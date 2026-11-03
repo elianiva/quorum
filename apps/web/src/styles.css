@@ -751,6 +751,16 @@ details.fold[open]::details-content {
 .title-art {
   container-type: inline-size;
 }
+/* The inlined title art follows the interface language without being remounted. */
+.hero-label-fr,
+html:lang(fr) .hero-label-default {
+  display: none;
+}
+
+html:lang(fr) .hero-label-fr {
+  display: inline;
+}
+
 .title-bench svg {
   display: block;
   width: 100%;

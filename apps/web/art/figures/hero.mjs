@@ -294,11 +294,7 @@ function callout({ at: [x, y], top, tag, left = false }) {
   const up = py - (left ? 12 : 22)
   const ink = 'var(--callout,var(--anatomy-muted))'
   const text = left ? `x="${(px - 8).toFixed(1)}" text-anchor="end"` : `x="${(px + 8).toFixed(1)}"`
-  // The title inlines this art; document language switches the label without replaying its entrance.
-  const french = tag === 'USERS' ? 'UTILISATEURS' : null
-  const labelStyle = `fill:${ink};font:500 6.2px var(--anatomy-mono);letter-spacing:.08em`
-  const label = `<text ${text} y="${(up + 2.2).toFixed(1)}" style="${labelStyle}"${french ? ' class="hero-label-default"' : ''}>${tag}</text>${french ? `<text ${text} y="${(up + 2.2).toFixed(1)}" style="${labelStyle}" class="hero-label-fr">${french}</text>` : ''}`
-  return `<g class="callout"><circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="1.1" style="fill:${ink}"/><path d="M${px.toFixed(1)} ${py.toFixed(1)}V${up.toFixed(1)}h${left ? -6 : 6}" style="fill:none;stroke:${ink};stroke-width:.5"/>${label}</g>`
+  return `<g class="callout"><circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="1.1" style="fill:${ink}"/><path d="M${px.toFixed(1)} ${py.toFixed(1)}V${up.toFixed(1)}h${left ? -6 : 6}" style="fill:none;stroke:${ink};stroke-width:.5"/><text ${text} y="${(up + 2.2).toFixed(1)}" style="fill:${ink};font:500 6.2px var(--anatomy-mono);letter-spacing:.08em">${tag}</text></g>`
 }
 
 export function figure() {

@@ -5,6 +5,56 @@ import { frMail } from './fr-mail.ts'
 export const fr: Readonly<Record<string, string>> = {
   ...frGlossary,
   ...frMail,
+  'Traffic & load': 'Trafic et charge',
+  'Live now': 'En direct',
+  'Live traffic': 'Trafic en direct',
+  'Recorded sample': 'Échantillon enregistré',
+  'Back to live': 'Retour au direct',
+  'Incoming operations': 'Opérations entrantes',
+  'Sent by': 'Envoyé par',
+  'Hits / misses': 'Succès / défauts de cache',
+  Backlog: 'File d’attente',
+  Refused: 'Refusées',
+  'Sent to Workers': 'Envoyé aux Workers',
+  'Queue wait': 'Attente dans la file',
+  'Day {0} · {1}': 'Jour {0} · {1}',
+  'Inspect recorded sample': 'Examiner un échantillon enregistré',
+  'Load history. Select a point or use the sample slider below.':
+    'Historique de charge. Choisissez un point ou utilisez le curseur ci-dessous.',
+  'Select a point or use arrow keys on the slider. Up to one day, sampled every 10 game minutes in this session.':
+    'Choisissez un point ou utilisez les flèches du curseur. Jusqu’à un jour, avec un relevé toutes les 10 minutes du jeu pendant cette session.',
+  'History appears after two recorded samples.': 'L’historique apparaît après deux relevés.',
+  'Research Metrics to inspect past samples.':
+    'Recherchez Métriques pour examiner les relevés passés.',
+  'Changes vs {0}: inbound {1}. Operation deltas appear below.':
+    'Évolution depuis {0} : trafic entrant {1}. Les écarts par opération figurent ci-dessous.',
+  'No incoming traffic at this sample.': 'Aucun trafic entrant dans ce relevé.',
+  'Shares describe incoming traffic, not CPU usage.':
+    'Les parts décrivent le trafic entrant, pas l’utilisation du CPU.',
+  'This component is down. Check its incident or restart status before resizing it.':
+    'Ce composant est arrêté. Vérifiez son incident ou son redémarrage avant de le redimensionner.',
+  'RAM is exhausted and this component is swapping. Reduce resident memory or add RAM.':
+    'La RAM est épuisée et ce composant utilise le swap. Réduisez la mémoire résidente ou ajoutez de la RAM.',
+  'CPU credits are exhausted. Consider a non-burstable instance or reduce sustained CPU work.':
+    'Les crédits CPU sont épuisés. Envisagez une instance à capacité fixe ou réduisez le travail CPU soutenu.',
+  'The connection limit is refusing queries. Consider connection pooling or reduce database concurrency.':
+    'La limite de connexions entraîne des refus de requêtes. Envisagez un pool de connexions ou réduisez la concurrence vers la base.',
+  'The working set exceeds RAM and reads hit disk. Consider more RAM, caching, or a read replica.':
+    'Les données actives dépassent la RAM et les lectures accèdent au disque. Envisagez plus de RAM, un cache ou une réplique de lecture.',
+  'Queued work is stalled. Check that Workers are connected and their downstream calls can complete.':
+    'Le travail en file est bloqué. Vérifiez que des Workers sont connectés et que leurs appels en aval peuvent aboutir.',
+  'CPU limits capacity. Reduce CPU-heavy work or add compute capacity.':
+    'Le CPU limite la capacité. Réduisez le travail intensif ou ajoutez de la capacité de calcul.',
+  'Worker slots limit capacity. Check downstream latency before adding workers.':
+    'Les emplacements de traitement limitent la capacité. Vérifiez la latence en aval avant d’ajouter des workers.',
+  'Memory limits capacity. Reduce per-request memory or add RAM.':
+    'La mémoire limite la capacité. Réduisez la mémoire par requête ou ajoutez de la RAM.',
+  'Network bandwidth limits capacity. Consider smaller payloads or more network capacity.':
+    'La bande passante limite la capacité. Envisagez des données plus petites ou davantage de capacité réseau.',
+  'Disk throughput limits capacity. Reduce disk work or increase storage throughput.':
+    'Le débit disque limite la capacité. Réduisez le travail disque ou augmentez le débit du stockage.',
+  'Throughput limits capacity. Reduce incoming work or increase this component’s capacity.':
+    'Le débit limite la capacité. Réduisez le travail entrant ou augmentez la capacité de ce composant.',
   'text-muted-foreground hover:bg-well hover:text-foreground':
     'survol du texte en sourdine : bg-well survol : texte-avant-plan',
   'text-[10.5px]': 'texte-[10.5px]',

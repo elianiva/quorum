@@ -12,6 +12,7 @@ import { Message } from './message.ts'
 import { Founder } from '@quorum/simulation/founder'
 import { Motion, Prefs, Reveal, SandboxStore, TradeoffOption } from './model.ts'
 import { History } from './history.ts'
+import { NodeSample } from './node-metrics.ts'
 import { play, setMuted, SOUND_NAMES } from './sound.ts'
 import { setAgentAccess } from './agent-relay.ts'
 import { appendLog, clearLog, downloadLog, LogEntry } from './playlog.ts'
@@ -49,7 +50,7 @@ export const SyncBoard = Command.define('SyncBoard', {
     selection: Schema.Array(Schema.String),
     placing: Schema.NullOr(ComponentId),
     stamp: StampArg,
-    history: Schema.Record(Schema.String, Schema.Array(Schema.Finite)),
+    history: Schema.Record(Schema.String, Schema.Array(NodeSample)),
     region: Region,
     paused: Schema.Boolean,
     /** The Node whose footer button glows: a disclosure cue. */

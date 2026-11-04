@@ -34,6 +34,7 @@ import {
   Wallet,
 } from 'lucide'
 import { play } from './sound.ts'
+import type { NodeSample } from './node-metrics.ts'
 import {
   Application,
   Container,
@@ -145,7 +146,7 @@ export type BoardState = Readonly<{
   /** A Playbook being placed: the next click puts its top-left corner there. */
   stamp: Stamp | null
   /** Each Node's utilization, one point per 10 sim seconds. */
-  history: Readonly<Record<string, ReadonlyArray<number>>>
+  history: Readonly<Record<string, ReadonlyArray<NodeSample>>>
   /** The region tab on show; its Nodes, and the Nodes they reach elsewhere, are drawn. */
   region: Region
   /** The company is paused: belts hold still. */
@@ -837,7 +838,7 @@ const rowsOf = (
   game: Game,
   node: GameNode,
   ledger: Ledger,
-  history: ReadonlyArray<number> = [],
+  history: ReadonlyArray<NodeSample> = [],
 ): ReadonlyArray<Row> => {
   const own = ledger.nodes[node.id]
   if (!own) return []
@@ -856,7 +857,9 @@ const rowsOf = (
         : 'idle',
     tone: own.utilization >= 0.9 ? 'danger' : own.utilization >= 0.7 ? 'warn' : 'plain',
     bar: Math.min(own.utilization, 1),
-    ...(has(game, 'metrics') && history.length > 1 ? { trend: history } : {}),
+    ...(has(game, 'metrics') && history.length > 1
+      ? { trend: history.map((sample) => sample.utilization) }
+      : {}),
   }
   const latency: Row = {
     glyph: 'latency',
@@ -1489,7 +1492,7 @@ class NodeView {
     selected: boolean,
     pressed: boolean,
     colors: Palette,
-    history: ReadonlyArray<number>,
+    history: ReadonlyArray<NodeSample>,
     region: Region | null,
     locale: Locale,
   ): void {

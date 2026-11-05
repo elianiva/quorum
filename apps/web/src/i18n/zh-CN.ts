@@ -449,6 +449,11 @@ export const zhCN: Readonly<Record<string, string>> = {
   '{0} At the front of the queue, it holds every Study behind it.':
     '{0}排到队首时，它会卡住后面的所有研究。',
   'Research (R). {0}': '研究（R）。{0}',
+  '{0} is stalled': '{0}已停滞',
+  'Every Study behind it waits until it moves. Fix the cause, or open Research to move another Study up or cancel this one.':
+    '排在它后面的研究都会等它推进。解决原因，或打开研究，把其他研究上移或取消这一项。',
+  'Open Research': '打开研究',
+  '{0} no longer holds the queue.': '{0}不再卡住队列。',
   'Move up': '上移',
   'Move down': '下移',
   'Speed (S)': '速度（S）',

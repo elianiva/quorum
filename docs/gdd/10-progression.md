@@ -273,7 +273,9 @@ A Study **stalls** when a recipe pool earns nothing and holds less than the Stud
 when the Design samples its kinds at too few Component types. A stalled running Study holds every
 Study behind it. The queue row, the Insight card, and the item's card mark a stalled Study and say
 why: the pool that earns nothing, and the Feature that brings its kind when one does, such as
-Password login for `login`. Queueing a stalled item says the same.
+Password login for `login`. Queueing a stalled item says the same. While the running Study is
+stalled, a teammate's Mail waits in Needs action with an Open Research button; its Thread resolves
+when the Study moves again or leaves the queue.
 
 `speed` is 1, and two things raise it:
 

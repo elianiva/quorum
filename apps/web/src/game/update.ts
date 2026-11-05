@@ -112,6 +112,7 @@ import { nextAdvice } from '@quorum/simulation/goals'
 import {
   EVENT_EVERY,
   churnFact,
+  stallFact,
   disclosureFact,
   eventFact,
   eventMail,
@@ -826,6 +827,14 @@ const mailAction = (model: Model, kind: string, target: string | null): Result =
     }
     case 'churn':
       return route(model, Message.PanelOpened({ panel: 'churn' }))
+    case 'research': {
+      const opened = route(model, Message.PanelOpened({ panel: 'research' }))
+      const focused = route(
+        opened.model,
+        Message.ResearchChanged({ message: ResearchMessage.Focused({ id: target as ResearchId }) }),
+      )
+      return { ...focused, commands: [...(opened.commands ?? []), ...(focused.commands ?? [])] }
+    }
     case 'first':
       return route(model, Message.WorkPrioritized({ id: Number(target) }))
     case 'rush':
@@ -1445,6 +1454,32 @@ const tick = (model: Model): Result => {
             ),
           },
         }
+    }
+  }
+  // A stalled running Study holds the queue: a teammate writes once, and the Thread waits in Needs
+  // action until the Study moves or leaves the queue (10 "Studies").
+  if (!offCompany(next)) {
+    const running = game.studies[0]
+    const stall = running ? studyStall(game, ledger, running.id) : null
+    const key = running && stall ? `research:stalled:${running.id}` : null
+    if (running && stall)
+      next = mailedTo(next, stallFact(game, running.id, stallReason(stall)), game.time)
+    for (const mail of next.board.inbox.mail) {
+      if (!mail.key.startsWith('research:stalled:') || mail.key === key) continue
+      if (mail.resolved !== null || mail.trashed) continue
+      const name = RESEARCH[mail.key.slice('research:stalled:'.length) as ResearchId]?.name
+      next = {
+        ...next,
+        board: {
+          ...next.board,
+          inbox: closed(
+            next.board.inbox,
+            mail.key,
+            game.time,
+            `${name} no longer holds the queue.`,
+          ),
+        },
+      }
     }
   }
   // The world writes too: teammates, CVEs, customers, and spam.

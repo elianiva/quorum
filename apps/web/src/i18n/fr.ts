@@ -1267,6 +1267,11 @@ export const fr: Readonly<Record<string, string>> = {
   '{0} At the front of the queue, it holds every Study behind it.':
     '{0} En tête de file, elle bloque toutes les études derrière elle.',
   'Research (R). {0}': 'Recherche (R). {0}',
+  '{0} is stalled': '{0} est bloquée',
+  'Every Study behind it waits until it moves. Fix the cause, or open Research to move another Study up or cancel this one.':
+    'Toutes les études derrière elle attendent qu’elle avance. Corrigez la cause, ou ouvrez la Recherche pour faire monter une autre étude ou annuler celle-ci.',
+  'Open Research': 'Ouvrir la Recherche',
+  '{0} no longer holds the queue.': '{0} ne bloque plus la file.',
   'Study {0} now': 'Étudier {0} maintenant',
   'Studying now: {0}.': 'Étude en cours : {0}.',
   'Cancelled {0}': 'Annulé {0}',

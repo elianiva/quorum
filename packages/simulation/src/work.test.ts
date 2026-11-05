@@ -21,6 +21,7 @@ import { growthOf } from './step.ts'
 import {
   badDeployChance,
   deploysPerDay,
+  enqueue,
   quarterSeconds,
   quartersBehind,
   serviceOf,
@@ -34,6 +35,7 @@ import {
   createTeam,
   moveItem,
   queueFeature,
+  queueSpike,
   queueTask,
   rollback,
   rushItem,
@@ -128,6 +130,25 @@ describe('the backlog', () => {
     // A Spike on a Study that cannot move would only hold the team.
     expect(spike(ok(study(idle, 'auth-provider')))).toBeUndefined()
     expect(spike({ ...ok(study(idle, 'caching')), autopilot: false })).toBeUndefined()
+  })
+
+  test('an autopilot Spike gives way to a CVE patch, and a player Spike replaces it', () => {
+    const all = shipped(preseed(), ...(Object.keys(FEATURES) as Array<FeatureId>))
+    const idle: Game = { ...all, autopilot: true, pools: { ...NO_INSIGHT, read: 1e6 } }
+    const spiking = work(ok(study(idle, 'caching')), 1)
+    expect(spiking.backlog).toMatchObject([{ kind: 'spike', ref: 'caching', auto: true }])
+    // A patch arrives: the only team leaves the Spike for it, and the Study keeps its progress.
+    const patched = enqueue(spiking, 'patch', 'CVE-2026-0042', 20, false, {
+      due: spiking.time + 600,
+      target: 'server',
+    })
+    const after = work(patched, 1)
+    expect(after.backlog.map((item) => item.kind)).toEqual(['patch'])
+    expect(after.backlog[0]?.spent).toBeGreaterThan(0)
+    expect(after.studies[0]?.progress).toBe(spiking.studies[0]?.progress)
+    // The player's own Spike takes the autopilot one's place, and holds its team.
+    expect(ok(queueSpike(spiking)).backlog).toMatchObject([{ kind: 'spike', ref: 'caching' }])
+    expect(ok(queueSpike(spiking)).backlog[0]?.auto).toBeUndefined()
   })
 
   test('Paid plans needs Password login on the way, and Pre-seed Features wait for Pre-seed', () => {

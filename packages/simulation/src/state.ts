@@ -475,6 +475,8 @@ export const WorkItem = Schema.Struct({
   due: Schema.optionalKey(Schema.Finite),
   /** The Component id a patch is for. */
   target: Schema.optionalKey(Schema.String),
+  /** A Spike the autopilot queued to fill idle time: it gives way to any other work. */
+  auto: Schema.optionalKey(Schema.Boolean),
 })
 export type WorkItem = typeof WorkItem.Type
 

@@ -276,7 +276,7 @@ export const enqueue = (
   ref: string,
   cost: number,
   top = false,
-  extra: Pick<WorkItem, 'due' | 'target'> = {},
+  extra: Pick<WorkItem, 'due' | 'target' | 'auto'> = {},
 ): Game => {
   const item: WorkItem = { id: game.workSeq + 1, kind, ref, cost, spent: 0, ...extra }
   return {

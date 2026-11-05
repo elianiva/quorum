@@ -70,7 +70,8 @@ Work waits in a backlog in priority order. Each team builds the first item that 
 has taken. Spare Dev Hours go to a pool, which can rush any item.
 With the autopilot on, an idle team picks the next Feature it can build. It also queues a Refactor
 when debt gets high. With nothing else to build, it spikes the running Study, which then runs twice
-as fast, unless that Study is stalled. The team stays on that Spike until the Study finishes.
+as fast, unless that Study is stalled. That Spike only fills idle time: the team leaves it as soon
+as other work arrives, such as a new Feature or a CVE patch, and the Study keeps its progress.
 
 A finished Feature does not reach users at once. It waits for the next deploy:
 

@@ -253,7 +253,8 @@ import {
   SaveIndex,
 } from './saves.ts'
 import { DEFAULT_LOGO } from './logos.ts'
-import { poolName, recipeOf } from '@quorum/ui/game/pools'
+import { poolName, recipeOf, stallReason } from '@quorum/ui/game/pools'
+import { studyStall } from '@quorum/simulation/studies'
 import { bootStep } from './boot-machine.ts'
 import { sessionStep } from './session-machine.ts'
 import { stepOf } from '@quorum/simulation/migration'
@@ -887,7 +888,10 @@ const foldResearch = (model: Model, message: ResearchMessage): Result =>
         Study: ({ id }) =>
           act(parent, `Study ${RESEARCH[id].name}`, Actions.study(parent.board.game, id), {
             note: (game) => {
-              // Warn when the pools hold less than the recipe: the Study waits on their rates.
+              // A Study that cannot finish holds the queue: say why. Short pools only slow it.
+              const stall = studyStall(game, ledgerOf(parent), id)
+              if (stall)
+                return [`Study queued: ${RESEARCH[id].name}. ${stallReason(stall)}`, 'warn']
               const short = recipeOf(id)
                 .filter(([pool, cost]) => game.pools[pool] < cost)
                 .map(([pool]) => poolName(pool))

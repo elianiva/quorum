@@ -1188,4 +1188,22 @@ test('a stalled running Study raises a teammate alert that opens Research and cl
   )
   const after = cancelled.board.inbox.mail.find((mail) => mail.key === alert!.key)
   expect(after?.resolved).not.toBeNull()
+  // A player who read the alert and then cancelled gets no fresh unread Mail for it.
+  const seen: Model = {
+    ...stalled,
+    board: {
+      ...stalled.board,
+      inbox: {
+        ...stalled.board.inbox,
+        mail: stalled.board.inbox.mail.map((mail) => ({ ...mail, read: true })),
+      },
+    },
+  }
+  const quiet = tick(
+    update(
+      seen,
+      Message.ResearchChanged({ message: ResearchMessage.StudyCancelled({ id: 'auth-provider' }) }),
+    ).model,
+  )
+  expect(quiet.board.inbox.mail.find((mail) => mail.key === alert!.key)?.read).toBe(true)
 })

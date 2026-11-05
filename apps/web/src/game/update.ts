@@ -127,6 +127,7 @@ import {
   InboxMessage,
   InboxOutMessage,
   closed,
+  withMail,
   folderList,
   mailed,
   openingFolder,
@@ -1468,17 +1469,16 @@ const tick = (model: Model): Result => {
       if (!mail.key.startsWith('research:stalled:') || mail.key === key) continue
       if (mail.resolved !== null || mail.trashed) continue
       const name = RESEARCH[mail.key.slice('research:stalled:'.length) as ResearchId]?.name
+      // The player usually caused this, by cancelling or by shipping the fix: no new unread Mail.
+      const inbox = closed(
+        next.board.inbox,
+        mail.key,
+        game.time,
+        `${name} no longer holds the queue.`,
+      )
       next = {
         ...next,
-        board: {
-          ...next.board,
-          inbox: closed(
-            next.board.inbox,
-            mail.key,
-            game.time,
-            `${name} no longer holds the queue.`,
-          ),
-        },
+        board: { ...next.board, inbox: withMail(inbox, mail.id, { read: mail.read }) },
       }
     }
   }

@@ -69,7 +69,8 @@ See [Conway's law](/glossary/conways-law).
 Work waits in a backlog in priority order. Each team builds the first item that no team ahead of it
 has taken. Spare Dev Hours go to a pool, which can rush any item.
 With the autopilot on, an idle team picks the next Feature it can build. It also queues a Refactor
-when debt gets high.
+when debt gets high. With nothing else to build, it spikes the running Study, which then runs twice
+as fast, unless that Study is stalled. The team stays on that Spike until the Study finishes.
 
 A finished Feature does not reach users at once. It waits for the next deploy:
 

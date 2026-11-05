@@ -1,6 +1,6 @@
 import { Result, Schema } from 'effect'
 import { describe, expect, test } from 'vitest'
-import { connect, place, setPoolerMode, type Action } from './actions.ts'
+import { connect, place, setPoolerMode, study, type Action } from './actions.ts'
 import { callsOf } from './capacity.ts'
 import {
   CALENDAR_DAY,
@@ -16,7 +16,7 @@ import { forceIncident } from './director.ts'
 import type { Ledger } from './ledger.ts'
 import { nextRandom } from './random.ts'
 import { solve, solveFlow } from './solve.ts'
-import { Game, type GameNode } from './state.ts'
+import { Game, NO_INSIGHT, type GameNode } from './state.ts'
 import { growthOf } from './step.ts'
 import {
   badDeployChance,
@@ -111,6 +111,23 @@ describe('the backlog', () => {
   test('with the autopilot on, an idle team picks the next Feature itself', () => {
     expect(work({ ...preseed(), autopilot: true }, 1).backlog[0]?.ref).toBe('landing-page')
     expect(work(preseed(), 1).backlog).toEqual([])
+  })
+
+  test('with nothing to build, the autopilot spikes the running Study, unless it is stalled', () => {
+    // Every Feature is out, so the autopilot has no Feature to pick. Analytics is unlinked, so no
+    // pool earns: Caching runs on its saved `read` Insight, and Managed identity has no `login`.
+    const all = shipped(preseed(), ...(Object.keys(FEATURES) as Array<FeatureId>))
+    const idle: Game = {
+      ...all,
+      links: all.links.filter((link) => link.to !== 'analytics'),
+      autopilot: true,
+      pools: { ...NO_INSIGHT, read: 1e6 },
+    }
+    const spike = (game: Game) => work(game, 1).backlog.find((item) => item.kind === 'spike')
+    expect(spike(ok(study(idle, 'caching')))?.ref).toBe('caching')
+    // A Spike on a Study that cannot move would only hold the team.
+    expect(spike(ok(study(idle, 'auth-provider')))).toBeUndefined()
+    expect(spike({ ...ok(study(idle, 'caching')), autopilot: false })).toBeUndefined()
   })
 
   test('Paid plans needs Password login on the way, and Pre-seed Features wait for Pre-seed', () => {

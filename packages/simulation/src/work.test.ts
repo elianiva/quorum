@@ -1,6 +1,6 @@
 import { Result, Schema } from 'effect'
 import { describe, expect, test } from 'vitest'
-import { connect, place, setPoolerMode, type Action } from './actions.ts'
+import { connect, place, setPoolerMode, study, type Action } from './actions.ts'
 import { callsOf } from './capacity.ts'
 import {
   CALENDAR_DAY,
@@ -16,11 +16,12 @@ import { forceIncident } from './director.ts'
 import type { Ledger } from './ledger.ts'
 import { nextRandom } from './random.ts'
 import { solve, solveFlow } from './solve.ts'
-import { Game, type GameNode } from './state.ts'
+import { Game, NO_INSIGHT, type GameNode } from './state.ts'
 import { growthOf } from './step.ts'
 import {
   badDeployChance,
   deploysPerDay,
+  enqueue,
   quarterSeconds,
   quartersBehind,
   serviceOf,
@@ -34,6 +35,7 @@ import {
   createTeam,
   moveItem,
   queueFeature,
+  queueSpike,
   queueTask,
   rollback,
   rushItem,
@@ -111,6 +113,42 @@ describe('the backlog', () => {
   test('with the autopilot on, an idle team picks the next Feature itself', () => {
     expect(work({ ...preseed(), autopilot: true }, 1).backlog[0]?.ref).toBe('landing-page')
     expect(work(preseed(), 1).backlog).toEqual([])
+  })
+
+  test('with nothing to build, the autopilot spikes the running Study, unless it is stalled', () => {
+    // Every Feature is out, so the autopilot has no Feature to pick. Analytics is unlinked, so no
+    // pool earns: Caching runs on its saved `read` Insight, and Managed identity has no `login`.
+    const all = shipped(preseed(), ...(Object.keys(FEATURES) as Array<FeatureId>))
+    const idle: Game = {
+      ...all,
+      links: all.links.filter((link) => link.to !== 'analytics'),
+      autopilot: true,
+      pools: { ...NO_INSIGHT, read: 1e6 },
+    }
+    const spike = (game: Game) => work(game, 1).backlog.find((item) => item.kind === 'spike')
+    expect(spike(ok(study(idle, 'caching')))?.ref).toBe('caching')
+    // A Spike on a Study that cannot move would only hold the team.
+    expect(spike(ok(study(idle, 'auth-provider')))).toBeUndefined()
+    expect(spike({ ...ok(study(idle, 'caching')), autopilot: false })).toBeUndefined()
+  })
+
+  test('an autopilot Spike gives way to a CVE patch, and a player Spike replaces it', () => {
+    const all = shipped(preseed(), ...(Object.keys(FEATURES) as Array<FeatureId>))
+    const idle: Game = { ...all, autopilot: true, pools: { ...NO_INSIGHT, read: 1e6 } }
+    const spiking = work(ok(study(idle, 'caching')), 1)
+    expect(spiking.backlog).toMatchObject([{ kind: 'spike', ref: 'caching', auto: true }])
+    // A patch arrives: the only team leaves the Spike for it, and the Study keeps its progress.
+    const patched = enqueue(spiking, 'patch', 'CVE-2026-0042', 20, false, {
+      due: spiking.time + 600,
+      target: 'server',
+    })
+    const after = work(patched, 1)
+    expect(after.backlog.map((item) => item.kind)).toEqual(['patch'])
+    expect(after.backlog[0]?.spent).toBeGreaterThan(0)
+    expect(after.studies[0]?.progress).toBe(spiking.studies[0]?.progress)
+    // The player's own Spike takes the autopilot one's place, and holds its team.
+    expect(ok(queueSpike(spiking)).backlog).toMatchObject([{ kind: 'spike', ref: 'caching' }])
+    expect(ok(queueSpike(spiking)).backlog[0]?.auto).toBeUndefined()
   })
 
   test('Paid plans needs Password login on the way, and Pre-seed Features wait for Pre-seed', () => {

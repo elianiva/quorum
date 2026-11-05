@@ -42,6 +42,7 @@ import {
 } from './migration.ts'
 import { nextRandom } from './random.ts'
 import type { Game, TeamKind, WorkItem } from './state.ts'
+import { studyStall } from './studies.ts'
 import {
   badDeployChance,
   deployEvery,
@@ -159,15 +160,19 @@ export const setFix = (game: Game, id: FixId, on: boolean): Action => {
   )
 }
 
-/** Puts a Team on the running Study (08 "Spikes"): it runs 2× while the Team works on it. */
+/**
+ * Puts a Team on the running Study (08 "Spikes"): it runs 2× while the Team works on it. The
+ * player's Spike replaces an autopilot one, and holds its Team until its Study completes.
+ */
 export const queueSpike = (game: Game): Action => {
   const running = game.studies[0]
   if (game.sandbox) return notAllowed(SANDBOX)
   if (!running) return notAllowed('No Study is running.')
-  if (queued(game, running.id))
+  const own = game.backlog.filter((item) => !(item.auto && item.ref === running.id))
+  if (queued({ ...game, backlog: own }, running.id))
     return notAllowed(`A Team already spikes ${RESEARCH[running.id].name}.`)
   // A Spike has no size: it holds its Team until its Study completes.
-  return ok(enqueue(game, 'spike', running.id, Number.MAX_SAFE_INTEGER, true))
+  return ok(enqueue({ ...game, backlog: own }, 'spike', running.id, Number.MAX_SAFE_INTEGER, true))
 }
 
 /* ---------- the backlog ---------- */
@@ -433,8 +438,24 @@ type Advance = Readonly<{ game: Game; events: ReadonlyArray<StepEvent> }>
 export const nextFeature = (game: Game): FeatureId | undefined =>
   FEATURE_IDS.find((id) => featureRefusal(game, id) === null)
 
-/** Idle teams pick work, and a built migration step shifts. */
-const autopilot = (game: Game, events: Array<StepEvent>): Game => {
+/** The next item the autopilot queues: a Feature, then a Refactor once debt is high. */
+const autoItem = (
+  game: Game,
+): Readonly<{ kind: WorkItem['kind']; ref: string; cost: number }> | null => {
+  const feature = nextFeature(game)
+  if (feature) return { kind: 'feature', ref: feature, cost: FEATURES[feature].dh }
+  if (serviceOf(game).debt >= AUTO_REFACTOR && !queued(game, 'refactor'))
+    return { kind: 'task', ref: 'refactor', cost: TASKS.refactor.dh }
+  return null
+}
+
+/**
+ * Idle teams pick work, and a built migration step shifts. With no Feature or refactor to take, an
+ * idle team spikes the running Study, unless it is stalled. That Spike only fills idle time: it
+ * gives way as soon as other work waits for its team or can be queued, such as a CVE patch. Study
+ * progress lives in the Study, so dropping the Spike loses none.
+ */
+const autopilot = (game: Game, ledger: Ledger, events: Array<StepEvent>): Game => {
   let next = game
   const migration = serviceOf(next).migration
   if (migration && isReady(migration)) {
@@ -444,14 +465,25 @@ const autopilot = (game: Game, events: Array<StepEvent>): Game => {
       events.push(StepEvent.MigrationShifted({ step: stepOf(migration) + 1 }))
     }
   }
+  const running = next.studies[0]
+  const autos = next.backlog.reduce((count, item) => count + (item.auto ? 1 : 0), 0)
+  const fills =
+    running !== undefined &&
+    next.backlog.length - autos < next.teams.length &&
+    autoItem(next) === null &&
+    !studyStall(next, ledger, running.id)
+  if (autos > 0) {
+    const kept = next.backlog.filter((item) => !item.auto || (fills && item.ref === running?.id))
+    if (kept.length !== next.backlog.length) next = { ...next, backlog: kept }
+  }
   while (next.backlog.length < next.teams.length) {
-    const feature = nextFeature(next)
-    if (feature) {
-      next = enqueue(next, 'feature', feature, FEATURES[feature].dh)
+    const item = autoItem(next)
+    if (item) {
+      next = enqueue(next, item.kind, item.ref, item.cost)
       continue
     }
-    if (serviceOf(next).debt >= AUTO_REFACTOR && !queued(next, 'refactor')) {
-      next = enqueue(next, 'task', 'refactor', TASKS.refactor.dh)
+    if (fills && running && !queued(next, running.id)) {
+      next = enqueue(next, 'spike', running.id, Number.MAX_SAFE_INTEGER, false, { auto: true })
       continue
     }
     break
@@ -605,7 +637,7 @@ export const advanceTeam = (
     for (const entry of joined) events.push(StepEvent.Hired({ engineerId: entry.id }))
   }
 
-  if (next.autopilot) next = autopilot(next, events)
+  if (next.autopilot) next = autopilot(next, ledger, events)
 
   // Each team builds the first item no team ahead of it has.
   const migrating = serviceOf(next).migration !== null

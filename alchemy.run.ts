@@ -41,6 +41,14 @@ const sentryEnv = {
  * uploads. The maps stay out of the deployed code: Alchemy writes them to `.alchemy`.
  */
 const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN
+
+/**
+ * The CPU one invocation may spend, in milliseconds. The Workers Paid default is
+ * 30 seconds, which leaves a runaway loop room to bill ten times what one game
+ * request needs. The Free plan rejects a custom limit (error 100328), so the
+ * setting stays off until the deploy environment sets `CPU_LIMIT_MS`.
+ */
+const cpuLimitMs = Number(process.env.CPU_LIMIT_MS ?? 0)
 const apiBuild = {
   build: {
     input: {
@@ -146,6 +154,8 @@ export default Alchemy.Stack(
       ...apiBuild,
       compatibility: sentryCompatibility,
       observability,
+      // A setting Cloudflare only takes on Workers Paid, so it is opt-in.
+      ...(cpuLimitMs > 0 ? { limits: { cpuMs: cpuLimitMs } } : {}),
       // The website reaches the API through its service binding only. Remove
       // this when the API needs its own public URL or custom domain.
       workersDev: false,

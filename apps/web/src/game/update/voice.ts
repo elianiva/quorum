@@ -188,12 +188,20 @@ export const voiceHandlers = (
     const parts = clauses(text)
     const first = parts[0]
     if (first === undefined) return { model }
+    // A line that carries on from the one before reads as one sentence, not two:
+    // the model sometimes reports the same words again in a later segment.
+    const carried = model.voice.text
+    const continues = carried !== '' && text.startsWith(carried)
+    const before =
+      continues && model.voice.settled.endsWith(carried)
+        ? model.voice.settled.slice(0, model.voice.settled.length - carried.length).trimEnd()
+        : model.voice.settled
     const voice = {
       ...model.voice,
       heard: '',
       held: null,
       choices: [],
-      settled: lineWith(model.voice.settled, model.voice.text),
+      settled: continues ? before : lineWith(before, carried),
       text,
       applied: 0,
       clauses: parts.map((part) => ({ text: part.text, end: part.end })),

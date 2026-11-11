@@ -46,6 +46,17 @@ describe('the dictation line', () => {
     ).toBe('buy a database')
   })
 
+  test('a line that carries on does not repeat itself', () => {
+    const first = update(listOf(lab(), ''), Message.VoiceUttered({ text: 'connect' })).model
+    const second = update(first, Message.VoiceUttered({ text: 'connect the database' })).model
+    expect(second.voice.settled).toBe('')
+    expect(second.voice.text).toBe('connect the database')
+
+    const other = update(first, Message.VoiceUttered({ text: 'buy a cache' })).model
+    expect(other.voice.settled).toBe('connect')
+    expect(other.voice.text).toBe('buy a cache')
+  })
+
   test('a finished clause sets the line to clear after the hold', () => {
     const heard = update(lab(), Message.VoiceUttered({ text: 'add a database' })).model
     const answers: IntentAnswers = {

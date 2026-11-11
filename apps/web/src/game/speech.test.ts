@@ -23,8 +23,8 @@ describe('the line the model hears', () => {
 
   test('finishes a line that has stopped changing', () => {
     const line = say('add a database', 1_000).line
-    expect(quietAt(line, 1_500)).toBe(false)
-    expect(quietAt(line, 1_950)).toBe(true)
+    expect(quietAt(line, 4_500)).toBe(false)
+    expect(quietAt(line, 5_100)).toBe(true)
   })
 
   test('does not finish an empty line', () => {

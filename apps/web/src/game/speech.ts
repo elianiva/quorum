@@ -52,8 +52,12 @@ type Result = Readonly<{
   channel?: Readonly<{ alternatives?: ReadonlyArray<Readonly<{ transcript?: string }>> }>
 }>
 
-/** How long a line stays unchanged before the player is read as finished. */
-export const QUIET_MS = 900
+/**
+ * The model finalises a line itself, usually one to two seconds after the player
+ * stops. This is only the rescue for a final that never comes, so it sits well
+ * clear of the model's own cadence: finalising early split one sentence into two.
+ */
+export const QUIET_MS = 4_000
 
 /** The line being recognised: what is settled, and the words after it that still change. */
 export type Line = Readonly<{ settled: string; current: string; changedAt: number }>

@@ -336,6 +336,35 @@ export const ForgetDictation = Command.define('ForgetDictation', {
     Effect.sleep(Duration.millis(delay)).pipe(Effect.as(Message.VoiceForgotten({ text }))),
 })
 
+/** Empties the dictation field after a sentence, and keeps the cursor in it for the next one. */
+export const ClearDictationField = Command.define('ClearDictationField', {
+  args: {},
+  messages: [Message.Synced],
+  execute: () =>
+    Effect.sync(() => {
+      const field = document.querySelector<HTMLInputElement>('[data-dictation-input]')
+      if (field === null) return
+      field.value = ''
+      field.focus()
+    }).pipe(Effect.as(Message.Synced())),
+})
+
+/**
+ * Puts the cursor in the dictation field. The field has no chrome of its own, so
+ * the bar is only a place to type once it holds the focus.
+ */
+export const FocusDictation = Command.define('FocusDictation', {
+  args: {},
+  messages: [Message.Synced],
+  execute: () =>
+    Effect.sync(() => {
+      // The field mounts with the bar, so wait for the frame that draws it.
+      requestAnimationFrame(() => {
+        document.querySelector<HTMLInputElement>('[data-dictation-input]')?.focus()
+      })
+    }).pipe(Effect.as(Message.Synced())),
+})
+
 /**
  * Keeps the newest words in view. The dictation line only grows, so it follows
  * itself to the right end as a sentence runs on, and respects Reduce motion.

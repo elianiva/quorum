@@ -3,8 +3,8 @@ import { Schema } from 'effect'
 
 /* ==========================================================================
    Dictation. One utterance becomes clauses, and each clause becomes one Move.
-   The bar shows the utterance grey until a clause lands, then black, so what
-   the microphone heard and what the board did are the same line of text.
+   The bar is the line being said: words arrive in black, and each landed Move
+   answers with a tick on the bar.
    ========================================================================== */
 
 /** One clause still to run, and where it ends in the utterance. */
@@ -17,10 +17,8 @@ export type VoiceClause = typeof VoiceClause.Type
 export const Voice = Schema.Struct({
   /** The player started dictation. */
   on: Schema.Boolean,
-  /** What the microphone has heard and not sent yet. */
+  /** What the field holds and the player has not sent yet. */
   heard: Schema.String,
-  /** What the player said before this utterance, kept on the line as it scrolls away. */
-  settled: Schema.String,
   /** The utterance the pending clauses came from. */
   text: Schema.String,
   /** How much of `text` a Move has landed for: the black part of the bar. */
@@ -42,22 +40,9 @@ export const Voice = Schema.Struct({
 })
 export type Voice = typeof Voice.Type
 
-/**
- * The line runs on. A finished utterance stays in front of the next one, and the
- * oldest words fall off once the line is longer than anyone reads at a glance.
- */
-const KEPT = 180
-
-export const lineWith = (settled: string, next: string): string => {
-  const whole = settled === '' ? next : next === '' ? settled : `${settled} ${next}`
-  if (whole.length <= KEPT) return whole
-  return whole.slice(whole.length - KEPT).replace(/^\S*\s+/, '')
-}
-
 export const EMPTY_VOICE: Voice = {
   on: false,
   heard: '',
-  settled: '',
   text: '',
   applied: 0,
   clauses: [],

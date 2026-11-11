@@ -6,7 +6,6 @@ import { sentryVitePlugin } from '@sentry/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
-import { asrQuery, ASR_PATH } from '../../packages/rpc/src/speech.ts'
 import { simVersion } from '../../packages/simulation/sim-version.ts'
 
 /**
@@ -137,33 +136,11 @@ const intent = (): Plugin => ({
 // The Foldkit dev server: Model preservation across reloads, and the devtools relay.
 const foldkitPlugins = foldkit().map(unbrandedModules)
 
-/**
- * Speech to text, dev only. The page streams 16 kHz PCM to this route, and the
- * route forwards the socket to Deepgram's Nova-3 on Workers AI. The token and
- * the gateway name stay on the server. A local prototype: the API Worker gets
- * the same socket with an `AI` binding before this ships.
- */
-const asrProxy = (): Record<string, import('vite').ProxyOptions> => {
-  const token = process.env.CLOUDFLARE_API_TOKEN
-  const account = process.env.CLOUDFLARE_ACCOUNT_ID
-  const gateway = process.env.CLOUDFLARE_AI_GATEWAY ?? 'mochimemo'
-  if (!token || !account) return {}
-  return {
-    [ASR_PATH]: {
-      target: 'wss://gateway.ai.cloudflare.com',
-      ws: true,
-      changeOrigin: true,
-      headers: { 'cf-aig-authorization': `Bearer ${token}` },
-      rewrite: () => `/v1/${account}/${gateway}/workers-ai?${asrQuery()}`,
-    },
-  }
-}
-
 const authToken = process.env.SENTRY_AUTH_TOKEN
 const release = process.env.VITE_SENTRY_RELEASE
 
 export default defineConfig({
-  server: { proxy: asrProxy() },
+  server: {},
   build: {
     sourcemap: authToken ? 'hidden' : false,
   },

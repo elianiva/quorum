@@ -1,10 +1,9 @@
 import * as Sentry from '@sentry/cloudflare'
-import { AGENT_ROOM_PATH, ASR_PATH, MCP_PATH, ROOM_SOCKET_PATH } from '@quorum/rpc'
+import { AGENT_ROOM_PATH, MCP_PATH, ROOM_SOCKET_PATH } from '@quorum/rpc'
 import type { AgentRooms } from './contexts/agent/room.ts'
 import type { RoomStub } from './contexts/room/directory.ts'
 import { handlerFor } from './handler.ts'
 import { agentHttp } from './platform/agent-http.ts'
-import { asrSocket } from './platform/asr.ts'
 import { AgentRoom } from './platform/agent-room.ts'
 import { roomDirectory } from './platform/room-directory.ts'
 import { RoomObject } from './platform/room-object.ts'
@@ -48,7 +47,6 @@ export default Sentry.withSentry(
     fetch: (request: Request, env: Env): Promise<Response> => {
       const path = new URL(request.url).pathname
       if (path === ROOM_SOCKET_PATH) return roomSocket(request, env)
-      if (path === ASR_PATH) return asrSocket(request, env.AI)
       if (path === MCP_PATH || path === AGENT_ROOM_PATH)
         return agentHttp(request, env.AGENT_ROOMS as unknown as AgentRooms)
       if (

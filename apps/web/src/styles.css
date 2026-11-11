@@ -1473,6 +1473,84 @@
   transform-origin: center;
   animation: dictate-wave 1.1s ease-in-out infinite;
 }
+/* A word is written as it arrives, rather than appearing in one frame. */
+@keyframes dictate-write {
+  0% {
+    opacity: 0;
+    filter: blur(5px);
+    transform: translate(8px, 4px);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    filter: blur();
+    transform: none;
+  }
+}
+.dictate-write {
+  animation: dictate-write 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* The sentence before slides away to the left as the next one starts. */
+@keyframes dictate-leave {
+  to {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateX(-26px);
+  }
+}
+.dictate-sentence[data-exiting] {
+  animation: dictate-leave 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+/* The bar says it is the place being typed into. */
+@keyframes dictate-live {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 var(--primary-soft);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 4px var(--primary-soft);
+  }
+}
+.dictate-live {
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+[data-dictation]:focus-within .dictate-live {
+  opacity: 1;
+  animation: dictate-live 1.6s ease-in-out infinite;
+}
+/* A landed Move: one ring out, and a tick that stays for the next sentence. */
+@keyframes dictate-ack {
+  0% {
+    box-shadow: 0 0 0 0 var(--ok-soft);
+  }
+  35% {
+    box-shadow: 0 0 0 4px var(--ok-soft);
+  }
+  to {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+.dictate-ack {
+  animation: dictate-ack 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes dictate-tick {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.dictate-tick {
+  animation: dictate-tick 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
 /* The microphone answers: the bars carry the room's level instead of breathing on their own. */
 [data-dictation][data-live] .dictate-wave {
   animation: none;

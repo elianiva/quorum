@@ -20,7 +20,7 @@ const certain = (choice: string, other: string, p = 0.9): IntentAnswers[string] 
 
 const listOf = (model: ReturnType<typeof lab>, text: string) => ({
   ...model,
-  voice: { ...model.voice, on: true, text, settled: text, applied: text.length },
+  voice: { ...model.voice, on: true, text, applied: text.length },
 })
 
 describe('the dictation line', () => {
@@ -28,7 +28,6 @@ describe('the dictation line', () => {
     const model = listOf(lab(), 'buy a database')
     const cleared = update(model, Message.VoiceForgotten({ text: 'buy a database' })).model
     expect(cleared.voice.text).toBe('')
-    expect(cleared.voice.settled).toBe('')
     expect(cleared.voice.applied).toBe(0)
   })
 
@@ -44,17 +43,6 @@ describe('the dictation line', () => {
     expect(
       update(running, Message.VoiceForgotten({ text: 'buy a database' })).model.voice.text,
     ).toBe('buy a database')
-  })
-
-  test('a line that carries on does not repeat itself', () => {
-    const first = update(listOf(lab(), ''), Message.VoiceUttered({ text: 'connect' })).model
-    const second = update(first, Message.VoiceUttered({ text: 'connect the database' })).model
-    expect(second.voice.settled).toBe('')
-    expect(second.voice.text).toBe('connect the database')
-
-    const other = update(first, Message.VoiceUttered({ text: 'buy a cache' })).model
-    expect(other.voice.settled).toBe('connect')
-    expect(other.voice.text).toBe('buy a cache')
   })
 
   test('a finished clause sets the line to clear after the hold', () => {

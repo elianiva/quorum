@@ -9,10 +9,10 @@ import {
   type Move,
   type Resolved,
 } from '../moves.ts'
-import { EMPTY_VOICE, lineWith } from '../voice.ts'
+import { EMPTY_VOICE } from '../voice.ts'
 import { Actions } from '../board-actions.ts'
 import { ResearchMessage } from '../research.ts'
-import { ForgetDictation, ResolveClause } from '../commands.ts'
+import { ClearDictationField, FocusDictation, ForgetDictation, ResolveClause } from '../commands.ts'
 import {
   act,
   say,
@@ -180,6 +180,8 @@ export const voiceHandlers = (
       // Switching dictation off puts the line away: the bar is only there while it is listening.
       voice: model.voice.on ? { ...EMPTY_VOICE } : { ...model.voice, on: true, error: null },
     },
+    // Opening the bar puts the cursor in it, so a dictation app has somewhere to type.
+    ...(model.voice.on ? {} : { commands: [FocusDictation({})] }),
   }),
 
   VoiceHeard: ({ text }) => ({ model: { ...model, voice: { ...model.voice, heard: text } } }),
@@ -188,20 +190,11 @@ export const voiceHandlers = (
     const parts = clauses(text)
     const first = parts[0]
     if (first === undefined) return { model }
-    // A line that carries on from the one before reads as one sentence, not two:
-    // the model sometimes reports the same words again in a later segment.
-    const carried = model.voice.text
-    const continues = carried !== '' && text.startsWith(carried)
-    const before =
-      continues && model.voice.settled.endsWith(carried)
-        ? model.voice.settled.slice(0, model.voice.settled.length - carried.length).trimEnd()
-        : model.voice.settled
     const voice = {
       ...model.voice,
       heard: '',
       held: null,
       choices: [],
-      settled: continues ? before : lineWith(before, carried),
       text,
       applied: 0,
       clauses: parts.map((part) => ({ text: part.text, end: part.end })),
@@ -212,6 +205,7 @@ export const voiceHandlers = (
     return {
       model: next,
       commands: [
+        ClearDictationField({}),
         ResolveClause({ clause: first.text, request: requestOf(next, first.text), delay: 0 }),
       ],
     }
@@ -263,7 +257,7 @@ export const voiceHandlers = (
     return {
       model: {
         ...model,
-        voice: { ...model.voice, settled: '', text: '', applied: 0, note: null },
+        voice: { ...model.voice, heard: '', text: '', applied: 0, note: null },
       },
     }
   },

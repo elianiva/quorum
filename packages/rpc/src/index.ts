@@ -17,7 +17,6 @@ export {
   ROOM_SOCKET_PATH,
   RPC_PATH,
 } from './paths.ts'
-export { ASR_KEYTERMS, ASR_MODEL, ASR_PATH, ASR_SAMPLE_RATE, asrQuery } from './speech.ts'
 export { RoomInfo, RoomOpened, RoomPublish, RoomQuery, RoomRpc } from './room.ts'
 export { SurveyExit, SurveyReceipt, SurveyRpc, SurveySubmission } from './survey.ts'
 export { SystemRpc, SystemStatus } from './system.ts'

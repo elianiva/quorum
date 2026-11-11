@@ -28,8 +28,6 @@ import type { SqlRunner } from './platform/sql.ts'
  * context reads its own table without a second resource.
  */
 export type Env = Readonly<{
-  /** Workers AI: speech to text for dictation. */
-  AI: Ai
   FEEDBACK: SqlRunner
   ACCESS: SqlRunner
   ROOMS: DurableObjectNamespace<RoomInstance>

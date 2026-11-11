@@ -12,7 +12,6 @@ import { ResearchMessage } from './research.ts'
 import { clockAway, halted, onlineFileOf, roomCode, type Model } from './model.ts'
 import { seatColour } from './seat-colour.ts'
 import { inRoom } from './room-machine.ts'
-import { listen } from './speech.ts'
 import { connect, onMessage, onStatus, seatOf, stop } from '@/platform/room-socket.ts'
 import { ServerMessage } from '@quorum/simulation/room'
 import { onBoard } from './route.ts'
@@ -101,41 +100,6 @@ const keys = Stream.callback<KeyMessage>((queue) =>
         return listener
       }),
       (listener) => Effect.sync(() => window.removeEventListener('keydown', listener)),
-    )
-    return yield* Effect.never
-  }),
-)
-
-/**
- * The microphone, while dictation is on. The page captures the audio and the
- * dev server forwards it to Nova-3; the model's interim words are the grey part
- * of the bar, and a line it finalises is one utterance.
- */
-const speech = Stream.callback<Message>((queue) =>
-  Effect.gen(function* () {
-    const opened = yield* Effect.tryPromise({
-      try: () =>
-        listen({
-          heard: (text) => Queue.offerUnsafe(queue, Message.VoiceHeard({ text })),
-          uttered: (text) => {
-            if (text.trim() !== '') Queue.offerUnsafe(queue, Message.VoiceUttered({ text }))
-          },
-          failed: (reason) => Queue.offerUnsafe(queue, Message.VoiceFailed({ clause: '', reason })),
-        }),
-      catch: (error) => (error instanceof Error ? error.message : 'The microphone did not open.'),
-    }).pipe(
-      Effect.match({
-        onSuccess: (stop) => stop,
-        onFailure: (reason): null => {
-          Queue.offerUnsafe(queue, Message.VoiceFailed({ clause: '', reason }))
-          return null
-        },
-      }),
-    )
-    if (opened === null) return yield* Effect.never
-
-    yield* Effect.acquireRelease(Effect.succeed(opened), (stop) =>
-      Effect.tryPromise(() => stop()).pipe(Effect.ignore),
     )
     return yield* Effect.never
   }),
@@ -411,16 +375,6 @@ export const subscriptions = {
                 ),
               )
             : Stream.empty,
-      },
-    ),
-
-    /** Dictation stays on until the player switches it off, across Boards and panels. */
-    dictation: entry(
-      { listening: Schema.Boolean },
-      {
-        modelToDependencies: (model: Model) => ({ listening: model.voice.on }),
-        dependenciesToStream: ({ listening }: { listening: boolean }) =>
-          listening ? speech : Stream.empty,
       },
     ),
 

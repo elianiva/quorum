@@ -1473,6 +1473,11 @@
   transform-origin: center;
   animation: dictate-wave 1.1s ease-in-out infinite;
 }
+/* The microphone answers: the bars carry the room's level instead of breathing on their own. */
+[data-dictation][data-live] .dictate-wave {
+  animation: none;
+  will-change: transform;
+}
 .dictate-halo {
   animation: dictate-halo 2.2s ease-in-out infinite;
 }

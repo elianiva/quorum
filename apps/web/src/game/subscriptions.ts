@@ -13,6 +13,7 @@ import { clockAway, halted, onlineFileOf, roomCode, type Model } from './model.t
 import { seatColour } from './seat-colour.ts'
 import { inRoom } from './room-machine.ts'
 import { MicTranscriber } from '@moonshine-ai/moonshine-wasm'
+import { meterOf } from './mic-meter.ts'
 import { connect, onMessage, onStatus, seatOf, stop } from '@/platform/room-socket.ts'
 import { ServerMessage } from '@quorum/simulation/room'
 import { onBoard } from './route.ts'
@@ -139,6 +140,9 @@ const KEYTERMS: ReadonlyArray<string> = [
  * and then run locally. A finished line is an utterance; the text still in
  * flight is the grey part of the bar.
  */
+/** A transcriber that is listening, and the level meter reading its stream. */
+type Opened = Readonly<{ mic: MicTranscriber; unwatch: (() => void) | null }>
+
 const speech = Stream.callback<Message>((queue) =>
   Effect.gen(function* () {
     let shown = -1
@@ -175,14 +179,15 @@ const speech = Stream.callback<Message>((queue) =>
         await mic.load()
         mic.setKeyterms([...KEYTERMS])
         await mic.start()
+        const unwatch = meterOf(mic)
         Queue.offerUnsafe(queue, Message.VoiceLoading({ progress: null }))
-        return mic
+        return { mic, unwatch }
       },
       catch: (error) => (error instanceof Error ? error.message : 'The microphone did not open.'),
     }).pipe(
       Effect.match({
         onSuccess: (started) => started,
-        onFailure: (reason): MicTranscriber | null => {
+        onFailure: (reason): Opened | null => {
           Queue.offerUnsafe(queue, Message.VoiceFailed({ clause: '', reason }))
           return null
         },
@@ -191,9 +196,10 @@ const speech = Stream.callback<Message>((queue) =>
     if (opened === null) return yield* Effect.never
 
     yield* Effect.acquireRelease(Effect.succeed(opened), (running) =>
-      Effect.tryPromise(() => running.stop()).pipe(
+      Effect.sync(() => running.unwatch?.()).pipe(
+        Effect.flatMap(() => Effect.tryPromise(() => running.mic.stop())),
         Effect.ignore,
-        Effect.flatMap(() => Effect.sync(() => running.close())),
+        Effect.flatMap(() => Effect.sync(() => running.mic.close())),
       ),
     )
     return yield* Effect.never

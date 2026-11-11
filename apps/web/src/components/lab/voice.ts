@@ -79,6 +79,7 @@ const listening = (h: HtmlBuilder<Message>): Html =>
       h.span(
         [
           h.Key(`bar-${bar}`),
+          h.DataAttribute('wave', String(bar)),
           h.Class('dictate-wave w-[5px] rounded-full bg-foreground/45'),
           h.Style({ height: '20px', animationDelay: `${bar * 130}ms` }),
         ],

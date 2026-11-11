@@ -12,6 +12,7 @@ import { ResearchMessage } from './research.ts'
 import { clockAway, halted, onlineFileOf, roomCode, type Model } from './model.ts'
 import { seatColour } from './seat-colour.ts'
 import { inRoom } from './room-machine.ts'
+import { MicTranscriber } from '@moonshine-ai/moonshine-wasm'
 import { connect, onMessage, onStatus, seatOf, stop } from '@/platform/room-socket.ts'
 import { ServerMessage } from '@quorum/simulation/room'
 import { onBoard } from './route.ts'
@@ -100,6 +101,100 @@ const keys = Stream.callback<KeyMessage>((queue) =>
         return listener
       }),
       (listener) => Effect.sync(() => window.removeEventListener('keydown', listener)),
+    )
+    return yield* Effect.never
+  }),
+)
+
+/** The game's own words, so the recognizer hears them the way the board spells them. */
+const KEYTERMS: ReadonlyArray<string> = [
+  'App Server',
+  'Worker',
+  'Database',
+  'Postgres',
+  'MySQL',
+  'Cache',
+  'Redis',
+  'Queue',
+  'CDN',
+  'WAF',
+  'Load Balancer',
+  'Autoscaler',
+  'Replica',
+  'Pooler',
+  'Search Engine',
+  'Object Storage',
+  'Stripe',
+  'Research',
+  'Team',
+  'Dashboard',
+  'Bottleneck',
+  'Upsize',
+  'Downsize',
+]
+
+/**
+ * The microphone, while dictation is on. Moonshine listens in the page: it owns
+ * the capture, the voice-activity detection, and the model, all downloaded once
+ * and then run locally. A finished line is an utterance; the text still in
+ * flight is the grey part of the bar.
+ */
+const speech = Stream.callback<Message>((queue) =>
+  Effect.gen(function* () {
+    let shown = -1
+    // No `modelArch`: English's default is MediumStreaming, the most accurate streaming model,
+    // and BaseStreaming is not in the English catalog at all.
+    const mic = new MicTranscriber()
+      .language('en')
+      .audioConstraints({
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      })
+      .onProgress((fraction) => {
+        // One Message per whole percent, not per file chunk.
+        const percent = Math.round(fraction * 100)
+        if (percent === shown) return
+        shown = percent
+        Queue.offerUnsafe(queue, Message.VoiceLoading({ progress: fraction }))
+      })
+      .onText((text) => {
+        Queue.offerUnsafe(queue, Message.VoiceHeard({ text }))
+      })
+      .onLine((line) => {
+        if (line.text.trim() !== '')
+          Queue.offerUnsafe(queue, Message.VoiceUttered({ text: line.text }))
+      })
+      .onError((error) => {
+        Queue.offerUnsafe(queue, Message.VoiceFailed({ clause: '', reason: error.message }))
+      })
+
+    const opened = yield* Effect.tryPromise({
+      try: async () => {
+        await mic.load()
+        mic.setKeyterms([...KEYTERMS])
+        await mic.start()
+        Queue.offerUnsafe(queue, Message.VoiceLoading({ progress: null }))
+        return mic
+      },
+      catch: (error) => (error instanceof Error ? error.message : 'The microphone did not open.'),
+    }).pipe(
+      Effect.match({
+        onSuccess: (started) => started,
+        onFailure: (reason): MicTranscriber | null => {
+          Queue.offerUnsafe(queue, Message.VoiceFailed({ clause: '', reason }))
+          return null
+        },
+      }),
+    )
+    if (opened === null) return yield* Effect.never
+
+    yield* Effect.acquireRelease(Effect.succeed(opened), (running) =>
+      Effect.tryPromise(() => running.stop()).pipe(
+        Effect.ignore,
+        Effect.flatMap(() => Effect.sync(() => running.close())),
+      ),
     )
     return yield* Effect.never
   }),
@@ -375,6 +470,16 @@ export const subscriptions = {
                 ),
               )
             : Stream.empty,
+      },
+    ),
+
+    /** Dictation stays on until the player switches it off, across Boards and panels. */
+    dictation: entry(
+      { listening: Schema.Boolean },
+      {
+        modelToDependencies: (model: Model) => ({ listening: model.voice.on }),
+        dependenciesToStream: ({ listening }: { listening: boolean }) =>
+          listening ? speech : Stream.empty,
       },
     ),
 

@@ -59,6 +59,7 @@ import { title } from './title.ts'
 import { survey } from './survey.ts'
 import { tradeoff } from './tradeoff.ts'
 import { catalog } from './catalog.ts'
+import { voice } from './voice.ts'
 
 export const ja = {
   room,
@@ -117,6 +118,7 @@ export const ja = {
   survey,
   tradeoff,
   catalog,
+  voice,
   units,
   senders,
   mail,

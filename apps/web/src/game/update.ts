@@ -16,6 +16,7 @@ import {
   PlaySound,
   PushUrl,
   ReplaceUrl,
+  ScrollDictation,
 } from './commands.ts'
 import { Message } from './message.ts'
 import { bootStep } from './boot-machine.ts'
@@ -59,6 +60,8 @@ import { panelsHandlers } from './update/panels.ts'
 import { saveHandlers } from './update/save.ts'
 import { roomHandlers } from './update/room.ts'
 import { accessHandlers } from './update/access.ts'
+import { voiceHandlers } from './update/voice.ts'
+import { EMPTY_VOICE } from './voice.ts'
 
 /** Every Message. Handlers live in ./update, grouped by what they touch; this file routes them. */
 
@@ -110,6 +113,7 @@ export const initialModel = (): Model => {
     runtimePicker: initStackPicker(),
     frameworkPicker: initStackPicker(),
     moreMenu: UiMenu.init({ id: 'more-menu' }),
+    voice: EMPTY_VOICE,
   })
 }
 
@@ -163,6 +167,9 @@ export const QUIET = new Set([
   // Sent by the compute worker several times a second.
   'BottleneckFound',
   'PreviewComputed',
+  // The microphone sends a Message on every partial transcript.
+  'VoiceHeard',
+  'VoiceLoading',
   // The answers are the player's words; only sending them is a gesture.
   'SurveyChanged',
   // The key field changes on every keystroke; only submitting it is a gesture.
@@ -276,6 +283,12 @@ export const boardChanged = (before: Model, after: Model): boolean =>
   cueNode(before) !== cueNode(after) ||
   (onBoard(after.route) && !onBoard(before.route))
 
+/** The dictation line follows the newest words, so a long sentence slides rather than swaps. */
+export const withDictation = (model: Model, result: UpdateResult): UpdateResult =>
+  result.model.voice === model.voice
+    ? result
+    : { ...result, commands: [...(result.commands ?? []), ScrollDictation({})] }
+
 /** The board follows the Model: one SyncBoard after any Message that changed what it draws.
  *  A fit asked for in the same Message runs inside it, after the new state is drawn. */
 export const withBoard = (model: Model, result: UpdateResult): UpdateResult => {
@@ -319,6 +332,7 @@ function handle(model: Model, message: Message): UpdateResult {
     ...saveHandlers(model, route),
     ...roomHandlers(model),
     ...accessHandlers(model),
+    ...voiceHandlers(model, route),
   })
 }
 
@@ -340,7 +354,10 @@ export const update = (model: Model, message: Message): UpdateResult => {
   return logged(
     model,
     message,
-    withBoard(model, moved ? milestones(model, result, [], ledgerOf(result.model)) : result),
+    withDictation(
+      model,
+      withBoard(model, moved ? milestones(model, result, [], ledgerOf(result.model)) : result),
+    ),
   )
 }
 

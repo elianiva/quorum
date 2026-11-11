@@ -59,6 +59,7 @@ import { team } from './team.ts'
 import { title } from './title.ts'
 import { tradeoff } from './tradeoff.ts'
 import { catalog } from './catalog.ts'
+import { voice } from './voice.ts'
 
 export const en = {
   room,
@@ -117,6 +118,7 @@ export const en = {
   title,
   tradeoff,
   catalog,
+  voice,
   units,
   senders,
   mail,

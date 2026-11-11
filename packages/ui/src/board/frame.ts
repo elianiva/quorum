@@ -41,6 +41,26 @@ export const animate = (c: BoardController, seconds: number): void => {
   const state = c.state
   if (!state) return
   const now = performance.now()
+  // A focus glides the camera instead of cutting to it, so the eye follows the move.
+  if (c.camera !== null) {
+    const k = 1 - Math.exp(-seconds * 9)
+    const { x, y, scale } = c.camera
+    const p = c.world.position
+    const next = { x: p.x + (x - p.x) * k, y: p.y + (y - p.y) * k }
+    const zoom = c.world.scale.x + (scale - c.world.scale.x) * k
+    if (
+      Math.abs(next.x - x) < 0.5 &&
+      Math.abs(next.y - y) < 0.5 &&
+      Math.abs(zoom - scale) < 0.001
+    ) {
+      p.set(x, y)
+      c.world.scale.set(scale)
+      c.camera = null
+    } else {
+      p.set(next.x, next.y)
+      c.world.scale.set(zoom)
+    }
+  }
   c.settleHover(now)
   c.flushCursor(now)
   c.cursorLayer.tick(

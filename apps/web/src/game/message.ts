@@ -17,6 +17,7 @@ import { sessionCases } from './message/session.ts'
 import { shellCases } from './message/shell.ts'
 import { teamCases } from './message/team.ts'
 import { tradeoffCases } from './message/tradeoff.ts'
+import { voiceCases } from './message/voice.ts'
 
 export const Message = defineMessageUnion({
   ...accessCases,
@@ -36,6 +37,7 @@ export const Message = defineMessageUnion({
   ...shellCases,
   ...teamCases,
   ...tradeoffCases,
+  ...voiceCases,
 })
 
 export type Message = typeof Message.Type

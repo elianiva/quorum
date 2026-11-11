@@ -34,6 +34,7 @@ import { SandboxId, SandboxRun, Session } from './session-machine.ts'
 import { History } from './history.ts'
 import { NodeSample } from './node-metrics.ts'
 import { StackPicker } from './stack-picker.ts'
+import { Voice } from './voice.ts'
 import { AppRoute, MENU_PAGES } from './route.ts'
 import { LogoId } from './logos.ts'
 import { fileOf, SaveIndex } from './saves.ts'
@@ -531,6 +532,8 @@ export const Model = Schema.Struct({
   runtimePicker: StackPicker,
   frameworkPicker: StackPicker,
   moreMenu: UiMenu.Model,
+  /** Dictation: what the microphone heard, and the clauses still to run. */
+  voice: Voice,
 })
 export type Model = typeof Model.Type
 

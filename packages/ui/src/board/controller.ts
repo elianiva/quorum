@@ -30,7 +30,7 @@ import { bindPointer } from './pointer.ts'
 import { type BoardEvents, type BoardState } from './types.ts'
 import { type Palette, palette } from './palette.ts'
 import { silhouette, badgeGlyph } from './shapes.ts'
-import { DRAW_IN_S, CURSOR_MS, HOVER_SETTLE_MS } from './motion.ts'
+import { DRAW_IN_S, CURSOR_MS, HOVER_SETTLE_MS, reducedMotion } from './motion.ts'
 import { glyph, paint } from './glyphs.ts'
 import { BADGE_X, BADGE_Y, BADGE_R, TITLE_X, medallion, headerBand } from './card-parts.ts'
 import { pointOn, distanceTo, laneUnder, routeOf, SLACK, bent, dashed } from './paths.ts'
@@ -126,6 +126,8 @@ export class BoardController {
   /** When the held footer button went down, in ms. */
   holdSince = 0
   state: BoardState | null = null
+  /** Where the camera is gliding to, so a focus lands as a move the eye can follow. */
+  camera: Readonly<{ x: number; y: number; scale: number }> | null = null
   gesture: Gesture = null
   hoverLink: Readonly<{ from: string; to: string }> | null = null
   /** What the pointer just entered, and when: it lights after a rest, so a pass lights nothing. */
@@ -415,6 +417,8 @@ export class BoardController {
         ? -minX * scale
         : left + across / 2 - ((minX + maxX) / 2) * scale
     this.world.position.set(x, top + room / 2 - ((minY + maxY) / 2) * scale)
+    // A fit wins over a glide that is still running, so the whole Design is in view.
+    this.camera = null
     this.fitted = true
     this.fittedWidth = w
   }
@@ -453,13 +457,17 @@ export class BoardController {
     const roomW = Math.max(1, w - left - right)
     const roomH = Math.max(1, h - top - bottom)
     const scale = Math.max(this.world.scale.x, phone ? MIN_FIT_SCALE_PHONE : MIN_FIT_SCALE)
-    this.world.scale.set(scale)
-    this.world.position.set(
-      left + roomW / 2 - (node.x + CARD_W / 2) * scale,
-      top + roomH / 2 - (node.y + heightOf(node.type) / 2) * scale,
-    )
+    const x = left + roomW / 2 - (node.x + CARD_W / 2) * scale
+    const y = top + roomH / 2 - (node.y + heightOf(node.type) / 2) * scale
     this.fitted = true
     this.fittedWidth = w
+    if (reducedMotion()) {
+      this.camera = null
+      this.world.scale.set(scale)
+      this.world.position.set(x, y)
+      return
+    }
+    this.camera = { x, y, scale }
   }
 
   toWorld(event: PointerEvent | WheelEvent): Pt {

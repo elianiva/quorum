@@ -41,6 +41,7 @@ import { challengeBar, challengeHud, challengePanel } from '@/components/lab/cha
 import { nodeList } from '@/components/lab/node-list.ts'
 import { tradeoffCard } from '@/components/lab/tradeoff.ts'
 import { commandPalette } from '@/components/lab/palette.ts'
+import { voiceBar } from '@/components/lab/voice.ts'
 import { boardHost } from './board-mount.ts'
 import { Message } from './message.ts'
 import {
@@ -122,6 +123,10 @@ export const labScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.div(
         [h.DataAttribute('flip', 'gesture'), h.Class(BOTTOM)],
         [
+          // Dictation sits over the action bar, and only while it is in use.
+          model.voice.on || model.voice.text !== '' || model.voice.heard !== ''
+            ? voiceBar(model, h)
+            : h.empty,
           changeBar(model, h, 'enter-pop compact:hidden'),
           h.div([h.Class('hidden compact:contents')], [phoneOffer(model, h)]),
           confirmSellOf(model.board)

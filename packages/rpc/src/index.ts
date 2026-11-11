@@ -1,6 +1,13 @@
 export { AccessRpc, FeatureKeyCheck, FeatureKeyStatus, KeyedFeature } from './access.ts'
 export { ApiError } from './errors.ts'
 export {
+  INTENT_PATH,
+  IntentAnswers,
+  IntentChoice,
+  IntentQuestion,
+  IntentRequest,
+} from './intent.ts'
+export {
   AGENT_PREFIX,
   AGENT_ROOM_PATH,
   API_PREFIX,

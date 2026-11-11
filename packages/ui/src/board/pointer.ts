@@ -166,6 +166,8 @@ export const bindPointer = (c: BoardController): void => {
         const dy = event.clientY - gesture.y
         if (!gesture.moved && Math.hypot(dx, dy) < 4) return
         gesture.moved = true
+        // A hand on the Board stops any glide that is still running.
+        c.camera = null
         c.world.position.x += dx
         c.world.position.y += dy
         gesture.x = event.clientX
@@ -377,6 +379,7 @@ export const bindPointer = (c: BoardController): void => {
         1.6,
         Math.max(0.25, c.world.scale.x * Math.exp(-event.deltaY * 0.0015)),
       )
+      c.camera = null
       c.world.scale.set(scale)
       c.world.position.set(screen.x - before.x * scale, screen.y - before.y * scale)
     },

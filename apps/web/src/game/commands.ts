@@ -3,7 +3,7 @@ import { copyIn } from '../i18n/messages.ts'
 import { nameIn } from '../i18n/refusal.ts'
 import { activityIn } from './presence.ts'
 import * as Effect from 'effect/Effect'
-import { Schema } from 'effect'
+import { Duration, Schema } from 'effect'
 import { Command } from 'foldkit'
 import { load, pushUrl, replaceUrl } from 'foldkit/navigation'
 import { fitBoard, focusBoard, repaintBoards, setBoard, zoomBoard } from '@quorum/ui/board/board'
@@ -46,7 +46,7 @@ import { play, setMuted, setVolume, SOUND_NAMES } from './sound.ts'
 import { pruneAgentRooms, setAgentAccess } from './agent-room.ts'
 import { appendLog, clearLog, downloadLog, LogEntry } from './playlog.ts'
 import { forward, setAnalyticsEnabled } from '../platform/analytics.ts'
-import { ApiError, SurveySubmission } from '@quorum/rpc'
+import { ApiError, INTENT_PATH, IntentAnswers, SurveySubmission } from '@quorum/rpc'
 import { ClientMessage } from '@quorum/simulation/room'
 import { Sample } from '@quorum/simulation/state'
 import { ApiRpc } from '@/platform/rpc.ts'
@@ -297,6 +297,53 @@ export const SendRoom = Command.define('SendRoom', {
   messages: [Message.RoomSent],
   execute: ({ message }) =>
     Effect.sync(() => sendRoom(message)).pipe(Effect.as(Message.RoomSent())),
+})
+
+/** One clause to the decision model. The answers come back as a Message; the handler decides. */
+export const ResolveClause = Command.define('ResolveClause', {
+  args: { clause: Schema.String, request: Schema.String, delay: Schema.Finite },
+  messages: [Message.VoiceAnswered, Message.VoiceFailed],
+  execute: ({ clause, request, delay }) =>
+    Effect.gen(function* () {
+      // A short beat between clauses: each step lands on screen before the next one starts.
+      if (delay > 0) yield* Effect.sleep(Duration.millis(delay))
+      const body: unknown = yield* Effect.tryPromise({
+        try: async () => {
+          const response = await fetch(INTENT_PATH, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: request,
+          })
+          if (!response.ok) throw new Error((await response.text()).slice(0, 200))
+          return await response.json()
+        },
+        catch: (error) => (error instanceof Error ? error.message : 'The model did not answer.'),
+      })
+      return yield* Schema.decodeUnknownEffect(IntentAnswers)(body)
+    }).pipe(
+      Effect.match({
+        onSuccess: (answers) => Message.VoiceAnswered({ clause, answers }),
+        onFailure: (reason) => Message.VoiceFailed({ clause, reason: String(reason) }),
+      }),
+    ),
+})
+
+/**
+ * Keeps the newest words in view. The dictation line only grows, so it follows
+ * itself to the right end as a sentence runs on, and respects Reduce motion.
+ */
+export const ScrollDictation = Command.define('ScrollDictation', {
+  args: {},
+  messages: [Message.Synced],
+  execute: () =>
+    Effect.sync(() => {
+      const line = document.querySelector<HTMLElement>('[data-dictation-line]')
+      if (line === null) return
+      const reduce =
+        document.documentElement.dataset.motion === 'reduce' ||
+        matchMedia('(prefers-reduced-motion: reduce)').matches
+      line.scrollTo({ left: line.scrollWidth, behavior: reduce ? 'auto' : 'smooth' })
+    }).pipe(Effect.as(Message.Synced())),
 })
 
 export const LoadSaves = Command.define('LoadSaves', {

@@ -59,6 +59,7 @@ import { team } from './team.ts'
 import { title } from './title.ts'
 import { tradeoff } from './tradeoff.ts'
 import { catalog } from './catalog.ts'
+import { voice } from './voice.ts'
 
 import type { Messages } from '../messages.ts'
 
@@ -119,6 +120,7 @@ export const zhCN: Messages = {
   title,
   tradeoff,
   catalog,
+  voice,
   units,
   senders,
   mail,

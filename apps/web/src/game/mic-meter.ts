@@ -1,8 +1,7 @@
 /* ==========================================================================
-   The listening bars follow the microphone. Moonshine owns the capture and
-   reports no level of its own, so the bars read the stream it opened: the
-   loudness of the room, trailed a few frames behind for each bar, so the row
-   moves like a waveform instead of pulsing in place.
+   The listening bars follow the microphone. The bars read the captured
+   stream: the loudness of the room, trailed a few frames behind for each bar,
+   so the row moves like a waveform instead of pulsing in place.
    ========================================================================== */
 
 /** How many frames each bar trails the one before it, at 60 frames a second. */
@@ -16,12 +15,6 @@ const CEILING = 0.09
 
 const bars = (): ReadonlyArray<HTMLElement> =>
   Array.from(document.querySelectorAll<HTMLElement>('[data-dictation] [data-wave]'))
-
-/** The stream a running transcriber captured, which it keeps to itself. */
-const streamOf = (transcriber: unknown): MediaStream | null => {
-  const internal = transcriber as { mediaStream?: MediaStream }
-  return internal.mediaStream ?? null
-}
 
 /** The loudness of one frame, from a quiet room (0) to a full bar (1). */
 export const loudness = (rms: number): number =>
@@ -80,19 +73,5 @@ export const watchMic = (stream: MediaStream): (() => void) => {
     panel()?.removeAttribute('data-live')
     source.disconnect()
     void context.close()
-  }
-}
-
-/**
- * Starts the meter on the stream a transcriber opened. Metering never costs the
- * microphone: if the stream is out of reach, the bars keep their own motion.
- */
-export const meterOf = (transcriber: unknown): (() => void) | null => {
-  const stream = streamOf(transcriber)
-  if (stream === null) return null
-  try {
-    return watchMic(stream)
-  } catch {
-    return null
   }
 }

@@ -12,8 +12,7 @@ import { ResearchMessage } from './research.ts'
 import { clockAway, halted, onlineFileOf, roomCode, type Model } from './model.ts'
 import { seatColour } from './seat-colour.ts'
 import { inRoom } from './room-machine.ts'
-import { MicTranscriber } from '@moonshine-ai/moonshine-wasm'
-import { meterOf } from './mic-meter.ts'
+import { listen } from './speech.ts'
 import { connect, onMessage, onStatus, seatOf, stop } from '@/platform/room-socket.ts'
 import { ServerMessage } from '@quorum/simulation/room'
 import { onBoard } from './route.ts'
@@ -107,87 +106,27 @@ const keys = Stream.callback<KeyMessage>((queue) =>
   }),
 )
 
-/** The game's own words, so the recognizer hears them the way the board spells them. */
-const KEYTERMS: ReadonlyArray<string> = [
-  'App Server',
-  'Worker',
-  'Database',
-  'Postgres',
-  'MySQL',
-  'Cache',
-  'Redis',
-  'Queue',
-  'CDN',
-  'WAF',
-  'Load Balancer',
-  'Autoscaler',
-  'Replica',
-  'Pooler',
-  'Search Engine',
-  'Object Storage',
-  'Stripe',
-  'Research',
-  'Team',
-  'Dashboard',
-  'Bottleneck',
-  'Upsize',
-  'Downsize',
-]
-
 /**
- * The microphone, while dictation is on. Moonshine listens in the page: it owns
- * the capture, the voice-activity detection, and the model, all downloaded once
- * and then run locally. A finished line is an utterance; the text still in
- * flight is the grey part of the bar.
+ * The microphone, while dictation is on. The page captures the audio and the
+ * dev server forwards it to Nova-3; the model's interim words are the grey part
+ * of the bar, and a line it finalises is one utterance.
  */
-/** A transcriber that is listening, and the level meter reading its stream. */
-type Opened = Readonly<{ mic: MicTranscriber; unwatch: (() => void) | null }>
-
 const speech = Stream.callback<Message>((queue) =>
   Effect.gen(function* () {
-    let shown = -1
-    // No `modelArch`: English's default is MediumStreaming, the most accurate streaming model,
-    // and BaseStreaming is not in the English catalog at all.
-    const mic = new MicTranscriber()
-      .language('en')
-      .audioConstraints({
-        channelCount: 1,
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-      })
-      .onProgress((fraction) => {
-        // One Message per whole percent, not per file chunk.
-        const percent = Math.round(fraction * 100)
-        if (percent === shown) return
-        shown = percent
-        Queue.offerUnsafe(queue, Message.VoiceLoading({ progress: fraction }))
-      })
-      .onText((text) => {
-        Queue.offerUnsafe(queue, Message.VoiceHeard({ text }))
-      })
-      .onLine((line) => {
-        if (line.text.trim() !== '')
-          Queue.offerUnsafe(queue, Message.VoiceUttered({ text: line.text }))
-      })
-      .onError((error) => {
-        Queue.offerUnsafe(queue, Message.VoiceFailed({ clause: '', reason: error.message }))
-      })
-
     const opened = yield* Effect.tryPromise({
-      try: async () => {
-        await mic.load()
-        mic.setKeyterms([...KEYTERMS])
-        await mic.start()
-        const unwatch = meterOf(mic)
-        Queue.offerUnsafe(queue, Message.VoiceLoading({ progress: null }))
-        return { mic, unwatch }
-      },
+      try: () =>
+        listen({
+          heard: (text) => Queue.offerUnsafe(queue, Message.VoiceHeard({ text })),
+          uttered: (text) => {
+            if (text.trim() !== '') Queue.offerUnsafe(queue, Message.VoiceUttered({ text }))
+          },
+          failed: (reason) => Queue.offerUnsafe(queue, Message.VoiceFailed({ clause: '', reason })),
+        }),
       catch: (error) => (error instanceof Error ? error.message : 'The microphone did not open.'),
     }).pipe(
       Effect.match({
-        onSuccess: (started) => started,
-        onFailure: (reason): Opened | null => {
+        onSuccess: (stop) => stop,
+        onFailure: (reason): null => {
           Queue.offerUnsafe(queue, Message.VoiceFailed({ clause: '', reason }))
           return null
         },
@@ -195,12 +134,8 @@ const speech = Stream.callback<Message>((queue) =>
     )
     if (opened === null) return yield* Effect.never
 
-    yield* Effect.acquireRelease(Effect.succeed(opened), (running) =>
-      Effect.sync(() => running.unwatch?.()).pipe(
-        Effect.flatMap(() => Effect.tryPromise(() => running.mic.stop())),
-        Effect.ignore,
-        Effect.flatMap(() => Effect.sync(() => running.mic.close())),
-      ),
+    yield* Effect.acquireRelease(Effect.succeed(opened), (stop) =>
+      Effect.tryPromise(() => stop()).pipe(Effect.ignore),
     )
     return yield* Effect.never
   }),

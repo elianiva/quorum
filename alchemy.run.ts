@@ -136,6 +136,8 @@ export default Alchemy.Stack(
     const ApiWorker = Cloudflare.Worker('Api', {
       main: './apps/backend/src/worker.ts',
       env: {
+        // Dictation's recogniser: Deepgram's Nova-3, reached over a WebSocket.
+        AI: Cloudflare.Workers.AI(),
         FEEDBACK: Results,
         // The same database under a second name: `ACCESS` holds the feature keys that
         // unlock server features, and each context reads its own table.

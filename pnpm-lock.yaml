@@ -192,9 +192,6 @@ importers:
       '@foldkit/vite-plugin':
         specifier: 0.29.0
         version: 0.29.0(effect@4.1.2)(foldkit@0.170.0(@effect/platform-browser@4.1.2(effect@4.1.2))(effect@4.1.2))(redis@6.3.1(@opentelemetry/api@1.10.0))(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
-      '@moonshine-ai/moonshine-wasm':
-        specifier: ^0.1.6
-        version: 0.1.6
       '@quorum/agent':
         specifier: workspace:*
         version: link:../../packages/agent
@@ -1060,10 +1057,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
-
-  '@moonshine-ai/moonshine-wasm@0.1.6':
-    resolution: {integrity: sha512-KICERzhdqIw5qxF7gzqYa1gR26hmeNELrkvHqCAMDKNZDJpdrXppK2K20rA/QP/w9zph3lhCr6ePvBPMaMTBHg==}
-    engines: {node: '>=18'}
 
   '@opentelemetry/api@1.10.0':
     resolution: {integrity: sha512-lMkyes8iHrG+mk6WH7X70MdCLI2RS0FwNBY1PyQ8UemaijE2m5mv5A0Niy3HtbYTFrgkUEQjFMXmSAk2hQDuPQ==}
@@ -3954,8 +3947,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
-
-  '@moonshine-ai/moonshine-wasm@0.1.6': {}
 
   '@opentelemetry/api@1.10.0': {}
 

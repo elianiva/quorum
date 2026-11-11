@@ -92,29 +92,6 @@ const listening = (h: HtmlBuilder<Message>): Html =>
     ),
   )
 
-/** While the model downloads, the bar shows that instead of listening bars. */
-const download = (model: Model, h: HtmlBuilder<Message>): Html => {
-  const t = copy(h).voice
-  const fraction = model.voice.loading ?? 0
-  return h.div(
-    [h.Class('flex min-w-0 flex-1 items-baseline gap-3')],
-    [
-      h.span(
-        [
-          h.Class(
-            'truncate text-[calc(17px*var(--type-scale))] font-medium tracking-[-0.02em] text-foreground/75',
-          ),
-        ],
-        [t.loading],
-      ),
-      h.span(
-        [h.Class('font-mono text-[calc(13px*var(--type-scale))] tabular-nums text-foreground/45')],
-        [`${Math.round(fraction * 100)}%`],
-      ),
-    ],
-  )
-}
-
 const microphone = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h).voice
   return h.button(
@@ -150,11 +127,11 @@ const microphone = (model: Model, h: HtmlBuilder<Message>): Html => {
  * beam under it fills as the words do.
  */
 export const voiceBar = (model: Model, h: HtmlBuilder<Message>): Html => {
-  const { on, heard, text, applied, note, error, loading, choices, clauses } = model.voice
+  const { on, heard, text, applied, note, error, choices, clauses } = model.voice
   const shown = heard !== '' ? heard : text
   const inked = heard !== '' ? 0 : applied
-  // The beam is the sentence's ink, or the model's download while that comes down.
-  const share = loading ?? (shown === '' ? 0 : inked / shown.length)
+  // The beam is the sentence's ink.
+  const share = shown === '' ? 0 : inked / shown.length
   const status = error ?? note
   return h.div(
     [
@@ -170,7 +147,7 @@ export const voiceBar = (model: Model, h: HtmlBuilder<Message>): Html => {
         [
           h.div(
             [h.Class('flex min-w-0 flex-1 items-center')],
-            [loading !== null ? download(model, h) : shown === '' ? listening(h) : line(model, h)],
+            [shown === '' ? listening(h) : line(model, h)],
           ),
           status === null
             ? h.empty
@@ -231,7 +208,7 @@ export const voiceBar = (model: Model, h: HtmlBuilder<Message>): Html => {
               ),
             ),
           ),
-      // The beam runs along the foot of the bar: the download, then the sentence's ink.
+      // The beam runs along the foot of the bar: how much of the sentence the board has carried out.
       h.span(
         [h.Class('absolute inset-x-7 bottom-0 h-[2px] overflow-hidden rounded-full')],
         [

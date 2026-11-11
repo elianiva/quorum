@@ -34,7 +34,6 @@ type VoiceTag =
   | 'VoiceToggled'
   | 'VoiceChoiceChosen'
   | 'VoiceHeard'
-  | 'VoiceLoading'
   | 'VoiceUttered'
   | 'VoiceAnswered'
   | 'VoiceFailed'
@@ -185,10 +184,6 @@ export const voiceHandlers = (
 
   VoiceHeard: ({ text }) => ({ model: { ...model, voice: { ...model.voice, heard: text } } }),
 
-  VoiceLoading: ({ progress }) => ({
-    model: { ...model, voice: { ...model.voice, loading: progress } },
-  }),
-
   VoiceUttered: ({ text }) => {
     const parts = clauses(text)
     const first = parts[0]
@@ -271,7 +266,6 @@ export const voiceHandlers = (
     const voice = {
       ...model.voice,
       error: reason,
-      loading: null,
       ...(clause === '' ? {} : { clauses: [] }),
     }
     // The bar says it, in place: a toast for it would say the same thing twice.

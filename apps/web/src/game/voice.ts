@@ -31,8 +31,6 @@ export const Voice = Schema.Struct({
   note: Schema.NullOr(Schema.String),
   /** Why the last clause stopped the chain. */
   error: Schema.NullOr(Schema.String),
-  /** How much of the speech model has downloaded, or null when it is ready. */
-  loading: Schema.NullOr(Schema.Finite),
   /** The Node the last Move placed, so "that" in the next clause points at it. */
   just: Schema.NullOr(Schema.String),
   /** The answers a clause stopped on, kept so a chip can settle one question. */
@@ -65,7 +63,6 @@ export const EMPTY_VOICE: Voice = {
   clauses: [],
   note: null,
   error: null,
-  loading: null,
   just: null,
   held: null,
   choices: [],

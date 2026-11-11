@@ -6,6 +6,7 @@ import { sentryVitePlugin } from '@sentry/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
+import { asrQuery, ASR_PATH } from '../../packages/rpc/src/speech.ts'
 import { simVersion } from '../../packages/simulation/sim-version.ts'
 
 /**
@@ -136,36 +137,36 @@ const intent = (): Plugin => ({
 // The Foldkit dev server: Model preservation across reloads, and the devtools relay.
 const foldkitPlugins = foldkit().map(unbrandedModules)
 
+/**
+ * Speech to text, dev only. The page streams 16 kHz PCM to this route, and the
+ * route forwards the socket to Deepgram's Nova-3 on Workers AI. The token and
+ * the gateway name stay on the server. A local prototype: the API Worker gets
+ * the same socket with an `AI` binding before this ships.
+ */
+const asrProxy = (): Record<string, import('vite').ProxyOptions> => {
+  const token = process.env.CLOUDFLARE_API_TOKEN
+  const account = process.env.CLOUDFLARE_ACCOUNT_ID
+  const gateway = process.env.CLOUDFLARE_AI_GATEWAY ?? 'mochimemo'
+  if (!token || !account) return {}
+  return {
+    [ASR_PATH]: {
+      target: 'wss://gateway.ai.cloudflare.com',
+      ws: true,
+      changeOrigin: true,
+      headers: { 'cf-aig-authorization': `Bearer ${token}` },
+      rewrite: () => `/v1/${account}/${gateway}/workers-ai?${asrQuery()}`,
+    },
+  }
+}
+
 const authToken = process.env.SENTRY_AUTH_TOKEN
 const release = process.env.VITE_SENTRY_RELEASE
 
 export default defineConfig({
-  // Moonshine's wasm is a threaded build: SharedArrayBuffer, and so the recognizer, needs a
-  // cross-origin-isolated page. Credentialless keeps the fonts and the fonts' stylesheet loading.
-  server: {
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'credentialless',
-    },
-  },
+  server: { proxy: asrProxy() },
   build: {
     sourcemap: authToken ? 'hidden' : false,
-    rollupOptions: {
-      output: {
-        // Moonshine's worker asks for `moonshine.wasm` by that name, next to itself. Keep the name
-        // it asks for instead of a hashed one, or the module loads without its engine.
-        assetFileNames: (asset) =>
-          asset.names.some((name) => name.endsWith('.wasm'))
-            ? 'assets/moonshine.wasm'
-            : 'assets/[name]-[hash][extname]',
-      },
-    },
   },
-  // The Moonshine wasm spawns Emscripten pthread workers, and its module uses top-level await:
-  // an ES worker keeps both, where Vite's default IIFE worker format rejects the await.
-  worker: { format: 'es' },
-  // Its `.mjs` and `.wasm` must stay as they ship: pre-bundling rewrites the paths they resolve.
-  optimizeDeps: { exclude: ['@moonshine-ai/moonshine-wasm'] },
   plugins: [
     layoutHarness(),
     intent(),

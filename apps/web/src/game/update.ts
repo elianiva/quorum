@@ -169,7 +169,6 @@ export const QUIET = new Set([
   'PreviewComputed',
   // The microphone sends a Message on every partial transcript.
   'VoiceHeard',
-  'VoiceLoading',
   // The answers are the player's words; only sending them is a gesture.
   'SurveyChanged',
   // The key field changes on every keystroke; only submitting it is a gesture.

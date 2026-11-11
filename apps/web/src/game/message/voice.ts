@@ -13,8 +13,6 @@ export const voiceCases = {
   VoiceUttered: { text: Schema.String },
   /** The model's answers for one clause. The handler resolves them and applies the Move. */
   VoiceAnswered: { clause: Schema.String, answers: IntentAnswers },
-  /** How much of the speech model has downloaded, or null when it is ready. */
-  VoiceLoading: { progress: Schema.NullOr(Schema.Finite) },
   /** The clause could not be decided, or the model was unreachable. */
   VoiceFailed: { clause: Schema.String, reason: Schema.String },
   /** The line has been on screen long enough to read, so it clears itself. */

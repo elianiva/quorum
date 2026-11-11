@@ -7,6 +7,7 @@ import { API_PREFIX, INGEST_PREFIX, MCP_PATH } from '@quorum/rpc'
 import { wikiSources } from './packages/agent/wiki-sources.ts'
 import { simVersion } from './packages/simulation/sim-version.ts'
 import type { AgentRoomInstance } from './apps/backend/src/platform/agent-room.ts'
+import type { RoomSlotsInstance } from './apps/backend/src/platform/room-slots.ts'
 import type { RoomInstance } from './apps/backend/src/platform/room-object.ts'
 
 const compatibility = { date: '2026-10-08' }
@@ -149,6 +150,8 @@ export default Alchemy.Stack(
         ROOMS: Cloudflare.DurableObject<RoomInstance>('RoomObject'),
         // A Company exposed to agents: one object per agent room id.
         AGENT_ROOMS: Cloudflare.DurableObject<AgentRoomInstance>('AgentRoom'),
+        // The account's Room slots: one object counts the Rooms that are open.
+        SLOTS: Cloudflare.DurableObject<RoomSlotsInstance>('RoomSlots'),
         ...sentryEnv,
       },
       ...apiBuild,

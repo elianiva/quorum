@@ -10,6 +10,7 @@ import {
 } from '@quorum/simulation/room'
 import type { Region } from '@quorum/simulation/state'
 import type { PublishInput, RoomStub } from '../contexts/room/directory.ts'
+import type { RoomSlotsInstance } from './room-slots.ts'
 import {
   advance,
   apply,
@@ -34,11 +35,18 @@ import { SIM_VERSION } from '@quorum/simulation/version'
    sockets. The rules live in contexts/room, so this file only knows the host.
    ========================================================================== */
 
-export type RoomEnv = Readonly<{ SENTRY_DSN?: string }>
+export type RoomEnv = Readonly<{
+  SENTRY_DSN?: string
+  /** The account's Room slots, one object for the whole account. */
+  SLOTS: DurableObjectNamespace<RoomSlotsInstance>
+}>
 
 type Attachment = Readonly<{ seat: string; sampleAt: number }>
 
 const NO_SEAT: Attachment = { seat: '', sampleAt: 0 }
+
+/** The name of the one object that counts the account's Rooms. */
+const ACCOUNT = 'account'
 
 const encode = Schema.encodeSync(ServerMessage)
 const decode = Schema.decodeUnknownOption(ClientMessage)
@@ -73,13 +81,17 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
 
   /* ---------- The methods the API Worker calls ---------- */
 
-  async publish(input: PublishInput): Promise<void> {
+  async publish(input: PublishInput): Promise<'ok' | 'full'> {
+    // A Room that already exists holds its slot, so publishing it again must not
+    // spend a second one.
+    if (this.state === null && !(await this.reserve())) return 'full'
     const { token, ...rest } = input
     // The Room's clock is the object's, not the browser's: a browser clock that is
     // behind would read as minutes of owed Steps, a whole CPU budget of catch-up on
     // the first wake. The later `wall` wins over the one the browser uploaded.
     this.state = openRoom({ ...rest, token, wall: Date.now() })
     await this.save()
+    return 'ok'
   }
 
   async info(): Promise<Readonly<{ exists: boolean; seats: number }>> {
@@ -421,6 +433,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     if (state.idleAt === null) this.state = { ...state, idleAt: Date.now() }
     await this.save()
     await this.ctx.storage.deleteAlarm()
+    await this.release()
   }
 
   /** The Room holds no Seat: close the connections that never took one. */
@@ -518,6 +531,39 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     await this.ctx.storage.deleteAlarm()
     await this.ctx.storage.deleteAll()
     this.state = null
+    await this.release()
+  }
+
+  /** This Room's code. It names the object and its storage, so it is the lease's key. */
+  private code(): string | undefined {
+    return this.ctx.id.name
+  }
+
+  /**
+   * Claims a slot in the account's Room count. A counter that cannot answer opens
+   * the Room instead: the cap protects the bill, and a counter outage must not stop
+   * the game, which is how the rate limiter behaves too.
+   */
+  private async reserve(): Promise<boolean> {
+    const code = this.code()
+    if (code === undefined) return true
+    try {
+      return await this.env.SLOTS.getByName(ACCOUNT).reserve(code)
+    } catch (error) {
+      Sentry.captureException(error)
+      return true
+    }
+  }
+
+  /** Gives the slot back. A lease expires on its own, so a failed release needs no retry. */
+  private async release(): Promise<void> {
+    const code = this.code()
+    if (code === undefined) return
+    try {
+      await this.env.SLOTS.getByName(ACCOUNT).release(code)
+    } catch (error) {
+      Sentry.captureException(error)
+    }
   }
 }
 

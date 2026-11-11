@@ -14,17 +14,20 @@ import { SurveyStore } from './contexts/survey/store.ts'
 import { SystemHandlers } from './contexts/system/handlers.ts'
 import { d1SurveyStore } from './platform/d1-survey-store.ts'
 import type { AgentRoomInstance } from './platform/agent-room.ts'
+import type { RoomSlotsInstance } from './platform/room-slots.ts'
 import type { RoomInstance } from './platform/room-object.ts'
 import type { SqlRunner } from './platform/sql.ts'
 
 /**
  * The bindings the stack gives the API Worker. A `D1Database` is a `SqlRunner`.
- * `FEEDBACK` holds the Exit survey; `ROOMS` hosts an online Company.
+ * `FEEDBACK` holds the Exit survey, `ROOMS` hosts an online Company, and `SLOTS`
+ * counts the Rooms the account holds.
  */
 export type Env = Readonly<{
   FEEDBACK: SqlRunner
   ROOMS: DurableObjectNamespace<RoomInstance>
   AGENT_ROOMS: DurableObjectNamespace<AgentRoomInstance>
+  SLOTS: DurableObjectNamespace<RoomSlotsInstance>
   SENTRY_DSN?: string
   SENTRY_RELEASE?: string
 }>

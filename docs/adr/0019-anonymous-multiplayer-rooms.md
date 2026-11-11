@@ -71,8 +71,8 @@ The message schemas live beside the Simulation because their payloads are the Ga
 
 ## Consequences
 
-- The API Worker hosts the `RoomObject` Durable Object and binds one namespace. No other Cloudflare
-  resource is added.
+- The API Worker hosts the `RoomObject` Durable Object and binds its namespace. The `RoomSlots`
+  object counts the Rooms the account holds ([ADR 0024](./0024-a-room-sleeps-when-nobody-watches.md)).
 - The Game a Room sends carries no `history`. The browser rebuilds it from the Samples the Room
   sends, so the Dashboard's short ranges and the HUD's trend read the Room's own Samples. Achievements
   read that history, so an online Company earns them from the owner's snapshots only, and guests earn

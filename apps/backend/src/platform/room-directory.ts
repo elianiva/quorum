@@ -1,10 +1,12 @@
 import * as Effect from 'effect/Effect'
 import {
+  RoomCapacity,
   RoomDirectory,
   RoomError,
   type Published,
   type RoomStub,
 } from '../contexts/room/directory.ts'
+import { LIVE_ROOMS } from '../contexts/room/leases.ts'
 
 /** Room codes: no 0, O, 1, or I, so a code can be read aloud. */
 const ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
@@ -38,10 +40,11 @@ export const roomDirectory = (stubOf: (code: string) => RoomStub): RoomDirectory
           catch: (cause) => new RoomError({ cause }),
         })
         if (taken.exists) continue
-        yield* Effect.tryPromise({
+        const claimed = yield* Effect.tryPromise({
           try: () => stubOf(candidate).publish({ ...request, token }),
           catch: (cause) => new RoomError({ cause }),
         })
+        if (claimed === 'full') return yield* new RoomCapacity({ cap: LIVE_ROOMS })
         return { code: candidate, token } satisfies Published
       }
       return yield* new RoomError({ cause: 'No room code was free.' })

@@ -7,10 +7,11 @@ import { agentHttp } from './platform/agent-http.ts'
 import { AgentRoom } from './platform/agent-room.ts'
 import { roomDirectory } from './platform/room-directory.ts'
 import { RoomObject } from './platform/room-object.ts'
+import { RoomSlots } from './platform/room-slots.ts'
 import type { Env } from './handler.ts'
 
-// The Durable Object class must be exported by the script that hosts it.
-export { AgentRoom, RoomObject }
+// The Durable Object classes must be exported by the script that hosts them.
+export { AgentRoom, RoomObject, RoomSlots }
 export type { Env }
 
 // Built on the first request and kept for the isolate, once per database binding.

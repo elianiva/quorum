@@ -2,7 +2,7 @@ import { Effect, Option, Schema } from 'effect'
 import { ApiError, RoomRpc } from '@quorum/rpc'
 import { SIM_VERSION } from '@quorum/simulation/version'
 import { Game, Sample } from '@quorum/simulation/state'
-import { RoomDirectory, RoomError } from './directory.ts'
+import { RoomDirectory, RoomCapacity, RoomError } from './directory.ts'
 
 /* A Company goes online, and a join screen asks whether a code is real. */
 
@@ -18,6 +18,16 @@ const unavailable = (error: RoomError) =>
   Effect.gen(function* () {
     yield* Effect.logError('RoomDirectory failed', error.cause)
     return yield* fail('The Room is unavailable. Try again later.')
+  })
+
+/**
+ * Every Room slot is taken. The cap protects the account's bill, so the answer
+ * names the wait rather than the failure, and it never reaches Sentry.
+ */
+const atCapacity = (error: RoomCapacity) =>
+  Effect.gen(function* () {
+    yield* Effect.logInfo('Every Room slot is taken', error.cap)
+    return yield* fail('Every Room is busy right now. Try again in a few minutes.')
   })
 
 export const RoomHandlers = RoomRpc.toLayer(
@@ -40,7 +50,12 @@ export const RoomHandlers = RoomRpc.toLayer(
         if (!Number.isFinite(payload.wall)) return yield* fail('The clock is not valid.')
         const published = yield* directory
           .publish({ name, game: game.value, samples, wall: payload.wall, simVersion: SIM_VERSION })
-          .pipe(Effect.catchTag('RoomError', unavailable))
+          .pipe(
+            Effect.catchTags({
+              RoomError: unavailable,
+              RoomCapacity: atCapacity,
+            }),
+          )
         yield* Effect.annotateCurrentSpan({
           'room.code': published.code,
           'room.samples': samples.length,

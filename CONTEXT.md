@@ -522,6 +522,11 @@ _Avoid_: lobby, session, server, match
 The six characters that open a Room. It is the only invitation.
 _Avoid_: invite, key, PIN
 
+**Room slot**:
+One of the Rooms the account can hold at once. A Room takes a slot when it is published and gives it
+back when it sleeps or ends, so a pile of Rooms cannot outrun the bill.
+_Avoid_: lobby, capacity, quota
+
 **Seat**:
 One player in a Room, with a name and a colour. A refresh takes the same Seat.
 _Avoid_: player slot, member, user
@@ -571,4 +576,5 @@ _Avoid_: save, state dump
 - A **Challenge** run is a **Replay** that stays in the browser. A server that re-runs it and keeps **Histograms** waits for accounts.
 - A **Company** is offline, played by the browser, or **Online**, run by one **Room**. The owner takes it offline, which ends the Room with the Company's latest Game.
 - A **Room** has one owner **Seat** and up to three guest **Seats**. A **Vote** passes with more than half of the connected Seats.
+- A **Room** holds one of the account's **Room slots** while it runs, and gives it back when it sleeps or ends.
 - A **Company** may have one **Agent room** while Agent access is on. Turning it off clears the Agent room.

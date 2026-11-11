@@ -46,25 +46,29 @@ const line = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.p(
         [
           h.Class(
-            'm-0 w-max whitespace-nowrap text-[calc(23px*var(--type-scale))] leading-[1.25] font-semibold tracking-[-0.025em]',
+            'm-0 w-max whitespace-nowrap text-[calc(21px*var(--type-scale))] leading-[1.25] font-semibold tracking-[-0.025em]',
           ),
           h.Title(shown),
         ],
         tokensOf(shown, inked).map((token, index) =>
-          h.span(
-            [
-              h.Key(`word-${index}`),
-              h.Class(
-                cn(
-                  'dictate-ink inline-block',
-                  token.inked ? 'text-foreground' : 'text-foreground/20',
-                  // Words still to come breathe, and enter from a blur as they arrive.
-                  !token.inked && waiting ? 'dictate-waiting dictate-word' : undefined,
-                ),
+          // A space is its own token. In an inline-block it has no width, so it stays
+          // inline and keeps its advance, and the words do not run together.
+          token.text.trim() === ''
+            ? h.span([h.Key(`space-${index}`), h.Class('whitespace-pre')], [token.text])
+            : h.span(
+                [
+                  h.Key(`word-${index}`),
+                  h.Class(
+                    cn(
+                      'dictate-ink inline-block',
+                      token.inked ? 'text-foreground' : 'text-foreground/20',
+                      // Words still to come breathe, and enter from a blur as they arrive.
+                      !token.inked && waiting ? 'dictate-waiting dictate-word' : undefined,
+                    ),
+                  ),
+                ],
+                [token.text],
               ),
-            ],
-            [token.text],
-          ),
         ),
       ),
     ],

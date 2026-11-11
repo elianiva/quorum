@@ -12,8 +12,16 @@ import {
 import { EMPTY_VOICE, lineWith } from '../voice.ts'
 import { Actions } from '../board-actions.ts'
 import { ResearchMessage } from '../research.ts'
-import { ResolveClause } from '../commands.ts'
-import { act, say, sync, type Dispatch, type MessageCases, type UpdateResult } from './shared.ts'
+import { ForgetDictation, ResolveClause } from '../commands.ts'
+import {
+  act,
+  say,
+  sync,
+  type AnyCommand,
+  type Dispatch,
+  type MessageCases,
+  type UpdateResult,
+} from './shared.ts'
 
 /* ==========================================================================
    Dictation. One utterance is split into clauses, and one clause becomes one
@@ -30,9 +38,17 @@ type VoiceTag =
   | 'VoiceUttered'
   | 'VoiceAnswered'
   | 'VoiceFailed'
+  | 'VoiceForgotten'
 
 /** How long each landed clause stays the newest thing on screen before the chain moves on. */
 export const CLAUSE_PAUSE_MS = 450
+
+/** How long a finished line stays on the board, so it can be read before it clears. */
+export const LINE_HOLD_MS = 9_000
+
+/** Sends the line away after the hold, unless a newer utterance owns it by then. */
+const forgetLater = (model: Model): AnyCommand =>
+  ForgetDictation({ text: model.voice.text, delay: LINE_HOLD_MS })
 
 const requestOf = (model: Model, clause: string): string =>
   JSON.stringify(
@@ -57,14 +73,16 @@ const settle = (model: Model, resolved: Resolved, route: Dispatch): UpdateResult
     applied.model.board.selected === model.board.selected
       ? (applied.model.toast?.message ?? 'That move did not happen.')
       : null
-  if (refused !== null)
-    return {
-      model: {
-        ...model,
-        voice: { ...model.voice, clauses: [], choices: [], held: null, error: refused },
-      },
-      ...(applied.commands === undefined ? {} : { commands: applied.commands }),
+  if (refused !== null) {
+    const next: Model = {
+      ...model,
+      voice: { ...model.voice, clauses: [], choices: [], held: null, error: refused },
     }
+    return {
+      model: next,
+      commands: [...(applied.commands ?? []), forgetLater(next)],
+    }
+  }
   const just =
     resolved.move._tag === 'Place' && applied.model.board.game !== model.board.game
       ? (applied.model.board.game.nodes.at(-1)?.id ?? null)
@@ -104,6 +122,8 @@ const settle = (model: Model, resolved: Resolved, route: Dispatch): UpdateResult
         delay: CLAUSE_PAUSE_MS,
       }),
     )
+  // The last clause leaves its sentence on the bar for a moment, then the bar empties.
+  else commands.push(forgetLater(next))
   return { model: next, commands }
 }
 
@@ -231,6 +251,18 @@ export const voiceHandlers = (
     if (held === null) return { model }
     const resolved = resolve(model.board.game, held.answers, { question, id })
     return resolved.confident ? settle(model, resolved, route) : { model }
+  },
+
+  VoiceForgotten: ({ text }) => {
+    // A newer utterance, or a clause still in flight, owns the line now.
+    if (model.voice.text !== text || model.voice.clauses.length > 0 || model.voice.heard !== '')
+      return { model }
+    return {
+      model: {
+        ...model,
+        voice: { ...model.voice, settled: '', text: '', applied: 0, note: null },
+      },
+    }
   },
 
   VoiceFailed: ({ clause, reason }) => {

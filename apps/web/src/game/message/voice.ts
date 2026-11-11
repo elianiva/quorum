@@ -17,4 +17,6 @@ export const voiceCases = {
   VoiceLoading: { progress: Schema.NullOr(Schema.Finite) },
   /** The clause could not be decided, or the model was unreachable. */
   VoiceFailed: { clause: Schema.String, reason: Schema.String },
+  /** The line has been on screen long enough to read, so it clears itself. */
+  VoiceForgotten: { text: Schema.String },
 }

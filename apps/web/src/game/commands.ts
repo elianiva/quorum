@@ -328,6 +328,14 @@ export const ResolveClause = Command.define('ResolveClause', {
     ),
 })
 
+/** The line stays after the last clause so it can be read, then takes itself off the board. */
+export const ForgetDictation = Command.define('ForgetDictation', {
+  args: { text: Schema.String, delay: Schema.Finite },
+  messages: [Message.VoiceForgotten],
+  execute: ({ text, delay }) =>
+    Effect.sleep(Duration.millis(delay)).pipe(Effect.as(Message.VoiceForgotten({ text }))),
+})
+
 /**
  * Keeps the newest words in view. The dictation line only grows, so it follows
  * itself to the right end as a sentence runs on, and respects Reduce motion.

@@ -1,4 +1,5 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
+import { cn } from '@/lib/utils'
 import { dock } from '@/components/lab/dock.ts'
 import {
   changeBar,
@@ -65,7 +66,11 @@ const TOP_ROW =
 const LANE = 'flex min-w-0 flex-1 flex-col items-center gap-2 compact:items-stretch compact:gap-1.5'
 
 const BOTTOM =
-  'pointer-events-none absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-2 compact:right-[max(8px,env(safe-area-inset-right))] compact:bottom-[max(8px,env(safe-area-inset-bottom))] compact:left-[max(8px,env(safe-area-inset-left))] compact:translate-x-0 compact:items-stretch'
+  'pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 compact:right-[max(8px,env(safe-area-inset-right))] compact:bottom-[max(8px,env(safe-area-inset-bottom))] compact:left-[max(8px,env(safe-area-inset-left))] compact:translate-x-0 compact:items-stretch'
+
+/** The microphone is open, or its words are still on the bar. */
+const dictating = (model: Model): boolean =>
+  model.voice.on || model.voice.text !== '' || model.voice.heard !== ''
 
 /** The desktop's mail preview and Research offer keep their own corners. A phone shows one queue
  *  row in the top lane instead, so neither can cover the board or the action bar. */
@@ -121,12 +126,15 @@ export const labScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
         ],
       ),
       h.div(
-        [h.DataAttribute('flip', 'gesture'), h.Class(BOTTOM)],
+        [
+          h.DataAttribute('flip', 'gesture'),
+          // Dictating lifts the bottom stack over panels and notices: the line is the thing
+          // being read, so nothing opens on top of it.
+          h.Class(cn(BOTTOM, dictating(model) ? 'z-[60]' : 'z-20')),
+        ],
         [
           // Dictation sits over the action bar, and only while it is in use.
-          model.voice.on || model.voice.text !== '' || model.voice.heard !== ''
-            ? voiceBar(model, h)
-            : h.empty,
+          dictating(model) ? voiceBar(model, h) : h.empty,
           changeBar(model, h, 'enter-pop compact:hidden'),
           h.div([h.Class('hidden compact:contents')], [phoneOffer(model, h)]),
           confirmSellOf(model.board)

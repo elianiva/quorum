@@ -515,7 +515,8 @@ _Avoid_: hosted, live, published, broadcasting
 
 **Room**:
 The Durable Object that runs one online Company, with its Seats, its open vote, and its revision. It
-keeps the Company for 24 hours after the last Seat leaves.
+steps while a tab is watching, sleeps when every socket has been silent for two minutes, and keeps
+the Company for 24 hours after the last Seat leaves.
 _Avoid_: lobby, session, server, match
 
 **Room code**:

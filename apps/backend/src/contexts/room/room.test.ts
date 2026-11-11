@@ -14,6 +14,8 @@ import {
   MAX_CATCH_UP,
   openRoom,
   restoreRoom,
+  SOCKET_IDLE_MS,
+  sleeping,
   startVote,
   type RoomState,
 } from './room.ts'
@@ -232,6 +234,26 @@ describe('votes', () => {
     const started = startVote(state, owner, 'exit')
     if (Result.isFailure(started)) throw new Error('no vote')
     expect(startVote(started.success, owner, 'fund')._tag).toBe('Failure')
+  })
+})
+
+describe('the clock', () => {
+  const now = 10 * SOCKET_IDLE_MS
+
+  test('a Room with no socket is not asleep: it is empty, and stops', () => {
+    expect(sleeping([], now)).toBe(false)
+  })
+
+  test('one socket that is watching keeps the Room awake', () => {
+    expect(sleeping([now - SOCKET_IDLE_MS - 1, now], now)).toBe(false)
+  })
+
+  test('every socket silent for two minutes lets the Room sleep', () => {
+    expect(sleeping([now - SOCKET_IDLE_MS - 1, now - SOCKET_IDLE_MS - 5_000], now)).toBe(true)
+  })
+
+  test('the last frame of the window still counts', () => {
+    expect(sleeping([now - SOCKET_IDLE_MS], now)).toBe(false)
   })
 })
 

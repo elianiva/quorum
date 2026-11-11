@@ -70,6 +70,7 @@ const open = (): void => {
     attempt = 0
     next.send(JSON.stringify(encode(helloOf(current))))
     announce('open')
+    startPinging()
   })
   next.addEventListener('message', (event) => {
     if (mine !== generation) return
@@ -88,6 +89,7 @@ const open = (): void => {
     // A socket we replaced: its Seat is the new socket's now, and retrying here
     // would open a second one that the Room closes again.
     if (mine !== generation) return
+    stopPinging()
     if (socket === next) socket = null
     announce('closed')
     if (stopped || config === null) return
@@ -119,6 +121,7 @@ export const connect = (next: RoomConfig): void => {
   timer = null
   // Supersede the socket we had, so its close stays quiet.
   generation += 1
+  stopPinging()
   const old = socket
   socket = null
   old?.close(1000, 'Reconnecting')
@@ -130,6 +133,7 @@ export const stop = (): void => {
   stopped = true
   config = null
   generation += 1
+  stopPinging()
   if (timer !== null) clearTimeout(timer)
   timer = null
   const old = socket
@@ -140,6 +144,39 @@ export const stop = (): void => {
 export const send = (message: Client): void => {
   if (socket === null || socket.readyState !== WebSocket.OPEN) return
   socket.send(JSON.stringify(encode(message)))
+}
+
+/**
+ * How often a tab that is on screen tells the Room it is still watching. The
+ * Room stops stepping after two silent minutes, so a hidden tab costs nothing
+ * and this is the frame that starts it again when the tab comes back.
+ */
+const PING_MS = 30_000
+
+let pinger: ReturnType<typeof setInterval> | null = null
+let listening = false
+
+const ping = (): void => {
+  if (document.visibilityState !== 'visible') return
+  send({ _tag: 'Ping', at: Date.now() })
+}
+
+const startPinging = (): void => {
+  if (pinger !== null) return
+  if (!listening) {
+    listening = true
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') ping()
+    })
+  }
+  ping()
+  pinger = setInterval(ping, PING_MS)
+}
+
+const stopPinging = (): void => {
+  if (pinger === null) return
+  clearInterval(pinger)
+  pinger = null
 }
 
 /** Tells the Room where this tab's pointer is. A closed socket drops it. */

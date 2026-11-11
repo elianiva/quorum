@@ -24,6 +24,19 @@ export const STEP_SECONDS = 0.1
 export const ALARM_MS = 500
 
 /**
+ * How long a silent socket keeps the Room awake. A tab that is on screen pings
+ * every thirty seconds, so two minutes covers a late frame or two; a tab that
+ * is gone, hidden, or asleep stops pinging, and the Room stops with it. Without
+ * this the alarm runs until the socket closes, which a background tab may not
+ * do for hours.
+ */
+export const SOCKET_IDLE_MS = 2 * 60 * 1000
+
+/** Every socket has been silent for longer than `SOCKET_IDLE_MS`: nobody is watching. */
+export const sleeping = (seenAt: ReadonlyArray<number>, now: number): boolean =>
+  seenAt.length > 0 && seenAt.every((at) => now - at > SOCKET_IDLE_MS)
+
+/**
  * The most Steps one wake may run: one alarm's worth at the fastest speed, plus a
  * little jitter. A Room that fell further behind drops the rest of its debt instead
  * of replaying it, so a wake costs a tick's work whatever the gap since the last

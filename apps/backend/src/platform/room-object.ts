@@ -10,7 +10,6 @@ import {
 } from '@quorum/simulation/room'
 import type { Region } from '@quorum/simulation/state'
 import type { PublishInput, RoomStub } from '../contexts/room/directory.ts'
-import type { RoomSlotsInstance } from './room-slots.ts'
 import {
   advance,
   apply,
@@ -23,11 +22,13 @@ import {
   openRoom,
   restoreRoom,
   setSpeed,
+  sleeping,
   snapshotOf,
   startVote,
   ALARM_MS,
   type RoomState,
 } from '../contexts/room/room.ts'
+import type { RoomSlotsInstance } from './room-slots.ts'
 import { SIM_VERSION } from '@quorum/simulation/version'
 
 /* ==========================================================================
@@ -41,9 +42,9 @@ export type RoomEnv = Readonly<{
   SLOTS: DurableObjectNamespace<RoomSlotsInstance>
 }>
 
-type Attachment = Readonly<{ seat: string; sampleAt: number }>
+type Attachment = Readonly<{ seat: string; sampleAt: number; seenAt: number }>
 
-const NO_SEAT: Attachment = { seat: '', sampleAt: 0 }
+const NO_SEAT: Attachment = { seat: '', sampleAt: 0, seenAt: 0 }
 
 /** The name of the one object that counts the account's Rooms. */
 const ACCOUNT = 'account'
@@ -114,11 +115,17 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     const [client, server] = Object.values(pair) as [WebSocket, WebSocket]
     // `acceptWebSocket` rather than `accept`, so the object can hibernate.
     this.ctx.acceptWebSocket(server)
-    server.serializeAttachment(NO_SEAT)
+    server.serializeAttachment({ seat: '', sampleAt: 0, seenAt: Date.now() } satisfies Attachment)
     return new Response(null, { status: 101, webSocket: client })
   }
 
   async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer): Promise<void> {
+    // Any frame is proof the tab is there, which keeps the Room awake. A tab that
+    // stops sending lets the alarm find the Room asleep and stop it.
+    ws.serializeAttachment({
+      ...this.attachmentOf(ws),
+      seenAt: Date.now(),
+    } satisfies Attachment)
     const text = textOf(raw)
     if (text === null) return
     let body: unknown
@@ -143,7 +150,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
       Kick: (frame) => this.kick(ws, frame.seat),
       TakeOffline: () => this.takeOffline(ws),
       Resync: () => Promise.resolve(this.resync(ws)),
-      Ping: () => Promise.resolve(),
+      Ping: () => this.ping(),
     })
   }
 
@@ -163,6 +170,10 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     // Nobody is in the Room: no Step runs and no alarm stays set, so an empty Room
     // costs nothing until a connection comes back.
     if (!state.open || state.ended !== null || this.nobody()) return this.stop()
+    // The sockets are still attached but silent: a hidden tab, or one that is gone
+    // without a close frame. The same rule applies as an empty Room, except that
+    // the Seats stay in place for the tab that comes back.
+    if (this.asleep(Date.now())) return this.sleep()
     this.advanceNow()
     this.broadcast()
     if (Date.now() - this.savedAt > 4_000) await this.save()
@@ -188,12 +199,13 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     const next = joined.success
     this.state = next.state
     const seat = next.seat
+    const seenAt = this.attachmentOf(ws).seenAt
     // A reload takes its own Seat back from the socket that held it.
     for (const other of this.ctx.getWebSockets()) {
       if (other === ws) continue
       if (this.seatOf(other) === seat.id) other.close(4000, 'Seat moved')
     }
-    ws.serializeAttachment({ seat: seat.id, sampleAt: 0 } satisfies Attachment)
+    ws.serializeAttachment({ seat: seat.id, sampleAt: 0, seenAt } satisfies Attachment)
     await this.save()
     this.send(ws, {
       _tag: 'Welcome',
@@ -210,6 +222,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     ws.serializeAttachment({
       seat: seat.id,
       sampleAt: next.state.samples.length,
+      seenAt,
     } satisfies Attachment)
     this.seats()
     if (next.newSeat) this.everyone({ _tag: 'Joined', seat }, ws)
@@ -391,6 +404,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     ws.serializeAttachment({
       seat: this.seatOf(ws),
       sampleAt: current.samples.length,
+      seenAt: this.attachmentOf(ws).seenAt,
     } satisfies Attachment)
   }
 
@@ -420,6 +434,19 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     return this.ctx.getWebSockets().length === 0
   }
 
+  /** Every attached socket has been silent for two minutes: a hidden tab, or one that is gone. */
+  private asleep(now: number): boolean {
+    return sleeping(
+      this.ctx.getWebSockets().map((ws) => this.attachmentOf(ws).seenAt),
+      now,
+    )
+  }
+
+  /** A tab says it is watching, which is what re-arms the alarm after a sleep. */
+  private async ping(): Promise<void> {
+    await this.schedule()
+  }
+
   /**
    * The Room holds nobody: stop the clock, delete the alarm, and date the Room so
    * the twenty-four hours it keeps the Company start now. With no connection and no
@@ -431,6 +458,19 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     const state = this.state
     if (state === null) return
     if (state.idleAt === null) this.state = { ...state, idleAt: Date.now() }
+    await this.save()
+    await this.ctx.storage.deleteAlarm()
+    await this.release()
+  }
+
+  /**
+   * The sockets are attached but nobody is watching: stop the clock and let the
+   * runtime hibernate the object with its connections still open. The next frame
+   * wakes it, and `schedule` arms the alarm again, so a tab that comes back to the
+   * front resumes where the Company stopped. The Room is not dated as empty here:
+   * its Seats are still attached, and `stop` owns that path.
+   */
+  private async sleep(): Promise<void> {
     await this.save()
     await this.ctx.storage.deleteAlarm()
     await this.release()
@@ -448,9 +488,12 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     }
   }
 
+  private attachmentOf(ws: WebSocket): Attachment {
+    return (ws.deserializeAttachment() as Attachment | null) ?? NO_SEAT
+  }
+
   private seatOf(ws: WebSocket): string {
-    const attachment = ws.deserializeAttachment() as Attachment | null
-    return attachment?.seat ?? ''
+    return this.attachmentOf(ws).seat
   }
 
   private advanceNow(): void {
@@ -508,13 +551,20 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
       ws.serializeAttachment({
         seat: attachment.seat,
         sampleAt: current.samples.length,
+        seenAt: attachment.seenAt,
       } satisfies Attachment)
     }
   }
 
   private async schedule(): Promise<void> {
     const state = this.state
-    if (state !== null && state.open && state.ended === null && !this.nobody()) {
+    if (
+      state !== null &&
+      state.open &&
+      state.ended === null &&
+      !this.nobody() &&
+      !this.asleep(Date.now())
+    ) {
       await this.ctx.storage.setAlarm(Date.now() + ALARM_MS)
       return
     }

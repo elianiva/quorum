@@ -5,11 +5,23 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
   Cross-Origin-Opener-Policy: same-origin-allow-popups
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://ampcode.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://ampcode.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://ampcode.com; connect-src 'self' https://*.ingest.sentry.io https://*.sentry.io https://ampcode.com wss://playquorum.dev; worker-src 'self' blob:; media-src 'self' blob:; manifest-src 'self'; frame-src https://ampcode.com; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://ampcode.com; style-src 'self' 'unsafe-inline' https://ampcode.com; font-src 'self'; img-src 'self' data: blob: https://ampcode.com; connect-src 'self' https://*.ingest.sentry.io https://*.sentry.io https://ampcode.com wss://playquorum.dev; worker-src 'self' blob:; media-src 'self' blob:; manifest-src 'self'; frame-src https://ampcode.com; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'; upgrade-insecure-requests
   Cache-Control: public, max-age=0, must-revalidate
   Document-Policy: js-profiling
 
 /assets/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+/sw.js
+  ! Cache-Control
+  Cache-Control: no-cache
+
+/fonts/geist-latin-v5.woff2
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/geist-mono-latin-v6.woff2
   ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 
@@ -35,4 +47,4 @@
 
 /manifest.webmanifest
   ! Cache-Control
-  Cache-Control: public, max-age=86400
+  Cache-Control: public, max-age=3600

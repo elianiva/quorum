@@ -6,6 +6,7 @@
   "lang": "en",
   "categories": ["games", "education"],
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#141517",
   "theme_color": "#141517",
@@ -18,12 +19,89 @@
     {
       "src": "/icon-192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-monochrome.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "monochrome"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/board-1280x720.png",
+      "type": "image/png",
+      "sizes": "1280x720",
+      "form_factor": "wide",
+      "label": "A Series A Board with a CDN, a load balancer, app servers, a cache, a database, and a queue."
+    },
+    {
+      "src": "/screenshots/title-1170x2532.png",
+      "type": "image/png",
+      "sizes": "1170x2532",
+      "form_factor": "narrow",
+      "label": "The title screen, with the Quorum badge ready to clock in."
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open company",
+      "short_name": "Company",
+      "description": "Continue the Company you played last.",
+      "url": "/company",
+      "icons": [
+        {
+          "src": "/icon-96.png",
+          "type": "image/png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Found a company",
+      "short_name": "New company",
+      "description": "Name a Company and start in Pre-seed.",
+      "url": "/menu/found",
+      "icons": [
+        {
+          "src": "/icon-96.png",
+          "type": "image/png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Free Sandbox",
+      "short_name": "Sandbox",
+      "description": "Build a Design without a Company.",
+      "url": "/sandbox/free",
+      "icons": [
+        {
+          "src": "/icon-96.png",
+          "type": "image/png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ]
 }

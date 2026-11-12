@@ -3,7 +3,7 @@ import { Result } from 'effect'
 import type { IntentAnswers } from '@quorum/rpc'
 import { place } from '@quorum/simulation/actions'
 import { newGame } from '@quorum/simulation/company'
-import { candidates, clauses, moveRequest, resolve } from './moves.ts'
+import { blockedOf, candidates, clauses, moveRequest, resolve } from './moves.ts'
 
 const certain = (choice: string, other: string, p = 0.9): IntentAnswers[string] => ({
   choice,
@@ -165,6 +165,11 @@ describe('resolve', () => {
     const labels = new Set(offered.map((offer) => offer.resolved.label))
     expect(offered.length).toBe(2)
     expect(labels.size).toBe(2)
+  })
+
+  it('says why a Component the Game will not take cannot be placed', () => {
+    expect(blockedOf(game, 'na', 'buy a cache')?._tag).toBe('Locked')
+    expect(blockedOf(game, 'na', 'buy a database')).toBeNull()
   })
 
   it('declines a sentence with no move in it', () => {

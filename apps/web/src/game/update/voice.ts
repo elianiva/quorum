@@ -1,6 +1,7 @@
 import { Message } from '../message.ts'
 import { Model } from '../model.ts'
 import {
+  blockedOf,
   candidates,
   clauses,
   moveRequest,
@@ -9,6 +10,7 @@ import {
   type Move,
   type Resolved,
 } from '../moves.ts'
+import { refusalIn } from '@/i18n/refusal.ts'
 import { EMPTY_VOICE } from '../voice.ts'
 import { Actions } from '../board-actions.ts'
 import { ResearchMessage } from '../research.ts'
@@ -235,10 +237,16 @@ export const voiceHandlers = (
           },
         },
       }
+    // A move the Game will not take says why, when the sentence names the thing.
+    const blocked = blockedOf(model.board.game, model.board.region, clause)
     return {
       model: {
         ...model,
-        voice: { ...model.voice, clauses: [], error: say(model).voice.notUnderstood },
+        voice: {
+          ...model.voice,
+          clauses: [],
+          error: blocked === null ? say(model).voice.notUnderstood : refusalIn(say(model), blocked),
+        },
       },
     }
   },

@@ -10,7 +10,7 @@ import {
   type ComponentId,
   type ResearchId,
 } from '@quorum/simulation/catalog'
-import { connect, place, resize, shortOfCash } from '@quorum/simulation/actions'
+import { connect, place, resize, shortOfCash, type Refusal } from '@quorum/simulation/actions'
 import { researchReady } from '@quorum/simulation/lookups'
 import { nodeLabel } from '@quorum/simulation/labels'
 import { regionView } from '@quorum/simulation/regions'
@@ -244,6 +244,26 @@ const PANELS: ReadonlyArray<Readonly<{ id: PanelId; what: string }>> = [
 
 const steps = (game: Game, node: GameNode): boolean =>
   Result.isSuccess(resize(game, node.id, 1)) || Result.isSuccess(resize(game, node.id, -1))
+
+/**
+ * Why a move the player named cannot happen, when the Simulation says so. A
+ * clause that names a Component the Game will not take ("buy a cache" before
+ * its Research) answers with that reason, not with a shrug.
+ */
+export const blockedOf = (game: Game, region: Region, clause: string): Refusal | null => {
+  // Names with spaces, and punctuation in the sentence, both fall away here.
+  const said = ` ${clause.toLowerCase().replace(/[^a-z]+/g, ' ')} `
+  for (const type of COMPONENT_IDS) {
+    const def = COMPONENTS[type]
+    if (def.fixed) continue
+    const name = def.name.toLowerCase()
+    if (!said.includes(` ${name} `) && !said.includes(` ${name}s `)) continue
+    const placed = place(game, type, 0, 0, region)
+    if (Result.isSuccess(placed)) continue
+    return Result.match(placed, { onSuccess: () => null, onFailure: (refusal) => refusal })
+  }
+  return null
+}
 
 export type MoveInput = Readonly<{
   game: Game

@@ -437,16 +437,20 @@ const hashesOnPool = (
   !context.delegated &&
   !context.worker
 
+type VariantMemory = Readonly<{ factor: number; extraMB: number }>
+
+/** A Node's variant memory, reused until the Game that set it changes. */
+const variantMemories = new WeakMap<GameNode, Readonly<{ game: Game; value: VariantMemory }>>()
+
 /**
  * A variant's memory cost: YJIT's 20% and jemalloc's 5% multiply the runtime's base, and Node.js
  * worker threads add a fixed pool at 10 MB a thread (06 "Variants by language").
  */
-export const variantMemoryOf = (
-  game: Game,
-  node: GameNode,
-): Readonly<{ factor: number; extraMB: number }> => {
+export const variantMemoryOf = (game: Game, node: GameNode): VariantMemory => {
+  const found = variantMemories.get(node)
+  if (found?.game === game) return found.value
   const runtime = RUNTIMES[node.runtime]
-  return {
+  const value: VariantMemory = {
     factor:
       (runtime.language === 'ruby' && has(game, 'yjit') ? YJIT_MEMORY : 1) *
       (runtime.language === 'rust' && has(game, 'jemalloc') ? JEMALLOC_MEMORY : 1),
@@ -461,6 +465,8 @@ export const variantMemoryOf = (
         ? SPAWN_BLOCKING_THREADS * SPAWN_BLOCKING_THREAD_MB
         : 0),
   }
+  variantMemories.set(node, { game, value })
+  return value
 }
 
 /**
@@ -495,24 +501,30 @@ const overheadOf = (node: GameNode, kind: RequestKind): number => {
 const gogcOf = (node: GameNode) =>
   GOGC.find((entry) => entry.gogc === node.gogc) ?? (GOGC[1] as (typeof GOGC)[number])
 
+type Collector = Readonly<{ pauseMs: number; cpu: number; memory: number }>
+
+/** A Node's collector: it depends on the Node, not the pass, so every model reuses it. */
+const collectors = new WeakMap<GameNode, Collector | null>()
+
 /**
  * A runtime's garbage collector as this Node runs it: Java's collector sets the pause and the
  * heap; Go's GOGC trades memory for collection CPU. Null for runtimes without a global GC.
  */
-export const collectorOf = (
-  node: GameNode,
-): Readonly<{ pauseMs: number; cpu: number; memory: number }> | null => {
+export const collectorOf = (node: GameNode): Collector | null => {
+  const cached = collectors.get(node)
+  if (cached !== undefined) return cached
   const runtime = RUNTIMES[node.runtime]
-  if (!runtime.gc) return null
-  if (runtime.language === 'java') {
+  let value: Collector | null
+  if (!runtime.gc) value = null
+  else if (runtime.language === 'java') {
     const collector = COLLECTORS[node.collector]
-    return { pauseMs: collector.pauseMs, cpu: runtime.gc.cpu, memory: collector.memory }
-  }
-  if (runtime.language === 'go') {
+    value = { pauseMs: collector.pauseMs, cpu: runtime.gc.cpu, memory: collector.memory }
+  } else if (runtime.language === 'go') {
     const gogc = gogcOf(node)
-    return { pauseMs: runtime.gc.pauseMs, cpu: runtime.gc.cpu * gogc.cpu, memory: gogc.memory }
-  }
-  return { ...runtime.gc, memory: 1 }
+    value = { pauseMs: runtime.gc.pauseMs, cpu: runtime.gc.cpu * gogc.cpu, memory: gogc.memory }
+  } else value = { ...runtime.gc, memory: 1 }
+  collectors.set(node, value)
+  return value
 }
 
 /** A saturated App Server with Priority load shedding keeps its load at this share. */
@@ -695,41 +707,55 @@ const shedding = (context: ServerContext, full: NodeModel, degrade = false): Nod
  * What a server's per-kind calls and core-milliseconds depend on: the Game, the Node and these flags,
  * not the pass. The passes, probes and shedding searches of one solve share them.
  */
-const tables = new WeakMap<
-  Game,
-  Map<
-    GameNode,
-    Map<
-      string,
-      Readonly<{
-        calls: Record<RequestKind, Calls>
-        raw: Record<RequestKind, number>
-      }>
-    >
-  >
->()
+type ServerTable = Readonly<{
+  callOf: (kind: RequestKind) => Calls
+  rawOf: (kind: RequestKind) => number
+}>
 
-const tablesOf = (context: ServerContext) => {
+/** Per Game, Node and flag set. The flags are one number, so a model call allocates no key string. */
+const tables = new WeakMap<Game, Map<GameNode, Array<Map<number, ServerTable> | undefined>>>()
+
+const tablesOf = (context: ServerContext): ServerTable => {
   const { game, node } = context
   let byNode = tables.get(game)
   if (!byNode) tables.set(game, (byNode = new Map()))
   let byFlags = byNode.get(node)
-  if (!byFlags) byNode.set(node, (byFlags = new Map()))
-  const key = `${context.delegated}|${context.worker}|${context.offloaded}|${context.local}|${context.hashing}|${context.sampling}`
-  let found = byFlags.get(key)
+  if (!byFlags) byNode.set(node, (byFlags = []))
+  const flags =
+    (context.delegated ? 1 : 0) |
+    (context.worker ? 2 : 0) |
+    (context.offloaded ? 4 : 0) |
+    (context.local ? 8 : 0) |
+    (context.hashing > 1 ? 16 : 0)
+  let bySampling = byFlags[flags]
+  if (!bySampling) {
+    bySampling = new Map()
+    byFlags[flags] = bySampling
+  }
+  let found = bySampling.get(context.sampling)
   if (!found) {
-    const calls = Object.fromEntries(
-      REQUEST_KINDS.map((kind) => [
-        kind,
-        context.worker
+    // Only the kinds that arrive are ever read. Build each one when a pass first asks for it.
+    const calls = new Map<RequestKind, Calls>()
+    const raw = new Map<RequestKind, number>()
+    const callOf = (kind: RequestKind): Calls => {
+      let value = calls.get(kind)
+      if (value === undefined) {
+        value = context.worker
           ? asyncCallsOf(game, kind)
-          : callsOf(game, node, kind, context.delegated, context.offloaded ?? false),
-      ]),
-    ) as Record<RequestKind, Calls>
-    const raw = Object.fromEntries(
-      REQUEST_KINDS.map((kind) => [kind, cpuOf(context, kind, calls[kind])]),
-    ) as Record<RequestKind, number>
-    byFlags.set(key, (found = { calls, raw }))
+          : callsOf(game, node, kind, context.delegated, context.offloaded ?? false)
+        calls.set(kind, value)
+      }
+      return value
+    }
+    const rawOf = (kind: RequestKind): number => {
+      let value = raw.get(kind)
+      if (value === undefined) {
+        value = cpuOf(context, kind, callOf(kind))
+        raw.set(kind, value)
+      }
+      return value
+    }
+    bySampling.set(context.sampling, (found = { callOf, rawOf }))
   }
   return found
 }
@@ -810,11 +836,11 @@ export const serverModel = (context: ServerContext, shed = true): NodeModel => {
 
   const kinds = REQUEST_KINDS.filter((kind) => (arriving[kind] ?? 0) > 0)
   const rate = kinds.reduce((sum, kind) => sum + (arriving[kind] ?? 0), 0)
-  const { calls, raw } = tablesOf(context)
+  const { callOf, rawOf } = tablesOf(context)
   // Only the kinds that arrive are ever read, so only they build a cost.
-  const cpu: Partial<Record<RequestKind, number>> = Object.fromEntries(
-    kinds.map((kind) => [kind, (raw[kind] / efficiency) * (collecting > 1 ? collecting : 1)]),
-  )
+  const cpu: Partial<Record<RequestKind, number>> = {}
+  for (const kind of kinds)
+    cpu[kind] = (rawOf(kind) / efficiency) * (collecting > 1 ? collecting : 1)
 
   const cpuWork = kinds.reduce((sum, kind) => sum + (arriving[kind] ?? 0) * (cpu[kind] ?? 0), 0)
   const cpuUtilization = cores > 0 ? cpuWork / (cores * 1000) : rate > 0 ? 99 : 0
@@ -823,21 +849,21 @@ export const serverModel = (context: ServerContext, shed = true): NodeModel => {
 
   // A Worker also waits on the broker for each fetch, and takes `prefetch` tasks per fetch.
   const fetching = context.worker ? FETCH_MS / Math.max(1, node.prefetch) : 0
-  const waiting = (kind: RequestKind): number => {
-    if (context.local) return 0
-    return waitOf(calls[kind], context.callLatency) + fetching
-  }
-  // A slow client holds the slot while its request body comes up the wire, unless the work went
-  // async: then the file goes straight to storage and the App Server keeps the small sync part.
-  const receiving = (kind: RequestKind): number => {
+  const residence: Partial<Record<RequestKind, number>> = {}
+  let slotWork = 0
+  for (const kind of kinds) {
+    // A slow client holds the slot while its request body comes up the wire, unless the work went
+    // async: then the file goes straight to storage and the App Server keeps the small sync part.
     const profile = profileOf(game, kind)
-    if (context.worker || profile.inKB <= 0) return 0
-    const kept = context.offloaded ? 1 - profile.offload : 1
-    return ((profile.inKB * 8) / USER_UP_MBPS) * kept
+    const receiving =
+      context.worker || profile.inKB <= 0
+        ? 0
+        : ((profile.inKB * 8) / USER_UP_MBPS) * (context.offloaded ? 1 - profile.offload : 1)
+    const waiting = context.local ? 0 : waitOf(callOf(kind), context.callLatency) + fetching
+    const each = (cpu[kind] ?? 0) / perRequest + cpuWait + waiting + receiving
+    residence[kind] = each
+    slotWork += (arriving[kind] ?? 0) * each
   }
-  const residence = (kind: RequestKind): number =>
-    (cpu[kind] ?? 0) / perRequest + cpuWait + waiting(kind) + receiving(kind)
-  const slotWork = kinds.reduce((sum, kind) => sum + (arriving[kind] ?? 0) * residence(kind), 0)
   const slotUtilization = slots === Number.POSITIVE_INFINITY ? 0 : slotWork / (slots * 1000)
   const slotWait = rate > 0 ? waitFor(slotWork / rate, slotUtilization, slots) : 0
 
@@ -861,13 +887,16 @@ export const serverModel = (context: ServerContext, shed = true): NodeModel => {
   // Node.js hashes passwords on libuv's thread pool: four threads a process. The hashes leave the
   // event loop, and wait for a thread when more of them arrive than the pool can run (06 "Event
   // loops and blocking"). The pool also cannot run more threads than the box has cores.
-  const pooled = (kind: RequestKind): boolean => hashesOnPool(game, node, kind, context)
-  const poolKinds = kinds.filter(pooled)
-  const poolRate = poolKinds.reduce((sum, kind) => sum + (arriving[kind] ?? 0), 0)
-  const poolWork = poolKinds.reduce(
-    (sum, kind) => sum + ((arriving[kind] ?? 0) * (cpu[kind] ?? 0)) / perRequest,
-    0,
-  )
+  const pooled: Partial<Record<RequestKind, boolean>> = {}
+  let poolRate = 0
+  let poolWork = 0
+  for (const kind of kinds) {
+    const on = hashesOnPool(game, node, kind, context)
+    pooled[kind] = on
+    if (!on) continue
+    poolRate += arriving[kind] ?? 0
+    poolWork += ((arriving[kind] ?? 0) * (cpu[kind] ?? 0)) / perRequest
+  }
   const poolThreads = Math.max(1, Math.min(LIBUV_THREADS * Math.max(1, processes), cores))
   const poolUtilization = poolWork / (poolThreads * 1000)
   const poolWait = poolRate > 0 ? waitFor(poolWork / poolRate, poolUtilization, poolThreads) : 0
@@ -896,27 +925,29 @@ export const serverModel = (context: ServerContext, shed = true): NodeModel => {
   // it (06 "Event loops and blocking"). The squared term lets rare heavy kinds dominate:
   // The stall hits LOOP_TAIL_SHARE of requests, above 1%, so it lands on the p99 and not the p95.
   // The libuv pool and an Auth Provider take the login hash off the loop, not the rest.
-  const offLoop = (kind: RequestKind): boolean =>
-    (asLogin(game, kind) && (pooled(kind) || context.delegated)) ||
-    // Worker threads take CPU-heavy kinds off Node.js's loop (06 "Event loops and blocking").
-    (has(game, 'worker-threads') &&
-      fixed(game, 'off-loop') &&
-      (runtime.language === 'node' ||
-        (runtime.language === 'python' && runtime.model === 'loop')) &&
-      CPU_HEAVY_KINDS.includes(kind))
   // Tokio blocks one worker thread of many: the stall lands on a share of requests per core. Its
   // blocking pool removes that, and a runtime that never blocks has none (06 "Rust").
   const blocking =
     runtime.blocking === 'worker' && runtime.language === 'rust' && has(game, 'spawn-blocking')
       ? null
       : runtime.blocking
-  const onLoop = blocking !== null ? kinds.filter((kind) => !offLoop(kind)) : []
-  const callback = (kind: RequestKind): number => (cpu[kind] ?? 0) / perRequest
-  const loopWork = onLoop.reduce((sum, kind) => sum + (arriving[kind] ?? 0) * callback(kind), 0)
-  const loopSquares = onLoop.reduce(
-    (sum, kind) => sum + (arriving[kind] ?? 0) * callback(kind) * callback(kind),
-    0,
-  )
+  let loopWork = 0
+  let loopSquares = 0
+  if (blocking !== null)
+    for (const kind of kinds) {
+      const offLoop =
+        (asLogin(game, kind) && (pooled[kind] === true || context.delegated)) ||
+        // Worker threads take CPU-heavy kinds off Node.js's loop (06 "Event loops and blocking").
+        (has(game, 'worker-threads') &&
+          fixed(game, 'off-loop') &&
+          (runtime.language === 'node' ||
+            (runtime.language === 'python' && runtime.model === 'loop')) &&
+          CPU_HEAVY_KINDS.includes(kind))
+      if (offLoop) continue
+      const callback = (cpu[kind] ?? 0) / perRequest
+      loopWork += (arriving[kind] ?? 0) * callback
+      loopSquares += (arriving[kind] ?? 0) * callback * callback
+    }
   const loopBlock = loopWork > 0 ? loopSquares / loopWork : 0
   const stallP =
     loopBlock > 0
@@ -941,16 +972,13 @@ export const serverModel = (context: ServerContext, shed = true): NodeModel => {
       )
     : collected
 
-  const service = Object.fromEntries(
-    kinds.map((kind) => [
-      kind,
-      {
-        fixedMs: 2,
-        variableMs:
-          (cpu[kind] ?? 0) / perRequest + cpuWait + slotWait + (pooled(kind) ? poolWait : 0),
-      },
-    ]),
-  )
+  const service: Partial<Record<RequestKind, { fixedMs: number; variableMs: number }>> = {}
+  for (const kind of kinds)
+    service[kind] = {
+      fixedMs: 2,
+      variableMs:
+        (cpu[kind] ?? 0) / perRequest + cpuWait + slotWait + (pooled[kind] ? poolWait : 0),
+    }
 
   const used = Math.min(cpuWork * share, cores * 1000) / 1000
   // Work share (12 "Load diagnosis") counts in the unit of the resource the limit names.
@@ -968,14 +996,14 @@ export const serverModel = (context: ServerContext, shed = true): NodeModel => {
       ? payloadOf(node, requestKind, context.offloaded ?? false) *
           payloadFactor(context.game, requestKind)
       : workUnit === 'workers'
-        ? residence(requestKind)
+        ? (residence[requestKind] ?? 0)
         : (cpu[requestKind] ?? 0)
   }
   const kindReceipt = (kind: Kind): Receipt | undefined => {
     if (!(REQUEST_KINDS as ReadonlyArray<Kind>).includes(kind)) return undefined
     const requestKind = kind as RequestKind
     return extended(
-      receiptOf(context, requestKind, calls[requestKind]),
+      receiptOf(context, requestKind, callOf(requestKind)),
       [
         ['swapping', 1 / efficiency],
         ['gc', collecting > 1 ? collecting : 1],

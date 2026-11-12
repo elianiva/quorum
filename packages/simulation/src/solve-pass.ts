@@ -2,6 +2,7 @@ import {
   CALLOUT_FAILURE,
   CALLOUT_MS,
   LAG_SURGE,
+  BACKEND_KINDS,
   COMPONENTS,
   DATA_KINDS,
   DB_ENGINES,
@@ -76,6 +77,14 @@ export type Inputs = Readonly<{
   /** Server connections held open on each Node on the last pass. */
   connectionUsed: ReadonlyArray<number | undefined>
 }>
+
+/** Every kind, numbered once: the per-pass caches below are dense arrays, not keyed maps. */
+const KIND_INDEX: Record<Kind, number> = Object.fromEntries(
+  [...REQUEST_KINDS, ...BACKEND_KINDS].map((kind, index) => [kind, index]),
+) as Record<Kind, number>
+
+/** A kind's place in a per-kind array. */
+export const kindIndex = (kind: Kind): number => KIND_INDEX[kind]
 
 /** Attempts a Queue gives a task: its max attempts with a dead-letter queue, else forever. */
 export const attemptsAllowed = (queue: GameNode): number =>
@@ -349,6 +358,7 @@ export const forward = (inputs: Inputs): Pass => {
   const lag = REPLICA_LAG_MS + REPLICA_LAG_PER_WRITE * writes
   return {
     at,
+    slots: graph.slots,
     arriving,
     models,
     hits,
@@ -384,43 +394,47 @@ export const carries = (node: GameNode, edge: Edge, kind: Kind): boolean => {
 export type Split = ReadonlyArray<readonly [Edge, number]>
 
 /** Splits by Node and kind, per pass: routing, outcomes and held time all ask for the same ones. */
-export const splits = new WeakMap<Inputs, Map<GameNode, Map<Kind, Split>>>()
+export const splits = new WeakMap<Inputs, Array<Array<Split | undefined>>>()
 
 export const splitOf = (inputs: Inputs, node: GameNode, kind: Kind): Split => {
-  let byNode = splits.get(inputs)
-  if (!byNode) {
-    byNode = new Map()
-    splits.set(inputs, byNode)
+  let bySlot = splits.get(inputs)
+  if (!bySlot) {
+    bySlot = []
+    splits.set(inputs, bySlot)
   }
-  let byKind = byNode.get(node)
+  const slot = inputs.graph.slots.get(node) as number
+  let byKind = bySlot[slot]
   if (!byKind) {
-    byKind = new Map()
-    byNode.set(node, byKind)
+    byKind = []
+    bySlot[slot] = byKind
   }
-  let split = byKind.get(kind)
-  if (!split) {
+  const index = kindIndex(kind)
+  let split = byKind[index]
+  if (split === undefined) {
     split = splitFor(inputs, node, kind)
-    byKind.set(kind, split)
+    byKind[index] = split
   }
   return split
 }
 
 /** The Edges out of a Node that can take a kind, per Graph: they do not change during a solve. */
-export const takersByGraph = new WeakMap<Graph, Map<GameNode, Map<Kind, ReadonlyArray<Edge>>>>()
+export const takersByGraph = new WeakMap<Graph, Array<Array<ReadonlyArray<Edge> | undefined>>>()
 
 export const takersOf = (graph: Graph, node: GameNode, kind: Kind): ReadonlyArray<Edge> => {
-  let byNode = takersByGraph.get(graph)
-  if (!byNode) {
-    byNode = new Map()
-    takersByGraph.set(graph, byNode)
+  let bySlot = takersByGraph.get(graph)
+  if (!bySlot) {
+    bySlot = []
+    takersByGraph.set(graph, bySlot)
   }
-  let byKind = byNode.get(node)
+  const slot = graph.slots.get(node) as number
+  let byKind = bySlot[slot]
   if (!byKind) {
-    byKind = new Map()
-    byNode.set(node, byKind)
+    byKind = []
+    bySlot[slot] = byKind
   }
-  let takers = byKind.get(kind)
-  if (!takers) {
+  const index = kindIndex(kind)
+  let takers = byKind[index]
+  if (takers === undefined) {
     const linked = (graph.out.get(node.id) ?? []).filter(
       (edge) => accepts(edge.to, kind) && carries(node, edge, kind),
     )
@@ -441,7 +455,7 @@ export const takersOf = (graph: Graph, node: GameNode, kind: Kind): ReadonlyArra
         ? own.filter((edge) => edge.to.type === 'warehouse' && !isDown(edge.to))
         : []
     takers = warehouse.length > 0 ? warehouse : own.length > 0 ? own : usable
-    byKind.set(kind, takers)
+    byKind[index] = takers
   }
   return takers
 }
@@ -452,12 +466,26 @@ export const splitFor = (inputs: Inputs, node: GameNode, kind: Kind): Split => {
   // A drained Node is out of rotation at once: the router plans the drain, so it waits for no
   // health check. With nowhere left to send the request, it is stranded (11 "Drain a Node").
   // A Read Replica that no Database ships its log to copies nothing, so it takes no query.
-  const takers = takersOf(graph, node, kind).filter(
-    (edge) =>
-      edge.to.service._tag !== 'Draining' &&
-      (edge.to.type !== 'replica' || primaryOf(game, edge.to)),
-  )
+  const all = takersOf(graph, node, kind)
+  let takers = all
+  for (let index = 0; index < all.length; index += 1) {
+    const edge = all[index] as Edge
+    if (
+      edge.to.service._tag === 'Draining' ||
+      (edge.to.type === 'replica' && !primaryOf(game, edge.to))
+    ) {
+      takers = all.filter(
+        (entry) =>
+          entry.to.service._tag !== 'Draining' &&
+          (entry.to.type !== 'replica' || primaryOf(game, entry.to)),
+      )
+      break
+    }
+  }
   if (takers.length === 0) return []
+  // One way on takes everything, whatever the algorithm: no weights to build, no shares to split.
+  // A Load Balancer still runs its health checks, which can take its only target out.
+  if (takers.length === 1 && node.type !== 'lb') return [[takers[0] as Edge, 1] as const]
   // A Stream broadcasts a change to every consumer: each copy must see every change. A task is
   // a consumer group, so its Workers share the rate.
   if (node.type === 'log' && kind === 'change') return takers.map((edge) => [edge, 1] as const)

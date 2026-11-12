@@ -36,6 +36,8 @@ export type Graph = Readonly<{
   byId: ReadonlyMap<string, GameNode>
   /** Each Node's place in the per-Node arrays of a solve: its index in the Design, by id. */
   at: ReadonlyMap<string, number>
+  /** The same place, by object identity: a rule asks for it many times per pass. */
+  slots: WeakMap<GameNode, number>
   /** Each routing Link, by caller, then callee. */
   edgeTo: ReadonlyMap<string, ReadonlyMap<string, Edge>>
   /** Each Node's outgoing Edges, one per routing Link, in the Design's order. */
@@ -71,6 +73,8 @@ export const graphOf = (game: Game): Graph => {
 export const buildGraph = (game: Game): Graph => {
   const byId = new Map(game.nodes.map((node) => [node.id, node]))
   const at = new Map(game.nodes.map((node, index) => [node.id, index]))
+  const slots = new WeakMap<GameNode, number>()
+  game.nodes.forEach((node, index) => slots.set(node, index))
   const routes = new Map<string, Array<GameNode>>()
   const parents = new Map<string, Array<GameNode>>()
   const taps = new Map<string, Array<string>>()
@@ -154,6 +158,7 @@ export const buildGraph = (game: Game): Graph => {
   return {
     byId,
     at,
+    slots,
     edgeTo,
     out,
     mirrors,

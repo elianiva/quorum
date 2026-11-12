@@ -38,7 +38,7 @@ import {
   runsLocalDb,
   samplingMsOf,
 } from './solve-graph.ts'
-import { type Inputs, CALLOUT, splitOf } from './solve-pass.ts'
+import { type Inputs, CALLOUT, kindIndex, splitOf } from './solve-pass.ts'
 
 /**
  * A leap second repeats one, so every Node in the region fires its timers twice: its answer waits
@@ -71,7 +71,9 @@ export const chaotic = (game: Game, node: GameNode, answer: Outcome): Outcome =>
 
 export const outcomesOf = (inputs: Inputs, pass: Pass) => {
   const { game, graph } = inputs
-  const memo = new Map<GameNode, Map<Kind, Outcome>>()
+  const memo: Array<Array<Outcome | undefined>> = []
+  const attempts: Array<Array<Outcome | undefined>> = []
+  const downstreams = new Map<number, Array<Array<Outcome | undefined>>>()
 
   const ownHop = (node: GameNode, kind: Kind, value = 1) => {
     const model = pass.models[slotOf(pass, node)]
@@ -91,11 +93,21 @@ export const outcomesOf = (inputs: Inputs, pass: Pass) => {
 
   /** One attempt on a Link: the callee's outcome cut at the Link's timeout, or its bulkhead. */
   const attempt = (edge: Edge, kind: Kind): Outcome => {
+    let byKind = attempts[edge.index]
+    if (!byKind) {
+      byKind = []
+      attempts[edge.index] = byKind
+    }
+    const index = kindIndex(kind)
+    const cached = byKind[index]
+    if (cached) return cached
     const policy = edge.policy
     const wait = policy.bulkhead ? Math.min(policy.timeout, BULKHEAD_MS) : policy.timeout
     const answer = timedOut(outcome(edge.to, kind), wait)
     // A hedged Link races a second copy and keeps the faster answer (10 "Reliability").
-    return policy.hedge ? hedged(answer) : answer
+    const result = policy.hedge ? hedged(answer) : answer
+    byKind[index] = result
+    return result
   }
 
   /**
@@ -149,11 +161,30 @@ export const outcomesOf = (inputs: Inputs, pass: Pass) => {
   /** What one request of `kind` sent from `node` to its targets gets back. */
   const downstream = (node: GameNode, kind: Kind, extraHop = 0): Outcome => {
     if (kind === 'callout') return CALLOUT
+    let bySlot = downstreams.get(extraHop)
+    if (!bySlot) {
+      bySlot = []
+      downstreams.set(extraHop, bySlot)
+    }
+    const slot = slotOf(pass, node)
+    let byKind = bySlot[slot]
+    if (!byKind) {
+      byKind = []
+      bySlot[slot] = byKind
+    }
+    const index = kindIndex(kind)
+    const cached = byKind[index]
+    if (cached) return cached
     const mixed = blend(
       splitOf(inputs, node, kind).map(([edge, weight]) => [placed(edge, kind), weight]),
     )
-    if (!mixed) return failed('stranded')
-    return extraHop > 0 ? through(hop({ fixedMs: extraHop }), [[mixed, 1]]) : mixed
+    const result = !mixed
+      ? failed('stranded')
+      : extraHop > 0
+        ? through(hop({ fixedMs: extraHop }), [[mixed, 1]])
+        : mixed
+    byKind[index] = result
+    return result
   }
 
   /** Milliseconds a caller holds its slot for one call: E[min(X, T)] per attempt, times the attempts. */
@@ -174,12 +205,14 @@ export const outcomesOf = (inputs: Inputs, pass: Pass) => {
     }, 0)
 
   const outcome = (node: GameNode, kind: Kind): Outcome => {
-    let byKind = memo.get(node)
+    const slot = slotOf(pass, node)
+    let byKind = memo[slot]
     if (!byKind) {
-      byKind = new Map()
-      memo.set(node, byKind)
+      byKind = []
+      memo[slot] = byKind
     }
-    const cached = byKind.get(kind)
+    const index = kindIndex(kind)
+    const cached = byKind[index]
     if (cached) return cached
     // A Node the kernel killed for memory fails as `oom` until it is back.
     const result = isDown(node)
@@ -208,7 +241,7 @@ export const outcomesOf = (inputs: Inputs, pass: Pass) => {
               ),
             ),
           )
-    byKind.set(kind, result)
+    byKind[index] = result
     return result
   }
 

@@ -82,6 +82,8 @@ export type Model = NodeModel & { disk?: boolean }
 export type Pass = Readonly<{
   /** Each Node's place in the per-Node arrays below, by id. */
   at: ReadonlyMap<string, number>
+  /** The same place by object identity: rules ask for it many times per pass. */
+  slots?: WeakMap<GameNode, number>
   arriving: ReadonlyArray<Rates>
   models: ReadonlyArray<Model | undefined>
   hits: ReadonlyArray<number | undefined>
@@ -105,7 +107,8 @@ export type Pass = Readonly<{
 }>
 
 /** A Node's place in a pass's per-Node arrays. */
-export const slotOf = (pass: Pass, node: GameNode): number => pass.at.get(node.id) as number
+export const slotOf = (pass: Pass, node: GameNode): number =>
+  pass.slots?.get(node) ?? (pass.at.get(node.id) as number)
 
 /** What `serve` may do: send work on, and record a Cache's hit ratio. */
 export type Serve = Readonly<{

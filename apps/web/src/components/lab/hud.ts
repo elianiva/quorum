@@ -91,6 +91,7 @@ import { glowing, playbooksShown, shown } from '@/game/reveal.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
 import { cn } from '@/lib/utils'
+import { canDictate } from '@/game/access.ts'
 import {
   CHIPS,
   EYEBROW,
@@ -1510,27 +1511,30 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
     ],
     [
       desktopOnly([exitButton(model, h)], h),
-      // Dictation: the bar under the board shows what it heard and what it did.
-      h.button(
-        [
-          h.Key('dictation'),
-          h.Type('button'),
-          h.Title(t.voice.dictation),
-          h.AriaLabel(t.voice.dictation),
-          h.AriaPressed(model.voice.on ? 'true' : 'false'),
-          h.OnClick(Message.VoiceToggled()),
-          h.Class(
-            cn(
-              tool(model.voice.on),
-              'flex w-auto gap-2 px-3 text-[calc(13px*var(--type-scale))] font-medium compact:size-11 compact:px-0 max-2xl:w-9 max-2xl:justify-center max-2xl:px-0',
-            ),
+      // Dictation: the bar under the board shows what it heard and what it did. It is a
+      // keyed feature, so the button is only there when the key unlocks it.
+      !canDictate(model)
+        ? h.empty
+        : h.button(
+            [
+              h.Key('dictation'),
+              h.Type('button'),
+              h.Title(t.voice.dictation),
+              h.AriaLabel(t.voice.dictation),
+              h.AriaPressed(model.voice.on ? 'true' : 'false'),
+              h.OnClick(Message.VoiceToggled()),
+              h.Class(
+                cn(
+                  tool(model.voice.on),
+                  'flex w-auto gap-2 px-3 text-[calc(13px*var(--type-scale))] font-medium compact:size-11 compact:px-0 max-2xl:w-9 max-2xl:justify-center max-2xl:px-0',
+                ),
+              ),
+            ],
+            [
+              icon(h, model.voice.on ? Mic : MicOff, 'size-[18px]'),
+              h.span([h.Class('compact:hidden max-2xl:hidden')], [t.voice.dictation]),
+            ],
           ),
-        ],
-        [
-          icon(h, model.voice.on ? Mic : MicOff, 'size-[18px]'),
-          h.span([h.Class('compact:hidden max-2xl:hidden')], [t.voice.dictation]),
-        ],
-      ),
       offCompany(model) || !shown(model, 'research')
         ? h.empty
         : h.button(

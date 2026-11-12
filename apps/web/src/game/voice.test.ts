@@ -2,14 +2,16 @@ import { describe, expect, test } from 'vitest'
 import type { IntentAnswers } from '@quorum/rpc'
 import { newGame } from '@quorum/simulation/company'
 import { AppRoute } from './route.ts'
+import type { Model } from './model.ts'
 import { initialModel, update } from './update.ts'
 import { Message } from './message.ts'
 import { LINE_HOLD_MS } from './update/voice.ts'
 
-const lab = () => ({
+const lab = (): Model => ({
   ...initialModel(),
   route: AppRoute.Company(),
   board: { ...initialModel().board, game: newGame() },
+  access: { ...initialModel().access, key: 'HLD1-2ABC-3DEF-4GHJ', features: ['dictation'] },
 })
 
 const certain = (choice: string, other: string, p = 0.9): IntentAnswers[string] => ({
@@ -24,6 +26,14 @@ const listOf = (model: ReturnType<typeof lab>, text: string) => ({
 })
 
 describe('the dictation line', () => {
+  test('a browser without the key cannot dictate', () => {
+    const locked = { ...lab(), access: { key: null, features: [], expiresAt: null } }
+    const ignored = update(locked, Message.VoiceUttered({ text: 'add a database' }))
+    expect(ignored.model.voice.clauses).toEqual([])
+    expect(ignored.model.voice.text).toBe('')
+    expect(update(locked, Message.VoiceToggled()).model.voice.on).toBe(false)
+  })
+
   test('clears itself once the line has been read', () => {
     const model = listOf(lab(), 'buy a database')
     const cleared = update(model, Message.VoiceForgotten({ text: 'buy a database' })).model

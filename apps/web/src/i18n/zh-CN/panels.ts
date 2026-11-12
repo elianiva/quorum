@@ -49,7 +49,7 @@ export const panels: Messages['panels'] = {
   featureKeyUnreachable: '无法检查密钥，请重试。',
   featureKeyAccepted: '功能密钥已激活。',
   featureKeyActiveUntil: (p0: string | number | null) => `密钥有效期至 ${p0}。`,
-  featureNames: { multiplayer: '在线房间' },
+  featureNames: { multiplayer: '在线房间', dictation: '语音输入' },
   featuresUnlocked: (p0: string | number | null) => `${p0}已解锁。`,
   featuresLocked: (p0: string | number | null) => `${p0}需要功能密钥。`,
   iPO: 'IPO',

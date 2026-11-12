@@ -47,7 +47,7 @@ export const panels = {
   featureKeyUnreachable: 'The key could not be checked. Try again.',
   featureKeyAccepted: 'Feature key accepted.',
   featureKeyActiveUntil: (p0: string | number | null) => `Key active until ${p0}.`,
-  featureNames: { multiplayer: 'Online Rooms' },
+  featureNames: { multiplayer: 'Online Rooms', dictation: 'Dictation' },
   featuresUnlocked: (p0: string | number | null) => `${p0} unlocked.`,
   featuresLocked: (p0: string | number | null) => `${p0} need a feature key.`,
   iPO: 'IPO',

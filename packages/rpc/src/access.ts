@@ -8,7 +8,7 @@ import { ApiError } from './errors.ts'
  * keyed feature adds its id here, a check in its handler, and a row in Settings.
  * It is not a game Feature, the product change a player builds with Dev Hours.
  */
-export const KeyedFeature = Schema.Literals(['multiplayer'])
+export const KeyedFeature = Schema.Literals(['multiplayer', 'dictation'])
 export type KeyedFeature = typeof KeyedFeature.Type
 
 /**

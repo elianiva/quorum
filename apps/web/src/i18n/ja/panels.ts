@@ -50,7 +50,7 @@ export const panels: Messages['panels'] = {
   featureKeyUnreachable: 'キーを確認できませんでした。もう一度お試しください。',
   featureKeyAccepted: '機能キーを有効化しました。',
   featureKeyActiveUntil: (p0: string | number | null) => `${p0} まで有効です。`,
-  featureNames: { multiplayer: 'オンラインルーム' },
+  featureNames: { multiplayer: 'オンラインルーム', dictation: '音声入力' },
   featuresUnlocked: (p0: string | number | null) => `${p0}を利用できます。`,
   featuresLocked: (p0: string | number | null) => `${p0}には機能キーが必要です。`,
   iPO: 'IPO',

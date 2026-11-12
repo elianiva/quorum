@@ -60,6 +60,7 @@ import { panelsHandlers } from './update/panels.ts'
 import { saveHandlers } from './update/save.ts'
 import { roomHandlers } from './update/room.ts'
 import { accessHandlers } from './update/access.ts'
+import { canDictate } from './access.ts'
 import { voiceHandlers } from './update/voice.ts'
 import { EMPTY_VOICE } from './voice.ts'
 
@@ -313,6 +314,9 @@ export const connect = (model: Model, result: UpdateResult): UpdateResult =>
       }
 
 function handle(model: Model, message: Message): UpdateResult {
+  // Dictation is a keyed feature. Without the key, no voice Message changes anything,
+  // which keeps the bar, the clause chain, and the model calls out of reach.
+  if (message._tag.startsWith('Voice') && !canDictate(model)) return { model }
   return Message.match<UpdateResult>(message, {
     ...companiesHandlers(model),
     ...sessionHandlers(model),

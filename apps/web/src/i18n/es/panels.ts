@@ -50,7 +50,7 @@ export const panels: Messages['panels'] = {
   featureKeyUnreachable: 'No se pudo comprobar la clave. Inténtalo de nuevo.',
   featureKeyAccepted: 'Clave de función aceptada.',
   featureKeyActiveUntil: (p0: string | number | null) => `Clave activa hasta el ${p0}.`,
-  featureNames: { multiplayer: 'Salas en línea' },
+  featureNames: { multiplayer: 'Salas en línea', dictation: 'Dictado' },
   featuresUnlocked: (p0: string | number | null) => `${p0} desbloqueadas.`,
   featuresLocked: (p0: string | number | null) => `${p0} necesitan una clave de función.`,
   iPO: 'IPO',

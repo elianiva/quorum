@@ -1,5 +1,6 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { cn } from '@/lib/utils'
+import { canDictate } from './access.ts'
 import { dock } from '@/components/lab/dock.ts'
 import {
   changeBar,
@@ -134,7 +135,7 @@ export const labScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
         ],
         [
           // Dictation sits over the action bar, and only while it is in use.
-          dictating(model) ? voiceBar(model, h) : h.empty,
+          canDictate(model) && dictating(model) ? voiceBar(model, h) : h.empty,
           changeBar(model, h, 'enter-pop compact:hidden'),
           h.div([h.Class('hidden compact:contents')], [phoneOffer(model, h)]),
           confirmSellOf(model.board)

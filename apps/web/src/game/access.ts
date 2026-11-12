@@ -13,7 +13,10 @@ import { KeyPhase } from './key-machine.ts'
 export const KEY_FIELD_MAX = 40
 
 /** The features this build gates, in the order Settings names them. */
-export const KEYED_FEATURES = ['multiplayer'] as const satisfies ReadonlyArray<KeyedFeature>
+export const KEYED_FEATURES = [
+  'multiplayer',
+  'dictation',
+] as const satisfies ReadonlyArray<KeyedFeature>
 
 /** Whether this browser holds a key that unlocks `feature`. */
 export const unlocked = (access: Access, feature: KeyedFeature): boolean =>
@@ -21,6 +24,9 @@ export const unlocked = (access: Access, feature: KeyedFeature): boolean =>
 
 /** Online Rooms are the one feature behind a key today. */
 export const canPlayOnline = (model: Model): boolean => unlocked(model.access, 'multiplayer')
+
+/** Dictation spends the decision model on every sentence, so it takes a key too. */
+export const canDictate = (model: Model): boolean => unlocked(model.access, 'dictation')
 
 /** The names of features, in the language of the copy the caller holds. */
 const namesOf = (features: ReadonlyArray<KeyedFeature>, t: Messages): string =>

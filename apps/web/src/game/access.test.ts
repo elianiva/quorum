@@ -152,7 +152,7 @@ describe('the Settings section', () => {
       Scene.given(section(initialModel())),
       focused(),
       Scene.expect(Scene.text('Feature key')).toExist(),
-      Scene.expect(Scene.text('Online Rooms need a feature key.')).toExist(),
+      Scene.expect(Scene.text('Online Rooms, Dictation need a feature key.')).toExist(),
     )
   })
 

@@ -1,7 +1,7 @@
 /* ==========================================================================
    The capacity figures a Node reports in the Ledger: what limits it, the
    resources it uses, and the Cost receipt of one request of each kind. The
-   kernel (`kernel/`) works them out; these are their shapes.
+   solver (`solver/`) works them out; these are their shapes.
    ========================================================================== */
 
 export type Limit =

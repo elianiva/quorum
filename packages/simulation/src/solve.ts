@@ -1,12 +1,12 @@
 import { CHAOS_EVERY, CHAOS_SECONDS } from './catalog.ts'
-import { carryKernel, kernelBottleneck, kernelFlow } from './kernel.ts'
+import { carrySolver, solverBottleneck, solverFlow } from './solver.ts'
 import type { Ledger } from './ledger.ts'
 import type { Game } from './state.ts'
 
 export { calendarMinute, clockOf, cosTurns } from './calendar.ts'
 export { demandOf, diurnal, weekly } from './solve-demand.ts'
 export { policyOf } from './solve-graph.ts'
-export { installKernel } from './kernel.ts'
+export { installSolver } from './solver.ts'
 
 /**
  * Whether a chaos experiment is running now (10 "Track: Reliability", "Chaos engineering"). An
@@ -29,7 +29,7 @@ const marked = new WeakMap<Game, Ledger>()
 export const solveFlow = (game: Game): Ledger => {
   const cached = flows.get(game)
   if (cached) return cached
-  const ledger = kernelFlow(game)
+  const ledger = solverFlow(game)
   flows.set(game, ledger)
   return ledger
 }
@@ -41,14 +41,14 @@ export const solveFlow = (game: Game): Ledger => {
  */
 export const bottleneckOf = (game: Game): string | null => {
   solveFlow(game)
-  return kernelBottleneck(game)
+  return solverBottleneck(game)
 }
 
 /** `to` reads the Ledger `from` solved: the Step that made it changed nothing the solve reads. */
 export const carryLedger = (from: Game, to: Game): void => {
   const ledger = flows.get(from)
   if (ledger) flows.set(to, ledger)
-  carryKernel(from, to)
+  carrySolver(from, to)
 }
 
 /** The full Ledger, with the bottleneck searched now. For tests and one-off checks. Cached per Game. */

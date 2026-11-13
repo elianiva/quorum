@@ -1,31 +1,32 @@
-# Solve kernel
+# Solver
 
 The game's solve, written in Rust and compiled to `wasm32-unknown-unknown`. It takes a Game
 and returns the Ledger and the Bottleneck. The crate has no `unsafe` code and no
 dependencies.
 
-`packages/simulation/src/kernel.ts` is the host side. It writes a Game into the kernel's
+`packages/simulation/src/solver.ts` is the host side. It writes a Game into the solver's
 blocks and decodes the Ledger. The Simulation package names no host globals, so each host
-loads the module and passes its exports to `installKernel`:
+loads the module and passes its exports to `installSolver`:
 
 | Host              | Loads the module with                                         |
 | ----------------- | ------------------------------------------------------------- |
-| `host/node.ts`    | `readFileSync` on `@quorum/simulation/kernel.wasm`            |
+| `host/node.ts`    | `readFileSync` on `@quorum/simulation/solver.wasm`            |
 | `host/browser.ts` | `fetch` on a `new URL(..., import.meta.url)` asset            |
 | `host/worker.ts`  | a `.wasm` module import, which Workers compile at deploy time |
 
-When no kernel is installed, the solve throws. There is no TypeScript fallback.
+When no solver is installed, the solve throws. There is no TypeScript fallback.
 
 ## Build
 
 ```sh
-rustup target add wasm32-unknown-unknown   # once
-cargo build --release --target wasm32-unknown-unknown
-cp target/wasm32-unknown-unknown/release/qsim.wasm ../src/kernel.wasm
+./build.sh
 ```
 
-The game loads `src/kernel.wasm`, which is committed. Rebuild and copy it after every change
-to the crate. Before you commit, run these and make sure each reports 0 warnings:
+The game loads `src/solver.wasm`, which is committed. `build.sh` builds the crate and copies
+the module there, so run it after every change to the crate and commit the result.
+`rust-toolchain.toml` pins the compiler, and `rustup` installs it on the first build.
+`build.sh` also strips machine paths from the module, so every checkout builds the same
+bytes. Before you commit, run these and make sure each reports 0 warnings:
 
 ```sh
 cargo clippy --release --target wasm32-unknown-unknown
@@ -33,21 +34,25 @@ cargo clippy --release --tests
 cargo test --release
 ```
 
+The Solver workflow (`.github/workflows/solver.yml`) runs only when this directory or
+`src/solver.wasm` changes. It runs the commands above with warnings as errors, then
+`./build.sh --check`, which fails when the committed module is not the build of this source.
+
 After a catalog change, regenerate `src/catalog.rs` from the TypeScript catalog, then
-rebuild and copy the kernel as above:
+run `./build.sh`:
 
 ```sh
 pnpm --filter @quorum/simulation catalog
 ```
 
-`test/kernel-catalog.test.ts` fails when either step is missing. It regenerates the catalog
+`test/solver-catalog.test.ts` fails when either step is missing. It regenerates the catalog
 and compares it with `src/catalog.rs`. Then it compares the generated `CATALOG_HASH` with
-the one `kernel.wasm` exports through `catalog_hash`. CI needs no Rust toolchain for this
+the one `solver.wasm` exports through `catalog_hash`. CI needs no Rust toolchain for this
 check.
 
 ## The ABI
 
-The host and the kernel share named blocks in memory the kernel owns. The host calls
+The host and the solver share named blocks in memory the solver owns. The host calls
 `reserve(block, length)`, writes through `ptr(block)`, and then calls one run function.
 Each run function returns a status code from `src/abi.rs`, and 0 means OK. A short block,
 an Edge that names a missing Node, or an unknown incident returns a code. The host never
@@ -60,10 +65,10 @@ reads a figure that only looks right.
 | `bottleneck_run`                              | Runs the Bottleneck search on the last solve's Ledger           |
 | `forget_solve`                                | Drops the cached solve, so the next search solves again         |
 | `scalar_len`, `node_field_len`, `summary_len` | The block layouts, so the host can check them                   |
-| `catalog_hash`                                | The `CATALOG_HASH` the kernel was built with                    |
+| `catalog_hash`                                | The `CATALOG_HASH` the solver was built with                    |
 
-`kernel.ts` mirrors the block ids, the scalar slots, and the Ledger stream in
-`src/wire.rs`. When one side changes, change the other too. `installKernel` checks the
+`solver.ts` mirrors the block ids, the scalar slots, and the Ledger stream in
+`src/wire.rs`. When one side changes, change the other too. `installSolver` checks the
 scalar count and the Node row length, so a slot added on one side only fails at start.
 
 ## Layout
@@ -89,9 +94,9 @@ scalar count and the Node row length, so a slot added on one side only fails at 
 
 Measured on Apple Silicon in plain `node`, with no test runner. `main` is the TypeScript
 solve. The 200-Node board is the one in `src/solve.bench.ts`. Each figure is the best
-median of 3 runs that alternate between `main` and the kernel.
+median of 3 runs that alternate between `main` and the solver.
 
-| What                                | `main`  | Kernel  | Speedup |
+| What                                | `main`  | Solver  | Speedup |
 | ----------------------------------- | ------- | ------- | ------- |
 | `solveFlow`, 200 Nodes              | 6.71 ms | 1.87 ms | 3.6×    |
 | `bottleneckOf`, 200 Nodes           | 2.03 ms | 0.32 ms | 6.3×    |
@@ -102,9 +107,9 @@ median of 3 runs that alternate between `main` and the kernel.
 | Every Challenge reference replay    | 10.2 s  | 3.8 s   | 2.7×    |
 
 Over 300 `solve` calls on the 200-Node board, `--trace-gc` counts 184 scavenges and 7
-mark-compacts on `main`, and 8 scavenges and 2 mark-compacts on the kernel.
+mark-compacts on `main`, and 8 scavenges and 2 mark-compacts on the solver.
 
-The kernel itself is about 63% of a 200-Node `solveFlow`. The rest is the host:
+The solver itself is about 63% of a 200-Node `solveFlow`. The rest is the host:
 `writeGame` writes the scalar rows (19%), `readLedger` decodes the Ledger (12%), and
 `writeDesign` writes the Design (5%).
 

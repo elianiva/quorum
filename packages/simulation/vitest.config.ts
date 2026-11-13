@@ -8,7 +8,7 @@ const FULL_ONLY = ['breadth', 'pacing', 'challenges'].map((name) => `test/${name
 export default defineConfig({
   plugins: [simVersion()],
   test: {
-    // The solve runs in the Rust kernel; every test run installs it first.
+    // The solve runs in the Rust solver; every test run installs it first.
     setupFiles: ['./host/node.ts'],
     // The whole-game runs in FULL_ONLY take over a minute; `pnpm test:full` and CI run them.
     exclude: [

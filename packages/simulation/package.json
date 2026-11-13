@@ -4,7 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./kernel.wasm": "./src/kernel.wasm",
+    "./solver.wasm": "./src/solver.wasm",
     "./host/node": "./host/node.ts",
     "./host/browser": "./host/browser.ts",
     "./host/worker": "./host/worker.ts",
@@ -12,7 +12,7 @@
   },
   "scripts": {
     "typecheck": "tsrs --noEmit -p tsconfig.json && tsrs --noEmit -p tsconfig.hosts.json && effect-tsrs diagnostics --strict --project tsconfig.json",
-    "catalog": "node kernel/gen-catalog.ts kernel/src/catalog.rs",
+    "catalog": "node solver/gen-catalog.ts solver/src/catalog.rs",
     "test": "vitest run",
     "test:full": "FULL_TESTS=1 vitest run",
     "test:engines": "vitest run --config vitest.engines.config.ts && node engines/workerd.mjs"

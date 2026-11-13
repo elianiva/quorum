@@ -1,10 +1,10 @@
-import { installKernel } from '../src/kernel.ts'
+import { installSolver } from '../src/solver.ts'
 
 /*
- * Installs the solve kernel in a browser page or Web Worker. The bundler emits the module as an
- * asset; `kernelReady` resolves once it is installed, and nothing may solve before then.
+ * Installs the Solver in a browser page or Web Worker. The bundler emits the module as an
+ * asset; `solverReady` resolves once it is installed, and nothing may solve before then.
  */
-export const kernelReady: Promise<void> = fetch(new URL('../src/kernel.wasm', import.meta.url))
+export const solverReady: Promise<void> = fetch(new URL('../src/solver.wasm', import.meta.url))
   .then((response) => response.arrayBuffer())
   .then((bytes) => WebAssembly.instantiate(bytes))
-  .then(({ instance }) => installKernel(instance.exports))
+  .then(({ instance }) => installSolver(instance.exports))

@@ -191,7 +191,7 @@ pub enum Incident {
     BadDeploy,
     ClusterUpgrade,
     LatencyRegression,
-    /// An incident whose effect reaches the kernel only through what the host
+    /// An incident whose effect reaches the solver only through what the host
     /// writes (demand, user routes, down Nodes), or not at all.
     Elsewhere,
 }
@@ -361,7 +361,7 @@ pub struct Node {
     pub has_primary: bool,
     /// A Service Mesh has put a sidecar beside this Node.
     pub mesh: bool,
-    /// The Node is down because the kernel killed it for memory.
+    /// The Node is down because the solver killed it for memory.
     pub down_oom: bool,
     /// Milliseconds Analytics sampling adds to this Node's hop.
     pub sampling_ms: f64,

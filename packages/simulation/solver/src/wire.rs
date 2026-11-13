@@ -8,7 +8,7 @@ use crate::dist::CAUSE_COUNT;
 use crate::ledger::{Keyed, Ledger, LinkRow, NodeRow};
 use crate::model::{Gauge, Order, Resources};
 
-/// The stream, as the kernel writes it.
+/// The stream, as the solver writes it.
 #[derive(Default)]
 pub struct Wire(Vec<f64>);
 

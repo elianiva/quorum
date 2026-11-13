@@ -622,7 +622,7 @@ const queryCpu = catalog.QUERY_CPU as Record<string, number>
 push(
   `pub static QUERY_CPU_BY_BACKEND: [f64; NB] = [${BACKEND_KINDS.map((k) => (queryCpu[k] === undefined ? '-1.0' : formatNumber(queryCpu[k]!))).join(', ')}];`,
 )
-// The stamp `catalog_hash` exports, so a check can tell whether `kernel.wasm` was built from
+// The stamp `catalog_hash` exports, so a check can tell whether `solver.wasm` was built from
 // this catalog: the first 32 bits of the SHA-256 of every line above.
 const stamp = createHash('sha256').update(out.join('\n')).digest('hex').slice(0, 8)
 push('')

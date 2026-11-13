@@ -27,16 +27,16 @@ await build({
   target: 'es2022',
   outfile: join(dir, 'worker.js'),
   logLevel: 'error',
-  // The kernel stays a module of its own: workerd compiles it, as the Workers runtime does.
+  // The solver stays a module of its own: workerd compiles it, as the Workers runtime does.
   plugins: [
     {
-      name: 'kernel',
+      name: 'solver',
       setup: (bundle) =>
-        bundle.onResolve({ filter: /\.wasm$/ }, () => ({ path: './kernel.wasm', external: true })),
+        bundle.onResolve({ filter: /\.wasm$/ }, () => ({ path: './solver.wasm', external: true })),
     },
   ],
 })
-copyFileSync(join(here, '../src/kernel.wasm'), join(dir, 'kernel.wasm'))
+copyFileSync(join(here, '../src/solver.wasm'), join(dir, 'solver.wasm'))
 writeFileSync(
   join(dir, 'config.capnp'),
   `using Workerd = import "/workerd/workerd.capnp";
@@ -47,7 +47,7 @@ const config :Workerd.Config = (
 const worker :Workerd.Worker = (
   modules = [
     (name = "worker.js", esModule = embed "worker.js"),
-    (name = "kernel.wasm", wasm = embed "kernel.wasm"),
+    (name = "solver.wasm", wasm = embed "solver.wasm"),
   ],
   compatibilityDate = "2026-10-08",
 );

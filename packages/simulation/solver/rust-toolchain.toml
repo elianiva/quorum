@@ -1,0 +1,6 @@
+# The Solver's compiler is pinned so CI rebuilds the same bytes as the committed solver.wasm.
+[toolchain]
+channel = "1.99.1"
+targets = ["wasm32-unknown-unknown"]
+components = ["clippy"]
+profile = "minimal"

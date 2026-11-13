@@ -228,3 +228,28 @@ fix and gone after it:
 - The final tree routed with the Weights and sick set the last pass produced, not the ones
   it ran with. Only a solve that runs out of passes sees the difference, and none of the 22
   boards did, but it is what `outcomesOf(inputs, pass)` reads.
+
+## Queues, Workers, and whole runs
+
+An opening board has empty Queues, cold Nodes, and no carried failures, so
+`trajectory.ts` plays each Challenge's canonical run through `beginRun` and `advanceRun`
+and compares the Game after every Step. The untouched runs reach Queue backlogs, Workers
+that drop tasks, warm-up, and Links that carry a failure share into the next Step. A
+scratch variant gave every Queue a dead-letter queue, 3 attempts, and a full backlog, and
+compared 3,200 more states. Porting Queue and Worker, and running whole runs, found:
+
+- The harness wrote incident 0 for every Game, and the kernel decoded only 4 incident
+  kinds. A run with a scripted incident was solved as if none ran. The slot now holds the
+  `INCIDENT_IDS` index plus one, and any incident is refused.
+- `pass_repeats` left out the resource gauges, the backend kinds' service times, and the
+  service mask. On hello-world, Apache's in-flight work moves its memory but not its
+  capacity, so Rust stopped a pass early and carried a different in-flight figure into
+  the Bottleneck search.
+- A Worker's model is `serverModel` over its task mix, once per attempt. Its attempts come
+  from its Queue's dead-letter setting and the task failure share the last pass fed back,
+  which the solve now carries. The task mix falls back to the Era's mix, which the kernel
+  now reads from the probe block, where it had weighted kinds by their offload share.
+  `mix_feed` reads the same mix instead of 0.
+- `repeated` added `sent - rate * weight` in one step; TypeScript adds `sent` and then
+  subtracts, which rounds differently. metastable showed it once its incident was out of
+  the way.

@@ -7,7 +7,8 @@
 
 use crate::catalog::*;
 use crate::extra::*;
-use crate::model::{cpu_base, database_model, flat_component, server_model, GameCtx, Incident, Model, Node, Rates, ServerCtx, ServerFlags};
+use crate::dist::task_attempts;
+use crate::model::{cpu_base, database_model, flat_component, flat_scale, server_model, GameCtx, Incident, Model, Node, Rates, ServerCtx, ServerFlags};
 use crate::routing::{Design, Splits, Weights};
 
 /// What one pass produced. The fields after `connections` are what the Ledger
@@ -88,7 +89,7 @@ static NO_CODE: Code = Code { calls: [[0.0; NB]; NR], cpu: [0.0; NR] };
 ///
 /// Both read only the Game, the Node, and its `ServerFlags`, so they hold for
 /// every pass, every tree, and every Bottleneck candidate. A row exists only for
-/// an App Server or a Function; every other slot reads zeros.
+/// an App Server, a Worker, or a Function; every other slot reads zeros.
 #[derive(Default)]
 pub struct CodeTable {
     /// Each slot's row in `rows`, or `u32::MAX` when it runs no code.
@@ -100,13 +101,20 @@ impl CodeTable {
     pub fn new(game: &GameCtx, nodes: &[Node], flags: &[ServerFlags]) -> CodeTable {
         let mut table = CodeTable { row_of: vec![u32::MAX; nodes.len()], rows: Vec::new() };
         for ((slot, node), flags) in nodes.iter().enumerate().zip(flags) {
-            if node.type_code != component::SERVER && node.type_code != component::FN {
+            if !matches!(node.type_code, component::SERVER | component::FN | component::WORKER) {
                 continue;
             }
             let mut code = NO_CODE;
             for kind in 0..NR {
-                code.calls[kind] = calls_of(game, node, kind, flags.delegated, flags.offloaded);
-                if node.type_code == component::SERVER {
+                // A Worker runs only the async part of each kind.
+                code.calls[kind] = if node.type_code == component::WORKER {
+                    let mut calls = [0.0; NB];
+                    calls.copy_from_slice(&async_calls_of(game, kind)[NR..]);
+                    calls
+                } else {
+                    calls_of(game, node, kind, flags.delegated, flags.offloaded)
+                };
+                if node.type_code != component::FN {
                     code.cpu[kind] = cpu_base(game, node, kind, &code.calls[kind], flags);
                 }
             }
@@ -172,8 +180,8 @@ pub fn async_calls_of(game: &GameCtx, origin: usize) -> &'static Rates {
 /// `mixOf(game).feed`, which only the fan-out branch reads. A board that ships
 /// no Feature moving it reads the Era's own share.
 #[inline]
-fn mix_feed(_game: &GameCtx) -> f64 {
-    0.0
+fn mix_feed(game: &GameCtx) -> f64 {
+    game.mix[kind::FEED]
 }
 
 /// The kinds a Component serves by passing the request straight on.
@@ -214,6 +222,10 @@ pub struct Run<'a> {
     pub connections: &'a [f64],
     /// The failure share on each retrying Link, by kind; NaN where none was seen.
     pub failures: &'a [[f64; NK]],
+    /// The share of a Worker's attempts that failed on the last pass; NaN where none was seen.
+    pub task_failure: &'a [f64],
+    /// Tasks per second each Worker could take on the last pass; infinite where unknown.
+    pub task_capacity: &'a [f64],
     /// The Node the Bottleneck search boosts, if any.
     pub boost: Option<usize>,
 }
@@ -228,6 +240,36 @@ impl Run<'_> {
     #[inline]
     fn boosted(&self, index: usize) -> f64 {
         if self.boost == Some(index) { 2.0 } else { 1.0 }
+    }
+
+    /// `solver.attempts`: the attempts each task takes on a Worker, from the
+    /// failure share its last pass saw and its Queue's limit.
+    fn attempts(&self, node: &Node, slot: usize) -> f64 {
+        if node.queue_attempts == 0.0 {
+            return 1.0;
+        }
+        let failure = self.task_failure.get(slot).copied().filter(|share| !share.is_nan()).unwrap_or(0.0);
+        task_attempts(failure.min(0.99), node.queue_attempts)
+    }
+
+    /// `solver.drainable(node, 'task')`: tasks per second a Queue's live Workers can take.
+    fn drainable(&self, slot: usize) -> f64 {
+        let design = self.board.design;
+        let mut total = 0.0;
+        for &edge in design.out_edges_of(slot) {
+            let child = design.edges[edge as usize].to as usize;
+            let Some(node) = self.board.nodes.get(child) else { continue };
+            if is_down(node) || !crate::routing::accepts(node.type_code, NR + backend::TASK) {
+                continue;
+            }
+            total += match node.type_code {
+                component::WORKER => self.task_capacity.get(child).copied().unwrap_or(f64::INFINITY),
+                component::WAREHOUSE => f64::INFINITY,
+                component::QUEUE | component::LOG => FLAT_CAPACITY[node.type_code] * flat_scale(node.size),
+                _ => 0.0,
+            };
+        }
+        total
     }
 }
 
@@ -282,6 +324,16 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
         let model = if type_code == component::SERVER {
             let latency = run.call_latency.get(slot).unwrap_or(&[0.0; NK]);
             server_model(game, node, &rates, code.node(slot), latency, &ctx)
+        } else if type_code == component::WORKER {
+            // Each task costs the async part of the kind it came from, once per attempt.
+            let tasks = rates[NR + backend::TASK] * run.attempts(node, slot);
+            let mix = task_mix_of(game, &out.tasks, slot);
+            let mut work = [0.0f64; NK];
+            for kind in 0..NR {
+                work[kind] = tasks * mix[kind];
+            }
+            let latency = run.call_latency.get(slot).unwrap_or(&[0.0; NK]);
+            server_model(game, node, &work, code.node(slot), latency, &ctx)
         } else if type_code == component::DATABASE || type_code == component::REPLICA {
             database_model(game, node, &rates, boost, Run::at(run.connections, slot))
         } else {
@@ -332,28 +384,26 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
                 }
             }
         } else if type_code == component::WORKER {
-            // A Worker makes the calls of the kinds its tasks came from.
-            let mix = task_mix_of(game, &out.tasks, slot);
-            let mut calls = [0.0f64; NK];
-            for (origin, &share) in mix[..NR].iter().enumerate() {
-                if share <= 0.0 {
-                    continue;
-                }
-                let each = async_calls_of(game, origin);
-                for backend in 0..NB {
-                    calls[NR + backend] += share * each[NR + backend];
-                }
-            }
-            let processed = kept[NR + backend::TASK];
-            if processed > 0.0 {
-                for backend in 0..NB {
-                    let made = calls[NR + backend];
-                    if made > 0.0 {
-                        out.route(run, splits, slot, NR + backend, processed * made, composition);
+            // A Worker makes the async part's calls of the kinds its tasks came
+            // from, once per attempt: an export's 50 reads.
+            let tasks = kept[NR + backend::TASK] * run.attempts(node, slot);
+            if tasks > 0.0 {
+                let mix = task_mix_of(game, &out.tasks, slot);
+                for (origin, &share) in mix[..NR].iter().enumerate() {
+                    let each = async_calls_of(game, origin);
+                    for backend in 0..NB {
+                        out.route(run, splits, slot, NR + backend, tasks * share * each[NR + backend], composition);
                     }
                 }
             }
-        } else if type_code == component::QUEUE || type_code == component::LOG {
+        } else if type_code == component::QUEUE {
+            // It offers its Workers what arrived, plus a share of its backlog as far as they have room.
+            if share > 0.0 {
+                let arrived = kept[NR + backend::TASK];
+                let room = (run.drainable(slot) - arrived).max(0.0);
+                out.route(run, splits, slot, NR + backend::TASK, arrived + (node.depth / DRAIN_SECONDS).min(room), composition);
+            }
+        } else if type_code == component::LOG {
             // A Queue or Log passes every task on, and keeps the mix of its origins.
             for (kind, &processed) in kept.iter().enumerate() {
                 if processed > 0.0 {
@@ -473,19 +523,19 @@ pub fn shares_of(rates: &Rates) -> Option<Rates> {
 pub fn task_mix_of(game: &GameCtx, tasks: &[Rates], slot: usize) -> Rates {
     let own = tasks.get(slot).copied().unwrap_or([0.0; NK]);
     let total: f64 = own.iter().sum();
+    let mut shares = [0.0f64; NK];
     if total > 0.0 {
-        let mut shares = [0.0f64; NK];
         for kind in 0..NR {
             shares[kind] = own[kind] / total;
         }
         return shares;
     }
-    let mut shares = [0.0f64; NK];
+    // `taskMixOf`: the Era's mix over the kinds that can go async.
     let mut sum = 0.0;
     for kind in 0..NR {
-        if PROFILE_OFFLOAD[kind] > 0.0 {
-            shares[kind] = PROFILE_OFFLOAD[kind];
-            sum += shares[kind];
+        if PROFILE_OFFLOAD[kind] > 0.0 && game.mix[kind] > 0.0 {
+            shares[kind] = game.mix[kind];
+            sum += game.mix[kind];
         }
     }
     if sum <= 0.0 {
@@ -495,7 +545,6 @@ pub fn task_mix_of(game: &GameCtx, tasks: &[Rates], slot: usize) -> Rates {
     for share in &mut shares[..NR] {
         *share /= sum;
     }
-    let _ = game;
     shares
 }
 
@@ -559,7 +608,8 @@ impl Pass {
             let sent = rate * weight * amplified;
             if amplified > 1.0 {
                 if let Some(entry) = self.repeated.get_mut(policy.to as usize) {
-                    *entry += sent - rate * weight;
+                    // Left to right, as `repeated + sent - rate * weight` rounds.
+                    *entry = *entry + sent - rate * weight;
                 }
             }
             if let Some(into) = self.arriving.get_mut(policy.to as usize) {

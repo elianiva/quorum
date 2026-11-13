@@ -117,7 +117,7 @@ pub fn solve_with(
     state.inflight.resize(count, 0.0);
     state.weights.resize(count, 1.0);
     state.failures.resize(board.design.edges.len(), [f64::NAN; NK]);
-    state.task_failure.resize(count, 0.0);
+    state.task_failure.resize(count, f64::NAN);
     state.task_capacity.resize(count, f64::INFINITY);
     state.connection_used.resize(count, 0.0);
     state.nominal.resize(count, 1.0);
@@ -163,6 +163,8 @@ pub fn solve_with(
                 inflight: &state.inflight,
                 connections: &state.connection_used,
                 failures: &state.failures,
+                task_failure: &state.task_failure,
+                task_capacity: &state.task_capacity,
                 boost,
             },
             splits,
@@ -251,6 +253,7 @@ fn feed_back(board: Board, current: &Pass, state: &mut State, splits: &mut Split
     let mut next_inflight = vec![0.0; count];
     let mut next_latency = vec![[0.0f64; NK]; count];
     let mut next_failures = vec![[f64::NAN; NK]; board.design.edges.len()];
+    let mut next_task_failure = vec![f64::NAN; count];
     {
         let mut tree = tree(board, current, weights_of(state), splits, memo);
         let hop = hop_ms(board.game);
@@ -269,6 +272,17 @@ fn feed_back(board: Board, current: &Pass, state: &mut State, splits: &mut Split
                 *latency =
                     if index == 0 { fresh } else { (state.call_latency[slot][kind] + fresh) / 2.0 };
             }
+        }
+        // A Worker's failed attempts come back: what its calls and code failed, not
+        // what it dropped, since a dropped task waits in the Queue.
+        for (slot, node) in board.nodes.iter().enumerate() {
+            if node.type_code != component::WORKER || current.tasks.get(slot).is_none_or(|tasks| tasks.iter().all(|rate| *rate == 0.0)) {
+                continue;
+            }
+            let result = tree.outcome(slot, NR + backend::TASK);
+            let fresh = (1.0 - (result.success + result.fail[crate::dist::DROPPED])).max(0.0);
+            let carried = state.task_failure[slot];
+            next_task_failure[slot] = if carried.is_nan() { fresh } else { (carried + fresh) / 2.0 };
         }
         // Failure shares on retrying Links, blended like the call latencies.
         for &edge in &current.link_order {
@@ -293,7 +307,7 @@ fn feed_back(board: Board, current: &Pass, state: &mut State, splits: &mut Split
     state.call_latency = next_latency;
     state.inflight = next_inflight;
     state.failures = next_failures;
-    state.task_failure = vec![0.0; count];
+    state.task_failure = next_task_failure;
     state.task_capacity = task_capacity;
 }
 
@@ -355,12 +369,31 @@ pub fn pass_repeats(previous: &Pass, current: &Pass) -> bool {
                 if before.disk != after.disk {
                     return false;
                 }
-                for kind in 0..NR {
+                if before.service_mask != after.service_mask {
+                    return false;
+                }
+                for kind in 0..NK {
                     if !near(before.service_fixed[kind], after.service_fixed[kind])
                         || !near(before.service_variable[kind], after.service_variable[kind])
                     {
                         return false;
                     }
+                }
+                // The resource gauges: Apache's processes move its memory before its capacity.
+                let gauges = |model: &crate::model::Model| {
+                    [
+                        model.cpu_used,
+                        model.cpu_total,
+                        model.ram_used,
+                        model.ram_total,
+                        model.slots_used,
+                        model.slots_total,
+                        model.network_used,
+                        model.network_total,
+                    ]
+                };
+                if gauges(before).iter().zip(gauges(after)).any(|(was, is)| !near(*was, is)) {
+                    return false;
                 }
             }
             _ => return false,

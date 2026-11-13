@@ -7,7 +7,7 @@
  * drift from the other.
  */
 import { readFileSync } from 'node:fs'
-import { causeOf } from '../../packages/simulation/src/life.ts'
+import { causeOf, warmOf } from '../../packages/simulation/src/life.ts'
 
 const ROOT = new URL('../../packages/simulation/src', import.meta.url).pathname
 export const S = await import(`${ROOT}/catalog.ts`)
@@ -41,6 +41,7 @@ export const BLOCK = {
   levers: 12,
   probe: 13,
   routes: 14,
+  value: 15,
   research: 16,
   features: 17,
   arriving: 20,
@@ -128,10 +129,29 @@ export const SLOT = {
   transactions: 72,
   samplingMs: 73,
   downOom: 74,
+  fixes: 75,
+  r2: 76,
+  archived: 77,
+  searchVariant: 78,
+  searchShards: 79,
+  heap: 80,
+  searchReplicas: 81,
+  refresh: 82,
+  secondProvider: 83,
+  gpu: 84,
+  gpuModel: 85,
+  precision: 86,
+  batch: 87,
+  quorumN: 88,
+  quorumR: 89,
+  quorumW: 90,
+  lost: 91,
+  spread: 92,
+  dataStaffed: 93,
 }
 export const SCALARS = Object.keys(SLOT).length
 const NODE_FIELDS = 10
-const EDGE_FIELDS = 8
+const EDGE_FIELDS = 9
 
 const MODES = ['session', 'transaction', 'statement']
 const POLICIES = ['weighted', 'round-robin', 'least-conn', 'p2c', 'hash']
@@ -212,6 +232,7 @@ export const writeDesign = (kernel, game, design, options = {}) => {
     edgeFields[b + 5] = e.policy.open ? 1 : 0
     edgeFields[b + 6] = e.policy.bulkhead ? 1 : 0
     edgeFields[b + 7] = e.policy.hedge ? 1 : 0
+    edgeFields[b + 8] = e.link.failure
   })
 
   const starts = new Int32Array(nodes + 1)
@@ -251,6 +272,8 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
   const { slotOf, nodes } = info
   const scalars = new Float64Array(nodes * SCALARS)
   const serviceIndexes = game.services.reduce((sum, service) => sum + service.indexes, 0)
+  // `team.ts` reads the fixes of the Service the Company runs: `serviceOf(game)`.
+  const serviceFixes = new Set(team.serviceOf(game).fixes)
   const venture = S.VENTURE_IDS.indexOf(game.founding?.venture ?? 'b2b-saas')
   game.nodes.forEach((n, i) => {
     const base = i * SCALARS
@@ -261,6 +284,11 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
     put(SLOT.seed, game.seed)
     put(SLOT.time, game.time)
     put(SLOT.sandbox, game.sandbox ? 1 : 0)
+    put(SLOT.scenarioTasks, game.scenario?.tasks ? 1 : 0)
+    put(
+      SLOT.fixes,
+      S.FIXES.reduce((bits, fix, index) => (serviceFixes.has(fix) ? bits + 2 ** index : bits), 0),
+    )
     put(SLOT.incidentNode, -1)
     put(SLOT.size, n.size)
     put(SLOT.workers, n.workers)
@@ -274,10 +302,12 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
     put(SLOT.credits, n.credits)
     put(SLOT.prefetch, n.prefetch)
     put(SLOT.pm, Math.max(0, POOLING.indexOf(n.pm)))
-    put(SLOT.gogc, 0)
+    // `gogcOf`: the Node's GOGC row, or the default row when none matches.
+    const gogc = S.GOGC.findIndex((entry) => entry.gogc === n.gogc)
+    put(SLOT.gogc, gogc < 0 ? 1 : gogc)
     put(SLOT.collector, Math.max(0, COLLECTORS.indexOf(n.collector)))
     put(SLOT.recycle, n.recycle ? 1 : 0)
-    put(SLOT.warm, n.life._tag === 'Running' ? 1 : (n.life.warm ?? 1))
+    put(SLOT.warm, warmOf(n.life))
     put(SLOT.down, lookups.isDown(n) ? 1 : 0)
     put(SLOT.zone, S.ZONES.indexOf(n.zone))
     put(SLOT.region, S.REGIONS.indexOf(n.region))
@@ -335,6 +365,34 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
     put(SLOT.poisoned, 0)
     put(SLOT.transactions, n.transactions ? 1 : 0)
     put(SLOT.downOom, n.life._tag !== 'Running' && causeOf(n.life) === 'oom' ? 1 : 0)
+    put(SLOT.dataStaffed, team.dataStaffed(game) ? 1 : 0)
+    if (n.type === 'storage') {
+      put(SLOT.r2, n.storeVariant === 'r2' ? 1 : 0)
+      // `storageRule.outcome`: the share of the store's GB in an archive class.
+      const bands = lookups.storageBands(game, n)
+      const all = bands.reduce((sum, band) => sum + band.gb, 0)
+      const archived = bands.reduce((sum, band) => sum + (band.archived ? band.gb : 0), 0)
+      put(SLOT.archived, all > 0 ? archived / all : S.STORAGE_CLASSES[n.storageClass].archived ? 1 : 0)
+    }
+    if (n.type === 'search') {
+      put(SLOT.searchVariant, Object.keys(S.SEARCH_VARIANTS).indexOf(n.searchVariant))
+      put(SLOT.searchShards, n.searchShards)
+      put(SLOT.heap, Object.keys(S.SEARCH_HEAPS).indexOf(n.heap))
+      put(SLOT.searchReplicas, n.searchReplicas)
+      put(SLOT.refresh, n.refresh)
+    }
+    put(SLOT.secondProvider, n.provider === 'second' ? 1 : 0)
+    if (n.type === 'gpu') {
+      put(SLOT.gpu, Object.keys(S.GPU_TYPES).indexOf(n.gpu))
+      put(SLOT.gpuModel, Object.keys(S.GPU_MODELS).indexOf(n.gpuModel))
+      put(SLOT.precision, Object.keys(S.GPU_PRECISIONS).indexOf(n.precision))
+      put(SLOT.batch, n.batch)
+    }
+    put(SLOT.quorumN, n.n)
+    put(SLOT.quorumR, n.r)
+    put(SLOT.quorumW, n.w)
+    put(SLOT.lost, n.lost)
+    put(SLOT.spread, n.spread ? 1 : 0)
   })
   fill(BLOCK.scalars, Array.from(scalars))
   fillBytes(BLOCK.research, bitset(S.RESEARCH_IDS, game.researched))
@@ -367,6 +425,7 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
     )
   fill(BLOCK.routes, routeRows)
   fill(BLOCK.levers, S.REQUEST_KINDS.map((kind) => game.levers?.[kind] ?? 0))
+  fill(BLOCK.value, S.REQUEST_KINDS.map((kind) => game.scenario?.value?.[kind] ?? 1))
   const latency = options.latency ?? new Array(nodes * NK).fill(0)
   fill(BLOCK.latency, latency)
   return { routes, intake }
@@ -406,6 +465,70 @@ export const bottleneckRun = (kernel, nodes, options = {}) => {
   const status = X.bottleneck_run(options.passes ?? 0)
   if (status !== 0) throw new Error(`bottleneck_run: status ${status}`)
   return readLedger(kernel, nodes)
+}
+
+/**
+ * Every Ledger figure the kernel reports, compared with the TypeScript Ledger by
+ * `Object.is`, so a sign of zero or a NaN counts as a difference.
+ */
+export const compareLedger = (game, flow, ledger) => {
+  let checked = 0
+  let wrong = 0
+  const bad = []
+  const compare = (label, ts, rust) => {
+    checked += 1
+    if (!Object.is(ts, rust)) {
+      wrong += 1
+      if (bad.length < 40) bad.push(`${label}: ts ${ts} rust ${rust}`)
+    }
+  }
+
+  compare('revenue', flow.revenue, ledger.revenue)
+  compare('demand', flow.demand, ledger.demand)
+  compare('served', flow.served, ledger.served)
+  compare('apdex', flow.apdex, ledger.apdex)
+  compare('latency', flow.latency, ledger.latency)
+  compare('p50', flow.p50, ledger.p50)
+  compare('p95', flow.p95, ledger.p95)
+  compare('p99', flow.p99, ledger.p99)
+  compare('errorShare', flow.errorShare, ledger.errorShare)
+  compare('fines', flow.fines, ledger.fines)
+  compare('subscriptions', flow.subscriptions, ledger.subscriptions)
+  compare(
+    'errorTotal',
+    Object.values(flow.errors).reduce((sum, rate) => sum + rate, 0),
+    ledger.errorTotal,
+  )
+  for (let kind = 0; kind < NR; kind += 1) {
+    const name = S.REQUEST_KINDS[kind]
+    const ts = flow.kinds[name]
+    const rust = ledger.kinds[kind]
+    if (!ts) {
+      compare(`kind ${name} absent`, 0, rust.rate)
+      continue
+    }
+    compare(`${name}.rate`, ts.rate, rust.rate)
+    compare(`${name}.success`, ts.success, rust.success)
+    compare(`${name}.apdex`, ts.apdex, rust.apdex)
+    compare(`${name}.mean`, ts.mean, rust.mean)
+    compare(`${name}.p50`, ts.p50, rust.p50)
+    compare(`${name}.p95`, ts.p95, rust.p95)
+    compare(`${name}.p99`, ts.p99, rust.p99)
+  }
+  game.nodes.forEach((node, slot) => {
+    const ts = flow.nodes[node.id]
+    const rust = ledger.nodes[slot]
+    compare(`${node.id}.inbound`, ts.inbound, rust.inbound)
+    compare(`${node.id}.capacity`, ts.capacity, rust.capacity)
+    compare(`${node.id}.utilization`, ts.utilization, rust.utilization)
+    compare(`${node.id}.dropped`, ts.dropped, rust.dropped)
+    compare(`${node.id}.refused`, ts.refused, rust.refused)
+    compare(`${node.id}.stranded`, ts.stranded, rust.stranded)
+    compare(`${node.id}.latency`, ts.latency, rust.latency)
+    compare(`${node.id}.p99`, ts.p99, rust.p99)
+    compare(`${node.id}.repeated`, ts.repeated, rust.repeated)
+  })
+  return { checked, wrong, bad }
 }
 
 export const readLedger = (kernel, nodes) => {

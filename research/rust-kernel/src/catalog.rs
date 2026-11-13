@@ -570,6 +570,79 @@ pub const YJIT_SPEED: f64 = 1.3;
 pub static ZONES: [&str; 3] = ["a", "b", "c"];
 pub static SCALAR_COUNT: usize = 501;
 
+// ---- row tables, generated ----
+
+/// `SEARCH_VARIANTS` rows.
+pub mod search_variant {
+    pub const ELASTICSEARCH: usize = 0;
+    pub const OPENSEARCH: usize = 1;
+    pub const MEILISEARCH: usize = 2;
+}
+pub static SEARCH_VARIANTS_JVM: [bool; 3] = [true, true, false];
+pub static SEARCH_VARIANTS_CAPACITY: [f64; 3] = [1.0, 1.0, 1.5];
+pub static SEARCH_VARIANTS_FIXED_MS: [f64; 3] = [15.0, 15.0, 8.0];
+pub static SEARCH_VARIANTS_BURN: [f64; 3] = [1.0, 1.0, 0.6];
+pub static SEARCH_VARIANTS_RELEVANCE: [f64; 3] = [0.0, 0.0, 5e-7];
+pub static SEARCH_VARIANTS_CAP: [f64; 3] = [0.0, 0.0, 0.25];
+
+/// `SEARCH_HEAPS` rows.
+pub mod search_heap {
+    pub const SMALL: usize = 0;
+    pub const HALF: usize = 1;
+    pub const LARGE: usize = 2;
+}
+pub static SEARCH_HEAPS_CAPACITY: [f64; 3] = [1.0, 1.0, 0.85];
+pub static SEARCH_HEAPS_TAIL_P: [f64; 3] = [0.05, 0.0, 0.02];
+pub static SEARCH_HEAPS_TAIL_MS: [f64; 3] = [150.0, 0.0, 400.0];
+
+pub static SEARCH_REFRESH_SECONDS: [f64; 3] = [1.0, 5.0, 60.0];
+pub static SEARCH_REFRESH_CAPACITY: [f64; 3] = [1.0, 1.1, 1.3];
+pub static SEARCH_REFRESH_STALE: [f64; 3] = [0.0, 0.05, 0.25];
+
+/// `STORAGE_CLASSES` rows.
+pub mod storage_class {
+    pub const STANDARD: usize = 0;
+    pub const INFREQUENT: usize = 1;
+    pub const ARCHIVE: usize = 2;
+}
+pub static STORAGE_CLASSES_PRICE: [f64; 3] = [1.0, 0.5, 0.1];
+pub static STORAGE_CLASSES_RETRIEVAL: [f64; 3] = [0.0, 0.01, 0.0];
+pub static STORAGE_CLASSES_ARCHIVED: [bool; 3] = [false, false, true];
+
+/// `GPU_TYPES` rows.
+pub mod gpu_type {
+    pub const T4: usize = 0;
+    pub const A100: usize = 1;
+    pub const H100: usize = 2;
+}
+pub static GPU_TYPES_BURN: [f64; 3] = [0.53, 1.8, 3.3];
+pub static GPU_TYPES_TOKENS: [f64; 3] = [200.0, 900.0, 2000.0];
+pub static GPU_TYPES_GB: [f64; 3] = [16.0, 80.0, 80.0];
+
+/// `GPU_MODELS` rows.
+pub mod gpu_model {
+    pub const SMALL: usize = 0;
+    pub const MEDIUM: usize = 1;
+    pub const LARGE: usize = 2;
+}
+pub static GPU_MODELS_GB: [f64; 3] = [6.0, 14.0, 68.0];
+pub static GPU_MODELS_SPEED: [f64; 3] = [2.0, 1.0, 0.25];
+pub static GPU_MODELS_VALUE: [f64; 3] = [0.6, 1.0, 1.8];
+
+/// `GPU_PRECISIONS` rows.
+pub mod gpu_precision {
+    pub const FP16: usize = 0;
+    pub const INT8: usize = 1;
+    pub const INT4: usize = 2;
+}
+pub static GPU_PRECISIONS_SPEED: [f64; 3] = [1.0, 2.0, 3.0];
+pub static GPU_PRECISIONS_VALUE: [f64; 3] = [1.0, 0.95, 0.85];
+pub static GPU_PRECISIONS_MEMORY: [f64; 3] = [1.0, 0.5, 0.25];
+
+pub static GPU_BATCHES_BATCH: [f64; 3] = [1.0, 8.0, 32.0];
+pub static GPU_BATCHES_GAIN: [f64; 3] = [1.0, 1.6, 2.2];
+pub static GPU_BATCHES_TTFT: [f64; 3] = [0.0, 150.0, 500.0];
+
 // ---- Request kind profiles ----
 pub static PROFILE_CPU: [f64; NR] = [4.0, 1.5, 2.0, 80.0, 3.0, 120.0, 2.0, 1.0, 0.3, 5.0, 400.0, 20.0, 5.0, 6.0, 2.0, 0.5, 0.5];
 pub static PROFILE_NATIVE: [bool; NR] = [false, false, false, true, false, true, false, false, false, false, false, false, false, false, false, false, false];
@@ -679,7 +752,7 @@ pub static RUNTIME_CONNECTION_KB: [f64; 28] = [-1.0, -1.0, -1.0, 20.0, 100.0, -1
 pub static RUNTIME_STARTUP_S: [f64; 28] = [0.0, 0.0, 0.0, 0.0, 10.0, 10.0, 10.0, 1.0, 1.0, 0.0, 1.0, 5.0, 5.0, 5.0, 5.0, 5.0, 0.0, 0.0, 20.0, 20.0, 20.0, 0.0, 3.0, 0.0, 3.0, 0.0, 0.0, 1.0];
 pub static RUNTIME_WARM_FROM: [f64; 28] = [1.0, 1.0, 1.0, 1.0, 0.9, 0.9, 0.9, 0.8, 0.8, 1.0, 0.8, 0.95, 0.95, 0.95, 0.95, 0.5, 1.0, 1.0, 0.3, 0.3, 0.3, 1.0, 0.6, 1.0, 1.0, 1.0, 1.0, 1.0];
 pub static RUNTIME_WARMUP: [f64; 28] = [15.0, 15.0, 0.0, 0.0, 15.0, 15.0, 15.0, 15.0, 15.0, 0.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0, 0.0, 30.0, 30.0, 30.0, 0.0, 15.0, 0.0, 15.0, 15.0, 0.0, 0.0];
-pub static RUNTIME_OVERHEAD_FACTOR: [f64; 28] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+pub static RUNTIME_OVERHEAD_FACTOR: [f64; 28] = [1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
 pub static RUNTIME_PERSISTENT: [bool; 28] = [false, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true];
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Blocking {
@@ -1242,6 +1315,16 @@ pub mod research {
     pub const UNIT_ECONOMICS: usize = 200;
     pub const COST_ALLOCATION: usize = 201;
     pub const SAVINGS_PLANS: usize = 202;
+}
+/// Fix bit indices: the code fixes a Service can ship.
+pub mod fix {
+    pub const EAGER_LOADING: usize = 0;
+    pub const FIX_LEAK: usize = 1;
+    pub const SESSION_STATE: usize = 2;
+    pub const IDEMPOTENCY_KEYS: usize = 3;
+    pub const OFF_LOOP: usize = 4;
+    pub const GRACEFUL_SHUTDOWN: usize = 5;
+    pub const HEALTH_CHECK: usize = 6;
 }
 pub const FEATURE_COUNT: usize = 29;
 pub static FEATURE_IDS: [&str; 29] = ["landing-page", "signup-flow", "pagination", "password-login", "paid-plans", "email-digests", "search-filters", "profile-photos", "public-api", "infinite-scroll", "video", "chat", "checkout", "notifications-center", "mobile-app", "data-export", "dashboards", "ai-assistant", "recommendations", "audit-log", "activity-feed", "webhooks", "push-notifications", "localization", "offline-mode", "single-sign-on", "data-residency", "status-page", "usage-pricing"];

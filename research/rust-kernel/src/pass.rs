@@ -7,7 +7,7 @@
 
 use crate::catalog::*;
 use crate::extra::*;
-use crate::model::{cpu_base, database_model, flat_model, flat_scale, server_model, GameCtx, Incident, Model, Node, Rates, ServerCtx, ServerFlags};
+use crate::model::{cpu_base, database_model, flat_component, server_model, GameCtx, Incident, Model, Node, Rates, ServerCtx, ServerFlags};
 use crate::routing::{Design, Splits, Weights};
 
 /// What one pass produced. The fields after `connections` are what the Ledger
@@ -136,7 +136,7 @@ pub fn calls_of(game: &GameCtx, node: &Node, kind: usize, delegated: bool, offlo
     }
     let orm = PROFILE_ORM[profile]
         && FRAMEWORK_ORM[node.framework]
-        && !(game.has(research::EAGER_LOADING) && game.fixed("eager-loading"));
+        && !(game.has(research::EAGER_LOADING) && game.fixed(fix::EAGER_LOADING));
     calls.copy_from_slice(&PROFILE_CALLS[profile][NR..]);
     calls[backend::Q_READ] *= if orm { ORM_READS } else { 1.0 };
     // Fan-out on write: a feed reads one timeline, and each write fills its followers'.
@@ -212,6 +212,8 @@ pub struct Run<'a> {
     pub inflight: &'a [f64],
     /// Server connections held open on each Node on the last pass.
     pub connections: &'a [f64],
+    /// The failure share on each retrying Link, by kind; NaN where none was seen.
+    pub failures: &'a [[f64; NK]],
     /// The Node the Bottleneck search boosts, if any.
     pub boost: Option<usize>,
 }
@@ -283,8 +285,7 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
         } else if type_code == component::DATABASE || type_code == component::REPLICA {
             database_model(game, node, &rates, boost, Run::at(run.connections, slot))
         } else {
-            let (capacity, fixed, variable) = flat_params(type_code, node, game);
-            flat_model(capacity, &rates, fixed, variable, boost)
+            flat_component(game, node, &rates, boost)
         };
         out.models[slot] = model;
 
@@ -318,7 +319,7 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
                     out.route(run, splits, slot, kind, processed, composition);
                 }
             }
-        } else if type_code == component::SERVER || type_code == component::FN {
+        } else if (type_code == component::SERVER || type_code == component::FN) && !node.local_db {
             for (kind, calls) in code.node(slot).calls.iter().enumerate() {
                 let processed = kept[kind];
                 if processed <= 0.0 {
@@ -523,27 +524,6 @@ fn connections_of(run: &Run, node: &Node, slot: usize, model: Option<&Model>, in
     0.0
 }
 
-/// The capacity and service a flat Component answers with.
-#[inline]
-fn flat_params(type_code: usize, node: &Node, game: &GameCtx) -> (f64, f64, f64) {
-    let capacity = FLAT_CAPACITY[type_code] * flat_scale(node.size);
-    if type_code == component::USERS {
-        (f64::INFINITY, 30.0, 0.0)
-    } else if type_code == component::LB {
-        (
-            capacity
-                * if node.variant == 1 { L4_CAPACITY } else { 1.0 }
-                * if node.policy == 3 && game.has(research::LB_ALGORITHMS) { P2C_CAPACITY } else { 1.0 },
-            if node.variant == 1 { L4_MS } else { 1.0 },
-            0.1,
-        )
-    } else if type_code == component::POOLER {
-        (capacity, 0.3, 0.0)
-    } else {
-        (capacity, 1.0, 0.1)
-    }
-}
-
 impl Pass {
     /// `route`: split `rate` of `kind` over the Links out of `node` and add it on.
     fn route(
@@ -574,7 +554,8 @@ impl Pass {
                 None => continue,
             };
             // Retries resend what failed, and a hedged Link sends its second copy.
-            let amplified = crate::routing::amplification(&policy, 0.0) * if policy.hedge { 1.0 + HEDGE_LOAD } else { 1.0 };
+            let failure = run.failures.get(edge).map(|shares| shares[kind]).filter(|share| !share.is_nan()).unwrap_or(0.0);
+            let amplified = crate::routing::amplification(&policy, failure) * if policy.hedge { 1.0 + HEDGE_LOAD } else { 1.0 };
             let sent = rate * weight * amplified;
             if amplified > 1.0 {
                 if let Some(entry) = self.repeated.get_mut(policy.to as usize) {

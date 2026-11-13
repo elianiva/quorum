@@ -148,8 +148,34 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
     {
         return Err(abi::SHORT_BLOCK);
     }
-    let nodes: Vec<Node> = (0..count).map(|slot| abi::node_of(inputs.row(slot))).collect();
-    let game = abi::game_with(inputs.row(0), abi::research_of(&inputs.research), abi::features_of(&inputs.features));
+    let mut nodes: Vec<Node> = (0..count).map(|slot| abi::node_of(inputs.row(slot))).collect();
+    // `runsLocalDb`: Postgres still runs on an App Server until it links to a database.
+    for (slot, node) in nodes.iter_mut().enumerate() {
+        node.local_db &= !design.out_edges_of(slot).iter().any(|&edge| {
+            design.edges.get(edge as usize).is_some_and(|edge| {
+                let child = design.nodes[edge.to as usize].type_code as usize;
+                crate::routing::accepts(child, kind::Q_READ) || crate::routing::accepts(child, kind::Q_WRITE)
+            })
+        });
+    }
+    let mut game = abi::game_with(inputs.row(0), abi::research_of(&inputs.research), abi::features_of(&inputs.features));
+    for (cell, value) in game.scenario_value.iter_mut().zip(&inputs.value) {
+        *cell = *value;
+    }
+    game.cdn_on_board = nodes.iter().any(|node| node.type_code == component::CDN);
+    // `spreadCount`: North America and every region with users, up to the cap.
+    let regions = nodes
+        .iter()
+        .filter(|node| node.type_code == component::USERS)
+        .fold(1u32, |seen, node| seen | 1 << node.region.min(31));
+    game.spread_regions = (regions.count_ones() as f64).min(SPREAD_REGIONS);
+    // `spreadRegions`: the open regions nearest a spread store's own, up to the cap.
+    for node in nodes.iter_mut().filter(|node| node.type_code == component::WIDE && node.spread) {
+        let home = node.region.min(REGIONS.len() - 1);
+        let mut open: Vec<usize> = (0..REGIONS.len()).filter(|region| regions >> region & 1 == 1).collect();
+        open.sort_by(|a, b| REGION_RTT[home][*a].total_cmp(&REGION_RTT[home][*b]));
+        node.local_regions = open.iter().take(SPREAD_REGIONS as usize).fold(0, |mask, region| mask | 1 << region);
+    }
     let status = surface(&nodes, &game, inputs);
     if status != abi::OK {
         return Err(status);
@@ -229,6 +255,7 @@ fn host_pass(board: Board, inputs: &Inputs, sick: &[bool], splits: &mut Splits) 
         call_latency: &latency,
         inflight: &inflight,
         connections: &connections,
+        failures: &[],
         boost: None,
     };
     splits.reset(board.design);

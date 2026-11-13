@@ -43,6 +43,9 @@ pub struct RouteEdge {
     pub open: bool,
     pub bulkhead: bool,
     pub hedge: bool,
+    /// `link.failure`: the failure share this Link saw last Step, which a
+    /// retrying Link starts a fresh solve from.
+    pub failure: f64,
 }
 
 /// The routing structure, built once per Design.
@@ -664,6 +667,7 @@ pub fn compile(inputs: &crate::abi::Inputs) -> Result<Design, i32> {
             open: field(5) != 0.0,
             bulkhead: field(6) != 0.0,
             hedge: field(7) != 0.0,
+            failure: field(8),
         });
     }
     if inputs.out_starts.len() < count + 1 {
@@ -776,7 +780,7 @@ mod tests {
         // users(0) -> lb(1)
         let design = Design::new(
             vec![node(component::USERS), node(component::LB)],
-            vec![RouteEdge { from: 0, to: 1, kinds: u64::MAX, retry: 0, timeout: 30_000.0, open: false, bulkhead: false, hedge: false }],
+            vec![RouteEdge { from: 0, to: 1, kinds: u64::MAX, retry: 0, timeout: 30_000.0, open: false, bulkhead: false, hedge: false, failure: 0.0 }],
             vec![0],
             vec![0, 1, 1],
             false,

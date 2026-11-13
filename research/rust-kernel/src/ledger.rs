@@ -204,7 +204,7 @@ pub fn completions_of(pass: &Pass, nodes: &[crate::model::Node], tree: &mut Tree
         if tasks.iter().all(|rate| *rate <= 0.0) || node.down {
             continue;
         }
-        let worker = tree.downstream(slot, NR + 13, 0.0);
+        let worker = tree.downstream(slot, NR + backend::TASK, 0.0);
         // A task a busy Worker dropped waits in the Queue: the wait counts it.
         let failure = (1.0 - worker.success - worker.fail[DROPPED]).clamp(0.0, 1.0);
         let allowed = attempts_allowed(node.dlq, node.attempts);
@@ -280,11 +280,11 @@ pub fn user_hop_ms(game: &GameCtx, ms: f64, kind: usize) -> f64 {
 ///
 /// The ported surface ships no Feature and moves no Product lever, so this is
 /// the Venture's own multiplier; `None` means the Game is outside that surface.
-pub fn value_factor(game: &GameCtx, _kind: usize) -> Option<f64> {
+pub fn value_factor(game: &GameCtx, kind: usize) -> Option<f64> {
     if game.features.iter().any(|bits| *bits != 0) {
         return None;
     }
-    Some(VENTURE_VALUE[game.venture.min(VENTURE_VALUE.len() - 1)])
+    Some(VENTURE_VALUE[game.venture.min(VENTURE_VALUE.len() - 1)] * game.scenario_value[kind])
 }
 
 /// `earnsInTime`: a request slower than the Venture's deadline earns nothing.

@@ -7,7 +7,7 @@
  * the machine is shared, so treat the ratios as the figure and the absolutes as
  * context.
  */
-import { NR, load, writeDesign, writeGame, solveRun, bottleneckRun, stressBoard, graph } from './harness.ts'
+import { load, writeDesign, writeGame, solveRun, bottleneckRun, stressBoard, graph, compareLedger } from './harness.ts'
 
 const ROOT = new URL('../../packages/simulation/src', import.meta.url).pathname
 const { solveFlow, solve, bottleneckOf } = await import(`${ROOT}/solve.ts`)
@@ -30,66 +30,21 @@ const ledger = solveRun(kernel, N)
 const searched = bottleneckRun(kernel, N)
 
 // ---- the figures, side by side ----
-let checked = 0
-let wrong = 0
-const bad = []
-const compare = (label, ts, rust) => {
+const { checked: ledgerChecked, wrong: ledgerWrong, bad } = compareLedger(game, flow, ledger)
+let checked = ledgerChecked
+let wrong = ledgerWrong
+const tsBottleneck = marked.bottleneck
+const rustBottleneck = searched.bottleneck >= 0 ? game.nodes[searched.bottleneck].id : null
+for (const [label, ts, rust] of [
+  ['bottleneck', tsBottleneck, rustBottleneck],
+  ['bottleneck revenue', marked.revenue, searched.revenue],
+]) {
   checked += 1
   if (!Object.is(ts, rust)) {
     wrong += 1
-    if (bad.length < 12) bad.push(`${label}: ts ${ts} rust ${rust}`)
+    bad.push(`${label}: ts ${ts} rust ${rust}`)
   }
 }
-
-compare('revenue', flow.revenue, ledger.revenue)
-compare('demand', flow.demand, ledger.demand)
-compare('served', flow.served, ledger.served)
-compare('apdex', flow.apdex, ledger.apdex)
-compare('latency', flow.latency, ledger.latency)
-compare('p50', flow.p50, ledger.p50)
-compare('p95', flow.p95, ledger.p95)
-compare('p99', flow.p99, ledger.p99)
-compare('errorShare', flow.errorShare, ledger.errorShare)
-compare('fines', flow.fines, ledger.fines)
-compare('subscriptions', flow.subscriptions, ledger.subscriptions)
-compare(
-  'errorTotal',
-  Object.values(flow.errors).reduce((sum, rate) => sum + rate, 0),
-  ledger.errorTotal,
-)
-for (let kind = 0; kind < NR; kind += 1) {
-  const name = Object.keys(flow.kinds)[kind]
-  const ts = flow.kinds[name]
-  const rust = ledger.kinds[kind]
-  if (!ts) {
-    compare(`kind ${name} absent`, 0, rust.rate)
-    continue
-  }
-  compare(`${name}.rate`, ts.rate, rust.rate)
-  compare(`${name}.success`, ts.success, rust.success)
-  compare(`${name}.apdex`, ts.apdex, rust.apdex)
-  compare(`${name}.mean`, ts.mean, rust.mean)
-  compare(`${name}.p50`, ts.p50, rust.p50)
-  compare(`${name}.p95`, ts.p95, rust.p95)
-  compare(`${name}.p99`, ts.p99, rust.p99)
-}
-game.nodes.forEach((node, slot) => {
-  const ts = flow.nodes[node.id]
-  const rust = ledger.nodes[slot]
-  compare(`${node.id}.inbound`, ts.inbound, rust.inbound)
-  compare(`${node.id}.capacity`, ts.capacity, rust.capacity)
-  compare(`${node.id}.utilization`, ts.utilization, rust.utilization)
-  compare(`${node.id}.dropped`, ts.dropped, rust.dropped)
-  compare(`${node.id}.refused`, ts.refused, rust.refused)
-  compare(`${node.id}.stranded`, ts.stranded, rust.stranded)
-  compare(`${node.id}.latency`, ts.latency, rust.latency)
-  compare(`${node.id}.p99`, ts.p99, rust.p99)
-  compare(`${node.id}.repeated`, ts.repeated, rust.repeated)
-})
-const tsBottleneck = marked.bottleneck
-const rustBottleneck = searched.bottleneck >= 0 ? game.nodes[searched.bottleneck].id : null
-compare('bottleneck', tsBottleneck, rustBottleneck)
-compare('bottleneck revenue', marked.revenue, searched.revenue)
 
 console.log(`solve figures: ${checked - wrong}/${checked} identical`)
 for (const line of bad) console.log('   ', line)

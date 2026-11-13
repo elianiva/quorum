@@ -40,6 +40,16 @@ pub struct GameCtx {
     pub incident_started: f64,
     pub sandbox: bool,
     pub scenario_tasks: bool,
+    /// The fixes the Service has shipped, as a bitset over `fix::`.
+    pub fixes: u64,
+    /// A Data team with engineers on it: `dataStaffed`.
+    pub data_staffed: bool,
+    /// A CDN is on the board, so R2 has no first-byte penalty.
+    pub cdn_on_board: bool,
+    /// `spreadCount`: the regions a spread store replicates to.
+    pub spread_regions: f64,
+    /// `game.scenario.value`: what a Challenge makes each kind worth.
+    pub scenario_value: [f64; NR],
     pub seed: f64,
     pub time: f64,
     /// Services the Company runs: their count, and the sum of their indexes.
@@ -74,9 +84,10 @@ impl GameCtx {
         })
     }
 
-    /// `fixed`: a Sandbox task, or a Service that ships the fix.
-    pub fn fixed(&self, _fix: &str) -> bool {
-        self.sandbox && !self.scenario_tasks
+    /// `fixed`: a Sandbox without tasks has every fix; otherwise the Service must ship it.
+    #[inline]
+    pub fn fixed(&self, fix: usize) -> bool {
+        (self.sandbox && !self.scenario_tasks) || (self.fixes >> fix) & 1 == 1
     }
 }
 
@@ -154,6 +165,34 @@ pub struct Node {
     pub sampling_ms: f64,
     /// The users whose rows this Node's Data Group holds.
     pub users_in_group: f64,
+    /// An Object Storage Node that is R2 rather than S3.
+    pub r2: bool,
+    /// Share of an Object Storage Node's objects in an archive class, which the host
+    /// works out from `storageBands`: what the store holds, and how old it is.
+    pub archived: f64,
+    /// A Search Engine's variant, shards, heap row, replicas, and refresh in seconds.
+    pub search_variant: usize,
+    pub search_shards: f64,
+    pub heap: usize,
+    pub search_replicas: f64,
+    pub refresh: f64,
+    /// A Payment Provider switched to the second provider.
+    pub second_provider: bool,
+    /// A GPU Node's GPU type, model, precision row, and batch size.
+    pub gpu: usize,
+    pub gpu_model: usize,
+    pub precision: usize,
+    pub batch: f64,
+    /// A Wide-column Store's replicas, read and write quorums, replicas lost, and
+    /// whether it spreads across regions.
+    pub quorum_n: f64,
+    pub quorum_r: f64,
+    pub quorum_w: f64,
+    pub lost: f64,
+    pub spread: bool,
+    /// `spreadRegions`: the regions a spread Wide-column Store answers from a
+    /// local quorum, as a bitset over `REGIONS`.
+    pub local_regions: u32,
 }
 
 /// What `serverModel` returns.
@@ -480,23 +519,23 @@ fn speed_of(game: &GameCtx, node: &Node) -> f64 {
     speed
 }
 
-/// `overheadOf`: framework CPU overhead per request.
+/// `overheadOf`: framework CPU overhead per request. An app that boots once
+/// (an overhead factor of exactly 0) keeps only what its framework still spends.
 fn overhead_of(node: &Node, kind: usize) -> f64 {
     let runtime = node.runtime;
     let framework = node.framework;
-    let model = RUNTIME_MODEL[runtime];
-    if FRAMEWORK_ASGI[framework] && model != Concurrency::Loop {
+    // FastAPI's overhead is ASGI's: on a process-per-request server it does not apply.
+    if FRAMEWORK_ASGI[framework] && RUNTIME_MODEL[runtime] != Concurrency::Loop {
         return FRAMEWORK_CPU[framework][kind];
     }
-    let booted = if RUNTIME_OVERHEAD_FACTOR[runtime] == 0.0 {
-        FRAMEWORK_WORKER_OVERHEAD[framework]
+    let factor = RUNTIME_OVERHEAD_FACTOR[runtime];
+    let booted = if factor == 0.0 {
+        let kept = FRAMEWORK_WORKER_OVERHEAD[framework];
+        if kept >= 0.0 { kept } else { 1.0 }
     } else {
-        -1.0
+        1.0 + (FRAMEWORK_OVERHEAD[framework] - 1.0) * factor
     };
-    let booted_value = if booted >= 0.0 { booted } else { 1.0 };
-    booted_value
-        * (1.0 + (FRAMEWORK_OVERHEAD[framework] - 1.0) * RUNTIME_OVERHEAD_FACTOR[runtime])
-        * FRAMEWORK_CPU[framework][kind]
+    booted * FRAMEWORK_CPU[framework][kind]
 }
 
 /// `kindSpeedOf`: the JIT and NIFs change what a kind costs the CPU.
@@ -796,7 +835,7 @@ pub fn server_model(
             let is_login = kind == kind::LOGIN;
             let off_loop = (is_login && (pooled[kind] || ctx.flags.delegated))
                 || (game.has(research::WORKER_THREADS)
-                    && game.fixed("off-loop")
+                    && game.fixed(fix::OFF_LOOP)
                     && (RUNTIME_LANGUAGE[runtime] == language::NODE
                         || (RUNTIME_LANGUAGE[runtime] == language::PYTHON && model == Concurrency::Loop))
                     && CPU_HEAVY_MASK[kind] == 1);
@@ -943,6 +982,129 @@ pub fn flat_model(capacity: f64, arriving: &Rates, fixed_ms: f64, variable_ms: f
     }
 }
 
+/// The `model` half of every Component rule except an App Server's and a
+/// database's: a capacity, and a fixed and a variable service time. The pass and
+/// the probe both read it, so a Component's capacity has one definition.
+pub fn flat_component(game: &GameCtx, node: &Node, rates: &Rates, boost: f64) -> Model {
+    let scale = flat_scale(node.size);
+    let flat = |capacity: f64, fixed: f64, variable: f64| flat_model(capacity, rates, fixed, variable, boost);
+    // `unlimited`: no capacity to run out of, so the boost does not apply.
+    let unlimited = |fixed: f64, variable: f64| flat_model(f64::INFINITY, rates, fixed, variable, 1.0);
+    match node.type_code {
+        component::USERS => unlimited(30.0, 0.0),
+        component::DNS => unlimited(0.0, 0.0),
+        component::AUTH => unlimited(120.0, 15.0),
+        component::WAREHOUSE => unlimited(1_500.0, 200.0),
+        component::LB => flat(
+            FLAT_CAPACITY[component::LB]
+                * scale
+                * if node.variant == 1 { L4_CAPACITY } else { 1.0 }
+                * if node.policy == 3 && game.has(research::LB_ALGORITHMS) { P2C_CAPACITY } else { 1.0 },
+            if node.variant == 1 { L4_MS } else { 1.0 },
+            0.1,
+        ),
+        component::POOLER => flat(FLAT_CAPACITY[component::POOLER] * scale, 0.3, 0.0),
+        // A Data team owns the pipelines, and a pipeline has half the lag with one.
+        component::CDC => flat(CDC_RATE * scale, CDC_MS * if game.data_staffed { DATA_TEAM_LAG } else { 1.0 }, 0.05),
+        component::MSGP => flat(MSGP_RATE * scale, 100.0, 10.0),
+        component::PSP => flat(PSP_CAPACITY * scale, 400.0, 30.0),
+        component::LLM => flat(LLM_RATE * scale, LLM_FIRST_TOKEN_MS, 0.0),
+        // R2 answers later than S3 unless a CDN on the board takes the first byte.
+        component::STORAGE => {
+            unlimited(40.0 + if node.r2 && !game.cdn_on_board { R2_FIRST_BYTE_MS } else { 0.0 }, 5.0)
+        }
+        component::GPU => {
+            let batch = GPU_BATCHES_BATCH.iter().position(|size| *size == node.batch).unwrap_or(0);
+            let capacity = (GPU_TYPES_TOKENS[node.gpu] * scale) / TOKENS_PER_PROMPT
+                * GPU_MODELS_SPEED[node.gpu_model]
+                * GPU_PRECISIONS_SPEED[node.precision]
+                * GPU_BATCHES_GAIN[batch]
+                * node.warm.max(0.1);
+            // Continuous batching serves the batch as it arrives, so no wait for a first token.
+            let ttft = if game.has(research::CONTINUOUS_BATCHING) { 0.0 } else { GPU_BATCHES_TTFT[batch] };
+            flat(capacity, GPU_FIRST_TOKEN_MS + ttft, 100.0)
+        }
+        component::SEARCH => search_model(game, node, rates, boost),
+        component::WIDE => wide_model(node, rates, boost),
+        // Control-plane Components take no traffic.
+        _ => flat_model(f64::INFINITY, &[0.0; NK], 0.0, 0.0, 1.0),
+    }
+}
+
+/// `refreshOf`: a Search Engine's refresh row, or the first when none matches.
+#[inline]
+pub fn refresh_row(node: &Node) -> usize {
+    SEARCH_REFRESH_SECONDS.iter().position(|seconds| *seconds == node.refresh).unwrap_or(0)
+}
+
+/// `searchRule.model`: shards fan a query out, replicas add capacity, and the heap
+/// trades collector pauses against the file system cache.
+fn search_model(game: &GameCtx, node: &Node, rates: &Rates, boost: f64) -> Model {
+    let variant = node.search_variant;
+    let jvm = SEARCH_VARIANTS_JVM[variant];
+    let shards = if jvm { node.search_shards } else { 1.0 };
+    let heap = if jvm { node.heap } else { search_heap::HALF };
+    let capacity = (SEARCH_QPS
+        * flat_scale(node.size)
+        * SEARCH_REFRESH_CAPACITY[refresh_row(node)]
+        * SEARCH_VARIANTS_CAPACITY[variant]
+        * (shards / (1.0 + SEARCH_FANOUT * (shards - 1.0)))
+        * (1.0 + if jvm { node.search_replicas } else { 0.0 })
+        * SEARCH_HEAPS_CAPACITY[heap]
+        * node.warm)
+        / query_factor(game, backend::Q_SEARCH);
+    Model {
+        tail_p: SEARCH_HEAPS_TAIL_P[heap],
+        tail_ms: SEARCH_HEAPS_TAIL_MS[heap],
+        ..flat_model(capacity, rates, SEARCH_VARIANTS_FIXED_MS[variant], 2.0, boost)
+    }
+}
+
+/// A Wide-column Store's replicas, and its read and write quorums, clamped.
+#[inline]
+pub fn quorum_n(node: &Node) -> f64 {
+    node.quorum_n.clamp(1.0, 5.0)
+}
+
+#[inline]
+pub fn quorum_r(node: &Node) -> f64 {
+    node.quorum_r.min(quorum_n(node)).max(1.0)
+}
+
+#[inline]
+pub fn quorum_w(node: &Node) -> f64 {
+    node.quorum_w.min(quorum_n(node)).max(1.0)
+}
+
+/// `splitWork`: a data Node's reads, and its writes of every kind.
+#[inline]
+pub fn split_work(rates: &Rates) -> (f64, f64) {
+    (rates[kind::Q_READ], rates[kind::Q_WRITE] + rates[kind::Q_TX] + rates[kind::K_WRITE])
+}
+
+/// Mean ms one Wide-column replica takes to answer.
+const WIDE_REPLICA_MS: f64 = 2.0;
+
+/// `wideRule.model`: a read waits for R replies and a write for W, of N replicas.
+fn wide_model(node: &Node, rates: &Rates, boost: f64) -> Model {
+    let (reads, writes) = split_work(rates);
+    let ops = reads * quorum_r(node) + writes * quorum_n(node);
+    let rate = reads + writes;
+    // `hotKeyFactor` is 1 without a Hot key incident, and the port refuses incidents.
+    let capacity = (WIDE_OPS * flat_scale(node.size)) / if ops > 0.0 { ops / rate } else { 1.0 };
+    let mut model = flat_model(capacity, rates, 1.0, 0.0, boost);
+    let wait = if (model.service_mask >> kind::Q_READ) & 1 == 1 { model.service_variable[kind::Q_READ] } else { 0.0 };
+    for kind in 0..NK {
+        if (model.service_mask >> kind) & 1 == 0 {
+            continue;
+        }
+        let quorum = if kind == kind::Q_READ { quorum_r(node) } else { quorum_w(node) };
+        model.service_fixed[kind] = 1.0;
+        model.service_variable[kind] = wait + WIDE_REPLICA_MS * crate::dist::kth_fastest(quorum, quorum_n(node));
+    }
+    model
+}
+
 /// `payloadFactor`: how big a response of `kind` is relative to its profile.
 pub fn payload_factor(game: &GameCtx, kind: usize) -> f64 {
     let mut value = 1.0;
@@ -1049,10 +1211,10 @@ pub fn database_model(
     let per_request = cores.min(1.0);
     let warmth = 0.5 + 0.5 * node.warm;
     let scan = if incident == Some(Incident::SlowQuery) { group_users * ROWS_PER_USER * UNINDEXED_MS_PER_ROW } else { 0.0 };
-    let scans = arriving[NR + 6]; // q-scan
+    let scans = arriving[NR + backend::Q_SCAN];
     let retention = node.keep.min(2);
     let view = if node.materialized && game.has(research::PRECOMPUTE) { MATERIALIZED_SCAN } else { 1.0 };
-    let scan_cpu = (QUERY_CPU_BY_BACKEND[6]
+    let scan_cpu = (QUERY_CPU_BY_BACKEND[backend::Q_SCAN]
         * DB_SCAN[engine]
         * scatter
         * if incident == Some(Incident::ReportDb) { REPORT_SURGE } else { 1.0 }
@@ -1064,15 +1226,15 @@ pub fn database_model(
     let bloat = if incident == Some(Incident::TableBloat) && game.incident_node == node.id { BLOAT_CPU } else { 1.0 };
     let denormalized = game.has(research::DENORMALIZATION);
     let read_cpu = (if evicted > 0.0 {
-        ((QUERY_CPU_BY_BACKEND[0] + scan) * if disk { 1.5 } else { 1.0 + 0.5 * evicted }) / warmth
+        ((QUERY_CPU_BY_BACKEND[backend::Q_READ] + scan) * if disk { 1.5 } else { 1.0 + 0.5 * evicted }) / warmth
     } else {
-        ((QUERY_CPU_BY_BACKEND[0] + scan) * if disk { 1.5 } else { 1.0 }) / warmth
+        ((QUERY_CPU_BY_BACKEND[backend::Q_READ] + scan) * if disk { 1.5 } else { 1.0 }) / warmth
     }) * shard
         * bloat
         * if denormalized { DENORMALIZED_READ } else { 1.0 }
         * DB_READ[engine];
     let multi_leader = topology == 1 && database_count > 1.0;
-    let write_cpu = ((QUERY_CPU_BY_BACKEND[1] * query_factor(game, 1)) / warmth)
+    let write_cpu = ((QUERY_CPU_BY_BACKEND[backend::Q_WRITE] * query_factor(game, backend::Q_WRITE)) / warmth)
         * (1.0 + 0.5 * evicted)
         * shard
         * bloat
@@ -1080,20 +1242,20 @@ pub fn database_model(
         * if denormalized { DENORMALIZED_WRITE } else { 1.0 }
         * DB_WRITE[engine]
         * if multi_leader { MULTI_WRITE_CPU } else { 1.0 };
-    let search_cpu = (QUERY_CPU_BY_BACKEND[3] * query_factor(game, 3) * DB_SEARCH_COST[engine] * scatter)
+    let search_cpu = (QUERY_CPU_BY_BACKEND[backend::Q_SEARCH] * query_factor(game, backend::Q_SEARCH) * DB_SEARCH_COST[engine] * scatter)
         / warmth;
-    let put_cpu = QUERY_CPU_BY_BACKEND[5] / warmth;
-    let tx_cpu = (QUERY_CPU_BY_BACKEND[8] * DB_WRITE[engine]
+    let put_cpu = QUERY_CPU_BY_BACKEND[backend::BLOB_PUT] / warmth;
+    let tx_cpu = (QUERY_CPU_BY_BACKEND[backend::Q_TX] * DB_WRITE[engine]
         * if multi_leader { MULTI_WRITE_CPU } else { 1.0 })
         / warmth;
-    let get_cpu = QUERY_CPU_BY_BACKEND[7] / warmth;
+    let get_cpu = QUERY_CPU_BY_BACKEND[backend::BLOB_GET] / warmth;
 
-    let reads = arriving[NR];
-    let writes = arriving[NR + 1];
-    let searches = arriving[NR + 3];
-    let puts = arriving[NR + 5];
-    let txs = arriving[NR + 8];
-    let gets = arriving[NR + 7];
+    let reads = arriving[NR + backend::Q_READ];
+    let writes = arriving[NR + backend::Q_WRITE];
+    let searches = arriving[NR + backend::Q_SEARCH];
+    let puts = arriving[NR + backend::BLOB_PUT];
+    let txs = arriving[NR + backend::Q_TX];
+    let gets = arriving[NR + backend::BLOB_GET];
     let mut rate = reads + writes + searches + puts;
     let mut work = reads * read_cpu + (writes * write_cpu + puts * put_cpu) * hot + searches * search_cpu;
     if txs > 0.0 || gets > 0.0 {
@@ -1140,14 +1302,14 @@ pub fn database_model(
         service_fixed[kind] = fixed;
         service_variable[kind] = variable;
     };
-    put(0, 2.5 + far_ms + if disk { 8.0 } else if evicted > 0.0 { 8.0 * evicted } else { 0.0 },
+    put(backend::Q_READ, 2.5 + far_ms + if disk { 8.0 } else if evicted > 0.0 { 8.0 * evicted } else { 0.0 },
         read_cpu / per_request + wait + if disk { io_wait } else { 0.0 }, &mut service_mask);
-    put(1, 2.5 + sync_ms + far_ms, write_cpu / per_request + wait + io_wait, &mut service_mask);
-    put(3, 2.5 + logical.scatter_ms, search_cpu / per_request + wait, &mut service_mask);
-    put(5, 2.5, put_cpu / per_request + wait + io_wait, &mut service_mask);
-    put(8, tx_service_fixed, tx_service_variable, &mut service_mask);
-    put(7, 2.5 + 8.0, get_cpu / per_request + wait + io_wait, &mut service_mask);
-    put(6, 2.5 + 8.0 + RETENTION_SCAN_MS[retention] + logical.scatter_ms, scan_cpu / per_request + wait + io_wait, &mut service_mask);
+    put(backend::Q_WRITE, 2.5 + sync_ms + far_ms, write_cpu / per_request + wait + io_wait, &mut service_mask);
+    put(backend::Q_SEARCH, 2.5 + logical.scatter_ms, search_cpu / per_request + wait, &mut service_mask);
+    put(backend::BLOB_PUT, 2.5, put_cpu / per_request + wait + io_wait, &mut service_mask);
+    put(backend::Q_TX, tx_service_fixed, tx_service_variable, &mut service_mask);
+    put(backend::BLOB_GET, 2.5 + 8.0, get_cpu / per_request + wait + io_wait, &mut service_mask);
+    put(backend::Q_SCAN, 2.5 + 8.0 + RETENTION_SCAN_MS[retention] + logical.scatter_ms, scan_cpu / per_request + wait + io_wait, &mut service_mask);
 
     let _ = (on_disk, HOT_KEY_SHARE);
     Model {

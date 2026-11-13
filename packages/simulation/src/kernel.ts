@@ -323,8 +323,26 @@ const RETENTION = ['keep', 'archive', 'delete']
 const TOPOLOGY = ['single', 'multi', 'sharded']
 
 /** The index of `value` in `list`, or 0 when it is not there. */
-const indexIn = (list: ReadonlyArray<string>, value: string): number =>
-  Math.max(0, list.indexOf(value))
+/** Each catalog list's or record's keys, as a map from name to position, built once. */
+const positions = new WeakMap<object, ReadonlyMap<string, number>>()
+
+/** `list.indexOf(value)`, or `Object.keys(record).indexOf(value)`, without the scan. */
+const positionOf = (source: ReadonlyArray<string> | object, value: string): number => {
+  let map = positions.get(source)
+  if (!map) {
+    const names: ReadonlyArray<string> = Array.isArray(source) ? source : Object.keys(source)
+    const built = new Map<string, number>()
+    names.forEach((name, index) => {
+      if (!built.has(name)) built.set(name, index)
+    })
+    map = built
+    positions.set(source, map)
+  }
+  return map.get(value) ?? -1
+}
+
+const indexIn = (source: ReadonlyArray<string> | object, value: string): number =>
+  Math.max(0, positionOf(source, value))
 
 /** The bit for `index`, as a number: exact up to 2⁵³, past the 32 bits `<<` keeps. */
 const bit = (index: number): number => Number(1n << BigInt(index))
@@ -332,7 +350,7 @@ const bit = (index: number): number => Number(1n << BigInt(index))
 const kindMask = (kinds: ReadonlyArray<Kind>): number => {
   let mask = 0n
   for (const kind of kinds) {
-    const index = ALL.indexOf(kind)
+    const index = positionOf(ALL, kind)
     if (index >= 0) mask |= 1n << BigInt(index)
   }
   return Number(mask)
@@ -356,6 +374,12 @@ const fill = (exports: Exports, block: number, values: ArrayLike<number>): void 
   view(exports, Float64Array, block, values.length).set(values)
 }
 
+/** Sets every slot of a block to one value, in place, so nothing is allocated to copy in. */
+const fillWith = (exports: Exports, block: number, length: number, value: number): void => {
+  reserve(exports, block, length)
+  view(exports, Float64Array, block, length).fill(value)
+}
+
 const fillInt = (exports: Exports, block: number, values: ArrayLike<number>): void => {
   reserve(exports, block, values.length)
   view(exports, Int32Array, block, values.length).set(values)
@@ -372,7 +396,7 @@ const writeDesign = (exports: Exports, game: Game, design: Graph): void => {
   const nodeFields = new Float64Array(nodes * NODE_FIELDS)
   game.nodes.forEach((node, index) => {
     const base = index * NODE_FIELDS
-    nodeFields[base] = S.COMPONENT_IDS.indexOf(node.type)
+    nodeFields[base] = positionOf(S.COMPONENT_IDS, node.type)
     nodeFields[base + 1] = isDown(node) ? 1 : 0
     nodeFields[base + 2] = node.sticky ? 1 : 0
     nodeFields[base + 3] = indexIn(POLICIES, node.policy)
@@ -394,7 +418,7 @@ const writeDesign = (exports: Exports, game: Game, design: Graph): void => {
     edgeFields[base] = slotOf.get(edge.from.id) ?? -1
     edgeFields[base + 1] = edge.toAt
     edgeFields[base + 2] = edge.link.kinds ? kindMask(edge.link.kinds) : EVERY_KIND
-    edgeFields[base + 3] = RETRIES.indexOf(edge.policy.retry)
+    edgeFields[base + 3] = positionOf(RETRIES, edge.policy.retry)
     edgeFields[base + 4] = edge.policy.timeout
     edgeFields[base + 5] = edge.policy.open ? 1 : 0
     edgeFields[base + 6] = edge.policy.bulkhead ? 1 : 0
@@ -434,15 +458,15 @@ const writeDesign = (exports: Exports, game: Game, design: Graph): void => {
   fillInt(exports, BLOCK.outStarts, starts)
   fillInt(exports, BLOCK.outEdges, outEdges)
   // The kernel probes each Node's capacity itself; these are the probe's starting points.
-  fill(exports, BLOCK.weights, new Float64Array(nodes).fill(1))
-  fill(exports, BLOCK.nominal, new Float64Array(nodes).fill(1))
-  fillBytes(exports, BLOCK.sick, new Uint8Array(nodes))
+  fillWith(exports, BLOCK.weights, nodes, 1)
+  fillWith(exports, BLOCK.nominal, nodes, 1)
+  reserve(exports, BLOCK.sick, nodes)
+  view(exports, Uint8Array, BLOCK.sick, nodes).fill(0)
 }
 
 /** Writes every Game-level block: the scalar rows, research, demand, intake, routes, and factors. */
 const writeGame = (exports: Exports, game: Game, design: Graph): void => {
   const nodes = game.nodes.length
-  const scalars = new Float64Array(nodes * SCALARS)
   const serviceIndexes = game.services.reduce((sum, service) => sum + service.indexes, 0)
   const serviceFixes = new Set(serviceOf(game).fixes)
   const fixes = S.FIXES.reduce(
@@ -476,198 +500,193 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
     BLOCK.kindService,
     S.REQUEST_KINDS.map((kind) => game.services.indexOf(serviceOfKind(game, kind))),
   )
+  // The slots every Node's row repeats: the Game's, not the Node's.
+  const template = new Float64Array(SCALARS)
+  template[SLOT.users] = game.users
+  template[SLOT.seed] = game.seed
+  template[SLOT.time] = game.time
+  template[SLOT.sandbox] = game.sandbox ? 1 : 0
+  template[SLOT.scenarioTasks] = game.scenario?.tasks ? 1 : 0
+  template[SLOT.fixes] = fixes
+  template[SLOT.incidentNode] = incidentNode
+  template[SLOT.incidentStarted] = incident?.startedAt ?? 0
+  template[SLOT.incidentRegion] = incident?.region ? positionOf(S.REGIONS, incident.region) : -1
+  template[SLOT.chaosTarget] = chaos
+  template[SLOT.incident] = incident ? positionOf(S.INCIDENT_IDS, incident.kind) + 1 : 0
+  template[SLOT.serviceIndexes] = serviceIndexes
+  template[SLOT.stage] = game.stage
+  template[SLOT.venture] = venture
+  template[SLOT.fixedMix] = game.fixedMix ? 1 : 0
+  template[SLOT.scenarioDaily] = game.scenario?.daily ? 1 : 0
+  template[SLOT.deployShare] = deployShare
+  template[SLOT.deployKinds] = deployKinds
+  template[SLOT.incidentThrottled] = incident?.throttled === true ? 1 : 0
+  template[SLOT.data] = game.data
+  template[SLOT.subscriptions] = subscriptions
+  template[SLOT.costIndex] = costIndex
+  template[SLOT.egressFactor] = egressFactor
+  template[SLOT.salaries] = salaries
+  template[SLOT.shareCompute] = shares.compute
+  template[SLOT.shareData] = shares.data
+  template[SLOT.shareStorage] = shares.storage
+  template[SLOT.shareObservability] = shares.observability
+  template[SLOT.serviceCount] = game.services.length
+  template[SLOT.insightPerk] = perk
+  template[SLOT.runtimeFailure] = runtimeFailure
+  template[SLOT.dataStaffed] = staffed
+  // Rows go straight into the kernel's block. Nothing below calls the kernel, so the view holds.
+  reserve(exports, BLOCK.scalars, nodes * SCALARS)
+  const scalars = view(exports, Float64Array, BLOCK.scalars, nodes * SCALARS)
   game.nodes.forEach((node, index) => {
-    const base = index * SCALARS
-    const put = (slot: number, value: number): void => {
-      scalars[base + slot] = value
-    }
+    const row = scalars.subarray(index * SCALARS, (index + 1) * SCALARS)
+    row.set(template)
     const group = dataGroupOf(game, node)
     const data = node.type === 'database' || node.type === 'replica'
-    put(SLOT.users, game.users)
-    put(SLOT.seed, game.seed)
-    put(SLOT.time, game.time)
-    put(SLOT.sandbox, game.sandbox ? 1 : 0)
-    put(SLOT.scenarioTasks, game.scenario?.tasks ? 1 : 0)
-    put(SLOT.fixes, fixes)
-    put(SLOT.incidentNode, incidentNode)
-    put(SLOT.incidentStarted, incident?.startedAt ?? 0)
-    put(SLOT.incidentRegion, incident?.region ? S.REGIONS.indexOf(incident.region) : -1)
-    put(SLOT.chaosTarget, chaos)
-    put(SLOT.size, node.size)
-    put(SLOT.workers, node.workers)
-    put(SLOT.replicas, node.replicas)
-    put(SLOT.runtime, S.RUNTIME_IDS.indexOf(node.runtime))
-    put(SLOT.framework, S.FRAMEWORK_IDS.indexOf(node.framework))
-    put(SLOT.family, S.FAMILY_IDS.indexOf(node.family))
-    put(SLOT.compress, node.compress ? 1 : 0)
-    put(SLOT.localDb, node.localDb ? 1 : 0)
-    put(SLOT.leak, node.leak)
-    put(SLOT.credits, node.credits)
-    put(SLOT.prefetch, node.prefetch)
-    put(SLOT.pm, indexIn(POOLING, node.pm))
+    row[SLOT.size] = node.size
+    row[SLOT.workers] = node.workers
+    row[SLOT.replicas] = node.replicas
+    row[SLOT.runtime] = positionOf(S.RUNTIME_IDS, node.runtime)
+    row[SLOT.framework] = positionOf(S.FRAMEWORK_IDS, node.framework)
+    row[SLOT.family] = positionOf(S.FAMILY_IDS, node.family)
+    row[SLOT.compress] = node.compress ? 1 : 0
+    row[SLOT.localDb] = node.localDb ? 1 : 0
+    row[SLOT.leak] = node.leak
+    row[SLOT.credits] = node.credits
+    row[SLOT.prefetch] = node.prefetch
+    row[SLOT.pm] = indexIn(POOLING, node.pm)
     // `gogcOf`: the Node's GOGC row, or the default row when none matches.
     const gogc = S.GOGC.findIndex((entry) => entry.gogc === node.gogc)
-    put(SLOT.gogc, gogc < 0 ? 1 : gogc)
-    put(SLOT.collector, indexIn(COLLECTORS, node.collector))
-    put(SLOT.recycle, node.recycle ? 1 : 0)
-    put(SLOT.warm, warmOf(node.life))
-    put(SLOT.down, isDown(node) ? 1 : 0)
-    put(SLOT.zone, S.ZONES.indexOf(node.zone))
-    put(SLOT.region, S.REGIONS.indexOf(node.region))
-    put(SLOT.dbEngine, engineOf(game, node) === 'mysql' ? 1 : 0)
-    put(SLOT.sampling, samplingOf(game, design, node))
-    put(SLOT.samplingMs, samplingMsOf(design, node))
-    put(SLOT.delegated, delegates(design, node) ? 1 : 0)
-    put(SLOT.offloaded, offloads(design, node) ? 1 : 0)
-    put(SLOT.pod, inCluster(game, node) ? 1 : 0)
-    put(SLOT.mesh, meshOf(game, node) ? 1 : 0)
-    put(SLOT.typeCode, S.COMPONENT_IDS.indexOf(node.type))
-    put(SLOT.id, index)
-    put(SLOT.incident, incident ? S.INCIDENT_IDS.indexOf(incident.kind) + 1 : 0)
-    put(SLOT.shards, node.shards ?? 1)
-    put(SLOT.shardKey, indexIn(SHARD_KEYS, node.shardKey))
-    put(SLOT.iops, indexIn(IOPS, node.iops))
-    put(SLOT.keep, indexIn(RETENTION, node.keep))
-    put(
-      SLOT.topology,
-      TOPOLOGY.indexOf(node.type === 'database' ? topologyOfGroup(game, group) : 'single'),
+    row[SLOT.gogc] = gogc < 0 ? 1 : gogc
+    row[SLOT.collector] = indexIn(COLLECTORS, node.collector)
+    row[SLOT.recycle] = node.recycle ? 1 : 0
+    row[SLOT.warm] = warmOf(node.life)
+    row[SLOT.down] = isDown(node) ? 1 : 0
+    row[SLOT.zone] = positionOf(S.ZONES, node.zone)
+    row[SLOT.region] = positionOf(S.REGIONS, node.region)
+    row[SLOT.dbEngine] = engineOf(game, node) === 'mysql' ? 1 : 0
+    row[SLOT.sampling] = samplingOf(game, design, node)
+    row[SLOT.samplingMs] = samplingMsOf(design, node)
+    row[SLOT.delegated] = delegates(design, node) ? 1 : 0
+    row[SLOT.offloaded] = offloads(design, node) ? 1 : 0
+    row[SLOT.pod] = inCluster(game, node) ? 1 : 0
+    row[SLOT.mesh] = meshOf(game, node) ? 1 : 0
+    row[SLOT.typeCode] = positionOf(S.COMPONENT_IDS, node.type)
+    row[SLOT.id] = index
+    row[SLOT.shards] = node.shards ?? 1
+    row[SLOT.shardKey] = indexIn(SHARD_KEYS, node.shardKey)
+    row[SLOT.iops] = indexIn(IOPS, node.iops)
+    row[SLOT.keep] = indexIn(RETENTION, node.keep)
+    row[SLOT.topology] = positionOf(
+      TOPOLOGY,
+      node.type === 'database' ? topologyOfGroup(game, group) : 'single',
     )
-    put(SLOT.depth, node.depth ?? 0)
-    put(SLOT.usersInGroup, usersOfGroup(game, group))
-    put(SLOT.serviceIndexes, serviceIndexes)
-    put(SLOT.stage, game.stage)
-    put(SLOT.venture, venture)
-    put(SLOT.fixedMix, game.fixedMix ? 1 : 0)
-    put(SLOT.scenarioDaily, game.scenario?.daily ? 1 : 0)
-    put(SLOT.variant, node.variant === 'l4' ? 1 : 0)
-    put(SLOT.policy, indexIn(POLICIES, node.policy))
-    put(SLOT.sticky, node.sticky ? 1 : 0)
-    put(SLOT.fanout, node.fanout === 'push' ? 1 : 0)
-    put(SLOT.mode, indexIn(MODES, node.mode))
-    put(SLOT.materialized, node.materialized ? 1 : 0)
-    put(SLOT.sync, node.sync ? 1 : 0)
-    put(SLOT.ryw, node.ryw ? 1 : 0)
-    put(SLOT.certUntil, node.certUntil ?? -1)
-    put(SLOT.rateLimit, node.rateLimit ?? 0)
-    put(SLOT.burst, node.burst ?? 0)
-    put(SLOT.maxLength, node.maxLength ?? 0)
-    put(SLOT.dlq, node.dlq ? 1 : 0)
-    put(SLOT.attempts, node.attempts ?? 25)
-    put(SLOT.blast, S.BLAST_FACTOR[S.LANGUAGES[S.RUNTIMES[node.runtime].language].blast])
-    put(SLOT.buggy, buggy(game, node) ? 1 : 0)
-    put(SLOT.databasesInGroup, data ? databasesOfGroup(game, group).length : 0)
-    put(SLOT.syncStalled, syncStalled(game, group) ? 1 : 0)
-    put(SLOT.primary, node.type === 'replica' && primaryOf(game, node) !== undefined ? 1 : 0)
+    row[SLOT.depth] = node.depth ?? 0
+    row[SLOT.usersInGroup] = usersOfGroup(game, group)
+    row[SLOT.variant] = node.variant === 'l4' ? 1 : 0
+    row[SLOT.policy] = indexIn(POLICIES, node.policy)
+    row[SLOT.sticky] = node.sticky ? 1 : 0
+    row[SLOT.fanout] = node.fanout === 'push' ? 1 : 0
+    row[SLOT.mode] = indexIn(MODES, node.mode)
+    row[SLOT.materialized] = node.materialized ? 1 : 0
+    row[SLOT.sync] = node.sync ? 1 : 0
+    row[SLOT.ryw] = node.ryw ? 1 : 0
+    row[SLOT.certUntil] = node.certUntil ?? -1
+    row[SLOT.rateLimit] = node.rateLimit ?? 0
+    row[SLOT.burst] = node.burst ?? 0
+    row[SLOT.maxLength] = node.maxLength ?? 0
+    row[SLOT.dlq] = node.dlq ? 1 : 0
+    row[SLOT.attempts] = node.attempts ?? 25
+    row[SLOT.blast] = S.BLAST_FACTOR[S.LANGUAGES[S.RUNTIMES[node.runtime].language].blast]
+    row[SLOT.buggy] = buggy(game, node) ? 1 : 0
+    row[SLOT.databasesInGroup] = data ? databasesOfGroup(game, group).length : 0
+    row[SLOT.syncStalled] = syncStalled(game, group) ? 1 : 0
+    row[SLOT.primary] = node.type === 'replica' && primaryOf(game, node) !== undefined ? 1 : 0
     // `solver.poisoned`: a poison message sits in a Queue with no DLQ that feeds this Node.
-    put(
-      SLOT.poisoned,
+    row[SLOT.poisoned] =
       incident?.kind === 'poison' &&
-        game.links.some((link) => {
-          const queue = game.nodes.find((entry) => entry.id === link.from)
-          return link.to === node.id && link.from === incident.nodeId && queue && !queue.dlq
-        })
+      game.links.some((link) => {
+        const queue = game.nodes.find((entry) => entry.id === link.from)
+        return link.to === node.id && link.from === incident.nodeId && queue && !queue.dlq
+      })
         ? 1
-        : 0,
-    )
-    put(SLOT.ramped, rampedOf(game, node) ? 1 : 0)
+        : 0
+    row[SLOT.ramped] = rampedOf(game, node) ? 1 : 0
     const cluster = clusterOf(game, node)
-    put(
-      SLOT.cluster,
-      cluster === undefined ? -1 : game.nodes.findIndex((entry) => entry.id === cluster),
-    )
-    put(SLOT.deployShare, deployShare)
-    put(SLOT.deployKinds, deployKinds)
-    put(SLOT.staleUntil, node.staleUntil)
-    put(SLOT.cacheKey, indexIn(Object.keys(S.CACHE_KEYS), node.cacheKey))
-    put(SLOT.presence, node.presence ? 1 : 0)
-    put(SLOT.backoff, node.backoff ? 1 : 0)
-    put(SLOT.clustering, node.clustering ? 1 : 0)
-    put(SLOT.warming, node.life._tag === 'Warming' ? 1 : 0)
-    put(SLOT.incidentThrottled, incident?.throttled === true ? 1 : 0)
-    put(SLOT.partitions, node.partitions)
-    put(SLOT.acks, indexIn(Object.keys(S.LOG_ACKS), node.acks))
-    put(SLOT.retain, node.retain)
-    put(SLOT.keyed, node.keyed ? 1 : 0)
-    put(SLOT.authEdge, node.authEdge ? 1 : 0)
-    put(SLOT.merge, node.merge ? 1 : 0)
-    put(SLOT.shut, node.service._tag === 'Shut' ? 1 : 0)
-    put(SLOT.data, game.data)
-    put(SLOT.subscriptions, subscriptions)
-    put(SLOT.sampleRate, node.sampleRate)
-    put(SLOT.burn, burnOf(game, node))
-    put(
-      SLOT.retrieval,
-      node.type === 'storage' ? S.STORAGE_CLASSES[node.storageClass].retrieval : 0,
-    )
-    put(SLOT.storeGet, storageRequestBurnOf(node, 1, 0))
-    put(SLOT.storePut, storageRequestBurnOf(node, 0, 1))
-    put(SLOT.costIndex, costIndex)
-    put(SLOT.egressFactor, egressFactor)
-    put(SLOT.salaries, salaries)
-    put(SLOT.shareCompute, shares.compute)
-    put(SLOT.shareData, shares.data)
-    put(SLOT.shareStorage, shares.storage)
-    put(SLOT.shareObservability, shares.observability)
-    put(SLOT.serviceCount, game.services.length)
-    put(SLOT.syncWait, data ? syncWaitMs(game, node) : 0)
-    put(
-      SLOT.iopsFactor,
+    row[SLOT.cluster] = cluster === undefined ? -1 : (design.at.get(cluster) ?? -1)
+    row[SLOT.staleUntil] = node.staleUntil
+    row[SLOT.cacheKey] = indexIn(S.CACHE_KEYS, node.cacheKey)
+    row[SLOT.presence] = node.presence ? 1 : 0
+    row[SLOT.backoff] = node.backoff ? 1 : 0
+    row[SLOT.clustering] = node.clustering ? 1 : 0
+    row[SLOT.warming] = node.life._tag === 'Warming' ? 1 : 0
+    row[SLOT.partitions] = node.partitions
+    row[SLOT.acks] = indexIn(S.LOG_ACKS, node.acks)
+    row[SLOT.retain] = node.retain
+    row[SLOT.keyed] = node.keyed ? 1 : 0
+    row[SLOT.authEdge] = node.authEdge ? 1 : 0
+    row[SLOT.merge] = node.merge ? 1 : 0
+    row[SLOT.shut] = node.service._tag === 'Shut' ? 1 : 0
+    row[SLOT.sampleRate] = node.sampleRate
+    row[SLOT.burn] = burnOf(game, node)
+    row[SLOT.retrieval] =
+      node.type === 'storage' ? S.STORAGE_CLASSES[node.storageClass].retrieval : 0
+    row[SLOT.storeGet] = storageRequestBurnOf(node, 1, 0)
+    row[SLOT.storePut] = storageRequestBurnOf(node, 0, 1)
+    row[SLOT.syncWait] = data ? syncWaitMs(game, node) : 0
+    row[SLOT.iopsFactor] =
       game.reshard?.node === node.id &&
-        game.reshard.phase._tag === 'Copying' &&
-        game.time < game.reshard.phase.until
+      game.reshard.phase._tag === 'Copying' &&
+      game.time < game.reshard.phase.until
         ? S.RESHARD_IOPS
-        : 1,
-    )
-    put(SLOT.steal, stealOf(game, node))
-    put(SLOT.shed, node.shed ? 1 : 0)
-    put(SLOT.degrade, node.degrade ? 1 : 0)
-    put(SLOT.insightPerk, perk)
-    put(SLOT.indexType, indexIn(Object.keys(S.VEC_INDEXES), node.indexType))
-    put(SLOT.runtimeFailure, runtimeFailure)
-    put(SLOT.transactions, node.transactions ? 1 : 0)
-    put(SLOT.downOom, node.life._tag !== 'Running' && causeOf(node.life) === 'oom' ? 1 : 0)
-    put(SLOT.dataStaffed, staffed)
-    put(SLOT.cacheEngine, indexIn(Object.keys(S.CACHE_ENGINES), node.engine))
-    put(SLOT.ttl, node.ttl)
-    put(SLOT.swr, node.swr ? 1 : 0)
-    put(SLOT.earlyExpiry, node.earlyExpiry ? 1 : 0)
-    put(SLOT.coalesce, node.coalesce ? 1 : 0)
-    put(SLOT.cacheStrategy, indexIn(Object.keys(S.CACHE_STRATEGIES), node.cacheStrategy))
-    put(SLOT.split, node.split ? 1 : 0)
-    put(SLOT.paranoia, node.paranoia)
-    put(SLOT.underAttack, node.underAttack ? 1 : 0)
+        : 1
+    row[SLOT.steal] = stealOf(game, node)
+    row[SLOT.shed] = node.shed ? 1 : 0
+    row[SLOT.degrade] = node.degrade ? 1 : 0
+    row[SLOT.indexType] = indexIn(S.VEC_INDEXES, node.indexType)
+    row[SLOT.transactions] = node.transactions ? 1 : 0
+    row[SLOT.downOom] = node.life._tag !== 'Running' && causeOf(node.life) === 'oom' ? 1 : 0
+    row[SLOT.cacheEngine] = indexIn(S.CACHE_ENGINES, node.engine)
+    row[SLOT.ttl] = node.ttl
+    row[SLOT.swr] = node.swr ? 1 : 0
+    row[SLOT.earlyExpiry] = node.earlyExpiry ? 1 : 0
+    row[SLOT.coalesce] = node.coalesce ? 1 : 0
+    row[SLOT.cacheStrategy] = indexIn(S.CACHE_STRATEGIES, node.cacheStrategy)
+    row[SLOT.split] = node.split ? 1 : 0
+    row[SLOT.paranoia] = node.paranoia
+    row[SLOT.underAttack] = node.underAttack ? 1 : 0
     if (node.type === 'storage') {
-      put(SLOT.r2, node.storeVariant === 'r2' ? 1 : 0)
+      row[SLOT.r2] = node.storeVariant === 'r2' ? 1 : 0
       // `storageRule.outcome`: the share of the store's GB in an archive class.
       const bands = storageBands(game, node)
       const all = bands.reduce((sum, band) => sum + band.gb, 0)
       const archived = bands.reduce((sum, band) => sum + (band.archived ? band.gb : 0), 0)
-      put(
-        SLOT.archived,
-        all > 0 ? archived / all : S.STORAGE_CLASSES[node.storageClass].archived ? 1 : 0,
-      )
+      row[SLOT.archived] =
+        all > 0 ? archived / all : S.STORAGE_CLASSES[node.storageClass].archived ? 1 : 0
     }
     if (node.type === 'search') {
-      put(SLOT.searchVariant, Object.keys(S.SEARCH_VARIANTS).indexOf(node.searchVariant))
-      put(SLOT.searchShards, node.searchShards)
-      put(SLOT.heap, Object.keys(S.SEARCH_HEAPS).indexOf(node.heap))
-      put(SLOT.searchReplicas, node.searchReplicas)
-      put(SLOT.refresh, node.refresh)
+      row[SLOT.searchVariant] = positionOf(S.SEARCH_VARIANTS, node.searchVariant)
+      row[SLOT.searchShards] = node.searchShards
+      row[SLOT.heap] = positionOf(S.SEARCH_HEAPS, node.heap)
+      row[SLOT.searchReplicas] = node.searchReplicas
+      row[SLOT.refresh] = node.refresh
     }
-    put(SLOT.secondProvider, node.provider === 'second' ? 1 : 0)
+    row[SLOT.secondProvider] = node.provider === 'second' ? 1 : 0
     if (node.type === 'gpu') {
-      put(SLOT.gpu, Object.keys(S.GPU_TYPES).indexOf(node.gpu))
-      put(SLOT.gpuModel, Object.keys(S.GPU_MODELS).indexOf(node.gpuModel))
-      put(SLOT.precision, Object.keys(S.GPU_PRECISIONS).indexOf(node.precision))
-      put(SLOT.batch, node.batch)
+      row[SLOT.gpu] = positionOf(S.GPU_TYPES, node.gpu)
+      row[SLOT.gpuModel] = positionOf(S.GPU_MODELS, node.gpuModel)
+      row[SLOT.precision] = positionOf(S.GPU_PRECISIONS, node.precision)
+      row[SLOT.batch] = node.batch
     }
-    put(SLOT.quorumN, node.n)
-    put(SLOT.quorumR, node.r)
-    put(SLOT.quorumW, node.w)
-    put(SLOT.lost, node.lost)
-    put(SLOT.spread, node.spread ? 1 : 0)
+    row[SLOT.quorumN] = node.n
+    row[SLOT.quorumR] = node.r
+    row[SLOT.quorumW] = node.w
+    row[SLOT.lost] = node.lost
+    row[SLOT.spread] = node.spread ? 1 : 0
   })
-  fill(exports, BLOCK.scalars, scalars)
+
+  // A kernel call inside the loop would have detached the view and dropped every row after it.
+  if (scalars.length !== nodes * SCALARS)
+    throw new Error('The scalar view detached while it was written.')
 
   const researched = new Set(game.researched)
   const research = new Uint8Array(Math.ceil(S.RESEARCH_IDS.length / 8))
@@ -688,7 +707,10 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
   routes.forEach((entry, index) => {
     const slot = entry.source ? (design.at.get(entry.source.id) ?? -1) : -1
     if (slot >= 0) intake[slot] = (intake[slot] ?? 0) + entry.share
-    routeRows.set([S.REGIONS.indexOf(entry.region), slot, entry.share, entry.extraMs], index * 4)
+    routeRows.set(
+      [positionOf(S.REGIONS, entry.region), slot, entry.share, entry.extraMs],
+      index * 4,
+    )
   })
   fill(exports, BLOCK.intake, intake)
   fill(exports, BLOCK.routes, routeRows)
@@ -714,7 +736,7 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
     BLOCK.query,
     S.BACKEND_KINDS.map((kind) => queryFactor(game, kind)),
   )
-  fill(exports, BLOCK.latency, new Float64Array(nodes * NK))
+  fillWith(exports, BLOCK.latency, nodes * NK, 0)
 }
 
 /** Writes a Game into the kernel and compiles its Design. */

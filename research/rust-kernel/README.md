@@ -74,30 +74,28 @@ instead of solving again, and a tree reset moves an epoch instead of zeroing its
 Ported in full, and compared figure by figure: the catalog, the outcome algebra, the three
 capacity models, routing splits, the forward pass, the outcome tree for `users`, `lb`,
 `dns`, `cdc`, `pooler`, `database`, `replica`, `server`, `auth`, `msgp`, `warehouse`,
-`psp`, `llm`, `storage`, `gpu`, `search`, `wide`, `queue`, `worker` and the Components whose rule is a
+`psp`, `llm`, `storage`, `gpu`, `search`, `wide`, `queue`, `worker`, `cache`, `waf` and the Components whose rule is a
 terminal `stranded`, the revenue and the Ledger figures the solve reads (revenue, demand,
 served, Apdex, latency, percentiles, errors, fines, per-kind rows, per-Node rows, per-kind
 bottleneck), the pass loop with its convergence test and feedback, and the Bottleneck
 search.
 
-`node challenges.ts` solves every Challenge's opening board on both sides. 30 of the 32
-are identical in every figure and in the Bottleneck. The other 2 are refused: one has a
-Cache, one a WAF. `node trajectory.ts 1` plays every Challenge's canonical run and
-compares the Game after every Step: 11,800 Steps are identical, and the kernel refuses
-the rest, which have an incident running or a Component it lacks.
+`node challenges.ts` solves every Challenge's opening board on both sides. All 32 are
+identical in every figure and in the Bottleneck. `node trajectory.ts 1` plays every
+Challenge's canonical run and compares the Game after every Step: 12,800 Steps are
+identical, and the kernel refuses the 1,300 that have an incident running.
 
 Not ported yet, and refused rather than approximated: a Game with an incident, a shipped
 Feature, or a Product lever; and any Component whose `outcome` rule is not in the list
-above (`cache`, `cdn`, `waf`, `gw`, `log`, `fn`, `doc`, `vec`, `edge`, `ws`, `dsql`). A run over such a Design returns status 6 instead of a figure. The
+above (`cdn`, `gw`, `log`, `fn`, `doc`, `vec`, `edge`, `ws`, `dsql`). A run over such a Design returns status 6 instead of a figure. The
 presentation-only halves of the TypeScript Ledger (bills, Insight, velocity, Link rows,
 regions, devices, services, market, forecast) are not ported, because no figure the solve
 reads depends on them.
 
 ## Open problems
 
-- `cache`, `cdn` and `gateway` have their `serve` halves in `pass.rs` but no `outcome` rule
-  yet, so a board with one is refused. Their hit ratios also need `pass.hits`, which is
-  wired but always zero.
+- `cdn` and `gw` have no rules yet, so a board with one is refused. No Challenge uses
+  either.
 - `gen-catalog.ts` mirrors two lists it cannot import — `GLOBAL_COMPONENTS` from
   `regions.ts` and the per-Component `fixed` flag is imported but the zone lists are not
   exported — so a change there needs the generator edited by hand.

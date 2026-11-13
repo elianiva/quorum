@@ -362,9 +362,51 @@ impl<'a> Tree<'a> {
             component::SEARCH => self.search(node, kind),
             component::WIDE => self.wide(node, kind),
             component::QUEUE => self.queue(node, kind),
+            component::CACHE => self.cache(node, kind),
+            // Bots stop here at the block rate; real users at the false positive rate.
+            component::WAF => {
+                let Some(game_node) = self.board.nodes.get(node).copied() else {
+                    return failed(STRANDED);
+                };
+                let stops = crate::model::Waf::of(&game_node, self.board.game).stops(kind);
+                fail_some(self.relay(node, kind), stops, BLOCKED)
+            }
             component::WORKER => self.worker(node, kind),
             // A Node with no path for a request strands it.
             _ => failed(STRANDED),
+        }
+    }
+
+    /// `cacheRule.outcome`: a hit answers here, a miss pays the hop to the store,
+    /// and the strategy decides who answers a write.
+    fn cache(&mut self, node: usize, kind: usize) -> Outcome {
+        let Some(game_node) = self.board.nodes.get(node).copied() else {
+            return failed(STRANDED);
+        };
+        let own = self.own_hop(node, kind, 1.0);
+        if kind == kind::CHANGE {
+            return through(own, &[], false);
+        }
+        let strategy = crate::model::cache::strategy(self.board.game, &game_node);
+        let write = CACHE_STRATEGIES_WRITE[strategy];
+        let hop = hop_ms(self.board.game);
+        // Write-through pays one more cache write; write-behind answers before the Database sees it.
+        if kind == kind::Q_WRITE && write == "through" {
+            let stored = self.downstream(node, kind, hop);
+            return through(Hop { fixed_ms: own.fixed_ms + CACHE_STRATEGIES_WRITE_MS[strategy], ..own }, &[(stored, 1.0)], false);
+        }
+        if kind == kind::Q_WRITE && write == "ahead" {
+            return through(own, &[], false);
+        }
+        if kind != kind::Q_READ {
+            return self.relay(node, kind);
+        }
+        let hit = self.pass.hits.get(node).copied().unwrap_or(0.0);
+        let stale = self.pass.stale_hits.get(node).copied().unwrap_or(0.0);
+        let missed = self.downstream(node, kind, hop + CACHE_STRATEGIES_LOAD_MS[strategy]);
+        match blend(&[(Outcome { stale, ..answered(0.0, 0.0) }, hit), (missed, 1.0 - hit)]) {
+            Some(mixed) => through(own, &[(mixed, 1.0)], false),
+            None => through(own, &[], false),
         }
     }
 
@@ -703,7 +745,7 @@ pub fn supports(type_code: usize) -> bool {
     matches!(
         type_code,
         USERS | LB | DNS | CDC | POOLER | DATABASE | REPLICA | SERVER | AUTH | MSGP | WAREHOUSE
-            | PSP | LLM | STORAGE | GPU | SEARCH | WIDE | QUEUE | WORKER
+            | PSP | LLM | STORAGE | GPU | SEARCH | WIDE | QUEUE | WORKER | CACHE | WAF
             | ANALYTICS | AUTOSCALER | CI | CLUSTER | FF | MESH | PAYMENTS | PKI
     )
 }

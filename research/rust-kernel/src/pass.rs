@@ -8,6 +8,7 @@
 use crate::catalog::*;
 use crate::extra::*;
 use crate::dist::task_attempts;
+use crate::model::{cache, Waf};
 use crate::model::{cpu_base, database_model, flat_component, flat_scale, server_model, GameCtx, Incident, Model, Node, Rates, ServerCtx, ServerFlags};
 use crate::routing::{Design, Splits, Weights};
 
@@ -192,7 +193,6 @@ fn passes_on(type_code: usize) -> bool {
         || type_code == component::POOLER
         || type_code == component::DNS
         || type_code == component::CDN
-        || type_code == component::WAF
         || type_code == component::GW
 }
 
@@ -365,7 +365,32 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
 
         // Serve: a Node that runs code sends one call per backend kind; a flat
         // Component passes the request straight on.
-        if passes_on(type_code) {
+        if type_code == component::CACHE {
+            let (hit, stale, sent, flush) = cache_serve(game, node, &rates);
+            out.hits[slot] = hit;
+            out.stale_hits[slot] = stale;
+            for (kind, &processed) in kept.iter().enumerate() {
+                // A change invalidates the Cache's copy. It has no answer to send on.
+                if processed <= 0.0 || kind == kind::CHANGE {
+                    continue;
+                }
+                let rate = match kind {
+                    kind::Q_READ => processed * sent,
+                    // Write-behind answers the write here and flushes only its share on.
+                    kind::Q_WRITE if flush < 1.0 => processed * flush,
+                    _ => processed,
+                };
+                out.route(run, splits, slot, kind, rate, composition);
+            }
+        } else if type_code == component::WAF {
+            // Bots stop here at the block rate; real users at the false positive rate.
+            let waf = Waf::of(node, game);
+            for (kind, &processed) in kept.iter().enumerate() {
+                if processed > 0.0 {
+                    out.route(run, splits, slot, kind, processed * (1.0 - waf.stops(kind)), composition);
+                }
+            }
+        } else if passes_on(type_code) {
             for (kind, &processed) in kept.iter().enumerate() {
                 if processed > 0.0 {
                     out.route(run, splits, slot, kind, processed, composition);
@@ -504,6 +529,29 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
         (lag * REPLICA_STALE_REUSE / 1000.0).min(0.15)
     };
     out
+}
+
+/// `cacheRule.serve`'s figures: the hit ratio, the stale share of hits, the
+/// share of reads sent on, and the share of writes a write-behind Cache flushes
+/// (1 for every other strategy).
+fn cache_serve(game: &GameCtx, node: &Node, rates: &Rates) -> (f64, f64, f64, f64) {
+    let reads = rates[kind::Q_READ];
+    let writes = rates[kind::Q_WRITE];
+    let write_share = if reads + writes > 0.0 { writes / (reads + writes) } else { 0.0 };
+    let strategy = cache::strategy(game, node);
+    let guarded = game.has(research::STAMPEDE_PROTECTION);
+    let hit = cache::hit_ratio(game, node, write_share, node.warm);
+    let ttl = cache::ttl_row(node);
+    // Stale-while-revalidate answers the reads an expired key would have missed from the old value.
+    let revalidating = if node.swr && guarded { 1.0 - CACHE_TTLS_FACTOR[ttl] } else { 0.0 };
+    let surge = if game.incident == Some(Incident::StaleRead) && game.incident_node == node.id { STALE_SURGE } else { 1.0 };
+    let stale = (CACHE_TTLS_STALE[ttl] * write_share * CACHE_STRATEGIES_STALE[strategy] * surge + revalidating).min(1.0);
+    // Stampede protection: misses only a cold Cache has wait on one fetch per key.
+    let warm_hit = cache::hit_ratio(game, node, write_share, 1.0);
+    let early = if node.early_expiry && guarded { hit * EARLY_REFRESH } else { 0.0 };
+    let missed = if node.coalesce && guarded { 1.0 - warm_hit + (warm_hit - hit) * COALESCED } else { 1.0 - hit };
+    let flush = if CACHE_STRATEGIES_WRITE[strategy] == "ahead" { CACHE_STRATEGIES_FLUSH[strategy] } else { 1.0 };
+    (hit, stale, missed + early, flush)
 }
 
 /// `sharesOf`: a rate record as shares of its own total, or `None` when it is empty.

@@ -474,8 +474,24 @@ pub fn features_of(bytes: &[u8]) -> Shipped {
     shipped
 }
 
-/// The incident codes the host writes: 0 is none.
-const INCIDENTS: [Option<Incident>; 4] = [None, Some(Incident::GcStorm), Some(Incident::Loop), Some(Incident::Connections)];
+/// The incident the host writes, as its index into `INCIDENT_IDS` plus one, 0
+/// for none. Only the kinds a ported model reads have a variant.
+fn incident_of(code: usize) -> Option<Incident> {
+    let id = INCIDENT_IDS.get(code.checked_sub(1)?)?;
+    Some(match *id {
+        "gc-storm" => Incident::GcStorm,
+        "loop" => Incident::Loop,
+        "connections" => Incident::Connections,
+        "retry-storm" => Incident::RetryStorm,
+        "slow-query" => Incident::SlowQuery,
+        "report-db" => Incident::ReportDb,
+        "hot-shard" => Incident::HotShard,
+        "table-bloat" => Incident::TableBloat,
+        "stuffing" => Incident::Stuffing,
+        "repl-lag" => Incident::ReplLag,
+        _ => return None,
+    })
+}
 
 /// The Game context: row 0 of the scalar block, plus the two bitsets.
 pub fn game_with(scalars: &[f64], research: Research, shipped: Shipped) -> GameCtx {
@@ -485,7 +501,8 @@ pub fn game_with(scalars: &[f64], research: Research, shipped: Shipped) -> GameC
         users: slot(S_USERS),
         researched: research,
         features: shipped,
-        incident: INCIDENTS.get(incident_code).copied().flatten(),
+        incident: incident_of(incident_code),
+        incident_code,
         incident_node: slot(S_INCIDENT_NODE) as usize,
         sandbox: slot(S_SANDBOX) != 0.0,
         scenario_tasks: slot(S_SCENARIO_TASKS) != 0.0,
@@ -494,6 +511,7 @@ pub fn game_with(scalars: &[f64], research: Research, shipped: Shipped) -> GameC
         cdn_on_board: false,
         spread_regions: 1.0,
         scenario_value: [1.0; NR],
+        mix: [0.0; NR],
         seed: slot(S_SEED),
         time: slot(S_TIME),
         incident_started: 0.0,
@@ -589,5 +607,6 @@ pub fn node_of(row: &[f64]) -> Node {
         lost: slot(S_LOST),
         spread: flag(S_SPREAD),
         local_regions: 0,
+        queue_attempts: 0.0,
     }
 }

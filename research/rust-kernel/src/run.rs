@@ -97,7 +97,7 @@ fn surface(nodes: &[Node], game: &GameCtx, inputs: &Inputs) -> i32 {
         return abi::UNSUPPORTED;
     }
     // An incident rewrites figures through rules the port has not reached yet.
-    if game.incident.is_some() {
+    if game.incident_code != 0 {
         return abi::UNSUPPORTED;
     }
     // A shipped Feature moves demand, payload, and value.
@@ -161,6 +161,19 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
     let mut game = abi::game_with(inputs.row(0), abi::research_of(&inputs.research), abi::features_of(&inputs.features));
     for (cell, value) in game.scenario_value.iter_mut().zip(&inputs.value) {
         *cell = *value;
+    }
+    for (cell, share) in game.mix.iter_mut().zip(&inputs.probe) {
+        *cell = *share;
+    }
+    // `queueOf`: a Worker takes the attempts of the first Queue that feeds it.
+    for edge in &design.edges {
+        let (from, to) = (edge.from as usize, edge.to as usize);
+        if nodes[from].type_code == component::QUEUE
+            && nodes[to].type_code == component::WORKER
+            && nodes[to].queue_attempts == 0.0
+        {
+            nodes[to].queue_attempts = crate::ledger::attempts_allowed(nodes[from].dlq, nodes[from].attempts);
+        }
     }
     game.cdn_on_board = nodes.iter().any(|node| node.type_code == component::CDN);
     // `spreadCount`: North America and every region with users, up to the cap.
@@ -256,6 +269,8 @@ fn host_pass(board: Board, inputs: &Inputs, sick: &[bool], splits: &mut Splits) 
         inflight: &inflight,
         connections: &connections,
         failures: &[],
+        task_failure: &[],
+        task_capacity: &[],
         boost: None,
     };
     splits.reset(board.design);

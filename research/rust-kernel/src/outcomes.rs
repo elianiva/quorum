@@ -361,9 +361,67 @@ impl<'a> Tree<'a> {
             component::GPU => self.gpu(node, kind),
             component::SEARCH => self.search(node, kind),
             component::WIDE => self.wide(node, kind),
+            component::QUEUE => self.queue(node, kind),
+            component::WORKER => self.worker(node, kind),
             // A Node with no path for a request strands it.
             _ => failed(STRANDED),
         }
+    }
+
+    /// `queueRule.outcome`: the caller waits for the enqueue only, and a long
+    /// backlog slows the broker.
+    fn queue(&mut self, node: usize, kind: usize) -> Outcome {
+        let Some(game_node) = self.board.nodes.get(node).copied() else {
+            return failed(STRANDED);
+        };
+        let own = self.own_hop(node, kind, 1.0);
+        // With no Worker linked, the task has nowhere to go.
+        if self.downstream(node, kind, 0.0).fail[STRANDED] >= 1.0 {
+            return failed(STRANDED);
+        }
+        let enqueued = through(Hop { fixed_ms: own.fixed_ms + BACKLOG_MS * game_node.depth, ..own }, &[], false);
+        // A full Queue refuses what its Workers cannot take (RabbitMQ `reject-publish`).
+        if game_node.max_length <= 0.0 || game_node.depth < game_node.max_length {
+            return enqueued;
+        }
+        let inflow = self.pass.rates(node)[NR + backend::TASK];
+        let drained = self.pass.drained.get(node).copied().unwrap_or(0.0);
+        if inflow > 0.0 {
+            fail_some(enqueued, (1.0 - drained / inflow).max(0.0), DROPPED)
+        } else {
+            enqueued
+        }
+    }
+
+    /// `workerRule.outcome`: one attempt, its calls, and the code's own failures.
+    /// Users never wait for it.
+    fn worker(&mut self, node: usize, kind: usize) -> Outcome {
+        let Some(game_node) = self.board.nodes.get(node).copied() else {
+            return failed(STRANDED);
+        };
+        let mix = crate::pass::task_mix_of(self.board.game, &self.pass.tasks, node);
+        let mut calls = [0.0f64; NB];
+        for (origin, &share) in mix[..NR].iter().enumerate() {
+            if share <= 0.0 {
+                continue;
+            }
+            let each = crate::pass::async_calls_of(self.board.game, origin);
+            for (call, made) in calls.iter_mut().zip(&each[NR..]) {
+                *call += share * made;
+            }
+        }
+        let own = self.own_hop(node, kind, 1.0);
+        let hop = hop_ms(self.board.game);
+        let mut entries = [(Outcome::default(), 0.0); NB];
+        let mut made = 0;
+        for (backend, &count) in calls.iter().enumerate() {
+            if count > 0.0 {
+                entries[made] = (self.downstream(node, NR + backend, hop), count);
+                made += 1;
+            }
+        }
+        let crashes = self.code_crashes(&game_node, kind);
+        fail_some(through(own, &entries[..made], false), crashes, CRASH)
     }
 
     /// `storageRule.outcome`: a read of an archived object waits hours for its
@@ -645,7 +703,7 @@ pub fn supports(type_code: usize) -> bool {
     matches!(
         type_code,
         USERS | LB | DNS | CDC | POOLER | DATABASE | REPLICA | SERVER | AUTH | MSGP | WAREHOUSE
-            | PSP | LLM | STORAGE | GPU | SEARCH | WIDE
+            | PSP | LLM | STORAGE | GPU | SEARCH | WIDE | QUEUE | WORKER
             | ANALYTICS | AUTOSCALER | CI | CLUSTER | FF | MESH | PAYMENTS | PKI
     )
 }

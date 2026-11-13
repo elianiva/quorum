@@ -36,6 +36,9 @@ pub struct GameCtx {
     pub features: [u64; 1],
     /// The incident that runs, if any.
     pub incident: Option<Incident>,
+    /// The incident's index into `INCIDENT_IDS` plus one, 0 for none, so a
+    /// kind no model reads still marks the Game as having one.
+    pub incident_code: usize,
     pub incident_node: usize,
     pub incident_started: f64,
     pub sandbox: bool,
@@ -46,6 +49,8 @@ pub struct GameCtx {
     pub data_staffed: bool,
     /// A CDN is on the board, so R2 has no first-byte penalty.
     pub cdn_on_board: bool,
+    /// `mixOf(game)`: the Era's share of each Request kind.
+    pub mix: [f64; NR],
     /// `spreadCount`: the regions a spread store replicates to.
     pub spread_regions: f64,
     /// `game.scenario.value`: what a Challenge makes each kind worth.
@@ -193,6 +198,9 @@ pub struct Node {
     /// `spreadRegions`: the regions a spread Wide-column Store answers from a
     /// local quorum, as a bitset over `REGIONS`.
     pub local_regions: u32,
+    /// `attemptsAllowed` of the Queue a Worker pulls from, or 0 when it pulls
+    /// from none and every task takes one attempt.
+    pub queue_attempts: f64,
 }
 
 /// What `serverModel` returns.
@@ -300,13 +308,15 @@ pub struct ServerFlags {
 
 impl ServerFlags {
     pub fn of(game: &GameCtx, node: &Node, sampling: f64, delegated: bool, offloaded: bool, pod: bool) -> ServerFlags {
+        let worker = node.type_code == component::WORKER;
         ServerFlags {
             sampling,
-            hashing: if game.incident == Some(Incident::Loop) { 4.0 } else { 1.0 },
-            delegated,
-            local: node.local_db,
-            offloaded,
-            worker: node.type_code == component::WORKER,
+            // A Worker answers no user: no logins to hash or hand off, no Queue to offload to.
+            hashing: if game.incident == Some(Incident::Loop) && !worker { 4.0 } else { 1.0 },
+            delegated: delegated && !worker,
+            local: node.local_db && !worker,
+            offloaded: offloaded && !worker,
+            worker,
             pod,
             mesh: node.mesh,
         }
@@ -1026,6 +1036,7 @@ pub fn flat_component(game: &GameCtx, node: &Node, rates: &Rates, boost: f64) ->
         }
         component::SEARCH => search_model(game, node, rates, boost),
         component::WIDE => wide_model(node, rates, boost),
+        component::QUEUE => flat(QUEUE_RATE * scale, 2.0, 0.05),
         // Control-plane Components take no traffic.
         _ => flat_model(f64::INFINITY, &[0.0; NK], 0.0, 0.0, 1.0),
     }

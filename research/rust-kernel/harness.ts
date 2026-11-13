@@ -321,7 +321,7 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
     put(SLOT.mesh, lookups.meshOf(game, n) ? 1 : 0)
     put(SLOT.typeCode, S.COMPONENT_IDS.indexOf(n.type))
     put(SLOT.id, i)
-    put(SLOT.incident, 0)
+    put(SLOT.incident, game.incident ? S.INCIDENT_IDS.indexOf(game.incident.kind) + 1 : 0)
     put(SLOT.shards, n.shards ?? 1)
     put(SLOT.shardKey, Math.max(0, SHARD_KEYS.indexOf(n.shardKey)))
     put(SLOT.iops, Math.max(0, IOPS.indexOf(n.iops)))

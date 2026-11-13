@@ -125,6 +125,10 @@ pub struct GameCtx {
     pub data_staffed: bool,
     /// A CDN is on the board, so R2 has no first-byte penalty.
     pub cdn_on_board: bool,
+    /// `hasEdge`: a live Edge Function is on the board.
+    pub edge_on_board: bool,
+    /// `staticPagesOf`: the largest share of pages a live App Server renders statically.
+    pub static_pages: f64,
     /// `mixOf(game)`: the Era's share of each Request kind.
     pub mix: [f64; NR],
     /// `spreadCount`: the regions a spread store replicates to.
@@ -298,6 +302,16 @@ pub struct Node {
     pub ramped: bool,
     /// `clusterOf`: the Cluster this App Server or Worker runs in, or `usize::MAX`.
     pub cluster: usize,
+    /// A Vector Index's type, a `vec_index` row.
+    pub index_type: usize,
+    /// `vecOf`: the recall of the first live Vector Index this Node links to.
+    pub vec_recall: Option<f64>,
+    /// A Distributed SQL store's consensus wait, ms.
+    pub majority_ms: f64,
+    /// A CDN serves pages cached before the deploy until this time.
+    pub stale_until: f64,
+    /// A CDN's cache key, a `cache_key` row.
+    pub cache_key: usize,
 }
 
 /// What `serverModel` returns.
@@ -1140,6 +1154,12 @@ pub fn flat_component(game: &GameCtx, node: &Node, rates: &Rates, order: &Order,
         component::SEARCH => search_model(game, node, rates, order, boost),
         component::WIDE => wide_model(game, node, rates, order, boost),
         component::QUEUE => flat(QUEUE_RATE * scale, 2.0, 0.05),
+        component::DSQL => dsql_model(node, rates, order, boost),
+        component::DOC => doc_model(game, node, rates, order, boost),
+        component::CDN => unlimited(8.0, 0.0),
+        component::EDGE => flat(f64::INFINITY, EDGE_MS, 0.0),
+        // The index lives in memory: its type decides how many lookups it answers.
+        component::VEC => flat(VEC_QUERIES * scale * VEC_INDEXES_QUERIES[node.index_type] / hot_key_factor(game, node), 20.0, 2.0),
         // Redis answers on one main thread; Memcached on every core of its box.
         component::CACHE => {
             let cores = if CACHE_ENGINES_SCALES[node.cache_engine] { grown(1.0, 2.0, node.size - 3.0).max(1.0) } else { 1.0 };
@@ -1286,6 +1306,56 @@ pub fn quorum_w(node: &Node) -> f64 {
 #[inline]
 pub fn split_work(rates: &Rates) -> (f64, f64) {
     (rates[kind::Q_READ], rates[kind::Q_WRITE] + rates[kind::Q_TX] + rates[kind::K_WRITE])
+}
+
+/// `dsqlRule.model`: a write waits for a majority of its regions; a read asks the leaseholder.
+fn dsql_model(node: &Node, rates: &Rates, order: &Order, boost: f64) -> Model {
+    let (reads, writes) = split_work(rates);
+    let rate = reads + writes;
+    let work = reads * DSQL_READ_COST + writes;
+    let capacity = (DSQL_TX * flat_scale(node.size)) / if work > 0.0 { work / rate } else { 1.0 };
+    let mut model = flat_model(capacity, rates, order, 3.0, 1.0, boost);
+    for kind in (0..NK).filter(|&kind| kind != kind::Q_READ && (model.service_mask >> kind) & 1 == 1) {
+        model.service_fixed[kind] += node.majority_ms;
+    }
+    model
+}
+
+/// `cdnHitOf`: the share of a kind a CDN answers at the edge.
+pub fn cdn_hit(game: &GameCtx, node: &Node, kind: usize) -> f64 {
+    let ttl = CDN_TTL_VALUES.iter().position(|ttl| *ttl == node.ttl).unwrap_or(1);
+    let base = if kind == kind::PAGE {
+        // The anonymous share, plus the shell of a logged-in page with Edge-side includes.
+        let esi = if game.has(research::ESI) { ESI_PAGE_HIT } else { 0.0 };
+        CDN_HIT[kind::PAGE] * ANONYMOUS_PAGE + (CDN_HIT[kind::PAGE] + esi) * (1.0 - ANONYMOUS_PAGE)
+    } else if kind == kind::MEDIA && game.has(research::TIERED_CACHING) {
+        TIERED_MEDIA_HIT
+    } else if kind == kind::READ && game.edge_on_board {
+        EDGE_READ_HIT
+    } else {
+        CDN_HIT[kind]
+    };
+    let factor = CDN_TTL_FACTOR[ttl];
+    let hit = base * factor * CACHE_KEYS_HIT[node.cache_key] * node.warm;
+    let regenerated = if kind == kind::PAGE { game.static_pages } else { 0.0 };
+    (hit + (1.0 - hit) * regenerated * factor * node.warm).min(0.95)
+}
+
+/// `docRule.model`: one flat rate of ops, a join at three of them. A join touches
+/// three documents and a transaction waits for each, so latency grows with the ops.
+fn doc_model(game: &GameCtx, node: &Node, rates: &Rates, order: &Order, boost: f64) -> Model {
+    let join = |kind: usize| if kind == kind::Q_TX || kind == kind::Q_SCAN { DOC_JOIN_COST } else { 1.0 };
+    let (rate, ops) = order.iter().fold((0.0, 0.0), |(rate, ops), kind| (rate + rates[kind], ops + rates[kind] * join(kind)));
+    let per_op = if rate > 0.0 { ops / rate } else { 1.0 };
+    let capacity = DOC_OPS * flat_scale(node.size) / hot_key_factor(game, node) / per_op;
+    let mut model = flat_model(capacity, rates, order, 3.0, DOC_OP_MS, boost);
+    let read = if (model.service_mask >> kind::Q_READ) & 1 == 1 { model.service_variable[kind::Q_READ] } else { DOC_OP_MS };
+    let wait = read - DOC_OP_MS;
+    for kind in (0..NK).filter(|&kind| (model.service_mask >> kind) & 1 == 1) {
+        let slower = if node.transactions && (kind == kind::Q_WRITE || kind == kind::Q_TX) { 1.0 + DOC_TXN_LATENCY } else { 1.0 };
+        model.service_variable[kind] = DOC_OP_MS * join(kind) * slower + wait;
+    }
+    model
 }
 
 /// Mean ms one Wide-column replica takes to answer.

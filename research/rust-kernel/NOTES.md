@@ -290,3 +290,25 @@ It found:
   TypeScript caches a server's table by Design, and the cache misses the warm-up change.
   With a deep copy per solve (`FRESH=1`) the figures are identical, so the kernel is right.
 
+## Vector Index, Distributed SQL, Document Store, CDN, and Edge Function
+
+No Challenge places any of these. A scratch sweep adds one to every Challenge board, plays
+4 Steps, and compares each: a Vector Index and a Document Store behind every App Server, a
+Distributed SQL store in the home region and in Europe, spread and not, and a CDN or an Edge
+Function in front of the users' targets. Edge also runs with Node.js, Go, and Rust stacks,
+linked straight to the App Servers' backends. All 2,176 states are identical.
+
+- A Vector Index changes its callers as well: `callsOf` adds one `q-vector` call to an `ai`
+  request, and `answerCalls` multiplies the value by `aiValueOf`. Each Node keeps the recall
+  of the first live index it links to, worked out once per run in one pass over the edges.
+  The first version scanned every edge for every pair of Nodes, and on the stress board that
+  made the kernel slower than TypeScript.
+- A Document Store sums its rate and ops in key order, so it reads the pass's `Order`.
+- A CDN answered as a pass-through. Its hit ratio now comes from `cdnHitOf`, which reads the
+  TTL row, the cache key, the warm share, ESI, tiered caching, a live Edge Function on the
+  board, and the share of pages a Next.js App Server renders statically.
+- An Edge Function's CPU ceiling is checked against `requestCpuMs`: one request with no
+  sampling, no offload, and no incident. The code table holds it in the `cpu` column, which a
+  Function otherwise leaves empty. Its serve makes calls without the offload, and its outcome
+  with it, as TypeScript does.
+

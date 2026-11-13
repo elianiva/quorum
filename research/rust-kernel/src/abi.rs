@@ -126,7 +126,10 @@ pub const S_CLUSTER: usize = 107;
 pub const S_DEPLOY_SHARE: usize = 108;
 pub const S_DEPLOY_KINDS: usize = 109;
 pub const S_RUNTIME_FAILURE: usize = 110;
-pub const SCALARS: usize = 111;
+pub const S_INDEX_TYPE: usize = 111;
+pub const S_STALE_UNTIL: usize = 112;
+pub const S_CACHE_KEY: usize = 113;
+pub const SCALARS: usize = 114;
 
 /// The node-fields block: one row per Node, read by the routing Design.
 pub const NODE_FIELDS: usize = 10;
@@ -558,6 +561,8 @@ pub fn game_with(scalars: &[f64], research: Research, shipped: Shipped) -> GameC
         fixes: slot(S_FIXES) as u64,
         data_staffed: slot(S_DATA_STAFFED) != 0.0,
         cdn_on_board: false,
+        edge_on_board: false,
+        static_pages: 0.0,
         spread_regions: 1.0,
         scenario_value: [1.0; NR],
         mix: [0.0; NR],
@@ -670,5 +675,10 @@ pub fn node_of(row: &[f64]) -> Node {
         poisoned: flag(S_POISONED),
         ramped: flag(S_RAMPED),
         cluster: slot_of(slot(S_CLUSTER)),
+        index_type: slot(S_INDEX_TYPE) as usize,
+        vec_recall: None,
+        majority_ms: 0.0,
+        stale_until: slot(S_STALE_UNTIL),
+        cache_key: slot(S_CACHE_KEY) as usize,
     }
 }

@@ -385,7 +385,7 @@ impl<'a> Tree<'a> {
             {
                 failed(UPSTREAM)
             }
-            component::AUTH | component::MSGP | component::WAREHOUSE | component::PSP => {
+            component::AUTH | component::MSGP | component::WAREHOUSE | component::PSP | component::DSQL => {
                 through(self.own_hop(node, kind, 1.0), &[], false)
             }
             // Past its rate limit, a model API fails a prompt as `throttled` at once.
@@ -407,8 +407,47 @@ impl<'a> Tree<'a> {
                 fail_some(self.relay(node, kind), stops, BLOCKED)
             }
             component::WORKER => self.worker(node, kind),
+            component::CDN => self.cdn(node, kind),
+            component::EDGE => {
+                if !crate::pass::edge_runs(&self.board.nodes[node]) {
+                    failed(REFUSED)
+                } else if !crate::pass::edge_fits(self.board.code.node(node), kind) {
+                    failed(TIMEOUT)
+                } else {
+                    self.answer_calls(node, kind)
+                }
+            }
+            // Without multi-document transactions a checkout can land half-applied, and the retry charges again.
+            component::DOC => {
+                let reply = through(self.own_hop(node, kind, 1.0), &[], false);
+                if kind == kind::Q_TX && !self.board.nodes[node].transactions { fail_some(reply, DOC_PARTIAL, DUPLICATE) } else { reply }
+            }
+            // An approximate index misses a true neighbour on its recall's shortfall: a stale result.
+            component::VEC => {
+                let miss = 1.0 - VEC_INDEXES_RECALL[self.board.nodes[node].index_type];
+                Outcome { stale: if kind == kind::Q_VECTOR { miss } else { 0.0 }, ..through(self.own_hop(node, kind, 1.0), &[], false) }
+            }
             // A Node with no path for a request strands it.
             _ => failed(STRANDED),
+        }
+    }
+
+    /// `cdnRule.outcome`: a hit is answered at the edge; a miss goes on to the origin.
+    fn cdn(&mut self, node: usize, kind: usize) -> Outcome {
+        let game_node = self.board.nodes[node];
+        let game = self.board.game;
+        let hit = crate::model::cdn_hit(game, &game_node, kind);
+        if hit <= 0.0 {
+            return self.relay(node, kind);
+        }
+        // Without a purge, pages cached before the deploy are served until their TTL passes.
+        let old = if kind == kind::PAGE && game.time < game_node.stale_until { STALE_AFTER_DEPLOY } else { 0.0 };
+        let down = self.downstream(node, kind, 0.0);
+        let mixed = blend(&[(Outcome { stale: old, ..answered(0.0, 0.0) }, hit), (down, 1.0 - hit)]);
+        let own = self.own_hop(node, kind, 1.0);
+        match mixed {
+            Some(mixed) => through(own, &[(mixed, 1.0)], false),
+            None => through(own, &[], false),
         }
     }
 
@@ -698,7 +737,7 @@ impl<'a> Tree<'a> {
             return failed(STRANDED);
         }
         // The Stack that answered sets the revenue.
-        let served = self.own_hop(node, kind, FRAMEWORK_VALUE[game_node.framework][kind]);
+        let served = self.own_hop(node, kind, FRAMEWORK_VALUE[game_node.framework][kind] * ai_value(&game_node, kind));
         // The response crosses the user's downlink: bytes over bandwidth.
         let offloaded = self.board.flags.get(node).map(|flags| flags.offloaded).unwrap_or(false);
         let own = Hop {
@@ -809,12 +848,23 @@ pub fn user_rtt_ms(game: &GameCtx, from: usize, to: usize) -> f64 {
 
 /// Whether a component's `outcome` rule is ported. A run refuses a Design with a
 /// Component whose rule is not, rather than print a figure that only looks right.
+/// `aiValueOf`: a prompt with the company's own documents behind it earns the
+/// Vector Index's lift, at its recall's share, and the ML bonus on Python.
+fn ai_value(node: &Node, kind: usize) -> f64 {
+    let Some(recall) = node.vec_recall.filter(|_| kind == kind::AI) else {
+        return 1.0;
+    };
+    let ml = if RUNTIME_LANGUAGE[node.runtime] == language::PYTHON && node.runtime != runtime::PYPY { ML_AI_BONUS } else { 1.0 };
+    (1.0 + (VEC_AI_LIFT - 1.0) * recall) * ml
+}
+
 pub fn supports(type_code: usize) -> bool {
     use crate::catalog::component::*;
     matches!(
         type_code,
         USERS | LB | DNS | CDC | POOLER | DATABASE | REPLICA | SERVER | AUTH | MSGP | WAREHOUSE
             | PSP | LLM | STORAGE | GPU | SEARCH | WIDE | QUEUE | WORKER | CACHE | WAF
+            | VEC | DSQL | DOC | CDN | EDGE
             | ANALYTICS | AUTOSCALER | CI | CLUSTER | FF | MESH | PAYMENTS | PKI
     )
 }

@@ -118,7 +118,15 @@ pub const S_CACHE_STRATEGY: usize = 99;
 pub const S_SPLIT: usize = 100;
 pub const S_PARANOIA: usize = 101;
 pub const S_UNDER_ATTACK: usize = 102;
-pub const SCALARS: usize = 103;
+pub const S_INCIDENT_STARTED: usize = 103;
+pub const S_INCIDENT_REGION: usize = 104;
+pub const S_CHAOS_TARGET: usize = 105;
+pub const S_RAMPED: usize = 106;
+pub const S_CLUSTER: usize = 107;
+pub const S_DEPLOY_SHARE: usize = 108;
+pub const S_DEPLOY_KINDS: usize = 109;
+pub const S_RUNTIME_FAILURE: usize = 110;
+pub const SCALARS: usize = 111;
 
 /// The node-fields block: one row per Node, read by the routing Design.
 pub const NODE_FIELDS: usize = 10;
@@ -501,8 +509,34 @@ fn incident_of(code: usize) -> Option<Incident> {
         "hot-key" => Incident::HotKey,
         "regex" => Incident::Regex,
         "stale-read" => Incident::StaleRead,
-        _ => return None,
+        "zone" => Incident::Zone,
+        "region" => Incident::Region,
+        "dr-drill" => Incident::DrDrill,
+        "bgp" => Incident::Bgp,
+        "certificate" => Incident::Certificate,
+        "double-charge" => Incident::DoubleCharge,
+        "psp-outage" => Incident::PspOutage,
+        "partition" => Incident::Partition,
+        "leap-second" => Incident::LeapSecond,
+        "mtu" => Incident::Mtu,
+        "jvm-warmup" => Incident::JvmWarmup,
+        "poison" => Incident::Poison,
+        "disk-full" => Incident::DiskFull,
+        "migration-lock" => Incident::MigrationLock,
+        "accidental-delete" => Incident::AccidentalDelete,
+        "bad-deploy" => Incident::BadDeploy,
+        "cluster-upgrade" => Incident::ClusterUpgrade,
+        "latency-regression" => Incident::LatencyRegression,
+        // Demand surges, outages the host writes as down Nodes or routes, and
+        // the runtime failures `runtime_failure` carries.
+        _ => Incident::Elsewhere,
     })
+}
+
+/// A slot the host wrote as a Node index, or `usize::MAX` for none: `-1.0 as
+/// usize` saturates to 0, which would name the first Node.
+fn slot_of(value: f64) -> usize {
+    if value >= 0.0 { value as usize } else { usize::MAX }
 }
 
 /// The Game context: row 0 of the scalar block, plus the two bitsets.
@@ -515,7 +549,10 @@ pub fn game_with(scalars: &[f64], research: Research, shipped: Shipped) -> GameC
         features: shipped,
         incident: incident_of(incident_code),
         incident_code,
-        incident_node: slot(S_INCIDENT_NODE) as usize,
+        incident_node: slot_of(slot(S_INCIDENT_NODE)),
+        incident_region: (slot(S_INCIDENT_REGION) >= 0.0).then(|| slot(S_INCIDENT_REGION) as usize),
+        chaos_target: (slot(S_CHAOS_TARGET) >= 0.0).then(|| slot(S_CHAOS_TARGET) as usize),
+        cert_nodes: false,
         sandbox: slot(S_SANDBOX) != 0.0,
         scenario_tasks: slot(S_SCENARIO_TASKS) != 0.0,
         fixes: slot(S_FIXES) as u64,
@@ -526,15 +563,16 @@ pub fn game_with(scalars: &[f64], research: Research, shipped: Shipped) -> GameC
         mix: [0.0; NR],
         seed: slot(S_SEED),
         time: slot(S_TIME),
-        incident_started: 0.0,
+        incident_started: slot(S_INCIDENT_STARTED),
         service_count: 1,
         service_indexes: slot(S_SERVICE_INDEXES),
         stage: slot(S_STAGE),
         venture: slot(S_VENTURE) as usize,
         fixed_mix: slot(S_FIXED_MIX) != 0.0,
         scenario_daily: slot(S_SCENARIO_DAILY) != 0.0,
-        poisoned: slot(S_POISONED) != 0.0,
-        attempts: slot(S_ATTEMPTS),
+        deploy_share: slot(S_DEPLOY_SHARE),
+        deploy_kinds: slot(S_DEPLOY_KINDS) as u64,
+        runtime_failure: slot(S_RUNTIME_FAILURE),
     }
 }
 
@@ -629,5 +667,8 @@ pub fn node_of(row: &[f64]) -> Node {
         split: flag(S_SPLIT),
         paranoia: slot(S_PARANOIA),
         under_attack: flag(S_UNDER_ATTACK),
+        poisoned: flag(S_POISONED),
+        ramped: flag(S_RAMPED),
+        cluster: slot_of(slot(S_CLUSTER)),
     }
 }

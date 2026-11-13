@@ -10,6 +10,52 @@ use crate::pass::{Calls, Code};
 /// Per-request-kind scratch, indexed by the Request kind index (0..NR).
 pub type Rates = [f64; NK];
 
+/// The kinds a rates record holds, in the order they were first written. A
+/// TypeScript record walks its keys in that order, so its sums round that way.
+#[derive(Clone, Copy, Debug)]
+pub struct Order {
+    kinds: [u8; NK],
+    len: u8,
+    seen: u64,
+}
+
+impl Default for Order {
+    fn default() -> Self {
+        Order { kinds: [0; NK], len: 0, seen: 0 }
+    }
+}
+
+impl Order {
+    /// Kinds `0..NK` in index order: a record built by walking `KINDS`.
+    pub fn indexed() -> Self {
+        let mut order = Order::default();
+        for kind in 0..NK {
+            order.push(kind);
+        }
+        order
+    }
+
+    #[inline]
+    pub fn push(&mut self, kind: usize) {
+        if self.seen & 1 << kind == 0 {
+            self.seen |= 1 << kind;
+            self.kinds[self.len as usize] = kind as u8;
+            self.len += 1;
+        }
+    }
+
+    #[inline]
+    pub fn iter(&self) -> impl Iterator<Item = usize> + '_ {
+        self.kinds[..self.len as usize].iter().map(|&kind| kind as usize)
+    }
+
+    /// Every rate, added in key order from 0.
+    #[inline]
+    pub fn sum(&self, rates: &Rates) -> f64 {
+        self.iter().fold(0.0, |total, kind| total + rates[kind])
+    }
+}
+
 /// An incident a rule reads. The ABI decodes only the first three; the rest are
 /// named by rules the port carries, and a Game with any incident is refused.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -27,6 +73,27 @@ pub enum Incident {
     HotKey,
     Regex,
     StaleRead,
+    Zone,
+    Region,
+    DrDrill,
+    Bgp,
+    Certificate,
+    DoubleCharge,
+    PspOutage,
+    Partition,
+    LeapSecond,
+    Mtu,
+    JvmWarmup,
+    Poison,
+    DiskFull,
+    MigrationLock,
+    AccidentalDelete,
+    BadDeploy,
+    ClusterUpgrade,
+    LatencyRegression,
+    /// An incident whose effect reaches the kernel only through what the host
+    /// writes (demand, user routes, down Nodes), or not at all.
+    Elsewhere,
 }
 
 /// The Game facts the models read. The catalog carries the tables.
@@ -42,6 +109,12 @@ pub struct GameCtx {
     /// The incident's index into `INCIDENT_IDS` plus one, 0 for none, so a
     /// kind no model reads still marks the Game as having one.
     pub incident_code: usize,
+    /// The region a Region outage, DR drill, or leap second hit.
+    pub incident_region: Option<usize>,
+    /// `chaosTarget`: the Node a chaos experiment fails now, if one runs.
+    pub chaos_target: Option<usize>,
+    /// `certNodes(game).length > 0`: some TLS terminator holds a certificate.
+    pub cert_nodes: bool,
     pub incident_node: usize,
     pub incident_started: f64,
     pub sandbox: bool,
@@ -71,10 +144,13 @@ pub struct GameCtx {
     pub fixed_mix: bool,
     /// A Sandbox that runs the daily cycle.
     pub scenario_daily: bool,
-    /// This Worker pulls from a Queue a poison message is stuck in.
-    pub poisoned: bool,
-    /// Attempts per task this Worker runs.
-    pub attempts: f64,
+    /// `badDeployShareOf` of the Service a bad deploy broke, and the Request
+    /// kinds it fails (`failsKind`) as a bitset; both 0 without a bad deploy.
+    pub deploy_share: f64,
+    pub deploy_kinds: u64,
+    /// `RUNTIME_INCIDENT_FAILURES` of the incident: the share of the incident
+    /// Node's requests its runtime fails.
+    pub runtime_failure: f64,
 }
 
 impl GameCtx {
@@ -216,6 +292,12 @@ pub struct Node {
     /// A WAF's paranoia level, 1 to 4, and whether Under attack mode is on.
     pub paranoia: f64,
     pub under_attack: bool,
+    /// This Worker pulls from a Queue a poison message is stuck in.
+    pub poisoned: bool,
+    /// `rampedOf`: a Load Balancer with slow start links to this Node.
+    pub ramped: bool,
+    /// `clusterOf`: the Cluster this App Server or Worker runs in, or `usize::MAX`.
+    pub cluster: usize,
 }
 
 /// What `serverModel` returns.
@@ -446,22 +528,15 @@ pub fn transfer_ms(node: &Node, kind: usize, offloaded: bool) -> f64 {
     (streamed * 8.0) / USER_MBPS + (PROFILE_IN_KB[kind] * 8.0) / USER_UP_MBPS
 }
 
-/// `hashesOnPool`: a Node.js login hashed off the event loop.
+/// `hashesOnPool`: a Node.js login hashed off the event loop. A stuffing bot
+/// is a login too.
 #[inline]
-fn hashes_on_pool(node: &Node, kind: usize, flags: &ServerFlags) -> bool {
+fn hashes_on_pool(game: &GameCtx, node: &Node, kind: usize, flags: &ServerFlags) -> bool {
     RUNTIME_LANGUAGE[node.runtime] == language::NODE
-        && ctx_hashing_available(node)
-        && PROFILE_CPU[kind] > 0.0
-        && kind == kind::LOGIN
+        && game.has(research::LIBUV_POOL)
+        && crate::pass::as_login(game, kind)
         && !flags.delegated
         && !flags.worker
-}
-
-#[inline]
-fn ctx_hashing_available(node: &Node) -> bool {
-    // `has(game, 'libuv-pool')` is checked by the caller through `hashing`; the
-    // port keeps the flag explicit on the Node to stay allocation free.
-    node.pm != usize::MAX
 }
 
 /// `cpuBase`: core-milliseconds one request of a kind costs this Node. It reads
@@ -471,17 +546,19 @@ pub fn cpu_base(game: &GameCtx, node: &Node, kind: usize, calls: &Calls, flags: 
     let framework = node.framework;
     let speed = speed_of(game, node);
     let overhead = overhead_of(node, kind);
-    let login = kind == kind::LOGIN;
+    // `profileOf`: a stuffing bot costs what a login costs.
+    let profile = crate::pass::profile_of(game, kind);
+    let login = crate::pass::as_login(game, kind);
     let variant = kind_speed_of(game, node, kind);
     let delegated_login = login && flags.delegated && !flags.worker;
 
     let mut cpu;
     if delegated_login {
         cpu = (LOGIN_DELEGATED_CPU * overhead) / speed;
-    } else if PROFILE_NATIVE[kind] {
-        cpu = PROFILE_CPU[kind] * if login { flags.hashing } else { 1.0 };
+    } else if PROFILE_NATIVE[profile] {
+        cpu = PROFILE_CPU[profile] * if login { flags.hashing } else { 1.0 };
     } else {
-        cpu = (PROFILE_CPU[kind] * overhead) / speed;
+        cpu = (PROFILE_CPU[profile] * overhead) / speed;
     }
     cpu /= variant;
     let mut made = 0.0;
@@ -496,12 +573,12 @@ pub fn cpu_base(game: &GameCtx, node: &Node, kind: usize, calls: &Calls, flags: 
         0.0
     };
     if flags.worker {
-        return (cpu + serial) * PROFILE_OFFLOAD[kind] * (1.0 + flags.sampling);
+        return (cpu + serial) * PROFILE_OFFLOAD[profile] * (1.0 + flags.sampling);
     }
     if flags.offloaded {
-        cpu *= 1.0 - PROFILE_OFFLOAD[kind];
+        cpu *= 1.0 - PROFILE_OFFLOAD[profile];
     }
-    if node.compress && PROFILE_COMPRESSIBLE[kind] {
+    if node.compress && PROFILE_COMPRESSIBLE[profile] {
         cpu *= GZIP_CPU;
     }
     if flags.local {
@@ -544,8 +621,10 @@ fn speed_of(game: &GameCtx, node: &Node) -> f64 {
                 / RECYCLE_CYCLE;
     }
     // A JVM that scaled up runs cold; the port keeps the warm share the caller passed.
+    // A JVM that scaled up under load runs its new copies cold until the warmup finishes.
+    let cold = game.incident == Some(Incident::JvmWarmup) && game.incident_node == node.id && !node.ramped;
     speed *= RUNTIME_WARM_FROM[node.runtime]
-        + (1.0 - RUNTIME_WARM_FROM[node.runtime]) * node.warm;
+        + (1.0 - RUNTIME_WARM_FROM[node.runtime]) * if cold { 0.0 } else { node.warm };
     speed
 }
 
@@ -774,11 +853,12 @@ pub fn server_model(
     let mut residence = [0.0f64; NR];
     let mut slot_work = 0.0;
     for &kind in kinds {
-        let receiving = if ctx.flags.worker || PROFILE_IN_KB[kind] <= 0.0 {
+        let profile = crate::pass::profile_of(game, kind);
+        let receiving = if ctx.flags.worker || PROFILE_IN_KB[profile] <= 0.0 {
             0.0
         } else {
-            ((PROFILE_IN_KB[kind] * 8.0) / USER_UP_MBPS)
-                * if ctx.flags.offloaded { 1.0 - PROFILE_OFFLOAD[kind] } else { 1.0 }
+            ((PROFILE_IN_KB[profile] * 8.0) / USER_UP_MBPS)
+                * if ctx.flags.offloaded { 1.0 - PROFILE_OFFLOAD[profile] } else { 1.0 }
         };
         let mut waiting = 0.0;
         if !ctx.flags.local {
@@ -813,7 +893,7 @@ pub fn server_model(
     let mut pool_rate = 0.0;
     let mut pool_work = 0.0;
     for &kind in kinds {
-        let on = hashes_on_pool(node, kind, &ctx.flags) && game.has(research::LIBUV_POOL);
+        let on = hashes_on_pool(game, node, kind, &ctx.flags);
         pooled[kind] = on;
         if !on {
             continue;
@@ -971,8 +1051,8 @@ pub fn wait_of(calls: &Calls, latency: &[f64; NK]) -> f64 {
 }
 
 /// `flatModel`: a Component with a flat capacity.
-pub fn flat_model(capacity: f64, arriving: &Rates, fixed_ms: f64, variable_ms: f64, boost: f64) -> Model {
-    let rate: f64 = arriving.iter().sum();
+pub fn flat_model(capacity: f64, arriving: &Rates, order: &Order, fixed_ms: f64, variable_ms: f64, boost: f64) -> Model {
+    let rate = order.sum(arriving);
     let utilization = if capacity.is_infinite() { 0.0 } else { rate / (capacity * boost) };
     let share = if utilization > 1.0 { 1.0 / utilization } else { 1.0 };
     let wait = wait_for(variable_ms, utilization, 1.0);
@@ -1015,11 +1095,11 @@ pub fn flat_model(capacity: f64, arriving: &Rates, fixed_ms: f64, variable_ms: f
 /// The `model` half of every Component rule except an App Server's and a
 /// database's: a capacity, and a fixed and a variable service time. The pass and
 /// the probe both read it, so a Component's capacity has one definition.
-pub fn flat_component(game: &GameCtx, node: &Node, rates: &Rates, boost: f64) -> Model {
+pub fn flat_component(game: &GameCtx, node: &Node, rates: &Rates, order: &Order, boost: f64) -> Model {
     let scale = flat_scale(node.size);
-    let flat = |capacity: f64, fixed: f64, variable: f64| flat_model(capacity, rates, fixed, variable, boost);
+    let flat = |capacity: f64, fixed: f64, variable: f64| flat_model(capacity, rates, order, fixed, variable, boost);
     // `unlimited`: no capacity to run out of, so the boost does not apply.
-    let unlimited = |fixed: f64, variable: f64| flat_model(f64::INFINITY, rates, fixed, variable, 1.0);
+    let unlimited = |fixed: f64, variable: f64| flat_model(f64::INFINITY, rates, order, fixed, variable, 1.0);
     match node.type_code {
         component::USERS => unlimited(30.0, 0.0),
         component::DNS => unlimited(0.0, 0.0),
@@ -1037,7 +1117,10 @@ pub fn flat_component(game: &GameCtx, node: &Node, rates: &Rates, boost: f64) ->
         // A Data team owns the pipelines, and a pipeline has half the lag with one.
         component::CDC => flat(CDC_RATE * scale, CDC_MS * if game.data_staffed { DATA_TEAM_LAG } else { 1.0 }, 0.05),
         component::MSGP => flat(MSGP_RATE * scale, 100.0, 10.0),
-        component::PSP => flat(PSP_CAPACITY * scale, 400.0, 30.0),
+        component::PSP => {
+            let slow = if game.incident == Some(Incident::DoubleCharge) { SLOW_CHARGE_MS } else { 0.0 };
+            flat(PSP_CAPACITY * scale, 400.0, 30.0 + slow)
+        }
         component::LLM => flat(LLM_RATE * scale, LLM_FIRST_TOKEN_MS, 0.0),
         // R2 answers later than S3 unless a CDN on the board takes the first byte.
         component::STORAGE => {
@@ -1054,8 +1137,8 @@ pub fn flat_component(game: &GameCtx, node: &Node, rates: &Rates, boost: f64) ->
             let ttft = if game.has(research::CONTINUOUS_BATCHING) { 0.0 } else { GPU_BATCHES_TTFT[batch] };
             flat(capacity, GPU_FIRST_TOKEN_MS + ttft, 100.0)
         }
-        component::SEARCH => search_model(game, node, rates, boost),
-        component::WIDE => wide_model(node, rates, boost),
+        component::SEARCH => search_model(game, node, rates, order, boost),
+        component::WIDE => wide_model(game, node, rates, order, boost),
         component::QUEUE => flat(QUEUE_RATE * scale, 2.0, 0.05),
         // Redis answers on one main thread; Memcached on every core of its box.
         component::CACHE => {
@@ -1069,7 +1152,7 @@ pub fn flat_component(game: &GameCtx, node: &Node, rates: &Rates, boost: f64) ->
             flat(FLAT_CAPACITY[component::WAF] * scale / waf.cpu * regex, 2.0 + attack, 0.1)
         }
         // Control-plane Components take no traffic.
-        _ => flat_model(f64::INFINITY, &[0.0; NK], 0.0, 0.0, 1.0),
+        _ => flat_model(f64::INFINITY, &[0.0; NK], &Order::default(), 0.0, 0.0, 1.0),
     }
 }
 
@@ -1162,7 +1245,7 @@ pub fn refresh_row(node: &Node) -> usize {
 
 /// `searchRule.model`: shards fan a query out, replicas add capacity, and the heap
 /// trades collector pauses against the file system cache.
-fn search_model(game: &GameCtx, node: &Node, rates: &Rates, boost: f64) -> Model {
+fn search_model(game: &GameCtx, node: &Node, rates: &Rates, order: &Order, boost: f64) -> Model {
     let variant = node.search_variant;
     let jvm = SEARCH_VARIANTS_JVM[variant];
     let shards = if jvm { node.search_shards } else { 1.0 };
@@ -1179,7 +1262,7 @@ fn search_model(game: &GameCtx, node: &Node, rates: &Rates, boost: f64) -> Model
     Model {
         tail_p: SEARCH_HEAPS_TAIL_P[heap],
         tail_ms: SEARCH_HEAPS_TAIL_MS[heap],
-        ..flat_model(capacity, rates, SEARCH_VARIANTS_FIXED_MS[variant], 2.0, boost)
+        ..flat_model(capacity, rates, order, SEARCH_VARIANTS_FIXED_MS[variant], 2.0, boost)
     }
 }
 
@@ -1209,13 +1292,12 @@ pub fn split_work(rates: &Rates) -> (f64, f64) {
 const WIDE_REPLICA_MS: f64 = 2.0;
 
 /// `wideRule.model`: a read waits for R replies and a write for W, of N replicas.
-fn wide_model(node: &Node, rates: &Rates, boost: f64) -> Model {
+fn wide_model(game: &GameCtx, node: &Node, rates: &Rates, order: &Order, boost: f64) -> Model {
     let (reads, writes) = split_work(rates);
     let ops = reads * quorum_r(node) + writes * quorum_n(node);
     let rate = reads + writes;
-    // `hotKeyFactor` is 1 without a Hot key incident, and the port refuses incidents.
-    let capacity = (WIDE_OPS * flat_scale(node.size)) / if ops > 0.0 { ops / rate } else { 1.0 };
-    let mut model = flat_model(capacity, rates, 1.0, 0.0, boost);
+    let capacity = (WIDE_OPS * flat_scale(node.size)) / hot_key_factor(game, node) / if ops > 0.0 { ops / rate } else { 1.0 };
+    let mut model = flat_model(capacity, rates, order, 1.0, 0.0, boost);
     let wait = if (model.service_mask >> kind::Q_READ) & 1 == 1 { model.service_variable[kind::Q_READ] } else { 0.0 };
     for kind in 0..NK {
         if (model.service_mask >> kind) & 1 == 0 {

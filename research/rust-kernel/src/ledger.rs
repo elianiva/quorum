@@ -244,7 +244,7 @@ pub fn answers_of(
             Some(source) => tree.outcome(source, kind),
             None => failed(STRANDED),
         };
-        let extra_ms = user_hop_ms(tree.game(), route.extra_ms, kind);
+        let extra_ms = user_hop_ms(tree.game(), route.extra_ms, kind) + regressed_ms(tree.game());
         let answer = if extra_ms > 0.0 {
             through_one(hop(extra_ms, 0.0), raw, false)
         } else {
@@ -258,12 +258,18 @@ pub fn answers_of(
 /// `answerOf`: what one request of `kind` gets back over every region's users.
 pub fn answer_of(tree: &Tree, answers: &[(Route, Outcome, Outcome)], kind: usize) -> Outcome {
     if let [(route, answer, _)] = answers {
-        if user_hop_ms(tree.game(), route.extra_ms, kind) == 0.0 {
+        if user_hop_ms(tree.game(), route.extra_ms, kind) + regressed_ms(tree.game()) == 0.0 {
             return *answer;
         }
     }
     let entries: Vec<(Outcome, f64)> = answers.iter().map(|(route, answer, _)| (*answer, route.share)).collect();
     blend(&entries).unwrap_or_else(|| failed(STRANDED))
+}
+
+/// A latency regression puts every answer this much further out.
+#[inline]
+fn regressed_ms(game: &GameCtx) -> f64 {
+    if game.incident == Some(crate::model::Incident::LatencyRegression) { LATENCY_REGRESSION_MS } else { 0.0 }
 }
 
 /// `userHopMs`: the user hop a request of `kind` pays.
@@ -462,8 +468,9 @@ pub fn ledger_of(
     // Node rows: what each Node was sent, what it could take, and what it dropped.
     for (slot, node) in nodes.iter().enumerate() {
         let rates = pass.rates(slot);
+        let order = pass.order.get(slot).copied().unwrap_or_default();
         let model = pass.models.get(slot);
-        let inbound = sum_rates(rates);
+        let inbound = order.sum(rates);
         let share = if node.down { 0.0 } else { model.map(|model| model.share).unwrap_or(1.0) };
         let pool = pass.connections.get(slot).copied().flatten();
         let refused_share = match pool {
@@ -481,15 +488,11 @@ pub fn ledger_of(
             }
         }
         let latency = if inbound > 0.0 {
-            let mut total = 0.0;
-            for kind in 0..NK {
-                total += rates[kind] * hop_by_kind[kind];
-            }
-            total / inbound
+            order.iter().fold(0.0, |total, kind| total + rates[kind] * hop_by_kind[kind]) / inbound
         } else {
             0.0
         };
-        let busiest = (0..NK).fold(None::<usize>, |best, kind| match best {
+        let busiest = order.iter().fold(None::<usize>, |best, kind| match best {
             None if rates[kind] > 0.0 => Some(kind),
             Some(current) if rates[kind] > rates[current] => Some(kind),
             other => other,

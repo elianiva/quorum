@@ -82,11 +82,12 @@ search.
 
 `node challenges.ts` solves every Challenge's opening board on both sides. All 32 are
 identical in every figure and in the Bottleneck. `node trajectory.ts 1` plays every
-Challenge's canonical run and compares the Game after every Step: 12,800 Steps are
-identical, and the kernel refuses the 1,300 that have an incident running.
+Challenge's canonical run and compares the Game after every Step: all 12,752 Steps are
+identical, including the ones with an incident running. A scratch sweep also forced each of
+the 56 incident kinds on every Challenge board and compared 6 Steps of each.
 
-Not ported yet, and refused rather than approximated: a Game with an incident, a shipped
-Feature, or a Product lever; and any Component whose `outcome` rule is not in the list
+Not ported yet, and refused rather than approximated: a Game with a shipped Feature or a
+Product lever; and any Component whose `outcome` rule is not in the list
 above (`cdn`, `gw`, `log`, `fn`, `doc`, `vec`, `edge`, `ws`, `dsql`). A run over such a Design returns status 6 instead of a figure. The
 presentation-only halves of the TypeScript Ledger (bills, Insight, velocity, Link rows,
 regions, devices, services, market, forecast) are not ported, because no figure the solve

@@ -267,3 +267,26 @@ without Under attack mode: 1,248 states with 493 distinct revenues, all identica
 treats a single settings object such as `UNDER_ATTACK` as a table of one row. `grown`
 replaces the loop inside `flat_scale`, written as TypeScript writes it, so a Memcached box
 below size 3 divides instead of multiplying.
+
+## Incidents
+
+Every incident kind now decodes. Kinds with no effect on a figure the solve reads decode
+to `Incident::Elsewhere`, so the kernel refuses only a code it does not know. A scratch
+sweep forced each of the 56 kinds on every Challenge board and compared the first 6 Steps.
+It found:
+
+- A TypeScript rates record sums its kinds in the order they were first written, not in
+  index order. An attack appends `bot` after the mix when the mix has no bots, and a Node
+  that gets `blob-get` from a Server before `blob-put` from a Worker holds them in that
+  order. No single order fits a whole board: on rule-of-40 one Node gets `q-read` first
+  and another `q-write`. The pass now keeps an `Order` per Node, filled in `route`, and
+  the serve loops, `flat_model`, and the Ledger's inbound, latency, and busiest kind walk
+  it. The rates themselves stay dense arrays.
+- A Server's task mix came from its rates after the share. TypeScript takes it from the
+  arriving record, and `sharesOf` rounds the two differently once a Server is overloaded.
+- A stuffing bot costs an App Server a login. `cpu_base` and the server model now read
+  the kind's profile, as `profileOf` does.
+- jvm-warmup differed only when the sweep reused one Game object across solves.
+  TypeScript caches a server's table by Design, and the cache misses the warm-up change.
+  With a deep copy per solve (`FRESH=1`) the figures are identical, so the kernel is right.
+

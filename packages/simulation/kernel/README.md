@@ -80,15 +80,27 @@ scalar count and the Node row length, so a slot added on one side only fails at 
 
 ## Performance
 
-These figures come from the 200-Node stress board on Apple Silicon. Each is a mean of 40
-samples after warm-up, measured before the kernel replaced the TypeScript solve.
+Measured on Apple Silicon in plain `node`, with no test runner. `main` is the TypeScript
+solve. The 200-Node board is the one in `src/solve.bench.ts`. Times are means; the solve
+rows take 300 samples after 30 warm-up runs.
 
-| Figure                          | TypeScript    | Rust          | Speedup |
-| ------------------------------- | ------------- | ------------- | ------- |
-| `solveFlow` (6 passes + Ledger) | 8,241 µs      | 790 µs        | 10.4×   |
-| `bottleneckOf` (3 candidates)   | 2,522 µs      | 338 µs        | 7.5×    |
-| `solve` (flow + search)         | 9,056 µs      | 1,064 µs      | 8.5×    |
-| Ledger held                     | 448 KB (JSON) | 23 KB (block) | n/a     |
+| What                                       | `main`  | Kernel  | Speedup |
+| ------------------------------------------ | ------- | ------- | ------- |
+| `solveFlow`, 200 Nodes                     | 6.91 ms | 2.36 ms | 2.9×    |
+| `bottleneckOf`, 200 Nodes                  | 2.41 ms | 0.33 ms | 7.3×    |
+| `solve`, 200 Nodes                         | 9.04 ms | 2.48 ms | 3.6×    |
+| One 1-second Step, 200 Nodes               | 8.08 ms | 3.40 ms | 2.4×    |
+| `previewOf`, 200 Nodes                     | 178 ms  | 71 ms   | 2.5×    |
+| Every Challenge opening (32 solves)        | 31.8 ms | 10.5 ms | 3.0×    |
+| Every Challenge reference replay           | 10.3 s  | 4.0 s   | 2.6×    |
+| `pnpm measurements` (bots play full games) | 103.6 s | 45.2 s  | 2.3×    |
+
+The kernel itself is about half of a solve. Writing the Game into the blocks and decoding
+the Ledger in `kernel.ts` is about a quarter, and GC and lookups are most of the rest. So
+the speedup a Game sees is smaller than the kernel's own.
+
+A decoded Ledger holds the same figures as before, but takes about 10% more heap: 662 KB
+against 602 KB for the 200-Node board.
 
 Before the TypeScript solve was deleted, a shadow run solved every Game in every test
 suite with both implementations: 61,999 solves, and every figure was identical.

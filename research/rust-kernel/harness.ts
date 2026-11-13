@@ -178,6 +178,10 @@ export const SLOT = {
   acks: 120,
   retain: 121,
   keyed: 122,
+  authEdge: 123,
+  merge: 124,
+  shut: 125,
+  data: 126,
 }
 export const SCALARS = Object.keys(SLOT).length
 const NODE_FIELDS = 10
@@ -428,6 +432,10 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
     put(SLOT.acks, Math.max(0, Object.keys(S.LOG_ACKS).indexOf(n.acks)))
     put(SLOT.retain, n.retain)
     put(SLOT.keyed, n.keyed ? 1 : 0)
+    put(SLOT.authEdge, n.authEdge ? 1 : 0)
+    put(SLOT.merge, n.merge ? 1 : 0)
+    put(SLOT.shut, n.service._tag === 'Shut' ? 1 : 0)
+    put(SLOT.data, game.data)
     put(SLOT.indexType, Math.max(0, Object.keys(S.VEC_INDEXES).indexOf(n.indexType)))
     put(SLOT.runtimeFailure, game.incident ? (S.RUNTIME_INCIDENT_FAILURES[game.incident.kind] ?? 0) : 0)
     put(SLOT.transactions, n.transactions ? 1 : 0)

@@ -96,8 +96,8 @@ pub type Calls = [f64; NB];
 #[derive(Clone, Copy)]
 pub struct Code {
     pub calls: [Calls; NR],
-    /// `cpuBase` by request kind. Zero on a Function, whose model is flat. On an
-    /// Edge Function, `requestCpuMs`: what its CPU ceiling is checked against.
+    /// `cpuOf` by request kind. On an Edge Function, `requestCpuMs`: what its CPU
+    /// ceiling is checked against.
     pub cpu: [f64; NR],
 }
 
@@ -137,7 +137,11 @@ impl CodeTable {
                     let alone = ServerFlags { sampling: 0.0, hashing: 1.0, offloaded: false, local: false, ..*flags };
                     let calls = calls_of(game, node, kind, flags.delegated, false);
                     code.cpu[kind] = cpu_base(game, node, kind, &calls, &alone);
-                } else if node.type_code != component::FN {
+                } else if node.type_code == component::FN {
+                    // A Function's code runs with no Queue to hand work to and no local database.
+                    let code_flags = ServerFlags { offloaded: false, local: false, ..*flags };
+                    code.cpu[kind] = cpu_base(game, node, kind, &code.calls[kind], &code_flags);
+                } else {
                     code.cpu[kind] = cpu_base(game, node, kind, &code.calls[kind], flags);
                 }
             }
@@ -230,7 +234,42 @@ fn passes_on(type_code: usize) -> bool {
         || type_code == component::LB
         || type_code == component::POOLER
         || type_code == component::DNS
-        || type_code == component::GW
+}
+
+/// `gatewayArrivals` then `gatewayShare`: every API Gateway shares one token bucket, so
+/// the first Gateway's limit counts what all of them were sent. Returns the share it
+/// lets through, or 1 with no Gateway on the board.
+pub fn gateway_kept(nodes: &[Node], arriving: &[Rates], order: &[Order]) -> f64 {
+    let mut first = None;
+    let mut rates = [0.0f64; NK];
+    let mut keys = Order::default();
+    for (slot, node) in nodes.iter().enumerate().filter(|(_, node)| node.type_code == component::GW) {
+        first.get_or_insert(node);
+        let Some((here, kinds)) = arriving.get(slot).zip(order.get(slot)) else { continue };
+        for kind in kinds.iter() {
+            rates[kind] += here[kind];
+            keys.push(kind);
+        }
+    }
+    let Some(gateway) = first else { return 1.0 };
+    let total = keys.sum(&rates);
+    let limit = if gateway.rate_limit > 0.0 { gateway.rate_limit } else { f64::INFINITY };
+    if total <= 0.0 || limit == f64::INFINITY {
+        return 1.0;
+    }
+    let allowed = limit * STEP_SECONDS + gateway.burst.max(0.0);
+    let asked = total * STEP_SECONDS;
+    if allowed < asked { allowed / asked } else { 1.0 }
+}
+
+/// `merged`: the share of a read kind a Gateway folds into a request already in flight,
+/// which grows with the rate.
+fn merged(node: &Node, kind: usize, rate: f64) -> f64 {
+    if !node.merge || !matches!(kind, kind::PAGE | kind::READ | kind::FEED | kind::SEARCH) {
+        return 0.0;
+    }
+    let overlap = rate * COALESCE_WINDOW;
+    (COALESCE_HOT * overlap) / (1.0 + overlap)
 }
 
 /// What a solve holds fixed: the Design, the Game, the Nodes, and the columns
@@ -392,6 +431,9 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
             }
             let latency = run.call_latency.get(slot).unwrap_or(&[0.0; NK]);
             server_model(game, node, &work, code.node(slot), latency, &ctx)
+        } else if type_code == component::FN {
+            let latency = run.call_latency.get(slot).unwrap_or(&[0.0; NK]);
+            crate::model::serverless_model(node, &rates, code.node(slot), latency, boost)
         } else if type_code == component::DATABASE || type_code == component::REPLICA {
             database_model(game, node, &rates, boost, Run::at(run.connections, slot))
         } else {
@@ -442,6 +484,15 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
                     _ => processed,
                 };
                 out.route(run, splits, slot, kind, rate, composition);
+            }
+        } else if type_code == component::GW {
+            // Past the shared limit it answers throttled; coalescing folds popular reads together.
+            let through = gateway_kept(nodes, &out.arriving, &out.order);
+            for kind in order.iter() {
+                let processed = kept[kind];
+                if processed > 0.0 {
+                    out.route(run, splits, slot, kind, processed * through * (1.0 - merged(node, kind, processed * through)), composition);
+                }
             }
         } else if type_code == component::CDN {
             out.hits[slot] = crate::model::cdn_hit(game, node, kind::PAGE);

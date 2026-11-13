@@ -10,7 +10,7 @@ use crate::catalog::*;
 use crate::dist::{Outcome, CAUSE_COUNT};
 use crate::ledger::{Ledger, Route};
 use crate::model::{GameCtx, Model, Node, Rates, ServerFlags};
-use crate::outcomes::{self, tree, Memo};
+use crate::outcomes::{tree, Memo};
 use crate::pass::{forward, Board, CodeTable, Pass, Run};
 use crate::routing::{Design, Splits, Weights};
 use crate::solve::{self, Setup};
@@ -92,10 +92,7 @@ pub extern "C" fn summary_len() -> i32 {
 }
 
 /// The status a Game outside the ported surface returns.
-fn surface(nodes: &[Node], game: &GameCtx, inputs: &Inputs) -> i32 {
-    if nodes.iter().any(|node| !outcomes::supports(node.type_code)) {
-        return abi::UNSUPPORTED;
-    }
+fn surface(game: &GameCtx, inputs: &Inputs) -> i32 {
     // An incident rewrites figures through rules the port has not reached yet.
     if game.incident_code != 0 && game.incident.is_none() {
         return abi::UNSUPPORTED;
@@ -181,6 +178,7 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
     });
     game.cdn_on_board = nodes.iter().any(|node| node.type_code == component::CDN);
     game.edge_on_board = nodes.iter().any(|node| node.type_code == component::EDGE && !node.down);
+    game.edge_auth = nodes.iter().any(|node| node.type_code == component::GW && node.auth_edge && !node.down && !node.shut);
     game.static_pages = nodes
         .iter()
         .filter(|node| node.type_code == component::SERVER && !node.down)
@@ -221,7 +219,7 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
         // `majorityMs`: a consensus write waits for the round trip of its majority-th nearest region.
         node.majority_ms = open.get(open.len() / 2).map_or(0.0, |region| REGION_RTT[home][*region]);
     }
-    let status = surface(&nodes, &game, inputs);
+    let status = surface(&game, inputs);
     if status != abi::OK {
         return Err(status);
     }

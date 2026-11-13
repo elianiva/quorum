@@ -379,6 +379,16 @@ impl<'a> Tree<'a> {
             }
             component::DATABASE | component::REPLICA => self.database(node, kind),
             component::SERVER => self.answer_calls(node, kind),
+            // An export runs as long as the rows it reads take; past 15 minutes the function is killed.
+            component::FN if kind == kind::JOB => {
+                let ms = self.board.game.data * EXPORT_MS_PER_GB;
+                if ms > FUNCTION_LIMIT_MS {
+                    return failed(TIMEOUT);
+                }
+                let own = self.answer_calls(node, kind);
+                through(hop(ms, 0.0), &[(own, 1.0)], false)
+            }
+            component::FN => self.answer_calls(node, kind),
             // An outage at the first provider fails every charge sent to it.
             component::PSP
                 if self.board.game.incident == Some(Incident::PspOutage) && !self.board.nodes[node].second_provider =>
@@ -409,6 +419,11 @@ impl<'a> Tree<'a> {
             }
             component::WORKER => self.worker(node, kind),
             component::CDN => self.cdn(node, kind),
+            // Past the shared rate limit a Gateway answers throttled.
+            component::GW => {
+                let kept = crate::pass::gateway_kept(self.board.nodes, &self.pass.arriving, &self.pass.order);
+                fail_some(self.relay(node, kind), 1.0 - kept, THROTTLED)
+            }
             component::WS => self.hub(node, kind),
             component::EDGE => {
                 if !crate::pass::edge_runs(&self.board.nodes[node]) {
@@ -898,15 +913,4 @@ fn ai_value(node: &Node, kind: usize) -> f64 {
     };
     let ml = if RUNTIME_LANGUAGE[node.runtime] == language::PYTHON && node.runtime != runtime::PYPY { ML_AI_BONUS } else { 1.0 };
     (1.0 + (VEC_AI_LIFT - 1.0) * recall) * ml
-}
-
-pub fn supports(type_code: usize) -> bool {
-    use crate::catalog::component::*;
-    matches!(
-        type_code,
-        USERS | LB | DNS | CDC | POOLER | DATABASE | REPLICA | SERVER | AUTH | MSGP | WAREHOUSE
-            | PSP | LLM | STORAGE | GPU | SEARCH | WIDE | QUEUE | WORKER | CACHE | WAF
-            | VEC | DSQL | DOC | CDN | EDGE | WS | LOG
-            | ANALYTICS | AUTOSCALER | CI | CLUSTER | FF | MESH | PAYMENTS | PKI
-    )
 }

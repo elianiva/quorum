@@ -33,11 +33,17 @@ cargo clippy --release --tests
 cargo test --release
 ```
 
-After a catalog change, regenerate `src/catalog.rs` from the TypeScript catalog:
+After a catalog change, regenerate `src/catalog.rs` from the TypeScript catalog, then
+rebuild and copy the kernel as above:
 
 ```sh
-node gen-catalog.ts src/catalog.rs
+pnpm --filter @quorum/simulation catalog
 ```
+
+`test/kernel-catalog.test.ts` fails when either step is missing. It regenerates the catalog
+and compares it with `src/catalog.rs`. Then it compares the generated `CATALOG_HASH` with
+the one `kernel.wasm` exports through `catalog_hash`. CI needs no Rust toolchain for this
+check.
 
 ## The ABI
 
@@ -54,6 +60,7 @@ reads a figure that only looks right.
 | `bottleneck_run`                              | Runs the Bottleneck search on the last solve's Ledger           |
 | `forget_solve`                                | Drops the cached solve, so the next search solves again         |
 | `scalar_len`, `node_field_len`, `summary_len` | The block layouts, so the host can check them                   |
+| `catalog_hash`                                | The `CATALOG_HASH` the kernel was built with                    |
 
 `kernel.ts` mirrors the block ids, the scalar slots, and the Ledger stream in
 `src/wire.rs`. When one side changes, change the other too. `installKernel` checks the
@@ -81,33 +88,28 @@ scalar count and the Node row length, so a slot added on one side only fails at 
 ## Performance
 
 Measured on Apple Silicon in plain `node`, with no test runner. `main` is the TypeScript
-solve. The 200-Node board is the one in `src/solve.bench.ts`. Times are means; the solve
-rows take 300 samples after 30 warm-up runs.
+solve. The 200-Node board is the one in `src/solve.bench.ts`. Each figure is the best
+median of 3 runs that alternate between `main` and the kernel.
 
-| What                                       | `main`  | Kernel  | Speedup |
-| ------------------------------------------ | ------- | ------- | ------- |
-| `solveFlow`, 200 Nodes                     | 6.91 ms | 2.36 ms | 2.9×    |
-| `bottleneckOf`, 200 Nodes                  | 2.41 ms | 0.33 ms | 7.3×    |
-| `solve`, 200 Nodes                         | 9.04 ms | 2.48 ms | 3.6×    |
-| One 1-second Step, 200 Nodes               | 8.08 ms | 3.40 ms | 2.4×    |
-| `previewOf`, 200 Nodes                     | 178 ms  | 71 ms   | 2.5×    |
-| Every Challenge opening (32 solves)        | 31.8 ms | 10.5 ms | 3.0×    |
-| Every Challenge reference replay           | 10.3 s  | 4.0 s   | 2.6×    |
-| `pnpm measurements` (bots play full games) | 103.6 s | 45.2 s  | 2.3×    |
+| What                                | `main`  | Kernel  | Speedup |
+| ----------------------------------- | ------- | ------- | ------- |
+| `solveFlow`, 200 Nodes              | 6.71 ms | 1.87 ms | 3.6×    |
+| `bottleneckOf`, 200 Nodes           | 2.03 ms | 0.32 ms | 6.3×    |
+| `solve`, 200 Nodes                  | 8.95 ms | 2.15 ms | 4.2×    |
+| One 1-second Step, 200 Nodes        | 7.41 ms | 2.57 ms | 2.9×    |
+| `previewOf`, 200 Nodes              | 169 ms  | 59 ms   | 2.8×    |
+| Every Challenge opening (32 solves) | 28.7 ms | 9.1 ms  | 3.1×    |
+| Every Challenge reference replay    | 10.2 s  | 3.8 s   | 2.7×    |
+
+Over 300 `solve` calls on the 200-Node board, `--trace-gc` counts 184 scavenges and 7
+mark-compacts on `main`, and 8 scavenges and 2 mark-compacts on the kernel.
 
 The kernel itself is about 63% of a 200-Node `solveFlow`. The rest is the host:
 `writeGame` writes the scalar rows (19%), `readLedger` decodes the Ledger (12%), and
-`writeDesign` writes the Design (5%). The table predates the in-place scalar rows, which
-cut `writeGame` by about 30% and the whole `solveFlow` by about 9%.
+`writeDesign` writes the Design (5%).
 
 A decoded Ledger holds the same figures as before, but takes about 10% more heap: 662 KB
 against 602 KB for the 200-Node board.
 
 Before the TypeScript solve was deleted, a shadow run solved every Game in every test
 suite with both implementations: 61,999 solves, and every figure was identical.
-
-## Known limits
-
-`gen-catalog.ts` cannot import two lists: `GLOBAL_COMPONENTS` from `regions.ts`, and the
-per-Component zone lists, which are not exported. A change to either needs a manual edit
-to the generator.

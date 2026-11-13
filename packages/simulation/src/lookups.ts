@@ -76,6 +76,7 @@ import {
   SEARCH_VARIANTS,
   SEARCH_INDEX_SHARE,
   STORE_VARIANTS,
+  ZONE_SPANNING_COMPONENTS,
   type Tuning,
 } from './catalog.ts'
 import { restarting, type DownCause } from './life.ts'
@@ -212,12 +213,7 @@ export const hopMs = (game: Game): number => HOP_MS + (has(game, 'keepalive') ? 
 export const zoned = (node: GameNode): boolean =>
   COMPONENTS[node.type].limiting &&
   !COMPONENTS[node.type].fixed &&
-  // A provider's, and the regional Load Balancer's, WAF's and API Gateway's, span every zone.
-  node.type !== 'psp' &&
-  node.type !== 'llm' &&
-  node.type !== 'lb' &&
-  node.type !== 'waf' &&
-  node.type !== 'gw' &&
+  !ZONE_SPANNING_COMPONENTS.includes(node.type) &&
   // A store spread across regions keeps replicas in every zone too.
   !((node.type === 'wide' || node.type === 'dsql') && node.spread)
 

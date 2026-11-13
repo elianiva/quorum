@@ -12,7 +12,7 @@ import {
   SPREAD_REGIONS,
   USER_ROUND_TRIPS,
   rttOf,
-  type ComponentId,
+  GLOBAL_COMPONENTS,
   type RegionId,
 } from './catalog.ts'
 import { has, zoneMs } from './lookups.ts'
@@ -27,18 +27,7 @@ import type { Game, GameNode, PerRegion } from './state.ts'
    region's users go to their own Users Node, or the nearest one alive.
    ========================================================================== */
 
-/** Managed and edge Components that serve every region from everywhere: no round trip to reach them. */
-const GLOBAL: ReadonlyArray<ComponentId> = [
-  'psp',
-  'llm',
-  'msgp',
-  'auth',
-  'cdn',
-  'analytics',
-  'payments',
-]
-
-export const isGlobal = (node: GameNode): boolean => GLOBAL.includes(node.type)
+export const isGlobal = (node: GameNode): boolean => GLOBAL_COMPONENTS.includes(node.type)
 
 /** Users live in four regions from Series C; before, every user is at home. */
 export const regional = (game: Game): boolean => game.stage >= REGIONS_FROM_STAGE

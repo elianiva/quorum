@@ -308,6 +308,12 @@ pub extern "C" fn node_field_len() -> i32 {
     NODE_FIELDS as i32
 }
 
+/// The catalog this kernel was built from, so a check can tell a stale build.
+#[no_mangle]
+pub extern "C" fn catalog_hash() -> f64 {
+    f64::from(crate::catalog::CATALOG_HASH)
+}
+
 /// Resizes a block so the host can fill it. Returns `OK` or `UNKNOWN_BLOCK`.
 #[no_mangle]
 pub extern "C" fn reserve(block: i32, len: i32) -> i32 {

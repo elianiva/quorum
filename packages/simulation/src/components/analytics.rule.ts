@@ -1,16 +1,6 @@
 import { type Action, notAllowed, ok, patch, withNode } from '../action-kit.ts'
 import type { Game } from '../state.ts'
 import { RETENTION_WINDOWS, SAMPLE_RATES } from '../catalog.ts'
-import { failed } from '../distribution.ts'
-
-import { flatModel } from '../capacity.ts'
-import { type ComponentRule, terminal } from '../rule-kit.ts'
-
-export const analyticsRule: ComponentRule = {
-  model: () => flatModel(Number.POSITIVE_INFINITY, {}, { fixedMs: 0, variableMs: 0 }, 1),
-  outcome: () => failed('stranded'),
-  ...terminal,
-}
 
 export const setSample = (game: Game, id: string, sampleRate: number): Action =>
   withNode(game, id, (node) =>

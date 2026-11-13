@@ -244,3 +244,18 @@ export type Ledger = Readonly<{
    */
   bottleneckByKind: Readonly<Partial<Record<RequestKind, string>>>
 }>
+
+/**
+ * The share of traffic that no Analytics tap samples: the player sees the load but not what it
+ * is, and it earns no Insight. It is the first thing to fix when research drags (12 "The cost of
+ * seeing"). A kind counts as sampled once any Component type samples it.
+ */
+export const unsampledOf = (ledger: Ledger): Readonly<{ rate: number; share: number }> => {
+  let rate = 0
+  let served = 0
+  for (const [kind, entry] of Object.entries(ledger.kinds) as Array<[RequestKind, KindLedger]>) {
+    served += entry.rate
+    if ((ledger.breadth[kind] ?? 0) === 0) rate += entry.rate
+  }
+  return { rate, share: served > 0 ? rate / served : 0 }
+}

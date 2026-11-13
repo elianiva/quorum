@@ -1,17 +1,8 @@
 import { type Action, Refusal, no, notAllowed, ok, patch, withNode } from '../action-kit.ts'
 import type { Game, ScaleSignal } from '../state.ts'
 import { RESEARCH, SCALE_MAXIMA, SCALE_TARGETS } from '../catalog.ts'
-import { failed } from '../distribution.ts'
 
-import { flatModel } from '../capacity.ts'
 import { has } from '../lookups.ts'
-import { type ComponentRule, terminal } from '../rule-kit.ts'
-
-export const autoscalerRule: ComponentRule = {
-  model: () => flatModel(Number.POSITIVE_INFINITY, {}, { fixedMs: 0, variableMs: 0 }, 1),
-  outcome: () => failed('stranded'),
-  ...terminal,
-}
 
 /** Sets an Autoscaler's signal, target, and copy limits. */
 export const setAutoscaler = (

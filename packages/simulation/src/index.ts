@@ -7,7 +7,6 @@
 
 export * from './actions.ts'
 export * from './capacity.ts'
-export { coldShareOf, serverlessModel, type ServerlessContext } from './components/fn.rule.ts'
 export * from './challenges.ts'
 export * from './churn.ts'
 export * from './catalog.ts'

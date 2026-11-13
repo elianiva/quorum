@@ -1,16 +1,12 @@
-import { CHAOS_EVERY, CHAOS_SECONDS, FOREVER_ATTEMPTS } from './catalog.ts'
+import { CHAOS_EVERY, CHAOS_SECONDS } from './catalog.ts'
 import { carryKernel, kernelBottleneck, kernelFlow } from './kernel.ts'
 import type { Ledger } from './ledger.ts'
-import type { Game, GameNode } from './state.ts'
+import type { Game } from './state.ts'
 
 export { calendarMinute, clockOf, cosTurns } from './calendar.ts'
 export { demandOf, diurnal, weekly } from './solve-demand.ts'
 export { policyOf } from './solve-graph.ts'
 export { installKernel } from './kernel.ts'
-
-/** Attempts a Queue gives a task: its max attempts with a dead-letter queue, else forever. */
-export const attemptsAllowed = (queue: GameNode): number =>
-  queue.dlq ? queue.attempts : FOREVER_ATTEMPTS
 
 /**
  * Whether a chaos experiment is running now (10 "Track: Reliability", "Chaos engineering"). An

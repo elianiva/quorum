@@ -10,9 +10,6 @@
 
 use crate::catalog::*;
 
-/// The most targets one split may report, so a result fits a fixed slot.
-const MAX_SPLIT: usize = 64;
-
 /// A Node as routing sees it. Kept small and `Copy` so the whole table is one
 /// contiguous scan.
 #[derive(Clone, Copy)]
@@ -726,7 +723,7 @@ pub fn compile(inputs: &crate::abi::Inputs) -> Result<Design, i32> {
     Ok(Design::new(nodes, edges, adjacency, starts, false, 0.0))
 }
 
-/// Compiles a Design once; `split_all` then answers every split from it.
+/// Compiles a Design once, so each solve reuses it.
 #[no_mangle]
 pub extern "C" fn design_set(health_checked: f64, time: f64) -> i32 {
     let compiled = crate::abi::with_inputs(compile);
@@ -738,55 +735,6 @@ pub extern "C" fn design_set(health_checked: f64, time: f64) -> i32 {
         }
         Err(status) => status,
     }
-}
-
-/// Every (Node, kind) split, as fixed slots: a count, then up to `MAX_SPLIT`
-/// pairs of (Edge index, share).
-#[no_mangle]
-pub extern "C" fn split_all(lb_algorithms: f64) -> i32 {
-    crate::abi::with_inputs(|inputs| {
-        let sick: Vec<bool> = inputs.sick.iter().map(|&byte| byte != 0).collect();
-        let weights = Weights { live: &inputs.weights, nominal: &inputs.nominal, sick: &sick };
-        CACHED.with(|cell| {
-            let mut guard = cell.borrow_mut();
-            let Some((design, scratch)) = guard.as_mut() else {
-                return crate::abi::NO_DESIGN;
-            };
-            crate::abi::with_outputs(|outputs| {
-                let stride = 1 + 2 * MAX_SPLIT;
-                let count = design.nodes.len();
-                if outputs.splits.len() < count * NK * stride {
-                    return crate::abi::SHORT_BLOCK;
-                }
-                for node in 0..count {
-                    for kind in 0..NK {
-                        let found =
-                            scratch.split(design, node, kind, &weights, lb_algorithms != 0.0);
-                        let base = (node * NK + kind) * stride;
-                        outputs.splits[base] = found as f64;
-                        for (index, (edge, share)) in scratch.pairs().iter().take(MAX_SPLIT).enumerate() {
-                            outputs.splits[base + 1 + index * 2] = *edge as f64;
-                            outputs.splits[base + 2 + index * 2] = *share;
-                        }
-                    }
-                }
-                crate::abi::OK
-            })
-        })
-    })
-}
-
-impl Scratch {
-    /// The answer for the split just computed.
-    #[inline]
-    pub fn pairs(&self) -> &[(u32, f64)] {
-        &self.pairs
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn split_stride() -> i32 {
-    (1 + 2 * MAX_SPLIT) as i32
 }
 
 #[cfg(test)]
@@ -826,8 +774,8 @@ mod tests {
         for (kind, name) in KINDS.iter().enumerate().take(NR) {
             let count = scratch.split(&design, 0, kind, &weights, false);
             assert_eq!(count, 1, "kind {kind} ({name}) had {count} targets");
-            assert_eq!(scratch.pairs()[0].0, 0);
-            assert_eq!(scratch.pairs()[0].1, 1.0);
+            assert_eq!(scratch.pairs[0].0, 0);
+            assert_eq!(scratch.pairs[0].1, 1.0);
         }
     }
 }

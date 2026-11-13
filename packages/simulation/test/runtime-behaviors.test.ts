@@ -3,7 +3,6 @@ import { describe, expect, test } from 'vitest'
 import * as Actions from '../src/actions.ts'
 import { GATEWAY_PRICE, GPU_MODELS, type ResearchId } from '../src/catalog.ts'
 import { gpuFits } from '../src/rules.ts'
-import { requestCpuMs } from '../src/capacity.ts'
 import {
   badDeployChance,
   buildMinutesOf,
@@ -98,7 +97,10 @@ describe('options', () => {
     const gateway = ok(Actions.place(game, 'gw', 100, 100))
     const id = gateway.nodes.at(-1)?.id as string
     const edged = ok(Actions.setGatewayOptions(gateway, id, { authEdge: true }))
-    expect(requestCpuMs(edged, server, 'read')).toBeLessThan(requestCpuMs(gateway, server, 'read'))
+    // The App Server's Cost receipt for a read: what one request costs its CPU.
+    const readCost = (board: Game) => solveFlow(board).nodes[server.id]?.receipts.read?.total ?? 0
+    expect(readCost(gateway)).toBeGreaterThan(0)
+    expect(readCost(edged)).toBeLessThan(readCost(gateway))
   })
 
   test('periodic restarts need a persistent runtime', () => {

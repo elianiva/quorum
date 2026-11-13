@@ -1,96 +1,14 @@
 import { type Action, notAllowed, ok, patch, withNode } from '../action-kit.ts'
-import type { Game, GameNode, SearchHeap, SearchVariant } from '../state.ts'
+import type { Game, SearchHeap, SearchVariant } from '../state.ts'
 import {
   SEARCH_REPLICAS,
   SEARCH_SHARDS,
-  DUAL_WRITE_STALE,
-  OUTBOX_STALE,
-  CDC_LAG_STALE,
-  CDC_DROP_STALE,
   SEARCH_REFRESH,
-  SEARCH_QPS,
-  SEARCH_FANOUT,
   SEARCH_HEAPS,
   SEARCH_VARIANTS,
 } from '../catalog.ts'
 
-import { warming, warmOf } from '../life.ts'
-import { flatModel } from '../capacity.ts'
-import { flatScale, has, isDown } from '../lookups.ts'
-import { queryFactor } from '../features.ts'
-import { through } from '../distribution.ts'
-import { type ComponentRule, slotOf, terminal } from '../rule-kit.ts'
-
-/** A Search Engine's refresh interval: how fresh its answers are and what indexing costs. */
-const refreshOf = (node: GameNode) =>
-  SEARCH_REFRESH.find((entry) => entry.seconds === node.refresh) ??
-  (SEARCH_REFRESH[0] as (typeof SEARCH_REFRESH)[number])
-
-export const searchRule: ComponentRule = {
-  model: (solver, node, arriving) => {
-    const variant = SEARCH_VARIANTS[node.searchVariant]
-    // Shards parallelize the index and fan every query out; replicas add query capacity; the heap
-    // trades garbage collection pauses against the file system cache (07 "Search Engine").
-    const shards = variant.jvm ? node.searchShards : 1
-    const heap = variant.jvm ? SEARCH_HEAPS[node.heap] : SEARCH_HEAPS.half
-    const capacity =
-      (SEARCH_QPS *
-        flatScale(node) *
-        refreshOf(node).capacity *
-        variant.capacity *
-        (shards / (1 + SEARCH_FANOUT * (shards - 1))) *
-        (1 + (variant.jvm ? node.searchReplicas : 0)) *
-        heap.capacity *
-        warmOf(node.life)) /
-      queryFactor(solver.game, 'q-search')
-    return {
-      ...flatModel(
-        capacity,
-        arriving,
-        { fixedMs: variant.fixedMs, variableMs: 2 },
-        solver.boost(node),
-      ),
-      tailP: heap.tailP,
-      tailMs: heap.tailMs,
-    }
-  },
-  // A slower refresh saves indexing CPU and answers staler: a new document waits to be seen. On
-  // top of that, the app's dual write loses now and then; an outbox carries the change with a
-  // relay's lag, and a CDC Connector carries it with its own lag and drops what it cannot keep up
-  // with (07 "Keeping copies in sync"). The design counts that divergence as stale search results.
-  outcome: (answer, node, kind) => {
-    const own = through(answer.ownHop(kind))
-    if (kind !== 'q-search') return own
-    // The copies can only diverge once the app writes to several of them: Series B (07).
-    let diverged = 0
-    // A CDC Connector only helps a Search Engine it can reach: the engine must take a change.
-    const fed = (answer.pass.arriving[slotOf(answer.pass, node)]?.change ?? 0) > 0
-    if (answer.game.stage >= 4) {
-      const outbox = has(answer.game, 'outbox')
-      const cdcs = fed
-        ? answer.game.nodes.filter((entry) => entry.type === 'cdc' && !isDown(entry))
-        : []
-      if (cdcs.length > 0) {
-        // A CDC Connector removes the dual write, but it lags and drops changes when overloaded.
-        let share = 1
-        for (const cdc of cdcs) {
-          const model = answer.pass.models[answer.pass.at.get(cdc.id) as number]
-          share = Math.min(share, model?.share ?? 0)
-        }
-        diverged = CDC_LAG_STALE + (1 - share) * CDC_DROP_STALE
-      } else if (outbox) {
-        diverged = OUTBOX_STALE
-      } else {
-        diverged = DUAL_WRITE_STALE
-      }
-    }
-    // Meilisearch's relevance falls as the index grows: its answers drift from what was asked.
-    const variant = SEARCH_VARIANTS[node.searchVariant]
-    const relevance = Math.min(variant.cap, answer.game.users * variant.relevance)
-    return { ...own, stale: Math.max(refreshOf(node).stale, diverged, relevance) }
-  },
-  ...terminal,
-}
+import { warming } from '../life.ts'
 
 /**
  * A Search Engine's product, shards, replicas, and heap (07 "Search Engine"). Meilisearch runs one

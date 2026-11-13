@@ -1,38 +1,7 @@
 import { type Action, Refusal, no, notAllowed, ok, patch, withNode } from '../action-kit.ts'
 import type { Fanout, Game } from '../state.ts'
-import { RESEARCH, RUNTIMES } from '../catalog.ts'
-import { has, inCluster, meshOf } from '../lookups.ts'
-import { serverModel } from '../capacity.ts'
-import { type ComponentRule, answerCalls, probeMixOf, serveCalls } from '../rule-kit.ts'
-
-export const serverRule: ComponentRule = {
-  model: (solver, node, arriving) =>
-    serverModel({
-      game: solver.game,
-      node,
-      arriving,
-      callLatency: solver.callLatency(node),
-      delegated: solver.delegates(node),
-      local: solver.runsLocalDb(node),
-      inflight: solver.inflight(node),
-      boost: solver.boost(node),
-      sampling: solver.sampling(node),
-      hashing: solver.game.incident?.kind === 'loop' ? 4 : 1,
-      offloaded: solver.offloads(node),
-      pod: inCluster(solver.game, node),
-      mesh: meshOf(solver.game, node),
-      capacityOnly: solver.capacityOnly(node),
-    }),
-  serve: serveCalls,
-  outcome: answerCalls,
-  // Every app process holds its own pool to each database it reaches.
-  connections: (solver, node, model) => {
-    if (solver.runsLocalDb(node)) return 0
-    const surge = solver.game.incident?.kind === 'connections' ? 2 : 1
-    return (model?.processes ?? 0) * RUNTIMES[node.runtime].connections * surge
-  },
-  probe: (game) => probeMixOf(game),
-}
+import { RESEARCH } from '../catalog.ts'
+import { has } from '../lookups.ts'
 
 /** Turns gzip on or off for an App Server's page and read responses. Needs Compression. */
 export const setCompression = (game: Game, id: string, compress: boolean): Action =>

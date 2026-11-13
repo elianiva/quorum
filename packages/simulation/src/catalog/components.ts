@@ -570,3 +570,17 @@ export { SEARCH_COPY_MINUTES_PER_GB } from '../components/search.ts'
 
 /** Sim seconds a Feature Flag change takes to propagate to every server (05 "Feature Flags"). */
 export const FLAG_PROPAGATION_SECONDS = 2
+
+/** Requests per second for Components without an instance type. */
+export const FLAT_CAPACITY: Readonly<Record<string, number>> = {
+  lb: 2_000,
+  cache: 50_000,
+  pooler: 10_000,
+  search: 400,
+  queue: 20_000,
+  log: 100_000,
+  waf: 5_000,
+  gw: 10_000,
+  // An Edge Function answers as many requests as reach it: nothing caps it but its CPU ceiling.
+  edge: Number.POSITIVE_INFINITY,
+}

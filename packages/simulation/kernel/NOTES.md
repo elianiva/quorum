@@ -1,5 +1,10 @@
 # Patterns this kernel uses, and why
 
+This note was written while the kernel was research. The TypeScript harnesses it names
+(`forward.ts`, `challenges.ts`, `trajectory.ts`, and the others) compared the kernel with
+the TypeScript solve, and were deleted with that solve. The game's test suites now check
+the kernel.
+
 Before writing more Rust I read what the ecosystem currently recommends for a numeric
 kernel compiled to `wasm32-unknown-unknown`. This note records the sources, what they
 say, and which pattern each one changed in the crate. The short version: the port is
@@ -18,7 +23,7 @@ set of pointers.
   and [`slice`/`vec` attributes](https://wasm-bindgen.github.io/wasm-bindgen/reference/attributes/on-js-imports/slice.html).
 - The Rust Programming Language, [To panic or not to panic](https://doc.rust-lang.org/book/ch09-03-to-panic-or-not-to-panic.html).
 - Rustonomicon, [Data layout](https://doc.rust-lang.org/nomicon/data.html), for why the
-  typed-array views below are a *layout* contract and not a language one.
+  typed-array views below are a _layout_ contract and not a language one.
 - The Rust reference on [`chunks_exact`](https://doc.rust-lang.org/std/primitive.slice.html#method.chunks_exact)
   and [`windows`](https://doc.rust-lang.org/std/primitive.slice.html#method.windows).
 
@@ -82,7 +87,7 @@ none of the above needed it.
 
 The reference and the std-dev-guide agree on what `#[inline]` actually does: it is not a
 hint so much as permission to codegen the body into every referencing codegen unit, and
-its real value is *crossing a crate boundary*, where the callee's body is otherwise
+its real value is _crossing a crate boundary_, where the callee's body is otherwise
 unavailable. `#[inline(always)]` is called out as almost never needed.
 
 Adopted: `#[inline]` stays on the small, hot, cross-module helpers (`hop`, `through`,
@@ -119,7 +124,7 @@ now length-checked against the block, and a mismatch is status 3, not a trap.
 
 The wasm-bindgen guide is explicit about what a `&[f64]` parameter gives you: a zero-copy
 typed-array view into linear memory that is valid only for the duration of the call, and
-that *detaches* if wasm memory grows during it. That is the right shape for a numeric
+that _detaches_ if wasm memory grows during it. That is the right shape for a numeric
 kernel, and it is also the reason to keep the number of crossings small.
 
 Adopted: no `wasm-bindgen` and no generated glue. The crate exports named blocks —
@@ -147,14 +152,14 @@ first: find out what changes how often, and compute each thing at the rate its i
 change. The changes below follow that rule. Each one kept 1,849/1,849 Ledger figures
 identical.
 
-| Step | `solveFlow` | `bottleneckOf` |
-| --- | --- | --- |
-| Before | 1,891 µs | 1,927 µs |
-| Names become typed constants and enums | 1,784 µs | 1,776 µs |
-| `callsOf` table, split cache, no per-visit `Vec`, candidates skip feedback | 976 µs | 1,031 µs |
-| Search reuses the flow solve's Ledger | 961 µs | 479 µs |
-| Epoch memo, workspace kept across runs | 868 µs | 410 µs |
-| `cpuBase` in the code table, code table kept while inputs hold | 790 µs | 338 µs |
+| Step                                                                       | `solveFlow` | `bottleneckOf` |
+| -------------------------------------------------------------------------- | ----------- | -------------- |
+| Before                                                                     | 1,891 µs    | 1,927 µs       |
+| Names become typed constants and enums                                     | 1,784 µs    | 1,776 µs       |
+| `callsOf` table, split cache, no per-visit `Vec`, candidates skip feedback | 976 µs      | 1,031 µs       |
+| Search reuses the flow solve's Ledger                                      | 961 µs      | 479 µs         |
+| Epoch memo, workspace kept across runs                                     | 868 µs      | 410 µs         |
+| `cpuBase` in the code table, code table kept while inputs hold             | 790 µs      | 338 µs         |
 
 ### Names are types, not strings
 
@@ -371,4 +376,3 @@ ships every Feature at partial adoption, at full adoption, with rolled outcomes,
 Feature Flags Node at 30% rollout, and with a Database that deletes history, then sets every
 lever, alone and with Features: 896 states, all identical. The Ledger row also never
 recorded subscriptions, though revenue counted them.
-

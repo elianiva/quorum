@@ -172,12 +172,6 @@ export const retryRefusal = (game: Game, retries: Retries): string | null => {
     : null
 }
 
-/** What a request may take and still earn: a bid miss earns nothing. */
-export const earnsInTime = (game: Game, ms: number): boolean => {
-  const deadline = ventureOf(game).constraint.deadline
-  return deadline === null || ms <= deadline
-}
-
 /** A bought Component's lifecycle: procurement runs it one calendar day after it is paid for. */
 export const placedLife = (game: Game, node: GameNode): Life =>
   ventureOf(game).constraint.procurement ? restarting(CALENDAR_DAY, 'restart', 0) : node.life

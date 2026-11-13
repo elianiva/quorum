@@ -7,34 +7,19 @@
 
 use crate::abi::{self, Inputs};
 use crate::catalog::*;
-use crate::dist::{Outcome, CAUSE_COUNT};
 use crate::ledger::Route;
-use crate::model::{GameCtx, Model, Node, Rates, ServerFlags};
-use crate::outcomes::{tree, Memo};
-use crate::pass::{forward, Board, CodeTable, Pass, Run};
-use crate::routing::{Design, Splits, Weights};
+use crate::model::{GameCtx, Node, Rates, ServerFlags};
+use crate::outcomes::Memo;
+use crate::pass::{Board, CodeTable};
+use crate::routing::{Design, Splits};
 use crate::solve::{self, Setup};
 
-/// The model block's stride: the figures, then each kind's fixed and variable part.
-pub const MODEL_STRIDE: usize = 18 + 2 * NR;
-/// The Outcome block's stride: seven figures, then twelve failure shares.
-pub const OUTCOME_STRIDE: usize = 19;
 /// The summary block: the figures a caller reads without the rows.
 pub const SUMMARY_REVENUE: usize = 0;
 pub const SUMMARY_BOTTLENECK: usize = 1;
 pub const SUMMARY_PASSES: usize = 2;
 pub const SUMMARY_NODES: usize = 3;
 pub const SUMMARY_LEN: usize = 4;
-
-#[no_mangle]
-pub extern "C" fn model_stride() -> i32 {
-    MODEL_STRIDE as i32
-}
-
-#[no_mangle]
-pub extern "C" fn outcome_stride() -> i32 {
-    OUTCOME_STRIDE as i32
-}
 
 #[no_mangle]
 pub extern "C" fn summary_len() -> i32 {
@@ -55,7 +40,6 @@ struct Prepared {
     nodes: Vec<Node>,
     game: GameCtx,
     demand: Rates,
-    sick: Vec<bool>,
     flags: Vec<ServerFlags>,
 }
 
@@ -183,7 +167,7 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
             ServerFlags::of(&game, node, sampling, flag(abi::S_DELEGATED), flag(abi::S_OFFLOADED), flag(abi::S_POD))
         })
         .collect();
-    Ok(Prepared { sick: inputs.sick.iter().map(|byte| *byte != 0).collect(), nodes, game, demand, flags })
+    Ok(Prepared { nodes, game, demand, flags })
 }
 
 /// The scratch a run works in: the split cache, the memo tables, and the code
@@ -223,167 +207,6 @@ fn with_prepared(body: impl FnOnce(&Design, &Inputs, &Prepared, &mut Workspace) 
             Err(status) => status,
         })
         .unwrap_or(abi::NO_DESIGN)
-    })
-}
-
-/// One pass over the feedback the host wrote, for the harnesses that check a
-/// pass or a tree on their own.
-fn host_pass(board: Board, inputs: &Inputs, sick: &[bool], splits: &mut Splits) -> Pass {
-    let latency: Vec<[f64; NK]> = (0..board.nodes.len())
-        .map(|slot| {
-            let mut calls = [0.0f64; NK];
-            if let Some(row) = inputs.latency.get(slot * NK..(slot + 1) * NK) {
-                calls.copy_from_slice(row);
-            }
-            calls
-        })
-        .collect();
-    let inflight = inputs.column(abi::S_INFLIGHT);
-    let connections = inputs.column(abi::S_CONNECTIONS);
-    let run = Run {
-        board,
-        weights: host_weights(inputs, sick),
-        call_latency: &latency,
-        inflight: &inflight,
-        connections: &connections,
-        failures: &[],
-        task_failure: &[],
-        task_capacity: &[],
-        boost: None,
-    };
-    splits.reset(board.design);
-    forward(&run, splits)
-}
-
-fn host_weights<'a>(inputs: &'a Inputs, sick: &'a [bool]) -> Weights<'a> {
-    Weights { live: &inputs.weights, nominal: &inputs.nominal, sick }
-}
-
-/// `forward_run`: one pass over the cached Design.
-#[no_mangle]
-pub extern "C" fn forward_run() -> i32 {
-    with_prepared(|design, inputs, prepared, work| {
-        work.refresh_code(prepared);
-        let Workspace { splits, code, .. } = work;
-        let board = prepared.board(design, inputs, code);
-        let pass = host_pass(board, inputs, &prepared.sick, splits);
-        let count = board.nodes.len();
-        abi::with_outputs(|outputs| {
-            // The kernel sizes its own outputs: the host reads them after the call.
-            outputs.arriving.clear();
-            outputs.arriving.extend(pass.arriving.iter().flatten());
-            outputs.models.clear();
-            outputs.models.resize(count * MODEL_STRIDE, 0.0);
-            for (model, out) in pass.models.iter().zip(outputs.models.as_chunks_mut::<MODEL_STRIDE>().0) {
-                write_model(model, out);
-            }
-            abi::OK
-        })
-    })
-}
-
-fn write_model(model: &Model, out: &mut [f64]) {
-    let gauge = |gauge: Option<crate::model::Gauge>| gauge.unwrap_or_default();
-    let values = [
-        model.utilization,
-        model.share,
-        model.capacity,
-        model.limit as usize as f64,
-        model.tail_p,
-        model.tail_ms,
-        model.processes,
-        model.inflight,
-        gauge(model.resources.cpu_cores).used,
-        gauge(model.resources.cpu_cores).total,
-        gauge(model.resources.ram_gb).used,
-        gauge(model.resources.ram_gb).total,
-        gauge(model.resources.slots).used,
-        gauge(model.resources.slots).total,
-        gauge(model.resources.network_kbps).used,
-        gauge(model.resources.network_kbps).total,
-        if model.throttled { 1.0 } else { 0.0 },
-        if model.swapping { 1.0 } else { 0.0 },
-    ];
-    for (index, value) in values.iter().enumerate() {
-        if let Some(cell) = out.get_mut(index) {
-            *cell = *value;
-        }
-    }
-    for kind in 0..NR {
-        if let Some(cell) = out.get_mut(18 + kind) {
-            *cell = model.service_fixed[kind];
-        }
-        if let Some(cell) = out.get_mut(18 + NR + kind) {
-            *cell = model.service_variable[kind];
-        }
-    }
-}
-
-/// `outcome_run`: one pass, then every Users Node's outcome per request kind.
-#[no_mangle]
-pub extern "C" fn outcome_run() -> i32 {
-    with_prepared(|design, inputs, prepared, work| {
-        work.refresh_code(prepared);
-        let Workspace { splits, memo, code, .. } = work;
-        let board = prepared.board(design, inputs, code);
-        let pass = host_pass(board, inputs, &prepared.sick, splits);
-        let mut walk = tree(board, &pass, host_weights(inputs, &prepared.sick), splits, memo);
-        abi::with_outputs(|outputs| {
-            outputs.outcomes.clear();
-            outputs.outcomes.resize(board.nodes.len() * NR * OUTCOME_STRIDE, 0.0);
-            for (slot, node) in board.nodes.iter().enumerate() {
-                if node.type_code != component::USERS {
-                    continue;
-                }
-                for kind in 0..NR {
-                    let value = walk.outcome(slot, kind);
-                    let base = (slot * NR + kind) * OUTCOME_STRIDE;
-                    write_outcome(&value, &mut outputs.outcomes[base..base + OUTCOME_STRIDE]);
-                }
-            }
-            abi::OK
-        })
-    })
-}
-
-fn write_outcome(value: &Outcome, out: &mut [f64]) {
-    let figures = [
-        value.success,
-        value.fixed_ms,
-        value.variable_ms,
-        value.tail_p,
-        value.tail_ms,
-        value.stale,
-        value.value,
-    ];
-    for (index, figure) in figures.iter().enumerate() {
-        if let Some(cell) = out.get_mut(index) {
-            *cell = *figure;
-        }
-    }
-    for cause in 0..CAUSE_COUNT {
-        if let Some(cell) = out.get_mut(7 + cause) {
-            *cell = value.fail[cause];
-        }
-    }
-}
-
-/// `outcome_probe`: one Node's outcome for one kind, so a harness can trace a chain.
-#[no_mangle]
-pub extern "C" fn outcome_probe(node: i32, kind: i32) -> i32 {
-    with_prepared(|design, inputs, prepared, work| {
-        work.refresh_code(prepared);
-        let Workspace { splits, memo, code, .. } = work;
-        let board = prepared.board(design, inputs, code);
-        let pass = host_pass(board, inputs, &prepared.sick, splits);
-        let mut walk = tree(board, &pass, host_weights(inputs, &prepared.sick), splits, memo);
-        let value = walk.outcome(node.max(0) as usize, kind.max(0) as usize);
-        abi::with_outputs(|outputs| {
-            outputs.outcomes.clear();
-            outputs.outcomes.resize(OUTCOME_STRIDE, 0.0);
-            write_outcome(&value, &mut outputs.outcomes[..OUTCOME_STRIDE]);
-            abi::OK
-        })
     })
 }
 

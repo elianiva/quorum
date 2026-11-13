@@ -1,30 +1,6 @@
 import { type Action, answering, notAllowed, ok, spend } from '../action-kit.ts'
 import type { Game } from '../state.ts'
-import { PSP_CAPACITY, SLOW_CHARGE_MS, SWITCH_PROVIDER_PRICE } from '../catalog.ts'
-import { failed, through } from '../distribution.ts'
-
-import { flatModel } from '../capacity.ts'
-import { flatScale } from '../lookups.ts'
-import { type ComponentRule, terminal } from '../rule-kit.ts'
-
-// A Managed Component: 400 ms per charge, and its own outages.
-export const pspRule: ComponentRule = {
-  model: (solver, node, arriving) =>
-    flatModel(
-      PSP_CAPACITY * flatScale(node),
-      arriving,
-      {
-        fixedMs: 400,
-        variableMs: 30 + (solver.game.incident?.kind === 'double-charge' ? SLOW_CHARGE_MS : 0),
-      },
-      solver.boost(node),
-    ),
-  outcome: (answer, node, kind) =>
-    answer.game.incident?.kind === 'psp-outage' && node.provider === 'first'
-      ? failed('upstream')
-      : through(answer.ownHop(kind)),
-  ...terminal,
-}
+import { SWITCH_PROVIDER_PRICE } from '../catalog.ts'
 
 /**
  * Moves every Payment Provider Node to the second provider, or back to the first (18 "Senders":

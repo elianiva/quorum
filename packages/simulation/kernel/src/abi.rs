@@ -1,4 +1,4 @@
-//! The flat ABI the harness calls: named blocks in memory this crate owns.
+//! The flat ABI the host calls: named blocks in memory this crate owns.
 //!
 //! Every input and output is a `Vec` inside one of two arenas. The host asks for
 //! a block's pointer with `ptr`, fills it through a `Float64Array` view, then
@@ -207,15 +207,8 @@ pub const BLOCK_VALUE: i32 = 15;
 pub const BLOCK_RESEARCH: i32 = 16;
 /// `queryFactor` per backend kind: what one query costs with the shipped Features.
 pub const BLOCK_QUERY: i32 = 17;
-pub const BLOCK_ARRIVING: i32 = 20;
-pub const BLOCK_MODELS: i32 = 21;
-pub const BLOCK_OUTCOMES: i32 = 22;
 pub const BLOCK_LEDGER: i32 = 23;
 pub const BLOCK_SUMMARY: i32 = 24;
-pub const BLOCK_SPLITS: i32 = 25;
-pub const BLOCK_DIST_IN: i32 = 30;
-pub const BLOCK_DIST_OUT: i32 = 31;
-pub const BLOCK_DIST_CALLS: i32 = 32;
 
 /// Status codes a run function returns.
 pub const OK: i32 = 0;
@@ -250,19 +243,11 @@ pub struct Inputs {
     pub query: Vec<f64>,
 }
 
-/// The output blocks: everything a run writes, and the two scratch blocks the
-/// Outcome algebra's harness reads and writes.
+/// The output blocks: everything a run writes.
 #[derive(Default)]
 pub struct Outputs {
-    pub arriving: Vec<f64>,
-    pub models: Vec<f64>,
-    pub outcomes: Vec<f64>,
     pub ledger: Vec<f64>,
     pub summary: Vec<f64>,
-    pub splits: Vec<f64>,
-    pub dist_in: Vec<f64>,
-    pub dist_out: Vec<f64>,
-    pub dist_calls: Vec<f64>,
 }
 
 impl Inputs {
@@ -317,15 +302,10 @@ pub extern "C" fn scalar_len() -> i32 {
     SCALARS as i32
 }
 
-/// The scalar row's stride, under the name the harness already used.
+/// The number of `f64`s one Node row holds.
 #[no_mangle]
 pub extern "C" fn node_field_len() -> i32 {
     NODE_FIELDS as i32
-}
-
-#[no_mangle]
-pub extern "C" fn edge_field_len() -> i32 {
-    EDGE_FIELDS as i32
 }
 
 /// Resizes a block so the host can fill it. Returns `OK` or `UNKNOWN_BLOCK`.
@@ -396,15 +376,8 @@ pub extern "C" fn reserve(block: i32, len: i32) -> i32 {
     let sized = OUTPUT.with(|cell| {
         let mut outputs = cell.borrow_mut();
         match block {
-            BLOCK_ARRIVING => Some(&mut outputs.arriving),
-            BLOCK_MODELS => Some(&mut outputs.models),
-            BLOCK_OUTCOMES => Some(&mut outputs.outcomes),
             BLOCK_LEDGER => Some(&mut outputs.ledger),
             BLOCK_SUMMARY => Some(&mut outputs.summary),
-            BLOCK_SPLITS => Some(&mut outputs.splits),
-            BLOCK_DIST_IN => Some(&mut outputs.dist_in),
-            BLOCK_DIST_OUT => Some(&mut outputs.dist_out),
-            BLOCK_DIST_CALLS => Some(&mut outputs.dist_calls),
             _ => None,
         }
         .map(|values| {
@@ -455,15 +428,8 @@ pub extern "C" fn ptr(block: i32) -> usize {
     OUTPUT.with(|cell| {
         let outputs = cell.borrow();
         let address = match block {
-            BLOCK_ARRIVING => Some(outputs.arriving.as_ptr()),
-            BLOCK_MODELS => Some(outputs.models.as_ptr()),
-            BLOCK_OUTCOMES => Some(outputs.outcomes.as_ptr()),
             BLOCK_LEDGER => Some(outputs.ledger.as_ptr()),
             BLOCK_SUMMARY => Some(outputs.summary.as_ptr()),
-            BLOCK_SPLITS => Some(outputs.splits.as_ptr()),
-            BLOCK_DIST_IN => Some(outputs.dist_in.as_ptr()),
-            BLOCK_DIST_OUT => Some(outputs.dist_out.as_ptr()),
-            BLOCK_DIST_CALLS => Some(outputs.dist_calls.as_ptr()),
             _ => None,
         };
         address.map(|pointer| pointer as usize).unwrap_or(0)
@@ -504,15 +470,8 @@ pub extern "C" fn len(block: i32) -> i32 {
     OUTPUT.with(|cell| {
         let outputs = cell.borrow();
         let count = match block {
-            BLOCK_ARRIVING => Some(outputs.arriving.len()),
-            BLOCK_MODELS => Some(outputs.models.len()),
-            BLOCK_OUTCOMES => Some(outputs.outcomes.len()),
             BLOCK_LEDGER => Some(outputs.ledger.len()),
             BLOCK_SUMMARY => Some(outputs.summary.len()),
-            BLOCK_SPLITS => Some(outputs.splits.len()),
-            BLOCK_DIST_IN => Some(outputs.dist_in.len()),
-            BLOCK_DIST_OUT => Some(outputs.dist_out.len()),
-            BLOCK_DIST_CALLS => Some(outputs.dist_calls.len()),
             _ => None,
         };
         count.map(|count| count as i32).unwrap_or(0)

@@ -2,7 +2,6 @@ pub mod abi;
 pub mod bill;
 pub mod catalog;
 pub mod dist;
-pub mod dist_abi;
 pub mod extra;
 pub mod model;
 pub mod outcomes;

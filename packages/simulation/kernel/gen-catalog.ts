@@ -3,8 +3,8 @@
  * the TypeScript catalog, so the two sides cannot drift.
  */
 import { writeFileSync } from 'node:fs'
-import * as catalog from '/Users/elianiva/Development/personal/apps/quorum-wasm-research/packages/simulation/src/catalog.ts'
-import { FLAT_CAPACITY } from '/Users/elianiva/Development/personal/apps/quorum-wasm-research/packages/simulation/src/capacity.ts'
+import * as catalog from '../src/catalog.ts'
+import { FLAT_CAPACITY } from '../src/catalog/components.ts'
 
 const out: Array<string> = []
 const push = (line: string) => out.push(line)
@@ -35,7 +35,10 @@ const pushEnum = (name: string, values: ReadonlyArray<string>): Map<string, stri
   const variants = new Map<string, string>()
   for (const value of values) {
     if (!variants.has(value)) {
-      variants.set(value, value.replace(/(^|[-_])([a-z])/g, (_, __, letter: string) => letter.toUpperCase()))
+      variants.set(
+        value,
+        value.replace(/(^|[-_])([a-z])/g, (_, __, letter: string) => letter.toUpperCase()),
+      )
     }
   }
   push('#[derive(Clone, Copy, PartialEq, Eq, Debug)]')
@@ -53,7 +56,11 @@ push('')
 push(`pub static KINDS: [&str; NK] = [${ALL_KINDS.map((k) => `"${k}"`).join(', ')}];`)
 push('')
 pushIds('kind', 'Kind indices: request kinds first, then backend kinds.', ALL_KINDS)
-pushIds('backend', 'Backend kind indices, counted from `NR`: `NR + backend::Q_READ` is `kind::Q_READ`.', BACKEND_KINDS)
+pushIds(
+  'backend',
+  'Backend kind indices, counted from `NR`: `NR + backend::Q_READ` is `kind::Q_READ`.',
+  BACKEND_KINDS,
+)
 push('')
 push('/// Whether a kind index is one a user asks for (a Request kind).')
 push('pub fn is_request_kind(kind: usize) -> bool {')
@@ -123,19 +130,28 @@ const pushTable = (name: string, module: string | null) => {
     | Record<string, Record<string, unknown>>
     | ReadonlyArray<Record<string, unknown>>
   // A single settings object, such as `UNDER_ATTACK`, is a table of one row.
-  const single = !Array.isArray(table) && Object.values(table).every((value) => typeof value !== 'object')
-  const rows = Array.isArray(table) ? table : single ? [table as Record<string, unknown>] : Object.values(table)
+  const single =
+    !Array.isArray(table) && Object.values(table).every((value) => typeof value !== 'object')
+  const rows = Array.isArray(table)
+    ? table
+    : single
+      ? [table as Record<string, unknown>]
+      : Object.values(table)
   push('')
   if (module) pushIds(module, `\`${name}\` rows.`, Object.keys(table))
   for (const field of Object.keys(rows[0] ?? {})) {
     const values = rows.map((row) => row[field])
     const column = `${name}_${snake(field)}`
     if (values.every((value) => typeof value === 'number'))
-      push(`pub static ${column}: [f64; ${rows.length}] = [${values.map((v) => formatNumber(v as number)).join(', ')}];`)
+      push(
+        `pub static ${column}: [f64; ${rows.length}] = [${values.map((v) => formatNumber(v as number)).join(', ')}];`,
+      )
     else if (values.every((value) => typeof value === 'boolean'))
       push(`pub static ${column}: [bool; ${rows.length}] = [${values.join(', ')}];`)
     else if (field !== 'name' && values.every((value) => typeof value === 'string'))
-      push(`pub static ${column}: [&str; ${rows.length}] = [${values.map((v) => JSON.stringify(v)).join(', ')}];`)
+      push(
+        `pub static ${column}: [&str; ${rows.length}] = [${values.map((v) => JSON.stringify(v)).join(', ')}];`,
+      )
   }
 }
 push('')
@@ -166,11 +182,10 @@ function formatNumber(value: number): string {
 
 // ---- record tables ----
 const requestIndex = new Map(REQUEST_KINDS.map((kind, index) => [kind, index]))
-const backendIndex = new Map(BACKEND_KINDS.map((kind, index) => [kind, index]))
 const kindIndex = new Map(ALL_KINDS.map((kind, index) => [kind, index]))
 
 const sparse = (record: Record<string, number> | undefined, total: number): Array<string> => {
-  const row = new Array(total).fill('0.0')
+  const row = Array.from({ length: total }, () => '0.0')
   for (const [key, value] of Object.entries(record ?? {})) {
     const index = kindIndex.get(key)
     if (index !== undefined) row[index] = formatNumber(value)
@@ -240,11 +255,14 @@ push(
 )
 pushIds('runtime', 'Runtime indices.', RUNTIME_IDS)
 const runtime = catalog.RUNTIMES
-push('/// Each runtime\'s language, as an index into `LANGUAGE_IDS`.')
+push("/// Each runtime's language, as an index into `LANGUAGE_IDS`.")
 push(
   `pub static RUNTIME_LANGUAGE: [usize; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => catalog.LANGUAGE_IDS.indexOf(runtime[id].language)).join(', ')}];`,
 )
-const concurrency = pushEnum('Concurrency', RUNTIME_IDS.map((id) => runtime[id].model))
+const concurrency = pushEnum(
+  'Concurrency',
+  RUNTIME_IDS.map((id) => runtime[id].model),
+)
 push(
   `pub static RUNTIME_MODEL: [Concurrency; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => `Concurrency::${concurrency.get(runtime[id].model)}`).join(', ')}];`,
 )
@@ -281,7 +299,10 @@ push(
 push(
   `pub static RUNTIME_PERSISTENT: [bool; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => runtime[id].persistent).join(', ')}];`,
 )
-const blocking = pushEnum('Blocking', RUNTIME_IDS.map((id) => runtime[id].blocking ?? 'none'))
+const blocking = pushEnum(
+  'Blocking',
+  RUNTIME_IDS.map((id) => runtime[id].blocking ?? 'none'),
+)
 push(
   `pub static RUNTIME_BLOCKING: [Blocking; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => `Blocking::${blocking.get(runtime[id].blocking ?? 'none')}`).join(', ')}];`,
 )
@@ -303,9 +324,15 @@ push('')
 push('// ---- Languages ----')
 // PHP-FPM pool modes, in the order the harness encodes `pm`: spares (-1 for the whole pool), spawn share, spawn ms.
 const PM_IDS = ['static', 'dynamic', 'ondemand']
-push(`pub static PM_SPARES: [f64; 3] = [${PM_IDS.map((id) => formatNumber(catalog.PM_MODES[id].spares ?? -1)).join(', ')}];`)
-push(`pub static PM_SPAWN_SHARE: [f64; 3] = [${PM_IDS.map((id) => formatNumber(catalog.PM_MODES[id].spawnShare)).join(', ')}];`)
-push(`pub static PM_SPAWN_MS: [f64; 3] = [${PM_IDS.map((id) => formatNumber(catalog.PM_MODES[id].spawnMs)).join(', ')}];`)
+push(
+  `pub static PM_SPARES: [f64; 3] = [${PM_IDS.map((id) => formatNumber(catalog.PM_MODES[id].spares ?? -1)).join(', ')}];`,
+)
+push(
+  `pub static PM_SPAWN_SHARE: [f64; 3] = [${PM_IDS.map((id) => formatNumber(catalog.PM_MODES[id].spawnShare)).join(', ')}];`,
+)
+push(
+  `pub static PM_SPAWN_MS: [f64; 3] = [${PM_IDS.map((id) => formatNumber(catalog.PM_MODES[id].spawnMs)).join(', ')}];`,
+)
 
 const LANGUAGE_IDS = catalog.LANGUAGE_IDS
 push(`pub const LANGUAGE_COUNT: usize = ${LANGUAGE_IDS.length};`)
@@ -359,7 +386,7 @@ push(
 )
 push(`pub static FRAMEWORK_VALUE: [[f64; NR]; ${FRAMEWORK_IDS.length}] = [`)
 for (const id of FRAMEWORK_IDS) {
-  const row = new Array(NR).fill('1.0')
+  const row = Array.from({ length: NR }, () => '1.0')
   for (const [key, value] of Object.entries(framework[id].value ?? {})) {
     const index = requestIndex.get(key)
     if (index !== undefined) row[index] = formatNumber(value as number)
@@ -369,7 +396,7 @@ for (const id of FRAMEWORK_IDS) {
 push('];')
 push(`pub static FRAMEWORK_CPU: [[f64; NR]; ${FRAMEWORK_IDS.length}] = [`)
 for (const id of FRAMEWORK_IDS) {
-  const row = new Array(NR).fill('1.0')
+  const row = Array.from({ length: NR }, () => '1.0')
   for (const [key, value] of Object.entries(framework[id].cpu ?? {})) {
     const index = requestIndex.get(key)
     if (index !== undefined) row[index] = formatNumber(value as number)
@@ -484,13 +511,27 @@ push(
 // Each Venture's traffic profile and rule, so the revenue layer reads the same
 // numbers the TypeScript does.
 const VENTURES = catalog.VENTURE_IDS.map((id) => catalog.VENTURES[id])
-push(`pub static VENTURE_VALUE: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.value)).join(', ')}];`)
-push(`pub static VENTURE_MARKET: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.market)).join(', ')}];`)
-push(`pub static VENTURE_AMPLITUDE: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.amplitude)).join(', ')}];`)
-push(`pub static VENTURE_PEAK: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.peak)).join(', ')}];`)
-push(`pub static VENTURE_WEEKEND: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.weekend)).join(', ')}];`)
-push(`pub static VENTURE_DEADLINE: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => (v.constraint.deadline === null ? '-1.0' : formatNumber(v.constraint.deadline))).join(', ')}];`)
-push(`pub static VENTURE_STALE_FINE: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.constraint.staleFine)).join(', ')}];`)
+push(
+  `pub static VENTURE_VALUE: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.value)).join(', ')}];`,
+)
+push(
+  `pub static VENTURE_MARKET: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.market)).join(', ')}];`,
+)
+push(
+  `pub static VENTURE_AMPLITUDE: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.amplitude)).join(', ')}];`,
+)
+push(
+  `pub static VENTURE_PEAK: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.peak)).join(', ')}];`,
+)
+push(
+  `pub static VENTURE_WEEKEND: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.weekend)).join(', ')}];`,
+)
+push(
+  `pub static VENTURE_DEADLINE: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => (v.constraint.deadline === null ? '-1.0' : formatNumber(v.constraint.deadline))).join(', ')}];`,
+)
+push(
+  `pub static VENTURE_STALE_FINE: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.constraint.staleFine)).join(', ')}];`,
+)
 
 push(
   `pub static COLLECTOR_PAUSE: [f64; 3] = [${['g1', 'parallel', 'zgc'].map((id) => formatNumber(catalog.COLLECTORS[id as 'g1'].pauseMs)).join(', ')}];`,
@@ -566,7 +607,6 @@ push(
 push(
   `pub static MONEY_KINDS_MASK: u64 = 0x${catalog.MONEY_KINDS.reduce((mask, kind) => mask | (1n << BigInt(kindIndex.get(kind)!)), 0n).toString(16)};`,
 )
-const DATA = new Set(catalog.DATA_KINDS)
 push(
   `pub static DATA_KINDS_MASK: u64 = ${(() => {
     let m = 0n

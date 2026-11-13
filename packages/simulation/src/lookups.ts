@@ -19,32 +19,25 @@ import {
   RETENTION_WINDOWS,
   SAMPLE_STORAGE,
   GPU_TYPES,
-  GZIP_RATIO,
   HANDSHAKE_MS,
   HOP_MS,
   L4_BURN,
   POD_BURN,
-  PROFILES,
   PRICINGS,
   DEPLOY_STRATEGIES,
   RESTART_SECONDS,
   SELL_REFUND,
   SIZES,
   STORAGE_PRICE,
-  STREAM_KB,
   VCPU_PRICE,
   SAVINGS_PLAN_RATE,
   WARMED,
-  USER_MBPS,
-  USER_UP_MBPS,
   VM_RESTART_SECONDS,
   type DockGroup,
   DOCK_OF,
   type ComponentId,
   type EraDef,
   type FrameworkId,
-  type RequestKind,
-  type RequestProfile,
   type PerkId,
   type ResearchId,
   type RuntimeId,
@@ -79,7 +72,6 @@ import {
   SYNC_MS,
   REPLICA_BOX_PRICE,
   rttOf,
-  INDEX_WRITE_COST,
   CACHE_KEYS,
   SEARCH_VARIANTS,
   SEARCH_INDEX_SHARE,
@@ -195,54 +187,6 @@ export const sizeName = (node: GameNode): string => SIZES[node.size]?.name ?? 'c
 export const sizeLabel = (node: GameNode, size = node.size): string =>
   COMPONENTS[node.type].sized ? (SIZES[size]?.name ?? '') : `size ${size}`
 
-/**
- * A key that identifies a Design: the same Node objects, Links, research,
- * features, and the Service's fixes. Work that depends only on those can be
- * cached across Steps: a Node that changed is a different object, so identity
- * is the whole check. The service list itself is rebuilt every Step, but its
- * fixes array is not, so the fixes stand in for it.
- */
-const designKeys = new WeakMap<Game, object>()
-let lastDesign: Readonly<{
-  nodes: ReadonlyArray<GameNode>
-  links: unknown
-  researched: unknown
-  features: unknown
-  fixes: unknown
-  key: object
-}> | null = null
-
-export const designKeyOf = (game: Game): object => {
-  const known = designKeys.get(game)
-  if (known) return known
-  const fixes = game.services[0]?.fixes
-  const previous = lastDesign
-  let key: object
-  if (
-    previous !== null &&
-    previous.links === game.links &&
-    previous.researched === game.researched &&
-    previous.features === game.features &&
-    previous.fixes === fixes &&
-    previous.nodes.length === game.nodes.length &&
-    previous.nodes.every((node, index) => node === game.nodes[index])
-  ) {
-    key = previous.key
-  } else {
-    key = {}
-    lastDesign = {
-      nodes: game.nodes,
-      links: game.links,
-      researched: game.researched,
-      features: game.features,
-      fixes,
-      key,
-    }
-  }
-  designKeys.set(game, key)
-  return key
-}
-
 /** Capacity and Burn multiplier of a flat Component's size: each step doubles both. */
 export const flatScale = (node: GameNode): number => grown(1, 2, node.size - 1)
 
@@ -258,30 +202,8 @@ export const sampleIndex = (node: GameNode): number => {
 
 export const vcpuOf = (node: GameNode): number => SIZES[node.size]?.vcpu ?? 1
 
-/** KB a response of this kind sends from this Node: gzip shrinks the compressible kinds. */
-export const payloadOf = (node: GameNode, kind: RequestKind, offloaded = false): number =>
-  (offloaded && PROFILES[kind].offload > 0 ? PROFILES[kind].asyncKB : PROFILES[kind].payloadKB) *
-  (node.compress && PROFILES[kind].compressible ? GZIP_RATIO : 1)
-
-/** Milliseconds the response takes to reach the user over their downlink, after the request came up. */
-export const transferMs = (node: GameNode, kind: RequestKind, offloaded = false): number =>
-  ((PROFILES[kind].stream
-    ? Math.min(STREAM_KB, payloadOf(node, kind, offloaded))
-    : payloadOf(node, kind, offloaded)) *
-    8) /
-    USER_MBPS +
-  (PROFILES[kind].inKB * 8) / USER_UP_MBPS
-
 /** Credential stuffing: bots send logins, each one a password hash. */
 export const stuffing = (game: Game): boolean => game.incident?.kind === 'stuffing'
-
-/** A kind's profile now: during credential stuffing, bots send logins. */
-export const profileOf = (game: Game, kind: RequestKind): RequestProfile =>
-  kind === 'bot' && stuffing(game) ? { ...PROFILES.login, scored: false } : PROFILES[kind]
-
-/** This kind costs an App Server a login: a password hash, or a call to the Auth Provider. */
-export const asLogin = (game: Game, kind: RequestKind): boolean =>
-  kind === 'login' || (kind === 'bot' && stuffing(game))
 
 /** Milliseconds one internal call costs on the wire: a hop, plus a handshake without keep-alive. */
 export const hopMs = (game: Game): number => HOP_MS + (has(game, 'keepalive') ? 0 : HANDSHAKE_MS)
@@ -302,9 +224,6 @@ export const zoned = (node: GameNode): boolean =>
 /** Extra milliseconds a call between two Nodes pays for leaving its zone. Regional Nodes span every zone. */
 export const zoneMs = (from: GameNode, to: GameNode): number =>
   zoned(from) && zoned(to) && from.zone !== to.zone ? CROSS_ZONE_MS : 0
-
-/** KB per second the box's network card moves: Gbps × 125,000. */
-export const networkOf = (node: GameNode): number => (SIZES[node.size]?.gbps ?? 1) * 125_000
 
 export const ramOf = (node: GameNode): number => vcpuOf(node) * FAMILIES[node.family].ramPerVcpu
 
@@ -387,19 +306,6 @@ export const coldStartMs = (node: GameNode): number => {
 export const hasEdge = (game: Game): boolean =>
   game.nodes.some((node) => node.type === 'edge' && !isDown(node))
 
-/**
- * The live Vector Index a Node links to, if any: the company's own documents behind an `ai`
- * answer (07 "Vector Index"). A Node that reaches one pays the nearest-neighbour lookup, and the
- * prompt it answers earns more.
- */
-export const vecOf = (game: Game, node: GameNode): GameNode | undefined =>
-  game.nodes.find(
-    (entry) =>
-      entry.type === 'vec' &&
-      !isDown(entry) &&
-      game.links.some((link) => link.from === node.id && link.to === entry.id),
-  )
-
 /** Replicas an Event Stream keeps of each partition, 1 to 3 (07 "Event Stream"). */
 export const logReplicas = (node: GameNode): number =>
   Math.max(1, Math.min(LOG_REPLICAS[LOG_REPLICAS.length - 1] ?? 3, Math.floor(node.n)))
@@ -407,12 +313,6 @@ export const logReplicas = (node: GameNode): number =>
 /** The share of its events an Event Stream loses when a broker fails: all of them with one replica. */
 export const logLoss = (node: GameNode): number =>
   logReplicas(node) <= 1 ? 1 : LOG_LOSS[node.acks]
-
-/** Whether a live API Gateway validates every token at the edge, so the services skip it (05). */
-export const edgeAuthOf = (game: Game): boolean =>
-  game.nodes.some(
-    (node) => node.type === 'gw' && node.authEdge && !isDown(node) && node.service._tag !== 'Shut',
-  )
 
 /** The live Service Mesh Nodes, and the members that link into each, found once per Game. */
 const meshed = new WeakMap<Game, ReadonlyMap<string, ReadonlyArray<GameNode>>>()
@@ -1018,10 +918,6 @@ export const syncWaitMs = (game: Game, database: GameNode): number => {
 export const syncStalled = (game: Game, group: string): boolean =>
   syncReplicasOf(game, group).some((replica) => isDown(replica))
 
-/** The indexes the Services have added: each one makes every write cost more (07 "Indexes"). */
-export const indexWriteFactor = (game: Game): number =>
-  1 + INDEX_WRITE_COST * game.services.reduce((sum, service) => sum + service.indexes, 0)
-
 /** What a CDN's cache key does to its hit ratio. */
 export const cacheKeyHit = (node: GameNode): number => CACHE_KEYS[node.cacheKey].hit
 
@@ -1035,22 +931,3 @@ export const rampedOf = (game: Game, node: GameNode): boolean =>
       link.to === node.id &&
       game.nodes.some((entry) => entry.id === link.from && entry.type === 'lb' && entry.slowStart),
   )
-
-/** The Nodes a sticky Load Balancer pins its users to, per node list: built once per Step. */
-const pinnedSets = new WeakMap<ReadonlyArray<GameNode>, ReadonlySet<string>>()
-
-/**
- * Whether a sticky Load Balancer links to the Node (05 "Load Balancer"): its users stay on it, so
- * an App Server answers some reads from its own memory and a Hub takes back its own clients.
- */
-export const pinnedOf = (game: Game, node: GameNode): boolean => {
-  let set = pinnedSets.get(game.nodes)
-  if (!set) {
-    const sticky = new Set(
-      game.nodes.filter((entry) => entry.type === 'lb' && entry.sticky).map((entry) => entry.id),
-    )
-    set = new Set(game.links.filter((link) => sticky.has(link.from)).map((link) => link.to))
-    pinnedSets.set(game.nodes, set)
-  }
-  return set.has(node.id)
-}

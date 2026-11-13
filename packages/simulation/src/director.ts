@@ -71,7 +71,6 @@ import { PROMOTE_DATA_LOSS } from './components/replica.ts'
 import { nextRandom, pickWeighted } from './random.ts'
 import type { Game, GameLink, GameNode, Incident, Postmortem, Region, Zone } from './state.ts'
 import { isGlobal, survivesRegion } from './regions.ts'
-import { collectorOf } from './capacity.ts'
 import {
   fixed,
   platformStaffed,
@@ -160,7 +159,10 @@ const gcTargets = (game: Game, ledger: Ledger): ReadonlyArray<readonly [GameNode
   game.nodes
     .filter(
       (node) =>
-        node.type === 'server' && collectorOf(node) !== null && !isDown(node) && busy(ledger, node),
+        node.type === 'server' &&
+        RUNTIMES[node.runtime].gc !== null &&
+        !isDown(node) &&
+        busy(ledger, node),
     )
     .map((node) => {
       const ram = ledger.nodes[node.id]?.resources.ramGb

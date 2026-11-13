@@ -3,8 +3,9 @@ import { expect, test } from 'vitest'
 import { COMPONENT_IDS, COMPONENTS } from '../src/catalog.ts'
 
 /*
- * The layout of "one file per Component": each id has a data file, `components/<id>.ts`, and a
- * rule file, `components/<id>.rule.ts`. The data file is imported by the catalog, so it must not
+ * The layout of "one file per Component": each id has a data file, `components/<id>.ts`, and the
+ * Actions and helpers only it has live in `components/<id>.rule.ts`. The solve itself runs in the
+ * kernel (`kernel/`). The data file is imported by the catalog, so it must not
  * import anything that imports the catalog back (the solver, the lookups, the state): that is an
  * import cycle, and it crashes at load.
  */
@@ -16,15 +17,15 @@ const importsOf = (text: string) =>
     (match) => [Boolean(match[1]), match[2] ?? ''] as const,
   )
 
-test('every Component has a data file and a rule file', () => {
-  for (const id of COMPONENT_IDS) {
+const ruleFile = (id: string): string | null =>
+  existsSync(new URL(`${id}.rule.ts`, dir)) ? `${id}.rule.ts` : null
+
+test('every Component has a data file, and every other file belongs to one', () => {
+  for (const id of COMPONENT_IDS)
     expect(existsSync(new URL(`${id}.ts`, dir)), `${id}.ts`).toBe(true)
-    expect(existsSync(new URL(`${id}.rule.ts`, dir)), `${id}.rule.ts`).toBe(true)
-  }
-  const files = readdirSync(dir).filter(
-    (name) => !/^(define|defs|fields|index|rules)\.ts$/.test(name),
-  )
-  expect(files.length).toBe(COMPONENT_IDS.length * 2)
+  const owned = new Set(COMPONENT_IDS.flatMap((id) => [`${id}.ts`, ruleFile(id) ?? []].flat()))
+  const files = readdirSync(dir).filter((name) => !/^(define|defs|fields|index)\.ts$/.test(name))
+  expect(files.filter((name) => !owned.has(name))).toEqual([])
 })
 
 test('a data file imports only data: effect, the catalog, and types from the state', () => {
@@ -40,15 +41,13 @@ test('a data file imports only data: effect, the catalog, and types from the sta
   }
 })
 
-test('no Component imports another, except a Read Replica reusing the Database rule', () => {
+test('no Component imports another', () => {
   const names = new Set<string>(COMPONENT_IDS)
   for (const id of COMPONENT_IDS) {
-    for (const file of [`${id}.ts`, `${id}.rule.ts`]) {
+    for (const file of [`${id}.ts`, ruleFile(id) ?? []].flat()) {
       for (const [, spec] of importsOf(read(file))) {
         const other = /^\.\/([a-z0-9]+)(\.rule)?\.ts$/.exec(spec)?.[1]
-        if (!other || !names.has(other) || other === id) continue
-        const own = other === 'database' && id === 'replica' && file === 'replica.rule.ts'
-        expect(own, `${file} imports ${spec}`).toBe(true)
+        expect(!other || !names.has(other) || other === id, `${file} imports ${spec}`).toBe(true)
       }
     }
   }

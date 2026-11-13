@@ -2,18 +2,6 @@ import { type Action, notAllowed, ok, withNode } from '../action-kit.ts'
 import type { FeatureId, Game } from '../state.ts'
 import { ROLLOUT_STEPS } from '../catalog.ts'
 import { isLive, step } from '../feature-machine.ts'
-import { failed } from '../distribution.ts'
-
-import { flatModel } from '../capacity.ts'
-import { type ComponentRule, terminal } from '../rule-kit.ts'
-
-// Feature Flags carry nothing either: what they change is how far a bad deploy reaches, which
-// `badDeployShare` reads from the Design (05 "Feature Flags", 08 "Rollout").
-export const ffRule: ComponentRule = {
-  model: () => flatModel(Number.POSITIVE_INFINITY, {}, { fixedMs: 0, variableMs: 0 }, 1),
-  outcome: () => failed('stranded'),
-  ...terminal,
-}
 
 /**
  * Sets a Feature's rollout from its flag (05 "Feature Flags", 08 "Rollout"). One of the design's

@@ -5,7 +5,7 @@ import { INSIGHT_POOLS } from '../src/catalog.ts'
 import { link, newGame, node, preseedGame } from '../src/company.ts'
 import { freeSandbox, GUIDED } from '../src/sandbox.ts'
 import { solveFlow } from '../src/solve.ts'
-import { unsampledOf } from '../src/solve-insight.ts'
+import { unsampledOf } from '../src/ledger.ts'
 import {
   advanceStudies,
   broadEnough,

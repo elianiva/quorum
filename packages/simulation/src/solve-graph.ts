@@ -1,16 +1,7 @@
-import {
-  COMPONENTS,
-  REQUEST_KINDS,
-  SAMPLE_LATENCY,
-  SAMPLE_OVERHEAD,
-  LINK_TIMEOUT,
-  BACKEND_KINDS,
-  type RequestKind,
-} from './catalog.ts'
-import { RETRY_BUDGET, attemptsFor } from './distribution.ts'
+import { COMPONENTS, SAMPLE_LATENCY, SAMPLE_OVERHEAD, LINK_TIMEOUT } from './catalog.ts'
 import { has, meshOf, sampleIndex } from './lookups.ts'
 import { isOpen } from './breaker-machine.ts'
-import { slotOf, accepts, type Pass, type Rates } from './rules.ts'
+import { accepts } from './rules.ts'
 import { type Game, type GameLink, type GameNode } from './state.ts'
 import { fixed } from './team.ts'
 
@@ -287,41 +278,13 @@ export const policyOf = (game: Game, link: GameLink | undefined, from?: GameNode
 export const edgeOf = (graph: Graph, from: string, to: string): Edge | undefined =>
   graph.edgeTo.get(from)?.get(to)
 
-export const NO_RATES: Rates = {}
-
-/** What a pass sent from one Node to another, by kind. */
-export const carriedOn = (graph: Graph, pass: Pass, from: string, to: string): Rates => {
-  const edge = edgeOf(graph, from, to)
-  return (edge && pass.links[edge.index]) ?? NO_RATES
-}
-
-/** Calls per call a retrying Link sends when a share `failure` fails. */
-export const amplification = (policy: Policy, failure: number): number =>
-  policy.open
-    ? 0
-    : policy.retry === 'naive'
-      ? attemptsFor(failure)
-      : policy.retry === 'backoff'
-        ? 1 + Math.min(RETRY_BUDGET, attemptsFor(failure) - 1)
-        : 1
-
 export const delegates = (graph: Graph, node: GameNode): boolean =>
   (graph.routes.get(node.id) ?? []).some((child) => accepts(child, 'auth'))
-
-/** A CDC Connector reads this Node's write log (05 "CDC Connector"). */
-export const cdcMirrored = (graph: Graph, node: GameNode): boolean =>
-  (graph.mirrors.get(node.id)?.length ?? 0) > 0
 
 /** An App Server with a Link to a Queue or an Event Stream hands its async work to Workers. */
 export const offloads = (graph: Graph, node: GameNode): boolean =>
   node.type === 'server' &&
   (graph.routes.get(node.id) ?? []).some((child) => child.type === 'queue' || child.type === 'log')
-
-export const runsLocalDb = (graph: Graph, node: GameNode): boolean =>
-  node.localDb &&
-  !(graph.routes.get(node.id) ?? []).some(
-    (child) => accepts(child, 'q-read') || accepts(child, 'q-write'),
-  )
 
 /** CPU overhead from Analytics sampling a Node: the highest rate of any tap on it. */
 export const samplingOf = (game: Game, graph: Graph, node: GameNode): number => {
@@ -343,39 +306,4 @@ export const samplingMsOf = (graph: Graph, node: GameNode): number => {
     if (tap) ms = Math.max(ms, SAMPLE_LATENCY[sampleIndex(tap)] ?? 0)
   }
   return ms
-}
-
-/**
- * The request kinds behind each Node's traffic, as shares. A request keeps its
- * kind on every hop: the backend kinds a Node receives carry the mix of the
- * Nodes that sent them.
- */
-export const originsOf = (
-  graph: Graph,
-  pass: Pass,
-): Map<string, ReadonlyArray<readonly [RequestKind, number]>> => {
-  const origins = new Map<string, ReadonlyArray<readonly [RequestKind, number]>>()
-  for (const node of graph.order) {
-    const mix = new Map<RequestKind, number>()
-    const arriving = pass.arriving[slotOf(pass, node)] ?? {}
-    for (const kind of REQUEST_KINDS) {
-      const rate = arriving[kind] ?? 0
-      if (rate > 0) mix.set(kind, rate)
-    }
-    for (const parent of graph.parents.get(node.id) ?? []) {
-      const carried = carriedOn(graph, pass, parent.id, node.id)
-      let backend = 0
-      for (const kind of BACKEND_KINDS) backend += carried[kind] ?? 0
-      if (backend <= 0) continue
-      for (const [kind, share] of origins.get(parent.id) ?? [])
-        mix.set(kind, (mix.get(kind) ?? 0) + backend * share)
-    }
-    let total = 0
-    for (const rate of mix.values()) total += rate
-    origins.set(
-      node.id,
-      total > 0 ? [...mix].map(([kind, rate]) => [kind, rate / total] as const) : [],
-    )
-  }
-  return origins
 }

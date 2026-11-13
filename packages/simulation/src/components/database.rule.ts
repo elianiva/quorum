@@ -11,115 +11,14 @@ import {
 } from '../action-kit.ts'
 import type { Backup, DbRetention, DbTopology, Game, IopsClass, ShardKey } from '../state.ts'
 import {
-  MATERIALIZED_STALE,
   RESEARCH,
   RESTORE_DRILL_DH,
   RESTORE_FAILURE,
   SHARD_COUNTS,
   SHARD_KEYS,
-  MULTI_CONFLICT,
-  DISTRIBUTED_TX_FAILURE,
 } from '../catalog.ts'
 import { nextRandom } from '../random.ts'
-import { answered, failSome, failed, through, type Outcome } from '../distribution.ts'
-import { databaseModel } from '../capacity.ts'
-import {
-  dataGroupOf,
-  databasesOfGroup,
-  has,
-  replacePrice,
-  shardingOf,
-  syncStalled,
-  topologyOfGroup,
-} from '../lookups.ts'
-import { type ComponentRule, slotOf, terminal } from '../rule-kit.ts'
-
-export const databaseRule: ComponentRule = {
-  model: (solver, node, arriving) =>
-    databaseModel({
-      game: solver.game,
-      node,
-      arriving,
-      boost: solver.boost(node),
-      connections: solver.connections(node),
-      cdcMirrored: solver.cdcMirrored(node),
-    }),
-  outcome: (answer, node, kind) => {
-    // A full disk: Postgres cannot extend a file, so every write fails.
-    if (
-      answer.game.incident?.kind === 'disk-full' &&
-      answer.game.incident.nodeId === node.id &&
-      (kind === 'q-write' || kind === 'q-tx' || kind === 'blob-put')
-    )
-      return failed('refused')
-    // A migration holds the table's lock while it copies it: writes queue and time out
-    // (11 "Schema migration lock").
-    if (
-      answer.game.incident?.kind === 'migration-lock' &&
-      answer.game.incident.nodeId === node.id &&
-      (kind === 'q-write' || kind === 'q-tx')
-    )
-      return failed('timeout')
-    // A deleted table: every read and write that needs it fails until a restore (11).
-    if (
-      answer.game.incident?.kind === 'accidental-delete' &&
-      answer.game.incident.nodeId === node.id &&
-      (kind === 'q-read' || kind === 'q-write' || kind === 'q-tx')
-    )
-      return failed('refused')
-    // A synchronous replica that is down stalls every write the primary takes, because each one
-    // waits for it (07 "Read Replica").
-    if (
-      node.type === 'database' &&
-      (kind === 'q-write' || kind === 'q-tx') &&
-      syncStalled(answer.game, dataGroupOf(answer.game, node))
-    )
-      return failed('timeout')
-    const pool = answer.pass.connections[slotOf(answer.pass, node)]
-    const refused = pool && pool.used > pool.max ? 1 - pool.max / pool.used : 0
-    // A report read from a materialized view is as fresh as its last refresh (10 "Performance").
-    const staleScan =
-      kind === 'q-scan' && node.materialized && has(answer.game, 'precompute')
-        ? MATERIALIZED_STALE
-        : 0
-    const reply: Outcome = {
-      ...answered(0, 0),
-      success: 1 - refused,
-      stale: Math.max(
-        node.type === 'replica' && kind === 'q-read' && !node.sync ? answer.pass.staleShare : 0,
-        staleScan,
-      ),
-      failRefused: refused,
-    }
-    const own = through(answer.ownHop(kind), [[reply, 1]])
-    // A multi-leader certifies every write against its peers: when two leaders touch the same row
-    // at once, the first commit wins and the loser rolls back (07 "Multi-leader").
-    const group = node.type === 'database' ? dataGroupOf(answer.game, node) : ''
-    const groupDatabases =
-      node.type === 'database' ? databasesOfGroup(answer.game, group).length : 0
-    if (
-      node.type === 'database' &&
-      (kind === 'q-write' || kind === 'q-tx' || kind === 'blob-put') &&
-      topologyOfGroup(answer.game, group) === 'multi' &&
-      groupDatabases > 1
-    )
-      return failSome(own, Math.min(0.5, MULTI_CONFLICT * (groupDatabases - 1)), 'refused')
-    // A transaction across shards commits on each of them, and any one can fail (07 "Partitioning").
-    // Physical sharding (07 "Topologies") widens the same count: N Databases are N shards.
-    if (kind === 'q-tx') {
-      const sharded = node.type === 'database' && topologyOfGroup(answer.game, group) === 'sharded'
-      const logical = shardingOf(node)
-      const shards = logical.shards * (sharded ? Math.max(1, groupDatabases) : 1)
-      const key = SHARD_KEYS[node.shardKey]
-      const cross = shards > 1 ? key.cross * (1 - 1 / shards) : 0
-      const failure = cross * DISTRIBUTED_TX_FAILURE * shards
-      return failSome(own, failure, 'timeout')
-    }
-    return own
-  },
-  ...terminal,
-  probe: () => ({ 'q-read': 1 }),
-}
+import { has, replacePrice } from '../lookups.ts'
 
 /**
  * Sets a Database's backups. Needs Point-in-time recovery. A backup nobody has restored is

@@ -1,69 +1,8 @@
 import { type Action, Refusal, no, notAllowed, ok, patch, withNode } from '../action-kit.ts'
-import type { Game, GameNode } from '../state.ts'
-import {
-  GATEWAY_BURST,
-  GATEWAY_LIMITS,
-  RESEARCH,
-  GATEWAY_AUTH_MS,
-  COALESCE_KINDS,
-  COALESCE_HOT,
-  COALESCE_WINDOW,
-  type Kind,
-  type RequestKind,
-} from '../catalog.ts'
-import { failSome } from '../distribution.ts'
+import type { Game } from '../state.ts'
+import { GATEWAY_BURST, GATEWAY_LIMITS, RESEARCH } from '../catalog.ts'
 
-import { flatModel } from '../capacity.ts'
 import { has } from '../lookups.ts'
-import {
-  type ComponentRule,
-  each,
-  flatCapacity,
-  gatewayArrivals,
-  gatewayShare,
-  noConnections,
-  noProbe,
-  relay,
-  slotOf,
-} from '../rule-kit.ts'
-
-/**
- * Share of a read kind's requests a Gateway merges into one already in flight (05 "Request
- * coalescing"): the popular reads that overlap, which grows with the rate.
- */
-const merged = (node: GameNode, kind: Kind, rate: number): number => {
-  if (!node.merge || !COALESCE_KINDS.includes(kind as RequestKind)) return 0
-  const overlap = rate * COALESCE_WINDOW
-  return (COALESCE_HOT * overlap) / (1 + overlap)
-}
-
-// A Gateway relays every kind, and past its rate limit it answers throttled instead (05).
-export const gwRule: ComponentRule = {
-  model: (solver, node, arriving) =>
-    flatModel(
-      flatCapacity(node),
-      arriving,
-      { fixedMs: 6 + (node.authEdge ? GATEWAY_AUTH_MS : 0), variableMs: 0.1 },
-      solver.boost(node),
-    ),
-  serve: (serve, node, rates, share) => {
-    const all = gatewayArrivals(serve.solver.game, (entry) => serve.solver.arriving(entry))
-    const kept = all.node ? gatewayShare(all.node, all.arriving) : 1
-    each(rates, share, (kind, processed) =>
-      serve.route(kind, processed * kept * (1 - merged(node, kind, processed * kept))),
-    )
-  },
-  outcome: (answer, node, kind) => {
-    const all = gatewayArrivals(
-      answer.game,
-      (entry) => answer.pass.arriving[slotOf(answer.pass, entry)] ?? {},
-    )
-    const kept = all.node ? gatewayShare(all.node, all.arriving) : 1
-    return failSome(relay(answer, node, kind), 1 - kept, 'throttled')
-  },
-  connections: noConnections,
-  probe: noProbe,
-}
 
 /** Sets the shared API Gateway rate limit in requests per second; 0 turns it off (05). */
 export const setRateLimit = (game: Game, id: string, rateLimit: number): Action =>

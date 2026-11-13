@@ -1,5 +1,5 @@
 import { playwright } from '@vitest/browser-playwright'
-// The `node` command below solves in this process, so it installs the kernel here.
+// The `node` command below solves in this process, so it installs the solver here.
 import './host/node.ts'
 import { defineConfig } from 'vitest/config'
 import { report } from './engines/report.ts'

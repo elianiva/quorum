@@ -308,7 +308,7 @@ pub extern "C" fn node_field_len() -> i32 {
     NODE_FIELDS as i32
 }
 
-/// The catalog this kernel was built from, so a check can tell a stale build.
+/// The catalog this solver was built from, so a check can tell a stale build.
 #[no_mangle]
 pub extern "C" fn catalog_hash() -> f64 {
     f64::from(crate::catalog::CATALOG_HASH)

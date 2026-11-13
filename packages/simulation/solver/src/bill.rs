@@ -1,7 +1,7 @@
 //! The cloud bill, ported from `solve-bill.ts` (`billOf`), and the figures the
 //! Ledger splits it into: cost per kind, cost per Service, and what each Service
 //! served. What depends only on the Game (each Node's `burnOf`, payroll, and the
-//! burn shares) the host works out and sends; the kernel adds what traffic costs.
+//! burn shares) the host works out and sends; the solver adds what traffic costs.
 
 use crate::catalog::*;
 use crate::ledger::{KindRow, NodeRow};

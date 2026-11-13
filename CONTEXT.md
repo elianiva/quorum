@@ -205,7 +205,11 @@ _Avoid_: bandwidth cost, transfer fee
 
 **Simulation**:
 The pure model that turns a Design and demand into the Ledger.
-_Avoid_: engine, solver, kernel
+_Avoid_: engine, kernel
+
+**Solver**:
+The part of the Simulation that runs the solve: a WebAssembly module built from Rust in `packages/simulation/solver`. It takes a Game and returns the Ledger and the Bottleneck. The rest of the Simulation, such as the Step and the catalog, stays in TypeScript ([ADR 0025](docs/adr/0025-the-solve-runs-in-a-rust-solver.md)).
+_Avoid_: kernel, engine
 
 **Step**:
 One advance of the Simulation, 100 ms of sim time.

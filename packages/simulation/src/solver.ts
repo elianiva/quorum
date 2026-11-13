@@ -58,17 +58,17 @@ import {
 } from './team.ts'
 
 /* ==========================================================================
-   The solve runs in a WebAssembly kernel built from `kernel/` (Rust). This
-   file is its host side: it writes a Game into the kernel's blocks and reads
+   The solve runs in a WebAssembly solver built from `solver/` (Rust). This
+   file is its host side: it writes a Game into the solver's blocks and reads
    the Ledger back. The Simulation names no host globals, so each host
-   instantiates the module itself and hands its exports to `installKernel`.
+   instantiates the module itself and hands its exports to `installSolver`.
 
-   The block ids and scalar slots mirror `kernel/src/abi.rs`, and the Ledger
-   stream mirrors `kernel/src/wire.rs`. They change together; `installKernel`
+   The block ids and scalar slots mirror `solver/src/abi.rs`, and the Ledger
+   stream mirrors `solver/src/wire.rs`. They change together; `installSolver`
    checks the scalar count, so a slot added on one side cannot drift.
    ========================================================================== */
 
-/** What the solve calls on the kernel. */
+/** What the solve calls on the solver. */
 type Exports = Readonly<{
   memory: Readonly<{ buffer: ArrayBuffer }>
   scalar_len: () => number
@@ -98,44 +98,44 @@ const FUNCTIONS = [
   'catalog_hash',
 ] as const
 
-let kernel: Exports | null = null
+let solver: Exports | null = null
 
 /**
- * Hands the solve a kernel instance's exports. Every host calls it once at start, before the
+ * Hands the solve a solver instance's exports. Every host calls it once at start, before the
  * first solve: `new WebAssembly.Instance(module).exports`.
  */
-export const installKernel = (exports: Readonly<Record<string, unknown>>): void => {
+export const installSolver = (exports: Readonly<Record<string, unknown>>): void => {
   const memory = exports['memory']
   if (typeof memory !== 'object' || memory === null || !('buffer' in memory))
-    throw new Error('The kernel exports no memory.')
+    throw new Error('The solver exports no memory.')
   for (const name of FUNCTIONS)
-    if (typeof exports[name] !== 'function') throw new Error(`The kernel exports no ${name}.`)
+    if (typeof exports[name] !== 'function') throw new Error(`The solver exports no ${name}.`)
   // Checked above: the memory and every function the solve calls.
   const checked = exports as Exports
   if (checked.scalar_len() !== SCALARS)
     throw new Error(
-      `The kernel has ${checked.scalar_len()} scalar slots; the host writes ${SCALARS}.`,
+      `The solver has ${checked.scalar_len()} scalar slots; the host writes ${SCALARS}.`,
     )
   if (checked.node_field_len() !== NODE_FIELDS)
     throw new Error(
-      `The kernel reads ${checked.node_field_len()} Node fields; the host writes ${NODE_FIELDS}.`,
+      `The solver reads ${checked.node_field_len()} Node fields; the host writes ${NODE_FIELDS}.`,
     )
-  kernel = checked
+  solver = checked
   converged = new WeakSet()
 }
 
-/** The `CATALOG_HASH` the installed kernel was built with, so a check can tell a stale build. */
-export const kernelCatalogHash = (): number => installed().catalog_hash()
+/** The `CATALOG_HASH` the installed solver was built with, so a check can tell a stale build. */
+export const solverCatalogHash = (): number => installed().catalog_hash()
 
 const installed = (): Exports => {
-  if (kernel === null) throw new Error('No solve kernel is installed. Call installKernel first.')
-  return kernel
+  if (solver === null) throw new Error('No Solver is installed. Call installSolver first.')
+  return solver
 }
 
 const ALL: ReadonlyArray<Kind> = [...S.REQUEST_KINDS, ...S.BACKEND_KINDS]
 const NK = ALL.length
 
-/** Block ids, from `kernel/src/abi.rs`. */
+/** Block ids, from `solver/src/abi.rs`. */
 const BLOCK = {
   scalars: 1,
   nodeFields: 2,
@@ -160,7 +160,7 @@ const BLOCK = {
   summary: 24,
 } as const
 
-/** Scalar slots, from `kernel/src/abi.rs`. Slots the host leaves at 0 are listed too. */
+/** Scalar slots, from `solver/src/abi.rs`. Slots the host leaves at 0 are listed too. */
 const SLOT = {
   users: 0,
   seed: 1,
@@ -314,7 +314,7 @@ const SCALARS = Object.keys(SLOT).length
 const NODE_FIELDS = 12
 const EDGE_FIELDS = 10
 
-/** `SUMMARY_*` in `kernel/src/run.rs`. */
+/** `SUMMARY_*` in `solver/src/run.rs`. */
 const SUMMARY_BOTTLENECK = 1
 
 const MODES = ['session', 'transaction', 'statement']
@@ -362,7 +362,7 @@ const kindMask = (kinds: ReadonlyArray<Kind>): number => {
 }
 const EVERY_KIND = Number((1n << BigInt(NK)) - 1n)
 
-/** A view into the kernel's memory. Any call that grows memory detaches it, so take a fresh one. */
+/** A view into the solver's memory. Any call that grows memory detaches it, so take a fresh one. */
 const view = <T>(
   exports: Exports,
   Type: new (buffer: ArrayBuffer, offset: number, length: number) => T,
@@ -371,7 +371,7 @@ const view = <T>(
 ): T => new Type(exports.memory.buffer, exports.ptr(block), length)
 
 const reserve = (exports: Exports, block: number, length: number): void => {
-  if (exports.reserve(block, length) !== 0) throw new Error(`The kernel refused block ${block}.`)
+  if (exports.reserve(block, length) !== 0) throw new Error(`The solver refused block ${block}.`)
 }
 
 const fill = (exports: Exports, block: number, values: ArrayLike<number>): void => {
@@ -462,7 +462,7 @@ const writeDesign = (exports: Exports, game: Game, design: Graph): void => {
   fill(exports, BLOCK.edgeFields, edgeFields)
   fillInt(exports, BLOCK.outStarts, starts)
   fillInt(exports, BLOCK.outEdges, outEdges)
-  // The kernel probes each Node's capacity itself; these are the probe's starting points.
+  // The solver probes each Node's capacity itself; these are the probe's starting points.
   fillWith(exports, BLOCK.weights, nodes, 1)
   fillWith(exports, BLOCK.nominal, nodes, 1)
   reserve(exports, BLOCK.sick, nodes)
@@ -539,7 +539,7 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
   template[SLOT.insightPerk] = perk
   template[SLOT.runtimeFailure] = runtimeFailure
   template[SLOT.dataStaffed] = staffed
-  // Rows go straight into the kernel's block. Nothing below calls the kernel, so the view holds.
+  // Rows go straight into the solver's block. Nothing below calls the solver, so the view holds.
   reserve(exports, BLOCK.scalars, nodes * SCALARS)
   const scalars = view(exports, Float64Array, BLOCK.scalars, nodes * SCALARS)
   game.nodes.forEach((node, index) => {
@@ -689,7 +689,7 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
     row[SLOT.spread] = node.spread ? 1 : 0
   })
 
-  // A kernel call inside the loop would have detached the view and dropped every row after it.
+  // A solver call inside the loop would have detached the view and dropped every row after it.
   if (scalars.length !== nodes * SCALARS)
     throw new Error('The scalar view detached while it was written.')
 
@@ -744,7 +744,7 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
   fillWith(exports, BLOCK.latency, nodes * NK, 0)
 }
 
-/** Writes a Game into the kernel and compiles its Design. */
+/** Writes a Game into the solver and compiles its Design. */
 const write = (exports: Exports, game: Game): void => {
   const design = graphOf(game)
   writeDesign(exports, game, design)
@@ -753,7 +753,7 @@ const write = (exports: Exports, game: Game): void => {
 }
 
 const check = (status: number, call: string): void => {
-  if (status !== 0) throw new Error(`The kernel's ${call} returned status ${status}.`)
+  if (status !== 0) throw new Error(`The solver's ${call} returned status ${status}.`)
 }
 
 /** The chaos experiment's target, as `solve.ts` exports it; here so the encoder needs no cycle. */
@@ -761,13 +761,13 @@ const chaosTarget = (game: Game): string | null =>
   game.chaos && game.time % S.CHAOS_EVERY < S.CHAOS_SECONDS ? game.weakest : null
 
 /**
- * The Games whose converged state the kernel holds: the last one it solved, and every Game
- * `carryKernel` carried it to. The Bottleneck search starts from that state.
+ * The Games whose converged state the solver holds: the last one it solved, and every Game
+ * `carrySolver` carried it to. The Bottleneck search starts from that state.
  */
 let converged = new WeakSet<Game>()
 
 /** The flow solve: the pass loop and its Ledger, without the Bottleneck search. */
-export const kernelFlow = (game: Game): Ledger => {
+export const solverFlow = (game: Game): Ledger => {
   const exports = installed()
   write(exports, game)
   check(exports.solve_run(-1, 0, 0), 'solve_run')
@@ -776,14 +776,14 @@ export const kernelFlow = (game: Game): Ledger => {
 }
 
 /** `to` holds the state `from` solved to: the Step between them changed nothing the solve reads. */
-export const carryKernel = (from: Game, to: Game): void => {
+export const carrySolver = (from: Game, to: Game): void => {
   if (converged.has(from)) converged.add(to)
 }
 
 /** The Node whose doubled capacity would earn the most, searched from the flow solve's state. */
-export const kernelBottleneck = (game: Game): string | null => {
+export const solverBottleneck = (game: Game): string | null => {
   const exports = installed()
-  if (!converged.has(game)) kernelFlow(game)
+  if (!converged.has(game)) solverFlow(game)
   check(exports.bottleneck_run(0), 'bottleneck_run')
   const slot =
     view(exports, Float64Array, BLOCK.summary, exports.summary_len())[SUMMARY_BOTTLENECK] ?? -1
@@ -791,7 +791,7 @@ export const kernelBottleneck = (game: Game): string | null => {
 }
 
 /* ==========================================================================
-   The Ledger stream. `kernel/src/wire.rs` writes every record in the key
+   The Ledger stream. `solver/src/wire.rs` writes every record in the key
    order the Ledger type lists it, so each object literal below reads its
    fields in source order: the result has the same keys, in the same order,
    with the same nulls.
@@ -816,7 +816,7 @@ const STATUSES = [
   'danger',
   'down',
 ] as const satisfies ReadonlyArray<NodeStatus>
-/** `Cause` in `kernel/src/model.rs`, in order. */
+/** `Cause` in `solver/src/model.rs`, in order. */
 const CAUSES = [
   'runtime',
   'collector',

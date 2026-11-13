@@ -1,4 +1,4 @@
-// First: a Room steps its Company, and every Step solves on the kernel.
+// First: a Room steps its Company, and every Step solves on the solver.
 import '@quorum/simulation/host/worker'
 import * as Sentry from '@sentry/cloudflare'
 import { AGENT_ROOM_PATH, MCP_PATH, ROOM_SOCKET_PATH } from '@quorum/rpc'

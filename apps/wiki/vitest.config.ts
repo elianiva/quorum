@@ -16,7 +16,7 @@ export default defineConfig({
   // The corpus tests read every page of the wiki, which a CI runner needs more than 5 s for.
   test: {
     testTimeout: 30_000,
-    // The solve runs in the Rust kernel; every test run installs it first.
+    // The solve runs in the Rust solver; every test run installs it first.
     setupFiles: ['@quorum/simulation/host/node'],
   },
 })

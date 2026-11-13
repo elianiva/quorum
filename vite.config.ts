@@ -11,8 +11,8 @@ const ignored = [
   'coverage/**',
   // Vendored from github.com/wheresryan22/anatomy; kept identical to upstream.
   'apps/web/art/kit/**',
-  // The Rust kernel's cargo output.
-  'packages/simulation/kernel/target/**',
+  // The Rust solver's cargo output.
+  'packages/simulation/solver/target/**',
 ]
 
 export default defineConfig({

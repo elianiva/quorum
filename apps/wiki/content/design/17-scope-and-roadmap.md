@@ -23,11 +23,11 @@ Code: `packages/ui/src/board/board.ts`
 
 ### Simulation
 
-Code: `simulation/solve.ts`, `kernel.ts`, the Rust kernel in `simulation/kernel`, `step.ts`, `director.ts`, `slo.ts`, `regions.ts`, `ipo.ts`, `valuation.ts`, `quarters.ts`, `preview.ts`
+Code: `simulation/solve.ts`, `solver.ts`, the Rust solver in `simulation/solver`, `step.ts`, `director.ts`, `slo.ts`, `regions.ts`, `ipo.ts`, `valuation.ts`, `quarters.ts`, `preview.ts`
 
 Core model:
 
-- Pure flow solve in a WebAssembly kernel, one rule per Component (`simulation/kernel/src/outcomes.rs`)
+- Pure flow solve in a WebAssembly solver, one rule per Component (`simulation/solver/src/outcomes.rs`)
 - Capacity model and latency coupling
 - Connections and link timeouts
 - Apdex revenue

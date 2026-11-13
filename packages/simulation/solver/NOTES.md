@@ -1,12 +1,12 @@
-# Patterns this kernel uses, and why
+# Patterns this solver uses, and why
 
-This note was written while the kernel was research. The TypeScript harnesses it names
-(`forward.ts`, `challenges.ts`, `trajectory.ts`, and the others) compared the kernel with
+This note was written while the solver was research. The TypeScript harnesses it names
+(`forward.ts`, `challenges.ts`, `trajectory.ts`, and the others) compared the solver with
 the TypeScript solve, and were deleted with that solve. The game's test suites now check
-the kernel.
+the solver.
 
 Before writing more Rust I read what the ecosystem currently recommends for a numeric
-kernel compiled to `wasm32-unknown-unknown`. This note records the sources, what they
+solver compiled to `wasm32-unknown-unknown`. This note records the sources, what they
 say, and which pattern each one changed in the crate. The short version: the port is
 data-oriented and pointer-free, and the boundary is a set of named blocks rather than a
 set of pointers.
@@ -32,7 +32,7 @@ set of pointers.
 ### Struct of arrays with `u32` indices, not an object graph
 
 The layout advice is consistent: an array of structs is for object-centric logic, and a
-struct of arrays is for numeric kernels and batch passes, because the inner loop should
+struct of arrays is for numeric solvers and batch passes, because the inner loop should
 read the fields it needs and nothing else. Pointer-heavy graphs are called out as the
 worst case for locality, with an arena-backed contiguous store as the fix.
 
@@ -111,7 +111,7 @@ error: it traps the module and takes the caller's state with it.
 Adopted: the exported functions have no `unwrap`, no `expect`, no indexing that can panic,
 and no arithmetic that can overflow a slot count without a checked conversion. They return
 an `i32` status: `0` ok, `3` a short block, `4` an Edge that names a Node outside the
-Design, `6` an incident code the kernel does not know, and so on. Inside the crate,
+Design, `6` an incident code the solver does not know, and so on. Inside the crate,
 `Option` is used where absence is meaningful (`blend` returns `None` when there is nothing
 to mix), and `unwrap_or_else`/`match` everywhere else.
 
@@ -125,19 +125,19 @@ now length-checked against the block, and a mismatch is status 3, not a trap.
 The wasm-bindgen guide is explicit about what a `&[f64]` parameter gives you: a zero-copy
 typed-array view into linear memory that is valid only for the duration of the call, and
 that _detaches_ if wasm memory grows during it. That is the right shape for a numeric
-kernel, and it is also the reason to keep the number of crossings small.
+solver, and it is also the reason to keep the number of crossings small.
 
 Adopted: no `wasm-bindgen` and no generated glue. The crate exports named blocks —
 scalars, node fields, edge fields, CSR starts and edges, weights, demand, intake, latency,
 probes, routes, the research bitset, and the per-kind value, payload, and query factors — each a `Vec` the crate owns. The host asks
-for `ptr(block)` and writes through a `Float64Array` view; the kernel sizes its own output
+for `ptr(block)` and writes through a `Float64Array` view; the solver sizes its own output
 blocks and the host re-reads the pointer after any call that may have grown memory. A
 solve therefore crosses the boundary a fixed number of times (one `design_set`, one
 `solve_run`, one `bottleneck_run`), not once per Node.
 
 `wasm-bindgen` would remove the manual `ptr`/`reserve` dance, but it would also add a
 build step and a second source of truth for the block layout, and it copies `Vec` returns
-rather than lending them. For a kernel whose whole point is to keep the working set in
+rather than lending them. For a solver whose whole point is to keep the working set in
 linear memory, the flat ABI is the smaller machine. The cost is the contract documented
 above: a stale view after a growing call, and a host that must respect each block's length.
 Both are checked where they can be (`reserve` returns a status, `ptr` returns 0 for an
@@ -224,7 +224,7 @@ fix and gone after it:
 - `placeMs` charged the cross-region round trip into a spread Wide-column Store, and
   `zoneMs` charged a zone hop to provider APIs, the regional LB, WAF and API Gateway, and
   spread stores. follow-the-sun was 49 ms slow on every kind.
-- `game.scenario.value` never reached the kernel. A new input block carries it per kind,
+- `game.scenario.value` never reached the solver. A new input block carries it per kind,
   and gpu-economics now earns the same.
 - The probe ignored the start state. A Bottleneck candidate re-probes its boosted Node,
   and TypeScript's probe reads that Node's carried call latency and connections. Rust read
@@ -242,7 +242,7 @@ that drop tasks, warm-up, and Links that carry a failure share into the next Ste
 scratch variant gave every Queue a dead-letter queue, 3 attempts, and a full backlog, and
 compared 3,200 more states. Porting Queue and Worker, and running whole runs, found:
 
-- The harness wrote incident 0 for every Game, and the kernel decoded only 4 incident
+- The harness wrote incident 0 for every Game, and the solver decoded only 4 incident
   kinds. A run with a scripted incident was solved as if none ran. The slot now holds the
   `INCIDENT_IDS` index plus one, and any incident is refused.
 - `pass_repeats` left out the resource gauges, the backend kinds' service times, and the
@@ -251,7 +251,7 @@ compared 3,200 more states. Porting Queue and Worker, and running whole runs, fo
   the Bottleneck search.
 - A Worker's model is `serverModel` over its task mix, once per attempt. Its attempts come
   from its Queue's dead-letter setting and the task failure share the last pass fed back,
-  which the solve now carries. The task mix falls back to the Era's mix, which the kernel
+  which the solve now carries. The task mix falls back to the Era's mix, which the solver
   now reads from the probe block, where it had weighted kinds by their offload share.
   `mix_feed` reads the same mix instead of 0.
 - `repeated` added `sent - rate * weight` in one step; TypeScript adds `sent` and then
@@ -275,7 +275,7 @@ below size 3 divides instead of multiplying.
 ## Incidents
 
 Every incident kind now decodes. Kinds with no effect on a figure the solve reads decode
-to `Incident::Elsewhere`, so the kernel refuses only a code it does not know. A scratch
+to `Incident::Elsewhere`, so the solver refuses only a code it does not know. A scratch
 sweep forced each of the 56 kinds on every Challenge board and compared the first 6 Steps.
 It found:
 
@@ -292,7 +292,7 @@ It found:
   the kind's profile, as `profileOf` does.
 - jvm-warmup differed only when the sweep reused one Game object across solves.
   TypeScript caches a server's table by Design, and the cache misses the warm-up change.
-  With a deep copy per solve (`FRESH=1`) the figures are identical, so the kernel is right.
+  With a deep copy per solve (`FRESH=1`) the figures are identical, so the solver is right.
 
 ## Vector Index, Distributed SQL, Document Store, CDN, and Edge Function
 
@@ -306,7 +306,7 @@ linked straight to the App Servers' backends. All 2,176 states are identical.
   request, and `answerCalls` multiplies the value by `aiValueOf`. Each Node keeps the recall
   of the first live index it links to, worked out once per run in one pass over the edges.
   The first version scanned every edge for every pair of Nodes, and on the stress board that
-  made the kernel slower than TypeScript.
+  made the solver slower than TypeScript.
 - A Document Store sums its rate and ops in key order, so it reads the pass's `Order`.
 - A CDN answered as a pass-through. Its hit ratio now comes from `cdnHitOf`, which reads the
   TTL row, the cache key, the warm share, ESI, tiered caching, a live Edge Function on the
@@ -330,7 +330,7 @@ Connector behind every Database, sending to a Warehouse or an Event Stream. All 
   own `sticky` field, which only a Load Balancer sets, so an App Server behind a sticky Load
   Balancer never got its local reads. With every Challenge's Load Balancer made sticky, 116
   of 128 states differed. Each Node now has `pinned`, set from the edges.
-- A CDC Connector was in the ported list, but the kernel never copied a write to it or
+- A CDC Connector was in the ported list, but the solver never copied a write to it or
   routed its changes on: 76 of 128 states differed. The Design now keeps each Node's Edges
   into a Connector as their own list, as `graph.mirrors` does. Kahn's order walks them after
   the routing Edges, the pass copies `q-write`, `q-tx`, and `k-write` along them, the
@@ -360,7 +360,7 @@ With all 38 Components ported, the check that refused a Design by Component is g
 
 ## Features and Product levers
 
-The kernel refused a Game with a shipped Feature or a Product lever. Its Feature tables were
+The solver refused a Game with a shipped Feature or a Product lever. Its Feature tables were
 zero-filled placeholders, and it read them at full exposure. The solve reads five things from
 Features and levers, all per Game: the mix, `valueFactor` and `payloadFactor` per request
 kind, `queryFactor` per backend kind, and `subscriptionsOf`. The host already sent the mix

@@ -90,7 +90,7 @@ With the existing Era 3 recipe multiplier, the effective costs are 2625 each of 
 The relevant local sources are [GDD 06](https://wiki.playquorum.dev/design/06-runtimes),
 [the runtime catalog](../../packages/simulation/src/catalog/runtimes.ts),
 [the research catalog](../../packages/simulation/src/catalog/research.ts), and
-[`server_model`](../../packages/simulation/kernel/src/model.rs).
+[`server_model`](../../packages/simulation/solver/src/model.rs).
 
 - `pool: true` multiplies processes and process memory. It does not configure a thread pool.
   Zig therefore uses `pool: false` with a fixed `threads: 64`. A future thread-count control

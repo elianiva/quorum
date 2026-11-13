@@ -326,7 +326,7 @@ impl<'a> Tree<'a> {
             Some(game_node) => game_node,
             None => return failed(STRANDED),
         };
-        // A Node the kernel killed for memory fails as `oom` until it is back.
+        // A Node the solver killed for memory fails as `oom` until it is back.
         let result = if game_node.down {
             failed(if game_node.down_oom { OOM } else { DOWN })
         } else if game_node.cert_until.map(|until| self.board.game.time >= until).unwrap_or(false) {

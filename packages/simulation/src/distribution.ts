@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Why a request fails, in the order the Ledger lists the causes. The kernel
-   (`kernel/`) writes each cause's share in this order.
+   Why a request fails, in the order the Ledger lists the causes. The solver
+   (`solver/`) writes each cause's share in this order.
    ========================================================================== */
 
 export const ERROR_CAUSES = [

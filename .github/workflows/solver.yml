@@ -1,0 +1,38 @@
+name: Solver
+
+# Runs only when the Rust source or the committed module changes. A change to the TypeScript catalog
+# is caught by `test/solver-catalog.test.ts` in CI, which needs no Rust.
+on:
+  push:
+    paths:
+      - 'packages/simulation/solver/**'
+      - 'packages/simulation/src/solver.wasm'
+      - '.github/workflows/solver.yml'
+  pull_request:
+    paths:
+      - 'packages/simulation/solver/**'
+      - 'packages/simulation/src/solver.wasm'
+      - '.github/workflows/solver.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  solver:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/simulation/solver
+    steps:
+      - uses: actions/checkout@v7
+      # rustup reads rust-toolchain.toml here and installs the pinned compiler, target, and clippy.
+      - run: rustup show active-toolchain || rustup toolchain install
+      - run: cargo clippy --release --target wasm32-unknown-unknown -- -D warnings
+      - run: cargo clippy --release --tests -- -D warnings
+      - run: cargo test --release
+      # The committed module must be the build of this source, byte for byte.
+      - run: ./build.sh --check

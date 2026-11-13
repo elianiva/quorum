@@ -28,14 +28,14 @@ pub extern "C" fn summary_len() -> i32 {
 
 /// The status a Game outside the ported surface returns.
 fn surface(game: &GameCtx) -> i32 {
-    // An incident code from a catalog newer than the kernel's.
+    // An incident code from a catalog newer than the solver's.
     if game.incident_code != 0 && game.incident.is_none() {
         return abi::UNSUPPORTED;
     }
     abi::OK
 }
 
-/// The blocks every run reads, decoded once per call into columns the kernel owns.
+/// The blocks every run reads, decoded once per call into columns the solver owns.
 struct Prepared {
     nodes: Vec<Node>,
     game: GameCtx,

@@ -11,6 +11,8 @@ const ignored = [
   'coverage/**',
   // Vendored from github.com/wheresryan22/anatomy; kept identical to upstream.
   'apps/web/art/kit/**',
+  // Throwaway harnesses for the Rust kernel experiment; not shipped.
+  'research/**',
 ]
 
 export default defineConfig({

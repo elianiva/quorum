@@ -16,6 +16,35 @@ const NK = ALL_KINDS.length
 const NR = REQUEST_KINDS.length
 const NB = BACKEND_KINDS.length
 
+/** A catalog id as a Rust constant name: `q-read` is `Q_READ`. */
+const constName = (id: string): string => {
+  const name = id.toUpperCase().replace(/[^A-Z0-9]/g, '_')
+  return /^[0-9]/.test(name) ? `_${name}` : name
+}
+
+/** One module of index constants, so a rule names `kind::LOGIN`, not a string it looks up. */
+const pushIds = (module: string, doc: string, ids: ReadonlyArray<string>) => {
+  push(`/// ${doc}`)
+  push(`pub mod ${module} {`)
+  for (const [index, id] of ids.entries()) push(`    pub const ${constName(id)}: usize = ${index};`)
+  push('}')
+}
+
+/** A Rust enum over a table's distinct string values, in first-seen order. */
+const pushEnum = (name: string, values: ReadonlyArray<string>): Map<string, string> => {
+  const variants = new Map<string, string>()
+  for (const value of values) {
+    if (!variants.has(value)) {
+      variants.set(value, value.replace(/(^|[-_])([a-z])/g, (_, __, letter: string) => letter.toUpperCase()))
+    }
+  }
+  push('#[derive(Clone, Copy, PartialEq, Eq, Debug)]')
+  push(`pub enum ${name} {`)
+  for (const variant of variants.values()) push(`    ${variant},`)
+  push('}')
+  return variants
+}
+
 push('// Generated from packages/simulation/src/catalog.ts. Do not edit by hand.')
 push(`pub const NK: usize = ${NK};`)
 push(`pub const NR: usize = ${NR};`)
@@ -23,13 +52,8 @@ push(`pub const NB: usize = ${NB};`)
 push('')
 push(`pub static KINDS: [&str; NK] = [${ALL_KINDS.map((k) => `"${k}"`).join(', ')}];`)
 push('')
-push('/// The index of a kind, or NK when the name is unknown.')
-push('pub fn kind_index(name: &str) -> usize {')
-push('    match name {')
-for (const [index, kind] of ALL_KINDS.entries()) push(`        "${kind}" => ${index},`)
-push('        _ => NK,')
-push('    }')
-push('}')
+pushIds('kind', 'Kind indices: request kinds first, then backend kinds.', ALL_KINDS)
+pushIds('backend', 'Backend kind indices, counted from `NR`: `NR + backend::Q_READ` is `kind::Q_READ`.', BACKEND_KINDS)
 push('')
 push('/// Whether a kind index is one a user asks for (a Request kind).')
 push('pub fn is_request_kind(kind: usize) -> bool {')
@@ -168,18 +192,15 @@ push(`pub const RUNTIME_COUNT: usize = ${RUNTIME_IDS.length};`)
 push(
   `pub static RUNTIME_IDS: [&str; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => `"${id}"`).join(', ')}];`,
 )
-push('pub fn runtime_index(name: &str) -> usize {')
-push('    match name {')
-for (const [index, id] of RUNTIME_IDS.entries()) push(`        "${id}" => ${index},`)
-push('        _ => 0,')
-push('    }')
-push('}')
+pushIds('runtime', 'Runtime indices.', RUNTIME_IDS)
 const runtime = catalog.RUNTIMES
+push('/// Each runtime\'s language, as an index into `LANGUAGE_IDS`.')
 push(
-  `pub static RUNTIME_LANGUAGE: [&str; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => `"${runtime[id].language}"`).join(', ')}];`,
+  `pub static RUNTIME_LANGUAGE: [usize; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => catalog.LANGUAGE_IDS.indexOf(runtime[id].language)).join(', ')}];`,
 )
+const concurrency = pushEnum('Concurrency', RUNTIME_IDS.map((id) => runtime[id].model))
 push(
-  `pub static RUNTIME_MODEL: [&str; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => `"${runtime[id].model}"`).join(', ')}];`,
+  `pub static RUNTIME_MODEL: [Concurrency; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => `Concurrency::${concurrency.get(runtime[id].model)}`).join(', ')}];`,
 )
 push(
   `pub static RUNTIME_SPEED: [f64; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => formatNumber(runtime[id].speed)).join(', ')}];`,
@@ -214,8 +235,9 @@ push(
 push(
   `pub static RUNTIME_PERSISTENT: [bool; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => runtime[id].persistent).join(', ')}];`,
 )
+const blocking = pushEnum('Blocking', RUNTIME_IDS.map((id) => runtime[id].blocking ?? 'none'))
 push(
-  `pub static RUNTIME_BLOCKING: [&str; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => `"${runtime[id].blocking ?? 'none'}"`).join(', ')}];`,
+  `pub static RUNTIME_BLOCKING: [Blocking; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => `Blocking::${blocking.get(runtime[id].blocking ?? 'none')}`).join(', ')}];`,
 )
 push(
   `pub static RUNTIME_CONNECTIONS: [f64; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => formatNumber(runtime[id].connections ?? 0)).join(', ')}];`,
@@ -238,12 +260,7 @@ push(`pub const LANGUAGE_COUNT: usize = ${LANGUAGE_IDS.length};`)
 push(
   `pub static LANGUAGE_IDS: [&str; ${LANGUAGE_IDS.length}] = [${LANGUAGE_IDS.map((id) => `"${id}"`).join(', ')}];`,
 )
-push('pub fn language_index(name: &str) -> usize {')
-push('    match name {')
-for (const [index, id] of LANGUAGE_IDS.entries()) push(`        "${id}" => ${index},`)
-push('        _ => 0,')
-push('    }')
-push('}')
+pushIds('language', 'Language indices.', LANGUAGE_IDS)
 const language = catalog.LANGUAGES
 push(
   `pub static LANGUAGE_VELOCITY: [f64; ${LANGUAGE_IDS.length}] = [${LANGUAGE_IDS.map((id) => formatNumber(language[id].velocity)).join(', ')}];`,
@@ -344,12 +361,7 @@ push(`pub const COMPONENT_COUNT: usize = ${COMPONENT_IDS.length};`)
 push(
   `pub static COMPONENT_IDS: [&str; ${COMPONENT_IDS.length}] = [${COMPONENT_IDS.map((id) => `"${id}"`).join(', ')}];`,
 )
-push('pub fn component_index(name: &str) -> usize {')
-push('    match name {')
-for (const [index, id] of COMPONENT_IDS.entries()) push(`        "${id}" => ${index},`)
-push('        _ => 0,')
-push('    }')
-push('}')
+pushIds('component', 'Component type codes.', COMPONENT_IDS)
 /** A bitmask over all 33 kinds: what a Component accepts. */
 const maskOf = (kinds: ReadonlyArray<string>): string => {
   let mask = 0n
@@ -479,23 +491,13 @@ push(`pub const RESEARCH_COUNT: usize = ${RESEARCH_IDS.length};`)
 push(
   `pub static RESEARCH_IDS: [&str; ${RESEARCH_IDS.length}] = [${RESEARCH_IDS.map((id) => `"${id}"`).join(', ')}];`,
 )
-push('pub fn research_index(name: &str) -> usize {')
-push('    match name {')
-for (const [index, id] of RESEARCH_IDS.entries()) push(`        "${id}" => ${index},`)
-push(`        _ => ${RESEARCH_IDS.length},`)
-push('    }')
-push('}')
+pushIds('research', 'Research bit indices.', RESEARCH_IDS)
 const FEATURE_IDS = catalog.FEATURE_IDS
 push(`pub const FEATURE_COUNT: usize = ${FEATURE_IDS.length};`)
 push(
   `pub static FEATURE_IDS: [&str; ${FEATURE_IDS.length}] = [${FEATURE_IDS.map((id) => `"${id}"`).join(', ')}];`,
 )
-push('pub fn feature_index(name: &str) -> usize {')
-push('    match name {')
-for (const [index, id] of FEATURE_IDS.entries()) push(`        "${id}" => ${index},`)
-push(`        _ => ${FEATURE_IDS.length},`)
-push('    }')
-push('}')
+pushIds('feature', 'Feature bit indices.', FEATURE_IDS)
 
 // ---- derived masks and per-backend cost tables ----
 push('')
@@ -507,6 +509,9 @@ push(
 const HEAVY = new Set(catalog.CPU_HEAVY_KINDS)
 push(
   `pub static CPU_HEAVY_MASK: [u8; NK] = [${ALL_KINDS.map((k) => (HEAVY.has(k as never) ? 1 : 0)).join(', ')}];`,
+)
+push(
+  `pub static MONEY_KINDS_MASK: u64 = 0x${catalog.MONEY_KINDS.reduce((mask, kind) => mask | (1n << BigInt(kindIndex.get(kind)!)), 0n).toString(16)};`,
 )
 const DATA = new Set(catalog.DATA_KINDS)
 push(

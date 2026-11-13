@@ -9,59 +9,78 @@
 use crate::catalog::*;
 use crate::dist::*;
 use crate::model::{GameCtx, Model, Node};
-use crate::pass::Pass;
-use crate::routing::{amplification, Design, Scratch};
+use crate::pass::{Board, Pass};
+use crate::routing::{amplification, Splits, Weights};
 
-/// The memo tables, allocated once per Design and reused: a solve builds one tree
-/// per pass and three more per Bottleneck candidate, so clearing a flag beats
-/// zeroing five megabytes.
+/// One memo table: an `Outcome` per key, valid while its stamp is the epoch.
 #[derive(Default)]
-pub struct Memo {
-    memo: Vec<Outcome>,
-    memo_done: Vec<u8>,
-    attempts: Vec<Outcome>,
-    attempts_done: Vec<u8>,
-    downstream: Vec<Outcome>,
-    downstream_done: Vec<u8>,
+struct Table {
+    values: Vec<Outcome>,
+    stamps: Vec<u32>,
 }
 
-impl Memo {
-    /// Marks every slot empty without touching the Outcomes.
-    fn reset(&mut self, nodes: usize, edges: usize) {
-        let memo = nodes * NK;
-        let downstream = memo * 2;
-        let attempts = edges * NK;
-        if self.memo.len() < memo {
-            self.memo.resize(memo, Outcome::default());
-            self.memo_done.resize(memo, 0);
+impl Table {
+    fn grow(&mut self, len: usize) {
+        if self.values.len() < len {
+            self.values.resize(len, Outcome::default());
+            self.stamps.resize(len, 0);
         }
-        if self.downstream.len() < downstream {
-            self.downstream.resize(downstream, Outcome::default());
-            self.downstream_done.resize(downstream, 0);
+    }
+
+    #[inline]
+    fn get(&self, key: usize, epoch: u32) -> Option<Outcome> {
+        match self.stamps.get(key) {
+            Some(&stamp) if stamp == epoch => Some(self.values[key]),
+            _ => None,
         }
-        if self.attempts.len() < attempts {
-            self.attempts.resize(attempts, Outcome::default());
-            self.attempts_done.resize(attempts, 0);
+    }
+
+    #[inline]
+    fn put(&mut self, key: usize, epoch: u32, value: Outcome) -> Outcome {
+        if let (Some(slot), Some(stamp)) = (self.values.get_mut(key), self.stamps.get_mut(key)) {
+            *slot = value;
+            *stamp = epoch;
         }
-        self.memo_done.fill(0);
-        self.downstream_done.fill(0);
-        self.attempts_done.fill(0);
+        value
     }
 }
 
-/// The memo tables: one entry per Node and kind, or per Edge and kind.
+/// The memo tables, kept for the life of the module and reused by every tree.
+///
+/// A solve walks one tree per pass and more per Bottleneck candidate. Starting
+/// a tree only moves the epoch, so no table is zeroed between walks: an entry
+/// whose stamp is an older epoch reads as empty.
+#[derive(Default)]
+pub struct Memo {
+    epoch: u32,
+    outcome: Table,
+    attempts: Table,
+    downstream: Table,
+}
+
+impl Memo {
+    /// Empties every table, sized for `nodes` Nodes and `edges` Links.
+    fn reset(&mut self, nodes: usize, edges: usize) {
+        self.outcome.grow(nodes * NK);
+        self.downstream.grow(nodes * NK * 2);
+        self.attempts.grow(edges * NK);
+        self.epoch = self.epoch.wrapping_add(1);
+        if self.epoch == 0 {
+            // Four billion trees later the stamps wrap: clear them once.
+            for table in [&mut self.outcome, &mut self.attempts, &mut self.downstream] {
+                table.stamps.fill(0);
+            }
+            self.epoch = 1;
+        }
+    }
+}
+
+/// One walk of the tree: the Board, the pass it reads, and the memo tables.
 pub struct Tree<'a> {
-    design: &'a Design,
-    game: &'a GameCtx,
-    nodes: &'a [Node],
+    board: Board<'a>,
     pass: &'a Pass,
-    weights: &'a [f64],
-    nominal: &'a [f64],
-    sick: &'a [bool],
-    sampling_ms: &'a [f64],
-    delegated: &'a [bool],
-    offloads: &'a [bool],
-    scratch: &'a mut Scratch,
+    weights: Weights<'a>,
+    splits: &'a mut Splits,
     memo: &'a mut Memo,
 }
 
@@ -77,43 +96,23 @@ impl Tree<'_> {
     }
 }
 
-/// Builds the tree's memo tables for a Design of `nodes` Nodes and `edges` Links.
+/// Starts a walk over one pass. `splits` must answer for the same `weights`.
 pub fn tree<'a>(
-    design: &'a Design,
-    game: &'a GameCtx,
-    nodes: &'a [Node],
+    board: Board<'a>,
     pass: &'a Pass,
-    weights: &'a [f64],
-    nominal: &'a [f64],
-    sick: &'a [bool],
-    sampling_ms: &'a [f64],
-    delegated: &'a [bool],
-    offloads: &'a [bool],
-    scratch: &'a mut Scratch,
+    weights: Weights<'a>,
+    splits: &'a mut Splits,
     memo: &'a mut Memo,
 ) -> Tree<'a> {
-    memo.reset(design.nodes.len(), design.edges.len());
-    Tree {
-        design,
-        game,
-        nodes,
-        pass,
-        weights,
-        nominal,
-        sick,
-        sampling_ms,
-        delegated,
-        offloads,
-        scratch,
-        memo,
-    }
+    memo.reset(board.design.nodes.len(), board.design.edges.len());
+    Tree { board, pass, weights, splits, memo }
 }
 
 impl<'a> Tree<'a> {
     /// The Game this walk reads, for a caller that has only the tree.
     #[inline]
     pub fn game(&self) -> &'a GameCtx {
-        self.game
+        self.board.game
     }
 
     /// `ownHop`: this Node's own service time for a kind, with the revenue multiplier.
@@ -123,14 +122,14 @@ impl<'a> Tree<'a> {
             Some(model) => model,
             None => return Hop { value, ..Hop::default() },
         };
-        let type_code = self.nodes.get(node).map(|node| node.type_code).unwrap_or(0);
+        let type_code = self.board.nodes.get(node).map(|node| node.type_code).unwrap_or(0);
         // A kind the model has no service record for falls back to the Component's latency.
         let (fixed, variable) = if kind < NK && (model.service_mask >> kind) & 1 == 1 {
             (model.service_fixed[kind], model.service_variable[kind])
         } else {
             (COMPONENT_LATENCY[type_code], 0.0)
         };
-        let sampling = self.sampling_ms.get(node).copied().unwrap_or(0.0);
+        let sampling = self.board.flags.get(node).map(|flags| flags.sampling).unwrap_or(0.0);
         Hop {
             share: model.share,
             fixed_ms: fixed + sampling,
@@ -145,23 +144,21 @@ impl<'a> Tree<'a> {
     /// `attempt`: the callee's outcome cut at the Link's timeout or bulkhead.
     fn attempt(&mut self, edge: usize, kind: usize) -> Outcome {
         let slot = self.edge_slot(edge, kind);
-        if self.memo.attempts_done.get(slot).copied().unwrap_or(1) == 1 {
-            return self.memo.attempts[slot];
+        if let Some(memo) = self.memo.attempts.get(slot, self.memo.epoch) {
+            return memo;
         }
-        let Some(policy) = self.design.edges.get(edge).copied() else {
+        let Some(policy) = self.board.design.edges.get(edge).copied() else {
             return failed(STRANDED);
         };
         let wait = if policy.bulkhead { policy.timeout.min(BULKHEAD_MS) } else { policy.timeout };
         let answer = timed_out(self.outcome(policy.to as usize, kind), wait);
         let result = if policy.hedge { hedged(answer) } else { answer };
-        self.memo.attempts[slot] = result;
-        self.memo.attempts_done[slot] = 1;
-        result
+        self.memo.attempts.put(slot, self.memo.epoch, result)
     }
 
     /// `call`: one attempt, plus the Link's retries.
     fn call(&mut self, edge: usize, kind: usize) -> Outcome {
-        let policy = match self.design.edges.get(edge) {
+        let policy = match self.board.design.edges.get(edge) {
             Some(policy) => *policy,
             None => return failed(STRANDED),
         };
@@ -182,8 +179,8 @@ impl<'a> Tree<'a> {
         } else {
             0.0
         };
-        if kind == kind_index("charge")
-            && !(self.game.has("idempotency-keys") && self.game.fixed("idempotency-keys"))
+        if kind == kind::CHARGE
+            && !(self.board.game.has(research::IDEMPOTENCY_KEYS) && self.board.game.fixed("idempotency-keys"))
             && duplicates > 0.0
         {
             return fail_some(again, duplicates, DUPLICATE);
@@ -198,7 +195,7 @@ impl<'a> Tree<'a> {
 
     /// `placed`: a call that leaves its zone or region pays the hop on top.
     fn placed(&mut self, edge: usize, kind: usize) -> Outcome {
-        let (from, to) = match self.design.edges.get(edge) {
+        let (from, to) = match self.board.design.edges.get(edge) {
             Some(policy) => (policy.from as usize, policy.to as usize),
             None => return failed(STRANDED),
         };
@@ -213,11 +210,11 @@ impl<'a> Tree<'a> {
 
     /// `placeMs`: the hop a call pays for leaving its zone or region.
     pub fn place_ms(&self, from: usize, to: usize) -> f64 {
-        let source = match self.nodes.get(from) {
+        let source = match self.board.nodes.get(from) {
             Some(node) => node,
             None => return 0.0,
         };
-        let target = match self.nodes.get(to) {
+        let target = match self.board.nodes.get(to) {
             Some(node) => node,
             None => return 0.0,
         };
@@ -225,8 +222,8 @@ impl<'a> Tree<'a> {
             return 0.0;
         }
         if source.region != target.region {
-            return if source.type_code == component_index("users") {
-                user_rtt_ms(self.game, source.region, target.region)
+            return if source.type_code == component::USERS {
+                user_rtt_ms(self.board.game, source.region, target.region)
             } else {
                 REGION_RTT[source.region.min(REGIONS.len() - 1)][target.region.min(REGIONS.len() - 1)]
             };
@@ -237,7 +234,7 @@ impl<'a> Tree<'a> {
     /// `meshOf`: a sidecar adds a millisecond to every call out of its Node.
     #[inline]
     fn mesh_ms(&self, node: usize) -> f64 {
-        if self.nodes.get(node).map(|node| node.mesh).unwrap_or(false) {
+        if self.board.nodes.get(node).map(|node| node.mesh).unwrap_or(false) {
             MESH_HOP_MS
         } else {
             0.0
@@ -246,53 +243,45 @@ impl<'a> Tree<'a> {
 
     /// `downstream`: what one request of `kind` sent from `node` gets back.
     pub fn downstream(&mut self, node: usize, kind: usize, extra_hop: f64) -> Outcome {
-        if kind == kind_index("callout") {
+        if kind == kind::CALLOUT {
             return callout_outcome();
         }
         let bucket = if extra_hop == 0.0 { 0 } else { 1 };
         let slot = self.slot(node, kind) * 2 + bucket;
-        if self.memo.downstream_done.get(slot).copied().unwrap_or(1) == 1 {
-            return self.memo.downstream[slot];
+        if let Some(memo) = self.memo.downstream.get(slot, self.memo.epoch) {
+            return memo;
         }
-        let count = self.scratch.split(
-            self.design, node, kind, self.weights, self.nominal, self.sick, false,
-        );
-        // The recursion below reuses the same scratch, so the split is copied out first.
-        let split: Vec<(u32, f64)> = self.scratch.pairs().iter().take(count).copied().collect();
-        let mut entries: Vec<(Outcome, f64)> = Vec::with_capacity(count);
-        for (edge, weight) in split {
-            let answer = self.placed(edge as usize, kind);
-            entries.push((answer, weight));
-        }
+        let split = self.splits.range(self.board.design, node, kind, &self.weights);
+        let total: f64 = split.clone().map(|index| self.splits.pair(index).1).sum();
         // A split with no targets strands the work, and the hop is not paid.
-        let mixed = match blend(&entries) {
-            Some(mixed) => mixed,
-            None => {
-                self.memo.downstream[slot] = failed(STRANDED);
-                self.memo.downstream_done[slot] = 1;
-                return self.memo.downstream[slot];
+        let mixed = match Blend::new(total).filter(|_| !split.is_empty()) {
+            Some(mut mix) => {
+                // The recursion may add splits, but never moves one already kept.
+                for index in split {
+                    let (edge, weight) = self.splits.pair(index);
+                    let answer = self.placed(edge as usize, kind);
+                    mix.add(&answer, weight);
+                }
+                mix.finish()
             }
+            None => return self.memo.downstream.put(slot, self.memo.epoch, failed(STRANDED)),
         };
         let result = if extra_hop > 0.0 {
             through_one(hop(extra_hop, 0.0), mixed, false)
         } else {
             mixed
         };
-        self.memo.downstream[slot] = result;
-        self.memo.downstream_done[slot] = 1;
-        result
+        self.memo.downstream.put(slot, self.memo.epoch, result)
     }
 
     /// `held`: milliseconds a caller holds its slot for one call of `kind`.
     pub fn held(&mut self, node: usize, kind: usize, extra_hop: f64) -> f64 {
-        let count = self.scratch.split(
-            self.design, node, kind, self.weights, self.nominal, self.sick, false,
-        );
-        let split: Vec<(u32, f64)> = self.scratch.pairs().iter().take(count).copied().collect();
+        let split = self.splits.range(self.board.design, node, kind, &self.weights);
         let mut total = 0.0;
-        for (edge, weight) in split {
+        for index in split {
+            let (edge, weight) = self.splits.pair(index);
             let edge = edge as usize;
-            let policy = match self.design.edges.get(edge) {
+            let policy = match self.board.design.edges.get(edge) {
                 Some(policy) => *policy,
                 None => continue,
             };
@@ -315,69 +304,54 @@ impl<'a> Tree<'a> {
     /// `outcome`: what one request of `kind` gets back from `node`.
     pub fn outcome(&mut self, node: usize, kind: usize) -> Outcome {
         let slot = self.slot(node, kind);
-        if self.memo.memo_done.get(slot).copied().unwrap_or(1) == 1 {
-            return self.memo.memo[slot];
+        if let Some(memo) = self.memo.outcome.get(slot, self.memo.epoch) {
+            return memo;
         }
-        let game_node = match self.nodes.get(node) {
+        let game_node = match self.board.nodes.get(node) {
             Some(game_node) => game_node,
             None => return failed(STRANDED),
         };
         // A Node the kernel killed for memory fails as `oom` until it is back.
         let result = if game_node.down {
             failed(if game_node.down_oom { OOM } else { DOWN })
-        } else if game_node.cert_until.map(|until| self.game.time >= until).unwrap_or(false) {
+        } else if game_node.cert_until.map(|until| self.board.game.time >= until).unwrap_or(false) {
             // A Node whose TLS certificate ran out is refused by every browser.
             failed(DOWN)
         } else {
             self.rule(node, kind)
         };
-        self.memo.memo[slot] = result;
-        self.memo.memo_done[slot] = 1;
-        result
+        self.memo.outcome.put(slot, self.memo.epoch, result)
     }
 
     /// The `outcome` half of each component rule.
     fn rule(&mut self, node: usize, kind: usize) -> Outcome {
-        let type_code = match self.nodes.get(node) {
+        let type_code = match self.board.nodes.get(node) {
             Some(game_node) => game_node.type_code,
             None => return failed(STRANDED),
         };
-        if type_code == component_index("users")
-            || type_code == component_index("lb")
-            || type_code == component_index("dns")
-            || type_code == component_index("cdc")
-        {
-            return self.relay(node, kind);
-        }
-        if type_code == component_index("pooler") {
-            let mode = self.nodes[node].mode;
-            if mode == 2 && kind == kind_index("q-tx") {
-                return failed(REFUSED);
+        match type_code {
+            component::USERS | component::LB | component::DNS | component::CDC => self.relay(node, kind),
+            component::POOLER => {
+                let mode = self.board.nodes[node].mode;
+                if mode == 2 && kind == kind::Q_TX {
+                    return failed(REFUSED);
+                }
+                let relayed = self.relay(node, kind);
+                let crashes = if mode != 0 && !self.board.game.fixed("session-state") {
+                    SESSION_STATE_CRASHES
+                } else {
+                    0.0
+                };
+                fail_some(relayed, crashes, CRASH)
             }
-            let relayed = self.relay(node, kind);
-            let crashes = if mode != 0 && !self.game.fixed("session-state") {
-                SESSION_STATE_CRASHES
-            } else {
-                0.0
-            };
-            return fail_some(relayed, crashes, CRASH);
+            component::DATABASE | component::REPLICA => self.database(node, kind),
+            component::SERVER => self.answer_calls(node, kind),
+            component::AUTH | component::DSQL | component::MSGP | component::WAREHOUSE => {
+                through(self.own_hop(node, kind, 1.0), &[], false)
+            }
+            // A Node with no path for a request strands it.
+            _ => failed(STRANDED),
         }
-        if type_code == component_index("database") || type_code == component_index("replica") {
-            return self.database(node, kind);
-        }
-        if type_code == component_index("server") {
-            return self.answer_calls(node, kind);
-        }
-        if type_code == component_index("auth")
-            || type_code == component_index("dsql")
-            || type_code == component_index("msgp")
-            || type_code == component_index("warehouse")
-        {
-            let own = self.own_hop(node, kind, 1.0);
-            return through(own, &[], false);
-        }
-        // A Node with no path for a request strands it.
-        failed(STRANDED)
     }
 
     /// Its own hop, then what it sends on.
@@ -389,13 +363,13 @@ impl<'a> Tree<'a> {
 
     /// The `databaseRule.outcome` half, which a Read Replica shares.
     fn database(&mut self, node: usize, kind: usize) -> Outcome {
-        let game_node = match self.nodes.get(node) {
+        let game_node = match self.board.nodes.get(node) {
             Some(game_node) => *game_node,
             None => return failed(STRANDED),
         };
         // A synchronous replica that is down stalls every write the primary takes.
-        if game_node.type_code == component_index("database")
-            && (kind == kind_index("q-write") || kind == kind_index("q-tx"))
+        if game_node.type_code == component::DATABASE
+            && (kind == kind::Q_WRITE || kind == kind::Q_TX)
             && game_node.sync_stalled
         {
             return failed(TIMEOUT);
@@ -405,16 +379,16 @@ impl<'a> Tree<'a> {
             _ => 0.0,
         };
         // A report read from a materialized view is as fresh as its last refresh.
-        let stale_scan = if kind == kind_index("q-scan")
+        let stale_scan = if kind == kind::Q_SCAN
             && game_node.materialized
-            && self.game.has("precompute")
+            && self.board.game.has(research::PRECOMPUTE)
         {
             MATERIALIZED_STALE
         } else {
             0.0
         };
-        let replica_stale = if game_node.type_code == component_index("replica")
-            && kind == kind_index("q-read")
+        let replica_stale = if game_node.type_code == component::REPLICA
+            && kind == kind::Q_READ
             && !game_node.sync
         {
             self.pass.stale_share
@@ -425,8 +399,8 @@ impl<'a> Tree<'a> {
         reply.fail[REFUSED] = refused;
         let own = through(self.own_hop(node, kind, 1.0), &[(reply, 1.0)], false);
         // A multi-leader certifies every write against its peers.
-        if game_node.type_code == component_index("database")
-            && (kind == kind_index("q-write") || kind == kind_index("q-tx") || kind == kind_index("blob-put"))
+        if game_node.type_code == component::DATABASE
+            && (kind == kind::Q_WRITE || kind == kind::Q_TX || kind == kind::BLOB_PUT)
             && game_node.topology == 2
             && game_node.databases_in_group > 1.0
         {
@@ -434,8 +408,8 @@ impl<'a> Tree<'a> {
             return fail_some(own, conflict, REFUSED);
         }
         // A transaction across shards commits on each of them, and any one can fail.
-        if kind == kind_index("q-tx") {
-            let sharded = game_node.type_code == component_index("database") && game_node.topology == 1;
+        if kind == kind::Q_TX {
+            let sharded = game_node.type_code == component::DATABASE && game_node.topology == 1;
             let logical = crate::model::sharding_of(&game_node);
             let shards = logical.shards * if sharded { game_node.databases_in_group.max(1.0) } else { 1.0 };
             let cross = if shards > 1.0 { SHARD_CROSS[game_node.shard_key.min(3)] * (1.0 - 1.0 / shards) } else { 0.0 };
@@ -447,7 +421,7 @@ impl<'a> Tree<'a> {
 
     /// `answerCalls`: an App Server's own hop, the calls it makes, and the bytes back.
     fn answer_calls(&mut self, node: usize, kind: usize) -> Outcome {
-        let game_node = match self.nodes.get(node) {
+        let game_node = match self.board.nodes.get(node) {
             Some(game_node) => *game_node,
             None => return failed(STRANDED),
         };
@@ -457,34 +431,33 @@ impl<'a> Tree<'a> {
         // The Stack that answered sets the revenue.
         let served = self.own_hop(node, kind, FRAMEWORK_VALUE[game_node.framework][kind]);
         // The response crosses the user's downlink: bytes over bandwidth.
-        let offloaded = self.offloads.get(node).copied().unwrap_or(false);
+        let offloaded = self.board.flags.get(node).map(|flags| flags.offloaded).unwrap_or(false);
         let own = Hop {
             fixed_ms: served.fixed_ms
-                + crate::model::transfer_ms(&game_node, kind, offloaded) * crate::model::payload_factor(self.game, kind),
+                + crate::model::transfer_ms(&game_node, kind, offloaded) * crate::model::payload_factor(self.board.game, kind),
             ..served
         };
         // A runtime that holds a worker per open connection cannot keep realtime connections.
-        if kind == kind_index("rt") && RUNTIME_CONNECTION_KB[game_node.runtime] < 0.0 {
+        if kind == kind::RT && RUNTIME_CONNECTION_KB[game_node.runtime] < 0.0 {
             return failed(REFUSED);
         }
         let crashes = self.code_crashes(&game_node, kind);
         if game_node.local_db {
             return fail_some(through(own, &[], false), crashes, CRASH);
         }
-        let delegated = self.delegated.get(node).copied().unwrap_or(false);
-        let calls = crate::pass::calls_of(self.game, &game_node, kind, delegated, offloaded);
-        let hop = hop_ms(self.game);
-        let mut entries: Vec<(Outcome, f64)> = Vec::with_capacity(NB);
-        for backend in 0..NB {
-            let count = calls[NR + backend];
+        let calls = self.board.code.node(node).calls[kind];
+        let hop = hop_ms(self.board.game);
+        let mut entries = [(Outcome::default(), 0.0); NB];
+        let mut made = 0;
+        for (backend, &count) in calls.iter().enumerate() {
             if backend < 3 || count > 0.0 {
-                let answer = self.downstream(node, NR + backend, hop);
-                entries.push((answer, count));
+                entries[made] = (self.downstream(node, NR + backend, hop), count);
+                made += 1;
             }
         }
         // A stale read fails an API read, a checkout that reads its own write, and a search.
-        let stale_counts = kind == kind_index("read") || kind == kind_index("buy") || kind == kind_index("search");
-        let relayed = through(own, &entries, stale_counts);
+        let stale_counts = kind == kind::READ || kind == kind::BUY || kind == kind::SEARCH;
+        let relayed = through(own, &entries[..made], stale_counts);
         fail_some(relayed, crashes, CRASH)
     }
 
@@ -518,7 +491,7 @@ fn zone_ms(from: &Node, to: &Node) -> f64 {
 /// `hopMs`: one internal call's wire time, plus a handshake without keep-alive.
 #[inline]
 pub fn hop_ms(game: &GameCtx) -> f64 {
-    HOP_MS + if game.has("keepalive") { 0.0 } else { HANDSHAKE_MS }
+    HOP_MS + if game.has(research::KEEPALIVE) { 0.0 } else { HANDSHAKE_MS }
 }
 
 /// `userRttMs`: milliseconds a user's hop pays between two regions.
@@ -529,8 +502,8 @@ pub fn user_rtt_ms(game: &GameCtx, from: usize, to: usize) -> f64 {
     if rtt <= 0.0 {
         return rtt;
     }
-    let cut = if game.has("http3") { rtt * (1.0 - HTTP3_CUT) } else { rtt };
-    if game.has("anycast") {
+    let cut = if game.has(research::HTTP3) { rtt * (1.0 - HTTP3_CUT) } else { rtt };
+    if game.has(research::ANYCAST) {
         (cut - ANYCAST_MS).max(0.0)
     } else {
         cut
@@ -540,27 +513,10 @@ pub fn user_rtt_ms(game: &GameCtx, from: usize, to: usize) -> f64 {
 /// Whether a component's `outcome` rule is ported. A run refuses a Design with a
 /// Component whose rule is not, rather than print a figure that only looks right.
 pub fn supports(type_code: usize) -> bool {
-    let supported = [
-        "users",
-        "lb",
-        "dns",
-        "cdc",
-        "pooler",
-        "database",
-        "replica",
-        "server",
-        "auth",
-        "dsql",
-        "msgp",
-        "warehouse",
-        "analytics",
-        "autoscaler",
-        "ci",
-        "cluster",
-        "ff",
-        "mesh",
-        "payments",
-        "pki",
-    ];
-    supported.iter().any(|name| component_index(name) == type_code)
+    use crate::catalog::component::*;
+    matches!(
+        type_code,
+        USERS | LB | DNS | CDC | POOLER | DATABASE | REPLICA | SERVER | AUTH | DSQL | MSGP | WAREHOUSE
+            | ANALYTICS | AUTOSCALER | CI | CLUSTER | FF | MESH | PAYMENTS | PKI
+    )
 }

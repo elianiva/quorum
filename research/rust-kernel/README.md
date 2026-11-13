@@ -55,21 +55,19 @@ relevant, a timing comparison.
 Apple Silicon, one `node` process, means of 40 samples after warm-up. TypeScript is the
 package as shipped; Rust is the raw `cargo` release artifact, without `wasm-opt`.
 
-| Figure                      | TypeScript | Rust    | Speedup |
-| --------------------------- | ---------- | ------- | ------- |
-| `solveFlow` (6 passes + Ledger) | 8,248 µs | 1,907 µs | 4.33× |
-| `bottleneckOf` (3 candidates)   | 2,382 µs | 2,001 µs | 1.19× |
-| `solve` (flow + search)         | 9,067 µs | 3,737 µs | 2.43× |
-| wasm linear memory              | —        | 9.2 MB  | —       |
-| Ledger held                     | 448 KB (JSON) | 23 KB (block) | — |
+| Figure                          | TypeScript    | Rust          | Speedup |
+| ------------------------------- | ------------- | ------------- | ------- |
+| `solveFlow` (6 passes + Ledger) | 8,241 µs      | 790 µs        | 10.4×   |
+| `bottleneckOf` (3 candidates)   | 2,522 µs      | 338 µs        | 7.5×    |
+| `solve` (flow + search)         | 9,056 µs      | 1,064 µs      | 8.5×    |
+| Ledger held                     | 448 KB (JSON) | 23 KB (block) | —       |
 
 The solve converges in 3 passes on this board, in both implementations. Revenue matches to
 the last bit: 377.45804081548965 on both sides.
 
-`solveFlow` is the figure that moved: the pass, the outcome tree, and the Ledger all run
-inside one boundary crossing, and the tree's memo tables are reused across passes. The
-Bottleneck search is a smaller win because each candidate is one pass over a board whose
-per-Node work is already small, and the fixed cost of a tree reset dominates it.
+`NOTES.md` explains where the time went: work that reads only the Design or the Game is
+done once per Design instead of once per pass, the search reuses the flow solve's Ledger
+instead of solving again, and a tree reset moves an epoch instead of zeroing its tables.
 
 ## What is ported, and what is not
 

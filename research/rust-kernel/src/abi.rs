@@ -448,7 +448,8 @@ pub fn features_of(bytes: &[u8]) -> Shipped {
     shipped
 }
 
-const INCIDENTS: [&str; 4] = ["", "gc-storm", "loop", "connections"];
+/// The incident codes the host writes: 0 is none.
+const INCIDENTS: [Option<Incident>; 4] = [None, Some(Incident::GcStorm), Some(Incident::Loop), Some(Incident::Connections)];
 
 /// The Game context: row 0 of the scalar block, plus the two bitsets.
 pub fn game_with(scalars: &[f64], research: Research, shipped: Shipped) -> GameCtx {
@@ -458,7 +459,7 @@ pub fn game_with(scalars: &[f64], research: Research, shipped: Shipped) -> GameC
         users: slot(S_USERS),
         researched: research,
         features: shipped,
-        incident: INCIDENTS.get(incident_code).copied().unwrap_or(""),
+        incident: INCIDENTS.get(incident_code).copied().flatten(),
         incident_node: slot(S_INCIDENT_NODE) as usize,
         sandbox: slot(S_SANDBOX) != 0.0,
         scenario_tasks: slot(S_SCENARIO_TASKS) != 0.0,
@@ -467,7 +468,6 @@ pub fn game_with(scalars: &[f64], research: Research, shipped: Shipped) -> GameC
         incident_started: 0.0,
         service_count: 1,
         service_indexes: slot(S_SERVICE_INDEXES),
-        users_in_group: slot(S_USERS_IN_GROUP),
         stage: slot(S_STAGE),
         venture: slot(S_VENTURE) as usize,
         fixed_mix: slot(S_FIXED_MIX) != 0.0,

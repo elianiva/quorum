@@ -42,9 +42,7 @@ fn write(outcome: &Outcome) {
         out[4] = outcome.tail_ms;
         out[5] = outcome.stale;
         out[6] = outcome.value;
-        for cause in 0..CAUSE_COUNT {
-            out[7 + cause] = outcome.fail[cause];
-        }
+        out[7..7 + CAUSE_COUNT].copy_from_slice(&outcome.fail);
     });
 }
 

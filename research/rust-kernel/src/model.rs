@@ -5,20 +5,37 @@
 
 use crate::catalog::*;
 use crate::extra::*;
+use crate::pass::{Calls, Code};
 
 /// Per-request-kind scratch, indexed by the Request kind index (0..NR).
 pub type Rates = [f64; NK];
 
+/// An incident a rule reads. The ABI decodes only the first three; the rest are
+/// named by rules the port carries, and a Game with any incident is refused.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Incident {
+    GcStorm,
+    Loop,
+    Connections,
+    RetryStorm,
+    SlowQuery,
+    ReportDb,
+    HotShard,
+    TableBloat,
+    Stuffing,
+    ReplLag,
+}
+
 /// The Game facts the models read. The catalog carries the tables.
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct GameCtx {
     pub users: f64,
     /// Research the Company owns, as a bitset over `RESEARCH_IDS`.
     pub researched: [u64; 4],
     /// Features shipped, as a bitset over `FEATURE_IDS`.
     pub features: [u64; 1],
-    /// The incident kind, or `""` when none runs.
-    pub incident: &'static str,
+    /// The incident that runs, if any.
+    pub incident: Option<Incident>,
     pub incident_node: usize,
     pub incident_started: f64,
     pub sandbox: bool,
@@ -28,8 +45,6 @@ pub struct GameCtx {
     /// Services the Company runs: their count, and the sum of their indexes.
     pub service_count: usize,
     pub service_indexes: f64,
-    /// The users whose rows this Node's Data Group holds, which the caller derives.
-    pub users_in_group: f64,
     /// The Era, so a rule reads the stage the same way the TypeScript does.
     pub stage: f64,
     /// The Venture, as its index in `VENTURE_IDS`.
@@ -45,22 +60,18 @@ pub struct GameCtx {
 }
 
 impl GameCtx {
+    /// Whether the Company owns a Research, by its `research::` index.
     #[inline]
-    pub fn has(&self, research: &str) -> bool {
-        let index = research_index(research);
-        if index >= RESEARCH_COUNT {
-            return false;
-        }
-        (self.researched[index / 64] >> (index % 64)) & 1 == 1
+    pub fn has(&self, research: usize) -> bool {
+        (self.researched[research / 64] >> (research % 64)) & 1 == 1
     }
 
+    /// The shipped Features' indices, in catalog order.
     #[inline]
-    pub fn has_feature(&self, feature: &str) -> bool {
-        let index = feature_index(feature);
-        if index >= FEATURE_COUNT {
-            return false;
-        }
-        (self.features[index / 64] >> (index % 64)) & 1 == 1
+    pub fn shipped(&self) -> impl Iterator<Item = usize> + '_ {
+        self.features.iter().enumerate().flat_map(|(word, &bits)| {
+            (0..64).filter(move |bit| (bits >> bit) & 1 == 1).map(move |bit| word * 64 + bit)
+        })
     }
 
     /// `fixed`: a Sandbox task, or a Service that ships the fix.
@@ -70,7 +81,7 @@ impl GameCtx {
 }
 
 /// A Node, as the capacity models see it.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Node {
     pub id: usize,
     pub type_code: usize,
@@ -231,19 +242,44 @@ impl Limit {
     }
 }
 
-/// A server's context: the flags and per-pass feedback the model reads.
+/// What a server's model reads about it that holds for a whole solve.
+#[derive(Clone, Copy, Default, PartialEq)]
+pub struct ServerFlags {
+    /// CPU overhead from Analytics sampling, in milliseconds.
+    pub sampling: f64,
+    pub hashing: f64,
+    /// An Auth Provider takes this Node's logins.
+    pub delegated: bool,
+    pub local: bool,
+    /// This Node can hand async work to a Queue.
+    pub offloaded: bool,
+    pub worker: bool,
+    /// This Node runs as pods.
+    pub pod: bool,
+    pub mesh: bool,
+}
+
+impl ServerFlags {
+    pub fn of(game: &GameCtx, node: &Node, sampling: f64, delegated: bool, offloaded: bool, pod: bool) -> ServerFlags {
+        ServerFlags {
+            sampling,
+            hashing: if game.incident == Some(Incident::Loop) { 4.0 } else { 1.0 },
+            delegated,
+            local: node.local_db,
+            offloaded,
+            worker: node.type_code == component::WORKER,
+            pod,
+            mesh: node.mesh,
+        }
+    }
+}
+
+/// A server's context: its flags, and the feedback one pass hands the next.
 #[derive(Clone, Copy)]
 pub struct ServerCtx {
     pub boost: f64,
     pub inflight: f64,
-    pub sampling: f64,
-    pub hashing: f64,
-    pub delegated: bool,
-    pub local: bool,
-    pub offloaded: bool,
-    pub worker: bool,
-    pub pod: bool,
-    pub mesh: bool,
+    pub flags: ServerFlags,
 }
 
 #[inline]
@@ -343,13 +379,13 @@ pub fn transfer_ms(node: &Node, kind: usize, offloaded: bool) -> f64 {
 
 /// `hashesOnPool`: a Node.js login hashed off the event loop.
 #[inline]
-fn hashes_on_pool(node: &Node, kind: usize, ctx: &ServerCtx) -> bool {
-    RUNTIME_LANGUAGE[node.runtime] == "node"
+fn hashes_on_pool(node: &Node, kind: usize, flags: &ServerFlags) -> bool {
+    RUNTIME_LANGUAGE[node.runtime] == language::NODE
         && ctx_hashing_available(node)
         && PROFILE_CPU[kind] > 0.0
-        && kind == request_index("login")
-        && !ctx.delegated
-        && !ctx.worker
+        && kind == kind::LOGIN
+        && !flags.delegated
+        && !flags.worker
 }
 
 #[inline]
@@ -359,55 +395,49 @@ fn ctx_hashing_available(node: &Node) -> bool {
     node.pm != usize::MAX
 }
 
-#[inline]
-fn request_index(name: &str) -> usize {
-    kind_index(name)
-}
-
-/// `cpuBase`: core-milliseconds one request of a kind costs this Node.
-fn cpu_base(game: &GameCtx, node: &Node, kind: usize, calls: &[f64; NK], ctx: &ServerCtx) -> f64 {
+/// `cpuBase`: core-milliseconds one request of a kind costs this Node. It reads
+/// nothing a pass changes, so a solve works it out once per Node and kind.
+pub fn cpu_base(game: &GameCtx, node: &Node, kind: usize, calls: &Calls, flags: &ServerFlags) -> f64 {
     let runtime = node.runtime;
     let framework = node.framework;
     let speed = speed_of(game, node);
     let overhead = overhead_of(node, kind);
-    let login = kind == request_index("login");
+    let login = kind == kind::LOGIN;
     let variant = kind_speed_of(game, node, kind);
-    let delegated_login = login && ctx.delegated && !ctx.worker;
+    let delegated_login = login && flags.delegated && !flags.worker;
 
     let mut cpu;
     if delegated_login {
         cpu = (LOGIN_DELEGATED_CPU * overhead) / speed;
     } else if PROFILE_NATIVE[kind] {
-        cpu = PROFILE_CPU[kind] * if login { ctx.hashing } else { 1.0 };
+        cpu = PROFILE_CPU[kind] * if login { flags.hashing } else { 1.0 };
     } else {
         cpu = (PROFILE_CPU[kind] * overhead) / speed;
     }
     cpu /= variant;
     let mut made = 0.0;
-    for backend in 0..NB {
-        made += calls[NR + backend];
+    for &count in calls {
+        made += count;
     }
-    let serial = made * SERIALIZE_MS * if game.has("binary-rpc") { 0.5 } else { 1.0 };
-    let auth = if AUTHENTICATED_KINDS_MASK[kind] == 1 && !edge_auth_of(game) && !(login && ctx.delegated)
+    let serial = made * SERIALIZE_MS * if game.has(research::BINARY_RPC) { 0.5 } else { 1.0 };
+    let auth = if AUTHENTICATED_KINDS_MASK[kind] == 1 && !edge_auth_of(game) && !(login && flags.delegated)
     {
         AUTH_CHECK_MS
     } else {
         0.0
     };
-    if ctx.worker {
-        return (cpu + serial) * PROFILE_OFFLOAD[kind] * (1.0 + ctx.sampling);
+    if flags.worker {
+        return (cpu + serial) * PROFILE_OFFLOAD[kind] * (1.0 + flags.sampling);
     }
-    if ctx.offloaded {
+    if flags.offloaded {
         cpu *= 1.0 - PROFILE_OFFLOAD[kind];
     }
     if node.compress && PROFILE_COMPRESSIBLE[kind] {
         cpu *= GZIP_CPU;
     }
-    if ctx.local {
+    if flags.local {
         let mut queries = 0.0;
-        for backend in 0..NB {
-            let count = calls[NR + backend];
-            let each = QUERY_CPU_BY_BACKEND[backend];
+        for (&count, &each) in calls.iter().zip(&QUERY_CPU_BY_BACKEND) {
             if count != 0.0 && each >= 0.0 {
                 queries += count * each;
             }
@@ -416,23 +446,23 @@ fn cpu_base(game: &GameCtx, node: &Node, kind: usize, calls: &[f64; NK], ctx: &S
     }
     let _ = framework;
     let _ = runtime;
-    (cpu + serial + auth) * (1.0 + ctx.sampling)
+    (cpu + serial + auth) * (1.0 + flags.sampling)
 }
 
 /// `speedOf`: runtime, OPcache, and warmup, multiplied in order.
 fn speed_of(game: &GameCtx, node: &Node) -> f64 {
     let mut speed = RUNTIME_SPEED[node.runtime];
     // The collector's speed only applies to Java.
-    if RUNTIME_LANGUAGE[node.runtime] == "java" {
+    if RUNTIME_LANGUAGE[node.runtime] == language::JAVA {
         speed *= COLLECTOR_SPEED[node.collector.min(2)];
     }
-    if RUNTIME_LANGUAGE[node.runtime] == "php" && game.has("opcache") {
+    if RUNTIME_LANGUAGE[node.runtime] == language::PHP && game.has(research::OPCACHE) {
         speed *= 1.0 + (OPCACHE_SPEED - 1.0) * node.warm;
     }
-    if RUNTIME_LANGUAGE[node.runtime] == "ruby" && game.has("yjit") {
+    if RUNTIME_LANGUAGE[node.runtime] == language::RUBY && game.has(research::YJIT) {
         speed *= YJIT_SPEED;
     }
-    if RUNTIME_LANGUAGE[node.runtime] == "rust" && game.has("jemalloc") {
+    if RUNTIME_LANGUAGE[node.runtime] == language::RUST && game.has(research::JEMALLOC) {
         speed *= JEMALLOC_SPEED;
     }
     if node.family == 4 {
@@ -455,7 +485,7 @@ fn overhead_of(node: &Node, kind: usize) -> f64 {
     let runtime = node.runtime;
     let framework = node.framework;
     let model = RUNTIME_MODEL[runtime];
-    if FRAMEWORK_ASGI[framework] && model != "loop" {
+    if FRAMEWORK_ASGI[framework] && model != Concurrency::Loop {
         return FRAMEWORK_CPU[framework][kind];
     }
     let booted = if RUNTIME_OVERHEAD_FACTOR[runtime] == 0.0 {
@@ -474,36 +504,38 @@ fn kind_speed_of(game: &GameCtx, node: &Node, kind: usize) -> f64 {
     let runtime = node.runtime;
     let heavy = CPU_HEAVY_MASK[kind] == 1;
     let mut speed = 1.0;
-    if RUNTIME_LANGUAGE[runtime] == "php" && game.has("php-jit") {
+    if RUNTIME_LANGUAGE[runtime] == language::PHP && game.has(research::PHP_JIT) {
         speed *= if heavy { PHP_JIT_HEAVY } else { PHP_JIT_SPEED };
     }
-    if RUNTIME_LANGUAGE[runtime] == "elixir" && game.has("nifs") && heavy {
+    if RUNTIME_LANGUAGE[runtime] == language::ELIXIR && game.has(research::NIFS) && heavy {
         speed *= NIF_SPEED;
     }
     speed
 }
 
-fn edge_auth_of(game: &GameCtx) -> bool {
-    game.has("edge-auth")
+/// `edgeAuthOf`: a live API Gateway that validates tokens at the edge. The port
+/// refuses a Design with a Gateway, so no Gateway validates anything here.
+fn edge_auth_of(_game: &GameCtx) -> bool {
+    false
 }
 
 /// `variantMemoryOf`: a variant's memory cost.
 fn variant_memory(game: &GameCtx, node: &Node) -> (f64, f64) {
     let mut factor = 1.0;
-    if RUNTIME_LANGUAGE[node.runtime] == "ruby" && game.has("yjit") {
+    if RUNTIME_LANGUAGE[node.runtime] == language::RUBY && game.has(research::YJIT) {
         factor *= YJIT_MEMORY;
     }
-    if RUNTIME_LANGUAGE[node.runtime] == "rust" && game.has("jemalloc") {
+    if RUNTIME_LANGUAGE[node.runtime] == language::RUST && game.has(research::JEMALLOC) {
         factor *= JEMALLOC_MEMORY;
     }
     let mut extra = 0.0;
-    if RUNTIME_LANGUAGE[node.runtime] == "node" && game.has("worker-threads") {
+    if RUNTIME_LANGUAGE[node.runtime] == language::NODE && game.has(research::WORKER_THREADS) {
         extra += WORKER_THREADS * WORKER_THREAD_MB;
     }
-    if RUNTIME_LANGUAGE[node.runtime] == "node" && game.has("libuv-pool") {
+    if RUNTIME_LANGUAGE[node.runtime] == language::NODE && game.has(research::LIBUV_POOL) {
         extra += LIBUV_THREADS * LIBUV_THREAD_MB;
     }
-    if RUNTIME_LANGUAGE[node.runtime] == "rust" && game.has("spawn-blocking") {
+    if RUNTIME_LANGUAGE[node.runtime] == language::RUST && game.has(research::SPAWN_BLOCKING) {
         extra += SPAWN_BLOCKING_THREADS * SPAWN_BLOCKING_THREAD_MB;
     }
     (factor, extra)
@@ -516,11 +548,11 @@ fn collector_memory(node: &Node) -> (bool, f64, f64, f64) {
     if RUNTIME_GC_PAUSE[node.runtime] < 0.0 {
         return (false, 1.0, 0.0, 0.0);
     }
-    if language == "java" {
+    if language == language::JAVA {
         let index = node.collector.min(2);
         return (true, COLLECTOR_MEMORY[index], COLLECTOR_PAUSE[index], RUNTIME_GC_CPU[node.runtime]);
     }
-    if language == "go" {
+    if language == language::GO {
         let index = if node.gogc < 3 { node.gogc } else { 1 };
         return (
             true,
@@ -537,7 +569,7 @@ pub fn server_model(
     game: &GameCtx,
     node: &Node,
     arriving: &Rates,
-    calls: &[[f64; NK]; NR],
+    code: &Code,
     call_latency: &[f64; NK],
     ctx: &ServerCtx,
 ) -> Model {
@@ -549,28 +581,28 @@ pub fn server_model(
     let ram = ram_of(node.size, node.family) * ctx.boost * copies;
     let model = RUNTIME_MODEL[runtime];
 
-    let processes = if RUNTIME_IDS[runtime] == "mod_php" {
+    let processes = if runtime == runtime::MOD_PHP {
         APACHE_MAX_WORKERS.min((ctx.inflight).ceil() + APACHE_SPARE)
     } else if RUNTIME_POOL[runtime] {
         node.workers * copies
-    } else if (model == "threads" && !RUNTIME_PARALLEL[runtime]) || RUNTIME_IDS[runtime] == "node_cluster"
+    } else if (model == Concurrency::Threads && !RUNTIME_PARALLEL[runtime]) || runtime == runtime::NODE_CLUSTER
     {
         (vcpu / copies).round().max(1.0) * copies
     } else {
         copies
     };
-    let slots = if model == "loop" || model == "green" || model == "async" {
+    let slots = if model == Concurrency::Loop || model == Concurrency::Green || model == Concurrency::Async {
         f64::INFINITY
-    } else if model == "threads" {
+    } else if model == Concurrency::Threads {
         processes * RUNTIME_THREADS[runtime]
-    } else if RUNTIME_IDS[runtime] == "mod_php" {
+    } else if runtime == runtime::MOD_PHP {
         APACHE_MAX_WORKERS * ctx.boost * copies
     } else {
         node.workers * ctx.boost * copies
     };
 
     // PHP-FPM pool modes; every other runtime keeps the whole pool resident.
-    let (pm_spares, pm_spawn_share, pm_spawn_ms) = if RUNTIME_IDS[runtime] == "php_fpm" {
+    let (pm_spares, pm_spawn_share, pm_spawn_ms) = if runtime == runtime::PHP_FPM {
         match node.pm {
             1 => (3.0, 0.0, 0.0),   // dynamic
             2 => (0.0, 0.05, 8.0),  // ondemand
@@ -584,7 +616,7 @@ pub fn server_model(
     } else {
         processes.min((ctx.inflight.ceil() + pm_spares).max(1.0))
     };
-    let connections = arriving[request_index("rt")] * RT_HOLD_SECONDS;
+    let connections = arriving[kind::RT] * RT_HOLD_SECONDS;
     let connection_kb = RUNTIME_CONNECTION_KB[runtime];
     let connection_ram = if connections > 0.0 && connection_kb >= 0.0 {
         (connections * connection_kb) / 1_048_576.0
@@ -597,7 +629,7 @@ pub fn server_model(
         * (RUNTIME_MEMORY_MB[runtime] * variant_factor * collector_memory + FRAMEWORK_MEMORY_MB[framework]))
         / 1024.0;
     ram_used += (resident * variant_extra) / 1024.0;
-    if ctx.local {
+    if ctx.flags.local {
         ram_used += LOCAL_DB_RAM + game.users * LOCAL_DB_RAM_PER_USER;
     }
     ram_used += node.leak + connection_ram;
@@ -609,7 +641,7 @@ pub fn server_model(
     };
     let heap = if ram > 0.0 { ram_used / ram } else { 0.0 };
     let storm = has_collector
-        && game.incident == "gc-storm"
+        && game.incident == Some(Incident::GcStorm)
         && game.incident_node == node.id;
     let live = if storm { (heap + GC_STORM_HEAP).min(1.0) } else { heap };
     let pressure = if has_collector && live > GC_HEAP {
@@ -625,13 +657,13 @@ pub fn server_model(
 
     let usable = if RUNTIME_PARALLEL[runtime] {
         vcpu
-    } else if model == "process" {
+    } else if model == Concurrency::Process {
         vcpu.min(processes.max(1.0))
     } else {
         vcpu.min(processes)
     };
     let throttled = node.family == 0 && node.credits < 1.0;
-    let shared = if ctx.mesh { usable * (1.0 - MESH_OVERHEAD) } else { usable };
+    let shared = if ctx.flags.mesh { usable * (1.0 - MESH_OVERHEAD) } else { usable };
     let cores = if throttled {
         shared.min(BURST_BASELINE * vcpu)
     } else {
@@ -640,21 +672,23 @@ pub fn server_model(
     let per_request = cores.min(1.0);
 
     // The kinds that arrive.
-    let mut kinds: Vec<usize> = Vec::with_capacity(NR);
+    let mut arrived = [0usize; NR];
+    let mut count = 0;
     let mut rate = 0.0;
-    for kind in 0..NR {
-        if arriving[kind] > 0.0 {
-            kinds.push(kind);
-            rate += arriving[kind];
+    for (kind, &arrives) in arriving[..NR].iter().enumerate() {
+        if arrives > 0.0 {
+            arrived[count] = kind;
+            count += 1;
+            rate += arrives;
         }
     }
+    let kinds = &arrived[..count];
     let mut cpu = [0.0f64; NR];
-    for &kind in &kinds {
-        let raw = cpu_base(game, node, kind, &calls[kind], ctx);
-        cpu[kind] = (raw / efficiency) * if collecting > 1.0 { collecting } else { 1.0 };
+    for &kind in kinds {
+        cpu[kind] = (code.cpu[kind] / efficiency) * if collecting > 1.0 { collecting } else { 1.0 };
     }
     let mut cpu_work = 0.0;
-    for &kind in &kinds {
+    for &kind in kinds {
         cpu_work += arriving[kind] * cpu[kind];
     }
     let cpu_utilization = if cores > 0.0 {
@@ -667,19 +701,19 @@ pub fn server_model(
     let mean_service = if rate > 0.0 { cpu_work / rate / per_request } else { 0.0 };
     let cpu_wait = wait_for(mean_service, cpu_utilization, cores);
 
-    let fetching = if ctx.worker { FETCH_MS / node.prefetch.max(1.0) } else { 0.0 };
+    let fetching = if ctx.flags.worker { FETCH_MS / node.prefetch.max(1.0) } else { 0.0 };
     let mut residence = [0.0f64; NR];
     let mut slot_work = 0.0;
-    for &kind in &kinds {
-        let receiving = if ctx.worker || PROFILE_IN_KB[kind] <= 0.0 {
+    for &kind in kinds {
+        let receiving = if ctx.flags.worker || PROFILE_IN_KB[kind] <= 0.0 {
             0.0
         } else {
             ((PROFILE_IN_KB[kind] * 8.0) / USER_UP_MBPS)
-                * if ctx.offloaded { 1.0 - PROFILE_OFFLOAD[kind] } else { 1.0 }
+                * if ctx.flags.offloaded { 1.0 - PROFILE_OFFLOAD[kind] } else { 1.0 }
         };
         let mut waiting = 0.0;
-        if !ctx.local {
-            waiting = wait_of(&calls[kind], call_latency) + fetching;
+        if !ctx.flags.local {
+            waiting = wait_of(&code.calls[kind], call_latency) + fetching;
         }
         let each = cpu[kind] / per_request + cpu_wait + waiting + receiving;
         residence[kind] = each;
@@ -693,14 +727,14 @@ pub fn server_model(
     };
 
     let mut bytes = 0.0;
-    if !ctx.worker {
-        for &kind in &kinds {
-            bytes += arriving[kind] * payload_of(node, kind, ctx.offloaded) * payload_factor(game, kind);
+    if !ctx.flags.worker {
+        for &kind in kinds {
+            bytes += arriving[kind] * payload_of(node, kind, ctx.flags.offloaded) * payload_factor(game, kind);
         }
     }
     let network_utilization = bytes / (network_of(node.size) * ctx.boost);
 
-    let thread_utilization = if model == "threads" && connection_ram > 0.0 && ram > 0.0 {
+    let thread_utilization = if model == Concurrency::Threads && connection_ram > 0.0 && ram > 0.0 {
         ram_used / ram
     } else {
         0.0
@@ -709,8 +743,8 @@ pub fn server_model(
     let mut pooled = [false; NR];
     let mut pool_rate = 0.0;
     let mut pool_work = 0.0;
-    for &kind in &kinds {
-        let on = hashes_on_pool(node, kind, ctx) && game.has("libuv-pool");
+    for &kind in kinds {
+        let on = hashes_on_pool(node, kind, &ctx.flags) && game.has(research::LIBUV_POOL);
         pooled[kind] = on;
         if !on {
             continue;
@@ -747,24 +781,24 @@ pub fn server_model(
     };
 
     // Event-loop stalls.
-    let blocking = if RUNTIME_BLOCKING[runtime] == "worker"
-        && RUNTIME_LANGUAGE[runtime] == "rust"
-        && game.has("spawn-blocking")
+    let blocking = if RUNTIME_BLOCKING[runtime] == Blocking::Worker
+        && RUNTIME_LANGUAGE[runtime] == language::RUST
+        && game.has(research::SPAWN_BLOCKING)
     {
-        "none"
+        Blocking::None
     } else {
         RUNTIME_BLOCKING[runtime]
     };
     let mut loop_work = 0.0;
     let mut loop_squares = 0.0;
-    if blocking != "none" {
-        for &kind in &kinds {
-            let is_login = kind == request_index("login");
-            let off_loop = (is_login && (pooled[kind] || ctx.delegated))
-                || (game.has("worker-threads")
+    if blocking != Blocking::None {
+        for &kind in kinds {
+            let is_login = kind == kind::LOGIN;
+            let off_loop = (is_login && (pooled[kind] || ctx.flags.delegated))
+                || (game.has(research::WORKER_THREADS)
                     && game.fixed("off-loop")
-                    && (RUNTIME_LANGUAGE[runtime] == "node"
-                        || (RUNTIME_LANGUAGE[runtime] == "python" && model == "loop"))
+                    && (RUNTIME_LANGUAGE[runtime] == language::NODE
+                        || (RUNTIME_LANGUAGE[runtime] == language::PYTHON && model == Concurrency::Loop))
                     && CPU_HEAVY_MASK[kind] == 1);
             if off_loop {
                 continue;
@@ -776,7 +810,7 @@ pub fn server_model(
     }
     let loop_block = if loop_work > 0.0 { loop_squares / loop_work } else { 0.0 };
     let stall_p = if loop_block > 0.0 {
-        if blocking == "worker" {
+        if blocking == Blocking::Worker {
             LOOP_TAIL_SHARE / cores.max(1.0)
         } else {
             LOOP_TAIL_SHARE
@@ -799,7 +833,7 @@ pub fn server_model(
     } else {
         (stall_p, stall_ms)
     };
-    if ctx.pod {
+    if ctx.flags.pod {
         let (p, ms) = combine_tail(
             tail_p,
             tail_ms,
@@ -813,7 +847,7 @@ pub fn server_model(
     let mut service_fixed = [0.0f64; NK];
     let mut service_variable = [0.0f64; NK];
     let mut service_mask = 0u64;
-    for &kind in &kinds {
+    for &kind in kinds {
         service_mask |= 1u64 << kind;
         service_fixed[kind] = 2.0;
         service_variable[kind] = cpu[kind] / per_request
@@ -857,12 +891,11 @@ fn combine_tail(a: f64, a_ms: f64, b: f64, b_ms: f64) -> (f64, f64) {
 
 /// `waitOf`: sum of count × latency over the backend kinds, in catalog order.
 #[inline]
-pub fn wait_of(calls: &[f64; NK], latency: &[f64; NK]) -> f64 {
+pub fn wait_of(calls: &Calls, latency: &[f64; NK]) -> f64 {
     let mut sum = 0.0;
-    for backend in 0..NB {
-        let count = calls[NR + backend];
+    for (&count, &each) in calls.iter().zip(&latency[NR..]) {
         if count != 0.0 {
-            sum += count * latency[NR + backend];
+            sum += count * each;
         }
     }
     sum
@@ -870,10 +903,7 @@ pub fn wait_of(calls: &[f64; NK], latency: &[f64; NK]) -> f64 {
 
 /// `flatModel`: a Component with a flat capacity.
 pub fn flat_model(capacity: f64, arriving: &Rates, fixed_ms: f64, variable_ms: f64, boost: f64) -> Model {
-    let mut rate = 0.0;
-    for kind in 0..NK {
-        rate += arriving[kind];
-    }
+    let rate: f64 = arriving.iter().sum();
     let utilization = if capacity.is_infinite() { 0.0 } else { rate / (capacity * boost) };
     let share = if utilization > 1.0 { 1.0 / utilization } else { 1.0 };
     let wait = wait_for(variable_ms, utilization, 1.0);
@@ -916,10 +946,7 @@ pub fn flat_model(capacity: f64, arriving: &Rates, fixed_ms: f64, variable_ms: f
 /// `payloadFactor`: how big a response of `kind` is relative to its profile.
 pub fn payload_factor(game: &GameCtx, kind: usize) -> f64 {
     let mut value = 1.0;
-    for feature in 0..FEATURE_COUNT {
-        if !game.has_feature(FEATURE_IDS[feature]) {
-            continue;
-        }
+    for feature in game.shipped() {
         // Without an exposure record the port reads the Feature at full exposure,
         // which is what a fully adopted Feature gives.
         let factor = FEATURE_PAYLOAD[feature][kind];
@@ -989,7 +1016,7 @@ pub fn database_model(
     let ram = ram_of(node.size, node.family) * boost;
     let connection_ram = (connections * DB_CONNECTION_MB[engine]) / 1024.0;
     // One Service over one Database: the group holds the Company's users.
-    let group_users = game.users_in_group;
+    let group_users = node.users_in_group;
     let topology = node.topology;
     let database_count = 1.0f64;
     let shard_share = if topology == 2 && database_count > 1.0 { 1.0 / database_count } else { 1.0 };
@@ -998,7 +1025,7 @@ pub fn database_model(
     let disk = footprint > ram - OS_RAM;
     let logical = sharding_of(node);
     let shards = logical.shards
-        * if topology == 2 && node.type_code == component_index("database") { database_count } else { 1.0 };
+        * if topology == 2 && node.type_code == component::DATABASE { database_count } else { 1.0 };
     let cross = if shards > 1.0 { SHARD_CROSS[node.shard_key.min(3)] * (1.0 - 1.0 / shards) } else { 0.0 };
     let scatter = 1.0 + SCATTER_CPU * (shards - 1.0);
     let hot = if shards > 1.0 {
@@ -1014,28 +1041,28 @@ pub fn database_model(
     let iops = STORAGE_IOPS[node.iops.min(1)] * shards;
     let throttled = node.family == 0 && node.credits < 1.0;
     let incident = game.incident;
-    let slowed = incident == "retry-storm"
+    let slowed = incident == Some(Incident::RetryStorm)
         && game.incident_node == node.id
         && game.time - game.incident_started < STORM_TRIGGER;
     let cores = (if throttled { BURST_BASELINE * vcpu } else { vcpu })
         * if slowed { STORM_SLOWDOWN } else { 1.0 };
     let per_request = cores.min(1.0);
     let warmth = 0.5 + 0.5 * node.warm;
-    let scan = if incident == "slow-query" { group_users * ROWS_PER_USER * UNINDEXED_MS_PER_ROW } else { 0.0 };
+    let scan = if incident == Some(Incident::SlowQuery) { group_users * ROWS_PER_USER * UNINDEXED_MS_PER_ROW } else { 0.0 };
     let scans = arriving[NR + 6]; // q-scan
     let retention = node.keep.min(2);
-    let view = if node.materialized && game.has("precompute") { MATERIALIZED_SCAN } else { 1.0 };
+    let view = if node.materialized && game.has(research::PRECOMPUTE) { MATERIALIZED_SCAN } else { 1.0 };
     let scan_cpu = (QUERY_CPU_BY_BACKEND[6]
         * DB_SCAN[engine]
         * scatter
-        * if incident == "report-db" { REPORT_SURGE } else { 1.0 }
+        * if incident == Some(Incident::ReportDb) { REPORT_SURGE } else { 1.0 }
         * RETENTION_REBUILD[retention]
         * view)
         / warmth;
     let evicted = if scans > 0.0 { scan_eviction(scans * scan_cpu, cores) } else { 0.0 };
-    let shard = if incident == "hot-shard" && game.incident_node == node.id { HOT_SHARD_CPU } else { 1.0 };
-    let bloat = if incident == "table-bloat" && game.incident_node == node.id { BLOAT_CPU } else { 1.0 };
-    let denormalized = game.has("denormalization");
+    let shard = if incident == Some(Incident::HotShard) && game.incident_node == node.id { HOT_SHARD_CPU } else { 1.0 };
+    let bloat = if incident == Some(Incident::TableBloat) && game.incident_node == node.id { BLOAT_CPU } else { 1.0 };
+    let denormalized = game.has(research::DENORMALIZATION);
     let read_cpu = (if evicted > 0.0 {
         ((QUERY_CPU_BY_BACKEND[0] + scan) * if disk { 1.5 } else { 1.0 + 0.5 * evicted }) / warmth
     } else {
@@ -1169,10 +1196,7 @@ fn disk_ms(iops: usize) -> f64 {
 #[inline]
 pub fn query_factor(game: &GameCtx, backend: usize) -> f64 {
     let mut value = 1.0;
-    for feature in 0..FEATURE_COUNT {
-        if !game.has_feature(FEATURE_IDS[feature]) {
-            continue;
-        }
+    for feature in game.shipped() {
         let factor = FEATURE_QUERY[feature][backend];
         if factor > 0.0 {
             value *= factor;

@@ -7,8 +7,8 @@
 
 use crate::catalog::*;
 use crate::extra::*;
-use crate::model::{database_model, flat_model, flat_scale, server_model, GameCtx, Model, Node, Rates, ServerCtx};
-use crate::routing::{Design, Scratch};
+use crate::model::{cpu_base, database_model, flat_model, flat_scale, server_model, GameCtx, Incident, Model, Node, Rates, ServerCtx, ServerFlags};
+use crate::routing::{Design, Splits, Weights};
 
 /// What one pass produced. The fields after `connections` are what the Ledger
 /// reads, and what the pass loop feeds back into the next pass.
@@ -17,6 +17,8 @@ pub struct Pass {
     pub models: Vec<Model>,
     pub links: Vec<Rates>,
     pub link_order: Vec<usize>,
+    /// Whether `link_order` already lists each Edge.
+    listed: Vec<bool>,
     pub connections: Vec<Option<(f64, f64)>>,
     /// A Cache's or CDN's hit ratio, and the share of its hits that are stale.
     pub hits: Vec<f64>,
@@ -55,69 +57,116 @@ pub fn is_down(node: &Node) -> bool {
 /// `asLogin`: this kind costs an App Server a password hash.
 #[inline]
 fn as_login(game: &GameCtx, kind: usize) -> bool {
-    kind == kind_index("login") || (kind == kind_index("bot") && game.incident == "stuffing")
+    kind == kind::LOGIN || (kind == kind::BOT && game.incident == Some(Incident::Stuffing))
 }
 
 /// `profileOf`: the kind's profile, or a login when a stuffing incident is on.
 #[inline]
 fn profile_of(game: &GameCtx, kind: usize) -> usize {
-    if kind == kind_index("bot") && game.incident == "stuffing" {
-        kind_index("login")
+    if kind == kind::BOT && game.incident == Some(Incident::Stuffing) {
+        kind::LOGIN
     } else {
         kind
     }
 }
 
+/// Backend calls one request makes, by backend kind (`NR + backend` in a `Rates`).
+pub type Calls = [f64; NB];
+
+/// What one request of each kind costs a Node that runs code, before any pass:
+/// the backend calls it makes, and the core-milliseconds it takes.
+#[derive(Clone, Copy)]
+pub struct Code {
+    pub calls: [Calls; NR],
+    /// `cpuBase` by request kind. Zero on a Function, whose model is flat.
+    pub cpu: [f64; NR],
+}
+
+static NO_CODE: Code = Code { calls: [[0.0; NB]; NR], cpu: [0.0; NR] };
+
+/// `callsOf` and `cpuBase` for every Node that runs code, worked out once per run.
+///
+/// Both read only the Game, the Node, and its `ServerFlags`, so they hold for
+/// every pass, every tree, and every Bottleneck candidate. A row exists only for
+/// an App Server or a Function; every other slot reads zeros.
+#[derive(Default)]
+pub struct CodeTable {
+    /// Each slot's row in `rows`, or `u32::MAX` when it runs no code.
+    row_of: Vec<u32>,
+    rows: Vec<Code>,
+}
+
+impl CodeTable {
+    pub fn new(game: &GameCtx, nodes: &[Node], flags: &[ServerFlags]) -> CodeTable {
+        let mut table = CodeTable { row_of: vec![u32::MAX; nodes.len()], rows: Vec::new() };
+        for ((slot, node), flags) in nodes.iter().enumerate().zip(flags) {
+            if node.type_code != component::SERVER && node.type_code != component::FN {
+                continue;
+            }
+            let mut code = NO_CODE;
+            for kind in 0..NR {
+                code.calls[kind] = calls_of(game, node, kind, flags.delegated, flags.offloaded);
+                if node.type_code == component::SERVER {
+                    code.cpu[kind] = cpu_base(game, node, kind, &code.calls[kind], flags);
+                }
+            }
+            table.row_of[slot] = table.rows.len() as u32;
+            table.rows.push(code);
+        }
+        table
+    }
+
+    /// One Node's row.
+    #[inline]
+    pub fn node(&self, slot: usize) -> &Code {
+        self.row_of
+            .get(slot)
+            .and_then(|&row| self.rows.get(row as usize))
+            .unwrap_or(&NO_CODE)
+    }
+}
+
 /// `callsOf`: the backend calls one request of a kind makes from this Node.
-pub fn calls_of(game: &GameCtx, node: &Node, kind: usize, delegated: bool, offloaded: bool) -> Rates {
+pub fn calls_of(game: &GameCtx, node: &Node, kind: usize, delegated: bool, offloaded: bool) -> Calls {
     let profile = profile_of(game, kind);
-    let mut calls = [0.0f64; NK];
+    let mut calls = [0.0f64; NB];
     if as_login(game, kind) && delegated {
-        calls[NR + backend_index("auth")] = 1.0;
+        calls[backend::AUTH] = 1.0;
         return calls;
     }
     let orm = PROFILE_ORM[profile]
         && FRAMEWORK_ORM[node.framework]
-        && !(game.has("eager-loading") && game.fixed("eager-loading"));
-    for slot in 0..NK {
-        calls[slot] = PROFILE_CALLS[profile][slot];
-    }
-    let read = calls[NR + backend_index("q-read")];
-    calls[NR + backend_index("q-read")] = read * if orm { ORM_READS } else { 1.0 };
+        && !(game.has(research::EAGER_LOADING) && game.fixed("eager-loading"));
+    calls.copy_from_slice(&PROFILE_CALLS[profile][NR..]);
+    calls[backend::Q_READ] *= if orm { ORM_READS } else { 1.0 };
     // Fan-out on write: a feed reads one timeline, and each write fills its followers'.
     if node.fanout == 1 {
-        let hybrid = game.has("hybrid-fanout");
-        if kind == kind_index("feed") {
-            calls[NR + backend_index("q-read")] = if hybrid { HYBRID_READS } else { 1.0 };
+        let hybrid = game.has(research::HYBRID_FANOUT);
+        if kind == kind::FEED {
+            calls[backend::Q_READ] = if hybrid { HYBRID_READS } else { 1.0 };
         }
-        if kind == kind_index("write") && mix_feed(game) > 0.0 {
-            calls[NR + backend_index("k-write")] = FOLLOWERS * if hybrid { HYBRID_WRITES } else { 1.0 };
+        if kind == kind::WRITE && mix_feed(game) > 0.0 {
+            calls[backend::K_WRITE] = FOLLOWERS * if hybrid { HYBRID_WRITES } else { 1.0 };
         }
     }
     // A sticky Load Balancer keeps a user on this server, so some reads hit its memory.
     if node.sticky {
-        let read = calls[NR + backend_index("q-read")];
-        calls[NR + backend_index("q-read")] = read * (1.0 - STICKY_LOCAL_READ);
+        calls[backend::Q_READ] *= 1.0 - STICKY_LOCAL_READ;
     }
     // The async part's calls: a Worker makes them once the kind goes through a Queue.
     if offloaded && PROFILE_OFFLOAD[profile] > 0.0 {
-        calls[NR + backend_index("task")] = 1.0;
+        calls[backend::TASK] = 1.0;
     } else {
-        for slot in 0..NK {
-            calls[slot] += PROFILE_ASYNC_CALLS[profile][slot];
+        for (call, extra) in calls.iter_mut().zip(&PROFILE_ASYNC_CALLS[profile][NR..]) {
+            *call += extra;
         }
     }
     calls
 }
 
 /// `asyncCallsOf`: the calls the async part of a kind makes.
-pub fn async_calls_of(game: &GameCtx, origin: usize) -> Rates {
-    let mut calls = [0.0f64; NK];
-    let profile = profile_of(game, origin);
-    for slot in 0..NK {
-        calls[slot] = PROFILE_ASYNC_CALLS[profile][slot];
-    }
-    calls
+pub fn async_calls_of(game: &GameCtx, origin: usize) -> &'static Rates {
+    &PROFILE_ASYNC_CALLS[profile_of(game, origin)]
 }
 
 /// `mixOf(game).feed`, which only the fan-out branch reads. A board that ships
@@ -130,41 +179,39 @@ fn mix_feed(_game: &GameCtx) -> f64 {
 /// The kinds a Component serves by passing the request straight on.
 #[inline]
 fn passes_on(type_code: usize) -> bool {
-    type_code == component_index("users")
-        || type_code == component_index("lb")
-        || type_code == component_index("pooler")
-        || type_code == component_index("dns")
-        || type_code == component_index("cdn")
-        || type_code == component_index("waf")
-        || type_code == component_index("gw")
+    type_code == component::USERS
+        || type_code == component::LB
+        || type_code == component::POOLER
+        || type_code == component::DNS
+        || type_code == component::CDN
+        || type_code == component::WAF
+        || type_code == component::GW
 }
 
-/// Everything a pass reads. One struct rather than fifteen arguments.
-pub struct Run<'a> {
+/// What a solve holds fixed: the Design, the Game, the Nodes, and the columns
+/// the host wrote once. A pass, a tree, and the Ledger all read the same one.
+#[derive(Clone, Copy)]
+pub struct Board<'a> {
     pub design: &'a Design,
     pub game: &'a GameCtx,
     pub nodes: &'a [Node],
     pub demand: &'a Rates,
     pub intake: &'a [f64],
-    pub weights: &'a [f64],
-    pub nominal: &'a [f64],
-    pub sick: &'a [bool],
+    /// Each Node's `ServerFlags`, by slot.
+    pub flags: &'a [ServerFlags],
+    /// `callsOf` and `cpuBase` for every Node that runs code.
+    pub code: &'a CodeTable,
+}
+
+/// One pass's inputs: the Board, and the feedback the last pass left.
+pub struct Run<'a> {
+    pub board: Board<'a>,
+    pub weights: Weights<'a>,
     /// Milliseconds an App Server holds a slot per call, by backend kind, from the last pass.
     pub call_latency: &'a [[f64; NK]],
     pub inflight: &'a [f64],
     /// Server connections held open on each Node on the last pass.
     pub connections: &'a [f64],
-    pub users_in_group: &'a [f64],
-    /// CPU overhead from Analytics sampling each Node.
-    pub sampling: &'a [f64],
-    /// An Auth Provider takes this Node's logins.
-    pub delegated: &'a [bool],
-    /// This Node can hand async work to a Queue.
-    pub offloads: &'a [bool],
-    /// This Node runs as pods.
-    pub pod: &'a [bool],
-    /// A Service Mesh has put a sidecar beside this Node.
-    pub mesh: &'a [bool],
     /// The Node the Bottleneck search boosts, if any.
     pub boost: Option<usize>,
 }
@@ -175,10 +222,6 @@ impl Run<'_> {
         values.get(index).copied().unwrap_or(0.0)
     }
 
-    #[inline]
-    fn flag(values: &[bool], index: usize) -> bool {
-        values.get(index).copied().unwrap_or(false)
-    }
 
     #[inline]
     fn boosted(&self, index: usize) -> f64 {
@@ -187,21 +230,26 @@ impl Run<'_> {
 }
 
 /// `forward`: one pass over the Design.
-pub fn forward(run: &Run, scratch: &mut Scratch) -> Pass {
-    let design = run.design;
-    let game = run.game;
-    let nodes = run.nodes;
+pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
+    let Board { design, game, nodes, demand, intake, flags, code } = run.board;
     let count = design.nodes.len();
-    let mut arriving: Vec<Rates> = vec![[0.0; NK]; count];
-    let mut models: Vec<Model> = vec![Model::default(); count];
-    let mut links: Vec<Rates> = vec![[0.0; NK]; count.max(design.edges.len())];
-    let mut link_order: Vec<usize> = Vec::new();
-    let hits: Vec<f64> = vec![0.0; count];
-    let stale_hits: Vec<f64> = vec![0.0; count];
-    let mut stranded: Vec<Option<(f64, u64)>> = vec![None; count];
-    let mut repeated: Vec<f64> = vec![0.0; count];
-    let mut tasks: Vec<Rates> = vec![[0.0; NK]; count];
-    let mut drained: Vec<f64> = vec![0.0; count];
+    let links = count.max(design.edges.len());
+    let mut out = Pass {
+        arriving: vec![[0.0; NK]; count],
+        models: vec![Model::default(); count],
+        links: vec![[0.0; NK]; links],
+        link_order: Vec::new(),
+        listed: vec![false; links],
+        connections: vec![None; count],
+        hits: vec![0.0; count],
+        stale_hits: vec![0.0; count],
+        stranded: vec![None; count],
+        repeated: vec![0.0; count],
+        tasks: vec![[0.0; NK]; count],
+        drained: vec![0.0; count],
+        lag_ms: 0.0,
+        stale_share: 0.0,
+    };
 
     for &node_index in &design.order {
         let route_node = design.nodes[node_index];
@@ -212,13 +260,13 @@ pub fn forward(run: &Run, scratch: &mut Scratch) -> Pass {
         }
         // A Users Node takes its share of the demand; every other Node takes what
         // its upstream sent it this pass.
-        if type_code == component_index("users") {
-            let share = Run::at(run.intake, slot);
-            for kind in 0..NR {
-                arriving[slot][kind] = run.demand[kind] * share;
+        if type_code == component::USERS {
+            let share = Run::at(intake, slot);
+            for (into, rate) in out.arriving[slot].iter_mut().zip(&demand[..NR]) {
+                *into = rate * share;
             }
         }
-        let rates = arriving[slot];
+        let rates = out.arriving[slot];
         let node = match nodes.get(slot) {
             Some(node) => node,
             None => continue,
@@ -227,31 +275,18 @@ pub fn forward(run: &Run, scratch: &mut Scratch) -> Pass {
         let ctx = ServerCtx {
             boost,
             inflight: Run::at(run.inflight, slot),
-            sampling: Run::at(run.sampling, slot),
-            hashing: if game.incident == "loop" { 4.0 } else { 1.0 },
-            delegated: Run::flag(run.delegated, slot),
-            local: node.local_db,
-            offloaded: Run::flag(run.offloads, slot),
-            worker: type_code == component_index("worker"),
-            pod: Run::flag(run.pod, slot),
-            mesh: Run::flag(run.mesh, slot),
+            flags: flags.get(slot).copied().unwrap_or_default(),
         };
-        let model = if type_code == component_index("server") {
-            let mut calls = [[0.0f64; NK]; NR];
-            for kind in 0..NR {
-                calls[kind] = calls_of(game, node, kind, ctx.delegated, ctx.offloaded);
-            }
-            let latency = run.call_latency.get(slot).copied().unwrap_or([0.0; NK]);
-            server_model(game, node, &rates, &calls, &latency, &ctx)
-        } else if type_code == component_index("database") || type_code == component_index("replica") {
-            let mut scoped = game.clone();
-            scoped.users_in_group = Run::at(run.users_in_group, slot);
-            database_model(&scoped, node, &rates, boost, Run::at(run.connections, slot))
+        let model = if type_code == component::SERVER {
+            let latency = run.call_latency.get(slot).unwrap_or(&[0.0; NK]);
+            server_model(game, node, &rates, code.node(slot), latency, &ctx)
+        } else if type_code == component::DATABASE || type_code == component::REPLICA {
+            database_model(game, node, &rates, boost, Run::at(run.connections, slot))
         } else {
             let (capacity, fixed, variable) = flat_params(type_code, node, game);
             flat_model(capacity, &rates, fixed, variable, boost)
         };
-        models[slot] = model;
+        out.models[slot] = model;
 
         let share = if is_down(node) { 0.0 } else { model.share };
         let mut kept = [0.0f64; NK];
@@ -261,7 +296,7 @@ pub fn forward(run: &Run, scratch: &mut Scratch) -> Pass {
 
         // The kinds behind the tasks this Node sends on: an App Server enqueues
         // one task per request of a kind that goes async; a Queue passes on its mix.
-        let composition = if type_code == component_index("server") {
+        let composition = if type_code == component::SERVER {
             let mut offloaded = [0.0f64; NK];
             for kind in 0..NR {
                 if PROFILE_OFFLOAD[kind] > 0.0 && kept[kind] > 0.0 {
@@ -269,8 +304,8 @@ pub fn forward(run: &Run, scratch: &mut Scratch) -> Pass {
                 }
             }
             shares_of(&offloaded)
-        } else if type_code == component_index("queue") || type_code == component_index("log") {
-            shares_of(&tasks[slot])
+        } else if type_code == component::QUEUE || type_code == component::LOG {
+            shares_of(&out.tasks[slot])
         } else {
             None
         };
@@ -278,40 +313,28 @@ pub fn forward(run: &Run, scratch: &mut Scratch) -> Pass {
         // Serve: a Node that runs code sends one call per backend kind; a flat
         // Component passes the request straight on.
         if passes_on(type_code) {
-            for kind in 0..NK {
-                let processed = kept[kind];
+            for (kind, &processed) in kept.iter().enumerate() {
                 if processed > 0.0 {
-                    route(
-                        run, scratch, &mut arriving, &mut links, &mut link_order, &mut repeated,
-                        &mut tasks, &mut stranded, slot, kind, processed, composition,
-                    );
+                    out.route(run, splits, slot, kind, processed, composition);
                 }
             }
-        } else if type_code == component_index("server") || type_code == component_index("fn") {
-            let delegated = Run::flag(run.delegated, slot);
-            let offloaded = Run::flag(run.offloads, slot);
-            for kind in 0..NR {
+        } else if type_code == component::SERVER || type_code == component::FN {
+            for (kind, calls) in code.node(slot).calls.iter().enumerate() {
                 let processed = kept[kind];
                 if processed <= 0.0 {
                     continue;
                 }
-                let calls = calls_of(game, node, kind, delegated, offloaded);
-                for backend in 0..NB {
-                    let made = calls[NR + backend];
+                for (backend, &made) in calls.iter().enumerate() {
                     if made != 0.0 {
-                        route(
-                            run, scratch, &mut arriving, &mut links, &mut link_order, &mut repeated,
-                            &mut tasks, &mut stranded, slot, NR + backend, processed * made, composition,
-                        );
+                        out.route(run, splits, slot, NR + backend, processed * made, composition);
                     }
                 }
             }
-        } else if type_code == component_index("worker") {
+        } else if type_code == component::WORKER {
             // A Worker makes the calls of the kinds its tasks came from.
-            let mix = task_mix_of(game, &tasks, slot);
+            let mix = task_mix_of(game, &out.tasks, slot);
             let mut calls = [0.0f64; NK];
-            for origin in 0..NR {
-                let share = mix[origin];
+            for (origin, &share) in mix[..NR].iter().enumerate() {
                 if share <= 0.0 {
                     continue;
                 }
@@ -320,27 +343,20 @@ pub fn forward(run: &Run, scratch: &mut Scratch) -> Pass {
                     calls[NR + backend] += share * each[NR + backend];
                 }
             }
-            let processed = kept[NR + backend_index("task")];
+            let processed = kept[NR + backend::TASK];
             if processed > 0.0 {
                 for backend in 0..NB {
                     let made = calls[NR + backend];
                     if made > 0.0 {
-                        route(
-                            run, scratch, &mut arriving, &mut links, &mut link_order, &mut repeated,
-                            &mut tasks, &mut stranded, slot, NR + backend, processed * made, composition,
-                        );
+                        out.route(run, splits, slot, NR + backend, processed * made, composition);
                     }
                 }
             }
-        } else if type_code == component_index("queue") || type_code == component_index("log") {
+        } else if type_code == component::QUEUE || type_code == component::LOG {
             // A Queue or Log passes every task on, and keeps the mix of its origins.
-            for kind in 0..NK {
-                let processed = kept[kind];
+            for (kind, &processed) in kept.iter().enumerate() {
                 if processed > 0.0 {
-                    route(
-                        run, scratch, &mut arriving, &mut links, &mut link_order, &mut repeated,
-                        &mut tasks, &mut stranded, slot, kind, processed, composition,
-                    );
+                    out.route(run, splits, slot, kind, processed, composition);
                 }
             }
         }
@@ -358,28 +374,28 @@ pub fn forward(run: &Run, scratch: &mut Scratch) -> Pass {
             None => continue,
         };
         let type_code = node.type_code;
-        let through = type_code == component_index("lb");
-        let out = if through {
+        let through = type_code == component::LB;
+        let held = if through {
             connections_in[slot]
         } else {
-            connections_of(run, node, slot, models.get(slot), connections_in[slot])
+            connections_of(run, node, slot, out.models.get(slot), connections_in[slot])
         };
-        if out <= 0.0 {
+        if held <= 0.0 {
             continue;
         }
-        let mut shares: Vec<(u32, f64)> = Vec::new();
-        if through {
-            let found = scratch.split(design, slot, kind_index("q-read"), run.weights, run.nominal, run.sick, false);
-            shares.extend_from_slice(&scratch.pairs()[..found]);
-        }
+        let shares: &[(u32, f64)] = if through {
+            splits.get(design, slot, kind::Q_READ, &run.weights)
+        } else {
+            &[]
+        };
         let start = design.out_start(slot);
         let end = design.out_end(slot);
         for &edge in design.out_edges_in(start, end) {
             let edge = edge as usize;
             let child = design.edges.get(edge).map(|edge| edge.to as usize).unwrap_or(slot);
             let child_type = design.nodes.get(child).map(|node| node.type_code as usize).unwrap_or(0);
-            if !crate::routing::accepts(child_type, kind_index("q-read"))
-                && !crate::routing::accepts(child_type, kind_index("q-write"))
+            if !crate::routing::accepts(child_type, kind::Q_READ)
+                && !crate::routing::accepts(child_type, kind::Q_WRITE)
             {
                 continue;
             }
@@ -389,66 +405,54 @@ pub fn forward(run: &Run, scratch: &mut Scratch) -> Pass {
                 1.0
             };
             if let Some(into) = connections_in.get_mut(child) {
-                *into += out * share;
+                *into += held * share;
             }
         }
     }
-    let mut pools: Vec<Option<(f64, f64)>> = vec![None; count];
+
     let mut writes = 0.0;
-    for node in 0..count {
+    for (node, &held) in connections_in.iter().enumerate() {
         let kind = nodes.get(node).map(|node| node.type_code).unwrap_or(0);
-        if kind != component_index("database") && kind != component_index("replica") {
+        if kind != component::DATABASE && kind != component::REPLICA {
             continue;
         }
         let engine = nodes.get(node).map(|node| node.db_engine.min(1)).unwrap_or(0);
         let boost = run.boosted(node);
-        pools[node] = Some((connections_in[node], DB_CONNECTIONS[engine] * boost));
-        writes += arriving.get(node).map(|rates| rates[kind_index("q-write")]).unwrap_or(0.0) * DB_LAG[engine];
+        out.connections[node] = Some((held, DB_CONNECTIONS[engine] * boost));
+        writes += out.arriving.get(node).map(|rates| rates[kind::Q_WRITE]).unwrap_or(0.0) * DB_LAG[engine];
     }
 
     // What each Queue's Workers take from it.
     for node in 0..count {
-        if nodes.get(node).map(|node| node.type_code) != Some(component_index("queue")) {
+        if nodes.get(node).map(|node| node.type_code) != Some(component::QUEUE) {
             continue;
         }
         let mut total = 0.0;
         for &edge in design.out_edges_of(node) {
             let edge = edge as usize;
             let child = design.edges.get(edge).map(|edge| edge.to as usize).unwrap_or(node);
-            if nodes.get(child).map(|node| node.type_code) != Some(component_index("worker")) {
+            if nodes.get(child).map(|node| node.type_code) != Some(component::WORKER) {
                 continue;
             }
             let share = if nodes.get(child).map(|node| node.down).unwrap_or(false) {
                 0.0
             } else {
-                models.get(child).map(|model| model.share).unwrap_or(1.0)
+                out.models.get(child).map(|model| model.share).unwrap_or(1.0)
             };
-            total += links.get(edge).map(|rates| rates[NR + backend_index("task")]).unwrap_or(0.0) * share;
+            total += out.links.get(edge).map(|rates| rates[NR + backend::TASK]).unwrap_or(0.0) * share;
         }
-        drained[node] = total;
+        out.drained[node] = total;
     }
 
-    let surge = game.incident == "repl-lag";
+    let surge = game.incident == Some(Incident::ReplLag);
     let lag = REPLICA_LAG_MS + REPLICA_LAG_PER_WRITE * writes;
-    Pass {
-        arriving,
-        models,
-        links,
-        link_order,
-        connections: pools,
-        hits,
-        stale_hits,
-        stranded,
-        repeated,
-        tasks,
-        drained,
-        lag_ms: if surge { lag * LAG_SURGE } else { lag },
-        stale_share: if surge {
-            (lag * LAG_SURGE / 1000.0).min(0.5)
-        } else {
-            (lag * REPLICA_STALE_REUSE / 1000.0).min(0.15)
-        },
-    }
+    out.lag_ms = if surge { lag * LAG_SURGE } else { lag };
+    out.stale_share = if surge {
+        (lag * LAG_SURGE / 1000.0).min(0.5)
+    } else {
+        (lag * REPLICA_STALE_REUSE / 1000.0).min(0.15)
+    };
+    out
 }
 
 /// `sharesOf`: a rate record as shares of its own total, or `None` when it is empty.
@@ -484,11 +488,11 @@ pub fn task_mix_of(game: &GameCtx, tasks: &[Rates], slot: usize) -> Rates {
         }
     }
     if sum <= 0.0 {
-        shares[kind_index("upload")] = 1.0;
+        shares[kind::UPLOAD] = 1.0;
         return shares;
     }
-    for kind in 0..NR {
-        shares[kind] /= sum;
+    for share in &mut shares[..NR] {
+        *share /= sum;
     }
     let _ = game;
     shares
@@ -499,20 +503,20 @@ fn connections_of(run: &Run, node: &Node, slot: usize, model: Option<&Model>, in
     let type_code = node.type_code;
     let processes = model.map(|model| model.processes).unwrap_or(0.0);
     let runtime = node.runtime;
-    if type_code == component_index("server") {
+    if type_code == component::SERVER {
         if node.local_db {
             return 0.0;
         }
-        let surge = if run.game.incident == "connections" { 2.0 } else { 1.0 };
+        let surge = if run.board.game.incident == Some(Incident::Connections) { 2.0 } else { 1.0 };
         return processes * RUNTIME_CONNECTIONS[runtime] * surge;
     }
-    if type_code == component_index("worker") || type_code == component_index("fn") {
+    if type_code == component::WORKER || type_code == component::FN {
         return processes * RUNTIME_CONNECTIONS[runtime];
     }
-    if type_code == component_index("pooler") {
+    if type_code == component::POOLER {
         return if node.mode == 0 { inbound } else { inbound.min(POOLER_CONNECTIONS) };
     }
-    if type_code == component_index("cache") {
+    if type_code == component::CACHE {
         return inbound;
     }
     let _ = slot;
@@ -523,81 +527,78 @@ fn connections_of(run: &Run, node: &Node, slot: usize, model: Option<&Model>, in
 #[inline]
 fn flat_params(type_code: usize, node: &Node, game: &GameCtx) -> (f64, f64, f64) {
     let capacity = FLAT_CAPACITY[type_code] * flat_scale(node.size);
-    if type_code == component_index("users") {
+    if type_code == component::USERS {
         (f64::INFINITY, 30.0, 0.0)
-    } else if type_code == component_index("lb") {
+    } else if type_code == component::LB {
         (
             capacity
                 * if node.variant == 1 { L4_CAPACITY } else { 1.0 }
-                * if node.policy == 3 && game.has("lb-algorithms") { P2C_CAPACITY } else { 1.0 },
+                * if node.policy == 3 && game.has(research::LB_ALGORITHMS) { P2C_CAPACITY } else { 1.0 },
             if node.variant == 1 { L4_MS } else { 1.0 },
             0.1,
         )
-    } else if type_code == component_index("pooler") {
+    } else if type_code == component::POOLER {
         (capacity, 0.3, 0.0)
     } else {
         (capacity, 1.0, 0.1)
     }
 }
 
-/// `route`: split `rate` of `kind` over the Links out of `node` and add it on.
-#[allow(clippy::too_many_arguments)]
-fn route(
-    run: &Run,
-    scratch: &mut Scratch,
-    arriving: &mut [Rates],
-    links: &mut [Rates],
-    link_order: &mut Vec<usize>,
-    repeated: &mut [f64],
-    tasks: &mut [Rates],
-    stranded: &mut [Option<(f64, u64)>],
-    node: usize,
-    kind: usize,
-    rate: f64,
-    composition: Option<Rates>,
-) {
-    if rate <= 0.0 || kind == kind_index("callout") {
-        return;
-    }
-    let count = scratch.split(run.design, node, kind, run.weights, run.nominal, run.sick, false);
-    if count == 0 {
-        if let Some(entry) = stranded.get_mut(node) {
-            let (total, kinds) = entry.unwrap_or((0.0, 0));
-            *entry = Some((total + rate, kinds | (1u64 << kind)));
+impl Pass {
+    /// `route`: split `rate` of `kind` over the Links out of `node` and add it on.
+    fn route(
+        &mut self,
+        run: &Run,
+        splits: &mut Splits,
+        node: usize,
+        kind: usize,
+        rate: f64,
+        composition: Option<Rates>,
+    ) {
+        if rate <= 0.0 || kind == kind::CALLOUT {
+            return;
         }
-        return;
-    }
-    for index in 0..count {
-        let (edge, weight) = scratch.pairs()[index];
-        let edge = edge as usize;
-        let policy = match run.design.edges.get(edge) {
-            Some(edge) => *edge,
-            None => continue,
-        };
-        // Retries resend what failed, and a hedged Link sends its second copy.
-        let amplified = crate::routing::amplification(&policy, 0.0) * if policy.hedge { 1.0 + HEDGE_LOAD } else { 1.0 };
-        let sent = rate * weight * amplified;
-        if amplified > 1.0 {
-            if let Some(entry) = repeated.get_mut(policy.to as usize) {
-                *entry += sent - rate * weight;
+        let split = splits.range(run.board.design, node, kind, &run.weights);
+        if split.is_empty() {
+            if let Some(entry) = self.stranded.get_mut(node) {
+                let (total, kinds) = entry.unwrap_or((0.0, 0));
+                *entry = Some((total + rate, kinds | (1u64 << kind)));
             }
+            return;
         }
-        if let Some(into) = arriving.get_mut(policy.to as usize) {
-            into[kind] += sent;
-        }
-        if let Some(carried) = links.get_mut(edge) {
-            if carried[kind] == 0.0 && !link_order.contains(&edge) {
-                link_order.push(edge);
+        for index in split {
+            let (edge, weight) = splits.pair(index);
+            let edge = edge as usize;
+            let policy = match run.board.design.edges.get(edge) {
+                Some(edge) => *edge,
+                None => continue,
+            };
+            // Retries resend what failed, and a hedged Link sends its second copy.
+            let amplified = crate::routing::amplification(&policy, 0.0) * if policy.hedge { 1.0 + HEDGE_LOAD } else { 1.0 };
+            let sent = rate * weight * amplified;
+            if amplified > 1.0 {
+                if let Some(entry) = self.repeated.get_mut(policy.to as usize) {
+                    *entry += sent - rate * weight;
+                }
             }
-            carried[kind] += sent;
-        }
-        // A task carries the mix of the request kinds that enqueued it.
-        if kind == NR + backend_index("task") {
-            if let Some(origins) = composition {
-                if let Some(into) = tasks.get_mut(policy.to as usize) {
-                    for origin in 0..NR {
-                        if origins[origin] > 0.0 {
-                            into[origin] += sent * origins[origin];
+            if let Some(into) = self.arriving.get_mut(policy.to as usize) {
+                into[kind] += sent;
+            }
+            if let Some(carried) = self.links.get_mut(edge) {
+                if carried[kind] == 0.0 && !self.listed[edge] {
+                    self.listed[edge] = true;
+                    self.link_order.push(edge);
+                }
+                carried[kind] += sent;
+            }
+            // A task carries the mix of the request kinds that enqueued it.
+            if kind == NR + backend::TASK {
+                if let Some(origins) = composition {
+                    if let Some(into) = self.tasks.get_mut(policy.to as usize) {
+                        for origin in 0..NR {
+                            if origins[origin] > 0.0 {
+                                into[origin] += sent * origins[origin];
+                            }
                         }
                     }
                 }
@@ -606,24 +607,3 @@ fn route(
     }
 }
 
-#[inline]
-fn backend_index(name: &str) -> usize {
-    match name {
-        "q-read" => 0,
-        "q-write" => 1,
-        "auth" => 2,
-        "q-search" => 3,
-        "q-vector" => 4,
-        "blob-put" => 5,
-        "task" => 6,
-        "blob-get" => 7,
-        "q-tx" => 8,
-        "charge" => 9,
-        "q-scan" => 10,
-        "infer" => 11,
-        "notify" => 12,
-        "callout" => 13,
-        "k-write" => 14,
-        _ => 15,
-    }
-}

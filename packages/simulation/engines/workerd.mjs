@@ -2,7 +2,7 @@
 // Workers runtime, and compares them with the hashes Node computes. Wall time
 // is measured from here: inside a Worker the clock stops while code runs.
 import { spawn } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -15,6 +15,7 @@ const workerd = join(require.resolve('workerd/package.json'), '..', 'bin', 'work
 const PORT = 8_791
 const dir = mkdtempSync(join(tmpdir(), 'quorum-workerd-'))
 
+await import('../host/node.ts')
 const { report } = await import('./report.ts')
 const expected = report()
 
@@ -26,7 +27,16 @@ await build({
   target: 'es2022',
   outfile: join(dir, 'worker.js'),
   logLevel: 'error',
+  // The kernel stays a module of its own: workerd compiles it, as the Workers runtime does.
+  plugins: [
+    {
+      name: 'kernel',
+      setup: (bundle) =>
+        bundle.onResolve({ filter: /\.wasm$/ }, () => ({ path: './kernel.wasm', external: true })),
+    },
+  ],
 })
+copyFileSync(join(here, '../src/kernel.wasm'), join(dir, 'kernel.wasm'))
 writeFileSync(
   join(dir, 'config.capnp'),
   `using Workerd = import "/workerd/workerd.capnp";
@@ -35,7 +45,10 @@ const config :Workerd.Config = (
   sockets = [(name = "http", address = "127.0.0.1:${PORT}", http = (), service = "main")],
 );
 const worker :Workerd.Worker = (
-  modules = [(name = "worker.js", esModule = embed "worker.js")],
+  modules = [
+    (name = "worker.js", esModule = embed "worker.js"),
+    (name = "kernel.wasm", wasm = embed "kernel.wasm"),
+  ],
   compatibilityDate = "2026-10-08",
 );
 `,

@@ -1,6 +1,8 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+// Measuring plays the game, and every Step solves on the kernel.
+import '@quorum/simulation/host/node'
 import { measure } from '../src/measurements/measure.ts'
 
 /*

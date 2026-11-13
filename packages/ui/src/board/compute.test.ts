@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from 'vitest'
 import { newGame } from '@quorum/simulation/company'
-import { bottleneckOf, solveFlow } from '@quorum/simulation/solve'
+import { bottleneckOf } from '@quorum/simulation/solve'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -29,8 +29,8 @@ test('a compute worker that fails to load answers its jobs on the page instead o
   const newer = compute('bottleneck', { game })
   workers[0]?.onerror?.({ message: 'failed to load', preventDefault: () => {} })
   await expect(older).resolves.toBeUndefined()
-  await expect(newer).resolves.toBe(bottleneckOf(game, solveFlow(game)))
+  await expect(newer).resolves.toBe(bottleneckOf(game))
   // Later jobs skip the dead worker.
-  await expect(compute('bottleneck', { game })).resolves.toBe(bottleneckOf(game, solveFlow(game)))
+  await expect(compute('bottleneck', { game })).resolves.toBe(bottleneckOf(game))
   expect(workers).toHaveLength(1)
 })

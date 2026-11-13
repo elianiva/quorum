@@ -1,7 +1,7 @@
 import { Result } from 'effect'
 import * as Actions from '@quorum/simulation/actions'
 import { previewOf, whatIfsOf, type Preview, type WhatIf } from '@quorum/simulation/preview'
-import { bottleneckOf, solveFlow } from '@quorum/simulation/solve'
+import { bottleneckOf } from '@quorum/simulation/solve'
 import type { Game } from '@quorum/simulation/state'
 import type { TradeoffOption } from '../game/tradeoff.ts'
 import { routeLinks, type RoutedLink, type RoutedNode, type Wire } from './routing.ts'
@@ -57,7 +57,7 @@ export const JOBS: { [C in Channel]: (input: Jobs[C]['input']) => Jobs[C]['outpu
       { onSuccess: (preview) => preview, onFailure: () => null },
     ),
   route: ({ nodes, links }) => routeLinks(nodes, links),
-  bottleneck: ({ game }) => bottleneckOf(game, solveFlow(game)),
+  bottleneck: ({ game }) => bottleneckOf(game),
   whatIf: ({ game, nodeId }) => whatIfsOf(game, nodeId),
 }
 

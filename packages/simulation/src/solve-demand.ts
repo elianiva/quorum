@@ -88,3 +88,16 @@ export const demandOf = (game: Game): Partial<Record<RequestKind, number>> => {
   if (attack > 0) demand.bot = (demand.bot ?? 0) + attack
   return demand
 }
+
+/**
+ * Projects today's demand to tomorrow's peak hour, using the known diurnal cycle instead of a
+ * statistical fit (10 "Track: Observability", `anomaly-detection`). A Company with no diurnal
+ * cycle (a Sandbox with no daily cycle, or a regional Company) reports the current demand: the
+ * cycle this function reads is the single-region, non-regional cycle `demandOf` also uses.
+ */
+export const forecastPeakOf = (game: Game, demand: number): number => {
+  if (demand <= 0 || regional(game) || (game.sandbox && !game.scenario?.daily)) return demand
+  const now = ventureDiurnal(game) * ventureWeekly(game)
+  const peak = (1 + DIURNAL_AMPLITUDE) * ventureWeekly(game)
+  return now > 0 ? demand * (peak / now) : demand
+}

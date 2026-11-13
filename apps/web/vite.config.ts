@@ -102,6 +102,8 @@ export default defineConfig({
     dedupe: ['effect', 'foldkit'],
   },
   test: {
+    // The solve runs in the Rust kernel; every test run installs it first.
+    setupFiles: ['@quorum/simulation/host/node'],
     // Every file imports the whole app, and the tests are CPU-bound while the main process idles,
     // so use every core rather than Vitest's default of one fewer.
     maxWorkers: availableParallelism(),

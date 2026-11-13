@@ -41,11 +41,12 @@ time('routeLinks, big board (61 Nodes)', () => routeLinks(nodes, BIG_LINKS), 10)
 
 let game = bigBoard()
 for (let index = 0; index < 50; index += 1) game = step(game, 0.1).game
-const flow = solveFlow(game)
+// Solved once first, so `bottleneckOf` below times the search alone.
+solveFlow(game)
 // A fresh Game object each time, so the per-Game cache does not answer.
 time('solveFlow, big board', () => solveFlow({ ...game }))
 time('step, big board', () => step({ ...game }, 0.1))
-time('bottleneckOf, big board', () => bottleneckOf(game, flow), 10)
+time('bottleneckOf, big board', () => bottleneckOf(game), 10)
 
 const tidied = (name: string, board: Game, links: ReadonlyArray<RoutedLink>): void => {
   const nodes = board.nodes.map((node) => ({ ...node, group: zoned(node) ? node.zone : 'all' }))

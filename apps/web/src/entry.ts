@@ -1,5 +1,6 @@
 import { Layer } from 'effect'
 import { Runtime } from 'foldkit'
+import { kernelReady } from '@quorum/simulation/host/browser'
 import { setSeatActivity } from '@quorum/ui/board/board'
 import {
   init,
@@ -101,6 +102,8 @@ if (locale !== 'en') await loadLocale(locale).catch(() => undefined)
 // The pre-public single save has no reader. Remove it, so the browser's quota holds live Companies.
 sweepLegacyStorage()
 
+// The game solves from its first frame, so the solve kernel must be installed first.
+await kernelReady
 Runtime.run(application)
 
 // The other catalogs are large. Fetch them once the title is idle, so a language change is instant.

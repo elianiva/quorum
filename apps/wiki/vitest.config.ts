@@ -14,5 +14,9 @@ export default defineConfig({
   ],
   resolve: { dedupe: ['effect', 'foldkit'] },
   // The corpus tests read every page of the wiki, which a CI runner needs more than 5 s for.
-  test: { testTimeout: 30_000 },
+  test: {
+    testTimeout: 30_000,
+    // The solve runs in the Rust kernel; every test run installs it first.
+    setupFiles: ['@quorum/simulation/host/node'],
+  },
 })

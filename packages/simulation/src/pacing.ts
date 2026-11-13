@@ -1088,7 +1088,7 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
 
   const flow = solveFlow(next)
   const target =
-    bottleneckOf(next, flow) ??
+    bottleneckOf(next) ??
     next.nodes
       .filter(
         (node) =>

@@ -312,3 +312,26 @@ linked straight to the App Servers' backends. All 2,176 states are identical.
   Function otherwise leaves empty. Its serve makes calls without the offload, and its outcome
   with it, as TypeScript does.
 
+## Realtime Hub, Event Stream, and CDC
+
+The same sweep adds a Realtime Hub fed by the users and the Load Balancer, with PHP (which
+holds no connection), Node.js, Go with Clustering, and Elixir with Distributed Erlang, warm
+and warming, with and without backoff, behind a sticky Load Balancer, and with a reconnect
+storm and a split brain forced on it. It turns every Queue into an Event Stream, keyed and
+not, with a deep backlog and short retention, and idle with no producer. It puts a CDC
+Connector behind every Database, sending to a Warehouse or an Event Stream. All 33 variants,
+4,224 states, are identical. It found two bugs in code already marked as ported:
+
+- `pinnedOf` asks whether a sticky Load Balancer links to a Node. The port read the Node's
+  own `sticky` field, which only a Load Balancer sets, so an App Server behind a sticky Load
+  Balancer never got its local reads. With every Challenge's Load Balancer made sticky, 116
+  of 128 states differed. Each Node now has `pinned`, set from the edges.
+- A CDC Connector was in the ported list, but the kernel never copied a write to it or
+  routed its changes on: 76 of 128 states differed. The Design now keeps each Node's Edges
+  into a Connector as their own list, as `graph.mirrors` does. Kahn's order walks them after
+  the routing Edges, the pass copies `q-write`, `q-tx`, and `k-write` along them, the
+  Connector routes their sum as `change`, and a mirrored Database counts the copies as
+  disk reads.
+- An Event Stream's `drainable` takes the kind: a change goes to every consumer, so the
+  slowest one sets the rate, and tasks go to a group that shares it.
+

@@ -185,10 +185,17 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
         .iter()
         .filter(|node| node.type_code == component::SERVER && !node.down)
         .fold(0.0, |best, node| best.max(FRAMEWORK_CACHEABLE[node.framework]));
-    // `vecOf`: the first live Vector Index, in board order, that a Node links to.
+    // `pinnedOf`: a sticky Load Balancer links to the Node. `vecOf`: the first live
+    // Vector Index, in board order, that a Node links to.
+    for (slot, node) in nodes.iter_mut().enumerate() {
+        node.cdc_mirrored = !design.mirror_edges_of(slot).is_empty();
+    }
     let mut first_vec = vec![usize::MAX; nodes.len()];
     for edge in &design.edges {
         let (from, to) = (edge.from as usize, edge.to as usize);
+        if nodes[from].type_code == component::LB && nodes[from].sticky {
+            nodes[to].pinned = true;
+        }
         if nodes[to].type_code == component::VEC && !nodes[to].down {
             first_vec[from] = first_vec[from].min(to);
         }

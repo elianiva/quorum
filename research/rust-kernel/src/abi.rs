@@ -129,7 +129,16 @@ pub const S_RUNTIME_FAILURE: usize = 110;
 pub const S_INDEX_TYPE: usize = 111;
 pub const S_STALE_UNTIL: usize = 112;
 pub const S_CACHE_KEY: usize = 113;
-pub const SCALARS: usize = 114;
+pub const S_PRESENCE: usize = 114;
+pub const S_BACKOFF: usize = 115;
+pub const S_CLUSTERING: usize = 116;
+pub const S_WARMING: usize = 117;
+pub const S_INCIDENT_THROTTLED: usize = 118;
+pub const S_PARTITIONS: usize = 119;
+pub const S_ACKS: usize = 120;
+pub const S_RETAIN: usize = 121;
+pub const S_KEYED: usize = 122;
+pub const SCALARS: usize = 123;
 
 /// The node-fields block: one row per Node, read by the routing Design.
 pub const NODE_FIELDS: usize = 10;
@@ -509,6 +518,8 @@ fn incident_of(code: usize) -> Option<Incident> {
         "table-bloat" => Incident::TableBloat,
         "stuffing" => Incident::Stuffing,
         "repl-lag" => Incident::ReplLag,
+        "reconnect" => Incident::Reconnect,
+        "split-brain" => Incident::SplitBrain,
         "hot-key" => Incident::HotKey,
         "regex" => Incident::Regex,
         "stale-read" => Incident::StaleRead,
@@ -553,6 +564,7 @@ pub fn game_with(scalars: &[f64], research: Research, shipped: Shipped) -> GameC
         incident: incident_of(incident_code),
         incident_code,
         incident_node: slot_of(slot(S_INCIDENT_NODE)),
+        incident_throttled: slot(S_INCIDENT_THROTTLED) != 0.0,
         incident_region: (slot(S_INCIDENT_REGION) >= 0.0).then(|| slot(S_INCIDENT_REGION) as usize),
         chaos_target: (slot(S_CHAOS_TARGET) >= 0.0).then(|| slot(S_CHAOS_TARGET) as usize),
         cert_nodes: false,
@@ -680,5 +692,15 @@ pub fn node_of(row: &[f64]) -> Node {
         majority_ms: 0.0,
         stale_until: slot(S_STALE_UNTIL),
         cache_key: slot(S_CACHE_KEY) as usize,
+        presence: flag(S_PRESENCE),
+        backoff: flag(S_BACKOFF),
+        clustering: flag(S_CLUSTERING),
+        warming: flag(S_WARMING),
+        pinned: false,
+        partitions: slot(S_PARTITIONS),
+        acks: slot(S_ACKS) as usize,
+        retain: slot(S_RETAIN),
+        keyed: flag(S_KEYED),
+        cdc_mirrored: false,
     }
 }

@@ -181,7 +181,7 @@ pub fn calls_of(game: &GameCtx, node: &Node, kind: usize, delegated: bool, offlo
         }
     }
     // A sticky Load Balancer keeps a user on this server, so some reads hit its memory.
-    if node.sticky {
+    if node.pinned {
         calls[backend::Q_READ] *= 1.0 - STICKY_LOCAL_READ;
     }
     // The async part's calls: a Worker makes them once the kind goes through a Queue.
@@ -290,21 +290,38 @@ impl Run<'_> {
     }
 
     /// `solver.drainable(node, 'task')`: tasks per second a Queue's live Workers can take.
-    fn drainable(&self, slot: usize) -> f64 {
+    fn drainable(&self, slot: usize, kind: usize) -> f64 {
         let design = self.board.design;
         let mut total = 0.0;
+        let mut slowest = f64::INFINITY;
+        let mut found = false;
         for &edge in design.out_edges_of(slot) {
             let child = design.edges[edge as usize].to as usize;
             let Some(node) = self.board.nodes.get(child) else { continue };
-            if is_down(node) || !crate::routing::accepts(node.type_code, NR + backend::TASK) {
+            if is_down(node) || !crate::routing::accepts(node.type_code, kind) {
                 continue;
             }
-            total += match node.type_code {
+            // A Worker takes tasks at the rate its last pass could; a buffer takes either kind
+            // at its own rate, and a Warehouse takes every change.
+            let flat = FLAT_CAPACITY[node.type_code] * flat_scale(node.size);
+            let capacity = match node.type_code {
                 component::WORKER => self.task_capacity.get(child).copied().unwrap_or(f64::INFINITY),
                 component::WAREHOUSE => f64::INFINITY,
-                component::QUEUE | component::LOG => FLAT_CAPACITY[node.type_code] * flat_scale(node.size),
+                component::QUEUE | component::LOG => flat,
+                _ if kind == kind::CHANGE => if flat == 0.0 { 1_000.0 } else { flat },
                 _ => 0.0,
             };
+            found = true;
+            // A Stream broadcasts a change to every consumer, so its slowest one sets the rate.
+            // Tasks go to a consumer group, whose Workers share the rate.
+            if kind == kind::CHANGE {
+                slowest = slowest.min(capacity);
+            } else {
+                total += capacity;
+            }
+        }
+        if kind == kind::CHANGE {
+            return if found { slowest } else { 0.0 };
         }
         total
     }
@@ -496,16 +513,67 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
             // It offers its Workers what arrived, plus a share of its backlog as far as they have room.
             if share > 0.0 {
                 let arrived = kept[NR + backend::TASK];
-                let room = (run.drainable(slot) - arrived).max(0.0);
+                let room = (run.drainable(slot, NR + backend::TASK) - arrived).max(0.0);
                 out.route(run, splits, slot, NR + backend::TASK, arrived + (node.depth / DRAIN_SECONDS).min(room), composition);
             }
-        } else if type_code == component::LOG {
-            // A Queue or Log passes every task on, and keeps the mix of its origins.
-            for kind in order.iter() {
-                let processed = kept[kind];
-                if processed > 0.0 {
-                    out.route(run, splits, slot, kind, processed, composition);
+        } else if type_code == component::CDC {
+            // It publishes each change it copied as one `change`.
+            let changes = [kind::Q_WRITE, kind::Q_TX, kind::K_WRITE].iter().fold(0.0, |total, &kind| total + rates[kind] * share);
+            if changes > 0.0 {
+                out.route(run, splits, slot, kind::CHANGE, changes, composition);
+            }
+        } else if type_code == component::LOG && share > 0.0 {
+            // It offers its consumers what arrived plus a share of its lag, no faster than
+            // one consumer per partition reads.
+            let task = rates[NR + backend::TASK] * share;
+            let change = rates[kind::CHANGE] * share;
+            let arrived = task + change;
+            let room = (run.drainable(slot, NR + backend::TASK) + run.drainable(slot, kind::CHANGE) - arrived).max(0.0);
+            let read = LOG_READ_RATE * node.partitions.floor().max(1.0);
+            let backlog = (node.depth / DRAIN_SECONDS).min(room).min(read);
+            let offered = (arrived + backlog).min(read);
+            if arrived > 0.0 {
+                let ratio = offered / arrived;
+                if task > 0.0 {
+                    out.route(run, splits, slot, NR + backend::TASK, task * ratio, composition);
                 }
+                if change > 0.0 {
+                    out.route(run, splits, slot, kind::CHANGE, change * ratio, composition);
+                }
+            } else if backlog > 0.0 {
+                // No producer is sending: drain what it holds to the consumers it feeds, split
+                // only when both kinds have one.
+                let consumers = || design.out_edges_of(slot).iter().map(|&edge| design.edges[edge as usize].to as usize);
+                let takes = |kind: usize| consumers().any(|child| crate::routing::accepts(nodes[child].type_code, kind));
+                match (takes(NR + backend::TASK), takes(kind::CHANGE)) {
+                    (true, true) => {
+                        out.route(run, splits, slot, NR + backend::TASK, backlog / 2.0, composition);
+                        out.route(run, splits, slot, kind::CHANGE, backlog / 2.0, composition);
+                    }
+                    (true, false) => out.route(run, splits, slot, NR + backend::TASK, backlog, composition),
+                    (false, true) => out.route(run, splits, slot, kind::CHANGE, backlog, composition),
+                    (false, false) => {}
+                }
+            }
+        }
+
+        // A CDC Connector takes a copy of the changes this Node wrote and none of its
+        // traffic: the writes stay answered here, and the connector publishes them.
+        for &edge in design.mirror_edges_of(slot) {
+            let edge = edge as usize;
+            let to = design.edges[edge].to as usize;
+            for kind in [kind::Q_WRITE, kind::Q_TX, kind::K_WRITE] {
+                let written = kept[kind];
+                if written <= 0.0 {
+                    continue;
+                }
+                out.arriving[to][kind] += written;
+                out.order[to].push(kind);
+                if !out.listed[edge] {
+                    out.listed[edge] = true;
+                    out.link_order.push(edge);
+                }
+                out.links[edge][kind] += written;
             }
         }
     }

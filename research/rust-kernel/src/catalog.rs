@@ -696,6 +696,8 @@ pub mod cache_key {
 pub static CACHE_KEYS_HIT: [f64; 3] = [1.0, 1.1, 1.2];
 pub static CACHE_KEYS_LEAK: [f64; 3] = [0.0, 1.0, 2.5];
 
+pub static LOG_ACKS_LATENCY: [f64; 3] = [0.4, 1.0, 1.5];
+
 // ---- Request kind profiles ----
 pub static PROFILE_CPU: [f64; NR] = [4.0, 1.5, 2.0, 80.0, 3.0, 120.0, 2.0, 1.0, 0.3, 5.0, 400.0, 20.0, 5.0, 6.0, 2.0, 0.5, 0.5];
 pub static PROFILE_NATIVE: [bool; NR] = [false, false, false, true, false, true, false, false, false, false, false, false, false, false, false, false, false];

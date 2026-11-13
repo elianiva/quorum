@@ -397,6 +397,7 @@ impl<'a> Tree<'a> {
             component::SEARCH => self.search(node, kind),
             component::WIDE => self.wide(node, kind),
             component::QUEUE => self.queue(node, kind),
+            component::LOG => self.stream(node, kind),
             component::CACHE => self.cache(node, kind),
             // Bots stop here at the block rate; real users at the false positive rate.
             component::WAF => {
@@ -408,6 +409,7 @@ impl<'a> Tree<'a> {
             }
             component::WORKER => self.worker(node, kind),
             component::CDN => self.cdn(node, kind),
+            component::WS => self.hub(node, kind),
             component::EDGE => {
                 if !crate::pass::edge_runs(&self.board.nodes[node]) {
                     failed(REFUSED)
@@ -430,6 +432,46 @@ impl<'a> Tree<'a> {
             // A Node with no path for a request strands it.
             _ => failed(STRANDED),
         }
+    }
+
+    /// `wsRule.outcome`: a Hub that just came back takes the fleet's reconnect wave
+    /// at once, and a split cluster loses the messages that cross the cut.
+    fn hub(&mut self, node: usize, kind: usize) -> Outcome {
+        let game_node = self.board.nodes[node];
+        let game = self.board.game;
+        // A runtime that holds a worker per open connection cannot hold any.
+        if RUNTIME_CONNECTION_KB[game_node.runtime] < 0.0 {
+            return failed(REFUSED);
+        }
+        let here = game.incident_node == node;
+        // Jittered backoff, or a throttled storm, spreads the wave over the hold time.
+        let throttled = here && game.incident == Some(Incident::Reconnect) && game.incident_throttled;
+        let herd = game_node.warming && !game_node.backoff && !throttled;
+        let split = if here && game.incident == Some(Incident::SplitBrain) { game.runtime_failure } else { 0.0 };
+        let own = self.own_hop(node, kind, if game_node.presence { PRESENCE_VALUE } else { 1.0 });
+        // A sticky Load Balancer sends each client back to its Hub: a restarted one takes its own half.
+        let refused = if herd { HERD_REFUSED * if game_node.pinned { STICKY_HERD } else { 1.0 } } else { 0.0 };
+        fail_some(fail_some(through(own, &[], false), split, STALE), refused, REFUSED)
+    }
+
+    /// `logRule.outcome`: the producer waits for its append only. A consumer further
+    /// behind than the retention window loses the oldest events, and one that reads
+    /// unkeyed events sees them out of order.
+    fn stream(&mut self, node: usize, kind: usize) -> Outcome {
+        let game_node = self.board.nodes[node];
+        let own = self.own_hop(node, kind, 1.0);
+        // With no consumer linked, nothing reads the stream.
+        if self.downstream(node, kind, 0.0).fail[STRANDED] >= 1.0 {
+            return failed(STRANDED);
+        }
+        let appended = through(Hop { fixed_ms: own.fixed_ms + BACKLOG_MS * game_node.depth, ..own }, &[], false);
+        let rates = self.pass.rates(node);
+        let inflow = rates[NR + backend::TASK] + rates[kind::CHANGE];
+        // How far behind the producer its consumers are, in seconds of arriving work.
+        let lag = if inflow > 0.0 { game_node.depth / inflow } else { 0.0 };
+        let expired = if lag > game_node.retain && lag > 0.0 { 1.0 - game_node.retain / lag } else { 0.0 };
+        let unordered = if game_node.keyed { 0.0 } else { 1.0 - 1.0 / game_node.partitions.floor().max(1.0) };
+        fail_some(fail_some(appended, expired, DROPPED), unordered, STALE)
     }
 
     /// `cdnRule.outcome`: a hit is answered at the edge; a miss goes on to the origin.
@@ -864,7 +906,7 @@ pub fn supports(type_code: usize) -> bool {
         type_code,
         USERS | LB | DNS | CDC | POOLER | DATABASE | REPLICA | SERVER | AUTH | MSGP | WAREHOUSE
             | PSP | LLM | STORAGE | GPU | SEARCH | WIDE | QUEUE | WORKER | CACHE | WAF
-            | VEC | DSQL | DOC | CDN | EDGE
+            | VEC | DSQL | DOC | CDN | EDGE | WS | LOG
             | ANALYTICS | AUTOSCALER | CI | CLUSTER | FF | MESH | PAYMENTS | PKI
     )
 }

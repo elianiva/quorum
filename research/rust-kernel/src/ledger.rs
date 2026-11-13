@@ -9,7 +9,7 @@
 
 use crate::catalog::*;
 use crate::dist::*;
-use crate::model::{GameCtx, Order, Rates, Resources, WorkUnit};
+use crate::model::{GameCtx, Limit, Order, Rates, Resources, WorkUnit};
 use crate::outcomes::Tree;
 use crate::pass::Pass;
 
@@ -157,6 +157,13 @@ pub struct Ledger {
     pub fines: f64,
     pub revenue_by_kind: Vec<f64>,
     pub fines_by_kind: Vec<f64>,
+    pub links: Vec<LinkRow>,
+    /// Insight per second, by pool: the request kinds, then failure.
+    pub insight: [f64; INSIGHT_POOLS.len()],
+    /// Component types that sample each request kind.
+    pub breadth: Keyed,
+    /// Regions that sample each request kind.
+    pub breadth_regions: Keyed,
     pub failing: Vec<usize>,
     /// The most utilized limiting Node on each kind's path.
     pub bottleneck_by_kind: Vec<Option<usize>>,
@@ -399,15 +406,9 @@ pub fn score_kind(
 }
 
 /// `ledgerOf`: the whole Ledger, as far as the solve and the benchmark read it.
-pub fn ledger_of(
-    game: &GameCtx,
-    design: &crate::routing::Design,
-    demand: &Rates,
-    pass: &Pass,
-    nodes: &[crate::model::Node],
-    tree: &mut Tree,
-    routes: &[Route],
-) -> Ledger {
+pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> Ledger {
+    let crate::pass::Board { game, design, demand, nodes, .. } = setup.board;
+    let routes = setup.routes;
     let completion = completions_of(pass, nodes, tree);
     let mut ledger = Ledger {
         kinds: vec![KindRow::default(); NR],
@@ -617,8 +618,231 @@ pub fn ledger_of(
         };
     }
 
+    // Analytics turns sampled traffic into Insight, and fills in each tap's own row.
+    let insight = insight_of(game, nodes, setup.links, &origins, &ledger.kinds, &mut ledger.nodes);
+    ledger.insight = insight.pools;
+    ledger.breadth = insight.breadth;
+    ledger.breadth_regions = insight.regions;
+    ledger.links = setup.links.iter().map(|link| link_row(game, design, pass, tree, &ledger.nodes, link)).collect();
+
     ledger.bottleneck_by_kind = bottleneck_by_kind(nodes, &ledger.nodes);
     ledger
+}
+
+/// One Link in Game order, as the Ledger reads it.
+#[derive(Clone, Copy)]
+pub struct LinkIn {
+    pub from: usize,
+    pub to: usize,
+    /// The routing or mirror Edge for the pair, if the Link carries traffic.
+    pub edge: Option<usize>,
+    pub breaker: bool,
+}
+
+/// One Link's figures.
+#[derive(Clone, Copy, Default)]
+pub struct LinkRow {
+    pub rate: f64,
+    pub traffic: Keyed,
+    /// The kind carrying the most traffic, for the particle colour.
+    pub kind: usize,
+    pub failing: bool,
+    pub failure: f64,
+}
+
+/// The share of traffic an Analytics tap's Link shows as sampled.
+const TAP_LINK_SHARE: f64 = 0.15;
+
+/// `sampledTraffic`: a tap's sampled volume, attributed to its source's incoming kinds.
+fn sampled_traffic(source: Option<&NodeRow>, rate: f64) -> Keyed {
+    let mut traffic = Keyed::default();
+    let Some(source) = source.filter(|source| source.inbound > 0.0) else { return traffic };
+    let scale = ((source.inbound - source.dropped) / source.inbound) * rate;
+    for (kind, carried) in source.traffic.entries() {
+        traffic.set(kind, carried * scale);
+    }
+    traffic
+}
+
+/// A Link's row: a tap's sampled share of its source, or what the Edge carried.
+fn link_row(
+    game: &GameCtx,
+    design: &crate::routing::Design,
+    pass: &Pass,
+    tree: &mut Tree,
+    rows: &[NodeRow],
+    link: &LinkIn,
+) -> LinkRow {
+    if design.nodes.get(link.to).is_some_and(|to| COMPONENT_TAP[to.type_code as usize]) {
+        let source = rows.get(link.from);
+        return LinkRow {
+            rate: source.map_or(0.0, |source| (source.inbound - source.dropped) * TAP_LINK_SHARE),
+            traffic: sampled_traffic(source, TAP_LINK_SHARE),
+            kind: kind::PAGE,
+            failing: false,
+            failure: 0.0,
+        };
+    }
+    let carried = match link.edge {
+        Some(edge) => Keyed { values: pass.links[edge], keys: pass.link_kinds[edge] },
+        None => Keyed::default(),
+    };
+    let (kind, _) = carried
+        .entries()
+        .fold((kind::PAGE, -1.0), |best, (kind, rate)| if rate > best.1 { (kind, rate) } else { best });
+    let rate = carried.entries().fold(0.0, |total, (_, rate)| total + rate);
+    let failing = rows
+        .get(link.to)
+        .is_some_and(|target| target.status == Status::Down || target.refused > 0.0 || target.dropped > 0.01);
+    LinkRow { rate, traffic: carried, kind, failing, failure: link_failure(game, design, tree, link, &carried, rate) }
+}
+
+/// `linkFailure`: the share of calls that fail on a Link that retries or has a
+/// breaker, by what it carries. Zero for every other Link: nothing reads it.
+fn link_failure(
+    game: &GameCtx,
+    design: &crate::routing::Design,
+    tree: &mut Tree,
+    link: &LinkIn,
+    carried: &Keyed,
+    rate: f64,
+) -> f64 {
+    let Some(edge) = link.edge else { return 0.0 };
+    let Some(policy) = design.edges.get(edge).copied() else { return 0.0 };
+    let watched = policy.retry != 0 || (link.breaker && game.has(research::CIRCUIT_BREAKERS));
+    if !watched || policy.open || rate <= 0.0 {
+        return 0.0;
+    }
+    carried
+        .entries()
+        .fold(0.0, |total, (kind, share)| total + (share / rate) * tree.failure_on(edge, kind))
+}
+
+/// What Analytics earned: Insight by pool, and how broadly each kind is sampled.
+struct Insight {
+    pools: [f64; INSIGHT_POOLS.len()],
+    breadth: Keyed,
+    regions: Keyed,
+}
+
+/// The samples of one Component type and request kind.
+#[derive(Clone, Copy)]
+struct Sampled {
+    kind: usize,
+    samples: f64,
+    meshed: f64,
+    profiled: f64,
+}
+
+/// `insightOf`: Analytics turns sampled traffic into Insight of each request kind,
+/// and each tap's own row takes the volume it samples.
+fn insight_of(
+    game: &GameCtx,
+    nodes: &[crate::model::Node],
+    links: &[LinkIn],
+    origins: &[Keyed],
+    kinds: &[KindRow],
+    rows: &mut [NodeRow],
+) -> Insight {
+    // Each tap and its sources, in the order the Links name them.
+    let mut taps: Vec<(usize, Vec<usize>)> = Vec::new();
+    for link in links {
+        if !nodes.get(link.to).is_some_and(|to| COMPONENT_TAP[to.type_code]) {
+            continue;
+        }
+        match taps.iter_mut().find(|(tap, _)| *tap == link.to) {
+            Some((_, sources)) => sources.push(link.from),
+            None => taps.push((link.to, vec![link.from])),
+        }
+    }
+    // Samples by Component type and kind, in the order they were first seen.
+    let mut sampled: Vec<Sampled> = Vec::new();
+    let mut index = vec![usize::MAX; COMPONENT_TAP.len() * NR];
+    // Failed samples by Component type, in the order they were first seen.
+    let mut failed: Vec<(usize, f64)> = Vec::new();
+    let mut regions = Keyed::default();
+    let mut seen_regions = [0u64; NR];
+    for (tap_slot, sources) in &taps {
+        let Some(tap) = nodes.get(*tap_slot) else { continue };
+        let rate = tap.sample_rate;
+        let volume = sources.iter().fold(0.0, |total, source| {
+            total + rows.get(*source).map_or(0.0, |entry| entry.inbound - entry.dropped)
+        });
+        let mut traffic = Keyed::default();
+        for source in sources {
+            for (kind, value) in sampled_traffic(rows.get(*source), rate).entries() {
+                traffic.add(kind, value);
+            }
+        }
+        let capacity = crate::model::grown(ANALYTICS_CAPACITY, 2.0, tap.size - 1.0);
+        // Samples beyond the tap's capacity are dropped, evenly.
+        let kept = if tap.down || volume * rate <= 0.0 { 0.0 } else { (capacity / (volume * rate)).min(1.0) };
+        for source in sources {
+            let (Some(entry), Some(from)) = (rows.get(*source), nodes.get(*source)) else { continue };
+            if kept <= 0.0 {
+                continue;
+            }
+            let done = (entry.inbound - entry.dropped) * rate * kept;
+            for (kind, share) in origins[*source].entries() {
+                let samples = done * share;
+                if samples <= 0.0 {
+                    continue;
+                }
+                let key = from.type_code * NR + kind;
+                if index[key] == usize::MAX {
+                    index[key] = sampled.len();
+                    sampled.push(Sampled { kind, samples: 0.0, meshed: 0.0, profiled: 0.0 });
+                }
+                if seen_regions[kind] & (1 << from.region) == 0 {
+                    seen_regions[kind] |= 1 << from.region;
+                    regions.add(kind, 1.0);
+                }
+                let entry = &mut sampled[index[key]];
+                entry.samples += samples;
+                if from.mesh {
+                    entry.meshed += samples;
+                }
+                if from.type_code == component::SERVER && RUNTIME_LANGUAGE[from.runtime] == language::JAVA {
+                    entry.profiled += samples;
+                }
+                // A request that fails or frustrates its user teaches Failure, a tolerated one half.
+                let answer = kinds[kind];
+                if answer.rate > 0.0 && PROFILE_SCORED[kind] {
+                    let lost = samples * (1.0 - answer.success * answer.apdex);
+                    match failed.iter_mut().find(|(type_code, _)| *type_code == from.type_code) {
+                        Some((_, total)) => *total += lost,
+                        None => failed.push((from.type_code, 0.0 + lost)),
+                    }
+                }
+            }
+        }
+        let inbound = volume * rate;
+        let utilization = if capacity > 0.0 { inbound / capacity } else { 0.0 };
+        if let Some(row) = rows.get_mut(*tap_slot) {
+            row.inbound = inbound;
+            row.traffic = traffic;
+            row.capacity = capacity;
+            row.utilization = utilization;
+            row.limit = if inbound > capacity { Limit::Throughput as usize } else { Limit::None as usize };
+            row.status = status_of(tap.down, volume, utilization, false);
+        }
+    }
+    // The square root per Component type and kind: a broad Design teaches more than a big one.
+    let perk = game.insight_perk;
+    let mut pools = [0.0f64; INSIGHT_POOLS.len()];
+    let mut breadth = Keyed::default();
+    for entry in &sampled {
+        pools[entry.kind] += INSIGHT_YIELD
+            * (entry.samples.sqrt() + MESH_INSIGHT * entry.meshed.sqrt() + JVM_INSIGHT * entry.profiled.sqrt())
+            * perk;
+        breadth.add(entry.kind, 1.0);
+    }
+    // Tail-based sampling keeps the failed traces: twice the Failure Insight.
+    let tail_sampled = if game.has(research::TAIL_SAMPLING) { 2.0 } else { 1.0 };
+    for (_, lost) in &failed {
+        pools[NR] += INSIGHT_YIELD * FAILURE_YIELD * lost.max(0.0).sqrt() * perk * tail_sampled;
+    }
+    Insight { pools, breadth, regions }
 }
 
 /// `evictionShareOf`: the share of a Cache's refills that push out a hot key.

@@ -12,10 +12,10 @@ const STATUSES = ['idle', 'ok', 'warn', 'danger', 'down']
 /**
  * @param block the stream
  * @param game the Game the kernel solved, for Node ids
- * @param names the catalog lists: `kinds` (every Kind, request kinds first) and `causes`
+ * @param names the catalog lists: `kinds` (every Kind, request kinds first), `causes`, and `pools`
  */
 export const decodeLedger = (block, game, names) => {
-  const { kinds, causes } = names
+  const { kinds, causes, pools } = names
   let at = 0
   const num = () => block[at++]
   const flag = () => block[at++] !== 0
@@ -86,6 +86,14 @@ export const decodeLedger = (block, game, names) => {
       swapping: flag(),
       status: STATUSES[num()],
     }
+  const links = game.links.map((link) => ({
+    ...link,
+    rate: num(),
+    traffic: keyed(),
+    kind: kinds[num()],
+    failing: flag(),
+    failure: num(),
+  }))
   const kindRows = {}
   for (let left = num(); left > 0; left -= 1)
     kindRows[kinds[num()]] = {
@@ -100,6 +108,7 @@ export const decodeLedger = (block, game, names) => {
     }
   const ledger = {
     nodes,
+    links,
     kinds: kindRows,
     demand: num(),
     served: num(),
@@ -112,6 +121,9 @@ export const decodeLedger = (block, game, names) => {
     apdex: num(),
     revenue: num(),
     subscriptions: num(),
+    insight: Object.fromEntries(pools.map((pool) => [pool, num()])),
+    breadth: keyed(),
+    breadthRegions: keyed(),
     fines: num(),
     revenueByKind: keyed(),
     finesByKind: keyed(),

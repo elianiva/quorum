@@ -218,7 +218,18 @@ export const leverMixOf = (
  * Feature ships, and the other shares grow to fill its place. An early kind
  * takes its share from the others. Load effects then add demand on top.
  */
+/** The Era's mix is the same for every Node of a Game: build it once per Game. */
+const mixes = new WeakMap<Game, Partial<Record<RequestKind, number>>>()
+
 export const mixOf = (game: Game): Partial<Record<RequestKind, number>> => {
+  const cached = mixes.get(game)
+  if (cached) return cached
+  const built = computeMix(game)
+  mixes.set(game, built)
+  return built
+}
+
+const computeMix = (game: Game): Partial<Record<RequestKind, number>> => {
   const levered = leverMixOf(game).levered
   if (game.sandbox) return levered
   const shares = { ...levered }

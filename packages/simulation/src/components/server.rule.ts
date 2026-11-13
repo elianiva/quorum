@@ -1,10 +1,9 @@
 import { type Action, Refusal, no, notAllowed, ok, patch, withNode } from '../action-kit.ts'
 import type { Fanout, Game } from '../state.ts'
-import { REQUEST_KINDS, RESEARCH, RUNTIMES } from '../catalog.ts'
+import { RESEARCH, RUNTIMES } from '../catalog.ts'
 import { has, inCluster, meshOf } from '../lookups.ts'
-import { mixOf } from '../features.ts'
 import { serverModel } from '../capacity.ts'
-import { type ComponentRule, answerCalls, serveCalls } from '../rule-kit.ts'
+import { type ComponentRule, answerCalls, probeMixOf, serveCalls } from '../rule-kit.ts'
 
 export const serverRule: ComponentRule = {
   model: (solver, node, arriving) =>
@@ -32,10 +31,7 @@ export const serverRule: ComponentRule = {
     const surge = solver.game.incident?.kind === 'connections' ? 2 : 1
     return (model?.processes ?? 0) * RUNTIMES[node.runtime].connections * surge
   },
-  probe: (game) => {
-    const mix = mixOf(game)
-    return Object.fromEntries(REQUEST_KINDS.map((kind) => [kind, mix[kind] ?? 0]))
-  },
+  probe: (game) => probeMixOf(game),
 }
 
 /** Turns gzip on or off for an App Server's page and read responses. Needs Compression. */

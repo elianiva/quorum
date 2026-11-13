@@ -296,6 +296,22 @@ export const gatewayLimitOf = (node: GameNode): number =>
   node.rateLimit > 0 ? node.rateLimit : Number.POSITIVE_INFINITY
 
 /** Total requests per second in a rate record. */
+/**
+ * The Era's mix as a full kind record. Every App Server and Function of a Game
+ * probes with the same record, so it is built once per Game.
+ */
+const probeMixes = new WeakMap<Game, Rates>()
+
+export const probeMixOf = (game: Game): Rates => {
+  const cached = probeMixes.get(game)
+  if (cached) return cached
+  const mix = mixOf(game)
+  const rates: Rates = {}
+  for (const kind of REQUEST_KINDS) rates[kind] = mix[kind] ?? 0
+  probeMixes.set(game, rates)
+  return rates
+}
+
 export const totalRates = (arriving: Rates): number => {
   let total = 0
   for (const kind of Object.keys(arriving) as Array<Kind>) total += arriving[kind] ?? 0

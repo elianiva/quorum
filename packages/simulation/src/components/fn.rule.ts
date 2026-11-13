@@ -10,7 +10,6 @@ import {
 } from '../catalog.ts'
 import { failed, hop, through } from '../distribution.ts'
 
-import { mixOf } from '../features.ts'
 import {
   type Calls,
   type NodeModel,
@@ -22,7 +21,7 @@ import {
 import { coldStartMs } from '../lookups.ts'
 import { warmOf } from '../life.ts'
 import type { Game, GameNode } from '../state.ts'
-import { type ComponentRule, answerCalls, serveCalls } from '../rule-kit.ts'
+import { type ComponentRule, answerCalls, probeMixOf, serveCalls } from '../rule-kit.ts'
 
 /**
  * Share of invocations that find no warm execution environment (05 "Cold starts"): an
@@ -142,9 +141,5 @@ export const fnRule: ComponentRule = {
   },
   // Each concurrent execution opens its own connections: a spike exhausts the Database's pool.
   connections: (_, node, model) => (model?.processes ?? 0) * RUNTIMES[node.runtime].connections,
-  // An LB weighs it by the Era's mix, as it weighs an App Server.
-  probe: (game) => {
-    const mix = mixOf(game)
-    return Object.fromEntries(REQUEST_KINDS.map((kind) => [kind, mix[kind] ?? 0]))
-  },
+  probe: (game) => probeMixOf(game),
 }

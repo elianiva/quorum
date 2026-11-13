@@ -643,6 +643,41 @@ pub static GPU_BATCHES_BATCH: [f64; 3] = [1.0, 8.0, 32.0];
 pub static GPU_BATCHES_GAIN: [f64; 3] = [1.0, 1.6, 2.2];
 pub static GPU_BATCHES_TTFT: [f64; 3] = [0.0, 150.0, 500.0];
 
+/// `CACHE_ENGINES` rows.
+pub mod cache_engine {
+    pub const REDIS: usize = 0;
+    pub const MEMCACHED: usize = 1;
+}
+pub static CACHE_ENGINES_SCALES: [bool; 2] = [false, true];
+pub static CACHE_ENGINES_WARM_AFTER_RESTART: [f64; 2] = [0.5, 0.0];
+
+pub static CACHE_TTLS_TTL: [f64; 3] = [10.0, 60.0, 3600.0];
+pub static CACHE_TTLS_FACTOR: [f64; 3] = [0.6, 0.85, 0.97];
+pub static CACHE_TTLS_STALE: [f64; 3] = [0.005, 0.02, 0.1];
+
+/// `CACHE_STRATEGIES` rows.
+pub mod cache_strategy {
+    pub const ASIDE: usize = 0;
+    pub const READ_THROUGH: usize = 1;
+    pub const WRITE_THROUGH: usize = 2;
+    pub const WRITE_BEHIND: usize = 3;
+}
+pub static CACHE_STRATEGIES_STALE: [f64; 4] = [1.0, 0.75, 0.0, 0.5];
+pub static CACHE_STRATEGIES_WRITE: [&str; 4] = ["bypass", "bypass", "through", "ahead"];
+pub static CACHE_STRATEGIES_WRITE_MS: [f64; 4] = [0.0, 0.0, 0.5, 0.0];
+pub static CACHE_STRATEGIES_FLUSH: [f64; 4] = [1.0, 1.0, 1.0, 0.5];
+pub static CACHE_STRATEGIES_LOAD_MS: [f64; 4] = [0.0, 1.0, 0.0, 0.0];
+
+pub static PARANOIA_LEVEL: [f64; 4] = [1.0, 2.0, 3.0, 4.0];
+pub static PARANOIA_BLOCK: [f64; 4] = [0.6, 0.8, 0.92, 0.98];
+pub static PARANOIA_FALSE_POSITIVE: [f64; 4] = [0.001, 0.005, 0.02, 0.06];
+pub static PARANOIA_CPU: [f64; 4] = [1.0, 1.5, 2.5, 4.0];
+
+pub static UNDER_ATTACK_BLOCK: [f64; 1] = [0.99];
+pub static UNDER_ATTACK_FALSE_POSITIVE: [f64; 1] = [0.01];
+pub static UNDER_ATTACK_LATENCY: [f64; 1] = [40.0];
+pub static UNDER_ATTACK_CPU: [f64; 1] = [1.0];
+
 // ---- Request kind profiles ----
 pub static PROFILE_CPU: [f64; NR] = [4.0, 1.5, 2.0, 80.0, 3.0, 120.0, 2.0, 1.0, 0.3, 5.0, 400.0, 20.0, 5.0, 6.0, 2.0, 0.5, 0.5];
 pub static PROFILE_NATIVE: [bool; NR] = [false, false, false, true, false, true, false, false, false, false, false, false, false, false, false, false, false];

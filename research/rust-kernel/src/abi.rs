@@ -109,7 +109,16 @@ pub const S_QUORUM_W: usize = 90;
 pub const S_LOST: usize = 91;
 pub const S_SPREAD: usize = 92;
 pub const S_DATA_STAFFED: usize = 93;
-pub const SCALARS: usize = 94;
+pub const S_CACHE_ENGINE: usize = 94;
+pub const S_TTL: usize = 95;
+pub const S_SWR: usize = 96;
+pub const S_EARLY_EXPIRY: usize = 97;
+pub const S_COALESCE: usize = 98;
+pub const S_CACHE_STRATEGY: usize = 99;
+pub const S_SPLIT: usize = 100;
+pub const S_PARANOIA: usize = 101;
+pub const S_UNDER_ATTACK: usize = 102;
+pub const SCALARS: usize = 103;
 
 /// The node-fields block: one row per Node, read by the routing Design.
 pub const NODE_FIELDS: usize = 10;
@@ -489,6 +498,9 @@ fn incident_of(code: usize) -> Option<Incident> {
         "table-bloat" => Incident::TableBloat,
         "stuffing" => Incident::Stuffing,
         "repl-lag" => Incident::ReplLag,
+        "hot-key" => Incident::HotKey,
+        "regex" => Incident::Regex,
+        "stale-read" => Incident::StaleRead,
         _ => return None,
     })
 }
@@ -608,5 +620,14 @@ pub fn node_of(row: &[f64]) -> Node {
         spread: flag(S_SPREAD),
         local_regions: 0,
         queue_attempts: 0.0,
+        cache_engine: slot(S_CACHE_ENGINE) as usize,
+        ttl: slot(S_TTL),
+        swr: flag(S_SWR),
+        early_expiry: flag(S_EARLY_EXPIRY),
+        coalesce: flag(S_COALESCE),
+        cache_strategy: slot(S_CACHE_STRATEGY) as usize,
+        split: flag(S_SPLIT),
+        paranoia: slot(S_PARANOIA),
+        under_attack: flag(S_UNDER_ATTACK),
     }
 }

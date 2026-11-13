@@ -148,6 +148,15 @@ export const SLOT = {
   lost: 91,
   spread: 92,
   dataStaffed: 93,
+  cacheEngine: 94,
+  ttl: 95,
+  swr: 96,
+  earlyExpiry: 97,
+  coalesce: 98,
+  cacheStrategy: 99,
+  split: 100,
+  paranoia: 101,
+  underAttack: 102,
 }
 export const SCALARS = Object.keys(SLOT).length
 const NODE_FIELDS = 10
@@ -366,6 +375,15 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
     put(SLOT.transactions, n.transactions ? 1 : 0)
     put(SLOT.downOom, n.life._tag !== 'Running' && causeOf(n.life) === 'oom' ? 1 : 0)
     put(SLOT.dataStaffed, team.dataStaffed(game) ? 1 : 0)
+    put(SLOT.cacheEngine, Math.max(0, Object.keys(S.CACHE_ENGINES).indexOf(n.engine)))
+    put(SLOT.ttl, n.ttl)
+    put(SLOT.swr, n.swr ? 1 : 0)
+    put(SLOT.earlyExpiry, n.earlyExpiry ? 1 : 0)
+    put(SLOT.coalesce, n.coalesce ? 1 : 0)
+    put(SLOT.cacheStrategy, Math.max(0, Object.keys(S.CACHE_STRATEGIES).indexOf(n.cacheStrategy)))
+    put(SLOT.split, n.split ? 1 : 0)
+    put(SLOT.paranoia, n.paranoia)
+    put(SLOT.underAttack, n.underAttack ? 1 : 0)
     if (n.type === 'storage') {
       put(SLOT.r2, n.storeVariant === 'r2' ? 1 : 0)
       // `storageRule.outcome`: the share of the store's GB in an archive class.

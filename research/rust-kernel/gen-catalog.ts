@@ -123,7 +123,9 @@ const pushTable = (name: string, module: string | null) => {
   const table = (catalog as Record<string, unknown>)[name] as
     | Record<string, Record<string, unknown>>
     | ReadonlyArray<Record<string, unknown>>
-  const rows = Array.isArray(table) ? table : Object.values(table)
+  // A single settings object, such as `UNDER_ATTACK`, is a table of one row.
+  const single = !Array.isArray(table) && Object.values(table).every((value) => typeof value !== 'object')
+  const rows = Array.isArray(table) ? table : single ? [table as Record<string, unknown>] : Object.values(table)
   push('')
   if (module) pushIds(module, `\`${name}\` rows.`, Object.keys(table))
   for (const field of Object.keys(rows[0] ?? {})) {
@@ -133,6 +135,8 @@ const pushTable = (name: string, module: string | null) => {
       push(`pub static ${column}: [f64; ${rows.length}] = [${values.map((v) => formatNumber(v as number)).join(', ')}];`)
     else if (values.every((value) => typeof value === 'boolean'))
       push(`pub static ${column}: [bool; ${rows.length}] = [${values.join(', ')}];`)
+    else if (field !== 'name' && values.every((value) => typeof value === 'string'))
+      push(`pub static ${column}: [&str; ${rows.length}] = [${values.map((v) => JSON.stringify(v)).join(', ')}];`)
   }
 }
 push('')
@@ -145,6 +149,11 @@ pushTable('GPU_TYPES', 'gpu_type')
 pushTable('GPU_MODELS', 'gpu_model')
 pushTable('GPU_PRECISIONS', 'gpu_precision')
 pushTable('GPU_BATCHES', null)
+pushTable('CACHE_ENGINES', 'cache_engine')
+pushTable('CACHE_TTLS', null)
+pushTable('CACHE_STRATEGIES', 'cache_strategy')
+pushTable('PARANOIA', null)
+pushTable('UNDER_ATTACK', null)
 
 function formatNumber(value: number): string {
   if (value === Number.POSITIVE_INFINITY) return 'f64::INFINITY'

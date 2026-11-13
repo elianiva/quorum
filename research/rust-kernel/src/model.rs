@@ -24,6 +24,9 @@ pub enum Incident {
     TableBloat,
     Stuffing,
     ReplLag,
+    HotKey,
+    Regex,
+    StaleRead,
 }
 
 /// The Game facts the models read. The catalog carries the tables.
@@ -201,6 +204,18 @@ pub struct Node {
     /// `attemptsAllowed` of the Queue a Worker pulls from, or 0 when it pulls
     /// from none and every task takes one attempt.
     pub queue_attempts: f64,
+    /// A Cache's engine row, TTL in seconds, stampede guards, strategy row, and
+    /// whether its hot keys are split.
+    pub cache_engine: usize,
+    pub ttl: f64,
+    pub swr: bool,
+    pub early_expiry: bool,
+    pub coalesce: bool,
+    pub cache_strategy: usize,
+    pub split: bool,
+    /// A WAF's paranoia level, 1 to 4, and whether Under attack mode is on.
+    pub paranoia: f64,
+    pub under_attack: bool,
 }
 
 /// What `serverModel` returns.
@@ -338,22 +353,27 @@ fn wait_for(service: f64, utilization: f64, servers: f64) -> f64 {
     (service * rho) / (s * (1.0 - rho))
 }
 
-#[inline]
-pub fn flat_scale(size: f64) -> f64 {
-    // `grown(1, 2, size - 1)`: a loop of multiplications, not a power, so the
-    // last bit matches the TypeScript exactly.
-    let mut value = 1.0f64;
-    let steps = size - 1.0;
+/// `grown`: `base` multiplied by `factor` once per step, or divided once per
+/// step below zero. A loop, not a power, so the last bit matches the TypeScript.
+pub fn grown(base: f64, factor: f64, steps: f64) -> f64 {
+    let mut value = base;
     let mut index = 0.0f64;
     while index < steps {
-        value *= 2.0;
+        value *= factor;
         index += 1.0;
     }
+    let mut index = 0.0f64;
     while index > steps {
-        value /= 2.0;
+        value /= factor;
         index -= 1.0;
     }
     value
+}
+
+/// `flatScale`: a flat Component's capacity doubles with each size step.
+#[inline]
+pub fn flat_scale(size: f64) -> f64 {
+    grown(1.0, 2.0, size - 1.0)
 }
 
 #[inline]
@@ -1037,8 +1057,100 @@ pub fn flat_component(game: &GameCtx, node: &Node, rates: &Rates, boost: f64) ->
         component::SEARCH => search_model(game, node, rates, boost),
         component::WIDE => wide_model(node, rates, boost),
         component::QUEUE => flat(QUEUE_RATE * scale, 2.0, 0.05),
+        // Redis answers on one main thread; Memcached on every core of its box.
+        component::CACHE => {
+            let cores = if CACHE_ENGINES_SCALES[node.cache_engine] { grown(1.0, 2.0, node.size - 3.0).max(1.0) } else { 1.0 };
+            flat(CACHE_OPS * cores / hot_key_factor(game, node), 0.5, 0.2)
+        }
+        component::WAF => {
+            let waf = Waf::of(node, game);
+            let regex = if game.incident == Some(Incident::Regex) { REGEX_CAPACITY } else { 1.0 };
+            let attack = if node.under_attack { UNDER_ATTACK_LATENCY[0] } else { 0.0 };
+            flat(FLAT_CAPACITY[component::WAF] * scale / waf.cpu * regex, 2.0 + attack, 0.1)
+        }
         // Control-plane Components take no traffic.
         _ => flat_model(f64::INFINITY, &[0.0; NK], 0.0, 0.0, 1.0),
+    }
+}
+
+/// `hotKeyFactor`: one key takes a big share of a Cache's traffic and lands on
+/// one shard, which sets the pace for the rest.
+fn hot_key_factor(game: &GameCtx, node: &Node) -> f64 {
+    if game.incident != Some(Incident::HotKey) || game.incident_node != node.id {
+        return 1.0;
+    }
+    if node.split && game.has(research::HYBRID_FANOUT) {
+        return 1.0;
+    }
+    let shards = flat_scale(node.size).max(2.0);
+    HOT_KEY_SHARE * shards + 1.0 - HOT_KEY_SHARE
+}
+
+/// `wafOf`: what a WAF blocks and costs at its paranoia level, or in Under
+/// attack mode. Bot management halves its false positives.
+pub struct Waf {
+    pub block: f64,
+    pub false_positive: f64,
+    pub cpu: f64,
+}
+
+impl Waf {
+    pub fn of(node: &Node, game: &GameCtx) -> Waf {
+        let soften = |rate: f64| if game.has(research::BOT_MANAGEMENT) { rate * BOT_MANAGEMENT_FALSE } else { rate };
+        if node.under_attack {
+            return Waf { block: UNDER_ATTACK_BLOCK[0], false_positive: soften(UNDER_ATTACK_FALSE_POSITIVE[0]), cpu: UNDER_ATTACK_CPU[0] };
+        }
+        let level = (node.paranoia - 1.0).clamp(0.0, (PARANOIA_BLOCK.len() - 1) as f64) as usize;
+        Waf { block: PARANOIA_BLOCK[level], false_positive: soften(PARANOIA_FALSE_POSITIVE[level]), cpu: PARANOIA_CPU[level] }
+    }
+
+    /// The share of `kind` it stops: bots at the block rate, people at the false positive rate.
+    #[inline]
+    pub fn stops(&self, kind: usize) -> f64 {
+        if kind == kind::BOT { self.block } else { self.false_positive }
+    }
+}
+
+/// A Cache's view of its TTL, strategy, and hit ratio.
+pub mod cache {
+    use super::*;
+
+    /// `cacheTtlOf`: the TTL class a Cache's TTL falls in.
+    #[inline]
+    pub fn ttl_row(node: &Node) -> usize {
+        if node.ttl <= 10.0 {
+            0
+        } else if node.ttl < 3_600.0 {
+            1
+        } else {
+            2
+        }
+    }
+
+    /// `cacheStrategyOf`: the strategy it runs; without the research, cache-aside.
+    #[inline]
+    pub fn strategy(game: &GameCtx, node: &Node) -> usize {
+        if game.has(research::CACHE_STRATEGIES) { node.cache_strategy } else { cache_strategy::ASIDE }
+    }
+
+    /// `ttlFactorOf`: the share of reads its TTL keeps as hits.
+    pub fn ttl_factor(game: &GameCtx, node: &Node) -> f64 {
+        let factor = CACHE_TTLS_FACTOR[ttl_row(node)];
+        if !game.has(research::STAMPEDE_PROTECTION) {
+            return factor;
+        }
+        if node.swr {
+            return 1.0;
+        }
+        if node.early_expiry { factor + (1.0 - factor) * EARLY_LIFT } else { factor }
+    }
+
+    /// `hitRatioOf`: sqrt(memory / hot data) x TTL x invalidation x warmth.
+    pub fn hit_ratio(game: &GameCtx, node: &Node, write_share: f64, warm: f64) -> f64 {
+        let memory = flat_scale(node.size);
+        let hot = (game.users * HOT_KB_PER_USER) / 1_000_000.0;
+        let fits = if hot > 0.0 { (memory / hot).min(1.0) } else { 1.0 };
+        fits.sqrt() * ttl_factor(game, node) * (1.0 - (2.0 * write_share).min(0.5)) * warm
     }
 }
 

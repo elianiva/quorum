@@ -253,3 +253,17 @@ compared 3,200 more states. Porting Queue and Worker, and running whole runs, fo
 - `repeated` added `sent - rate * weight` in one step; TypeScript adds `sent` and then
   subtracts, which rounds differently. metastable showed it once its incident was out of
   the way.
+
+## Cache and WAF
+
+Only healthcare-launch has a Cache and only regex-of-doom a WAF, each at its defaults, and
+healthcare-launch's Cache has no Link to the Database until the player adds one. A Cache
+with no store behind it takes no reads, so its runs say nothing about the hit ratio. A
+scratch sweep added that Link and the research, then played every strategy, TTL class,
+stampede guard, engine, and two sizes, warm and cold, plus every paranoia level with and
+without Under attack mode: 1,248 states with 493 distinct revenues, all identical.
+
+`gen-catalog.ts` now emits string columns other than `name` (`CACHE_STRATEGIES_WRITE`) and
+treats a single settings object such as `UNDER_ATTACK` as a table of one row. `grown`
+replaces the loop inside `flat_scale`, written as TypeScript writes it, so a Memcached box
+below size 3 divides instead of multiplying.

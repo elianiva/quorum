@@ -678,6 +678,24 @@ pub static UNDER_ATTACK_FALSE_POSITIVE: [f64; 1] = [0.01];
 pub static UNDER_ATTACK_LATENCY: [f64; 1] = [40.0];
 pub static UNDER_ATTACK_CPU: [f64; 1] = [1.0];
 
+/// `VEC_INDEXES` rows.
+pub mod vec_index {
+    pub const EXACT: usize = 0;
+    pub const HNSW: usize = 1;
+}
+pub static VEC_INDEXES_RECALL: [f64; 2] = [1.0, 0.95];
+pub static VEC_INDEXES_QUERIES: [f64; 2] = [1.0, 2.0];
+pub static VEC_INDEXES_BURN: [f64; 2] = [1.0, 2.0];
+
+/// `CACHE_KEYS` rows.
+pub mod cache_key {
+    pub const FULL: usize = 0;
+    pub const QUERY: usize = 1;
+    pub const PATH: usize = 2;
+}
+pub static CACHE_KEYS_HIT: [f64; 3] = [1.0, 1.1, 1.2];
+pub static CACHE_KEYS_LEAK: [f64; 3] = [0.0, 1.0, 2.5];
+
 // ---- Request kind profiles ----
 pub static PROFILE_CPU: [f64; NR] = [4.0, 1.5, 2.0, 80.0, 3.0, 120.0, 2.0, 1.0, 0.3, 5.0, 400.0, 20.0, 5.0, 6.0, 2.0, 0.5, 0.5];
 pub static PROFILE_NATIVE: [bool; NR] = [false, false, false, true, false, true, false, false, false, false, false, false, false, false, false, false, false];
@@ -1140,6 +1158,7 @@ pub static GOGC_CPU: [f64; 3] = [2.0, 1.0, 0.5];
 pub static GOGC_MEMORY: [f64; 3] = [0.7, 1.0, 1.5];
 pub static GOGC_VALUES: [f64; 3] = [50.0, 100.0, 200.0];
 pub static CDN_TTL_VALUES: [f64; 3] = [60.0, 300.0, 3600.0];
+pub static CDN_HIT: [f64; NK] = [0.7, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.75, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 pub static CDN_TTL_FACTOR: [f64; 3] = [0.8, 1.0, 1.2];
 
 // ---- Research ----

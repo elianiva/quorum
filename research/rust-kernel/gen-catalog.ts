@@ -154,6 +154,8 @@ pushTable('CACHE_TTLS', null)
 pushTable('CACHE_STRATEGIES', 'cache_strategy')
 pushTable('PARANOIA', null)
 pushTable('UNDER_ATTACK', null)
+pushTable('VEC_INDEXES', 'vec_index')
+pushTable('CACHE_KEYS', 'cache_key')
 
 function formatNumber(value: number): string {
   if (value === Number.POSITIVE_INFINITY) return 'f64::INFINITY'
@@ -522,6 +524,9 @@ push(
 )
 push(
   `pub static CDN_TTL_VALUES: [f64; ${catalog.CDN_TTLS.length}] = [${catalog.CDN_TTLS.map((entry) => formatNumber(entry.ttl)).join(', ')}];`,
+)
+push(
+  `pub static CDN_HIT: [f64; NK] = [${[...catalog.REQUEST_KINDS, ...catalog.BACKEND_KINDS].map((kind) => formatNumber((catalog.CDN_HIT as Record<string, number>)[kind] ?? 0)).join(', ')}];`,
 )
 push(
   `pub static CDN_TTL_FACTOR: [f64; ${catalog.CDN_TTLS.length}] = [${catalog.CDN_TTLS.map((entry) => formatNumber(entry.factor)).join(', ')}];`,

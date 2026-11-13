@@ -59,7 +59,9 @@ pub fn probe_capacity(setup: &Setup, slot: usize, boost: Option<usize>, state: &
     let mut probe = [0.0f64; NK];
     match node.type_code {
         component::SERVER => probe = *setup.probe_mix,
-        component::DATABASE | component::REPLICA | component::WIDE => probe[kind::Q_READ] = 1.0,
+        component::DATABASE | component::REPLICA | component::WIDE | component::DOC => probe[kind::Q_READ] = 1.0,
+        component::VEC => probe[kind::Q_VECTOR] = 1.0,
+        component::DSQL => probe[kind::Q_TX] = 1.0,
         // A Component with no probe answers its flat capacity, or a thousand without one.
         type_code => {
             let flat = FLAT_CAPACITY.get(type_code).copied().unwrap_or(0.0);

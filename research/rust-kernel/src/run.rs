@@ -180,6 +180,24 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
             && matches!(node.type_code, component::LB | component::CDN | component::WAF | component::GW | component::WS | component::EDGE)
     });
     game.cdn_on_board = nodes.iter().any(|node| node.type_code == component::CDN);
+    game.edge_on_board = nodes.iter().any(|node| node.type_code == component::EDGE && !node.down);
+    game.static_pages = nodes
+        .iter()
+        .filter(|node| node.type_code == component::SERVER && !node.down)
+        .fold(0.0, |best, node| best.max(FRAMEWORK_CACHEABLE[node.framework]));
+    // `vecOf`: the first live Vector Index, in board order, that a Node links to.
+    let mut first_vec = vec![usize::MAX; nodes.len()];
+    for edge in &design.edges {
+        let (from, to) = (edge.from as usize, edge.to as usize);
+        if nodes[to].type_code == component::VEC && !nodes[to].down {
+            first_vec[from] = first_vec[from].min(to);
+        }
+    }
+    let recalls: Vec<Option<f64>> =
+        first_vec.iter().map(|&vec| (vec != usize::MAX).then(|| VEC_INDEXES_RECALL[nodes[vec].index_type])).collect();
+    for (node, recall) in nodes.iter_mut().zip(recalls) {
+        node.vec_recall = recall;
+    }
     // `spreadCount`: North America and every region with users, up to the cap.
     let regions = nodes
         .iter()
@@ -187,11 +205,14 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
         .fold(1u32, |seen, node| seen | 1 << node.region.min(31));
     game.spread_regions = (regions.count_ones() as f64).min(SPREAD_REGIONS);
     // `spreadRegions`: the open regions nearest a spread store's own, up to the cap.
-    for node in nodes.iter_mut().filter(|node| node.type_code == component::WIDE && node.spread) {
+    for node in nodes.iter_mut().filter(|node| matches!(node.type_code, component::WIDE | component::DSQL) && node.spread) {
         let home = node.region.min(REGIONS.len() - 1);
         let mut open: Vec<usize> = (0..REGIONS.len()).filter(|region| regions >> region & 1 == 1).collect();
         open.sort_by(|a, b| REGION_RTT[home][*a].total_cmp(&REGION_RTT[home][*b]));
-        node.local_regions = open.iter().take(SPREAD_REGIONS as usize).fold(0, |mask, region| mask | 1 << region);
+        open.truncate(SPREAD_REGIONS as usize);
+        node.local_regions = open.iter().fold(0, |mask, region| mask | 1 << region);
+        // `majorityMs`: a consensus write waits for the round trip of its majority-th nearest region.
+        node.majority_ms = open.get(open.len() / 2).map_or(0.0, |region| REGION_RTT[home][*region]);
     }
     let status = surface(&nodes, &game, inputs);
     if status != abi::OK {

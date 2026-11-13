@@ -166,6 +166,9 @@ export const SLOT = {
   deployShare: 108,
   deployKinds: 109,
   runtimeFailure: 110,
+  indexType: 111,
+  staleUntil: 112,
+  cacheKey: 113,
 }
 export const SCALARS = Object.keys(SLOT).length
 const NODE_FIELDS = 10
@@ -405,6 +408,9 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
         ? S.REQUEST_KINDS.reduce((bits, kind, index) => (team.failsKind(game, kind) ? bits + 2 ** index : bits), 0)
         : 0,
     )
+    put(SLOT.staleUntil, n.staleUntil)
+    put(SLOT.cacheKey, Math.max(0, Object.keys(S.CACHE_KEYS).indexOf(n.cacheKey)))
+    put(SLOT.indexType, Math.max(0, Object.keys(S.VEC_INDEXES).indexOf(n.indexType)))
     put(SLOT.runtimeFailure, game.incident ? (S.RUNTIME_INCIDENT_FAILURES[game.incident.kind] ?? 0) : 0)
     put(SLOT.transactions, n.transactions ? 1 : 0)
     put(SLOT.downOom, n.life._tag !== 'Running' && causeOf(n.life) === 'oom' ? 1 : 0)

@@ -96,7 +96,8 @@ pub type Calls = [f64; NB];
 #[derive(Clone, Copy)]
 pub struct Code {
     pub calls: [Calls; NR],
-    /// `cpuBase` by request kind. Zero on a Function, whose model is flat.
+    /// `cpuBase` by request kind. Zero on a Function, whose model is flat. On an
+    /// Edge Function, `requestCpuMs`: what its CPU ceiling is checked against.
     pub cpu: [f64; NR],
 }
 
@@ -118,7 +119,7 @@ impl CodeTable {
     pub fn new(game: &GameCtx, nodes: &[Node], flags: &[ServerFlags]) -> CodeTable {
         let mut table = CodeTable { row_of: vec![u32::MAX; nodes.len()], rows: Vec::new() };
         for ((slot, node), flags) in nodes.iter().enumerate().zip(flags) {
-            if !matches!(node.type_code, component::SERVER | component::FN | component::WORKER) {
+            if !matches!(node.type_code, component::SERVER | component::FN | component::WORKER | component::EDGE) {
                 continue;
             }
             let mut code = NO_CODE;
@@ -131,7 +132,12 @@ impl CodeTable {
                 } else {
                     calls_of(game, node, kind, flags.delegated, flags.offloaded)
                 };
-                if node.type_code != component::FN {
+                if node.type_code == component::EDGE {
+                    // `requestCpuMs`: one request alone, with no offload, sampling, or incident.
+                    let alone = ServerFlags { sampling: 0.0, hashing: 1.0, offloaded: false, local: false, ..*flags };
+                    let calls = calls_of(game, node, kind, flags.delegated, false);
+                    code.cpu[kind] = cpu_base(game, node, kind, &calls, &alone);
+                } else if node.type_code != component::FN {
                     code.cpu[kind] = cpu_base(game, node, kind, &code.calls[kind], flags);
                 }
             }
@@ -186,6 +192,10 @@ pub fn calls_of(game: &GameCtx, node: &Node, kind: usize, delegated: bool, offlo
             *call += extra;
         }
     }
+    // A prompt on a Node that reaches a Vector Index pays one nearest-neighbour lookup.
+    if kind == kind::AI && node.vec_recall.is_some() {
+        calls[backend::Q_VECTOR] += 1.0;
+    }
     calls
 }
 
@@ -201,6 +211,18 @@ fn mix_feed(game: &GameCtx) -> f64 {
     game.mix[kind::FEED]
 }
 
+/// `edgeRuns`: the Stack's language runs at the edge, natively or as WebAssembly.
+#[inline]
+pub fn edge_runs(node: &Node) -> bool {
+    EDGE_LANGUAGES.contains(&LANGUAGE_IDS[RUNTIME_LANGUAGE[node.runtime]])
+}
+
+/// `edgeFits`: one request of a kind fits the Edge Function's CPU ceiling.
+#[inline]
+pub fn edge_fits(code: &Code, kind: usize) -> bool {
+    kind < NR && code.cpu[kind] <= EDGE_CPU_MS
+}
+
 /// The kinds a Component serves by passing the request straight on.
 #[inline]
 fn passes_on(type_code: usize) -> bool {
@@ -208,7 +230,6 @@ fn passes_on(type_code: usize) -> bool {
         || type_code == component::LB
         || type_code == component::POOLER
         || type_code == component::DNS
-        || type_code == component::CDN
         || type_code == component::GW
 }
 
@@ -405,6 +426,15 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
                 };
                 out.route(run, splits, slot, kind, rate, composition);
             }
+        } else if type_code == component::CDN {
+            out.hits[slot] = crate::model::cdn_hit(game, node, kind::PAGE);
+            out.stale_hits[slot] = 0.0;
+            for kind in order.iter() {
+                let processed = kept[kind];
+                if processed > 0.0 {
+                    out.route(run, splits, slot, kind, processed * (1.0 - crate::model::cdn_hit(game, node, kind)), composition);
+                }
+            }
         } else if type_code == component::WAF {
             // Bots stop here at the block rate; real users at the false positive rate.
             let waf = Waf::of(node, game);
@@ -428,6 +458,21 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
                 if processed <= 0.0 {
                     continue;
                 }
+                for (backend, &made) in calls.iter().enumerate() {
+                    if made != 0.0 {
+                        out.route(run, splits, slot, NR + backend, processed * made, composition);
+                    }
+                }
+            }
+        } else if type_code == component::EDGE && edge_runs(node) {
+            // A handler past the CPU ceiling is killed; the rest make their calls.
+            let delegated = flags.get(slot).is_some_and(|flags| flags.delegated);
+            for kind in order.iter().filter(|&kind| kind < NR) {
+                let processed = kept[kind];
+                if processed <= 0.0 || !edge_fits(code.node(slot), kind) {
+                    continue;
+                }
+                let calls = calls_of(game, node, kind, delegated, false);
                 for (backend, &made) in calls.iter().enumerate() {
                     if made != 0.0 {
                         out.route(run, splits, slot, NR + backend, processed * made, composition);

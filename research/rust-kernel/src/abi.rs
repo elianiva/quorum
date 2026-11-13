@@ -1,12 +1,19 @@
-//! The flat ABI the harness (and, later, the browser) calls.
+//! The flat ABI the harness calls: named blocks in memory this crate owns.
 //!
-//! Every value crosses as an `f64` or a `u8` bitset in linear memory, so the
-//! boundary is a copy and never a re-encode.
+//! Every input and output is a `Vec` inside one of two arenas. The host asks for
+//! a block's pointer with `ptr`, fills it through a `Float64Array` view, then
+//! calls a run function that reads the block with checked indexing. Nothing here
+//! uses `unsafe`: a short, unknown, or out-of-range block makes a run function
+//! return a status code instead of trapping, and the host re-reads `ptr` after
+//! any call that may grow memory, because a grown memory detaches its views.
+//!
+//! Block ids are stable: they are the ABI.
 
 use crate::catalog::*;
 use crate::model::*;
 
-/// Scalar block indices, mirrored by the TypeScript harness.
+// ---- the scalar block: one row per Node, plus the Game's own slots ----
+
 pub const S_USERS: usize = 0;
 pub const S_SEED: usize = 1;
 pub const S_TIME: usize = 2;
@@ -55,331 +62,483 @@ pub const S_DEPTH: usize = 44;
 pub const S_CONNECTIONS: usize = 45;
 pub const S_USERS_IN_GROUP: usize = 46;
 pub const S_SERVICE_INDEXES: usize = 47;
-pub const SCALARS: usize = 48;
+pub const S_STAGE: usize = 48;
+pub const S_VENTURE: usize = 49;
+pub const S_FIXED_MIX: usize = 50;
+pub const S_SCENARIO_DAILY: usize = 51;
+pub const S_VARIANT: usize = 52;
+pub const S_POLICY: usize = 53;
+pub const S_STICKY: usize = 54;
+pub const S_FANOUT: usize = 55;
+pub const S_MODE: usize = 56;
+pub const S_MATERIALIZED: usize = 57;
+pub const S_SYNC: usize = 58;
+pub const S_RYW: usize = 59;
+pub const S_CERT_UNTIL: usize = 60;
+pub const S_RATE_LIMIT: usize = 61;
+pub const S_BURST: usize = 62;
+pub const S_MAX_LENGTH: usize = 63;
+pub const S_DLQ: usize = 64;
+pub const S_ATTEMPTS: usize = 65;
+pub const S_BLAST: usize = 66;
+pub const S_BUGGY: usize = 67;
+pub const S_DATABASES_IN_GROUP: usize = 68;
+pub const S_SYNC_STALLED: usize = 69;
+pub const S_PRIMARY: usize = 70;
+pub const S_POISONED: usize = 71;
+pub const S_TRANSACTIONS: usize = 72;
+pub const S_SAMPLING_MS: usize = 73;
+pub const S_DOWN_OOM: usize = 74;
+pub const SCALARS: usize = 75;
 
-/// Output block: the model's figures, then per-kind service times.
-pub const O_UTILIZATION: usize = 0;
-pub const O_SHARE: usize = 1;
-pub const O_CAPACITY: usize = 2;
-pub const O_LIMIT: usize = 3;
-pub const O_TAIL_P: usize = 4;
-pub const O_TAIL_MS: usize = 5;
-pub const O_PROCESSES: usize = 6;
-pub const O_INFLIGHT: usize = 7;
-pub const O_CPU_USED: usize = 8;
-pub const O_CPU_TOTAL: usize = 9;
-pub const O_RAM_USED: usize = 10;
-pub const O_RAM_TOTAL: usize = 11;
-pub const O_SLOTS_USED: usize = 12;
-pub const O_SLOTS_TOTAL: usize = 13;
-pub const O_NETWORK_USED: usize = 14;
-pub const O_NETWORK_TOTAL: usize = 15;
-pub const O_THROTTLED: usize = 16;
-pub const O_SWAPPING: usize = 17;
-pub const O_SERVICE_FIXED: usize = 18;
-pub const O_SERVICE_VARIABLE: usize = O_SERVICE_FIXED + NR;
-pub const O_COUNT: usize = O_SERVICE_VARIABLE + NR;
+/// The node-fields block: one row per Node, read by the routing Design.
+pub const NODE_FIELDS: usize = 10;
+/// The edge-fields block: one row per Edge.
+pub const EDGE_FIELDS: usize = 8;
 
-const INCIDENTS: [&str; 4] = ["", "gc-storm", "loop", "connections"];
+// ---- block ids ----
 
-#[inline]
-unsafe fn bit(pointer: *const u8, index: usize) -> bool {
-    (*pointer.add(index / 8) >> (index % 8)) & 1 == 1
+pub const BLOCK_SCALARS: i32 = 1;
+pub const BLOCK_NODE_FIELDS: i32 = 2;
+pub const BLOCK_EDGE_FIELDS: i32 = 3;
+pub const BLOCK_OUT_STARTS: i32 = 4;
+pub const BLOCK_OUT_EDGES: i32 = 5;
+pub const BLOCK_WEIGHTS: i32 = 6;
+pub const BLOCK_NOMINAL: i32 = 7;
+pub const BLOCK_SICK: i32 = 8;
+pub const BLOCK_DEMAND: i32 = 9;
+pub const BLOCK_INTAKE: i32 = 10;
+pub const BLOCK_LATENCY: i32 = 11;
+pub const BLOCK_LEVERS: i32 = 12;
+pub const BLOCK_PROBE: i32 = 13;
+pub const BLOCK_ROUTES: i32 = 14;
+pub const BLOCK_RESEARCH: i32 = 16;
+pub const BLOCK_FEATURES: i32 = 17;
+pub const BLOCK_ARRIVING: i32 = 20;
+pub const BLOCK_MODELS: i32 = 21;
+pub const BLOCK_OUTCOMES: i32 = 22;
+pub const BLOCK_LEDGER: i32 = 23;
+pub const BLOCK_SUMMARY: i32 = 24;
+pub const BLOCK_SPLITS: i32 = 25;
+pub const BLOCK_DIST_IN: i32 = 30;
+pub const BLOCK_DIST_OUT: i32 = 31;
+pub const BLOCK_DIST_CALLS: i32 = 32;
+
+/// Status codes a run function returns.
+pub const OK: i32 = 0;
+pub const UNKNOWN_BLOCK: i32 = 1;
+pub const NO_DESIGN: i32 = 2;
+pub const SHORT_BLOCK: i32 = 3;
+pub const BAD_EDGE: i32 = 4;
+pub const TOO_LARGE: i32 = 5;
+pub const UNSUPPORTED: i32 = 6;
+
+/// The input blocks: everything the host writes before a run.
+#[derive(Default)]
+pub struct Inputs {
+    pub scalars: Vec<f64>,
+    pub node_fields: Vec<f64>,
+    pub edge_fields: Vec<f64>,
+    pub out_starts: Vec<i32>,
+    pub out_edges: Vec<i32>,
+    pub weights: Vec<f64>,
+    pub nominal: Vec<f64>,
+    pub sick: Vec<u8>,
+    pub demand: Vec<f64>,
+    pub intake: Vec<f64>,
+    pub latency: Vec<f64>,
+    pub levers: Vec<f64>,
+    pub probe: Vec<f64>,
+    pub routes: Vec<f64>,
+    pub research: Vec<u8>,
+    pub features: Vec<u8>,
 }
 
-/// Builds the Game context from the scalar block and the two bitsets.
+/// The output blocks: everything a run writes, and the two scratch blocks the
+/// Outcome algebra's harness reads and writes.
+#[derive(Default)]
+pub struct Outputs {
+    pub arriving: Vec<f64>,
+    pub models: Vec<f64>,
+    pub outcomes: Vec<f64>,
+    pub ledger: Vec<f64>,
+    pub summary: Vec<f64>,
+    pub splits: Vec<f64>,
+    pub dist_in: Vec<f64>,
+    pub dist_out: Vec<f64>,
+    pub dist_calls: Vec<f64>,
+}
+
+impl Inputs {
+    /// The Game's slots, one row at index 0 of the scalar block.
+    #[inline]
+    pub fn scalar(&self, slot: usize) -> f64 {
+        self.scalars.get(slot).copied().unwrap_or(0.0)
+    }
+
+    /// One slot of every Node's row, as a column.
+    pub fn column(&self, slot: usize) -> Vec<f64> {
+        let count = self.scalars.len() / SCALARS;
+        (0..count)
+            .map(|node| self.scalars.get(node * SCALARS + slot).copied().unwrap_or(0.0))
+            .collect()
+    }
+
+    /// One slot of every Node's row, as flags.
+    pub fn flags(&self, slot: usize) -> Vec<bool> {
+        self.column(slot).into_iter().map(|value| value != 0.0).collect()
+    }
+
+    /// One Node's scalar row, or zeroes when the block is short.
+    #[inline]
+    pub fn row(&self, node: usize) -> &[f64] {
+        let start = node.saturating_mul(SCALARS);
+        match self.scalars.get(start..start + SCALARS) {
+            Some(row) => row,
+            None => &[],
+        }
+    }
+}
+
+thread_local! {
+    static INPUT: core::cell::RefCell<Inputs> = core::cell::RefCell::new(Inputs::default());
+    static OUTPUT: core::cell::RefCell<Outputs> = core::cell::RefCell::new(Outputs::default());
+}
+
+/// Reads the input arena. Never held across a call that borrows it again.
+pub fn with_inputs<R>(read: impl FnOnce(&Inputs) -> R) -> R {
+    INPUT.with(|cell| read(&cell.borrow()))
+}
+
+/// Writes the output arena.
+pub fn with_outputs<R>(write: impl FnOnce(&mut Outputs) -> R) -> R {
+    OUTPUT.with(|cell| write(&mut cell.borrow_mut()))
+}
+
+/// The number of `f64`s one scalar row holds, so the host builds a batch.
+#[no_mangle]
+pub extern "C" fn scalar_len() -> i32 {
+    SCALARS as i32
+}
+
+/// The scalar row's stride, under the name the harness already used.
+#[no_mangle]
+pub extern "C" fn node_field_len() -> i32 {
+    NODE_FIELDS as i32
+}
+
+#[no_mangle]
+pub extern "C" fn edge_field_len() -> i32 {
+    EDGE_FIELDS as i32
+}
+
+/// Resizes a block so the host can fill it. Returns `OK` or `UNKNOWN_BLOCK`.
+#[no_mangle]
+pub extern "C" fn reserve(block: i32, len: i32) -> i32 {
+    let want = len.max(0) as usize;
+    let sized = INPUT.with(|cell| {
+        let mut inputs = cell.borrow_mut();
+        match block {
+            BLOCK_SCALARS => Some(&mut inputs.scalars),
+            BLOCK_NODE_FIELDS => Some(&mut inputs.node_fields),
+            BLOCK_EDGE_FIELDS => Some(&mut inputs.edge_fields),
+            BLOCK_WEIGHTS => Some(&mut inputs.weights),
+            BLOCK_NOMINAL => Some(&mut inputs.nominal),
+            BLOCK_DEMAND => Some(&mut inputs.demand),
+            BLOCK_INTAKE => Some(&mut inputs.intake),
+            BLOCK_LATENCY => Some(&mut inputs.latency),
+            BLOCK_LEVERS => Some(&mut inputs.levers),
+            BLOCK_PROBE => Some(&mut inputs.probe),
+            BLOCK_ROUTES => Some(&mut inputs.routes),
+            _ => None,
+        }
+        .map(|values| {
+            values.clear();
+            values.resize(want, 0.0);
+        })
+        .is_some()
+    });
+    if sized {
+        return OK;
+    }
+    let sized = INPUT.with(|cell| {
+        let mut inputs = cell.borrow_mut();
+        match block {
+            BLOCK_OUT_STARTS => Some(&mut inputs.out_starts),
+            BLOCK_OUT_EDGES => Some(&mut inputs.out_edges),
+            _ => None,
+        }
+        .map(|values| {
+            values.clear();
+            values.resize(want, 0);
+        })
+        .is_some()
+    });
+    if sized {
+        return OK;
+    }
+    let sized = INPUT.with(|cell| {
+        let mut inputs = cell.borrow_mut();
+        match block {
+            BLOCK_SICK => Some(&mut inputs.sick),
+            BLOCK_RESEARCH => Some(&mut inputs.research),
+            BLOCK_FEATURES => Some(&mut inputs.features),
+            _ => None,
+        }
+        .map(|values| {
+            values.clear();
+            values.resize(want, 0);
+        })
+        .is_some()
+    });
+    if sized {
+        return OK;
+    }
+    let sized = OUTPUT.with(|cell| {
+        let mut outputs = cell.borrow_mut();
+        match block {
+            BLOCK_ARRIVING => Some(&mut outputs.arriving),
+            BLOCK_MODELS => Some(&mut outputs.models),
+            BLOCK_OUTCOMES => Some(&mut outputs.outcomes),
+            BLOCK_LEDGER => Some(&mut outputs.ledger),
+            BLOCK_SUMMARY => Some(&mut outputs.summary),
+            BLOCK_SPLITS => Some(&mut outputs.splits),
+            BLOCK_DIST_IN => Some(&mut outputs.dist_in),
+            BLOCK_DIST_OUT => Some(&mut outputs.dist_out),
+            BLOCK_DIST_CALLS => Some(&mut outputs.dist_calls),
+            _ => None,
+        }
+        .map(|values| {
+            values.clear();
+            values.resize(want, 0.0);
+        })
+        .is_some()
+    });
+    if sized {
+        OK
+    } else {
+        UNKNOWN_BLOCK
+    }
+}
+
+/// A block's address in linear memory, or 0 for an unknown id. The host writes
+/// through a typed-array view of it, and must ask again after memory grows.
+#[no_mangle]
+pub extern "C" fn ptr(block: i32) -> usize {
+    let address = INPUT.with(|cell| {
+        let inputs = cell.borrow();
+        match block {
+            BLOCK_SCALARS => Some(inputs.scalars.as_ptr()),
+            BLOCK_NODE_FIELDS => Some(inputs.node_fields.as_ptr().cast::<f64>()),
+            BLOCK_EDGE_FIELDS => Some(inputs.edge_fields.as_ptr()),
+            BLOCK_WEIGHTS => Some(inputs.weights.as_ptr()),
+            BLOCK_NOMINAL => Some(inputs.nominal.as_ptr()),
+            BLOCK_DEMAND => Some(inputs.demand.as_ptr()),
+            BLOCK_INTAKE => Some(inputs.intake.as_ptr()),
+            BLOCK_LATENCY => Some(inputs.latency.as_ptr()),
+            BLOCK_LEVERS => Some(inputs.levers.as_ptr()),
+            BLOCK_PROBE => Some(inputs.probe.as_ptr()),
+            BLOCK_ROUTES => Some(inputs.routes.as_ptr()),
+            BLOCK_OUT_STARTS => Some(inputs.out_starts.as_ptr().cast::<f64>()),
+            BLOCK_OUT_EDGES => Some(inputs.out_edges.as_ptr().cast::<f64>()),
+            BLOCK_SICK => Some(inputs.sick.as_ptr().cast::<f64>()),
+            BLOCK_RESEARCH => Some(inputs.research.as_ptr().cast::<f64>()),
+            BLOCK_FEATURES => Some(inputs.features.as_ptr().cast::<f64>()),
+            _ => None,
+        }
+    });
+    if let Some(address) = address {
+        return address as usize;
+    }
+    OUTPUT.with(|cell| {
+        let outputs = cell.borrow();
+        let address = match block {
+            BLOCK_ARRIVING => Some(outputs.arriving.as_ptr()),
+            BLOCK_MODELS => Some(outputs.models.as_ptr()),
+            BLOCK_OUTCOMES => Some(outputs.outcomes.as_ptr()),
+            BLOCK_LEDGER => Some(outputs.ledger.as_ptr()),
+            BLOCK_SUMMARY => Some(outputs.summary.as_ptr()),
+            BLOCK_SPLITS => Some(outputs.splits.as_ptr()),
+            BLOCK_DIST_IN => Some(outputs.dist_in.as_ptr()),
+            BLOCK_DIST_OUT => Some(outputs.dist_out.as_ptr()),
+            BLOCK_DIST_CALLS => Some(outputs.dist_calls.as_ptr()),
+            _ => None,
+        };
+        address.map(|pointer| pointer as usize).unwrap_or(0)
+    })
+}
+
+/// A block's length in elements, or 0 for an unknown id.
+#[no_mangle]
+pub extern "C" fn len(block: i32) -> i32 {
+    let count = INPUT.with(|cell| {
+        let inputs = cell.borrow();
+        match block {
+            BLOCK_SCALARS => Some(inputs.scalars.len()),
+            BLOCK_NODE_FIELDS => Some(inputs.node_fields.len()),
+            BLOCK_EDGE_FIELDS => Some(inputs.edge_fields.len()),
+            BLOCK_WEIGHTS => Some(inputs.weights.len()),
+            BLOCK_NOMINAL => Some(inputs.nominal.len()),
+            BLOCK_DEMAND => Some(inputs.demand.len()),
+            BLOCK_INTAKE => Some(inputs.intake.len()),
+            BLOCK_LATENCY => Some(inputs.latency.len()),
+            BLOCK_LEVERS => Some(inputs.levers.len()),
+            BLOCK_PROBE => Some(inputs.probe.len()),
+            BLOCK_ROUTES => Some(inputs.routes.len()),
+            BLOCK_OUT_STARTS => Some(inputs.out_starts.len()),
+            BLOCK_OUT_EDGES => Some(inputs.out_edges.len()),
+            BLOCK_SICK => Some(inputs.sick.len()),
+            BLOCK_RESEARCH => Some(inputs.research.len()),
+            BLOCK_FEATURES => Some(inputs.features.len()),
+            _ => None,
+        }
+    });
+    if let Some(count) = count {
+        return count as i32;
+    }
+    OUTPUT.with(|cell| {
+        let outputs = cell.borrow();
+        let count = match block {
+            BLOCK_ARRIVING => Some(outputs.arriving.len()),
+            BLOCK_MODELS => Some(outputs.models.len()),
+            BLOCK_OUTCOMES => Some(outputs.outcomes.len()),
+            BLOCK_LEDGER => Some(outputs.ledger.len()),
+            BLOCK_SUMMARY => Some(outputs.summary.len()),
+            BLOCK_SPLITS => Some(outputs.splits.len()),
+            BLOCK_DIST_IN => Some(outputs.dist_in.len()),
+            BLOCK_DIST_OUT => Some(outputs.dist_out.len()),
+            BLOCK_DIST_CALLS => Some(outputs.dist_calls.len()),
+            _ => None,
+        };
+        count.map(|count| count as i32).unwrap_or(0)
+    })
+}
+
+// ---- reading a Game out of the blocks ----
+
 /// The two bitsets, built once for a batch of Nodes.
 pub type Research = [u64; 4];
 pub type Shipped = [u64; 1];
 
-pub unsafe fn research_of(researched: *const u8) -> Research {
+#[inline]
+fn bit(bytes: &[u8], index: usize) -> bool {
+    match bytes.get(index / 8) {
+        Some(byte) => (byte >> (index % 8)) & 1 == 1,
+        None => false,
+    }
+}
+
+pub fn research_of(bytes: &[u8]) -> Research {
     let mut research = [0u64; 4];
     for index in 0..RESEARCH_COUNT {
-        if bit(researched, index) {
+        if bit(bytes, index) {
             research[index / 64] |= 1 << (index % 64);
         }
     }
     research
 }
 
-pub unsafe fn features_of(features: *const u8) -> Shipped {
+pub fn features_of(bytes: &[u8]) -> Shipped {
     let mut shipped = [0u64; 1];
     for index in 0..FEATURE_COUNT {
-        if bit(features, index) {
+        if bit(bytes, index) {
             shipped[index / 64] |= 1 << (index % 64);
         }
     }
     shipped
 }
 
-unsafe fn game_of(scalars: *const f64, researched: *const u8, features: *const u8) -> GameCtx {
-    game_with(scalars, research_of(researched), features_of(features))
-}
+const INCIDENTS: [&str; 4] = ["", "gc-storm", "loop", "connections"];
 
-#[inline]
-pub unsafe fn game_with(scalars: *const f64, research: Research, shipped: Shipped) -> GameCtx {
-    let incident_code = *scalars.add(S_INCIDENT) as usize;
+/// The Game context: row 0 of the scalar block, plus the two bitsets.
+pub fn game_with(scalars: &[f64], research: Research, shipped: Shipped) -> GameCtx {
+    let slot = |index: usize| scalars.get(index).copied().unwrap_or(0.0);
+    let incident_code = slot(S_INCIDENT) as usize;
     GameCtx {
-        users: *scalars.add(S_USERS),
+        users: slot(S_USERS),
         researched: research,
         features: shipped,
         incident: INCIDENTS.get(incident_code).copied().unwrap_or(""),
-        incident_node: *scalars.add(S_INCIDENT_NODE) as usize,
-        sandbox: *scalars.add(S_SANDBOX) != 0.0,
-        scenario_tasks: *scalars.add(S_SCENARIO_TASKS) != 0.0,
-        seed: *scalars.add(S_SEED),
-        time: *scalars.add(S_TIME),
+        incident_node: slot(S_INCIDENT_NODE) as usize,
+        sandbox: slot(S_SANDBOX) != 0.0,
+        scenario_tasks: slot(S_SCENARIO_TASKS) != 0.0,
+        seed: slot(S_SEED),
+        time: slot(S_TIME),
         incident_started: 0.0,
         service_count: 1,
-        service_indexes: *scalars.add(S_SERVICE_INDEXES),
-        users_in_group: *scalars.add(S_USERS_IN_GROUP),
+        service_indexes: slot(S_SERVICE_INDEXES),
+        users_in_group: slot(S_USERS_IN_GROUP),
+        stage: slot(S_STAGE),
+        venture: slot(S_VENTURE) as usize,
+        fixed_mix: slot(S_FIXED_MIX) != 0.0,
+        scenario_daily: slot(S_SCENARIO_DAILY) != 0.0,
+        poisoned: slot(S_POISONED) != 0.0,
+        attempts: slot(S_ATTEMPTS),
     }
 }
 
-pub unsafe fn node_of(scalars: *const f64) -> Node {
-    let flag = |index: usize| *scalars.add(index) != 0.0;
+/// One Node's row of the scalar block.
+pub fn node_of(row: &[f64]) -> Node {
+    let slot = |index: usize| row.get(index).copied().unwrap_or(0.0);
+    let flag = |index: usize| slot(index) != 0.0;
+    let cert = slot(S_CERT_UNTIL);
     Node {
-        id: *scalars.add(S_ID) as usize,
-        type_code: *scalars.add(S_TYPE_CODE) as usize,
-        size: *scalars.add(S_SIZE),
-        workers: *scalars.add(S_WORKERS),
-        replicas: *scalars.add(S_REPLICAS),
-        runtime: *scalars.add(S_RUNTIME) as usize,
-        framework: *scalars.add(S_FRAMEWORK) as usize,
-        family: *scalars.add(S_FAMILY) as usize,
+        id: slot(S_ID) as usize,
+        type_code: slot(S_TYPE_CODE) as usize,
+        size: slot(S_SIZE),
+        workers: slot(S_WORKERS),
+        replicas: slot(S_REPLICAS),
+        runtime: slot(S_RUNTIME) as usize,
+        framework: slot(S_FRAMEWORK) as usize,
+        family: slot(S_FAMILY) as usize,
         compress: flag(S_COMPRESS),
         local_db: flag(S_LOCAL_DB),
-        leak: *scalars.add(S_LEAK),
-        credits: *scalars.add(S_CREDITS),
-        prefetch: *scalars.add(S_PREFETCH),
-        pm: *scalars.add(S_PM) as usize,
-        gogc: *scalars.add(S_GOGC) as usize,
-        collector: *scalars.add(S_COLLECTOR) as usize,
+        leak: slot(S_LEAK),
+        credits: slot(S_CREDITS),
+        prefetch: slot(S_PREFETCH),
+        pm: slot(S_PM) as usize,
+        gogc: slot(S_GOGC) as usize,
+        collector: slot(S_COLLECTOR) as usize,
         recycle: flag(S_RECYCLE),
-        warm: *scalars.add(S_WARM),
+        warm: slot(S_WARM),
         down: flag(S_DOWN),
-        zone: *scalars.add(S_ZONE) as usize,
-        region: *scalars.add(S_REGION) as usize,
-        db_engine: *scalars.add(S_DB_ENGINE) as usize,
-        ryw: false,
-        materialized: false,
+        zone: slot(S_ZONE) as usize,
+        region: slot(S_REGION) as usize,
+        db_engine: slot(S_DB_ENGINE) as usize,
+        ryw: flag(S_RYW),
+        materialized: flag(S_MATERIALIZED),
         shed: false,
         degrade: false,
-        sticky: false,
-        fanout: 0,
-        policy: 0,
-        variant: 0,
-        depth: *scalars.add(S_DEPTH),
-        shards: *scalars.add(S_SHARDS),
-        shard_key: *scalars.add(S_SHARD_KEY) as usize,
-        iops: *scalars.add(S_IOPS) as usize,
-        keep: *scalars.add(S_KEEP) as usize,
-        topology: *scalars.add(S_TOPOLOGY) as usize,
-    }
-}
-
-unsafe fn ctx_of(scalars: *const f64) -> ServerCtx {
-    let flag = |index: usize| *scalars.add(index) != 0.0;
-    ServerCtx {
-        boost: *scalars.add(S_BOOST),
-        inflight: *scalars.add(S_INFLIGHT),
-        sampling: *scalars.add(S_SAMPLING),
-        hashing: *scalars.add(S_HASHING),
-        delegated: flag(S_DELEGATED),
-        local: flag(S_LOCAL),
-        offloaded: flag(S_OFFLOADED),
-        worker: flag(S_WORKER),
-        pod: flag(S_POD),
+        sticky: flag(S_STICKY),
+        fanout: slot(S_FANOUT) as u8,
+        policy: slot(S_POLICY) as usize,
+        variant: slot(S_VARIANT) as usize,
+        depth: slot(S_DEPTH),
+        shards: slot(S_SHARDS),
+        shard_key: slot(S_SHARD_KEY) as usize,
+        iops: slot(S_IOPS) as usize,
+        keep: slot(S_KEEP) as usize,
+        topology: slot(S_TOPOLOGY) as usize,
+        mode: slot(S_MODE) as usize,
+        sync: flag(S_SYNC),
+        cert_until: if cert > 0.0 { Some(cert) } else { None },
+        rate_limit: slot(S_RATE_LIMIT),
+        burst: slot(S_BURST),
+        max_length: slot(S_MAX_LENGTH),
+        dlq: flag(S_DLQ),
+        attempts: slot(S_ATTEMPTS),
+        transactions: flag(S_TRANSACTIONS),
+        blast: {
+            let blast = slot(S_BLAST);
+            if blast > 0.0 { blast } else { 1.0 }
+        },
+        buggy: flag(S_BUGGY),
+        databases_in_group: slot(S_DATABASES_IN_GROUP),
+        sync_stalled: flag(S_SYNC_STALLED),
+        has_primary: flag(S_PRIMARY),
         mesh: flag(S_MESH),
+        down_oom: flag(S_DOWN_OOM),
+        sampling_ms: slot(S_SAMPLING_MS),
+        users_in_group: slot(S_USERS_IN_GROUP),
     }
-}
-
-unsafe fn read_rates(pointer: *const f64) -> Rates {
-    let mut rates = [0.0f64; NK];
-    for kind in 0..NK {
-        rates[kind] = *pointer.add(kind);
-    }
-    rates
-}
-
-unsafe fn read_calls(pointer: *const f64) -> [[f64; NK]; NR] {
-    let mut calls = [[0.0f64; NK]; NR];
-    for kind in 0..NR {
-        for slot in 0..NK {
-            calls[kind][slot] = *pointer.add(kind * NK + slot);
-        }
-    }
-    calls
-}
-
-fn write_model(model: &Model, out: *mut f64) {
-    unsafe {
-        *out.add(O_UTILIZATION) = model.utilization;
-        *out.add(O_SHARE) = model.share;
-        *out.add(O_CAPACITY) = model.capacity;
-        *out.add(O_LIMIT) = model.limit as usize as f64;
-        *out.add(O_TAIL_P) = model.tail_p;
-        *out.add(O_TAIL_MS) = model.tail_ms;
-        *out.add(O_PROCESSES) = model.processes;
-        *out.add(O_INFLIGHT) = model.inflight;
-        *out.add(O_CPU_USED) = model.cpu_used;
-        *out.add(O_CPU_TOTAL) = model.cpu_total;
-        *out.add(O_RAM_USED) = model.ram_used;
-        *out.add(O_RAM_TOTAL) = model.ram_total;
-        *out.add(O_SLOTS_USED) = model.slots_used;
-        *out.add(O_SLOTS_TOTAL) = model.slots_total;
-        *out.add(O_NETWORK_USED) = model.network_used;
-        *out.add(O_NETWORK_TOTAL) = model.network_total;
-        *out.add(O_THROTTLED) = if model.throttled { 1.0 } else { 0.0 };
-        *out.add(O_SWAPPING) = if model.swapping { 1.0 } else { 0.0 };
-        for kind in 0..NR {
-            *out.add(O_SERVICE_FIXED + kind) = model.service_fixed[kind];
-            *out.add(O_SERVICE_VARIABLE + kind) = model.service_variable[kind];
-        }
-    }
-}
-
-/// `serverModel` over the flat ABI.
-#[no_mangle]
-pub extern "C" fn server_model_flat(
-    scalars: *const f64,
-    researched: *const u8,
-    features: *const u8,
-    arriving: *const f64,
-    calls: *const f64,
-    latency: *const f64,
-    out: *mut f64,
-) {
-    unsafe {
-        let game = game_of(scalars, researched, features);
-        let node = node_of(scalars);
-        let ctx = ctx_of(scalars);
-        let rates = read_rates(arriving);
-        let call_table = read_calls(calls);
-        let latency_table = read_calls(latency);
-        let model = server_model(&game, &node, &rates, &call_table, &latency_table, &ctx);
-        write_model(&model, out);
-    }
-}
-
-/// `flatModel` over the flat ABI: capacity, fixed, variable, boost.
-#[no_mangle]
-pub extern "C" fn flat_model_flat(
-    capacity: f64,
-    fixed_ms: f64,
-    variable_ms: f64,
-    boost: f64,
-    arriving: *const f64,
-    out: *mut f64,
-) {
-    unsafe {
-        let rates = read_rates(arriving);
-        let model = flat_model(capacity, &rates, fixed_ms, variable_ms, boost);
-        write_model(&model, out);
-    }
-}
-
-/// Scratch memory the host writes into, so a call copies inputs once.
-#[no_mangle]
-pub extern "C" fn alloc(size: i32) -> *mut u8 {
-    let mut buffer = Vec::<u8>::with_capacity(size as usize);
-    let pointer = buffer.as_mut_ptr();
-    std::mem::forget(buffer);
-    pointer
-}
-
-#[no_mangle]
-pub extern "C" fn dealloc(pointer: *mut u8, size: i32) {
-    unsafe {
-        drop(Vec::from_raw_parts(pointer, 0, size as usize));
-    }
-}
-
-/// How many `f64`s the caller must allocate for a model output block.
-#[no_mangle]
-pub extern "C" fn out_len() -> i32 {
-    O_COUNT as i32
-}
-
-/// `databaseModel` over the flat ABI. `connections` is the previous pass's pool.
-#[no_mangle]
-pub extern "C" fn database_model_flat(
-    scalars: *const f64,
-    researched: *const u8,
-    features: *const u8,
-    arriving: *const f64,
-    out: *mut f64,
-) {
-    unsafe {
-        let game = game_of(scalars, researched, features);
-        let node = node_of(scalars);
-        let rates = read_rates(arriving);
-        let model = database_model(&game, &node, &rates, *scalars.add(S_BOOST), *scalars.add(S_CONNECTIONS));
-        write_model(&model, out);
-    }
-}
-
-/// Runs every Node's model in one call, so a pass pays one boundary crossing
-/// rather than one per Node. `kinds` picks the model: 0 server, 1 database,
-/// 2 flat (its capacity, fixed, and variable come from `flat_params`).
-#[no_mangle]
-pub extern "C" fn model_batch(
-    count: i32,
-    kinds: *const i32,
-    scalars: *const f64,
-    flat_params: *const f64,
-    researched: *const u8,
-    features: *const u8,
-    arriving: *const f64,
-    calls: *const f64,
-    latency: *const f64,
-    out: *mut f64,
-) {
-    unsafe {
-        let research = research_of(researched);
-        let shipped = features_of(features);
-        let shared_latency = read_calls(latency);
-        for index in 0..count as usize {
-            let node_scalars = scalars.add(index * SCALARS);
-            let game = game_with(node_scalars, research, shipped);
-            let node = node_of(node_scalars);
-            let rates = read_rates(arriving.add(index * NK));
-            let slot = out.add(index * O_COUNT);
-            match *kinds.add(index) {
-                0 => {
-                    let cells = read_calls(calls.add(index * NR * NK));
-                    let ctx = ctx_of(node_scalars);
-                    let model = server_model(&game, &node, &rates, &cells, &shared_latency, &ctx);
-                    write_model(&model, slot);
-                }
-                1 => {
-                    let model = database_model(
-                        &game,
-                        &node,
-                        &rates,
-                        *node_scalars.add(S_BOOST),
-                        *node_scalars.add(S_CONNECTIONS),
-                    );
-                    write_model(&model, slot);
-                }
-                _ => {
-                    let params = flat_params.add(index * 3);
-                    let model = flat_model(*params, &rates, *params.add(1), *params.add(2), *node_scalars.add(S_BOOST));
-                    write_model(&model, slot);
-                }
-            }
-        }
-    }
-}
-
-/// The scalar block's stride, so the host can build a batch.
-#[no_mangle]
-pub extern "C" fn scalar_len() -> i32 {
-    SCALARS as i32
-}
-
-/// The model output block's stride.
-#[no_mangle]
-pub extern "C" fn out_stride() -> i32 {
-    O_COUNT as i32
 }

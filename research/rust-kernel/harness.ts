@@ -1,0 +1,510 @@
+/**
+ * The one place that fills the kernel's blocks from a Game, and reads the
+ * figures back. Every harness imports this, so the ABI lives in one file.
+ *
+ * The block ids and slot numbers mirror `src/abi.rs`; `scalar_len()` must match
+ * `SLOT`, which `load()` checks, so a slot added on one side cannot silently
+ * drift from the other.
+ */
+import { readFileSync } from 'node:fs'
+import { causeOf } from '../../packages/simulation/src/life.ts'
+
+const ROOT = new URL('../../packages/simulation/src', import.meta.url).pathname
+export const S = await import(`${ROOT}/catalog.ts`)
+export const company = await import(`${ROOT}/company.ts`)
+export const graph = await import(`${ROOT}/solve-graph.ts`)
+export const lookups = await import(`${ROOT}/lookups.ts`)
+export const team = await import(`${ROOT}/team.ts`)
+export const pass = await import(`${ROOT}/solve-pass.ts`)
+export const regions = await import(`${ROOT}/regions.ts`)
+export const demand = await import(`${ROOT}/solve-demand.ts`)
+export const features = await import(`${ROOT}/features.ts`)
+
+export const ALL = [...S.REQUEST_KINDS, ...S.BACKEND_KINDS]
+export const NK = ALL.length
+export const NR = S.REQUEST_KINDS.length
+export const NB = S.BACKEND_KINDS.length
+
+/** Block ids, from `src/abi.rs`. */
+export const BLOCK = {
+  scalars: 1,
+  nodeFields: 2,
+  edgeFields: 3,
+  outStarts: 4,
+  outEdges: 5,
+  weights: 6,
+  nominal: 7,
+  sick: 8,
+  demand: 9,
+  intake: 10,
+  latency: 11,
+  levers: 12,
+  probe: 13,
+  routes: 14,
+  research: 16,
+  features: 17,
+  arriving: 20,
+  models: 21,
+  outcomes: 22,
+  ledger: 23,
+  summary: 24,
+  splits: 25,
+}
+
+/** Scalar slots, from `src/abi.rs`. */
+export const SLOT = {
+  users: 0,
+  seed: 1,
+  time: 2,
+  sandbox: 3,
+  scenarioTasks: 4,
+  incidentNode: 5,
+  size: 6,
+  workers: 7,
+  replicas: 8,
+  runtime: 9,
+  framework: 10,
+  family: 11,
+  compress: 12,
+  localDb: 13,
+  leak: 14,
+  credits: 15,
+  prefetch: 16,
+  pm: 17,
+  gogc: 18,
+  collector: 19,
+  recycle: 20,
+  warm: 21,
+  down: 22,
+  zone: 23,
+  region: 24,
+  dbEngine: 25,
+  boost: 26,
+  inflight: 27,
+  sampling: 28,
+  hashing: 29,
+  delegated: 30,
+  local: 31,
+  offloaded: 32,
+  worker: 33,
+  pod: 34,
+  mesh: 35,
+  typeCode: 36,
+  id: 37,
+  incident: 38,
+  shards: 39,
+  shardKey: 40,
+  iops: 41,
+  keep: 42,
+  topology: 43,
+  depth: 44,
+  connections: 45,
+  usersInGroup: 46,
+  serviceIndexes: 47,
+  stage: 48,
+  venture: 49,
+  fixedMix: 50,
+  scenarioDaily: 51,
+  variant: 52,
+  policy: 53,
+  sticky: 54,
+  fanout: 55,
+  mode: 56,
+  materialized: 57,
+  sync: 58,
+  ryw: 59,
+  certUntil: 60,
+  rateLimit: 61,
+  burst: 62,
+  maxLength: 63,
+  dlq: 64,
+  attempts: 65,
+  blast: 66,
+  buggy: 67,
+  databasesInGroup: 68,
+  syncStalled: 69,
+  primary: 70,
+  poisoned: 71,
+  transactions: 72,
+  samplingMs: 73,
+  downOom: 74,
+}
+export const SCALARS = Object.keys(SLOT).length
+const NODE_FIELDS = 10
+const EDGE_FIELDS = 8
+
+const MODES = ['session', 'transaction', 'statement']
+const POLICIES = ['weighted', 'round-robin', 'least-conn', 'p2c', 'hash']
+const RETRIES = ['none', 'naive', 'backoff']
+const POOLING = ['static', 'dynamic', 'ondemand']
+const COLLECTORS = ['g1', 'parallel', 'zgc']
+const SHARD_KEYS = ['hash', 'range', 'tenant', 'region']
+const IOPS = ['general', 'provisioned']
+const RETENTION = ['keep', 'archive', 'delete']
+const TOPOLOGY = ['single', 'multi', 'sharded']
+
+export const load = async () => {
+  const wasm = await WebAssembly.instantiate(
+    readFileSync(new URL('./target/wasm32-unknown-unknown/release/qsim.wasm', import.meta.url)),
+  )
+  const X = wasm.instance.exports
+  if (X.scalar_len() !== SCALARS) {
+    throw new Error(`scalar slots: kernel ${X.scalar_len()}, harness ${SCALARS}`)
+  }
+  /** Views into linear memory. Any call that grows memory detaches them. */
+  const view = (id, Type, length) => new Type(X.memory.buffer, X.ptr(id), length)
+  const reserve = (id, length) => {
+    if (X.reserve(id, Math.max(0, length)) !== 0) throw new Error(`reserve ${id} failed`)
+  }
+  const fill = (id, values) => {
+    reserve(id, values.length)
+    view(id, Float64Array, values.length).set(values)
+  }
+  const fillInt = (id, values) => {
+    reserve(id, values.length)
+    view(id, Int32Array, values.length).set(values)
+  }
+  const fillBytes = (id, values) => {
+    reserve(id, values.length)
+    view(id, Uint8Array, values.length).set(values)
+  }
+  const bitset = (ids, present) => {
+    const bytes = new Uint8Array(Math.ceil(ids.length / 8))
+    for (const id of present) {
+      const index = ids.indexOf(id)
+      if (index >= 0) bytes[index >> 3] |= 1 << (index & 7)
+    }
+    return bytes
+  }
+  return { X, view, reserve, fill, fillInt, fillBytes, bitset }
+}
+
+/** Writes the Design's blocks and compiles it. */
+export const writeDesign = (kernel, game, design, options = {}) => {
+  const { fill, fillInt, fillBytes } = kernel
+  const slotOf = new Map(game.nodes.map((n, i) => [n.id, i]))
+  const nodes = game.nodes.length
+  const edges = design.edges.length
+
+  const nodeFields = new Float64Array(nodes * NODE_FIELDS)
+  game.nodes.forEach((n, i) => {
+    const b = i * NODE_FIELDS
+    nodeFields[b] = S.COMPONENT_IDS.indexOf(n.type)
+    nodeFields[b + 1] = lookups.isDown(n) ? 1 : 0
+    nodeFields[b + 2] = n.sticky ? 1 : 0
+    nodeFields[b + 3] = Math.max(0, POLICIES.indexOf(n.policy))
+    nodeFields[b + 4] = n.ttl
+    nodeFields[b + 5] = n.checkEvery
+    nodeFields[b + 6] = n.deepCheck ? 1 : 0
+    nodeFields[b + 7] = n.type === 'replica' ? 1 : 0
+    nodeFields[b + 8] = n.type === 'replica' && lookups.primaryOf(game, n) !== undefined ? 1 : 0
+    nodeFields[b + 9] = n.service._tag === 'Draining' ? 1 : 0
+  })
+
+  const edgeFields = new Float64Array(edges * EDGE_FIELDS)
+  design.edges.forEach((e, i) => {
+    const b = i * EDGE_FIELDS
+    edgeFields[b] = slotOf.get(e.from.id)
+    edgeFields[b + 1] = slotOf.get(e.to.id)
+    edgeFields[b + 2] = e.link.kinds ? kindMask(e.link.kinds) : Number((1n << BigInt(NK)) - 1n)
+    edgeFields[b + 3] = RETRIES.indexOf(e.policy.retry)
+    edgeFields[b + 4] = e.policy.timeout
+    edgeFields[b + 5] = e.policy.open ? 1 : 0
+    edgeFields[b + 6] = e.policy.bulkhead ? 1 : 0
+    edgeFields[b + 7] = e.policy.hedge ? 1 : 0
+  })
+
+  const starts = new Int32Array(nodes + 1)
+  const outEdges = []
+  game.nodes.forEach((n, i) => {
+    starts[i] = outEdges.length
+    for (const e of design.out.get(n.id) ?? []) outEdges.push(e.index)
+  })
+  starts[nodes] = outEdges.length
+
+  fill(BLOCK.nodeFields, Array.from(nodeFields))
+  fill(BLOCK.edgeFields, Array.from(edgeFields))
+  fillInt(BLOCK.outStarts, Array.from(starts))
+  fillInt(BLOCK.outEdges, outEdges)
+
+  const weights = options.weights ?? new Array(nodes).fill(1)
+  const nominal = options.nominal ?? new Array(nodes).fill(1)
+  const sick = options.sick ?? new Uint8Array(nodes)
+  fill(BLOCK.weights, weights)
+  fill(BLOCK.nominal, nominal)
+  fillBytes(BLOCK.sick, sick)
+  return { slotOf, nodes, edges }
+}
+
+const kindMask = (kinds) => {
+  let mask = 0n
+  for (const kind of kinds) {
+    const index = ALL.indexOf(kind)
+    if (index >= 0) mask |= 1n << BigInt(index)
+  }
+  return Number(mask)
+}
+
+/** Writes every Game-level block: the scalar rows, research, demand, intake. */
+export const writeGame = (kernel, game, design, info, options = {}) => {
+  const { fill, fillBytes, bitset } = kernel
+  const { slotOf, nodes } = info
+  const scalars = new Float64Array(nodes * SCALARS)
+  const serviceIndexes = game.services.reduce((sum, service) => sum + service.indexes, 0)
+  const venture = S.VENTURE_IDS.indexOf(game.founding?.venture ?? 'b2b-saas')
+  game.nodes.forEach((n, i) => {
+    const base = i * SCALARS
+    const put = (slot, value) => {
+      scalars[base + slot] = value
+    }
+    put(SLOT.users, game.users)
+    put(SLOT.seed, game.seed)
+    put(SLOT.time, game.time)
+    put(SLOT.sandbox, game.sandbox ? 1 : 0)
+    put(SLOT.incidentNode, -1)
+    put(SLOT.size, n.size)
+    put(SLOT.workers, n.workers)
+    put(SLOT.replicas, n.replicas)
+    put(SLOT.runtime, S.RUNTIME_IDS.indexOf(n.runtime))
+    put(SLOT.framework, S.FRAMEWORK_IDS.indexOf(n.framework))
+    put(SLOT.family, S.FAMILY_IDS.indexOf(n.family))
+    put(SLOT.compress, n.compress ? 1 : 0)
+    put(SLOT.localDb, n.localDb ? 1 : 0)
+    put(SLOT.leak, n.leak)
+    put(SLOT.credits, n.credits)
+    put(SLOT.prefetch, n.prefetch)
+    put(SLOT.pm, Math.max(0, POOLING.indexOf(n.pm)))
+    put(SLOT.gogc, 0)
+    put(SLOT.collector, Math.max(0, COLLECTORS.indexOf(n.collector)))
+    put(SLOT.recycle, n.recycle ? 1 : 0)
+    put(SLOT.warm, n.life._tag === 'Running' ? 1 : (n.life.warm ?? 1))
+    put(SLOT.down, lookups.isDown(n) ? 1 : 0)
+    put(SLOT.zone, S.ZONES.indexOf(n.zone))
+    put(SLOT.region, S.REGIONS.indexOf(n.region))
+    put(SLOT.dbEngine, n.dbEngine === 'mysql' ? 1 : 0)
+    put(SLOT.inflight, 0)
+    put(SLOT.sampling, graph.samplingOf(game, design, n))
+    put(SLOT.samplingMs, graph.samplingMsOf(design, n))
+    put(SLOT.delegated, graph.delegates(design, n) ? 1 : 0)
+    put(SLOT.offloaded, graph.offloads(design, n) ? 1 : 0)
+    put(SLOT.pod, lookups.inCluster(game, n) ? 1 : 0)
+    put(SLOT.mesh, lookups.meshOf(game, n) ? 1 : 0)
+    put(SLOT.typeCode, S.COMPONENT_IDS.indexOf(n.type))
+    put(SLOT.id, i)
+    put(SLOT.incident, 0)
+    put(SLOT.shards, n.shards ?? 1)
+    put(SLOT.shardKey, Math.max(0, SHARD_KEYS.indexOf(n.shardKey)))
+    put(SLOT.iops, Math.max(0, IOPS.indexOf(n.iops)))
+    put(SLOT.keep, Math.max(0, RETENTION.indexOf(n.keep)))
+    put(SLOT.topology, Math.max(0, TOPOLOGY.indexOf(n.topology)))
+    put(SLOT.depth, n.depth ?? 0)
+    put(SLOT.connections, 0)
+    put(SLOT.usersInGroup, lookups.usersOfGroup(game, lookups.dataGroupOf(game, n)))
+    put(SLOT.serviceIndexes, serviceIndexes)
+    put(SLOT.stage, game.stage)
+    put(SLOT.venture, Math.max(0, venture))
+    put(SLOT.fixedMix, game.fixedMix ? 1 : 0)
+    put(SLOT.scenarioDaily, game.scenario?.daily ? 1 : 0)
+    put(SLOT.variant, n.variant === 'l4' ? 1 : 0)
+    put(SLOT.policy, Math.max(0, POLICIES.indexOf(n.policy)))
+    put(SLOT.sticky, n.sticky ? 1 : 0)
+    put(SLOT.fanout, n.fanout === 'push' ? 1 : 0)
+    put(SLOT.mode, Math.max(0, MODES.indexOf(n.mode)))
+    put(SLOT.materialized, n.materialized ? 1 : 0)
+    put(SLOT.sync, n.sync ? 1 : 0)
+    put(SLOT.ryw, n.ryw ? 1 : 0)
+    put(SLOT.certUntil, n.certUntil ?? 0)
+    put(SLOT.rateLimit, n.rateLimit ?? 0)
+    put(SLOT.burst, n.burst ?? 0)
+    put(SLOT.maxLength, n.maxLength ?? 0)
+    put(SLOT.dlq, n.dlq ? 1 : 0)
+    put(SLOT.attempts, n.attempts ?? 25)
+    put(
+      SLOT.blast,
+      S.BLAST_FACTOR[S.LANGUAGES[S.RUNTIMES[n.runtime].language].blast],
+    )
+    put(SLOT.buggy, team.buggy(game, n) ? 1 : 0)
+    put(
+      SLOT.databasesInGroup,
+      n.type === 'database' || n.type === 'replica'
+        ? lookups.databasesOfGroup(game, lookups.dataGroupOf(game, n)).length
+        : 0,
+    )
+    put(SLOT.syncStalled, lookups.syncStalled(game, lookups.dataGroupOf(game, n)) ? 1 : 0)
+    put(SLOT.primary, n.type === 'replica' && lookups.primaryOf(game, n) !== undefined ? 1 : 0)
+    put(SLOT.poisoned, 0)
+    put(SLOT.transactions, n.transactions ? 1 : 0)
+    put(SLOT.downOom, n.life._tag !== 'Running' && causeOf(n.life) === 'oom' ? 1 : 0)
+  })
+  fill(BLOCK.scalars, Array.from(scalars))
+  fillBytes(BLOCK.research, bitset(S.RESEARCH_IDS, game.researched))
+  fillBytes(BLOCK.features, bitset(S.FEATURE_IDS, Object.keys(game.features ?? {})))
+
+  const demandRates = demand.demandOf(game)
+  fill(
+    BLOCK.demand,
+    Array.from({ length: NK }, (_, k) => demandRates[S.REQUEST_KINDS[k]] ?? 0),
+  )
+  const routes = regions.userRoutes(game, (n) => (design.routes.get(n.id)?.length ?? 0) > 0)
+  const intake = new Float64Array(nodes)
+  for (const entry of routes)
+    if (entry.source) {
+      const slot = info.slotOf.get(entry.source.id)
+      intake[slot] = (intake[slot] ?? 0) + entry.share
+    }
+  fill(BLOCK.intake, Array.from(intake))
+  fill(
+    BLOCK.probe,
+    S.REQUEST_KINDS.map((kind) => features.mixOf(game)[kind] ?? 0),
+  )
+  const routeRows = []
+  for (const entry of routes)
+    routeRows.push(
+      S.REGIONS.indexOf(entry.region),
+      entry.source ? info.slotOf.get(entry.source.id) : -1,
+      entry.share,
+      entry.extraMs,
+    )
+  fill(BLOCK.routes, routeRows)
+  fill(BLOCK.levers, S.REQUEST_KINDS.map((kind) => game.levers?.[kind] ?? 0))
+  const latency = options.latency ?? new Array(nodes * NK).fill(0)
+  fill(BLOCK.latency, latency)
+  return { routes, intake }
+}
+
+/** One pass: the arriving rates and the models. */
+export const forwardRun = (kernel, nodes) => {
+  const { X, view } = kernel
+  const status = X.forward_run()
+  if (status !== 0) throw new Error(`forward_run: status ${status}`)
+  return {
+    arriving: view(BLOCK.arriving, Float64Array, nodes * NK),
+    models: view(BLOCK.models, Float64Array, nodes * X.model_stride()),
+    stride: X.model_stride(),
+  }
+}
+
+/** The outcome tree for every Users Node. */
+export const outcomeRun = (kernel, nodes) => {
+  const { X, view } = kernel
+  const status = X.outcome_run()
+  if (status !== 0) throw new Error(`outcome_run: status ${status}`)
+  return view(BLOCK.outcomes, Float64Array, nodes * NR * X.outcome_stride())
+}
+
+/** The pass loop and its Ledger. */
+export const solveRun = (kernel, nodes, options = {}) => {
+  const { X, view } = kernel
+  const status = X.solve_run(options.boost ?? -1, options.passes ?? 0, options.revenueOnly ? 1 : 0)
+  if (status !== 0) throw new Error(`solve_run: status ${status}`)
+  return readLedger(kernel, nodes)
+}
+
+/** The pass loop plus the Bottleneck search. */
+export const bottleneckRun = (kernel, nodes, options = {}) => {
+  const { X, view } = kernel
+  const status = X.bottleneck_run(options.passes ?? 0)
+  if (status !== 0) throw new Error(`bottleneck_run: status ${status}`)
+  return readLedger(kernel, nodes)
+}
+
+export const readLedger = (kernel, nodes) => {
+  const { X, view } = kernel
+  const stride = X.ledger_node_stride()
+  const base = X.ledger_node_base()
+  const kindBase = X.ledger_kind_base()
+  const kindStride = X.ledger_kind_stride()
+  const block = view(BLOCK.ledger, Float64Array, X.ledger_len_for(nodes))
+  const summary = view(BLOCK.summary, Float64Array, X.summary_len())
+  const nodeRows = []
+  for (let slot = 0; slot < nodes; slot += 1) {
+    const at = base + slot * stride
+    nodeRows.push({
+      inbound: block[at],
+      capacity: block[at + 1],
+      utilization: block[at + 2],
+      dropped: block[at + 3],
+      refused: block[at + 4],
+      stranded: block[at + 5],
+      latency: block[at + 6],
+      p99: block[at + 7],
+      repeated: block[at + 8],
+      limit: block[at + 9],
+      connectionsUsed: block[at + 10],
+      connectionsMax: block[at + 11],
+      hitRatio: block[at + 12],
+      lagMs: block[at + 13],
+    })
+  }
+  const kinds = []
+  for (let kind = 0; kind < NR; kind += 1) {
+    const at = kindBase + kind * kindStride
+    kinds.push({
+      rate: block[at],
+      success: block[at + 1],
+      apdex: block[at + 2],
+      completion: block[at + 3],
+      mean: block[at + 4],
+      p50: block[at + 5],
+      p95: block[at + 6],
+      p99: block[at + 7],
+    })
+  }
+  return {
+    revenue: block[0],
+    demand: block[1],
+    served: block[2],
+    apdex: block[3],
+    latency: block[4],
+    p50: block[5],
+    p95: block[6],
+    p99: block[7],
+    errorShare: block[8],
+    fines: block[9],
+    subscriptions: block[10],
+    bottleneck: block[11],
+    failing: block[12],
+    errorTotal: block[13],
+    errors: Array.from(block.subarray(16, 28)),
+    bottleneckByKind: Array.from(block.subarray(28, 28 + NR)),
+    kinds,
+    nodes: nodeRows,
+    passes: summary[2],
+  }
+}
+
+/** The 200-Node stress board the TypeScript benchmark measures. */
+export const stressBoard = () => {
+  const nodes = [company.node('users', 'users', 0, 0), company.node('lb', 'lb', 100, 0)]
+  const links = [company.link('users', 'lb')]
+  for (let group = 0; group < 6; group += 1) {
+    const lb = `lb${group}`
+    const pool = `pool${group}`
+    const database = `db${group}`
+    nodes.push(
+      company.node(lb, 'lb', 200, group * 100),
+      company.node(pool, 'pooler', 400, group * 100),
+      company.node(database, 'database', 500, group * 100, { size: 5 }),
+    )
+    links.push(company.link('lb', lb), company.link(pool, database))
+    for (let index = 0; index < 30; index += 1) {
+      const id = `s${group}-${index}`
+      nodes.push(
+        company.node(id, 'server', 300, group * 100 + index, {
+          size: 3,
+          runtime: 'php_fpm',
+          workers: 40,
+        }),
+      )
+      links.push(company.link(lb, id), company.link(id, pool))
+    }
+  }
+  const preseed = company.preseedGame()
+  return {
+    ...preseed,
+    nodes,
+    links,
+    users: 400_000,
+    researched: [...preseed.researched, 'pooling', 'opcache'],
+  }
+}

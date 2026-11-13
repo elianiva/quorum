@@ -191,6 +191,12 @@ pub fn through(own: Hop, calls: &[(Outcome, f64)], stale_counts: bool) -> Outcom
     }
 }
 
+/// `throughOne`: a hop followed by exactly one call, with no list to build.
+#[inline]
+pub fn through_one(own: Hop, call: Outcome, stale_counts: bool) -> Outcome {
+    through(own, &[(call, 1.0)], stale_counts)
+}
+
 /// A weighted mix of several outcomes. `None` when there are none.
 #[inline]
 pub fn blend(entries: &[(Outcome, f64)]) -> Option<Outcome> {
@@ -256,7 +262,6 @@ pub fn slower_than(outcome: &Outcome, ms: f64) -> f64 {
     plain.max(if outcome.tail_p < with_tail { outcome.tail_p } else { with_tail })
 }
 
-#[inline]
 #[inline]
 pub fn mean_of(outcome: &Outcome) -> f64 {
     outcome.fixed_ms + outcome.variable_ms + outcome.tail_p * outcome.tail_ms

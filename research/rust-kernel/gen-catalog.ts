@@ -4,6 +4,7 @@
  */
 import { writeFileSync } from 'node:fs'
 import * as catalog from '/Users/elianiva/Development/personal/apps/quorum-wasm-research/packages/simulation/src/catalog.ts'
+import { FLAT_CAPACITY } from '/Users/elianiva/Development/personal/apps/quorum-wasm-research/packages/simulation/src/capacity.ts'
 
 const out: Array<string> = []
 const push = (line: string) => out.push(line)
@@ -389,20 +390,9 @@ push(
 // ---- Other tables ----
 push('')
 push('// ---- Other tables ----')
-const FLAT_CAP: Record<string, number> = {
-  lb: 2_000,
-  cache: 50_000,
-  pooler: 10_000,
-  search: 400,
-  queue: 20_000,
-  log: 100_000,
-  waf: 5_000,
-  gw: 10_000,
-  edge: Number.POSITIVE_INFINITY,
-}
 push(
   `pub static FLAT_CAPACITY: [f64; ${COMPONENT_IDS.length}] = [${COMPONENT_IDS.map((id) => {
-    const value = FLAT_CAP[id]
+    const value = (FLAT_CAPACITY as Record<string, number>)[id]
     return value === undefined
       ? '0.0'
       : value === Number.POSITIVE_INFINITY
@@ -410,6 +400,34 @@ push(
         : formatNumber(value)
   }).join(', ')}];`,
 )
+// A Component that serves every region from everywhere, and one that spans every
+// zone: `regions.ts` and `lookups.ts` own these lists, mirrored here because
+// neither exports them.
+const GLOBAL_COMPONENTS = ['psp', 'llm', 'msgp', 'auth', 'cdn', 'analytics', 'payments']
+push(
+  `pub static COMPONENT_GLOBAL: [bool; ${COMPONENT_IDS.length}] = [${COMPONENT_IDS.map((id) => GLOBAL_COMPONENTS.includes(id)).join(', ')}];`,
+)
+push(
+  `pub static COMPONENT_FIXED: [bool; ${COMPONENT_IDS.length}] = [${COMPONENT_IDS.map((id) => catalog.COMPONENTS[id].fixed).join(', ')}];`,
+)
+// Round trips between regions, from the catalog's own lookup.
+const REGIONS = catalog.REGIONS
+push(
+  `pub static REGION_RTT: [[f64; ${REGIONS.length}]; ${REGIONS.length}] = [${REGIONS.map(
+    (from) => `[${REGIONS.map((to) => formatNumber(catalog.rttOf(from, to))).join(', ')}]`,
+  ).join(', ')}];`,
+)
+// Each Venture's traffic profile and rule, so the revenue layer reads the same
+// numbers the TypeScript does.
+const VENTURES = catalog.VENTURE_IDS.map((id) => catalog.VENTURES[id])
+push(`pub static VENTURE_VALUE: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.value)).join(', ')}];`)
+push(`pub static VENTURE_MARKET: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.market)).join(', ')}];`)
+push(`pub static VENTURE_AMPLITUDE: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.amplitude)).join(', ')}];`)
+push(`pub static VENTURE_PEAK: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.peak)).join(', ')}];`)
+push(`pub static VENTURE_WEEKEND: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.weekend)).join(', ')}];`)
+push(`pub static VENTURE_DEADLINE: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => (v.constraint.deadline === null ? '-1.0' : formatNumber(v.constraint.deadline))).join(', ')}];`)
+push(`pub static VENTURE_STALE_FINE: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.constraint.staleFine)).join(', ')}];`)
+
 push(
   `pub static COLLECTOR_PAUSE: [f64; 3] = [${['g1', 'parallel', 'zgc'].map((id) => formatNumber(catalog.COLLECTORS[id as 'g1'].pauseMs)).join(', ')}];`,
 )

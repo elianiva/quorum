@@ -30,6 +30,18 @@ pub struct GameCtx {
     pub service_indexes: f64,
     /// The users whose rows this Node's Data Group holds, which the caller derives.
     pub users_in_group: f64,
+    /// The Era, so a rule reads the stage the same way the TypeScript does.
+    pub stage: f64,
+    /// The Venture, as its index in `VENTURE_IDS`.
+    pub venture: usize,
+    /// A Challenge or guided Sandbox pins its mix, so a lever cannot move it.
+    pub fixed_mix: bool,
+    /// A Sandbox that runs the daily cycle.
+    pub scenario_daily: bool,
+    /// This Worker pulls from a Queue a poison message is stuck in.
+    pub poisoned: bool,
+    /// Attempts per task this Worker runs.
+    pub attempts: f64,
 }
 
 impl GameCtx {
@@ -58,7 +70,7 @@ impl GameCtx {
 }
 
 /// A Node, as the capacity models see it.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Node {
     pub id: usize,
     pub type_code: usize,
@@ -99,17 +111,52 @@ pub struct Node {
     pub iops: usize,
     pub keep: usize,
     pub topology: usize,
+    /// A Connection Pooler's mode: 0 session, 1 transaction, 2 statement.
+    pub mode: usize,
+    /// A Read Replica that replicates synchronously serves no stale read.
+    pub sync: bool,
+    /// The sim second this Node's certificate runs out; `None` when none is issued.
+    pub cert_until: Option<f64>,
+    /// An API Gateway's shared rate limit, and the burst its bucket holds.
+    pub rate_limit: f64,
+    pub burst: f64,
+    /// A Queue's maximum length, dead-letter queue, and attempts per task.
+    pub max_length: f64,
+    pub dlq: bool,
+    pub attempts: f64,
+    /// A Document Store that runs multi-document transactions.
+    pub transactions: bool,
+    /// This Node's language blast factor, and whether a migration's bugs hit it.
+    pub blast: f64,
+    pub buggy: bool,
+    /// The Databases in this Node's Data Group, and whether a synchronous
+    /// replica behind it is down.
+    pub databases_in_group: f64,
+    pub sync_stalled: bool,
+    /// A Read Replica's primary exists, so it copies something.
+    pub has_primary: bool,
+    /// A Service Mesh has put a sidecar beside this Node.
+    pub mesh: bool,
+    /// The Node is down because the kernel killed it for memory.
+    pub down_oom: bool,
+    /// Milliseconds Analytics sampling adds to this Node's hop.
+    pub sampling_ms: f64,
+    /// The users whose rows this Node's Data Group holds.
+    pub users_in_group: f64,
 }
 
 /// What `serverModel` returns.
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy)]
 pub struct Model {
     pub utilization: f64,
     pub share: f64,
     pub capacity: f64,
     pub limit: Limit,
-    pub service_fixed: [f64; NR],
-    pub service_variable: [f64; NR],
+    pub service_fixed: [f64; NK],
+    pub service_variable: [f64; NK],
+    /// Which kinds the model has a service record for: a missing kind falls back
+    /// to the Component's latency, so presence is a bit and not a zero.
+    pub service_mask: u64,
     pub tail_p: f64,
     pub tail_ms: f64,
     pub processes: f64,
@@ -125,6 +172,35 @@ pub struct Model {
     pub throttled: bool,
     pub swapping: bool,
     pub disk: bool,
+}
+
+impl Default for Model {
+    fn default() -> Self {
+        Model {
+            utilization: 0.0,
+            share: 0.0,
+            capacity: 0.0,
+            limit: Limit::None,
+            service_fixed: [0.0; NK],
+            service_variable: [0.0; NK],
+            service_mask: 0,
+            tail_p: 0.0,
+            tail_ms: 0.0,
+            processes: 0.0,
+            inflight: 0.0,
+            cpu_used: 0.0,
+            cpu_total: 0.0,
+            ram_used: 0.0,
+            ram_total: 0.0,
+            slots_used: 0.0,
+            slots_total: 0.0,
+            network_used: 0.0,
+            network_total: 0.0,
+            throttled: false,
+            swapping: false,
+            disk: false,
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Default)]
@@ -462,7 +538,7 @@ pub fn server_model(
     node: &Node,
     arriving: &Rates,
     calls: &[[f64; NK]; NR],
-    call_latency: &[[f64; NK]; NR],
+    call_latency: &[f64; NK],
     ctx: &ServerCtx,
 ) -> Model {
     let runtime = node.runtime;
@@ -603,7 +679,7 @@ pub fn server_model(
         };
         let mut waiting = 0.0;
         if !ctx.local {
-            waiting = wait_of(&calls[kind], &call_latency[kind]) + fetching;
+            waiting = wait_of(&calls[kind], call_latency) + fetching;
         }
         let each = cpu[kind] / per_request + cpu_wait + waiting + receiving;
         residence[kind] = each;
@@ -734,9 +810,11 @@ pub fn server_model(
         tail_ms = ms;
     }
 
-    let mut service_fixed = [0.0f64; NR];
-    let mut service_variable = [0.0f64; NR];
+    let mut service_fixed = [0.0f64; NK];
+    let mut service_variable = [0.0f64; NK];
+    let mut service_mask = 0u64;
     for &kind in &kinds {
+        service_mask |= 1u64 << kind;
         service_fixed[kind] = 2.0;
         service_variable[kind] = cpu[kind] / per_request
             + cpu_wait
@@ -752,6 +830,7 @@ pub fn server_model(
         limit,
         service_fixed,
         service_variable,
+        service_mask,
         tail_p,
         tail_ms,
         processes: resident,
@@ -798,10 +877,12 @@ pub fn flat_model(capacity: f64, arriving: &Rates, fixed_ms: f64, variable_ms: f
     let utilization = if capacity.is_infinite() { 0.0 } else { rate / (capacity * boost) };
     let share = if utilization > 1.0 { 1.0 / utilization } else { 1.0 };
     let wait = wait_for(variable_ms, utilization, 1.0);
-    let mut service_fixed = [0.0f64; NR];
-    let mut service_variable = [0.0f64; NR];
-    for kind in 0..NR {
+    let mut service_fixed = [0.0f64; NK];
+    let mut service_variable = [0.0f64; NK];
+    let mut service_mask = 0u64;
+    for kind in 0..NK {
         if arriving[kind] > 0.0 {
+            service_mask |= 1u64 << kind;
             service_fixed[kind] = fixed_ms;
             service_variable[kind] = variable_ms + wait;
         }
@@ -813,6 +894,7 @@ pub fn flat_model(capacity: f64, arriving: &Rates, fixed_ms: f64, variable_ms: f
         limit: if utilization <= 0.0 { Limit::None } else { Limit::Throughput },
         service_fixed,
         service_variable,
+        service_mask,
         tail_p: 0.0,
         tail_ms: 0.0,
         processes: 0.0,
@@ -1021,23 +1103,24 @@ pub fn database_model(
     let tx_service_fixed = 2.5 * distributed + sync_ms + far_ms;
     let tx_service_variable = (tx_cpu / per_request + wait + io_wait) * distributed;
 
-    let mut service_fixed = [0.0f64; NR];
-    let mut service_variable = [0.0f64; NR];
-    // The backend kinds a Database answers, in the order the Ledger reads them.
-    service_fixed[0] = 2.5 + far_ms + if disk { 8.0 } else if evicted > 0.0 { 8.0 * evicted } else { 0.0 };
-    service_variable[0] = read_cpu / per_request + wait + if disk { io_wait } else { 0.0 };
-    service_fixed[1] = 2.5 + sync_ms + far_ms;
-    service_variable[1] = write_cpu / per_request + wait + io_wait;
-    service_fixed[3] = 2.5 + logical.scatter_ms;
-    service_variable[3] = search_cpu / per_request + wait;
-    service_fixed[5] = 2.5;
-    service_variable[5] = put_cpu / per_request + wait + io_wait;
-    service_fixed[8] = tx_service_fixed;
-    service_variable[8] = tx_service_variable;
-    service_fixed[7] = 2.5 + 8.0;
-    service_variable[7] = get_cpu / per_request + wait + io_wait;
-    service_fixed[6] = 2.5 + 8.0 + RETENTION_SCAN_MS[retention] + logical.scatter_ms;
-    service_variable[6] = scan_cpu / per_request + wait + io_wait;
+    let mut service_fixed = [0.0f64; NK];
+    let mut service_variable = [0.0f64; NK];
+    // The backend kinds a Database answers, at their place in the full kind list.
+    let mut service_mask = 0u64;
+    let mut put = |backend: usize, fixed: f64, variable: f64, mask: &mut u64| {
+        let kind = NR + backend;
+        *mask |= 1u64 << kind;
+        service_fixed[kind] = fixed;
+        service_variable[kind] = variable;
+    };
+    put(0, 2.5 + far_ms + if disk { 8.0 } else if evicted > 0.0 { 8.0 * evicted } else { 0.0 },
+        read_cpu / per_request + wait + if disk { io_wait } else { 0.0 }, &mut service_mask);
+    put(1, 2.5 + sync_ms + far_ms, write_cpu / per_request + wait + io_wait, &mut service_mask);
+    put(3, 2.5 + logical.scatter_ms, search_cpu / per_request + wait, &mut service_mask);
+    put(5, 2.5, put_cpu / per_request + wait + io_wait, &mut service_mask);
+    put(8, tx_service_fixed, tx_service_variable, &mut service_mask);
+    put(7, 2.5 + 8.0, get_cpu / per_request + wait + io_wait, &mut service_mask);
+    put(6, 2.5 + 8.0 + RETENTION_SCAN_MS[retention] + logical.scatter_ms, scan_cpu / per_request + wait + io_wait, &mut service_mask);
 
     let _ = (on_disk, HOT_KEY_SHARE);
     Model {
@@ -1055,6 +1138,7 @@ pub fn database_model(
         },
         service_fixed,
         service_variable,
+        service_mask,
         tail_p: 0.0,
         tail_ms: 0.0,
         processes: 0.0,

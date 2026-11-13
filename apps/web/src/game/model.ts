@@ -214,6 +214,8 @@ export const Prefs = Schema.Struct({
   agentAccess: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
   /** Share anonymous usage data. Off stops capture and persists the choice. */
   analytics: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(true))),
+  /** The title screen has shown its one install prompt, so it never comes back. */
+  pwaPromptSeen: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
 })
 export type Prefs = typeof Prefs.Type
 
@@ -479,6 +481,19 @@ export const SettingsSection = Schema.Literals([
 ])
 export type SettingsSection = typeof SettingsSection.Type
 
+/**
+ * The browser's PWA state: whether the install dialog is offered, whether the
+ * page runs as an installed app, whether a new worker waits, and whether the
+ * network is up. Rooms and feature keys need the network; the Company does not.
+ */
+export const Pwa = Schema.Struct({
+  installable: Schema.Boolean,
+  installed: Schema.Boolean,
+  updateReady: Schema.Boolean,
+  online: Schema.Boolean,
+})
+export type Pwa = typeof Pwa.Type
+
 export const Model = Schema.Struct({
   route: AppRoute,
   /** Where the app is in its boot sequence: the clock-in splash, the title, or a board opening. */
@@ -516,6 +531,8 @@ export const Model = Schema.Struct({
   today: Schema.String,
   /** The player's settings, kept in the browser apart from saves. */
   prefs: Prefs,
+  /** Install, update, and connection state from the browser. */
+  pwa: Pwa,
   /** The feature key this browser holds, kept with the settings. */
   access: Access,
   /** The key field, while the player types or pastes one. */

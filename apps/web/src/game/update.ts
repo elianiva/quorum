@@ -59,6 +59,8 @@ import { panelsHandlers } from './update/panels.ts'
 import { saveHandlers } from './update/save.ts'
 import { roomHandlers } from './update/room.ts'
 import { accessHandlers } from './update/access.ts'
+import { pwaHandlers } from './update/pwa.ts'
+import { pwaSnapshot } from '../platform/pwa.ts'
 
 /** Every Message. Handlers live in ./update, grouped by what they touch; this file routes them. */
 
@@ -100,7 +102,9 @@ export const initialModel = (): Model => {
       theme: 'light',
       agentAccess: false,
       analytics: true,
+      pwaPromptSeen: false,
     },
+    pwa: pwaSnapshot(),
     access: EMPTY_ACCESS,
     keyDraft: '',
     keyPhase: { _tag: 'Idle' },
@@ -168,6 +172,8 @@ export const QUIET = new Set([
   // The key field changes on every keystroke; only submitting it is a gesture.
   'KeyTyped',
   'AccessLoaded',
+  // The browser's install offer and network state change without a gesture.
+  'PwaChanged',
   // The palette's query and highlight are UI state; the row the player runs is logged.
   'PaletteQueryChanged',
   'PaletteMoved',
@@ -319,6 +325,7 @@ function handle(model: Model, message: Message): UpdateResult {
     ...saveHandlers(model, route),
     ...roomHandlers(model),
     ...accessHandlers(model),
+    ...pwaHandlers(model),
   })
 }
 

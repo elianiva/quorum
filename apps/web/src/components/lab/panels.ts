@@ -13,11 +13,14 @@ import {
   Lock,
   LogOut,
   Play,
+  RefreshCw,
   Settings,
   Trash2,
   Users,
+  WifiOff,
   X,
 } from 'lucide'
+import { browserFamilyOf, onIos } from '@/platform/pwa.ts'
 import { offer } from '@quorum/simulation/actions'
 import { PRE_IPO_STAGE } from '@quorum/simulation/ipo'
 import { INCIDENT_IDS } from '@quorum/simulation/catalog'
@@ -761,6 +764,13 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     // A key that was turned off stops a Room here as well as at the API Worker.
     const allowed = canPlayOnline(model)
     body.push(h.p([h.Class('px-5 pt-4 text-sm text-muted-foreground')], [t.room.onlineHint]))
+    if (!model.pwa.online)
+      body.push(
+        h.p(
+          [h.Class('flex items-start gap-2 px-5 pt-3 text-sm text-muted-foreground')],
+          [icon(h, WifiOff, 'mt-0.5 size-4 shrink-0'), t.pwa.offlineNote],
+        ),
+      )
     if (file !== null && !allowed)
       body.push(
         h.div(
@@ -793,6 +803,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 onClick: Message.RoomPublishAsked(),
                 size: 'lg',
                 className: 'w-full justify-start gap-2.5',
+                isDisabled: !model.pwa.online,
               },
               [
                 icon(h, Play, 'size-4'),
@@ -949,9 +960,11 @@ const toneClass = (tone: Tone): string =>
  */
 const featureKeyRow = (label: string, model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
-  const note = keyNote(model, t)
+  const note = model.pwa.online
+    ? keyNote(model, t)
+    : { text: t.pwa.offlineNote, tone: 'warn' as Tone }
   const checking = KeyPhase.guards.Checking(model.keyPhase)
-  const canSubmit = !checking && model.keyDraft.trim() !== ''
+  const canSubmit = model.pwa.online && !checking && model.keyDraft.trim() !== ''
   return h.div(
     [h.Class('flex flex-col gap-2 px-4 py-3')],
     [
@@ -1042,6 +1055,47 @@ const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Ht
   }
 }
 
+/**
+ * Install and update for the whole app. A browser without an install dialog
+ * gets its own instructions, and iPhone and iPad get the storage note: the
+ * installed app does not see this browser's Company files.
+ */
+const pwaSettingsSection = (model: Model, h: HtmlBuilder<Message>): Html => {
+  const t = copy(h)
+  if (model.pwa.installed && !model.pwa.updateReady) return h.empty
+  const family = browserFamilyOf()
+  const rows: Array<Html> = []
+  if (!model.pwa.installed) {
+    rows.push(
+      model.pwa.installable
+        ? settingAction(t.pwa.installQuorum, Message.PwaInstallChosen(), Download, h)
+        : h.div(
+            [h.Class('flex flex-col gap-1 px-4 py-3')],
+            [
+              h.span([h.Class(settingLabelClass)], [t.pwa.installQuorum]),
+              h.p(
+                [h.Class('text-xs leading-snug text-muted-foreground')],
+                [t.pwa.installHelp[family]],
+              ),
+            ],
+          ),
+    )
+    if (onIos())
+      rows.push(
+        h.p([h.Class('px-4 py-3 text-xs leading-snug text-muted-foreground')], [t.pwa.moveNote]),
+      )
+  }
+  if (model.pwa.updateReady)
+    rows.push(
+      settingAction(t.pwa.updateReady, Message.PwaUpdateChosen(), RefreshCw, h),
+      h.p(
+        [h.Class('px-4 pb-3 text-xs leading-snug text-muted-foreground')],
+        [t.pwa.updateReadyDetail],
+      ),
+    )
+  return settingSection(t.pwa.app, rows, h)
+}
+
 export const settingsPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -1080,6 +1134,7 @@ export const settingsPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               ),
             ],
           ),
+          pwaSettingsSection(model, h),
         ],
       ),
     ],

@@ -6,6 +6,7 @@ import { allow } from '../game/analytics-budget.ts'
 import { halted, ledgerOf, type Model } from '../game/model.ts'
 import type { LogEntry } from '../game/playlog.ts'
 import { onBoard } from '../game/route.ts'
+import { displayMode, type InstallOutcome } from './pwa.ts'
 
 type Client = typeof import('posthog-js').default
 
@@ -83,6 +84,7 @@ const beforeSend = (event: CaptureResult | null): CaptureResult | null => {
 
 const sessionStart = (model: Model): Record<string, unknown> => {
   const params = search()
+  const mode = displayMode()
   return {
     entry_route: model.route._tag,
     referrer_domain: typeof document === 'undefined' ? null : referrerDomain(document.referrer),
@@ -93,8 +95,9 @@ const sessionStart = (model: Model): Record<string, unknown> => {
     company_count: model.saves.companies.length,
     locale: model.prefs.locale,
     viewport_bucket: typeof window === 'undefined' ? null : viewportBucket(window.innerWidth),
-    is_pwa:
-      typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches,
+    is_pwa: mode === 'standalone',
+    display_mode: mode,
+    installed: mode === 'standalone',
     has_agent_access: model.prefs.agentAccess,
   }
 }
@@ -224,4 +227,18 @@ export const setAnalyticsEnabled = (next: boolean): void => {
   if (client === null) return
   if (next) client.opt_in_capturing()
   else client.opt_out_capturing()
+}
+
+/**
+ * The player pressed Install and the browser answered. `unavailable` means the
+ * dialog the browser offered was gone by the time it was asked for.
+ */
+export const trackInstallPrompt = (outcome: InstallOutcome): void => {
+  if (client === null) return
+  const mode = displayMode()
+  client.capture('pwa:install_prompt', {
+    outcome,
+    display_mode: mode,
+    installed: mode === 'standalone',
+  })
 }

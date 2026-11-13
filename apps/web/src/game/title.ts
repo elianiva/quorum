@@ -10,7 +10,9 @@ import {
   BookOpen,
   Check,
   Coffee,
+  Download,
   Hash,
+  RefreshCw,
   Trash2,
   Lock,
   ScrollText,
@@ -57,6 +59,7 @@ import { LOGOS } from './logos.ts'
 import { MAX_COMPANY_NAME, nameOr, recent, type CompanyFile } from './saves.ts'
 import { menuOf, type MenuPage } from './route.ts'
 import { supportedLocales } from '../i18n/index.ts'
+import { browserFamilyOf, onIos } from '../platform/pwa.ts'
 import { play } from './sound.ts'
 
 type Page = typeof MenuPage.Type | 'main' | 'save'
@@ -380,6 +383,34 @@ const divider = (h: HtmlBuilder<Message>): Html =>
 const section = (label: string, rows: ReadonlyArray<Html>, h: HtmlBuilder<Message>) =>
   rows.length === 0 ? [] : [group(label, h), ...rows]
 
+/**
+ * The install offer, once: only after the player has a Company to keep, never
+ * in an installed app, and never again after they act on it. Where the browser
+ * offers no dialog, the row says how that browser installs the app instead.
+ */
+const installPromptRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
+  const t = copy(h)
+  if (model.pwa.installed || model.prefs.pwaPromptSeen || model.saves.companies.length === 0)
+    return []
+  const family = browserFamilyOf()
+  return [
+    note(t.pwa.installPrompt, h),
+    row(
+      {
+        key: 'pwa-install',
+        label: t.pwa.installQuorum,
+        detail: model.pwa.installable ? t.pwa.installDetail : t.pwa.installHelp[family],
+        side: icon(h, Download, 'booth-icon'),
+        message: model.pwa.installable ? Message.PwaInstallChosen() : null,
+        record: !model.pwa.installable,
+      },
+      h,
+    ),
+    ...(onIos() ? [note(t.pwa.moveNote, h)] : []),
+    row({ key: 'pwa-not-now', label: t.pwa.notNow, message: Message.PwaPromptDismissed() }, h),
+  ]
+}
+
 const mainRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
 
@@ -391,6 +422,22 @@ const mainRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
   const passed = SANDBOX_IDS.filter((id) => model.passed.includes(id)).length
   const solved = CHALLENGES.filter((entry) => model.founder.completed.includes(entry.id)).length
   return [
+    ...(model.pwa.updateReady
+      ? [
+          row(
+            {
+              key: 'pwa-update',
+              label: t.pwa.updateReady,
+              detail: t.pwa.updateReadyDetail,
+              side: icon(h, RefreshCw, 'booth-icon'),
+              message: Message.PwaUpdateChosen(),
+              big: true,
+            },
+            h,
+          ),
+        ]
+      : []),
+    ...section(t.pwa.app, installPromptRows(model, h), h),
     ...section(
       t.title.company,
       [
@@ -862,9 +909,11 @@ const noteClass = (tone: Tone): string =>
  */
 const featureKeyBlock = (label: string, model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
-  const note = keyNote(model, t)
+  const note = model.pwa.online
+    ? keyNote(model, t)
+    : { text: t.pwa.offlineNote, tone: 'warn' as Tone }
   const checking = KeyPhase.guards.Checking(model.keyPhase)
-  const canSubmit = !checking && model.keyDraft.trim() !== ''
+  const canSubmit = model.pwa.online && !checking && model.keyDraft.trim() !== ''
   return h.div(
     [h.Class('flex flex-col')],
     [
@@ -1005,6 +1054,51 @@ const settingsRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html
     backRow(h),
     settingsTabs(model, h),
     ...active.rows.map((setting) => settingRow(setting, model, h)),
+    ...pwaSettingsRows(model, h),
+  ]
+}
+
+/**
+ * Install and update sit under every settings section, because they are about
+ * the whole app rather than one of its settings. An installed app with nothing
+ * to update shows neither.
+ */
+const pwaSettingsRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
+  const t = copy(h)
+  if (model.pwa.installed && !model.pwa.updateReady) return []
+  const family = browserFamilyOf()
+  return [
+    group(t.pwa.app, h),
+    ...(model.pwa.installed
+      ? []
+      : [
+          row(
+            {
+              key: 'pwa-install-setting',
+              label: t.pwa.installQuorum,
+              detail: model.pwa.installable ? t.pwa.installDetail : t.pwa.installHelp[family],
+              side: icon(h, Download, 'booth-icon'),
+              message: model.pwa.installable ? Message.PwaInstallChosen() : null,
+              record: !model.pwa.installable,
+            },
+            h,
+          ),
+          ...(onIos() ? [note(t.pwa.moveNote, h)] : []),
+        ]),
+    ...(model.pwa.updateReady
+      ? [
+          row(
+            {
+              key: 'pwa-update-setting',
+              label: t.pwa.updateReady,
+              detail: t.pwa.updateReadyDetail,
+              side: icon(h, RefreshCw, 'booth-icon'),
+              message: Message.PwaUpdateChosen(),
+            },
+            h,
+          ),
+        ]
+      : []),
   ]
 }
 

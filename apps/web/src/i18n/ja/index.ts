@@ -56,6 +56,7 @@ import { research } from './research.ts'
 import { sandbox } from './sandbox.ts'
 import { team } from './team.ts'
 import { title } from './title.ts'
+import { pwa } from './pwa.ts'
 import { survey } from './survey.ts'
 import { tradeoff } from './tradeoff.ts'
 import { catalog } from './catalog.ts'
@@ -122,4 +123,5 @@ export const ja = {
   mail,
   mailWords,
   toasts,
+  pwa,
 }

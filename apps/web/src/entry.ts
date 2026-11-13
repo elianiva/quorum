@@ -1,8 +1,18 @@
 import { Layer } from 'effect'
 import { Runtime } from 'foldkit'
 import { setSeatActivity } from '@quorum/ui/board/board'
-import { init, Message, Model, subscriptions, update, view } from './app/main.ts'
+import {
+  init,
+  Message,
+  Model,
+  subscriptions as appSubscriptions,
+  update,
+  view,
+} from './app/main.ts'
 import { startMotion } from './game/motion.ts'
+import { pwaSubscriptions } from './game/update/pwa.ts'
+import { unreadCount } from './components/lab/inbox.ts'
+import { syncAppBadge } from './platform/pwa.ts'
 import { loadLocale, preloadLocales } from './i18n/messages.ts'
 import { supportedLocales, type Locale } from './i18n/index.ts'
 import { PREFS_KEY, readStored, sweepLegacyStorage } from './game/storage.ts'
@@ -34,10 +44,12 @@ const application = Runtime.makeApplication({
     publish(result.model)
     syncAgent(result.model)
     observe(result.model)
+    // The installed icon carries the unread Inbox count; reading the Inbox clears it.
+    syncAppBadge(unreadCount(result.model))
     return result
   },
   view,
-  subscriptions,
+  subscriptions: { ...appSubscriptions, ...pwaSubscriptions },
   routing: {
     onUrlRequest: (request) => Message.ClickedLink({ request }),
     onUrlChange: (url) => Message.ChangedUrl({ url }),

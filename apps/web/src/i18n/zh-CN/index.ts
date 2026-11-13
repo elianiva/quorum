@@ -57,6 +57,7 @@ import { sandbox } from './sandbox.ts'
 import { survey } from './survey.ts'
 import { team } from './team.ts'
 import { title } from './title.ts'
+import { pwa } from './pwa.ts'
 import { tradeoff } from './tradeoff.ts'
 import { catalog } from './catalog.ts'
 
@@ -124,4 +125,5 @@ export const zhCN: Messages = {
   mail,
   mailWords,
   toasts,
+  pwa,
 }

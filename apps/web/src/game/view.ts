@@ -1,5 +1,6 @@
 import { localizeBuilder } from '../i18n/builder.ts'
-import type { Document, HtmlBuilder } from 'foldkit/html'
+import { copy } from '../i18n/messages.ts'
+import type { Document, Html, HtmlBuilder } from 'foldkit/html'
 import { toast } from '@/components/lab/toast.ts'
 import { roomPanel, settingsPanel } from '@/components/lab/panels.ts'
 import { labScreen } from './screens.ts'
@@ -22,6 +23,25 @@ const boardFilled = (model: Model): boolean =>
     Challenge: () => boardChallenge(model.board) !== null,
     Room: () => RoomPhase.isAnyOf(['Online', 'Reconnecting'])(model.room.phase),
   })
+
+/** The network is down: the game still runs, and this says so wherever the player is. */
+const offlineStatus = (model: Model, h: HtmlBuilder<Message>): Html => {
+  const t = copy(h)
+  return model.pwa.online
+    ? h.empty
+    : h.p(
+        [
+          h.Class('offline-status'),
+          h.Role('status'),
+          h.AriaLabel(t.pwa.offlineStatus),
+          h.Title(t.pwa.offlineStatus),
+        ],
+        [
+          h.span([h.Class('offline-status-dot'), h.AriaHidden(true)], []),
+          h.span([], [t.pwa.offline]),
+        ],
+      )
+}
 
 export const view = (model: Model, builder: HtmlBuilder<Message>): Document => {
   const h = localizeBuilder(model.prefs.locale, builder)
@@ -54,6 +74,7 @@ export const view = (model: Model, builder: HtmlBuilder<Message>): Document => {
         AppRoute.guards.Room(model.route) && model.panel === 'room' && !boardFilled(model)
           ? roomPanel(model, h)
           : h.empty,
+        offlineStatus(model, h),
         toast(
           model.toast,
           model.panel !== 'none' && !model.board.screenshot,

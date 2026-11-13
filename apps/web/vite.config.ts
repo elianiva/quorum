@@ -7,6 +7,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 import { simVersion } from '../../packages/simulation/sim-version.ts'
+import { pwa } from './pwa/plugin.ts'
 
 /**
  * Foldkit's view-identity transform wraps every function return in a module. The Simulation has
@@ -78,6 +79,8 @@ export default defineConfig({
     tailwindcss(),
     foldkit().map(unbrandedModules),
     simVersion(),
+    // Before the source-map upload, so the worker is written for every build.
+    pwa(),
     // Last, so it sees the final bundle.
     authToken
       ? sentryVitePlugin({

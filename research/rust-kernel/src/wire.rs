@@ -104,6 +104,18 @@ impl Wire {
         self.keyed(&row.work_share);
         self.num(row.work_unit.map_or(-1.0, |unit| unit as usize as f64));
         self.num(row.cost);
+        self.num(row.receipts.len() as f64);
+        for (kind, receipt) in &row.receipts {
+            self.num(*kind as f64);
+            self.num(receipt.base);
+            self.num(receipt.lines.len() as f64);
+            for line in &receipt.lines {
+                self.num(line.cause as usize as f64);
+                self.flag(line.plus);
+                self.num(line.value);
+            }
+            self.num(receipt.total);
+        }
         self.num(row.repeated);
         self.keyed(&row.origins);
         self.num(row.dropped);

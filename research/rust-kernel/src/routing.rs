@@ -62,6 +62,10 @@ pub struct Design {
     pub order: Vec<usize>,
     out_starts: Vec<u32>,
     out_edges: Vec<u32>,
+    /// Each Node's Edges into a CDC Connector, which copy its writes and route nothing,
+    /// laid out as `out_edges` is.
+    mirror_starts: Vec<u32>,
+    mirror_edges: Vec<u32>,
     pub health_checked: bool,
     pub time: f64,
     /// Which compile this is, so a cache of its splits can tell it from the next one.
@@ -92,6 +96,14 @@ impl Design {
         self.out_edges.get(start..end).unwrap_or(&[])
     }
 
+    /// A Node's Edges into a CDC Connector.
+    #[inline]
+    pub fn mirror_edges_of(&self, node: usize) -> &[u32] {
+        let start = self.mirror_starts.get(node).copied().unwrap_or(0) as usize;
+        let end = self.mirror_starts.get(node + 1).copied().unwrap_or(0) as usize;
+        self.mirror_edges.get(start..end.max(start)).unwrap_or(&[])
+    }
+
     /// The Edges between two indices of `out_edges`.
     #[inline]
     pub fn out_edges_in(&self, start: usize, end: usize) -> &[u32] {
@@ -113,9 +125,27 @@ impl Design {
         health_checked: bool,
         time: f64,
     ) -> Design {
-        // Kahn's order over the routing Edges: a Node walks after every Node that
-        // routes to it, so its arrivals are complete when its model runs.
+        // An Edge into a CDC Connector copies the writes of the Node it leaves.
         let count = nodes.len();
+        let mut mirror_starts = vec![0u32; count + 1];
+        for edge in edges.iter().filter(|edge| nodes[edge.to as usize].type_code as usize == crate::catalog::component::CDC) {
+            mirror_starts[edge.from as usize + 1] += 1;
+        }
+        for node in 0..count {
+            mirror_starts[node + 1] += mirror_starts[node];
+        }
+        let mut mirror_edges = vec![0u32; mirror_starts[count] as usize];
+        let mut filled = mirror_starts.clone();
+        for (index, edge) in edges.iter().enumerate() {
+            if nodes[edge.to as usize].type_code as usize == crate::catalog::component::CDC {
+                let at = &mut filled[edge.from as usize];
+                mirror_edges[*at as usize] = index as u32;
+                *at += 1;
+            }
+        }
+        // Kahn's order over the routing Edges: a Node walks after every Node that
+        // routes to it, so its arrivals are complete when its model runs. A CDC
+        // Connector also waits for every Node whose writes it copies.
         let mut indegree = vec![0u32; count];
         for edge in &edges {
             indegree[edge.to as usize] += 1;
@@ -129,7 +159,8 @@ impl Design {
             order.push(node);
             let start = out_starts[node] as usize;
             let end = out_starts[node + 1] as usize;
-            for &edge in &out_edges[start..end] {
+            let mirrors = &mirror_edges[mirror_starts[node] as usize..mirror_starts[node + 1] as usize];
+            for &edge in out_edges[start..end].iter().chain(mirrors) {
                 let target = edges[edge as usize].to as usize;
                 indegree[target] -= 1;
                 if indegree[target] == 0 {
@@ -144,7 +175,7 @@ impl Design {
             }
         }
         let generation = GENERATIONS.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
-        Design { nodes, edges, order, out_starts, out_edges, health_checked, time, generation }
+        Design { nodes, edges, order, out_starts, out_edges, mirror_starts, mirror_edges, health_checked, time, generation }
     }
 }
 

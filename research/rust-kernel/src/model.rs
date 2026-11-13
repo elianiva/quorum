@@ -70,6 +70,8 @@ pub enum Incident {
     TableBloat,
     Stuffing,
     ReplLag,
+    Reconnect,
+    SplitBrain,
     HotKey,
     Regex,
     StaleRead,
@@ -116,6 +118,8 @@ pub struct GameCtx {
     /// `certNodes(game).length > 0`: some TLS terminator holds a certificate.
     pub cert_nodes: bool,
     pub incident_node: usize,
+    /// The reconnect storm is throttled to the rate the Hub can take.
+    pub incident_throttled: bool,
     pub incident_started: f64,
     pub sandbox: bool,
     pub scenario_tasks: bool,
@@ -312,6 +316,21 @@ pub struct Node {
     pub stale_until: f64,
     /// A CDN's cache key, a `cache_key` row.
     pub cache_key: usize,
+    /// A Realtime Hub's Presence, Reconnect backoff, and Clustering.
+    pub presence: bool,
+    pub backoff: bool,
+    pub clustering: bool,
+    /// The Node is warming up after a start or a restart.
+    pub warming: bool,
+    /// `pinnedOf`: a sticky Load Balancer links to this Node.
+    pub pinned: bool,
+    /// An Event Stream's partitions, acknowledgement row, retention in seconds, and key.
+    pub partitions: f64,
+    pub acks: usize,
+    pub retain: f64,
+    pub keyed: bool,
+    /// `cdcMirrored`: a CDC Connector reads this Node's write log.
+    pub cdc_mirrored: bool,
 }
 
 /// What `serverModel` returns.
@@ -1158,6 +1177,8 @@ pub fn flat_component(game: &GameCtx, node: &Node, rates: &Rates, order: &Order,
         component::DOC => doc_model(game, node, rates, order, boost),
         component::CDN => unlimited(8.0, 0.0),
         component::EDGE => flat(f64::INFINITY, EDGE_MS, 0.0),
+        component::WS => ws_model(game, node, rates, order, boost),
+        component::LOG => flat(LOG_RATE * scale / hot_key_factor(game, node), LOG_ACKS_LATENCY[node.acks] * 5.0, 0.1),
         // The index lives in memory: its type decides how many lookups it answers.
         component::VEC => flat(VEC_QUERIES * scale * VEC_INDEXES_QUERIES[node.index_type] / hot_key_factor(game, node), 20.0, 2.0),
         // Redis answers on one main thread; Memcached on every core of its box.
@@ -1339,6 +1360,28 @@ pub fn cdn_hit(game: &GameCtx, node: &Node, kind: usize) -> f64 {
     let hit = base * factor * CACHE_KEYS_HIT[node.cache_key] * node.warm;
     let regenerated = if kind == kind::PAGE { game.static_pages } else { 0.0 };
     (hit + (1.0 - hit) * regenerated * factor * node.warm).min(0.95)
+}
+
+/// `hubConnections`: connections a Realtime Hub holds, the RAM it gives them over
+/// what one costs its runtime. Without Clustering only one box takes them.
+pub fn hub_connections(node: &Node, built_in: bool) -> f64 {
+    let per_connection = RUNTIME_CONNECTION_KB[node.runtime];
+    if per_connection < 0.0 {
+        return 0.0;
+    }
+    (HUB_RAM_KB * if node.clustering || built_in { flat_scale(node.size) } else { 1.0 }) / per_connection
+}
+
+/// `wsRule.model`: a Hub holds a connection for each realtime message for the hold
+/// time. A runtime that holds a worker per connection takes the traffic and refuses it.
+fn ws_model(game: &GameCtx, node: &Node, rates: &Rates, order: &Order, boost: f64) -> Model {
+    if RUNTIME_CONNECTION_KB[node.runtime] < 0.0 {
+        return flat_model(f64::INFINITY, rates, order, 1.0, 0.0, boost);
+    }
+    // Distributed Erlang gives an Elixir Hub its own cluster backbone.
+    let built_in = game.has(research::DISTRIBUTED_ERLANG) && RUNTIME_LANGUAGE[node.runtime] == language::ELIXIR;
+    let rate = (hub_connections(node, built_in) / RT_HOLD_SECONDS) * if node.presence { 1.0 - PRESENCE_CPU } else { 1.0 };
+    flat_model(rate, rates, order, 1.0, 0.0, boost)
 }
 
 /// `docRule.model`: one flat rate of ops, a join at three of them. A join touches
@@ -1541,7 +1584,9 @@ pub fn database_model(
         rate += scans;
         work += scans * scan_cpu;
     }
-    let disk_ops = writes + txs + puts + gets + scans + if disk { reads } else { 0.0 };
+    // A CDC Connector reads the write log: every change it copies is one more read on the volume.
+    let cdc_ops = if node.cdc_mirrored { writes + txs } else { 0.0 };
+    let disk_ops = writes + txs + puts + gets + scans + if disk { reads } else { 0.0 } + cdc_ops;
     let io_utilization = if iops > 0.0 { disk_ops / iops } else { 0.0 };
     let io_wait = wait_for(disk_ms(node.iops), io_utilization.min(0.98), 1.0);
     let cpu_utilization = if cores > 0.0 {

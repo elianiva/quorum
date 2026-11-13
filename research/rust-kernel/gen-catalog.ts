@@ -156,6 +156,7 @@ pushTable('PARANOIA', null)
 pushTable('UNDER_ATTACK', null)
 pushTable('VEC_INDEXES', 'vec_index')
 pushTable('CACHE_KEYS', 'cache_key')
+pushTable('LOG_ACKS', null)
 
 function formatNumber(value: number): string {
   if (value === Number.POSITIVE_INFINITY) return 'f64::INFINITY'

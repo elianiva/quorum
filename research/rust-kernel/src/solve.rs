@@ -62,6 +62,7 @@ pub fn probe_capacity(setup: &Setup, slot: usize, boost: Option<usize>, state: &
         component::DATABASE | component::REPLICA | component::WIDE | component::DOC => probe[kind::Q_READ] = 1.0,
         component::VEC => probe[kind::Q_VECTOR] = 1.0,
         component::DSQL => probe[kind::Q_TX] = 1.0,
+        component::WS => probe[kind::RT] = 1.0,
         // A Component with no probe answers its flat capacity, or a thousand without one.
         type_code => {
             let flat = FLAT_CAPACITY.get(type_code).copied().unwrap_or(0.0);

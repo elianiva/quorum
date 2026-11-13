@@ -169,6 +169,15 @@ export const SLOT = {
   indexType: 111,
   staleUntil: 112,
   cacheKey: 113,
+  presence: 114,
+  backoff: 115,
+  clustering: 116,
+  warming: 117,
+  incidentThrottled: 118,
+  partitions: 119,
+  acks: 120,
+  retain: 121,
+  keyed: 122,
 }
 export const SCALARS = Object.keys(SLOT).length
 const NODE_FIELDS = 10
@@ -410,6 +419,15 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
     )
     put(SLOT.staleUntil, n.staleUntil)
     put(SLOT.cacheKey, Math.max(0, Object.keys(S.CACHE_KEYS).indexOf(n.cacheKey)))
+    put(SLOT.presence, n.presence ? 1 : 0)
+    put(SLOT.backoff, n.backoff ? 1 : 0)
+    put(SLOT.clustering, n.clustering ? 1 : 0)
+    put(SLOT.warming, n.life._tag === 'Warming' ? 1 : 0)
+    put(SLOT.incidentThrottled, game.incident?.throttled === true ? 1 : 0)
+    put(SLOT.partitions, n.partitions)
+    put(SLOT.acks, Math.max(0, Object.keys(S.LOG_ACKS).indexOf(n.acks)))
+    put(SLOT.retain, n.retain)
+    put(SLOT.keyed, n.keyed ? 1 : 0)
     put(SLOT.indexType, Math.max(0, Object.keys(S.VEC_INDEXES).indexOf(n.indexType)))
     put(SLOT.runtimeFailure, game.incident ? (S.RUNTIME_INCIDENT_FAILURES[game.incident.kind] ?? 0) : 0)
     put(SLOT.transactions, n.transactions ? 1 : 0)

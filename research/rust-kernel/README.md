@@ -75,7 +75,7 @@ Ported in full, and compared figure by figure: the catalog, the outcome algebra,
 capacity models, routing splits, the forward pass, the outcome tree for `users`, `lb`,
 `dns`, `cdc`, `pooler`, `database`, `replica`, `server`, `auth`, `msgp`, `warehouse`,
 `psp`, `llm`, `storage`, `gpu`, `search`, `wide`, `queue`, `worker`, `cache`, `waf`, `vec`, `dsql`,
-`doc`, `cdn`, `edge` and the Components whose rule is a
+`doc`, `cdn`, `edge`, `ws`, `log` and the Components whose rule is a
 terminal `stranded`, the revenue and the Ledger figures the solve reads (revenue, demand,
 served, Apdex, latency, percentiles, errors, fines, per-kind rows, per-Node rows, per-kind
 bottleneck), the pass loop with its convergence test and feedback, and the Bottleneck
@@ -89,15 +89,15 @@ the 56 incident kinds on every Challenge board and compared 6 Steps of each.
 
 Not ported yet, and refused rather than approximated: a Game with a shipped Feature or a
 Product lever; and any Component whose `outcome` rule is not in the list
-above (`gw`, `log`, `fn`, `ws`). A run over such a Design returns status 6 instead of a figure. The
+above (`gw` and `fn`). A run over such a Design returns status 6 instead of a figure. The
 presentation-only halves of the TypeScript Ledger (bills, Insight, velocity, Link rows,
 regions, devices, services, market, forecast) are not ported, because no figure the solve
 reads depends on them.
 
 ## Open problems
 
-- `gw`, `log`, `fn`, and `ws` have no rules yet, so a board with one is refused. No
-  Challenge uses any of them.
+- `gw` and `fn` have no rules yet, so a board with one is refused. No Challenge uses
+  either.
 - `gen-catalog.ts` mirrors two lists it cannot import — `GLOBAL_COMPONENTS` from
   `regions.ts` and the per-Component `fixed` flag is imported but the zone lists are not
   exported — so a change there needs the generator edited by hand.

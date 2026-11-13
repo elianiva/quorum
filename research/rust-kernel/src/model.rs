@@ -157,6 +157,8 @@ pub struct GameCtx {
     pub query: [f64; NB],
     /// `subscriptionsOf`: dollars per second from paid plans.
     pub subscriptions: f64,
+    /// `insightPerk`: what the founder's perks multiply Insight by.
+    pub insight_perk: f64,
     pub seed: f64,
     pub time: f64,
     /// Services the Company runs: their count, and the sum of their indexes.
@@ -314,6 +316,8 @@ pub struct Node {
     pub poisoned: bool,
     /// `rampedOf`: a Load Balancer with slow start links to this Node.
     pub ramped: bool,
+    /// An Analytics tap's sample rate.
+    pub sample_rate: f64,
     /// `clusterOf`: the Cluster this App Server or Worker runs in, or `usize::MAX`.
     pub cluster: usize,
     /// A Vector Index's type, a `vec_index` row.
@@ -1141,13 +1145,12 @@ pub fn flat_model(capacity: f64, arriving: &Rates, order: &Order, fixed_ms: f64,
     let wait = wait_for(variable_ms, utilization, 1.0);
     let mut service_fixed = [0.0f64; NK];
     let mut service_variable = [0.0f64; NK];
+    // A service entry for every kind sent, a zero rate included, as `Object.keys(arriving)` lists them.
     let mut service_mask = 0u64;
-    for kind in 0..NK {
-        if arriving[kind] > 0.0 {
-            service_mask |= 1u64 << kind;
-            service_fixed[kind] = fixed_ms;
-            service_variable[kind] = variable_ms + wait;
-        }
+    for kind in order.iter() {
+        service_mask |= 1u64 << kind;
+        service_fixed[kind] = fixed_ms;
+        service_variable[kind] = variable_ms + wait;
     }
     Model {
         utilization,

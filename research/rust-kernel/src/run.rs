@@ -176,7 +176,7 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
         .map(|(slot, node)| {
             let row = inputs.row(slot);
             let flag = |index: usize| row.get(index).is_some_and(|value| *value != 0.0);
-            let sampling = row.get(abi::S_SAMPLING_MS).copied().unwrap_or(0.0);
+            let sampling = row.get(abi::S_SAMPLING).copied().unwrap_or(0.0);
             ServerFlags::of(&game, node, sampling, flag(abi::S_DELEGATED), flag(abi::S_OFFLOADED), flag(abi::S_POD))
         })
         .collect();
@@ -404,6 +404,28 @@ fn routes_of(inputs: &Inputs) -> Result<Vec<Route>, i32> {
         .collect())
 }
 
+/// The links block: each Link in Game order, as (from slot, to slot, Edge or -1, breaker).
+fn links_of(inputs: &Inputs, nodes: usize, edges: usize) -> Result<Vec<crate::ledger::LinkIn>, i32> {
+    let (rows, rest) = inputs.links.as_chunks::<{ abi::LINK_FIELDS }>();
+    if !rest.is_empty() {
+        return Err(abi::BAD_EDGE);
+    }
+    rows.iter()
+        .map(|row| {
+            let (from, to, edge) = (row[0] as usize, row[1] as usize, row[2]);
+            if from >= nodes || to >= nodes || edge >= edges as f64 {
+                return Err(abi::BAD_EDGE);
+            }
+            Ok(crate::ledger::LinkIn {
+                from,
+                to,
+                edge: (edge >= 0.0).then_some(edge as usize),
+                breaker: row[3] != 0.0,
+            })
+        })
+        .collect()
+}
+
 /// `solve_run`: the pass loop, from the probe to the Ledger.
 #[no_mangle]
 pub extern "C" fn solve_run(boost_slot: i32, passes: i32, revenue_only: i32) -> i32 {
@@ -445,11 +467,16 @@ fn solve_impl(boost_slot: i32, passes: i32, revenue_only: i32, search: bool) -> 
             Ok(routes) => routes,
             Err(status) => return status,
         };
+        let links = match links_of(inputs, prepared.nodes.len(), design.edges.len()) {
+            Ok(links) => links,
+            Err(status) => return status,
+        };
         let mut probe = [0.0f64; NK];
         probe[..NR].copy_from_slice(&inputs.probe[..NR]);
         work.refresh_code(prepared);
         let Workspace { splits, memo, code, .. } = work;
-        let setup = Setup { board: prepared.board(design, inputs, code), routes: &routes, probe_mix: &probe };
+        let setup =
+            Setup { board: prepared.board(design, inputs, code), routes: &routes, links: &links, probe_mix: &probe };
         let count = prepared.nodes.len();
         let boost = if boost_slot >= 0 { Some(boost_slot as usize) } else { None };
         let passes = if passes <= 0 { solve::PASSES } else { passes as usize };

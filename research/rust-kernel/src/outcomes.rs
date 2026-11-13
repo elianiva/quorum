@@ -122,14 +122,14 @@ impl<'a> Tree<'a> {
             Some(model) => model,
             None => return Hop { value, ..Hop::default() },
         };
-        let type_code = self.board.nodes.get(node).map(|node| node.type_code).unwrap_or(0);
+        let (type_code, sampling) =
+            self.board.nodes.get(node).map(|node| (node.type_code, node.sampling_ms)).unwrap_or((0, 0.0));
         // A kind the model has no service record for falls back to the Component's latency.
         let (fixed, variable) = if kind < NK && (model.service_mask >> kind) & 1 == 1 {
             (model.service_fixed[kind], model.service_variable[kind])
         } else {
             (COMPONENT_LATENCY[type_code], 0.0)
         };
-        let sampling = self.board.flags.get(node).map(|flags| flags.sampling).unwrap_or(0.0);
         Hop {
             share: model.share,
             fixed_ms: fixed + sampling,

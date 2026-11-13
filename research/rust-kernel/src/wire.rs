@@ -5,7 +5,7 @@
 
 use crate::catalog::*;
 use crate::dist::CAUSE_COUNT;
-use crate::ledger::{Keyed, Ledger, NodeRow};
+use crate::ledger::{Keyed, Ledger, LinkRow, NodeRow};
 use crate::model::{Gauge, Order, Resources};
 
 /// The stream, as the kernel writes it.
@@ -114,6 +114,15 @@ impl Wire {
         self.num(row.status as usize as f64);
     }
 
+    /// One Link row: the host spreads the Game's Link under it.
+    fn link(&mut self, row: &LinkRow) {
+        self.num(row.rate);
+        self.keyed(&row.traffic);
+        self.num(row.kind as f64);
+        self.flag(row.failing);
+        self.num(row.failure);
+    }
+
     /// The Ledger, in `Ledger`'s key order, so the host decodes it into object
     /// literals as it reads.
     pub fn ledger(ledger: &Ledger) -> Vec<f64> {
@@ -121,6 +130,9 @@ impl Wire {
         wire.num(ledger.nodes.len() as f64);
         for row in &ledger.nodes {
             wire.node(row);
+        }
+        for row in &ledger.links {
+            wire.link(row);
         }
         let kinds: Vec<usize> = (0..NR).filter(|kind| ledger.kinds[*kind].rate > 0.0).collect();
         wire.num(kinds.len() as f64);
@@ -145,6 +157,11 @@ impl Wire {
         }
         wire.num(ledger.revenue);
         wire.num(ledger.subscriptions);
+        for pool in ledger.insight {
+            wire.num(pool);
+        }
+        wire.keyed(&ledger.breadth);
+        wire.keyed(&ledger.breadth_regions);
         wire.num(ledger.fines);
         wire.by_kind(&ledger.revenue_by_kind);
         wire.by_kind(&ledger.fines_by_kind);

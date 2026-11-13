@@ -36,6 +36,8 @@ pub struct State {
 pub struct Setup<'a> {
     pub board: Board<'a>,
     pub routes: &'a [Route],
+    /// Every Link in Game order, for the Ledger's Link rows and Analytics taps.
+    pub links: &'a [crate::ledger::LinkIn],
     /// The Era's mix, which an App Server probes its capacity with.
     pub probe_mix: &'a Rates,
 }
@@ -217,7 +219,7 @@ pub fn solve_with(
     let mut tree = tree(board, &current, weights_of(&state), splits, memo);
     let revenue = ledger::revenue_of(board.game, board.demand, &current, board.nodes, &mut tree, setup.routes);
     let ledger = (want == Want::Ledger).then(|| {
-        ledger::ledger_of(board.game, board.design, board.demand, &current, board.nodes, &mut tree, setup.routes)
+        ledger::ledger_of(setup, &current, &mut tree)
     });
     if let Some(update) = pending {
         apply(&mut state, update);

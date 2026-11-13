@@ -143,7 +143,11 @@ pub const S_MERGE: usize = 124;
 pub const S_SHUT: usize = 125;
 pub const S_DATA: usize = 126;
 pub const S_SUBSCRIPTIONS: usize = 127;
-pub const SCALARS: usize = 128;
+/// An Analytics tap's sample rate.
+pub const S_SAMPLE_RATE: usize = 128;
+/// `insightPerk`: what the founder's perks multiply Insight by.
+pub const S_INSIGHT_PERK: usize = 129;
+pub const SCALARS: usize = 130;
 
 /// The node-fields block: one row per Node, read by the routing Design.
 pub const NODE_FIELDS: usize = 10;
@@ -167,6 +171,9 @@ pub const BLOCK_LATENCY: i32 = 11;
 pub const BLOCK_PAYLOAD: i32 = 12;
 pub const BLOCK_PROBE: i32 = 13;
 pub const BLOCK_ROUTES: i32 = 14;
+/// Each Link in Game order: from slot, to slot, Edge index or -1, and a breaker flag.
+pub const BLOCK_LINKS: i32 = 18;
+pub const LINK_FIELDS: usize = 4;
 /// `valueFactor` per request kind: the Features, the levers, the Venture, and the Scenario.
 pub const BLOCK_VALUE: i32 = 15;
 pub const BLOCK_RESEARCH: i32 = 16;
@@ -209,6 +216,7 @@ pub struct Inputs {
     pub value: Vec<f64>,
     pub probe: Vec<f64>,
     pub routes: Vec<f64>,
+    pub links: Vec<f64>,
     pub research: Vec<u8>,
     pub query: Vec<f64>,
 }
@@ -311,6 +319,7 @@ pub extern "C" fn reserve(block: i32, len: i32) -> i32 {
             BLOCK_VALUE => Some(&mut inputs.value),
             BLOCK_PROBE => Some(&mut inputs.probe),
             BLOCK_ROUTES => Some(&mut inputs.routes),
+            BLOCK_LINKS => Some(&mut inputs.links),
             _ => None,
         }
         .map(|values| {
@@ -401,6 +410,7 @@ pub extern "C" fn ptr(block: i32) -> usize {
             BLOCK_VALUE => Some(inputs.value.as_ptr()),
             BLOCK_PROBE => Some(inputs.probe.as_ptr()),
             BLOCK_ROUTES => Some(inputs.routes.as_ptr()),
+            BLOCK_LINKS => Some(inputs.links.as_ptr()),
             BLOCK_OUT_STARTS => Some(inputs.out_starts.as_ptr().cast::<f64>()),
             BLOCK_OUT_EDGES => Some(inputs.out_edges.as_ptr().cast::<f64>()),
             BLOCK_SICK => Some(inputs.sick.as_ptr().cast::<f64>()),
@@ -448,6 +458,7 @@ pub extern "C" fn len(block: i32) -> i32 {
             BLOCK_VALUE => Some(inputs.value.len()),
             BLOCK_PROBE => Some(inputs.probe.len()),
             BLOCK_ROUTES => Some(inputs.routes.len()),
+            BLOCK_LINKS => Some(inputs.links.len()),
             BLOCK_OUT_STARTS => Some(inputs.out_starts.len()),
             BLOCK_OUT_EDGES => Some(inputs.out_edges.len()),
             BLOCK_SICK => Some(inputs.sick.len()),
@@ -577,6 +588,7 @@ pub fn game_with(scalars: &[f64], research: Research) -> GameCtx {
         payload: [1.0; NR],
         query: [1.0; NB],
         subscriptions: slot(S_SUBSCRIPTIONS),
+        insight_perk: slot(S_INSIGHT_PERK),
         mix: [0.0; NR],
         seed: slot(S_SEED),
         time: slot(S_TIME),
@@ -686,6 +698,7 @@ pub fn node_of(row: &[f64]) -> Node {
         under_attack: flag(S_UNDER_ATTACK),
         poisoned: flag(S_POISONED),
         ramped: flag(S_RAMPED),
+        sample_rate: slot(S_SAMPLE_RATE),
         cluster: slot_of(slot(S_CLUSTER)),
         index_type: slot(S_INDEX_TYPE) as usize,
         vec_recall: None,

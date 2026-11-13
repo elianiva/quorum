@@ -19,6 +19,7 @@ export const pass = await import(`${ROOT}/solve-pass.ts`)
 export const regions = await import(`${ROOT}/regions.ts`)
 export const demand = await import(`${ROOT}/solve-demand.ts`)
 export const features = await import(`${ROOT}/features.ts`)
+export const founding = await import(`${ROOT}/founding.ts`)
 const solveOutcomes = await import(`${ROOT}/solve-outcomes.ts`)
 const { ERROR_CAUSES } = await import(`${ROOT}/distribution.ts`)
 import { decodeLedger, compareDeep } from './ledger-wire.ts'
@@ -53,6 +54,7 @@ export const BLOCK = {
   ledger: 23,
   summary: 24,
   splits: 25,
+  links: 18,
 }
 
 /** Scalar slots, from `src/abi.rs`. */
@@ -185,6 +187,8 @@ export const SLOT = {
   shut: 125,
   data: 126,
   subscriptions: 127,
+  sampleRate: 128,
+  insightPerk: 129,
 }
 export const SCALARS = Object.keys(SLOT).length
 const NODE_FIELDS = 10
@@ -280,6 +284,13 @@ export const writeDesign = (kernel, game, design, options = {}) => {
   })
   starts[nodes] = outEdges.length
 
+  // Each Link in Game order: its ends, the Edge that carries it or -1, and its breaker.
+  const linkFields = []
+  for (const link of game.links) {
+    const edge = graph.edgeOf(design, link.from, link.to)
+    linkFields.push(slotOf.get(link.from), slotOf.get(link.to), edge ? edge.index : -1, link.breaker ? 1 : 0)
+  }
+  fill(BLOCK.links, linkFields)
   fill(BLOCK.nodeFields, Array.from(nodeFields))
   fill(BLOCK.edgeFields, Array.from(edgeFields))
   fillInt(BLOCK.outStarts, Array.from(starts))
@@ -440,6 +451,8 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
     put(SLOT.shut, n.service._tag === 'Shut' ? 1 : 0)
     put(SLOT.data, game.data)
     put(SLOT.subscriptions, features.subscriptionsOf(game))
+    put(SLOT.sampleRate, n.sampleRate)
+    put(SLOT.insightPerk, founding.insightPerk(game))
     put(SLOT.indexType, Math.max(0, Object.keys(S.VEC_INDEXES).indexOf(n.indexType)))
     put(SLOT.runtimeFailure, game.incident ? (S.RUNTIME_INCIDENT_FAILURES[game.incident.kind] ?? 0) : 0)
     put(SLOT.transactions, n.transactions ? 1 : 0)
@@ -558,13 +571,9 @@ export const bottleneckRun = (kernel, game, options = {}) => {
 
 /** The Ledger figures the kernel does not write yet. */
 export const PENDING = [
-  'links',
   'regions',
   'deviceLatency',
   'regionKinds',
-  'insight',
-  'breadth',
-  'breadthRegions',
   'burn',
   'salaries',
   'egress',
@@ -589,7 +598,7 @@ export const compareLedger = (game, flow, ledger) => compareDeep(flow, ledger, P
 export const readLedger = (kernel, game) => {
   const { X, view } = kernel
   const block = view(BLOCK.ledger, Float64Array, X.len(BLOCK.ledger))
-  return decodeLedger(block, game, { kinds: ALL, causes: ERROR_CAUSES })
+  return decodeLedger(block, game, { kinds: ALL, causes: ERROR_CAUSES, pools: S.INSIGHT_POOLS })
 }
 
 /** How many passes the last solve ran. */

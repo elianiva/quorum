@@ -158,8 +158,8 @@ fn sick_visit(
             Some(child_node) => child_node,
             None => continue,
         };
-        if !crate::routing::accepts(child_node.type_code, kind_index("q-read"))
-            && !crate::routing::accepts(child_node.type_code, kind_index("q-write"))
+        if !crate::routing::accepts(child_node.type_code, kind::Q_READ)
+            && !crate::routing::accepts(child_node.type_code, kind::Q_WRITE)
         {
             continue;
         }
@@ -167,8 +167,8 @@ fn sick_visit(
         if child_node.down {
             return true;
         }
-        if (child_node.type_code == component_index("database")
-            || child_node.type_code == component_index("replica"))
+        if (child_node.type_code == component::DATABASE
+            || child_node.type_code == component::REPLICA)
             && pass.models.get(child).map(|model| model.utilization).unwrap_or(0.0) >= 1.0
         {
             return true;
@@ -188,7 +188,7 @@ pub fn completions_of(pass: &Pass, nodes: &[crate::model::Node], tree: &mut Tree
         waits: vec![0.0; nodes.len()],
     };
     for (slot, node) in nodes.iter().enumerate() {
-        if node.type_code != component_index("queue") {
+        if node.type_code != component::QUEUE {
             continue;
         }
         let drained = pass.drained.get(slot).copied().unwrap_or(0.0);
@@ -269,7 +269,7 @@ pub fn answer_of(tree: &Tree, answers: &[(Route, Outcome, Outcome)], kind: usize
 /// `userHopMs`: the user hop a request of `kind` pays.
 #[inline]
 pub fn user_hop_ms(game: &GameCtx, ms: f64, kind: usize) -> f64 {
-    if kind == kind_index("page") && game.has("http2") {
+    if kind == kind::PAGE && game.has(research::HTTP2) {
         ms * (1.0 - HTTP2_CUT)
     } else {
         ms
@@ -425,7 +425,7 @@ pub fn ledger_of(
             ledger.errors[cause] += rate * score.result.fail[cause];
         }
         // Fintech fines a stale answer to a money kind.
-        if !game.sandbox && MONEY_KINDS.contains(&KINDS[kind]) {
+        if !game.sandbox && (MONEY_KINDS_MASK >> kind) & 1 == 1 {
             let fine = rate
                 * score.result.fail[STALE]
                 * KIND_VALUE[kind]
@@ -532,12 +532,12 @@ pub fn ledger_of(
             refused: inbound * share * refused_share,
             stranded,
             connections: pool,
-            hit_ratio: if node.type_code == component_index("cache") || node.type_code == component_index("cdn") {
+            hit_ratio: if node.type_code == component::CACHE || node.type_code == component::CDN {
                 Some(pass.hits.get(slot).copied().unwrap_or(0.0))
             } else {
                 None
             },
-            lag_ms: if node.type_code == component_index("replica") { Some(pass.lag_ms) } else { None },
+            lag_ms: if node.type_code == component::REPLICA { Some(pass.lag_ms) } else { None },
             disk: model.map(|model| model.disk).unwrap_or(false),
             throttled: model.map(|model| model.throttled).unwrap_or(false),
             swapping: model.map(|model| model.swapping).unwrap_or(false),
@@ -552,7 +552,7 @@ pub fn ledger_of(
 /// `bottleneckByKindOf`: the most utilized limiting Node on each kind's own path.
 pub fn bottleneck_by_kind(nodes: &[crate::model::Node], rows: &[NodeRow]) -> Vec<Option<usize>> {
     let mut by_kind = vec![None; NR];
-    for kind in 0..NR {
+    for (kind, by_kind) in by_kind.iter_mut().enumerate() {
         let mut best: Option<usize> = None;
         let mut best_utilization = 0.6;
         for (slot, node) in nodes.iter().enumerate() {
@@ -571,7 +571,7 @@ pub fn bottleneck_by_kind(nodes: &[crate::model::Node], rows: &[NodeRow]) -> Vec
                 best = Some(slot);
             }
         }
-        by_kind[kind] = best;
+        *by_kind = best;
     }
     by_kind
 }

@@ -61,7 +61,12 @@ pub struct Design {
     out_edges: Vec<u32>,
     pub health_checked: bool,
     pub time: f64,
+    /// Which compile this is, so a cache of its splits can tell it from the next one.
+    generation: u64,
 }
+
+/// Counts compiled Designs: every `Design::new` takes the next number.
+static GENERATIONS: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(1);
 
 impl Design {
     /// The first index into `out_edges` for a Node's Edges.
@@ -135,7 +140,8 @@ impl Design {
                 order.push(node);
             }
         }
-        Design { nodes, edges, order, out_starts, out_edges, health_checked, time }
+        let generation = GENERATIONS.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
+        Design { nodes, edges, order, out_starts, out_edges, health_checked, time, generation }
     }
 }
 
@@ -149,6 +155,115 @@ pub fn amplification(policy: &RouteEdge, failure: f64) -> f64 {
         1 => crate::dist::attempts_for(failure),
         2 => 1.0 + crate::dist::RETRY_BUDGET.min(crate::dist::attempts_for(failure) - 1.0),
         _ => 1.0,
+    }
+}
+
+/// What a router reads about each Node: its live weight, its probed capacity,
+/// and whether a deep health check has failed it. One pass reads one of these.
+#[derive(Clone, Copy)]
+pub struct Weights<'a> {
+    pub live: &'a [f64],
+    pub nominal: &'a [f64],
+    pub sick: &'a [bool],
+}
+
+/// What a split's answer was read from.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Read {
+    /// Not worked out since the last reset.
+    Unsplit,
+    /// The Design alone: the answer holds for every set of Weights.
+    Design,
+    /// The Weights too: the answer holds until they move.
+    Weights,
+}
+
+/// Every split one Design answers, each worked out on first use.
+///
+/// A pass and the tree after it ask for the same (Node, kind) splits, and the
+/// tree asks again for every caller, so the answers are kept in one flat list
+/// indexed by `node * NK + kind`. The owner calls `reset` whenever the Weights
+/// it passes change: a split that read them is forgotten, and one that read only
+/// the Design, which is most of them, is kept for the rest of the run.
+#[derive(Default)]
+pub struct Splits {
+    scratch: Scratch,
+    /// The Design these splits answer for.
+    design: u64,
+    read: Vec<Read>,
+    /// Where each (Node, kind) split starts in `pairs`, and how many pairs it has.
+    start: Vec<u32>,
+    count: Vec<u32>,
+    pairs: Vec<(u32, f64)>,
+    /// `reset` compacts the kept answers into this, then swaps it with `pairs`.
+    spare: Vec<(u32, f64)>,
+}
+
+impl Splits {
+    /// Forgets every split that read the Weights, and every split at all when
+    /// `design` is not the Design they were worked out for.
+    pub fn reset(&mut self, design: &Design) {
+        let keys = design.nodes.len() * NK;
+        if self.design != design.generation || self.read.len() != keys {
+            self.design = design.generation;
+            let nodes = design.nodes.len();
+            self.read.clear();
+            self.read.resize(nodes * NK, Read::Unsplit);
+            self.start.clear();
+            self.start.resize(nodes * NK, 0);
+            self.count.clear();
+            self.count.resize(nodes * NK, 0);
+            self.pairs.clear();
+            return;
+        }
+        self.spare.clear();
+        for key in 0..self.read.len() {
+            match self.read[key] {
+                Read::Design => {
+                    let start = self.start[key] as usize;
+                    let end = start + self.count[key] as usize;
+                    self.start[key] = self.spare.len() as u32;
+                    self.spare.extend_from_slice(&self.pairs[start..end]);
+                }
+                Read::Weights => self.read[key] = Read::Unsplit,
+                Read::Unsplit => {}
+            }
+        }
+        core::mem::swap(&mut self.pairs, &mut self.spare);
+    }
+
+    /// The split of `kind` out of `node`, as a range of `pair` indices.
+    #[inline]
+    pub fn range(&mut self, design: &Design, node: usize, kind: usize, weights: &Weights) -> core::ops::Range<usize> {
+        let key = node * NK + kind;
+        let start = match self.read.get(key) {
+            Some(Read::Unsplit) => {
+                let start = self.pairs.len();
+                let (count, read) = self.scratch.split_reading(design, node, kind, weights, false);
+                self.pairs.extend_from_slice(&self.scratch.pairs[..count]);
+                self.read[key] = read;
+                self.start[key] = start as u32;
+                self.count[key] = count as u32;
+                start
+            }
+            Some(_) => self.start[key] as usize,
+            // A key outside the table: answer without keeping it.
+            None => return 0..0,
+        };
+        start..start + self.count[key] as usize
+    }
+
+    /// The split of `kind` out of `node`.
+    #[inline]
+    pub fn get(&mut self, design: &Design, node: usize, kind: usize, weights: &Weights) -> &[(u32, f64)] {
+        let range = self.range(design, node, kind, weights);
+        &self.pairs[range]
+    }
+
+    /// One (Edge, share) pair of a range `range` returned.
+    #[inline]
+    pub fn pair(&self, index: usize) -> (u32, f64) {
+        self.pairs[index]
     }
 }
 
@@ -184,7 +299,7 @@ pub fn accepts(type_code: usize, kind: usize) -> bool {
 /// `carries`: an API Gateway sends only the kinds its route table names.
 #[inline]
 fn carries(edge: &RouteEdge, source: &RouteNode, kind: usize) -> bool {
-    source.type_code as usize != component_index("gw") || (edge.kinds >> kind) & 1 == 1
+    source.type_code as usize != component::GW || (edge.kinds >> kind) & 1 == 1
 }
 
 /// `noticed`: whether the router in front of a Node has seen it go down.
@@ -245,9 +360,9 @@ impl Scratch {
             let target_index = design.edges[edge as usize].to as usize;
             let target = design.nodes[target_index];
             let type_code = target.type_code as usize;
-            let fallback = type_code == component_index("cache")
-                || type_code == component_index("pooler")
-                || type_code == component_index("lb");
+            let fallback = type_code == component::CACHE
+                || type_code == component::POOLER
+                || type_code == component::LB;
             if !fallback
                 || !is_data
                 || design.out(target_index).iter().any(|&next| {
@@ -266,12 +381,12 @@ impl Scratch {
             }
         }
         // A Warehouse is the analytical target, so it takes the scan.
-        if kind == kind_index("q-scan") {
+        if kind == kind::Q_SCAN {
             let mut warehouse = 0;
             let mut first = 0;
             for &edge in &self.own {
                 let target = design.edges[edge as usize].to as usize;
-                if design.nodes[target].type_code as usize == component_index("warehouse")
+                if design.nodes[target].type_code as usize == component::WAREHOUSE
                     && !design.nodes[target].down
                 {
                     if warehouse == 0 {
@@ -284,7 +399,7 @@ impl Scratch {
                 self.targets.clear();
                 for &edge in &self.own {
                     let target = design.edges[edge as usize].to as usize;
-                    if design.nodes[target].type_code as usize == component_index("warehouse")
+                    if design.nodes[target].type_code as usize == component::WAREHOUSE
                         && !design.nodes[target].down
                     {
                         self.targets.push(edge);
@@ -306,20 +421,24 @@ impl Scratch {
 
     /// `splitFor`: the share of `kind` each Edge out of `node` takes. The answer
     /// is `self.pairs[..count]`.
-    pub fn split(
+    pub fn split(&mut self, design: &Design, node: usize, kind: usize, weights: &Weights, lb_algorithms: bool) -> usize {
+        self.split_reading(design, node, kind, weights, lb_algorithms).0
+    }
+
+    /// `split`, and whether the answer read the Weights or only the Design.
+    fn split_reading(
         &mut self,
         design: &Design,
         node: usize,
         kind: usize,
-        weights: &[f64],
-        nominal: &[f64],
-        sick: &[bool],
+        weights: &Weights,
         lb_algorithms: bool,
-    ) -> usize {
+    ) -> (usize, Read) {
+        let Weights { live: weights, nominal, sick } = *weights;
         let source = design.nodes[node];
         if self.takers(design, node, kind) == 0 {
             self.pairs.clear();
-            return 0;
+            return (0, Read::Design);
         }
         // A drained Node is out of rotation at once, and a Replica no primary
         // ships to copies nothing, so neither takes a query.
@@ -345,24 +464,24 @@ impl Scratch {
         }
         if self.targets.is_empty() {
             self.pairs.clear();
-            return 0;
+            return (0, Read::Design);
         }
         // One way on takes everything.
-        if self.targets.len() == 1 && source.type_code as usize != component_index("lb") {
+        if self.targets.len() == 1 && source.type_code as usize != component::LB {
             let edge = self.targets[0];
             self.pairs.clear();
             self.pairs.push((edge, 1.0));
-            return 1;
+            return (1, Read::Design);
         }
         // A Stream broadcasts a change to every consumer.
-        if source.type_code as usize == component_index("log") && kind == kind_index("change") {
+        if source.type_code as usize == component::LOG && kind == kind::CHANGE {
             self.pairs.clear();
             for &edge in &self.targets {
                 self.pairs.push((edge, 1.0));
             }
-            return self.pairs.len();
+            return (self.pairs.len(), Read::Design);
         }
-        if source.type_code as usize == component_index("dns") {
+        if source.type_code as usize == component::DNS {
             self.up.clear();
             if design.health_checked {
                 for &edge in &self.targets {
@@ -381,13 +500,13 @@ impl Scratch {
             for &edge in live {
                 self.pairs.push((edge, share));
             }
-            return self.pairs.len();
+            return (self.pairs.len(), Read::Design);
         }
-        if source.type_code as usize != component_index("lb") {
+        if source.type_code as usize != component::LB {
             let count = self.weighted(design, |design, edge| {
                 weights[design.edges[edge as usize].to as usize]
             });
-            return count;
+            return (count, Read::Weights);
         }
         // A Load Balancer notices a dead host at its next health check, and a
         // deep check also takes out servers whose database is down.
@@ -410,7 +529,7 @@ impl Scratch {
         }
         if self.healthy.is_empty() {
             self.pairs.clear();
-            return 0;
+            return (0, Read::Weights);
         }
         let policy = if lb_algorithms || source.policy == 1 { source.policy } else { 0 };
         // The algorithm splits over `healthy`, so swap it in as the target set.
@@ -475,9 +594,9 @@ impl Scratch {
                 ));
                 weight *= STICKY_DECAY;
             }
-            return self.pairs.len();
+            return (self.pairs.len(), Read::Weights);
         }
-        count
+        (count, Read::Weights)
     }
 }
 
@@ -492,7 +611,7 @@ thread_local! {
     /// The Design the host last handed over, so a later pass or a measurement
     /// does not rebuild it. One per thread, which is one per Worker.
     static CACHED: core::cell::RefCell<Option<(Design, Scratch)>> =
-        core::cell::RefCell::new(None);
+        const { core::cell::RefCell::new(None) };
 }
 
 /// Compiles the routing tables the host wrote into the ABI's blocks.
@@ -500,7 +619,7 @@ thread_local! {
 /// A row that names a Node outside the block is an error, not a panic: the
 /// caller turns it into a status code the host can read.
 pub fn compile(inputs: &crate::abi::Inputs) -> Result<Design, i32> {
-    if inputs.node_fields.len() % crate::abi::NODE_FIELDS != 0 || inputs.edge_fields.len() % crate::abi::EDGE_FIELDS != 0 {
+    if !inputs.node_fields.len().is_multiple_of(crate::abi::NODE_FIELDS) || !inputs.edge_fields.len().is_multiple_of(crate::abi::EDGE_FIELDS) {
         return Err(crate::abi::SHORT_BLOCK);
     }
     let count = inputs.node_fields.len() / crate::abi::NODE_FIELDS;
@@ -509,7 +628,7 @@ pub fn compile(inputs: &crate::abi::Inputs) -> Result<Design, i32> {
     }
     let nodes: Vec<RouteNode> = inputs
         .node_fields
-        .chunks_exact(crate::abi::NODE_FIELDS)
+        .as_chunks::<{ crate::abi::NODE_FIELDS }>().0.iter()
         .map(|row| {
             let field = |index: usize| row.get(index).copied().unwrap_or(0.0);
             RouteNode {
@@ -529,7 +648,7 @@ pub fn compile(inputs: &crate::abi::Inputs) -> Result<Design, i32> {
         })
         .collect();
     let mut edges: Vec<RouteEdge> = Vec::with_capacity(inputs.edge_fields.len() / crate::abi::EDGE_FIELDS);
-    for row in inputs.edge_fields.chunks_exact(crate::abi::EDGE_FIELDS) {
+    for row in inputs.edge_fields.as_chunks::<{ crate::abi::EDGE_FIELDS }>().0 {
         let field = |index: usize| row.get(index).copied().unwrap_or(0.0);
         let from = field(0) as u32;
         let to = field(1) as u32;
@@ -571,7 +690,7 @@ pub fn compile(inputs: &crate::abi::Inputs) -> Result<Design, i32> {
 /// Compiles a Design once; `split_all` then answers every split from it.
 #[no_mangle]
 pub extern "C" fn design_set(health_checked: f64, time: f64) -> i32 {
-    let compiled = crate::abi::with_inputs(|inputs| compile(inputs));
+    let compiled = crate::abi::with_inputs(compile);
     match compiled {
         Ok(design) => {
             let design = Design { health_checked: health_checked != 0.0, time, ..design };
@@ -587,9 +706,8 @@ pub extern "C" fn design_set(health_checked: f64, time: f64) -> i32 {
 #[no_mangle]
 pub extern "C" fn split_all(lb_algorithms: f64) -> i32 {
     crate::abi::with_inputs(|inputs| {
-        let weights = &inputs.weights;
-        let nominal = &inputs.nominal;
         let sick: Vec<bool> = inputs.sick.iter().map(|&byte| byte != 0).collect();
+        let weights = Weights { live: &inputs.weights, nominal: &inputs.nominal, sick: &sick };
         CACHED.with(|cell| {
             let mut guard = cell.borrow_mut();
             let Some((design, scratch)) = guard.as_mut() else {
@@ -604,7 +722,7 @@ pub extern "C" fn split_all(lb_algorithms: f64) -> i32 {
                 for node in 0..count {
                     for kind in 0..NK {
                         let found =
-                            scratch.split(design, node, kind, weights, nominal, &sick, lb_algorithms != 0.0);
+                            scratch.split(design, node, kind, &weights, lb_algorithms != 0.0);
                         let base = (node * NK + kind) * stride;
                         outputs.splits[base] = found as f64;
                         for (index, (edge, share)) in scratch.pairs().iter().take(MAX_SPLIT).enumerate() {
@@ -636,9 +754,9 @@ pub extern "C" fn split_stride() -> i32 {
 mod tests {
     use super::*;
 
-    fn node(type_name: &str) -> RouteNode {
+    fn node(type_code: usize) -> RouteNode {
         RouteNode {
-            type_code: component_index(type_name) as u16,
+            type_code: type_code as u16,
             down: false,
             down_cause: 1,
             down_at: 0.0,
@@ -657,20 +775,18 @@ mod tests {
     fn users_sends_every_request_kind_to_its_load_balancer() {
         // users(0) -> lb(1)
         let design = Design::new(
-            vec![node("users"), node("lb")],
+            vec![node(component::USERS), node(component::LB)],
             vec![RouteEdge { from: 0, to: 1, kinds: u64::MAX, retry: 0, timeout: 30_000.0, open: false, bulkhead: false, hedge: false }],
             vec![0],
             vec![0, 1, 1],
             false,
             0.0,
         );
-        let weights = [1.0, 1.0];
-        let nominal = [1.0, 1.0];
-        let sick = [false, false];
+        let weights = Weights { live: &[1.0, 1.0], nominal: &[1.0, 1.0], sick: &[false, false] };
         let mut scratch = Scratch::default();
-        for kind in 0..NR {
-            let count = scratch.split(&design, 0, kind, &weights, &nominal, &sick, false);
-            assert_eq!(count, 1, "kind {} ({}) had {} targets", kind, KINDS[kind], count);
+        for (kind, name) in KINDS.iter().enumerate().take(NR) {
+            let count = scratch.split(&design, 0, kind, &weights, false);
+            assert_eq!(count, 1, "kind {kind} ({name}) had {count} targets");
             assert_eq!(scratch.pairs()[0].0, 0);
             assert_eq!(scratch.pairs()[0].1, 1.0);
         }

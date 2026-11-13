@@ -157,8 +157,8 @@ pub fn through(own: Hop, calls: &[(Outcome, f64)], stale_counts: bool) -> Outcom
         let (p, ms) = combine_tail(tail_p, tail_ms, call.tail_p, call.tail_ms);
         tail_p = p;
         tail_ms = ms;
-        for cause in 0..CAUSE_COUNT {
-            fail[cause] += call.fail[cause] * count;
+        for (fail, add) in fail.iter_mut().zip(&call.fail) {
+            *fail += add * count;
         }
         cause_weight += (1.0 - call.success) * count;
         if call.stale > stale {
@@ -201,26 +201,56 @@ pub fn through_one(own: Hop, call: Outcome, stale_counts: bool) -> Outcome {
 #[inline]
 pub fn blend(entries: &[(Outcome, f64)]) -> Option<Outcome> {
     let total: f64 = entries.iter().map(|(_, weight)| *weight).sum();
-    if entries.is_empty() || total <= 0.0 {
+    if entries.is_empty() {
         return None;
     }
-    let mut out = Outcome::default();
-    let mut tail_weight = 0.0;
-    for &(entry, weight) in entries {
-        let w = weight / total;
-        tail_weight += entry.tail_p * w * entry.tail_ms;
+    let mut mix = Blend::new(total)?;
+    for (entry, weight) in entries {
+        mix.add(entry, *weight);
+    }
+    Some(mix.finish())
+}
+
+/// `blend`, one entry at a time, for a caller that knows the total weight
+/// before it has the outcomes. Same operations in the same order, so the same bits.
+pub struct Blend {
+    total: f64,
+    out: Outcome,
+    tail_weight: f64,
+}
+
+impl Blend {
+    /// `None` when the total weight leaves nothing to mix.
+    #[inline]
+    pub fn new(total: f64) -> Option<Blend> {
+        if total <= 0.0 {
+            return None;
+        }
+        Some(Blend { total, out: Outcome::default(), tail_weight: 0.0 })
+    }
+
+    #[inline]
+    pub fn add(&mut self, entry: &Outcome, weight: f64) {
+        let w = weight / self.total;
+        let out = &mut self.out;
+        self.tail_weight += entry.tail_p * w * entry.tail_ms;
         out.success += entry.success * w;
         out.fixed_ms += entry.fixed_ms * w;
         out.variable_ms += entry.variable_ms * w;
         out.tail_p += entry.tail_p * w;
         out.stale += entry.stale * w;
         out.value += entry.value * w;
-        for cause in 0..CAUSE_COUNT {
-            out.fail[cause] += entry.fail[cause] * w;
+        for (fail, add) in out.fail.iter_mut().zip(&entry.fail) {
+            *fail += add * w;
         }
     }
-    out.tail_ms = if out.tail_p > 0.0 { tail_weight / out.tail_p } else { 0.0 };
-    Some(out)
+
+    #[inline]
+    pub fn finish(self) -> Outcome {
+        let mut out = self.out;
+        out.tail_ms = if out.tail_p > 0.0 { self.tail_weight / out.tail_p } else { 0.0 };
+        out
+    }
 }
 
 /// e^(-x) for x >= 0, from a short series and eight squarings.

@@ -138,3 +138,67 @@ linear memory, the flat ABI is the smaller machine. The cost is the contract doc
 above: a stale view after a growing call, and a host that must respect each block's length.
 Both are checked where they can be (`reserve` returns a status, `ptr` returns 0 for an
 unknown block, and every run validates its blocks before reading them).
+
+## Second pass: hoist what does not change
+
+A profile of the first version put 20% of the time in `calls_of`, 9% in `split`, and 5%
+in string matches (`research_index`, `component_index`, `kind_index`). All three answered
+questions whose inputs do not change during a solve. Data-oriented design calls this out
+first: find out what changes how often, and compute each thing at the rate its inputs
+change. The changes below follow that rule. Each one kept 1,849/1,849 Ledger figures
+identical.
+
+| Step | `solveFlow` | `bottleneckOf` |
+| --- | --- | --- |
+| Before | 1,891 µs | 1,927 µs |
+| Names become typed constants and enums | 1,784 µs | 1,776 µs |
+| `callsOf` table, split cache, no per-visit `Vec`, candidates skip feedback | 976 µs | 1,031 µs |
+| Search reuses the flow solve's Ledger | 961 µs | 479 µs |
+| Epoch memo, workspace kept across runs | 868 µs | 410 µs |
+| `cpuBase` in the code table, code table kept while inputs hold | 790 µs | 338 µs |
+
+### Names are types, not strings
+
+`gen-catalog.ts` now emits `kind::LOGIN`, `component::SERVER`, `research::OPCACHE`, and the
+same for backends, runtimes, and languages, as `usize` constants. It also emits the
+`Concurrency` and `Blocking` enums for a runtime's model. `GameCtx::has` takes a bit
+index. `Incident` is an enum, not a `&'static str`. A typo is now a compile error instead
+of a lookup that returns "not found", and a rule's `match` on a type code is a jump table.
+
+### Compute at the rate the inputs change
+
+- `CodeTable` holds `callsOf` and `cpuBase` for each Node that runs code. Both read only
+  the Game, the Node, and its `ServerFlags`, so the run function builds the table once and
+  keeps it in a `thread_local` workspace until those inputs differ.
+- `Splits` caches every (Node, kind) split in one flat list. A split records whether it
+  read the Weights. `reset` keeps the ones that read only the Design and drops the rest,
+  so a new pass recomputes only the Load Balancer and weighted splits. The cache also
+  stores the Design's generation, so a different Design with the same Node count can never
+  read stale splits. A scratch harness solved Design A and then Design B and compared the
+  bytes with a fresh B. With the generation check removed, that harness fails.
+- The flow solve leaves its Ledger and state behind, and `bottleneck_run` ranks that
+  Ledger instead of solving again. This is the same thing `bottleneckOf(game, flow)` does
+  in TypeScript.
+- A Bottleneck candidate drops its state, so its last pass skips the feedback that only a
+  next pass reads (`held`, failure shares, in-flight work). A scratch probe boosted all 200
+  Nodes at 1 to 3 passes and compared revenue with and without the shortcut: 600 of 600
+  results were bit-identical.
+
+### Reset is a counter, not a fill
+
+`Memo` stamps each entry with an epoch. Starting a tree increments the epoch, so the
+tables are never zeroed between walks, and the stamps are cleared once when the counter
+wraps. The memo, split cache, and code table live in one `Workspace` for the life of the
+module. Repeated runs therefore allocate nothing for them.
+
+### No heap on the hot path
+
+`server_model` collects the arriving kinds into a `[usize; NR]`, not a `Vec`. The tree
+blends a split with `Blend`, which accumulates one entry at a time in the same order as
+`blend`, and `answer_calls` fills a `[_; NB]` array. `Pass::route` is a method on the pass
+it writes, which replaces a function that took twelve arguments.
+
+### Tried and dropped
+
+`-C target-feature=+simd128` changed nothing measurable, because the hot loops are
+branchy and short, not wide arithmetic. It is not enabled.

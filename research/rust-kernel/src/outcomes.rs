@@ -799,7 +799,7 @@ impl<'a> Tree<'a> {
         let offloaded = self.board.flags.get(node).map(|flags| flags.offloaded).unwrap_or(false);
         let own = Hop {
             fixed_ms: served.fixed_ms
-                + crate::model::transfer_ms(&game_node, kind, offloaded) * crate::model::payload_factor(self.board.game, kind),
+                + crate::model::transfer_ms(&game_node, kind, offloaded) * self.board.game.payload[kind],
             ..served
         };
         // A runtime that holds a worker per open connection cannot keep realtime connections.

@@ -282,17 +282,6 @@ pub fn user_hop_ms(game: &GameCtx, ms: f64, kind: usize) -> f64 {
     }
 }
 
-/// `valueFactor`: what a request of `kind` earns relative to its catalog value.
-///
-/// The ported surface ships no Feature and moves no Product lever, so this is
-/// the Venture's own multiplier; `None` means the Game is outside that surface.
-pub fn value_factor(game: &GameCtx, kind: usize) -> Option<f64> {
-    if game.features.iter().any(|bits| *bits != 0) {
-        return None;
-    }
-    Some(VENTURE_VALUE[game.venture.min(VENTURE_VALUE.len() - 1)] * game.scenario_value[kind])
-}
-
 /// `earnsInTime`: a request slower than the Venture's deadline earns nothing.
 #[inline]
 pub fn earns_in_time(game: &GameCtx, ms: f64) -> bool {
@@ -300,19 +289,9 @@ pub fn earns_in_time(game: &GameCtx, ms: f64) -> bool {
     deadline < 0.0 || ms <= deadline
 }
 
-/// `subscriptionsOf`: dollars per second from paid plans. A Feature that bills a
-/// subscription is outside the ported surface, so this is zero.
-#[inline]
-pub fn subscriptions_of(_game: &GameCtx) -> f64 {
-    0.0
-}
-
 /// `earnedOf`: what one request of `kind` earns in a second, at this rate and Apdex.
 pub fn earned_of(game: &GameCtx, kind: usize, rate: f64, result: &Outcome, apdex: f64) -> f64 {
-    let factor = match value_factor(game, kind) {
-        Some(factor) => factor,
-        None => return 0.0,
-    };
+    let factor = game.value[kind];
     rate * result.success
         * apdex
         * KIND_VALUE[kind]
@@ -348,7 +327,7 @@ pub fn revenue_of(
         let score = score_kind(game, tree, routes, &completion, kind, rate);
         revenue += score.earned;
     }
-    revenue + subscriptions_of(game)
+    revenue + game.subscriptions
 }
 
 /// The figures one kind scores at: its blended answer, its Apdex, and what it earns.
@@ -463,7 +442,8 @@ pub fn ledger_of(
         ledger.p95 = percentile(&overall, 0.95);
         ledger.p99 = percentile(&overall, 0.99);
     }
-    ledger.revenue += subscriptions_of(game);
+    ledger.subscriptions = game.subscriptions;
+    ledger.revenue += game.subscriptions;
 
     // Node rows: what each Node was sent, what it could take, and what it dropped.
     for (slot, node) in nodes.iter().enumerate() {

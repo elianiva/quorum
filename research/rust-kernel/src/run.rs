@@ -92,17 +92,9 @@ pub extern "C" fn summary_len() -> i32 {
 }
 
 /// The status a Game outside the ported surface returns.
-fn surface(game: &GameCtx, inputs: &Inputs) -> i32 {
-    // An incident rewrites figures through rules the port has not reached yet.
+fn surface(game: &GameCtx) -> i32 {
+    // An incident code from a catalog newer than the kernel's.
     if game.incident_code != 0 && game.incident.is_none() {
-        return abi::UNSUPPORTED;
-    }
-    // A shipped Feature moves demand, payload, and value.
-    if game.features.iter().any(|bits| *bits != 0) {
-        return abi::UNSUPPORTED;
-    }
-    // A Product lever moves a kind's share, which needs the Era's mix.
-    if inputs.levers.iter().any(|step| *step > 0.0) {
         return abi::UNSUPPORTED;
     }
     abi::OK
@@ -155,9 +147,12 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
             })
         });
     }
-    let mut game = abi::game_with(inputs.row(0), abi::research_of(&inputs.research), abi::features_of(&inputs.features));
-    for (cell, value) in game.scenario_value.iter_mut().zip(&inputs.value) {
-        *cell = *value;
+    let mut game = abi::game_with(inputs.row(0), abi::research_of(&inputs.research));
+    let columns = [(&mut game.value[..], &inputs.value), (&mut game.payload[..], &inputs.payload), (&mut game.query[..], &inputs.query)];
+    for (cells, column) in columns {
+        for (cell, value) in cells.iter_mut().zip(column) {
+            *cell = *value;
+        }
     }
     for (cell, share) in game.mix.iter_mut().zip(&inputs.probe) {
         *cell = *share;
@@ -219,7 +214,7 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
         // `majorityMs`: a consensus write waits for the round trip of its majority-th nearest region.
         node.majority_ms = open.get(open.len() / 2).map_or(0.0, |region| REGION_RTT[home][*region]);
     }
-    let status = surface(&game, inputs);
+    let status = surface(&game);
     if status != abi::OK {
         return Err(status);
     }

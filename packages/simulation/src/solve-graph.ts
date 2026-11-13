@@ -61,12 +61,56 @@ export type Graph = Readonly<{
 /** One Graph per Game: the Bottleneck search re-solves the same Game, and reuses it. */
 export const graphs = new WeakMap<Game, Graph>()
 
+/** Two Designs have the same Nodes, in order, and the same Links, research, and features. */
+const sameNodes = (a: ReadonlyArray<GameNode>, b: ReadonlyArray<GameNode>): boolean => {
+  if (a.length !== b.length) return false
+  for (let index = 0; index < a.length; index += 1) if (a[index] !== b[index]) return false
+  return true
+}
+
+/**
+ * The last Design built. A Step that edits no Node keeps every Node object, so
+ * the Design is the same object graph and the Graph can be reused. A Link whose
+ * breaker opened is a different Link in a different array, so that misses too.
+ */
+let lastStructure: Readonly<{
+  nodes: ReadonlyArray<GameNode>
+  links: unknown
+  researched: unknown
+  features: unknown
+  graph: Graph
+}> | null = null
+
 export const graphOf = (game: Game): Graph => {
-  let graph = graphs.get(game)
-  if (!graph) {
-    graph = buildGraph(game)
-    graphs.set(game, graph)
+  const known = graphs.get(game)
+  if (known) return known
+  const previous = lastStructure
+  let base: Graph
+  if (
+    previous !== null &&
+    previous.links === game.links &&
+    previous.researched === game.researched &&
+    previous.features === game.features &&
+    sameNodes(previous.nodes, game.nodes)
+  ) {
+    base = previous.graph
+  } else {
+    base = buildGraph(game)
+    lastStructure = {
+      nodes: game.nodes,
+      links: game.links,
+      researched: game.researched,
+      features: game.features,
+      graph: base,
+    }
   }
+  // These two change every Step, so they are read fresh rather than cached.
+  const healthChecked = has(game, 'health-checks') && fixed(game, 'health-check')
+  const graph =
+    base.time === game.time && base.healthChecked === healthChecked
+      ? base
+      : { ...base, time: game.time, healthChecked }
+  graphs.set(game, graph)
   return graph
 }
 
@@ -94,12 +138,18 @@ export const buildGraph = (game: Game): Graph => {
       mirroring.push([from, to])
       last.set(`${from.id}>${to.id}`, link)
     } else if (COMPONENTS[to.type].tap) {
-      taps.set(to.id, [...(taps.get(to.id) ?? []), from.id])
+      const tapped = taps.get(to.id)
+      if (tapped) tapped.push(from.id)
+      else taps.set(to.id, [from.id])
     } else {
       routing.push([from, to])
       last.set(`${from.id}>${to.id}`, link)
-      routes.set(from.id, [...(routes.get(from.id) ?? []), to])
-      parents.set(to.id, [...(parents.get(to.id) ?? []), from])
+      const fromRoutes = routes.get(from.id)
+      if (fromRoutes) fromRoutes.push(to)
+      else routes.set(from.id, [to])
+      const toParents = parents.get(to.id)
+      if (toParents) toParents.push(from)
+      else parents.set(to.id, [from])
     }
   }
   const edgeTo = new Map<string, Map<string, Edge>>()
@@ -125,10 +175,18 @@ export const buildGraph = (game: Game): Graph => {
     edges.push(edge)
     return edge
   }
-  for (const [from, to] of routing)
-    out.set(from.id, [...(out.get(from.id) ?? []), edgeOfPair(from, to)])
-  for (const [from, to] of mirroring)
-    mirrors.set(from.id, [...(mirrors.get(from.id) ?? []), edgeOfPair(from, to)])
+  for (const [from, to] of routing) {
+    const edge = edgeOfPair(from, to)
+    const fromOut = out.get(from.id)
+    if (fromOut) fromOut.push(edge)
+    else out.set(from.id, [edge])
+  }
+  for (const [from, to] of mirroring) {
+    const edge = edgeOfPair(from, to)
+    const fromMirrors = mirrors.get(from.id)
+    if (fromMirrors) fromMirrors.push(edge)
+    else mirrors.set(from.id, [edge])
+  }
   // Kahn's order over routing links. A Node caught in a cycle never runs. A CDC Connector also
   // waits for every Node whose log it reads, so it sees this pass's writes.
   const mirrored = new Map<string, number>()
@@ -142,8 +200,8 @@ export const buildGraph = (game: Game): Graph => {
   )
   const order: Array<GameNode> = []
   const ready = game.nodes.filter((node) => (indegree.get(node.id) ?? 0) === 0)
-  while (ready.length > 0) {
-    const node = ready.shift() as GameNode
+  for (let cursor = 0; cursor < ready.length; cursor += 1) {
+    const node = ready[cursor] as GameNode
     order.push(node)
     const children = [
       ...(routes.get(node.id) ?? []),

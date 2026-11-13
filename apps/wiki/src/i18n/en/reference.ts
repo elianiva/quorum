@@ -7,6 +7,12 @@ export const reference = {
   yes: 'Yes',
   no: 'No',
   any: 'Any',
+  /** The full stop that closes a sentence whose last words are a link, and the space that
+      separates a finished sentence from the next. */
+  /** What separates the items of a list the copy introduces. */
+  listSeparator: ', ',
+  sentenceEnd: '.',
+  sentenceGap: ' ',
   factsLabel: (title: string) => `${title} facts`,
   /** The headings of generated pages, by key. The anchor of each is the English text's slug in every language. */
   sections: {

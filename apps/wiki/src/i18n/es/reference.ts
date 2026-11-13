@@ -9,6 +9,12 @@ export const reference: Messages['reference'] = {
   yes: 'Sí',
   no: 'No',
   any: 'Cualquiera',
+  /** El punto que cierra una frase cuya última palabra es un enlace, y el espacio que separa
+      una frase terminada de la siguiente. */
+  /** Lo que separa los elementos de una lista que introduce el texto. */
+  listSeparator: ', ',
+  sentenceEnd: '.',
+  sentenceGap: ' ',
   factsLabel: (title) => `Datos de ${title}`,
   sections: {
     rules: 'Reglas',

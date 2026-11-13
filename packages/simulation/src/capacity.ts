@@ -93,6 +93,7 @@ import {
   profileOf,
   ramOf,
   vcpuOf,
+  designKeyOf,
   vecOf,
   rampedOf,
 } from './lookups.ts'
@@ -292,7 +293,52 @@ export const waitOf = (calls: Calls, latency: Calls): number => {
  * The backend calls one request of a kind makes from this App Server. With a
  * Queue linked, a kind that can go async also enqueues one task.
  */
+/** A Request kind's place in a dense per-kind array. */
+const REQUEST_INDEX: Readonly<Record<string, number>> = Object.fromEntries(
+  REQUEST_KINDS.map((kind, index) => [kind, index]),
+)
+
+/**
+ * Whether this Node's calls read the Era's mix. Only a fan-out on write does,
+ * and the mix moves with adoption, so such a Node is never cached.
+ */
+const mixFree = (node: GameNode): boolean => node.fanout !== 'push'
+
+/** Whether a stuffing incident is on: it swaps the bot profile for a login. */
+const stuffingNow = (game: Game): number => (game.incident?.kind === 'stuffing' ? 1 : 0)
+
+/**
+ * Per Design and Node, a dense slot per kind, flag set, and stuffing state.
+ * The value depends only on those, so it survives a Step that edited nothing.
+ */
+const callCache = new WeakMap<object, Map<GameNode, Array<Calls | undefined>>>()
+
 export const callsOf = (
+  game: Game,
+  node: GameNode,
+  kind: RequestKind,
+  delegated: boolean,
+  offloaded = false,
+): Calls => {
+  if (!mixFree(node)) return callsFor(game, node, kind, delegated, offloaded)
+  const design = designKeyOf(game)
+  let byNode = callCache.get(design)
+  if (!byNode) callCache.set(design, (byNode = new Map()))
+  let slots = byNode.get(node)
+  if (!slots) byNode.set(node, (slots = []))
+  const slot =
+    (REQUEST_INDEX[kind] ?? 0) * 8 +
+    stuffingNow(game) * 4 +
+    (delegated ? 2 : 0) +
+    (offloaded ? 1 : 0)
+  const hit = slots[slot]
+  if (hit !== undefined) return hit
+  const made = callsFor(game, node, kind, delegated, offloaded)
+  slots[slot] = made
+  return made
+}
+
+const callsFor = (
   game: Game,
   node: GameNode,
   kind: RequestKind,
@@ -715,12 +761,18 @@ type ServerTable = Readonly<{
 }>
 
 /** Per Game, Node and flag set. The flags are one number, so a model call allocates no key string. */
-const tables = new WeakMap<Game, Map<GameNode, Array<Map<number, ServerTable> | undefined>>>()
+/**
+ * Per Design, per Node, per flag set. The Design key lets a table survive a
+ * Step that edited nothing; a Node whose calls read the Era's mix is rebuilt
+ * every time, because that mix moves with adoption.
+ */
+const tables = new WeakMap<object, Map<GameNode, Array<Map<number, ServerTable> | undefined>>>()
 
 const tablesOf = (context: ServerContext): ServerTable => {
   const { game, node } = context
-  let byNode = tables.get(game)
-  if (!byNode) tables.set(game, (byNode = new Map()))
+  const design = designKeyOf(game)
+  let byNode = tables.get(design)
+  if (!byNode) tables.set(design, (byNode = new Map()))
   let byFlags = byNode.get(node)
   if (!byFlags) byNode.set(node, (byFlags = []))
   const flags =
@@ -728,7 +780,8 @@ const tablesOf = (context: ServerContext): ServerTable => {
     (context.worker ? 2 : 0) |
     (context.offloaded ? 4 : 0) |
     (context.local ? 8 : 0) |
-    (context.hashing > 1 ? 16 : 0)
+    (context.hashing > 1 ? 16 : 0) |
+    (stuffingNow(game) ? 32 : 0)
   let bySampling = byFlags[flags]
   if (!bySampling) {
     bySampling = new Map()

@@ -195,6 +195,54 @@ export const sizeName = (node: GameNode): string => SIZES[node.size]?.name ?? 'c
 export const sizeLabel = (node: GameNode, size = node.size): string =>
   COMPONENTS[node.type].sized ? (SIZES[size]?.name ?? '') : `size ${size}`
 
+/**
+ * A key that identifies a Design: the same Node objects, Links, research,
+ * features, and the Service's fixes. Work that depends only on those can be
+ * cached across Steps: a Node that changed is a different object, so identity
+ * is the whole check. The service list itself is rebuilt every Step, but its
+ * fixes array is not, so the fixes stand in for it.
+ */
+const designKeys = new WeakMap<Game, object>()
+let lastDesign: Readonly<{
+  nodes: ReadonlyArray<GameNode>
+  links: unknown
+  researched: unknown
+  features: unknown
+  fixes: unknown
+  key: object
+}> | null = null
+
+export const designKeyOf = (game: Game): object => {
+  const known = designKeys.get(game)
+  if (known) return known
+  const fixes = game.services[0]?.fixes
+  const previous = lastDesign
+  let key: object
+  if (
+    previous !== null &&
+    previous.links === game.links &&
+    previous.researched === game.researched &&
+    previous.features === game.features &&
+    previous.fixes === fixes &&
+    previous.nodes.length === game.nodes.length &&
+    previous.nodes.every((node, index) => node === game.nodes[index])
+  ) {
+    key = previous.key
+  } else {
+    key = {}
+    lastDesign = {
+      nodes: game.nodes,
+      links: game.links,
+      researched: game.researched,
+      features: game.features,
+      fixes,
+      key,
+    }
+  }
+  designKeys.set(game, key)
+  return key
+}
+
 /** Capacity and Burn multiplier of a flat Component's size: each step doubles both. */
 export const flatScale = (node: GameNode): number => grown(1, 2, node.size - 1)
 

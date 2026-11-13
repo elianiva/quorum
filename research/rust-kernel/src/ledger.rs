@@ -9,7 +9,7 @@
 
 use crate::catalog::*;
 use crate::dist::*;
-use crate::model::{GameCtx, Rates};
+use crate::model::{GameCtx, Order, Rates, Resources, WorkUnit};
 use crate::outcomes::Tree;
 use crate::pass::Pass;
 
@@ -46,52 +46,96 @@ pub struct KindRow {
     pub p99: f64,
 }
 
+/// `NodeStatus`: how a Node reads on the board.
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+pub enum Status {
+    #[default]
+    Idle,
+    Ok,
+    Warn,
+    Danger,
+    Down,
+}
+
+/// `statusOf`: down, idle, then by how full the Node runs.
+pub fn status_of(down: bool, inbound: f64, utilization: f64, trouble: bool) -> Status {
+    if down {
+        Status::Down
+    } else if inbound <= 0.0 {
+        Status::Idle
+    } else if utilization >= 0.9 {
+        Status::Danger
+    } else if utilization >= 0.7 || trouble {
+        Status::Warn
+    } else {
+        Status::Ok
+    }
+}
+
+/// A per-kind record and the order its keys were written in.
+#[derive(Clone, Copy)]
+pub struct Keyed {
+    pub values: Rates,
+    pub keys: Order,
+}
+
+impl Default for Keyed {
+    fn default() -> Self {
+        Keyed { values: [0.0; NK], keys: Order::default() }
+    }
+}
+
+impl Keyed {
+    #[inline]
+    pub fn add(&mut self, kind: usize, value: f64) {
+        self.values[kind] += value;
+        self.keys.push(kind);
+    }
+
+    #[inline]
+    pub fn set(&mut self, kind: usize, value: f64) {
+        self.values[kind] = value;
+        self.keys.push(kind);
+    }
+
+    /// The entries in key order.
+    pub fn entries(&self) -> impl Iterator<Item = (usize, f64)> + '_ {
+        self.keys.iter().map(|kind| (kind, self.values[kind]))
+    }
+}
+
 /// One Node's figures.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct NodeRow {
     pub inbound: f64,
-    pub traffic: Rates,
+    pub traffic: Keyed,
     pub capacity: f64,
     pub utilization: f64,
     pub limit: usize,
     pub latency: f64,
     pub p99: f64,
-    pub hop_by_kind: Rates,
+    pub hop_by_kind: Keyed,
+    pub wait_by_kind: Keyed,
+    pub work_share: Keyed,
+    pub work_unit: Option<WorkUnit>,
+    pub cost: f64,
     pub repeated: f64,
+    pub origins: Keyed,
     pub dropped: f64,
     pub refused: f64,
     pub stranded: f64,
+    pub stranded_kinds: Order,
     pub connections: Option<(f64, f64)>,
     pub hit_ratio: Option<f64>,
+    pub evictions: Option<f64>,
+    pub age: Option<f64>,
     pub lag_ms: Option<f64>,
     pub disk: bool,
+    pub out: Keyed,
+    pub resources: Resources,
     pub throttled: bool,
     pub swapping: bool,
-}
-
-impl Default for NodeRow {
-    fn default() -> Self {
-        NodeRow {
-            inbound: 0.0,
-            traffic: [0.0; NK],
-            capacity: 0.0,
-            utilization: 0.0,
-            limit: 0,
-            latency: 0.0,
-            p99: 0.0,
-            hop_by_kind: [0.0; NK],
-            repeated: 0.0,
-            dropped: 0.0,
-            refused: 0.0,
-            stranded: 0.0,
-            connections: None,
-            hit_ratio: None,
-            lag_ms: None,
-            disk: false,
-            throttled: false,
-            swapping: false,
-        }
-    }
+    pub status: Status,
 }
 
 /// What one solve prints.
@@ -446,6 +490,7 @@ pub fn ledger_of(
     ledger.revenue += game.subscriptions;
 
     // Node rows: what each Node was sent, what it could take, and what it dropped.
+    let origins = origins_of(design, pass);
     for (slot, node) in nodes.iter().enumerate() {
         let rates = pass.rates(slot);
         let order = pass.order.get(slot).copied().unwrap_or_default();
@@ -454,28 +499,46 @@ pub fn ledger_of(
         let share = if node.down { 0.0 } else { model.map(|model| model.share).unwrap_or(1.0) };
         let pool = pass.connections.get(slot).copied().flatten();
         let refused_share = match pool {
-            Some((used, max)) if used > max && used > 0.0 => 1.0 - max / used,
+            Some((used, max)) if used > max => 1.0 - max / used,
             _ => 0.0,
         };
-        let mut hop_by_kind = [0.0f64; NK];
-        for kind in 0..NK {
-            if rates[kind] > 0.0 {
-                if let Some(model) = model {
-                    if (model.service_mask >> kind) & 1 == 1 {
-                        hop_by_kind[kind] = model.service_fixed[kind] + model.service_variable[kind];
-                    }
-                }
+        let mut out = Keyed::default();
+        for &edge in design.out_edges_of(slot) {
+            let edge = edge as usize;
+            let (Some(carried), Some(keys)) = (pass.links.get(edge), pass.link_kinds.get(edge)) else { continue };
+            for kind in keys.iter() {
+                out.add(kind, carried[kind]);
             }
         }
-        let latency = if inbound > 0.0 {
-            order.iter().fold(0.0, |total, kind| total + rates[kind] * hop_by_kind[kind]) / inbound
+        // Each kind's own hop time at this Node, before it is blended into `latency`.
+        let mut hop_by_kind = Keyed::default();
+        if let Some(model) = model {
+            for kind in order.iter().filter(|kind| (model.service_mask >> kind) & 1 == 1) {
+                hop_by_kind.set(kind, model.service_fixed[kind] + model.service_variable[kind]);
+            }
+        }
+        let latency = if inbound > 0.0 && model.is_some() {
+            order.iter().fold(0.0, |total, kind| total + rates[kind] * hop_by_kind.values[kind]) / inbound
         } else {
             0.0
         };
+        // A Queue's wait applies to every kind it holds; every other Node waits for nothing.
+        let mut wait_by_kind = Keyed::default();
+        if node.type_code == component::QUEUE {
+            let tasks = pass.tasks.get(slot).copied().unwrap_or([0.0; NK]);
+            for kind in pass.task_order.get(slot).copied().unwrap_or_default().iter() {
+                if tasks[kind] > 0.0 {
+                    wait_by_kind.set(kind, completion.waits[slot]);
+                }
+            }
+        }
+        // The slowest 1% of this Node's own time, for its busiest kind: the first
+        // kind, then each that carries strictly more.
         let busiest = order.iter().fold(None::<usize>, |best, kind| match best {
-            None if rates[kind] > 0.0 => Some(kind),
-            Some(current) if rates[kind] > rates[current] => Some(kind),
-            other => other,
+            Some(current) if rates[kind].partial_cmp(&rates[current]) != Some(core::cmp::Ordering::Greater) => {
+                Some(current)
+            }
+            _ => Some(kind),
         });
         let p99 = match (model, busiest) {
             (Some(model), Some(kind)) if inbound > 0.0 && (model.service_mask >> kind) & 1 == 1 => {
@@ -492,6 +555,22 @@ pub fn ledger_of(
             }
             _ => 0.0,
         };
+        // Load diagnosis: each kind's share of the work at the limit, and the mean work per request.
+        let work_of = |kind: usize| match model {
+            Some(model) if model.work_unit.is_some() => model.work[kind],
+            _ => 1.0,
+        };
+        let work_total = order.iter().fold(0.0, |total, kind| total + rates[kind] * work_of(kind));
+        let mut work_share = Keyed::default();
+        if work_total > 0.0 {
+            for kind in order.iter() {
+                work_share.set(kind, rates[kind] * work_of(kind) / work_total);
+            }
+        }
+        let mut from_users = Keyed::default();
+        for (kind, part) in origins[slot].entries() {
+            from_users.set(kind, inbound * part);
+        }
         let utilization = if refused_share > 0.0 {
             model
                 .map(|model| model.utilization)
@@ -500,36 +579,109 @@ pub fn ledger_of(
         } else {
             model.map(|model| model.utilization).unwrap_or(0.0)
         };
-        let stranded = pass.stranded.get(slot).copied().flatten().map(|(rate, _)| rate).unwrap_or(0.0);
+        let strand = pass.stranded.get(slot).copied().flatten();
+        let stranded = strand.map(|(rate, _)| rate).unwrap_or(0.0);
+        let hits = pass.hits.get(slot).copied().unwrap_or(0.0);
+        let queued = matches!(node.type_code, component::QUEUE | component::LOG);
         ledger.nodes[slot] = NodeRow {
             inbound,
-            traffic: *rates,
+            traffic: Keyed { values: *rates, keys: order },
             capacity: if inbound > 0.0 { model.map(|model| model.capacity).unwrap_or(0.0) } else { 0.0 },
             utilization,
             limit: if refused_share > 0.0 { 8 } else { model.map(|model| model.limit as usize).unwrap_or(0) },
             latency,
             p99,
             hop_by_kind,
+            wait_by_kind,
+            work_share,
+            work_unit: model.and_then(|model| model.work_unit),
+            cost: if inbound > 0.0 { work_total / inbound } else { 0.0 },
             repeated: inbound.min(pass.repeated.get(slot).copied().unwrap_or(0.0)),
+            origins: from_users,
             dropped: inbound * (1.0 - share),
             refused: inbound * share * refused_share,
             stranded,
+            stranded_kinds: strand.map(|(_, kinds)| kinds).unwrap_or_default(),
             connections: pool,
-            hit_ratio: if node.type_code == component::CACHE || node.type_code == component::CDN {
-                Some(pass.hits.get(slot).copied().unwrap_or(0.0))
-            } else {
-                None
-            },
-            lag_ms: if node.type_code == component::REPLICA { Some(pass.lag_ms) } else { None },
-            disk: model.map(|model| model.disk).unwrap_or(false),
-            throttled: model.map(|model| model.throttled).unwrap_or(false),
-            swapping: model.map(|model| model.swapping).unwrap_or(false),
+            hit_ratio: matches!(node.type_code, component::CACHE | component::CDN).then_some(hits),
+            evictions: (node.type_code == component::CACHE)
+                .then(|| rates[NR + backend::Q_READ] * (1.0 - hits) * eviction_share_of(game, node)),
+            age: queued.then(|| completion.waits[slot]),
+            lag_ms: (node.type_code == component::REPLICA).then_some(pass.lag_ms),
+            disk: model.is_some_and(|model| model.disk),
+            out,
+            resources: model.map(|model| model.resources).unwrap_or_default(),
+            throttled: model.is_some_and(|model| model.throttled),
+            swapping: model.is_some_and(|model| model.swapping),
+            status: status_of(node.down, inbound, utilization, stranded > 0.0 || refused_share > 0.0),
         };
     }
 
     ledger.bottleneck_by_kind = bottleneck_by_kind(nodes, &ledger.nodes);
-    let _ = design;
     ledger
+}
+
+/// `evictionShareOf`: the share of a Cache's refills that push out a hot key.
+fn eviction_share_of(game: &GameCtx, node: &crate::model::Node) -> f64 {
+    let hot = (game.users * HOT_KB_PER_USER) / 1_000_000.0;
+    if hot > 0.0 {
+        (1.0 - (crate::model::flat_scale(node.size) / hot).min(1.0)).max(0.0)
+    } else {
+        0.0
+    }
+}
+
+/// `originsOf`: each Node's traffic as shares of the Users' Request kinds behind it.
+pub fn origins_of(design: &crate::routing::Design, pass: &Pass) -> Vec<Keyed> {
+    let count = design.nodes.len();
+    // Each Node's routing Edges in, in Link order: a mirror Edge carries no origins.
+    let mut parents: Vec<Vec<usize>> = vec![Vec::new(); count];
+    let mut routed = vec![false; design.edges.len()];
+    for node in 0..count {
+        for &edge in design.out_edges_of(node) {
+            if let Some(flag) = routed.get_mut(edge as usize) {
+                *flag = true;
+            }
+        }
+    }
+    for (edge, link) in design.edges.iter().enumerate() {
+        if routed[edge] {
+            if let Some(into) = parents.get_mut(link.to as usize) {
+                into.push(edge);
+            }
+        }
+    }
+    let mut origins = vec![Keyed::default(); count];
+    for &node in &design.order {
+        let mut mix = Keyed::default();
+        let arriving = pass.rates(node);
+        for (kind, &rate) in arriving[..NR].iter().enumerate() {
+            if rate > 0.0 {
+                mix.set(kind, rate);
+            }
+        }
+        for &edge in &parents[node] {
+            let link = &design.edges[edge];
+            let carried = pass.links.get(edge).copied().unwrap_or([0.0; NK]);
+            let backend = carried[NR..].iter().fold(0.0, |total, rate| total + rate);
+            if backend <= 0.0 {
+                continue;
+            }
+            let parent = origins[link.from as usize];
+            for (kind, share) in parent.entries() {
+                mix.add(kind, backend * share);
+            }
+        }
+        let total = mix.entries().fold(0.0, |total, (_, rate)| total + rate);
+        if total > 0.0 {
+            let mut shares = Keyed::default();
+            for (kind, rate) in mix.entries() {
+                shares.set(kind, rate / total);
+            }
+            origins[node] = shares;
+        }
+    }
+    origins
 }
 
 /// `bottleneckByKindOf`: the most utilized limiting Node on each kind's own path.
@@ -546,7 +698,7 @@ pub fn bottleneck_by_kind(nodes: &[crate::model::Node], rows: &[NodeRow]) -> Vec
                 Some(row) => row,
                 None => continue,
             };
-            if row.traffic[kind] <= 0.0 {
+            if row.traffic.values[kind] <= 0.0 {
                 continue;
             }
             if row.utilization > best_utilization {

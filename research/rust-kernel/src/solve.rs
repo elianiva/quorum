@@ -385,19 +385,16 @@ pub fn pass_repeats(previous: &Pass, current: &Pass) -> bool {
                     }
                 }
                 // The resource gauges: Apache's processes move its memory before its capacity.
-                let gauges = |model: &crate::model::Model| {
-                    [
-                        model.cpu_used,
-                        model.cpu_total,
-                        model.ram_used,
-                        model.ram_total,
-                        model.slots_used,
-                        model.slots_total,
-                        model.network_used,
-                        model.network_total,
-                    ]
+                let near_gauge = |was: Option<crate::model::Gauge>, is: Option<crate::model::Gauge>| match (was, is) {
+                    (Some(was), Some(is)) => near(was.used, is.used) && near(was.total, is.total),
+                    (was, is) => was.is_none() && is.is_none(),
                 };
-                if gauges(before).iter().zip(gauges(after)).any(|(was, is)| !near(*was, is)) {
+                let (was, is) = (&before.resources, &after.resources);
+                if !near_gauge(was.cpu_cores, is.cpu_cores)
+                    || !near_gauge(was.ram_gb, is.ram_gb)
+                    || !near_gauge(was.slots, is.slots)
+                    || !near_gauge(was.network_kbps, is.network_kbps)
+                {
                     return false;
                 }
             }
@@ -427,8 +424,8 @@ pub fn pass_repeats(previous: &Pass, current: &Pass) -> bool {
         if !near(was_stranded.map(|(rate, _)| rate).unwrap_or(0.0), is_stranded.map(|(rate, _)| rate).unwrap_or(0.0)) {
             return false;
         }
-        if was_stranded.map(|(_, kinds)| kinds.count_ones()).unwrap_or(0)
-            != is_stranded.map(|(_, kinds)| kinds.count_ones()).unwrap_or(0)
+        if was_stranded.map(|(_, kinds)| kinds.len()).unwrap_or(0)
+            != is_stranded.map(|(_, kinds)| kinds.len()).unwrap_or(0)
         {
             return false;
         }

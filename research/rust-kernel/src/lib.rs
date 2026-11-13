@@ -10,5 +10,6 @@ pub mod pass;
 pub mod run;
 pub mod solve;
 pub mod routing;
+pub mod wire;
 
 pub use extra::*;

@@ -36,10 +36,10 @@ const compare = (game) => {
   writeGame(kernel, game, design, info)
   kernel.X.design_set(design.healthChecked ? 1 : 0, design.time)
   kernel.X.forget_solve()
-  const ledger = solveRun(kernel, game.nodes.length)
-  const searched = bottleneckRun(kernel, game.nodes.length)
+  const ledger = solveRun(kernel, game)
+  const searched = bottleneckRun(kernel, game)
   const { wrong, bad } = compareLedger(game, solveFlow(game), ledger)
-  const rust = searched.bottleneck >= 0 ? game.nodes[searched.bottleneck].id : null
+  const rust = searched.bottleneck
   const ts = solve(game).bottleneck
   if (!Object.is(ts, rust)) bad.push(`bottleneck: ts ${ts} rust ${rust}`)
   return wrong === 0 && Object.is(ts, rust) ? null : bad

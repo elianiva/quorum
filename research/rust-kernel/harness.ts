@@ -20,6 +20,8 @@ export const regions = await import(`${ROOT}/regions.ts`)
 export const demand = await import(`${ROOT}/solve-demand.ts`)
 export const features = await import(`${ROOT}/features.ts`)
 const solveOutcomes = await import(`${ROOT}/solve-outcomes.ts`)
+const { ERROR_CAUSES } = await import(`${ROOT}/distribution.ts`)
+import { decodeLedger, compareDeep } from './ledger-wire.ts'
 
 export const ALL = [...S.REQUEST_KINDS, ...S.BACKEND_KINDS]
 export const NK = ALL.length
@@ -539,149 +541,59 @@ export const outcomeRun = (kernel, nodes) => {
 }
 
 /** The pass loop and its Ledger. */
-export const solveRun = (kernel, nodes, options = {}) => {
-  const { X, view } = kernel
+export const solveRun = (kernel, game, options = {}) => {
+  const { X } = kernel
   const status = X.solve_run(options.boost ?? -1, options.passes ?? 0, options.revenueOnly ? 1 : 0)
   if (status !== 0) throw new Error(`solve_run: status ${status}`)
-  return readLedger(kernel, nodes)
+  return readLedger(kernel, game)
 }
 
 /** The pass loop plus the Bottleneck search. */
-export const bottleneckRun = (kernel, nodes, options = {}) => {
-  const { X, view } = kernel
+export const bottleneckRun = (kernel, game, options = {}) => {
+  const { X } = kernel
   const status = X.bottleneck_run(options.passes ?? 0)
   if (status !== 0) throw new Error(`bottleneck_run: status ${status}`)
-  return readLedger(kernel, nodes)
+  return readLedger(kernel, game)
 }
+
+/** The Ledger figures the kernel does not write yet. */
+export const PENDING = [
+  'links',
+  'regions',
+  'deviceLatency',
+  'regionKinds',
+  'insight',
+  'breadth',
+  'breadthRegions',
+  'burn',
+  'salaries',
+  'egress',
+  'fees',
+  'burnLines',
+  'costPerKind',
+  'costPerService',
+  'services',
+  'market',
+  'velocity',
+  'forecastPeak',
+  'nodes.*.receipts',
+]
 
 /**
- * Every Ledger figure the kernel reports, compared with the TypeScript Ledger by
- * `Object.is`, so a sign of zero or a NaN counts as a difference.
+ * Every Ledger figure, compared with the TypeScript Ledger by `Object.is` and
+ * key order, so a sign of zero, a NaN, or a reordered record counts as a difference.
  */
-export const compareLedger = (game, flow, ledger) => {
-  let checked = 0
-  let wrong = 0
-  const bad = []
-  const compare = (label, ts, rust) => {
-    checked += 1
-    if (!Object.is(ts, rust)) {
-      wrong += 1
-      if (bad.length < 40) bad.push(`${label}: ts ${ts} rust ${rust}`)
-    }
-  }
+export const compareLedger = (game, flow, ledger) => compareDeep(flow, ledger, PENDING)
 
-  compare('revenue', flow.revenue, ledger.revenue)
-  compare('demand', flow.demand, ledger.demand)
-  compare('served', flow.served, ledger.served)
-  compare('apdex', flow.apdex, ledger.apdex)
-  compare('latency', flow.latency, ledger.latency)
-  compare('p50', flow.p50, ledger.p50)
-  compare('p95', flow.p95, ledger.p95)
-  compare('p99', flow.p99, ledger.p99)
-  compare('errorShare', flow.errorShare, ledger.errorShare)
-  compare('fines', flow.fines, ledger.fines)
-  compare('subscriptions', flow.subscriptions, ledger.subscriptions)
-  compare(
-    'errorTotal',
-    Object.values(flow.errors).reduce((sum, rate) => sum + rate, 0),
-    ledger.errorTotal,
-  )
-  for (let kind = 0; kind < NR; kind += 1) {
-    const name = S.REQUEST_KINDS[kind]
-    const ts = flow.kinds[name]
-    const rust = ledger.kinds[kind]
-    if (!ts) {
-      compare(`kind ${name} absent`, 0, rust.rate)
-      continue
-    }
-    compare(`${name}.rate`, ts.rate, rust.rate)
-    compare(`${name}.success`, ts.success, rust.success)
-    compare(`${name}.apdex`, ts.apdex, rust.apdex)
-    compare(`${name}.mean`, ts.mean, rust.mean)
-    compare(`${name}.p50`, ts.p50, rust.p50)
-    compare(`${name}.p95`, ts.p95, rust.p95)
-    compare(`${name}.p99`, ts.p99, rust.p99)
-  }
-  game.nodes.forEach((node, slot) => {
-    const ts = flow.nodes[node.id]
-    const rust = ledger.nodes[slot]
-    compare(`${node.id}.inbound`, ts.inbound, rust.inbound)
-    compare(`${node.id}.capacity`, ts.capacity, rust.capacity)
-    compare(`${node.id}.utilization`, ts.utilization, rust.utilization)
-    compare(`${node.id}.dropped`, ts.dropped, rust.dropped)
-    compare(`${node.id}.refused`, ts.refused, rust.refused)
-    compare(`${node.id}.stranded`, ts.stranded, rust.stranded)
-    compare(`${node.id}.latency`, ts.latency, rust.latency)
-    compare(`${node.id}.p99`, ts.p99, rust.p99)
-    compare(`${node.id}.repeated`, ts.repeated, rust.repeated)
-  })
-  return { checked, wrong, bad }
-}
-
-export const readLedger = (kernel, nodes) => {
+/** The Ledger the last solve wrote, rebuilt in the TypeScript shape. */
+export const readLedger = (kernel, game) => {
   const { X, view } = kernel
-  const stride = X.ledger_node_stride()
-  const base = X.ledger_node_base()
-  const kindBase = X.ledger_kind_base()
-  const kindStride = X.ledger_kind_stride()
-  const block = view(BLOCK.ledger, Float64Array, X.ledger_len_for(nodes))
-  const summary = view(BLOCK.summary, Float64Array, X.summary_len())
-  const nodeRows = []
-  for (let slot = 0; slot < nodes; slot += 1) {
-    const at = base + slot * stride
-    nodeRows.push({
-      inbound: block[at],
-      capacity: block[at + 1],
-      utilization: block[at + 2],
-      dropped: block[at + 3],
-      refused: block[at + 4],
-      stranded: block[at + 5],
-      latency: block[at + 6],
-      p99: block[at + 7],
-      repeated: block[at + 8],
-      limit: block[at + 9],
-      connectionsUsed: block[at + 10],
-      connectionsMax: block[at + 11],
-      hitRatio: block[at + 12],
-      lagMs: block[at + 13],
-    })
-  }
-  const kinds = []
-  for (let kind = 0; kind < NR; kind += 1) {
-    const at = kindBase + kind * kindStride
-    kinds.push({
-      rate: block[at],
-      success: block[at + 1],
-      apdex: block[at + 2],
-      completion: block[at + 3],
-      mean: block[at + 4],
-      p50: block[at + 5],
-      p95: block[at + 6],
-      p99: block[at + 7],
-    })
-  }
-  return {
-    revenue: block[0],
-    demand: block[1],
-    served: block[2],
-    apdex: block[3],
-    latency: block[4],
-    p50: block[5],
-    p95: block[6],
-    p99: block[7],
-    errorShare: block[8],
-    fines: block[9],
-    subscriptions: block[10],
-    bottleneck: block[11],
-    failing: block[12],
-    errorTotal: block[13],
-    errors: Array.from(block.subarray(16, 28)),
-    bottleneckByKind: Array.from(block.subarray(28, 28 + NR)),
-    kinds,
-    nodes: nodeRows,
-    passes: summary[2],
-  }
+  const block = view(BLOCK.ledger, Float64Array, X.len(BLOCK.ledger))
+  return decodeLedger(block, game, { kinds: ALL, causes: ERROR_CAUSES })
 }
+
+/** How many passes the last solve ran. */
+export const passesOf = (kernel) => kernel.view(BLOCK.summary, Float64Array, kernel.X.summary_len())[2]
 
 /** The 200-Node stress board the TypeScript benchmark measures. */
 export const stressBoard = () => {

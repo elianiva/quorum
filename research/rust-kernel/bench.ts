@@ -7,7 +7,7 @@
  * the machine is shared, so treat the ratios as the figure and the absolutes as
  * context.
  */
-import { load, writeDesign, writeGame, solveRun, bottleneckRun, stressBoard, graph, compareLedger } from './harness.ts'
+import { load, writeDesign, writeGame, solveRun, bottleneckRun, stressBoard, graph, compareLedger, passesOf, BLOCK } from './harness.ts'
 
 const ROOT = new URL('../../packages/simulation/src', import.meta.url).pathname
 const { solveFlow, solve, bottleneckOf } = await import(`${ROOT}/solve.ts`)
@@ -26,15 +26,15 @@ const { X } = kernel
 const info = writeDesign(kernel, game, design)
 writeGame(kernel, game, design, info)
 X.design_set(design.healthChecked ? 1 : 0, design.time)
-const ledger = solveRun(kernel, N)
-const searched = bottleneckRun(kernel, N)
+const ledger = solveRun(kernel, game)
+const searched = bottleneckRun(kernel, game)
 
 // ---- the figures, side by side ----
 const { checked: ledgerChecked, wrong: ledgerWrong, bad } = compareLedger(game, flow, ledger)
 let checked = ledgerChecked
 let wrong = ledgerWrong
 const tsBottleneck = marked.bottleneck
-const rustBottleneck = searched.bottleneck >= 0 ? game.nodes[searched.bottleneck].id : null
+const rustBottleneck = searched.bottleneck
 for (const [label, ts, rust] of [
   ['bottleneck', tsBottleneck, rustBottleneck],
   ['bottleneck revenue', marked.revenue, searched.revenue],
@@ -50,7 +50,7 @@ console.log(`solve figures: ${checked - wrong}/${checked} identical`)
 for (const line of bad) console.log('   ', line)
 console.log(`bottleneck: TypeScript ${tsBottleneck}, Rust ${rustBottleneck}`)
 console.log(`revenue:    TypeScript ${flow.revenue}, Rust ${ledger.revenue}`)
-console.log(`passes:     Rust ${ledger.passes}`)
+console.log(`passes:     Rust ${passesOf(kernel)}`)
 
 // ---- timings ----
 const time = (label, run, samples = 40) => {
@@ -68,19 +68,19 @@ const time = (label, run, samples = 40) => {
 }
 
 const tsFlow = time('TypeScript solveFlow (6 passes, Ledger)', () => solveFlow({ ...game }))
-const rsFlow = time('Rust solveFlow (6 passes, Ledger)', () => solveRun(kernel, N))
+const rsFlow = time('Rust solveFlow (6 passes, Ledger)', () => solveRun(kernel, game))
 const tsBottleneckTime = time('TypeScript bottleneckOf (up to 3 re-solves)', () =>
   bottleneckOf(game, flow),
 )
-const rsBottleneckTime = time('Rust bottleneckOf (up to 3 re-solves)', () => bottleneckRun(kernel, N))
+const rsBottleneckTime = time('Rust bottleneckOf (up to 3 re-solves)', () => bottleneckRun(kernel, game))
 const tsSolve = time('TypeScript solve (flow + bottleneck)', () => {
   const fresh = { ...game }
   const base = solveFlow(fresh)
   return bottleneckOf(fresh, base)
 })
 const rsSolve = time('Rust solve (flow + bottleneck)', () => {
-  solveRun(kernel, N)
-  return bottleneckRun(kernel, N)
+  solveRun(kernel, game)
+  return bottleneckRun(kernel, game)
 })
 
 // ---- memory ----
@@ -89,7 +89,7 @@ const rsSolve = time('Rust solve (flow + bottleneck)', () => {
 // the Ledger block the kernel writes, and the JSON size of the TypeScript Ledger
 // it is compared with.
 const wasmBytes = X.memory.buffer.byteLength
-const rustLedgerBytes = X.ledger_len_for(N) * 8
+const rustLedgerBytes = X.len(BLOCK.ledger) * 8
 const tsLedgerBytes = JSON.stringify(flow).length
 
 console.log('')

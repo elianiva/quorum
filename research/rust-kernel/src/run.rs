@@ -8,7 +8,7 @@
 use crate::abi::{self, Inputs};
 use crate::catalog::*;
 use crate::dist::{Outcome, CAUSE_COUNT};
-use crate::ledger::{Ledger, Route};
+use crate::ledger::Route;
 use crate::model::{GameCtx, Model, Node, Rates, ServerFlags};
 use crate::outcomes::{tree, Memo};
 use crate::pass::{forward, Board, CodeTable, Pass, Run};
@@ -19,27 +19,12 @@ use crate::solve::{self, Setup};
 pub const MODEL_STRIDE: usize = 18 + 2 * NR;
 /// The Outcome block's stride: seven figures, then twelve failure shares.
 pub const OUTCOME_STRIDE: usize = 19;
-/// Where the Ledger's per-kind rows start.
-pub const LEDGER_KIND_BASE: usize = 64;
-/// One kind row: rate, success, apdex, completion, mean, p50, p95, p99.
-pub const LEDGER_KIND_STRIDE: usize = 8;
-/// One Node row's stride.
-pub const LEDGER_NODE_STRIDE: usize = 14;
-/// Where the Ledger's per-kind bottlenecks start.
-pub const LEDGER_BOTTLENECK_BASE: usize = 28;
-/// Where the Ledger's error shares start.
-pub const LEDGER_ERROR_BASE: usize = 16;
 /// The summary block: the figures a caller reads without the rows.
 pub const SUMMARY_REVENUE: usize = 0;
 pub const SUMMARY_BOTTLENECK: usize = 1;
 pub const SUMMARY_PASSES: usize = 2;
 pub const SUMMARY_NODES: usize = 3;
 pub const SUMMARY_LEN: usize = 4;
-
-/// How many `f64`s a Ledger of `nodes` Nodes takes.
-pub fn ledger_len(nodes: usize) -> usize {
-    LEDGER_KIND_BASE + NR * LEDGER_KIND_STRIDE + nodes * LEDGER_NODE_STRIDE
-}
 
 #[no_mangle]
 pub extern "C" fn model_stride() -> i32 {
@@ -49,41 +34,6 @@ pub extern "C" fn model_stride() -> i32 {
 #[no_mangle]
 pub extern "C" fn outcome_stride() -> i32 {
     OUTCOME_STRIDE as i32
-}
-
-#[no_mangle]
-pub extern "C" fn ledger_kind_base() -> i32 {
-    LEDGER_KIND_BASE as i32
-}
-
-#[no_mangle]
-pub extern "C" fn ledger_kind_stride() -> i32 {
-    LEDGER_KIND_STRIDE as i32
-}
-
-#[no_mangle]
-pub extern "C" fn ledger_node_stride() -> i32 {
-    LEDGER_NODE_STRIDE as i32
-}
-
-#[no_mangle]
-pub extern "C" fn ledger_node_base() -> i32 {
-    (LEDGER_KIND_BASE + NR * LEDGER_KIND_STRIDE) as i32
-}
-
-#[no_mangle]
-pub extern "C" fn ledger_bottleneck_base() -> i32 {
-    LEDGER_BOTTLENECK_BASE as i32
-}
-
-#[no_mangle]
-pub extern "C" fn ledger_error_base() -> i32 {
-    LEDGER_ERROR_BASE as i32
-}
-
-#[no_mangle]
-pub extern "C" fn ledger_len_for(nodes: i32) -> i32 {
-    ledger_len(nodes.max(0) as usize) as i32
 }
 
 #[no_mangle]
@@ -330,6 +280,7 @@ pub extern "C" fn forward_run() -> i32 {
 }
 
 fn write_model(model: &Model, out: &mut [f64]) {
+    let gauge = |gauge: Option<crate::model::Gauge>| gauge.unwrap_or_default();
     let values = [
         model.utilization,
         model.share,
@@ -339,14 +290,14 @@ fn write_model(model: &Model, out: &mut [f64]) {
         model.tail_ms,
         model.processes,
         model.inflight,
-        model.cpu_used,
-        model.cpu_total,
-        model.ram_used,
-        model.ram_total,
-        model.slots_used,
-        model.slots_total,
-        model.network_used,
-        model.network_total,
+        gauge(model.resources.cpu_cores).used,
+        gauge(model.resources.cpu_cores).total,
+        gauge(model.resources.ram_gb).used,
+        gauge(model.resources.ram_gb).total,
+        gauge(model.resources.slots).used,
+        gauge(model.resources.slots).total,
+        gauge(model.resources.network_kbps).used,
+        gauge(model.resources.network_kbps).total,
         if model.throttled { 1.0 } else { 0.0 },
         if model.swapping { 1.0 } else { 0.0 },
     ];
@@ -536,9 +487,7 @@ fn solve_impl(boost_slot: i32, passes: i32, revenue_only: i32, search: bool) -> 
             outputs.summary[SUMMARY_PASSES] = solved.passes as f64;
             outputs.summary[SUMMARY_NODES] = count as f64;
             if let Some(ledger) = solved.ledger.as_ref() {
-                outputs.ledger.clear();
-                outputs.ledger.resize(ledger_len(count), 0.0);
-                write_ledger(ledger, &mut outputs.ledger, count);
+                outputs.ledger = crate::wire::Wire::ledger(ledger);
             }
             abi::OK
         });
@@ -548,62 +497,4 @@ fn solve_impl(boost_slot: i32, passes: i32, revenue_only: i32, search: bool) -> 
         }
         status
     })
-}
-
-fn write_ledger(ledger: &Ledger, out: &mut [f64], nodes: usize) {
-    let mut put = |index: usize, value: f64| {
-        if let Some(cell) = out.get_mut(index) {
-            *cell = value;
-        }
-    };
-    put(0, ledger.revenue);
-    put(1, ledger.demand);
-    put(2, ledger.served);
-    put(3, ledger.apdex);
-    put(4, ledger.latency);
-    put(5, ledger.p50);
-    put(6, ledger.p95);
-    put(7, ledger.p99);
-    put(8, ledger.error_share);
-    put(9, ledger.fines);
-    put(10, ledger.subscriptions);
-    put(11, ledger.bottleneck.map(|slot| slot as f64).unwrap_or(-1.0));
-    put(12, ledger.failing.len() as f64);
-    put(13, ledger.errors.iter().sum::<f64>());
-    for cause in 0..CAUSE_COUNT {
-        put(LEDGER_ERROR_BASE + cause, ledger.errors[cause]);
-    }
-    for kind in 0..NR {
-        let slot = ledger.bottleneck_by_kind.get(kind).copied().flatten();
-        put(LEDGER_BOTTLENECK_BASE + kind, slot.map(|slot| slot as f64).unwrap_or(-1.0));
-        let row = ledger.kinds.get(kind).copied().unwrap_or_default();
-        let base = LEDGER_KIND_BASE + kind * LEDGER_KIND_STRIDE;
-        put(base, row.rate);
-        put(base + 1, row.success);
-        put(base + 2, row.apdex);
-        put(base + 3, row.completion.unwrap_or(-1.0));
-        put(base + 4, row.mean);
-        put(base + 5, row.p50);
-        put(base + 6, row.p95);
-        put(base + 7, row.p99);
-    }
-    let node_base = LEDGER_KIND_BASE + NR * LEDGER_KIND_STRIDE;
-    for slot in 0..nodes.min(ledger.nodes.len()) {
-        let row = &ledger.nodes[slot];
-        let base = node_base + slot * LEDGER_NODE_STRIDE;
-        put(base, row.inbound);
-        put(base + 1, row.capacity);
-        put(base + 2, row.utilization);
-        put(base + 3, row.dropped);
-        put(base + 4, row.refused);
-        put(base + 5, row.stranded);
-        put(base + 6, row.latency);
-        put(base + 7, row.p99);
-        put(base + 8, row.repeated);
-        put(base + 9, row.limit as f64);
-        put(base + 10, row.connections.map(|(used, _)| used).unwrap_or(0.0));
-        put(base + 11, row.connections.map(|(_, max)| max).unwrap_or(0.0));
-        put(base + 12, row.hit_ratio.unwrap_or(-1.0));
-        put(base + 13, row.lag_ms.unwrap_or(-1.0));
-    }
 }

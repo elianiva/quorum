@@ -2,7 +2,8 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import { cn } from 'cn'
 import { ERAS, type BuildGroup, type ResearchId } from '@quorum/simulation/catalog'
 import { FIGURE } from '@quorum/ui/game/bits'
-import type { Lang, Title } from '../i18n/lang.ts'
+import { localeOf } from '../i18n/builder.ts'
+import { langOf, type Lang, type Title } from '../i18n/lang.ts'
 import type { Message } from '../main.ts'
 import { proseAt } from '../content.ts'
 import { headingsOf, prose } from '../prose.ts'
@@ -43,13 +44,15 @@ export const researchLink = (l: Lang, id: ResearchId, h: H): Html =>
   link(researchPath(id), l.cat.RESEARCH[id].name, h)
 
 /** Links separated by commas, or a dash when there are none. */
-export const linkList = (items: ReadonlyArray<Html>, h: H): Html =>
-  items.length === 0
+export const linkList = (items: ReadonlyArray<Html>, h: H): Html => {
+  const separator = langOf(localeOf(h)).t.reference.listSeparator
+  return items.length === 0
     ? h.span([h.Class('text-muted-foreground')], ['—'])
     : h.span(
         [],
-        items.flatMap((item, index) => (index === 0 ? [item] : [', ', item])),
+        items.flatMap((item, index) => (index === 0 ? [item] : [separator, item])),
       )
+}
 
 export type Fact = Readonly<{ name: string; value: Html | string }>
 

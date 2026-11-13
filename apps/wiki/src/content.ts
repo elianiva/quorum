@@ -7,18 +7,23 @@ import type { Page } from './page.ts'
 
 export type ProseModule = Readonly<{ default: unknown; frontmatter: unknown }>
 
-/* Prose lives in `content/` (English) and `content-es/` (Spanish, the same relative paths). English
-   is the source of structure: a Spanish file replaces an English page's title, summary, aliases and
-   body, while its section, group, order, era, gdd and toc always come from the English file. A page
-   with no Spanish file shows its English text. Spanish loads as a separate chunk
-   (src/locales/es.ts) and registers its files here. */
+/* Prose lives in `content/` (English) and in a directory per other language with the same relative
+   paths: `content-es/` and `content-ja/`. English is the source of structure: a translated file
+   replaces an English page's title, summary, aliases and body, while its section, group, order, era,
+   gdd and toc always come from the English file. A page with no translation shows its English text.
+   A translation loads as a separate chunk (src/locales/<language>.ts) and registers its files
+   here. */
 
 const english = import.meta.glob<ProseModule>('../content/**/*.md', { eager: true })
 
 const decodeFrontmatter = Schema.decodeUnknownSync(Frontmatter)
 
 /** The directory each language's files live in, as the repository names it. */
-const ROOTS: Readonly<Record<Locale, string>> = { en: 'content', es: 'content-es' }
+const ROOTS: Readonly<Record<Locale, string>> = {
+  en: 'content',
+  es: 'content-es',
+  ja: 'content-ja',
+}
 
 type Entry = Readonly<{
   path: string
@@ -65,7 +70,7 @@ export const registerProse = (
   byLocale[locale] = entriesOf(modules, locale)
 }
 
-/** The Spanish counterpart of an English entry, if its file exists. */
+/** The translation of an English entry, if its file exists. */
 const translation = (locale: Locale, path: string, structured: boolean): Entry | null =>
   locale === 'en'
     ? null
@@ -113,7 +118,7 @@ export const prosePaths: ReadonlyArray<string> = englishEntries()
   .filter((entry) => !entry.frontmatter)
   .map((entry) => entry.path)
 
-/** The authored pages in a language: Spanish text where it exists, English where it does not. */
+/** The authored pages in a language: translated text where it exists, English where it does not. */
 export const authoredPages = (locale: Locale): ReadonlyArray<Page> =>
   englishEntries().flatMap((base): ReadonlyArray<Page> => {
     const meta = base.frontmatter
@@ -134,7 +139,7 @@ export const authoredPages = (locale: Locale): ReadonlyArray<Page> =>
         group: meta.group ?? null,
         order: Number(meta.order ?? 100),
         era: meta.era === undefined ? null : Number(meta.era),
-        // A Spanish page keeps its English aliases too, so a reader who knows the English term finds it.
+        // A translated page keeps its English aliases too, so a reader who knows the English term finds it.
         aliases: [
           ...new Set(
             [text.aliases, meta.aliases]

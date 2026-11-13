@@ -74,6 +74,7 @@ const staticFiles = (): Plugin => ({
 const INDEX_LOCALES: Readonly<Record<string, Locale>> = {
   '/search-index.json': 'en',
   '/es/search-index.json': 'es',
+  '/ja/search-index.json': 'ja',
 }
 
 const searchIndexDev = (): Plugin => ({
@@ -83,8 +84,8 @@ const searchIndexDev = (): Plugin => ({
       const locale = INDEX_LOCALES[(request.url ?? '').split('?')[0] ?? '']
       if (locale === undefined) return next()
       void (async () => {
-        // The Spanish bundle registers its copy and prose when it loads.
-        await server.ssrLoadModule('/src/locales/es.ts')
+        // A translated language registers its copy and prose when its bundle loads.
+        await server.ssrLoadModule(`/src/locales/${locale}.ts`)
         const { pagesFor } = (await server.ssrLoadModule('/src/pages.ts')) as {
           pagesFor: (locale: Locale) => ReadonlyArray<Page>
         }

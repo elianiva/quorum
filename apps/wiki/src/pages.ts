@@ -32,7 +32,7 @@ export const PAGES: ReadonlyArray<Page> = pagesFor(DEFAULT_LOCALE)
 export const pageIn = (locale: Locale, path: string): Page | null =>
   buildFor(locale).byPath.get(path) ?? null
 
-/** A page by the URL path it is served at: `/glossary/latency` or `/es/glossary/latency`. */
+/** A page by the URL path it is served at: `/glossary/latency`, `/es/glossary/latency` or `/ja/glossary/latency`. */
 export const pageAt = (pathname: string): Page | null =>
   pageIn(localeOfPath(pathname), stripLocale(pathname))
 

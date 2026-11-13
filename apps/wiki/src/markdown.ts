@@ -18,9 +18,9 @@ import { WIKI_ORIGIN } from './site.ts'
 type Inline = Markdown.Inline
 type Block = Markdown.MarkdownDocument['blocks'][number]
 
-/* The Markdown export is English. Its pages come from `PAGES`, the English pages, so a Spanish
-   page has no twin: the files stay as agents already read them, and the `/es` pages are the
-   readers' (src/entry.server.ts links a twin only from an English page). */
+/* The Markdown export is English. Its pages come from `PAGES`, the English pages, so a translated
+   page has no twin: the files stay as agents already read them, and the `/es` and `/ja` pages are
+   the readers' (src/entry.server.ts links a twin only from an English page). */
 
 const ENGLISH = langOf('en')
 

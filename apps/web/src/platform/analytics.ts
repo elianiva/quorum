@@ -25,11 +25,13 @@ export const PRIVACY_URL = `${WIKI_URL}/about/privacy`
 export const DISCLAIMER_URL = `${WIKI_URL}/about/disclaimer`
 export const SOURCE_URL = 'https://github.com/elianiva/quorum'
 
-/** The wiki's page for an engineering term. The game links its terms here. The wiki is in English
- *  and Spanish, with Spanish under `/es`, so a player who plays in Spanish opens the Spanish page
- *  and every other language opens the English one. */
+/** The wiki's page for an engineering term. The game links its terms here. The wiki is in English,
+ *  Spanish and Japanese, each translated language under its prefix, so a player who plays in
+ *  Spanish or Japanese opens that language's page and every other language opens the English one. */
+const WIKI_PREFIX: Readonly<Partial<Record<Locale, string>>> = { es: '/es', ja: '/ja' }
+
 export const glossaryUrl = (id: string, locale: Locale = 'en'): string =>
-  `${WIKI_URL}${locale === 'es' ? '/es' : ''}/glossary/${id}`
+  `${WIKI_URL}${WIKI_PREFIX[locale] ?? ''}/glossary/${id}`
 
 let client: Client | null = null
 let starting = false

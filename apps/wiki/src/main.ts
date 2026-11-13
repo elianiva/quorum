@@ -47,7 +47,7 @@ export const normalize = (pathname: string): string => {
   return trimmed === '' ? '/' : trimmed
 }
 
-/** The language and the logical path a URL path names: `/es/glossary/latency` is Spanish at `/glossary/latency`. */
+/** The language and the logical path a URL path names: `/ja/glossary/latency` is Japanese at `/glossary/latency`. */
 export const routeOf = (pathname: string): Readonly<{ locale: Locale; path: string }> => {
   const trimmed = normalize(pathname)
   return { locale: localeOfPath(trimmed), path: normalize(stripLocale(trimmed)) }

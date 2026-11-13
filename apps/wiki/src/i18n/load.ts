@@ -5,4 +5,5 @@ import type { Locale } from './locale.ts'
     bundle registers itself when it loads, and loading it twice is free. */
 export const loadLocale = async (locale: Locale): Promise<void> => {
   if (locale === 'es') await import('../locales/es.ts')
+  if (locale === 'ja') await import('../locales/ja.ts')
 }

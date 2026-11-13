@@ -9,8 +9,9 @@ import { PAGES, pageAt, pageIn, pagesFor } from './pages.ts'
 import { indexJson } from './search.ts'
 import { GAME_ORIGIN, WIKI_ORIGIN } from './site.ts'
 import { view } from './view.ts'
-// The Spanish bundle registers itself here, since the server renders every language.
+// The translated bundles register themselves here, since the server renders every language.
 import './locales/es.ts'
+import './locales/ja.ts'
 
 const FONTS =
   'https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap'
@@ -143,7 +144,7 @@ export const searchIndexes = (): Readonly<Record<string, string>> =>
     ]),
   )
 
-/** Every page in every language: English at its path, Spanish under `/es`. */
+/** Every page in every language: English at its path, each translation under its prefix. */
 export const prerenderPaths: ReadonlyArray<string> = LOCALES.flatMap((locale) =>
   PAGES.map((page) => withLocale(locale, page.path)),
 )

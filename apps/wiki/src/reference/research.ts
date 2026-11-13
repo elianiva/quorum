@@ -157,7 +157,7 @@ const entity = (l: Lang, entry: ResearchDef): Page => {
                         entry.requires.map((id) => researchLink(l, id, h)),
                         h,
                       ),
-                      '.',
+                      l.t.reference.sentenceEnd,
                     ]
                   : [t.root(trackLabel(l, entry.track))],
               ),
@@ -171,7 +171,7 @@ const entity = (l: Lang, entry: ResearchDef): Page => {
                           followUps.map((next) => researchLink(l, next.id, h)),
                           h,
                         ),
-                        '.',
+                        l.t.reference.sentenceEnd,
                       ],
                     ),
                   ]

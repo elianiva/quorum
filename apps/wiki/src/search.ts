@@ -10,7 +10,7 @@ import type { Page } from './page.ts'
    summaries, aliases, headings and text, and queried with its own stop words and stemmer. Why
    MiniSearch: docs/research/full-text-search.md. */
 
-/** Where a language's index is served: English at the root, Spanish under `/es`. */
+/** Where a language's index is served: English at the root, every other language under its prefix. */
 export const indexUrl = (locale: Locale): string => withLocale(locale, '/search-index.json')
 
 export type Hit = Readonly<{
@@ -143,6 +143,8 @@ const SPANISH_STOPWORDS = new Set([
 const STOPWORDS: Readonly<Record<Locale, ReadonlySet<string>>> = {
   en: ENGLISH_STOPWORDS,
   es: SPANISH_STOPWORDS,
+  // Japanese has none: a pair carries meaning on its own, and a particle alone is not a token.
+  ja: new Set(),
 }
 
 /** A light English stemmer, so "caching" finds "cache", "retries" finds "retry", and
@@ -180,7 +182,12 @@ export const stemEs = (word: string): string => {
   return out.length > 4 && /[aeo]$/.test(out) ? out.slice(0, -1) : out
 }
 
-const stemmers: Readonly<Record<Locale, (word: string) => string>> = { en: stem, es: stemEs }
+const stemmers: Readonly<Record<Locale, (word: string) => string>> = {
+  en: stem,
+  es: stemEs,
+  // A Japanese token is already the two characters the index meets a query on.
+  ja: (word) => word,
+}
 
 /** Lower case with accents folded, so "Cómo" and "como" are one word in both languages. */
 const fold = (text: string): string =>
@@ -195,9 +202,26 @@ const words = (text: string): ReadonlyArray<string> =>
     .split(/[^a-z0-9]+/)
     .filter(Boolean)
 
+const JAPANESE = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}ー々]+/gu
+
+/** The Japanese runs of a text, split into overlapping pairs. Japanese writes without spaces and
+    the wiki ships no dictionary, so index and query meet on two characters at a time: キャッシュ
+    is キャ ャッ ッシ シュ ュ, and any of them finds it. A run of one character stands alone. */
+const pairs = (text: string): ReadonlyArray<string> =>
+  [...text.normalize('NFKC').matchAll(JAPANESE)].flatMap(([run = '']) =>
+    run.length === 1
+      ? [run]
+      : Array.from({ length: run.length - 1 }, (_, index) => run.slice(index, index + 2)),
+  )
+
+/** The terms a text is cut into before stop words and stems: whole Latin words, and Japanese
+    pairs. */
+const tokensOf = (text: string, locale: Locale): ReadonlyArray<string> =>
+  locale === 'ja' ? [...words(text), ...pairs(text)] : words(text)
+
 /** The terms a text is searched by: stop words dropped, the rest stemmed. */
 const termsOf = (text: string, locale: Locale): ReadonlyArray<string> =>
-  words(text)
+  tokensOf(text, locale)
     .filter((word) => !STOPWORDS[locale].has(word))
     .map(stemmers[locale])
 
@@ -206,7 +230,7 @@ const termsOf = (text: string, locale: Locale): ReadonlyArray<string> =>
 const optionsFor = (locale: Locale): Options<Document> => ({
   fields: ['title', 'aliases', 'headings', 'summary', 'text', 'kind'],
   storeFields: ['path', 'title', 'aliases', 'summary', 'section', 'anchors'],
-  tokenize: (text) => [...words(text)],
+  tokenize: (text) => [...tokensOf(text, locale)],
   processTerm: (term) => {
     if (STOPWORDS[locale].has(term)) return null
     return stemmers[locale](term)
@@ -253,13 +277,15 @@ export const loadIndex = (json: string, locale: Locale = DEFAULT_LOCALE): Index 
 
 /** The heading a query names, so a result opens at that section rather than the page top. Terms
     shorter than four letters, such as "the" and "of", name every heading, so only terms of four
-    letters or more, and terms with a digit such as "p99", count. */
+    letters or more, and terms with a digit such as "p99", count. Japanese pairs are two characters
+    and count on their own. */
 const headingOf = (
   anchors: ReadonlyArray<Anchor>,
   terms: ReadonlyArray<string>,
   locale: Locale,
 ): string | null => {
-  const candidates = terms.filter((term) => term.length >= 3 || /\d/.test(term))
+  const shortest = locale === 'ja' ? 2 : 3
+  const candidates = terms.filter((term) => term.length >= shortest || /\d/.test(term))
   let best: Readonly<{ id: string; score: number }> | null = null
   for (const anchor of anchors) {
     const heading = termsOf(anchor.text, locale)

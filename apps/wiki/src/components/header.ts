@@ -1,6 +1,6 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { cn } from 'cn'
-import { ArrowUpRight, Languages, Menu, X } from 'lucide'
+import { ArrowUpRight, Menu, X } from 'lucide'
 import { githubMark } from '@quorum/ui/primitives/github'
 import { icon } from '@quorum/ui/primitives/icon'
 import { rootBuilder } from '../i18n/builder.ts'
@@ -40,27 +40,38 @@ export const mark = (h: H): Html =>
     ],
   )
 
-/** The same page in the other language: a link, so the page loads whole in its language. */
-const switcher = (model: Model, l: Lang, h: H): Html => {
-  const other = LOCALES.find((locale) => locale !== model.locale) ?? model.locale
-  const name = LOCALE_NAMES[other]
-  const tag = LOCALE_TAGS[other].lang
-  return h.a(
+/** Every language the wiki has, with the current one marked. A link, so the page loads whole in its
+    language; the current language is a label, since it already is the page. */
+const switcher = (model: Model, l: Lang, h: H): Html =>
+  h.nav(
     [
       h.Key('language'),
-      // The builder that points links into the page's language would point this one back.
-      rootBuilder(h).Href(withLocale(other, model.path)),
-      h.Attribute('hreflang', tag),
-      h.Attribute('lang', tag),
-      h.Title(l.t.header.switchTo(name)),
-      h.AriaLabel(l.t.header.switchTo(name)),
-      h.Class(
-        'flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-border px-2 text-[12px] font-medium text-muted-foreground hover:border-foreground/30 hover:text-foreground',
-      ),
+      h.AriaLabel(l.t.header.language),
+      h.Class('flex h-8 shrink-0 items-center gap-0.5 rounded-md border border-border p-0.5'),
     ],
-    [icon(h, Languages, 'size-3.5'), h.span([], [tag.toUpperCase()])],
+    LOCALES.map((locale) => {
+      const tag = LOCALE_TAGS[locale].lang
+      const current = locale === model.locale
+      const look = cn(
+        'grid h-full min-w-6 place-items-center rounded px-1 text-[11px] font-semibold uppercase',
+        current ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
+      )
+      return current
+        ? h.span([h.Key(locale), h.AriaCurrent('page'), h.Class(look)], [tag])
+        : h.a(
+            [
+              h.Key(locale),
+              // The builder that points links into the page's language would point this one back.
+              rootBuilder(h).Href(withLocale(locale, model.path)),
+              h.Attribute('hreflang', tag),
+              h.Attribute('lang', tag),
+              h.Title(l.t.header.switchTo(LOCALE_NAMES[locale])),
+              h.Class(look),
+            ],
+            [tag],
+          )
+    }),
   )
-}
 
 export const header = (model: Model, h: H): Html => {
   const l = langOf(model.locale)

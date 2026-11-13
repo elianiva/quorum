@@ -179,13 +179,13 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
             [
               t.needs,
               ...needs.flatMap((research, index) => [
-                ...(index > 0 ? [', '] : []),
+                ...(index > 0 ? [l.t.reference.listSeparator] : []),
                 h.a(
                   [h.Href(`/research/${research}`), h.Class('underline underline-offset-4')],
                   [RESEARCH[research].name],
                 ),
               ]),
-              '.',
+              l.t.reference.sentenceEnd,
             ],
           )
         : h.empty,

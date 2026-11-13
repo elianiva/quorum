@@ -119,7 +119,7 @@ const entity = (l: Lang, def: IncidentDef): Page => {
                       [],
                       [
                         production.sentence,
-                        ' ',
+                        l.t.reference.sentenceGap,
                         link(productionPath, production.label, h),
                         t.shapeAndLimit,
                       ],

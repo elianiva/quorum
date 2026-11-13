@@ -87,8 +87,9 @@ describe('Design change labels', () => {
 })
 
 describe('wiki links', () => {
-  test('a Spanish game opens the Spanish glossary page, and every other language the English one', () => {
+  test('a translated game opens the wiki page in its language, and every other language the English one', () => {
     expect(glossaryUrl('apdex', 'es')).toBe('https://wiki.playquorum.dev/es/glossary/apdex')
+    expect(glossaryUrl('apdex', 'ja')).toBe('https://wiki.playquorum.dev/ja/glossary/apdex')
     expect(glossaryUrl('apdex', 'en')).toBe('https://wiki.playquorum.dev/glossary/apdex')
     expect(glossaryUrl('apdex', 'fr')).toBe('https://wiki.playquorum.dev/glossary/apdex')
     expect(glossaryUrl('apdex')).toBe('https://wiki.playquorum.dev/glossary/apdex')

@@ -22,7 +22,7 @@ const GRID =
   'grid gap-x-8 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_16rem]'
 
 export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
-  // Every link a Spanish page draws points into `/es` (src/i18n/builder.ts).
+  // Every link a translated page draws points into its own language (src/i18n/builder.ts).
   const h = builderFor(model.locale, plain)
   const t = langOf(model.locale).t.site
   const page = pageIn(model.locale, model.path)

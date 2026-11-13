@@ -64,6 +64,9 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
     const all = model.era === ALL_ERAS
     const reached = all ? t.allShow : t.hidingAfter(ERAS[model.era]?.name ?? '')
     const step = 'h-7 min-w-0 flex-1 cursor-pointer rounded-md text-[12px] transition-colors'
+    // The first step says a word, not a number: it takes the room it needs, in every language.
+    const allStep =
+      'h-7 shrink-0 cursor-pointer rounded-md px-2 text-[12px] whitespace-nowrap transition-colors'
     return h.div(
       [h.Class('border-t border-border pt-3')],
       [
@@ -85,8 +88,7 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
                 h.OnClick(Message.Chosen({ era: ALL_ERAS })),
                 h.Class(
                   cn(
-                    step,
-                    'max-w-9 flex-[1.4]',
+                    allStep,
                     all
                       ? 'bg-foreground font-medium text-background'
                       : 'border border-border text-muted-foreground hover:bg-muted hover:text-foreground',

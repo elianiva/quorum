@@ -63,7 +63,8 @@ const spoiler = (page: Page, model: Model, body: Html, h: H): Html => {
 }
 
 const footer = (page: Page, h: H): Html => {
-  const t = langOf(page.locale).t.article
+  const l = langOf(page.locale)
+  const t = l.t.article
   const related = page.related.flatMap((path) => {
     const target = pageIn(page.locale, path)
     return target ? [target] : []
@@ -147,7 +148,7 @@ const footer = (page: Page, h: H): Html => {
                 ],
                 [t.changelogLink],
               ),
-              '.',
+              l.t.reference.sentenceEnd,
             ],
           ),
         ],

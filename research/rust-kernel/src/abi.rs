@@ -176,7 +176,7 @@ pub const S_DEGRADE: usize = 146;
 pub const SCALARS: usize = 147;
 
 /// The node-fields block: one row per Node, read by the routing Design.
-pub const NODE_FIELDS: usize = 10;
+pub const NODE_FIELDS: usize = 12;
 /// The edge-fields block: one row per Edge.
 pub const EDGE_FIELDS: usize = 10;
 

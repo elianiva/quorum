@@ -6,6 +6,11 @@
 use crate::catalog::*;
 use crate::extra::*;
 use crate::pass::{Calls, Code};
+/// `DbTopology` codes, in the host's order: how a Data Group holds its rows.
+pub mod topology {
+    pub const MULTI: usize = 1;
+    pub const SHARDED: usize = 2;
+}
 
 /// Per-request-kind scratch, indexed by the Request kind index (0..NR).
 pub type Rates = [f64; NK];
@@ -328,6 +333,7 @@ pub struct Node {
     pub shard_key: usize,
     pub iops: usize,
     pub keep: usize,
+    /// A `topology::*` code: how the Node's Data Group holds its rows.
     pub topology: usize,
     /// A Connection Pooler's mode: 0 session, 1 transaction, 2 statement.
     pub mode: usize,
@@ -1846,7 +1852,7 @@ pub fn db_cpu(game: &GameCtx, node: &Node, arriving: &Rates, cores: f64, scatter
         * bloat
         * if denormalized { DENORMALIZED_READ } else { 1.0 }
         * DB_READ[engine];
-    let multi_leader = topology == 1 && database_count > 1.0;
+    let multi_leader = topology == topology::MULTI && database_count > 1.0;
     let write_cpu = ((QUERY_CPU_BY_BACKEND[backend::Q_WRITE] * game.query[backend::Q_WRITE]) / warmth)
         * (1.0 + 0.5 * evicted)
         * shard
@@ -1899,7 +1905,7 @@ pub struct DbShards {
 
 pub fn db_shards(node: &Node, logical: &Sharding, database_count: f64) -> DbShards {
     let shards = logical.shards
-        * if node.topology == 2 && node.type_code == component::DATABASE { database_count } else { 1.0 };
+        * if node.topology == topology::SHARDED && node.type_code == component::DATABASE { database_count } else { 1.0 };
     let key = node.shard_key.min(3);
     DbShards {
         shards,
@@ -2004,7 +2010,10 @@ pub fn server_receipt(game: &GameCtx, node: &Node, model: &Model, kind: usize, c
     lines.times(Cause::Neighbours, 1.0 / (1.0 - node.steal));
     lines.times(Cause::Swapping, 1.0 / model.efficiency);
     lines.times(Cause::Gc, if model.collecting > 1.0 { model.collecting } else { 1.0 });
-    Receipt { base, lines, total: (cpu / model.efficiency) * if model.collecting > 1.0 { model.collecting } else { 1.0 } }
+    // Shedding runs the model on the kept rates, which builds no cost for a kind it drops whole.
+    let shed = kind < NR && (model.shares_mask >> kind) & 1 == 1 && model.shares[kind] == 0.0;
+    let total = if shed { 0.0 } else { (cpu / model.efficiency) * if model.collecting > 1.0 { model.collecting } else { 1.0 } };
+    Receipt { base, lines, total }
 }
 
 /// The Database model: `databaseModel` from capacity.ts.
@@ -2028,7 +2037,7 @@ pub fn database_model(
     let group_users = node.users_in_group;
     let topology = node.topology;
     let database_count = database_count(node);
-    let shard_share = if topology == 2 && database_count > 1.0 { 1.0 / database_count } else { 1.0 };
+    let shard_share = if topology == topology::SHARDED && database_count > 1.0 { 1.0 / database_count } else { 1.0 };
     let working_set = (LOCAL_DB_RAM + group_users * LOCAL_DB_RAM_PER_USER) * shard_share;
     let footprint = working_set + connection_ram;
     let disk = footprint > ram - OS_RAM;

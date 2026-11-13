@@ -670,8 +670,9 @@ pub fn compile(inputs: &crate::abi::Inputs) -> Result<Design, i32> {
             RouteNode {
                 type_code: field(0) as u16,
                 down: field(1) != 0.0,
-                down_cause: 1,
-                down_at: 0.0,
+                // `causeOf(life) === 'restart'`: a planned restart drains first, so routers see it at once.
+                down_cause: if field(11) != 0.0 { 0 } else { 1 },
+                down_at: field(10),
                 sticky: field(2) != 0.0,
                 policy: field(3) as u8,
                 ttl: field(4),

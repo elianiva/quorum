@@ -925,9 +925,18 @@ export const cacheKeyHit = (node: GameNode): number => CACHE_KEYS[node.cacheKey]
  * Whether a Load Balancer with slow start links to the Node (11 "JVM warmup under load"): it
  * sends a new copy a growing share of traffic, so the copy never meets a spike cold.
  */
-export const rampedOf = (game: Game, node: GameNode): boolean =>
-  game.links.some(
-    (link) =>
-      link.to === node.id &&
-      game.nodes.some((entry) => entry.id === link.from && entry.type === 'lb' && entry.slowStart),
-  )
+export const rampedOf = (game: Game, node: GameNode): boolean => rampedIdsOf(game).has(node.id)
+
+/** The Nodes a slow-start Load Balancer links to, found once per Game. */
+const ramped = new WeakMap<Game, ReadonlySet<string>>()
+const rampedIdsOf = (game: Game): ReadonlySet<string> => {
+  let ids = ramped.get(game)
+  if (!ids) {
+    const slowStart = new Set(
+      game.nodes.filter((entry) => entry.type === 'lb' && entry.slowStart).map((entry) => entry.id),
+    )
+    ids = new Set(game.links.filter((link) => slowStart.has(link.from)).map((link) => link.to))
+    ramped.set(game, ids)
+  }
+  return ids
+}

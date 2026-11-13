@@ -180,7 +180,7 @@ impl<'a> Tree<'a> {
             0.0
         };
         if kind == kind::CHARGE
-            && !(self.board.game.has(research::IDEMPOTENCY_KEYS) && self.board.game.fixed("idempotency-keys"))
+            && !(self.board.game.has(research::IDEMPOTENCY_KEYS) && self.board.game.fixed(fix::IDEMPOTENCY_KEYS))
             && duplicates > 0.0
         {
             return fail_some(again, duplicates, DUPLICATE);
@@ -219,6 +219,10 @@ impl<'a> Tree<'a> {
             None => return 0.0,
         };
         if COMPONENT_GLOBAL[source.type_code] || COMPONENT_GLOBAL[target.type_code] {
+            return 0.0;
+        }
+        // A leaderless store spread across regions answers from a local quorum.
+        if target.type_code == component::WIDE && target.local_regions >> source.region.min(31) & 1 == 1 {
             return 0.0;
         }
         if source.region != target.region {
@@ -337,7 +341,7 @@ impl<'a> Tree<'a> {
                     return failed(REFUSED);
                 }
                 let relayed = self.relay(node, kind);
-                let crashes = if mode != 0 && !self.board.game.fixed("session-state") {
+                let crashes = if mode != 0 && !self.board.game.fixed(fix::SESSION_STATE) {
                     SESSION_STATE_CRASHES
                 } else {
                     0.0
@@ -346,12 +350,129 @@ impl<'a> Tree<'a> {
             }
             component::DATABASE | component::REPLICA => self.database(node, kind),
             component::SERVER => self.answer_calls(node, kind),
-            component::AUTH | component::DSQL | component::MSGP | component::WAREHOUSE => {
+            component::AUTH | component::MSGP | component::WAREHOUSE | component::PSP => {
                 through(self.own_hop(node, kind, 1.0), &[], false)
             }
+            // Past its rate limit, a model API fails a prompt as `throttled` at once.
+            component::LLM => {
+                through(Hop { cause: THROTTLED, ..self.own_hop(node, kind, 1.0) }, &[], false)
+            }
+            component::STORAGE => self.storage(node, kind),
+            component::GPU => self.gpu(node, kind),
+            component::SEARCH => self.search(node, kind),
+            component::WIDE => self.wide(node, kind),
             // A Node with no path for a request strands it.
             _ => failed(STRANDED),
         }
+    }
+
+    /// `storageRule.outcome`: a read of an archived object waits hours for its
+    /// restore, so the archived share of reads fails as a timeout.
+    fn storage(&mut self, node: usize, kind: usize) -> Outcome {
+        let own = through(self.own_hop(node, kind, 1.0), &[], false);
+        if kind != kind::BLOB_GET {
+            return own;
+        }
+        let archived = self.board.nodes.get(node).map(|node| node.archived).unwrap_or(0.0);
+        fail_some(own, archived, TIMEOUT)
+    }
+
+    /// `gpuRule.outcome`: a quantized answer is worth less, and a model that does
+    /// not fit in the GPUs' memory is killed as it loads.
+    fn gpu(&mut self, node: usize, kind: usize) -> Outcome {
+        let Some(game_node) = self.board.nodes.get(node).copied() else {
+            return failed(STRANDED);
+        };
+        let need = GPU_MODELS_GB[game_node.gpu_model] * GPU_PRECISIONS_MEMORY[game_node.precision]
+            + GPU_CACHE_GB * game_node.batch;
+        let held = GPU_TYPES_GB[game_node.gpu] * crate::model::flat_scale(game_node.size);
+        if need > held {
+            return failed(OOM);
+        }
+        let value = GPU_PRECISIONS_VALUE[game_node.precision] * GPU_MODELS_VALUE[game_node.gpu_model];
+        through(self.own_hop(node, kind, value), &[], false)
+    }
+
+    /// `searchRule.outcome`: a search answers as stale as its refresh, its copy of
+    /// the data, or its relevance, whichever is worst.
+    fn search(&mut self, node: usize, kind: usize) -> Outcome {
+        let own = through(self.own_hop(node, kind, 1.0), &[], false);
+        if kind != kind::Q_SEARCH {
+            return own;
+        }
+        let Some(game_node) = self.board.nodes.get(node).copied() else {
+            return failed(STRANDED);
+        };
+        let game = self.board.game;
+        // The copies can only diverge once the app writes to several of them: Series B.
+        let mut diverged = 0.0;
+        if game.stage >= 4.0 {
+            // A CDC Connector only helps a Search Engine it reaches: the engine must take a change.
+            let fed = self.pass.rates(node)[kind::CHANGE] > 0.0;
+            let mut cdcs = 0;
+            let mut share = 1.0f64;
+            if fed {
+                for (slot, cdc) in self.board.nodes.iter().enumerate() {
+                    if cdc.type_code == component::CDC && !cdc.down {
+                        cdcs += 1;
+                        share = share.min(self.pass.models.get(slot).map(|model| model.share).unwrap_or(0.0));
+                    }
+                }
+            }
+            diverged = if cdcs > 0 {
+                CDC_LAG_STALE + (1.0 - share) * CDC_DROP_STALE
+            } else if game.has(research::OUTBOX) {
+                OUTBOX_STALE
+            } else {
+                DUAL_WRITE_STALE
+            };
+        }
+        // Meilisearch's relevance falls as the index grows.
+        let variant = game_node.search_variant;
+        let relevance = SEARCH_VARIANTS_CAP[variant].min(game.users * SEARCH_VARIANTS_RELEVANCE[variant]);
+        let stale = SEARCH_REFRESH_STALE[crate::model::refresh_row(&game_node)].max(diverged).max(relevance);
+        Outcome { stale, ..own }
+    }
+
+    /// `wideRule.outcome`: a quorum that needs more replicas than are left cannot
+    /// form, and a weak one reads a missed write now and then.
+    fn wide(&mut self, node: usize, kind: usize) -> Outcome {
+        use crate::model::{quorum_n, quorum_r, quorum_w, split_work};
+        let Some(game_node) = self.board.nodes.get(node).copied() else {
+            return failed(STRANDED);
+        };
+        let n = quorum_n(&game_node);
+        let short = if game_node.lost > 0.0 { 1.0 } else { 0.0 };
+        let needed = if kind == kind::Q_READ { quorum_r(&game_node) } else { quorum_w(&game_node) };
+        if needed > n - short {
+            return failed(REFUSED);
+        }
+        let reply = through(self.own_hop(node, kind, 1.0), &[], false);
+        // Overlap is not linearizability: a checkout on a quorum store still goes wrong.
+        if kind == kind::Q_TX {
+            return fail_some(Outcome { stale: WIDE_TX_STALE, ..reply }, WIDE_TX_DUPLICATE, DUPLICATE);
+        }
+        if kind != kind::Q_READ {
+            return reply;
+        }
+        let (reads, writes) = split_work(self.pass.rates(node));
+        let write_share = if reads + writes > 0.0 { writes / (reads + writes) } else { 0.0 };
+        let (r, w) = (quorum_r(&game_node), quorum_w(&game_node));
+        // `wideStale`: R + W > N reads the latest write every time.
+        let quorum_stale = if r + w > n {
+            0.0
+        } else {
+            let missed = (n - w) / n;
+            (WIDE_STALE * write_share * missed * (2.0 / (r + 1.0)) + 0.05 * missed).min(0.5)
+        };
+        // LOCAL_QUORUM keeps latency local, but cross-region replication lags.
+        let regions = self.board.game.spread_regions;
+        let spread_stale = if game_node.spread && regions > 1.0 {
+            WIDE_SPREAD_LAG_STALE * (1.0 - 1.0 / regions) * write_share
+        } else {
+            0.0
+        };
+        Outcome { stale: (quorum_stale + spread_stale).min(1.0), ..reply }
     }
 
     /// Its own hop, then what it sends on.
@@ -480,7 +601,14 @@ fn callout_outcome() -> Outcome {
 /// `zoneMs`: extra milliseconds a call pays for leaving its zone.
 #[inline]
 fn zone_ms(from: &Node, to: &Node) -> f64 {
-    let zoned = |node: &Node| COMPONENT_LIMITING[node.type_code] && !COMPONENT_FIXED[node.type_code];
+    let zoned = |node: &Node| {
+        COMPONENT_LIMITING[node.type_code]
+            && !COMPONENT_FIXED[node.type_code]
+            // A provider's, and the regional Load Balancer's, WAF's and API Gateway's, span every zone.
+            && !matches!(node.type_code, component::PSP | component::LLM | component::LB | component::WAF | component::GW)
+            // A store spread across regions keeps replicas in every zone too.
+            && !(node.spread && matches!(node.type_code, component::WIDE | component::DSQL))
+    };
     if zoned(from) && zoned(to) && from.zone != to.zone {
         CROSS_ZONE_MS
     } else {
@@ -516,7 +644,8 @@ pub fn supports(type_code: usize) -> bool {
     use crate::catalog::component::*;
     matches!(
         type_code,
-        USERS | LB | DNS | CDC | POOLER | DATABASE | REPLICA | SERVER | AUTH | DSQL | MSGP | WAREHOUSE
+        USERS | LB | DNS | CDC | POOLER | DATABASE | REPLICA | SERVER | AUTH | MSGP | WAREHOUSE
+            | PSP | LLM | STORAGE | GPU | SEARCH | WIDE
             | ANALYTICS | AUTOSCALER | CI | CLUSTER | FF | MESH | PAYMENTS | PKI
     )
 }

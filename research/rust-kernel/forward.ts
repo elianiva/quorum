@@ -1,7 +1,15 @@
-/** Compares the Rust forward pass's arriving rates and model figures with TypeScript's. */
+/**
+ * Compares the Rust forward pass's arriving rates and model figures with
+ * TypeScript's, on the stress board or on a Challenge's opening board:
+ * `node forward.ts [challenge-id]`.
+ */
 import { ALL, NK, NR, load, writeDesign, writeGame, forwardRun, stressBoard, graph } from './harness.ts'
 
-const game = stressBoard()
+const only = process.argv[2]
+const { CHALLENGES } = await import(
+  new URL('../../packages/simulation/src/challenges.ts', import.meta.url).pathname
+)
+const game = only ? CHALLENGES.find((challenge) => challenge.id === only).start() : stressBoard()
 const design = graph.graphOf(game)
 const N = game.nodes.length
 const kernel = await load()
@@ -75,7 +83,7 @@ game.nodes.forEach((n, i) => {
     mChecked += 1
     if (!Object.is(a, b)) {
       mWrong += 1
-      if (mBad.length < 6) mBad.push(`${n.type} ${n.id} ${name}: ts ${a} rust ${b}`)
+      if (mBad.length < 20) mBad.push(`${n.type} ${n.id} ${name}: ts ${a} rust ${b}`)
     }
   }
 })

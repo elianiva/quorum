@@ -202,3 +202,29 @@ it writes, which replaces a function that took twelve arguments.
 
 `-C target-feature=+simd128` changed nothing measurable, because the hot loops are
 branchy and short, not wide arithmetic. It is not enabled.
+
+## Challenge boards
+
+The stress board exercises the ported Components. The Challenges exercise the game, so
+`challenges.ts` compares every opening board, and `forward.ts <id>` compares one board's
+first pass. Porting six more rules found these bugs, each confirmed on a board before the
+fix and gone after it:
+
+- The Database model read `q-scan` at backend index 6, which is `task`. Report scans cost
+  nothing, so postgres-for-everything served 1.6% too many requests. Every backend index
+  in `database_model` is now a `backend::` constant. `completions_of` had the same kind of
+  slip (`callout` for `task`), which no supported board reached yet.
+- The pass never read the retry failure shares the solve carried, and the blend treated a
+  stored 0 as "never seen". exactly-once missed a 2.4e-8 retried share into the PSP. The
+  shares now start as NaN, seed from `link.failure` on a fresh solve, and reach the pass.
+- `placeMs` charged the cross-region round trip into a spread Wide-column Store, and
+  `zoneMs` charged a zone hop to provider APIs, the regional LB, WAF and API Gateway, and
+  spread stores. follow-the-sun was 49 ms slow on every kind.
+- `game.scenario.value` never reached the kernel. A new input block carries it per kind,
+  and gpu-economics now earns the same.
+- The probe ignored the start state. A Bottleneck candidate re-probes its boosted Node,
+  and TypeScript's probe reads that Node's carried call latency and connections. Rust read
+  zero, so thirteen-engineers boosted each server into 2.37 of revenue instead of 1.01.
+- The final tree routed with the Weights and sick set the last pass produced, not the ones
+  it ran with. Only a solve that runs out of passes sees the difference, and none of the 22
+  boards did, but it is what `outcomesOf(inputs, pass)` reads.

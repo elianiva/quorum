@@ -7,7 +7,7 @@
 
 use crate::catalog::*;
 use crate::ledger::{self, Ledger, Route};
-use crate::model::{flat_model, flat_scale, database_model, server_model, Model, Node, Rates, ServerCtx};
+use crate::model::{database_model, flat_component, flat_scale, server_model, Rates, ServerCtx};
 use crate::outcomes::{hop_ms, tree, Memo};
 use crate::pass::{forward, is_down, Board, Pass, Run};
 use crate::routing::{Splits, Weights};
@@ -48,73 +48,43 @@ pub struct Solved {
     pub passes: usize,
 }
 
-/// `probeCapacity`: requests per second a Node could take with the Era's mix.
-pub fn probe_capacity(setup: &Setup, slot: usize, weights: &[f64]) -> f64 {
-    let node = match setup.board.nodes.get(slot) {
+/// `probeCapacity`: requests per second a Node could take with its probe mix,
+/// at the boost and in-flight work this solve gives it.
+pub fn probe_capacity(setup: &Setup, slot: usize, boost: Option<usize>, state: &State) -> f64 {
+    let board = &setup.board;
+    let node = match board.nodes.get(slot) {
         Some(node) => node,
         None => return 1_000.0,
     };
-    let type_code = node.type_code;
-    let probe = if type_code == component::SERVER {
-        Some(*setup.probe_mix)
-    } else if type_code == component::DATABASE
-        || type_code == component::REPLICA
-    {
-        let mut probe = [0.0f64; NK];
-        probe[kind::Q_READ] = 1.0;
-        Some(probe)
-    } else {
-        None
-    };
-    let probe = match probe {
-        Some(probe) => probe,
-        None => {
+    let mut probe = [0.0f64; NK];
+    match node.type_code {
+        component::SERVER => probe = *setup.probe_mix,
+        component::DATABASE | component::REPLICA | component::WIDE => probe[kind::Q_READ] = 1.0,
+        // A Component with no probe answers its flat capacity, or a thousand without one.
+        type_code => {
             let flat = FLAT_CAPACITY.get(type_code).copied().unwrap_or(0.0);
             return if flat == 0.0 { 1_000.0 } else { flat * flat_scale(node.size) };
         }
+    }
+    let boost = if boost == Some(slot) { 2.0 } else { 1.0 };
+    let ctx = ServerCtx {
+        boost,
+        inflight: state.inflight.get(slot).copied().unwrap_or(0.0),
+        flags: board.flags.get(slot).copied().unwrap_or_default(),
     };
-    let model = model_of(setup, slot, &probe, weights, &[0.0; NK]);
+    // The probe reads the state the solve starts from: a re-probed Node in a
+    // search still waits on its calls and holds its connections.
+    let call_latency = state.call_latency.get(slot).unwrap_or(&[0.0; NK]);
+    let connections = state.connection_used.get(slot).copied().unwrap_or(0.0);
+    let model = match node.type_code {
+        component::SERVER => server_model(board.game, node, &probe, board.code.node(slot), call_latency, &ctx),
+        component::DATABASE | component::REPLICA => database_model(board.game, node, &probe, boost, connections),
+        _ => flat_component(board.game, node, &probe, boost),
+    };
     if model.utilization > 0.0 {
         1.0 / model.utilization
     } else {
         1_000.0
-    }
-}
-
-/// One Node's model at the pass's feedback, which the probe and the loop share.
-fn model_of(setup: &Setup, slot: usize, rates: &Rates, state: &[f64], call_latency: &[f64; NK]) -> Model {
-    let board = &setup.board;
-    let node = match board.nodes.get(slot) {
-        Some(node) => node,
-        None => return Model::default(),
-    };
-    let boost = 1.0;
-    let ctx = ServerCtx {
-        boost,
-        inflight: state.first().copied().unwrap_or(0.0),
-        flags: board.flags.get(slot).copied().unwrap_or_default(),
-    };
-    if node.type_code == component::SERVER {
-        return server_model(board.game, node, rates, board.code.node(slot), call_latency, &ctx);
-    }
-    if node.type_code == component::DATABASE || node.type_code == component::REPLICA {
-        return database_model(board.game, node, rates, boost, 0.0);
-    }
-    let (capacity, fixed, variable) = flat_params(node);
-    flat_model(capacity, rates, fixed, variable, boost)
-}
-
-#[inline]
-fn flat_params(node: &Node) -> (f64, f64, f64) {
-    let capacity = FLAT_CAPACITY.get(node.type_code).copied().unwrap_or(0.0) * flat_scale(node.size);
-    if node.type_code == component::USERS {
-        (f64::INFINITY, 30.0, 0.0)
-    } else if node.type_code == component::LB {
-        (capacity, if node.variant == 1 { L4_MS } else { 1.0 }, 0.1)
-    } else if node.type_code == component::POOLER {
-        (capacity, 0.3, 0.0)
-    } else {
-        (capacity, 1.0, 0.1)
     }
 }
 
@@ -146,26 +116,45 @@ pub fn solve_with(
     state.call_latency.resize(count, [0.0; NK]);
     state.inflight.resize(count, 0.0);
     state.weights.resize(count, 1.0);
-    state.failures.resize(board.design.edges.len(), [0.0; NK]);
+    state.failures.resize(board.design.edges.len(), [f64::NAN; NK]);
     state.task_failure.resize(count, 0.0);
     state.task_capacity.resize(count, f64::INFINITY);
     state.connection_used.resize(count, 0.0);
     state.nominal.resize(count, 1.0);
     state.sick.resize(count, false);
     if start.is_none() {
+        // Retrying Links start from the failure share they saw last Step.
+        for (edge, policy) in board.design.edges.iter().enumerate() {
+            if policy.failure <= 0.0 || policy.retry == 0 {
+                continue;
+            }
+            let target = board.design.nodes[policy.to as usize].type_code as usize;
+            for (kind, share) in state.failures[edge].iter_mut().enumerate() {
+                if crate::routing::accepts(target, kind) {
+                    *share = policy.failure;
+                }
+            }
+        }
         for slot in 0..count {
-            state.nominal[slot] = probe_capacity(setup, slot, &state.weights);
+            state.nominal[slot] = probe_capacity(setup, slot, boost, &state);
         }
         state.weights = state.nominal.clone();
     } else if let Some(slot) = boost {
-        state.nominal[slot] = probe_capacity(setup, slot, &state.weights);
+        state.nominal[slot] = probe_capacity(setup, slot, boost, &state);
     }
     // Every split below answers for `state`'s Weights until they move.
     splits.reset(board.design);
 
     let mut previous: Option<Pass> = None;
+    // A pass's new Weights and sick servers reach the next pass, but its own
+    // tree routes with what the pass ran with, as `outcomesOf(inputs, pass)` does.
+    let mut pending: Option<(Vec<f64>, Vec<usize>)> = None;
     let mut ran = 0;
     for index in 0..passes {
+        if let Some(update) = pending.take() {
+            apply(&mut state, update);
+            splits.reset(board.design);
+        }
         let current = forward(
             &Run {
                 board,
@@ -173,6 +162,7 @@ pub fn solve_with(
                 call_latency: &state.call_latency,
                 inflight: &state.inflight,
                 connections: &state.connection_used,
+                failures: &state.failures,
                 boost,
             },
             splits,
@@ -202,15 +192,13 @@ pub fn solve_with(
             feed_back(board, &current, &mut state, splits, memo, index);
         }
         // Once a deep check fails a server in a pass, it stays out for the solve.
-        for (slot, node) in board.nodes.iter().enumerate() {
-            if node.type_code == component::SERVER
-                && ledger::database_sick(board.design, &current, board.nodes, slot)
-            {
-                state.sick[slot] = true;
-            }
-        }
-        state.weights = next_weights;
-        splits.reset(board.design);
+        let sick = (0..count)
+            .filter(|&slot| {
+                board.nodes[slot].type_code == component::SERVER
+                    && ledger::database_sick(board.design, &current, board.nodes, slot)
+            })
+            .collect();
+        pending = Some((next_weights, sick));
         previous = Some(current);
     }
     let current = match previous {
@@ -224,7 +212,18 @@ pub fn solve_with(
     let ledger = (want == Want::Ledger).then(|| {
         ledger::ledger_of(board.game, board.design, board.demand, &current, board.nodes, &mut tree, setup.routes)
     });
+    if let Some(update) = pending {
+        apply(&mut state, update);
+    }
     Solved { ledger, revenue, state, passes: ran }
+}
+
+/// Hands a pass's new Weights and sick servers to the state the next pass reads.
+fn apply(state: &mut State, (weights, sick): (Vec<f64>, Vec<usize>)) {
+    state.weights = weights;
+    for slot in sick {
+        state.sick[slot] = true;
+    }
 }
 
 /// The Weights a pass and its tree route with.
@@ -251,7 +250,7 @@ fn feed_back(board: Board, current: &Pass, state: &mut State, splits: &mut Split
     }
     let mut next_inflight = vec![0.0; count];
     let mut next_latency = vec![[0.0f64; NK]; count];
-    let mut next_failures = vec![[0.0f64; NK]; board.design.edges.len()];
+    let mut next_failures = vec![[f64::NAN; NK]; board.design.edges.len()];
     {
         let mut tree = tree(board, current, weights_of(state), splits, memo);
         let hop = hop_ms(board.game);
@@ -286,7 +285,7 @@ fn feed_back(board: Board, current: &Pass, state: &mut State, splits: &mut Split
                 }
                 let fresh = tree.failure_on(edge, kind);
                 let carried = state.failures[edge][kind];
-                next_failures[edge][kind] = if carried == 0.0 { fresh } else { (carried + fresh) / 2.0 };
+                next_failures[edge][kind] = if carried.is_nan() { fresh } else { (carried + fresh) / 2.0 };
             }
         }
     }

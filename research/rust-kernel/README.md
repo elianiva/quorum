@@ -73,19 +73,23 @@ instead of solving again, and a tree reset moves an epoch instead of zeroing its
 
 Ported in full, and compared figure by figure: the catalog, the outcome algebra, the three
 capacity models, routing splits, the forward pass, the outcome tree for `users`, `lb`,
-`dns`, `cdc`, `pooler`, `database`, `replica`, `server`, `auth`, `dsql`, `msgp`,
-`warehouse` and the Components whose rule is a terminal `stranded`, the revenue and the
-Ledger figures the solve reads (revenue, demand, served, Apdex, latency, percentiles,
-errors, fines, per-kind rows, per-Node rows, per-kind bottleneck), the pass loop with its
-convergence test and feedback, and the Bottleneck search.
+`dns`, `cdc`, `pooler`, `database`, `replica`, `server`, `auth`, `msgp`, `warehouse`,
+`psp`, `llm`, `storage`, `gpu`, `search`, `wide` and the Components whose rule is a
+terminal `stranded`, the revenue and the Ledger figures the solve reads (revenue, demand,
+served, Apdex, latency, percentiles, errors, fines, per-kind rows, per-Node rows, per-kind
+bottleneck), the pass loop with its convergence test and feedback, and the Bottleneck
+search.
+
+`node challenges.ts` solves every Challenge's opening board on both sides. 22 of the 32
+are identical in every figure and in the Bottleneck. The other 10 are refused.
 
 Not ported yet, and refused rather than approximated: a Game with an incident, a shipped
 Feature, or a Product lever; and any Component whose `outcome` rule is not in the list
-above (`cache`, `cdn`, `waf`, `gw`, `queue`, `log`, `worker`, `fn`, `search`, `storage`,
-`doc`, `vec`, `gpu`, `wide`, `edge`, `ws`, `psp`, `llm`). A run over such a Design returns
-status 6 instead of a figure. The presentation-only halves of the TypeScript Ledger —
-bills, Insight, velocity, Link rows, regions, devices, services, market, forecast — are not
-ported, because no figure the solve reads depends on them.
+above (`cache`, `cdn`, `waf`, `gw`, `queue`, `log`, `worker`, `fn`, `doc`, `vec`, `edge`,
+`ws`, `dsql`). A run over such a Design returns status 6 instead of a figure. The
+presentation-only halves of the TypeScript Ledger (bills, Insight, velocity, Link rows,
+regions, devices, services, market, forecast) are not ported, because no figure the solve
+reads depends on them.
 
 ## Open problems
 

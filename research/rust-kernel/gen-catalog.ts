@@ -111,6 +111,41 @@ for (const [name, value] of Object.entries(catalog)) {
 }
 push(`pub static SCALAR_COUNT: usize = ${scalarNames.length};`)
 
+/** `fixedMs` as a Rust name part: `FIXED_MS`. */
+const snake = (field: string): string => constName(field.replace(/([a-z0-9])([A-Z])/g, '$1_$2'))
+
+/**
+ * A table of rows, keyed by id (a record) or by position (an array): an id module for a record,
+ * then one column per field that every row holds as a number or a boolean. A rule reads
+ * `SEARCH_HEAPS_TAIL_P[node.heap]`, the same row the TypeScript reads as `SEARCH_HEAPS[heap].tailP`.
+ */
+const pushTable = (name: string, module: string | null) => {
+  const table = (catalog as Record<string, unknown>)[name] as
+    | Record<string, Record<string, unknown>>
+    | ReadonlyArray<Record<string, unknown>>
+  const rows = Array.isArray(table) ? table : Object.values(table)
+  push('')
+  if (module) pushIds(module, `\`${name}\` rows.`, Object.keys(table))
+  for (const field of Object.keys(rows[0] ?? {})) {
+    const values = rows.map((row) => row[field])
+    const column = `${name}_${snake(field)}`
+    if (values.every((value) => typeof value === 'number'))
+      push(`pub static ${column}: [f64; ${rows.length}] = [${values.map((v) => formatNumber(v as number)).join(', ')}];`)
+    else if (values.every((value) => typeof value === 'boolean'))
+      push(`pub static ${column}: [bool; ${rows.length}] = [${values.join(', ')}];`)
+  }
+}
+push('')
+push('// ---- row tables, generated ----')
+pushTable('SEARCH_VARIANTS', 'search_variant')
+pushTable('SEARCH_HEAPS', 'search_heap')
+pushTable('SEARCH_REFRESH', null)
+pushTable('STORAGE_CLASSES', 'storage_class')
+pushTable('GPU_TYPES', 'gpu_type')
+pushTable('GPU_MODELS', 'gpu_model')
+pushTable('GPU_PRECISIONS', 'gpu_precision')
+pushTable('GPU_BATCHES', null)
+
 function formatNumber(value: number): string {
   if (value === Number.POSITIVE_INFINITY) return 'f64::INFINITY'
   if (value === Number.NEGATIVE_INFINITY) return 'f64::NEG_INFINITY'
@@ -230,7 +265,7 @@ push(
   `pub static RUNTIME_WARMUP: [f64; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => formatNumber(runtime[id].warmup)).join(', ')}];`,
 )
 push(
-  `pub static RUNTIME_OVERHEAD_FACTOR: [f64; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => formatNumber(runtime[id].overheadFactor ?? 0)).join(', ')}];`,
+  `pub static RUNTIME_OVERHEAD_FACTOR: [f64; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => formatNumber(runtime[id].overheadFactor ?? 1)).join(', ')}];`,
 )
 push(
   `pub static RUNTIME_PERSISTENT: [bool; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => runtime[id].persistent).join(', ')}];`,
@@ -492,6 +527,7 @@ push(
   `pub static RESEARCH_IDS: [&str; ${RESEARCH_IDS.length}] = [${RESEARCH_IDS.map((id) => `"${id}"`).join(', ')}];`,
 )
 pushIds('research', 'Research bit indices.', RESEARCH_IDS)
+pushIds('fix', 'Fix bit indices: the code fixes a Service can ship.', catalog.FIXES)
 const FEATURE_IDS = catalog.FEATURE_IDS
 push(`pub const FEATURE_COUNT: usize = ${FEATURE_IDS.length};`)
 push(

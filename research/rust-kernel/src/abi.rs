@@ -89,12 +89,32 @@ pub const S_POISONED: usize = 71;
 pub const S_TRANSACTIONS: usize = 72;
 pub const S_SAMPLING_MS: usize = 73;
 pub const S_DOWN_OOM: usize = 74;
-pub const SCALARS: usize = 75;
+/// The fixes the Company's Service has shipped, as a bitset over `FIXES`. Row 0 only.
+pub const S_FIXES: usize = 75;
+pub const S_R2: usize = 76;
+pub const S_ARCHIVED: usize = 77;
+pub const S_SEARCH_VARIANT: usize = 78;
+pub const S_SEARCH_SHARDS: usize = 79;
+pub const S_HEAP: usize = 80;
+pub const S_SEARCH_REPLICAS: usize = 81;
+pub const S_REFRESH: usize = 82;
+pub const S_SECOND_PROVIDER: usize = 83;
+pub const S_GPU: usize = 84;
+pub const S_GPU_MODEL: usize = 85;
+pub const S_PRECISION: usize = 86;
+pub const S_BATCH: usize = 87;
+pub const S_QUORUM_N: usize = 88;
+pub const S_QUORUM_R: usize = 89;
+pub const S_QUORUM_W: usize = 90;
+pub const S_LOST: usize = 91;
+pub const S_SPREAD: usize = 92;
+pub const S_DATA_STAFFED: usize = 93;
+pub const SCALARS: usize = 94;
 
 /// The node-fields block: one row per Node, read by the routing Design.
 pub const NODE_FIELDS: usize = 10;
 /// The edge-fields block: one row per Edge.
-pub const EDGE_FIELDS: usize = 8;
+pub const EDGE_FIELDS: usize = 9;
 
 // ---- block ids ----
 
@@ -112,6 +132,8 @@ pub const BLOCK_LATENCY: i32 = 11;
 pub const BLOCK_LEVERS: i32 = 12;
 pub const BLOCK_PROBE: i32 = 13;
 pub const BLOCK_ROUTES: i32 = 14;
+/// The Scenario's value multiplier per kind, 1 where it sets none.
+pub const BLOCK_VALUE: i32 = 15;
 pub const BLOCK_RESEARCH: i32 = 16;
 pub const BLOCK_FEATURES: i32 = 17;
 pub const BLOCK_ARRIVING: i32 = 20;
@@ -148,6 +170,7 @@ pub struct Inputs {
     pub intake: Vec<f64>,
     pub latency: Vec<f64>,
     pub levers: Vec<f64>,
+    pub value: Vec<f64>,
     pub probe: Vec<f64>,
     pub routes: Vec<f64>,
     pub research: Vec<u8>,
@@ -248,6 +271,7 @@ pub extern "C" fn reserve(block: i32, len: i32) -> i32 {
             BLOCK_INTAKE => Some(&mut inputs.intake),
             BLOCK_LATENCY => Some(&mut inputs.latency),
             BLOCK_LEVERS => Some(&mut inputs.levers),
+            BLOCK_VALUE => Some(&mut inputs.value),
             BLOCK_PROBE => Some(&mut inputs.probe),
             BLOCK_ROUTES => Some(&mut inputs.routes),
             _ => None,
@@ -337,6 +361,7 @@ pub extern "C" fn ptr(block: i32) -> usize {
             BLOCK_INTAKE => Some(inputs.intake.as_ptr()),
             BLOCK_LATENCY => Some(inputs.latency.as_ptr()),
             BLOCK_LEVERS => Some(inputs.levers.as_ptr()),
+            BLOCK_VALUE => Some(inputs.value.as_ptr()),
             BLOCK_PROBE => Some(inputs.probe.as_ptr()),
             BLOCK_ROUTES => Some(inputs.routes.as_ptr()),
             BLOCK_OUT_STARTS => Some(inputs.out_starts.as_ptr().cast::<f64>()),
@@ -383,6 +408,7 @@ pub extern "C" fn len(block: i32) -> i32 {
             BLOCK_INTAKE => Some(inputs.intake.len()),
             BLOCK_LATENCY => Some(inputs.latency.len()),
             BLOCK_LEVERS => Some(inputs.levers.len()),
+            BLOCK_VALUE => Some(inputs.value.len()),
             BLOCK_PROBE => Some(inputs.probe.len()),
             BLOCK_ROUTES => Some(inputs.routes.len()),
             BLOCK_OUT_STARTS => Some(inputs.out_starts.len()),
@@ -463,6 +489,11 @@ pub fn game_with(scalars: &[f64], research: Research, shipped: Shipped) -> GameC
         incident_node: slot(S_INCIDENT_NODE) as usize,
         sandbox: slot(S_SANDBOX) != 0.0,
         scenario_tasks: slot(S_SCENARIO_TASKS) != 0.0,
+        fixes: slot(S_FIXES) as u64,
+        data_staffed: slot(S_DATA_STAFFED) != 0.0,
+        cdn_on_board: false,
+        spread_regions: 1.0,
+        scenario_value: [1.0; NR],
         seed: slot(S_SEED),
         time: slot(S_TIME),
         incident_started: 0.0,
@@ -540,5 +571,23 @@ pub fn node_of(row: &[f64]) -> Node {
         down_oom: flag(S_DOWN_OOM),
         sampling_ms: slot(S_SAMPLING_MS),
         users_in_group: slot(S_USERS_IN_GROUP),
+        r2: flag(S_R2),
+        archived: slot(S_ARCHIVED),
+        search_variant: slot(S_SEARCH_VARIANT) as usize,
+        search_shards: slot(S_SEARCH_SHARDS),
+        heap: slot(S_HEAP) as usize,
+        search_replicas: slot(S_SEARCH_REPLICAS),
+        refresh: slot(S_REFRESH),
+        second_provider: flag(S_SECOND_PROVIDER),
+        gpu: slot(S_GPU) as usize,
+        gpu_model: slot(S_GPU_MODEL) as usize,
+        precision: slot(S_PRECISION) as usize,
+        batch: slot(S_BATCH),
+        quorum_n: slot(S_QUORUM_N),
+        quorum_r: slot(S_QUORUM_R),
+        quorum_w: slot(S_QUORUM_W),
+        lost: slot(S_LOST),
+        spread: flag(S_SPREAD),
+        local_regions: 0,
     }
 }

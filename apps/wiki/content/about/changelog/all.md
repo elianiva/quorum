@@ -9,6 +9,19 @@ toc: top
 
 Every day that changed Quorum, newest first. The [changelog](/about/changelog) shows only the latest days.
 
+## Thursday, 12 November 2026
+
+### Changed
+
+- Speed up the simulation solve with dense per-pass caches ([3ed0c95](https://github.com/elianiva/quorum/commit/3ed0c95e30b0ec8610d27fab6b225e1eedf38290))
+- Polish the install shell with maskable icons and startup images ([805ced8](https://github.com/elianiva/quorum/commit/805ced87339978f15d0ec2343480cfa53a73fc32))
+- Build sound Nodes from the context, not from globals ([8de1b1b](https://github.com/elianiva/quorum/commit/8de1b1b40387c896929aa7b2e2be3a2819c6acd1))
+- Stop Tidy from crashing on Links with no place ([2c710e5](https://github.com/elianiva/quorum/commit/2c710e5b59996abc3bb43ca27b4fbf4e656bb805))
+- Add the changelog entry for 2026-11-11 (#49) ([f6ffca9](https://github.com/elianiva/quorum/commit/f6ffca9c730df1a55afd39df8370e0fd616a5f7d))
+- Add a command palette over the board ([fa727da](https://github.com/elianiva/quorum/commit/fa727da928d515639d2997f83abb5dc96ae600b2))
+- Write down feature keys ([9a23e91](https://github.com/elianiva/quorum/commit/9a23e91fb0eaf5b5bd9ed245993eea88be4d0aeb))
+- Gate online Rooms behind a feature key ([23fc23b](https://github.com/elianiva/quorum/commit/23fc23b380625d8107229b9e84c481cb2dac5e27))
+
 ## Wednesday, 11 November 2026
 
 ### Changed

@@ -446,7 +446,9 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
             let latency = run.call_latency.get(slot).unwrap_or(&[0.0; NK]);
             crate::model::serverless_model(node, &rates, code.node(slot), latency, boost)
         } else if type_code == component::DATABASE || type_code == component::REPLICA {
-            database_model(game, node, &rates, boost, Run::at(run.connections, slot))
+            // `replicaRule.model` passes no connections: only a Database holds their memory.
+            let connections = if type_code == component::DATABASE { Run::at(run.connections, slot) } else { 0.0 };
+            database_model(game, node, &rates, boost, connections)
         } else {
             flat_component(game, node, &rates, &order, boost)
         };

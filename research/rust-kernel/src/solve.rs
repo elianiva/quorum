@@ -80,7 +80,9 @@ pub fn probe_capacity(setup: &Setup, slot: usize, boost: Option<usize>, state: &
     // The probe reads the state the solve starts from: a re-probed Node in a
     // search still waits on its calls and holds its connections.
     let call_latency = state.call_latency.get(slot).unwrap_or(&[0.0; NK]);
-    let connections = state.connection_used.get(slot).copied().unwrap_or(0.0);
+    // `replicaRule.model` passes no connections: only a Database holds their memory.
+    let connections =
+        if node.type_code == component::DATABASE { state.connection_used.get(slot).copied().unwrap_or(0.0) } else { 0.0 };
     let model = match node.type_code {
         component::SERVER => crate::model::server_model_shed(board.game, node, &probe, board.code.node(slot), call_latency, &ctx),
         component::FN => crate::model::serverless_model(node, &probe, board.code.node(slot), call_latency, boost),

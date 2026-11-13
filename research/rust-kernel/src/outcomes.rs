@@ -766,7 +766,7 @@ impl<'a> Tree<'a> {
         // A multi-leader certifies every write against its peers.
         if game_node.type_code == component::DATABASE
             && (kind == kind::Q_WRITE || kind == kind::Q_TX || kind == kind::BLOB_PUT)
-            && game_node.topology == 2
+            && game_node.topology == crate::model::topology::MULTI
             && game_node.databases_in_group > 1.0
         {
             let conflict = (MULTI_CONFLICT * (game_node.databases_in_group - 1.0)).min(0.5);
@@ -774,7 +774,7 @@ impl<'a> Tree<'a> {
         }
         // A transaction across shards commits on each of them, and any one can fail.
         if kind == kind::Q_TX {
-            let sharded = game_node.type_code == component::DATABASE && game_node.topology == 1;
+            let sharded = game_node.type_code == component::DATABASE && game_node.topology == crate::model::topology::SHARDED;
             let logical = crate::model::sharding_of(&game_node);
             let shards = logical.shards * if sharded { game_node.databases_in_group.max(1.0) } else { 1.0 };
             let cross = if shards > 1.0 { SHARD_CROSS[game_node.shard_key.min(3)] * (1.0 - 1.0 / shards) } else { 0.0 };
@@ -812,11 +812,17 @@ impl<'a> Tree<'a> {
         }
         let calls = self.board.code.node(node).calls[kind];
         let hop = hop_ms(self.board.game);
+        // Read-your-writes routing sends a checkout's read, and most reads after a write, to the primary.
+        let ryw = game_node.ryw && self.board.game.has(research::RYW_ROUTING);
         let mut entries = [(Outcome::default(), 0.0); NB];
         let mut made = 0;
         for (backend, &count) in calls.iter().enumerate() {
             if backend < 3 || count > 0.0 {
-                entries[made] = (self.downstream(node, NR + backend, hop), count);
+                let mut outcome = self.downstream(node, NR + backend, hop);
+                if ryw && backend == backend::Q_READ && outcome.stale > 0.0 {
+                    outcome.stale = if kind == kind::BUY { 0.0 } else { outcome.stale * crate::extra::RYW_STALE };
+                }
+                entries[made] = (outcome, count);
                 made += 1;
             }
         }

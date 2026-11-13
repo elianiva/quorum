@@ -210,7 +210,7 @@ export const SLOT = {
   degrade: 146,
 }
 export const SCALARS = Object.keys(SLOT).length
-const NODE_FIELDS = 10
+const NODE_FIELDS = 12
 const EDGE_FIELDS = 10
 
 const MODES = ['session', 'transaction', 'statement']
@@ -279,6 +279,8 @@ export const writeDesign = (kernel, game, design, options = {}) => {
     nodeFields[b + 7] = n.type === 'replica' ? 1 : 0
     nodeFields[b + 8] = n.type === 'replica' && lookups.primaryOf(game, n) !== undefined ? 1 : 0
     nodeFields[b + 9] = n.service._tag === 'Draining' ? 1 : 0
+    nodeFields[b + 10] = n.downAt
+    nodeFields[b + 11] = lookups.isDown(n) && causeOf(n.life) === 'restart' ? 1 : 0
   })
 
   const edgeFields = new Float64Array(edges * EDGE_FIELDS)

@@ -360,6 +360,8 @@ export type ServerContext = Readonly<{
   worker?: boolean
   /** It runs as pods in a Kubernetes Cluster: neighbours on the same node steal CPU now and then. */
   pod?: boolean
+  /** The seed probe reads only utilization: stop once it is known. */
+  capacityOnly?: boolean
   /** A Service Mesh sidecar shares its box: it takes a share of the CPU (05 "Service Mesh"). */
   mesh?: boolean
 }>
@@ -920,6 +922,30 @@ export const serverModel = (context: ServerContext, shed = true): NodeModel => {
             : slotUtilization > cpuUtilization
               ? 'workers'
               : 'cpu'
+
+  // The seed probe reads only utilization, so a capacity-only model stops here:
+  // no service times, receipts, resource gauges, or tails. A saturated Node
+  // still sheds, because shedding is what sets the utilization the probe reads.
+  if (context.capacityOnly) {
+    const capacity = rate > 0 ? rate / Math.max(utilization, 1e-9) : 0
+    const minimal: NodeModel = {
+      utilization,
+      limit,
+      share,
+      capacity,
+      service: {},
+      tailP: 0,
+      tailMs: 0,
+      processes: resident,
+      inflight: 0,
+      resources: NO_RESOURCES,
+      throttled,
+      swapping,
+    }
+    if (!shed || utilization <= SHED_AT || context.worker) return minimal
+    if (node.degrade && has(game, 'graceful-degradation')) return shedding(context, minimal, true)
+    return node.shed && has(game, 'load-shedding') ? shedding(context, minimal) : minimal
+  }
 
   // One event loop runs one callback at a time: a heavy callback stalls every request behind
   // it (06 "Event loops and blocking"). The squared term lets rare heavy kinds dominate:

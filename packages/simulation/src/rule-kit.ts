@@ -46,6 +46,11 @@ export type Rates = Partial<Record<Kind, number>>
 /** What a rule may ask the solve about the Design in the current pass. */
 export type Solver = Readonly<{
   game: Game
+  /**
+   * The seed probe reads only a Node's utilization, so a model may stop once it
+   * knows that. False everywhere a full model is read.
+   */
+  capacityOnly: (node: GameNode) => boolean
   /** 2 on the Node the Bottleneck search boosts, 1 elsewhere. */
   boost: (node: GameNode) => number
   /** Milliseconds an App Server holds a slot per call, by backend kind, from the last pass. */

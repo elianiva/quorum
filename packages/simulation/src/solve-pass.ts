@@ -76,6 +76,8 @@ export type Inputs = Readonly<{
   taskCapacity: ReadonlyArray<number | undefined>
   /** Server connections held open on each Node on the last pass. */
   connectionUsed: ReadonlyArray<number | undefined>
+  /** Set only by the seed probe, which reads utilization and nothing else. */
+  capacityOnly?: boolean
 }>
 
 /** Every kind, numbered once: the per-pass caches below are dense arrays, not keyed maps. */
@@ -122,6 +124,7 @@ export const solverOf = (
   const { game, graph } = inputs
   return {
     game,
+    capacityOnly: () => inputs.capacityOnly === true,
     boost: (node) => (inputs.boost === node.id ? 2 : 1),
     callLatency: (node) => inputs.callLatency[graph.at.get(node.id) as number] ?? NO_CALLS,
     inflight: (node) => inputs.inflight[graph.at.get(node.id) as number] ?? 0,

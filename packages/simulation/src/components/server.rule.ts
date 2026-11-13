@@ -22,6 +22,7 @@ export const serverRule: ComponentRule = {
       offloaded: solver.offloads(node),
       pod: inCluster(solver.game, node),
       mesh: meshOf(solver.game, node),
+      capacityOnly: solver.capacityOnly(node),
     }),
   serve: serveCalls,
   outcome: answerCalls,

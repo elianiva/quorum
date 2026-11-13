@@ -9,8 +9,9 @@ import { type Game } from './state.ts'
 import { demandOf } from './solve-demand.ts'
 import { type Edge, graphOf, edgeOf } from './solve-graph.ts'
 import { type Inputs, NO_CALLS, solverOf, probeCapacity, forward } from './solve-pass.ts'
+import { passRepeats } from './solve-converge.ts'
 import { outcomesOf } from './solve-outcomes.ts'
-import { databaseSick, sumRates, ledgerOf } from './solve-ledger.ts'
+import { databaseSick, sumRates, ledgerOf, revenueOf } from './solve-ledger.ts'
 
 const PASSES = 6
 
@@ -20,24 +21,55 @@ export { policyOf } from './solve-graph.ts'
 export { attemptsAllowed } from './solve-pass.ts'
 export { chaosRunning, chaosTarget } from './solve-outcomes.ts'
 
-const solveWith = (game: Game, boost: string | null): Ledger => {
+/**
+ * What one solve converges to. The bottleneck search starts each candidate from
+ * it, so a boosted Node only moves its own figures.
+ */
+type SolveState = Readonly<{
+  callLatency: ReadonlyArray<Calls | undefined>
+  inflight: ReadonlyArray<number | undefined>
+  weights: ReadonlyArray<number | undefined>
+  failures: ReadonlyArray<Partial<Record<Kind, number>> | undefined>
+  taskFailure: ReadonlyArray<number | undefined>
+  taskCapacity: ReadonlyArray<number | undefined>
+  connectionUsed: ReadonlyArray<number | undefined>
+  nominal: ReadonlyArray<number | undefined>
+  sick: ReadonlyArray<boolean | undefined>
+}>
+
+type SolveOptions = Readonly<{
+  /** A converged state to start from. A boosted Node then only moves its own figures. */
+  start?: SolveState | null
+  /** Passes to run; six by default, and convergence can stop it sooner. */
+  passes?: number
+  /** Skip the Node and Link rows: only the revenue is needed. */
+  revenueOnly?: boolean
+}>
+
+const solveWith = (
+  game: Game,
+  boost: string | null,
+  options: SolveOptions = {},
+): { ledger: Ledger | null; revenue: number; state: SolveState } => {
+  const { start = null, passes = PASSES, revenueOnly = false } = options
   const graph = graphOf(game)
   const demand = demandOf(game)
-  let callLatency: Array<Calls | undefined> = []
-  let inflight: Array<number | undefined> = []
-  let weights: Array<number | undefined> = []
+  let callLatency: Array<Calls | undefined> = start ? [...start.callLatency] : []
+  let inflight: Array<number | undefined> = start ? [...start.inflight] : []
+  let weights: Array<number | undefined> = start ? [...start.weights] : []
   // Retrying Links start from the failure share they saw last Step: retries carry a storm forward.
-  let failures: Array<Partial<Record<Kind, number>> | undefined> = []
-  for (const link of game.links) {
-    const edge = edgeOf(graph, link.from, link.to)
-    if (link.failure <= 0 || !edge || edge.policy.retry === 'none') continue
-    const byKind: Partial<Record<Kind, number>> = {}
-    for (const kind of COMPONENTS[edge.to.type].accepts) byKind[kind] = link.failure
-    failures[edge.index] = byKind
-  }
+  let failures: Array<Partial<Record<Kind, number>> | undefined> = start ? [...start.failures] : []
+  if (start === null)
+    for (const link of game.links) {
+      const edge = edgeOf(graph, link.from, link.to)
+      if (link.failure <= 0 || !edge || edge.policy.retry === 'none') continue
+      const byKind: Partial<Record<Kind, number>> = {}
+      for (const kind of COMPONENTS[edge.to.type].accepts) byKind[kind] = link.failure
+      failures[edge.index] = byKind
+    }
   const at = graph.at
-  const nominal: Array<number | undefined> = []
-  const sick: Array<boolean | undefined> = []
+  const nominal: Array<number | undefined> = start ? [...start.nominal] : []
+  const sick: Array<boolean | undefined> = start ? [...start.sick] : []
   const routes = userRoutes(game, (node) => (graph.routes.get(node.id)?.length ?? 0) > 0)
   const intake: Array<number | undefined> = []
   for (const entry of routes)
@@ -45,10 +77,10 @@ const solveWith = (game: Game, boost: string | null): Ledger => {
       const slot = at.get(entry.source.id) as number
       intake[slot] = (intake[slot] ?? 0) + entry.share
     }
-  let taskFailure: Array<number | undefined> = []
-  let taskCapacity: Array<number | undefined> = []
+  let taskFailure: Array<number | undefined> = start ? [...start.taskFailure] : []
+  let taskCapacity: Array<number | undefined> = start ? [...start.taskCapacity] : []
   // A Database's connection memory follows the connections the last pass held open.
-  let connectionUsed: Array<number | undefined> = []
+  let connectionUsed: Array<number | undefined> = start ? [...start.connectionUsed] : []
   const seed: Inputs = {
     game,
     graph,
@@ -65,14 +97,24 @@ const solveWith = (game: Game, boost: string | null): Ledger => {
     taskCapacity,
     connectionUsed,
   }
-  const seedSolver = solverOf(seed)
-  for (const node of game.nodes)
-    nominal[at.get(node.id) as number] = probeCapacity(seed, seedSolver, node)
-  weights = [...nominal]
+  // The probe reads only each Node's utilization, so it asks for a capacity-only model.
+  const seedSolver = solverOf({ ...seed, capacityOnly: true })
+  if (start === null) {
+    for (const node of game.nodes)
+      nominal[at.get(node.id) as number] = probeCapacity(seed, seedSolver, node)
+    weights = [...nominal]
+  } else if (boost !== null) {
+    // Only the boosted Node's probe changes, because the probe reads its boost.
+    const boosted = game.nodes.find((node) => node.id === boost)
+    if (boosted) nominal[at.get(boosted.id) as number] = probeCapacity(seed, seedSolver, boosted)
+  }
 
   let pass: Pass | null = null
   let outcomes: ReturnType<typeof outcomesOf> | null = null
-  for (let index = 0; index < PASSES; index += 1) {
+  // The pass loop is a relaxation that settles: once a pass repeats the figures
+  // the Ledger reads, later passes cannot change the answer. Six stays the cap.
+  let previousPass: Pass | null = null
+  for (let index = 0; index < passes; index += 1) {
     const inputs: Inputs = {
       game,
       graph,
@@ -91,6 +133,8 @@ const solveWith = (game: Game, boost: string | null): Ledger => {
     }
     pass = forward(inputs)
     outcomes = outcomesOf(inputs, pass)
+    if (previousPass !== null && passRepeats(previousPass, pass)) break
+    previousPass = pass
     // A Worker's failed attempts come back: what its calls and code failed, not what it dropped,
     // since a dropped task waits in the Queue.
     const nextTaskFailure: Array<number | undefined> = []
@@ -158,7 +202,22 @@ const solveWith = (game: Game, boost: string | null): Ledger => {
     failures = nextFailures
   }
   if (!pass || !outcomes) throw new Error('The solve ran no passes.')
-  return ledgerOf(game, graph, demand, pass, outcomes, routes)
+  const ledger = revenueOnly ? null : ledgerOf(game, graph, demand, pass, outcomes, routes)
+  return {
+    ledger,
+    revenue: ledger ? ledger.revenue : revenueOf(game, demand, pass, outcomes, routes),
+    state: {
+      callLatency,
+      inflight,
+      weights,
+      failures,
+      taskFailure,
+      taskCapacity,
+      connectionUsed,
+      nominal,
+      sick,
+    },
+  }
 }
 
 /**
@@ -180,10 +239,15 @@ export const bottleneckOf = (game: Game, base: Ledger): string | null => {
     .filter(([, utilization]) => utilization > 0.6)
     .toSorted((a, b) => b[1] - a[1])
     .slice(0, 3)
+  // The base solve's converged state: a boosted Node then needs one pass, and
+  // the search only needs the revenue, not the Node and Link rows.
+  const start = states.get(game) ?? null
   let best: string | null = null
   let gain = Math.max(0.005, base.revenue * 0.01)
   for (const [id] of busiest) {
-    const boosted = solveWith(game, id).revenue - base.revenue
+    const boosted =
+      solveWith(game, id, start ? { start, passes: 1, revenueOnly: true } : { revenueOnly: true })
+        .revenue - base.revenue
     if (boosted > gain) {
       gain = boosted
       best = id
@@ -194,6 +258,8 @@ export const bottleneckOf = (game: Game, base: Ledger): string | null => {
 
 const flows = new WeakMap<Game, Ledger>()
 const marked = new WeakMap<Game, Ledger>()
+/** The state each solved Game converged to, so the search can start there. */
+const states = new WeakMap<Game, SolveState>()
 
 /**
  * The Ledger without the bottleneck search: what each Step and each view
@@ -203,8 +269,10 @@ const marked = new WeakMap<Game, Ledger>()
 export const solveFlow = (game: Game): Ledger => {
   const cached = flows.get(game)
   if (cached) return cached
-  const ledger = solveWith(game, null)
+  const { ledger, state } = solveWith(game, null)
+  if (ledger === null) throw new Error('A flow solve builds a Ledger.')
   flows.set(game, ledger)
+  states.set(game, state)
   return ledger
 }
 
@@ -212,6 +280,8 @@ export const solveFlow = (game: Game): Ledger => {
 export const carryLedger = (from: Game, to: Game): void => {
   const ledger = flows.get(from)
   if (ledger) flows.set(to, ledger)
+  const state = states.get(from)
+  if (state) states.set(to, state)
 }
 
 /** The full Ledger, with the bottleneck searched now. For tests and one-off checks. Cached per Game. */

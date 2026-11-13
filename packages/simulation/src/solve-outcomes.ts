@@ -20,8 +20,8 @@ import {
   timedOut,
   blend,
   failed,
-  hop,
-  through,
+  hopOf,
+  throughOne,
   type Outcome,
 } from './distribution.ts'
 import { has, certExpired, isDown, meshOf } from './lookups.ts'
@@ -49,7 +49,7 @@ export const skewed = (game: Game, node: GameNode, answer: Outcome): Outcome => 
   if (incident?.kind !== 'leap-second' || incident.region === null) return answer
   if (node.region !== incident.region) return answer
   return failSome(
-    through(hop({ fixedMs: CLOCK_SKEW_MS }), [[answer, 1]]),
+    throughOne(hopOf(1, CLOCK_SKEW_MS, 0, 0, 0, 1), answer),
     CLOCK_SKEW_LOSS,
     'timeout',
   )
@@ -81,14 +81,14 @@ export const outcomesOf = (inputs: Inputs, pass: Pass) => {
       fixedMs: COMPONENTS[node.type].latency,
       variableMs: 0,
     }
-    return hop({
-      share: model?.shares?.[kind] ?? model?.share ?? 1,
-      fixedMs: service.fixedMs + samplingMsOf(graph, node),
-      variableMs: service.variableMs,
-      tailP: model?.tailP ?? 0,
-      tailMs: model?.tailMs ?? 0,
+    return hopOf(
+      model?.shares?.[kind] ?? model?.share ?? 1,
+      service.fixedMs + samplingMsOf(graph, node),
+      service.variableMs,
+      model?.tailP ?? 0,
+      model?.tailMs ?? 0,
       value,
-    })
+    )
   }
 
   /** One attempt on a Link: the callee's outcome cut at the Link's timeout, or its bulkhead. */
@@ -155,7 +155,7 @@ export const outcomesOf = (inputs: Inputs, pass: Pass) => {
       return failed('timeout')
     const extra = placeMs(game, node, child) + (meshOf(game, node) ? MESH_HOP_MS : 0)
     const answer = call(edge, kind)
-    return extra > 0 ? through(hop({ fixedMs: extra }), [[answer, 1]]) : answer
+    return extra > 0 ? throughOne(hopOf(1, extra, 0, 0, 0, 1), answer) : answer
   }
 
   /** What one request of `kind` sent from `node` to its targets gets back. */
@@ -181,7 +181,7 @@ export const outcomesOf = (inputs: Inputs, pass: Pass) => {
     const result = !mixed
       ? failed('stranded')
       : extraHop > 0
-        ? through(hop({ fixedMs: extraHop }), [[mixed, 1]])
+        ? throughOne(hopOf(1, extraHop, 0, 0, 0, 1), mixed)
         : mixed
     byKind[index] = result
     return result

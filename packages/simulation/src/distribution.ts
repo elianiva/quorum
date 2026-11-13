@@ -123,23 +123,34 @@ export const withoutFailures = (outcome: Outcome): Outcome => ({
   ...NO_FAILURE_FIELDS,
 })
 
-export const failed = (cause: ErrorCause): Outcome => ({
-  success: 0,
-  value: 1,
-  ...NO_HOP,
-  failStranded: cause === 'stranded' ? 1 : 0,
-  failDropped: cause === 'dropped' ? 1 : 0,
-  failRefused: cause === 'refused' ? 1 : 0,
-  failDown: cause === 'down' ? 1 : 0,
-  failStale: cause === 'stale' ? 1 : 0,
-  failOom: cause === 'oom' ? 1 : 0,
-  failTimeout: cause === 'timeout' ? 1 : 0,
-  failCrash: cause === 'crash' ? 1 : 0,
-  failBlocked: cause === 'blocked' ? 1 : 0,
-  failUpstream: cause === 'upstream' ? 1 : 0,
-  failThrottled: cause === 'throttled' ? 1 : 0,
-  failDuplicate: cause === 'duplicate' ? 1 : 0,
-})
+const FAILED_BY_CAUSE = Object.fromEntries(
+  ERROR_CAUSES.map((cause) => [
+    cause,
+    {
+      success: 0,
+      value: 1,
+      ...NO_HOP,
+      failStranded: cause === 'stranded' ? 1 : 0,
+      failDropped: cause === 'dropped' ? 1 : 0,
+      failRefused: cause === 'refused' ? 1 : 0,
+      failDown: cause === 'down' ? 1 : 0,
+      failStale: cause === 'stale' ? 1 : 0,
+      failOom: cause === 'oom' ? 1 : 0,
+      failTimeout: cause === 'timeout' ? 1 : 0,
+      failCrash: cause === 'crash' ? 1 : 0,
+      failBlocked: cause === 'blocked' ? 1 : 0,
+      failUpstream: cause === 'upstream' ? 1 : 0,
+      failThrottled: cause === 'throttled' ? 1 : 0,
+      failDuplicate: cause === 'duplicate' ? 1 : 0,
+    } satisfies Outcome,
+  ]),
+) as Readonly<Record<ErrorCause, Outcome>>
+
+/**
+ * Twelve outcomes cover every cause, so the solve shares them instead of
+ * building a twelve-field object for each stranded or down hop.
+ */
+export const failed = (cause: ErrorCause): Outcome => FAILED_BY_CAUSE[cause]
 
 /** The same outcome with a share of its answered requests failing for `cause` instead. */
 export const failSome = (outcome: Outcome, share: number, cause: ErrorCause): Outcome => {
@@ -183,6 +194,17 @@ export type Hop = Readonly<{
   tailMs: number
   value: number
 }>
+
+/** A Hop built from its fields, without the intermediate partial object. */
+export const hopOf = (
+  share: number,
+  fixedMs: number,
+  variableMs: number,
+  tailP: number,
+  tailMs: number,
+  value: number,
+  cause: ErrorCause = 'dropped',
+): Hop => ({ share, cause, fixedMs, variableMs, tailP, tailMs, value })
 
 export const hop = (entry: Partial<Hop>): Hop => ({
   share: 1,
@@ -279,6 +301,19 @@ export const through = (
     failThrottled: throttled * ratio * reached + (own.cause === 'throttled' ? ownFail : 0),
     failDuplicate: duplicate * ratio * reached + (own.cause === 'duplicate' ? ownFail : 0),
   }
+}
+
+/**
+ * `through` for the common case of one call: the tuple is reused, so a hop on
+ * the hot path allocates no array. `through` only reads it.
+ */
+const ONE_CALL: Array<[Outcome, number]> = [[answered(0, 0), 1]]
+
+export const throughOne = (own: Hop, call: Outcome, staleCounts = false): Outcome => {
+  const entry = ONE_CALL[0] as [Outcome, number]
+  entry[0] = call
+  entry[1] = 1
+  return through(own, ONE_CALL, staleCounts)
 }
 
 /** A weighted mix of the outcomes of several targets. Undefined when there are none. */

@@ -30,7 +30,9 @@ import {
   failed,
   failuresOf,
   hop,
+  hopOf,
   meanOf,
+  throughOne,
   percentile,
   through,
   withoutFailures,
@@ -115,6 +117,95 @@ export const completionsOf = (game: Game, pass: Pass, outcomes: ReturnType<typeo
 /** One region's answer to a request kind, with and without its users' hop. */
 export type RouteAnswer = Readonly<{ entry: UserRoute; answer: Outcome; raw: Outcome }>
 
+/**
+ * What one request of `kind` gets back for each region's users, and what it
+ * would with no user hop. Shared with `revenueOf`, so the bottleneck search
+ * scores a candidate by exactly the arithmetic the Ledger prints.
+ */
+export const answersOf = (
+  game: Game,
+  outcomes: ReturnType<typeof outcomesOf>,
+  routes: ReadonlyArray<UserRoute>,
+  kind: RequestKind,
+): ReadonlyArray<RouteAnswer> => {
+  // A latency regression puts every answer this much further out (13 "Ventures", Ad tech).
+  const regressed = game.incident?.kind === 'latency-regression' ? LATENCY_REGRESSION_MS : 0
+  return routes.map((entry) => {
+    const raw = entry.source ? outcomes.outcome(entry.source, kind) : failed('stranded')
+    const extraMs = userHopMs(game, entry.extraMs, kind) + regressed
+    return {
+      entry,
+      raw,
+      answer: extraMs > 0 ? throughOne(hopOf(1, extraMs, 0, 0, 0, 1), raw) : raw,
+    }
+  })
+}
+
+/** What one request of `kind` gets back, over every region's users. */
+export const answerOf = (
+  game: Game,
+  answers: ReadonlyArray<RouteAnswer>,
+  kind: RequestKind,
+): Outcome => {
+  const regressed = game.incident?.kind === 'latency-regression' ? LATENCY_REGRESSION_MS : 0
+  const only = answers.length === 1 ? answers[0] : undefined
+  if (only && userHopMs(game, only.entry.extraMs, kind) + regressed === 0) return only.answer
+  return (
+    blend(answers.map(({ entry, answer }) => [answer, entry.share] as const)) ?? failed('stranded')
+  )
+}
+
+/**
+ * What one request of `kind` earns in a second, at this rate and Apdex. A
+ * request that misses the Venture's deadline earns nothing (13 "Ventures").
+ */
+export const earnedOf = (
+  game: Game,
+  kind: RequestKind,
+  rate: number,
+  result: Outcome,
+  apdex: number,
+): number =>
+  rate *
+  result.success *
+  apdex *
+  KINDS[kind].value *
+  result.value *
+  valueFactor(game, kind) *
+  (earnsInTime(game, meanOf(result)) ? 1 : 0)
+
+/**
+ * What the Company earns in a second, without building the Node and Link rows.
+ * The bottleneck search asks this once per candidate; `ledgerOf` prints the
+ * same figure through `earnedOf`.
+ */
+export const revenueOf = (
+  game: Game,
+  demand: Partial<Record<RequestKind, number>>,
+  pass: Pass,
+  outcomes: ReturnType<typeof outcomesOf>,
+  routes: ReadonlyArray<UserRoute>,
+): number => {
+  const completion = completionsOf(game, pass, outcomes)
+  let revenue = 0
+  for (const kind of REQUEST_KINDS) {
+    const rate = demand[kind] ?? 0
+    if (rate <= 0) continue
+    // Bots earn nothing and do not count toward Apdex: blocking one is a success.
+    if (!PROFILES[kind].scored) continue
+    const result = answerOf(game, answersOf(game, outcomes, routes, kind), kind)
+    // The part that went through a Queue is also scored on when its result is ready.
+    const enqueued = completion.enqueued[kind] ?? 0
+    const done = enqueued > 0 ? (completion.scored[kind] ?? 0) / enqueued : null
+    const async =
+      done === null || result.success <= 0 ? 0 : Math.min(1, enqueued / (rate * result.success))
+    const finish = 1 - async + async * (done ?? 1)
+    const apdex = apdexOf(result, PROFILES[kind].apdex) * finish
+    revenue += earnedOf(game, kind, rate, result, apdex)
+  }
+  return revenue + subscriptionsOf(game)
+}
+
 export const ledgerOf = (
   game: Game,
   graph: Graph,
@@ -123,28 +214,7 @@ export const ledgerOf = (
   outcomes: ReturnType<typeof outcomesOf>,
   routes: ReadonlyArray<UserRoute>,
 ): Ledger => {
-  // A latency regression puts every answer this much further out (13 "Ventures", Ad tech).
-  const regressed = game.incident?.kind === 'latency-regression' ? LATENCY_REGRESSION_MS : 0
-  /** What one request of `kind` gets back for each region's users, and what it would with no user hop. */
-  const answersOf = (kind: RequestKind): ReadonlyArray<RouteAnswer> =>
-    routes.map((entry) => {
-      const raw = entry.source ? outcomes.outcome(entry.source, kind) : failed('stranded')
-      const extraMs = userHopMs(game, entry.extraMs, kind) + regressed
-      return {
-        entry,
-        raw,
-        answer: extraMs > 0 ? through(hop({ fixedMs: extraMs }), [[raw, 1]]) : raw,
-      }
-    })
-  /** What one request of `kind` gets back, over every region's users. */
-  const answerOf = (answers: ReadonlyArray<RouteAnswer>, kind: RequestKind): Outcome => {
-    const only = answers.length === 1 ? answers[0] : undefined
-    if (only && userHopMs(game, only.entry.extraMs, kind) + regressed === 0) return only.answer
-    return (
-      blend(answers.map(({ entry, answer }) => [answer, entry.share] as const)) ??
-      failed('stranded')
-    )
-  }
+  const answersFor = (kind: RequestKind) => answersOf(game, outcomes, routes, kind)
   // Each region's users get their own Apdex (04 "Users and growth"), and their own rows for the
   // Churn breakdown (12 "The Churn breakdown").
   const regionRate: Partial<Record<RegionId, number>> = {}
@@ -169,8 +239,8 @@ export const ledgerOf = (
   for (const kind of REQUEST_KINDS) {
     const rate = demand[kind] ?? 0
     if (rate <= 0) continue
-    const answers = answersOf(kind)
-    const result = answerOf(answers, kind)
+    const answers = answersFor(kind)
+    const result = answerOf(game, answers, kind)
     // The part that went through a Queue is also scored on when its result is ready.
     const enqueued = completion.enqueued[kind] ?? 0
     const done = enqueued > 0 ? (completion.scored[kind] ?? 0) / enqueued : null
@@ -214,15 +284,7 @@ export const ledgerOf = (
     served += rate * result.success
     satisfied += rate * result.success * apdex
     const mean = meanOf(result)
-    // A request that misses the Venture's deadline earns nothing (13 "Ventures", Ad tech).
-    const earned =
-      rate *
-      result.success *
-      apdex *
-      KINDS[kind].value *
-      result.value *
-      valueFactor(game, kind) *
-      (earnsInTime(game, mean) ? 1 : 0)
+    const earned = earnedOf(game, kind, rate, result, apdex)
     revenue += earned
     if (earned > 0) revenueByKind[kind] = earned
     latencyWeight += rate * result.success * mean

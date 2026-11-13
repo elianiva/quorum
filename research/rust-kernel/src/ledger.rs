@@ -1,11 +1,9 @@
-//! The Ledger: what one request earns, and what each Node and kind looks like.
+//! The Ledger: every figure the Simulation derives at a Step.
 //!
 //! Ported from `solve-ledger.ts` (`completionsOf`, `answersOf`, `answerOf`,
-//! `earnedOf`, `revenueOf`, `ledgerOf`). The parts the solve itself reads are
-//! here in full: revenue, the per-kind rows, the error shares, the Node rows the
-//! Bottleneck search ranks, and the per-kind bottleneck. The presentation-only
-//! halves of the TypeScript Ledger (bills, Insight, velocity, Link rows, regions,
-//! devices) are not ported yet, and a run does not report them.
+//! `earnedOf`, `revenueOf`, `ledgerOf`) and `solve-insight.ts`. The bill lives in
+//! `bill.rs`. Market and the forecast peak read nothing the solve changes, so
+//! the host fills them in when it decodes the stream `wire.rs` writes.
 
 use crate::catalog::*;
 use crate::dist::*;
@@ -131,6 +129,8 @@ pub struct NodeRow {
     pub work_share: Keyed,
     pub work_unit: Option<WorkUnit>,
     pub cost: f64,
+    /// Each kind's Cost receipt, on App Servers, Databases, and Read Replicas.
+    pub receipts: Vec<(usize, crate::model::Receipt)>,
     pub repeated: f64,
     pub origins: Keyed,
     pub dropped: f64,
@@ -633,6 +633,26 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
                 work_share.set(kind, rates[kind] * work_of(kind) / work_total);
             }
         }
+        // Each kind's Cost receipt, where the model's cost depends on the kind.
+        let mut receipts = Vec::new();
+        if let Some(model) = model {
+            for kind in order.iter().filter(|kind| rates[*kind] > 0.0) {
+                let receipt = match node.type_code {
+                    component::SERVER if kind < NR => {
+                        let code = setup.board.code.node(slot);
+                        let flags = setup.board.flags.get(slot).copied().unwrap_or_default();
+                        Some(crate::model::server_receipt(game, node, model, kind, &code.calls[kind], &flags, code.cpu[kind]))
+                    }
+                    component::DATABASE | component::REPLICA => {
+                        crate::model::database_receipt(game, node, model, rates, kind)
+                    }
+                    _ => None,
+                };
+                if let Some(receipt) = receipt {
+                    receipts.push((kind, receipt));
+                }
+            }
+        }
         let mut from_users = Keyed::default();
         for (kind, part) in origins[slot].entries() {
             from_users.set(kind, inbound * part);
@@ -662,6 +682,7 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
             work_share,
             work_unit: model.and_then(|model| model.work_unit),
             cost: if inbound > 0.0 { work_total / inbound } else { 0.0 },
+            receipts,
             repeated: inbound.min(pass.repeated.get(slot).copied().unwrap_or(0.0)),
             origins: from_users,
             dropped: inbound * (1.0 - share),

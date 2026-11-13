@@ -627,9 +627,7 @@ export const bottleneckRun = (kernel, game, options = {}) => {
 }
 
 /** The Ledger figures the kernel does not write yet. */
-export const PENDING = [
-  'nodes.*.receipts',
-]
+export const PENDING = []
 
 /**
  * Every Ledger figure, compared with the TypeScript Ledger by `Object.is` and

@@ -8,6 +8,8 @@
 const LIMITS = ['none', 'cpu', 'workers', 'network', 'memory', 'credits', 'throughput', 'disk', 'connections']
 const WORK_UNITS = ['cpu', 'workers', 'network', 'disk']
 const STATUSES = ['idle', 'ok', 'warn', 'danger', 'down']
+/** `CostCause`, in the order of `Cause` in `src/model.rs`. */
+const CAUSES = ['runtime', 'collector', 'opcache', 'variant', 'arm', 'recycle', 'warmup', 'framework', 'jit', 'hashing', 'async', 'compression', 'local-db', 'serialization', 'auth', 'sampling', 'neighbours', 'swapping', 'gc', 'slow-query', 'disk', 'eviction', 'hot-shard', 'bloat', 'denormalization', 'indexes', 'features', 'engine', 'multi-leader', 'scatter', 'report', 'retention', 'view', 'busiest-shard']
 
 /**
  * @param block the stream
@@ -44,6 +46,18 @@ export const decodeLedger = (block, game, names) => {
     for (let left = block[at++]; left > 0; left -= 1) list.push(kinds[block[at++]])
     return list
   }
+  const receipts = () => {
+    const record = {}
+    for (let left = block[at++]; left > 0; left -= 1) {
+      const kind = kinds[block[at++]]
+      const base = block[at++]
+      const lines = []
+      for (let count = block[at++]; count > 0; count -= 1)
+        lines.push({ cause: CAUSES[block[at++]], op: block[at++] !== 0 ? 'plus' : 'times', value: block[at++] })
+      record[kind] = { base, lines, total: block[at++] }
+    }
+    return record
+  }
   const nodeId = (slot) => (slot >= 0 ? game.nodes[slot].id : null)
 
   const nodes = {}
@@ -62,6 +76,7 @@ export const decodeLedger = (block, game, names) => {
       workShare: keyed(),
       workUnit: WORK_UNITS[num()] ?? null,
       cost: num(),
+      receipts: receipts(),
       repeated: num(),
       origins: keyed(),
       dropped: num(),

@@ -66,6 +66,89 @@ impl Order {
     }
 }
 
+/// `CostCause`: what makes one request of a kind cost more or less, in the
+/// TypeScript union's order, which `ledger-wire.ts` decodes by index.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Cause {
+    Runtime,
+    Collector,
+    Opcache,
+    Variant,
+    Arm,
+    Recycle,
+    Warmup,
+    Framework,
+    Jit,
+    Hashing,
+    Async,
+    Compression,
+    LocalDb,
+    Serialization,
+    Auth,
+    Sampling,
+    Neighbours,
+    Swapping,
+    Gc,
+    SlowQuery,
+    Disk,
+    Eviction,
+    HotShard,
+    Bloat,
+    Denormalization,
+    Indexes,
+    Features,
+    Engine,
+    MultiLeader,
+    Scatter,
+    Report,
+    Retention,
+    View,
+    BusiestShard,
+}
+
+/// One step of a Cost receipt: the cost so far is multiplied by, or gets added, `value`.
+#[derive(Clone, Copy)]
+pub struct CostLine {
+    pub cause: Cause,
+    pub plus: bool,
+    pub value: f64,
+}
+
+/// A Cost receipt: the base cost, then each factor in the order the model applies it.
+#[derive(Clone, Default)]
+pub struct Receipt {
+    pub base: f64,
+    pub lines: Vec<CostLine>,
+    pub total: f64,
+}
+
+/// Where a cost writes its receipt: nowhere while the solve runs, a list once the Ledger asks.
+pub trait Lines {
+    fn times(&mut self, cause: Cause, value: f64);
+    fn plus(&mut self, cause: Cause, value: f64);
+}
+
+impl Lines for () {
+    #[inline]
+    fn times(&mut self, _: Cause, _: f64) {}
+    #[inline]
+    fn plus(&mut self, _: Cause, _: f64) {}
+}
+
+/// Leaves out the factors that change nothing, as `linesOf` does.
+impl Lines for Vec<CostLine> {
+    fn times(&mut self, cause: Cause, value: f64) {
+        if value != 1.0 {
+            self.push(CostLine { cause, plus: false, value });
+        }
+    }
+    fn plus(&mut self, cause: Cause, value: f64) {
+        if value != 0.0 {
+            self.push(CostLine { cause, plus: true, value });
+        }
+    }
+}
+
 /// An incident a rule reads. Every incident kind decodes; one no figure the solve
 /// reads depends on is `Elsewhere`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -393,6 +476,10 @@ pub struct Model {
     /// every other kind keeps `share`.
     pub shares: [f64; NR],
     pub shares_mask: u64,
+    /// What swapping leaves of a server's speed, and what garbage collection multiplies
+    /// its CPU by: the two factors a server's receipts add after `cpuBase`.
+    pub efficiency: f64,
+    pub collecting: f64,
     /// The resource `work` counts, or `None` where every request costs the same.
     pub work_unit: Option<WorkUnit>,
     /// What one request of each kind takes from the resource in `work_unit`.
@@ -446,6 +533,8 @@ impl Default for Model {
             inflight: 0.0,
             shares: [0.0; NR],
             shares_mask: 0,
+            efficiency: 1.0,
+            collecting: 1.0,
             work_unit: None,
             work: [0.0; NK],
             resources: Resources::default(),
@@ -639,26 +728,51 @@ fn hashes_on_pool(game: &GameCtx, node: &Node, kind: usize, flags: &ServerFlags)
 
 /// `cpuBase`: core-milliseconds one request of a kind costs this Node. It reads
 /// nothing a pass changes, so a solve works it out once per Node and kind.
+#[inline]
 pub fn cpu_base(game: &GameCtx, node: &Node, kind: usize, calls: &Calls, flags: &ServerFlags) -> f64 {
-    let runtime = node.runtime;
-    let framework = node.framework;
-    let speed = speed_of(game, node);
+    cpu_base_with(game, node, kind, calls, flags, &mut ()).1
+}
+
+/// `cpuBase` with its Cost receipt: the base cost, and the same arithmetic with each step recorded.
+pub fn cpu_base_with(
+    game: &GameCtx,
+    node: &Node,
+    kind: usize,
+    calls: &Calls,
+    flags: &ServerFlags,
+    lines: &mut dyn Lines,
+) -> (f64, f64) {
+    let parts = speed_parts(game, node);
+    let speed = parts.iter().fold(1.0, |speed, (_, part)| speed * part);
     let overhead = overhead_of(node, kind);
     // `profileOf`: a stuffing bot costs what a login costs.
     let profile = crate::pass::profile_of(game, kind);
     let login = crate::pass::as_login(game, kind);
     let variant = kind_speed_of(game, node, kind);
     let delegated_login = login && flags.delegated && !flags.worker;
+    // What the framework and each speed part do to the cost.
+    let slowed = |lines: &mut dyn Lines| {
+        lines.times(Cause::Framework, overhead);
+        for (cause, part) in parts {
+            lines.times(cause, 1.0 / part);
+        }
+    };
+    let base = if delegated_login { LOGIN_DELEGATED_CPU } else { PROFILE_CPU[profile] };
 
     let mut cpu;
     if delegated_login {
         cpu = (LOGIN_DELEGATED_CPU * overhead) / speed;
+        slowed(lines);
     } else if PROFILE_NATIVE[profile] {
         cpu = PROFILE_CPU[profile] * if login { flags.hashing } else { 1.0 };
+        lines.times(Cause::Hashing, if login { flags.hashing } else { 1.0 });
     } else {
         cpu = (PROFILE_CPU[profile] * overhead) / speed;
+        slowed(lines);
     }
+    // The JIT and NIFs change what one request of a kind costs the CPU, native work included.
     cpu /= variant;
+    lines.times(Cause::Jit, 1.0 / variant);
     let mut made = 0.0;
     for &count in calls {
         made += count;
@@ -671,13 +785,18 @@ pub fn cpu_base(game: &GameCtx, node: &Node, kind: usize, calls: &Calls, flags: 
         0.0
     };
     if flags.worker {
-        return (cpu + serial) * PROFILE_OFFLOAD[profile] * (1.0 + flags.sampling);
+        lines.plus(Cause::Serialization, serial);
+        lines.times(Cause::Async, PROFILE_OFFLOAD[profile]);
+        lines.times(Cause::Sampling, 1.0 + flags.sampling);
+        return (base, (cpu + serial) * PROFILE_OFFLOAD[profile] * (1.0 + flags.sampling));
     }
     if flags.offloaded {
         cpu *= 1.0 - PROFILE_OFFLOAD[profile];
+        lines.times(Cause::Async, 1.0 - PROFILE_OFFLOAD[profile]);
     }
     if node.compress && PROFILE_COMPRESSIBLE[profile] {
         cpu *= GZIP_CPU;
+        lines.times(Cause::Compression, GZIP_CPU);
     }
     if flags.local {
         let mut queries = 0.0;
@@ -687,43 +806,48 @@ pub fn cpu_base(game: &GameCtx, node: &Node, kind: usize, calls: &Calls, flags: 
             }
         }
         cpu += queries * LOCAL_DB_CONTENTION;
+        lines.plus(Cause::LocalDb, queries * LOCAL_DB_CONTENTION);
     }
-    let _ = framework;
-    let _ = runtime;
-    (cpu + serial + auth) * (1.0 + flags.sampling)
+    lines.plus(Cause::Serialization, serial);
+    lines.plus(Cause::Auth, auth);
+    lines.times(Cause::Sampling, 1.0 + flags.sampling);
+    (base, (cpu + serial + auth) * (1.0 + flags.sampling))
 }
 
-/// `speedOf`: runtime, OPcache, and warmup, multiplied in order.
-fn speed_of(game: &GameCtx, node: &Node) -> f64 {
-    let mut speed = RUNTIME_SPEED[node.runtime];
-    // The collector's speed only applies to Java.
-    if RUNTIME_LANGUAGE[node.runtime] == language::JAVA {
-        speed *= COLLECTOR_SPEED[node.collector.min(2)];
-    }
-    if RUNTIME_LANGUAGE[node.runtime] == language::PHP && game.has(research::OPCACHE) {
-        speed *= 1.0 + (OPCACHE_SPEED - 1.0) * node.warm;
-    }
-    if RUNTIME_LANGUAGE[node.runtime] == language::RUBY && game.has(research::YJIT) {
-        speed *= YJIT_SPEED;
-    }
-    if RUNTIME_LANGUAGE[node.runtime] == language::RUST && game.has(research::JEMALLOC) {
-        speed *= JEMALLOC_SPEED;
-    }
-    if node.family == 4 {
-        speed *= ARM_SPEED;
-    }
-    if node.recycle && RUNTIME_PERSISTENT[node.runtime] {
-        speed *= 1.0
-            - (RUNTIME_STARTUP_S[node.runtime]
-                + (1.0 - RUNTIME_WARM_FROM[node.runtime]) * RUNTIME_WARMUP[node.runtime])
-                / RECYCLE_CYCLE;
-    }
-    // A JVM that scaled up runs cold; the port keeps the warm share the caller passed.
+/// `speedParts`: runtime, collector, OPcache, variant, ARM, recycling, and warmup, in
+/// the order they multiply. `cpuBase` multiplies them; a receipt lists each one.
+fn speed_parts(game: &GameCtx, node: &Node) -> [(Cause, f64); 7] {
+    let runtime = node.runtime;
+    let language = RUNTIME_LANGUAGE[runtime];
+    let collector = if language == language::JAVA { COLLECTOR_SPEED[node.collector.min(2)] } else { 1.0 };
+    let opcache = if language == language::PHP && game.has(research::OPCACHE) {
+        1.0 + (OPCACHE_SPEED - 1.0) * node.warm
+    } else {
+        1.0
+    };
+    // A variant's speed: YJIT and jemalloc.
+    let variant = (if language == language::RUBY && game.has(research::YJIT) { YJIT_SPEED } else { 1.0 })
+        * if language == language::RUST && game.has(research::JEMALLOC) { JEMALLOC_SPEED } else { 1.0 };
+    let arm = if node.family == 4 { ARM_SPEED } else { 1.0 };
+    // A recycled process starts cold every RECYCLE_CYCLE seconds: its boot, then its warmup.
+    let recycled = if node.recycle && RUNTIME_PERSISTENT[runtime] {
+        1.0 - (RUNTIME_STARTUP_S[runtime] + (1.0 - RUNTIME_WARM_FROM[runtime]) * RUNTIME_WARMUP[runtime])
+            / RECYCLE_CYCLE
+    } else {
+        1.0
+    };
     // A JVM that scaled up under load runs its new copies cold until the warmup finishes.
     let cold = game.incident == Some(Incident::JvmWarmup) && game.incident_node == node.id && !node.ramped;
-    speed *= RUNTIME_WARM_FROM[node.runtime]
-        + (1.0 - RUNTIME_WARM_FROM[node.runtime]) * if cold { 0.0 } else { node.warm };
-    speed
+    let warmup = RUNTIME_WARM_FROM[runtime] + (1.0 - RUNTIME_WARM_FROM[runtime]) * if cold { 0.0 } else { node.warm };
+    [
+        (Cause::Runtime, RUNTIME_SPEED[runtime]),
+        (Cause::Collector, collector),
+        (Cause::Opcache, opcache),
+        (Cause::Variant, variant),
+        (Cause::Arm, arm),
+        (Cause::Recycle, recycled),
+        (Cause::Warmup, warmup),
+    ]
 }
 
 /// `overheadOf`: framework CPU overhead per request. An app that boots once
@@ -1126,6 +1250,8 @@ pub fn server_model(
         inflight: (slot_work * share) / 1000.0,
         shares: [0.0; NR],
         shares_mask: 0,
+        efficiency,
+        collecting,
         work_unit: Some(work_unit),
         work,
         resources: Resources {
@@ -1662,55 +1788,40 @@ pub fn sharding_of(node: &Node) -> Sharding {
     }
 }
 
-/// The Database model: `databaseModel` from capacity.ts.
-///
-/// A board with no Data Groups and no physical topology reads the same figures
-/// the TypeScript does, because every branch it takes is the single-topology
-/// branch. Groups and topology are read from the Node, so a board that uses
-/// them takes the same branches here.
-pub fn database_model(
-    game: &GameCtx,
-    node: &Node,
-    arriving: &Rates,
-    boost: f64,
-    connections: f64,
-) -> Model {
+/// What one query of each backend kind costs a Database's CPU, and the factors
+/// that make it up. `databaseModel` and the Cost receipts read the same figures.
+#[derive(Clone, Copy)]
+pub struct DbCpu {
+    pub engine: usize,
+    pub warmth: f64,
+    /// Milliseconds a Slow query incident's unindexed scan adds to every read.
+    pub scan: f64,
+    pub scans: f64,
+    pub retention: usize,
+    pub view: f64,
+    pub report: f64,
+    pub scatter: f64,
+    pub evicted: f64,
+    pub shard: f64,
+    pub bloat: f64,
+    pub denormalized: bool,
+    pub multi_leader: bool,
+    pub disk: bool,
+    pub read_cpu: f64,
+    pub write_cpu: f64,
+    pub search_cpu: f64,
+    pub put_cpu: f64,
+    pub tx_cpu: f64,
+    pub get_cpu: f64,
+    pub scan_cpu: f64,
+}
+
+pub fn db_cpu(game: &GameCtx, node: &Node, arriving: &Rates, cores: f64, scatter: f64, disk: bool, database_count: f64) -> DbCpu {
     let engine = node.db_engine.min(1);
-    let vcpu = vcpu_of(node.size) * boost;
-    let ram = ram_of(node.size, node.family) * boost;
-    let connection_ram = (connections * DB_CONNECTION_MB[engine]) / 1024.0;
-    // One Service over one Database: the group holds the Company's users.
     let group_users = node.users_in_group;
     let topology = node.topology;
-    let database_count = if node.type_code == component::DATABASE { node.databases_in_group } else { 1.0 };
-    let shard_share = if topology == 2 && database_count > 1.0 { 1.0 / database_count } else { 1.0 };
-    let working_set = (LOCAL_DB_RAM + group_users * LOCAL_DB_RAM_PER_USER) * shard_share;
-    let footprint = working_set + connection_ram;
-    let disk = footprint > ram - OS_RAM;
-    let logical = sharding_of(node);
-    let shards = logical.shards
-        * if topology == 2 && node.type_code == component::DATABASE { database_count } else { 1.0 };
-    let cross = if shards > 1.0 { SHARD_CROSS[node.shard_key.min(3)] * (1.0 - 1.0 / shards) } else { 0.0 };
-    let scatter = 1.0 + SCATTER_CPU * (shards - 1.0);
-    let hot = if shards > 1.0 {
-        SHARD_HOT[node.shard_key.min(3)] + (1.0 - SHARD_HOT[node.shard_key.min(3)]) / shards
-    } else {
-        1.0
-    };
-    let far_ms = if shards > 1.0 {
-        SHARD_FAR_MS[node.shard_key.min(3)] * (1.0 - 1.0 / shards)
-    } else {
-        0.0
-    };
-    let iops = STORAGE_IOPS[node.iops.min(1)] * shards * node.iops_factor;
-    let throttled = node.family == 0 && node.credits < 1.0;
     let incident = game.incident;
-    let slowed = incident == Some(Incident::RetryStorm)
-        && game.incident_node == node.id
-        && game.time - game.incident_started < STORM_TRIGGER;
-    let cores = (if throttled { BURST_BASELINE * vcpu } else { vcpu })
-        * if slowed { STORM_SLOWDOWN } else { 1.0 };
-    let per_request = cores.min(1.0);
+    let report = if incident == Some(Incident::ReportDb) { REPORT_SURGE } else { 1.0 };
     let warmth = 0.5 + 0.5 * node.warm;
     let scan = if incident == Some(Incident::SlowQuery) { group_users * ROWS_PER_USER * UNINDEXED_MS_PER_ROW } else { 0.0 };
     let scans = arriving[NR + backend::Q_SCAN];
@@ -1719,7 +1830,7 @@ pub fn database_model(
     let scan_cpu = (QUERY_CPU_BY_BACKEND[backend::Q_SCAN]
         * DB_SCAN[engine]
         * scatter
-        * if incident == Some(Incident::ReportDb) { REPORT_SURGE } else { 1.0 }
+        * report
         * RETENTION_REBUILD[retention]
         * view)
         / warmth;
@@ -1751,6 +1862,195 @@ pub fn database_model(
         * if multi_leader { MULTI_WRITE_CPU } else { 1.0 })
         / warmth;
     let get_cpu = QUERY_CPU_BY_BACKEND[backend::BLOB_GET] / warmth;
+    DbCpu {
+        engine,
+        warmth,
+        scan,
+        scans,
+        retention,
+        view,
+        report,
+        scatter,
+        evicted,
+        shard,
+        bloat,
+        denormalized,
+        multi_leader,
+        disk,
+        read_cpu,
+        write_cpu,
+        search_cpu,
+        put_cpu,
+        tx_cpu,
+        get_cpu,
+        scan_cpu,
+    }
+}
+
+/// A Database's shards once physical sharding adds its Boards: each Database in a
+/// sharded Data Group is another shard.
+#[derive(Clone, Copy)]
+pub struct DbShards {
+    pub shards: f64,
+    pub cross: f64,
+    pub scatter: f64,
+    pub hot: f64,
+}
+
+pub fn db_shards(node: &Node, logical: &Sharding, database_count: f64) -> DbShards {
+    let shards = logical.shards
+        * if node.topology == 2 && node.type_code == component::DATABASE { database_count } else { 1.0 };
+    let key = node.shard_key.min(3);
+    DbShards {
+        shards,
+        cross: if shards > 1.0 { SHARD_CROSS[key] * (1.0 - 1.0 / shards) } else { 0.0 },
+        scatter: 1.0 + SCATTER_CPU * (shards - 1.0),
+        hot: if shards > 1.0 { SHARD_HOT[key] + (1.0 - SHARD_HOT[key]) / shards } else { 1.0 },
+    }
+}
+
+/// How many Databases share this Node's Data Group, as the topology counts them.
+#[inline]
+pub fn database_count(node: &Node) -> f64 {
+    if node.type_code == component::DATABASE { node.databases_in_group } else { 1.0 }
+}
+
+/// `receiptOf` for a Database or Read Replica: each backend kind's Cost receipt,
+/// from the same factors `db_cpu` multiplies.
+pub fn database_receipt(game: &GameCtx, node: &Node, model: &Model, arriving: &Rates, kind: usize) -> Option<Receipt> {
+    let count = database_count(node);
+    let DbShards { scatter, hot, .. } = db_shards(node, &sharding_of(node), count);
+    let cores = model.resources.cpu_cores.map_or(0.0, |gauge| gauge.total);
+    let cost = db_cpu(game, node, arriving, cores, scatter, model.disk, count);
+    let engine = cost.engine;
+    let cold = (Cause::Warmup, 1.0 / cost.warmth);
+    let shard = [(Cause::HotShard, cost.shard), (Cause::Bloat, cost.bloat)];
+    let multi = cost.multi_leader.then_some((Cause::MultiLeader, MULTI_WRITE_CPU));
+    let backend = kind.checked_sub(NR)?;
+    let (factors, total, added): (Vec<(Cause, f64)>, f64, f64) = match backend {
+        backend::Q_READ => (
+            [
+                if cost.disk { (Cause::Disk, 1.5) } else { (Cause::Eviction, 1.0 + 0.5 * cost.evicted) },
+                (Cause::Engine, DB_READ[engine]),
+                cold,
+            ]
+            .into_iter()
+            .chain(shard)
+            .chain([(Cause::Denormalization, if cost.denormalized { DENORMALIZED_READ } else { 1.0 })])
+            .collect(),
+            cost.read_cpu,
+            cost.scan,
+        ),
+        backend::Q_WRITE => (
+            [(Cause::Features, game.query[backend::Q_WRITE]), (Cause::Engine, DB_WRITE[engine])]
+                .into_iter()
+                .chain(multi)
+                .chain([
+                    cold,
+                    (Cause::Eviction, 1.0 + 0.5 * cost.evicted),
+                    (Cause::Indexes, index_write_factor(game)),
+                    (Cause::Denormalization, if cost.denormalized { DENORMALIZED_WRITE } else { 1.0 }),
+                ])
+                .chain(shard)
+                .chain([(Cause::BusiestShard, hot)])
+                .collect(),
+            cost.write_cpu * hot,
+            0.0,
+        ),
+        backend::Q_SEARCH => (
+            vec![
+                (Cause::Features, game.query[backend::Q_SEARCH]),
+                (Cause::Engine, DB_SEARCH_COST[engine]),
+                (Cause::Scatter, cost.scatter),
+                cold,
+            ],
+            cost.search_cpu,
+            0.0,
+        ),
+        backend::BLOB_PUT => (vec![cold, (Cause::BusiestShard, hot)], cost.put_cpu * hot, 0.0),
+        backend::Q_TX => (
+            [(Cause::Engine, DB_WRITE[engine])].into_iter().chain(multi).chain([cold]).collect(),
+            cost.tx_cpu,
+            0.0,
+        ),
+        backend::BLOB_GET => (vec![cold], cost.get_cpu, 0.0),
+        backend::Q_SCAN => (
+            vec![
+                (Cause::Scatter, cost.scatter),
+                (Cause::Report, cost.report),
+                (Cause::Retention, RETENTION_REBUILD[cost.retention]),
+                (Cause::View, cost.view),
+                (Cause::Engine, DB_SCAN[engine]),
+                cold,
+            ],
+            cost.scan_cpu,
+            0.0,
+        ),
+        _ => return None,
+    };
+    let mut lines: Vec<CostLine> = Vec::new();
+    lines.plus(Cause::SlowQuery, added);
+    for (cause, value) in factors {
+        lines.times(cause, value);
+    }
+    Some(Receipt { base: QUERY_CPU_BY_BACKEND[backend], lines, total })
+}
+
+/// `kindReceipt` for an App Server: `cpuBase`'s receipt, then a noisy neighbour,
+/// swapping, and garbage collection. `cpu` is the cost the solve charged the kind.
+pub fn server_receipt(game: &GameCtx, node: &Node, model: &Model, kind: usize, calls: &Calls, flags: &ServerFlags, cpu: f64) -> Receipt {
+    let mut lines: Vec<CostLine> = Vec::new();
+    let (base, _) = cpu_base_with(game, node, kind, calls, flags, &mut lines);
+    lines.times(Cause::Neighbours, 1.0 / (1.0 - node.steal));
+    lines.times(Cause::Swapping, 1.0 / model.efficiency);
+    lines.times(Cause::Gc, if model.collecting > 1.0 { model.collecting } else { 1.0 });
+    Receipt { base, lines, total: (cpu / model.efficiency) * if model.collecting > 1.0 { model.collecting } else { 1.0 } }
+}
+
+/// The Database model: `databaseModel` from capacity.ts.
+///
+/// A board with no Data Groups and no physical topology reads the same figures
+/// the TypeScript does, because every branch it takes is the single-topology
+/// branch. Groups and topology are read from the Node, so a board that uses
+/// them takes the same branches here.
+pub fn database_model(
+    game: &GameCtx,
+    node: &Node,
+    arriving: &Rates,
+    boost: f64,
+    connections: f64,
+) -> Model {
+    let engine = node.db_engine.min(1);
+    let vcpu = vcpu_of(node.size) * boost;
+    let ram = ram_of(node.size, node.family) * boost;
+    let connection_ram = (connections * DB_CONNECTION_MB[engine]) / 1024.0;
+    // One Service over one Database: the group holds the Company's users.
+    let group_users = node.users_in_group;
+    let topology = node.topology;
+    let database_count = database_count(node);
+    let shard_share = if topology == 2 && database_count > 1.0 { 1.0 / database_count } else { 1.0 };
+    let working_set = (LOCAL_DB_RAM + group_users * LOCAL_DB_RAM_PER_USER) * shard_share;
+    let footprint = working_set + connection_ram;
+    let disk = footprint > ram - OS_RAM;
+    let logical = sharding_of(node);
+    let DbShards { shards, cross, scatter, hot } = db_shards(node, &logical, database_count);
+    let far_ms = if shards > 1.0 {
+        SHARD_FAR_MS[node.shard_key.min(3)] * (1.0 - 1.0 / shards)
+    } else {
+        0.0
+    };
+    let iops = STORAGE_IOPS[node.iops.min(1)] * shards * node.iops_factor;
+    let throttled = node.family == 0 && node.credits < 1.0;
+    let incident = game.incident;
+    let slowed = incident == Some(Incident::RetryStorm)
+        && game.incident_node == node.id
+        && game.time - game.incident_started < STORM_TRIGGER;
+    let cores = (if throttled { BURST_BASELINE * vcpu } else { vcpu })
+        * if slowed { STORM_SLOWDOWN } else { 1.0 };
+    let per_request = cores.min(1.0);
+    let cost = db_cpu(game, node, arriving, cores, scatter, disk, database_count);
+    let DbCpu { warmth, scan, retention, scans, evicted, read_cpu, write_cpu, search_cpu, put_cpu, tx_cpu, get_cpu, scan_cpu, .. } = cost;
+    let _ = (warmth, scan);
 
     let reads = arriving[NR + backend::Q_READ];
     let writes = arriving[NR + backend::Q_WRITE];
@@ -1859,6 +2159,8 @@ pub fn database_model(
         inflight: 0.0,
         shares: [0.0; NR],
         shares_mask: 0,
+        efficiency: 1.0,
+        collecting: 1.0,
         work_unit: Some(if on_disk { WorkUnit::Disk } else { WorkUnit::Cpu }),
         work,
         resources: Resources {

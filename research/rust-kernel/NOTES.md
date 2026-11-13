@@ -335,3 +335,22 @@ Connector behind every Database, sending to a Warehouse or an Event Stream. All 
 - An Event Stream's `drainable` takes the kind: a change goes to every consumer, so the
   slowest one sets the rate, and tasks go to a group that shares it.
 
+## API Gateway and Serverless Function
+
+The sweep puts one or two API Gateways in front of the users' targets, at their defaults,
+with a rate limit, a burst, Auth at the edge, and Request coalescing. It turns every App
+Server into a Function, places one next to them with Java and GraalVM stacks, cold, and with
+enough data that an export passes the 15-minute limit. All are identical.
+
+- Every Gateway shares one token bucket. `gateway_kept` adds the arrivals of every Gateway
+  in board order and in each one's key order, and the first Gateway's limit decides. The
+  serve reads the arrivals so far in the pass, as TypeScript does, and the outcome the
+  final ones.
+- `edge_auth_of` returned `false`. It is now `edgeAuthOf`: a live Gateway with Auth at the
+  edge lets every App Server skip its token check.
+- A Function's model is `serverlessModel`, with the code table's CPU for each kind worked
+  out with no offload and no local database, as TypeScript's serverless context has
+  neither. The probe uses it with the Era's mix, as an App Server's does.
+
+With all 38 Components ported, the check that refused a Design by Component is gone.
+

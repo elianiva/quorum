@@ -58,7 +58,7 @@ pub fn probe_capacity(setup: &Setup, slot: usize, boost: Option<usize>, state: &
     };
     let mut probe = [0.0f64; NK];
     match node.type_code {
-        component::SERVER => probe = *setup.probe_mix,
+        component::SERVER | component::FN => probe = *setup.probe_mix,
         component::DATABASE | component::REPLICA | component::WIDE | component::DOC => probe[kind::Q_READ] = 1.0,
         component::VEC => probe[kind::Q_VECTOR] = 1.0,
         component::DSQL => probe[kind::Q_TX] = 1.0,
@@ -81,6 +81,7 @@ pub fn probe_capacity(setup: &Setup, slot: usize, boost: Option<usize>, state: &
     let connections = state.connection_used.get(slot).copied().unwrap_or(0.0);
     let model = match node.type_code {
         component::SERVER => server_model(board.game, node, &probe, board.code.node(slot), call_latency, &ctx),
+        component::FN => crate::model::serverless_model(node, &probe, board.code.node(slot), call_latency, boost),
         component::DATABASE | component::REPLICA => database_model(board.game, node, &probe, boost, connections),
         // `probeMixOf` walks `REQUEST_KINDS`.
         _ => flat_component(board.game, node, &probe, &Order::indexed(), boost),

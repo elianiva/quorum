@@ -56,8 +56,8 @@ impl Order {
     }
 }
 
-/// An incident a rule reads. The ABI decodes only the first three; the rest are
-/// named by rules the port carries, and a Game with any incident is refused.
+/// An incident a rule reads. Every incident kind decodes; one no figure the solve
+/// reads depends on is `Elsewhere`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Incident {
     GcStorm,
@@ -131,6 +131,10 @@ pub struct GameCtx {
     pub cdn_on_board: bool,
     /// `hasEdge`: a live Edge Function is on the board.
     pub edge_on_board: bool,
+    /// `edgeAuthOf`: a live API Gateway checks auth at the edge, so App Servers skip it.
+    pub edge_auth: bool,
+    /// The company's data, GB.
+    pub data: f64,
     /// `staticPagesOf`: the largest share of pages a live App Server renders statically.
     pub static_pages: f64,
     /// `mixOf(game)`: the Era's share of each Request kind.
@@ -331,6 +335,11 @@ pub struct Node {
     pub keyed: bool,
     /// `cdcMirrored`: a CDC Connector reads this Node's write log.
     pub cdc_mirrored: bool,
+    /// An API Gateway's Auth at the edge and Request coalescing.
+    pub auth_edge: bool,
+    pub merge: bool,
+    /// The Node's Service is shut.
+    pub shut: bool,
 }
 
 /// What `serverModel` returns.
@@ -599,7 +608,7 @@ pub fn cpu_base(game: &GameCtx, node: &Node, kind: usize, calls: &Calls, flags: 
         made += count;
     }
     let serial = made * SERIALIZE_MS * if game.has(research::BINARY_RPC) { 0.5 } else { 1.0 };
-    let auth = if AUTHENTICATED_KINDS_MASK[kind] == 1 && !edge_auth_of(game) && !(login && flags.delegated)
+    let auth = if AUTHENTICATED_KINDS_MASK[kind] == 1 && !game.edge_auth && !(login && flags.delegated)
     {
         AUTH_CHECK_MS
     } else {
@@ -696,10 +705,6 @@ fn kind_speed_of(game: &GameCtx, node: &Node, kind: usize) -> f64 {
 
 /// `edgeAuthOf`: a live API Gateway that validates tokens at the edge. The port
 /// refuses a Design with a Gateway, so no Gateway validates anything here.
-fn edge_auth_of(_game: &GameCtx) -> bool {
-    false
-}
-
 /// `variantMemoryOf`: a variant's memory cost.
 fn variant_memory(game: &GameCtx, node: &Node) -> (f64, f64) {
     let mut factor = 1.0;
@@ -1178,6 +1183,11 @@ pub fn flat_component(game: &GameCtx, node: &Node, rates: &Rates, order: &Order,
         component::CDN => unlimited(8.0, 0.0),
         component::EDGE => flat(f64::INFINITY, EDGE_MS, 0.0),
         component::WS => ws_model(game, node, rates, order, boost),
+        component::GW => flat(
+            FLAT_CAPACITY[component::GW] * scale,
+            6.0 + if node.auth_edge { GATEWAY_AUTH_MS } else { 0.0 },
+            0.1,
+        ),
         component::LOG => flat(LOG_RATE * scale / hot_key_factor(game, node), LOG_ACKS_LATENCY[node.acks] * 5.0, 0.1),
         // The index lives in memory: its type decides how many lookups it answers.
         component::VEC => flat(VEC_QUERIES * scale * VEC_INDEXES_QUERIES[node.index_type] / hot_key_factor(game, node), 20.0, 2.0),
@@ -1382,6 +1392,59 @@ fn ws_model(game: &GameCtx, node: &Node, rates: &Rates, order: &Order, boost: f6
     let built_in = game.has(research::DISTRIBUTED_ERLANG) && RUNTIME_LANGUAGE[node.runtime] == language::ELIXIR;
     let rate = (hub_connections(node, built_in) / RT_HOLD_SECONDS) * if node.presence { 1.0 - PRESENCE_CPU } else { 1.0 };
     flat_model(rate, rates, order, 1.0, 0.0, boost)
+}
+
+/// `serverlessModel`: one execution environment per in-flight request, up to the
+/// concurrency cap. An execution lasts the request's CPU plus the calls it waits on,
+/// so Little's law turns a mean execution into the requests a second the cap allows.
+pub fn serverless_model(node: &Node, arriving: &Rates, code: &Code, latency: &Rates, boost: f64) -> Model {
+    // `waitOf`: the calls one request waits on, in backend order.
+    let waiting = |kind: usize| {
+        code.calls[kind].iter().zip(&latency[NR..]).fold(0.0, |sum, (&count, &each)| if count != 0.0 { sum + count * each } else { sum })
+    };
+    let kinds = || (0..NR).filter(|&kind| arriving[kind] > 0.0);
+    let rate = kinds().fold(0.0, |sum, kind| sum + arriving[kind]);
+    let concurrency = SERVERLESS_CONCURRENCY * boost;
+    let inflight = kinds().fold(0.0, |sum, kind| sum + (arriving[kind] * (code.cpu[kind] + waiting(kind))) / 1_000.0);
+    let utilization = if concurrency > 0.0 {
+        inflight / concurrency
+    } else if rate > 0.0 {
+        99.0
+    } else {
+        0.0
+    };
+    let share = if utilization > 1.0 { 1.0 / utilization } else { 1.0 };
+    // A new environment starts cold, and one reaped after an idle gap starts cold too.
+    let cold = (1.0 - node.warm).max(1.0 / (1.0 + rate.max(0.0) * SERVERLESS_IDLE_SECONDS));
+    let used = inflight * share;
+    let mut service_fixed = [0.0f64; NK];
+    let mut service_variable = [0.0f64; NK];
+    for kind in 0..NR {
+        service_fixed[kind] = SERVERLESS_MS;
+        service_variable[kind] = code.cpu[kind] + waiting(kind);
+    }
+    // `coldStartMs`: native images start fast; every other runtime pays its language's start.
+    let tail_ms = if node.runtime == runtime::GRAAL || node.runtime == runtime::NATIVE_AOT {
+        NATIVE_COLD_MS
+    } else {
+        COLD_START_MS[RUNTIME_LANGUAGE[node.runtime]]
+    };
+    Model {
+        utilization,
+        share,
+        capacity: if rate > 0.0 { rate / utilization.max(1e-9) } else { 0.0 },
+        limit: if utilization <= 0.0 { Limit::None } else { Limit::Throughput },
+        service_fixed,
+        service_variable,
+        service_mask: (1u64 << NR) - 1,
+        tail_p: cold,
+        tail_ms,
+        processes: used,
+        inflight: used,
+        slots_used: used,
+        slots_total: concurrency,
+        ..Model::default()
+    }
 }
 
 /// `docRule.model`: one flat rate of ops, a join at three of them. A join touches

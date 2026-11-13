@@ -71,33 +71,29 @@ instead of solving again, and a tree reset moves an epoch instead of zeroing its
 
 ## What is ported, and what is not
 
-Ported in full, and compared figure by figure: the catalog, the outcome algebra, the three
-capacity models, routing splits, the forward pass, the outcome tree for `users`, `lb`,
-`dns`, `cdc`, `pooler`, `database`, `replica`, `server`, `auth`, `msgp`, `warehouse`,
-`psp`, `llm`, `storage`, `gpu`, `search`, `wide`, `queue`, `worker`, `cache`, `waf`, `vec`, `dsql`,
-`doc`, `cdn`, `edge`, `ws`, `log` and the Components whose rule is a
-terminal `stranded`, the revenue and the Ledger figures the solve reads (revenue, demand,
-served, Apdex, latency, percentiles, errors, fines, per-kind rows, per-Node rows, per-kind
-bottleneck), the pass loop with its convergence test and feedback, and the Bottleneck
-search.
+Ported in full, and compared figure by figure: the catalog, the outcome algebra, the
+capacity models, routing splits, the forward pass, the outcome tree for all 38 Components,
+the revenue and the Ledger figures the solve reads (revenue, demand, served, Apdex,
+latency, percentiles, errors, fines, per-kind rows, per-Node rows, per-kind bottleneck), the
+pass loop with its convergence test and feedback, the Bottleneck search, and every incident.
 
 `node challenges.ts` solves every Challenge's opening board on both sides. All 32 are
 identical in every figure and in the Bottleneck. `node trajectory.ts 1` plays every
 Challenge's canonical run and compares the Game after every Step: all 12,752 Steps are
-identical, including the ones with an incident running. A scratch sweep also forced each of
-the 56 incident kinds on every Challenge board and compared 6 Steps of each.
+identical, including the ones with an incident running. Two scratch sweeps cover what the
+runs do not reach. One forced each of the 56 incident kinds on every Challenge board and
+compared 6 Steps of each: 7,469 states. The other placed each Component no Challenge uses on
+every Challenge board, in 44 settings, and compared 4 Steps of each: 5,632 states. All are
+identical.
 
 Not ported yet, and refused rather than approximated: a Game with a shipped Feature or a
-Product lever; and any Component whose `outcome` rule is not in the list
-above (`gw` and `fn`). A run over such a Design returns status 6 instead of a figure. The
+Product lever. A run over such a Game returns status 6 instead of a figure. The
 presentation-only halves of the TypeScript Ledger (bills, Insight, velocity, Link rows,
 regions, devices, services, market, forecast) are not ported, because no figure the solve
 reads depends on them.
 
 ## Open problems
 
-- `gw` and `fn` have no rules yet, so a board with one is refused. No Challenge uses
-  either.
 - `gen-catalog.ts` mirrors two lists it cannot import — `GLOBAL_COMPONENTS` from
   `regions.ts` and the per-Component `fixed` flag is imported but the zone lists are not
   exported — so a change there needs the generator edited by hand.

@@ -138,7 +138,11 @@ pub const S_PARTITIONS: usize = 119;
 pub const S_ACKS: usize = 120;
 pub const S_RETAIN: usize = 121;
 pub const S_KEYED: usize = 122;
-pub const SCALARS: usize = 123;
+pub const S_AUTH_EDGE: usize = 123;
+pub const S_MERGE: usize = 124;
+pub const S_SHUT: usize = 125;
+pub const S_DATA: usize = 126;
+pub const SCALARS: usize = 127;
 
 /// The node-fields block: one row per Node, read by the routing Design.
 pub const NODE_FIELDS: usize = 10;
@@ -574,6 +578,8 @@ pub fn game_with(scalars: &[f64], research: Research, shipped: Shipped) -> GameC
         data_staffed: slot(S_DATA_STAFFED) != 0.0,
         cdn_on_board: false,
         edge_on_board: false,
+        edge_auth: false,
+        data: slot(S_DATA),
         static_pages: 0.0,
         spread_regions: 1.0,
         scenario_value: [1.0; NR],
@@ -702,5 +708,8 @@ pub fn node_of(row: &[f64]) -> Node {
         retain: slot(S_RETAIN),
         keyed: flag(S_KEYED),
         cdc_mirrored: false,
+        auth_edge: flag(S_AUTH_EDGE),
+        merge: flag(S_MERGE),
+        shut: flag(S_SHUT),
     }
 }

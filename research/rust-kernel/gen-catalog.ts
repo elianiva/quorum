@@ -527,6 +527,9 @@ push(
   `pub static CDN_TTL_VALUES: [f64; ${catalog.CDN_TTLS.length}] = [${catalog.CDN_TTLS.map((entry) => formatNumber(entry.ttl)).join(', ')}];`,
 )
 push(
+  `pub static COLD_START_MS: [f64; ${catalog.LANGUAGE_IDS.length}] = [${catalog.LANGUAGE_IDS.map((language: string) => formatNumber((catalog.COLD_START_MS as Record<string, number>)[language] ?? catalog.NATIVE_COLD_MS)).join(', ')}];`,
+)
+push(
   `pub static CDN_HIT: [f64; NK] = [${[...catalog.REQUEST_KINDS, ...catalog.BACKEND_KINDS].map((kind) => formatNumber((catalog.CDN_HIT as Record<string, number>)[kind] ?? 0)).join(', ')}];`,
 )
 push(

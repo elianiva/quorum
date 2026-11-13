@@ -485,8 +485,15 @@ export const storageBurnOf = (game: Game, node: GameNode): number =>
 export const DB_GB_PRICE = STORAGE_PRICE * DB_STORAGE_MULT
 
 /** The Databases in the Design, in order. */
-export const databasesOf = (game: Game): ReadonlyArray<GameNode> =>
-  game.nodes.filter((node) => node.type === 'database')
+const databases = new WeakMap<Game, ReadonlyArray<GameNode>>()
+export const databasesOf = (game: Game): ReadonlyArray<GameNode> => {
+  let found = databases.get(game)
+  if (!found) {
+    found = game.nodes.filter((node) => node.type === 'database')
+    databases.set(game, found)
+  }
+  return found
+}
 
 /**
  * The Data Group a Node belongs to (07 "Data Groups"): the box that holds it, or its own id while
@@ -571,7 +578,25 @@ export const groupDataOf = (game: Game, group: string): number => {
 
 /** How many Services read and write a Data Group. */
 export const groupServicesOf = (game: Game, group: string): ReadonlyArray<Service> =>
-  game.services.filter((service) => dataGroupOfService(game, service) === group)
+  servicesByGroupOf(game).get(group) ?? []
+
+/** Each Data Group's Services, in Game order, found once per Game. */
+const servicesByGroup = new WeakMap<Game, ReadonlyMap<string | null, ReadonlyArray<Service>>>()
+const servicesByGroupOf = (game: Game): ReadonlyMap<string | null, ReadonlyArray<Service>> => {
+  let found = servicesByGroup.get(game)
+  if (!found) {
+    const grouped = new Map<string | null, Array<Service>>()
+    for (const service of game.services) {
+      const group = dataGroupOfService(game, service)
+      const list = grouped.get(group)
+      if (list) list.push(service)
+      else grouped.set(group, [service])
+    }
+    found = grouped
+    servicesByGroup.set(game, found)
+  }
+  return found
+}
 
 /**
  * The Company's users that read and write one Data Group: each Service serves an equal share, and

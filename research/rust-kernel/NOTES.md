@@ -106,10 +106,9 @@ error: it traps the module and takes the caller's state with it.
 Adopted: the exported functions have no `unwrap`, no `expect`, no indexing that can panic,
 and no arithmetic that can overflow a slot count without a checked conversion. They return
 an `i32` status: `0` ok, `3` a short block, `4` an Edge that names a Node outside the
-Design, `6` a Component or Game outside the ported surface, and so on. Inside the crate,
+Design, `6` an incident code the kernel does not know, and so on. Inside the crate,
 `Option` is used where absence is meaningful (`blend` returns `None` when there is nothing
-to mix, `value_factor` returns `None` when a Game ships a Feature the port has not
-reached), and `unwrap_or_else`/`match` everywhere else.
+to mix), and `unwrap_or_else`/`match` everywhere else.
 
 This is also the fix for the panic this branch started with. `forward.ts` wrote four
 fields per Edge while the ABI read eight, so the Edge's target slot was whatever the next
@@ -125,7 +124,7 @@ kernel, and it is also the reason to keep the number of crossings small.
 
 Adopted: no `wasm-bindgen` and no generated glue. The crate exports named blocks —
 scalars, node fields, edge fields, CSR starts and edges, weights, demand, intake, latency,
-probes, routes, research and feature bitsets — each a `Vec` the crate owns. The host asks
+probes, routes, the research bitset, and the per-kind value, payload, and query factors — each a `Vec` the crate owns. The host asks
 for `ptr(block)` and writes through a `Float64Array` view; the kernel sizes its own output
 blocks and the host re-reads the pointer after any call that may have grown memory. A
 solve therefore crosses the boundary a fixed number of times (one `design_set`, one
@@ -353,4 +352,23 @@ enough data that an export passes the 15-minute limit. All are identical.
   neither. The probe uses it with the Era's mix, as an App Server's does.
 
 With all 38 Components ported, the check that refused a Design by Component is gone.
+
+## Features and Product levers
+
+The kernel refused a Game with a shipped Feature or a Product lever. Its Feature tables were
+zero-filled placeholders, and it read them at full exposure. The solve reads five things from
+Features and levers, all per Game: the mix, `valueFactor` and `payloadFactor` per request
+kind, `queryFactor` per backend kind, and `subscriptionsOf`. The host already sent the mix
+and the demand built from it. It now sends the other four, as it sends the Scenario's
+values. Block 12 was `levers` and is now `payload`, `value` holds the whole value factor,
+block 17 was the Feature bitset and is now `query`, and subscriptions is a scalar. The placeholder tables and the
+Feature ids left the generated catalog.
+
+Exposure is a Feature's flag rollout, its adoption, history retention, and rolled outcome.
+All of it is Game state the Step code moves, so porting it would give the integration two
+definitions to keep in step. The sweep turns each Challenge board into a regular Game and
+ships every Feature at partial adoption, at full adoption, with rolled outcomes, behind a
+Feature Flags Node at 30% rollout, and with a Database that deletes history, then sets every
+lever, alone and with Features: 896 states, all identical. The Ledger row also never
+recorded subscriptions, though revenue counted them.
 

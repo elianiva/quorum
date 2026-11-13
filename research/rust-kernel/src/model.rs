@@ -104,8 +104,6 @@ pub struct GameCtx {
     pub users: f64,
     /// Research the Company owns, as a bitset over `RESEARCH_IDS`.
     pub researched: [u64; 4],
-    /// Features shipped, as a bitset over `FEATURE_IDS`.
-    pub features: [u64; 1],
     /// The incident that runs, if any.
     pub incident: Option<Incident>,
     /// The incident's index into `INCIDENT_IDS` plus one, 0 for none, so a
@@ -141,8 +139,14 @@ pub struct GameCtx {
     pub mix: [f64; NR],
     /// `spreadCount`: the regions a spread store replicates to.
     pub spread_regions: f64,
-    /// `game.scenario.value`: what a Challenge makes each kind worth.
-    pub scenario_value: [f64; NR],
+    /// `valueFactor`, `payloadFactor`, and `queryFactor`: what the shipped Features at
+    /// their exposure, the Product levers, the Venture, and the Scenario make a request
+    /// earn, a response weigh, and a query cost. The host works them out once a Game.
+    pub value: [f64; NR],
+    pub payload: [f64; NR],
+    pub query: [f64; NB],
+    /// `subscriptionsOf`: dollars per second from paid plans.
+    pub subscriptions: f64,
     pub seed: f64,
     pub time: f64,
     /// Services the Company runs: their count, and the sum of their indexes.
@@ -170,14 +174,6 @@ impl GameCtx {
     #[inline]
     pub fn has(&self, research: usize) -> bool {
         (self.researched[research / 64] >> (research % 64)) & 1 == 1
-    }
-
-    /// The shipped Features' indices, in catalog order.
-    #[inline]
-    pub fn shipped(&self) -> impl Iterator<Item = usize> + '_ {
-        self.features.iter().enumerate().flat_map(|(word, &bits)| {
-            (0..64).filter(move |bit| (bits >> bit) & 1 == 1).map(move |bit| word * 64 + bit)
-        })
     }
 
     /// `fixed`: a Sandbox without tasks has every fix; otherwise the Service must ship it.
@@ -916,7 +912,7 @@ pub fn server_model(
     let mut bytes = 0.0;
     if !ctx.flags.worker {
         for &kind in kinds {
-            bytes += arriving[kind] * payload_of(node, kind, ctx.flags.offloaded) * payload_factor(game, kind);
+            bytes += arriving[kind] * payload_of(node, kind, ctx.flags.offloaded) * game.payload[kind];
         }
     }
     let network_utilization = bytes / (network_of(node.size) * ctx.boost);
@@ -1309,7 +1305,7 @@ fn search_model(game: &GameCtx, node: &Node, rates: &Rates, order: &Order, boost
         * (1.0 + if jvm { node.search_replicas } else { 0.0 })
         * SEARCH_HEAPS_CAPACITY[heap]
         * node.warm)
-        / query_factor(game, backend::Q_SEARCH);
+        / game.query[backend::Q_SEARCH];
     Model {
         tail_p: SEARCH_HEAPS_TAIL_P[heap],
         tail_ms: SEARCH_HEAPS_TAIL_MS[heap],
@@ -1486,20 +1482,6 @@ fn wide_model(game: &GameCtx, node: &Node, rates: &Rates, order: &Order, boost: 
     model
 }
 
-/// `payloadFactor`: how big a response of `kind` is relative to its profile.
-pub fn payload_factor(game: &GameCtx, kind: usize) -> f64 {
-    let mut value = 1.0;
-    for feature in game.shipped() {
-        // Without an exposure record the port reads the Feature at full exposure,
-        // which is what a fully adopted Feature gives.
-        let factor = FEATURE_PAYLOAD[feature][kind];
-        if factor > 0.0 {
-            value *= factor;
-        }
-    }
-    value
-}
-
 /// `scanEviction`: the share of the buffer cache report scans evict.
 #[inline]
 fn scan_eviction(scan_work: f64, cores: f64) -> f64 {
@@ -1615,7 +1597,7 @@ pub fn database_model(
         * if denormalized { DENORMALIZED_READ } else { 1.0 }
         * DB_READ[engine];
     let multi_leader = topology == 1 && database_count > 1.0;
-    let write_cpu = ((QUERY_CPU_BY_BACKEND[backend::Q_WRITE] * query_factor(game, backend::Q_WRITE)) / warmth)
+    let write_cpu = ((QUERY_CPU_BY_BACKEND[backend::Q_WRITE] * game.query[backend::Q_WRITE]) / warmth)
         * (1.0 + 0.5 * evicted)
         * shard
         * bloat
@@ -1623,7 +1605,7 @@ pub fn database_model(
         * if denormalized { DENORMALIZED_WRITE } else { 1.0 }
         * DB_WRITE[engine]
         * if multi_leader { MULTI_WRITE_CPU } else { 1.0 };
-    let search_cpu = (QUERY_CPU_BY_BACKEND[backend::Q_SEARCH] * query_factor(game, backend::Q_SEARCH) * DB_SEARCH_COST[engine] * scatter)
+    let search_cpu = (QUERY_CPU_BY_BACKEND[backend::Q_SEARCH] * game.query[backend::Q_SEARCH] * DB_SEARCH_COST[engine] * scatter)
         / warmth;
     let put_cpu = QUERY_CPU_BY_BACKEND[backend::BLOB_PUT] / warmth;
     let tx_cpu = (QUERY_CPU_BY_BACKEND[backend::Q_TX] * DB_WRITE[engine]
@@ -1737,15 +1719,3 @@ fn disk_ms(iops: usize) -> f64 {
     1_000.0 / volume
 }
 
-/// `queryFactor`: what one query of a backend kind costs relative to the catalog.
-#[inline]
-pub fn query_factor(game: &GameCtx, backend: usize) -> f64 {
-    let mut value = 1.0;
-    for feature in game.shipped() {
-        let factor = FEATURE_QUERY[feature][backend];
-        if factor > 0.0 {
-            value *= factor;
-        }
-    }
-    value
-}

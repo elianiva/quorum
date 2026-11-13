@@ -142,7 +142,8 @@ pub const S_AUTH_EDGE: usize = 123;
 pub const S_MERGE: usize = 124;
 pub const S_SHUT: usize = 125;
 pub const S_DATA: usize = 126;
-pub const SCALARS: usize = 127;
+pub const S_SUBSCRIPTIONS: usize = 127;
+pub const SCALARS: usize = 128;
 
 /// The node-fields block: one row per Node, read by the routing Design.
 pub const NODE_FIELDS: usize = 10;
@@ -162,13 +163,15 @@ pub const BLOCK_SICK: i32 = 8;
 pub const BLOCK_DEMAND: i32 = 9;
 pub const BLOCK_INTAKE: i32 = 10;
 pub const BLOCK_LATENCY: i32 = 11;
-pub const BLOCK_LEVERS: i32 = 12;
+/// `payloadFactor` per request kind: how big a response is with the shipped Features.
+pub const BLOCK_PAYLOAD: i32 = 12;
 pub const BLOCK_PROBE: i32 = 13;
 pub const BLOCK_ROUTES: i32 = 14;
-/// The Scenario's value multiplier per kind, 1 where it sets none.
+/// `valueFactor` per request kind: the Features, the levers, the Venture, and the Scenario.
 pub const BLOCK_VALUE: i32 = 15;
 pub const BLOCK_RESEARCH: i32 = 16;
-pub const BLOCK_FEATURES: i32 = 17;
+/// `queryFactor` per backend kind: what one query costs with the shipped Features.
+pub const BLOCK_QUERY: i32 = 17;
 pub const BLOCK_ARRIVING: i32 = 20;
 pub const BLOCK_MODELS: i32 = 21;
 pub const BLOCK_OUTCOMES: i32 = 22;
@@ -202,12 +205,12 @@ pub struct Inputs {
     pub demand: Vec<f64>,
     pub intake: Vec<f64>,
     pub latency: Vec<f64>,
-    pub levers: Vec<f64>,
+    pub payload: Vec<f64>,
     pub value: Vec<f64>,
     pub probe: Vec<f64>,
     pub routes: Vec<f64>,
     pub research: Vec<u8>,
-    pub features: Vec<u8>,
+    pub query: Vec<f64>,
 }
 
 /// The output blocks: everything a run writes, and the two scratch blocks the
@@ -303,7 +306,8 @@ pub extern "C" fn reserve(block: i32, len: i32) -> i32 {
             BLOCK_DEMAND => Some(&mut inputs.demand),
             BLOCK_INTAKE => Some(&mut inputs.intake),
             BLOCK_LATENCY => Some(&mut inputs.latency),
-            BLOCK_LEVERS => Some(&mut inputs.levers),
+            BLOCK_PAYLOAD => Some(&mut inputs.payload),
+            BLOCK_QUERY => Some(&mut inputs.query),
             BLOCK_VALUE => Some(&mut inputs.value),
             BLOCK_PROBE => Some(&mut inputs.probe),
             BLOCK_ROUTES => Some(&mut inputs.routes),
@@ -339,7 +343,6 @@ pub extern "C" fn reserve(block: i32, len: i32) -> i32 {
         match block {
             BLOCK_SICK => Some(&mut inputs.sick),
             BLOCK_RESEARCH => Some(&mut inputs.research),
-            BLOCK_FEATURES => Some(&mut inputs.features),
             _ => None,
         }
         .map(|values| {
@@ -393,7 +396,8 @@ pub extern "C" fn ptr(block: i32) -> usize {
             BLOCK_DEMAND => Some(inputs.demand.as_ptr()),
             BLOCK_INTAKE => Some(inputs.intake.as_ptr()),
             BLOCK_LATENCY => Some(inputs.latency.as_ptr()),
-            BLOCK_LEVERS => Some(inputs.levers.as_ptr()),
+            BLOCK_PAYLOAD => Some(inputs.payload.as_ptr()),
+            BLOCK_QUERY => Some(inputs.query.as_ptr()),
             BLOCK_VALUE => Some(inputs.value.as_ptr()),
             BLOCK_PROBE => Some(inputs.probe.as_ptr()),
             BLOCK_ROUTES => Some(inputs.routes.as_ptr()),
@@ -401,7 +405,6 @@ pub extern "C" fn ptr(block: i32) -> usize {
             BLOCK_OUT_EDGES => Some(inputs.out_edges.as_ptr().cast::<f64>()),
             BLOCK_SICK => Some(inputs.sick.as_ptr().cast::<f64>()),
             BLOCK_RESEARCH => Some(inputs.research.as_ptr().cast::<f64>()),
-            BLOCK_FEATURES => Some(inputs.features.as_ptr().cast::<f64>()),
             _ => None,
         }
     });
@@ -440,7 +443,8 @@ pub extern "C" fn len(block: i32) -> i32 {
             BLOCK_DEMAND => Some(inputs.demand.len()),
             BLOCK_INTAKE => Some(inputs.intake.len()),
             BLOCK_LATENCY => Some(inputs.latency.len()),
-            BLOCK_LEVERS => Some(inputs.levers.len()),
+            BLOCK_PAYLOAD => Some(inputs.payload.len()),
+            BLOCK_QUERY => Some(inputs.query.len()),
             BLOCK_VALUE => Some(inputs.value.len()),
             BLOCK_PROBE => Some(inputs.probe.len()),
             BLOCK_ROUTES => Some(inputs.routes.len()),
@@ -448,7 +452,6 @@ pub extern "C" fn len(block: i32) -> i32 {
             BLOCK_OUT_EDGES => Some(inputs.out_edges.len()),
             BLOCK_SICK => Some(inputs.sick.len()),
             BLOCK_RESEARCH => Some(inputs.research.len()),
-            BLOCK_FEATURES => Some(inputs.features.len()),
             _ => None,
         }
     });
@@ -475,9 +478,8 @@ pub extern "C" fn len(block: i32) -> i32 {
 
 // ---- reading a Game out of the blocks ----
 
-/// The two bitsets, built once for a batch of Nodes.
+/// The research bitset, built once for a batch of Nodes.
 pub type Research = [u64; 4];
-pub type Shipped = [u64; 1];
 
 #[inline]
 fn bit(bytes: &[u8], index: usize) -> bool {
@@ -495,16 +497,6 @@ pub fn research_of(bytes: &[u8]) -> Research {
         }
     }
     research
-}
-
-pub fn features_of(bytes: &[u8]) -> Shipped {
-    let mut shipped = [0u64; 1];
-    for index in 0..FEATURE_COUNT {
-        if bit(bytes, index) {
-            shipped[index / 64] |= 1 << (index % 64);
-        }
-    }
-    shipped
 }
 
 /// The incident the host writes, as its index into `INCIDENT_IDS` plus one, 0
@@ -558,13 +550,12 @@ fn slot_of(value: f64) -> usize {
 }
 
 /// The Game context: row 0 of the scalar block, plus the two bitsets.
-pub fn game_with(scalars: &[f64], research: Research, shipped: Shipped) -> GameCtx {
+pub fn game_with(scalars: &[f64], research: Research) -> GameCtx {
     let slot = |index: usize| scalars.get(index).copied().unwrap_or(0.0);
     let incident_code = slot(S_INCIDENT) as usize;
     GameCtx {
         users: slot(S_USERS),
         researched: research,
-        features: shipped,
         incident: incident_of(incident_code),
         incident_code,
         incident_node: slot_of(slot(S_INCIDENT_NODE)),
@@ -582,7 +573,10 @@ pub fn game_with(scalars: &[f64], research: Research, shipped: Shipped) -> GameC
         data: slot(S_DATA),
         static_pages: 0.0,
         spread_regions: 1.0,
-        scenario_value: [1.0; NR],
+        value: [1.0; NR],
+        payload: [1.0; NR],
+        query: [1.0; NB],
+        subscriptions: slot(S_SUBSCRIPTIONS),
         mix: [0.0; NR],
         seed: slot(S_SEED),
         time: slot(S_TIME),

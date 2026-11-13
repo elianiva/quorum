@@ -83,12 +83,16 @@ Challenge's canonical run and compares the Game after every Step: all 12,752 Ste
 identical, including the ones with an incident running. Two scratch sweeps cover what the
 runs do not reach. One forced each of the 56 incident kinds on every Challenge board and
 compared 6 Steps of each: 7,469 states. The other placed each Component no Challenge uses on
-every Challenge board, in 44 settings, and compared 4 Steps of each: 5,632 states. All are
+every Challenge board, and shipped Features and set Product levers on each board as a
+regular Game, in 51 settings, and compared 4 Steps of each: 6,528 states. All are
 identical.
 
-Not ported yet, and refused rather than approximated: a Game with a shipped Feature or a
-Product lever. A run over such a Game returns status 6 instead of a figure. The
-presentation-only halves of the TypeScript Ledger (bills, Insight, velocity, Link rows,
+Shipped Features and Product levers reach the solve as five per-Game inputs the host works
+out once: the mix, which it already sent, and `valueFactor`, `payloadFactor`, and
+`queryFactor` per kind, and `subscriptionsOf`. A Feature's exposure depends on its phase,
+its flag's rollout, adoption, history retention, and its rolled outcome, which the Step code
+owns, so the kernel takes the products instead of a second copy of that code. The kernel
+refuses only an incident code it does not know, with status 6. The presentation-only halves of the TypeScript Ledger (bills, Insight, velocity, Link rows,
 regions, devices, services, market, forecast) are not ported, because no figure the solve
 reads depends on them.
 
@@ -97,5 +101,3 @@ reads depends on them.
 - `gen-catalog.ts` mirrors two lists it cannot import — `GLOBAL_COMPONENTS` from
   `regions.ts` and the per-Component `fixed` flag is imported but the zone lists are not
   exported — so a change there needs the generator edited by hand.
-- The `Feature` tables are not generated, which is why a Game that ships one is refused
-  rather than read at full exposure.

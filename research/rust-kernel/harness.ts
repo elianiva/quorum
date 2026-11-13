@@ -39,12 +39,12 @@ export const BLOCK = {
   demand: 9,
   intake: 10,
   latency: 11,
-  levers: 12,
+  payload: 12,
   probe: 13,
   routes: 14,
   value: 15,
   research: 16,
-  features: 17,
+  query: 17,
   arriving: 20,
   models: 21,
   outcomes: 22,
@@ -182,6 +182,7 @@ export const SLOT = {
   merge: 124,
   shut: 125,
   data: 126,
+  subscriptions: 127,
 }
 export const SCALARS = Object.keys(SLOT).length
 const NODE_FIELDS = 10
@@ -436,6 +437,7 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
     put(SLOT.merge, n.merge ? 1 : 0)
     put(SLOT.shut, n.service._tag === 'Shut' ? 1 : 0)
     put(SLOT.data, game.data)
+    put(SLOT.subscriptions, features.subscriptionsOf(game))
     put(SLOT.indexType, Math.max(0, Object.keys(S.VEC_INDEXES).indexOf(n.indexType)))
     put(SLOT.runtimeFailure, game.incident ? (S.RUNTIME_INCIDENT_FAILURES[game.incident.kind] ?? 0) : 0)
     put(SLOT.transactions, n.transactions ? 1 : 0)
@@ -480,7 +482,6 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
   })
   fill(BLOCK.scalars, Array.from(scalars))
   fillBytes(BLOCK.research, bitset(S.RESEARCH_IDS, game.researched))
-  fillBytes(BLOCK.features, bitset(S.FEATURE_IDS, Object.keys(game.features ?? {})))
 
   const demandRates = demand.demandOf(game)
   fill(
@@ -508,8 +509,10 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
       entry.extraMs,
     )
   fill(BLOCK.routes, routeRows)
-  fill(BLOCK.levers, S.REQUEST_KINDS.map((kind) => game.levers?.[kind] ?? 0))
-  fill(BLOCK.value, S.REQUEST_KINDS.map((kind) => game.scenario?.value?.[kind] ?? 1))
+  // The Features at their exposure and the Product levers, as the per-kind factors the solve reads.
+  fill(BLOCK.value, S.REQUEST_KINDS.map((kind) => features.valueFactor(game, kind)))
+  fill(BLOCK.payload, S.REQUEST_KINDS.map((kind) => features.payloadFactor(game, kind)))
+  fill(BLOCK.query, S.BACKEND_KINDS.map((kind) => features.queryFactor(game, kind)))
   const latency = options.latency ?? new Array(nodes * NK).fill(0)
   fill(BLOCK.latency, latency)
   return { routes, intake }

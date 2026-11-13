@@ -71,7 +71,6 @@ const DEFINED_LATER = new Set([
   'FRAMEWORK_IDS',
   'COMPONENT_IDS',
   'RESEARCH_IDS',
-  'FEATURE_IDS',
   'KINDS',
   'PROFILES',
   'RUNTIMES',
@@ -546,12 +545,6 @@ push(
 )
 pushIds('research', 'Research bit indices.', RESEARCH_IDS)
 pushIds('fix', 'Fix bit indices: the code fixes a Service can ship.', catalog.FIXES)
-const FEATURE_IDS = catalog.FEATURE_IDS
-push(`pub const FEATURE_COUNT: usize = ${FEATURE_IDS.length};`)
-push(
-  `pub static FEATURE_IDS: [&str; ${FEATURE_IDS.length}] = [${FEATURE_IDS.map((id) => `"${id}"`).join(', ')}];`,
-)
-pushIds('feature', 'Feature bit indices.', FEATURE_IDS)
 
 // ---- derived masks and per-backend cost tables ----
 push('')
@@ -582,21 +575,6 @@ const queryCpu = catalog.QUERY_CPU as Record<string, number>
 push(
   `pub static QUERY_CPU_BY_BACKEND: [f64; NB] = [${BACKEND_KINDS.map((k) => (queryCpu[k] === undefined ? '-1.0' : formatNumber(queryCpu[k]!))).join(', ')}];`,
 )
-// Feature payload multipliers: a board with no shipped Feature reads 1 for every kind.
-const FEATURE_COUNT = catalog.FEATURE_IDS.length
-push(`pub static FEATURE_PAYLOAD: [[f64; NK]; ${FEATURE_COUNT}] = [`)
-for (let index = 0; index < FEATURE_COUNT; index += 1) {
-  const row = new Array(NK).fill('0.0')
-  push(`    [${row.join(', ')}],`)
-}
-push('];')
-
-push('')
-const FC = catalog.FEATURE_IDS.length
-push(`pub static FEATURE_QUERY: [[f64; NK]; ${FC}] = [`)
-for (let index = 0; index < FC; index += 1) push(`    [0.0; NK],`)
-push('];')
-
 writeFileSync(process.argv[2] ?? 'src/catalog.rs', `${out.join('\n')}\n`)
 console.log(
   `wrote ${out.length} lines; ${scalarNames.length} scalar constants; NK=${NK} NR=${NR} NB=${NB}`,

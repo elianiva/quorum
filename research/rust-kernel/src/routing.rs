@@ -51,6 +51,7 @@ pub struct RouteEdge {
 /// Edges out of Node `n`. One allocation each, and a Node's Edges are adjacent
 /// in memory, so walking them touches one cache line instead of chasing a
 /// `Vec` per Node.
+#[derive(Clone)]
 pub struct Design {
     pub nodes: Vec<RouteNode>,
     pub edges: Vec<RouteEdge>,
@@ -63,6 +64,32 @@ pub struct Design {
 }
 
 impl Design {
+    /// The first index into `out_edges` for a Node's Edges.
+    #[inline]
+    pub fn out_start(&self, node: usize) -> usize {
+        self.out_starts.get(node).copied().unwrap_or(0) as usize
+    }
+
+    /// The end of a Node's slice of `out_edges`.
+    #[inline]
+    pub fn out_end(&self, node: usize) -> usize {
+        self.out_starts.get(node + 1).copied().unwrap_or(0) as usize
+    }
+
+    /// A Node's Edges, as one contiguous slice.
+    #[inline]
+    pub fn out_edges_of(&self, node: usize) -> &[u32] {
+        let start = self.out_start(node);
+        let end = self.out_end(node).max(start);
+        self.out_edges.get(start..end).unwrap_or(&[])
+    }
+
+    /// The Edges between two indices of `out_edges`.
+    #[inline]
+    pub fn out_edges_in(&self, start: usize, end: usize) -> &[u32] {
+        self.out_edges.get(start..end.max(start)).unwrap_or(&[])
+    }
+
     #[inline]
     fn out(&self, node: usize) -> &[u32] {
         let start = self.out_starts[node] as usize;
@@ -109,6 +136,19 @@ impl Design {
             }
         }
         Design { nodes, edges, order, out_starts, out_edges, health_checked, time }
+    }
+}
+
+/// `amplification`: calls per call a retrying Link sends when a share `failure` fails.
+#[inline]
+pub fn amplification(policy: &RouteEdge, failure: f64) -> f64 {
+    if policy.open {
+        return 0.0;
+    }
+    match policy.retry {
+        1 => crate::dist::attempts_for(failure),
+        2 => 1.0 + crate::dist::RETRY_BUDGET.min(crate::dist::attempts_for(failure) - 1.0),
+        _ => 1.0,
     }
 }
 
@@ -441,115 +481,142 @@ impl Scratch {
     }
 }
 
-// ---- the flat ABI ----
+// ---- compiling a Design out of the ABI's blocks ----
 
-/// The Design the host last handed over, so a later pass or a measurement does
-/// not rebuild it. One per thread, which is one per Worker.
+/// Reads the cached Design. `None` when the host has not built one.
+pub fn with_design<R>(read: impl FnOnce(&Design) -> R) -> Option<R> {
+    CACHED.with(|cell| cell.borrow().as_ref().map(|(design, _)| read(design)))
+}
+
 thread_local! {
-    static CACHED: core::cell::RefCell<Option<(Design, Vec<f64>, Vec<f64>, Vec<bool>, Scratch)>> =
+    /// The Design the host last handed over, so a later pass or a measurement
+    /// does not rebuild it. One per thread, which is one per Worker.
+    static CACHED: core::cell::RefCell<Option<(Design, Scratch)>> =
         core::cell::RefCell::new(None);
 }
 
-unsafe fn read_design(
-    node_count: i32,
-    edge_count: i32,
-    node_fields: *const f64,
-    edge_fields: *const f64,
-    out_starts: *const i32,
-    out_edges: *const i32,
-    health_checked: f64,
-    time: f64,
-) -> Design {
-    let nodes_n = node_count as usize;
-    let edges_n = edge_count as usize;
-    let flag = |value: f64| value != 0.0;
-    let nodes: Vec<RouteNode> = (0..nodes_n)
-        .map(|index| {
-            let base = index * 10;
+/// Compiles the routing tables the host wrote into the ABI's blocks.
+///
+/// A row that names a Node outside the block is an error, not a panic: the
+/// caller turns it into a status code the host can read.
+pub fn compile(inputs: &crate::abi::Inputs) -> Result<Design, i32> {
+    if inputs.node_fields.len() % crate::abi::NODE_FIELDS != 0 || inputs.edge_fields.len() % crate::abi::EDGE_FIELDS != 0 {
+        return Err(crate::abi::SHORT_BLOCK);
+    }
+    let count = inputs.node_fields.len() / crate::abi::NODE_FIELDS;
+    if count > u32::MAX as usize {
+        return Err(crate::abi::TOO_LARGE);
+    }
+    let nodes: Vec<RouteNode> = inputs
+        .node_fields
+        .chunks_exact(crate::abi::NODE_FIELDS)
+        .map(|row| {
+            let field = |index: usize| row.get(index).copied().unwrap_or(0.0);
             RouteNode {
-                type_code: *node_fields.add(base) as u16,
-                down: flag(*node_fields.add(base + 1)),
+                type_code: field(0) as u16,
+                down: field(1) != 0.0,
                 down_cause: 1,
                 down_at: 0.0,
-                sticky: flag(*node_fields.add(base + 2)),
-                policy: *node_fields.add(base + 3) as u8,
-                ttl: *node_fields.add(base + 4),
-                check_every: *node_fields.add(base + 5),
-                deep_check: flag(*node_fields.add(base + 6)),
-                replica: flag(*node_fields.add(base + 7)),
-                has_primary: flag(*node_fields.add(base + 8)),
-                draining: flag(*node_fields.add(base + 9)),
+                sticky: field(2) != 0.0,
+                policy: field(3) as u8,
+                ttl: field(4),
+                check_every: field(5),
+                deep_check: field(6) != 0.0,
+                replica: field(7) != 0.0,
+                has_primary: field(8) != 0.0,
+                draining: field(9) != 0.0,
             }
         })
         .collect();
-    let edges: Vec<RouteEdge> = (0..edges_n)
-        .map(|index| {
-            let base = index * 8;
-            RouteEdge {
-                from: *edge_fields.add(base) as u32,
-                to: *edge_fields.add(base + 1) as u32,
-                kinds: *edge_fields.add(base + 2) as u64,
-                retry: *edge_fields.add(base + 3) as u8,
-                timeout: *edge_fields.add(base + 4),
-                open: *edge_fields.add(base + 5) != 0.0,
-                bulkhead: *edge_fields.add(base + 6) != 0.0,
-                hedge: *edge_fields.add(base + 7) != 0.0,
-            }
-        })
+    let mut edges: Vec<RouteEdge> = Vec::with_capacity(inputs.edge_fields.len() / crate::abi::EDGE_FIELDS);
+    for row in inputs.edge_fields.chunks_exact(crate::abi::EDGE_FIELDS) {
+        let field = |index: usize| row.get(index).copied().unwrap_or(0.0);
+        let from = field(0) as u32;
+        let to = field(1) as u32;
+        if from as usize >= count || to as usize >= count {
+            return Err(crate::abi::BAD_EDGE);
+        }
+        edges.push(RouteEdge {
+            from,
+            to,
+            kinds: field(2) as u64,
+            retry: field(3) as u8,
+            timeout: field(4),
+            open: field(5) != 0.0,
+            bulkhead: field(6) != 0.0,
+            hedge: field(7) != 0.0,
+        });
+    }
+    if inputs.out_starts.len() < count + 1 {
+        return Err(crate::abi::SHORT_BLOCK);
+    }
+    let starts: Vec<u32> = inputs
+        .out_starts
+        .iter()
+        .take(count + 1)
+        .map(|&value| value.max(0) as u32)
         .collect();
-    let starts: Vec<u32> = (0..=nodes_n).map(|i| *out_starts.add(i) as u32).collect();
-    let total = *out_starts.add(nodes_n) as usize;
-    let adjacency: Vec<u32> = (0..total).map(|i| *out_edges.add(i) as u32).collect();
-    Design::new(nodes, edges, adjacency, starts, flag(health_checked), time)
+    let total = starts.get(count).copied().unwrap_or(0) as usize;
+    if inputs.out_edges.len() < total {
+        return Err(crate::abi::SHORT_BLOCK);
+    }
+    let adjacency: Vec<u32> = inputs.out_edges.iter().take(total).map(|&edge| edge.max(0) as u32).collect();
+    if let Some(&edge) = adjacency.iter().find(|&&edge| edge as usize >= edges.len()) {
+        let _ = edge;
+        return Err(crate::abi::BAD_EDGE);
+    }
+    Ok(Design::new(nodes, edges, adjacency, starts, false, 0.0))
 }
 
 /// Compiles a Design once; `split_all` then answers every split from it.
 #[no_mangle]
-pub extern "C" fn design_set(
-    node_count: i32,
-    edge_count: i32,
-    node_fields: *const f64,
-    edge_fields: *const f64,
-    out_starts: *const i32,
-    out_edges: *const i32,
-    weights: *const f64,
-    nominal: *const f64,
-    sick_bytes: *const u8,
-    health_checked: f64,
-    time: f64,
-) {
-    unsafe {
-        let design = read_design(node_count, edge_count, node_fields, edge_fields, out_starts, out_edges, health_checked, time);
-        let n = node_count as usize;
-        let w: Vec<f64> = (0..n).map(|i| *weights.add(i)).collect();
-        let nom: Vec<f64> = (0..n).map(|i| *nominal.add(i)).collect();
-        let sick: Vec<bool> = (0..n).map(|i| *sick_bytes.add(i) != 0).collect();
-        CACHED.with(|cell| *cell.borrow_mut() = Some((design, w, nom, sick, Scratch::default())));
+pub extern "C" fn design_set(health_checked: f64, time: f64) -> i32 {
+    let compiled = crate::abi::with_inputs(|inputs| compile(inputs));
+    match compiled {
+        Ok(design) => {
+            let design = Design { health_checked: health_checked != 0.0, time, ..design };
+            CACHED.with(|cell| *cell.borrow_mut() = Some((design, Scratch::default())));
+            crate::abi::OK
+        }
+        Err(status) => status,
     }
 }
 
 /// Every (Node, kind) split, as fixed slots: a count, then up to `MAX_SPLIT`
 /// pairs of (Edge index, share).
 #[no_mangle]
-pub extern "C" fn split_all(lb_algorithms: f64, result: *mut f64) {
-    CACHED.with(|cell| {
-        let mut guard = cell.borrow_mut();
-        let Some((design, weights, nominal, sick, scratch)) = guard.as_mut() else { return };
-        let stride = 1 + 2 * MAX_SPLIT;
-        for node in 0..design.nodes.len() {
-            for kind in 0..NK {
-                let count = scratch.split(design, node, kind, weights, nominal, sick, lb_algorithms != 0.0);
-                unsafe {
-                    let slot = result.add((node * NK + kind) * stride);
-                    *slot = count as f64;
-                    for (index, (edge, share)) in scratch.pairs().iter().take(MAX_SPLIT).enumerate() {
-                        *slot.add(1 + index * 2) = *edge as f64;
-                        *slot.add(2 + index * 2) = *share;
+pub extern "C" fn split_all(lb_algorithms: f64) -> i32 {
+    crate::abi::with_inputs(|inputs| {
+        let weights = &inputs.weights;
+        let nominal = &inputs.nominal;
+        let sick: Vec<bool> = inputs.sick.iter().map(|&byte| byte != 0).collect();
+        CACHED.with(|cell| {
+            let mut guard = cell.borrow_mut();
+            let Some((design, scratch)) = guard.as_mut() else {
+                return crate::abi::NO_DESIGN;
+            };
+            crate::abi::with_outputs(|outputs| {
+                let stride = 1 + 2 * MAX_SPLIT;
+                let count = design.nodes.len();
+                if outputs.splits.len() < count * NK * stride {
+                    return crate::abi::SHORT_BLOCK;
+                }
+                for node in 0..count {
+                    for kind in 0..NK {
+                        let found =
+                            scratch.split(design, node, kind, weights, nominal, &sick, lb_algorithms != 0.0);
+                        let base = (node * NK + kind) * stride;
+                        outputs.splits[base] = found as f64;
+                        for (index, (edge, share)) in scratch.pairs().iter().take(MAX_SPLIT).enumerate() {
+                            outputs.splits[base + 1 + index * 2] = *edge as f64;
+                            outputs.splits[base + 2 + index * 2] = *share;
+                        }
                     }
                 }
-            }
-        }
-    });
+                crate::abi::OK
+            })
+        })
+    })
 }
 
 impl Scratch {
@@ -591,7 +658,7 @@ mod tests {
         // users(0) -> lb(1)
         let design = Design::new(
             vec![node("users"), node("lb")],
-            vec![RouteEdge { from: 0, to: 1, kinds: u64::MAX, retry: 0 }],
+            vec![RouteEdge { from: 0, to: 1, kinds: u64::MAX, retry: 0, timeout: 30_000.0, open: false, bulkhead: false, hedge: false }],
             vec![0],
             vec![0, 1, 1],
             false,
@@ -608,117 +675,4 @@ mod tests {
             assert_eq!(scratch.pairs()[0].1, 1.0);
         }
     }
-}
-
-/// Runs one forward pass over the cached Design and writes each Node's arriving
-/// rates, so the host can compare them with its own pass.
-#[no_mangle]
-pub extern "C" fn forward_run(
-    node_count: i32,
-    scalars: *const f64,
-    researched: *const u8,
-    features: *const u8,
-    demand: *const f64,
-    intake: *const f64,
-    call_latency: *const f64,
-    arriving_out: *mut f64,
-    model_out: *mut f64,
-) {
-    CACHED.with(|cell| {
-        let mut guard = cell.borrow_mut();
-        let Some((design, weights, nominal, sick, scratch)) = guard.as_mut() else { return };
-        let n = node_count as usize;
-        unsafe {
-            let research = crate::abi::research_of(researched);
-            let shipped = crate::abi::features_of(features);
-            let game = crate::abi::game_with(scalars, research, shipped);
-            let nodes: Vec<crate::model::Node> = (0..n).map(|i| crate::abi::node_of(scalars.add(i * crate::abi::SCALARS))).collect();
-            let mut demand_rates = [0.0f64; NK];
-            for kind in 0..NK {
-                demand_rates[kind] = *demand.add(kind);
-            }
-            let intake_values: Vec<f64> = (0..n).map(|i| *intake.add(i)).collect();
-            let mut latency = [[0.0f64; NK]; NR];
-            for kind in 0..NR {
-                for slot in 0..NK {
-                    latency[kind][slot] = *call_latency.add(kind * NK + slot);
-                }
-            }
-            let inflight: Vec<f64> = (0..n).map(|i| *scalars.add(i * crate::abi::SCALARS + crate::abi::S_INFLIGHT)).collect();
-            let connections: Vec<f64> = (0..n).map(|i| *scalars.add(i * crate::abi::SCALARS + crate::abi::S_CONNECTIONS)).collect();
-            let users_in_group: Vec<f64> = (0..n).map(|i| *scalars.add(i * crate::abi::SCALARS + crate::abi::S_USERS_IN_GROUP)).collect();
-            let pass = crate::pass::forward(
-                design, &game, &nodes, &demand_rates, &intake_values, weights, nominal, sick,
-                &latency, &inflight, &connections, &users_in_group, scratch,
-            );
-            for slot in 0..n {
-                for kind in 0..NK {
-                    *arriving_out.add(slot * NK + kind) = pass.arriving[slot][kind];
-                }
-                let base = slot * 6;
-                *model_out.add(base) = pass.models[slot].utilization;
-                *model_out.add(base + 1) = pass.models[slot].share;
-                *model_out.add(base + 2) = pass.models[slot].capacity;
-                *model_out.add(base + 3) = pass.models[slot].service_variable[0];
-                *model_out.add(base + 4) = pass.models[slot].service_variable[1];
-                *model_out.add(base + 5) = pass.models[slot].service_variable[8];
-            }
-        }
-    });
-}
-
-/// Runs one pass, then every Users Node's outcome per request kind.
-#[no_mangle]
-pub extern "C" fn outcome_run(
-    node_count: i32,
-    scalars: *const f64,
-    researched: *const u8,
-    features: *const u8,
-    demand: *const f64,
-    intake: *const f64,
-    call_latency: *const f64,
-    out: *mut f64,
-) {
-    CACHED.with(|cell| {
-        let mut guard = cell.borrow_mut();
-        let Some((design, weights, nominal, sick, scratch)) = guard.as_mut() else { return };
-        let n = node_count as usize;
-        unsafe {
-            let research = crate::abi::research_of(researched);
-            let shipped = crate::abi::features_of(features);
-            let game = crate::abi::game_with(scalars, research, shipped);
-            let nodes: Vec<crate::model::Node> =
-                (0..n).map(|i| crate::abi::node_of(scalars.add(i * crate::abi::SCALARS))).collect();
-            let mut demand_rates = [0.0f64; NK];
-            for kind in 0..NK { demand_rates[kind] = *demand.add(kind); }
-            let intake_values: Vec<f64> = (0..n).map(|i| *intake.add(i)).collect();
-            let mut latency = [[0.0f64; NK]; NR];
-            for kind in 0..NR { for slot in 0..NK { latency[kind][slot] = *call_latency.add(kind * NK + slot); } }
-            let inflight: Vec<f64> = (0..n).map(|i| *scalars.add(i * crate::abi::SCALARS + crate::abi::S_INFLIGHT)).collect();
-            let connections: Vec<f64> = (0..n).map(|i| *scalars.add(i * crate::abi::SCALARS + crate::abi::S_CONNECTIONS)).collect();
-            let users_in_group: Vec<f64> = (0..n).map(|i| *scalars.add(i * crate::abi::SCALARS + crate::abi::S_USERS_IN_GROUP)).collect();
-            let pass = crate::pass::forward(
-                design, &game, &nodes, &demand_rates, &intake_values, weights, nominal, sick,
-                &latency, &inflight, &connections, &users_in_group, scratch,
-            );
-            let mut state = crate::outcomes::Outcomes::new(n, design.edges.len());
-            for node in 0..n {
-                if design.nodes[node].type_code as usize != component_index("users") { continue; }
-                for kind in 0..NR {
-                    let value = crate::outcomes::outcome(
-                        design, &game, &nodes, &pass, &mut state, scratch, weights, nominal, sick, node, kind,
-                    );
-                    let base = (node * NR + kind) * 19;
-                    *out.add(base) = value.success;
-                    *out.add(base + 1) = value.fixed_ms;
-                    *out.add(base + 2) = value.variable_ms;
-                    *out.add(base + 3) = value.tail_p;
-                    *out.add(base + 4) = value.tail_ms;
-                    *out.add(base + 5) = value.stale;
-                    *out.add(base + 6) = value.value;
-                    for cause in 0..12 { *out.add(base + 7 + cause) = value.fail[cause]; }
-                }
-            }
-        }
-    });
 }

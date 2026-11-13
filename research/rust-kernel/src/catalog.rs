@@ -984,6 +984,16 @@ pub static COMPONENT_STEPS: [f64; 38] = [1.0, 6.0, 8.0, 1.0, 1.0, 1.0, 6.0, 4.0,
 
 // ---- Other tables ----
 pub static FLAT_CAPACITY: [f64; 38] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2000.0, 10000.0, 50000.0, 0.0, 0.0, 400.0, 0.0, 0.0, 20000.0, 0.0, 100000.0, 0.0, 0.0, 5000.0, 10000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, f64::INFINITY, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+pub static COMPONENT_GLOBAL: [bool; 38] = [false, true, true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false, true, false, false, false, false, false, false, false, true, true, false, false, false, false, false, false];
+pub static COMPONENT_FIXED: [bool; 38] = [true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false];
+pub static REGION_RTT: [[f64; 4]; 4] = [[0.0, 75.0, 200.0, 120.0], [75.0, 0.0, 160.0, 190.0], [200.0, 160.0, 0.0, 300.0], [120.0, 190.0, 300.0, 0.0]];
+pub static VENTURE_VALUE: [f64; 12] = [1.0, 0.55, 0.72, 0.77, 0.83, 0.74, 0.88, 0.83, 0.87, 0.44, 1.0, 1.51];
+pub static VENTURE_MARKET: [f64; 12] = [1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.5, 1.0, 3.0, 1.0, 0.8];
+pub static VENTURE_AMPLITUDE: [f64; 12] = [0.45, 0.45, 0.6, 0.55, 0.45, 0.1, 0.45, 0.1, 0.45, 0.05, 0.45, 0.45];
+pub static VENTURE_PEAK: [f64; 12] = [20.0, 20.0, 14.0, 21.0, 21.0, 20.0, 20.0, 20.0, 14.0, 20.0, 20.0, 14.0];
+pub static VENTURE_WEEKEND: [f64; 12] = [1.0, 1.15, 0.4, 1.0, 1.0, 1.0, 1.0, 1.0, 0.4, 1.0, 1.0, 0.2];
+pub static VENTURE_DEADLINE: [f64; 12] = [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 100.0, -1.0, -1.0];
+pub static VENTURE_STALE_FINE: [f64; 12] = [0.0, 0.0, 20.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 pub static COLLECTOR_PAUSE: [f64; 3] = [30.0, 150.0, 1.0];
 pub static COLLECTOR_SPEED: [f64; 3] = [1.0, 1.05, 0.9];
 pub static COLLECTOR_MEMORY: [f64; 3] = [1.0, 0.95, 1.15];

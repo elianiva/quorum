@@ -7,7 +7,7 @@
 
 use crate::catalog::*;
 use crate::ledger::{self, Ledger, Route};
-use crate::model::{database_model, flat_component, flat_scale, server_model, Order, Rates, ServerCtx};
+use crate::model::{database_model, flat_component, flat_scale, Order, Rates, ServerCtx};
 use crate::outcomes::{hop_ms, tree, Memo};
 use crate::pass::{forward, is_down, Board, Pass, Run};
 use crate::routing::{Splits, Weights};
@@ -82,7 +82,7 @@ pub fn probe_capacity(setup: &Setup, slot: usize, boost: Option<usize>, state: &
     let call_latency = state.call_latency.get(slot).unwrap_or(&[0.0; NK]);
     let connections = state.connection_used.get(slot).copied().unwrap_or(0.0);
     let model = match node.type_code {
-        component::SERVER => server_model(board.game, node, &probe, board.code.node(slot), call_latency, &ctx),
+        component::SERVER => crate::model::server_model_shed(board.game, node, &probe, board.code.node(slot), call_latency, &ctx),
         component::FN => crate::model::serverless_model(node, &probe, board.code.node(slot), call_latency, boost),
         component::DATABASE | component::REPLICA => database_model(board.game, node, &probe, boost, connections),
         // `probeMixOf` walks `REQUEST_KINDS`.

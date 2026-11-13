@@ -823,6 +823,9 @@ pub static RUNTIME_GC_PAUSE: [f64; 28] = [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1
 pub static RUNTIME_GC_CPU: [f64; 28] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.15];
 
 // ---- Languages ----
+pub static PM_SPARES: [f64; 3] = [-1.0, 2.0, 0.0];
+pub static PM_SPAWN_SHARE: [f64; 3] = [0.0, 0.02, 0.1];
+pub static PM_SPAWN_MS: [f64; 3] = [0.0, 20.0, 50.0];
 pub const LANGUAGE_COUNT: usize = 11;
 pub static LANGUAGE_IDS: [&str; 11] = ["php", "ruby", "node", "python", "go", "java", "csharp", "elixir", "rust", "zig", "haskell"];
 /// Language indices.

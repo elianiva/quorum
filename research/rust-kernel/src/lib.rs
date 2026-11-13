@@ -1,4 +1,5 @@
 pub mod abi;
+pub mod bill;
 pub mod catalog;
 pub mod dist;
 pub mod dist_abi;

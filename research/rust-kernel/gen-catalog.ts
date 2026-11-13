@@ -301,6 +301,12 @@ push(
 // ---- Languages ----
 push('')
 push('// ---- Languages ----')
+// PHP-FPM pool modes, in the order the harness encodes `pm`: spares (-1 for the whole pool), spawn share, spawn ms.
+const PM_IDS = ['static', 'dynamic', 'ondemand']
+push(`pub static PM_SPARES: [f64; 3] = [${PM_IDS.map((id) => formatNumber(catalog.PM_MODES[id].spares ?? -1)).join(', ')}];`)
+push(`pub static PM_SPAWN_SHARE: [f64; 3] = [${PM_IDS.map((id) => formatNumber(catalog.PM_MODES[id].spawnShare)).join(', ')}];`)
+push(`pub static PM_SPAWN_MS: [f64; 3] = [${PM_IDS.map((id) => formatNumber(catalog.PM_MODES[id].spawnMs)).join(', ')}];`)
+
 const LANGUAGE_IDS = catalog.LANGUAGE_IDS
 push(`pub const LANGUAGE_COUNT: usize = ${LANGUAGE_IDS.length};`)
 push(

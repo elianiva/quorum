@@ -179,6 +179,15 @@ pub struct GameCtx {
     /// `RUNTIME_INCIDENT_FAILURES` of the incident: the share of the incident
     /// Node's requests its runtime fails.
     pub runtime_failure: f64,
+    /// The Era's cost index, and the Venture's egress multiplier.
+    pub cost_index: f64,
+    pub egress_factor: f64,
+    /// `payrollOf`: dollars per second of salaries.
+    pub salaries: f64,
+    /// `burnSharesOf`: compute, data, storage, and observability.
+    pub shares: [f64; 4],
+    /// `serviceOfKind`: each request kind's Service index.
+    pub kind_service: [usize; NR],
 }
 
 impl GameCtx {
@@ -318,6 +327,18 @@ pub struct Node {
     pub ramped: bool,
     /// An Analytics tap's sample rate.
     pub sample_rate: f64,
+    /// `burnOf`: what the Node's box bills, before traffic.
+    pub burn: f64,
+    /// Object Storage's retrieval fee per GB, and its price per read and per write.
+    pub retrieval: f64,
+    pub store_get: f64,
+    pub store_put: f64,
+    /// `syncWaitMs`: what a write waits for synchronous copies.
+    pub sync_wait: f64,
+    /// What a resharding copy leaves of the volume's IOPS.
+    pub iops_factor: f64,
+    /// `stealOf`: the share of the cores a noisy neighbour takes.
+    pub steal: f64,
     /// `clusterOf`: the Cluster this App Server or Worker runs in, or `usize::MAX`.
     pub cluster: usize,
     /// A Vector Index's type, a `vec_index` row.
@@ -368,6 +389,10 @@ pub struct Model {
     pub tail_ms: f64,
     pub processes: f64,
     pub inflight: f64,
+    /// Load shedding's share of each request kind kept, for the kinds in `shares_mask`;
+    /// every other kind keeps `share`.
+    pub shares: [f64; NR],
+    pub shares_mask: u64,
     /// The resource `work` counts, or `None` where every request costs the same.
     pub work_unit: Option<WorkUnit>,
     /// What one request of each kind takes from the resource in `work_unit`.
@@ -419,6 +444,8 @@ impl Default for Model {
             tail_ms: 0.0,
             processes: 0.0,
             inflight: 0.0,
+            shares: [0.0; NR],
+            shares_mask: 0,
             work_unit: None,
             work: [0.0; NK],
             resources: Resources::default(),
@@ -817,15 +844,8 @@ pub fn server_model(
     };
 
     // PHP-FPM pool modes; every other runtime keeps the whole pool resident.
-    let (pm_spares, pm_spawn_share, pm_spawn_ms) = if runtime == runtime::PHP_FPM {
-        match node.pm {
-            1 => (3.0, 0.0, 0.0),   // dynamic
-            2 => (0.0, 0.05, 8.0),  // ondemand
-            _ => (-1.0, 0.0, 0.0),  // static
-        }
-    } else {
-        (-1.0, 0.0, 0.0)
-    };
+    let pm = if runtime == runtime::PHP_FPM { node.pm.min(PM_SPARES.len() - 1) } else { 0 };
+    let (pm_spares, pm_spawn_share, pm_spawn_ms) = (PM_SPARES[pm], PM_SPAWN_SHARE[pm], PM_SPAWN_MS[pm]);
     let resident = if pm_spares < 0.0 {
         processes
     } else {
@@ -1104,6 +1124,8 @@ pub fn server_model(
         tail_ms,
         processes: resident,
         inflight: (slot_work * share) / 1000.0,
+        shares: [0.0; NR],
+        shares_mask: 0,
         work_unit: Some(work_unit),
         work,
         resources: Resources {
@@ -1117,6 +1139,82 @@ pub fn server_model(
         swapping,
         disk: false,
     }
+}
+
+impl Model {
+    /// The share of `kind` this Node processes: its shed share, or the Node's.
+    #[inline]
+    pub fn share_of(&self, kind: usize) -> f64 {
+        if kind < NR && (self.shares_mask >> kind) & 1 == 1 { self.shares[kind] } else { self.share }
+    }
+}
+
+/// `serverModel` with its shedding: priority load shedding drops the cheapest-value kinds
+/// first until the box runs at `SHED_AT`; graceful degradation drops the dearest ones
+/// instead, and wins when a Node has both.
+pub fn server_model_shed(
+    game: &GameCtx,
+    node: &Node,
+    arriving: &Rates,
+    code: &Code,
+    call_latency: &[f64; NK],
+    ctx: &ServerCtx,
+) -> Model {
+    let full = server_model(game, node, arriving, code, call_latency, ctx);
+    if full.utilization <= SHED_AT || ctx.flags.worker {
+        return full;
+    }
+    let degrade = node.degrade && game.has(research::GRACEFUL_DEGRADATION);
+    if !degrade && !(node.shed && game.has(research::LOAD_SHEDDING)) {
+        return full;
+    }
+    // The kinds that arrive, in the order they go: a stable sort, as `toSorted` is.
+    let mut kinds: Vec<usize> = (0..NR).filter(|kind| arriving[*kind] > 0.0).collect();
+    if degrade {
+        let cpu = |kind: usize| PROFILE_CPU[crate::pass::profile_of(game, kind)];
+        kinds.sort_by(|a, b| cpu(*b).total_cmp(&cpu(*a)));
+    } else {
+        kinds.sort_by(|a, b| KIND_VALUE[*a].total_cmp(&KIND_VALUE[*b]));
+    }
+    let keep = |dropped: usize, fraction: f64| {
+        let mut kept = [0.0f64; NK];
+        for (index, &kind) in kinds.iter().enumerate() {
+            kept[kind] = match index.cmp(&dropped) {
+                core::cmp::Ordering::Less => 0.0,
+                core::cmp::Ordering::Equal => arriving[kind] * fraction,
+                core::cmp::Ordering::Greater => arriving[kind],
+            };
+        }
+        kept
+    };
+    let run = |kept: &Rates| server_model(game, node, kept, code, call_latency, ctx);
+    // The first kind whose loss brings the load under the line, then how much of it to keep.
+    let mut dropped = 0;
+    while dropped < kinds.len() && run(&keep(dropped + 1, 1.0)).utilization > SHED_AT {
+        dropped += 1;
+    }
+    let (mut low, mut high) = (0.0f64, 1.0f64);
+    for _ in 0..16 {
+        let middle = (low + high) / 2.0;
+        if run(&keep(dropped, middle)).utilization > SHED_AT {
+            high = middle;
+        } else {
+            low = middle;
+        }
+    }
+    let kept = keep(dropped, low);
+    let mut model = run(&kept);
+    let (mut total, mut left) = (0.0, 0.0);
+    for &kind in &kinds {
+        let rate = arriving[kind];
+        model.shares[kind] = if rate > 0.0 { kept[kind] / rate } else { 1.0 };
+        model.shares_mask |= 1 << kind;
+        total += rate;
+        left += kept[kind];
+    }
+    model.share = if total > 0.0 { left / total } else { 1.0 };
+    model.capacity = full.capacity;
+    model
 }
 
 #[inline]
@@ -1584,7 +1682,7 @@ pub fn database_model(
     // One Service over one Database: the group holds the Company's users.
     let group_users = node.users_in_group;
     let topology = node.topology;
-    let database_count = 1.0f64;
+    let database_count = if node.type_code == component::DATABASE { node.databases_in_group } else { 1.0 };
     let shard_share = if topology == 2 && database_count > 1.0 { 1.0 / database_count } else { 1.0 };
     let working_set = (LOCAL_DB_RAM + group_users * LOCAL_DB_RAM_PER_USER) * shard_share;
     let footprint = working_set + connection_ram;
@@ -1604,7 +1702,7 @@ pub fn database_model(
     } else {
         0.0
     };
-    let iops = STORAGE_IOPS[node.iops.min(1)] * shards;
+    let iops = STORAGE_IOPS[node.iops.min(1)] * shards * node.iops_factor;
     let throttled = node.family == 0 && node.credits < 1.0;
     let incident = game.incident;
     let slowed = incident == Some(Incident::RetryStorm)
@@ -1694,7 +1792,7 @@ pub fn database_model(
     let used = (work * share).min(cores * 1000.0) / 1000.0;
     let on_disk = io_utilization > 0.0 && io_utilization >= cpu_utilization;
     let distributed = 1.0 + 2.0 * cross;
-    let sync_ms = 0.0;
+    let sync_ms = node.sync_wait;
     let tx_service_fixed = 2.5 * distributed + sync_ms + far_ms;
     let tx_service_variable = (tx_cpu / per_request + wait + io_wait) * distributed;
 
@@ -1759,6 +1857,8 @@ pub fn database_model(
         tail_ms: 0.0,
         processes: 0.0,
         inflight: 0.0,
+        shares: [0.0; NR],
+        shares_mask: 0,
         work_unit: Some(if on_disk { WorkUnit::Disk } else { WorkUnit::Cpu }),
         work,
         resources: Resources {

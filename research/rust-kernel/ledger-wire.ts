@@ -15,7 +15,7 @@ const STATUSES = ['idle', 'ok', 'warn', 'danger', 'down']
  * @param names the catalog lists: `kinds` (every Kind, request kinds first), `causes`, and `pools`
  */
 export const decodeLedger = (block, game, names) => {
-  const { kinds, causes, pools } = names
+  const { kinds, causes, pools, regions, devices, services, extras } = names
   let at = 0
   const num = () => block[at++]
   const flag = () => block[at++] !== 0
@@ -94,6 +94,62 @@ export const decodeLedger = (block, game, names) => {
     failing: flag(),
     failure: num(),
   }))
+  let latency = 0
+  const serviceKeyed = () => {
+    const record = {}
+    for (let left = num(); left > 0; left -= 1) {
+      const id = services[num()]
+      record[id] = num()
+    }
+    return record
+  }
+  const serviceRows = () => {
+    const record = {}
+    for (let index = 0, count = num(); index < count; index += 1) {
+      const served = []
+      for (let left = num(); left > 0; left -= 1) served.push(kinds[num()])
+      const rate = num()
+      const done = num()
+      const satisfied = num()
+      const spent = num()
+      record[services[index]] = {
+        kinds: served,
+        rate,
+        served: done,
+        failed: rate - done,
+        apdex: rate > 0 ? satisfied / rate : 1,
+        mean: done > 0 ? spent / done : 0,
+        p99: num(),
+      }
+    }
+    return record
+  }
+  const regionApdex = () => {
+    const record = {}
+    for (let left = num(); left > 0; left -= 1) {
+      const region = regions[num()]
+      record[region] = num()
+    }
+    return record
+  }
+  const regionRows = () => {
+    const record = {}
+    for (let left = num(); left > 0; left -= 1) {
+      const rows = {}
+      record[regions[num()]] = rows
+      for (let count = num(); count > 0; count -= 1)
+        rows[kinds[num()]] = {
+          rate: num(),
+          success: num(),
+          apdex: num(),
+          near: num(),
+          fail: Object.fromEntries(causes.map((cause) => [cause, num()])),
+          hopMs: num(),
+          p99: num(),
+        }
+    }
+    return record
+  }
   const kindRows = {}
   for (let left = num(); left > 0; left -= 1)
     kindRows[kinds[num()]] = {
@@ -114,23 +170,48 @@ export const decodeLedger = (block, game, names) => {
     served: num(),
     errors: Object.fromEntries(causes.map((cause) => [cause, num()])),
     errorShare: num(),
-    latency: num(),
+    latency: (latency = num()),
     p50: num(),
     p95: num(),
     p99: num(),
     apdex: num(),
+    regions: regionApdex(),
+    // Each device's mean: `latency` plus its own radio round trip.
+    deviceLatency: Object.fromEntries(devices.map(([device, rttMs]) => [device, latency + rttMs])),
+    regionKinds: regionRows(),
     revenue: num(),
     subscriptions: num(),
     insight: Object.fromEntries(pools.map((pool) => [pool, num()])),
     breadth: keyed(),
     breadthRegions: keyed(),
+    burn: num(),
     fines: num(),
+    salaries: num(),
+    egress: num(),
+    fees: num(),
+    burnLines: {
+      compute: num(),
+      data: num(),
+      storage: num(),
+      egress: num(),
+      thirdParty: num(),
+      requests: num(),
+      observability: num(),
+      salaries: num(),
+    },
     revenueByKind: keyed(),
     finesByKind: keyed(),
+    costPerKind: keyed(),
+    costPerService: serviceKeyed(),
+    services: serviceRows(),
+    market: extras.market,
+    velocity: num(),
     failing: kindList(),
+    forecastPeak: 0,
     bottleneck: nodeId(num()),
     bottleneckByKind: {},
   }
+  ledger.forecastPeak = extras.forecastPeak(ledger.demand)
   for (let left = num(); left > 0; left -= 1) ledger.bottleneckByKind[kinds[num()]] = nodeId(num())
   if (at !== block.length) throw new Error(`ledger wire: read ${at} of ${block.length}`)
   return ledger

@@ -9,6 +9,19 @@ toc: top
 
 Quorum has no versions. It changes all the time, and this page lists the latest days, newest first, so you can see what moved since you last played. A page on this wiki can lag behind the game by a few days. Older days are in the [full changelog](/about/changelog/all).
 
+## Thursday, 12 November 2026
+
+### Changed
+
+- Speed up the simulation solve with dense per-pass caches ([3ed0c95](https://github.com/elianiva/quorum/commit/3ed0c95e30b0ec8610d27fab6b225e1eedf38290))
+- Polish the install shell with maskable icons and startup images ([805ced8](https://github.com/elianiva/quorum/commit/805ced87339978f15d0ec2343480cfa53a73fc32))
+- Build sound Nodes from the context, not from globals ([8de1b1b](https://github.com/elianiva/quorum/commit/8de1b1b40387c896929aa7b2e2be3a2819c6acd1))
+- Stop Tidy from crashing on Links with no place ([2c710e5](https://github.com/elianiva/quorum/commit/2c710e5b59996abc3bb43ca27b4fbf4e656bb805))
+- Add the changelog entry for 2026-11-11 (#49) ([f6ffca9](https://github.com/elianiva/quorum/commit/f6ffca9c730df1a55afd39df8370e0fd616a5f7d))
+- Add a command palette over the board ([fa727da](https://github.com/elianiva/quorum/commit/fa727da928d515639d2997f83abb5dc96ae600b2))
+- Write down feature keys ([9a23e91](https://github.com/elianiva/quorum/commit/9a23e91fb0eaf5b5bd9ed245993eea88be4d0aeb))
+- Gate online Rooms behind a feature key ([23fc23b](https://github.com/elianiva/quorum/commit/23fc23b380625d8107229b9e84c481cb2dac5e27))
+
 ## Wednesday, 11 November 2026
 
 ### Changed
@@ -126,22 +139,3 @@ Quorum has no versions. It changes all the time, and this page lists the latest 
 ### Fixed
 
 - Incident alarms now show queue and budget fields. ([4fd2a3a](https://github.com/elianiva/quorum/commit/4fd2a3ae7d1d10fd250ea644303f7e23e5242134))
-
-## Wednesday, 4 November 2026
-
-### Added
-
-- The Dashboard now includes rows for Alerts, Services, Resources and Users, plus per-Component charts for Load Balancer, Database, Cache, Queue, CDN and managed Components, and markers for Deploy, Incident, Company and Design changes. ([5c0c0e7](https://github.com/elianiva/quorum/commit/5c0c0e7cea16c9a2f192682a414467e39c755c31))
-- Press `$` to open the Cost panel; it splits Burn into compute, data, storage, egress, third parties, observability and salaries, and also shows Revenue and margin. ([b8cb017](https://github.com/elianiva/quorum/commit/b8cb01792bba1897b5de59c5258e7b2c7de4a7a2))
-- The Inspector shows two new buttons next to a Node’s size: “Buy ten sizes” and “Buy to the largest size”, letting you resize the Node in bulk with one click. ([e8870b3](https://github.com/elianiva/quorum/commit/e8870b3d982413f4b2e66994935485e5073567eb))
-- A book-open icon appears in the title-screen taskbar; clicking it opens the wiki in a new browser tab. ([27bf73f](https://github.com/elianiva/quorum/commit/27bf73f87ac64acdd9758b89867b51151f7d3fa2))
-- Settings now contain a Usage Data toggle that lets you opt out of anonymous product analytics, with the privacy policy linked beside it. ([b43ef66](https://github.com/elianiva/quorum/commit/b43ef664507a93ba359d2388ab19a8ea3cc2676b))
-
-### Changed
-
-- Folded sections in the Inspector remain in the same open or closed state when you advance simulation steps, and the sandbox controls on phones keep their open state after you touch them. ([23b170f](https://github.com/elianiva/quorum/commit/23b170f6ca48d5fc4646d6fb20ea3e44458a278f))
-- The Companies page lists every saved Company with its name and logo; the title screen shows all Companies and lets you open, rename or delete each file. ([69e82d0](https://github.com/elianiva/quorum/commit/69e82d01af6017c5afd40e9017d60ba12cc209c4))
-
-### Fixed
-
-- A Spot reclaim now warns you before the Node is downsized, and switching the Node to on-demand during the warning cancels it. ([5c0c0e7](https://github.com/elianiva/quorum/commit/5c0c0e7cea16c9a2f192682a414467e39c755c31))

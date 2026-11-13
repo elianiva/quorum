@@ -1,5 +1,5 @@
 import { actionLabelIn, answerIn, closingIn, signOf, writtenIn } from '@/i18n/mail-render.ts'
-import { type Messages, copy } from '@/i18n/messages.ts'
+import { type Messages, copy, localeOf } from '@/i18n/messages.ts'
 import { has } from '@quorum/simulation/lookups'
 import { InboxMessage } from '@/game/inbox.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -771,7 +771,7 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                 : h.a(
                     [
                       h.Key(`glossary-${tell.id}`),
-                      h.Href(glossaryUrl(tell.term)),
+                      h.Href(glossaryUrl(tell.term, localeOf(h))),
                       h.Target('_blank'),
                       h.Rel('noreferrer noopener'),
                       h.Title(t.inbox.opensTheGlossaryOnThisAdvisory),
@@ -1089,7 +1089,7 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                     ),
                   ),
                 ],
-                [model.board.inbox.filter ? 'Spam filter on' : 'Spam filter off'],
+                [model.board.inbox.filter ? t.changes.spamFilterOn : t.changes.spamFilterOff],
               )
             : h.empty,
           h.span(

@@ -50,6 +50,7 @@ import { nodeList } from './nodeList.ts'
 import { palette } from './palette.ts'
 import { panels } from './panels.ts'
 import { presence } from './presence.ts'
+import { changes } from './changes.ts'
 import { levers } from './levers.ts'
 import { pools } from './pools.ts'
 import { research } from './research.ts'
@@ -59,7 +60,7 @@ import { title } from './title.ts'
 import { pwa } from './pwa.ts'
 import { survey } from './survey.ts'
 import { tradeoff } from './tradeoff.ts'
-import { catalog } from './catalog.ts'
+import { catalog } from '@quorum/ui/i18n/catalog/ja'
 
 export const ja = {
   room,
@@ -109,6 +110,7 @@ export const ja = {
   palette,
   panels,
   presence,
+  changes,
   levers,
   pools,
   research,

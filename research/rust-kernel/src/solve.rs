@@ -7,7 +7,7 @@
 
 use crate::catalog::*;
 use crate::ledger::{self, Ledger, Route};
-use crate::model::{database_model, flat_component, flat_scale, server_model, Rates, ServerCtx};
+use crate::model::{database_model, flat_component, flat_scale, server_model, Order, Rates, ServerCtx};
 use crate::outcomes::{hop_ms, tree, Memo};
 use crate::pass::{forward, is_down, Board, Pass, Run};
 use crate::routing::{Splits, Weights};
@@ -79,7 +79,8 @@ pub fn probe_capacity(setup: &Setup, slot: usize, boost: Option<usize>, state: &
     let model = match node.type_code {
         component::SERVER => server_model(board.game, node, &probe, board.code.node(slot), call_latency, &ctx),
         component::DATABASE | component::REPLICA => database_model(board.game, node, &probe, boost, connections),
-        _ => flat_component(board.game, node, &probe, boost),
+        // `probeMixOf` walks `REQUEST_KINDS`.
+        _ => flat_component(board.game, node, &probe, &Order::indexed(), boost),
     };
     if model.utilization > 0.0 {
         1.0 / model.utilization

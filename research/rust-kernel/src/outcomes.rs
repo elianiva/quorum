@@ -8,7 +8,7 @@
 
 use crate::catalog::*;
 use crate::dist::*;
-use crate::model::{GameCtx, Model, Node};
+use crate::model::{GameCtx, Incident, Model, Node};
 use crate::pass::{Board, Pass};
 use crate::routing::{amplification, Splits, Weights};
 
@@ -199,6 +199,17 @@ impl<'a> Tree<'a> {
             Some(policy) => (policy.from as usize, policy.to as usize),
             None => return failed(STRANDED),
         };
+        // A partition cuts calls between regions until it heals.
+        if self.board.game.incident == Some(Incident::Partition) {
+            let (source, target) = (&self.board.nodes[from], &self.board.nodes[to]);
+            if source.region != target.region
+                && source.type_code != component::USERS
+                && !COMPONENT_GLOBAL[source.type_code]
+                && !COMPONENT_GLOBAL[target.type_code]
+            {
+                return failed(TIMEOUT);
+            }
+        }
         let extra = self.place_ms(from, to) + self.mesh_ms(from);
         let answer = self.call(edge, kind);
         if extra > 0.0 {
@@ -322,7 +333,18 @@ impl<'a> Tree<'a> {
             // A Node whose TLS certificate ran out is refused by every browser.
             failed(DOWN)
         } else {
-            self.rule(node, kind)
+            let answer = self.rule(node, kind);
+            let game = self.board.game;
+            // A leap second repeats one, so every Node in the region fires its timers twice.
+            let answer = if game.incident == Some(Incident::LeapSecond)
+                && game.incident_region.is_some_and(|region| region == game_node.region)
+            {
+                fail_some(through_one(hop(CLOCK_SKEW_MS, 0.0), answer, false), CLOCK_SKEW_LOSS, TIMEOUT)
+            } else {
+                answer
+            };
+            // A chaos experiment fails a share of what its target answers.
+            if game.chaos_target == Some(node) { fail_some(answer, CHAOS_FAILURE, REFUSED) } else { answer }
         };
         self.memo.outcome.put(slot, self.memo.epoch, result)
     }
@@ -334,6 +356,13 @@ impl<'a> Tree<'a> {
             None => return failed(STRANDED),
         };
         match type_code {
+            // An expired certificate with none left, or a BGP leak: every browser fails to reach the site.
+            component::USERS
+                if matches!(self.board.game.incident, Some(Incident::Bgp))
+                    || (self.board.game.incident == Some(Incident::Certificate) && !self.board.game.cert_nodes) =>
+            {
+                failed(DOWN)
+            }
             component::USERS | component::LB | component::DNS | component::CDC => self.relay(node, kind),
             component::POOLER => {
                 let mode = self.board.nodes[node].mode;
@@ -350,6 +379,12 @@ impl<'a> Tree<'a> {
             }
             component::DATABASE | component::REPLICA => self.database(node, kind),
             component::SERVER => self.answer_calls(node, kind),
+            // An outage at the first provider fails every charge sent to it.
+            component::PSP
+                if self.board.game.incident == Some(Incident::PspOutage) && !self.board.nodes[node].second_provider =>
+            {
+                failed(UPSTREAM)
+            }
             component::AUTH | component::MSGP | component::WAREHOUSE | component::PSP => {
                 through(self.own_hop(node, kind, 1.0), &[], false)
             }
@@ -462,7 +497,9 @@ impl<'a> Tree<'a> {
                 made += 1;
             }
         }
-        let crashes = self.code_crashes(&game_node, kind);
+        // A Worker's task breaks when one of the kinds that made it breaks.
+        let origins = mix[..NR].iter().enumerate().filter(|(_, share)| **share > 0.0).fold(0u64, |bits, (origin, _)| bits | 1 << origin);
+        let crashes = self.code_crashes(&game_node, origins);
         fail_some(through(own, &entries[..made], false), crashes, CRASH)
     }
 
@@ -588,6 +625,17 @@ impl<'a> Tree<'a> {
             Some(game_node) => *game_node,
             None => return failed(STRANDED),
         };
+        let incident = if self.board.game.incident_node == node { self.board.game.incident } else { None };
+        let writes = kind == kind::Q_WRITE || kind == kind::Q_TX;
+        match incident {
+            // A full disk: Postgres cannot extend a file, so every write fails.
+            Some(Incident::DiskFull) if writes || kind == kind::BLOB_PUT => return failed(REFUSED),
+            // A migration holds the table's lock while it copies it: writes queue and time out.
+            Some(Incident::MigrationLock) if writes => return failed(TIMEOUT),
+            // A deleted table: every read and write that needs it fails until a restore.
+            Some(Incident::AccidentalDelete) if writes || kind == kind::Q_READ => return failed(REFUSED),
+            _ => {}
+        }
         // A synchronous replica that is down stalls every write the primary takes.
         if game_node.type_code == component::DATABASE
             && (kind == kind::Q_WRITE || kind == kind::Q_TX)
@@ -662,7 +710,7 @@ impl<'a> Tree<'a> {
         if kind == kind::RT && RUNTIME_CONNECTION_KB[game_node.runtime] < 0.0 {
             return failed(REFUSED);
         }
-        let crashes = self.code_crashes(&game_node, kind);
+        let crashes = self.code_crashes(&game_node, 1 << kind);
         if game_node.local_db {
             return fail_some(through(own, &[], false), crashes, CRASH);
         }
@@ -678,14 +726,35 @@ impl<'a> Tree<'a> {
         }
         // A stale read fails an API read, a checkout that reads its own write, and a search.
         let stale_counts = kind == kind::READ || kind == kind::BUY || kind == kind::SEARCH;
-        let relayed = through(own, &entries[..made], stale_counts);
-        fail_some(relayed, crashes, CRASH)
+        let relayed = fail_some(through(own, &entries[..made], stale_counts), crashes, CRASH);
+        // A path with a smaller MTU drops an upload larger than it: the request times out.
+        if self.board.game.incident == Some(Incident::Mtu) && kind == kind::UPLOAD {
+            fail_some(relayed, MTU_LOSS, TIMEOUT)
+        } else {
+            relayed
+        }
     }
 
-    /// `codeCrashes`: the share of requests the code itself fails.
-    fn code_crashes(&self, node: &Node, _kind: usize) -> f64 {
+    /// `codeCrashes`: the share of requests the code itself fails. `kinds` is the
+    /// request kinds a Worker's task came from, or the request kind itself.
+    fn code_crashes(&self, node: &Node, kinds: u64) -> f64 {
+        let game = self.board.game;
+        // A bad deploy fails only the traffic of the Service that shipped it, and a
+        // rolling deploy stops after its first batch of pods.
+        let clustered = node.cluster != usize::MAX;
+        let deploy = if game.deploy_kinds & kinds != 0 {
+            game.deploy_share * if clustered { ROLLOUT_SHARE } else { 1.0 }
+        } else {
+            0.0
+        };
+        let upgrade = if game.incident == Some(Incident::ClusterUpgrade) && clustered && node.cluster == game.incident_node {
+            UPGRADE_CRASHES
+        } else {
+            0.0
+        };
+        let runtime = if game.incident_node == node.id { game.runtime_failure } else { 0.0 };
         let bugs = if node.buggy { MIGRATION_BUGS } else { 0.0 };
-        (bugs * node.blast).min(1.0)
+        ((deploy + upgrade + runtime + bugs) * node.blast).min(1.0)
     }
 }
 

@@ -9,13 +9,15 @@ use crate::catalog::*;
 use crate::extra::*;
 use crate::dist::task_attempts;
 use crate::model::{cache, Waf};
-use crate::model::{cpu_base, database_model, flat_component, flat_scale, server_model, GameCtx, Incident, Model, Node, Rates, ServerCtx, ServerFlags};
+use crate::model::{cpu_base, database_model, flat_component, flat_scale, server_model, GameCtx, Incident, Model, Node, Order, Rates, ServerCtx, ServerFlags};
 use crate::routing::{Design, Splits, Weights};
 
 /// What one pass produced. The fields after `connections` are what the Ledger
 /// reads, and what the pass loop feeds back into the next pass.
 pub struct Pass {
     pub arriving: Vec<Rates>,
+    /// The order each Node's `arriving` kinds were first sent in.
+    pub order: Vec<Order>,
     pub models: Vec<Model>,
     pub links: Vec<Rates>,
     pub link_order: Vec<usize>,
@@ -51,6 +53,20 @@ impl Pass {
 
 static ZERO_RATES: Rates = [0.0; NK];
 
+/// `demandOf`'s key order: the mix's kinds in index order, then the bots an
+/// attack adds when the mix has none of its own.
+fn demand_order(game: &GameCtx, demand: &Rates) -> Order {
+    let mut order = Order::default();
+    let appended = game.mix[kind::BOT] <= 0.0;
+    for kind in (0..NR).filter(|&kind| demand[kind] > 0.0 && !(appended && kind == kind::BOT)) {
+        order.push(kind);
+    }
+    if appended && demand[kind::BOT] > 0.0 {
+        order.push(kind::BOT);
+    }
+    order
+}
+
 #[inline]
 pub fn is_down(node: &Node) -> bool {
     node.down
@@ -58,13 +74,13 @@ pub fn is_down(node: &Node) -> bool {
 
 /// `asLogin`: this kind costs an App Server a password hash.
 #[inline]
-fn as_login(game: &GameCtx, kind: usize) -> bool {
+pub(crate) fn as_login(game: &GameCtx, kind: usize) -> bool {
     kind == kind::LOGIN || (kind == kind::BOT && game.incident == Some(Incident::Stuffing))
 }
 
 /// `profileOf`: the kind's profile, or a login when a stuffing incident is on.
 #[inline]
-fn profile_of(game: &GameCtx, kind: usize) -> usize {
+pub(crate) fn profile_of(game: &GameCtx, kind: usize) -> usize {
     if kind == kind::BOT && game.incident == Some(Incident::Stuffing) {
         kind::LOGIN
     } else {
@@ -280,6 +296,7 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
     let links = count.max(design.edges.len());
     let mut out = Pass {
         arriving: vec![[0.0; NK]; count],
+        order: vec![Order::default(); count],
         models: vec![Model::default(); count],
         links: vec![[0.0; NK]; links],
         link_order: Vec::new(),
@@ -309,8 +326,10 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
             for (into, rate) in out.arriving[slot].iter_mut().zip(&demand[..NR]) {
                 *into = rate * share;
             }
+            out.order[slot] = demand_order(game, demand);
         }
         let rates = out.arriving[slot];
+        let order = out.order[slot];
         let node = match nodes.get(slot) {
             Some(node) => node,
             None => continue,
@@ -326,7 +345,8 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
             server_model(game, node, &rates, code.node(slot), latency, &ctx)
         } else if type_code == component::WORKER {
             // Each task costs the async part of the kind it came from, once per attempt.
-            let tasks = rates[NR + backend::TASK] * run.attempts(node, slot);
+            // A poison message eats most of its time.
+            let tasks = rates[NR + backend::TASK] * run.attempts(node, slot) / if node.poisoned { 1.0 - POISON_SHARE } else { 1.0 };
             let mix = task_mix_of(game, &out.tasks, slot);
             let mut work = [0.0f64; NK];
             for kind in 0..NR {
@@ -337,7 +357,7 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
         } else if type_code == component::DATABASE || type_code == component::REPLICA {
             database_model(game, node, &rates, boost, Run::at(run.connections, slot))
         } else {
-            flat_component(game, node, &rates, boost)
+            flat_component(game, node, &rates, &order, boost)
         };
         out.models[slot] = model;
 
@@ -350,10 +370,12 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
         // The kinds behind the tasks this Node sends on: an App Server enqueues
         // one task per request of a kind that goes async; a Queue passes on its mix.
         let composition = if type_code == component::SERVER {
+            // TypeScript's `kept` is the arriving record itself unless the Node sheds, which
+            // the port does not: the mix comes from what arrived, before the share.
             let mut offloaded = [0.0f64; NK];
             for kind in 0..NR {
-                if PROFILE_OFFLOAD[kind] > 0.0 && kept[kind] > 0.0 {
-                    offloaded[kind] = kept[kind];
+                if PROFILE_OFFLOAD[kind] > 0.0 && rates[kind] > 0.0 {
+                    offloaded[kind] = rates[kind];
                 }
             }
             shares_of(&offloaded)
@@ -369,7 +391,8 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
             let (hit, stale, sent, flush) = cache_serve(game, node, &rates);
             out.hits[slot] = hit;
             out.stale_hits[slot] = stale;
-            for (kind, &processed) in kept.iter().enumerate() {
+            for kind in order.iter() {
+                let processed = kept[kind];
                 // A change invalidates the Cache's copy. It has no answer to send on.
                 if processed <= 0.0 || kind == kind::CHANGE {
                     continue;
@@ -385,20 +408,23 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
         } else if type_code == component::WAF {
             // Bots stop here at the block rate; real users at the false positive rate.
             let waf = Waf::of(node, game);
-            for (kind, &processed) in kept.iter().enumerate() {
+            for kind in order.iter() {
+                let processed = kept[kind];
                 if processed > 0.0 {
                     out.route(run, splits, slot, kind, processed * (1.0 - waf.stops(kind)), composition);
                 }
             }
         } else if passes_on(type_code) {
-            for (kind, &processed) in kept.iter().enumerate() {
+            for kind in order.iter() {
+                let processed = kept[kind];
                 if processed > 0.0 {
                     out.route(run, splits, slot, kind, processed, composition);
                 }
             }
         } else if (type_code == component::SERVER || type_code == component::FN) && !node.local_db {
-            for (kind, calls) in code.node(slot).calls.iter().enumerate() {
-                let processed = kept[kind];
+            let table = &code.node(slot).calls;
+            for kind in order.iter().filter(|&kind| kind < NR) {
+                let (processed, calls) = (kept[kind], &table[kind]);
                 if processed <= 0.0 {
                     continue;
                 }
@@ -430,7 +456,8 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
             }
         } else if type_code == component::LOG {
             // A Queue or Log passes every task on, and keeps the mix of its origins.
-            for (kind, &processed) in kept.iter().enumerate() {
+            for kind in order.iter() {
+                let processed = kept[kind];
                 if processed > 0.0 {
                     out.route(run, splits, slot, kind, processed, composition);
                 }
@@ -662,6 +689,7 @@ impl Pass {
             }
             if let Some(into) = self.arriving.get_mut(policy.to as usize) {
                 into[kind] += sent;
+                self.order[policy.to as usize].push(kind);
             }
             if let Some(carried) = self.links.get_mut(edge) {
                 if carried[kind] == 0.0 && !self.listed[edge] {

@@ -97,7 +97,7 @@ fn surface(nodes: &[Node], game: &GameCtx, inputs: &Inputs) -> i32 {
         return abi::UNSUPPORTED;
     }
     // An incident rewrites figures through rules the port has not reached yet.
-    if game.incident_code != 0 {
+    if game.incident_code != 0 && game.incident.is_none() {
         return abi::UNSUPPORTED;
     }
     // A shipped Feature moves demand, payload, and value.
@@ -175,6 +175,10 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
             nodes[to].queue_attempts = crate::ledger::attempts_allowed(nodes[from].dlq, nodes[from].attempts);
         }
     }
+    game.cert_nodes = nodes.iter().any(|node| {
+        node.cert_until.is_some()
+            && matches!(node.type_code, component::LB | component::CDN | component::WAF | component::GW | component::WS | component::EDGE)
+    });
     game.cdn_on_board = nodes.iter().any(|node| node.type_code == component::CDN);
     // `spreadCount`: North America and every region with users, up to the cap.
     let regions = nodes

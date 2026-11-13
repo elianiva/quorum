@@ -19,6 +19,7 @@ export const pass = await import(`${ROOT}/solve-pass.ts`)
 export const regions = await import(`${ROOT}/regions.ts`)
 export const demand = await import(`${ROOT}/solve-demand.ts`)
 export const features = await import(`${ROOT}/features.ts`)
+const solveOutcomes = await import(`${ROOT}/solve-outcomes.ts`)
 
 export const ALL = [...S.REQUEST_KINDS, ...S.BACKEND_KINDS]
 export const NK = ALL.length
@@ -157,6 +158,14 @@ export const SLOT = {
   split: 100,
   paranoia: 101,
   underAttack: 102,
+  incidentStarted: 103,
+  incidentRegion: 104,
+  chaosTarget: 105,
+  ramped: 106,
+  cluster: 107,
+  deployShare: 108,
+  deployKinds: 109,
+  runtimeFailure: 110,
 }
 export const SCALARS = Object.keys(SLOT).length
 const NODE_FIELDS = 10
@@ -298,7 +307,10 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
       SLOT.fixes,
       S.FIXES.reduce((bits, fix, index) => (serviceFixes.has(fix) ? bits + 2 ** index : bits), 0),
     )
-    put(SLOT.incidentNode, -1)
+    put(SLOT.incidentNode, game.nodes.findIndex((entry) => entry.id === game.incident?.nodeId))
+    put(SLOT.incidentStarted, game.incident?.startedAt ?? 0)
+    put(SLOT.incidentRegion, game.incident?.region ? S.REGIONS.indexOf(game.incident.region) : -1)
+    put(SLOT.chaosTarget, game.nodes.findIndex((entry) => entry.id === solveOutcomes.chaosTarget(game)))
     put(SLOT.size, n.size)
     put(SLOT.workers, n.workers)
     put(SLOT.replicas, n.replicas)
@@ -371,7 +383,29 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
     )
     put(SLOT.syncStalled, lookups.syncStalled(game, lookups.dataGroupOf(game, n)) ? 1 : 0)
     put(SLOT.primary, n.type === 'replica' && lookups.primaryOf(game, n) !== undefined ? 1 : 0)
-    put(SLOT.poisoned, 0)
+    // `solver.poisoned`: a poison message sits in a Queue with no DLQ that feeds this Node.
+    put(
+      SLOT.poisoned,
+      game.incident?.kind === 'poison' &&
+        game.links.some((link) => {
+          const queue = game.nodes.find((entry) => entry.id === link.from)
+          return link.to === n.id && link.from === game.incident.nodeId && queue && !queue.dlq
+        })
+        ? 1
+        : 0,
+    )
+    put(SLOT.ramped, lookups.rampedOf(game, n) ? 1 : 0)
+    const cluster = lookups.clusterOf(game, n)
+    put(SLOT.cluster, cluster === undefined ? -1 : game.nodes.findIndex((entry) => entry.id === cluster))
+    const deploying = game.incident?.kind === 'bad-deploy'
+    put(SLOT.deployShare, deploying ? team.badDeployShareOf(game, team.blastService(game)) : 0)
+    put(
+      SLOT.deployKinds,
+      deploying
+        ? S.REQUEST_KINDS.reduce((bits, kind, index) => (team.failsKind(game, kind) ? bits + 2 ** index : bits), 0)
+        : 0,
+    )
+    put(SLOT.runtimeFailure, game.incident ? (S.RUNTIME_INCIDENT_FAILURES[game.incident.kind] ?? 0) : 0)
     put(SLOT.transactions, n.transactions ? 1 : 0)
     put(SLOT.downOom, n.life._tag !== 'Running' && causeOf(n.life) === 'oom' ? 1 : 0)
     put(SLOT.dataStaffed, team.dataStaffed(game) ? 1 : 0)

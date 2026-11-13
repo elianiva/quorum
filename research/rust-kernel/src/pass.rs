@@ -148,6 +148,8 @@ impl CodeTable {
                 } else {
                     code.cpu[kind] = cpu_base(game, node, kind, &code.calls[kind], flags);
                 }
+                // `cpuOf`: under Shared tenancy a noisy neighbour takes a share of the cores.
+                code.cpu[kind] /= 1.0 - node.steal;
             }
             table.row_of[slot] = table.rows.len() as u32;
             table.rows.push(code);
@@ -428,7 +430,7 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
         };
         let model = if type_code == component::SERVER {
             let latency = run.call_latency.get(slot).unwrap_or(&[0.0; NK]);
-            server_model(game, node, &rates, code.node(slot), latency, &ctx)
+            crate::model::server_model_shed(game, node, &rates, code.node(slot), latency, &ctx)
         } else if type_code == component::WORKER {
             // Each task costs the async part of the kind it came from, once per attempt.
             // A poison message eats most of its time.
@@ -450,22 +452,26 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
         };
         out.models[slot] = model;
 
-        let share = if is_down(node) { 0.0 } else { model.share };
+        // A Node that sheds keeps a share of each kind and serves it whole; any other keeps
+        // one share of all.
+        let shed = model.shares_mask != 0 && !is_down(node);
+        let share = if is_down(node) { 0.0 } else if shed { 1.0 } else { model.share };
         let mut kept = [0.0f64; NK];
         for kind in 0..NK {
-            kept[kind] = rates[kind] * share;
+            kept[kind] = rates[kind] * if shed { model.share_of(kind) } else { share };
         }
 
         // The kinds behind the tasks this Node sends on: an App Server enqueues
         // one task per request of a kind that goes async; a Queue passes on its mix.
         let composition = if type_code == component::SERVER {
-            // TypeScript's `kept` is the arriving record itself unless the Node sheds, which
-            // the port does not: the mix comes from what arrived, before the share.
+            // TypeScript's `kept` is the arriving record itself unless the Node sheds: the mix
+            // comes from what arrived, before the share, or from what shedding kept.
             let mut offloaded = [0.0f64; NK];
             let mut keys = Order::default();
             for kind in 0..NR {
-                if PROFILE_OFFLOAD[kind] > 0.0 && rates[kind] > 0.0 {
-                    offloaded[kind] = rates[kind];
+                let rate = if shed { kept[kind] } else { rates[kind] };
+                if PROFILE_OFFLOAD[kind] > 0.0 && rate > 0.0 {
+                    offloaded[kind] = rate;
                     keys.push(kind);
                 }
             }

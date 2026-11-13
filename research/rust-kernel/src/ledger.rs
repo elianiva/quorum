@@ -104,6 +104,18 @@ impl Keyed {
     }
 }
 
+/// `RegionKindLedger`: what one region's users get for one request kind.
+#[derive(Clone, Copy)]
+pub struct RegionKindRow {
+    pub rate: f64,
+    pub success: f64,
+    pub apdex: f64,
+    pub near: f64,
+    pub fail: [f64; CAUSE_COUNT],
+    pub hop_ms: f64,
+    pub p99: f64,
+}
+
 /// One Node's figures.
 #[derive(Clone, Default)]
 pub struct NodeRow {
@@ -157,7 +169,17 @@ pub struct Ledger {
     pub fines: f64,
     pub revenue_by_kind: Vec<f64>,
     pub fines_by_kind: Vec<f64>,
+    /// Each region's users' Apdex, in the order they were first served.
+    pub regions: Vec<(usize, f64)>,
+    /// Each region's rows by request kind, in the order they were first written.
+    pub region_kinds: Vec<(usize, Vec<(usize, RegionKindRow)>)>,
     pub links: Vec<LinkRow>,
+    pub bill: crate::bill::Bill,
+    pub costs: crate::bill::Costs,
+    pub velocity: f64,
+    /// `payrollOf` and `burnSharesOf`, as the host sent them.
+    pub salaries: f64,
+    pub game_shares: [f64; 4],
     /// Insight per second, by pool: the request kinds, then failure.
     pub insight: [f64; INSIGHT_POOLS.len()],
     /// Component types that sample each request kind.
@@ -354,6 +376,10 @@ pub fn earned_of(game: &GameCtx, kind: usize, rate: f64, result: &Outcome, apdex
 /// What one kind earns and how it scores, shared by `revenueOf` and `ledgerOf`.
 pub struct KindScore {
     pub result: Outcome,
+    /// Each region's answer and its raw answer before the users' hop.
+    pub answers: Vec<(Route, Outcome, Outcome)>,
+    /// How much of the Apdex the async part keeps.
+    pub finish: f64,
     pub apdex: f64,
     pub completion: Option<f64>,
     pub earned: f64,
@@ -402,7 +428,7 @@ pub fn score_kind(
     let finish = 1.0 - r#async + r#async * done.unwrap_or(1.0);
     let apdex = apdex_of(&result, PROFILE_APDEX[kind]) * finish;
     let earned = earned_of(game, kind, rate, &result, apdex);
-    KindScore { result, apdex, completion: done, earned }
+    KindScore { result, answers, finish, apdex, completion: done, earned }
 }
 
 /// `ledgerOf`: the whole Ledger, as far as the solve and the benchmark read it.
@@ -423,6 +449,8 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
     let mut served = 0.0;
     let mut satisfied = 0.0;
     let mut latency_weight = 0.0;
+    // Each region's users: (region, rate sent, rate satisfied), in first-served order.
+    let mut region_rate: Vec<(usize, f64, f64)> = Vec::new();
     for kind in 0..NR {
         let rate = demand[kind];
         if rate <= 0.0 {
@@ -442,6 +470,39 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
         // Bots earn nothing and do not count toward Apdex or errors.
         if !PROFILE_SCORED[kind] {
             continue;
+        }
+        for (route, answer, raw) in &score.answers {
+            let sent = rate * route.share;
+            let own = apdex_of(answer, PROFILE_APDEX[kind]) * score.finish;
+            let at = match region_rate.iter().position(|(region, _, _)| *region == route.region) {
+                Some(at) => at,
+                None => {
+                    region_rate.push((route.region, 0.0, 0.0));
+                    region_rate.len() - 1
+                }
+            };
+            region_rate[at].1 += sent;
+            region_rate[at].2 += sent * answer.success * own;
+            let row = RegionKindRow {
+                rate: sent,
+                success: answer.success,
+                apdex: own,
+                near: apdex_of(raw, PROFILE_APDEX[kind]) * score.finish,
+                fail: answer.fail,
+                hop_ms: user_hop_ms(game, route.extra_ms, kind),
+                p99: percentile(answer, 0.99),
+            };
+            let rows = match ledger.region_kinds.iter_mut().find(|(region, _)| *region == route.region) {
+                Some((_, rows)) => rows,
+                None => {
+                    ledger.region_kinds.push((route.region, Vec::new()));
+                    &mut ledger.region_kinds.last_mut().expect("just pushed").1
+                }
+            };
+            match rows.iter_mut().find(|(at, _)| *at == kind) {
+                Some((_, entry)) => *entry = row,
+                None => rows.push((kind, row)),
+            }
         }
         rate_total += rate;
         served += rate * score.result.success;
@@ -473,6 +534,10 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
         }
     }
     let overall = blend(&mixture);
+    ledger.regions = region_rate
+        .iter()
+        .map(|&(region, sent, satisfied)| (region, if sent > 0.0 { satisfied / sent } else { 1.0 }))
+        .collect();
     ledger.demand = rate_total;
     ledger.served = served;
     ledger.latency = if served > 0.0 { latency_weight / served } else { 0.0 };
@@ -624,6 +689,13 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
     ledger.breadth = insight.breadth;
     ledger.breadth_regions = insight.regions;
     ledger.links = setup.links.iter().map(|link| link_row(game, design, pass, tree, &ledger.nodes, link)).collect();
+
+    // Velocity, then the bill and how it splits across kinds and Services.
+    ledger.salaries = game.salaries;
+    ledger.game_shares = game.shares;
+    ledger.velocity = crate::bill::velocity_of(game, nodes, &ledger.nodes);
+    ledger.bill = crate::bill::bill_of(game, design, nodes, pass, &ledger.nodes, &ledger.kinds);
+    ledger.costs = crate::bill::costs_of(game, &ledger.kinds, ledger.demand, ledger.bill.total);
 
     ledger.bottleneck_by_kind = bottleneck_by_kind(nodes, &ledger.nodes);
     ledger

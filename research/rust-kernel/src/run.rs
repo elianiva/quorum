@@ -104,6 +104,9 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
             *cell = *value;
         }
     }
+    for (cell, service) in game.kind_service.iter_mut().zip(&inputs.kind_service) {
+        *cell = if *service >= 0.0 { *service as usize } else { usize::MAX };
+    }
     for (cell, share) in game.mix.iter_mut().zip(&inputs.probe) {
         *cell = *share;
     }

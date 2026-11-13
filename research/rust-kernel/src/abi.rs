@@ -147,12 +147,38 @@ pub const S_SUBSCRIPTIONS: usize = 127;
 pub const S_SAMPLE_RATE: usize = 128;
 /// `insightPerk`: what the founder's perks multiply Insight by.
 pub const S_INSIGHT_PERK: usize = 129;
-pub const SCALARS: usize = 130;
+/// `burnOf`: what the Node's box bills, before traffic.
+pub const S_BURN: usize = 130;
+/// Object Storage's retrieval fee per GB, and its price per read and per write.
+pub const S_RETRIEVAL: usize = 131;
+pub const S_STORE_GET: usize = 132;
+pub const S_STORE_PUT: usize = 133;
+/// The Era's cost index, and the Venture's egress multiplier.
+pub const S_COST_INDEX: usize = 134;
+pub const S_EGRESS_FACTOR: usize = 135;
+/// `payrollOf`, and `burnSharesOf` by line: compute, data, storage, observability.
+pub const S_SALARIES: usize = 136;
+pub const S_SHARE_COMPUTE: usize = 137;
+pub const S_SHARE_DATA: usize = 138;
+pub const S_SHARE_STORAGE: usize = 139;
+pub const S_SHARE_OBSERVABILITY: usize = 140;
+/// How many Services the Company runs.
+pub const S_SERVICE_COUNT: usize = 141;
+/// `syncWaitMs`: what a write waits for synchronous replicas and a synchronous standby.
+pub const S_SYNC_WAIT: usize = 142;
+/// What a resharding copy leaves of the volume's IOPS: `RESHARD_IOPS` while it copies, else 1.
+pub const S_IOPS_FACTOR: usize = 143;
+/// `stealOf`: the share of the cores a noisy neighbour takes under Shared tenancy.
+pub const S_STEAL: usize = 144;
+/// Priority load shedding and graceful degradation, as the Node sets them.
+pub const S_SHED: usize = 145;
+pub const S_DEGRADE: usize = 146;
+pub const SCALARS: usize = 147;
 
 /// The node-fields block: one row per Node, read by the routing Design.
 pub const NODE_FIELDS: usize = 10;
 /// The edge-fields block: one row per Edge.
-pub const EDGE_FIELDS: usize = 9;
+pub const EDGE_FIELDS: usize = 10;
 
 // ---- block ids ----
 
@@ -174,6 +200,8 @@ pub const BLOCK_ROUTES: i32 = 14;
 /// Each Link in Game order: from slot, to slot, Edge index or -1, and a breaker flag.
 pub const BLOCK_LINKS: i32 = 18;
 pub const LINK_FIELDS: usize = 4;
+/// `serviceOfKind`: each request kind's Service, as its index in the Game's Services.
+pub const BLOCK_KIND_SERVICE: i32 = 19;
 /// `valueFactor` per request kind: the Features, the levers, the Venture, and the Scenario.
 pub const BLOCK_VALUE: i32 = 15;
 pub const BLOCK_RESEARCH: i32 = 16;
@@ -217,6 +245,7 @@ pub struct Inputs {
     pub probe: Vec<f64>,
     pub routes: Vec<f64>,
     pub links: Vec<f64>,
+    pub kind_service: Vec<f64>,
     pub research: Vec<u8>,
     pub query: Vec<f64>,
 }
@@ -320,6 +349,7 @@ pub extern "C" fn reserve(block: i32, len: i32) -> i32 {
             BLOCK_PROBE => Some(&mut inputs.probe),
             BLOCK_ROUTES => Some(&mut inputs.routes),
             BLOCK_LINKS => Some(&mut inputs.links),
+            BLOCK_KIND_SERVICE => Some(&mut inputs.kind_service),
             _ => None,
         }
         .map(|values| {
@@ -411,6 +441,7 @@ pub extern "C" fn ptr(block: i32) -> usize {
             BLOCK_PROBE => Some(inputs.probe.as_ptr()),
             BLOCK_ROUTES => Some(inputs.routes.as_ptr()),
             BLOCK_LINKS => Some(inputs.links.as_ptr()),
+            BLOCK_KIND_SERVICE => Some(inputs.kind_service.as_ptr()),
             BLOCK_OUT_STARTS => Some(inputs.out_starts.as_ptr().cast::<f64>()),
             BLOCK_OUT_EDGES => Some(inputs.out_edges.as_ptr().cast::<f64>()),
             BLOCK_SICK => Some(inputs.sick.as_ptr().cast::<f64>()),
@@ -459,6 +490,7 @@ pub extern "C" fn len(block: i32) -> i32 {
             BLOCK_PROBE => Some(inputs.probe.len()),
             BLOCK_ROUTES => Some(inputs.routes.len()),
             BLOCK_LINKS => Some(inputs.links.len()),
+            BLOCK_KIND_SERVICE => Some(inputs.kind_service.len()),
             BLOCK_OUT_STARTS => Some(inputs.out_starts.len()),
             BLOCK_OUT_EDGES => Some(inputs.out_edges.len()),
             BLOCK_SICK => Some(inputs.sick.len()),
@@ -593,7 +625,7 @@ pub fn game_with(scalars: &[f64], research: Research) -> GameCtx {
         seed: slot(S_SEED),
         time: slot(S_TIME),
         incident_started: slot(S_INCIDENT_STARTED),
-        service_count: 1,
+        service_count: slot(S_SERVICE_COUNT) as usize,
         service_indexes: slot(S_SERVICE_INDEXES),
         stage: slot(S_STAGE),
         venture: slot(S_VENTURE) as usize,
@@ -602,6 +634,11 @@ pub fn game_with(scalars: &[f64], research: Research) -> GameCtx {
         deploy_share: slot(S_DEPLOY_SHARE),
         deploy_kinds: slot(S_DEPLOY_KINDS) as u64,
         runtime_failure: slot(S_RUNTIME_FAILURE),
+        cost_index: slot(S_COST_INDEX),
+        egress_factor: slot(S_EGRESS_FACTOR),
+        salaries: slot(S_SALARIES),
+        shares: [slot(S_SHARE_COMPUTE), slot(S_SHARE_DATA), slot(S_SHARE_STORAGE), slot(S_SHARE_OBSERVABILITY)],
+        kind_service: [usize::MAX; NR],
     }
 }
 
@@ -635,8 +672,8 @@ pub fn node_of(row: &[f64]) -> Node {
         db_engine: slot(S_DB_ENGINE) as usize,
         ryw: flag(S_RYW),
         materialized: flag(S_MATERIALIZED),
-        shed: false,
-        degrade: false,
+        shed: flag(S_SHED),
+        degrade: flag(S_DEGRADE),
         sticky: flag(S_STICKY),
         fanout: slot(S_FANOUT) as u8,
         policy: slot(S_POLICY) as usize,
@@ -649,7 +686,7 @@ pub fn node_of(row: &[f64]) -> Node {
         topology: slot(S_TOPOLOGY) as usize,
         mode: slot(S_MODE) as usize,
         sync: flag(S_SYNC),
-        cert_until: if cert > 0.0 { Some(cert) } else { None },
+        cert_until: (cert >= 0.0).then_some(cert),
         rate_limit: slot(S_RATE_LIMIT),
         burst: slot(S_BURST),
         max_length: slot(S_MAX_LENGTH),
@@ -698,6 +735,13 @@ pub fn node_of(row: &[f64]) -> Node {
         under_attack: flag(S_UNDER_ATTACK),
         poisoned: flag(S_POISONED),
         ramped: flag(S_RAMPED),
+        burn: slot(S_BURN),
+        retrieval: slot(S_RETRIEVAL),
+        store_get: slot(S_STORE_GET),
+        store_put: slot(S_STORE_PUT),
+        sync_wait: slot(S_SYNC_WAIT),
+        iops_factor: slot(S_IOPS_FACTOR),
+        steal: slot(S_STEAL),
         sample_rate: slot(S_SAMPLE_RATE),
         cluster: slot_of(slot(S_CLUSTER)),
         index_type: slot(S_INDEX_TYPE) as usize,

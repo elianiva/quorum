@@ -131,7 +131,7 @@ impl<'a> Tree<'a> {
             (COMPONENT_LATENCY[type_code], 0.0)
         };
         Hop {
-            share: model.share,
+            share: model.share_of(kind),
             fixed_ms: fixed + sampling,
             variable_ms: variable,
             tail_p: model.tail_p,

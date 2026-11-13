@@ -21,6 +21,7 @@ export const demand = await import(`${ROOT}/solve-demand.ts`)
 export const features = await import(`${ROOT}/features.ts`)
 export const founding = await import(`${ROOT}/founding.ts`)
 const solveOutcomes = await import(`${ROOT}/solve-outcomes.ts`)
+const solveLedger = await import(`${ROOT}/solve-ledger.ts`)
 const { ERROR_CAUSES } = await import(`${ROOT}/distribution.ts`)
 import { decodeLedger, compareDeep } from './ledger-wire.ts'
 
@@ -55,6 +56,7 @@ export const BLOCK = {
   summary: 24,
   splits: 25,
   links: 18,
+  kindService: 19,
 }
 
 /** Scalar slots, from `src/abi.rs`. */
@@ -189,10 +191,27 @@ export const SLOT = {
   subscriptions: 127,
   sampleRate: 128,
   insightPerk: 129,
+  burn: 130,
+  retrieval: 131,
+  storeGet: 132,
+  storePut: 133,
+  costIndex: 134,
+  egressFactor: 135,
+  salaries: 136,
+  shareCompute: 137,
+  shareData: 138,
+  shareStorage: 139,
+  shareObservability: 140,
+  serviceCount: 141,
+  syncWait: 142,
+  iopsFactor: 143,
+  steal: 144,
+  shed: 145,
+  degrade: 146,
 }
 export const SCALARS = Object.keys(SLOT).length
 const NODE_FIELDS = 10
-const EDGE_FIELDS = 9
+const EDGE_FIELDS = 10
 
 const MODES = ['session', 'transaction', 'statement']
 const POLICIES = ['weighted', 'round-robin', 'least-conn', 'p2c', 'hash']
@@ -274,6 +293,10 @@ export const writeDesign = (kernel, game, design, options = {}) => {
     edgeFields[b + 6] = e.policy.bulkhead ? 1 : 0
     edgeFields[b + 7] = e.policy.hedge ? 1 : 0
     edgeFields[b + 8] = e.link.failure
+    // How the Edge's bytes leave their zone: 0 not at all, 1 to another zone, 2 to another region.
+    const crossRegion =
+      e.from.region !== e.to.region && !regions.isGlobal(e.from) && !regions.isGlobal(e.to)
+    edgeFields[b + 9] = crossRegion ? 2 : lookups.zoneMs(e.from, e.to) > 0 ? 1 : 0
   })
 
   const starts = new Int32Array(nodes + 1)
@@ -323,6 +346,15 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
   // `team.ts` reads the fixes of the Service the Company runs: `serviceOf(game)`.
   const serviceFixes = new Set(team.serviceOf(game).fixes)
   const venture = S.VENTURE_IDS.indexOf(game.founding?.venture ?? 'b2b-saas')
+  // What the bill reads that the solve does not change.
+  const costIndex = lookups.eraOf(game).costIndex
+  const egressFactor = founding.ventureOf(game).constraint.egress
+  const salaries = team.payrollOf(game)
+  const shares = lookups.burnSharesOf(game)
+  fill(
+    BLOCK.kindService,
+    S.REQUEST_KINDS.map((kind) => game.services.indexOf(team.serviceOfKind(game, kind))),
+  )
   game.nodes.forEach((n, i) => {
     const base = i * SCALARS
     const put = (slot, value) => {
@@ -362,7 +394,7 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
     put(SLOT.down, lookups.isDown(n) ? 1 : 0)
     put(SLOT.zone, S.ZONES.indexOf(n.zone))
     put(SLOT.region, S.REGIONS.indexOf(n.region))
-    put(SLOT.dbEngine, n.dbEngine === 'mysql' ? 1 : 0)
+    put(SLOT.dbEngine, lookups.engineOf(game, n) === 'mysql' ? 1 : 0)
     put(SLOT.inflight, 0)
     put(SLOT.sampling, graph.samplingOf(game, design, n))
     put(SLOT.samplingMs, graph.samplingMsOf(design, n))
@@ -377,7 +409,10 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
     put(SLOT.shardKey, Math.max(0, SHARD_KEYS.indexOf(n.shardKey)))
     put(SLOT.iops, Math.max(0, IOPS.indexOf(n.iops)))
     put(SLOT.keep, Math.max(0, RETENTION.indexOf(n.keep)))
-    put(SLOT.topology, Math.max(0, TOPOLOGY.indexOf(n.topology)))
+    put(
+      SLOT.topology,
+      TOPOLOGY.indexOf(n.type === 'database' ? lookups.topologyOfGroup(game, lookups.dataGroupOf(game, n)) : 'single'),
+    )
     put(SLOT.depth, n.depth ?? 0)
     put(SLOT.connections, 0)
     put(SLOT.usersInGroup, lookups.usersOfGroup(game, lookups.dataGroupOf(game, n)))
@@ -394,7 +429,7 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
     put(SLOT.materialized, n.materialized ? 1 : 0)
     put(SLOT.sync, n.sync ? 1 : 0)
     put(SLOT.ryw, n.ryw ? 1 : 0)
-    put(SLOT.certUntil, n.certUntil ?? 0)
+    put(SLOT.certUntil, n.certUntil ?? -1)
     put(SLOT.rateLimit, n.rateLimit ?? 0)
     put(SLOT.burst, n.burst ?? 0)
     put(SLOT.maxLength, n.maxLength ?? 0)
@@ -452,6 +487,28 @@ export const writeGame = (kernel, game, design, info, options = {}) => {
     put(SLOT.data, game.data)
     put(SLOT.subscriptions, features.subscriptionsOf(game))
     put(SLOT.sampleRate, n.sampleRate)
+    put(SLOT.burn, lookups.burnOf(game, n))
+    put(SLOT.retrieval, n.type === 'storage' ? S.STORAGE_CLASSES[n.storageClass].retrieval : 0)
+    put(SLOT.storeGet, lookups.storageRequestBurnOf(n, 1, 0))
+    put(SLOT.storePut, lookups.storageRequestBurnOf(n, 0, 1))
+    put(SLOT.costIndex, costIndex)
+    put(SLOT.egressFactor, egressFactor)
+    put(SLOT.salaries, salaries)
+    put(SLOT.shareCompute, shares.compute)
+    put(SLOT.shareData, shares.data)
+    put(SLOT.shareStorage, shares.storage)
+    put(SLOT.shareObservability, shares.observability)
+    put(SLOT.serviceCount, game.services.length)
+    put(SLOT.syncWait, n.type === 'database' || n.type === 'replica' ? lookups.syncWaitMs(game, n) : 0)
+    put(
+      SLOT.iopsFactor,
+      game.reshard?.node === n.id && game.reshard.phase._tag === 'Copying' && game.time < game.reshard.phase.until
+        ? S.RESHARD_IOPS
+        : 1,
+    )
+    put(SLOT.steal, founding.stealOf(game, n))
+    put(SLOT.shed, n.shed ? 1 : 0)
+    put(SLOT.degrade, n.degrade ? 1 : 0)
     put(SLOT.insightPerk, founding.insightPerk(game))
     put(SLOT.indexType, Math.max(0, Object.keys(S.VEC_INDEXES).indexOf(n.indexType)))
     put(SLOT.runtimeFailure, game.incident ? (S.RUNTIME_INCIDENT_FAILURES[game.incident.kind] ?? 0) : 0)
@@ -571,20 +628,6 @@ export const bottleneckRun = (kernel, game, options = {}) => {
 
 /** The Ledger figures the kernel does not write yet. */
 export const PENDING = [
-  'regions',
-  'deviceLatency',
-  'regionKinds',
-  'burn',
-  'salaries',
-  'egress',
-  'fees',
-  'burnLines',
-  'costPerKind',
-  'costPerService',
-  'services',
-  'market',
-  'velocity',
-  'forecastPeak',
   'nodes.*.receipts',
 ]
 
@@ -598,7 +641,10 @@ export const compareLedger = (game, flow, ledger) => compareDeep(flow, ledger, P
 export const readLedger = (kernel, game) => {
   const { X, view } = kernel
   const block = view(BLOCK.ledger, Float64Array, X.len(BLOCK.ledger))
-  return decodeLedger(block, game, { kinds: ALL, causes: ERROR_CAUSES, pools: S.INSIGHT_POOLS })
+  return decodeLedger(block, game, { kinds: ALL, causes: ERROR_CAUSES, pools: S.INSIGHT_POOLS, regions: S.REGIONS, devices: S.DEVICES.map((device) => [device, S.DEVICE_INFO[device].rttMs]),
+    services: game.services.map((service) => service.id),
+    extras: { market: features.marketOf(game), forecastPeak: (demand) => solveLedger.forecastPeakOf(game, demand) },
+  })
 }
 
 /** How many passes the last solve ran. */

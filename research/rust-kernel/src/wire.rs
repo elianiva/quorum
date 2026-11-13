@@ -73,6 +73,15 @@ impl Wire {
         }
     }
 
+    /// A count, then each key and its value, in the order given.
+    fn pairs(&mut self, pairs: &[(usize, f64)]) {
+        self.num(pairs.len() as f64);
+        for &(key, value) in pairs {
+            self.num(key as f64);
+            self.num(value);
+        }
+    }
+
     fn resources(&mut self, resources: &Resources) {
         self.gauge(resources.cpu_cores);
         self.gauge(resources.ram_gb);
@@ -155,6 +164,27 @@ impl Wire {
         for figure in [ledger.error_share, ledger.latency, ledger.p50, ledger.p95, ledger.p99, ledger.apdex] {
             wire.num(figure);
         }
+        wire.num(ledger.regions.len() as f64);
+        for &(region, apdex) in &ledger.regions {
+            wire.num(region as f64);
+            wire.num(apdex);
+        }
+        wire.num(ledger.region_kinds.len() as f64);
+        for (region, rows) in &ledger.region_kinds {
+            wire.num(*region as f64);
+            wire.num(rows.len() as f64);
+            for (kind, row) in rows {
+                wire.num(*kind as f64);
+                for figure in [row.rate, row.success, row.apdex, row.near] {
+                    wire.num(figure);
+                }
+                for fail in row.fail {
+                    wire.num(fail);
+                }
+                wire.num(row.hop_ms);
+                wire.num(row.p99);
+            }
+        }
         wire.num(ledger.revenue);
         wire.num(ledger.subscriptions);
         for pool in ledger.insight {
@@ -162,9 +192,31 @@ impl Wire {
         }
         wire.keyed(&ledger.breadth);
         wire.keyed(&ledger.breadth_regions);
+        let bill = ledger.bill;
+        let [compute, data, storage, observability] = ledger.game_shares;
+        wire.num(bill.total);
         wire.num(ledger.fines);
+        wire.num(ledger.salaries);
+        wire.num(bill.egress);
+        wire.num(bill.third_party);
+        for figure in [compute, data, storage + bill.retrieval, bill.egress, bill.third_party, bill.requests, observability, ledger.salaries] {
+            wire.num(figure);
+        }
         wire.by_kind(&ledger.revenue_by_kind);
         wire.by_kind(&ledger.fines_by_kind);
+        wire.pairs(&ledger.costs.per_kind);
+        wire.pairs(&ledger.costs.per_service);
+        wire.num(ledger.costs.services.len() as f64);
+        for service in &ledger.costs.services {
+            wire.num(service.kinds.len() as f64);
+            for kind in &service.kinds {
+                wire.num(*kind as f64);
+            }
+            for figure in [service.rate, service.served, service.satisfied, service.latency, service.p99] {
+                wire.num(figure);
+            }
+        }
+        wire.num(ledger.velocity);
         wire.num(ledger.failing.len() as f64);
         for kind in &ledger.failing {
             wire.num(*kind as f64);

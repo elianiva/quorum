@@ -95,9 +95,10 @@ rows take 300 samples after 30 warm-up runs.
 | Every Challenge reference replay           | 10.3 s  | 4.0 s   | 2.6×    |
 | `pnpm measurements` (bots play full games) | 103.6 s | 45.2 s  | 2.3×    |
 
-The kernel itself is about half of a solve. Writing the Game into the blocks and decoding
-the Ledger in `kernel.ts` is about a quarter, and GC and lookups are most of the rest. So
-the speedup a Game sees is smaller than the kernel's own.
+The kernel itself is about 63% of a 200-Node `solveFlow`. The rest is the host:
+`writeGame` writes the scalar rows (19%), `readLedger` decodes the Ledger (12%), and
+`writeDesign` writes the Design (5%). The table predates the in-place scalar rows, which
+cut `writeGame` by about 30% and the whole `solveFlow` by about 9%.
 
 A decoded Ledger holds the same figures as before, but takes about 10% more heap: 662 KB
 against 602 KB for the 200-Node board.

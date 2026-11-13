@@ -1,0 +1,724 @@
+//! Routing: which Links a Node sends a kind on, and what share each takes.
+//!
+//! Ported from `solve-graph.ts` and `solve-pass.ts` (`takersOf`, `splitFor`,
+//! `weighted`, `pinned`, `noticed`, `carries`).
+//!
+//! The Design is compiled once into a flat, cache-friendly shape: adjacency is
+//! a CSR pair of arrays, not `Vec<Vec<_>>`, and every scratch list lives in
+//! `Scratch` and is cleared rather than reallocated. A split therefore allocates
+//! nothing, which is the whole reason this beats the JavaScript it came from.
+
+use crate::catalog::*;
+
+/// The most targets one split may report, so a result fits a fixed slot.
+const MAX_SPLIT: usize = 64;
+
+/// A Node as routing sees it. Kept small and `Copy` so the whole table is one
+/// contiguous scan.
+#[derive(Clone, Copy)]
+pub struct RouteNode {
+    pub type_code: u16,
+    pub down: bool,
+    pub down_cause: u8,
+    pub down_at: f64,
+    pub sticky: bool,
+    pub policy: u8,
+    pub ttl: f64,
+    pub check_every: f64,
+    pub deep_check: bool,
+    pub replica: bool,
+    pub has_primary: bool,
+    pub draining: bool,
+}
+
+/// A routing Link, numbered so a pass keeps per-Link state in arrays.
+#[derive(Clone, Copy)]
+pub struct RouteEdge {
+    pub from: u32,
+    pub to: u32,
+    /// Kinds this Link carries, as a mask over all kinds.
+    pub kinds: u64,
+    pub retry: u8,
+    pub timeout: f64,
+    pub open: bool,
+    pub bulkhead: bool,
+    pub hedge: bool,
+}
+
+/// The routing structure, built once per Design.
+///
+/// Adjacency is CSR: `out_edges[out_starts[n]..out_starts[n + 1]]` are the
+/// Edges out of Node `n`. One allocation each, and a Node's Edges are adjacent
+/// in memory, so walking them touches one cache line instead of chasing a
+/// `Vec` per Node.
+pub struct Design {
+    pub nodes: Vec<RouteNode>,
+    pub edges: Vec<RouteEdge>,
+    /// Nodes in the order a pass walks them: every Node after the ones that feed it.
+    pub order: Vec<usize>,
+    out_starts: Vec<u32>,
+    out_edges: Vec<u32>,
+    pub health_checked: bool,
+    pub time: f64,
+}
+
+impl Design {
+    #[inline]
+    fn out(&self, node: usize) -> &[u32] {
+        let start = self.out_starts[node] as usize;
+        let end = self.out_starts[node + 1] as usize;
+        &self.out_edges[start..end]
+    }
+
+    pub fn new(
+        nodes: Vec<RouteNode>,
+        edges: Vec<RouteEdge>,
+        out_edges: Vec<u32>,
+        out_starts: Vec<u32>,
+        health_checked: bool,
+        time: f64,
+    ) -> Design {
+        // Kahn's order over the routing Edges: a Node walks after every Node that
+        // routes to it, so its arrivals are complete when its model runs.
+        let count = nodes.len();
+        let mut indegree = vec![0u32; count];
+        for edge in &edges {
+            indegree[edge.to as usize] += 1;
+        }
+        let mut order = Vec::with_capacity(count);
+        let mut queue: Vec<usize> = (0..count).filter(|&i| indegree[i] == 0).collect();
+        let mut cursor = 0;
+        while cursor < queue.len() {
+            let node = queue[cursor];
+            cursor += 1;
+            order.push(node);
+            let start = out_starts[node] as usize;
+            let end = out_starts[node + 1] as usize;
+            for &edge in &out_edges[start..end] {
+                let target = edges[edge as usize].to as usize;
+                indegree[target] -= 1;
+                if indegree[target] == 0 {
+                    queue.push(target);
+                }
+            }
+        }
+        // A Design with a cycle leaves the stragglers out; keep them so nothing is dropped.
+        for node in 0..count {
+            if !order.contains(&node) {
+                order.push(node);
+            }
+        }
+        Design { nodes, edges, order, out_starts, out_edges, health_checked, time }
+    }
+}
+
+/// Every buffer a split needs, allocated once. `clear` keeps the capacity, so a
+/// solve allocates only when a list first grows.
+#[derive(Default)]
+pub struct Scratch {
+    /// Edges that accept the kind and carry it.
+    linked: Vec<u32>,
+    /// The subset with a way on, for a Cache, Pooler, or Load Balancer.
+    live: Vec<u32>,
+    /// The subset built for the kind rather than falling back to it.
+    own: Vec<u32>,
+    /// Load Balancer health-check survivors.
+    up: Vec<u32>,
+    /// The healthy subset a Load Balancer splits over.
+    healthy: Vec<u32>,
+    /// The current target set.
+    targets: Vec<u32>,
+    /// The algorithm's shares before stickiness.
+    base: Vec<(u32, f64)>,
+    /// The answer for the split just computed.
+    pairs: Vec<(u32, f64)>,
+    /// Weights, so a share never divides by a stale sum.
+    raw: Vec<f64>,
+}
+
+#[inline]
+pub fn accepts(type_code: usize, kind: usize) -> bool {
+    (COMPONENT_ACCEPTS[type_code] >> kind) & 1 == 1
+}
+
+/// `carries`: an API Gateway sends only the kinds its route table names.
+#[inline]
+fn carries(edge: &RouteEdge, source: &RouteNode, kind: usize) -> bool {
+    source.type_code as usize != component_index("gw") || (edge.kinds >> kind) & 1 == 1
+}
+
+/// `noticed`: whether the router in front of a Node has seen it go down.
+#[inline]
+fn noticed(design: &Design, child: usize, after: f64) -> bool {
+    let node = &design.nodes[child];
+    node.down && (node.down_cause == 0 || design.time - node.down_at >= after)
+}
+
+impl Scratch {
+    /// `weighted`: each target's share of the total weight, with a floor. Writes
+    /// into `pairs` and returns the count.
+    #[inline]
+    fn weighted(&mut self, design: &Design, weight_of: impl Fn(&Design, u32) -> f64) -> usize {
+        self.raw.clear();
+        let mut sum = 0.0;
+        for &edge in &self.targets {
+            let weight = weight_of(design, edge);
+            let clamped = if weight.is_finite() { weight.max(1e-6) } else { 1e9 };
+            self.raw.push(clamped);
+            sum += clamped;
+        }
+        self.pairs.clear();
+        for (index, &edge) in self.targets.iter().enumerate() {
+            // `raw` was filled in the same pass as `targets`, so the index is sound.
+            let share = self.raw[index] / sum;
+            self.pairs.push((edge, share));
+        }
+        self.pairs.len()
+    }
+
+    /// `even`: each target takes the same share.
+    #[inline]
+    fn even(&mut self) -> usize {
+        let share = 1.0 / self.targets.len() as f64;
+        self.pairs.clear();
+        for &edge in &self.targets {
+            self.pairs.push((edge, share));
+        }
+        self.pairs.len()
+    }
+
+    /// `takersOf`: the Edges out of `node` that can take `kind`.
+    fn takers(&mut self, design: &Design, node: usize, kind: usize) -> usize {
+        let source = design.nodes[node];
+        self.linked.clear();
+        for &edge in design.out(node) {
+            let target = design.nodes[design.edges[edge as usize].to as usize];
+            if accepts(target.type_code as usize, kind)
+                && carries(&design.edges[edge as usize], &source, kind)
+            {
+                self.linked.push(edge);
+            }
+        }
+        self.live.clear();
+        let is_data = (DATA_KINDS_MASK >> kind) & 1 == 1;
+        for &edge in &self.linked {
+            let target_index = design.edges[edge as usize].to as usize;
+            let target = design.nodes[target_index];
+            let type_code = target.type_code as usize;
+            let fallback = type_code == component_index("cache")
+                || type_code == component_index("pooler")
+                || type_code == component_index("lb");
+            if !fallback
+                || !is_data
+                || design.out(target_index).iter().any(|&next| {
+                    accepts(design.nodes[design.edges[next as usize].to as usize].type_code as usize, kind)
+                })
+            {
+                self.live.push(edge);
+            }
+        }
+        let usable: &[u32] = if self.live.is_empty() { &self.linked } else { &self.live };
+        self.own.clear();
+        for &edge in usable {
+            let target_type = design.nodes[design.edges[edge as usize].to as usize].type_code as usize;
+            if (COMPONENT_FALLBACK[target_type] >> kind) & 1 == 0 {
+                self.own.push(edge);
+            }
+        }
+        // A Warehouse is the analytical target, so it takes the scan.
+        if kind == kind_index("q-scan") {
+            let mut warehouse = 0;
+            let mut first = 0;
+            for &edge in &self.own {
+                let target = design.edges[edge as usize].to as usize;
+                if design.nodes[target].type_code as usize == component_index("warehouse")
+                    && !design.nodes[target].down
+                {
+                    if warehouse == 0 {
+                        first = edge;
+                    }
+                    warehouse += 1;
+                }
+            }
+            if warehouse > 0 {
+                self.targets.clear();
+                for &edge in &self.own {
+                    let target = design.edges[edge as usize].to as usize;
+                    if design.nodes[target].type_code as usize == component_index("warehouse")
+                        && !design.nodes[target].down
+                    {
+                        self.targets.push(edge);
+                    }
+                }
+                let _ = first;
+                return self.targets.len();
+            }
+        }
+        // A Node built for the kind takes it from one that only falls back to it.
+        self.targets.clear();
+        if self.own.is_empty() {
+            self.targets.extend_from_slice(usable);
+        } else {
+            self.targets.extend_from_slice(&self.own);
+        }
+        self.targets.len()
+    }
+
+    /// `splitFor`: the share of `kind` each Edge out of `node` takes. The answer
+    /// is `self.pairs[..count]`.
+    pub fn split(
+        &mut self,
+        design: &Design,
+        node: usize,
+        kind: usize,
+        weights: &[f64],
+        nominal: &[f64],
+        sick: &[bool],
+        lb_algorithms: bool,
+    ) -> usize {
+        let source = design.nodes[node];
+        if self.takers(design, node, kind) == 0 {
+            self.pairs.clear();
+            return 0;
+        }
+        // A drained Node is out of rotation at once, and a Replica no primary
+        // ships to copies nothing, so neither takes a query.
+        let mut filtered = false;
+        for &edge in &self.targets {
+            let target = &design.nodes[design.edges[edge as usize].to as usize];
+            if target.draining || (target.replica && !target.has_primary) {
+                filtered = true;
+                break;
+            }
+        }
+        if filtered {
+            let mut kept = 0;
+            for index in 0..self.targets.len() {
+                let edge = self.targets[index];
+                let target = &design.nodes[design.edges[edge as usize].to as usize];
+                if !target.draining && (!target.replica || target.has_primary) {
+                    self.targets[kept] = edge;
+                    kept += 1;
+                }
+            }
+            self.targets.truncate(kept);
+        }
+        if self.targets.is_empty() {
+            self.pairs.clear();
+            return 0;
+        }
+        // One way on takes everything.
+        if self.targets.len() == 1 && source.type_code as usize != component_index("lb") {
+            let edge = self.targets[0];
+            self.pairs.clear();
+            self.pairs.push((edge, 1.0));
+            return 1;
+        }
+        // A Stream broadcasts a change to every consumer.
+        if source.type_code as usize == component_index("log") && kind == kind_index("change") {
+            self.pairs.clear();
+            for &edge in &self.targets {
+                self.pairs.push((edge, 1.0));
+            }
+            return self.pairs.len();
+        }
+        if source.type_code as usize == component_index("dns") {
+            self.up.clear();
+            if design.health_checked {
+                for &edge in &self.targets {
+                    if !noticed(design, design.edges[edge as usize].to as usize, source.ttl) {
+                        self.up.push(edge);
+                    }
+                }
+            }
+            let live: &[u32] = if !design.health_checked || self.up.is_empty() {
+                &self.targets
+            } else {
+                &self.up
+            };
+            let share = 1.0 / live.len() as f64;
+            self.pairs.clear();
+            for &edge in live {
+                self.pairs.push((edge, share));
+            }
+            return self.pairs.len();
+        }
+        if source.type_code as usize != component_index("lb") {
+            let count = self.weighted(design, |design, edge| {
+                weights[design.edges[edge as usize].to as usize]
+            });
+            return count;
+        }
+        // A Load Balancer notices a dead host at its next health check, and a
+        // deep check also takes out servers whose database is down.
+        self.up.clear();
+        for &edge in &self.targets {
+            if !noticed(design, design.edges[edge as usize].to as usize, source.check_every) {
+                self.up.push(edge);
+            }
+        }
+        let checked: &[u32] = if self.up.is_empty() { &self.targets } else { &self.up };
+        self.healthy.clear();
+        if source.deep_check && design.health_checked {
+            for &edge in checked {
+                if !sick[design.edges[edge as usize].to as usize] {
+                    self.healthy.push(edge);
+                }
+            }
+        } else {
+            self.healthy.extend_from_slice(checked);
+        }
+        if self.healthy.is_empty() {
+            self.pairs.clear();
+            return 0;
+        }
+        let policy = if lb_algorithms || source.policy == 1 { source.policy } else { 0 };
+        // The algorithm splits over `healthy`, so swap it in as the target set.
+        std::mem::swap(&mut self.targets, &mut self.healthy);
+        let count = match policy {
+            1 => self.even(),
+            0 => self.weighted(design, |design, edge| {
+                nominal[design.edges[edge as usize].to as usize]
+            }),
+            2 => self.weighted(design, |design, edge| {
+                let target = design.edges[edge as usize].to as usize;
+                if design.nodes[target].down { nominal[target] } else { weights[target] }
+            }),
+            4 => self.even(),
+            3 => {
+                // Two choices: the live split blended towards an even spread.
+                let spread = 1.0 / self.targets.len() as f64;
+                self.raw.clear();
+                let mut sum = 0.0;
+                for &edge in &self.targets {
+                    let target = design.edges[edge as usize].to as usize;
+                    let weight = if design.nodes[target].down { nominal[target] } else { weights[target] };
+                    let clamped = if weight.is_finite() { weight.max(1e-6) } else { 1e9 };
+                    self.raw.push(clamped);
+                    sum += clamped;
+                }
+                self.pairs.clear();
+                for (index, &edge) in self.targets.iter().enumerate() {
+                    self.pairs.push((
+                        edge,
+                        (1.0 - P2C_IMBALANCE) * (self.raw[index] / sum) + P2C_IMBALANCE * spread,
+                    ));
+                }
+                self.pairs.len()
+            }
+            _ => self.weighted(design, |design, edge| {
+                nominal[design.edges[edge as usize].to as usize]
+            }),
+        };
+        // Sticky sessions keep the oldest target's share fixed. The algorithm's
+        // shares are swapped into `base` so `pairs` can be rebuilt in place.
+        if source.sticky {
+            std::mem::swap(&mut self.base, &mut self.pairs);
+            self.pairs.clear();
+            let mut sum = 0.0;
+            let mut weight = 1.0;
+            for _ in 0..self.targets.len() {
+                sum += weight;
+                weight *= STICKY_DECAY;
+            }
+            weight = 1.0;
+            for &edge in &self.targets {
+                let algorithm = self
+                    .base
+                    .iter()
+                    .find(|(each, _)| *each == edge)
+                    .map(|(_, share)| *share)
+                    .unwrap_or(0.0);
+                self.pairs.push((
+                    edge,
+                    (1.0 - STICKY_SHARE) * algorithm + (STICKY_SHARE * weight) / sum,
+                ));
+                weight *= STICKY_DECAY;
+            }
+            return self.pairs.len();
+        }
+        count
+    }
+}
+
+// ---- the flat ABI ----
+
+/// The Design the host last handed over, so a later pass or a measurement does
+/// not rebuild it. One per thread, which is one per Worker.
+thread_local! {
+    static CACHED: core::cell::RefCell<Option<(Design, Vec<f64>, Vec<f64>, Vec<bool>, Scratch)>> =
+        core::cell::RefCell::new(None);
+}
+
+unsafe fn read_design(
+    node_count: i32,
+    edge_count: i32,
+    node_fields: *const f64,
+    edge_fields: *const f64,
+    out_starts: *const i32,
+    out_edges: *const i32,
+    health_checked: f64,
+    time: f64,
+) -> Design {
+    let nodes_n = node_count as usize;
+    let edges_n = edge_count as usize;
+    let flag = |value: f64| value != 0.0;
+    let nodes: Vec<RouteNode> = (0..nodes_n)
+        .map(|index| {
+            let base = index * 10;
+            RouteNode {
+                type_code: *node_fields.add(base) as u16,
+                down: flag(*node_fields.add(base + 1)),
+                down_cause: 1,
+                down_at: 0.0,
+                sticky: flag(*node_fields.add(base + 2)),
+                policy: *node_fields.add(base + 3) as u8,
+                ttl: *node_fields.add(base + 4),
+                check_every: *node_fields.add(base + 5),
+                deep_check: flag(*node_fields.add(base + 6)),
+                replica: flag(*node_fields.add(base + 7)),
+                has_primary: flag(*node_fields.add(base + 8)),
+                draining: flag(*node_fields.add(base + 9)),
+            }
+        })
+        .collect();
+    let edges: Vec<RouteEdge> = (0..edges_n)
+        .map(|index| {
+            let base = index * 8;
+            RouteEdge {
+                from: *edge_fields.add(base) as u32,
+                to: *edge_fields.add(base + 1) as u32,
+                kinds: *edge_fields.add(base + 2) as u64,
+                retry: *edge_fields.add(base + 3) as u8,
+                timeout: *edge_fields.add(base + 4),
+                open: *edge_fields.add(base + 5) != 0.0,
+                bulkhead: *edge_fields.add(base + 6) != 0.0,
+                hedge: *edge_fields.add(base + 7) != 0.0,
+            }
+        })
+        .collect();
+    let starts: Vec<u32> = (0..=nodes_n).map(|i| *out_starts.add(i) as u32).collect();
+    let total = *out_starts.add(nodes_n) as usize;
+    let adjacency: Vec<u32> = (0..total).map(|i| *out_edges.add(i) as u32).collect();
+    Design::new(nodes, edges, adjacency, starts, flag(health_checked), time)
+}
+
+/// Compiles a Design once; `split_all` then answers every split from it.
+#[no_mangle]
+pub extern "C" fn design_set(
+    node_count: i32,
+    edge_count: i32,
+    node_fields: *const f64,
+    edge_fields: *const f64,
+    out_starts: *const i32,
+    out_edges: *const i32,
+    weights: *const f64,
+    nominal: *const f64,
+    sick_bytes: *const u8,
+    health_checked: f64,
+    time: f64,
+) {
+    unsafe {
+        let design = read_design(node_count, edge_count, node_fields, edge_fields, out_starts, out_edges, health_checked, time);
+        let n = node_count as usize;
+        let w: Vec<f64> = (0..n).map(|i| *weights.add(i)).collect();
+        let nom: Vec<f64> = (0..n).map(|i| *nominal.add(i)).collect();
+        let sick: Vec<bool> = (0..n).map(|i| *sick_bytes.add(i) != 0).collect();
+        CACHED.with(|cell| *cell.borrow_mut() = Some((design, w, nom, sick, Scratch::default())));
+    }
+}
+
+/// Every (Node, kind) split, as fixed slots: a count, then up to `MAX_SPLIT`
+/// pairs of (Edge index, share).
+#[no_mangle]
+pub extern "C" fn split_all(lb_algorithms: f64, result: *mut f64) {
+    CACHED.with(|cell| {
+        let mut guard = cell.borrow_mut();
+        let Some((design, weights, nominal, sick, scratch)) = guard.as_mut() else { return };
+        let stride = 1 + 2 * MAX_SPLIT;
+        for node in 0..design.nodes.len() {
+            for kind in 0..NK {
+                let count = scratch.split(design, node, kind, weights, nominal, sick, lb_algorithms != 0.0);
+                unsafe {
+                    let slot = result.add((node * NK + kind) * stride);
+                    *slot = count as f64;
+                    for (index, (edge, share)) in scratch.pairs().iter().take(MAX_SPLIT).enumerate() {
+                        *slot.add(1 + index * 2) = *edge as f64;
+                        *slot.add(2 + index * 2) = *share;
+                    }
+                }
+            }
+        }
+    });
+}
+
+impl Scratch {
+    /// The answer for the split just computed.
+    #[inline]
+    pub fn pairs(&self) -> &[(u32, f64)] {
+        &self.pairs
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn split_stride() -> i32 {
+    (1 + 2 * MAX_SPLIT) as i32
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn node(type_name: &str) -> RouteNode {
+        RouteNode {
+            type_code: component_index(type_name) as u16,
+            down: false,
+            down_cause: 1,
+            down_at: 0.0,
+            sticky: false,
+            policy: 0,
+            ttl: 300.0,
+            check_every: 10.0,
+            deep_check: false,
+            replica: false,
+            has_primary: false,
+            draining: false,
+        }
+    }
+
+    #[test]
+    fn users_sends_every_request_kind_to_its_load_balancer() {
+        // users(0) -> lb(1)
+        let design = Design::new(
+            vec![node("users"), node("lb")],
+            vec![RouteEdge { from: 0, to: 1, kinds: u64::MAX, retry: 0 }],
+            vec![0],
+            vec![0, 1, 1],
+            false,
+            0.0,
+        );
+        let weights = [1.0, 1.0];
+        let nominal = [1.0, 1.0];
+        let sick = [false, false];
+        let mut scratch = Scratch::default();
+        for kind in 0..NR {
+            let count = scratch.split(&design, 0, kind, &weights, &nominal, &sick, false);
+            assert_eq!(count, 1, "kind {} ({}) had {} targets", kind, KINDS[kind], count);
+            assert_eq!(scratch.pairs()[0].0, 0);
+            assert_eq!(scratch.pairs()[0].1, 1.0);
+        }
+    }
+}
+
+/// Runs one forward pass over the cached Design and writes each Node's arriving
+/// rates, so the host can compare them with its own pass.
+#[no_mangle]
+pub extern "C" fn forward_run(
+    node_count: i32,
+    scalars: *const f64,
+    researched: *const u8,
+    features: *const u8,
+    demand: *const f64,
+    intake: *const f64,
+    call_latency: *const f64,
+    arriving_out: *mut f64,
+    model_out: *mut f64,
+) {
+    CACHED.with(|cell| {
+        let mut guard = cell.borrow_mut();
+        let Some((design, weights, nominal, sick, scratch)) = guard.as_mut() else { return };
+        let n = node_count as usize;
+        unsafe {
+            let research = crate::abi::research_of(researched);
+            let shipped = crate::abi::features_of(features);
+            let game = crate::abi::game_with(scalars, research, shipped);
+            let nodes: Vec<crate::model::Node> = (0..n).map(|i| crate::abi::node_of(scalars.add(i * crate::abi::SCALARS))).collect();
+            let mut demand_rates = [0.0f64; NK];
+            for kind in 0..NK {
+                demand_rates[kind] = *demand.add(kind);
+            }
+            let intake_values: Vec<f64> = (0..n).map(|i| *intake.add(i)).collect();
+            let mut latency = [[0.0f64; NK]; NR];
+            for kind in 0..NR {
+                for slot in 0..NK {
+                    latency[kind][slot] = *call_latency.add(kind * NK + slot);
+                }
+            }
+            let inflight: Vec<f64> = (0..n).map(|i| *scalars.add(i * crate::abi::SCALARS + crate::abi::S_INFLIGHT)).collect();
+            let connections: Vec<f64> = (0..n).map(|i| *scalars.add(i * crate::abi::SCALARS + crate::abi::S_CONNECTIONS)).collect();
+            let users_in_group: Vec<f64> = (0..n).map(|i| *scalars.add(i * crate::abi::SCALARS + crate::abi::S_USERS_IN_GROUP)).collect();
+            let pass = crate::pass::forward(
+                design, &game, &nodes, &demand_rates, &intake_values, weights, nominal, sick,
+                &latency, &inflight, &connections, &users_in_group, scratch,
+            );
+            for slot in 0..n {
+                for kind in 0..NK {
+                    *arriving_out.add(slot * NK + kind) = pass.arriving[slot][kind];
+                }
+                let base = slot * 6;
+                *model_out.add(base) = pass.models[slot].utilization;
+                *model_out.add(base + 1) = pass.models[slot].share;
+                *model_out.add(base + 2) = pass.models[slot].capacity;
+                *model_out.add(base + 3) = pass.models[slot].service_variable[0];
+                *model_out.add(base + 4) = pass.models[slot].service_variable[1];
+                *model_out.add(base + 5) = pass.models[slot].service_variable[8];
+            }
+        }
+    });
+}
+
+/// Runs one pass, then every Users Node's outcome per request kind.
+#[no_mangle]
+pub extern "C" fn outcome_run(
+    node_count: i32,
+    scalars: *const f64,
+    researched: *const u8,
+    features: *const u8,
+    demand: *const f64,
+    intake: *const f64,
+    call_latency: *const f64,
+    out: *mut f64,
+) {
+    CACHED.with(|cell| {
+        let mut guard = cell.borrow_mut();
+        let Some((design, weights, nominal, sick, scratch)) = guard.as_mut() else { return };
+        let n = node_count as usize;
+        unsafe {
+            let research = crate::abi::research_of(researched);
+            let shipped = crate::abi::features_of(features);
+            let game = crate::abi::game_with(scalars, research, shipped);
+            let nodes: Vec<crate::model::Node> =
+                (0..n).map(|i| crate::abi::node_of(scalars.add(i * crate::abi::SCALARS))).collect();
+            let mut demand_rates = [0.0f64; NK];
+            for kind in 0..NK { demand_rates[kind] = *demand.add(kind); }
+            let intake_values: Vec<f64> = (0..n).map(|i| *intake.add(i)).collect();
+            let mut latency = [[0.0f64; NK]; NR];
+            for kind in 0..NR { for slot in 0..NK { latency[kind][slot] = *call_latency.add(kind * NK + slot); } }
+            let inflight: Vec<f64> = (0..n).map(|i| *scalars.add(i * crate::abi::SCALARS + crate::abi::S_INFLIGHT)).collect();
+            let connections: Vec<f64> = (0..n).map(|i| *scalars.add(i * crate::abi::SCALARS + crate::abi::S_CONNECTIONS)).collect();
+            let users_in_group: Vec<f64> = (0..n).map(|i| *scalars.add(i * crate::abi::SCALARS + crate::abi::S_USERS_IN_GROUP)).collect();
+            let pass = crate::pass::forward(
+                design, &game, &nodes, &demand_rates, &intake_values, weights, nominal, sick,
+                &latency, &inflight, &connections, &users_in_group, scratch,
+            );
+            let mut state = crate::outcomes::Outcomes::new(n, design.edges.len());
+            for node in 0..n {
+                if design.nodes[node].type_code as usize != component_index("users") { continue; }
+                for kind in 0..NR {
+                    let value = crate::outcomes::outcome(
+                        design, &game, &nodes, &pass, &mut state, scratch, weights, nominal, sick, node, kind,
+                    );
+                    let base = (node * NR + kind) * 19;
+                    *out.add(base) = value.success;
+                    *out.add(base + 1) = value.fixed_ms;
+                    *out.add(base + 2) = value.variable_ms;
+                    *out.add(base + 3) = value.tail_p;
+                    *out.add(base + 4) = value.tail_ms;
+                    *out.add(base + 5) = value.stale;
+                    *out.add(base + 6) = value.value;
+                    for cause in 0..12 { *out.add(base + 7 + cause) = value.fail[cause]; }
+                }
+            }
+        }
+    });
+}

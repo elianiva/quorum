@@ -875,8 +875,7 @@ fn zone_ms(from: &Node, to: &Node) -> f64 {
     let zoned = |node: &Node| {
         COMPONENT_LIMITING[node.type_code]
             && !COMPONENT_FIXED[node.type_code]
-            // A provider's, and the regional Load Balancer's, WAF's and API Gateway's, span every zone.
-            && !matches!(node.type_code, component::PSP | component::LLM | component::LB | component::WAF | component::GW)
+            && !COMPONENT_SPANS_ZONES[node.type_code]
             // A store spread across regions keeps replicas in every zone too.
             && !(node.spread && matches!(node.type_code, component::WIDE | component::DSQL))
     };

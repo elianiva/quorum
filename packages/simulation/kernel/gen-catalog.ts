@@ -2,6 +2,7 @@
  * Emits Rust source for every constant and table the solve reads, straight from
  * the TypeScript catalog, so the two sides cannot drift.
  */
+import { createHash } from 'node:crypto'
 import { writeFileSync } from 'node:fs'
 import * as catalog from '../src/catalog.ts'
 import { FLAT_CAPACITY } from '../src/catalog/components.ts'
@@ -491,12 +492,12 @@ push(
         : formatNumber(value)
   }).join(', ')}];`,
 )
-// A Component that serves every region from everywhere, and one that spans every
-// zone: `regions.ts` and `lookups.ts` own these lists, mirrored here because
-// neither exports them.
-const GLOBAL_COMPONENTS = ['psp', 'llm', 'msgp', 'auth', 'cdn', 'analytics', 'payments']
+// A Component that serves every region from everywhere, and one whose copies span every zone.
 push(
-  `pub static COMPONENT_GLOBAL: [bool; ${COMPONENT_IDS.length}] = [${COMPONENT_IDS.map((id) => GLOBAL_COMPONENTS.includes(id)).join(', ')}];`,
+  `pub static COMPONENT_GLOBAL: [bool; ${COMPONENT_IDS.length}] = [${COMPONENT_IDS.map((id) => catalog.GLOBAL_COMPONENTS.includes(id)).join(', ')}];`,
+)
+push(
+  `pub static COMPONENT_SPANS_ZONES: [bool; ${COMPONENT_IDS.length}] = [${COMPONENT_IDS.map((id) => catalog.ZONE_SPANNING_COMPONENTS.includes(id)).join(', ')}];`,
 )
 push(
   `pub static COMPONENT_FIXED: [bool; ${COMPONENT_IDS.length}] = [${COMPONENT_IDS.map((id) => catalog.COMPONENTS[id].fixed).join(', ')}];`,
@@ -621,6 +622,12 @@ const queryCpu = catalog.QUERY_CPU as Record<string, number>
 push(
   `pub static QUERY_CPU_BY_BACKEND: [f64; NB] = [${BACKEND_KINDS.map((k) => (queryCpu[k] === undefined ? '-1.0' : formatNumber(queryCpu[k]!))).join(', ')}];`,
 )
+// The stamp `catalog_hash` exports, so a check can tell whether `kernel.wasm` was built from
+// this catalog: the first 32 bits of the SHA-256 of every line above.
+const stamp = createHash('sha256').update(out.join('\n')).digest('hex').slice(0, 8)
+push('')
+push('/// The first 32 bits of the SHA-256 of every line above.')
+push(`pub const CATALOG_HASH: u32 = 0x${stamp};`)
 writeFileSync(process.argv[2] ?? 'src/catalog.rs', `${out.join('\n')}\n`)
 console.log(
   `wrote ${out.length} lines; ${scalarNames.length} scalar constants; NK=${NK} NR=${NR} NB=${NB}`,

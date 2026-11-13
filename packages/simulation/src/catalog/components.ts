@@ -205,6 +205,24 @@ export const AUTH_CHECK_MS = 0.02
 
 /** Zones a Node can sit in (05 "Zones and regions"). */
 export const ZONES = ['a', 'b', 'c'] as const
+/** Managed and edge Components that serve every region from everywhere: no round trip to reach them. */
+export const GLOBAL_COMPONENTS: ReadonlyArray<ComponentId> = [
+  'psp',
+  'llm',
+  'msgp',
+  'auth',
+  'cdn',
+  'analytics',
+  'payments',
+]
+/** A provider's, and the regional Load Balancer's, WAF's and API Gateway's copies span every zone. */
+export const ZONE_SPANNING_COMPONENTS: ReadonlyArray<ComponentId> = [
+  'psp',
+  'llm',
+  'lb',
+  'waf',
+  'gw',
+]
 /** A call between zones costs this much more than one inside a zone, and egress both ways. */
 export const CROSS_ZONE_MS = 1
 export const EGRESS_CROSS_ZONE = 0.01

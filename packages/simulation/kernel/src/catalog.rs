@@ -237,6 +237,7 @@ pub static GATEWAY_LIMITS: [f64; 6] = [0.0, 100.0, 500.0, 1000.0, 2500.0, 5000.0
 pub const GATEWAY_PRICE: f64 = 0.002;
 pub const GC_STORM: f64 = 5.0;
 pub const GC_STORM_HEAP: f64 = 0.2;
+pub static GLOBAL_COMPONENTS: [&str; 7] = ["psp", "llm", "msgp", "auth", "cdn", "analytics", "payments"];
 pub static GLOSSARY_CATEGORIES: [&str; 10] = ["performance", "reliability", "observability", "data", "runtimes", "network", "security", "delivery", "team", "business"];
 pub const GPU_CACHE_GB: f64 = 0.25;
 pub const GPU_FIRST_TOKEN_MS: f64 = 300.0;
@@ -569,7 +570,8 @@ pub const WRITE_BEHIND_SECONDS: f64 = 10.0;
 pub const YJIT_MEMORY: f64 = 1.2;
 pub const YJIT_SPEED: f64 = 1.3;
 pub static ZONES: [&str; 3] = ["a", "b", "c"];
-pub static SCALAR_COUNT: usize = 502;
+pub static ZONE_SPANNING_COMPONENTS: [&str; 5] = ["psp", "llm", "lb", "waf", "gw"];
+pub static SCALAR_COUNT: usize = 504;
 
 // ---- row tables, generated ----
 
@@ -1142,6 +1144,7 @@ pub static COMPONENT_STEPS: [f64; 38] = [1.0, 6.0, 8.0, 1.0, 1.0, 1.0, 6.0, 4.0,
 // ---- Other tables ----
 pub static FLAT_CAPACITY: [f64; 38] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2000.0, 10000.0, 50000.0, 0.0, 0.0, 400.0, 0.0, 0.0, 20000.0, 0.0, 100000.0, 0.0, 0.0, 5000.0, 10000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, f64::INFINITY, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 pub static COMPONENT_GLOBAL: [bool; 38] = [false, true, true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false, true, false, false, false, false, false, false, false, true, true, false, false, false, false, false, false];
+pub static COMPONENT_SPANS_ZONES: [bool; 38] = [false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, true, true, false, true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false];
 pub static COMPONENT_FIXED: [bool; 38] = [true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false];
 pub static REGION_RTT: [[f64; 4]; 4] = [[0.0, 75.0, 200.0, 120.0], [75.0, 0.0, 160.0, 190.0], [200.0, 160.0, 0.0, 300.0], [120.0, 190.0, 300.0, 0.0]];
 pub static VENTURE_VALUE: [f64; 12] = [1.0, 0.55, 0.72, 0.77, 0.83, 0.74, 0.88, 0.83, 0.87, 0.44, 1.0, 1.51];
@@ -1394,3 +1397,6 @@ pub static CPU_HEAVY_MASK: [u8; NK] = [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0,
 pub static MONEY_KINDS_MASK: u64 = 0x206;
 pub static DATA_KINDS_MASK: u64 = 0x8b760000;
 pub static QUERY_CPU_BY_BACKEND: [f64; NB] = [8.0, 25.0, -1.0, 80.0, -1.0, 60.0, -1.0, 30.0, 40.0, -1.0, 100.0, -1.0, -1.0, -1.0, -1.0, -1.0];
+
+/// The first 32 bits of the SHA-256 of every line above.
+pub const CATALOG_HASH: u32 = 0x16818635;

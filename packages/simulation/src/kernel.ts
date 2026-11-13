@@ -81,6 +81,7 @@ type Exports = Readonly<{
   solve_run: (boost: number, passes: number, revenueOnly: number) => number
   bottleneck_run: (passes: number) => number
   forget_solve: () => number
+  catalog_hash: () => number
 }>
 
 const FUNCTIONS = [
@@ -94,6 +95,7 @@ const FUNCTIONS = [
   'solve_run',
   'bottleneck_run',
   'forget_solve',
+  'catalog_hash',
 ] as const
 
 let kernel: Exports | null = null
@@ -121,6 +123,9 @@ export const installKernel = (exports: Readonly<Record<string, unknown>>): void 
   kernel = checked
   converged = new WeakSet()
 }
+
+/** The `CATALOG_HASH` the installed kernel was built with, so a check can tell a stale build. */
+export const kernelCatalogHash = (): number => installed().catalog_hash()
 
 const installed = (): Exports => {
   if (kernel === null) throw new Error('No solve kernel is installed. Call installKernel first.')

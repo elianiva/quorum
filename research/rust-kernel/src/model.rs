@@ -49,6 +49,16 @@ impl Order {
         self.kinds[..self.len as usize].iter().map(|&kind| kind as usize)
     }
 
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.len as usize
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
     /// Every rate, added in key order from 0.
     #[inline]
     pub fn sum(&self, rates: &Rates) -> f64 {
@@ -354,17 +364,41 @@ pub struct Model {
     pub tail_ms: f64,
     pub processes: f64,
     pub inflight: f64,
-    pub cpu_used: f64,
-    pub cpu_total: f64,
-    pub ram_used: f64,
-    pub ram_total: f64,
-    pub slots_used: f64,
-    pub slots_total: f64,
-    pub network_used: f64,
-    pub network_total: f64,
+    /// The resource `work` counts, or `None` where every request costs the same.
+    pub work_unit: Option<WorkUnit>,
+    /// What one request of each kind takes from the resource in `work_unit`.
+    pub work: [f64; NK],
+    pub resources: Resources,
     pub throttled: bool,
     pub swapping: bool,
     pub disk: bool,
+}
+
+/// One resource's use against its size.
+#[derive(Clone, Copy, Default, PartialEq)]
+pub struct Gauge {
+    pub used: f64,
+    pub total: f64,
+}
+
+/// `Resources`: what a Node's model reports about the box it runs on.
+#[derive(Clone, Copy, Default, PartialEq)]
+pub struct Resources {
+    pub cpu_cores: Option<Gauge>,
+    pub ram_gb: Option<Gauge>,
+    pub slots: Option<Gauge>,
+    pub network_kbps: Option<Gauge>,
+    /// Burstable credits in core-seconds, and their change per second.
+    pub credits: Option<(f64, f64)>,
+}
+
+/// `WorkUnit`: the resource a Node's work share counts.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum WorkUnit {
+    Cpu,
+    Workers,
+    Network,
+    Disk,
 }
 
 impl Default for Model {
@@ -381,14 +415,9 @@ impl Default for Model {
             tail_ms: 0.0,
             processes: 0.0,
             inflight: 0.0,
-            cpu_used: 0.0,
-            cpu_total: 0.0,
-            ram_used: 0.0,
-            ram_total: 0.0,
-            slots_used: 0.0,
-            slots_total: 0.0,
-            network_used: 0.0,
-            network_total: 0.0,
+            work_unit: None,
+            work: [0.0; NK],
+            resources: Resources::default(),
             throttled: false,
             swapping: false,
             disk: false,
@@ -814,7 +843,9 @@ pub fn server_model(
     if ctx.flags.local {
         ram_used += LOCAL_DB_RAM + game.users * LOCAL_DB_RAM_PER_USER;
     }
-    ram_used += node.leak + connection_ram;
+    // Left to right, as TypeScript's sum rounds.
+    ram_used += node.leak;
+    ram_used += connection_ram;
     let swapping = ram_used > ram;
     let efficiency = if swapping {
         (1.0 - (2.5 * (ram_used - ram)) / ram).max(0.15)
@@ -1040,6 +1071,23 @@ pub fn server_model(
     }
 
     let used = (cpu_work * share).min(cores * 1000.0) / 1000.0;
+    // Work share counts in the unit of the resource the limit names. A Worker's
+    // Ledger counts `task`, not the Request kinds behind it: each task counts as one.
+    let work_unit = if network_utilization >= utilization {
+        WorkUnit::Network
+    } else if slot_utilization > cpu_utilization {
+        WorkUnit::Workers
+    } else {
+        WorkUnit::Cpu
+    };
+    let mut work = [1.0f64; NK];
+    for (kind, each) in work[..NR].iter_mut().enumerate() {
+        *each = match work_unit {
+            WorkUnit::Network => payload_of(node, kind, ctx.flags.offloaded) * game.payload[kind],
+            WorkUnit::Workers => residence[kind],
+            WorkUnit::Cpu | WorkUnit::Disk => cpu[kind],
+        };
+    }
     Model {
         utilization,
         share,
@@ -1052,14 +1100,15 @@ pub fn server_model(
         tail_ms,
         processes: resident,
         inflight: (slot_work * share) / 1000.0,
-        cpu_used: used,
-        cpu_total: cores,
-        ram_used,
-        ram_total: ram,
-        slots_used: if slots.is_infinite() { 0.0 } else { (slot_work * share) / 1000.0 },
-        slots_total: slots,
-        network_used: bytes * share,
-        network_total: network_of(node.size) * ctx.boost,
+        work_unit: Some(work_unit),
+        work,
+        resources: Resources {
+            cpu_cores: Some(Gauge { used, total: cores }),
+            ram_gb: Some(Gauge { used: ram_used, total: ram }),
+            slots: (!slots.is_infinite()).then(|| Gauge { used: (slot_work * share) / 1000.0, total: slots }),
+            network_kbps: Some(Gauge { used: bytes * share, total: network_of(node.size) * ctx.boost }),
+            credits: (node.family == 0).then_some((node.credits, BURST_BASELINE * vcpu - used)),
+        },
         throttled,
         swapping,
         disk: false,
@@ -1112,17 +1161,7 @@ pub fn flat_model(capacity: f64, arriving: &Rates, order: &Order, fixed_ms: f64,
         tail_ms: 0.0,
         processes: 0.0,
         inflight: 0.0,
-        cpu_used: 0.0,
-        cpu_total: 0.0,
-        ram_used: 0.0,
-        ram_total: 0.0,
-        slots_used: 0.0,
-        slots_total: 0.0,
-        network_used: 0.0,
-        network_total: 0.0,
-        throttled: false,
-        swapping: false,
-        disk: false,
+        ..Model::default()
     }
 }
 
@@ -1437,8 +1476,7 @@ pub fn serverless_model(node: &Node, arriving: &Rates, code: &Code, latency: &Ra
         tail_ms,
         processes: used,
         inflight: used,
-        slots_used: used,
-        slots_total: concurrency,
+        resources: Resources { slots: Some(Gauge { used, total: concurrency }), ..Resources::default() },
         ..Model::default()
     }
 }
@@ -1676,7 +1714,28 @@ pub fn database_model(
     put(backend::BLOB_GET, 2.5 + 8.0, get_cpu / per_request + wait + io_wait, &mut service_mask);
     put(backend::Q_SCAN, 2.5 + 8.0 + RETENTION_SCAN_MS[retention] + logical.scatter_ms, scan_cpu / per_request + wait + io_wait, &mut service_mask);
 
-    let _ = (on_disk, HOT_KEY_SHARE);
+    // When the volume's IOPS set the load, work counts disk operations: every write,
+    // and a read only when the working set misses RAM. Searches stay in memory.
+    let mut work = [0.0f64; NK];
+    if on_disk {
+        work = [1.0; NK];
+        work[NR + backend::Q_SEARCH] = 0.0;
+        if !disk {
+            work[NR + backend::Q_READ] = 0.0;
+        }
+    } else {
+        for (backend, total) in [
+            (backend::Q_READ, read_cpu),
+            (backend::Q_WRITE, write_cpu * hot),
+            (backend::Q_SEARCH, search_cpu),
+            (backend::BLOB_PUT, put_cpu * hot),
+            (backend::Q_TX, tx_cpu),
+            (backend::BLOB_GET, get_cpu),
+            (backend::Q_SCAN, scan_cpu),
+        ] {
+            work[NR + backend] = total;
+        }
+    }
     Model {
         utilization,
         share,
@@ -1697,14 +1756,14 @@ pub fn database_model(
         tail_ms: 0.0,
         processes: 0.0,
         inflight: 0.0,
-        cpu_used: used,
-        cpu_total: cores,
-        ram_used: (footprint + OS_RAM).min(ram),
-        ram_total: ram,
-        slots_used: 0.0,
-        slots_total: 0.0,
-        network_used: 0.0,
-        network_total: 0.0,
+        work_unit: Some(if on_disk { WorkUnit::Disk } else { WorkUnit::Cpu }),
+        work,
+        resources: Resources {
+            cpu_cores: Some(Gauge { used, total: cores }),
+            ram_gb: Some(Gauge { used: (footprint + OS_RAM).min(ram), total: ram }),
+            credits: (node.family == 0).then_some((node.credits, BURST_BASELINE * vcpu - used)),
+            ..Resources::default()
+        },
         throttled,
         swapping: false,
         disk,

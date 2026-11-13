@@ -20,6 +20,8 @@ pub struct Pass {
     pub order: Vec<Order>,
     pub models: Vec<Model>,
     pub links: Vec<Rates>,
+    /// The order each Edge's carried kinds were first sent in.
+    pub link_kinds: Vec<Order>,
     pub link_order: Vec<usize>,
     /// Whether `link_order` already lists each Edge.
     listed: Vec<bool>,
@@ -28,11 +30,13 @@ pub struct Pass {
     pub hits: Vec<f64>,
     pub stale_hits: Vec<f64>,
     /// What a Node was sent and could not route: the rate, and the kinds.
-    pub stranded: Vec<Option<(f64, u64)>>,
+    pub stranded: Vec<Option<(f64, Order)>>,
     /// Calls per second each Node gets on top of the first try.
     pub repeated: Vec<f64>,
     /// Tasks per second each Queue or Worker gets, by the request kind behind them.
     pub tasks: Vec<Rates>,
+    /// The order each Node's task kinds were first sent in.
+    pub task_order: Vec<Order>,
     /// Tasks per second each Queue's Workers take from it.
     pub drained: Vec<f64>,
     pub lag_ms: f64,
@@ -376,6 +380,7 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
         order: vec![Order::default(); count],
         models: vec![Model::default(); count],
         links: vec![[0.0; NK]; links],
+        link_kinds: vec![Order::default(); links],
         link_order: Vec::new(),
         listed: vec![false; links],
         connections: vec![None; count],
@@ -384,6 +389,7 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
         stranded: vec![None; count],
         repeated: vec![0.0; count],
         tasks: vec![[0.0; NK]; count],
+        task_order: vec![Order::default(); count],
         drained: vec![0.0; count],
         lag_ms: 0.0,
         stale_share: 0.0,
@@ -403,7 +409,10 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
             for (into, rate) in out.arriving[slot].iter_mut().zip(&demand[..NR]) {
                 *into = rate * share;
             }
-            out.order[slot] = demand_order(game, demand);
+            // `intakeOf`: a Users Node with no share of the demand takes none of its kinds.
+            if share > 0.0 {
+                out.order[slot] = demand_order(game, demand);
+            }
         }
         let rates = out.arriving[slot];
         let order = out.order[slot];
@@ -453,14 +462,16 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
             // TypeScript's `kept` is the arriving record itself unless the Node sheds, which
             // the port does not: the mix comes from what arrived, before the share.
             let mut offloaded = [0.0f64; NK];
+            let mut keys = Order::default();
             for kind in 0..NR {
                 if PROFILE_OFFLOAD[kind] > 0.0 && rates[kind] > 0.0 {
                     offloaded[kind] = rates[kind];
+                    keys.push(kind);
                 }
             }
-            shares_of(&offloaded)
+            shares_of(&offloaded, keys)
         } else if type_code == component::QUEUE || type_code == component::LOG {
-            shares_of(&out.tasks[slot])
+            shares_of(&out.tasks[slot], out.task_order[slot])
         } else {
             None
         };
@@ -625,6 +636,7 @@ pub fn forward(run: &Run, splits: &mut Splits) -> Pass {
                     out.link_order.push(edge);
                 }
                 out.links[edge][kind] += written;
+                out.link_kinds[edge].push(kind);
             }
         }
     }
@@ -746,16 +758,16 @@ fn cache_serve(game: &GameCtx, node: &Node, rates: &Rates) -> (f64, f64, f64, f6
 }
 
 /// `sharesOf`: a rate record as shares of its own total, or `None` when it is empty.
-pub fn shares_of(rates: &Rates) -> Option<Rates> {
-    let total: f64 = rates.iter().sum();
+pub fn shares_of(rates: &Rates, keys: Order) -> Option<(Rates, Order)> {
+    let total = keys.sum(rates);
     if total <= 0.0 {
         return None;
     }
     let mut shares = [0.0f64; NK];
-    for kind in 0..NK {
+    for kind in keys.iter() {
         shares[kind] = rates[kind] / total;
     }
-    Some(shares)
+    Some((shares, keys))
 }
 
 /// `taskMixOf` for a Node: its own mix when the pass has one, the Era's otherwise.
@@ -821,7 +833,7 @@ impl Pass {
         node: usize,
         kind: usize,
         rate: f64,
-        composition: Option<Rates>,
+        composition: Option<(Rates, Order)>,
     ) {
         if rate <= 0.0 || kind == kind::CALLOUT {
             return;
@@ -829,8 +841,9 @@ impl Pass {
         let split = splits.range(run.board.design, node, kind, &run.weights);
         if split.is_empty() {
             if let Some(entry) = self.stranded.get_mut(node) {
-                let (total, kinds) = entry.unwrap_or((0.0, 0));
-                *entry = Some((total + rate, kinds | (1u64 << kind)));
+                let (total, mut kinds) = entry.unwrap_or((0.0, Order::default()));
+                kinds.push(kind);
+                *entry = Some((total + rate, kinds));
             }
             return;
         }
@@ -861,15 +874,16 @@ impl Pass {
                     self.link_order.push(edge);
                 }
                 carried[kind] += sent;
+                self.link_kinds[edge].push(kind);
             }
             // A task carries the mix of the request kinds that enqueued it.
             if kind == NR + backend::TASK {
-                if let Some(origins) = composition {
-                    if let Some(into) = self.tasks.get_mut(policy.to as usize) {
-                        for origin in 0..NR {
-                            if origins[origin] > 0.0 {
-                                into[origin] += sent * origins[origin];
-                            }
+                if let Some((origins, keys)) = composition {
+                    let to = policy.to as usize;
+                    if let (Some(into), Some(order)) = (self.tasks.get_mut(to), self.task_order.get_mut(to)) {
+                        for origin in keys.iter() {
+                            into[origin] += sent * origins[origin];
+                            order.push(origin);
                         }
                     }
                 }

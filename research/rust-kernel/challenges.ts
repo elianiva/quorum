@@ -34,8 +34,8 @@ for (const challenge of CHALLENGES) {
   let ledger
   let searched
   try {
-    ledger = solveRun(kernel, nodes)
-    searched = bottleneckRun(kernel, nodes)
+    ledger = solveRun(kernel, game)
+    searched = bottleneckRun(kernel, game)
   } catch (error) {
     refused += 1
     console.log(`${challenge.id.padEnd(26)} refused: ${error.message}`)
@@ -43,7 +43,7 @@ for (const challenge of CHALLENGES) {
   }
   const { checked, wrong, bad } = compareLedger(game, solveFlow(game), ledger)
   const marked = solve(game)
-  const rustBottleneck = searched.bottleneck >= 0 ? game.nodes[searched.bottleneck].id : null
+  const rustBottleneck = searched.bottleneck
   const bottleneckSame = Object.is(marked.bottleneck, rustBottleneck)
   if (!bottleneckSame) bad.push(`bottleneck: ts ${marked.bottleneck} rust ${rustBottleneck}`)
   const same = wrong === 0 && bottleneckSame

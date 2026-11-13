@@ -51,14 +51,15 @@ const bigBoard = (): Game => {
 
 test('a 200-Node board', async ({ bench }) => {
   const game = bigBoard()
-  const flow = solveFlow(game)
+  // Solved once first, so `bottleneckOf` below times the search alone.
+  solveFlow(game)
   await bench.compare(
     // A fresh Game object each time, so the per-Game cache does not answer.
     bench('solveFlow (budget 2 ms)', () => {
       solveFlow({ ...game })
     }),
     bench('bottleneckOf (budget 3 ms)', () => {
-      bottleneckOf(game, flow)
+      bottleneckOf(game)
     }),
   )
 })

@@ -1,3 +1,4 @@
+import { kernelReady } from '@quorum/simulation/host/browser'
 import { JOBS, PRIORITY, type Channel } from './jobs.ts'
 
 /*
@@ -19,8 +20,9 @@ let scheduled = false
 const schedule = (): void => {
   if (scheduled) return
   scheduled = true
-  // A task of its own, so requests that arrived during a job are read before the next one.
-  setTimeout(serve, 0)
+  // A task of its own, so requests that arrived during a job are read before the next one. No job
+  // runs before the solve kernel is installed.
+  void kernelReady.then(() => setTimeout(serve, 0))
 }
 
 const serve = (): void => {

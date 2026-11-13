@@ -1,5 +1,7 @@
 import { Effect } from 'effect'
 import { Server } from 'foldkit/experimental'
+// The prerender solves every board it draws, so it installs the solve kernel before any page.
+import '@quorum/simulation/host/node'
 import { langOf } from './i18n/lang.ts'
 import { LOCALES, LOCALE_TAGS, localeOfPath, withLocale, type Locale } from './i18n/locale.ts'
 import { init, normalize } from './main.ts'

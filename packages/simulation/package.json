@@ -4,10 +4,14 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./kernel.wasm": "./src/kernel.wasm",
+    "./host/node": "./host/node.ts",
+    "./host/browser": "./host/browser.ts",
+    "./host/worker": "./host/worker.ts",
     "./*": "./src/*.ts"
   },
   "scripts": {
-    "typecheck": "tsrs --noEmit -p tsconfig.json && effect-tsrs diagnostics --strict --project tsconfig.json",
+    "typecheck": "tsrs --noEmit -p tsconfig.json && tsrs --noEmit -p tsconfig.hosts.json && effect-tsrs diagnostics --strict --project tsconfig.json",
     "test": "vitest run",
     "test:full": "FULL_TESTS=1 vitest run",
     "test:engines": "vitest run --config vitest.engines.config.ts && node engines/workerd.mjs"

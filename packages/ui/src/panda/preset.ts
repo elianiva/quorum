@@ -31,9 +31,17 @@ export const quorumPreset = definePreset({
           default: { value: 'var(--default-transition-timing-function)' },
         },
         durations: {
-          default: { value: 'var(--default-transition-duration)' },
+          fast: { value: '150ms' },
+          faster: { value: '100ms' },
+          normal: { value: '200ms' },
+          slow: { value: '250ms' },
+          slower: { value: '400ms' },
+          slowest: { value: '500ms' },
+          glacial: { value: '700ms' },
         },
         radii: {
+          '2xs': { value: 'var(--radius-2xs)' },
+          xs: { value: 'var(--radius-xs)' },
           sm: { value: 'var(--radius-sm)' },
           md: { value: 'var(--radius-md)' },
           lg: { value: 'var(--radius-lg)' },
@@ -42,8 +50,74 @@ export const quorumPreset = definePreset({
           '3xl': { value: 'var(--radius-3xl)' },
           '4xl': { value: 'var(--radius-4xl)' },
         },
+        /** Dense interface scale. Names are px at 100% text size; `-5` means half a pixel more. */
+        fontSizes: {
+          code: { value: '0.86em' },
+          type: {
+            '9': { value: 'var(--type-9)' },
+            '9-5': { value: 'var(--type-9-5)' },
+            '10': { value: 'var(--type-10)' },
+            '10-5': { value: 'var(--type-10-5)' },
+            '11': { value: 'var(--type-11)' },
+            '11-5': { value: 'var(--type-11-5)' },
+            '12': { value: 'var(--type-12)' },
+            '12-5': { value: 'var(--type-12-5)' },
+            '12-8': { value: 'var(--type-12-8)' },
+            '13': { value: 'var(--type-13)' },
+            '13-5': { value: 'var(--type-13-5)' },
+            '14': { value: 'var(--type-14)' },
+            '14-5': { value: 'var(--type-14-5)' },
+            '15': { value: 'var(--type-15)' },
+            '16': { value: 'var(--type-16)' },
+            '17': { value: 'var(--type-17)' },
+            '18': { value: 'var(--type-18)' },
+            '20': { value: 'var(--type-20)' },
+            '22': { value: 'var(--type-22)' },
+            '23': { value: 'var(--type-23)' },
+            '26': { value: 'var(--type-26)' },
+            '28': { value: 'var(--type-28)' },
+            '30': { value: 'var(--type-30)' },
+            '32': { value: 'var(--type-32)' },
+            '34': { value: 'var(--type-34)' },
+            '44': { value: 'var(--type-44)' },
+          },
+        },
+        fontWeights: {
+          normal: { value: '400' },
+          medium: { value: '500' },
+          semibold: { value: '600' },
+        },
+        lineHeights: {
+          display: { value: '1.05' },
+          heading: { value: '1.1' },
+          compact: { value: '1.3333333333333333' },
+          dense: { value: '1.35' },
+          bodyTight: { value: '1.4' },
+          fine: { value: '1.4285714285714286' },
+          body: { value: '1.45' },
+          fixed: { value: '1rem' },
+          prose: { value: '1.7' },
+          code: { value: '1.6' },
+          loose: { value: '1.8' },
+        },
+        letterSpacings: {
+          label: { value: '0.04em' },
+          tag: { value: '0.06em' },
+          eyebrow: { value: '0.08em' },
+          banner: { value: '0.1em' },
+          badge: { value: '0.12em' },
+          badgeWide: { value: '0.14em' },
+          overline: { value: '0.16em' },
+          stamp: { value: '0.18em' },
+          heading: { value: '-0.035em' },
+          title: { value: '-0.03em' },
+          body: { value: '-0.02em' },
+          subtle: { value: '-0.01em' },
+        },
         spacing: {
+          '0.25': { value: '0.0625rem' },
           '0.5': { value: '0.125rem' },
+          '0.75': { value: '0.1875rem' },
           '1.5': { value: '0.375rem' },
           '2.5': { value: '0.625rem' },
           '3.5': { value: '0.875rem' },
@@ -83,6 +157,11 @@ export const quorumPreset = definePreset({
           canvasGrid: themeScoped('var(--canvas-grid)'),
           well: themeScoped('var(--well)'),
           nested: themeScoped('var(--surface-nested)'),
+          raisedTop: themeScoped('var(--raised-top)'),
+          raisedBottom: themeScoped('var(--raised-bottom)'),
+          primaryFillTop: themeScoped('var(--primary-fill-top)'),
+          primaryFillBottom: themeScoped('var(--primary-fill-bottom)'),
+          primaryEdge: themeScoped('var(--primary-edge)'),
           hairline: themeScoped('var(--hairline)'),
           hairlineSoft: themeScoped('var(--hairline-soft)'),
           highlight: themeScoped('var(--highlight)'),
@@ -120,34 +199,129 @@ export const quorumPreset = definePreset({
           card: themeScoped('var(--elev-card)'),
           float: themeScoped('var(--elev-float)'),
           primary: themeScoped('var(--elev-primary)'),
+          focus: {
+            value: '0 0 0 3px color-mix(in oklab, {colors.ring} 50%, transparent)',
+          },
+          focusWell: {
+            value: '{shadows.well}, 0 0 0 3px color-mix(in oklab, {colors.ring} 50%, transparent)',
+          },
+          focusRaised: {
+            value:
+              '{shadows.raised}, 0 0 0 3px color-mix(in oklab, {colors.ring} 50%, transparent)',
+          },
+          invalid: {
+            value: {
+              base: '0 0 0 3px color-mix(in oklab, {colors.destructive} 20%, transparent)',
+              _dark: '0 0 0 3px color-mix(in oklab, {colors.destructive} 40%, transparent)',
+            },
+          },
+          invalidLine: {
+            value: 'inset 0 0 0 1px color-mix(in oklch, {colors.destructive} 25%, transparent)',
+          },
+          line: { value: 'inset 0 0 0 1px {colors.hairlineSoft}' },
+          lineStrong: { value: 'inset 0 0 0 1px {colors.hairline}' },
+          avatar: { value: '0 0 0 2px {colors.background}' },
+          cardRing: { value: '0 0 0 2px {colors.card}' },
+          selected: {
+            value:
+              '{shadows.raised}, 0 0 0 4px color-mix(in oklab, {colors.primary} 25%, transparent)',
+          },
+          selectedStrong: {
+            value:
+              '{shadows.raised}, 0 0 0 6px color-mix(in oklab, {colors.primary} 25%, transparent)',
+          },
+          selectedHalo: {
+            value: '0 0 0 2px {colors.white}, 0 0 0 4px {colors.primary}',
+          },
+          active: { value: '{shadows.raised}, 0 0 0 1.5px {colors.primary}' },
+          hoverCard: {
+            value: '0 0 0 1px {colors.hairlineSoft}, 0 1px 2px oklch(0 0 0 / 0.05)',
+          },
+          hoverCardStrong: {
+            value: '0 0 0 1px {colors.hairline}, 0 2px 6px oklch(0 0 0 / 0.07)',
+          },
+          dangerRing: { value: '0 0 0 1.5px {colors.danger}' },
+          dangerLine: {
+            value: '0 0 0 1px color-mix(in oklab, {colors.danger} 60%, transparent)',
+          },
+          edge: { value: '0 0 0 1px {colors.hairlineSoft}' },
+          dividerStart: { value: 'inset 1px 0 0 {colors.hairlineSoft}' },
+          highlightTop: { value: 'inset 0 1px 0 oklch(1 0 0 / 0.3)' },
+          highlightTopStrong: { value: 'inset 0 1px 0 oklch(1 0 0 / 0.35)' },
+          highlightLine: { value: 'inset 0 0 0 1px oklch(1 0 0 / 0.4)' },
+          highlightLineStrong: { value: 'inset 0 0 0 1px oklch(1 0 0 / 0.42)' },
+          insetTop: { value: 'inset 0 1px 2px oklch(0 0 0 / 0.3)' },
+          pressed: {
+            value: 'inset 0 -2px 0 oklch(0 0 0 / 0.12), 0 1px 2px oklch(0 0 0 / 0.12)',
+          },
+          hoverCardElevated: {
+            value: '0 0 0 1px {colors.hairlineSoft}, 0 2px 6px oklch(0 0 0 / 0.08)',
+          },
+          okLine: {
+            value: 'inset 0 0 0 1px color-mix(in oklch, {colors.ok} 25%, transparent)',
+          },
+          okLineFaint: {
+            value: 'inset 0 0 0 1px color-mix(in oklch, {colors.ok} 18%, transparent)',
+          },
+          warnLine: {
+            value: 'inset 0 0 0 1px color-mix(in oklch, {colors.warn} 28%, transparent)',
+          },
+          warnLineStrong: {
+            value: 'inset 0 0 0 1px color-mix(in oklch, {colors.warn} 38%, transparent)',
+          },
+          dangerLineInset: {
+            value: 'inset 0 0 0 1px color-mix(in oklch, {colors.danger} 25%, transparent)',
+          },
+          primaryLineInset: {
+            value: 'inset 0 0 0 1px color-mix(in oklch, {colors.primary} 28%, transparent)',
+          },
         },
       },
       textStyles: {
-        xs: { value: { fontSize: '0.75rem', lineHeight: '1rem' } },
-        sm: { value: { fontSize: '0.875rem', lineHeight: '1.25rem' } },
-        base: { value: { fontSize: '1rem', lineHeight: '1.5rem' } },
-        lg: { value: { fontSize: '1.125rem', lineHeight: '1.75rem' } },
-        xl: { value: { fontSize: '1.25rem', lineHeight: '1.75rem' } },
+        display: {
+          value: {
+            fontSize: 'type.44',
+            lineHeight: 'display',
+            fontWeight: 'semibold',
+            letterSpacing: 'heading',
+          },
+        },
+        pageTitle: {
+          value: {
+            fontSize: 'type.32',
+            lineHeight: 'tight',
+            fontWeight: 'semibold',
+            letterSpacing: 'tight',
+          },
+        },
+        sectionTitle: {
+          value: {
+            fontSize: 'type.20',
+            fontWeight: 'semibold',
+            letterSpacing: 'tight',
+          },
+        },
       },
       layerStyles: {
         surface: {
           value: {
-            backgroundColor: 'var(--card)',
+            backgroundColor: '{colors.card}',
             backgroundImage:
-              'linear-gradient(to bottom, color-mix(in oklch, var(--card), white 3%), var(--card) 48px)',
+              'linear-gradient(to bottom, color-mix(in oklch, {colors.card}, {colors.white} 3%), {colors.card} 48px)',
           },
         },
         raised: {
           value: {
-            backgroundColor: 'var(--raised-bottom)',
-            backgroundImage: 'linear-gradient(to bottom, var(--raised-top), var(--raised-bottom))',
+            backgroundColor: '{colors.raisedBottom}',
+            backgroundImage:
+              'linear-gradient(to bottom, {colors.raisedTop}, {colors.raisedBottom})',
           },
         },
         primaryFill: {
           value: {
-            backgroundColor: 'var(--primary-fill-bottom)',
+            backgroundColor: '{colors.primaryFillBottom}',
             backgroundImage:
-              'linear-gradient(to bottom, var(--primary-fill-top), var(--primary-fill-bottom))',
+              'linear-gradient(to bottom, {colors.primaryFillTop}, {colors.primaryFillBottom})',
           },
         },
       },

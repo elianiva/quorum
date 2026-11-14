@@ -70,6 +70,19 @@ type Gesture =
   | { kind: 'box'; from: Pt; at: Pt }
   | null
 
+const isWebKit = (): boolean =>
+  /AppleWebKit/.test(navigator.userAgent) && !/Chrome|Chromium|Android/.test(navigator.userAgent)
+
+/**
+ * WebGPU only where an adapter exists. Safari's WebGPU throws "Length out of range of buffer" while
+ * uploading vertex buffers, and some browsers expose `navigator.gpu` with no adapter behind it.
+ */
+const rendererPreference = async (): Promise<Array<RendererPreference>> => {
+  if (isWebKit() || !navigator.gpu) return ['webgl']
+  const adapter = await navigator.gpu.requestAdapter().catch(() => null)
+  return adapter ? ['webgpu', 'webgl'] : ['webgl']
+}
+
 export class BoardController {
   readonly app = new Application()
   readonly world = new Container()
@@ -247,7 +260,7 @@ export class BoardController {
 
   async start(initial: BoardState | undefined): Promise<void> {
     this.state = initial ?? null
-    const preferred: Array<RendererPreference> = ['webgpu', 'webgl']
+    const preferred = await rendererPreference()
     await this.app.init({
       autoStart: false,
       // Opaque, in the colour the host shows behind it. A transparent WebGPU canvas is composited

@@ -2,9 +2,9 @@ import { startAnalytics } from './platform/analytics.ts'
 import { startTheme } from './theme.ts'
 import './styles.css'
 
-/* Every page is prerendered (ADR 0009). A page with a live island starts the app at once. The home
-   page is copy and links, so it starts the app on the reader's first interaction with the header:
-   a reader who only reads downloads none of the app's JavaScript. */
+/* Every page is prerendered (ADR 0009). A page with a live island starts the app at once. The other
+   pages start it when the browser is idle after the page draws, or sooner on the reader's first
+   interaction with a control that needs it. */
 
 startTheme()
 startAnalytics()
@@ -22,7 +22,7 @@ const LAZY_ISLAND = '[data-lazy-island]'
 
 /** Starts the app on the first interaction with a control that has no server-side handler. The
     interaction waits for hydration, then replays on the control the reader touched. */
-const startOnIntent = (load: () => Promise<void>): void => {
+const startOnIntent = (load: () => Promise<void>): (() => void) => {
   let hydrated = false
   let loading = false
   let replay: (() => void) | null = null
@@ -139,6 +139,7 @@ const startOnIntent = (load: () => Promise<void>): void => {
   document.addEventListener('focusin', onFocusIn, true)
   document.addEventListener('input', onInput, true)
   document.addEventListener('keydown', onKeyDown, true)
+  return begin
 }
 
 /** Starts the app when a live figure nears the viewport. A reading page's figures are below the
@@ -166,6 +167,10 @@ const startWhenVisible = (load: () => Promise<void>): void => {
 const hydration = document.querySelector('[data-hydration]')?.getAttribute('data-hydration')
 if (hydration === 'now' || hydration === null) void start()
 else {
-  startOnIntent(start)
+  const begin = startOnIntent(start)
+  // The browser is idle once the page has drawn: load the app then, so the first click on a link
+  // finds the next page already prefetched (src/prefetch.ts) instead of paying for the app too.
+  if ('requestIdleCallback' in window) requestIdleCallback(begin, { timeout: 4000 })
+  else setTimeout(begin, 2000)
   if (hydration === 'visible') startWhenVisible(start)
 }

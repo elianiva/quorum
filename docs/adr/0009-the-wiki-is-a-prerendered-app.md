@@ -55,3 +55,11 @@ The wiki still prerenders every page. A reading page now starts the client only 
 uses a header control, or when a quiz, live figure, or practice board nears the viewport. A page
 with none of those never downloads the app, catalog, or framework. The home page's first script is
 the boot entry and its view-identity helper; the app arrives on the first interaction.
+
+## Second amendment
+
+A reading page now also starts the client when the browser is idle after the page draws. Waiting
+for a first interaction made the first link click pay for the app and for the next page together.
+With the app loaded, `src/prefetch.ts` fetches the next page as the reader heads for its link, so
+the first click is as fast as the rest. The first script is still the boot entry; the app follows
+once the browser has nothing else to do.

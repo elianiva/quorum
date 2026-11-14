@@ -2,6 +2,7 @@ import { Runtime } from 'foldkit'
 import { loadProse } from './content.ts'
 import { loadLocale } from './i18n/load.ts'
 import { Message, Model, init, routeOf, update } from './main.ts'
+import { startPrefetch } from './prefetch.ts'
 import { installSolver } from './solver.ts'
 import { subscriptions } from './subscriptions.ts'
 import { view } from './view.ts'
@@ -37,4 +38,5 @@ export const start = async (): Promise<void> => {
   await loadLocale(locale)
   await loadProse(locale, path)
   Runtime.hydrate(application)
+  startPrefetch()
 }

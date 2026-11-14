@@ -32,7 +32,7 @@ export const switchClass = cx(
     outlineStyle: 'none',
     transitionProperty: 'all',
     transitionDuration: '150ms',
-    transitionTimingFunction: 'var(--ease-out)',
+    transitionTimingFunction: 'out',
     '&[data-checked]': {
       layerStyle: 'primaryFill',
       boxShadow: 'inset 0 1px 2px oklch(0 0 0 / 0.3)',
@@ -55,7 +55,7 @@ export const switchClass = cx(
         boxShadow: '0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
       },
     },
-    '&[data-size="default"]': { height: '1.25rem', width: '34px' },
+    '&[data-size="default"]': { height: '5', width: '34px' },
     '&[data-size="sm"]': { height: '14px', width: '24px' },
     '&::after': {
       content: '""',
@@ -80,16 +80,16 @@ export const switchThumbClass = css({
   display: 'block',
   transitionProperty: 'transform',
   transitionDuration: '150ms',
-  transitionTimingFunction: 'var(--ease-out)',
+  transitionTimingFunction: 'out',
   '.group-switch[data-size="default"] &': {
-    width: '1rem',
-    height: '1rem',
+    width: '4',
+    height: '4',
     '&[data-checked]': { transform: 'translateX(calc(100% - 1px))' },
     '&[data-unchecked]': { transform: 'translateX(1px)' },
   },
   '.group-switch[data-size="sm"] &': {
-    width: '0.75rem',
-    height: '0.75rem',
+    width: '3',
+    height: '3',
     '&[data-checked]': { transform: 'translateX(calc(100% - 2px))' },
     '&[data-unchecked]': { transform: 'translateX(0)' },
   },
@@ -113,13 +113,13 @@ export const switchDescriptionClass = css({
 
 export const switchWrapperClass = cx(
   'group-field',
-  css({ display: 'flex', alignItems: 'center', gap: '0.75rem' }),
+  css({ display: 'flex', alignItems: 'center', gap: '3' }),
 )
 
 export const switchTextWrapperClass = css({
   display: 'flex',
   flexDirection: 'column',
-  gap: '0.25rem',
+  gap: '1',
 })
 
 export type SwitchConfig<M> = Readonly<{

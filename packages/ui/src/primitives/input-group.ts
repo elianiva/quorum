@@ -32,14 +32,14 @@ export const inputGroupClass = cx(
           'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
       },
     },
-    height: '2rem',
+    height: '8',
     borderRadius: 'lg',
     borderWidth: '1px',
     borderStyle: 'solid',
     transitionProperty:
       'color, background-color, border-color, text-decoration-color, fill, stroke',
-    transitionTimingFunction: 'var(--default-transition-timing-function)',
-    transitionDuration: 'var(--default-transition-duration)',
+    transitionTimingFunction: 'default',
+    transitionDuration: 'default',
     '[data-slot="combobox-content"] &': {
       _focusWithin: {
         borderColor: 'inherit',
@@ -50,18 +50,18 @@ export const inputGroupClass = cx(
     '&:has(> [data-align="block-end"])': {
       height: 'auto',
       flexDirection: 'column',
-      '& > input': { paddingTop: '0.75rem' },
+      '& > input': { paddingTop: '3' },
     },
     '&:has(> [data-align="block-start"])': {
       height: 'auto',
       flexDirection: 'column',
-      '& > input': { paddingBottom: '0.75rem' },
+      '& > input': { paddingBottom: '3' },
     },
     '&:has(> [data-align="inline-end"])': {
-      '& > input': { paddingRight: '0.375rem' },
+      '& > input': { paddingRight: '1.5' },
     },
     '&:has(> [data-align="inline-start"])': {
-      '& > input': { paddingLeft: '0.375rem' },
+      '& > input': { paddingLeft: '1.5' },
     },
     position: 'relative',
     display: 'flex',
@@ -76,10 +76,10 @@ export const inputGroupClass = cx(
 
 /** Upstream InputGroupAddon base string; alignment via the align tokens. */
 export const inputGroupAddonClass = css({
-  color: 'var(--muted-foreground)',
+  color: 'mutedForeground',
   height: 'auto',
-  gap: '0.5rem',
-  paddingBlock: '0.375rem',
+  gap: '2',
+  paddingBlock: '1.5',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
   fontWeight: '500',
@@ -90,8 +90,8 @@ export const inputGroupAddonClass = css({
     borderRadius: 'calc(var(--radius) - 5px)',
   },
   '& > svg:not([data-svg-icon])': {
-    width: '1rem',
-    height: '1rem',
+    width: '4',
+    height: '4',
   },
   display: 'flex',
   cursor: 'text',
@@ -102,31 +102,31 @@ export const inputGroupAddonClass = css({
 
 export const inputGroupAddonAlignClasses = {
   'inline-start': css({
-    paddingLeft: '0.5rem',
+    paddingLeft: '2',
     '&:has(> button)': { marginLeft: '-0.3rem' },
     '&:has(> kbd)': { marginLeft: '-0.15rem' },
     order: '-9999',
   }),
   'inline-end': css({
-    paddingRight: '0.5rem',
+    paddingRight: '2',
     '&:has(> button)': { marginRight: '-0.3rem' },
     '&:has(> kbd)': { marginRight: '-0.15rem' },
     order: '9999',
   }),
   'block-start': css({
-    paddingInline: '0.625rem',
-    paddingTop: '0.5rem',
-    '.group-input-group:has(> input) &': { paddingTop: '0.5rem' },
-    '&[data-border="b"]': { paddingBottom: '0.5rem' },
+    paddingInline: '2.5',
+    paddingTop: '2',
+    '.group-input-group:has(> input) &': { paddingTop: '2' },
+    '&[data-border="b"]': { paddingBottom: '2' },
     order: '-9999',
     width: '100%',
     justifyContent: 'flex-start',
   }),
   'block-end': css({
-    paddingInline: '0.625rem',
-    paddingBottom: '0.5rem',
-    '.group-input-group:has(> input) &': { paddingBottom: '0.5rem' },
-    '&[data-border="t"]': { paddingTop: '0.5rem' },
+    paddingInline: '2.5',
+    paddingBottom: '2',
+    '.group-input-group:has(> input) &': { paddingBottom: '2' },
+    '&[data-border="t"]': { paddingTop: '2' },
     order: '9999',
     width: '100%',
     justifyContent: 'flex-start',
@@ -140,7 +140,7 @@ export type InputGroupButtonSize = (typeof inputGroupButtonSizeKeys)[number]
 
 /** Upstream InputGroupButton base string (sizes are tokens). */
 export const inputGroupButtonClass = css({
-  gap: '0.5rem',
+  gap: '2',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
   display: 'flex',
@@ -151,21 +151,21 @@ export const inputGroupButtonClass = css({
 /** Upstream InputGroupButton size tokens; keyed like upstream's cva variants. */
 export const inputGroupButtonSizeClasses = {
   xs: css({
-    height: '1.5rem',
-    gap: '0.25rem',
+    height: '6',
+    gap: '1',
     borderRadius: 'calc(var(--radius) - 3px)',
-    paddingInline: '0.375rem',
+    paddingInline: '1.5',
     '& > svg:not([data-svg-icon])': {
-      width: '0.875rem',
-      height: '0.875rem',
+      width: '3.5',
+      height: '3.5',
     },
   }),
   sm: css({
-    gap: '0.25rem',
+    gap: '1',
   }),
   'icon-xs': css({
-    width: '1.5rem',
-    height: '1.5rem',
+    width: '6',
+    height: '6',
     borderRadius: 'calc(var(--radius) - 3px)',
     padding: '0',
     '&:has(> svg)': {
@@ -173,8 +173,8 @@ export const inputGroupButtonSizeClasses = {
     },
   }),
   'icon-sm': css({
-    width: '2rem',
-    height: '2rem',
+    width: '8',
+    height: '8',
     padding: '0',
     '&:has(> svg)': {
       padding: '0',
@@ -199,7 +199,7 @@ export const inputGroupTextareaClass = css({
   borderRadius: '0',
   borderWidth: '0',
   backgroundColor: 'transparent',
-  paddingBlock: '0.5rem',
+  paddingBlock: '2',
   boxShadow: 'none',
   _focusVisible: { boxShadow: 'none' },
   '&:disabled': { backgroundColor: 'transparent' },
@@ -213,13 +213,13 @@ export const inputGroupTextareaClass = css({
 })
 
 export const inputGroupTextClass = css({
-  color: 'var(--muted-foreground)',
-  gap: '0.5rem',
+  color: 'mutedForeground',
+  gap: '2',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
   '& svg:not([data-svg-icon])': {
-    width: '1rem',
-    height: '1rem',
+    width: '4',
+    height: '4',
   },
   display: 'flex',
   alignItems: 'center',

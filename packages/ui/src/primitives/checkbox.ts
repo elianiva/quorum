@@ -46,8 +46,8 @@ export const checkboxClass = cx(
       boxShadow: 'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
     },
     display: 'flex',
-    width: '1rem',
-    height: '1rem',
+    width: '4',
+    height: '4',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: '4px',
@@ -55,8 +55,8 @@ export const checkboxClass = cx(
     borderStyle: 'solid',
     transitionProperty:
       'color, background-color, border-color, text-decoration-color, fill, stroke',
-    transitionTimingFunction: 'var(--default-transition-timing-function)',
-    transitionDuration: 'var(--default-transition-duration)',
+    transitionTimingFunction: 'default',
+    transitionDuration: 'default',
     '.group-field:has(:disabled) &': { opacity: 0.5 },
     '.group-field-label:has(:focus-visible) &': { boxShadow: 'none' },
     '&[aria-disabled="true"]': { cursor: 'not-allowed', opacity: 0.5 },
@@ -75,7 +75,7 @@ export const checkboxClass = cx(
 )
 
 export const checkboxIndicatorClass = css({
-  '& > svg': { width: '0.875rem', height: '0.875rem' },
+  '& > svg': { width: '3.5', height: '3.5' },
   display: 'grid',
   placeContent: 'center',
   color: 'currentColor',
@@ -121,7 +121,7 @@ export const checkbox = <M>(config: CheckboxConfig<M>, h: HtmlBuilder<M>): Html 
                 css({
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.25rem',
+                  gap: '1',
                 }),
                 config.wrapperClass,
               ),
@@ -134,7 +134,7 @@ export const checkbox = <M>(config: CheckboxConfig<M>, h: HtmlBuilder<M>): Html 
                   css({
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.5rem',
+                    gap: '2',
                   }),
                 ),
               ],
@@ -157,8 +157,8 @@ export const checkbox = <M>(config: CheckboxConfig<M>, h: HtmlBuilder<M>): Html 
                               h,
                               config.isIndeterminate === true ? Minus : Check,
                               css({
-                                width: '0.875rem',
-                                height: '0.875rem',
+                                width: '3.5',
+                                height: '3.5',
                               }),
                             ),
                           ],
@@ -202,7 +202,7 @@ export const checkbox = <M>(config: CheckboxConfig<M>, h: HtmlBuilder<M>): Html 
                         css({
                           fontSize: 'calc(0.875rem * var(--type-scale))',
                           lineHeight: 'calc(1.25 / 0.875)',
-                          color: 'var(--muted-foreground)',
+                          color: 'mutedForeground',
                         }),
                         config.descriptionClass,
                       ),

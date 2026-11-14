@@ -4,10 +4,10 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 type Child = Html | string
 
 export const emptyClass = css({
-  gap: '1rem',
+  gap: '4',
   borderRadius: 'xl',
   borderStyle: 'dashed',
-  padding: '1.5rem',
+  padding: '6',
   display: 'flex',
   width: '100%',
   minWidth: '0',
@@ -20,9 +20,9 @@ export const emptyClass = css({
 })
 
 export const emptyHeaderClass = css({
-  gap: '0.5rem',
+  gap: '2',
   display: 'flex',
-  maxWidth: '24rem',
+  maxWidth: '96',
   flexDirection: 'column',
   alignItems: 'center',
 })
@@ -31,7 +31,7 @@ export const emptyMediaVariantKeys = ['default', 'icon'] as const
 export type EmptyMediaVariant = (typeof emptyMediaVariantKeys)[number]
 
 export const emptyMediaClass = css({
-  marginBottom: '0.5rem',
+  marginBottom: '2',
   display: 'flex',
   flexShrink: '0',
   alignItems: 'center',
@@ -49,13 +49,13 @@ export const emptyMediaVariants: Record<EmptyMediaVariant, string> = {
     boxShadow: 'raised',
     color: 'foreground',
     display: 'flex',
-    width: '2.25rem',
-    height: '2.25rem',
+    width: '9',
+    height: '9',
     flexShrink: '0',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 'lg',
-    '& svg:not([data-svg-icon])': { width: '1rem', height: '1rem' },
+    '& svg:not([data-svg-icon])': { width: '4', height: '4' },
   }),
 }
 
@@ -79,12 +79,12 @@ export const emptyDescriptionClass = css({
 })
 
 export const emptyContentClass = css({
-  gap: '0.625rem',
+  gap: '2.5',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
   display: 'flex',
   width: '100%',
-  maxWidth: '24rem',
+  maxWidth: '96',
   minWidth: '0',
   flexDirection: 'column',
   alignItems: 'center',

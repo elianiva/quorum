@@ -8,8 +8,8 @@ const spin = keyframes({
 })
 
 export const spinnerClass = css({
-  width: '1rem',
-  height: '1rem',
+  width: '4',
+  height: '4',
   animation: `${spin} 1s linear infinite`,
 })
 

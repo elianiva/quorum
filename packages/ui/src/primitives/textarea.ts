@@ -3,29 +3,29 @@ import { Textarea as FoldkitTextarea } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 export const textareaClass = css({
-  backgroundColor: 'var(--well)',
+  backgroundColor: 'well',
   boxShadow: 'well',
   borderColor: 'transparent',
   borderRadius: 'lg',
   borderWidth: '1px',
-  paddingInline: '0.625rem',
-  paddingBlock: '0.5rem',
+  paddingInline: '2.5',
+  paddingBlock: '2',
   fontSize: 'calc(1rem * var(--type-scale))',
   lineHeight: 'calc(1.5 / 1)',
   transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke',
-  transitionTimingFunction: 'var(--default-transition-timing-function)',
-  transitionDuration: 'var(--default-transition-duration)',
+  transitionTimingFunction: 'default',
+  transitionDuration: 'default',
   display: 'flex',
-  minHeight: '4rem',
+  minHeight: '16',
   width: '100%',
   outlineStyle: 'none',
-  '&::placeholder': { color: 'var(--muted-foreground)' },
+  '&::placeholder': { color: 'mutedForeground' },
   '&:focus-visible': {
-    borderColor: 'var(--ring)',
+    borderColor: 'ring',
     boxShadow: 'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
   },
   '&[aria-invalid="true"]': {
-    borderColor: 'var(--destructive)',
+    borderColor: 'destructive',
     boxShadow:
       'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
   },
@@ -55,7 +55,7 @@ export const textareaClass = css({
  *  state flows from the wrapper (group-field + data-disabled, mirroring
  *  switch.ts). */
 export const textareaLabelClass = css({
-  gap: '0.5rem',
+  gap: '2',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: '1',
   fontWeight: '500',
@@ -72,13 +72,13 @@ export const textareaLabelClass = css({
 export const textareaDescriptionClass = css({
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
-  color: 'var(--muted-foreground)',
+  color: 'mutedForeground',
 })
 
 export const textareaWrapperClass = css({
   display: 'flex',
   flexDirection: 'column',
-  gap: '0.375rem',
+  gap: '1.5',
   width: '100%',
 })
 

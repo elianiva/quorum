@@ -3,39 +3,39 @@ import { Input as FoldkitInput } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 export const inputClass = css({
-  backgroundColor: 'var(--well)',
+  backgroundColor: 'well',
   boxShadow: 'well',
   borderColor: 'transparent',
-  height: '2rem',
+  height: '8',
   borderRadius: 'lg',
   borderWidth: '1px',
-  paddingInline: '0.625rem',
-  paddingBlock: '0.25rem',
+  paddingInline: '2.5',
+  paddingBlock: '1',
   fontSize: 'calc(1rem * var(--type-scale))',
   lineHeight: 'calc(1.5 / 1)',
   transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke',
-  transitionTimingFunction: 'var(--default-transition-timing-function)',
-  transitionDuration: 'var(--default-transition-duration)',
+  transitionTimingFunction: 'default',
+  transitionDuration: 'default',
   width: '100%',
   minWidth: '0',
   outlineStyle: 'none',
   '&::file-selector-button': {
-    height: '1.5rem',
+    height: '6',
     fontSize: 'calc(0.875rem * var(--type-scale))',
     lineHeight: 'calc(1.25 / 0.875)',
     fontWeight: '500',
     display: 'inline-flex',
     borderWidth: '0',
     backgroundColor: 'transparent',
-    color: 'var(--foreground)',
+    color: 'foreground',
   },
-  '&::placeholder': { color: 'var(--muted-foreground)' },
+  '&::placeholder': { color: 'mutedForeground' },
   '&:focus-visible': {
-    borderColor: 'var(--ring)',
+    borderColor: 'ring',
     boxShadow: 'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
   },
   '&[aria-invalid="true"]': {
-    borderColor: 'var(--destructive)',
+    borderColor: 'destructive',
     boxShadow:
       'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
   },
@@ -69,7 +69,7 @@ export const inputClass = css({
  *  state flows from the wrapper (group-field + data-disabled, mirroring
  *  switch.ts). */
 export const inputLabelClass = css({
-  gap: '0.5rem',
+  gap: '2',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: '1',
   fontWeight: '500',
@@ -86,13 +86,13 @@ export const inputLabelClass = css({
 export const inputDescriptionClass = css({
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
-  color: 'var(--muted-foreground)',
+  color: 'mutedForeground',
 })
 
 export const inputWrapperClass = css({
   display: 'flex',
   flexDirection: 'column',
-  gap: '0.375rem',
+  gap: '1.5',
   width: '100%',
 })
 

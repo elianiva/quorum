@@ -15,13 +15,13 @@ type Child = Html | string
 export const progressClass = css({
   display: 'flex',
   flexWrap: 'wrap',
-  gap: '0.75rem',
+  gap: '3',
 })
 
 export const progressTrackClass = css({
   backgroundColor: 'well',
   boxShadow: 'well',
-  height: '0.375rem',
+  height: '1.5',
   borderRadius: '9999px',
   position: 'relative',
   display: 'flex',
@@ -38,7 +38,7 @@ export const progressIndicatorClass = css({
   width: '100%',
   transitionProperty: 'all',
   transitionDuration: '150ms',
-  transitionTimingFunction: 'var(--ease-out)',
+  transitionTimingFunction: 'out',
 })
 
 export const progressLabelClass = css({

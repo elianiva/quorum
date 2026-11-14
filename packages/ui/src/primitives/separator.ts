@@ -5,7 +5,7 @@ export type SeparatorOrientation = 'horizontal' | 'vertical'
 
 export const separatorClass = css({
   flexShrink: '0',
-  backgroundColor: 'var(--border)',
+  backgroundColor: 'border',
   '&[data-horizontal]': {
     height: '1px',
     width: '100%',

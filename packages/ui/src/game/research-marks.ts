@@ -342,12 +342,12 @@ export const researchMark = <M>(
           COMPONENT_ICONS[look.component],
           size === 'lg'
             ? css({
-                width: '2.75rem',
-                height: '2.75rem',
+                width: '11',
+                height: '11',
               })
             : css({
-                width: '1.75rem',
-                height: '1.75rem',
+                width: '7',
+                height: '7',
               }),
           h,
           muted,
@@ -359,12 +359,12 @@ export const researchMark = <M>(
             : { path: 'logo' in look ? STACK_LOGOS[look.logo].path : look.brand.path },
           size === 'lg'
             ? css({
-                width: '2.75rem',
-                height: '2.75rem',
+                width: '11',
+                height: '11',
               })
             : css({
-                width: '1.75rem',
-                height: '1.75rem',
+                width: '7',
+                height: '7',
               }),
           h,
           muted,
@@ -381,12 +381,12 @@ export const researchMark = <M>(
           }),
           size === 'lg'
             ? css({
-                width: '3rem',
-                height: '3rem',
+                width: '12',
+                height: '12',
               })
             : css({
-                width: '2rem',
-                height: '2rem',
+                width: '8',
+                height: '8',
               }),
         ),
       ),

@@ -13,38 +13,38 @@ export const markerVariants: Record<MarkerVariant, string> = {
       height: '1px',
       minWidth: '0',
       flex: '1 1 0%',
-      backgroundColor: 'var(--border)',
-      marginRight: '0.25rem',
+      backgroundColor: 'border',
+      marginRight: '1',
     },
     '&::after': {
       height: '1px',
       minWidth: '0',
       flex: '1 1 0%',
-      backgroundColor: 'var(--border)',
-      marginLeft: '0.25rem',
+      backgroundColor: 'border',
+      marginLeft: '1',
     },
   }),
   border: css({
     borderBottomWidth: '1px',
     borderBottomStyle: 'solid',
     borderColor: 'border',
-    paddingBottom: '0.5rem',
+    paddingBottom: '2',
   }),
 }
 
 export const markerClass = cx(
   css({
-    gap: '0.5rem',
+    gap: '2',
     fontSize: 'calc(0.875rem * var(--type-scale))',
     lineHeight: 'calc(1.25 / 0.875)',
     color: 'mutedForeground',
     '& a': {
-      _hover: { color: 'var(--foreground)' },
+      _hover: { color: 'foreground' },
       textUnderlineOffset: '3px',
       textDecorationLine: 'underline',
     },
-    '& svg:not([data-svg-icon])': { width: '1rem', height: '1rem' },
-    minHeight: '1rem',
+    '& svg:not([data-svg-icon])': { width: '4', height: '4' },
+    minHeight: '4',
     textAlign: 'left',
     position: 'relative',
     display: 'flex',
@@ -55,11 +55,11 @@ export const markerClass = cx(
 )
 
 export const markerIconClass = css({
-  width: '1rem',
-  height: '1rem',
+  width: '4',
+  height: '4',
   '& svg:not([data-svg-icon])': {
-    width: '1rem',
-    height: '1rem',
+    width: '4',
+    height: '4',
   },
   flexShrink: '0',
 })
@@ -70,7 +70,7 @@ export const markerContentClass = css({
     textAlign: 'center',
   },
   '& > a': {
-    _hover: { color: 'var(--foreground)' },
+    _hover: { color: 'foreground' },
     textDecorationLine: 'underline',
     textUnderlineOffset: '3px',
   },

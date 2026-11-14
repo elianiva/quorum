@@ -48,19 +48,19 @@ export type RenderInfo<Value extends string = string> = FoldkitRadioGroup.Render
  *  layout to the consumer). */
 export const radioGroupClass = css({
   display: 'grid',
-  gap: '0.5rem',
+  gap: '2',
   width: '100%',
 })
 
 export const radioGroupVerticalClass = css({
   display: 'grid',
-  gap: '0.5rem',
+  gap: '2',
   width: '100%',
 })
 
 export const radioGroupHorizontalClass = css({
   display: 'grid',
-  gap: '0.5rem',
+  gap: '2',
   width: '100%',
   sm: {
     flexDirection: 'row',
@@ -102,8 +102,8 @@ export const radioItemClass = cx(
       },
     },
     display: 'flex',
-    width: '1rem',
-    height: '1rem',
+    width: '4',
+    height: '4',
     borderRadius: '9999px',
     '.group-field-label:has(:focus-visible) &': { boxShadow: 'none' },
     '&[aria-disabled="true"]': { cursor: 'not-allowed', opacity: 0.5 },
@@ -127,19 +127,19 @@ export const radioItemClass = cx(
 
 export const radioIndicatorClass = css({
   display: 'flex',
-  width: '1rem',
-  height: '1rem',
+  width: '4',
+  height: '4',
   alignItems: 'center',
   justifyContent: 'center',
 })
 
 export const radioDotClass = css({
-  backgroundColor: 'var(--primary-foreground)',
+  backgroundColor: 'primaryForeground',
   position: 'absolute',
   top: '50%',
   left: '50%',
-  width: '0.5rem',
-  height: '0.5rem',
+  width: '2',
+  height: '2',
   translate: '-50% -50%',
   borderRadius: '9999px',
 })
@@ -149,7 +149,7 @@ export const radioDotClass = css({
  *  data-disabled on it when disabled — so the peer twins below are live
  *  (upstream's native peer-disabled variant can never match). */
 export const radioItemLabelClass = css({
-  gap: '0.5rem',
+  gap: '2',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: '1',
   fontWeight: '500',
@@ -170,7 +170,7 @@ export const radioItemLabelClass = css({
 export const radioItemDescriptionClass = css({
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
-  color: 'var(--muted-foreground)',
+  color: 'mutedForeground',
 })
 
 /** Legacy consumer-drawn row (used when `option` callback is supplied). */
@@ -187,12 +187,12 @@ export const radioOptionClass = cx(
     borderStyle: 'solid',
     borderColor: 'transparent',
     layerStyle: 'raised',
-    padding: '0.75rem',
+    padding: '3',
     color: 'cardForeground',
     boxShadow: 'raised',
     transitionProperty: 'box-shadow',
-    transitionTimingFunction: 'var(--default-transition-timing-function)',
-    transitionDuration: 'var(--default-transition-duration)',
+    transitionTimingFunction: 'default',
+    transitionDuration: 'default',
     '&::after': {
       position: 'absolute',
       insetInline: '-0.75rem',
@@ -230,7 +230,7 @@ export const radioOptionLabelClass = css({
 export const radioOptionDescriptionClass = css({
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
-  color: 'var(--muted-foreground)',
+  color: 'mutedForeground',
 })
 
 export type StyledViewInputs<M, Value extends string = string> = Readonly<{
@@ -404,15 +404,15 @@ const defaultOptionRow = <M, Value extends string>(
                 display: 'flex',
                 width: '100%',
                 alignItems: 'center',
-                gap: '0.5rem',
+                gap: '2',
               })
             : css({
                 display: 'flex',
                 width: '100%',
                 alignItems: 'flex-start',
-                gap: '0.5rem',
+                gap: '2',
                 '&>[role=radio]': {
-                  marginTop: '0.125rem',
+                  marginTop: '0.5',
                 },
               }),
           optionClass,
@@ -431,7 +431,7 @@ const defaultOptionRow = <M, Value extends string>(
                   minWidth: '0',
                   flex: '1 1 0%',
                   flexDirection: 'column',
-                  gap: '0.125rem',
+                  gap: '0.5',
                   '.peer-control[aria-disabled="true"] ~ &': { opacity: 0.5 },
                 }),
               ),

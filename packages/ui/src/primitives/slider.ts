@@ -30,7 +30,7 @@ export type SliderAttributes = FoldkitSlider.SliderAttributes
 
 export const sliderRootClass = css({
   '&[data-vertical]': {
-    minHeight: '10rem',
+    minHeight: '40',
     height: '100%',
     width: 'auto',
     flexDirection: 'column',
@@ -48,8 +48,8 @@ export const sliderTrackClass = css({
   backgroundColor: 'well',
   boxShadow: 'well',
   borderRadius: '9999px',
-  '&[data-horizontal]': { height: '0.375rem', width: '100%' },
-  '&[data-vertical]': { height: '100%', width: '0.375rem' },
+  '&[data-horizontal]': { height: '1.5', width: '100%' },
+  '&[data-vertical]': { height: '100%', width: '1.5' },
   position: 'relative',
   flexGrow: '1',
   overflow: 'hidden',
@@ -68,14 +68,14 @@ export const sliderFilledTrackClass = css({
  *  under foldkit (aria-/data- twins are inlined at style resolution). */
 export const sliderThumbClass = css({
   position: 'relative',
-  width: '1rem',
-  height: '1rem',
+  width: '4',
+  height: '4',
   borderRadius: '9999px',
   layerStyle: 'raised',
   boxShadow: 'raised',
   transitionProperty: 'color, box-shadow',
-  transitionTimingFunction: 'var(--default-transition-timing-function)',
-  transitionDuration: 'var(--default-transition-duration)',
+  transitionTimingFunction: 'default',
+  transitionDuration: 'default',
   '&::after': { position: 'absolute', inset: '-0.5rem' },
   _hover: {
     boxShadow: 'var(--elev-raised), 0 0 0 4px color-mix(in oklab, var(--primary) 25%, transparent)',
@@ -111,7 +111,7 @@ export const sliderValueClass = css({
 export const sliderRowClass = css({
   display: 'flex',
   flexDirection: 'column',
-  gap: '0.5rem',
+  gap: '2',
   width: '100%',
 })
 
@@ -532,7 +532,7 @@ export const styledViewInputs = <M>(
                       css({
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.375rem',
+                        gap: '1.5',
                       }),
                     ),
                   ],

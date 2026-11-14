@@ -16,12 +16,12 @@ import type { Attribute, Html, HtmlBuilder } from 'foldkit/html'
 const chartTooltipOverlayClass = css({
   borderColor: 'color-mix(in oklab, var(--border) 50%, transparent)',
   backgroundColor: 'background',
-  gap: '0.375rem',
+  gap: '1.5',
   borderRadius: 'lg',
   borderWidth: '1px',
   borderStyle: 'solid',
-  paddingInline: '0.625rem',
-  paddingBlock: '0.375rem',
+  paddingInline: '2.5',
+  paddingBlock: '1.5',
   fontSize: 'calc(0.75rem * var(--type-scale))',
   lineHeight: 'calc(1 / 0.75)',
   boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
@@ -1338,7 +1338,7 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
                   [
                     h.Class(
                       css({
-                        marginBottom: '0.25rem',
+                        marginBottom: '1',
                         fontWeight: '500',
                       }),
                     ),
@@ -1355,7 +1355,7 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
                         css({
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '0.5rem',
+                          gap: '2',
                         }),
                       ),
                     ],
@@ -1365,8 +1365,8 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
                           h.Style({ backgroundColor: row.color }),
                           h.Class(
                             css({
-                              width: '0.5rem',
-                              height: '0.5rem',
+                              width: '2',
+                              height: '2',
                               borderRadius: '9999px',
                             }),
                           ),
@@ -1389,10 +1389,10 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
                   cx(
                     css({
                       display: 'flex',
-                      gap: '0.625rem',
+                      gap: '2.5',
                       fontSize: 'calc(0.875rem * var(--type-scale))',
                       lineHeight: 'calc(1.25 / 0.875)',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                     legend.props.align === 'right'
                       ? css({
@@ -1440,7 +1440,7 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
                               css({
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '0.25rem',
+                                gap: '1',
                               }),
                             ),
                             ...(props.onLegendHover === undefined ||
@@ -1457,8 +1457,8 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
                                 h.Class(
                                   css({
                                     display: 'inline-block',
-                                    height: '0.125rem',
-                                    width: '1rem',
+                                    height: '0.5',
+                                    width: '4',
                                   }),
                                 ),
                                 h.Style({ backgroundColor: lineColor(child) }),

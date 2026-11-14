@@ -18,16 +18,16 @@ export const kbdClass = css({
       backgroundColor: 'color-mix(in oklab, var(--background) 10%, transparent)',
     },
   },
-  height: '1.25rem',
+  height: '5',
   width: 'fit-content',
-  minWidth: '1.25rem',
-  gap: '0.25rem',
+  minWidth: '5',
+  gap: '1',
   borderRadius: '5px',
-  paddingInline: '0.375rem',
+  paddingInline: '1.5',
   fontFamily: 'mono',
   fontSize: '10.5px',
   fontWeight: '500',
-  '& svg:not([data-svg-icon])': { width: '0.75rem', height: '0.75rem' },
+  '& svg:not([data-svg-icon])': { width: '3', height: '3' },
   pointerEvents: 'none',
   display: 'inline-flex',
   alignItems: 'center',
@@ -36,7 +36,7 @@ export const kbdClass = css({
 })
 
 export const kbdGroupClass = css({
-  gap: '0.25rem',
+  gap: '1',
   display: 'inline-flex',
   alignItems: 'center',
 })

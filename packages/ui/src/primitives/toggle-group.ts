@@ -45,9 +45,9 @@ export const toggleGroupClass = cx(
 export const toggleGroupItemClass = css({
   '&[data-spacing="0"]': {
     borderRadius: '0',
-    paddingInline: '0.5rem',
-    '&:has([data-icon="inline-end"])': { paddingRight: '0.375rem' },
-    '&:has([data-icon="inline-start"])': { paddingLeft: '0.375rem' },
+    paddingInline: '2',
+    '&:has([data-icon="inline-end"])': { paddingRight: '1.5' },
+    '&:has([data-icon="inline-start"])': { paddingLeft: '1.5' },
   },
   '.group-toggle-group[data-horizontal] &': {
     '&[data-spacing="0"]:first-child': {

@@ -32,7 +32,7 @@ const tabsListBaseClass = cx(
   css({
     borderRadius: 'lg',
     padding: '3px',
-    '.group-tabs[data-horizontal] &': { height: '2.25rem' },
+    '.group-tabs[data-horizontal] &': { height: '9' },
     '&[data-variant="line"]': { borderRadius: '0' },
     display: 'inline-flex',
     width: 'fit-content',
@@ -50,7 +50,7 @@ const tabsListVariantClasses: Record<TabsListVariant, string> = {
     boxShadow: 'well',
   }),
   line: css({
-    gap: '0.25rem',
+    gap: '1',
     backgroundColor: 'transparent',
   }),
 }
@@ -61,19 +61,19 @@ export const tabsListClass = (variant: TabsListVariant = 'default') =>
 /** Upstream TabsTrigger string with data-active → data-selected prefix swaps
  *  (foldkit attr name). */
 export const tabsTriggerClass = css({
-  gap: '0.375rem',
+  gap: '1.5',
   borderRadius: 'md',
   borderWidth: '1px',
   borderStyle: 'solid',
   borderColor: 'transparent',
-  paddingInline: '0.375rem',
-  paddingBlock: '0.125rem',
+  paddingInline: '1.5',
+  paddingBlock: '0.5',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
   fontWeight: '500',
-  '& svg:not([data-svg-icon])': { width: '1rem', height: '1rem' },
-  '&:has([data-icon="inline-end"])': { paddingRight: '0.25rem' },
-  '&:has([data-icon="inline-start"])': { paddingLeft: '0.25rem' },
+  '& svg:not([data-svg-icon])': { width: '4', height: '4' },
+  '&:has([data-icon="inline-end"])': { paddingRight: '1' },
+  '&:has([data-icon="inline-start"])': { paddingLeft: '1' },
   position: 'relative',
   display: 'inline-flex',
   height: 'calc(100% - 1px)',
@@ -83,8 +83,8 @@ export const tabsTriggerClass = css({
   whiteSpace: 'nowrap',
   color: 'color-mix(in oklab, var(--foreground) 60%, transparent)',
   transitionProperty: 'all',
-  transitionDuration: 'var(--default-transition-duration)',
-  transitionTimingFunction: 'var(--default-transition-timing-function)',
+  transitionDuration: 'default',
+  transitionTimingFunction: 'default',
   _hover: { color: 'foreground' },
   _focusVisible: {
     borderColor: 'ring',
@@ -106,7 +106,7 @@ export const tabsTriggerClass = css({
     '&::after': {
       insetBlock: '0',
       right: '-0.25rem',
-      width: '0.125rem',
+      width: '0.5',
     },
   },
   '&[data-selected]': { color: 'foreground' },
@@ -115,14 +115,14 @@ export const tabsTriggerClass = css({
     backgroundColor: 'foreground',
     opacity: 0,
     transitionProperty: 'opacity',
-    transitionTimingFunction: 'var(--default-transition-timing-function)',
-    transitionDuration: 'var(--default-transition-duration)',
+    transitionTimingFunction: 'default',
+    transitionDuration: 'default',
   },
   '.group-tabs[data-horizontal] &': {
     '&::after': {
       insetInline: '0',
       bottom: '-5px',
-      height: '0.125rem',
+      height: '0.5',
     },
   },
   '.group-tabs-list[data-variant=default] &': {
@@ -225,14 +225,14 @@ export const styledViewInputs = <M, Value extends string = string>(
           h.Class(
             cx(
               css({
-                gap: '0.5rem',
+                gap: '2',
                 display: 'flex',
               }),
               'group-tabs',
               isVertical
                 ? css({
                     width: '100%',
-                    gap: '0.5rem',
+                    gap: '2',
                   })
                 : css({
                     flexDirection: 'column',

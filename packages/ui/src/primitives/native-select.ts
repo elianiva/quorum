@@ -34,26 +34,26 @@ export const nativeSelectClass = css({
         'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
     },
   },
-  height: '2rem',
+  height: '8',
   width: '100%',
   minWidth: '0',
   appearance: 'none',
   borderRadius: 'lg',
   borderWidth: '1px',
   borderStyle: 'solid',
-  paddingBlock: '0.25rem',
-  paddingRight: '2rem',
-  paddingLeft: '0.625rem',
+  paddingBlock: '1',
+  paddingRight: '8',
+  paddingLeft: '2.5',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
   transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke',
-  transitionTimingFunction: 'var(--default-transition-timing-function)',
-  transitionDuration: 'var(--default-transition-duration)',
+  transitionTimingFunction: 'default',
+  transitionDuration: 'default',
   userSelect: 'none',
   '&[data-size="sm"]': {
-    height: '1.75rem',
+    height: '7',
     borderRadius: 'min(var(--radius-md), 10px)',
-    paddingBlock: '0.125rem',
+    paddingBlock: '0.5',
   },
   '&[aria-disabled="true"], &[data-disabled]': {
     pointerEvents: 'none',
@@ -75,11 +75,11 @@ export const nativeSelectWrapperClass = css({
 })
 
 export const nativeSelectIconClass = css({
-  color: 'var(--muted-foreground)',
+  color: 'mutedForeground',
   top: '50%',
-  right: '0.625rem',
-  width: '1rem',
-  height: '1rem',
+  right: '2.5',
+  width: '4',
+  height: '4',
   translate: '0 -50%',
   pointerEvents: 'none',
   position: 'absolute',
@@ -97,22 +97,22 @@ export const nativeSelectOptGroupClass = css({
 })
 
 export const nativeSelectLabelClass = css({
-  paddingInline: '0.375rem',
-  paddingBlock: '0.25rem',
+  paddingInline: '1.5',
+  paddingBlock: '1',
   fontSize: 'calc(0.75rem * var(--type-scale))',
   lineHeight: 'calc(1 / 0.75)',
-  color: 'var(--muted-foreground)',
+  color: 'mutedForeground',
 })
 export const nativeSelectDescriptionClass = css({
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
-  color: 'var(--muted-foreground)',
+  color: 'mutedForeground',
 })
 export const nativeSelectFieldWrapperClass = css({
   display: 'flex',
   width: '100%',
   flexDirection: 'column',
-  gap: '0.375rem',
+  gap: '1.5',
 })
 
 export type NativeSelectConfig<M> = Readonly<{
@@ -218,8 +218,8 @@ export const nativeSelectChevron = <M>(h: HtmlBuilder<M>): Html =>
     h,
     ChevronDown,
     css({
-      width: '1rem',
-      height: '1rem',
+      width: '4',
+      height: '4',
     }),
   )
 

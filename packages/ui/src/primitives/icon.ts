@@ -17,7 +17,7 @@ import type { IconNode, SVGProps } from 'lucide'
  * icon(h, ChevronDown)
  *
  * // Custom size
- * icon(h, ChevronDown, css({ width: '0.75rem', height: '0.75rem' }))
+ * icon(h, ChevronDown, css({ width: '3', height: '3' }))
  * ```
  */
 
@@ -66,7 +66,7 @@ const nodeToAttributes = <M>(
 ): ReadonlyArray<Attribute<M> | ChildAttribute> =>
   Object.entries(attrs).map(([name, value]) => h.Attribute(name, String(value)))
 
-const defaultIconClass = css({ width: '1rem', height: '1rem', flexShrink: '0' })
+const defaultIconClass = css({ width: '4', height: '4', flexShrink: '0' })
 
 export type IconPosition = 'inline-start' | 'inline-end'
 

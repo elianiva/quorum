@@ -7,19 +7,19 @@ type Child = Html | string
 import { separatorClass } from './separator'
 
 export const fieldsetClass = css({
-  gap: '1rem',
+  gap: '4',
   '&:has(> [data-slot=checkbox-group])': {
-    gap: '0.75rem',
+    gap: '3',
   },
   '&:has(> [data-slot=radio-group])': {
-    gap: '0.75rem',
+    gap: '3',
   },
   display: 'flex',
   flexDirection: 'column',
 })
 
 export const fieldsetLegendClass = css({
-  marginBottom: '0.375rem',
+  marginBottom: '1.5',
   fontWeight: '500',
   '&[data-variant="label"]': {
     fontSize: 'calc(0.875rem * var(--type-scale))',
@@ -33,9 +33,9 @@ export const fieldsetLegendClass = css({
 
 export const fieldGroupClass = cx(
   css({
-    gap: '1.25rem',
-    '&[data-slot="checkbox-group"]': { gap: '0.75rem' },
-    '& > [data-slot="field-group"]': { gap: '1rem' },
+    gap: '5',
+    '&[data-slot="checkbox-group"]': { gap: '3' },
+    '& > [data-slot="field-group"]': { gap: '4' },
     containerType: 'inline-size',
     containerName: 'field-group',
     display: 'flex',
@@ -49,7 +49,7 @@ export const fieldGroupClass = cx(
 export const fieldBaseClass = cx(
   css({
     '&[data-invalid="true"]': { color: 'destructive' },
-    gap: '0.5rem',
+    gap: '2',
     display: 'flex',
     width: '100%',
   }),
@@ -97,7 +97,7 @@ export const fieldOrientationClasses = {
 export type FieldOrientation = keyof typeof fieldOrientationClasses
 
 export const fieldContentClass = css({
-  gap: '0.125rem',
+  gap: '0.5',
   display: 'flex',
   flex: '1 1 0%',
   flexDirection: 'column',
@@ -109,7 +109,7 @@ export const fieldContentClass = css({
  *  (foldkit emits `data-disabled=""`, never "true"). Re-keyed onto the
  *  fieldset wrapper's live group + data-disabled signal. */
 export const labelClass = css({
-  gap: '0.5rem',
+  gap: '2',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: '1',
   fontWeight: '500',
@@ -128,7 +128,7 @@ export const labelClass = css({
 
 export const fieldLabelClass = cx(
   css({
-    gap: '0.5rem',
+    gap: '2',
     lineHeight: '1.375',
     '.group-field[data-disabled] &': { opacity: 0.5 },
     '&:has(> [data-slot="field"])': {
@@ -136,8 +136,8 @@ export const fieldLabelClass = cx(
       layerStyle: 'raised',
       boxShadow: 'raised',
       transitionProperty: 'box-shadow',
-      transitionTimingFunction: 'var(--default-transition-timing-function)',
-      transitionDuration: 'var(--default-transition-duration)',
+      transitionTimingFunction: 'default',
+      transitionDuration: 'default',
       width: '100%',
       flexDirection: 'column',
       '&:has(:focus-visible)': {
@@ -148,7 +148,7 @@ export const fieldLabelClass = cx(
     '&:has([data-checked])': {
       boxShadow: 'var(--elev-raised), 0 0 0 1.5px var(--primary)',
     },
-    '& > [data-slot="field"]': { padding: '0.75rem' },
+    '& > [data-slot="field"]': { padding: '3' },
     display: 'flex',
     width: 'fit-content',
   }),
@@ -156,7 +156,7 @@ export const fieldLabelClass = cx(
 )
 
 export const fieldTitleClass = css({
-  gap: '0.5rem',
+  gap: '2',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
   fontWeight: '500',
@@ -187,7 +187,7 @@ export const fieldDescriptionClass = css({
 
 export const fieldSeparatorClass = css({
   marginBlock: '-0.5rem',
-  height: '1.25rem',
+  height: '5',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
   '.group-field-group[data-variant=outline] &': {
@@ -203,17 +203,17 @@ export const fieldSeparatorLineClass = css({
 })
 
 export const fieldSeparatorContentClass = css({
-  color: 'var(--muted-foreground)',
-  paddingInline: '0.5rem',
+  color: 'mutedForeground',
+  paddingInline: '2',
   position: 'relative',
   marginInline: 'auto',
   display: 'block',
   width: 'fit-content',
-  backgroundColor: 'var(--background)',
+  backgroundColor: 'background',
 })
 
 export const fieldErrorClass = css({
-  color: 'var(--destructive)',
+  color: 'destructive',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
   fontWeight: '400',
@@ -396,11 +396,11 @@ export const fieldError = <M>(
         [
           h.Class(
             css({
-              marginLeft: '1rem',
+              marginLeft: '4',
               display: 'flex',
               listStyleType: 'disc',
               flexDirection: 'column',
-              gap: '0.25rem',
+              gap: '1',
             }),
           ),
         ],

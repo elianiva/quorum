@@ -42,8 +42,8 @@ export const scrollAreaViewportClass = css({
   height: '100%',
   borderRadius: 'inherit',
   transitionProperty: 'color, box-shadow',
-  transitionTimingFunction: 'var(--default-transition-timing-function)',
-  transitionDuration: 'var(--default-transition-duration)',
+  transitionTimingFunction: 'default',
+  transitionDuration: 'default',
   outlineStyle: 'none',
   _focusVisible: {
     boxShadow: '0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
@@ -54,7 +54,7 @@ export const scrollAreaViewportClass = css({
 
 export const scrollAreaScrollbarClass = css({
   '&[data-horizontal]': {
-    height: '0.625rem',
+    height: '2.5',
     flexDirection: 'column',
     borderTopWidth: '1px',
     borderTopStyle: 'solid',
@@ -62,7 +62,7 @@ export const scrollAreaScrollbarClass = css({
   },
   '&[data-vertical]': {
     height: '100%',
-    width: '0.625rem',
+    width: '2.5',
     borderLeftWidth: '1px',
     borderLeftStyle: 'solid',
     borderLeftColor: 'transparent',
@@ -71,8 +71,8 @@ export const scrollAreaScrollbarClass = css({
   touchAction: 'none',
   padding: '1px',
   transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke',
-  transitionTimingFunction: 'var(--default-transition-timing-function)',
-  transitionDuration: 'var(--default-transition-duration)',
+  transitionTimingFunction: 'default',
+  transitionDuration: 'default',
   userSelect: 'none',
 })
 
@@ -80,7 +80,7 @@ export const scrollAreaThumbClass = css({
   borderRadius: '9999px',
   position: 'relative',
   flex: '1 1 0%',
-  backgroundColor: 'var(--border)',
+  backgroundColor: 'border',
 })
 
 const SCROLLBAR_PAD_PX = 1

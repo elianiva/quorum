@@ -42,7 +42,7 @@ export const cardClass = cx(
 )
 
 export const cardHeaderClass = css({
-  gap: '0.25rem',
+  gap: '1',
   borderTopLeftRadius: '2xl',
   borderTopRightRadius: '2xl',
   paddingInline: 'var(--card-spacing)',
@@ -68,7 +68,7 @@ export const cardTitleClass = css({
 })
 
 export const cardDescriptionClass = css({
-  color: 'var(--muted-foreground)',
+  color: 'mutedForeground',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
 })
@@ -86,12 +86,12 @@ export const cardActionClass = css({
 })
 
 export const cardFooterClass = css({
-  backgroundColor: 'var(--surface-nested)',
+  backgroundColor: 'nested',
   borderBottomLeftRadius: '2xl',
   borderBottomRightRadius: '2xl',
   borderTopWidth: '1px',
   borderTopStyle: 'solid',
-  borderColor: 'var(--hairline)',
+  borderColor: 'hairline',
   padding: 'var(--card-spacing)',
   display: 'flex',
   alignItems: 'center',

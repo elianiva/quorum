@@ -4,16 +4,16 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 type Child = Html | string
 
 export const itemGroupClass = css({
-  gap: '1rem',
-  '&:has([data-size="sm"])': { gap: '0.625rem' },
-  '&:has([data-size="xs"])': { gap: '0.5rem' },
+  gap: '4',
+  '&:has([data-size="sm"])': { gap: '2.5' },
+  '&:has([data-size="xs"])': { gap: '2' },
   display: 'flex',
   width: '100%',
   flexDirection: 'column',
 })
 
 export const itemSeparatorClass = css({
-  marginBlock: '0.5rem',
+  marginBlock: '2',
 })
 
 export const itemVariantKeys = ['default', 'outline', 'muted'] as const
@@ -38,19 +38,19 @@ export type ItemSize = (typeof itemSizeKeys)[number]
 
 export const itemSizes: Record<ItemSize, string> = {
   default: css({
-    gap: '0.625rem',
-    paddingInline: '0.75rem',
-    paddingBlock: '0.625rem',
+    gap: '2.5',
+    paddingInline: '3',
+    paddingBlock: '2.5',
   }),
   sm: css({
-    gap: '0.625rem',
-    paddingInline: '0.75rem',
-    paddingBlock: '0.625rem',
+    gap: '2.5',
+    paddingInline: '3',
+    paddingBlock: '2.5',
   }),
   xs: css({
-    gap: '0.5rem',
-    paddingInline: '0.625rem',
-    paddingBlock: '0.5rem',
+    gap: '2',
+    paddingInline: '2.5',
+    paddingBlock: '2',
     '[data-slot="dropdown-menu-content"] &': { padding: '0' },
   }),
 }
@@ -61,8 +61,8 @@ export const itemClass = cx(
       _hover: { backgroundColor: 'muted' },
       transitionProperty:
         'color, background-color, border-color, text-decoration-color, fill, stroke',
-      transitionTimingFunction: 'var(--default-transition-timing-function)',
-      transitionDuration: 'var(--default-transition-duration)',
+      transitionTimingFunction: 'default',
+      transitionDuration: 'default',
     },
     borderRadius: 'xl',
     borderWidth: '1px',
@@ -75,7 +75,7 @@ export const itemClass = cx(
     alignItems: 'center',
     transitionProperty:
       'color, background-color, border-color, text-decoration-color, fill, stroke',
-    transitionTimingFunction: 'var(--default-transition-timing-function)',
+    transitionTimingFunction: 'default',
     transitionDuration: '100ms',
     outlineStyle: 'none',
     _focusVisible: {
@@ -92,21 +92,21 @@ export type ItemMediaVariant = (typeof itemMediaVariantKeys)[number]
 export const itemMediaVariants: Record<ItemMediaVariant, string> = {
   default: css({ backgroundColor: 'transparent' }),
   icon: css({
-    '& svg:not([data-svg-icon])': { width: '1rem', height: '1rem' },
+    '& svg:not([data-svg-icon])': { width: '4', height: '4' },
   }),
   image: css({
-    width: '2.5rem',
-    height: '2.5rem',
+    width: '10',
+    height: '10',
     overflow: 'hidden',
     borderRadius: 'sm',
-    '.group-item[data-size=sm] &': { width: '2rem', height: '2rem' },
-    '.group-item[data-size=xs] &': { width: '1.5rem', height: '1.5rem' },
+    '.group-item[data-size=sm] &': { width: '8', height: '8' },
+    '.group-item[data-size=xs] &': { width: '6', height: '6' },
     '& img': { width: '100%', height: '100%', objectFit: 'cover' },
   }),
 }
 
 export const itemMediaClass = css({
-  gap: '0.5rem',
+  gap: '2',
   '.group-item:has([data-slot="item-description"]) &': {
     translate: '0 0.125rem',
     alignSelf: 'flex-start',
@@ -119,7 +119,7 @@ export const itemMediaClass = css({
 })
 
 export const itemContentClass = css({
-  gap: '0.25rem',
+  gap: '1',
   '.group-item[data-size=xs] &': {
     gap: '0',
   },
@@ -132,7 +132,7 @@ export const itemContentClass = css({
 })
 
 export const itemTitleClass = css({
-  gap: '0.5rem',
+  gap: '2',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: '1.375',
   fontWeight: '500',
@@ -144,7 +144,7 @@ export const itemTitleClass = css({
 })
 
 export const itemDescriptionClass = css({
-  color: 'var(--muted-foreground)',
+  color: 'mutedForeground',
   textAlign: 'left',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: '1.5',
@@ -159,24 +159,24 @@ export const itemDescriptionClass = css({
     textUnderlineOffset: '4',
   },
   '&>a:hover': {
-    color: 'var(--primary)',
+    color: 'primary',
   },
 })
 
 export const itemActionsClass = css({
-  gap: '0.5rem',
+  gap: '2',
   display: 'flex',
   alignItems: 'center',
 })
 export const itemHeaderClass = css({
-  gap: '0.5rem',
+  gap: '2',
   display: 'flex',
   flexBasis: '100%',
   alignItems: 'center',
   justifyContent: 'space-between',
 })
 export const itemFooterClass = css({
-  gap: '0.5rem',
+  gap: '2',
   display: 'flex',
   flexBasis: '100%',
   alignItems: 'center',

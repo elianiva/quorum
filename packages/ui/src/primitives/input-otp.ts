@@ -70,7 +70,7 @@ export const otpSlotStates = (
 }
 
 export const inputOtpClass = css({
-  gap: '0.5rem',
+  gap: '2',
   position: 'relative',
   display: 'flex',
   alignItems: 'center',
@@ -94,7 +94,7 @@ export const inputOtpGroupClass = css({
   borderRadius: 'lg',
   display: 'flex',
   alignItems: 'center',
-  gap: '0.375rem',
+  gap: '1.5',
 })
 
 export const inputOtpInputClass = css({
@@ -133,8 +133,8 @@ export const inputOtpSlotClass = css({
     },
   },
   '&[aria-invalid="true"]': { borderColor: 'destructive' },
-  width: '2.25rem',
-  height: '2.25rem',
+  width: '9',
+  height: '9',
   borderRadius: 'lg',
   borderWidth: '1px',
   borderStyle: 'solid',
@@ -142,8 +142,8 @@ export const inputOtpSlotClass = css({
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
   transitionProperty: 'all',
-  transitionDuration: 'var(--default-transition-duration)',
-  transitionTimingFunction: 'var(--default-transition-timing-function)',
+  transitionDuration: 'default',
+  transitionTimingFunction: 'default',
   outlineStyle: 'none',
   position: 'relative',
   display: 'flex',
@@ -168,14 +168,14 @@ const caretBlink = keyframes({
 export const inputOtpCaretLineClass = css({
   animation: `${caretBlink} 1.25s ease-out infinite`,
   backgroundColor: 'foreground',
-  height: '1rem',
+  height: '4',
   width: '1px',
 })
 
 export const inputOtpSeparatorClass = css({
   '& svg:not([data-svg-icon])': {
-    width: '1rem',
-    height: '1rem',
+    width: '4',
+    height: '4',
   },
   display: 'flex',
   alignItems: 'center',

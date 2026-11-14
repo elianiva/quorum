@@ -9,7 +9,7 @@ type Child = Html | string
  *  live `group` ancestor carrying data-disabled — e.g. the fieldset compound
  *  or switch wrapper. */
 export const labelClass = css({
-  gap: '0.5rem',
+  gap: '2',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: '1',
   fontWeight: '500',

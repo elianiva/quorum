@@ -26,30 +26,30 @@ export const alertVariants: Record<AlertVariant, string> = {
 export const alertClass = cx(
   css({
     display: 'grid',
-    gap: '0.125rem',
+    gap: '0.5',
     borderRadius: 'xl',
     borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: 'transparent',
-    paddingInline: '0.75rem',
-    paddingBlock: '0.625rem',
+    paddingInline: '3',
+    paddingBlock: '2.5',
     textAlign: 'left',
     fontSize: 'calc(0.875rem * var(--type-scale))',
     lineHeight: 'calc(1.25 / 0.875)',
     '&:has([data-slot="alert-action"])': {
       position: 'relative',
-      paddingRight: '4.5rem',
+      paddingRight: '18',
     },
     '&:has(> svg)': {
       gridTemplateColumns: 'auto 1fr',
-      columnGap: '0.5rem',
+      columnGap: '2',
     },
     '& > svg': {
       gridRow: 'span 2 / span 2',
       translate: '0 0.125rem',
       color: 'currentColor',
     },
-    '& > svg:not([data-svg-icon])': { width: '1rem', height: '1rem' },
+    '& > svg:not([data-svg-icon])': { width: '4', height: '4' },
     position: 'relative',
     width: '100%',
   }),
@@ -64,12 +64,12 @@ export const alertTitleClass = css({
   '& a': {
     textDecorationLine: 'underline',
     textUnderlineOffset: '3px',
-    _hover: { color: 'var(--foreground)' },
+    _hover: { color: 'foreground' },
   },
 })
 
 export const alertDescriptionClass = css({
-  color: 'var(--muted-foreground)',
+  color: 'mutedForeground',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
   textWrap: 'balance',
@@ -77,21 +77,21 @@ export const alertDescriptionClass = css({
     textWrap: 'pretty',
   },
   '& p:not(:last-child)': {
-    marginBottom: '1rem',
+    marginBottom: '4',
   },
   '& a': {
     textDecorationLine: 'underline',
     textUnderlineOffset: '3px',
     _hover: {
-      color: 'var(--foreground)',
+      color: 'foreground',
     },
   },
 })
 
 export const alertActionClass = css({
   position: 'absolute',
-  top: '0.5rem',
-  right: '0.5rem',
+  top: '2',
+  right: '2',
 })
 
 type StyleConfig = Readonly<{ className?: string; variant?: AlertVariant }>

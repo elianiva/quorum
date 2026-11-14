@@ -36,12 +36,12 @@ import type {
 const chartTooltipClass = css({
   borderColor: 'color-mix(in oklab, var(--border) 50%, transparent)',
   backgroundColor: 'background',
-  gap: '0.375rem',
+  gap: '1.5',
   borderRadius: 'lg',
   borderWidth: '1px',
   borderStyle: 'solid',
-  paddingInline: '0.625rem',
-  paddingBlock: '0.375rem',
+  paddingInline: '2.5',
+  paddingBlock: '1.5',
   fontSize: 'calc(0.75rem * var(--type-scale))',
   lineHeight: 'calc(1 / 0.75)',
   boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
@@ -50,12 +50,12 @@ const chartTooltipClass = css({
 const chartTooltipOverlayClass = css({
   borderColor: 'color-mix(in oklab, var(--border) 50%, transparent)',
   backgroundColor: 'background',
-  gap: '0.375rem',
+  gap: '1.5',
   borderRadius: 'lg',
   borderWidth: '1px',
   borderStyle: 'solid',
-  paddingInline: '0.625rem',
-  paddingBlock: '0.375rem',
+  paddingInline: '2.5',
+  paddingBlock: '1.5',
   fontSize: 'calc(0.75rem * var(--type-scale))',
   lineHeight: 'calc(1 / 0.75)',
   boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
@@ -773,7 +773,7 @@ const scatterCartesian = <M>(props: CartesianChartProps<M>, h: HtmlBuilder<M>): 
                   [
                     h.Class(
                       css({
-                        marginBottom: '0.25rem',
+                        marginBottom: '1',
                         fontWeight: '500',
                       }),
                     ),
@@ -801,7 +801,7 @@ const scatterCartesian = <M>(props: CartesianChartProps<M>, h: HtmlBuilder<M>): 
                       css({
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.5rem',
+                        gap: '2',
                       }),
                     ),
                   ],
@@ -820,10 +820,10 @@ const scatterCartesian = <M>(props: CartesianChartProps<M>, h: HtmlBuilder<M>): 
                 h.Class(
                   css({
                     display: 'flex',
-                    gap: '0.625rem',
+                    gap: '2.5',
                     fontSize: 'calc(0.875rem * var(--type-scale))',
                     lineHeight: 'calc(1.25 / 0.875)',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                     justifyContent: 'center',
                   }),
                 ),
@@ -835,7 +835,7 @@ const scatterCartesian = <M>(props: CartesianChartProps<M>, h: HtmlBuilder<M>): 
                       css({
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '0.25rem',
+                        gap: '1',
                       }),
                     ),
                     ...(props.onLegendHover === undefined
@@ -854,8 +854,8 @@ const scatterCartesian = <M>(props: CartesianChartProps<M>, h: HtmlBuilder<M>): 
                         h.Class(
                           css({
                             display: 'inline-block',
-                            width: '0.75rem',
-                            height: '0.75rem',
+                            width: '3',
+                            height: '3',
                             borderRadius: '9999px',
                           }),
                         ),
@@ -2185,7 +2185,7 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
                   [
                     h.Class(
                       css({
-                        marginBottom: '0.25rem',
+                        marginBottom: '1',
                         fontWeight: '500',
                       }),
                     ),
@@ -2204,7 +2204,7 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
                               css({
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '0.5rem',
+                                gap: '2',
                               }),
                             ),
                           ],
@@ -2225,10 +2225,10 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
                 h.Class(
                   css({
                     display: 'flex',
-                    gap: '0.625rem',
+                    gap: '2.5',
                     fontSize: 'calc(0.875rem * var(--type-scale))',
                     lineHeight: 'calc(1.25 / 0.875)',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                     justifyContent: 'center',
                   }),
                 ),
@@ -2253,7 +2253,7 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
                         css({
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '0.25rem',
+                          gap: '1',
                         }),
                       ),
                       ...(props.onLegendHover === undefined
@@ -2273,13 +2273,13 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
                             item.kind === 'line'
                               ? css({
                                   display: 'inline-block',
-                                  height: '0.125rem',
-                                  width: '1rem',
+                                  height: '0.5',
+                                  width: '4',
                                 })
                               : css({
                                   display: 'inline-block',
-                                  width: '0.875rem',
-                                  height: '0.875rem',
+                                  width: '3.5',
+                                  height: '3.5',
                                 }),
                           ),
                           h.Style({
@@ -3159,10 +3159,10 @@ const polar = <M>(
           h.Class(
             css({
               display: 'flex',
-              gap: '0.625rem',
+              gap: '2.5',
               fontSize: 'calc(0.875rem * var(--type-scale))',
               lineHeight: 'calc(1.25 / 0.875)',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
               justifyContent: 'center',
             }),
           ),
@@ -3174,7 +3174,7 @@ const polar = <M>(
                 css({
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '0.25rem',
+                  gap: '1',
                 }),
               ),
             ],
@@ -3184,8 +3184,8 @@ const polar = <M>(
                   h.Class(
                     css({
                       display: 'inline-block',
-                      width: '0.875rem',
-                      height: '0.875rem',
+                      width: '3.5',
+                      height: '3.5',
                     }),
                   ),
                   h.Style({ backgroundColor: item.color }),

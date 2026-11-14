@@ -12,7 +12,7 @@ type Child = Html | string
 
 export const buttonGroupClass = css({
   '&:has(> [data-slot="button-group"])': {
-    gap: '0.5rem',
+    gap: '2',
   },
   '&:has(select[aria-hidden="true"]:last-child)': {
     '& > [data-slot="select-trigger"]:last-of-type': {
@@ -74,17 +74,17 @@ export const buttonGroupOrientationClasses = {
 export type ButtonGroupOrientation = keyof typeof buttonGroupOrientationClasses
 
 export const buttonGroupTextClass = css({
-  backgroundColor: 'var(--well)',
+  backgroundColor: 'well',
   boxShadow: 'well',
-  gap: '0.5rem',
+  gap: '2',
   borderRadius: 'lg',
-  paddingInline: '0.625rem',
+  paddingInline: '2.5',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
   fontWeight: '500',
   '& svg:not([data-svg-icon])': {
-    width: '1rem',
-    height: '1rem',
+    width: '4',
+    height: '4',
   },
   display: 'flex',
   alignItems: 'center',

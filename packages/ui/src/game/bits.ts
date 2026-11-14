@@ -63,18 +63,18 @@ export const tool = (active: boolean): string =>
         css({
           position: 'relative',
           display: 'grid',
-          width: '2.5rem',
-          height: '2.5rem',
+          width: '10',
+          height: '10',
           flexShrink: 0,
           placeItems: 'center',
           borderRadius: 'xl',
           layerStyle: 'primaryFill',
           color: 'onPrimaryFill',
-          boxShadow: 'var(--elev-primary)',
+          boxShadow: 'primary',
           _dark: {
             layerStyle: 'raised',
             color: 'foreground',
-            boxShadow: 'var(--elev-raised)',
+            boxShadow: 'raised',
           },
         }),
         'press',
@@ -83,8 +83,8 @@ export const tool = (active: boolean): string =>
         css({
           position: 'relative',
           display: 'grid',
-          width: '2.5rem',
-          height: '2.5rem',
+          width: '10',
+          height: '10',
           flexShrink: 0,
           placeItems: 'center',
           borderRadius: 'xl',
@@ -234,8 +234,8 @@ export const groupBadge = <M>(
                 h,
                 content,
                 css({
-                  width: '1.5rem',
-                  height: '1.5rem',
+                  width: '6',
+                  height: '6',
                   color: 'white',
                 }),
               ),
@@ -261,7 +261,7 @@ export const stackLogo = <M>(id: StackLogoId, className: string, h: HtmlBuilder<
           logo.color
             ? ''
             : css({
-                color: 'var(--foreground)',
+                color: 'foreground',
               }),
           className,
         ),
@@ -287,9 +287,9 @@ export const figure = <M>(
           display: 'flex',
           minWidth: '0',
           flexDirection: 'column',
-          gap: '0.25rem',
-          paddingInline: '0.875rem',
-          paddingBlock: '0.5rem',
+          gap: '1',
+          paddingInline: '3.5',
+          paddingBlock: '2',
         }),
       ),
     ],
@@ -303,7 +303,7 @@ export const figure = <M>(
               css({
                 display: 'flex',
                 alignItems: 'baseline',
-                gap: '0.375rem',
+                gap: '1.5',
                 fontSize: 'calc(15px*var(--type-scale))',
                 lineHeight: '1',
                 whiteSpace: 'nowrap',
@@ -323,7 +323,7 @@ export const figure = <M>(
                       }),
                       noteTone === 'plain'
                         ? css({
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           })
                         : toneText(noteTone),
                     ),
@@ -347,9 +347,9 @@ export const row = <M>(name: string, value: string, tone: Tone, h: HtmlBuilder<M
           display: 'flex',
           alignItems: 'baseline',
           justifyContent: 'space-between',
-          gap: '0.75rem',
-          paddingInline: '0.75rem',
-          paddingBlock: '0.375rem',
+          gap: '3',
+          paddingInline: '3',
+          paddingBlock: '1.5',
         }),
       ),
     ],
@@ -359,7 +359,7 @@ export const row = <M>(name: string, value: string, tone: Tone, h: HtmlBuilder<M
           h.Class(
             css({
               fontSize: 'calc(12.5px*var(--type-scale))',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -389,7 +389,7 @@ export const meter = <M>(share: number, fill: string, h: HtmlBuilder<M>): Html =
     [
       h.Class(
         css({
-          height: '0.375rem',
+          height: '1.5',
           overflow: 'hidden',
           borderRadius: '9999px',
           backgroundColor: 'well',
@@ -458,7 +458,7 @@ export const ring = <M>(share: number, className: string, h: HtmlBuilder<M>): Ht
           css({
             transitionProperty: 'stroke-dashoffset',
             transitionDuration: '200ms',
-            transitionTimingFunction: 'var(--ease-out)',
+            transitionTimingFunction: 'out',
           }),
         ),
       ]),
@@ -509,8 +509,8 @@ export const insightChip = <M>(
             h,
             POOL_ICONS[pool],
             css({
-              width: '0.75rem',
-              height: '0.75rem',
+              width: '3',
+              height: '3',
               flexShrink: '0',
             }),
           ),
@@ -522,7 +522,7 @@ export const insightChip = <M>(
           h.Class(
             grey
               ? css({
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 })
               : tone === 'plain'
                 ? ''

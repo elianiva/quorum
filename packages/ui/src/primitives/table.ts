@@ -51,17 +51,17 @@ export const tableRowClass = css({
   borderBottomWidth: '1px',
   borderBottomStyle: 'solid',
   transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke',
-  transitionTimingFunction: 'var(--default-transition-timing-function)',
-  transitionDuration: 'var(--default-transition-duration)',
+  transitionTimingFunction: 'default',
+  transitionDuration: 'default',
   '&:has([aria-expanded])': {
     backgroundColor: 'color-mix(in oklab, var(--muted) 50%, transparent)',
   },
 })
 
 export const tableHeadClass = css({
-  color: 'var(--foreground)',
-  height: '2.5rem',
-  paddingInline: '0.5rem',
+  color: 'foreground',
+  height: '10',
+  paddingInline: '2',
   textAlign: 'left',
   verticalAlign: 'middle',
   fontWeight: '500',
@@ -72,7 +72,7 @@ export const tableHeadClass = css({
 })
 
 export const tableCellClass = css({
-  padding: '0.5rem',
+  padding: '2',
   verticalAlign: 'middle',
   whiteSpace: 'nowrap',
   '&:has([role=checkbox])': {
@@ -81,8 +81,8 @@ export const tableCellClass = css({
 })
 
 export const tableCaptionClass = css({
-  color: 'var(--muted-foreground)',
-  marginTop: '1rem',
+  color: 'mutedForeground',
+  marginTop: '4',
   fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
 })

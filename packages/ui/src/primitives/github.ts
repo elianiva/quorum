@@ -8,7 +8,7 @@ import { siGithub } from 'simple-icons'
  */
 export const githubMark = <M>(
   h: HtmlBuilder<M>,
-  className = css({ width: '1rem', height: '1rem', flexShrink: '0' }),
+  className = css({ width: '4', height: '4', flexShrink: '0' }),
 ): Html =>
   h.svg(
     [

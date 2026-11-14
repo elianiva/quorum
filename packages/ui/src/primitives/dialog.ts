@@ -69,12 +69,12 @@ export const dialogPanelClass = cx(
     boxShadow: 'float',
     display: 'grid',
     maxWidth: 'calc(100% - 2rem)',
-    gap: '1rem',
+    gap: '4',
     borderRadius: '2xl',
-    padding: '1rem',
+    padding: '4',
     fontSize: 'calc(0.875rem * var(--type-scale))',
     lineHeight: 'calc(1.25 / 0.875)',
-    sm: { maxWidth: '24rem' },
+    sm: { maxWidth: '96' },
     position: 'fixed',
     top: '50%',
     left: '50%',
@@ -102,12 +102,12 @@ export const dialogCloseButtonClass = css({
   justifyContent: 'center',
   whiteSpace: 'nowrap',
   transitionProperty: 'all',
-  transitionDuration: 'var(--default-transition-duration)',
-  transitionTimingFunction: 'var(--default-transition-timing-function)',
+  transitionDuration: 'default',
+  transitionTimingFunction: 'default',
   outlineStyle: 'none',
   userSelect: 'none',
   '& svg': { pointerEvents: 'none', flexShrink: '0' },
-  '& svg:not([data-svg-icon])': { width: '1rem', height: '1rem' },
+  '& svg:not([data-svg-icon])': { width: '4', height: '4' },
   _focusVisible: {
     borderColor: 'ring',
     boxShadow: '0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
@@ -128,14 +128,14 @@ export const dialogCloseButtonClass = css({
   _disabled: { pointerEvents: 'none', opacity: 0.5 },
   _hover: { backgroundColor: 'muted', color: 'foreground' },
   _expanded: { backgroundColor: 'muted', color: 'foreground' },
-  width: '1.75rem',
-  height: '1.75rem',
+  width: '7',
+  height: '7',
   borderRadius: 'min(var(--radius-md), 12px)',
   '&:active:not([aria-haspopup])': { translate: '0 1px' },
   '[data-slot="button-group"] &': { borderRadius: 'lg' },
   position: 'absolute',
-  top: '0.5rem',
-  right: '0.5rem',
+  top: '2',
+  right: '2',
 })
 
 export const dialogTitleClass = css({
@@ -152,12 +152,12 @@ export const dialogDescriptionClass = css({
   '& > a': {
     textDecorationLine: 'underline',
     textUnderlineOffset: '3px',
-    _hover: { color: 'var(--foreground)' },
+    _hover: { color: 'foreground' },
   },
 })
 
 export const dialogHeaderClass = css({
-  gap: '0.5rem',
+  gap: '2',
   display: 'flex',
   flexDirection: 'column',
 })
@@ -171,10 +171,10 @@ export const dialogFooterClass = css({
   borderTopWidth: '1px',
   borderTopStyle: 'solid',
   borderColor: 'hairline',
-  padding: '1rem',
+  padding: '4',
   display: 'flex',
   flexDirection: 'column-reverse',
-  gap: '0.5rem',
+  gap: '2',
   sm: {
     flexDirection: 'row',
     justifyContent: 'flex-end',

@@ -5,7 +5,7 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
   Cross-Origin-Opener-Policy: same-origin-allow-popups
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://ampcode.com; style-src 'self' 'unsafe-inline' https://ampcode.com; font-src 'self'; img-src 'self' data: blob: https://ampcode.com; connect-src 'self' https://*.ingest.sentry.io https://*.sentry.io https://ampcode.com wss://playquorum.dev; worker-src 'self' blob:; media-src 'self' blob:; manifest-src 'self'; frame-src https://ampcode.com; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline' https://ampcode.com; style-src 'self' 'unsafe-inline' https://ampcode.com; font-src 'self'; img-src 'self' data: blob: https://ampcode.com; connect-src 'self' https://*.ingest.sentry.io https://*.sentry.io https://ampcode.com wss://playquorum.dev; worker-src 'self' blob:; media-src 'self' blob:; manifest-src 'self'; frame-src https://ampcode.com; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'; upgrade-insecure-requests
   Cache-Control: public, max-age=0, must-revalidate
   Document-Policy: js-profiling
 

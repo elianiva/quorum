@@ -1,7 +1,7 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { IconNode } from 'lucide'
 import type { BuildGroup, InsightPool } from '@quorum/simulation/catalog'
-import { css, cx } from '@quorum/styled-system/css'
 import { cn } from 'cn'
 import { icon } from '../primitives/icon.ts'
 import { GROUP_SHAPES, type GroupShape, STACK_LOGOS, type StackLogoId } from './icons.ts'
@@ -206,8 +206,18 @@ export const groupBadge = <M>(
       h.ViewBox('0 0 24 24'),
       h.Class(
         cn(
-          'shrink-0 overflow-visible drop-shadow-[0_1px_1px_oklch(0_0_0/0.18)]',
-          muted ? 'text-muted-foreground/35' : color ? '' : GROUP_TEXT[group],
+          css({
+            flexShrink: '0',
+            overflow: 'visible',
+            filter: 'drop-shadow(0 1px 1px oklch(0 0 0/0.18))',
+          }),
+          muted
+            ? css({
+                color: 'color-mix(in oklab, var(--muted-foreground) 35%, transparent)',
+              })
+            : color
+              ? ''
+              : GROUP_TEXT[group],
           className,
         ),
       ),
@@ -220,7 +230,17 @@ export const groupBadge = <M>(
         // A nested 24-unit svg; its currentColor is white.
         'path' in content
           ? [h.path([h.D(content.path), h.Fill('white')], [])]
-          : [icon(h, content, 'size-6 text-white')],
+          : [
+              icon(
+                h,
+                content,
+                css({
+                  width: '1.5rem',
+                  height: '1.5rem',
+                  color: 'white',
+                }),
+              ),
+            ],
       ),
     ],
   )
@@ -234,7 +254,19 @@ export const stackLogo = <M>(id: StackLogoId, className: string, h: HtmlBuilder<
       h.AriaHidden(true),
       h.Xmlns('http://www.w3.org/2000/svg'),
       h.ViewBox('0 0 24 24'),
-      h.Class(cn('shrink-0', logo.color ? '' : 'text-foreground', className)),
+      h.Class(
+        cn(
+          css({
+            flexShrink: '0',
+          }),
+          logo.color
+            ? ''
+            : css({
+                color: 'var(--foreground)',
+              }),
+          className,
+        ),
+      ),
     ],
     [h.path([h.D(logo.path), h.Fill(logo.color ?? 'currentColor')], [])],
   )
@@ -249,7 +281,19 @@ export const figure = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Key(name), h.Class('flex min-w-0 flex-col gap-1 px-3.5 py-2')],
+    [
+      h.Key(name),
+      h.Class(
+        css({
+          display: 'flex',
+          minWidth: '0',
+          flexDirection: 'column',
+          gap: '0.25rem',
+          paddingInline: '0.875rem',
+          paddingBlock: '0.5rem',
+        }),
+      ),
+    ],
     [
       h.span([h.Class(EYEBROW)], [name]),
       h.span(
@@ -257,7 +301,14 @@ export const figure = <M>(
           h.Class(
             cn(
               FIGURE,
-              'flex items-baseline gap-1.5 text-[calc(15px*var(--type-scale))] leading-none whitespace-nowrap',
+              css({
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: '0.375rem',
+                fontSize: 'calc(15px*var(--type-scale))',
+                lineHeight: '1',
+                whiteSpace: 'nowrap',
+              }),
             ),
           ),
         ],
@@ -268,8 +319,14 @@ export const figure = <M>(
                 [
                   h.Class(
                     cn(
-                      'text-[calc(10.5px*var(--type-scale))]',
-                      noteTone === 'plain' ? 'text-muted-foreground' : toneText(noteTone),
+                      css({
+                        fontSize: 'calc(10.5px*var(--type-scale))',
+                      }),
+                      noteTone === 'plain'
+                        ? css({
+                            color: 'var(--muted-foreground)',
+                          })
+                        : toneText(noteTone),
                     ),
                   ),
                 ],
@@ -284,13 +341,42 @@ export const figure = <M>(
 /** A label and a value on one line, for nested groups. */
 export const row = <M>(name: string, value: string, tone: Tone, h: HtmlBuilder<M>): Html =>
   h.div(
-    [h.Key(name), h.Class('flex items-baseline justify-between gap-3 px-3 py-1.5')],
     [
-      h.span([h.Class('text-[calc(12.5px*var(--type-scale))] text-muted-foreground')], [name]),
+      h.Key(name),
+      h.Class(
+        css({
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          gap: '0.75rem',
+          paddingInline: '0.75rem',
+          paddingBlock: '0.375rem',
+        }),
+      ),
+    ],
+    [
       h.span(
         [
           h.Class(
-            cn(FIGURE, 'text-[calc(12px*var(--type-scale))] whitespace-nowrap', toneText(tone)),
+            css({
+              fontSize: 'calc(12.5px*var(--type-scale))',
+              color: 'var(--muted-foreground)',
+            }),
+          ),
+        ],
+        [name],
+      ),
+      h.span(
+        [
+          h.Class(
+            cn(
+              FIGURE,
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                whiteSpace: 'nowrap',
+              }),
+              toneText(tone),
+            ),
           ),
         ],
         [value],
@@ -317,7 +403,17 @@ export const meter = <M>(share: number, fill: string, h: HtmlBuilder<M>): Html =
         [
           // The fill slides rather than resizing: transform skips layout, and progress moves linearly.
           h.Class(
-            cn('h-full w-full rounded-full transition-transform duration-250 ease-linear', fill),
+            cn(
+              css({
+                height: '100%',
+                width: '100%',
+                borderRadius: '9999px',
+                transitionProperty: 'transform',
+                transitionDuration: '250ms',
+                transitionTimingFunction: 'linear',
+              }),
+              fill,
+            ),
           ),
           h.Style({
             transform: `translateX(${(Math.max(0, Math.min(1, share)) - 1) * 100}%)`,
@@ -359,7 +455,13 @@ export const ring = <M>(share: number, className: string, h: HtmlBuilder<M>): Ht
         h.Attribute('stroke-dasharray', `${length}`),
         h.Attribute('stroke-dashoffset', `${length * (1 - Math.max(0, Math.min(1, share)))}`),
         h.Attribute('transform', 'rotate(-90 8 8)'),
-        h.Class('transition-[stroke-dashoffset] duration-200 ease-out'),
+        h.Class(
+          css({
+            transitionProperty: 'stroke-dashoffset',
+            transitionDuration: '200ms',
+            transitionTimingFunction: 'var(--ease-out)',
+          }),
+        ),
       ]),
     ],
   )
@@ -381,20 +483,52 @@ export const insightChip = <M>(
     [
       h.Title(`${name} ${figure}`),
       h.AriaLabel(`${name} ${figure}`),
-      h.Class(cn(FIGURE, 'inline-flex items-center gap-[3px] whitespace-nowrap')),
+      h.Class(
+        cn(
+          FIGURE,
+          css({
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '3px',
+            whiteSpace: 'nowrap',
+          }),
+        ),
+      ),
     ],
     [
       h.span(
         [
-          h.Class('inline-flex'),
+          h.Class(
+            css({
+              display: 'inline-flex',
+            }),
+          ),
           h.Style({ color: grey ? 'var(--muted-foreground)' : poolColor(pool) }),
         ],
-        [icon(h, POOL_ICONS[pool], 'size-3 shrink-0')],
+        [
+          icon(
+            h,
+            POOL_ICONS[pool],
+            css({
+              width: '0.75rem',
+              height: '0.75rem',
+              flexShrink: '0',
+            }),
+          ),
+        ],
       ),
       h.span(
         [
           h.AriaHidden(true),
-          h.Class(grey ? 'text-muted-foreground' : tone === 'plain' ? '' : toneText(tone)),
+          h.Class(
+            grey
+              ? css({
+                  color: 'var(--muted-foreground)',
+                })
+              : tone === 'plain'
+                ? ''
+                : toneText(tone),
+          ),
         ],
         [figure],
       ),

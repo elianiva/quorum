@@ -54,8 +54,10 @@ export const precacheOf = (
   outputs: ReadonlyArray<OutputEntry>,
   publicFiles: ReadonlyArray<string>,
 ): ReadonlyArray<string> => {
+  // The shell is `/`, not `/index.html`: the host redirects the file to `/`, and a redirected
+  // response cannot answer a navigation.
   // Vite writes the HTML after the plugin's bundle hook, so it is never in the list it hands us.
-  const files = new Set<string>(['/index.html'])
+  const files = new Set<string>(['/'])
   for (const entry of outputs) {
     if (excludedFromCache(entry.fileName)) continue
     if (
@@ -66,7 +68,7 @@ export const precacheOf = (
       files.add(`/${entry.fileName}`)
       continue
     }
-    if (entry.fileName === 'index.html') files.add('/index.html')
+    if (entry.fileName === 'index.html') files.add('/')
     else if (entry.fileName.endsWith('.css')) files.add(`/${entry.fileName}`)
     else if (FONT.test(entry.fileName)) files.add(`/${entry.fileName}`)
   }

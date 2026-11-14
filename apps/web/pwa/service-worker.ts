@@ -21,10 +21,32 @@ const RUNTIME = /^\/(?:assets|art)\//
 /* A static response may carry Vary: Origin, and the precache was fetched without one.
    The shell is hashed and same-origin, so the header cannot change what it holds. */
 
+/* A redirected response cannot answer a navigation: the browser fails the load with ERR_FAILED.
+   Rebuild it from its body so the cache never holds the flag. */
+function clean(response) {
+  if (!response.redirected) return Promise.resolve(response)
+  return response.blob().then(function (body) {
+    return new Response(body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    })
+  })
+}
+
 self.addEventListener('install', function (event) {
   event.waitUntil(
     caches.open(CACHE).then(function (cache) {
-      return cache.addAll(PRECACHE)
+      return Promise.all(
+        PRECACHE.map(function (path) {
+          return fetch(path).then(function (response) {
+            if (!response.ok) throw new Error('precache ' + path + ' ' + response.status)
+            return clean(response).then(function (copy) {
+              return cache.put(path, copy)
+            })
+          })
+        }),
+      )
     }),
   )
 })
@@ -68,10 +90,10 @@ self.addEventListener('fetch', function (event) {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      caches.match('/index.html', { ignoreVary: true }).then(function (cached) {
+      caches.match('/', { ignoreVary: true }).then(function (cached) {
         if (cached) return cached
         return fetch(request).catch(function () {
-          return caches.match('/index.html', { ignoreVary: true }).then(function (shell) {
+          return caches.match('/', { ignoreVary: true }).then(function (shell) {
             return shell || Response.error()
           })
         })

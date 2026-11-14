@@ -51,6 +51,7 @@ describe('the service worker install list', () => {
 
   test('keeps the shell, every code chunk, the compute worker, the Solver, the manifest, the icons, and fonts', () => {
     expect(precacheOf(outputs, publicFiles)).toEqual([
+      '/',
       '/apple-touch-icon.png',
       '/assets/brand-xyz.js',
       '/assets/compute.worker-ghi.js',
@@ -72,7 +73,6 @@ describe('the service worker install list', () => {
       '/icon-maskable-192.png',
       '/icon-maskable-512.png',
       '/icon-monochrome.png',
-      '/index.html',
       '/manifest.webmanifest',
     ])
   })
@@ -96,10 +96,10 @@ describe('the service worker install list', () => {
 })
 
 test('the worker carries its build ID and install list', () => {
-  const source = serviceWorkerSource('abc123', ['/index.html', '/assets/index-abc.js'])
+  const source = serviceWorkerSource('abc123', ['/', '/assets/index-abc.js'])
   expect(source).toContain("const BUILD = 'abc123'")
   expect(source).toContain("const CACHE = 'quorum-' + BUILD")
-  expect(source).toContain('["/index.html","/assets/index-abc.js"]')
+  expect(source).toContain('["/","/assets/index-abc.js"]')
   expect(source).toContain(
     "if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting()",
   )
@@ -107,4 +107,29 @@ test('the worker carries its build ID and install list', () => {
   expect(source).toContain("url.pathname === '/harness.html'")
   // A static response can carry Vary: Origin, while the precache was fetched without one.
   expect(source).toContain('{ ignoreVary: true }')
+})
+
+test('the worker caches the shell at / and strips redirects from what it stores', async () => {
+  const source = serviceWorkerSource('abc123', ['/'])
+  expect(source).not.toContain('/index.html')
+  const listeners: Record<string, (event: unknown) => void> = {}
+  const stored = new Map<string, Response>()
+  const redirected = Object.defineProperty(new Response('<html></html>'), 'redirected', {
+    value: true,
+  })
+  const scope = {
+    addEventListener: (type: string, listener: (event: unknown) => void) => {
+      listeners[type] = listener
+    },
+  }
+  const cachesStub = {
+    open: async () => ({ put: async (k: string, v: Response) => void stored.set(k, v) }),
+  }
+  new Function('self', 'caches', 'fetch', source)(scope, cachesStub, async () => redirected)
+  let done: Promise<unknown> = Promise.resolve()
+  listeners.install({ waitUntil: (p: Promise<unknown>) => (done = p) })
+  await done
+  const shell = stored.get('/')
+  expect(shell?.redirected).toBe(false)
+  expect(await shell?.text()).toBe('<html></html>')
 })

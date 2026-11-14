@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
@@ -31,7 +32,7 @@ const loadBalancer = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Read
           (variant) => Message.LbVariantChosen({ nodeId: node.id, variant }),
           h,
           (id) => LB_VARIANTS[id].research === null || has(game, LB_VARIANTS[id].research),
-          'grid-cols-2',
+          css({ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }),
         ),
         caption(
           node.variant === 'l4'
@@ -55,7 +56,7 @@ const loadBalancer = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Read
             const research = LB_POLICIES[policy].research
             return research === null || has(game, research)
           },
-          'grid-cols-2',
+          css({ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }),
         ),
       ],
       h,

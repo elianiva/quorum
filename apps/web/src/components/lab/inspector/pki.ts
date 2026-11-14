@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { CERT_RENEW } from '@quorum/simulation/catalog'
@@ -19,7 +20,15 @@ const secrets = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyA
       t.inspectorPki.certificate,
       [
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                lineHeight: '1.375',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ],
           [t.inspectorPki.aCertificateLastsCalendarDaysAnd(life, Math.round(life * CERT_RENEW))],
         ),
         caption(
@@ -31,7 +40,15 @@ const secrets = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyA
           h,
         ),
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                lineHeight: '1.375',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ],
           [t.inspectorPki.sellItOrLeaveItDown],
         ),
       ],
@@ -42,7 +59,15 @@ const secrets = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyA
       t.inspectorPki.secrets,
       [
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                lineHeight: '1.375',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ],
           [t.inspectorPki.theKeysLiveHereNotIn],
         ),
       ],

@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { formats } from '@/i18n/format.ts'
 import { copy, localized, nodeLabelIn, nodeTitle, type Messages } from '@/i18n/messages.ts'
 import { isDown } from '@quorum/simulation/life'
@@ -106,21 +107,64 @@ const gauge = (
 ) => {
   const share = total > 0 ? Math.min(1, used / total) : 0
   const level = invert ? 1 - share : share
-  const fill = level >= 0.9 ? 'bg-danger' : level >= 0.7 ? 'bg-warn' : 'bg-primary-fill'
+  const fill =
+    level >= 0.9
+      ? css({ backgroundColor: 'danger' })
+      : level >= 0.7
+        ? css({ backgroundColor: 'warn' })
+        : css({ layerStyle: 'primaryFill' })
   return h.div(
-    [h.Key(name), h.Class('flex flex-col gap-1.5 py-0.5')],
+    [
+      h.Key(name),
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.375rem',
+          paddingBlock: '0.125rem',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex items-baseline justify-between')],
         [
-          h.span([h.Class('text-[calc(12.5px*var(--type-scale))] text-muted-foreground')], [name]),
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+            }),
+          ),
+        ],
+        [
+          h.span(
+            [
+              h.Class(
+                css({
+                  fontSize: 'calc(12.5px*var(--type-scale))',
+                  color: 'var(--muted-foreground)',
+                }),
+              ),
+            ],
+            [name],
+          ),
           h.span(
             [
               h.Class(
                 cn(
                   FIGURE,
-                  'text-[calc(12px*var(--type-scale))]',
-                  level >= 0.9 ? 'text-danger' : level >= 0.7 ? 'text-warn' : '',
+                  css({
+                    fontSize: 'calc(12px*var(--type-scale))',
+                  }),
+                  level >= 0.9
+                    ? css({
+                        color: 'var(--danger)',
+                      })
+                    : level >= 0.7
+                      ? css({
+                          color: 'var(--warn)',
+                        })
+                      : '',
                 ),
               ),
             ],
@@ -145,10 +189,29 @@ const callout = (
       h.Key(text),
       h.Class(
         cn(
-          'mx-4 mb-3 flex flex-col gap-2 rounded-xl px-3 py-2.5 text-[calc(12px*var(--type-scale))] leading-snug',
+          css({
+            marginInline: '1rem',
+            marginBottom: '0.75rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem',
+            borderRadius: 'xl',
+            paddingInline: '0.75rem',
+            paddingBlock: '0.625rem',
+            fontSize: 'calc(12px*var(--type-scale))',
+            lineHeight: '1.375',
+          }),
           tone === 'danger'
-            ? 'bg-danger/8 text-danger shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--danger)_25%,transparent)]'
-            : 'bg-warn/10 text-warn shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--warn)_28%,transparent)]',
+            ? css({
+                backgroundColor: 'color-mix(in oklab, var(--danger) 8%, transparent)',
+                color: 'var(--danger)',
+                boxShadow: 'inset 0 0 0 1px color-mix(in oklch,var(--danger) 25%,transparent)',
+              })
+            : css({
+                backgroundColor: 'color-mix(in oklab, var(--warn) 10%, transparent)',
+                color: 'var(--warn)',
+                boxShadow: 'inset 0 0 0 1px color-mix(in oklch,var(--warn) 28%,transparent)',
+              }),
           className,
         ),
       ),
@@ -179,7 +242,10 @@ const warnings = (
             isDisabled: game.cash < price,
             variant: 'outline',
             size: 'sm',
-            className: 'self-start text-danger',
+            className: css({
+              alignSelf: 'flex-start',
+              color: 'var(--danger)',
+            }),
           },
           [t.inspector.replace, h.span([h.Class(FIGURE)], [priceLabel(game.sandbox, price)])],
           h,
@@ -199,7 +265,10 @@ const warnings = (
             onClick: Message.ConnectsThrottled({ nodeId: node.id }),
             variant: 'outline',
             size: 'sm',
-            className: 'self-start text-danger',
+            className: css({
+              alignSelf: 'flex-start',
+              color: 'var(--danger)',
+            }),
           },
           [t.inspector.throttleConnects],
           h,
@@ -221,7 +290,10 @@ const warnings = (
             onClick: Message.KindMoved(),
             variant: 'outline',
             size: 'sm',
-            className: 'self-start text-danger',
+            className: css({
+              alignSelf: 'flex-start',
+              color: 'var(--danger)',
+            }),
           },
           [t.inspector.moveLogin],
           h,
@@ -239,7 +311,9 @@ const warnings = (
             onClick: Message.FailedOver({ nodeId: node.id }),
             variant: 'outline',
             size: 'sm',
-            className: 'self-start',
+            className: css({
+              alignSelf: 'flex-start',
+            }),
           },
           [t.inspector.failOver],
           h,
@@ -270,9 +344,22 @@ const warnings = (
             onClick: Message.RestartChosen({ nodeId: node.id }),
             variant: 'outline',
             size: 'sm',
-            className: 'self-start text-danger',
+            className: css({
+              alignSelf: 'flex-start',
+              color: 'var(--danger)',
+            }),
           },
-          [icon(h, RotateCcw, 'size-3.5'), t.inspector.restart],
+          [
+            icon(
+              h,
+              RotateCcw,
+              css({
+                width: '0.875rem',
+                height: '0.875rem',
+              }),
+            ),
+            t.inspector.restart,
+          ],
           h,
         ),
         h,
@@ -286,7 +373,9 @@ const warnings = (
         onClick: Message.TaskQueued({ id: 'upgrade-cluster' }),
         variant: 'outline',
         size: 'sm',
-        className: 'self-start',
+        className: css({
+          alignSelf: 'flex-start',
+        }),
       },
       [t.inspector.upgradeClustersDH(TASKS['upgrade-cluster'].dh)],
       h,
@@ -311,7 +400,9 @@ const warnings = (
             isDisabled: game.backlog.some((item) => item.ref === 'auth'),
             variant: 'outline',
             size: 'sm',
-            className: 'self-start',
+            className: css({
+              alignSelf: 'flex-start',
+            }),
           },
           [t.inspector.moveAuthInHouseDH(AUTH_MOVE_DH)],
           h,
@@ -371,7 +462,10 @@ const warnings = (
                 onClick: Message.MessageDeleted(),
                 variant: 'outline',
                 size: 'sm',
-                className: 'self-start text-danger',
+                className: css({
+                  alignSelf: 'flex-start',
+                  color: 'var(--danger)',
+                }),
               },
               [t.inspector.deleteMessage],
               h,
@@ -392,7 +486,10 @@ const warnings = (
                 onClick: Message.PricingChosen({ nodeId: node.id, pricing: 'on-demand' }),
                 variant: 'outline',
                 size: 'sm',
-                className: 'self-start text-danger',
+                className: css({
+                  alignSelf: 'flex-start',
+                  color: 'var(--danger)',
+                }),
               },
               [t.inspector.switchToOnDemand],
               h,
@@ -408,7 +505,15 @@ const warnings = (
         text,
         'danger',
         button(
-          { onClick: message, variant: 'outline', size: 'sm', className: 'self-start text-danger' },
+          {
+            onClick: message,
+            variant: 'outline',
+            size: 'sm',
+            className: css({
+              alignSelf: 'flex-start',
+              color: 'var(--danger)',
+            }),
+          },
           [label],
           h,
         ),
@@ -441,7 +546,10 @@ const warnings = (
             onClick: Message.UnderAttackChosen({ nodeId: node.id, underAttack: true }),
             variant: 'outline',
             size: 'sm',
-            className: 'self-start text-danger',
+            className: css({
+              alignSelf: 'flex-start',
+              color: 'var(--danger)',
+            }),
           },
           [t.inspector.underAttack],
           h,
@@ -461,7 +569,10 @@ const warnings = (
                 onClick: Message.IndexAdded({ nodeId: node.id }),
                 variant: 'outline',
                 size: 'sm',
-                className: 'self-start text-danger',
+                className: css({
+                  alignSelf: 'flex-start',
+                  color: 'var(--danger)',
+                }),
               },
               [t.inspector.addIndex],
               h,
@@ -674,7 +785,19 @@ const sparkline = (
   const onPick = options.onPick
   return h.svg(
     [
-      h.Class(cn('h-11 w-full', selected !== null ? 'overflow-visible' : '')),
+      h.Class(
+        cn(
+          css({
+            height: '2.75rem',
+            width: '100%',
+          }),
+          selected !== null
+            ? css({
+                overflow: 'visible',
+              })
+            : '',
+        ),
+      ),
       h.Attribute('viewBox', `0 0 ${width} ${height}`),
       h.Attribute('preserveAspectRatio', 'none'),
       ...(options.label ? [h.AriaLabel(options.label)] : []),
@@ -734,7 +857,11 @@ const sparkline = (
               h.Attribute('width', String(right - left)),
               h.Attribute('height', String(height)),
               h.Attribute('fill', 'transparent'),
-              h.Class('cursor-crosshair'),
+              h.Class(
+                css({
+                  cursor: 'crosshair',
+                }),
+              ),
               h.OnClick(onPick(index)),
             ])
           })
@@ -753,21 +880,52 @@ const pricing = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
       ? Math.ceil((node.pricingUntil - game.time) / 1_440)
       : null
   return h.div(
-    [h.Class('flex flex-col gap-1.5 pt-1')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.375rem',
+          paddingTop: '0.25rem',
+        }),
+      ),
+    ],
     [
       h.span(
-        [h.Class(cn(EYEBROW, 'px-1 text-muted-foreground'))],
+        [
+          h.Class(
+            cn(
+              EYEBROW,
+              css({
+                paddingInline: '0.25rem',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ),
+        ],
         [term === null ? t.inspector.pricing : t.inspector.pricingReservedFor(term)],
       ),
       segmented(
-        'grid-cols-3',
+        css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
         PRICING_IDS.map((id) =>
           choice(
             id,
             current === id,
             true,
             Message.PricingChosen({ nodeId: node.id, pricing: id }),
-            [h.span([h.Class('w-full text-center')], [t.catalog.pricings[id].name])],
+            [
+              h.span(
+                [
+                  h.Class(
+                    css({
+                      width: '100%',
+                      textAlign: 'center',
+                    }),
+                  ),
+                ],
+                [t.catalog.pricings[id].name],
+              ),
+            ],
             t.catalog.pricings[id].blurb,
             h,
           ),
@@ -797,7 +955,14 @@ const upgradeAll = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html =
     return price !== null && (game.sandbox || game.cash >= price)
   })
   return h.div(
-    [h.Class('px-4 py-3')],
+    [
+      h.Class(
+        css({
+          paddingInline: '1rem',
+          paddingBlock: '0.75rem',
+        }),
+      ),
+    ],
     [
       button(
         {
@@ -805,7 +970,10 @@ const upgradeAll = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html =
           isDisabled: !payable,
           variant: 'outline',
           size: 'sm',
-          className: 'w-full justify-between',
+          className: css({
+            width: '100%',
+            justifyContent: 'space-between',
+          }),
           attributes: [
             h.AriaLabel(t.inspector.upgradeEveryHere(name)),
             h.Title(t.inspector.oneSizeOnEveryOnThis(name)),
@@ -813,9 +981,24 @@ const upgradeAll = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html =
         },
         [
           h.span(
-            [h.Class('flex items-center gap-1.5')],
             [
-              icon(h, ArrowUp, 'size-3.5'),
+              h.Class(
+                css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.375rem',
+                }),
+              ),
+            ],
+            [
+              icon(
+                h,
+                ArrowUp,
+                css({
+                  width: '0.875rem',
+                  height: '0.875rem',
+                }),
+              ),
               growable.length > 0
                 ? t.inspector.upgradeAll(growable.length)
                 : t.inspector.upgradeAll2,
@@ -837,7 +1020,20 @@ const instance = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => 
     t.inspector.instance,
     [
       h.div(
-        [h.Class(cn('flex items-center justify-between gap-2 p-1', WELL))],
+        [
+          h.Class(
+            cn(
+              css({
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.5rem',
+                padding: '0.25rem',
+              }),
+              WELL,
+            ),
+          ),
+        ],
         [
           smallButton(
             t.inspector.smallerFree,
@@ -847,7 +1043,18 @@ const instance = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => 
             h,
           ),
           h.span(
-            [h.Class(cn(FIGURE, 'flex-1 text-center text-[calc(12.5px*var(--type-scale))]'))],
+            [
+              h.Class(
+                cn(
+                  FIGURE,
+                  css({
+                    flex: '1 1 0%',
+                    textAlign: 'center',
+                    fontSize: 'calc(12.5px*var(--type-scale))',
+                  }),
+                ),
+              ),
+            ],
             [
               t.inspector.vCPUGB(
                 sizeName ? t.nodeList.sizes[sizeName] : '',
@@ -870,7 +1077,17 @@ const instance = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => 
         ],
       ),
       h.div(
-        [h.Class('flex items-center gap-2 px-1 pt-1')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              paddingInline: '0.25rem',
+              paddingTop: '0.25rem',
+            }),
+          ),
+        ],
         [
           smallButton(
             t.inspector.buyTenSizes,
@@ -889,14 +1106,26 @@ const instance = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => 
         ],
       ),
       segmented(
-        'grid-cols-3',
+        css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
         FAMILY_IDS.map((id) =>
           choice(
             id,
             node.family === id,
             true,
             Message.OptionChosen({ nodeId: node.id, option: { kind: 'family', id } }),
-            [h.span([h.Class('w-full text-center')], [t.catalog.families[id].name])],
+            [
+              h.span(
+                [
+                  h.Class(
+                    css({
+                      width: '100%',
+                      textAlign: 'center',
+                    }),
+                  ),
+                ],
+                [t.catalog.families[id].name],
+              ),
+            ],
             t.catalog.families[id].blurb,
             h,
             Message.OptionPreviewed({ nodeId: node.id, option: { kind: 'family', id } }),
@@ -951,7 +1180,19 @@ const connectionGrid = (
   return h.div(
     [
       h.Class(
-        `-mx-1.5 grid ${links.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-x-1 gap-y-0.5`,
+        cx(
+          css({
+            marginInline: '-0.375rem',
+            display: 'grid',
+          }),
+          links.length === 1
+            ? css({ gridTemplateColumns: 'repeat(1, minmax(0, 1fr))' })
+            : css({ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }),
+          css({
+            columnGap: '0.25rem',
+            rowGap: '0.125rem',
+          }),
+        ),
       ),
     ],
     links.map(([, other]) => {
@@ -970,18 +1211,49 @@ const connectionGrid = (
           h.Title(`${name} · ${t.inspector.s(rate(rateNow))}`),
           h.DataAttribute('connection', side),
           h.Class(
-            'group flex min-w-0 items-center gap-1 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-well',
+            cx(
+              css({
+                display: 'flex',
+                minWidth: '0',
+                alignItems: 'center',
+                gap: '0.25rem',
+                borderRadius: 'md',
+                paddingInline: '0.375rem',
+                paddingBlock: '0.25rem',
+                textAlign: 'left',
+                transitionProperty:
+                  'color, background-color, border-color, text-decoration-color, fill, stroke',
+                transitionDuration: '150ms',
+                transitionTimingFunction: 'var(--ease-out)',
+                _hover: {
+                  backgroundColor: 'var(--well)',
+                },
+              }),
+              'group',
+            ),
           ),
         ],
         [
           groupBadge(
             COMPONENTS[other.type].group,
             COMPONENT_ICONS[other.type],
-            'size-4 shrink-0',
+            css({ width: '1rem', height: '1rem', flexShrink: '0' }),
             h,
           ),
           h.span(
-            [h.Class('min-w-0 flex-1 truncate text-[calc(11px*var(--type-scale))] font-medium')],
+            [
+              h.Class(
+                css({
+                  minWidth: '0',
+                  flex: '1 1 0%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: 'calc(11px*var(--type-scale))',
+                  fontWeight: '500',
+                }),
+              ),
+            ],
             [name],
           ),
           h.span(
@@ -989,8 +1261,17 @@ const connectionGrid = (
               h.Class(
                 cn(
                   FIGURE,
-                  'shrink-0 text-[calc(10.5px*var(--type-scale))]',
-                  rateNow > 0.01 ? 'text-muted-foreground' : 'text-muted-foreground/55',
+                  css({
+                    flexShrink: '0',
+                    fontSize: 'calc(10.5px*var(--type-scale))',
+                  }),
+                  rateNow > 0.01
+                    ? css({
+                        color: 'var(--muted-foreground)',
+                      })
+                    : css({
+                        color: 'color-mix(in oklab, var(--muted-foreground) 55%, transparent)',
+                      }),
                 ),
               ),
             ],
@@ -1022,20 +1303,64 @@ const capacityMeter = (
     ? `${t.inspector.s(rate(value))} · ${t.inspector.ofS(percent(share), rate(scale))}`
     : t.inspector.s(rate(value))
   return h.div(
-    [h.Class('flex flex-col gap-1.5')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.375rem',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex items-center justify-between gap-3')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.75rem',
+            }),
+          ),
+        ],
         [
           h.span(
-            [h.Class('flex items-center gap-1.5')],
             [
-              icon(h, glyph, 'size-3.5 shrink-0 text-muted-foreground'),
+              h.Class(
+                css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.375rem',
+                }),
+              ),
+            ],
+            [
+              icon(
+                h,
+                glyph,
+                css({
+                  width: '0.875rem',
+                  height: '0.875rem',
+                  flexShrink: '0',
+                  color: 'var(--muted-foreground)',
+                }),
+              ),
               h.span([h.Class(EYEBROW)], [label]),
             ],
           ),
           h.span(
-            [h.Class(cn(FIGURE, 'text-[calc(11px*var(--type-scale))] text-muted-foreground'))],
+            [
+              h.Class(
+                cn(
+                  FIGURE,
+                  css({
+                    fontSize: 'calc(11px*var(--type-scale))',
+                    color: 'var(--muted-foreground)',
+                  }),
+                ),
+              ),
+            ],
             [valueText],
           ),
         ],
@@ -1043,7 +1368,9 @@ const capacityMeter = (
       progress(
         {
           value: share * 100,
-          className: 'gap-0',
+          className: css({
+            gap: '0',
+          }),
           trackClassName: 'h-2',
           label: `${label} ${valueText}`,
         },
@@ -1078,7 +1405,17 @@ const trafficMeters = (
   const scale = bounded ? capacity : Math.max(inboundRate, outboundRate)
   return [
     h.div(
-      [h.Class('flex flex-col gap-3 px-4 pb-3')],
+      [
+        h.Class(
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
+            paddingInline: '1rem',
+            paddingBottom: '0.75rem',
+          }),
+        ),
+      ],
       [
         capacityMeter(
           t.inspector.inbound,
@@ -1187,7 +1524,16 @@ const calls = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArr
       t.inspector.calls,
       links.map(([link, target]) =>
         h.div(
-          [h.Key(link.to), h.Class('flex flex-col gap-1.5')],
+          [
+            h.Key(link.to),
+            h.Class(
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.375rem',
+              }),
+            ),
+          ],
           [
             nodeLink(game, target, h),
             picker(
@@ -1288,13 +1634,27 @@ const breakdown = (
   return h.div(
     [
       h.Key(typeof label === 'string' ? label : label.join('')),
-      h.Class('flex items-baseline justify-between gap-3 px-3 py-1.5'),
+      h.Class(
+        css({
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          gap: '0.75rem',
+          paddingInline: '0.75rem',
+          paddingBlock: '0.375rem',
+        }),
+      ),
     ],
     [
       h.span(
         [
           h.Class(
-            'min-w-0 break-words text-[calc(12.5px*var(--type-scale))] text-muted-foreground',
+            css({
+              minWidth: '0',
+              overflowWrap: 'break-word',
+              fontSize: 'calc(12.5px*var(--type-scale))',
+              color: 'var(--muted-foreground)',
+            }),
           ),
         ],
         typeof label === 'string' ? [label] : label,
@@ -1304,7 +1664,14 @@ const breakdown = (
           h.Class(
             cn(
               FIGURE,
-              'flex items-baseline justify-end gap-1.5 text-[calc(12px*var(--type-scale))] whitespace-nowrap',
+              css({
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'flex-end',
+                gap: '0.375rem',
+                fontSize: 'calc(12px*var(--type-scale))',
+                whiteSpace: 'nowrap',
+              }),
             ),
           ),
         ],
@@ -1316,7 +1683,14 @@ const breakdown = (
             ? []
             : [
                 h.span(
-                  [h.Class('text-[calc(11.5px*var(--type-scale))] text-muted-foreground')],
+                  [
+                    h.Class(
+                      css({
+                        fontSize: 'calc(11.5px*var(--type-scale))',
+                        color: 'var(--muted-foreground)',
+                      }),
+                    ),
+                  ],
                   [difference(t, value - previous)],
                 ),
               ]),
@@ -1369,7 +1743,16 @@ const trafficBreakdown = (
     t.inspector.trafficLoad,
     [
       h.div(
-        [h.Class('flex items-center justify-between gap-2')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.5rem',
+            }),
+          ),
+        ],
         [
           caption(index >= 0 ? t.inspector.recordedSample : t.inspector.liveTraffic, h),
           ...(index >= 0
@@ -1380,7 +1763,17 @@ const trafficBreakdown = (
                     variant: 'outline',
                     size: 'xs',
                   },
-                  [icon(h, ChevronsRight, 'size-3'), t.inspector.backToLive],
+                  [
+                    icon(
+                      h,
+                      ChevronsRight,
+                      css({
+                        width: '0.75rem',
+                        height: '0.75rem',
+                      }),
+                    ),
+                    t.inspector.backToLive,
+                  ],
                   h,
                 ),
               ]
@@ -1401,7 +1794,20 @@ const trafficBreakdown = (
               },
             ),
             h.div(
-              [h.Class(cn('flex items-center justify-between gap-2 p-1', WELL))],
+              [
+                h.Class(
+                  cn(
+                    css({
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '0.5rem',
+                      padding: '0.25rem',
+                    }),
+                    WELL,
+                  ),
+                ),
+              ],
               [
                 smallButton(
                   t.inspector.earlierSample,
@@ -1411,7 +1817,18 @@ const trafficBreakdown = (
                   h,
                 ),
                 h.span(
-                  [h.Class(cn(FIGURE, 'flex-1 text-center text-[calc(12.5px*var(--type-scale))]'))],
+                  [
+                    h.Class(
+                      cn(
+                        FIGURE,
+                        css({
+                          flex: '1 1 0%',
+                          textAlign: 'center',
+                          fontSize: 'calc(12.5px*var(--type-scale))',
+                        }),
+                      ),
+                    ),
+                  ],
                   [when(t, sample.time)],
                 ),
                 smallButton(
@@ -1429,7 +1846,15 @@ const trafficBreakdown = (
           ]
         : [
             h.p(
-              [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+              [
+                h.Class(
+                  css({
+                    fontSize: 'calc(12px*var(--type-scale))',
+                    lineHeight: '1.375',
+                    color: 'var(--muted-foreground)',
+                  }),
+                ),
+              ],
               [
                 has(game, 'metrics')
                   ? t.inspector.historyAppearsAfterTwoRecordedSamples
@@ -1490,7 +1915,15 @@ const trafficBreakdown = (
       ),
       ...(change ? [change] : []),
       h.div(
-        [h.Class('flex flex-col gap-1')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.25rem',
+            }),
+          ),
+        ],
         [
           caption(t.inspector.incomingOperations, h),
           ...(kinds.length
@@ -1511,14 +1944,27 @@ const trafficBreakdown = (
               ]
             : [
                 h.p(
-                  [h.Class('px-3 text-[calc(12px*var(--type-scale))] text-muted-foreground')],
+                  [
+                    h.Class(
+                      css({
+                        paddingInline: '0.75rem',
+                        fontSize: 'calc(12px*var(--type-scale))',
+                        color: 'var(--muted-foreground)',
+                      }),
+                    ),
+                  ],
                   [t.inspector.noIncomingTrafficAtThisSample],
                 ),
               ]),
           h.p(
             [
               h.Class(
-                'px-3 text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground',
+                css({
+                  paddingInline: '0.75rem',
+                  fontSize: 'calc(12px*var(--type-scale))',
+                  lineHeight: '1.375',
+                  color: 'var(--muted-foreground)',
+                }),
               ),
             ],
             [
@@ -1533,7 +1979,15 @@ const trafficBreakdown = (
       ...(sources.length
         ? [
             h.div(
-              [h.Class('flex flex-col gap-1')],
+              [
+                h.Class(
+                  css({
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.25rem',
+                  }),
+                ),
+              ],
               [
                 caption(t.inspector.sentBy, h),
                 h.div(
@@ -1609,25 +2063,74 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
         {
           label: t.inspector.close,
           onClick: Message.EmptyTapped(),
-          className: 'compact:top-[max(6px,env(safe-area-inset-top))] compact:size-11',
+          className: css({
+            _compact: {
+              top: 'max(6px,env(safe-area-inset-top))',
+              width: '2.75rem',
+              height: '2.75rem',
+            },
+          }),
         },
         h,
       ),
       h.div(
-        [h.Class('flex items-center gap-3 px-4 pt-4 pr-10 pb-2 compact:pr-14')],
         [
-          groupBadge(def.group, COMPONENT_ICONS[node.type], 'size-10', h),
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              paddingInline: '1rem',
+              paddingTop: '1rem',
+              paddingRight: '2.5rem',
+              paddingBottom: '0.5rem',
+              _compact: {
+                paddingRight: '3.5rem',
+              },
+            }),
+          ),
+        ],
+        [
+          groupBadge(
+            def.group,
+            COMPONENT_ICONS[node.type],
+            css({ width: '2.5rem', height: '2.5rem' }),
+            h,
+          ),
           h.div(
-            [h.Class('flex min-w-0 flex-1 flex-col')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  minWidth: '0',
+                  flex: '1 1 0%',
+                  flexDirection: 'column',
+                }),
+              ),
+            ],
             [
               h.span(
-                [h.Class('text-[calc(17px*var(--type-scale))] font-semibold tracking-[-0.025em]')],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'calc(17px*var(--type-scale))',
+                      fontWeight: '600',
+                      letterSpacing: '-0.025em',
+                    }),
+                  ),
+                ],
                 [label.name, ...(label.ordinal > 0 ? [` ${label.ordinal}`] : [])],
               ),
               h.span(
                 [
                   h.Class(
-                    cn(FIGURE, 'text-[calc(11.5px*var(--type-scale))] text-muted-foreground'),
+                    cn(
+                      FIGURE,
+                      css({
+                        fontSize: 'calc(11.5px*var(--type-scale))',
+                        color: 'var(--muted-foreground)',
+                      }),
+                    ),
                   ),
                 ],
                 [def.product],
@@ -1635,14 +2138,29 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
             ],
           ),
           sizeLabel
-            ? badge({ variant: 'secondary', className: 'font-mono' }, [sizeLabel], h)
+            ? badge(
+                {
+                  variant: 'secondary',
+                  className: css({
+                    fontFamily: 'mono',
+                  }),
+                },
+                [sizeLabel],
+                h,
+              )
             : h.empty,
         ],
       ),
       h.p(
         [
           h.Class(
-            'px-4 pb-3 text-[calc(12.5px*var(--type-scale))] leading-snug text-muted-foreground',
+            css({
+              paddingInline: '1rem',
+              paddingBottom: '0.75rem',
+              fontSize: 'calc(12.5px*var(--type-scale))',
+              lineHeight: '1.375',
+              color: 'var(--muted-foreground)',
+            }),
           ),
         ],
         [def.blurb],
@@ -1650,13 +2168,53 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
       ...trafficMeters(game, node, ledger, h),
       ...warnings(game, node, ledger, h),
       h.div(
-        [h.Class(`flex min-h-0 flex-1 flex-col divide-y divide-hairline ${SCROLL}`)],
+        [
+          h.Class(
+            cx(
+              css({
+                display: 'flex',
+                minHeight: '0',
+                flex: '1 1 0%',
+                flexDirection: 'column',
+                '& > :not(:last-child)': {
+                  borderBottomWidth: '1px',
+                  borderBottomStyle: 'solid',
+                  borderColor: 'var(--hairline)',
+                },
+              }),
+              SCROLL,
+            ),
+          ),
+        ],
         [
           h.div(
-            [h.Class('px-4 pt-1 pb-2')],
+            [
+              h.Class(
+                css({
+                  paddingInline: '1rem',
+                  paddingTop: '0.25rem',
+                  paddingBottom: '0.5rem',
+                }),
+              ),
+            ],
             [
               ...(hasTraffic(node)
-                ? [h.p([h.Class(`${EYEBROW} mb-2 text-muted-foreground`)], [t.inspector.liveNow])]
+                ? [
+                    h.p(
+                      [
+                        h.Class(
+                          cx(
+                            EYEBROW,
+                            css({
+                              marginBottom: '0.5rem',
+                              color: 'var(--muted-foreground)',
+                            }),
+                          ),
+                        ),
+                      ],
+                      [t.inspector.liveNow],
+                    ),
+                  ]
                 : []),
               h.div([h.Class(NESTED)], stats(game, node, ledger, h)),
             ],
@@ -1688,7 +2246,19 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
         ],
       ),
       h.div(
-        [h.Class('flex gap-2 border-t border-hairline bg-nested p-3')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              gap: '0.5rem',
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderColor: 'var(--hairline)',
+              backgroundColor: 'var(--surface-nested)',
+              padding: '0.75rem',
+            }),
+          ),
+        ],
         [
           node.type === 'payments' && game.pending > 0
             ? h.button(
@@ -1696,7 +2266,30 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                   h.Type('button'),
                   h.OnClick(Message.Collected()),
                   h.Class(
-                    'flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-ok text-[calc(13px*var(--type-scale))] font-medium text-white shadow-[inset_0_1px_0_oklch(1_0_0/0.25),0_0_0_1px_color-mix(in_oklch,var(--ok),black_25%),0_2px_6px_-2px_color-mix(in_oklch,var(--ok)_50%,transparent)] transition-[filter] hover:brightness-105 active:translate-y-px',
+                    css({
+                      display: 'flex',
+                      height: '2.25rem',
+                      flex: '1 1 0%',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      borderRadius: 'lg',
+                      backgroundColor: 'var(--ok)',
+                      fontSize: 'calc(13px*var(--type-scale))',
+                      fontWeight: '500',
+                      color: 'white',
+                      boxShadow:
+                        'inset 0 1px 0 oklch(1 0 0/0.25),0 0 0 1px color-mix(in oklch,var(--ok),black 25%),0 2px 6px -2px color-mix(in oklch,var(--ok) 50%,transparent)',
+                      transitionProperty: 'filter',
+                      transitionDuration: '150ms',
+                      transitionTimingFunction: 'var(--ease-out)',
+                      _hover: {
+                        filter: 'brightness(105%)',
+                      },
+                      _active: {
+                        translateY: '1px',
+                      },
+                    }),
                   ),
                 ],
                 [t.inspector.collect, h.span([h.Class(FIGURE)], [money(game.pending)])],
@@ -1708,14 +2301,38 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                   onClick: Message.ResizeChosen({ nodeId: node.id, direction: 1 }),
                   isDisabled: game.cash < price,
                   size: 'lg',
-                  className: 'min-w-0 flex-1 justify-between px-3',
+                  className: css({
+                    minWidth: '0',
+                    flex: '1 1 0%',
+                    justifyContent: 'space-between',
+                    paddingInline: '0.75rem',
+                  }),
                   attributes: [h.Title('U')],
                 },
                 [
                   h.span(
-                    [h.Class('flex items-center gap-1.5 truncate')],
                     [
-                      icon(h, ArrowUp, 'size-4 shrink-0'),
+                      h.Class(
+                        css({
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.375rem',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }),
+                      ),
+                    ],
+                    [
+                      icon(
+                        h,
+                        ArrowUp,
+                        css({
+                          width: '1rem',
+                          height: '1rem',
+                          flexShrink: '0',
+                        }),
+                      ),
                       node.type === 'payments'
                         ? t.inspector.biggerDrawer
                         : node.type === 'analytics'
@@ -1739,7 +2356,14 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                     h.AriaLabel(t.inspector.restart),
                   ],
                 },
-                icon(h, RotateCcw, 'size-4'),
+                icon(
+                  h,
+                  RotateCcw,
+                  css({
+                    width: '1rem',
+                    height: '1rem',
+                  }),
+                ),
                 h,
               )
             : h.empty,
@@ -1754,7 +2378,14 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                     h.AriaLabel(t.inspector.failOver),
                   ],
                 },
-                icon(h, ArrowRightLeft, 'size-4'),
+                icon(
+                  h,
+                  ArrowRightLeft,
+                  css({
+                    width: '1rem',
+                    height: '1rem',
+                  }),
+                ),
                 h,
               )
             : h.empty,
@@ -1769,7 +2400,14 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                   size: 'icon-lg',
                   attributes: [h.Title(t.inspector.drainTitle), h.AriaLabel(t.inspector.drain)],
                 },
-                icon(h, ArrowDownToLine, 'size-4'),
+                icon(
+                  h,
+                  ArrowDownToLine,
+                  css({
+                    width: '1rem',
+                    height: '1rem',
+                  }),
+                ),
                 h,
               )
             : h.empty,
@@ -1780,13 +2418,25 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                   onClick: Message.SellAsked(),
                   variant: 'outline',
                   size: 'icon-lg',
-                  className: 'text-muted-foreground hover:text-danger',
+                  className: css({
+                    color: 'var(--muted-foreground)',
+                    _hover: {
+                      color: 'var(--danger)',
+                    },
+                  }),
                   attributes: [
                     h.Title(t.inspector.sellForDelete(money(refundOf(game, node)))),
                     h.AriaLabel(t.inspector.sell),
                   ],
                 },
-                icon(h, Trash2, 'size-4'),
+                icon(
+                  h,
+                  Trash2,
+                  css({
+                    width: '1rem',
+                    height: '1rem',
+                  }),
+                ),
                 h,
               ),
         ],

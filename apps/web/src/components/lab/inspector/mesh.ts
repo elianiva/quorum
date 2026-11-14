@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { copy, nodeTitle } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { MESH_HOP_MS, MESH_OVERHEAD, MESH_INSIGHT } from '@quorum/simulation/catalog'
@@ -22,12 +23,31 @@ const sidecars = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readonly
           ? [caption(t.inspectorMesh.linkAppServersOrWorkersInto, h)]
           : members.map((member) =>
               h.div(
-                [h.Key(member.id), h.Class('flex items-center justify-between gap-2 py-0.5')],
+                [
+                  h.Key(member.id),
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '0.5rem',
+                      paddingBlock: '0.125rem',
+                    }),
+                  ),
+                ],
                 [caption(nodeTitle(t, game, member), h)],
               ),
             )),
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                lineHeight: '1.375',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ],
           [
             t.inspectorMesh.eachSidecarRetries(
               percentNumber(MESH_INSIGHT),

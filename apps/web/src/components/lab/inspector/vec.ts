@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { formats } from '@/i18n/format.ts'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -36,7 +37,15 @@ const vector = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyAr
           h,
         ),
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                lineHeight: '1.375',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ],
           [
             t.inspectorVec.exactComparesTheQueryToEvery(
               VEC_QUERIES,
@@ -54,7 +63,15 @@ const vector = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyAr
       t.inspectorVec.retrieval,
       [
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                lineHeight: '1.375',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ],
           [t.inspectorVec.linkANodeThatAnswersPrompts(Math.round((VEC_AI_LIFT - 1) * 100))],
         ),
         caption(

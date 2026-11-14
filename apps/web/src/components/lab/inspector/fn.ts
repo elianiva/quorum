@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { formats } from '@/i18n/format.ts'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -33,7 +34,15 @@ const serverless = (
       t.inspectorFn.executions,
       [
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                lineHeight: '1.375',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ],
           [t.inspectorFn.oneExecutionHoldsTheRequest(compact(SERVERLESS_CONCURRENCY))],
         ),
         caption(
@@ -51,7 +60,15 @@ const serverless = (
       t.inspectorFn.coldStart,
       [
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                lineHeight: '1.375',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ],
           [t.inspectorFn.aNewEnvironmentBoots(formats(t).ms(coldStartMs(node)))],
         ),
         caption(t.inspectorFn.changeTheRuntime, h),
@@ -62,7 +79,15 @@ const serverless = (
       t.inspectorFn.bill,
       [
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                lineHeight: '1.375',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ],
           [
             t.inspectorFn.noBoxToPayFor(
               money(SERVERLESS_REQUEST_PRICE * 1_000),

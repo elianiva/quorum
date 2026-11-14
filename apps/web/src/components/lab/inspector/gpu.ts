@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
@@ -39,7 +40,7 @@ const gpu = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
         (choice) => Message.GpuModelChosen({ nodeId: node.id, gpuModel: choice }),
         h,
         undefined,
-        'grid-cols-3',
+        css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
       ),
       caption(
         gpuFits(node)
@@ -65,7 +66,7 @@ const gpu = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
         (choice) => Message.PrecisionChosen({ nodeId: node.id, precision: choice }),
         h,
         (id) => id === 'fp16' || has(game, 'quantization'),
-        'grid-cols-3',
+        css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
       ),
       caption(
         node.precision === 'fp16'
@@ -83,7 +84,7 @@ const gpu = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
         (choice) => Message.BatchChosen({ nodeId: node.id, batch: choice }),
         h,
         undefined,
-        'grid-cols-3',
+        css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
       ),
       caption(
         node.batch === 1

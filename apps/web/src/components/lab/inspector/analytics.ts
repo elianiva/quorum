@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { SAMPLE_RATES } from '@quorum/simulation/catalog'
@@ -15,14 +16,26 @@ const sampler = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
     t.inspectorAnalytics.sampleRate,
     [
       segmented(
-        'grid-cols-5',
+        css({ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }),
         SAMPLE_RATES.map((value) =>
           choice(
             String(value),
             node.sampleRate === value,
             true,
             Message.SampleChosen({ nodeId: node.id, sampleRate: value }),
-            [h.span([h.Class('w-full text-center')], [`${Math.round(value * 100)}%`])],
+            [
+              h.span(
+                [
+                  h.Class(
+                    css({
+                      width: '100%',
+                      textAlign: 'center',
+                    }),
+                  ),
+                ],
+                [`${Math.round(value * 100)}%`],
+              ),
+            ],
             t.inspectorAnalytics.moreSamplesMoreInsightMoreCPU,
             h,
           ),
@@ -62,7 +75,17 @@ export const analyticsPanel: Panel = {
     return [
       unsampledOf(ledger).share >= 0.01
         ? h.p(
-            [h.Class('px-4 pb-2 text-[calc(12px*var(--type-scale))] leading-snug text-warn')],
+            [
+              h.Class(
+                css({
+                  paddingInline: '1rem',
+                  paddingBottom: '0.5rem',
+                  fontSize: 'calc(12px*var(--type-scale))',
+                  lineHeight: '1.375',
+                  color: 'var(--warn)',
+                }),
+              ),
+            ],
             [t.hud.unsampledHint],
           )
         : h.empty,

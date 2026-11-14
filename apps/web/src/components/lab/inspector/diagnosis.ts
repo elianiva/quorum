@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { ArrowUpRight, ChevronRight } from 'lucide'
 import { REQUEST_KINDS, type Kind } from '@quorum/simulation/catalog'
@@ -36,7 +37,23 @@ const whyLink = (anchor: string, h: HtmlBuilder<Message>): Html => {
       h.Rel('noreferrer noopener'),
       h.AriaLabel(t.inspector.whyTitle),
       h.Class(
-        'group inline-flex items-center gap-0.5 text-[calc(12px*var(--type-scale))] text-muted-foreground underline decoration-foreground/25 underline-offset-[3px] hover:text-foreground hover:decoration-foreground',
+        cx(
+          css({
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.125rem',
+            fontSize: 'calc(12px*var(--type-scale))',
+            color: 'var(--muted-foreground)',
+            textDecorationLine: 'underline',
+            textDecorationColor: 'color-mix(in oklab, var(--foreground) 25%, transparent)',
+            textUnderlineOffset: '3px',
+            _hover: {
+              color: 'var(--foreground)',
+              textDecorationColor: 'var(--foreground)',
+            },
+          }),
+          'group',
+        ),
       ),
     ],
     [
@@ -44,7 +61,18 @@ const whyLink = (anchor: string, h: HtmlBuilder<Message>): Html => {
       icon(
         h,
         ArrowUpRight,
-        'size-3 shrink-0 transition-transform group-hover:translate-x-px group-hover:-translate-y-px',
+        css({
+          width: '0.75rem',
+          height: '0.75rem',
+          flexShrink: '0',
+          transitionProperty: 'transform',
+          transitionDuration: '150ms',
+          transitionTimingFunction: 'var(--ease-out)',
+          '.group:hover &': {
+            translateX: '1px',
+            translateY: '-1px',
+          },
+        }),
       ),
     ],
   )
@@ -57,10 +85,28 @@ const block = (
   h: HtmlBuilder<Message>,
 ): Html =>
   h.div(
-    [h.Key(anchor), h.Class('flex flex-col gap-1')],
+    [
+      h.Key(anchor),
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.25rem',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex items-baseline justify-between gap-2')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: '0.5rem',
+            }),
+          ),
+        ],
         [caption(title, h), whyLink(anchor, h)],
       ),
       ...body,
@@ -259,33 +305,78 @@ export const costReceipts = (
               h.summary(
                 [
                   h.Class(
-                    'flex cursor-pointer list-none items-baseline justify-between gap-3 px-3 py-1.5 [&::-webkit-details-marker]:hidden',
+                    css({
+                      display: 'flex',
+                      cursor: 'pointer',
+                      listStyleType: 'none',
+                      alignItems: 'baseline',
+                      justifyContent: 'space-between',
+                      gap: '0.75rem',
+                      paddingInline: '0.75rem',
+                      paddingBlock: '0.375rem',
+                      '&::-webkit-details-marker': {
+                        display: 'none',
+                      },
+                    }),
                   ),
                 ],
                 [
                   h.span(
                     [
                       h.Class(
-                        'flex items-center gap-1 text-[calc(12.5px*var(--type-scale))] text-muted-foreground',
+                        css({
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                          fontSize: 'calc(12.5px*var(--type-scale))',
+                          color: 'var(--muted-foreground)',
+                        }),
                       ),
                     ],
                     [
                       icon(
                         h,
                         ChevronRight,
-                        'size-3 shrink-0 transition-transform group-open/receipt:rotate-90',
+                        css({
+                          width: '0.75rem',
+                          height: '0.75rem',
+                          flexShrink: '0',
+                          transitionProperty: 'transform',
+                          transitionDuration: '150ms',
+                          transitionTimingFunction: 'var(--ease-out)',
+                          '.group\\/receipt[open] &': {
+                            rotate: '90deg',
+                          },
+                        }),
                       ),
                       t.catalog.kinds[kind].label,
                     ],
                   ),
                   h.span(
-                    [h.Class(cn(FIGURE, 'text-[calc(12px*var(--type-scale))] whitespace-nowrap'))],
+                    [
+                      h.Class(
+                        cn(
+                          FIGURE,
+                          css({
+                            fontSize: 'calc(12px*var(--type-scale))',
+                            whiteSpace: 'nowrap',
+                          }),
+                        ),
+                      ),
+                    ],
                     [t.inspector.receiptTotal(ms(t, receipt.total), percent(cpu(kind) / total))],
                   ),
                 ],
               ),
               h.div(
-                [h.Class('pb-1 pl-4')],
+                [
+                  h.Class(
+                    css({
+                      paddingBottom: '0.25rem',
+                      paddingLeft: '1rem',
+                    }),
+                  ),
+                ],
                 [
                   row(t.inspector.receiptBase, ms(t, receipt.base), 'plain', h),
                   ...receipt.lines.map((line) =>

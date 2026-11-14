@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { BAD_DEPLOY_ERRORS, ROLLOUT_STEPS } from '@quorum/simulation/catalog'
@@ -33,11 +34,21 @@ const flags = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArr
           ? [caption(t.inspectorFf.shipAFeatureFirstAFlag, h)]
           : listed.map((feature) =>
               h.div(
-                [h.Key(feature), h.Class('flex flex-col gap-1.5 pb-1')],
+                [
+                  h.Key(feature),
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.375rem',
+                      paddingBottom: '0.25rem',
+                    }),
+                  ),
+                ],
                 [
                   caption(t.catalog.features[feature].name, h),
                   segmented(
-                    'grid-cols-5',
+                    css({ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }),
                     ROLLOUT_STEPS.map((share) =>
                       choice(
                         `${feature}-${share}`,
@@ -46,7 +57,14 @@ const flags = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArr
                         Message.RolloutChosen({ nodeId: node.id, feature, share }),
                         [
                           h.span(
-                            [h.Class('w-full text-center')],
+                            [
+                              h.Class(
+                                css({
+                                  width: '100%',
+                                  textAlign: 'center',
+                                }),
+                              ),
+                            ],
                             [share <= 0 ? t.inspectorFf.off : `${Math.round(share * 100)}%`],
                           ),
                         ],
@@ -62,7 +80,15 @@ const flags = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArr
               ),
             )),
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                lineHeight: '1.375',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ],
           [
             t.inspectorFf.aBadDeployFails(
               percentNumber(BAD_DEPLOY_ERRORS),
@@ -80,7 +106,15 @@ const flags = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArr
       t.inspectorFf.flagsAreAShield,
       [
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                lineHeight: '1.375',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ],
           [t.inspectorFf.aFeatureAt5OfUsers],
         ),
         caption(t.inspectorFf.notBuiltTheHoldoutGroupThat, h),

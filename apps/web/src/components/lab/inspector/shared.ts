@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { copy, localized, nodeLabelIn, nodeTitle, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { ChevronRight, Minus, Plus } from 'lucide'
@@ -59,24 +60,74 @@ export const section = (
   open = false,
 ) =>
   h.details(
-    [h.Key(title), ...(open ? [h.Open(true)] : []), h.Class('fold group px-4')],
+    [
+      h.Key(title),
+      ...(open ? [h.Open(true)] : []),
+      h.Class(
+        cx(
+          css({
+            paddingInline: '1rem',
+          }),
+          'fold',
+          'group',
+        ),
+      ),
+    ],
     [
       h.summary(
         [
           h.Class(
-            'flex cursor-pointer list-none items-center gap-1.5 py-2.5 hover:[&>span]:text-foreground [&::-webkit-details-marker]:hidden',
+            css({
+              display: 'flex',
+              cursor: 'pointer',
+              listStyleType: 'none',
+              alignItems: 'center',
+              gap: '0.375rem',
+              paddingBlock: '0.625rem',
+              _hover: {
+                '&>span': {
+                  color: 'var(--foreground)',
+                },
+              },
+              '&::-webkit-details-marker': {
+                display: 'none',
+              },
+            }),
           ),
         ],
         [
           icon(
             h,
             ChevronRight,
-            'fold-chevron size-3.5 shrink-0 text-muted-foreground group-open:rotate-90',
+            cx(
+              css({
+                width: '0.875rem',
+                height: '0.875rem',
+                flexShrink: '0',
+                color: 'var(--muted-foreground)',
+                '.group[open] &': {
+                  rotate: '90deg',
+                },
+              }),
+              'fold-chevron',
+            ),
           ),
           h.span([h.Class(EYEBROW)], [title]),
         ],
       ),
-      h.div([h.Class('flex flex-col gap-2 pb-3')], children),
+      h.div(
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+              paddingBottom: '0.75rem',
+            }),
+          ),
+        ],
+        children,
+      ),
     ],
   )
 
@@ -87,7 +138,23 @@ export const segmented = (
   h: HtmlBuilder<Message>,
 ) =>
   h.div(
-    [h.Class(cn('grid auto-rows-fr gap-[3px] p-[3px]', WELL, 'rounded-[11px]', columns))],
+    [
+      h.Class(
+        cn(
+          css({
+            display: 'grid',
+            gridAutoRows: 'fr',
+            gap: '3px',
+            padding: '3px',
+          }),
+          WELL,
+          css({
+            borderRadius: '11px',
+          }),
+          columns,
+        ),
+      ),
+    ],
     children,
   )
 
@@ -116,23 +183,41 @@ export const choice = (
         ? [h.OnMouseEnter(hover), h.OnMouseLeave(Message.OptionLeft())]
         : []),
       h.Class(
-        `flex min-h-8 min-w-0 items-center gap-2 rounded-lg px-2 py-1 text-left text-[calc(12px*var(--type-scale))] font-medium leading-tight transition-colors ${
+        cx(
+          css({
+            display: 'flex',
+            minHeight: '2rem',
+            minWidth: '0',
+            alignItems: 'center',
+            gap: '0.5rem',
+            borderRadius: 'lg',
+            paddingInline: '0.5rem',
+            paddingBlock: '0.25rem',
+            textAlign: 'left',
+            fontSize: 'calc(12px*var(--type-scale))',
+            fontWeight: '500',
+            lineHeight: '1.25',
+            transitionProperty:
+              'color, background-color, border-color, text-decoration-color, fill, stroke',
+            transitionDuration: '150ms',
+            transitionTimingFunction: 'var(--ease-out)',
+          }),
           selected
             ? 'bg-raised text-foreground shadow-raised'
             : ready
               ? 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground'
-              : 'cursor-not-allowed text-muted-foreground/45 [&_svg]:opacity-45 [&_svg]:grayscale'
-        }`,
+              : 'cursor-not-allowed text-muted-foreground/45 [&_svg]:opacity-45 [&_svg]:grayscale',
+        ),
       ),
     ],
     children,
   )
 
 export const COLUMNS: Record<number, string> = {
-  2: 'grid-cols-2',
-  3: 'grid-cols-3',
-  4: 'grid-cols-4',
-  5: 'grid-cols-5',
+  2: css({ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }),
+  3: css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
+  4: css({ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }),
+  5: css({ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }),
 }
 
 /** One option set as a segmented control: each value with its label. */
@@ -143,7 +228,7 @@ export const picker = <T extends string | number | boolean>(
   message: (value: T) => Message,
   h: HtmlBuilder<Message>,
   ready: (value: T) => boolean = () => true,
-  columns = COLUMNS[values.length] ?? 'grid-cols-4',
+  columns = COLUMNS[values.length] ?? css({ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }),
 ): Html =>
   segmented(
     columns,
@@ -153,7 +238,22 @@ export const picker = <T extends string | number | boolean>(
         value === current,
         ready(value),
         message(value),
-        [h.span([h.Class('w-full truncate text-center')], [label])],
+        [
+          h.span(
+            [
+              h.Class(
+                css({
+                  width: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  textAlign: 'center',
+                }),
+              ),
+            ],
+            [label],
+          ),
+        ],
         label,
         h,
       ),
@@ -176,7 +276,14 @@ export const smallButton = (
       size: 'icon-sm',
       attributes: [h.AriaLabel(label), h.Title(label)],
     },
-    icon(h, glyph, 'size-3.5'),
+    icon(
+      h,
+      glyph,
+      css({
+        width: '0.875rem',
+        height: '0.875rem',
+      }),
+    ),
     h,
   )
 
@@ -220,7 +327,15 @@ export const stack = (
       [
         runtimePickerView(model, node, h, reviewingRuntime),
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                lineHeight: '1.375',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ],
           [runtime.blurb],
         ),
       ],
@@ -233,7 +348,15 @@ export const stack = (
             t.inspectorShared.poolSize,
             [
               h.div(
-                [h.Class('flex items-center gap-2')],
+                [
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }),
+                  ),
+                ],
                 [
                   smallButton(
                     t.inspectorShared.fewerWorkers,
@@ -246,7 +369,18 @@ export const stack = (
                     h,
                   ),
                   h.span(
-                    [h.Class(cn(FIGURE, 'w-12 text-center text-[calc(13px*var(--type-scale))]'))],
+                    [
+                      h.Class(
+                        cn(
+                          FIGURE,
+                          css({
+                            width: '3rem',
+                            textAlign: 'center',
+                            fontSize: 'calc(13px*var(--type-scale))',
+                          }),
+                        ),
+                      ),
+                    ],
                     [String(node.workers)],
                   ),
                   smallButton(
@@ -262,7 +396,16 @@ export const stack = (
                   h.span(
                     [
                       h.Class(
-                        `ml-auto ${FIGURE} text-[calc(11.5px*var(--type-scale))] ${node.workers > fit ? 'text-danger' : 'text-muted-foreground'}`,
+                        cx(
+                          css({
+                            marginLeft: 'auto',
+                          }),
+                          FIGURE,
+                          css({
+                            fontSize: 'calc(11.5px*var(--type-scale))',
+                          }),
+                          node.workers > fit ? 'text-danger' : 'text-muted-foreground',
+                        ),
                       ),
                     ],
                     [t.inspectorShared.rAMFits(fit)],
@@ -279,7 +422,15 @@ export const stack = (
       [
         frameworkPickerView(model, node, h),
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                lineHeight: '1.375',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ],
           [t.catalog.frameworks[node.framework].blurb],
         ),
       ],
@@ -320,7 +471,15 @@ export const stack = (
                 h,
               ),
               h.p(
-                [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'calc(12px*var(--type-scale))',
+                      lineHeight: '1.375',
+                      color: 'var(--muted-foreground)',
+                    }),
+                  ),
+                ],
                 [t.inspectorShared.pmMaxRequestsAndWorkerKillers],
               ),
             ],
@@ -395,17 +554,45 @@ export const nodeLink = (
       h.AriaLabel(t.inspectorShared.openNode(nodeTitle(t, game, node))),
       h.Class(
         cn(
-          'flex min-w-0 items-center gap-1 text-left text-[12px] font-medium text-muted-foreground hover:text-foreground',
+          css({
+            display: 'flex',
+            minWidth: '0',
+            alignItems: 'center',
+            gap: '0.25rem',
+            textAlign: 'left',
+            fontSize: '12px',
+            fontWeight: '500',
+            color: 'var(--muted-foreground)',
+            _hover: {
+              color: 'var(--foreground)',
+            },
+          }),
           className,
         ),
       ),
     ],
     [
       h.span(
-        [h.Class('truncate')],
+        [
+          h.Class(
+            css({
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }),
+          ),
+        ],
         [label.name, ...(label.ordinal > 0 ? [` ${label.ordinal}`] : [])],
       ),
-      icon(h, ChevronRight, 'size-3.5 shrink-0'),
+      icon(
+        h,
+        ChevronRight,
+        css({
+          width: '0.875rem',
+          height: '0.875rem',
+          flexShrink: '0',
+        }),
+      ),
     ],
   )
 }
@@ -423,7 +610,18 @@ export const outbound = (
   })
 
 export const caption = (text: string, h: HtmlBuilder<Message>): Html =>
-  h.span([h.Class('text-[calc(12px*var(--type-scale))] font-medium text-muted-foreground')], [text])
+  h.span(
+    [
+      h.Class(
+        css({
+          fontSize: 'calc(12px*var(--type-scale))',
+          fontWeight: '500',
+          color: 'var(--muted-foreground)',
+        }),
+      ),
+    ],
+    [text],
+  )
 
 /** A Database's engine (07 "Variants"). */
 export const engine = (node: GameNode, h: HtmlBuilder<Message>): Html => {
@@ -440,7 +638,7 @@ export const engine = (node: GameNode, h: HtmlBuilder<Message>): Html => {
         (dbEngine) => Message.DbEngineChosen({ nodeId: node.id, dbEngine }),
         h,
         () => true,
-        'grid-cols-2',
+        css({ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }),
       ),
       caption(
         node.dbEngine === 'postgres'
@@ -461,10 +659,27 @@ export const replicaEngine = (game: Game, node: GameNode, h: HtmlBuilder<Message
     t.inspectorShared.engine,
     [
       h.div(
-        [h.Class('flex items-baseline justify-between gap-2')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: '0.5rem',
+            }),
+          ),
+        ],
         [
           h.span(
-            [h.Class('text-[calc(12px*var(--type-scale))] font-medium text-foreground')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'calc(12px*var(--type-scale))',
+                  fontWeight: '500',
+                  color: 'var(--foreground)',
+                }),
+              ),
+            ],
             [DB_ENGINES[engine].name],
           ),
         ],

@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
@@ -50,7 +51,7 @@ const storage = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyA
           (storageClass) => Message.StorageClassChosen({ nodeId: node.id, storageClass }),
           h,
           () => true,
-          'grid-cols-3',
+          css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
         ),
         caption(
           STORAGE_CLASSES[node.storageClass].archived

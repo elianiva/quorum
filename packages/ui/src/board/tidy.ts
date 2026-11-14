@@ -8,8 +8,8 @@ import { CARD_W, CLEARANCE, heightOf, type Placed, type Pt } from './geometry.ts
  *
  *   0. entry and external providers: Users, edge, LLM, PSP, Search
  *   1. compute and its watchers: App Servers, Analytics, Payments, Autoscalers
- *   2. queue and middle data: Queue, Pooler, Storage, the Replicas that fill it
- *   3. workers and cache: Worker, Cache, the Replicas that fill it, the Worker's Autoscaler
+ *   2. queue and middle data: Queue, Cache, Storage, the Replicas that fill it
+ *   3. workers and pooler: Worker, Pooler, the Replicas that fill it, the Worker's Autoscaler
  *   4. database and warehouse: Database, Warehouse, the Replicas that fill it
  *
  * A Node's column comes from its role. Entry follows the inbound path, top to
@@ -37,6 +37,7 @@ type Role =
   | 'queue'
   | 'middle'
   | 'worker'
+  | 'pooler'
   | 'cache'
   | 'replica'
   | 'database'
@@ -56,7 +57,7 @@ const ROLE: Record<ComponentId, Role> = {
   gpu: 'compute',
   edge: 'compute',
   database: 'database',
-  pooler: 'middle',
+  pooler: 'pooler',
   cache: 'cache',
   replica: 'replica',
   search: 'external',
@@ -92,7 +93,8 @@ const COLUMN: Record<Role, number> = {
   queue: 2,
   middle: 2,
   worker: 3,
-  cache: 3,
+  pooler: 3,
+  cache: 2,
   replica: 4,
   database: 4,
   warehouse: 4,
@@ -102,8 +104,8 @@ const COLUMN: Record<Role, number> = {
 const RANK: ReadonlyArray<Partial<Record<Role, number>>> = [
   { entry: 0 },
   { control: 0, compute: 1 },
-  { queue: 0, replica: 1, middle: 2 },
-  { control: 0, worker: 1, replica: 2, cache: 3 },
+  { queue: 0, replica: 1, middle: 2, cache: 3 },
+  { control: 0, worker: 1, replica: 2, pooler: 3 },
   { replica: 0, database: 1, warehouse: 2 },
   { external: 0 },
   { observability: 0 },

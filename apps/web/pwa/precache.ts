@@ -14,6 +14,8 @@ export type OutputEntry = Readonly<{
 }>
 
 const FONT = /\.(?:woff2?|ttf|otf)$/i
+/** The Solver's WebAssembly module: the game solves from its first frame, so boot waits for it. */
+const WASM = /\.wasm$/i
 
 /** The public files the shell needs. Everything else is fetched when the game asks for it. */
 const PUBLIC = new Set([
@@ -42,7 +44,7 @@ export const excludedFromCache = (path: string): boolean => {
 
 /**
  * The install list: the shell, every code chunk the app can ask for, the
- * manifest and icons, and any font the build serves itself. The art, the
+ * Solver's module, the manifest and icons, and any font the build serves itself. The art, the
  * screenshots, and the iOS splash load on first use instead. Every chunk is
  * kept because the board selects its renderer at runtime and the app preloads
  * the four catalogs after boot, so a first offline Company must still draw and
@@ -56,7 +58,11 @@ export const precacheOf = (
   const files = new Set<string>(['/index.html'])
   for (const entry of outputs) {
     if (excludedFromCache(entry.fileName)) continue
-    if (entry.kind === 'chunk' || entry.fileName.includes('compute.worker')) {
+    if (
+      entry.kind === 'chunk' ||
+      entry.fileName.includes('compute.worker') ||
+      WASM.test(entry.fileName)
+    ) {
       files.add(`/${entry.fileName}`)
       continue
     }

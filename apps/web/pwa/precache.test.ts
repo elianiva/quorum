@@ -20,6 +20,7 @@ describe('the service worker install list', () => {
     chunk('assets/plural-xyz.js', { imports: ['assets/brand-xyz.js'] }),
     { fileName: 'assets/index-def.css', kind: 'asset' },
     { fileName: 'assets/compute.worker-ghi.js', kind: 'asset' },
+    { fileName: 'assets/solver-yza.wasm', kind: 'asset' },
     chunk('assets/es-jkl.js', { moduleIds: ['/repo/apps/web/src/i18n/es/index.ts'] }),
     chunk('assets/fr-mno.js', { moduleIds: ['/repo/apps/web/src/i18n/fr/index.ts'] }),
     chunk('assets/ja-pqr.js', { moduleIds: ['/repo/apps/web/src/i18n/ja/index.ts'] }),
@@ -48,7 +49,7 @@ describe('the service worker install list', () => {
     'robots.txt',
   ]
 
-  test('keeps the shell, every code chunk, the compute worker, the manifest, the icons, and fonts', () => {
+  test('keeps the shell, every code chunk, the compute worker, the Solver, the manifest, the icons, and fonts', () => {
     expect(precacheOf(outputs, publicFiles)).toEqual([
       '/apple-touch-icon.png',
       '/assets/brand-xyz.js',
@@ -61,6 +62,7 @@ describe('the service worker install list', () => {
       '/assets/ja-pqr.js',
       '/assets/plural-xyz.js',
       '/assets/posthog-vwx.js',
+      '/assets/solver-yza.wasm',
       '/assets/zh-CN-stu.js',
       '/favicon.svg',
       '/fonts/Geist.woff2',

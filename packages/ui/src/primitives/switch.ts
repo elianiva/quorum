@@ -1,7 +1,7 @@
 import { Switch as FoldkitSwitch } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
-import { cn } from 'cn'
+import { css, cx } from '@quorum/styled-system/css'
 
 /**
  * foldkit deltas (inlined at style resolution): foldkit emits aria-disabled/
@@ -17,24 +17,111 @@ import { cn } from 'cn'
 export const switchSizeKeys = ['default', 'sm'] as const
 export type SwitchSize = (typeof switchSizeKeys)[number]
 
-/** Upstream switch component string; sizes come from the cn-switch token via
- *  the data-size attribute. */
-export const switchClass =
-  'data-checked:bg-primary-fill data-checked:shadow-[inset_0_1px_2px_oklch(0_0_0/0.3)] data-unchecked:bg-well data-unchecked:shadow-well focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 shrink-0 rounded-full border border-transparent focus-visible:ring-3 aria-invalid:ring-3 group-has-[:focus-visible]/field-label:ring-0 group-has-[:focus-visible]/field-label:border-transparent data-[size=default]:h-5 data-[size=default]:w-[34px] data-[size=sm]:h-[14px] data-[size=sm]:w-[24px] peer group/switch relative inline-flex items-center transition-all outline-none after:absolute after:-inset-x-3 after:-inset-y-2 data-disabled:cursor-not-allowed data-disabled:opacity-50'
+/** Upstream switch component; sizes come from the data-size attribute. */
+export const switchClass = cx(
+  'peer',
+  'group/switch',
+  css({
+    flexShrink: '0',
+    borderRadius: '9999px',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: 'transparent',
+    position: 'relative',
+    display: 'inline-flex',
+    alignItems: 'center',
+    outlineStyle: 'none',
+    transitionProperty: 'all',
+    transitionDuration: '150ms',
+    transitionTimingFunction: 'var(--ease-out)',
+    '&[data-checked]': {
+      layerStyle: 'primaryFill',
+      boxShadow: 'inset 0 1px 2px oklch(0 0 0 / 0.3)',
+    },
+    '&[data-unchecked]': {
+      backgroundColor: 'well',
+      boxShadow: 'well',
+    },
+    _focusVisible: {
+      borderColor: 'ring',
+      boxShadow: '0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+    },
+    '&[aria-invalid="true"]': {
+      borderColor: 'destructive',
+      boxShadow: '0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+    },
+    _dark: {
+      '&[aria-invalid="true"]': {
+        borderColor: 'color-mix(in oklab, var(--destructive) 50%, transparent)',
+        boxShadow: '0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+      },
+    },
+    '&[data-size="default"]': { height: '1.25rem', width: '34px' },
+    '&[data-size="sm"]': { height: '14px', width: '24px' },
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      insetInline: '-0.75rem',
+      insetBlock: '-0.5rem',
+    },
+    '&[data-disabled]': { cursor: 'not-allowed', opacity: 0.5 },
+    '.group\\/field-label:has(:focus-visible) &': {
+      boxShadow: 'none',
+      borderColor: 'transparent',
+    },
+  }),
+)
 
-/** Upstream thumb string; geometry/travel come from the token keyed on
- *  group data-size + data-checked/data-unchecked. */
-export const switchThumbClass =
-  'bg-raised shadow-raised rounded-full group-data-[size=default]/switch:size-4 group-data-[size=sm]/switch:size-3 group-data-[size=default]/switch:data-checked:translate-x-[calc(100%-1px)] group-data-[size=default]/switch:data-unchecked:translate-x-px group-data-[size=sm]/switch:data-checked:translate-x-[calc(100%-2px)] group-data-[size=sm]/switch:data-unchecked:translate-x-0 pointer-events-none block ring-0 transition-transform'
+/** Upstream thumb; geometry and travel come from the switch size and state. */
+export const switchThumbClass = css({
+  layerStyle: 'raised',
+  boxShadow: 'raised',
+  borderRadius: '9999px',
+  pointerEvents: 'none',
+  display: 'block',
+  transitionProperty: 'transform',
+  transitionDuration: '150ms',
+  transitionTimingFunction: 'var(--ease-out)',
+  '.group\\/switch[data-size="default"] &': {
+    width: '1rem',
+    height: '1rem',
+    '&[data-checked]': { transform: 'translateX(calc(100% - 1px))' },
+    '&[data-unchecked]': { transform: 'translateX(1px)' },
+  },
+  '.group\\/switch[data-size="sm"] &': {
+    width: '0.75rem',
+    height: '0.75rem',
+    '&[data-checked]': { transform: 'translateX(calc(100% - 2px))' },
+    '&[data-unchecked]': { transform: 'translateX(0)' },
+  },
+})
 
-export const switchLabelClass =
-  'text-sm font-medium leading-none group-data-[disabled]/field:cursor-not-allowed group-data-[disabled]/field:opacity-70'
+export const switchLabelClass = css({
+  fontSize: '0.875rem',
+  lineHeight: '1',
+  fontWeight: '500',
+  '.group\\/field[data-disabled] &': {
+    cursor: 'not-allowed',
+    opacity: 0.7,
+  },
+})
 
-export const switchDescriptionClass = 'text-sm text-muted-foreground'
+export const switchDescriptionClass = css({
+  fontSize: '0.875rem',
+  lineHeight: 'calc(1.25 / 0.875)',
+  color: 'mutedForeground',
+})
 
-export const switchWrapperClass = 'group/field flex items-center gap-3'
+export const switchWrapperClass = cx(
+  'group/field',
+  css({ display: 'flex', alignItems: 'center', gap: '0.75rem' }),
+)
 
-export const switchTextWrapperClass = 'flex flex-col gap-1'
+export const switchTextWrapperClass = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.25rem',
+})
 
 export type SwitchConfig<M> = Readonly<{
   id: string
@@ -71,7 +158,7 @@ export const switch_ = <M>(config: SwitchConfig<M>, h: HtmlBuilder<M>): Html =>
       toView: (attributes) =>
         h.div(
           [
-            h.Class(cn(switchWrapperClass, config.wrapperClass)),
+            h.Class(cx(switchWrapperClass, config.wrapperClass)),
             ...(config.isDisabled ? [h.DataAttribute('disabled', '')] : []),
           ],
           [
@@ -81,22 +168,22 @@ export const switch_ = <M>(config: SwitchConfig<M>, h: HtmlBuilder<M>): Html =>
                 h.DataAttribute('slot', 'switch'),
                 h.DataAttribute('size', config.size ?? 'default'),
                 ...(config.isChecked ? [] : [h.DataAttribute('unchecked', '')]),
-                h.Class(cn(switchClass, config.className)),
+                h.Class(cx(switchClass, config.className)),
               ],
               [
                 h.span([
                   h.DataAttribute('slot', 'switch-thumb'),
                   h.DataAttribute(config.isChecked ? 'checked' : 'unchecked', ''),
-                  h.Class(cn(switchThumbClass, config.thumbClass)),
+                  h.Class(cx(switchThumbClass, config.thumbClass)),
                 ]),
               ],
             ),
             ...(attributes.hiddenInput.length > 0 ? [h.input([...attributes.hiddenInput])] : []),
             h.div(
-              [h.Class(cn(switchTextWrapperClass, config.textClass))],
+              [h.Class(cx(switchTextWrapperClass, config.textClass))],
               [
                 h.label(
-                  [...attributes.label, h.Class(cn(switchLabelClass, config.labelClass))],
+                  [...attributes.label, h.Class(cx(switchLabelClass, config.labelClass))],
                   [config.label],
                 ),
                 config.description === undefined
@@ -104,7 +191,7 @@ export const switch_ = <M>(config: SwitchConfig<M>, h: HtmlBuilder<M>): Html =>
                   : h.p(
                       [
                         ...attributes.description,
-                        h.Class(cn(switchDescriptionClass, config.descriptionClass)),
+                        h.Class(cx(switchDescriptionClass, config.descriptionClass)),
                       ],
                       [config.description],
                     ),

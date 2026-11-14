@@ -30,21 +30,81 @@ import { EYEBROW, FIGURE, NESTED, SCROLL, WELL } from '@quorum/ui/game/bits'
 import { SurveyMessage } from '@/game/survey.ts'
 import { isSending, isSent, isSkipped } from '@/game/survey-machine.ts'
 import { shell } from './panels.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 const stat = (name: string, value: string, h: HtmlBuilder<Message>) =>
   h.div(
-    [h.Key(name), h.Class('flex flex-col gap-1 px-4 py-3')],
+    [
+      h.Key(name),
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.25rem',
+          paddingInline: '1rem',
+          paddingBlock: '0.75rem',
+        }),
+      ),
+    ],
     [
       h.span([h.Class(EYEBROW)], [name]),
-      h.span([h.Class(cn(FIGURE, 'text-[calc(18px*var(--type-scale))]'))], [value]),
+      h.span(
+        [
+          h.Class(
+            cn(
+              FIGURE,
+              css({
+                fontSize: 'calc(18px*var(--type-scale))',
+              }),
+            ),
+          ),
+        ],
+        [value],
+      ),
     ],
   )
 
 const stats = (columns: string, children: ReadonlyArray<Html>, h: HtmlBuilder<Message>) =>
-  h.div([h.Class(cn('grid w-full divide-x divide-hairline', WELL, columns))], children)
+  h.div(
+    [
+      h.Class(
+        cn(
+          css({
+            display: 'grid',
+            width: '100%',
+            '& > :not(:last-child)': {
+              borderRightWidth: '1px',
+              borderRightStyle: 'solid',
+              borderColor: 'var(--hairline)',
+            },
+          }),
+          WELL,
+          columns,
+        ),
+      ),
+    ],
+    children,
+  )
 
 const footer = (children: ReadonlyArray<Html>, h: HtmlBuilder<Message>) =>
-  h.div([h.Class('flex justify-end gap-2 border-t border-hairline bg-nested px-5 py-3')], children)
+  h.div(
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: '0.5rem',
+          borderTopWidth: '1px',
+          borderTopStyle: 'solid',
+          borderColor: 'var(--hairline)',
+          backgroundColor: 'var(--surface-nested)',
+          paddingInline: '1.25rem',
+          paddingBlock: '0.75rem',
+        }),
+      ),
+    ],
+    children,
+  )
 
 export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
@@ -58,10 +118,27 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     [],
     [
       h.div(
-        [h.Class(`flex flex-col gap-4 px-5 pt-1 pb-5 ${SCROLL}`)],
+        [
+          h.Class(
+            cx(
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem',
+                paddingInline: '1.25rem',
+                paddingTop: '0.25rem',
+                paddingBottom: '1.25rem',
+              }),
+              SCROLL,
+            ),
+          ),
+        ],
         [
           stats(
-            'grid-cols-4 narrow:grid-cols-2',
+            css({
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              _narrow: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+            }),
             [
               stat(t.legacy.valuation, money(value.valuation), h),
               stat(t.legacy.ruleOf40, value.ruleOf40.toFixed(0), h),
@@ -71,16 +148,59 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             h,
           ),
           h.div(
-            [h.Class(cn(NESTED, 'flex flex-col divide-y divide-hairline'))],
+            [
+              h.Class(
+                cn(
+                  NESTED,
+                  css({
+                    display: 'flex',
+                    flexDirection: 'column',
+                    '& > :not(:last-child)': {
+                      borderBottomWidth: '1px',
+                      borderBottomStyle: 'solid',
+                      borderColor: 'var(--hairline)',
+                    },
+                  }),
+                ),
+              ),
+            ],
             offers.map((offer) =>
               h.div(
-                [h.Key(offer.id), h.Class('flex items-center gap-3 px-4 py-3')],
+                [
+                  h.Key(offer.id),
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      paddingInline: '1rem',
+                      paddingBlock: '0.75rem',
+                    }),
+                  ),
+                ],
                 [
                   h.div(
-                    [h.Class('flex min-w-0 flex-1 flex-col gap-0.5')],
+                    [
+                      h.Class(
+                        css({
+                          display: 'flex',
+                          minWidth: '0',
+                          flex: '1 1 0%',
+                          flexDirection: 'column',
+                          gap: '0.125rem',
+                        }),
+                      ),
+                    ],
                     [
                       h.span(
-                        [h.Class('text-[calc(14px*var(--type-scale))] font-semibold')],
+                        [
+                          h.Class(
+                            css({
+                              fontSize: 'calc(14px*var(--type-scale))',
+                              fontWeight: '600',
+                            }),
+                          ),
+                        ],
                         [t.catalog.exits[offer.id].name],
                       ),
                       h.span(
@@ -88,7 +208,10 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                           h.Class(
                             cn(
                               FIGURE,
-                              'text-[calc(11.5px*var(--type-scale))] text-muted-foreground',
+                              css({
+                                fontSize: 'calc(11.5px*var(--type-scale))',
+                                color: 'var(--muted-foreground)',
+                              }),
                             ),
                           ),
                         ],
@@ -108,7 +231,7 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
         ],
       ),
     ],
-    'max-w-[620px]',
+    css({ maxWidth: '620px' }),
     h,
   )
 }
@@ -143,7 +266,11 @@ export const snapshotSvg = (
                 h.Key(`l${index}`),
                 h.D(`M${a.x + 108} ${a.y + 40} L${b.x + 108} ${b.y + 40}`),
                 h.StrokeWidth('6'),
-                h.Class('stroke-foreground/25'),
+                h.Class(
+                  css({
+                    stroke: 'color-mix(in oklab, var(--foreground) 25%, transparent)',
+                  }),
+                ),
               ],
               [],
             )
@@ -179,7 +306,15 @@ const surveySection = (model: Model, h: HtmlBuilder<Message>): Html => {
         h.Class(
           cn(
             NESTED,
-            'flex w-full items-center gap-2 px-4 py-3 text-[calc(12.5px*var(--type-scale))]',
+            css({
+              display: 'flex',
+              width: '100%',
+              alignItems: 'center',
+              gap: '0.5rem',
+              paddingInline: '1rem',
+              paddingBlock: '0.75rem',
+              fontSize: 'calc(12.5px*var(--type-scale))',
+            }),
           ),
         ),
       ],
@@ -188,14 +323,42 @@ const surveySection = (model: Model, h: HtmlBuilder<Message>): Html => {
   const sending = isSending(survey.phase)
   const empty = survey.issues.trim() === '' && survey.likes.trim() === ''
   return h.div(
-    [h.Class('flex w-full flex-col gap-3 border-t border-hairline pt-4')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          width: '100%',
+          flexDirection: 'column',
+          gap: '0.75rem',
+          borderTopWidth: '1px',
+          borderTopStyle: 'solid',
+          borderColor: 'var(--hairline)',
+          paddingTop: '1rem',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex flex-col gap-0.5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.125rem',
+            }),
+          ),
+        ],
         [
           h.span([h.Class(EYEBROW)], [t.survey.title]),
           h.span(
-            [h.Class('text-[calc(11.5px*var(--type-scale))] text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'calc(11.5px*var(--type-scale))',
+                  color: 'var(--muted-foreground)',
+                }),
+              ),
+            ],
             [t.survey.note],
           ),
         ],
@@ -226,12 +389,27 @@ const surveySection = (model: Model, h: HtmlBuilder<Message>): Html => {
       ),
       survey.phase._tag === 'Failed'
         ? h.span(
-            [h.Class('text-[calc(11.5px*var(--type-scale))] text-warn')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'calc(11.5px*var(--type-scale))',
+                  color: 'var(--warn)',
+                }),
+              ),
+            ],
             [t.survey.failed(survey.phase.note)],
           )
         : h.empty,
       h.div(
-        [h.Class('flex justify-end gap-2')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '0.5rem',
+            }),
+          ),
+        ],
         [
           button(
             { onClick: Message.SurveySkipped(), variant: 'ghost', size: 'sm' },
@@ -266,23 +444,57 @@ export const exitedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     [],
     [
       h.div(
-        [h.Class(`flex min-h-0 flex-col items-center gap-4 px-6 pt-1 pb-5 ${SCROLL}`)],
+        [
+          h.Class(
+            cx(
+              css({
+                display: 'flex',
+                minHeight: '0',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '1rem',
+                paddingInline: '1.5rem',
+                paddingTop: '0.25rem',
+                paddingBottom: '1.25rem',
+              }),
+              SCROLL,
+            ),
+          ),
+        ],
         [
           snapshotSvg(
             row.snapshot,
             h,
-            'h-[180px] w-full max-w-[520px] rounded-xl bg-well shadow-well p-2',
+            css({
+              height: '180px',
+              width: '100%',
+              maxWidth: '520px',
+              borderRadius: 'xl',
+              backgroundColor: 'well',
+              boxShadow: 'well',
+              padding: '0.5rem',
+            }),
           ),
           h.span(
             [
               h.Class(
-                cn(FIGURE, 'text-[calc(30px*var(--type-scale))] font-semibold tracking-[-0.035em]'),
+                cn(
+                  FIGURE,
+                  css({
+                    fontSize: 'calc(30px*var(--type-scale))',
+                    fontWeight: '600',
+                    letterSpacing: '-0.035em',
+                  }),
+                ),
               ),
             ],
             [t.legacy.legacy2(row.legacy)],
           ),
           stats(
-            'grid-cols-4 narrow:grid-cols-2',
+            css({
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              _narrow: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+            }),
             [
               stat(t.legacy.payout2, money(row.payout), h),
               stat(t.legacy.peakUsers, compact(row.peak), h),
@@ -293,11 +505,28 @@ export const exitedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           ),
           slots > 0
             ? h.div(
-                [h.Class('flex w-full flex-col gap-2')],
+                [
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      width: '100%',
+                      flexDirection: 'column',
+                      gap: '0.5rem',
+                    }),
+                  ),
+                ],
                 [
                   h.span([h.Class(EYEBROW)], [t.legacy.keepResearch(kept.length, slots)]),
                   h.div(
-                    [h.Class('flex flex-wrap gap-1.5')],
+                    [
+                      h.Class(
+                        css({
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: '0.375rem',
+                        }),
+                      ),
+                    ],
                     exited.researched.map((id) =>
                       button(
                         {
@@ -329,7 +558,7 @@ export const exitedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
         h,
       ),
     ],
-    'max-w-[680px]',
+    css({ maxWidth: '680px' }),
     h,
   )
 }
@@ -343,7 +572,23 @@ export const selectionBar = (model: Model, h: HtmlBuilder<Message>): Html => {
         [
           h.Key('selection'),
           h.Class(
-            'pointer-events-auto enter-pop flex h-[52px] items-center gap-2 rounded-2xl bg-surface py-1.5 pr-1.5 pl-3.5 text-[calc(12.5px*var(--type-scale))] shadow-card',
+            cx(
+              css({
+                pointerEvents: 'auto',
+                display: 'flex',
+                height: '52px',
+                alignItems: 'center',
+                gap: '0.5rem',
+                borderRadius: '2xl',
+                layerStyle: 'surface',
+                paddingBlock: '0.375rem',
+                paddingRight: '0.375rem',
+                paddingLeft: '0.875rem',
+                fontSize: 'calc(12.5px*var(--type-scale))',
+                boxShadow: 'card',
+              }),
+              'enter-pop',
+            ),
           ),
         ],
         [
@@ -386,7 +631,23 @@ export const sellBar = (model: Model, h: HtmlBuilder<Message>): Html => {
     [
       h.Key('sell'),
       h.Class(
-        'pointer-events-auto enter-pop flex h-[52px] items-center gap-2 rounded-2xl bg-surface py-1.5 pr-1.5 pl-3.5 text-[calc(12.5px*var(--type-scale))] shadow-card',
+        cx(
+          css({
+            pointerEvents: 'auto',
+            display: 'flex',
+            height: '52px',
+            alignItems: 'center',
+            gap: '0.5rem',
+            borderRadius: '2xl',
+            layerStyle: 'surface',
+            paddingBlock: '0.375rem',
+            paddingRight: '0.375rem',
+            paddingLeft: '0.875rem',
+            fontSize: 'calc(12.5px*var(--type-scale))',
+            boxShadow: 'card',
+          }),
+          'enter-pop',
+        ),
       ),
     ],
     [
@@ -423,7 +684,20 @@ export const stampBar = (model: Model, h: HtmlBuilder<Message>): Html => {
         [
           h.Key('stamp'),
           h.Class(
-            'enter-pop flex h-[52px] items-center gap-2 rounded-2xl bg-surface px-3.5 text-[calc(12.5px*var(--type-scale))] shadow-card',
+            cx(
+              css({
+                display: 'flex',
+                height: '52px',
+                alignItems: 'center',
+                gap: '0.5rem',
+                borderRadius: '2xl',
+                layerStyle: 'surface',
+                paddingInline: '0.875rem',
+                fontSize: 'calc(12.5px*var(--type-scale))',
+                boxShadow: 'card',
+              }),
+              'enter-pop',
+            ),
           ),
         ],
         [icon(h, Stamp, 'size-3.5 text-primary-strong'), t.legacy.clickToPlaceEsc(playbook.name)],
@@ -439,7 +713,17 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     t.legacy.playbooks,
     [
       h.span(
-        [h.Class(cn(FIGURE, 'text-[calc(12px*var(--type-scale))] text-muted-foreground'))],
+        [
+          h.Class(
+            cn(
+              FIGURE,
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ),
+        ],
         [`${founder.playbooks.length}/${playbookSlots(founder)}`],
       ),
       button(
@@ -450,25 +734,66 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     ],
     [
       h.div(
-        [h.Class(`flex flex-col gap-2 px-5 pt-1 pb-5 ${SCROLL}`)],
+        [
+          h.Class(
+            cx(
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem',
+                paddingInline: '1.25rem',
+                paddingTop: '0.25rem',
+                paddingBottom: '1.25rem',
+              }),
+              SCROLL,
+            ),
+          ),
+        ],
         founder.playbooks.length === 0
           ? [
               h.span(
                 [
                   h.Key('empty'),
-                  h.Class('text-[calc(12.5px*var(--type-scale))] text-muted-foreground'),
+                  h.Class(
+                    css({
+                      fontSize: 'calc(12.5px*var(--type-scale))',
+                      color: 'var(--muted-foreground)',
+                    }),
+                  ),
                 ],
                 [t.legacy.shiftClickOrShiftDragNodes],
               ),
             ]
           : founder.playbooks.map((playbook, index) =>
               h.div(
-                [h.Key(`p${index}`), h.Class(cn(NESTED, 'flex items-center gap-2 px-3 py-2'))],
+                [
+                  h.Key(`p${index}`),
+                  h.Class(
+                    cn(
+                      NESTED,
+                      css({
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        paddingInline: '0.75rem',
+                        paddingBlock: '0.5rem',
+                      }),
+                    ),
+                  ),
+                ],
                 [
                   h.span(
                     [
                       h.Class(
-                        'min-w-0 flex-1 truncate text-[calc(13px*var(--type-scale))] font-medium',
+                        css({
+                          minWidth: '0',
+                          flex: '1 1 0%',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          fontSize: 'calc(13px*var(--type-scale))',
+                          fontWeight: '500',
+                        }),
                       ),
                     ],
                     [playbook.name],
@@ -476,7 +801,13 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.span(
                     [
                       h.Class(
-                        cn(FIGURE, 'text-[calc(11.5px*var(--type-scale))] text-muted-foreground'),
+                        cn(
+                          FIGURE,
+                          css({
+                            fontSize: 'calc(11.5px*var(--type-scale))',
+                            color: 'var(--muted-foreground)',
+                          }),
+                        ),
                       ),
                     ],
                     [t.legacy.nodes(playbook.nodes.length)],
@@ -511,7 +842,7 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             ),
       ),
     ],
-    'max-w-[560px]',
+    css({ maxWidth: '560px' }),
     h,
   )
 }

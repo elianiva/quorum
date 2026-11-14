@@ -764,7 +764,9 @@ const slo = (game: Board['game'], h: HtmlBuilder<Message>): Html => {
 }
 
 /** What the toolbar takes from the top row of a phone: the funding row leaves it free. */
-const TOOLBAR_ROOM = 'compact:min-h-9 compact:pr-[var(--toolbar-w)]'
+const TOOLBAR_ROOM = css({
+  _compact: { minHeight: '2.25rem', paddingRight: 'var(--toolbar-w)' },
+})
 
 const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
@@ -2536,8 +2538,11 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
         ],
       ),
       anchor: { placement: 'bottom-end', gap: 6, padding: 8 },
-      backdropClassName: 'fixed inset-0 z-40',
-      itemsClassName: `z-50 min-w-48 p-1 outline-none ${FLOAT}`,
+      backdropClassName: css({ position: 'fixed', inset: '0', zIndex: '40' }),
+      itemsClassName: cx(
+        css({ zIndex: '50', minWidth: '12rem', padding: '0.25rem', outlineStyle: 'none' }),
+        FLOAT,
+      ),
       isItemDisabled: (item) =>
         (item === 'undo' && !undoAvailable(model.board)) ||
         (item === 'redo' && !redoAvailable(model.board)),
@@ -2634,7 +2639,28 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
   return h.nav(
     [
       h.Class(
-        `pointer-events-auto relative z-20 flex shrink-0 items-center gap-1 p-1.5 ${PANEL} compact:absolute compact:top-[calc(max(8px,env(safe-area-inset-top))+10px)] compact:right-[calc(max(8px,env(safe-area-inset-right))+10px)] compact:gap-3 compact:bg-none compact:p-0 compact:shadow-none`,
+        cx(
+          css({
+            pointerEvents: 'auto',
+            position: 'relative',
+            zIndex: '20',
+            display: 'flex',
+            flexShrink: '0',
+            alignItems: 'center',
+            gap: '0.25rem',
+            padding: '0.375rem',
+            _compact: {
+              position: 'absolute',
+              top: 'calc(max(8px, env(safe-area-inset-top)) + 10px)',
+              right: 'calc(max(8px, env(safe-area-inset-right)) + 10px)',
+              gap: '0.75rem',
+              backgroundImage: 'none',
+              padding: '0',
+              boxShadow: 'none',
+            },
+          }),
+          PANEL,
+        ),
       ),
     ],
     [
@@ -3024,7 +3050,19 @@ export const screenshotExit = (h: HtmlBuilder<Message>): Html => {
   )
 }
 
-const pill = `flex max-w-[480px] compact:max-w-none items-center gap-2.5 rounded-xl bg-surface px-3 py-2 text-[calc(12.5px*var(--type-scale))] shadow-card`
+const pill = css({
+  display: 'flex',
+  maxWidth: '480px',
+  alignItems: 'center',
+  gap: '0.625rem',
+  borderRadius: 'xl',
+  layerStyle: 'surface',
+  paddingInline: '0.75rem',
+  paddingBlock: '0.5rem',
+  fontSize: 'calc(12.5px * var(--type-scale))',
+  boxShadow: 'card',
+  _compact: { maxWidth: 'none' },
+})
 
 /** Settling while the Design settles, then what the change did, with Undo. */
 const undoButton = (danger: boolean, h: HtmlBuilder<Message>): Html => {

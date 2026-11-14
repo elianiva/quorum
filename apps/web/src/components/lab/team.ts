@@ -696,7 +696,11 @@ const engineerSeat = (game: Game, engineer: Engineer, h: HtmlBuilder<Message>): 
       hueOf(engineer.id),
       h.span([], [name.slice(0, 1)]),
       languageMark(engineer.language, h),
-      training ? halo(learned, 'text-primary', h) : ramping ? halo(ramp, 'text-ok', h) : h.empty,
+      training
+        ? halo(learned, css({ color: 'var(--primary)' }), h)
+        : ramping
+          ? halo(ramp, css({ color: 'var(--ok)' }), h)
+          : h.empty,
       h,
     ),
     name,
@@ -775,7 +779,7 @@ const engineerControls = (
         Message.TeamChanged({ message: TeamMessage.LayoffChosen({ engineerId: engineer.id }) }),
         true,
         h,
-        'hover:text-danger',
+        css({ _hover: { color: 'var(--danger)' } }),
       ),
       h,
     ),
@@ -979,7 +983,10 @@ const pendingSeat = (game: Game, id: string, readyAt: number, h: HtmlBuilder<Mes
     nameOf(id),
     t.team.inText(wait(t, left)),
     [],
-    'bg-foreground/[0.025] shadow-[inset_0_0_0_1px_var(--hairline-soft)]',
+    css({
+      backgroundColor: 'color-mix(in oklab, var(--foreground) 2.5%, transparent)',
+      boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
+    }),
     h,
   )
 }
@@ -2537,7 +2544,7 @@ const floor = (model: Model, h: HtmlBuilder<Message>): Html => {
                         zIndex: '50',
                         paddingInline: '1rem',
                         paddingBlock: '0.75rem',
-                        fontSize: '0.875rem',
+                        fontSize: 'calc(0.875rem * var(--type-scale))',
                         lineHeight: 'calc(1.25 / 0.875)',
                         fontWeight: '500',
                       }),
@@ -2957,10 +2964,10 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                           }),
                       share >= 1
                         ? css({
-                            translateX: '-100%',
+                            translate: '-100% 0',
                           })
                         : css({
-                            translateX: '-50%',
+                            translate: '-50% 0',
                           }),
                     ),
                   ),
@@ -2982,7 +2989,11 @@ type Status = 'queued' | 'building' | 'shipping' | 'live'
 const statusMark = (status: Status, share: number, h: HtmlBuilder<Message>): Html => {
   const pie = 2 * Math.PI * 2.5
   const tone =
-    status === 'building' ? 'text-warn' : status === 'queued' ? 'text-muted-foreground' : 'text-ok'
+    status === 'building'
+      ? css({ color: 'var(--warn)' })
+      : status === 'queued'
+        ? css({ color: 'var(--muted-foreground)' })
+        : css({ color: 'var(--ok)' })
   return h.svg(
     [
       h.AriaHidden(true),
@@ -4005,7 +4016,7 @@ const board = (game: Game, h: HtmlBuilder<Message>): Html => {
                     Message.TeamChanged({ message: TeamMessage.FeatureRemoved({ id }) }),
                     removeRefusal(game, id) === null,
                     h,
-                    'text-danger',
+                    css({ color: 'var(--danger)' }),
                   ),
                 ],
                 false,
@@ -4775,7 +4786,11 @@ const taskTile = (
   )
 }
 
-const TILES = 'grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2'
+const TILES = css({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+  gap: '0.5rem',
+})
 
 const work = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
@@ -4948,7 +4963,21 @@ export const teamPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.div(
         [
           h.Class(
-            `grid min-h-0 flex-1 grid-cols-[360px_minmax(0,1fr)] border-t border-hairline narrow:grid-cols-1 compact:block compact:overflow-y-auto compact:pb-[env(safe-area-inset-bottom)]`,
+            css({
+              display: 'grid',
+              minHeight: '0',
+              flex: '1 1 0%',
+              gridTemplateColumns: '360px minmax(0, 1fr)',
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderColor: 'var(--hairline)',
+              _narrow: { gridTemplateColumns: 'minmax(0, 1fr)' },
+              _compact: {
+                display: 'block',
+                overflowY: 'auto',
+                paddingBottom: 'env(safe-area-inset-bottom)',
+              },
+            }),
           ),
         ],
         [

@@ -35,11 +35,44 @@ import { EYEBROW, FIGURE, insightChip } from '@quorum/ui/game/bits'
  * Everything the player may want to reread is Mail. Nothing here is a record.
  */
 
-const ALARM =
-  'pointer-events-auto enter-down flex min-w-0 items-center gap-2.5 rounded-xl bg-danger py-1.5 pr-1.5 pl-3 text-[calc(13px*var(--type-scale))] font-semibold text-white shadow-[inset_0_1px_0_oklch(1_0_0/0.25),0_0_0_1px_color-mix(in_oklch,var(--danger),black_25%),0_10px_24px_-8px_color-mix(in_oklch,var(--danger)_60%,transparent)]'
+const ALARM = cx(
+  'enter-down',
+  css({
+    pointerEvents: 'auto',
+    display: 'flex',
+    minWidth: '0',
+    alignItems: 'center',
+    gap: '0.625rem',
+    borderRadius: 'xl',
+    backgroundColor: 'var(--danger)',
+    paddingBlock: '0.375rem',
+    paddingRight: '0.375rem',
+    paddingLeft: '0.75rem',
+    fontSize: 'calc(13px * var(--type-scale))',
+    fontWeight: '600',
+    color: 'white',
+    boxShadow:
+      'inset 0 1px 0 oklch(1 0 0/0.25), 0 0 0 1px color-mix(in oklch, var(--danger), black 25%), 0 10px 24px -8px color-mix(in oklch, var(--danger) 60%, transparent)',
+  }),
+)
 
-const STATE =
-  'pointer-events-auto enter-down flex min-w-0 items-center gap-2 rounded-xl bg-surface py-1 pr-1 pl-3 text-[calc(12.5px*var(--type-scale))] shadow-card'
+const STATE = cx(
+  'enter-down',
+  css({
+    pointerEvents: 'auto',
+    display: 'flex',
+    minWidth: '0',
+    alignItems: 'center',
+    gap: '0.5rem',
+    borderRadius: 'xl',
+    layerStyle: 'surface',
+    paddingBlock: '0.25rem',
+    paddingRight: '0.25rem',
+    paddingLeft: '0.75rem',
+    fontSize: 'calc(12.5px * var(--type-scale))',
+    boxShadow: 'card',
+  }),
+)
 
 type IncidentAction = Readonly<{
   label: (t: Messages) => string

@@ -354,15 +354,40 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
         )
       : h.empty
 
-const PLACE = 'absolute top-[76px] right-[372px] z-20 w-[320px] short:right-[340px]'
+const PLACE = css({
+  position: 'absolute',
+  top: '76px',
+  right: '372px',
+  zIndex: '20',
+  width: '320px',
+  _short: { right: '340px' },
+})
 
 /** A phone shows the effect of an option as a strip above the safe area, not a floating card. */
-const PLACE_PHONE =
-  'compact:inset-x-2 compact:top-auto compact:right-2 compact:bottom-[max(8px,env(safe-area-inset-bottom))] compact:z-40 compact:w-auto'
+const PLACE_PHONE = css({
+  _compact: {
+    left: '0.5rem',
+    right: '0.5rem',
+    top: 'auto',
+    bottom: 'max(8px, env(safe-area-inset-bottom))',
+    zIndex: '40',
+    width: 'auto',
+  },
+})
 
 /** An unpinned option takes the whole screen on a phone, like every other action. */
-const PLACE_SCREEN =
-  'compact:inset-0 compact:z-40 compact:max-h-none compact:w-auto compact:overflow-y-auto compact:rounded-none compact:p-5 compact:shadow-none'
+const PLACE_SCREEN = css({
+  _compact: {
+    inset: '0',
+    zIndex: '40',
+    maxHeight: 'none',
+    width: 'auto',
+    overflowY: 'auto',
+    borderRadius: '0',
+    padding: '1.25rem',
+    boxShadow: 'none',
+  },
+})
 
 export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)

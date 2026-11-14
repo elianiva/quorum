@@ -2020,12 +2020,20 @@ const trafficBreakdown = (
               sample.down || sample.swapping || sample.refused > 0 ? 'danger' : 'warn',
               null,
               h,
-              'mx-0 mb-0',
+              css({ marginInline: '0', marginBottom: '0' }),
             ),
           ]
         : []),
       ...(!hint && has(game, 'rightsizing') && oversized(history)
-        ? [callout(t.inspector.rightsizingReport, 'warn', null, h, 'mx-0 mb-0')]
+        ? [
+            callout(
+              t.inspector.rightsizingReport,
+              'warn',
+              null,
+              h,
+              css({ marginInline: '0', marginBottom: '0' }),
+            ),
+          ]
         : []),
     ],
     h,
@@ -2055,7 +2063,37 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
       h.DataAttribute('inspector', ''),
       h.AriaLabel(nodeTitle(t, game, node)),
       h.Class(
-        `absolute top-[76px] right-3 bottom-3 z-20 flex w-[348px] flex-col overflow-hidden ${PANEL} enter-panel sheet-screen compact:inset-0 compact:max-h-none compact:w-auto compact:rounded-none compact:pt-[env(safe-area-inset-top)] compact:pb-[env(safe-area-inset-bottom)] compact:shadow-none short:inset-x-auto short:top-[132px] short:right-[max(8px,env(safe-area-inset-right))] short:w-[320px] short:max-h-none`,
+        cx(
+          css({
+            position: 'absolute',
+            top: '76px',
+            right: '0.75rem',
+            bottom: '0.75rem',
+            zIndex: '20',
+            display: 'flex',
+            width: '348px',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            _compact: {
+              inset: '0',
+              maxHeight: 'none',
+              width: 'auto',
+              borderRadius: '0',
+              paddingTop: 'env(safe-area-inset-top)',
+              paddingBottom: 'env(safe-area-inset-bottom)',
+              boxShadow: 'none',
+            },
+            _short: {
+              left: 'auto',
+              top: '132px',
+              right: 'max(8px, env(safe-area-inset-right))',
+              width: '320px',
+              maxHeight: 'none',
+            },
+          }),
+          PANEL,
+          'enter-panel sheet-screen',
+        ),
       ),
     ],
     [
@@ -2287,7 +2325,7 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                         filter: 'brightness(105%)',
                       },
                       _active: {
-                        translateY: '1px',
+                        translate: '0 1px',
                       },
                     }),
                   ),

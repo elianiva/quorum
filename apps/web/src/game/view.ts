@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { localizeBuilder } from '../i18n/builder.ts'
 import { copy } from '../i18n/messages.ts'
 import type { Document, Html, HtmlBuilder } from 'foldkit/html'
@@ -53,18 +54,27 @@ export const view = (model: Model, builder: HtmlBuilder<Message>): Document => {
     lang: model.prefs.locale,
     body: h.div(
       [
-        h.Class('h-dvh w-full overflow-hidden bg-background text-foreground select-none'),
+        h.Class(
+          css({
+            height: '100dvh',
+            width: '100%',
+            overflow: 'hidden',
+            backgroundColor: 'var(--background)',
+            color: 'var(--foreground)',
+            userSelect: 'none',
+          }),
+        ),
         h.DataAttribute('toast', model.toast ? 'on' : 'off'),
       ],
       [
         h.div(
-          [h.Key(board ? 'board' : 'title'), h.Class('h-full')],
+          [h.Key(board ? 'board' : 'title'), h.Class(css({ height: '100%' }))],
           [
             board
               ? labScreen(model, h)
               : // A reload shows the board's canvas until its save fills it, never an empty Company.
                 screen
-                ? h.div([h.Class('h-full bg-canvas')])
+                ? h.div([h.Class(css({ height: '100%', backgroundColor: 'var(--canvas)' }))])
                 : titleScreen(model, h),
           ],
         ),

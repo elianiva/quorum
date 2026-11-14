@@ -600,8 +600,17 @@ const rowHeader = (label: string, count: number, h: HtmlBuilder<Message>): Html 
   )
 
 /** Chart text in the game's figure face; only foldcn's hover bands take the pointer, not the fills drawn over them. */
-const PLOT =
-  '[&_text]:font-mono [&_text]:text-[calc(10px*var(--type-scale))] [&_text]:fill-[var(--muted-foreground)] [&_text]:tracking-[-0.01em] [&_path]:pointer-events-none [&_line]:pointer-events-none [&_text]:pointer-events-none'
+const PLOT = css({
+  '& text': {
+    fontFamily: 'mono',
+    fontSize: 'calc(10px * var(--type-scale))',
+    fill: 'var(--muted-foreground)',
+    letterSpacing: '-0.01em',
+    pointerEvents: 'none',
+  },
+  '& path': { pointerEvents: 'none' },
+  '& line': { pointerEvents: 'none' },
+})
 
 /** The Chart's frame, as `timeSeries` hands it to ComposedChart. */
 const CHART_HEIGHT = 168
@@ -2775,10 +2784,10 @@ const tablePanel = (
   const columnClass = (index: number): string =>
     bars
       ? index === 0
-        ? 'text-left'
-        : 'text-right'
+        ? css({ textAlign: 'left' })
+        : css({ textAlign: 'right' })
       : index === 0
-        ? 'w-full text-left'
+        ? css({ width: '100%', textAlign: 'left' })
         : css({ width: '1px', minWidth: '88px', textAlign: 'right', whiteSpace: 'nowrap' })
   return panel(
     key,

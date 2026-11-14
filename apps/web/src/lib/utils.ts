@@ -1,1 +1,1 @@
-export { cn } from 'cn'
+export { cx as cn } from '@quorum/styled-system/css'

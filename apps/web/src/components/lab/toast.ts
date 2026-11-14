@@ -33,16 +33,56 @@ export const toast = (
           h.DataAttribute('morph', 'notice'),
           h.DataAttribute('exit', 'notice'),
           // A panel can fill a short screen, so the toast moves above it rather than over its actions.
-          h.Class(
-            `pointer-events-none fixed bottom-[176px] left-1/2 z-50 flex max-w-[calc(100%-16px)] -translate-x-1/2 justify-center rounded-xl bg-surface px-3.5 py-2.5 text-[calc(13px*var(--type-scale))] shadow-float enter-toast compact:right-[max(8px,env(safe-area-inset-right))] compact:left-[max(8px,env(safe-area-inset-left))] compact:max-w-none compact:translate-x-0 compact:justify-start ${
+          h.Attribute(
+            'style',
+            `--toast-bottom:${
               dockRows > 0
-                ? `compact:bottom-[calc(max(8px,env(safe-area-inset-bottom))+min(${50 * dockRows + 70}px,calc(46dvh+68px)))]`
-                : 'compact:bottom-[calc(max(8px,env(safe-area-inset-bottom))+72px)]'
-            } ${
-              overPanel
-                ? 'short:top-[max(2px,env(safe-area-inset-top))]! short:right-auto! short:bottom-auto! short:left-1/2! short:max-w-[calc(100%-16px)]! short:translate-x-[-50%]! short:justify-center!'
-                : ''
+                ? `calc(max(8px, env(safe-area-inset-bottom)) + min(${50 * dockRows + 70}px, calc(46dvh + 68px)))`
+                : 'calc(max(8px, env(safe-area-inset-bottom)) + 72px)'
             }`,
+          ),
+          h.Class(
+            cx(
+              css({
+                pointerEvents: 'none',
+                position: 'fixed',
+                bottom: '176px',
+                left: '50%',
+                zIndex: '50',
+                display: 'flex',
+                maxWidth: 'calc(100% - 16px)',
+                translate: '-50% 0',
+                justifyContent: 'center',
+                borderRadius: 'xl',
+                layerStyle: 'surface',
+                paddingInline: '0.875rem',
+                paddingBlock: '0.625rem',
+                fontSize: 'calc(13px * var(--type-scale))',
+                boxShadow: 'float',
+                _compact: {
+                  right: 'max(8px, env(safe-area-inset-right))',
+                  left: 'max(8px, env(safe-area-inset-left))',
+                  bottom: 'var(--toast-bottom)',
+                  maxWidth: 'none',
+                  translate: '0 0',
+                  justifyContent: 'flex-start',
+                },
+              }),
+              overPanel
+                ? css({
+                    _short: {
+                      top: 'max(2px, env(safe-area-inset-top)) !important',
+                      right: 'auto !important',
+                      bottom: 'auto !important',
+                      left: '50% !important',
+                      maxWidth: 'calc(100% - 16px) !important',
+                      translate: '-50% 0 !important',
+                      justifyContent: 'center !important',
+                    },
+                  })
+                : '',
+              'enter-toast',
+            ),
           ),
         ],
         [

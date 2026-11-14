@@ -143,7 +143,27 @@ export const shell = (
           h.Tabindex(-1),
           h.OnMount(PanelFocus()),
           h.Class(
-            `flex max-h-full w-full flex-col overflow-hidden outline-none compact:h-full compact:max-h-none compact:max-w-none compact:rounded-none compact:pb-[env(safe-area-inset-bottom)] compact:shadow-none ${width} ${FLOAT} enter-modal`,
+            cx(
+              css({
+                display: 'flex',
+                maxHeight: '100%',
+                width: '100%',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                outlineStyle: 'none',
+                _compact: {
+                  height: '100%',
+                  maxHeight: 'none',
+                  maxWidth: 'none',
+                  borderRadius: '0',
+                  paddingBottom: 'env(safe-area-inset-bottom)',
+                  boxShadow: 'none',
+                },
+              }),
+              width,
+              FLOAT,
+              'enter-modal',
+            ),
           ),
         ],
         [
@@ -311,7 +331,7 @@ const agentRoomRow = (model: Model, h: HtmlBuilder<Message>) => {
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                   fontFamily: 'mono',
-                  fontSize: '0.75rem',
+                  fontSize: 'calc(0.75rem * var(--type-scale))',
                   lineHeight: 'calc(1 / 0.75)',
                 }),
               ),
@@ -912,7 +932,7 @@ export const menuPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            fontSize: '0.75rem',
+                            fontSize: 'calc(0.75rem * var(--type-scale))',
                             lineHeight: 'calc(1 / 0.75)',
                             color: 'var(--muted-foreground)',
                           }),
@@ -1036,7 +1056,7 @@ const voteCard = (model: Model, open: Vote, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  fontSize: '0.875rem',
+                  fontSize: 'calc(0.875rem * var(--type-scale))',
                   lineHeight: 'calc(1.25 / 0.875)',
                   fontWeight: '500',
                 }),
@@ -1050,7 +1070,7 @@ const voteCard = (model: Model, open: Vote, h: HtmlBuilder<Message>): Html => {
                 cn(
                   FIGURE,
                   css({
-                    fontSize: '0.75rem',
+                    fontSize: 'calc(0.75rem * var(--type-scale))',
                     lineHeight: 'calc(1 / 0.75)',
                     color: 'var(--muted-foreground)',
                   }),
@@ -1294,7 +1314,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 width: '100%',
                 minWidth: '0',
                 backgroundColor: 'transparent',
-                fontSize: '0.875rem',
+                fontSize: 'calc(0.875rem * var(--type-scale))',
                 lineHeight: 'calc(1.25 / 0.875)',
                 outlineStyle: 'none',
               }),
@@ -1341,7 +1361,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               paddingBlock: '0.25rem',
               paddingRight: '0.375rem',
               paddingLeft: '0.5rem',
-              fontSize: '0.75rem',
+              fontSize: 'calc(0.75rem * var(--type-scale))',
               lineHeight: 'calc(1 / 0.75)',
             }),
           ),
@@ -1537,7 +1557,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               paddingInline: '1.25rem',
               paddingTop: '1rem',
-              fontSize: '0.875rem',
+              fontSize: 'calc(0.875rem * var(--type-scale))',
               lineHeight: 'calc(1.25 / 0.875)',
               color: 'var(--muted-foreground)',
             }),
@@ -1557,7 +1577,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 gap: '0.5rem',
                 paddingInline: '1.25rem',
                 paddingTop: '0.75rem',
-                fontSize: '0.875rem',
+                fontSize: 'calc(0.875rem * var(--type-scale))',
                 lineHeight: 'calc(1.25 / 0.875)',
                 color: 'var(--muted-foreground)',
               }),
@@ -1595,7 +1615,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                     display: 'flex',
                     alignItems: 'flex-start',
                     gap: '0.5rem',
-                    fontSize: '0.875rem',
+                    fontSize: 'calc(0.875rem * var(--type-scale))',
                     lineHeight: 'calc(1.25 / 0.875)',
                     color: 'var(--muted-foreground)',
                   }),
@@ -1678,7 +1698,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h.Class(
                   css({
                     paddingTop: '0.5rem',
-                    fontSize: '0.75rem',
+                    fontSize: 'calc(0.75rem * var(--type-scale))',
                     lineHeight: 'calc(1 / 0.75)',
                     color: 'var(--muted-foreground)',
                   }),
@@ -1697,7 +1717,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 paddingInline: '1.25rem',
                 paddingTop: '0.75rem',
-                fontSize: '0.875rem',
+                fontSize: 'calc(0.875rem * var(--type-scale))',
                 lineHeight: 'calc(1.25 / 0.875)',
                 color: 'var(--muted-foreground)',
               }),
@@ -1715,7 +1735,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 paddingInline: '1.25rem',
                 paddingTop: '1rem',
-                fontSize: '0.875rem',
+                fontSize: 'calc(0.875rem * var(--type-scale))',
                 lineHeight: 'calc(1.25 / 0.875)',
                 color: 'var(--muted-foreground)',
               }),
@@ -1735,7 +1755,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 css({
                   paddingInline: '1.25rem',
                   paddingTop: '0.75rem',
-                  fontSize: '0.75rem',
+                  fontSize: 'calc(0.75rem * var(--type-scale))',
                   lineHeight: 'calc(1 / 0.75)',
                   color: 'var(--muted-foreground)',
                 }),
@@ -1849,7 +1869,7 @@ const settingSwitch = (
     {
       ...config,
       wrapperClass: settingRowClass,
-      textClass: 'min-w-0 flex-1',
+      textClass: css({ minWidth: '0', flex: '1 1 0%' }),
       labelClass: settingLabelClass,
     },
     h,
@@ -1879,7 +1899,7 @@ const volumeRow = (model: Model, h: HtmlBuilder<Message>): Html => {
             label: t.panels.volume,
             formatValue: (value) => `${value}%`,
             isDisabled: model.prefs.muted,
-            rowClass: 'gap-2',
+            rowClass: css({ gap: '0.5rem' }),
           },
           h,
         ),
@@ -1951,12 +1971,12 @@ const settingAction = (
 /** A status line reads its tone from what it says: a refusal warns, an active key confirms. */
 const toneClass = (tone: Tone): string =>
   tone === 'ok'
-    ? 'text-ok'
+    ? css({ color: 'var(--ok)' })
     : tone === 'warn'
-      ? 'text-warn'
+      ? css({ color: 'var(--warn)' })
       : tone === 'danger'
-        ? 'text-danger'
-        : 'text-muted-foreground'
+        ? css({ color: 'var(--danger)' })
+        : css({ color: 'var(--muted-foreground)' })
 
 /**
  * The feature key: the field, the check, and what the key unlocks. The player keeps
@@ -2033,7 +2053,7 @@ const featureKeyRow = (label: string, model: Model, h: HtmlBuilder<Message>): Ht
                     minWidth: '0',
                     backgroundColor: 'transparent',
                     fontFamily: 'mono',
-                    fontSize: '0.875rem',
+                    fontSize: 'calc(0.875rem * var(--type-scale))',
                     lineHeight: 'calc(1.25 / 0.875)',
                     textTransform: 'uppercase',
                     outlineStyle: 'none',
@@ -2078,7 +2098,7 @@ const featureKeyRow = (label: string, model: Model, h: HtmlBuilder<Message>): Ht
               h.Class(
                 cx(
                   css({
-                    fontSize: '0.75rem',
+                    fontSize: 'calc(0.75rem * var(--type-scale))',
                     lineHeight: '1.375',
                   }),
                   toneClass(note.tone),
@@ -2163,7 +2183,7 @@ const pwaSettingsSection = (model: Model, h: HtmlBuilder<Message>): Html => {
                 [
                   h.Class(
                     css({
-                      fontSize: '0.75rem',
+                      fontSize: 'calc(0.75rem * var(--type-scale))',
                       lineHeight: '1.375',
                       color: 'var(--muted-foreground)',
                     }),
@@ -2182,7 +2202,7 @@ const pwaSettingsSection = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 paddingInline: '1rem',
                 paddingBlock: '0.75rem',
-                fontSize: '0.75rem',
+                fontSize: 'calc(0.75rem * var(--type-scale))',
                 lineHeight: '1.375',
                 color: 'var(--muted-foreground)',
               }),
@@ -2201,7 +2221,7 @@ const pwaSettingsSection = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               paddingInline: '1rem',
               paddingBottom: '0.75rem',
-              fontSize: '0.75rem',
+              fontSize: 'calc(0.75rem * var(--type-scale))',
               lineHeight: '1.375',
               color: 'var(--muted-foreground)',
             }),

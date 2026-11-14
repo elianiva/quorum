@@ -1,4 +1,4 @@
-import { css, cx } from '@quorum/styled-system/css'
+import { css, cx, keyframes } from '@quorum/styled-system/css'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { ChartLine, Mail, MessagesSquare, Plug, Wrench, X, type IconNode } from 'lucide'
@@ -22,14 +22,18 @@ import { unreadCount, waitingMail } from './inbox.ts'
 
 /** The highlight's offset under the open tab, by the tab's place in the dock. */
 const TAB_OFFSET = [
-  'translate-x-0',
-  'translate-x-11',
-  'translate-x-22',
-  'translate-x-33',
-  'translate-x-44',
-  'translate-x-55',
-  'translate-x-66',
+  css({ translate: '0' }),
+  css({ translate: '2.75rem' }),
+  css({ translate: '5.5rem' }),
+  css({ translate: '8.25rem' }),
+  css({ translate: '11rem' }),
+  css({ translate: '13.75rem' }),
+  css({ translate: '16.5rem' }),
 ]
+
+const highlightIn = keyframes({
+  from: { opacity: '0' },
+})
 
 const DOCK_ICONS: Record<DockGroup, IconNode> = {
   edge: GROUP_ICONS.edge,
@@ -333,7 +337,9 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
               alignItems: 'stretch',
             },
           }),
-          wide ? 'compact:w-full' : 'compact:w-fit compact:self-center',
+          wide
+            ? css({ _compact: { width: '100%' } })
+            : css({ _compact: { width: 'fit-content', alignSelf: 'center' } }),
         ),
       ),
     ],
@@ -398,14 +404,16 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
                               transitionProperty: 'translate',
                               transitionDuration: '200ms',
                               transitionTimingFunction: 'cubic-bezier(0.32,0.72,0,1)',
+                              animationName: highlightIn,
+                              animationDuration: '200ms',
+                              animationTimingFunction: 'var(--ease-out)',
+                              animationFillMode: 'both',
                               '@media (prefers-reduced-motion: reduce)': {
                                 transitionProperty: 'none',
                                 transitionDuration: '150ms',
                                 transitionTimingFunction: 'var(--ease-out)',
                               },
                             }),
-                            'animate-in',
-                            'fade-in',
                           ),
                           TAB_OFFSET[groups.findIndex((group) => group.key === open)],
                         ),

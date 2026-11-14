@@ -759,7 +759,13 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
           isDisabled: model.board.game.incident !== null,
           onChange: (kind) =>
             Schema.is(IncidentId)(kind) ? Message.IncidentForced({ kind }) : Message.Synced(),
-          wrapperClass: 'flex-row items-center gap-1.5 [&>div]:flex-1',
+          wrapperClass: css({
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: '0.375rem',
+            '& > div': { flex: '1 1 0%' },
+          }),
           labelClass: cn(
             EYEBROW,
             css({

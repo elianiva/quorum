@@ -551,7 +551,9 @@ const inboxToggle = (
       h.OnClick(Message.PanelOpened({ panel: 'inbox' })),
       h.Class(
         cx(
-          waiting ? 'mail-ping text-foreground ' : 'text-muted-foreground ',
+          waiting
+            ? cx('mail-ping', css({ color: 'var(--foreground)' }))
+            : css({ color: 'var(--muted-foreground)' }),
           css({
             position: 'absolute',
             right: '0.75rem',
@@ -1936,11 +1938,21 @@ const generator = (model: Model, h: HtmlBuilder<Message>): Html => {
         {
           id: 'mail-sample',
           label: t.inbox.sample,
-          labelClass: 'sr-only',
+          labelClass: css({
+            position: 'absolute',
+            width: '1px',
+            height: '1px',
+            padding: '0',
+            margin: '-1px',
+            overflow: 'hidden',
+            clip: 'rect(0, 0, 0, 0)',
+            whiteSpace: 'nowrap',
+            borderWidth: '0',
+          }),
           size: 'sm',
           value: model.board.inbox.sample,
           onChange: (id) => Message.InboxChanged({ message: InboxMessage.SampleChosen({ id }) }),
-          wrapperClass: 'w-64',
+          wrapperClass: css({ width: '16rem' }),
           options: [...new Set(SAMPLES.map((sample) => sample.group))].map((group) =>
             nativeSelectOptGroup(
               { label: group },
@@ -2034,7 +2046,38 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.DataAttribute('exit', 'gesture'),
       h.AriaLabel(t.inbox.inbox),
       h.Class(
-        `absolute right-3 bottom-[68px] z-30 flex h-[min(520px,calc(100%-96px))] w-[min(720px,calc(100%-24px))] flex-col overflow-hidden ${FLOAT} enter-panel sheet compact:inset-x-0 compact:top-auto compact:bottom-0 compact:h-[min(680px,78dvh)] compact:max-h-none compact:w-auto compact:rounded-t-2xl compact:rounded-b-none compact:border-t compact:border-hairline compact:pb-[env(safe-area-inset-bottom)]`,
+        cx(
+          css({
+            position: 'absolute',
+            right: '0.75rem',
+            bottom: '68px',
+            zIndex: '30',
+            display: 'flex',
+            height: 'min(520px, calc(100% - 96px))',
+            width: 'min(720px, calc(100% - 24px))',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            _compact: {
+              left: '0',
+              right: '0',
+              top: 'auto',
+              bottom: '0',
+              height: 'min(680px, 78dvh)',
+              maxHeight: 'none',
+              width: 'auto',
+              borderTopLeftRadius: '2xl',
+              borderTopRightRadius: '2xl',
+              borderBottomLeftRadius: '0',
+              borderBottomRightRadius: '0',
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderTopColor: 'var(--hairline)',
+              paddingBottom: 'env(safe-area-inset-bottom)',
+            },
+          }),
+          FLOAT,
+          'enter-panel sheet',
+        ),
       ),
     ],
     [

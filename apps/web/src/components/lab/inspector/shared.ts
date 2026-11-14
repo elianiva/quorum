@@ -203,10 +203,24 @@ export const choice = (
             transitionTimingFunction: 'var(--ease-out)',
           }),
           selected
-            ? 'bg-raised text-foreground shadow-raised'
+            ? css({
+                layerStyle: 'raised',
+                color: 'var(--foreground)',
+                boxShadow: 'raised',
+              })
             : ready
-              ? 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground'
-              : 'cursor-not-allowed text-muted-foreground/45 [&_svg]:opacity-45 [&_svg]:grayscale',
+              ? css({
+                  color: 'var(--muted-foreground)',
+                  _hover: {
+                    backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                    color: 'var(--foreground)',
+                  },
+                })
+              : css({
+                  cursor: 'not-allowed',
+                  color: 'color-mix(in oklab, var(--muted-foreground) 45%, transparent)',
+                  '& svg': { opacity: 0.45, filter: 'grayscale(100%)' },
+                }),
         ),
       ),
     ],
@@ -404,7 +418,9 @@ export const stack = (
                           css({
                             fontSize: 'calc(11.5px*var(--type-scale))',
                           }),
-                          node.workers > fit ? 'text-danger' : 'text-muted-foreground',
+                          node.workers > fit
+                            ? css({ color: 'var(--danger)' })
+                            : css({ color: 'var(--muted-foreground)' }),
                         ),
                       ),
                     ],

@@ -252,8 +252,13 @@ const results = (
   t: Messages,
   h: HtmlBuilder<Message>,
 ): Html => {
-  const frame =
-    'max-h-[min(52vh,420px)] overflow-y-auto overscroll-contain p-1.5 [scrollbar-width:thin]'
+  const frame = css({
+    maxHeight: 'min(52vh, 420px)',
+    overflowY: 'auto',
+    overscrollBehavior: 'contain',
+    padding: '0.375rem',
+    scrollbarWidth: 'thin',
+  })
   if (rows.length === 0)
     return h.div(
       [h.Id('palette-results'), h.Role('status'), h.Class(frame)],

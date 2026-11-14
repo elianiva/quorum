@@ -69,8 +69,7 @@ const whyLink = (anchor: string, h: HtmlBuilder<Message>): Html => {
           transitionDuration: '150ms',
           transitionTimingFunction: 'var(--ease-out)',
           '.group:hover &': {
-            translateX: '1px',
-            translateY: '-1px',
+            translate: '1px -1px',
           },
         }),
       ),
@@ -300,7 +299,7 @@ export const costReceipts = (
         sorted.map((kind) => {
           const receipt = own.receipts[kind]!
           return h.details(
-            [h.Key(kind), h.Class('group/receipt')],
+            [h.Key(kind), h.Class('group-receipt')],
             [
               h.summary(
                 [
@@ -344,7 +343,7 @@ export const costReceipts = (
                           transitionProperty: 'transform',
                           transitionDuration: '150ms',
                           transitionTimingFunction: 'var(--ease-out)',
-                          '.group\\/receipt[open] &': {
+                          '.group-receipt[open] &': {
                             rotate: '90deg',
                           },
                         }),

@@ -705,7 +705,6 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '2',
-                    borderRadius: 'lg',
                     paddingInline: '2.5',
                     paddingBlock: '2',
                   }),
@@ -2356,9 +2355,9 @@ const exitButton = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.OnClick(Message.PanelOpened({ panel: model.panel === 'exit' ? 'none' : 'exit' })),
       h.Class(
         cx(
-          tool(model.panel === 'exit'),
-          cx(
-            css({
+          tool(
+            model.panel === 'exit',
+            css.raw({
               display: 'flex',
               width: 'auto',
               gap: '2',
@@ -2376,8 +2375,8 @@ const exitButton = (model: Model, h: HtmlBuilder<Message>): Html => {
                 justifyContent: 'center',
               },
             }),
-            'enter-pop',
           ),
+          'enter-pop',
         ),
       ),
     ],
@@ -2487,10 +2486,9 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
         },
       }),
       ariaLabel: t.hud.more,
-      buttonClassName: cx(
-        tool(model.moreMenu.isOpen),
-        css({
-          position: 'relative',
+      buttonClassName: tool(
+        model.moreMenu.isOpen,
+        css.raw({
           width: '11',
           height: '11',
         }),
@@ -2678,27 +2676,29 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
               ),
               h.Class(
                 cx(
-                  tool(model.panel === 'research'),
+                  tool(
+                    model.panel === 'research',
+                    css.raw({
+                      display: 'flex',
+                      width: 'auto',
+                      gap: '2',
+                      paddingInline: '3',
+                      fontSize: 'type.13',
+                      fontWeight: 'medium',
+                      _compact: {
+                        width: '11',
+                        height: '11',
+                        paddingInline: '0',
+                      },
+                      '@media (max-width: 1535px)': {
+                        width: '9',
+                        paddingInline: '0',
+                        justifyContent: 'center',
+                      },
+                    }),
+                  ),
                   'enter-pop',
                   glowing(model, 'research') && 'cue-glow',
-                  css({
-                    display: 'flex',
-                    width: 'auto',
-                    gap: '2',
-                    paddingInline: '3',
-                    fontSize: 'type.13',
-                    fontWeight: 'medium',
-                    _compact: {
-                      width: '11',
-                      height: '11',
-                      paddingInline: '0',
-                    },
-                    '@media (max-width: 1535px)': {
-                      width: '9',
-                      paddingInline: '0',
-                      justifyContent: 'center',
-                    },
-                  }),
                 ),
               ),
             ],
@@ -2774,27 +2774,29 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.OnClick(Message.PanelOpened({ panel: model.panel === 'team' ? 'none' : 'team' })),
               h.Class(
                 cx(
-                  tool(model.panel === 'team'),
+                  tool(
+                    model.panel === 'team',
+                    css.raw({
+                      display: 'flex',
+                      width: 'auto',
+                      gap: '2',
+                      paddingInline: '3',
+                      fontSize: 'type.13',
+                      fontWeight: 'medium',
+                      _compact: {
+                        width: '11',
+                        height: '11',
+                        paddingInline: '0',
+                      },
+                      '@media (max-width: 1535px)': {
+                        width: '9',
+                        paddingInline: '0',
+                        justifyContent: 'center',
+                      },
+                    }),
+                  ),
                   'enter-pop',
                   glowing(model, 'team') && 'cue-glow',
-                  css({
-                    display: 'flex',
-                    width: 'auto',
-                    gap: '2',
-                    paddingInline: '3',
-                    fontSize: 'type.13',
-                    fontWeight: 'medium',
-                    _compact: {
-                      width: '11',
-                      height: '11',
-                      paddingInline: '0',
-                    },
-                    '@media (max-width: 1535px)': {
-                      width: '9',
-                      paddingInline: '0',
-                      justifyContent: 'center',
-                    },
-                  }),
                 ),
               ),
             ],

@@ -68,7 +68,7 @@ import {
   XAxis,
   YAxis,
 } from '@quorum/ui/primitives/composed-chart'
-import { EYEBROW, FIGURE, PANEL, SCROLL, WELL } from '@quorum/ui/game/bits'
+import { EYEBROW, FIGURE, PANEL, SCROLL, WELL, FIGURE_STYLE } from '@quorum/ui/game/bits'
 
 /** Time ranges in calendar minutes: up to 10 hours read the Game's one-minute Samples, longer
     ones the 15-minute and 1-hour blocks (12 "History and resolution"). */
@@ -1608,19 +1608,16 @@ const stat = (
           h.span(
             [
               h.Class(
-                cx(
-                  FIGURE,
-                  css({
-                    position: 'relative',
-                    paddingInline: '3',
-                    paddingBottom: '7',
-                    fontSize: 'type.30',
-                    lineHeight: 'none',
-                    fontWeight: 'medium',
-                    letterSpacing: 'title',
-                    textShadow: '0 1px 0 var(--highlight)',
-                  }),
-                ),
+                css(FIGURE_STYLE, {
+                  position: 'relative',
+                  paddingInline: '3',
+                  paddingBottom: '7',
+                  fontSize: 'type.30',
+                  lineHeight: 'none',
+                  fontWeight: 'medium',
+                  letterSpacing: 'title',
+                  textShadow: '0 1px 0 var(--highlight)',
+                }),
               ),
               h.Style({ color: level === 'plain' ? 'var(--foreground)' : LEVEL_COLOR[level] }),
             ],
@@ -3953,7 +3950,6 @@ const thresholdPicker = (rule: Rule, chosen: number, h: HtmlBuilder<Message>): H
           css({
             display: 'inline-flex',
             gap: '0.75',
-            borderRadius: 'lg',
             padding: '0.75',
           }),
           WELL,
@@ -4792,7 +4788,6 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                   css({
                     display: 'flex',
                     gap: '0.75',
-                    borderRadius: 'lg',
                     padding: '0.75',
                   }),
                   WELL,
@@ -5560,15 +5555,12 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                         h.span(
                           [
                             h.Class(
-                              cx(
-                                FIGURE,
-                                css({
-                                  fontSize: 'type.30',
-                                  lineHeight: 'none',
-                                  fontWeight: 'medium',
-                                  letterSpacing: 'title',
-                                }),
-                              ),
+                              css(FIGURE_STYLE, {
+                                fontSize: 'type.30',
+                                lineHeight: 'none',
+                                fontWeight: 'medium',
+                                letterSpacing: 'title',
+                              }),
                             ),
                             h.Style({ color: credit > 0 ? RED : MUTED }),
                             h.Title(

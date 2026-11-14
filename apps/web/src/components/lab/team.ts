@@ -138,7 +138,17 @@ import { glowing, shown } from '@/game/reveal.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { badge } from '@quorum/ui/primitives/badge'
 import { button } from '@quorum/ui/primitives/button'
-import { EYEBROW, FIGURE, PANEL, SCROLL, WELL, ring, stackLogo } from '@quorum/ui/game/bits'
+import {
+  EYEBROW,
+  FIGURE,
+  PANEL,
+  SCROLL,
+  ring,
+  stackLogo,
+  EYEBROW_STYLE,
+  PANEL_STYLE,
+  WELL_STYLE,
+} from '@quorum/ui/game/bits'
 import { shell } from './panels.ts'
 
 const nameOf = (id: string): string => identityOf(id).name
@@ -411,18 +421,15 @@ const renameField = (
               : Option.none(),
         ),
         h.Class(
-          cx(
-            WELL,
-            css({
-              height: '7',
-              minWidth: '0',
-              flex: '1 1 0%',
-              borderRadius: 'lg',
-              paddingInline: '2',
-              fontSize: 'type.12',
-              outlineStyle: 'none',
-            }),
-          ),
+          css(WELL_STYLE, {
+            height: '7',
+            minWidth: '0',
+            flex: '1 1 0%',
+            borderRadius: 'lg',
+            paddingInline: '2',
+            fontSize: 'type.12',
+            outlineStyle: 'none',
+          }),
         ),
       ]),
       iconButton(
@@ -883,10 +890,7 @@ const hireSeat = (game: Game, h: HtmlBuilder<Message>): Html => {
                     color: 'onPrimaryFill',
                     boxShadow: 'primary',
                   })
-                : WELL,
-              css({
-                borderRadius: 'full',
-              }),
+                : css(WELL_STYLE, { borderRadius: 'full' }),
             ),
           ),
         ],
@@ -995,17 +999,17 @@ const policySwitch = (team: Team, h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Class(
-        cx(
-          css({
+        css(
+          {
             display: 'grid',
             gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
             gap: '0.75',
             padding: '0.75',
-          }),
-          WELL,
-          css({
+          },
+          WELL_STYLE,
+          {
             borderRadius: 'lg',
-          }),
+          },
         ),
       ),
     ],
@@ -1096,16 +1100,16 @@ const kindSwitch = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Class(
-        cx(
-          css({
+        css(
+          {
             display: 'flex',
             gap: '0.75',
             padding: '0.75',
-          }),
-          WELL,
-          css({
+          },
+          WELL_STYLE,
+          {
             borderRadius: 'lg',
-          }),
+          },
         ),
       ),
     ],
@@ -1214,9 +1218,9 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
       h.Key(team.id),
       ...DragAndDrop.droppable(team.id, teamName(t, team)),
       h.Class(
-        cx(
-          PANEL,
-          css({
+        css(
+          PANEL_STYLE,
+          {
             display: 'flex',
             flexDirection: 'column',
             gap: '3',
@@ -1224,11 +1228,10 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
             transitionProperty: 'box-shadow',
             transitionDuration: 'fast',
             transitionTimingFunction: 'out',
-          }),
-          dropTarget &&
-            css({
-              boxShadow: 'selectedHalo',
-            }),
+          },
+          dropTarget && {
+            boxShadow: 'selectedHalo',
+          },
         ),
       ),
     ],
@@ -1345,13 +1348,10 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
               h.span(
                 [
                   h.Class(
-                    cx(
-                      EYEBROW,
-                      css({
-                        marginTop: '1',
-                        fontSize: 'type.9-5',
-                      }),
-                    ),
+                    css(EYEBROW_STYLE, {
+                      marginTop: '1',
+                      fontSize: 'type.9-5',
+                    }),
                   ),
                 ],
                 [t.team.dHMin],
@@ -1496,18 +1496,18 @@ const sreWork = (game: Game, h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Class(
-        cx(
-          css({
+        css(
+          {
             display: 'flex',
             alignItems: 'center',
             gap: '2',
             paddingInline: '2.5',
             paddingBlock: '2',
-          }),
-          WELL,
-          css({
+          },
+          WELL_STYLE,
+          {
             borderRadius: 'lg',
-          }),
+          },
         ),
       ),
     ],
@@ -1546,18 +1546,18 @@ const dataWork = (h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Class(
-        cx(
-          css({
+        css(
+          {
             display: 'flex',
             alignItems: 'center',
             gap: '2',
             paddingInline: '2.5',
             paddingBlock: '2',
-          }),
-          WELL,
-          css({
+          },
+          WELL_STYLE,
+          {
             borderRadius: 'lg',
-          }),
+          },
         ),
       ),
     ],
@@ -1592,18 +1592,18 @@ const platformWork = (h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Class(
-        cx(
-          css({
+        css(
+          {
             display: 'flex',
             alignItems: 'center',
             gap: '2',
             paddingInline: '2.5',
             paddingBlock: '2',
-          }),
-          WELL,
-          css({
+          },
+          WELL_STYLE,
+          {
             borderRadius: 'lg',
-          }),
+          },
         ),
       ),
     ],
@@ -1638,18 +1638,18 @@ const securityWork = (h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Class(
-        cx(
-          css({
+        css(
+          {
             display: 'flex',
             alignItems: 'center',
             gap: '2',
             paddingInline: '2.5',
             paddingBlock: '2',
-          }),
-          WELL,
-          css({
+          },
+          WELL_STYLE,
+          {
             borderRadius: 'lg',
-          }),
+          },
         ),
       ),
     ],
@@ -1688,18 +1688,18 @@ const working = (
   return h.div(
     [
       h.Class(
-        cx(
-          css({
+        css(
+          {
             display: 'flex',
             alignItems: 'center',
             gap: '2',
             paddingInline: '2.5',
             paddingBlock: '2',
-          }),
-          WELL,
-          css({
+          },
+          WELL_STYLE,
+          {
             borderRadius: 'lg',
-          }),
+          },
         ),
       ),
     ],
@@ -1910,20 +1910,19 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
         return h.div(
           [
             h.Class(
-              cx(
-                WELL,
-                css({
+              css(
+                WELL_STYLE,
+                {
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '1',
                   borderRadius: 'lg',
                   paddingInline: '2.5',
                   paddingBlock: '2',
-                }),
-                paged &&
-                  css({
-                    boxShadow: 'dangerLine',
-                  }),
+                },
+                paged && {
+                  boxShadow: 'dangerLine',
+                },
               ),
             ),
           ],
@@ -2075,15 +2074,12 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                           }),
                         ),
                         h.Class(
-                          cx(
-                            WELL,
-                            css({
-                              height: '6',
-                              borderRadius: 'lg',
-                              paddingInline: '1.5',
-                              fontSize: 'type.11',
-                            }),
-                          ),
+                          css(WELL_STYLE, {
+                            height: '6',
+                            borderRadius: 'lg',
+                            paddingInline: '1.5',
+                            fontSize: 'type.11',
+                          }),
                         ),
                       ],
                       [
@@ -2143,15 +2139,12 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                           }),
                         ),
                         h.Class(
-                          cx(
-                            WELL,
-                            css({
-                              height: '6',
-                              borderRadius: 'lg',
-                              paddingInline: '1.5',
-                              fontSize: 'type.11',
-                            }),
-                          ),
+                          css(WELL_STYLE, {
+                            height: '6',
+                            borderRadius: 'lg',
+                            paddingInline: '1.5',
+                            fontSize: 'type.11',
+                          }),
                         ),
                       ],
                       game.teams.map((entry) =>
@@ -2203,18 +2196,15 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                       Message.TeamChanged({ message: TeamMessage.ServiceNamed({ name }) }),
                     ),
                     h.Class(
-                      cx(
-                        WELL,
-                        css({
-                          height: '7',
-                          minWidth: '0',
-                          flex: '1 1 0%',
-                          borderRadius: 'lg',
-                          paddingInline: '2',
-                          fontSize: 'type.12',
-                          outlineStyle: 'none',
-                        }),
-                      ),
+                      css(WELL_STYLE, {
+                        height: '7',
+                        minWidth: '0',
+                        flex: '1 1 0%',
+                        borderRadius: 'lg',
+                        paddingInline: '2',
+                        fontSize: 'type.12',
+                        outlineStyle: 'none',
+                      }),
                     ),
                   ]),
                   h.select(
@@ -2226,15 +2216,12 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                         }),
                       ),
                       h.Class(
-                        cx(
-                          WELL,
-                          css({
-                            height: '7',
-                            borderRadius: 'lg',
-                            paddingInline: '1.5',
-                            fontSize: 'type.12',
-                          }),
-                        ),
+                        css(WELL_STYLE, {
+                          height: '7',
+                          borderRadius: 'lg',
+                          paddingInline: '1.5',
+                          fontSize: 'type.12',
+                        }),
                       ),
                     ],
                     game.teams.map((entry) =>
@@ -2841,16 +2828,16 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
           h.div(
             [
               h.Class(
-                cx(
-                  css({
+                css(
+                  {
                     position: 'relative',
                     height: '7',
                     overflow: 'hidden',
-                  }),
-                  WELL,
-                  css({
+                  },
+                  WELL_STYLE,
+                  {
                     borderRadius: 'lg',
-                  }),
+                  },
                 ),
               ),
             ],

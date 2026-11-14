@@ -21,7 +21,7 @@ import { Message } from '@/game/message.ts'
 import type { Model } from '@/game/model.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
-import { EYEBROW, FIGURE, WELL } from '@quorum/ui/game/bits'
+import { EYEBROW, FIGURE, WELL_STYLE } from '@quorum/ui/game/bits'
 import { frameworkPickerView, runtimePickerView } from './stack-picker.ts'
 
 /** What a Component adds to its Node's Inspector, in the slots the panel has room for. */
@@ -140,16 +140,18 @@ export const segmented = (
     [
       h.Class(
         cx(
-          css({
-            display: 'grid',
-            gridAutoRows: 'fr',
-            gap: '0.75',
-            padding: '0.75',
-          }),
-          WELL,
-          css({
-            borderRadius: 'lg',
-          }),
+          css(
+            {
+              display: 'grid',
+              gridAutoRows: 'fr',
+              gap: '0.75',
+              padding: '0.75',
+            },
+            WELL_STYLE,
+            {
+              borderRadius: 'lg',
+            },
+          ),
           columns,
         ),
       ),

@@ -33,7 +33,7 @@ import { money } from '@quorum/ui/game/format'
 import { Message } from '@/game/message.ts'
 import type { Model } from '@/game/model.ts'
 import { button } from '@quorum/ui/primitives/button'
-import { EYEBROW, FIGURE, SCROLL, WELL } from '@quorum/ui/game/bits'
+import { EYEBROW, FIGURE, SCROLL, WELL, WELL_STYLE } from '@quorum/ui/game/bits'
 import { shell } from './panels.ts'
 
 const fieldLabelOf = (t: Messages): Record<Managed, string> => ({
@@ -168,16 +168,16 @@ const segmented = <A>(
     [
       h.Key(key),
       h.Class(
-        cx(
-          css({
+        css(
+          {
             display: 'grid',
             gap: '0.75',
             padding: '0.75',
-          }),
-          WELL,
-          css({
+          },
+          WELL_STYLE,
+          {
             borderRadius: 'lg',
-          }),
+          },
         ),
       ),
       h.Style({ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }),

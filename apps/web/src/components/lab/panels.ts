@@ -59,7 +59,7 @@ import { settingsSections, type Setting } from '@/game/settings.ts'
 import { KEY_FIELD_MAX, canPlayOnline, keyNote } from '@/game/access.ts'
 import { KeyPhase } from '@/game/key-machine.ts'
 import { languagePicker } from '@/i18n/picker.ts'
-import { EYEBROW, FIGURE, FLOAT, NESTED, SCROLL, WELL } from '@quorum/ui/game/bits'
+import { EYEBROW, FIGURE, FLOAT, NESTED, SCROLL, WELL, FIGURE_STYLE } from '@quorum/ui/game/bits'
 
 const focusable =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -586,8 +586,7 @@ const stepCell = (
         [
           h.Class(
             cx(
-              FIGURE,
-              css({
+              css(FIGURE_STYLE, {
                 fontSize: 'type.23',
                 lineHeight: 'none',
                 fontWeight: 'medium',
@@ -1224,14 +1223,11 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             h.span(
               [
                 h.Class(
-                  cx(
-                    FIGURE,
-                    css({
-                      fontSize: 'type.20',
-                      fontWeight: 'medium',
-                      letterSpacing: 'overline',
-                    }),
-                  ),
+                  css(FIGURE_STYLE, {
+                    fontSize: 'type.20',
+                    fontWeight: 'medium',
+                    letterSpacing: 'overline',
+                  }),
                 ),
               ],
               [code],

@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { formats } from '@/i18n/format.ts'
 import { copy, nodeTitle, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -22,7 +23,9 @@ const fixOf = (game: Game, entry: ChurnRow, h: HtmlBuilder<Message>): Html => {
         onClick: Message.ChurnFixTaken({ fix: kind, target }),
         variant: 'outline',
         size: 'sm',
-        className: 'justify-self-start',
+        className: css({
+          justifySelf: 'start',
+        }),
       },
       label,
       h,
@@ -31,7 +34,15 @@ const fixOf = (game: Game, entry: ChurnRow, h: HtmlBuilder<Message>): Html => {
   return ChurnFix.match(entry.fix, {
     advice: () =>
       h.span(
-        [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+        [
+          h.Class(
+            css({
+              fontSize: 'calc(12px*var(--type-scale))',
+              lineHeight: '1.375',
+              color: 'var(--muted-foreground)',
+            }),
+          ),
+        ],
         [entry.cause === 'far' ? '' : t.churn.fixes[entry.cause]],
       ),
     node: ({ nodeId }) => {
@@ -99,8 +110,16 @@ const row = (
               [
                 h.Class(
                   cn(
-                    'px-3 pb-1 text-[calc(11.5px*var(--type-scale))] text-muted-foreground',
-                    !entry.needed && 'opacity-60',
+                    css({
+                      paddingInline: '0.75rem',
+                      paddingBottom: '0.25rem',
+                      fontSize: 'calc(11.5px*var(--type-scale))',
+                      color: 'var(--muted-foreground)',
+                    }),
+                    !entry.needed &&
+                      css({
+                        opacity: 0.6,
+                      }),
                   ),
                 ),
               ],
@@ -123,22 +142,53 @@ const rowGrid = (
     [
       h.Class(
         cn(
-          'grid grid-cols-[88px_80px_1fr_44px_minmax(0,180px)] items-center gap-3 px-3 py-1.5 compact:grid-cols-[72px_64px_1fr_40px]',
-          !entry.needed && 'opacity-60',
+          css({
+            display: 'grid',
+            gridTemplateColumns: '88px 80px 1fr 44px minmax(0,180px)',
+            alignItems: 'center',
+            gap: '0.75rem',
+            paddingInline: '0.75rem',
+            paddingBlock: '0.375rem',
+            _compact: {
+              gridTemplateColumns: '72px 64px 1fr 40px',
+            },
+          }),
+          !entry.needed &&
+            css({
+              opacity: 0.6,
+            }),
         ),
       ),
     ],
     [
       h.span(
-        [h.Class('truncate text-[calc(12.5px*var(--type-scale))] font-medium')],
+        [
+          h.Class(
+            css({
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: 'calc(12.5px*var(--type-scale))',
+              fontWeight: '500',
+            }),
+          ),
+        ],
         [t.catalog.kinds[entry.kind].label],
       ),
       h.span(
         [
           h.Class(
             cn(
-              'text-[calc(12px*var(--type-scale))]',
-              entry.cause === 'slow' || entry.cause === 'far' ? 'text-warn' : 'text-danger',
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+              }),
+              entry.cause === 'slow' || entry.cause === 'far'
+                ? css({
+                    color: 'var(--warn)',
+                  })
+                : css({
+                    color: 'var(--danger)',
+                  }),
             ),
           ),
         ],
@@ -146,7 +196,13 @@ const rowGrid = (
       ),
       h.div(
         [
-          h.Class('h-1.5 rounded-full bg-muted'),
+          h.Class(
+            css({
+              height: '0.375rem',
+              borderRadius: '9999px',
+              backgroundColor: 'var(--muted)',
+            }),
+          ),
           h.Title(
             entry.p99 === null
               ? ''
@@ -157,7 +213,19 @@ const rowGrid = (
           h.div(
             [
               h.Class(
-                cn('h-full rounded-full', entry.needed ? 'bg-danger' : 'bg-muted-foreground'),
+                cn(
+                  css({
+                    height: '100%',
+                    borderRadius: '9999px',
+                  }),
+                  entry.needed
+                    ? css({
+                        backgroundColor: 'var(--danger)',
+                      })
+                    : css({
+                        backgroundColor: 'var(--muted-foreground)',
+                      }),
+                ),
               ),
               h.Style({ width: `${Math.max(4, (entry.points / widest) * 100)}%` }),
             ],
@@ -166,10 +234,31 @@ const rowGrid = (
         ],
       ),
       h.span(
-        [h.Class(cn(FIGURE, 'text-right text-[calc(12px*var(--type-scale))]'))],
+        [
+          h.Class(
+            cn(
+              FIGURE,
+              css({
+                textAlign: 'right',
+                fontSize: 'calc(12px*var(--type-scale))',
+              }),
+            ),
+          ),
+        ],
         [entry.points.toFixed(3)],
       ),
-      h.div([h.Class('compact:col-span-4')], fixed ? [fixOf(game, entry, h)] : []),
+      h.div(
+        [
+          h.Class(
+            css({
+              _compact: {
+                gridColumn: 'span 4 / span 4',
+              },
+            }),
+          ),
+        ],
+        fixed ? [fixOf(game, entry, h)] : [],
+      ),
     ],
   )
 }
@@ -181,17 +270,58 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
   const share = region.users > 0 ? (region.perHour / region.users) * 100 : 0
   const widest = region.rows.reduce((most, entry) => Math.max(most, entry.points), 0.001)
   return h.section(
-    [h.Key(region.region), h.Class(cn('flex flex-col py-1', WELL))],
+    [
+      h.Key(region.region),
+      h.Class(
+        cn(
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            paddingBlock: '0.25rem',
+          }),
+          WELL,
+        ),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex flex-wrap items-baseline gap-x-4 gap-y-1 px-3 pt-2 pb-1.5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'baseline',
+              columnGap: '1rem',
+              rowGap: '0.25rem',
+              paddingInline: '0.75rem',
+              paddingTop: '0.5rem',
+              paddingBottom: '0.375rem',
+            }),
+          ),
+        ],
         [
           h.span(
-            [h.Class('text-[calc(14px*var(--type-scale))] font-semibold')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'calc(14px*var(--type-scale))',
+                  fontWeight: '600',
+                }),
+              ),
+            ],
             [t.catalog.regionInfo[region.region].name],
           ),
           h.span(
-            [h.Class(cn(FIGURE, 'text-[calc(12.5px*var(--type-scale))]'))],
+            [
+              h.Class(
+                cn(
+                  FIGURE,
+                  css({
+                    fontSize: 'calc(12.5px*var(--type-scale))',
+                  }),
+                ),
+              ),
+            ],
             [t.churn.users(compact(region.users))],
           ),
           h.span(
@@ -199,7 +329,9 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
               h.Class(
                 cn(
                   FIGURE,
-                  'text-[calc(12.5px*var(--type-scale))]',
+                  css({
+                    fontSize: 'calc(12.5px*var(--type-scale))',
+                  }),
                   toneText(region.now >= region.target ? 'ok' : 'danger'),
                 ),
               ),
@@ -211,7 +343,9 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
               h.Class(
                 cn(
                   FIGURE,
-                  'text-[calc(12.5px*var(--type-scale))]',
+                  css({
+                    fontSize: 'calc(12.5px*var(--type-scale))',
+                  }),
                   toneText(falling ? 'danger' : 'ok'),
                 ),
               ),
@@ -221,7 +355,14 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
           h.span(
             [
               h.Class(
-                cn(FIGURE, 'ml-auto text-[calc(12.5px*var(--type-scale))] text-muted-foreground'),
+                cn(
+                  FIGURE,
+                  css({
+                    marginLeft: 'auto',
+                    fontSize: 'calc(12.5px*var(--type-scale))',
+                    color: 'var(--muted-foreground)',
+                  }),
+                ),
               ),
             ],
             [t.churn.n1Day(compact(region.inADay))],
@@ -259,11 +400,25 @@ export const churnPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     [],
     [
       h.div(
-        [h.Class(cn('flex flex-col gap-3 px-5 pt-1 pb-5', SCROLL))],
+        [
+          h.Class(
+            cn(
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem',
+                paddingInline: '1.25rem',
+                paddingTop: '0.25rem',
+                paddingBottom: '1.25rem',
+              }),
+              SCROLL,
+            ),
+          ),
+        ],
         regions.map((region) => section(game, region, h)),
       ),
     ],
-    'max-w-[720px]',
+    css({ maxWidth: '720px' }),
     h,
   )
 }

@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { copy, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { BurnLines } from '@quorum/simulation/ledger'
@@ -32,28 +33,81 @@ const row = (line: Line, value: number, total: number, h: HtmlBuilder<Message>):
   return h.div(
     [
       h.Class(
-        'grid grid-cols-[1fr_auto_64px] items-baseline gap-4 border-b border-border py-2 last:border-b-0',
+        css({
+          display: 'grid',
+          gridTemplateColumns: '1fr auto 64px',
+          alignItems: 'baseline',
+          gap: '1rem',
+          borderBottomWidth: '1px',
+          borderBottomStyle: 'solid',
+          borderColor: 'var(--border)',
+          paddingBlock: '0.5rem',
+          '&:last-child': {
+            borderBottomWidth: '0px',
+          },
+        }),
       ),
     ],
     [
       h.div(
-        [h.Class('min-w-0')],
         [
-          h.div([h.Class('text-[calc(13.5px*var(--type-scale))] text-foreground')], [line.label]),
+          h.Class(
+            css({
+              minWidth: '0',
+            }),
+          ),
+        ],
+        [
           h.div(
-            [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'calc(13.5px*var(--type-scale))',
+                  color: 'var(--foreground)',
+                }),
+              ),
+            ],
+            [line.label],
+          ),
+          h.div(
+            [
+              h.Class(
+                css({
+                  fontSize: 'calc(12px*var(--type-scale))',
+                  lineHeight: '1.375',
+                  color: 'var(--muted-foreground)',
+                }),
+              ),
+            ],
             [line.note],
           ),
         ],
       ),
       h.span(
-        [h.Class(cn(FIGURE, 'text-[calc(13.5px*var(--type-scale))] text-foreground'))],
+        [
+          h.Class(
+            cn(
+              FIGURE,
+              css({
+                fontSize: 'calc(13.5px*var(--type-scale))',
+                color: 'var(--foreground)',
+              }),
+            ),
+          ),
+        ],
         [t.cost.s(money(value))],
       ),
       h.span(
         [
           h.Class(
-            cn(FIGURE, 'text-right text-[calc(12px*var(--type-scale))] text-muted-foreground'),
+            cn(
+              FIGURE,
+              css({
+                textAlign: 'right',
+                fontSize: 'calc(12px*var(--type-scale))',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
           ),
         ],
         [total > 0 ? `${Math.round((value / total) * 100)}%` : '—'],
@@ -67,13 +121,45 @@ const figureRow = (label: string, value: string, h: HtmlBuilder<Message>): Html 
   h.div(
     [
       h.Class(
-        'flex items-baseline justify-between gap-4 border-b border-border py-1.5 last:border-b-0',
+        css({
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          gap: '1rem',
+          borderBottomWidth: '1px',
+          borderBottomStyle: 'solid',
+          borderColor: 'var(--border)',
+          paddingBlock: '0.375rem',
+          '&:last-child': {
+            borderBottomWidth: '0px',
+          },
+        }),
       ),
     ],
     [
-      h.span([h.Class('text-[calc(12.5px*var(--type-scale))] text-foreground')], [label]),
       h.span(
-        [h.Class(cn(FIGURE, 'text-[calc(12.5px*var(--type-scale))] text-muted-foreground'))],
+        [
+          h.Class(
+            css({
+              fontSize: 'calc(12.5px*var(--type-scale))',
+              color: 'var(--foreground)',
+            }),
+          ),
+        ],
+        [label],
+      ),
+      h.span(
+        [
+          h.Class(
+            cn(
+              FIGURE,
+              css({
+                fontSize: 'calc(12.5px*var(--type-scale))',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ),
+        ],
         [value],
       ),
     ],
@@ -101,55 +187,128 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     [],
     [
       h.div(
-        [h.Class('flex items-baseline gap-6 px-5 pb-2')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: '1.5rem',
+              paddingInline: '1.25rem',
+              paddingBottom: '0.5rem',
+            }),
+          ),
+        ],
         [
           h.div(
-            [h.Class('flex flex-col')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexDirection: 'column',
+                }),
+              ),
+            ],
             [
               h.span(
                 [
                   h.Class(
-                    cn(FIGURE, 'text-[calc(20px*var(--type-scale))] leading-none font-medium'),
+                    cn(
+                      FIGURE,
+                      css({
+                        fontSize: 'calc(20px*var(--type-scale))',
+                        lineHeight: '1',
+                        fontWeight: '500',
+                      }),
+                    ),
                   ),
                 ],
                 [t.cost.s(money(total))],
               ),
               h.span(
-                [h.Class('text-[calc(12px*var(--type-scale))] text-muted-foreground')],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'calc(12px*var(--type-scale))',
+                      color: 'var(--muted-foreground)',
+                    }),
+                  ),
+                ],
                 [t.cost.burn],
               ),
             ],
           ),
           h.div(
-            [h.Class('flex flex-col')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexDirection: 'column',
+                }),
+              ),
+            ],
             [
               h.span(
                 [
                   h.Class(
-                    cn(FIGURE, 'text-[calc(20px*var(--type-scale))] leading-none font-medium'),
+                    cn(
+                      FIGURE,
+                      css({
+                        fontSize: 'calc(20px*var(--type-scale))',
+                        lineHeight: '1',
+                        fontWeight: '500',
+                      }),
+                    ),
                   ),
                 ],
                 [t.cost.s(money(revenue))],
               ),
               h.span(
-                [h.Class('text-[calc(12px*var(--type-scale))] text-muted-foreground')],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'calc(12px*var(--type-scale))',
+                      color: 'var(--muted-foreground)',
+                    }),
+                  ),
+                ],
                 [t.cost.revenue],
               ),
             ],
           ),
           h.div(
-            [h.Class('flex flex-col')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexDirection: 'column',
+                }),
+              ),
+            ],
             [
               h.span(
                 [
                   h.Class(
-                    cn(FIGURE, 'text-[calc(20px*var(--type-scale))] leading-none font-medium'),
+                    cn(
+                      FIGURE,
+                      css({
+                        fontSize: 'calc(20px*var(--type-scale))',
+                        lineHeight: '1',
+                        fontWeight: '500',
+                      }),
+                    ),
                   ),
                 ],
                 [margin === null ? '—' : `${Math.round(margin * 100)}%`],
               ),
               h.span(
-                [h.Class('text-[calc(12px*var(--type-scale))] text-muted-foreground')],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'calc(12px*var(--type-scale))',
+                      color: 'var(--muted-foreground)',
+                    }),
+                  ),
+                ],
                 [t.cost.margin],
               ),
             ],
@@ -157,17 +316,50 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
         ],
       ),
       h.div(
-        [h.Class(cn(WELL, 'mx-5 mb-4 px-4 py-2'))],
+        [
+          h.Class(
+            cn(
+              WELL,
+              css({
+                marginInline: '1.25rem',
+                marginBottom: '1rem',
+                paddingInline: '1rem',
+                paddingBlock: '0.5rem',
+              }),
+            ),
+          ),
+        ],
         linesOf(t).map((line) => row(line, lines[line.key], total, h)),
       ),
       ...(unitEconomics.length > 0
         ? [
             h.div(
-              [h.Class('px-5 pb-1 text-[calc(12px*var(--type-scale))] text-muted-foreground')],
+              [
+                h.Class(
+                  css({
+                    paddingInline: '1.25rem',
+                    paddingBottom: '0.25rem',
+                    fontSize: 'calc(12px*var(--type-scale))',
+                    color: 'var(--muted-foreground)',
+                  }),
+                ),
+              ],
               ['Unit economics · cost per served request'],
             ),
             h.div(
-              [h.Class(cn(WELL, 'mx-5 mb-4 px-4 py-2'))],
+              [
+                h.Class(
+                  cn(
+                    WELL,
+                    css({
+                      marginInline: '1.25rem',
+                      marginBottom: '1rem',
+                      paddingInline: '1rem',
+                      paddingBlock: '0.5rem',
+                    }),
+                  ),
+                ),
+              ],
               unitEconomics.map((kind) =>
                 figureRow(
                   t.catalog.kinds[kind].label,
@@ -181,11 +373,32 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       ...(costAllocation.length > 0
         ? [
             h.div(
-              [h.Class('px-5 pb-1 text-[calc(12px*var(--type-scale))] text-muted-foreground')],
+              [
+                h.Class(
+                  css({
+                    paddingInline: '1.25rem',
+                    paddingBottom: '0.25rem',
+                    fontSize: 'calc(12px*var(--type-scale))',
+                    color: 'var(--muted-foreground)',
+                  }),
+                ),
+              ],
               ['Cost allocation · by Service'],
             ),
             h.div(
-              [h.Class(cn(WELL, 'mx-5 mb-4 px-4 py-2'))],
+              [
+                h.Class(
+                  cn(
+                    WELL,
+                    css({
+                      marginInline: '1.25rem',
+                      marginBottom: '1rem',
+                      paddingInline: '1rem',
+                      paddingBlock: '0.5rem',
+                    }),
+                  ),
+                ),
+              ],
               costAllocation.map(([id, cost]) => {
                 const service = game.services.find((entry) => entry.id === id)
                 const team = game.teams.find((entry) => entry.id === service?.owner)
@@ -201,13 +414,19 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.p(
         [
           h.Class(
-            'px-5 pb-4 text-[calc(12.5px*var(--type-scale))] leading-snug text-muted-foreground',
+            css({
+              paddingInline: '1.25rem',
+              paddingBottom: '1rem',
+              fontSize: 'calc(12.5px*var(--type-scale))',
+              lineHeight: '1.375',
+              color: 'var(--muted-foreground)',
+            }),
           ),
         ],
         [t.cost.billExplainer],
       ),
     ],
-    'max-w-[560px]',
+    css({ maxWidth: '560px' }),
     h,
   )
 }

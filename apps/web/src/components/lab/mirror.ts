@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { copy, nodeTitle, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
@@ -167,7 +168,19 @@ const segmented = <A>(
   h.div(
     [
       h.Key(key),
-      h.Class(cn('grid gap-[3px] p-[3px]', WELL, 'rounded-[11px]')),
+      h.Class(
+        cn(
+          css({
+            display: 'grid',
+            gap: '3px',
+            padding: '3px',
+          }),
+          WELL,
+          css({
+            borderRadius: '11px',
+          }),
+        ),
+      ),
       h.Style({ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }),
     ],
     options.map(([value, label]) =>
@@ -179,10 +192,30 @@ const segmented = <A>(
           h.OnClick(message(value)),
           h.Class(
             cn(
-              'h-7 rounded-lg px-2 text-[calc(12px*var(--type-scale))] font-medium transition-colors',
+              css({
+                height: '1.75rem',
+                borderRadius: 'lg',
+                paddingInline: '0.5rem',
+                fontSize: 'calc(12px*var(--type-scale))',
+                fontWeight: '500',
+                transitionProperty:
+                  'color, background-color, border-color, text-decoration-color, fill, stroke',
+                transitionDuration: '150ms',
+                transitionTimingFunction: 'var(--ease-out)',
+              }),
               value === current
-                ? 'bg-raised text-foreground shadow-raised'
-                : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground',
+                ? css({
+                    layerStyle: 'raised',
+                    color: 'var(--foreground)',
+                    boxShadow: 'raised',
+                  })
+                : css({
+                    color: 'var(--muted-foreground)',
+                    _hover: {
+                      backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                      color: 'var(--foreground)',
+                    },
+                  }),
             ),
           ),
         ],
@@ -192,7 +225,19 @@ const segmented = <A>(
   )
 
 const heading = (text: string, h: HtmlBuilder<Message>): Html =>
-  h.span([h.Class(cn(EYEBROW, 'px-1'))], [text])
+  h.span(
+    [
+      h.Class(
+        cn(
+          EYEBROW,
+          css({
+            paddingInline: '0.25rem',
+          }),
+        ),
+      ),
+    ],
+    [text],
+  )
 
 const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
@@ -200,7 +245,16 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
   const current = game.iac?.tool ?? null
   const left = switchLeft(game)
   return h.section(
-    [h.Key('tool'), h.Class('flex flex-col gap-2')],
+    [
+      h.Key('tool'),
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.5rem',
+        }),
+      ),
+    ],
     [
       heading(
         left > 0 && current
@@ -209,7 +263,18 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
         h,
       ),
       h.div(
-        [h.Class('grid grid-cols-3 gap-2 compact:grid-cols-1')],
+        [
+          h.Class(
+            css({
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+              gap: '0.5rem',
+              _compact: {
+                gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+              },
+            }),
+          ),
+        ],
         IAC_TOOLS.map((tool) =>
           h.button(
             [
@@ -219,23 +284,67 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
               h.OnClick(Message.IacToolPicked({ tool })),
               h.Class(
                 cn(
-                  'flex flex-col gap-1.5 rounded-xl p-3 text-left transition-colors',
+                  css({
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.375rem',
+                    borderRadius: 'xl',
+                    padding: '0.75rem',
+                    textAlign: 'left',
+                    transitionProperty:
+                      'color, background-color, border-color, text-decoration-color, fill, stroke',
+                    transitionDuration: '150ms',
+                    transitionTimingFunction: 'var(--ease-out)',
+                  }),
                   current === tool
-                    ? 'bg-raised shadow-raised'
-                    : cn(WELL, 'hover:brightness-[0.98]'),
+                    ? css({
+                        layerStyle: 'raised',
+                        boxShadow: 'raised',
+                      })
+                    : cn(
+                        WELL,
+                        css({
+                          _hover: {
+                            filter: 'brightness(0.98)',
+                          },
+                        }),
+                      ),
                 ),
               ),
             ],
             [
               h.span(
-                [h.Class('flex items-baseline justify-between gap-2')],
+                [
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      justifyContent: 'space-between',
+                      gap: '0.5rem',
+                    }),
+                  ),
+                ],
                 [
                   h.span(
-                    [h.Class('text-[calc(14px*var(--type-scale))] font-semibold')],
+                    [
+                      h.Class(
+                        css({
+                          fontSize: 'calc(14px*var(--type-scale))',
+                          fontWeight: '600',
+                        }),
+                      ),
+                    ],
                     [IAC_TOOL_INFO[tool].name],
                   ),
                   h.span(
-                    [h.Class('text-[calc(11.5px*var(--type-scale))] text-muted-foreground')],
+                    [
+                      h.Class(
+                        css({
+                          fontSize: 'calc(11.5px*var(--type-scale))',
+                          color: 'var(--muted-foreground)',
+                        }),
+                      ),
+                    ],
                     [IAC_TOOL_INFO[tool].language],
                   ),
                 ],
@@ -244,11 +353,36 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
                 h.span(
                   [
                     h.Key(name),
-                    h.Class('flex justify-between gap-2 text-[calc(12px*var(--type-scale))]'),
+                    h.Class(
+                      css({
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: '0.5rem',
+                        fontSize: 'calc(12px*var(--type-scale))',
+                      }),
+                    ),
                   ],
                   [
-                    h.span([h.Class('text-muted-foreground')], [name]),
-                    h.span([h.Class('font-medium')], [value]),
+                    h.span(
+                      [
+                        h.Class(
+                          css({
+                            color: 'var(--muted-foreground)',
+                          }),
+                        ),
+                      ],
+                      [name],
+                    ),
+                    h.span(
+                      [
+                        h.Class(
+                          css({
+                            fontWeight: '500',
+                          }),
+                        ),
+                      ],
+                      [value],
+                    ),
                   ],
                 ),
               ),
@@ -265,7 +399,16 @@ const gitops = (game: Game, h: HtmlBuilder<Message>): Html => {
   return !has(game, 'gitops') || !game.iac
     ? h.empty
     : h.section(
-        [h.Key('gitops'), h.Class('flex flex-col gap-2')],
+        [
+          h.Key('gitops'),
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+            }),
+          ),
+        ],
         [
           heading('GitOps', h),
           segmented(
@@ -337,12 +480,53 @@ const changeRow = (
     [
       h.Key(`${index}`),
       h.Class(
-        'grid grid-cols-[16px_1fr_auto] items-center gap-2 px-3 py-1 text-[calc(12.5px*var(--type-scale))]',
+        css({
+          display: 'grid',
+          gridTemplateColumns: '16px 1fr auto',
+          alignItems: 'center',
+          gap: '0.5rem',
+          paddingInline: '0.75rem',
+          paddingBlock: '0.25rem',
+          fontSize: 'calc(12.5px*var(--type-scale))',
+        }),
       ),
     ],
     [
-      h.span([h.Class(cn(FIGURE, hand ? 'text-danger' : 'text-muted-foreground'))], [mark]),
-      h.span([h.Class(cn('truncate', hand && 'text-danger'))], [hand ? t.mirror.hand(text) : text]),
+      h.span(
+        [
+          h.Class(
+            cn(
+              FIGURE,
+              hand
+                ? css({
+                    color: 'var(--danger)',
+                  })
+                : css({
+                    color: 'var(--muted-foreground)',
+                  }),
+            ),
+          ),
+        ],
+        [mark],
+      ),
+      h.span(
+        [
+          h.Class(
+            cn(
+              css({
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }),
+              hand &&
+                css({
+                  color: 'var(--danger)',
+                }),
+            ),
+          ),
+        ],
+        [hand ? t.mirror.hand(text) : text],
+      ),
       keep
         ? button({ onClick: keep, variant: 'ghost', size: 'xs' }, t.mirror.keepAsOverride, h)
         : h.span([], []),
@@ -358,15 +542,41 @@ const dataChoices = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Html 
   )
   if (sources.length === 0) return h.empty
   return h.div(
-    [h.Key('data'), h.Class('flex flex-col gap-1.5')],
+    [
+      h.Key('data'),
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.375rem',
+        }),
+      ),
+    ],
     [
       heading(t.mirror.writes, h),
       ...sources.map((node) =>
         h.div(
-          [h.Key(node.id), h.Class('grid grid-cols-[140px_1fr] items-center gap-3')],
+          [
+            h.Key(node.id),
+            h.Class(
+              css({
+                display: 'grid',
+                gridTemplateColumns: '140px 1fr',
+                alignItems: 'center',
+                gap: '0.75rem',
+              }),
+            ),
+          ],
           [
             h.span(
-              [h.Class('text-[calc(12.5px*var(--type-scale))] font-medium')],
+              [
+                h.Class(
+                  css({
+                    fontSize: 'calc(12.5px*var(--type-scale))',
+                    fontWeight: '500',
+                  }),
+                ),
+              ],
               [t.catalog.components[node.type].name],
             ),
             segmented(
@@ -398,7 +608,16 @@ const overrides = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Html =>
   )
   if (kept.length === 0) return h.empty
   return h.div(
-    [h.Key('overrides'), h.Class('flex flex-col gap-1')],
+    [
+      h.Key('overrides'),
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.25rem',
+        }),
+      ),
+    ],
     [
       heading(t.mirror.overrides, h),
       ...kept.map(([nodeId, field]) =>
@@ -406,7 +625,14 @@ const overrides = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Html =>
           [
             h.Key(`${nodeId}:${field}`),
             h.Class(
-              'flex items-center justify-between gap-2 px-1 text-[calc(12.5px*var(--type-scale))]',
+              css({
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.5rem',
+                paddingInline: '0.25rem',
+                fontSize: 'calc(12.5px*var(--type-scale))',
+              }),
             ),
           ],
           [
@@ -457,13 +683,39 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
   const pending = isApplying(mirror.sync)
   const tool = game.iac ? IAC_TOOL_INFO[game.iac.tool] : null
   return h.section(
-    [h.Key(`mirror-${mirror.region}`), h.Class('flex flex-col gap-3')],
+    [
+      h.Key(`mirror-${mirror.region}`),
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.75rem',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex flex-wrap items-baseline gap-x-3 gap-y-1')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'baseline',
+              columnGap: '0.75rem',
+              rowGap: '0.25rem',
+            }),
+          ),
+        ],
         [
           h.span(
-            [h.Class('text-[calc(14px*var(--type-scale))] font-semibold')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'calc(14px*var(--type-scale))',
+                  fontWeight: '600',
+                }),
+              ),
+            ],
             [
               t.mirror.mirrorOf(
                 t.catalog.regionInfo[mirror.region].name,
@@ -476,8 +728,20 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
               h.Class(
                 cn(
                   FIGURE,
-                  'text-[calc(12.5px*var(--type-scale))]',
-                  drift.hand > 0 ? 'text-danger' : drift.behind > 0 ? 'text-warn' : 'text-ok',
+                  css({
+                    fontSize: 'calc(12.5px*var(--type-scale))',
+                  }),
+                  drift.hand > 0
+                    ? css({
+                        color: 'var(--danger)',
+                      })
+                    : drift.behind > 0
+                      ? css({
+                          color: 'var(--warn)',
+                        })
+                      : css({
+                          color: 'var(--ok)',
+                        }),
                 ),
               ),
             ],
@@ -488,10 +752,27 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
       dataChoices(game, mirror, h),
       game.iac
         ? h.div(
-            [h.Key('computed'), h.Class('grid grid-cols-[140px_1fr] items-center gap-3')],
+            [
+              h.Key('computed'),
+              h.Class(
+                css({
+                  display: 'grid',
+                  gridTemplateColumns: '140px 1fr',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                }),
+              ),
+            ],
             [
               h.span(
-                [h.Class('text-[calc(12.5px*var(--type-scale))] font-medium')],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'calc(12.5px*var(--type-scale))',
+                      fontWeight: '500',
+                    }),
+                  ),
+                ],
                 [t.mirror.computedSizes],
               ),
               segmented(
@@ -509,13 +790,38 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
         : h.empty,
       changes.length > 0
         ? h.div(
-            [h.Key('plan'), h.Class(cn('flex flex-col py-1.5', WELL, SCROLL, 'max-h-[240px]'))],
+            [
+              h.Key('plan'),
+              h.Class(
+                cn(
+                  css({
+                    display: 'flex',
+                    flexDirection: 'column',
+                    paddingBlock: '0.375rem',
+                  }),
+                  WELL,
+                  SCROLL,
+                  css({
+                    maxHeight: '240px',
+                  }),
+                ),
+              ),
+            ],
             changes.map((change, index) => changeRow(game, mirror, change, index, h)),
           )
         : h.empty,
       overrides(game, mirror, h),
       h.div(
-        [h.Class('flex flex-wrap items-center gap-2')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }),
+          ),
+        ],
         [
           button(
             {
@@ -530,7 +836,15 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
             ? h.span(
                 [
                   h.Key('burn'),
-                  h.Class(cn(FIGURE, 'text-[calc(12px*var(--type-scale))] text-muted-foreground')),
+                  h.Class(
+                    cn(
+                      FIGURE,
+                      css({
+                        fontSize: 'calc(12px*var(--type-scale))',
+                        color: 'var(--muted-foreground)',
+                      }),
+                    ),
+                  ),
                 ],
                 [t.mirror.burnS(burn > 0 ? '+' : '', money(burn))],
               )
@@ -576,7 +890,9 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
               onClick: Message.MirrorStopped({ region: mirror.region }),
               size: 'sm',
               variant: 'ghost',
-              className: 'ml-auto',
+              className: css({
+                marginLeft: 'auto',
+              }),
             },
             t.mirror.stopMirroring,
             h,
@@ -600,16 +916,41 @@ const startSection = (game: Game, region: RegionId, h: HtmlBuilder<Message>): Ht
     ? open.filter((source) => source !== region && !mirrorOf(game, source))
     : REGIONS.filter((target) => target !== region && !mirrorOf(game, target) && !isSource(target))
   return h.section(
-    [h.Key(`start-${region}`), h.Class('flex flex-col gap-2')],
+    [
+      h.Key(`start-${region}`),
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.5rem',
+        }),
+      ),
+    ],
     [
       heading(empty ? t.mirror.mirrorIntoFrom[region] : t.mirror.mirrorRegionInto[region], h),
       targets.length === 0
         ? h.span(
-            [h.Class('px-1 text-[calc(12.5px*var(--type-scale))] text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  paddingInline: '0.25rem',
+                  fontSize: 'calc(12.5px*var(--type-scale))',
+                  color: 'var(--muted-foreground)',
+                }),
+              ),
+            ],
             [t.mirror.noRegionToPick],
           )
         : h.div(
-            [h.Class('flex flex-wrap gap-2')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '0.5rem',
+                }),
+              ),
+            ],
             targets.map((other) =>
               button(
                 {
@@ -642,7 +983,21 @@ export const mirrorPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     [],
     [
       h.div(
-        [h.Class(cn('flex flex-col gap-5 px-5 pt-1 pb-5', SCROLL))],
+        [
+          h.Class(
+            cn(
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1.25rem',
+                paddingInline: '1.25rem',
+                paddingTop: '0.25rem',
+                paddingBottom: '1.25rem',
+              }),
+              SCROLL,
+            ),
+          ),
+        ],
         [
           toolCards(game, h),
           gitops(game, h),
@@ -654,7 +1009,7 @@ export const mirrorPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
         ],
       ),
     ],
-    'max-w-[680px]',
+    css({ maxWidth: '680px' }),
     h,
   )
 }

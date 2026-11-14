@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { copy, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
@@ -105,7 +106,15 @@ const events = (node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
           h,
         ),
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'type.12',
+                lineHeight: 'snug',
+                color: 'mutedForeground',
+              }),
+            ),
+          ],
           [t.inspectorLog.messagesStayAfterTheyAreRead],
         ),
       ],

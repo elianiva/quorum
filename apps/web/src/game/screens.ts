@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { dock } from '@/components/lab/dock.ts'
 import {
@@ -53,35 +54,107 @@ import {
 } from './model.ts'
 
 /** Display-contents on a desktop, so the HUD, toolbar and goals keep their own corners. */
-const TOP =
-  'contents compact:pointer-events-none compact:absolute compact:inset-x-0 compact:top-0 compact:z-20 compact:flex compact:flex-col compact:gap-1.5 compact:[--toolbar-w:calc(184px*var(--type-scale))] compact:pt-[max(8px,env(safe-area-inset-top))] compact:pr-[max(8px,env(safe-area-inset-right))] compact:pb-0 compact:pl-[max(8px,env(safe-area-inset-left))]'
+const TOP = css({
+  display: 'contents',
+  _compact: {
+    pointerEvents: 'none',
+    position: 'absolute',
+    left: '0',
+    right: '0',
+    top: '0',
+    zIndex: '20',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.5',
+    '--toolbar-w': 'calc(184px * var(--type-scale))',
+    paddingTop: 'max(8px, env(safe-area-inset-top))',
+    paddingRight: 'max(8px, env(safe-area-inset-right))',
+    paddingBottom: '0',
+    paddingLeft: 'max(8px, env(safe-area-inset-left))',
+  },
+})
 
 /** The desktop's top row, right of the HUD; its left is set from the HUD's width. */
-const TOP_ROW =
-  'pointer-events-none absolute top-3 right-3 z-20 flex items-start gap-3 compact:contents'
+const TOP_ROW = css({
+  pointerEvents: 'none',
+  position: 'absolute',
+  top: '3',
+  right: '3',
+  zIndex: '20',
+  display: 'flex',
+  alignItems: 'flex-start',
+  gap: '3',
+  _compact: { display: 'contents' },
+})
 
 /** Board context first, so it holds still while incidents come and go below it. */
-const LANE = 'flex min-w-0 flex-1 flex-col items-center gap-2 compact:items-stretch compact:gap-1.5'
+const LANE = css({
+  display: 'flex',
+  minWidth: '0',
+  flex: '1 1 0%',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '2',
+  _compact: { alignItems: 'stretch', gap: '1.5' },
+})
 
-const BOTTOM =
-  'pointer-events-none absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-2 compact:right-[max(8px,env(safe-area-inset-right))] compact:bottom-[max(8px,env(safe-area-inset-bottom))] compact:left-[max(8px,env(safe-area-inset-left))] compact:translate-x-0 compact:items-stretch'
+const BOTTOM = css({
+  pointerEvents: 'none',
+  position: 'absolute',
+  bottom: '3',
+  left: '50%',
+  zIndex: '20',
+  display: 'flex',
+  translate: '-50% 0',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '2',
+  _compact: {
+    right: 'max(8px, env(safe-area-inset-right))',
+    bottom: 'max(8px, env(safe-area-inset-bottom))',
+    left: 'max(8px, env(safe-area-inset-left))',
+    translate: '0 0',
+    alignItems: 'stretch',
+  },
+})
 
 /** The desktop's mail preview and Research offer keep their own corners. A phone shows one queue
  *  row in the top lane instead, so neither can cover the board or the action bar. */
 const bottomNotices = (model: Model, h: HtmlBuilder<Message>): Html =>
-  h.div([h.Class('contents compact:hidden')], [peek(model, h), researchOffer(model, h)])
+  h.div(
+    [h.Class(css({ display: 'contents', _compact: { display: 'none' } }))],
+    [peek(model, h), researchOffer(model, h)],
+  )
 
 export const labScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
   const ledger = ledgerOf(model)
   // A screenshot is the board and nothing else: no HUD, dock, notices, or panels.
   if (model.board.screenshot)
     return h.main(
-      [h.Class('relative h-full overflow-hidden bg-canvas')],
+      [
+        h.Class(
+          css({
+            position: 'relative',
+            height: '100%',
+            overflow: 'hidden',
+            backgroundColor: 'canvas',
+          }),
+        ),
+      ],
       [nodeList(model, ledger, h), boardHost(h), screenshotExit(h)],
     )
   const hudWidth: 248 | 276 = boardChallenge(model.board) || boardSandbox(model.board) ? 248 : 276
   return h.main(
-    [h.Class('relative h-full overflow-hidden bg-canvas')],
+    [
+      h.Class(
+        css({
+          position: 'relative',
+          height: '100%',
+          overflow: 'hidden',
+          backgroundColor: 'canvas',
+        }),
+      ),
+    ],
     [
       // The canvas is a picture; this is the board read aloud, and the keyboard's way in.
       nodeList(model, ledger, h),
@@ -122,8 +195,11 @@ export const labScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.div(
         [h.DataAttribute('flip', 'gesture'), h.Class(BOTTOM)],
         [
-          changeBar(model, h, 'enter-pop compact:hidden'),
-          h.div([h.Class('hidden compact:contents')], [phoneOffer(model, h)]),
+          changeBar(model, h, cx('enter-pop', css({ _compact: { display: 'none' } }))),
+          h.div(
+            [h.Class(css({ display: 'none', _compact: { display: 'contents' } }))],
+            [phoneOffer(model, h)],
+          ),
           confirmSellOf(model.board)
             ? sellBar(model, h)
             : model.board.selection.length > 0

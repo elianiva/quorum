@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { formats } from '@/i18n/format.ts'
 import { copy } from '@/i18n/messages.ts'
 import { Schema } from 'effect'
@@ -33,7 +34,6 @@ import { boardSandbox, hasCompany, type Model, type SandboxRun } from '@/game/mo
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
 import { nativeSelect, nativeSelectOption } from '@quorum/ui/primitives/native-select'
-import { cn } from '@/lib/utils'
 import {
   CHIPS,
   EYEBROW,
@@ -62,14 +62,45 @@ const figureRow = (
   h.div(
     [
       h.Key(name),
-      h.Class('flex h-8 items-center gap-2.5 px-2.5 compact:shrink-0 compact:gap-1.5 compact:px-3'),
+      h.Class(
+        css({
+          display: 'flex',
+          height: '8',
+          alignItems: 'center',
+          gap: '2.5',
+          paddingInline: '2.5',
+          _compact: {
+            flexShrink: '0',
+            gap: '1.5',
+            paddingInline: '3',
+          },
+        }),
+      ),
     ],
     [
-      icon(h, glyph, 'size-3.5 shrink-0 text-muted-foreground'),
+      icon(
+        h,
+        glyph,
+        css({
+          width: '3.5',
+          height: '3.5',
+          flexShrink: '0',
+          color: 'mutedForeground',
+        }),
+      ),
       h.span(
         [
           h.Class(
-            'min-w-[52px] shrink-0 whitespace-nowrap text-[calc(11.5px*var(--type-scale))] text-muted-foreground compact:hidden',
+            css({
+              minWidth: '52px',
+              flexShrink: '0',
+              whiteSpace: 'nowrap',
+              fontSize: 'type.11-5',
+              color: 'mutedForeground',
+              _compact: {
+                display: 'none',
+              },
+            }),
           ),
         ],
         [name],
@@ -77,9 +108,17 @@ const figureRow = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
-              'ml-auto text-[calc(13.5px*var(--type-scale))] leading-none whitespace-nowrap compact:ml-0',
+              css({
+                marginLeft: 'auto',
+                fontSize: 'type.13-5',
+                lineHeight: 'none',
+                whiteSpace: 'nowrap',
+                _compact: {
+                  marginLeft: '0',
+                },
+              }),
               toneText(tone),
             ),
           ),
@@ -102,7 +141,23 @@ const figures = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =>
   const watch = objective?.watch
   const watched = watch?.value(ledger) ?? 0
   return h.div(
-    [h.Class(`flex flex-col divide-y divide-hairline ${WELL} ${CHIPS}`)],
+    [
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            '& > :not(:last-child)': {
+              borderBottomWidth: '1px',
+              borderBottomStyle: 'solid',
+              borderColor: 'hairline',
+            },
+          }),
+          WELL,
+          CHIPS,
+        ),
+      ),
+    ],
     [
       figureRow(t.sandbox.demand, Gauge, t.sandbox.s(rate(ledger.demand)), 'plain', h),
       figureRow(
@@ -155,7 +210,19 @@ const header = (title: string, aside: Html, h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Class(
-        'flex min-h-9 items-center gap-2 px-2.5 pt-1.5 pb-2 compact:pb-1 compact:pr-[var(--toolbar-w)]',
+        css({
+          display: 'flex',
+          minHeight: '9',
+          alignItems: 'center',
+          gap: '2',
+          paddingInline: '2.5',
+          paddingTop: '1.5',
+          paddingBottom: '2',
+          _compact: {
+            paddingBottom: '1',
+            paddingRight: 'var(--toolbar-w)',
+          },
+        }),
       ),
     ],
     [
@@ -164,14 +231,46 @@ const header = (title: string, aside: Html, h: HtmlBuilder<Message>): Html => {
           onClick: Message.PanelOpened({ panel: 'menu' }),
           variant: 'ghost',
           size: 'icon-sm',
-          className: '-ml-1.5 text-muted-foreground',
+          className: css({
+            marginLeft: '-0.375rem',
+            color: 'mutedForeground',
+          }),
           attributes: [h.AriaLabel(t.hud.menuEsc), h.Title(t.hud.menuEsc)],
         },
-        icon(h, Menu, 'size-4'),
+        icon(
+          h,
+          Menu,
+          css({
+            width: '4',
+            height: '4',
+          }),
+        ),
         h,
       ),
-      h.span([h.Class('truncate text-[calc(13px*var(--type-scale))] font-semibold')], [title]),
-      h.span([h.Class('ml-auto')], [aside]),
+      h.span(
+        [
+          h.Class(
+            css({
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: 'type.13',
+              fontWeight: 'semibold',
+            }),
+          ),
+        ],
+        [title],
+      ),
+      h.span(
+        [
+          h.Class(
+            css({
+              marginLeft: 'auto',
+            }),
+          ),
+        ],
+        [aside],
+      ),
     ],
   )
 }
@@ -182,7 +281,13 @@ const steps = (run: SandboxRun, id: SandboxId, h: HtmlBuilder<Message>): Html =>
   const total = GUIDED[id].objectives.length
   return h.span(
     [
-      h.Class('flex items-center gap-1'),
+      h.Class(
+        css({
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1',
+        }),
+      ),
       h.AriaLabel(t.sandbox.objectiveOf(run.progress.objective + 1, total)),
     ],
     GUIDED[id].objectives.map((_, index) =>
@@ -190,13 +295,24 @@ const steps = (run: SandboxRun, id: SandboxId, h: HtmlBuilder<Message>): Html =>
         [
           h.Key(String(index)),
           h.Class(
-            cn(
-              'h-1.5 w-3 rounded-full',
+            cx(
+              css({
+                height: '1.5',
+                width: '3',
+                borderRadius: 'full',
+              }),
               index < run.progress.objective
-                ? 'bg-ok'
+                ? css({
+                    backgroundColor: 'ok',
+                  })
                 : index === run.progress.objective
-                  ? 'bg-primary-fill'
-                  : 'bg-well shadow-well',
+                  ? css({
+                      layerStyle: 'primaryFill',
+                    })
+                  : css({
+                      backgroundColor: 'well',
+                      boxShadow: 'well',
+                    }),
             ),
           ),
         ],
@@ -219,25 +335,85 @@ export const objectiveBar = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.Key(`objective-${run.progress.objective}`),
       h.DataAttribute('exit', 'notice'),
       h.Class(
-        'enter-down flex w-[420px] flex-col gap-2 compact:w-auto rounded-xl bg-surface px-3 py-2.5 text-[calc(12.5px*var(--type-scale))] shadow-card',
+        cx(
+          css({
+            display: 'flex',
+            width: '420px',
+            flexDirection: 'column',
+            gap: '2',
+            _compact: {
+              width: 'auto',
+            },
+            borderRadius: 'xl',
+            layerStyle: 'surface',
+            paddingInline: '3',
+            paddingBlock: '2.5',
+            fontSize: 'type.12-5',
+            boxShadow: 'card',
+          }),
+          'enter-down',
+        ),
       ),
     ],
     [
       h.div(
-        [h.Class('flex items-start gap-2.5')],
         [
-          icon(h, Flag, 'mt-0.5 size-3.5 shrink-0 text-primary-strong'),
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '2.5',
+            }),
+          ),
+        ],
+        [
+          icon(
+            h,
+            Flag,
+            css({
+              marginTop: '0.5',
+              width: '3.5',
+              height: '3.5',
+              flexShrink: '0',
+              color: 'primaryStrong',
+            }),
+          ),
           h.span(
-            [h.Class('flex-1 leading-snug')],
+            [
+              h.Class(
+                css({
+                  flex: '1 1 0%',
+                  lineHeight: 'snug',
+                }),
+              ),
+            ],
             [t.catalog.guided[run.id].objectives[run.progress.objective]?.goal ?? objective.goal],
           ),
           h.span(
-            [h.Class(cn(FIGURE, 'text-[calc(11px*var(--type-scale))] text-muted-foreground'))],
+            [
+              h.Class(
+                cx(
+                  FIGURE,
+                  css({
+                    fontSize: 'type.11',
+                    color: 'mutedForeground',
+                  }),
+                ),
+              ),
+            ],
             [`${clock(run.progress.held)} / ${clock(objective.hold)}`],
           ),
         ],
       ),
-      meter(share, share > 0 ? 'bg-ok' : 'bg-primary-fill', h),
+      meter(
+        share,
+        share > 0
+          ? css({
+              backgroundColor: 'ok',
+            })
+          : css({ layerStyle: 'primaryFill' }),
+        h,
+      ),
     ],
   )
 }
@@ -248,8 +424,16 @@ const tiny = (label: string, message: Message, h: HtmlBuilder<Message>, active =
       onClick: message,
       variant: active ? 'default' : 'outline',
       size: 'sm',
-      className:
-        'h-auto min-h-7 px-2 py-1 text-[calc(11.5px*var(--type-scale))] leading-tight whitespace-normal text-balance',
+      className: css({
+        height: 'auto',
+        minHeight: '7',
+        paddingInline: '2',
+        paddingBlock: '1',
+        fontSize: 'type.11-5',
+        lineHeight: 'tight',
+        whiteSpace: 'normal',
+        textWrap: 'balance',
+      }),
       attributes: [h.Key(label)],
     },
     label,
@@ -267,17 +451,42 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
   const kinds = LEVER_KINDS.filter((kind) => (mixOf(game)[kind] ?? 0) > 0)
   if (kinds.length === 0) return h.empty
   return h.div(
-    [h.Class('flex flex-col gap-1.5')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.5',
+        }),
+      ),
+    ],
     [
       h.span([h.Class(EYEBROW)], [t.sandbox.levers]),
       h.div(
-        [h.Class('flex max-h-44 flex-col gap-1 overflow-auto [scrollbar-width:thin]')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              maxHeight: '44',
+              flexDirection: 'column',
+              gap: '1',
+              overflow: 'auto',
+              scrollbarWidth: 'thin',
+            }),
+          ),
+        ],
         kinds.map((kind) => {
           const step = game.levers[kind] ?? 0
           return h.div(
             [
               h.Key(kind),
-              h.Class('flex items-center gap-1.5'),
+              h.Class(
+                css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1.5',
+                }),
+              ),
               h.Title(
                 `${t.levers.step(step, MAX_LEVER_STEP)} · ${t.levers.share(sharePercent(mixOf(game)[kind] ?? 0))}`,
               ),
@@ -286,7 +495,15 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.span(
                 [
                   h.Class(
-                    'min-w-0 flex-1 truncate text-[calc(11.5px*var(--type-scale))] text-muted-foreground',
+                    css({
+                      minWidth: '0',
+                      flex: '1 1 0%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      fontSize: 'type.11-5',
+                      color: 'mutedForeground',
+                    }),
                   ),
                 ],
                 [t.catalog.pools[kind].label],
@@ -299,11 +516,29 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
                   size: 'icon-xs',
                   attributes: [h.AriaLabel(t.levers.takeOff)],
                 },
-                icon(h, Minus, 'size-3'),
+                icon(
+                  h,
+                  Minus,
+                  css({
+                    width: '3',
+                    height: '3',
+                  }),
+                ),
                 h,
               ),
               h.span(
-                [h.Class(cn(FIGURE, 'w-6 text-center text-[calc(11px*var(--type-scale))]'))],
+                [
+                  h.Class(
+                    cx(
+                      FIGURE,
+                      css({
+                        width: '6',
+                        textAlign: 'center',
+                        fontSize: 'type.11',
+                      }),
+                    ),
+                  ),
+                ],
                 [`${step}/${MAX_LEVER_STEP}`],
               ),
               button(
@@ -314,7 +549,14 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
                   size: 'icon-xs',
                   attributes: [h.AriaLabel(t.levers.set)],
                 },
-                icon(h, Plus, 'size-3'),
+                icon(
+                  h,
+                  Plus,
+                  css({
+                    width: '3',
+                    height: '3',
+                  }),
+                ),
                 h,
               ),
             ],
@@ -338,14 +580,41 @@ const controls = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.summary(
         [
           h.Class(
-            'hidden h-9 cursor-pointer list-none items-center gap-2 px-2.5 text-[calc(12.5px*var(--type-scale))] font-medium compact:flex [&::-webkit-details-marker]:hidden',
+            css({
+              display: 'none',
+              height: '9',
+              cursor: 'pointer',
+              listStyleType: 'none',
+              alignItems: 'center',
+              gap: '2',
+              paddingInline: '2.5',
+              fontSize: 'type.12-5',
+              fontWeight: 'medium',
+              _compact: {
+                display: 'flex',
+              },
+              '&::-webkit-details-marker': {
+                display: 'none',
+              },
+            }),
           ),
         ],
         [
           icon(
             h,
             ChevronRight,
-            'fold-chevron size-3.5 shrink-0 text-muted-foreground group-open:rotate-90',
+            cx(
+              css({
+                width: '3.5',
+                height: '3.5',
+                flexShrink: '0',
+                color: 'mutedForeground',
+                '.group[open] &': {
+                  rotate: '90deg',
+                },
+              }),
+              'fold-chevron',
+            ),
           ),
           t.sandbox.controls,
         ],
@@ -358,12 +627,43 @@ const controls = (model: Model, h: HtmlBuilder<Message>): Html => {
 const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
-    [h.Class('flex flex-col gap-2.5 px-2.5 pt-2.5 pb-1.5')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2.5',
+          paddingInline: '2.5',
+          paddingTop: '2.5',
+          paddingBottom: '1.5',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex items-center gap-1.5')],
         [
-          h.span([h.Class(cn(EYEBROW, 'mr-auto'))], [t.sandbox.users]),
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1.5',
+            }),
+          ),
+        ],
+        [
+          h.span(
+            [
+              h.Class(
+                cx(
+                  EYEBROW,
+                  css({
+                    marginRight: 'auto',
+                  }),
+                ),
+              ),
+            ],
+            [t.sandbox.users],
+          ),
           button(
             {
               onClick: Message.DemandStepped({ direction: -1 }),
@@ -371,11 +671,29 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
               size: 'icon-sm',
               attributes: [h.AriaLabel(t.sandbox.lessDemand)],
             },
-            icon(h, Minus, 'size-3.5'),
+            icon(
+              h,
+              Minus,
+              css({
+                width: '3.5',
+                height: '3.5',
+              }),
+            ),
             h,
           ),
           h.span(
-            [h.Class(cn(FIGURE, 'w-14 text-center text-[calc(13px*var(--type-scale))]'))],
+            [
+              h.Class(
+                cx(
+                  FIGURE,
+                  css({
+                    width: '14',
+                    textAlign: 'center',
+                    fontSize: 'type.13',
+                  }),
+                ),
+              ),
+            ],
             [model.board.game.users.toLocaleString('en-US')],
           ),
           button(
@@ -385,17 +703,40 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
               size: 'icon-sm',
               attributes: [h.AriaLabel(t.sandbox.moreDemand)],
             },
-            icon(h, Plus, 'size-3.5'),
+            icon(
+              h,
+              Plus,
+              css({
+                width: '3.5',
+                height: '3.5',
+              }),
+            ),
             h,
           ),
         ],
       ),
       h.div(
-        [h.Class('flex flex-col gap-1.5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5',
+            }),
+          ),
+        ],
         [
           h.span([h.Class(EYEBROW)], [t.sandbox.mix]),
           h.div(
-            [h.Class('grid grid-cols-3 gap-1.5')],
+            [
+              h.Class(
+                css({
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                  gap: '1.5',
+                }),
+              ),
+            ],
             ERAS.slice(0, 3).map((era, stage) =>
               tiny(
                 t.catalog.eras[stage]?.name ?? era.name,
@@ -417,9 +758,23 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
           isDisabled: model.board.game.incident !== null,
           onChange: (kind) =>
             Schema.is(IncidentId)(kind) ? Message.IncidentForced({ kind }) : Message.Synced(),
-          wrapperClass: 'flex-row items-center gap-1.5 [&>div]:flex-1',
-          labelClass: cn(EYEBROW, 'mr-auto p-0'),
-          className: 'text-[calc(11.5px*var(--type-scale))]',
+          wrapperClass: css({
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: '1.5',
+            '& > div': { flex: '1 1 0%' },
+          }),
+          labelClass: cx(
+            EYEBROW,
+            css({
+              marginRight: 'auto',
+              padding: '0',
+            }),
+          ),
+          className: css({
+            fontSize: 'type.11-5',
+          }),
           options: [
             nativeSelectOption({ value: '', label: t.sandbox.none }, h),
             ...INCIDENT_IDS.map((kind) =>
@@ -430,17 +785,37 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
         h,
       ),
       h.div(
-        [h.Class('flex gap-1.5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              gap: '1.5',
+            }),
+          ),
+        ],
         [
           button(
             {
               onClick: Message.StressBoardLoaded({ big: false }),
               variant: 'ghost',
               size: 'sm',
-              className: 'flex-1 text-muted-foreground',
+              className: css({
+                flex: '1 1 0%',
+                color: 'mutedForeground',
+              }),
               attributes: [h.Title(t.sandbox.loadACrowdedDesignToTest)],
             },
-            [icon(h, Cable, 'size-3.5'), t.sandbox.stressBoard],
+            [
+              icon(
+                h,
+                Cable,
+                css({
+                  width: '3.5',
+                  height: '3.5',
+                }),
+              ),
+              t.sandbox.stressBoard,
+            ],
             h,
           ),
           button(
@@ -448,25 +823,58 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
               onClick: Message.StressBoardLoaded({ big: true }),
               variant: 'ghost',
               size: 'sm',
-              className: 'flex-1 text-muted-foreground',
+              className: css({
+                flex: '1 1 0%',
+                color: 'mutedForeground',
+              }),
               attributes: [h.Title(t.sandbox.loadA61NodeDesignTo)],
             },
-            [icon(h, Cable, 'size-3.5'), t.sandbox.bigBoard],
+            [
+              icon(
+                h,
+                Cable,
+                css({
+                  width: '3.5',
+                  height: '3.5',
+                }),
+              ),
+              t.sandbox.bigBoard,
+            ],
             h,
           ),
         ],
       ),
       h.div(
-        [h.Class('flex gap-1.5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              gap: '1.5',
+            }),
+          ),
+        ],
         [
           button(
             {
               onClick: Message.FreeSandboxReset(),
               variant: 'ghost',
               size: 'sm',
-              className: 'flex-1 text-muted-foreground',
+              className: css({
+                flex: '1 1 0%',
+                color: 'mutedForeground',
+              }),
             },
-            [icon(h, RotateCcw, 'size-3.5'), t.sandbox.reset],
+            [
+              icon(
+                h,
+                RotateCcw,
+                css({
+                  width: '3.5',
+                  height: '3.5',
+                }),
+              ),
+              t.sandbox.reset,
+            ],
             h,
           ),
           model.company && hasCompany(model)
@@ -475,10 +883,23 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
                   onClick: Message.CompanyCopied(),
                   variant: 'ghost',
                   size: 'sm',
-                  className: 'flex-1 text-muted-foreground',
+                  className: css({
+                    flex: '1 1 0%',
+                    color: 'mutedForeground',
+                  }),
                   attributes: [h.Title(t.sandbox.copyTheCompanyDesignOntoThis)],
                 },
-                [icon(h, Copy, 'size-3.5'), t.sandbox.copyCompany],
+                [
+                  icon(
+                    h,
+                    Copy,
+                    css({
+                      width: '3.5',
+                      height: '3.5',
+                    }),
+                  ),
+                  t.sandbox.copyCompany,
+                ],
                 h,
               )
             : h.empty,
@@ -496,13 +917,46 @@ export const sandboxHud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>
   return h.header(
     [
       h.Class(
-        `absolute top-3 left-3 z-20 flex w-[248px] flex-col gap-1 p-1.5 ${PANEL} compact:pointer-events-auto compact:static compact:w-auto compact:p-1`,
+        cx(
+          css({
+            position: 'absolute',
+            top: '3',
+            left: '3',
+            zIndex: '20',
+            display: 'flex',
+            width: '248px',
+            flexDirection: 'column',
+            gap: '1',
+            padding: '1.5',
+          }),
+          PANEL,
+          css({
+            _compact: {
+              pointerEvents: 'auto',
+              position: 'static',
+              width: 'auto',
+              padding: '1',
+            },
+          }),
+        ),
       ),
     ],
     [
       run.id
         ? header(t.catalog.guided[run.id].name, steps(run, run.id, h), h)
-        : header(t.sandbox.freeSandbox, icon(h, Zap, 'size-3.5 text-muted-foreground'), h),
+        : header(
+            t.sandbox.freeSandbox,
+            icon(
+              h,
+              Zap,
+              css({
+                width: '3.5',
+                height: '3.5',
+                color: 'mutedForeground',
+              }),
+            ),
+            h,
+          ),
       figures(model, ledger, h),
       run.id ? h.empty : controls(model, h),
     ],
@@ -520,45 +974,119 @@ export const passedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     [],
     [
       h.div(
-        [h.Class('flex flex-col items-center gap-3 px-8 pt-2 pb-6')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '3',
+              paddingInline: '8',
+              paddingTop: '2',
+              paddingBottom: '6',
+            }),
+          ),
+        ],
         [
           h.span(
             [
               h.Class(
-                'grid size-12 place-items-center rounded-full bg-ok text-white shadow-raised enter-pop',
+                cx(
+                  css({
+                    display: 'grid',
+                    width: '12',
+                    height: '12',
+                    placeItems: 'center',
+                    borderRadius: 'full',
+                    backgroundColor: 'ok',
+                    color: 'white',
+                    boxShadow: 'raised',
+                  }),
+                  'enter-pop',
+                ),
               ),
             ],
-            [icon(h, Check, 'size-6')],
+            [
+              icon(
+                h,
+                Check,
+                css({
+                  width: '6',
+                  height: '6',
+                }),
+              ),
+            ],
           ),
           h.span(
-            [h.Class('text-[calc(26px*var(--type-scale))] font-semibold tracking-[-0.035em]')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.26',
+                  fontWeight: 'semibold',
+                  letterSpacing: 'heading',
+                }),
+              ),
+            ],
             [t.sandbox.passed],
           ),
         ],
       ),
       h.div(
-        [h.Class('flex justify-end gap-2 border-t border-hairline bg-nested px-5 py-3')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '2',
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderColor: 'hairline',
+              backgroundColor: 'nested',
+              paddingInline: '5',
+              paddingBlock: '3',
+            }),
+          ),
+        ],
         [
           button(
-            { onClick: Message.TitleOpened(), variant: 'outline', size: 'lg', className: 'px-3.5' },
+            {
+              onClick: Message.TitleOpened(),
+              variant: 'outline',
+              size: 'lg',
+              className: css({
+                paddingInline: '3.5',
+              }),
+            },
             t.sandbox.sandboxMenu,
             h,
           ),
           next
             ? button(
-                { onClick: Message.GuidedStarted({ id: next }), size: 'lg', className: 'px-4' },
+                {
+                  onClick: Message.GuidedStarted({ id: next }),
+                  size: 'lg',
+                  className: css({
+                    paddingInline: '4',
+                  }),
+                },
                 t.catalog.guided[next].name,
                 h,
               )
             : button(
-                { onClick: Message.FreeSandboxStarted(), size: 'lg', className: 'px-4' },
+                {
+                  onClick: Message.FreeSandboxStarted(),
+                  size: 'lg',
+                  className: css({
+                    paddingInline: '4',
+                  }),
+                },
                 t.sandbox.freeSandbox,
                 h,
               ),
         ],
       ),
     ],
-    'max-w-[440px]',
+    css({ maxWidth: '440px' }),
     h,
   )
 }

@@ -122,7 +122,7 @@ test('an incident page names the Components that teach it and the Sandboxes that
 test('the arrow keys wrap around the search results', () => {
   const at = (active: number, delta: number) =>
     Search.update(
-      { locale: 'en', query: 'cache', open: true, active, status: 'ready' },
+      { locale: 'en', query: 'cache', open: true, panel: false, active, status: 'ready' },
       Search.Message.Moved({ delta, count: 3 }),
     ).model.active
   expect([at(2, 1), at(0, -1), at(0, 1)]).toEqual([0, 2, 1])

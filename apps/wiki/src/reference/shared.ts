@@ -1,5 +1,4 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
-import { cn } from 'cn'
 import { ERAS, type BuildGroup, type ResearchId } from '@quorum/simulation/catalog'
 import { FIGURE } from '@quorum/ui/game/bits'
 import { localeOf } from '../i18n/builder.ts'
@@ -8,6 +7,7 @@ import type { Message } from '../main.ts'
 import { proseAt } from '../content.ts'
 import { headingsOf, prose } from '../prose.ts'
 import { slug, type Heading, type Page, type View } from '../page.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 export type { Lang, Title }
 
@@ -34,7 +34,14 @@ export const link = (path: string, text: string, h: H): Html =>
     [
       h.Href(path),
       h.Class(
-        'underline decoration-foreground/30 underline-offset-[3px] hover:decoration-foreground',
+        css({
+          textDecorationLine: 'underline',
+          textDecorationColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
+          textUnderlineOffset: '3px',
+          _hover: {
+            textDecorationColor: 'foreground',
+          },
+        }),
       ),
     ],
     [text],
@@ -47,7 +54,16 @@ export const researchLink = (l: Lang, id: ResearchId, h: H): Html =>
 export const linkList = (items: ReadonlyArray<Html>, h: H): Html => {
   const separator = langOf(localeOf(h)).t.reference.listSeparator
   return items.length === 0
-    ? h.span([h.Class('text-muted-foreground')], ['—'])
+    ? h.span(
+        [
+          h.Class(
+            css({
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
+        ['—'],
+      )
     : h.span(
         [],
         items.flatMap((item, index) => (index === 0 ? [item] : [separator, item])),
@@ -66,21 +82,102 @@ export const factsBox = (
   h: H,
 ): Html =>
   h.aside(
-    [h.AriaLabel(l.t.reference.factsLabel(title)), h.Class('rounded-lg border border-border')],
+    [
+      h.AriaLabel(l.t.reference.factsLabel(title)),
+      h.Class(
+        css({
+          borderRadius: 'lg',
+          borderWidth: '1px',
+          borderStyle: 'solid',
+          borderColor: 'border',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex items-center gap-2.5 border-b border-border px-4 py-3')],
-        [badge ?? h.empty, h.span([h.Class('text-[14px] font-semibold')], [title])],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2.5',
+              borderBottomWidth: '1px',
+              borderBottomStyle: 'solid',
+              borderColor: 'border',
+              paddingInline: '4',
+              paddingBlock: '3',
+            }),
+          ),
+        ],
+        [
+          badge ?? h.empty,
+          h.span(
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.14',
+                  fontWeight: 'semibold',
+                }),
+              ),
+            ],
+            [title],
+          ),
+        ],
       ),
       h.dl(
-        [h.Class('divide-y divide-border')],
+        [
+          h.Class(
+            css({
+              '& > * + *': {
+                borderTopWidth: '1px',
+                borderTopStyle: 'solid',
+                borderColor: 'border',
+              },
+            }),
+          ),
+        ],
         facts.map((fact) =>
           h.div(
-            [h.Key(fact.name), h.Class('flex items-baseline justify-between gap-3 px-4 py-2')],
             [
-              h.dt([h.Class('shrink-0 text-[13px] text-muted-foreground')], [fact.name]),
+              h.Key(fact.name),
+              h.Class(
+                css({
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  justifyContent: 'space-between',
+                  gap: '3',
+                  paddingInline: '4',
+                  paddingBlock: '2',
+                }),
+              ),
+            ],
+            [
+              h.dt(
+                [
+                  h.Class(
+                    css({
+                      flexShrink: '0',
+                      fontSize: 'type.13',
+                      color: 'mutedForeground',
+                    }),
+                  ),
+                ],
+                [fact.name],
+              ),
               h.dd(
-                [h.Class(cn(FIGURE, 'min-w-0 text-right text-[12px] [overflow-wrap:anywhere]'))],
+                [
+                  h.Class(
+                    cx(
+                      FIGURE,
+                      css({
+                        minWidth: '0',
+                        textAlign: 'right',
+                        fontSize: 'type.12',
+                        overflowWrap: 'anywhere',
+                      }),
+                    ),
+                  ),
+                ],
                 [fact.value],
               ),
             ],
@@ -152,22 +249,86 @@ export const hubCard = (page: Page, mark: Html, meta: string, h: H): Html =>
     [
       h.Key(page.path),
       h.Href(page.path),
-      h.Class('group flex gap-3 bg-background p-4 transition-colors hover:bg-muted/60'),
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            gap: '3',
+            backgroundColor: 'background',
+            padding: '4',
+            transitionProperty:
+              'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
+            transitionDuration: 'fast',
+            transitionTimingFunction: 'default',
+            _hover: {
+              backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
+            },
+          }),
+          'group',
+        ),
+      ),
     ],
     [
       mark,
       h.div(
-        [h.Class('min-w-0')],
+        [
+          h.Class(
+            css({
+              minWidth: '0',
+            }),
+          ),
+        ],
         [
           h.div(
-            [h.Class('flex items-baseline gap-2')],
             [
-              h.span([h.Class('text-[14px] font-medium')], [page.title]),
-              h.span([h.Class('truncate text-[12px] text-muted-foreground')], [meta]),
+              h.Class(
+                css({
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: '2',
+                }),
+              ),
+            ],
+            [
+              h.span(
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'type.14',
+                      fontWeight: 'medium',
+                    }),
+                  ),
+                ],
+                [page.title],
+              ),
+              h.span(
+                [
+                  h.Class(
+                    css({
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      fontSize: 'type.12',
+                      color: 'mutedForeground',
+                    }),
+                  ),
+                ],
+                [meta],
+              ),
             ],
           ),
           h.p(
-            [h.Class('mt-0.5 line-clamp-2 text-[13px] leading-snug text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  marginTop: '0.5',
+                  lineClamp: '2',
+                  fontSize: 'type.13',
+                  lineHeight: 'snug',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
             [page.summary],
           ),
         ],
@@ -185,10 +346,33 @@ export const table = (
   figures: ReadonlyArray<number> = [],
 ): Html =>
   h.div(
-    [h.Class('not-prose my-6 overflow-x-auto rounded-lg border border-border')],
+    [
+      h.Class(
+        cx(
+          css({
+            marginBlock: '6',
+            overflowX: 'auto',
+            borderRadius: 'lg',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: 'border',
+          }),
+          'not-prose',
+        ),
+      ),
+    ],
     [
       h.table(
-        [h.Class('w-full border-collapse text-[14px] leading-snug')],
+        [
+          h.Class(
+            css({
+              width: '100%',
+              borderCollapse: 'collapse',
+              fontSize: 'type.14',
+              lineHeight: 'snug',
+            }),
+          ),
+        ],
         [
           h.thead(
             [],
@@ -200,9 +384,24 @@ export const table = (
                     [
                       h.Key(header),
                       h.Class(
-                        cn(
-                          'border-b border-border bg-muted/50 px-3 py-2 text-left text-[12px] font-medium whitespace-nowrap text-muted-foreground',
-                          figures.includes(index) && 'text-right',
+                        cx(
+                          css({
+                            borderBottomWidth: '1px',
+                            borderBottomStyle: 'solid',
+                            borderColor: 'border',
+                            backgroundColor: 'color-mix(in oklab, var(--muted) 50%, transparent)',
+                            paddingInline: '3',
+                            paddingBlock: '2',
+                            textAlign: 'left',
+                            fontSize: 'type.12',
+                            fontWeight: 'medium',
+                            whiteSpace: 'nowrap',
+                            color: 'mutedForeground',
+                          }),
+                          figures.includes(index) &&
+                            css({
+                              textAlign: 'right',
+                            }),
                         ),
                       ),
                     ],
@@ -213,7 +412,17 @@ export const table = (
             ],
           ),
           h.tbody(
-            [h.Class('divide-y divide-border')],
+            [
+              h.Class(
+                css({
+                  '& > * + *': {
+                    borderTopWidth: '1px',
+                    borderTopStyle: 'solid',
+                    borderColor: 'border',
+                  },
+                }),
+              ),
+            ],
             rows.map((row) =>
               h.tr(
                 [h.Key(row.key)],
@@ -221,10 +430,21 @@ export const table = (
                   h.td(
                     [
                       h.Class(
-                        cn(
-                          'px-3 py-2 align-top',
+                        cx(
+                          css({
+                            paddingInline: '3',
+                            paddingBlock: '2',
+                            verticalAlign: 'top',
+                          }),
                           figures.includes(index) &&
-                            cn(FIGURE, 'text-right text-[12px] whitespace-nowrap'),
+                            cx(
+                              FIGURE,
+                              css({
+                                textAlign: 'right',
+                                fontSize: 'type.12',
+                                whiteSpace: 'nowrap',
+                              }),
+                            ),
                         ),
                       ),
                     ],
@@ -246,7 +466,26 @@ export const cardGrid = (cards: ReadonlyArray<Html>, h: H): Html =>
   h.div(
     [
       h.Class(
-        'not-prose my-6 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 sm:[&>:last-child:nth-child(odd)]:col-span-2',
+        cx(
+          css({
+            marginBlock: '6',
+            display: 'grid',
+            gap: '0.25',
+            overflow: 'hidden',
+            borderRadius: 'lg',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: 'border',
+            backgroundColor: 'border',
+            sm: {
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              '& > :last-child:nth-child(odd)': {
+                gridColumn: 'span 2 / span 2',
+              },
+            },
+          }),
+          'not-prose',
+        ),
       ),
     ],
     cards,

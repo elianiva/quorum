@@ -7,6 +7,7 @@ import { icon } from '@quorum/ui/primitives/icon'
 import { localeOf } from '../i18n/builder.ts'
 import { langOf } from '../i18n/lang.ts'
 import type { Message, Model } from '../main.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* A guided Sandbox placed in a page. */
 
@@ -22,22 +23,86 @@ export const sandboxView = (
     [
       h.Href(`/sandboxes/${id}`),
       h.Class(
-        'not-prose group my-6 flex items-center gap-4 rounded-lg border border-border px-4 py-3 hover:bg-muted/60',
+        cx(
+          css({
+            marginBlock: '6',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4',
+            borderRadius: 'lg',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: 'border',
+            paddingInline: '4',
+            paddingBlock: '3',
+            _hover: {
+              backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
+            },
+          }),
+          'not-prose',
+          'group',
+        ),
       ),
     ],
     [
       h.span(
-        [h.Class('min-w-0 flex-1')],
         [
-          h.span([h.Class('text-[12px] text-muted-foreground')], [l.t.islands.sandbox]),
-          h.span([h.Class('mt-1 block text-[16px] font-semibold tracking-tight')], [def.name]),
+          h.Class(
+            css({
+              minWidth: '0',
+              flex: '1 1 0%',
+            }),
+          ),
+        ],
+        [
           h.span(
-            [h.Class('block text-[13px] text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.12',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
+            [l.t.islands.sandbox],
+          ),
+          h.span(
+            [
+              h.Class(
+                css({
+                  marginTop: '1',
+                  display: 'block',
+                  fontSize: 'type.16',
+                  fontWeight: 'semibold',
+                  letterSpacing: 'tight',
+                }),
+              ),
+            ],
+            [def.name],
+          ),
+          h.span(
+            [
+              h.Class(
+                css({
+                  display: 'block',
+                  fontSize: 'type.13',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
             [def.objectives[0]?.goal ?? ''],
           ),
         ],
       ),
-      icon(h, ArrowRight, 'size-4 text-muted-foreground'),
+      icon(
+        h,
+        ArrowRight,
+        css({
+          width: '4',
+          height: '4',
+          color: 'mutedForeground',
+        }),
+      ),
     ],
   )
 }

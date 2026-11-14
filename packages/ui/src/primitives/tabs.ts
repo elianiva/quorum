@@ -1,7 +1,6 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { Tabs as FoldkitTabs } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
-
-import { cn } from 'cn'
 
 // Re-export the @foldkit/ui Tabs surface. Create a bundle once per tab value
 // type:
@@ -29,27 +28,126 @@ export type RenderInfo<Value extends string = string> = FoldkitTabs.RenderInfo<V
 
 export type TabsListVariant = 'default' | 'line'
 
-const tabsListBaseClass =
-  'rounded-lg p-[3px] group-data-horizontal/tabs:h-9 data-[variant=line]:rounded-none group/tabs-list inline-flex w-fit items-center justify-center text-muted-foreground group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col'
+const tabsListBaseClass = cx(
+  css({
+    borderRadius: 'lg',
+    padding: '0.75',
+    '.group-tabs[data-horizontal] &': { height: '9' },
+    '&[data-variant="line"]': { borderRadius: '0' },
+    display: 'inline-flex',
+    width: 'fit-content',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'mutedForeground',
+    '.group-tabs[data-vertical] &': { height: 'fit-content', flexDirection: 'column' },
+  }),
+  'group-tabs-list',
+)
 
 const tabsListVariantClasses: Record<TabsListVariant, string> = {
-  default: 'bg-well shadow-well',
-  line: 'gap-1 bg-transparent',
+  default: css({
+    backgroundColor: 'well',
+    boxShadow: 'well',
+  }),
+  line: css({
+    gap: '1',
+    backgroundColor: 'transparent',
+  }),
 }
 
 export const tabsListClass = (variant: TabsListVariant = 'default') =>
-  cn(tabsListBaseClass, tabsListVariantClasses[variant])
+  cx(tabsListBaseClass, tabsListVariantClasses[variant])
 
 /** Upstream TabsTrigger string with data-active → data-selected prefix swaps
  *  (foldkit attr name). */
-export const tabsTriggerClass = cn(
-  "gap-1.5 rounded-md border border-transparent px-1.5 py-0.5 text-sm font-medium group-data-[variant=line]/tabs-list:data-active:shadow-none [&_svg:not([class*='size-'])]:size-4 has-data-[icon=inline-end]:pr-1 has-data-[icon=inline-start]:pl-1 relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center whitespace-nowrap text-foreground/60 transition-all group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 dark:text-muted-foreground dark:hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0",
-  'group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-selected:bg-transparent dark:group-data-[variant=line]/tabs-list:data-selected:border-transparent dark:group-data-[variant=line]/tabs-list:data-selected:bg-transparent',
-  'group-data-[variant=default]/tabs-list:data-selected:bg-raised group-data-[variant=default]/tabs-list:data-selected:shadow-raised data-selected:text-foreground',
-  'after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-selected:after:opacity-100',
-)
+export const tabsTriggerClass = css({
+  gap: '1.5',
+  borderRadius: 'md',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  borderColor: 'transparent',
+  paddingInline: '1.5',
+  paddingBlock: '0.5',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
+  '& svg:not([data-svg-icon])': { width: '4', height: '4' },
+  '&:has([data-icon="inline-end"])': { paddingRight: '1' },
+  '&:has([data-icon="inline-start"])': { paddingLeft: '1' },
+  position: 'relative',
+  display: 'inline-flex',
+  height: 'calc(100% - 1px)',
+  flex: '1 1 0%',
+  alignItems: 'center',
+  justifyContent: 'center',
+  whiteSpace: 'nowrap',
+  color: 'color-mix(in oklab, var(--foreground) 60%, transparent)',
+  transitionProperty: 'all',
+  transitionDuration: 'fast',
+  transitionTimingFunction: 'default',
+  _hover: { color: 'foreground' },
+  _focusVisible: {
+    borderColor: 'ring',
+    boxShadow: 'focus',
+    outlineWidth: '1px',
+    outlineStyle: 'solid',
+    outlineColor: 'ring',
+  },
+  _disabled: { pointerEvents: 'none', opacity: 0.5 },
+  '&[aria-disabled="true"]': { pointerEvents: 'none', opacity: 0.5 },
+  _dark: {
+    color: 'mutedForeground',
+    _hover: { color: 'foreground' },
+  },
+  '& svg': { pointerEvents: 'none', flexShrink: '0' },
+  '.group-tabs[data-vertical] &': {
+    width: '100%',
+    justifyContent: 'flex-start',
+    '&::after': {
+      insetBlock: '0',
+      right: '-0.25rem',
+      width: '0.5',
+    },
+  },
+  '&[data-selected]': { color: 'foreground' },
+  '&::after': {
+    position: 'absolute',
+    backgroundColor: 'foreground',
+    opacity: 0,
+    transitionProperty: 'opacity',
+    transitionTimingFunction: 'default',
+    transitionDuration: 'fast',
+  },
+  '.group-tabs[data-horizontal] &': {
+    '&::after': {
+      insetInline: '0',
+      bottom: '-5px',
+      height: '0.5',
+    },
+  },
+  '.group-tabs-list[data-variant=default] &': {
+    '&[data-selected]': { layerStyle: 'raised', boxShadow: 'raised' },
+  },
+  '.group-tabs-list[data-variant=line] &': {
+    '&[data-active]': { boxShadow: 'none' },
+    backgroundColor: 'transparent',
+    '&[data-selected]': { backgroundColor: 'transparent' },
+    _dark: {
+      '&[data-selected]': {
+        borderColor: 'transparent',
+        backgroundColor: 'transparent',
+      },
+    },
+    '&[data-selected]::after': { opacity: 1 },
+  },
+})
 
-export const tabsContentClass = 'text-sm flex-1 outline-none'
+export const tabsContentClass = css({
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  flex: '1 1 0%',
+  outlineStyle: 'none',
+})
 
 // Use inside `styledViewInputs` panel callbacks:
 //
@@ -64,7 +162,7 @@ export const list = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.DataAttribute('slot', 'tabs-list'), h.Class(cn(tabsListClass(), config.className))],
+    [h.DataAttribute('slot', 'tabs-list'), h.Class(cx(tabsListClass(), config.className))],
     children,
   )
 
@@ -74,7 +172,7 @@ export const trigger = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.button(
-    [h.DataAttribute('slot', 'tabs-trigger'), h.Class(cn(tabsTriggerClass, config.className))],
+    [h.DataAttribute('slot', 'tabs-trigger'), h.Class(cx(tabsTriggerClass, config.className))],
     children,
   )
 
@@ -84,7 +182,7 @@ export const content = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.DataAttribute('slot', 'tabs-content'), h.Class(cn(tabsContentClass, config.className))],
+    [h.DataAttribute('slot', 'tabs-content'), h.Class(cx(tabsContentClass, config.className))],
     children,
   )
 
@@ -125,9 +223,20 @@ export const styledViewInputs = <M, Value extends string = string>(
           h.DataAttribute('orientation', isVertical ? 'vertical' : 'horizontal'),
           ...(isVertical ? [h.DataAttribute('vertical', '')] : [h.DataAttribute('horizontal', '')]),
           h.Class(
-            cn(
-              'gap-2 group/tabs flex',
-              isVertical ? 'w-full gap-2' : 'flex-col',
+            cx(
+              css({
+                gap: '2',
+                display: 'flex',
+              }),
+              'group-tabs',
+              isVertical
+                ? css({
+                    width: '100%',
+                    gap: '2',
+                  })
+                : css({
+                    flexDirection: 'column',
+                  }),
               viewInputs.variant === 'line' ? '' : '',
             ),
           ),
@@ -138,14 +247,14 @@ export const styledViewInputs = <M, Value extends string = string>(
               ...tablist,
               h.DataAttribute('slot', 'tabs-list'),
               h.Attribute('data-variant', variant),
-              h.Class(cn(tabsListClass(variant), viewInputs.listClass)),
+              h.Class(cx(tabsListClass(variant), viewInputs.listClass)),
             ],
             tabs.map((tab) =>
               h.button(
                 [
                   ...tab.tab,
                   h.DataAttribute('slot', 'tabs-trigger'),
-                  h.Class(cn(tabsTriggerClass, viewInputs.triggerClass)),
+                  h.Class(cx(tabsTriggerClass, viewInputs.triggerClass)),
                 ],
                 [h.span([], [tab.value])],
               ),
@@ -158,7 +267,7 @@ export const styledViewInputs = <M, Value extends string = string>(
                 [
                   ...tab.panel,
                   h.DataAttribute('slot', 'tabs-content'),
-                  h.Class(cn(tabsContentClass, viewInputs.contentClass)),
+                  h.Class(cx(tabsContentClass, viewInputs.contentClass)),
                 ],
                 [viewInputs.panel(tab.value, { tablist, tabs, activeIndex }, h)],
               ),

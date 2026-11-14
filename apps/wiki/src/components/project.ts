@@ -1,5 +1,4 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
-import { cn } from 'cn'
 import { Star } from 'lucide'
 import { FIGURE } from '@quorum/ui/game/bits'
 import { compact } from '@quorum/ui/game/format'
@@ -10,6 +9,7 @@ import { langOf } from '../i18n/lang.ts'
 import type { Message } from '../main.ts'
 import { REPOSITORY } from '../site.ts'
 import type * as Project from '../submodels/project.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The repository behind the game and the wiki, as a card: where the code is, and what other
    people have made of it. */
@@ -21,10 +21,47 @@ const LICENSE_URL = `${REPOSITORY}/blob/main/LICENSE`
 
 const cell = (value: string, label: string, h: H): Html =>
   h.div(
-    [h.Key(label), h.Class('flex flex-col gap-1 bg-background px-4 py-3.5')],
     [
-      h.span([h.Class(cn(FIGURE, 'text-[20px] leading-none font-medium tabular-nums'))], [value]),
-      h.span([h.Class('text-[12px] text-muted-foreground')], [label]),
+      h.Key(label),
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1',
+          backgroundColor: 'background',
+          paddingInline: '4',
+          paddingBlock: '3.5',
+        }),
+      ),
+    ],
+    [
+      h.span(
+        [
+          h.Class(
+            cx(
+              FIGURE,
+              css({
+                fontSize: 'type.20',
+                lineHeight: 'none',
+                fontWeight: 'medium',
+                fontVariantNumeric: 'tabular-nums',
+              }),
+            ),
+          ),
+        ],
+        [value],
+      ),
+      h.span(
+        [
+          h.Class(
+            css({
+              fontSize: 'type.12',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
+        [label],
+      ),
     ],
   )
 
@@ -40,32 +77,110 @@ export const projectCard = (project: Project.Model, h: H): Html => {
       ]
     : []
   return h.div(
-    [h.Class('overflow-hidden rounded-lg border border-border bg-background')],
+    [
+      h.Class(
+        css({
+          overflow: 'hidden',
+          borderRadius: 'lg',
+          borderWidth: '1px',
+          borderStyle: 'solid',
+          borderColor: 'border',
+          backgroundColor: 'background',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex flex-wrap items-start justify-between gap-y-4 gap-x-6 p-5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              rowGap: '4',
+              columnGap: '6',
+              padding: '5',
+            }),
+          ),
+        ],
         [
           h.div(
-            [h.Class('flex min-w-0 items-start gap-3')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  minWidth: '0',
+                  alignItems: 'flex-start',
+                  gap: '3',
+                }),
+              ),
+            ],
             [
               h.span(
-                [h.Class('grid size-10 shrink-0 place-items-center rounded-md bg-muted/60')],
-                [githubMark(h, 'size-5')],
+                [
+                  h.Class(
+                    css({
+                      display: 'grid',
+                      width: '10',
+                      height: '10',
+                      flexShrink: '0',
+                      placeItems: 'center',
+                      borderRadius: 'md',
+                      backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
+                    }),
+                  ),
+                ],
+                [
+                  githubMark(
+                    h,
+                    css({
+                      width: '5',
+                      height: '5',
+                    }),
+                  ),
+                ],
               ),
               h.div(
-                [h.Class('min-w-0')],
+                [
+                  h.Class(
+                    css({
+                      minWidth: '0',
+                    }),
+                  ),
+                ],
                 [
                   h.a(
                     [
                       h.Href(REPOSITORY),
                       h.Class(
-                        cn(FIGURE, 'text-[14px] font-medium hover:underline underline-offset-4'),
+                        cx(
+                          FIGURE,
+                          css({
+                            fontSize: 'type.14',
+                            fontWeight: 'medium',
+                            _hover: {
+                              textDecorationLine: 'underline',
+                            },
+                            textUnderlineOffset: '4px',
+                          }),
+                        ),
                       ),
                     ],
                     [REPO_NAME],
                   ),
                   h.p(
-                    [h.Class('mt-1 max-w-sm text-[13px] leading-snug text-muted-foreground')],
+                    [
+                      h.Class(
+                        css({
+                          marginTop: '1',
+                          maxWidth: '96',
+                          fontSize: 'type.13',
+                          lineHeight: 'snug',
+                          color: 'mutedForeground',
+                        }),
+                      ),
+                    ],
                     [t.blurb],
                   ),
                 ],
@@ -73,22 +188,63 @@ export const projectCard = (project: Project.Model, h: H): Html => {
             ],
           ),
           h.div(
-            [h.Class('flex flex-wrap items-center gap-3')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  gap: '3',
+                }),
+              ),
+            ],
             [
               h.a(
                 [
                   h.Href(REPOSITORY),
                   h.Class(
-                    'inline-flex h-9 items-center gap-2 rounded-md bg-foreground px-3 text-[13px] font-medium text-background hover:opacity-90',
+                    css({
+                      display: 'inline-flex',
+                      height: '9',
+                      alignItems: 'center',
+                      gap: '2',
+                      borderRadius: 'md',
+                      backgroundColor: 'foreground',
+                      paddingInline: '3',
+                      fontSize: 'type.13',
+                      fontWeight: 'medium',
+                      color: 'background',
+                      _hover: {
+                        opacity: 0.9,
+                      },
+                    }),
                   ),
                 ],
-                [icon(h, Star, 'size-3.5'), t.star],
+                [
+                  icon(
+                    h,
+                    Star,
+                    css({
+                      width: '3.5',
+                      height: '3.5',
+                    }),
+                  ),
+                  t.star,
+                ],
               ),
               h.a(
                 [
                   h.Href('/about/contributing'),
                   h.Class(
-                    'text-[13px] text-muted-foreground underline underline-offset-4 hover:text-foreground',
+                    css({
+                      fontSize: 'type.13',
+                      color: 'mutedForeground',
+                      textDecorationLine: 'underline',
+                      textUnderlineOffset: '4px',
+                      _hover: {
+                        color: 'foreground',
+                      },
+                    }),
                   ),
                 ],
                 [t.contribute],
@@ -99,19 +255,57 @@ export const projectCard = (project: Project.Model, h: H): Html => {
       ),
       stats
         ? h.div(
-            [h.Class('grid grid-cols-2 gap-px border-t border-border bg-border sm:grid-cols-4')],
+            [
+              h.Class(
+                css({
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: '0.25',
+                  borderTopWidth: '1px',
+                  borderTopStyle: 'solid',
+                  borderColor: 'border',
+                  backgroundColor: 'border',
+                  sm: {
+                    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                  },
+                }),
+              ),
+            ],
             cells.map((entry) => cell(entry.value, entry.label, h)),
           )
         : h.empty,
       h.p(
         [
           h.Class(
-            'flex flex-wrap items-center gap-x-2 border-t border-border px-4 py-2.5 text-[12px] text-muted-foreground',
+            css({
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              columnGap: '2',
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderColor: 'border',
+              paddingInline: '4',
+              paddingBlock: '2.5',
+              fontSize: 'type.12',
+              color: 'mutedForeground',
+            }),
           ),
         ],
         [
           h.a(
-            [h.Href(LICENSE_URL), h.Class('underline underline-offset-2 hover:text-foreground')],
+            [
+              h.Href(LICENSE_URL),
+              h.Class(
+                css({
+                  textDecorationLine: 'underline',
+                  textUnderlineOffset: '2px',
+                  _hover: {
+                    color: 'foreground',
+                  },
+                }),
+              ),
+            ],
             [stats?.license ?? 'GPL-3.0'],
           ),
           h.span([h.AriaHidden(true)], ['·']),

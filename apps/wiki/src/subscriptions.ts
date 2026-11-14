@@ -20,8 +20,10 @@ const keys = Stream.callback<Message>((queue) =>
             event.preventDefault()
             Queue.offerUnsafe(queue, Message.SearchChanged({ message: Search.Message.Focused() }))
           }
-          if (event.key === 'Escape')
+          if (event.key === 'Escape') {
+            Queue.offerUnsafe(queue, Message.LanguageMenuClosed())
             Queue.offerUnsafe(queue, Message.SearchChanged({ message: Search.Message.Closed() }))
+          }
         }
         window.addEventListener('keydown', listener)
         return listener

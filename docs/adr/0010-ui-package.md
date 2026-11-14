@@ -31,5 +31,5 @@ Considered options:
 - `primitives` never imports `game` or `board`. `game` and `board` import `@quorum/simulation` and
   `primitives`, never an app.
 - The package ships TypeScript source, as `@quorum/simulation` does. Each app's Vite build compiles
-  it, and Tailwind scans it through an `@source` rule in `theme.css`.
+  it, and Panda reads its tokens and styles through the shared preset and the app source globs.
 - What would change it: a third consumer with different needs, such as a native client.

@@ -1,4 +1,5 @@
 import * as Effect from 'effect/Effect'
+import { css } from '@quorum/styled-system/css'
 import * as Queue from 'effect/Queue'
 import * as Stream from 'effect/Stream'
 import { Mount } from 'foldkit'
@@ -67,7 +68,11 @@ const BoardMounted = Mount.defineStream('BoardMounted', {
 export const boardHost = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
-    [h.Key('board'), h.Class('absolute inset-0 bg-canvas'), h.OnMount(BoardMounted({}))],
+    [
+      h.Key('board'),
+      h.Class(css({ position: 'absolute', inset: '0', backgroundColor: 'canvas' })),
+      h.OnMount(BoardMounted({})),
+    ],
     [
       h.div(
         [h.Class('board-unavailable'), h.Role('status')],

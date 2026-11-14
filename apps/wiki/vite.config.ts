@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { markdown } from '@foldkit/markdown/vite'
 import { foldkit } from '@foldkit/vite-plugin'
-import tailwindcss from '@tailwindcss/vite'
+import pandacss from '@pandacss/vite'
 import { defineConfig, type Plugin } from 'vite'
 import { simVersion } from '../../packages/simulation/sim-version.ts'
 import { Frontmatter } from './src/frontmatter.ts'
@@ -85,7 +85,8 @@ const searchIndexDev = (): Plugin => ({
       if (locale === undefined) return next()
       void (async () => {
         // A translated language registers its copy and prose when its bundle loads.
-        await server.ssrLoadModule(`/src/locales/${locale}.ts`)
+        // English ships in the main chunk.
+        if (locale !== 'en') await server.ssrLoadModule(`/src/locales/${locale}.ts`)
         const { pagesFor } = (await server.ssrLoadModule('/src/pages.ts')) as {
           pagesFor: (locale: Locale) => ReadonlyArray<Page>
         }
@@ -105,7 +106,7 @@ const searchIndexDev = (): Plugin => ({
    island schemas, so a bad page fails the build. */
 export default defineConfig(({ command }) => ({
   plugins: [
-    tailwindcss(),
+    pandacss({ codegen: false }),
     simVersion(),
     foldkit({
       // A dev server restart would otherwise mint a new build id while the browser still holds the

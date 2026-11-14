@@ -1,32 +1,95 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
 
-import { cn } from 'cn'
+export const emptyClass = css({
+  gap: '4',
+  borderRadius: 'xl',
+  borderStyle: 'dashed',
+  padding: '6',
+  display: 'flex',
+  width: '100%',
+  minWidth: '0',
+  flex: '1 1 0%',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  textAlign: 'center',
+  textWrap: 'balance',
+})
 
-export const emptyClass =
-  'gap-4 rounded-xl border-dashed p-6 flex w-full min-w-0 flex-1 flex-col items-center justify-center text-center text-balance'
-
-export const emptyHeaderClass = 'gap-2 flex max-w-sm flex-col items-center'
+export const emptyHeaderClass = css({
+  gap: '2',
+  display: 'flex',
+  maxWidth: '96',
+  flexDirection: 'column',
+  alignItems: 'center',
+})
 
 export const emptyMediaVariantKeys = ['default', 'icon'] as const
 export type EmptyMediaVariant = (typeof emptyMediaVariantKeys)[number]
 
-export const emptyMediaClass =
-  'mb-2 flex shrink-0 items-center justify-center [&_svg]:pointer-events-none [&_svg]:shrink-0'
+export const emptyMediaClass = css({
+  marginBottom: '2',
+  display: 'flex',
+  flexShrink: '0',
+  alignItems: 'center',
+  justifyContent: 'center',
+  '& svg': {
+    pointerEvents: 'none',
+    flexShrink: '0',
+  },
+})
 
 export const emptyMediaVariants: Record<EmptyMediaVariant, string> = {
-  default: 'bg-transparent',
-  icon: "bg-raised shadow-raised text-foreground flex size-9 shrink-0 items-center justify-center rounded-lg [&_svg:not([class*='size-'])]:size-4",
+  default: css({ backgroundColor: 'transparent' }),
+  icon: css({
+    layerStyle: 'raised',
+    boxShadow: 'raised',
+    color: 'foreground',
+    display: 'flex',
+    width: '9',
+    height: '9',
+    flexShrink: '0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 'lg',
+    '& svg:not([data-svg-icon])': { width: '4', height: '4' },
+  }),
 }
 
-export const emptyTitleClass = 'text-sm font-medium tracking-tight font-heading'
+export const emptyTitleClass = css({
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
+  letterSpacing: 'tight',
+  fontFamily: 'heading',
+})
 
-export const emptyDescriptionClass =
-  'text-sm/relaxed text-muted-foreground [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary'
+export const emptyDescriptionClass = css({
+  fontSize: 'type.14',
+  lineHeight: 'relaxed',
+  color: 'mutedForeground',
+  '& > a': {
+    textDecorationLine: 'underline',
+    textUnderlineOffset: '4px',
+    _hover: { color: 'primary' },
+  },
+})
 
-export const emptyContentClass =
-  'gap-2.5 text-sm flex w-full max-w-sm min-w-0 flex-col items-center text-balance'
+export const emptyContentClass = css({
+  gap: '2.5',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  display: 'flex',
+  width: '100%',
+  maxWidth: '96',
+  minWidth: '0',
+  flexDirection: 'column',
+  alignItems: 'center',
+  textWrap: 'balance',
+})
 
 type StyleConfig = Readonly<{ className?: string }>
 
@@ -37,7 +100,7 @@ const emptyContainer = <M>(
   children: ReadonlyArray<Child>,
   h: HtmlBuilder<M>,
 ): Html =>
-  h.div([h.Class(cn(emptyClass, config.className)), h.DataAttribute('slot', 'empty')], children)
+  h.div([h.Class(cx(emptyClass, config.className)), h.DataAttribute('slot', 'empty')], children)
 
 const emptyHeader = <M>(
   config: StyleConfig,
@@ -45,7 +108,7 @@ const emptyHeader = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(emptyHeaderClass, config.className)), h.DataAttribute('slot', 'empty-header')],
+    [h.Class(cx(emptyHeaderClass, config.className)), h.DataAttribute('slot', 'empty-header')],
     children,
   )
 
@@ -57,7 +120,7 @@ const emptyMedia = <M>(
   h.div(
     [
       h.Class(
-        cn(emptyMediaClass, emptyMediaVariants[config.variant ?? 'default'], config.className),
+        cx(emptyMediaClass, emptyMediaVariants[config.variant ?? 'default'], config.className),
       ),
       h.DataAttribute('slot', 'empty-icon'),
       h.DataAttribute('variant', config.variant ?? 'default'),
@@ -71,7 +134,7 @@ const emptyTitle = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(emptyTitleClass, config.className)), h.DataAttribute('slot', 'empty-title')],
+    [h.Class(cx(emptyTitleClass, config.className)), h.DataAttribute('slot', 'empty-title')],
     children,
   )
 
@@ -82,7 +145,7 @@ const emptyDescription = <M>(
 ): Html =>
   h.div(
     [
-      h.Class(cn(emptyDescriptionClass, config.className)),
+      h.Class(cx(emptyDescriptionClass, config.className)),
       h.DataAttribute('slot', 'empty-description'),
     ],
     children,
@@ -94,7 +157,7 @@ const emptyContent = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(emptyContentClass, config.className)), h.DataAttribute('slot', 'empty-content')],
+    [h.Class(cx(emptyContentClass, config.className)), h.DataAttribute('slot', 'empty-content')],
     children,
   )
 

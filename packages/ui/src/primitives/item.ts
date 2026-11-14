@@ -1,60 +1,187 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
 
-import { cn } from 'cn'
+export const itemGroupClass = css({
+  gap: '4',
+  '&:has([data-size="sm"])': { gap: '2.5' },
+  '&:has([data-size="xs"])': { gap: '2' },
+  display: 'flex',
+  width: '100%',
+  flexDirection: 'column',
+})
 
-export const itemGroupClass =
-  'gap-4 has-data-[size=sm]:gap-2.5 has-data-[size=xs]:gap-2 group/item-group flex w-full flex-col'
-
-export const itemSeparatorClass = 'my-2'
+export const itemSeparatorClass = css({
+  marginBlock: '2',
+})
 
 export const itemVariantKeys = ['default', 'outline', 'muted'] as const
 export type ItemVariant = (typeof itemVariantKeys)[number]
 
 export const itemVariants: Record<ItemVariant, string> = {
-  default: 'border-transparent',
-  outline: 'bg-raised shadow-raised border-transparent',
-  muted: 'bg-nested shadow-[inset_0_0_0_1px_var(--hairline-soft)] border-transparent',
+  default: css({ borderColor: 'transparent' }),
+  outline: css({
+    layerStyle: 'raised',
+    boxShadow: 'raised',
+    borderColor: 'transparent',
+  }),
+  muted: css({
+    backgroundColor: 'nested',
+    boxShadow: 'line',
+    borderColor: 'transparent',
+  }),
 }
 
 export const itemSizeKeys = ['default', 'sm', 'xs'] as const
 export type ItemSize = (typeof itemSizeKeys)[number]
 
 export const itemSizes: Record<ItemSize, string> = {
-  default: 'gap-2.5 px-3 py-2.5',
-  sm: 'gap-2.5 px-3 py-2.5',
-  xs: 'gap-2 px-2.5 py-2 in-data-[slot=dropdown-menu-content]:p-0',
+  default: css({
+    gap: '2.5',
+    paddingInline: '3',
+    paddingBlock: '2.5',
+  }),
+  sm: css({
+    gap: '2.5',
+    paddingInline: '3',
+    paddingBlock: '2.5',
+  }),
+  xs: css({
+    gap: '2',
+    paddingInline: '2.5',
+    paddingBlock: '2',
+    '[data-slot="dropdown-menu-content"] &': { padding: '0' },
+  }),
 }
 
-export const itemClass =
-  '[a]:hover:bg-muted rounded-xl border text-sm group/item flex w-full flex-wrap items-center transition-colors duration-100 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 [a]:transition-colors'
+export const itemClass = cx(
+  css({
+    '& a': {
+      _hover: { backgroundColor: 'muted' },
+      transitionProperty:
+        'color, background-color, border-color, text-decoration-color, fill, stroke',
+      transitionTimingFunction: 'default',
+      transitionDuration: 'fast',
+    },
+    borderRadius: 'xl',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    fontSize: 'type.14',
+    lineHeight: 'fine',
+    display: 'flex',
+    width: '100%',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    transitionProperty:
+      'color, background-color, border-color, text-decoration-color, fill, stroke',
+    transitionTimingFunction: 'default',
+    transitionDuration: 'faster',
+    outlineStyle: 'none',
+    _focusVisible: {
+      borderColor: 'ring',
+      boxShadow: 'focus',
+    },
+  }),
+  'group-item',
+)
 
 export const itemMediaVariantKeys = ['default', 'icon', 'image'] as const
 export type ItemMediaVariant = (typeof itemMediaVariantKeys)[number]
 
 export const itemMediaVariants: Record<ItemMediaVariant, string> = {
-  default: 'bg-transparent',
-  icon: "[&_svg:not([class*='size-'])]:size-4",
-  image:
-    'size-10 overflow-hidden rounded-sm group-data-[size=sm]/item:size-8 group-data-[size=xs]/item:size-6 [&_img]:size-full [&_img]:object-cover',
+  default: css({ backgroundColor: 'transparent' }),
+  icon: css({
+    '& svg:not([data-svg-icon])': { width: '4', height: '4' },
+  }),
+  image: css({
+    width: '10',
+    height: '10',
+    overflow: 'hidden',
+    borderRadius: 'sm',
+    '.group-item[data-size=sm] &': { width: '8', height: '8' },
+    '.group-item[data-size=xs] &': { width: '6', height: '6' },
+    '& img': { width: '100%', height: '100%', objectFit: 'cover' },
+  }),
 }
 
-export const itemMediaClass =
-  'gap-2 group-has-data-[slot=item-description]/item:translate-y-0.5 group-has-data-[slot=item-description]/item:self-start flex shrink-0 items-center justify-center [&_svg]:pointer-events-none'
+export const itemMediaClass = css({
+  gap: '2',
+  '.group-item:has([data-slot="item-description"]) &': {
+    translate: '0 0.125rem',
+    alignSelf: 'flex-start',
+  },
+  display: 'flex',
+  flexShrink: '0',
+  alignItems: 'center',
+  justifyContent: 'center',
+  '& svg': { pointerEvents: 'none' },
+})
 
-export const itemContentClass =
-  'gap-1 group-data-[size=xs]/item:gap-0 flex flex-1 flex-col [&+[data-slot=item-content]]:flex-none'
+export const itemContentClass = css({
+  gap: '1',
+  '.group-item[data-size=xs] &': {
+    gap: '0',
+  },
+  display: 'flex',
+  flex: '1 1 0%',
+  flexDirection: 'column',
+  '&+[data-slot=item-content]': {
+    flex: 'none',
+  },
+})
 
-export const itemTitleClass =
-  'gap-2 text-sm leading-snug font-medium underline-offset-4 line-clamp-1 flex w-fit items-center'
+export const itemTitleClass = css({
+  gap: '2',
+  fontSize: 'type.14',
+  lineHeight: 'snug',
+  fontWeight: 'medium',
+  textUnderlineOffset: '4',
+  lineClamp: '1',
+  display: 'flex',
+  width: 'fit-content',
+  alignItems: 'center',
+})
 
-export const itemDescriptionClass =
-  'text-muted-foreground text-left text-sm leading-normal group-data-[size=xs]/item:text-xs line-clamp-2 font-normal [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary'
+export const itemDescriptionClass = css({
+  color: 'mutedForeground',
+  textAlign: 'left',
+  fontSize: 'type.14',
+  lineHeight: 'normal',
+  '.group-item[data-size=xs] &': {
+    fontSize: 'type.12',
+    lineHeight: 'compact',
+  },
+  lineClamp: '2',
+  fontWeight: 'normal',
+  '&>a': {
+    textDecorationLine: 'underline',
+    textUnderlineOffset: '4',
+  },
+  '&>a:hover': {
+    color: 'primary',
+  },
+})
 
-export const itemActionsClass = 'gap-2 flex items-center'
-export const itemHeaderClass = 'gap-2 flex basis-full items-center justify-between'
-export const itemFooterClass = 'gap-2 flex basis-full items-center justify-between'
+export const itemActionsClass = css({
+  gap: '2',
+  display: 'flex',
+  alignItems: 'center',
+})
+export const itemHeaderClass = css({
+  gap: '2',
+  display: 'flex',
+  flexBasis: '100%',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+})
+export const itemFooterClass = css({
+  gap: '2',
+  display: 'flex',
+  flexBasis: '100%',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+})
 
 type StyleConfig = Readonly<{ className?: string }>
 
@@ -79,7 +206,7 @@ const itemGroup = <M>(
   h.div(
     [
       h.Role('list'),
-      h.Class(cn(itemGroupClass, config.className)),
+      h.Class(cx(itemGroupClass, config.className)),
       h.DataAttribute('slot', 'item-group'),
     ],
     children,
@@ -88,7 +215,7 @@ const itemGroup = <M>(
 const itemSeparator = <M>(config: ItemSeparatorConfig, h: HtmlBuilder<M>): Html =>
   h.div(
     [
-      h.Class(cn(itemSeparatorClass, config.className)),
+      h.Class(cx(itemSeparatorClass, config.className)),
       h.Role('separator'),
       h.AriaOrientation(config.orientation ?? 'horizontal'),
       h.DataAttribute('slot', 'item-separator'),
@@ -106,7 +233,7 @@ const itemContainer = <M>(
   h.div(
     [
       h.Class(
-        cn(
+        cx(
           itemClass,
           itemVariants[config.variant ?? 'default'],
           itemSizes[config.size ?? 'default'],
@@ -127,7 +254,7 @@ const itemMedia = <M>(
 ): Html =>
   h.div(
     [
-      h.Class(cn(itemMediaClass, itemMediaVariants[config.variant ?? 'default'], config.className)),
+      h.Class(cx(itemMediaClass, itemMediaVariants[config.variant ?? 'default'], config.className)),
       h.DataAttribute('slot', 'item-media'),
       h.DataAttribute('variant', config.variant ?? 'default'),
     ],
@@ -140,7 +267,7 @@ const itemContent = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(itemContentClass, config.className)), h.DataAttribute('slot', 'item-content')],
+    [h.Class(cx(itemContentClass, config.className)), h.DataAttribute('slot', 'item-content')],
     children,
   )
 
@@ -150,7 +277,7 @@ const itemTitle = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(itemTitleClass, config.className)), h.DataAttribute('slot', 'item-title')],
+    [h.Class(cx(itemTitleClass, config.className)), h.DataAttribute('slot', 'item-title')],
     children,
   )
 
@@ -161,7 +288,7 @@ const itemDescription = <M>(
 ): Html =>
   h.p(
     [
-      h.Class(cn(itemDescriptionClass, config.className)),
+      h.Class(cx(itemDescriptionClass, config.className)),
       h.DataAttribute('slot', 'item-description'),
     ],
     children,
@@ -173,7 +300,7 @@ const itemActions = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(itemActionsClass, config.className)), h.DataAttribute('slot', 'item-actions')],
+    [h.Class(cx(itemActionsClass, config.className)), h.DataAttribute('slot', 'item-actions')],
     children,
   )
 
@@ -183,7 +310,7 @@ const itemHeader = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(itemHeaderClass, config.className)), h.DataAttribute('slot', 'item-header')],
+    [h.Class(cx(itemHeaderClass, config.className)), h.DataAttribute('slot', 'item-header')],
     children,
   )
 
@@ -193,7 +320,7 @@ const itemFooter = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(itemFooterClass, config.className)), h.DataAttribute('slot', 'item-footer')],
+    [h.Class(cx(itemFooterClass, config.className)), h.DataAttribute('slot', 'item-footer')],
     children,
   )
 

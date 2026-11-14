@@ -1,6 +1,6 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { BACKEND_KINDS, KINDS, REQUEST_KINDS, type Kind } from '@quorum/simulation/catalog'
-import { cn } from 'cn'
 
 /** The four shapes, in the order the design names them. */
 export const PACKET_SHAPES = ['circle', 'square', 'triangle', 'diamond'] as const
@@ -35,20 +35,42 @@ export const packetColor = (kind: Kind): string =>
  */
 export const packetMark = <M>(kind: Kind, size: number, h: HtmlBuilder<M>): Html => {
   const shape = packetShapeOf(kind)
-  const box = `size-[${size}px]`
   return h.span(
     [
       h.Class(
-        cn(
-          'inline-block shrink-0',
-          box,
-          shape === 'circle' ? 'rounded-full' : '',
-          shape === 'square' ? 'rounded-[1.5px]' : '',
-          shape === 'triangle' ? '[clip-path:polygon(50%_0,100%_100%,0_100%)]' : '',
-          shape === 'diamond' ? 'rotate-45 rounded-[1px]' : '',
+        cx(
+          css({
+            display: 'inline-block',
+            flexShrink: '0',
+          }),
+          shape === 'circle'
+            ? css({
+                borderRadius: 'full',
+              })
+            : '',
+          shape === 'square'
+            ? css({
+                borderRadius: '2xs',
+              })
+            : '',
+          shape === 'triangle'
+            ? css({
+                clipPath: 'polygon(50% 0,100% 100%,0 100%)',
+              })
+            : '',
+          shape === 'diamond'
+            ? css({
+                rotate: '45deg',
+                borderRadius: '2xs',
+              })
+            : '',
         ),
       ),
-      h.Style({ background: packetColor(kind) }),
+      h.Style({
+        background: packetColor(kind),
+        width: `${String(size)}px`,
+        height: `${String(size)}px`,
+      }),
       h.AriaHidden(true),
     ],
     [],

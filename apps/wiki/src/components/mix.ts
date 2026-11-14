@@ -1,9 +1,9 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { localeOf } from '../i18n/builder.ts'
 import { langOf } from '../i18n/lang.ts'
-import { cn } from 'cn'
 import { KINDS, type EraDef, type RequestKind } from '@quorum/simulation/catalog'
 import { FIGURE } from '@quorum/ui/game/bits'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* An Era's request mix, in each kind's colour from the game. */
 
@@ -16,11 +16,34 @@ export const mixBar = <M>(mix: EraDef['mix'], h: HtmlBuilder<M>, legend = true):
   const entries = Object.entries(mix) as ReadonlyArray<[RequestKind, number]>
   const names = langOf(localeOf(h)).cat.KINDS
   return h.div(
-    [h.Class(cn('not-prose flex flex-col gap-3', legend && 'my-5'))],
+    [
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '3',
+          }),
+          'not-prose',
+          legend &&
+            css({
+              marginBlock: '5',
+            }),
+        ),
+      ),
+    ],
     [
       h.div(
         [
-          h.Class('flex h-2 gap-px overflow-hidden rounded-full'),
+          h.Class(
+            css({
+              display: 'flex',
+              height: '2',
+              gap: '0.25',
+              overflow: 'hidden',
+              borderRadius: 'full',
+            }),
+          ),
           ...(legend
             ? [h.AriaHidden(true)]
             : [
@@ -45,17 +68,57 @@ export const mixBar = <M>(mix: EraDef['mix'], h: HtmlBuilder<M>, legend = true):
       ),
       legend
         ? h.ul(
-            [h.Class('flex flex-wrap gap-x-4 gap-y-1.5 text-[12px]')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  columnGap: '4',
+                  rowGap: '1.5',
+                  fontSize: 'type.12',
+                }),
+              ),
+            ],
             entries.map(([kind, share]) =>
               h.li(
-                [h.Key(kind), h.Class('inline-flex items-center gap-1.5')],
+                [
+                  h.Key(kind),
+                  h.Class(
+                    css({
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '1.5',
+                    }),
+                  ),
+                ],
                 [
                   h.span(
-                    [h.Class('size-2.5 rounded-sm'), h.Style({ background: colorOf(kind) })],
+                    [
+                      h.Class(
+                        css({
+                          width: '2.5',
+                          height: '2.5',
+                          borderRadius: 'sm',
+                        }),
+                      ),
+                      h.Style({ background: colorOf(kind) }),
+                    ],
                     [],
                   ),
                   names[kind].label,
-                  h.span([h.Class(cn(FIGURE, 'text-muted-foreground'))], [percent(share)]),
+                  h.span(
+                    [
+                      h.Class(
+                        cx(
+                          FIGURE,
+                          css({
+                            color: 'mutedForeground',
+                          }),
+                        ),
+                      ),
+                    ],
+                    [percent(share)],
+                  ),
                 ],
               ),
             ),

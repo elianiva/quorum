@@ -1,8 +1,7 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
-
-import { cn } from 'cn'
 
 // Card is a pure layout primitive (no @foldkit/ui backing — there is no
 // headless Card). `Card` itself is the container; sub-builders are attached
@@ -12,23 +11,91 @@ import { cn } from 'cn'
 export const cardSizeKeys = ['default', 'sm'] as const
 export type CardSize = (typeof cardSizeKeys)[number]
 
-export const cardClass =
-  'bg-surface shadow-card text-card-foreground gap-(--card-spacing) overflow-hidden rounded-2xl py-(--card-spacing) text-sm [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-2xl *:[img:last-child]:rounded-b-2xl group/card flex flex-col'
+export const cardClass = cx(
+  css({
+    layerStyle: 'surface',
+    boxShadow: 'card',
+    color: 'cardForeground',
+    gap: 'var(--card-spacing)',
+    overflow: 'hidden',
+    borderRadius: '2xl',
+    paddingBlock: 'var(--card-spacing)',
+    fontSize: 'type.14',
+    lineHeight: 'fine',
+    '--card-spacing': '1rem',
+    '&:has([data-slot="card-footer"])': { paddingBottom: '0' },
+    '&:has(> img:first-child)': { paddingTop: '0' },
+    '&[data-size="sm"]': { '--card-spacing': '0.75rem' },
+    '&[data-size="sm"]:has([data-slot="card-footer"])': { paddingBottom: '0' },
+    '& > img:first-child': {
+      borderTopLeftRadius: '2xl',
+      borderTopRightRadius: '2xl',
+    },
+    '& > img:last-child': {
+      borderBottomLeftRadius: '2xl',
+      borderBottomRightRadius: '2xl',
+    },
+    display: 'flex',
+    flexDirection: 'column',
+  }),
+  'group-card',
+)
 
-export const cardHeaderClass =
-  'gap-1 rounded-t-2xl px-(--card-spacing) [.border-b]:pb-(--card-spacing) group/card-header @container/card-header grid auto-rows-min items-start has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto]'
+export const cardHeaderClass = css({
+  gap: '1',
+  borderTopLeftRadius: '2xl',
+  borderTopRightRadius: '2xl',
+  paddingInline: 'var(--card-spacing)',
+  '&.border-b': { paddingBottom: 'var(--card-spacing)' },
+  containerType: 'inline-size',
+  containerName: 'card-header',
+  display: 'grid',
+  gridAutoRows: 'min-content',
+  alignItems: 'flex-start',
+  '&:has([data-slot="card-action"])': { gridTemplateColumns: '1fr auto' },
+  '&:has([data-slot="card-description"])': { gridTemplateRows: 'auto auto' },
+})
 
-export const cardTitleClass =
-  'text-base leading-snug font-medium group-data-[size=sm]/card:text-sm font-heading'
+export const cardTitleClass = css({
+  fontSize: 'type.16',
+  lineHeight: 'snug',
+  fontWeight: 'medium',
+  '.group-card[data-size=sm] &': {
+    fontSize: 'type.14',
+    lineHeight: 'fine',
+  },
+  fontFamily: 'heading',
+})
 
-export const cardDescriptionClass = 'text-muted-foreground text-sm'
+export const cardDescriptionClass = css({
+  color: 'mutedForeground',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+})
 
-export const cardContentClass = 'px-(--card-spacing)'
+export const cardContentClass = css({
+  paddingInline: 'var(--card-spacing)',
+})
 
-export const cardActionClass = 'col-start-2 row-span-2 row-start-1 self-start justify-self-end'
+export const cardActionClass = css({
+  gridColumnStart: '2',
+  gridRow: 'span 2 / span 2',
+  gridRowStart: '1',
+  alignSelf: 'flex-start',
+  justifySelf: 'end',
+})
 
-export const cardFooterClass =
-  'bg-nested rounded-b-2xl border-t border-hairline p-(--card-spacing) flex items-center'
+export const cardFooterClass = css({
+  backgroundColor: 'nested',
+  borderBottomLeftRadius: '2xl',
+  borderBottomRightRadius: '2xl',
+  borderTopWidth: '1px',
+  borderTopStyle: 'solid',
+  borderColor: 'hairline',
+  padding: 'var(--card-spacing)',
+  display: 'flex',
+  alignItems: 'center',
+})
 
 type StyleConfig = Readonly<{ className?: string }>
 
@@ -41,7 +108,7 @@ const cardContainer = <M>(
 ): Html =>
   h.div(
     [
-      h.Class(cn(cardClass, config.className)),
+      h.Class(cx(cardClass, config.className)),
       h.DataAttribute('slot', 'card'),
       h.DataAttribute('size', config.size ?? 'default'),
     ],
@@ -55,7 +122,7 @@ const cardHeader = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(cardHeaderClass, config.className)), h.DataAttribute('slot', 'card-header')],
+    [h.Class(cx(cardHeaderClass, config.className)), h.DataAttribute('slot', 'card-header')],
     children,
   )
 
@@ -65,7 +132,7 @@ const cardTitle = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(cardTitleClass, config.className)), h.DataAttribute('slot', 'card-title')],
+    [h.Class(cx(cardTitleClass, config.className)), h.DataAttribute('slot', 'card-title')],
     children,
   )
 
@@ -76,7 +143,7 @@ const cardDescription = <M>(
 ): Html =>
   h.div(
     [
-      h.Class(cn(cardDescriptionClass, config.className)),
+      h.Class(cx(cardDescriptionClass, config.className)),
       h.DataAttribute('slot', 'card-description'),
     ],
     children,
@@ -89,7 +156,7 @@ const cardAction = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(cardActionClass, config.className)), h.DataAttribute('slot', 'card-action')],
+    [h.Class(cx(cardActionClass, config.className)), h.DataAttribute('slot', 'card-action')],
     children,
   )
 
@@ -99,7 +166,7 @@ const cardContent = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(cardContentClass, config.className)), h.DataAttribute('slot', 'card-content')],
+    [h.Class(cx(cardContentClass, config.className)), h.DataAttribute('slot', 'card-content')],
     children,
   )
 
@@ -109,7 +176,7 @@ const cardFooter = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(cardFooterClass, config.className)), h.DataAttribute('slot', 'card-footer')],
+    [h.Class(cx(cardFooterClass, config.className)), h.DataAttribute('slot', 'card-footer')],
     children,
   )
 

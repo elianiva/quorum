@@ -1,10 +1,9 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { Effect, Equal, Match as M, Option, Schema as S, Stream, pipe } from 'effect'
 import { Slider as FoldkitSlider } from '@foldkit/ui'
 import { childAttributes, type Html, type HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 import * as Subscription from 'foldkit/subscription'
-
-import { cn } from 'cn'
 
 /**
  * foldcn gap vs upstream: single value / single thumb only (upstream is
@@ -29,27 +28,98 @@ export const reflectRange = FoldkitSlider.reflectRange
 export type InitConfig = FoldkitSlider.InitConfig
 export type SliderAttributes = FoldkitSlider.SliderAttributes
 
-export const sliderRootClass =
-  'data-vertical:min-h-40 relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:w-auto data-vertical:flex-col'
+export const sliderRootClass = css({
+  '&[data-vertical]': {
+    minHeight: '40',
+    height: '100%',
+    width: 'auto',
+    flexDirection: 'column',
+  },
+  position: 'relative',
+  display: 'flex',
+  width: '100%',
+  touchAction: 'none',
+  alignItems: 'center',
+  userSelect: 'none',
+  '&[data-disabled]': { opacity: 0.5 },
+})
 
-export const sliderTrackClass =
-  'bg-well shadow-well rounded-full data-horizontal:h-1.5 data-horizontal:w-full data-vertical:h-full data-vertical:w-1.5 relative grow overflow-hidden select-none'
+export const sliderTrackClass = css({
+  backgroundColor: 'well',
+  boxShadow: 'well',
+  borderRadius: 'full',
+  '&[data-horizontal]': { height: '1.5', width: '100%' },
+  '&[data-vertical]': { height: '100%', width: '1.5' },
+  position: 'relative',
+  flexGrow: '1',
+  overflow: 'hidden',
+  userSelect: 'none',
+})
 
-export const sliderFilledTrackClass =
-  'bg-primary-fill rounded-full select-none data-horizontal:h-full data-vertical:w-full'
+export const sliderFilledTrackClass = css({
+  layerStyle: 'primaryFill',
+  borderRadius: 'full',
+  userSelect: 'none',
+  '&[data-horizontal]': { height: '100%' },
+  '&[data-vertical]': { width: '100%' },
+})
 
 /** Upstream SliderPrimitive.Thumb string. The disabled: variants are inert
  *  under foldkit (aria-/data- twins are inlined at style resolution). */
-export const sliderThumbClass =
-  'ring-primary/25 relative size-4 rounded-full bg-raised shadow-raised transition-[color,box-shadow] after:absolute after:-inset-2 hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden active:ring-[6px] aria-disabled:pointer-events-none aria-disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50 block shrink-0 select-none disabled:pointer-events-none disabled:opacity-50'
+export const sliderThumbClass = css({
+  position: 'relative',
+  width: '4',
+  height: '4',
+  borderRadius: 'full',
+  layerStyle: 'raised',
+  boxShadow: 'raised',
+  transitionProperty: 'color, box-shadow',
+  transitionTimingFunction: 'default',
+  transitionDuration: 'fast',
+  '&::after': { position: 'absolute', inset: '-0.5rem' },
+  _hover: {
+    boxShadow: 'selected',
+  },
+  _focusVisible: {
+    boxShadow: 'selected',
+    outlineStyle: 'hidden',
+  },
+  '&:active': {
+    boxShadow: 'selectedStrong',
+  },
+  '&[aria-disabled="true"]': { pointerEvents: 'none', opacity: 0.5 },
+  '&[data-disabled]': { pointerEvents: 'none', opacity: 0.5 },
+  display: 'block',
+  flexShrink: '0',
+  userSelect: 'none',
+  '&:disabled': { pointerEvents: 'none', opacity: 0.5 },
+})
 
-export const sliderLabelClass = 'text-sm font-medium'
+export const sliderLabelClass = css({
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
+})
 
-export const sliderValueClass = 'text-sm tabular-nums text-muted-foreground'
+export const sliderValueClass = css({
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontVariantNumeric: 'tabular-nums',
+  color: 'mutedForeground',
+})
 
-export const sliderRowClass = 'flex flex-col gap-2 w-full'
+export const sliderRowClass = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '2',
+  width: '100%',
+})
 
-export const sliderHeaderClass = 'flex items-center justify-between'
+export const sliderHeaderClass = css({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+})
 
 const LEFT_MOUSE_BUTTON = 0
 const THUMB_SIZE = '0.75rem'
@@ -450,17 +520,25 @@ export const styledViewInputs = <M>(
         viewInputs.label === undefined
           ? h.empty
           : h.div(
-              [h.Class(cn(sliderHeaderClass, viewInputs.headerClass))],
+              [h.Class(cx(sliderHeaderClass, viewInputs.headerClass))],
               [
                 h.label(
-                  [...attributes.label, h.Class(cn(sliderLabelClass, viewInputs.labelClass))],
+                  [...attributes.label, h.Class(cx(sliderLabelClass, viewInputs.labelClass))],
                   [viewInputs.label],
                 ),
                 h.div(
-                  [h.Class('flex items-center gap-1.5')],
+                  [
+                    h.Class(
+                      css({
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1.5',
+                      }),
+                    ),
+                  ],
                   [
                     h.span(
-                      [h.Class(cn(sliderValueClass, viewInputs.valueClass))],
+                      [h.Class(cx(sliderValueClass, viewInputs.valueClass))],
                       [
                         viewInputs.formatValue === undefined
                           ? String(viewInputs.value)
@@ -477,34 +555,34 @@ export const styledViewInputs = <M>(
         attributes.hiddenInput.length > 0 ? h.input([...attributes.hiddenInput]) : h.empty
 
       return h.div(
-        [h.Class(cn(sliderRowClass, viewInputs.rowClass))],
+        [h.Class(cx(sliderRowClass, viewInputs.rowClass))],
         [
           maybeHeader,
           h.div(
             [
               ...attributes.root,
               h.DataAttribute('slot', 'slider'),
-              h.Class(cn(sliderRootClass, viewInputs.rootClass)),
+              h.Class(cx(sliderRootClass, viewInputs.rootClass)),
             ],
             [
               h.div(
                 [
                   ...attributes.track,
                   h.DataAttribute('slot', 'slider-track'),
-                  h.Class(cn(sliderTrackClass, viewInputs.trackClass)),
+                  h.Class(cx(sliderTrackClass, viewInputs.trackClass)),
                 ],
                 [
                   h.div([
                     ...attributes.filledTrack,
                     h.DataAttribute('slot', 'slider-range'),
-                    h.Class(cn(sliderFilledTrackClass, viewInputs.filledTrackClass)),
+                    h.Class(cx(sliderFilledTrackClass, viewInputs.filledTrackClass)),
                   ]),
                 ],
               ),
               h.div([
                 ...attributes.thumb,
                 h.DataAttribute('slot', 'slider-thumb'),
-                h.Class(cn(sliderThumbClass, viewInputs.thumbClass)),
+                h.Class(cx(sliderThumbClass, viewInputs.thumbClass)),
               ]),
             ],
           ),

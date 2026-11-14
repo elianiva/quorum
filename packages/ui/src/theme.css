@@ -1,24 +1,8 @@
 /* ==========================================================================
    The Quorum design language, shared by the game and the wiki (ADR 0010).
-   Import it after `tailwindcss` and `tw-animate-css`. The `@source` rule makes
-   Tailwind scan this package's views from either app.
+   Panda reads the tokens from `packages/ui/src/panda/preset.ts`; this file
+   owns the raw values and the hand-authored surfaces both apps share.
    ========================================================================== */
-@source '.';
-
-@custom-variant dark (&:is(.dark *));
-
-/* A phone: narrow in portrait, short in landscape. The lab and the title
-   switch to their compact layouts here. */
-@custom-variant narrow (@media (max-width: 639px));
-@custom-variant short (@media (max-height: 499px));
-@custom-variant compact {
-  @media (max-width: 639px) {
-    @slot;
-  }
-  @media (max-height: 499px) {
-    @slot;
-  }
-}
 
 /* ==========================================================================
    Quorum — the shipped palette: Graphite.
@@ -31,6 +15,53 @@
   /* Interface text at its own size, or 150% (15 "Accessibility"). Every text size in the
      interface multiplies its px value by this, so type grows and boxes keep their size. */
   --type-scale: 1;
+
+  /* The dense interface type scale. Each name is the size in px at 100%; `-5` means
+     half a pixel more. Change --type-scale to grow every step together. */
+  --type-9: calc(9px * var(--type-scale));
+  --type-9-5: calc(9.5px * var(--type-scale));
+  --type-10: calc(10px * var(--type-scale));
+  --type-10-5: calc(10.5px * var(--type-scale));
+  --type-11: calc(11px * var(--type-scale));
+  --type-11-5: calc(11.5px * var(--type-scale));
+  --type-12: calc(12px * var(--type-scale));
+  --type-12-5: calc(12.5px * var(--type-scale));
+  --type-12-8: calc(12.8px * var(--type-scale));
+  --type-13: calc(13px * var(--type-scale));
+  --type-13-5: calc(13.5px * var(--type-scale));
+  --type-14: calc(14px * var(--type-scale));
+  --type-14-5: calc(14.5px * var(--type-scale));
+  --type-15: calc(15px * var(--type-scale));
+  --type-16: calc(16px * var(--type-scale));
+  --type-17: calc(17px * var(--type-scale));
+  --type-18: calc(18px * var(--type-scale));
+  --type-20: calc(20px * var(--type-scale));
+  --type-22: calc(22px * var(--type-scale));
+  --type-23: calc(23px * var(--type-scale));
+  --type-26: calc(26px * var(--type-scale));
+  --type-28: calc(28px * var(--type-scale));
+  --type-30: calc(30px * var(--type-scale));
+  --type-32: calc(32px * var(--type-scale));
+  --type-34: calc(34px * var(--type-scale));
+  --type-44: calc(44px * var(--type-scale));
+
+  --font-sans: var(--sans);
+  --font-heading: var(--heading);
+  --font-mono: var(--mono);
+
+  /* The default transition values Panda's transition utilities read. */
+  --default-transition-duration: 150ms;
+  --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --radius-2xs: 2px;
+  --radius-xs: 4px;
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 
   --sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
   --heading: var(--sans);
@@ -101,65 +132,6 @@
   --sidebar-ring: var(--ring);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary-strong: var(--primary-strong);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-ok: var(--ok);
-  --color-warn: var(--warn);
-  --color-danger: var(--danger);
-  --color-canvas: var(--canvas);
-  --color-node: var(--node);
-  --color-edge: var(--edge);
-  --color-signal: var(--signal);
-  --color-group-edge: var(--group-edge);
-  --color-group-compute: var(--group-compute);
-  --color-group-data: var(--group-data);
-  --color-group-ops: var(--group-ops);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-
-  --font-sans: var(--sans);
-  --font-heading: var(--heading);
-  --font-mono: var(--mono);
-
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-}
-
 /* ==========================================================================
    Depth. Surfaces sit on the page at three heights, and each height has one
    recipe: a hairline edge, a light top edge, and a soft shadow below.
@@ -184,6 +156,7 @@
   --primary-fill-bottom: oklch(0.25 0.004 260);
   --primary-edge: oklch(0.18 0 0);
   --on-primary-fill: oklch(0.99 0 0);
+  --on-group: oklch(0.99 0 0);
 
   --elev-well: inset 0 1px 2px oklch(0.26 0.01 260 / 0.09), inset 0 0 0 1px var(--hairline-soft);
   --elev-raised:
@@ -256,6 +229,7 @@
   --primary-fill-bottom: oklch(0.88 0.003 260);
   --primary-edge: oklch(0 0 0 / 0.2);
   --on-primary-fill: oklch(0.2 0.004 260);
+  --on-group: oklch(0.2 0.004 260);
 
   --elev-well:
     inset 0 1px 3px oklch(0 0 0 / 0.45), inset 0 0 0 1px oklch(0 0 0 / 0.25),
@@ -279,42 +253,6 @@
   --raised-bottom: oklch(0.24 0 0);
 }
 
-@theme inline {
-  --color-page: var(--page);
-  --color-well: var(--well);
-  --color-nested: var(--surface-nested);
-  --color-hairline: var(--hairline);
-  --color-on-primary-fill: var(--on-primary-fill);
-
-  --shadow-well: var(--elev-well);
-  --shadow-raised: var(--elev-raised);
-  --shadow-card: var(--elev-card);
-  --shadow-float: var(--elev-float);
-  --shadow-primary: var(--elev-primary);
-}
-
-/* A raised fill: lit from above. Pair with `shadow-raised`. */
-@utility bg-raised {
-  background-color: var(--raised-bottom);
-  background-image: linear-gradient(to bottom, var(--raised-top), var(--raised-bottom));
-}
-
-/* The primary fill. Pair with `shadow-primary` and `text-on-primary-fill`. */
-@utility bg-primary-fill {
-  background-color: var(--primary-fill-bottom);
-  background-image: linear-gradient(to bottom, var(--primary-fill-top), var(--primary-fill-bottom));
-}
-
-/* A card fill: a faint light falloff from the top edge. Pair with `shadow-card`. */
-@utility bg-surface {
-  background-color: var(--card);
-  background-image: linear-gradient(
-    to bottom,
-    color-mix(in oklch, var(--card), white 3%),
-    var(--card) 48px
-  );
-}
-
 @layer base {
   * {
     border-color: var(--border);
@@ -323,8 +261,8 @@
   body {
     color: var(--foreground);
     font-family: var(--sans);
-    font-size: calc(13px * var(--type-scale));
-    line-height: 1.45;
+    font-size: var(--type-13);
+    line-height: var(--quorum-line-heights-body);
     -webkit-font-smoothing: antialiased;
   }
 
@@ -333,9 +271,9 @@
   h3,
   h4 {
     font-family: var(--heading);
-    font-weight: 600;
-    letter-spacing: -0.025em;
-    line-height: 1.1;
+    font-weight: var(--quorum-font-weights-semibold);
+    letter-spacing: var(--quorum-letter-spacings-tight);
+    line-height: var(--quorum-line-heights-heading);
   }
 
   ::selection {
@@ -349,7 +287,7 @@
    Surfaces opened from the keyboard appear at once: shortcuts must feel
    instant. Reduced motion keeps the fades and drops the movement.
    ========================================================================== */
-@theme {
+:root {
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
@@ -386,7 +324,7 @@
 
 /* Entrances. Each surface comes from where it lives. */
 .enter-pop {
-  transform-origin: bottom center;
+  transform-origin: var(--transform-origin, bottom center);
   transition:
     opacity 200ms var(--ease-out),
     transform 200ms var(--ease-out);

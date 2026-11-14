@@ -3,9 +3,10 @@ import { blankNode } from '@quorum/simulation/actions'
 import { nodeOrdinals } from '@quorum/simulation/labels'
 import { freeSandbox } from '@quorum/simulation/sandbox'
 import { solveFlow } from '@quorum/simulation/solve'
-import { attachBoard, setBoard, type BoardState } from '@quorum/ui/board/board'
+import { attachBoard, setBoard, watchBoardTheme, type BoardState } from '@quorum/ui/board/board'
 
 const NOOP = () => {}
+watchBoardTheme()
 
 export const drawNodeCard = (key: string, type: ComponentId, host: HTMLElement): (() => void) => {
   const base = freeSandbox()

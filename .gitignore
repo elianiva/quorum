@@ -10,4 +10,13 @@ coverage/
 .amp/portals/
 # The changelog writer's scratch files: the day's commits and a rejected draft.
 apps/wiki/.changelog/
+# Panda codegen output. `packages/styled-system/package.json` is tracked.
+packages/styled-system/css/
+packages/styled-system/patterns/
+packages/styled-system/recipes/
+packages/styled-system/tokens/
+packages/styled-system/types/
+packages/styled-system/helpers.js
+packages/styled-system/helpers.d.ts
+apps/*/styled-system/
 .DS_Store

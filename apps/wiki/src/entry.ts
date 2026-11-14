@@ -5,6 +5,7 @@ import { Message, Model, init, update } from './main.ts'
 import { subscriptions } from './subscriptions.ts'
 import { view } from './view.ts'
 import { startAnalytics } from './platform/analytics.ts'
+import { startTheme } from './theme.ts'
 import './styles.css'
 
 const application = Runtime.makeApplication({
@@ -25,5 +26,6 @@ const application = Runtime.makeApplication({
 // language needs that language's copy and prose first, or the client would draw it differently.
 void loadLocale(localeOfPath(window.location.pathname)).then(() => {
   Runtime.hydrate(application)
+  startTheme()
   startAnalytics()
 })

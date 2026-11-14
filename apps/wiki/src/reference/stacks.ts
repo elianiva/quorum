@@ -27,6 +27,7 @@ import {
   type H,
   type Lang,
 } from './shared.ts'
+import { css } from '@quorum/styled-system/css'
 
 /* Languages, runtimes, and frameworks: one page per runtime and framework, and a hub that compares them. */
 
@@ -43,15 +44,33 @@ const axes = (l: Lang, values: Axes, h: H): Html => {
       cells: [
         t.axes[axis],
         h.span(
-          [h.AriaLabel(t.pips(values[axis])), h.Class('inline-flex gap-1')],
+          [
+            h.AriaLabel(t.pips(values[axis])),
+            h.Class(
+              css({
+                display: 'inline-flex',
+                gap: '1',
+              }),
+            ),
+          ],
           [1, 2, 3, 4, 5].map((step) =>
             h.span(
               [
                 h.Key(String(step)),
                 h.Class(
                   step <= values[axis]
-                    ? 'size-2 rounded-full bg-foreground/70'
-                    : 'size-2 rounded-full bg-foreground/12',
+                    ? css({
+                        width: '2',
+                        height: '2',
+                        borderRadius: 'full',
+                        backgroundColor: 'color-mix(in oklab, var(--foreground) 70%, transparent)',
+                      })
+                    : css({
+                        width: '2',
+                        height: '2',
+                        borderRadius: 'full',
+                        backgroundColor: 'color-mix(in oklab, var(--foreground) 12%, transparent)',
+                      }),
                 ),
               ],
               [],
@@ -103,7 +122,14 @@ const runtimePage = (l: Lang, def: RuntimeDef): Page => {
       factsBox(
         l,
         def.name,
-        stackLogo(def.language, 'size-6', h),
+        stackLogo(
+          def.language,
+          css({
+            width: '6',
+            height: '6',
+          }),
+          h,
+        ),
         null,
         [
           { name: t.language, value: LANGUAGES[def.language].name },
@@ -175,7 +201,16 @@ const frameworkPage = (l: Lang, def: FrameworkDef): Page => {
       factsBox(
         l,
         def.name,
-        def.id === 'none' ? null : stackLogo(def.id, 'size-6', h),
+        def.id === 'none'
+          ? null
+          : stackLogo(
+              def.id,
+              css({
+                width: '6',
+                height: '6',
+              }),
+              h,
+            ),
         null,
         [
           {
@@ -246,8 +281,26 @@ export const stackPages = (l: Lang): ReadonlyArray<Page> => {
                     key: id,
                     cells: [
                       h.span(
-                        [h.Class('inline-flex items-center gap-2')],
-                        [stackLogo(id, 'size-4', h), def.name],
+                        [
+                          h.Class(
+                            css({
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '2',
+                            }),
+                          ),
+                        ],
+                        [
+                          stackLogo(
+                            id,
+                            css({
+                              width: '4',
+                              height: '4',
+                            }),
+                            h,
+                          ),
+                          def.name,
+                        ],
                       ),
                       `×${def.velocity}`,
                       `×${def.salary}`,

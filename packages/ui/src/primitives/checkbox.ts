@@ -1,9 +1,9 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { Checkbox as FoldkitCheckbox } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import { icon } from './icon'
 import { Check, Minus } from 'lucide'
-import { cn } from 'cn'
 
 /**
  * foldkit delta (inlined at style resolution): foldkit emits
@@ -14,11 +14,73 @@ import { cn } from 'cn'
 
 /** Upstream checkbox component string. The disabled: variants are inert under
  *  foldkit (never native disabled) — compat twins are inlined at style resolution. */
-export const checkboxClass =
-  'bg-well shadow-well border-transparent data-checked:bg-primary-fill data-checked:text-on-primary-fill data-checked:shadow-primary aria-invalid:aria-checked:border-primary aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 flex size-4 items-center justify-center rounded-[4px] border transition-colors group-has-disabled/field:opacity-50 focus-visible:ring-3 aria-invalid:ring-3 group-has-[:focus-visible]/field-label:ring-0 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:opacity-50 peer relative shrink-0 outline-none after:absolute after:-inset-x-3 after:-inset-y-2 disabled:cursor-not-allowed disabled:opacity-50'
+export const checkboxClass = cx(
+  css({
+    backgroundColor: 'well',
+    boxShadow: 'well',
+    borderColor: 'transparent',
+    '&[data-checked]': {
+      layerStyle: 'primaryFill',
+      color: 'onPrimaryFill',
+      boxShadow: 'primary',
+      _focusVisible: {
+        boxShadow:
+          'var(--elev-primary), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+      },
+    },
+    '&[aria-invalid="true"]': {
+      borderColor: 'destructive',
+      boxShadow:
+        'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+    },
+    '&[aria-invalid="true"][aria-checked="true"]': { borderColor: 'primary' },
+    _dark: {
+      '&[aria-invalid="true"]': {
+        borderColor: 'color-mix(in oklab, var(--destructive) 50%, transparent)',
+        boxShadow:
+          'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+      },
+    },
+    _focusVisible: {
+      borderColor: 'ring',
+      boxShadow: 'focusWell',
+    },
+    display: 'flex',
+    width: '4',
+    height: '4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 'xs',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    transitionProperty:
+      'color, background-color, border-color, text-decoration-color, fill, stroke',
+    transitionTimingFunction: 'default',
+    transitionDuration: 'fast',
+    '.group-field:has(:disabled) &': { opacity: 0.5 },
+    '.group-field-label:has(:focus-visible) &': { boxShadow: 'none' },
+    '&[aria-disabled="true"]': { cursor: 'not-allowed', opacity: 0.5 },
+    '&[data-disabled]': { cursor: 'not-allowed', opacity: 0.5 },
+    position: 'relative',
+    flexShrink: '0',
+    outlineStyle: 'none',
+    '&::after': {
+      position: 'absolute',
+      insetInline: '-0.75rem',
+      insetBlock: '-0.5rem',
+    },
+    '&:disabled': { cursor: 'not-allowed', opacity: 0.5 },
+  }),
+  'peer-control',
+)
 
-export const checkboxIndicatorClass =
-  '[&>svg]:size-3.5 grid place-content-center text-current transition-none'
+export const checkboxIndicatorClass = css({
+  '& > svg': { width: '3.5', height: '3.5' },
+  display: 'grid',
+  placeContent: 'center',
+  color: 'current',
+  transitionProperty: 'none',
+})
 
 export type CheckboxConfig<M> = Readonly<{
   id: string
@@ -53,16 +115,35 @@ export const checkbox = <M>(config: CheckboxConfig<M>, h: HtmlBuilder<M>): Html 
       ...(config.value === undefined ? {} : { value: config.value }),
       toView: (attributes) =>
         h.div(
-          [h.Class(cn('flex flex-col gap-1', config.wrapperClass))],
+          [
+            h.Class(
+              cx(
+                css({
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1',
+                }),
+                config.wrapperClass,
+              ),
+            ),
+          ],
           [
             h.div(
-              [h.Class('flex items-center gap-2')],
+              [
+                h.Class(
+                  css({
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '2',
+                  }),
+                ),
+              ],
               [
                 h.button(
                   [
                     ...attributes.checkbox,
                     h.DataAttribute('slot', 'checkbox'),
-                    h.Class(cn(checkboxClass, config.className)),
+                    h.Class(cx(checkboxClass, config.className)),
                   ],
                   config.isChecked || config.isIndeterminate === true
                     ? [
@@ -71,7 +152,16 @@ export const checkbox = <M>(config: CheckboxConfig<M>, h: HtmlBuilder<M>): Html 
                             h.DataAttribute('slot', 'checkbox-indicator'),
                             h.Class(checkboxIndicatorClass),
                           ],
-                          [icon(h, config.isIndeterminate === true ? Minus : Check, 'size-3.5')],
+                          [
+                            icon(
+                              h,
+                              config.isIndeterminate === true ? Minus : Check,
+                              css({
+                                width: '3.5',
+                                height: '3.5',
+                              }),
+                            ),
+                          ],
                         ),
                       ]
                     : [],
@@ -83,8 +173,17 @@ export const checkbox = <M>(config: CheckboxConfig<M>, h: HtmlBuilder<M>): Html 
                   [
                     ...attributes.label,
                     h.Class(
-                      cn(
-                        'text-sm font-medium leading-none peer-aria-disabled:cursor-not-allowed peer-aria-disabled:opacity-70 peer-data-[disabled]:opacity-70',
+                      cx(
+                        css({
+                          fontSize: 'type.14',
+                          fontWeight: 'medium',
+                          lineHeight: 'none',
+                          '.peer-control[aria-disabled="true"] ~ &': {
+                            cursor: 'not-allowed',
+                            opacity: 0.7,
+                          },
+                          '.peer-control[data-disabled] ~ &': { opacity: 0.7 },
+                        }),
                         config.labelClass,
                       ),
                     ),
@@ -98,7 +197,16 @@ export const checkbox = <M>(config: CheckboxConfig<M>, h: HtmlBuilder<M>): Html 
               : h.p(
                   [
                     ...attributes.description,
-                    h.Class(cn('text-sm text-muted-foreground', config.descriptionClass)),
+                    h.Class(
+                      cx(
+                        css({
+                          fontSize: 'type.14',
+                          lineHeight: 'fine',
+                          color: 'mutedForeground',
+                        }),
+                        config.descriptionClass,
+                      ),
+                    ),
                   ],
                   [config.description],
                 ),

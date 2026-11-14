@@ -1,5 +1,4 @@
 import type { Document, HtmlBuilder } from 'foldkit/html'
-import { cn } from 'cn'
 import { article, notFound } from './components/article.ts'
 import { header } from './components/header.ts'
 import { homeView } from './components/home.ts'
@@ -11,15 +10,25 @@ import { LOCALE_TAGS, withLocale } from './i18n/locale.ts'
 import type { Message, Model } from './main.ts'
 import { pageIn } from './pages.ts'
 import { WIKI_ORIGIN } from './site.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The page frame: the header, the navigation rail, the page, and the facts rail. Each rail takes
-   one step of Tailwind's width scale, and the page fills what the frame has left. */
+   one step of the width scale, and the page fills what the frame has left. */
 
 /** The frame the header, the section bar, and the page share. */
-export const FRAME = 'mx-auto max-w-7xl px-4 sm:px-6'
+export const FRAME = css({
+  marginInline: 'auto',
+  maxWidth: '80rem',
+  paddingInline: '4',
+  sm: { paddingInline: '6' },
+})
 
-const GRID =
-  'grid gap-x-8 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_16rem]'
+const GRID = css({
+  display: 'grid',
+  columnGap: '8',
+  lg: { gridTemplateColumns: '16rem minmax(0,1fr)' },
+  xl: { gridTemplateColumns: '16rem minmax(0,1fr) 16rem' },
+})
 
 export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
   // Every link a translated page draws points into its own language (src/i18n/builder.ts).
@@ -35,11 +44,17 @@ export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
     lang: LOCALE_TAGS[model.locale].lang,
     ...(page ? { canonical: `${WIKI_ORIGIN}${withLocale(model.locale, page.path)}` } : {}),
     body: h.div(
-      [h.Class('min-h-dvh')],
+      [
+        h.Class(
+          css({
+            minHeight: '100dvh',
+          }),
+        ),
+      ],
       [
         header(model, h),
         h.div(
-          [h.Class(cn(FRAME, GRID))],
+          [h.Class(cx(FRAME, GRID))],
           [
             (!isHome && !wide) || model.menu ? sidebar(model, h) : h.empty,
             page
@@ -52,17 +67,48 @@ export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
               ? h.div(
                   [
                     h.Class(
-                      cn(
-                        'flex flex-col gap-10',
+                      cx(
+                        css({
+                          flexDirection: 'column',
+                          gap: '10',
+                        }),
                         railPage.aside
-                          ? 'lg:col-start-2 lg:row-start-2 xl:col-start-3 xl:row-start-1 xl:pt-8'
-                          : 'hidden xl:col-start-3 xl:row-start-1 xl:flex xl:pt-8',
+                          ? css({
+                              display: 'flex',
+                              lg: {
+                                gridColumnStart: '2',
+                                gridRowStart: '2',
+                              },
+                              xl: {
+                                gridColumnStart: '3',
+                                gridRowStart: '1',
+                                paddingTop: '8',
+                              },
+                            })
+                          : css({
+                              display: 'none',
+                              xl: {
+                                display: 'flex',
+                                gridColumnStart: '3',
+                                gridRowStart: '1',
+                                paddingTop: '8',
+                              },
+                            }),
                       ),
                     ),
                   ],
                   [
                     railPage.aside
-                      ? h.div([h.Class('lg:max-w-xs')], [railPage.aside(model, h)])
+                      ? h.div(
+                          [
+                            h.Class(
+                              css({
+                                lg: { maxWidth: '80' },
+                              }),
+                            ),
+                          ],
+                          [railPage.aside(model, h)],
+                        )
                       : h.empty,
                     toc(railPage, h),
                   ],

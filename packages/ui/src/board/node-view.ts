@@ -605,7 +605,7 @@ export class NodeView {
       }
     }
 
-    paint(this.mark, COMPONENT_ICONS[node.type], 0xffffff)
+    paint(this.mark, COMPONENT_ICONS[node.type], colors.card)
     const title =
       node.life._tag === 'Stopped'
         ? t(`${def.name} · failed`)

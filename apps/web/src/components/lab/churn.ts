@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { formats } from '@/i18n/format.ts'
 import { copy, nodeTitle, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -9,7 +10,6 @@ import { compact } from '@quorum/ui/game/format'
 import { Message } from '@/game/message.ts'
 import { ledgerOf, type Model } from '@/game/model.ts'
 import { button } from '@quorum/ui/primitives/button'
-import { cn } from '@/lib/utils'
 import { FIGURE, SCROLL, WELL, toneText } from '@quorum/ui/game/bits'
 import { shell } from './panels.ts'
 
@@ -22,7 +22,9 @@ const fixOf = (game: Game, entry: ChurnRow, h: HtmlBuilder<Message>): Html => {
         onClick: Message.ChurnFixTaken({ fix: kind, target }),
         variant: 'outline',
         size: 'sm',
-        className: 'justify-self-start',
+        className: css({
+          justifySelf: 'start',
+        }),
       },
       label,
       h,
@@ -31,7 +33,15 @@ const fixOf = (game: Game, entry: ChurnRow, h: HtmlBuilder<Message>): Html => {
   return ChurnFix.match(entry.fix, {
     advice: () =>
       h.span(
-        [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+        [
+          h.Class(
+            css({
+              fontSize: 'type.12',
+              lineHeight: 'snug',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
         [entry.cause === 'far' ? '' : t.churn.fixes[entry.cause]],
       ),
     node: ({ nodeId }) => {
@@ -98,9 +108,17 @@ const row = (
             h.div(
               [
                 h.Class(
-                  cn(
-                    'px-3 pb-1 text-[calc(11.5px*var(--type-scale))] text-muted-foreground',
-                    !entry.needed && 'opacity-60',
+                  cx(
+                    css({
+                      paddingInline: '3',
+                      paddingBottom: '1',
+                      fontSize: 'type.11-5',
+                      color: 'mutedForeground',
+                    }),
+                    !entry.needed &&
+                      css({
+                        opacity: 0.6,
+                      }),
                   ),
                 ),
               ],
@@ -122,23 +140,54 @@ const rowGrid = (
   return h.div(
     [
       h.Class(
-        cn(
-          'grid grid-cols-[88px_80px_1fr_44px_minmax(0,180px)] items-center gap-3 px-3 py-1.5 compact:grid-cols-[72px_64px_1fr_40px]',
-          !entry.needed && 'opacity-60',
+        cx(
+          css({
+            display: 'grid',
+            gridTemplateColumns: '88px 80px 1fr 44px minmax(0,180px)',
+            alignItems: 'center',
+            gap: '3',
+            paddingInline: '3',
+            paddingBlock: '1.5',
+            _compact: {
+              gridTemplateColumns: '72px 64px 1fr 40px',
+            },
+          }),
+          !entry.needed &&
+            css({
+              opacity: 0.6,
+            }),
         ),
       ),
     ],
     [
       h.span(
-        [h.Class('truncate text-[calc(12.5px*var(--type-scale))] font-medium')],
+        [
+          h.Class(
+            css({
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: 'type.12-5',
+              fontWeight: 'medium',
+            }),
+          ),
+        ],
         [t.catalog.kinds[entry.kind].label],
       ),
       h.span(
         [
           h.Class(
-            cn(
-              'text-[calc(12px*var(--type-scale))]',
-              entry.cause === 'slow' || entry.cause === 'far' ? 'text-warn' : 'text-danger',
+            cx(
+              css({
+                fontSize: 'type.12',
+              }),
+              entry.cause === 'slow' || entry.cause === 'far'
+                ? css({
+                    color: 'warn',
+                  })
+                : css({
+                    color: 'danger',
+                  }),
             ),
           ),
         ],
@@ -146,7 +195,13 @@ const rowGrid = (
       ),
       h.div(
         [
-          h.Class('h-1.5 rounded-full bg-muted'),
+          h.Class(
+            css({
+              height: '1.5',
+              borderRadius: 'full',
+              backgroundColor: 'muted',
+            }),
+          ),
           h.Title(
             entry.p99 === null
               ? ''
@@ -157,7 +212,19 @@ const rowGrid = (
           h.div(
             [
               h.Class(
-                cn('h-full rounded-full', entry.needed ? 'bg-danger' : 'bg-muted-foreground'),
+                cx(
+                  css({
+                    height: '100%',
+                    borderRadius: 'full',
+                  }),
+                  entry.needed
+                    ? css({
+                        backgroundColor: 'danger',
+                      })
+                    : css({
+                        backgroundColor: 'mutedForeground',
+                      }),
+                ),
               ),
               h.Style({ width: `${Math.max(4, (entry.points / widest) * 100)}%` }),
             ],
@@ -166,10 +233,31 @@ const rowGrid = (
         ],
       ),
       h.span(
-        [h.Class(cn(FIGURE, 'text-right text-[calc(12px*var(--type-scale))]'))],
+        [
+          h.Class(
+            cx(
+              FIGURE,
+              css({
+                textAlign: 'right',
+                fontSize: 'type.12',
+              }),
+            ),
+          ),
+        ],
         [entry.points.toFixed(3)],
       ),
-      h.div([h.Class('compact:col-span-4')], fixed ? [fixOf(game, entry, h)] : []),
+      h.div(
+        [
+          h.Class(
+            css({
+              _compact: {
+                gridColumn: 'span 4 / span 4',
+              },
+            }),
+          ),
+        ],
+        fixed ? [fixOf(game, entry, h)] : [],
+      ),
     ],
   )
 }
@@ -181,25 +269,68 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
   const share = region.users > 0 ? (region.perHour / region.users) * 100 : 0
   const widest = region.rows.reduce((most, entry) => Math.max(most, entry.points), 0.001)
   return h.section(
-    [h.Key(region.region), h.Class(cn('flex flex-col py-1', WELL))],
+    [
+      h.Key(region.region),
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            paddingBlock: '1',
+          }),
+          WELL,
+        ),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex flex-wrap items-baseline gap-x-4 gap-y-1 px-3 pt-2 pb-1.5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'baseline',
+              columnGap: '4',
+              rowGap: '1',
+              paddingInline: '3',
+              paddingTop: '2',
+              paddingBottom: '1.5',
+            }),
+          ),
+        ],
         [
           h.span(
-            [h.Class('text-[calc(14px*var(--type-scale))] font-semibold')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.14',
+                  fontWeight: 'semibold',
+                }),
+              ),
+            ],
             [t.catalog.regionInfo[region.region].name],
           ),
           h.span(
-            [h.Class(cn(FIGURE, 'text-[calc(12.5px*var(--type-scale))]'))],
+            [
+              h.Class(
+                cx(
+                  FIGURE,
+                  css({
+                    fontSize: 'type.12-5',
+                  }),
+                ),
+              ),
+            ],
             [t.churn.users(compact(region.users))],
           ),
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
-                  'text-[calc(12.5px*var(--type-scale))]',
+                  css({
+                    fontSize: 'type.12-5',
+                  }),
                   toneText(region.now >= region.target ? 'ok' : 'danger'),
                 ),
               ),
@@ -209,9 +340,11 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
-                  'text-[calc(12.5px*var(--type-scale))]',
+                  css({
+                    fontSize: 'type.12-5',
+                  }),
                   toneText(falling ? 'danger' : 'ok'),
                 ),
               ),
@@ -221,7 +354,14 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
           h.span(
             [
               h.Class(
-                cn(FIGURE, 'ml-auto text-[calc(12.5px*var(--type-scale))] text-muted-foreground'),
+                cx(
+                  FIGURE,
+                  css({
+                    marginLeft: 'auto',
+                    fontSize: 'type.12-5',
+                    color: 'mutedForeground',
+                  }),
+                ),
               ),
             ],
             [t.churn.n1Day(compact(region.inADay))],
@@ -259,11 +399,25 @@ export const churnPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     [],
     [
       h.div(
-        [h.Class(cn('flex flex-col gap-3 px-5 pt-1 pb-5', SCROLL))],
+        [
+          h.Class(
+            cx(
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '3',
+                paddingInline: '5',
+                paddingTop: '1',
+                paddingBottom: '5',
+              }),
+              SCROLL,
+            ),
+          ),
+        ],
         regions.map((region) => section(game, region, h)),
       ),
     ],
-    'max-w-[720px]',
+    css({ maxWidth: '720px' }),
     h,
   )
 }

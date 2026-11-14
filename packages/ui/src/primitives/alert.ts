@@ -1,28 +1,98 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
-
-import { cn } from 'cn'
 
 export const alertVariantKeys = ['default', 'destructive'] as const
 export type AlertVariant = (typeof alertVariantKeys)[number]
 
 export const alertVariants: Record<AlertVariant, string> = {
-  default: 'bg-surface shadow-card text-card-foreground',
-  destructive:
-    'text-destructive bg-destructive/8 shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--destructive)_25%,transparent)] *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current',
+  default: css({
+    layerStyle: 'surface',
+    boxShadow: 'card',
+    color: 'cardForeground',
+  }),
+  destructive: css({
+    color: 'destructive',
+    backgroundColor: 'color-mix(in oklab, var(--destructive) 8%, transparent)',
+    boxShadow: 'invalidLine',
+    '& > [data-slot="alert-description"]': {
+      color: 'color-mix(in oklab, var(--destructive) 90%, transparent)',
+    },
+    '& > svg': { color: 'current' },
+  }),
 }
 
-export const alertClass =
-  "grid gap-0.5 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4 group/alert relative w-full"
+export const alertClass = cx(
+  css({
+    display: 'grid',
+    gap: '0.5',
+    borderRadius: 'xl',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: 'transparent',
+    paddingInline: '3',
+    paddingBlock: '2.5',
+    textAlign: 'left',
+    fontSize: 'type.14',
+    lineHeight: 'fine',
+    '&:has([data-slot="alert-action"])': {
+      position: 'relative',
+      paddingRight: '18',
+    },
+    '&:has(> svg)': {
+      gridTemplateColumns: 'auto 1fr',
+      columnGap: '2',
+    },
+    '& > svg': {
+      gridRow: 'span 2 / span 2',
+      translate: '0 0.125rem',
+      color: 'current',
+    },
+    '& > svg:not([data-svg-icon])': { width: '4', height: '4' },
+    position: 'relative',
+    width: '100%',
+  }),
+  'group-alert',
+)
 
-export const alertTitleClass =
-  'font-medium group-has-[>svg]/alert:col-start-2 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground'
+export const alertTitleClass = css({
+  fontWeight: 'medium',
+  '.group-alert:has(> svg) &': {
+    gridColumnStart: '2',
+  },
+  '& a': {
+    textDecorationLine: 'underline',
+    textUnderlineOffset: '3px',
+    _hover: { color: 'foreground' },
+  },
+})
 
-export const alertDescriptionClass =
-  'text-muted-foreground text-sm text-balance md:text-pretty [&_p:not(:last-child)]:mb-4 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground'
+export const alertDescriptionClass = css({
+  color: 'mutedForeground',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  textWrap: 'balance',
+  md: {
+    textWrap: 'pretty',
+  },
+  '& p:not(:last-child)': {
+    marginBottom: '4',
+  },
+  '& a': {
+    textDecorationLine: 'underline',
+    textUnderlineOffset: '3px',
+    _hover: {
+      color: 'foreground',
+    },
+  },
+})
 
-export const alertActionClass = 'absolute top-2 right-2'
+export const alertActionClass = css({
+  position: 'absolute',
+  top: '2',
+  right: '2',
+})
 
 type StyleConfig = Readonly<{ className?: string; variant?: AlertVariant }>
 
@@ -33,7 +103,7 @@ const alertContainer = <M>(
 ): Html =>
   h.div(
     [
-      h.Class(cn(alertClass, alertVariants[config.variant ?? 'default'], config.className)),
+      h.Class(cx(alertClass, alertVariants[config.variant ?? 'default'], config.className)),
       h.Role('alert'),
       h.DataAttribute('slot', 'alert'),
       h.DataAttribute('variant', config.variant ?? 'default'),
@@ -47,7 +117,7 @@ const alertTitle = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(alertTitleClass, config.className)), h.DataAttribute('slot', 'alert-title')],
+    [h.Class(cx(alertTitleClass, config.className)), h.DataAttribute('slot', 'alert-title')],
     children,
   )
 
@@ -58,7 +128,7 @@ const alertDescription = <M>(
 ): Html =>
   h.div(
     [
-      h.Class(cn(alertDescriptionClass, config.className)),
+      h.Class(cx(alertDescriptionClass, config.className)),
       h.DataAttribute('slot', 'alert-description'),
     ],
     children,
@@ -72,7 +142,7 @@ const alertAction = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(alertActionClass, config.className)), h.DataAttribute('slot', 'alert-action')],
+    [h.Class(cx(alertActionClass, config.className)), h.DataAttribute('slot', 'alert-action')],
     children,
   )
 

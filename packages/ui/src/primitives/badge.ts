@@ -1,8 +1,11 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
 
-import { cn } from 'cn'
+const focusRing = '0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)'
+const invalidRing = '0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)'
+const darkInvalidRing = '0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)'
 
 /** Badge variant keys — keep in sync with `badgeVariants`. */
 export const badgeVariantKeys = [
@@ -17,22 +20,161 @@ export const badgeVariantKeys = [
 ] as const
 
 export const badgeVariants: Record<BadgeVariant, string> = {
-  default:
-    'bg-primary/14 text-primary-strong shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--primary)_28%,transparent)]',
-  secondary: 'bg-well text-muted-foreground shadow-well',
-  destructive:
-    'bg-destructive/10 text-destructive shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--destructive)_25%,transparent)]',
-  ok: 'bg-ok/12 text-ok shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--ok)_25%,transparent)]',
-  warn: 'bg-warn/14 text-warn shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--warn)_28%,transparent)]',
-  outline: 'bg-raised text-foreground shadow-raised',
-  ghost: 'hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50',
-  link: 'text-primary underline-offset-4 hover:underline',
+  default: css({
+    backgroundColor: 'color-mix(in oklab, var(--primary) 14%, transparent)',
+    color: 'primaryStrong',
+    boxShadow: 'primaryLineInset',
+    _focusVisible: {
+      boxShadow:
+        'inset 0 0 0 1px color-mix(in oklch, var(--primary) 28%, transparent), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+    },
+    '&[aria-invalid="true"]': {
+      boxShadow:
+        'inset 0 0 0 1px color-mix(in oklch, var(--primary) 28%, transparent), 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+    },
+    _dark: {
+      '&[aria-invalid="true"]': {
+        boxShadow:
+          'inset 0 0 0 1px color-mix(in oklch, var(--primary) 28%, transparent), 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+      },
+    },
+  }),
+  secondary: css({
+    backgroundColor: 'well',
+    color: 'mutedForeground',
+    boxShadow: 'well',
+    _focusVisible: { boxShadow: `var(--elev-well), ${focusRing}` },
+    '&[aria-invalid="true"]': { boxShadow: `var(--elev-well), ${invalidRing}` },
+    _dark: {
+      '&[aria-invalid="true"]': { boxShadow: `var(--elev-well), ${darkInvalidRing}` },
+    },
+  }),
+  destructive: css({
+    backgroundColor: 'color-mix(in oklab, var(--destructive) 10%, transparent)',
+    color: 'destructive',
+    boxShadow: 'invalidLine',
+    _focusVisible: {
+      boxShadow:
+        'inset 0 0 0 1px color-mix(in oklch, var(--destructive) 25%, transparent), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+    },
+    '&[aria-invalid="true"]': {
+      boxShadow:
+        'inset 0 0 0 1px color-mix(in oklch, var(--destructive) 25%, transparent), 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+    },
+    _dark: {
+      '&[aria-invalid="true"]': {
+        boxShadow:
+          'inset 0 0 0 1px color-mix(in oklch, var(--destructive) 25%, transparent), 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+      },
+    },
+  }),
+  ok: css({
+    backgroundColor: 'color-mix(in oklab, var(--ok) 12%, transparent)',
+    color: 'ok',
+    boxShadow: 'okLine',
+    _focusVisible: {
+      boxShadow:
+        'inset 0 0 0 1px color-mix(in oklch, var(--ok) 25%, transparent), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+    },
+    '&[aria-invalid="true"]': {
+      boxShadow:
+        'inset 0 0 0 1px color-mix(in oklch, var(--ok) 25%, transparent), 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+    },
+    _dark: {
+      '&[aria-invalid="true"]': {
+        boxShadow:
+          'inset 0 0 0 1px color-mix(in oklch, var(--ok) 25%, transparent), 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+      },
+    },
+  }),
+  warn: css({
+    backgroundColor: 'color-mix(in oklab, var(--warn) 14%, transparent)',
+    color: 'warn',
+    boxShadow: 'warnLine',
+    _focusVisible: {
+      boxShadow:
+        'inset 0 0 0 1px color-mix(in oklch, var(--warn) 28%, transparent), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+    },
+    '&[aria-invalid="true"]': {
+      boxShadow:
+        'inset 0 0 0 1px color-mix(in oklch, var(--warn) 28%, transparent), 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+    },
+    _dark: {
+      '&[aria-invalid="true"]': {
+        boxShadow:
+          'inset 0 0 0 1px color-mix(in oklch, var(--warn) 28%, transparent), 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+      },
+    },
+  }),
+  outline: css({
+    layerStyle: 'raised',
+    color: 'foreground',
+    boxShadow: 'raised',
+    _focusVisible: { boxShadow: `var(--elev-raised), ${focusRing}` },
+    '&[aria-invalid="true"]': { boxShadow: `var(--elev-raised), ${invalidRing}` },
+    _dark: {
+      '&[aria-invalid="true"]': { boxShadow: `var(--elev-raised), ${darkInvalidRing}` },
+    },
+  }),
+  ghost: css({
+    _hover: { backgroundColor: 'muted', color: 'mutedForeground' },
+    _dark: {
+      _hover: { backgroundColor: 'color-mix(in oklab, var(--muted) 50%, transparent)' },
+      '&[aria-invalid="true"]': { boxShadow: darkInvalidRing },
+    },
+    _focusVisible: { boxShadow: focusRing },
+    '&[aria-invalid="true"]': { boxShadow: invalidRing },
+  }),
+  link: css({
+    color: 'primary',
+    textUnderlineOffset: '4px',
+    _hover: { textDecorationLine: 'underline' },
+    _focusVisible: { boxShadow: focusRing },
+    '&[aria-invalid="true"]': { boxShadow: invalidRing },
+    _dark: { '&[aria-invalid="true"]': { boxShadow: darkInvalidRing } },
+  }),
 }
 
 export type BadgeVariant = (typeof badgeVariantKeys)[number]
 
-export const badgeClass =
-  'h-5 gap-1 rounded-md border border-transparent px-1.5 py-0.5 text-[11px] font-medium transition-all has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&>svg]:size-3! group/badge inline-flex w-fit shrink-0 items-center justify-center overflow-hidden whitespace-nowrap focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none'
+export const badgeClass = css({
+  height: '5',
+  gap: '1',
+  borderRadius: 'md',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  borderColor: 'transparent',
+  paddingInline: '1.5',
+  paddingBlock: '0.5',
+  fontSize: 'type.11',
+  fontWeight: 'medium',
+  transitionProperty: 'all',
+  transitionDuration: 'fast',
+  transitionTimingFunction: 'default',
+  '&:has([data-icon="inline-end"])': { paddingRight: '1.5' },
+  '&:has([data-icon="inline-start"])': { paddingLeft: '1.5' },
+  '& > svg': { width: '0.75rem!', height: '0.75rem!', pointerEvents: 'none' },
+  display: 'inline-flex',
+  width: 'fit-content',
+  flexShrink: '0',
+  alignItems: 'center',
+  justifyContent: 'center',
+  overflow: 'hidden',
+  whiteSpace: 'nowrap',
+  _focusVisible: {
+    borderColor: 'ring',
+    boxShadow: focusRing,
+  },
+  '&[aria-invalid="true"]': {
+    borderColor: 'destructive',
+    boxShadow: invalidRing,
+  },
+  _dark: {
+    '&[aria-invalid="true"]': {
+      boxShadow: darkInvalidRing,
+    },
+  },
+})
 
 type StyleConfig = Readonly<{ className?: string; variant?: BadgeVariant }>
 
@@ -46,7 +188,7 @@ export const badge = <M>(
 ): Html =>
   h.span(
     [
-      h.Class(cn(badgeClass, badgeVariants[config.variant ?? 'default'], config.className)),
+      h.Class(cx(badgeClass, badgeVariants[config.variant ?? 'default'], config.className)),
       h.DataAttribute('slot', 'badge'),
       h.DataAttribute('variant', config.variant ?? 'default'),
     ],

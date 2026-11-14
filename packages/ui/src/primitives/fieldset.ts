@@ -1,60 +1,222 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { Fieldset as FoldkitFieldset } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
 
-import { cn } from 'cn'
 import { separatorClass } from './separator'
 
-export const fieldsetClass =
-  'gap-4 has-[>[data-slot=checkbox-group]]:gap-3 has-[>[data-slot=radio-group]]:gap-3 flex flex-col'
+export const fieldsetClass = css({
+  gap: '4',
+  '&:has(> [data-slot=checkbox-group])': {
+    gap: '3',
+  },
+  '&:has(> [data-slot=radio-group])': {
+    gap: '3',
+  },
+  display: 'flex',
+  flexDirection: 'column',
+})
 
-export const fieldsetLegendClass =
-  'mb-1.5 font-medium data-[variant=label]:text-sm data-[variant=legend]:text-base'
+export const fieldsetLegendClass = css({
+  marginBottom: '1.5',
+  fontWeight: 'medium',
+  '&[data-variant="label"]': {
+    fontSize: 'type.14',
+    lineHeight: 'fine',
+  },
+  '&[data-variant="legend"]': {
+    fontSize: 'type.16',
+    lineHeight: 'normal',
+  },
+})
 
-export const fieldGroupClass =
-  'gap-5 data-[slot=checkbox-group]:gap-3 *:data-[slot=field-group]:gap-4 group/field-group @container/field-group flex w-full flex-col'
+export const fieldGroupClass = cx(
+  css({
+    gap: '5',
+    '&[data-slot="checkbox-group"]': { gap: '3' },
+    '& > [data-slot="field-group"]': { gap: '4' },
+    containerType: 'inline-size',
+    containerName: 'field-group',
+    display: 'flex',
+    width: '100%',
+    flexDirection: 'column',
+  }),
+  'group-field-group',
+)
 
 /** Upstream cva base + per-orientation variant strings. */
-export const fieldBaseClass = 'data-[invalid=true]:text-destructive gap-2 group/field flex w-full'
+export const fieldBaseClass = cx(
+  css({
+    '&[data-invalid="true"]': { color: 'destructive' },
+    gap: '2',
+    display: 'flex',
+    width: '100%',
+  }),
+  'group-field',
+)
 
 export const fieldOrientationClasses = {
-  vertical: 'flex-col *:w-full [&>.sr-only]:w-auto',
-  horizontal:
-    'flex-row items-center has-[>[data-slot=field-content]]:items-start *:data-[slot=field-label]:flex-auto has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px',
-  responsive:
-    'flex-col *:w-full @md/field-group:flex-row @md/field-group:items-center @md/field-group:*:w-auto @md/field-group:has-[>[data-slot=field-content]]:items-start @md/field-group:*:data-[slot=field-label]:flex-auto [&>.sr-only]:w-auto @md/field-group:has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px',
+  vertical: css({
+    flexDirection: 'column',
+    '& > *': {
+      width: '100%',
+    },
+  }),
+  horizontal: css({
+    flexDirection: 'row',
+    alignItems: 'center',
+    '&:has(> [data-slot="field-content"])': {
+      alignItems: 'flex-start',
+      '& > [role=checkbox], & > [role=radio]': {
+        marginTop: '1px',
+      },
+    },
+    '& > *': {
+      '&[data-slot="field-label"]': {
+        flex: '1 1 auto',
+      },
+    },
+  }),
+  responsive: css({
+    flexDirection: 'column',
+    '& > *': { width: '100%' },
+    '@container field-group (min-width: 28rem)': {
+      flexDirection: 'row',
+      alignItems: 'center',
+      '& > *': { width: 'auto' },
+      '&:has(> [data-slot="field-content"])': {
+        alignItems: 'flex-start',
+        '& > [role=checkbox], & > [role=radio]': { marginTop: '1px' },
+      },
+      '& > *[data-slot="field-label"]': { flex: '1 1 auto' },
+    },
+  }),
 } as const
 
 export type FieldOrientation = keyof typeof fieldOrientationClasses
 
-export const fieldContentClass = 'gap-0.5 group/field-content flex flex-1 flex-col leading-snug'
+export const fieldContentClass = css({
+  gap: '0.5',
+  display: 'flex',
+  flex: '1 1 0%',
+  flexDirection: 'column',
+  lineHeight: 'snug',
+})
 
 /** Upstream keys label disabling on a native peer-disabled sibling variant
  *  (no foldkit `.peer` sibling exists) and `group-data-[disabled=true]`
  *  (foldkit emits `data-disabled=""`, never "true"). Re-keyed onto the
  *  fieldset wrapper's live group + data-disabled signal. */
-export const labelClass =
-  'gap-2 text-sm leading-none font-medium group-data-[disabled]:opacity-50 flex items-center select-none group-data-[disabled]/field-set:pointer-events-none group-data-[disabled]/field-set:cursor-not-allowed group-data-[disabled]/field-set:opacity-50'
+export const labelClass = css({
+  gap: '2',
+  fontSize: 'type.14',
+  lineHeight: 'none',
+  fontWeight: 'medium',
+  '.group[data-disabled] &': {
+    opacity: 0.5,
+  },
+  display: 'flex',
+  alignItems: 'center',
+  userSelect: 'none',
+  '.group-field-set[data-disabled] &': {
+    pointerEvents: 'none',
+    cursor: 'not-allowed',
+    opacity: 0.5,
+  },
+})
 
-export const fieldLabelClass =
-  'gap-2 leading-snug group-data-[disabled]/field:opacity-50 has-[>[data-slot=field]]:rounded-xl has-[>[data-slot=field]]:bg-raised has-[>[data-slot=field]]:shadow-raised has-[>[data-slot=field]]:transition-shadow has-data-checked:shadow-[var(--elev-raised),0_0_0_1.5px_var(--primary)] has-[>[data-slot=field]]:has-[:focus-visible]:ring-ring/40 has-[>[data-slot=field]]:has-[:focus-visible]:ring-3 *:data-[slot=field]:p-3 group/field-label peer/field-label flex w-fit has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col'
+export const fieldLabelClass = cx(
+  css({
+    gap: '2',
+    lineHeight: 'snug',
+    '.group-field[data-disabled] &': { opacity: 0.5 },
+    '&:has(> [data-slot="field"])': {
+      borderRadius: 'xl',
+      layerStyle: 'raised',
+      boxShadow: 'raised',
+      transitionProperty: 'box-shadow',
+      transitionTimingFunction: 'default',
+      transitionDuration: 'fast',
+      width: '100%',
+      flexDirection: 'column',
+      '&:has(:focus-visible)': {
+        boxShadow: 'focusRaisedSoft',
+      },
+    },
+    '&:has([data-checked])': {
+      boxShadow: 'active',
+    },
+    '& > [data-slot="field"]': { padding: '3' },
+    display: 'flex',
+    width: 'fit-content',
+  }),
+  'group-field-label',
+)
 
-export const fieldTitleClass =
-  'gap-2 text-sm font-medium group-data-[disabled]/field:opacity-50 flex w-fit items-center'
+export const fieldTitleClass = css({
+  gap: '2',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
+  '.group-field[data-disabled] &': {
+    opacity: 0.5,
+  },
+  display: 'flex',
+  width: 'fit-content',
+  alignItems: 'center',
+})
 
-export const fieldDescriptionClass =
-  'text-muted-foreground text-left text-sm [[data-variant=legend]+&]:-mt-1.5 leading-normal font-normal group-has-data-horizontal/field:text-balance last:mt-0 nth-last-2:-mt-1 [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary'
+export const fieldDescriptionClass = css({
+  color: 'mutedForeground',
+  textAlign: 'left',
+  fontSize: 'type.14',
+  '[data-variant="legend"] + &': { marginTop: '-0.375rem' },
+  lineHeight: 'normal',
+  fontWeight: 'normal',
+  '.group-field:has([data-horizontal]) &': { textWrap: 'balance' },
+  '&:last-child': { marginTop: '0' },
+  '&:nth-last-child(2)': { marginTop: '-0.25rem' },
+  '& > a': {
+    textDecorationLine: 'underline',
+    textUnderlineOffset: '4px',
+    _hover: { color: 'primary' },
+  },
+})
 
-export const fieldSeparatorClass =
-  '-my-2 h-5 text-sm group-data-[variant=outline]/field-group:-mb-2 relative'
+export const fieldSeparatorClass = css({
+  marginBlock: '-0.5rem',
+  height: '5',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  '.group-field-group[data-variant=outline] &': {
+    marginBottom: '-0.5rem',
+  },
+  position: 'relative',
+})
 
-export const fieldSeparatorLineClass = 'absolute inset-0 top-1/2'
+export const fieldSeparatorLineClass = css({
+  position: 'absolute',
+  inset: '0',
+  top: '50%',
+})
 
-export const fieldSeparatorContentClass =
-  'text-muted-foreground px-2 relative mx-auto block w-fit bg-background'
+export const fieldSeparatorContentClass = css({
+  color: 'mutedForeground',
+  paddingInline: '2',
+  position: 'relative',
+  marginInline: 'auto',
+  display: 'block',
+  width: 'fit-content',
+  backgroundColor: 'background',
+})
 
-export const fieldErrorClass = 'text-destructive text-sm font-normal'
+export const fieldErrorClass = css({
+  color: 'destructive',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'normal',
+})
 
 type StyleConfig = Readonly<{ className?: string }>
 
@@ -64,7 +226,7 @@ export const fieldSet = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.fieldset(
-    [h.DataAttribute('slot', 'field-set'), h.Class(cn(fieldsetClass, config.className))],
+    [h.DataAttribute('slot', 'field-set'), h.Class(cx(fieldsetClass, config.className))],
     children,
   )
 
@@ -78,7 +240,7 @@ export const fieldLegend = <M>(
     [
       h.DataAttribute('slot', 'field-legend'),
       h.DataAttribute('variant', config.variant ?? 'legend'),
-      h.Class(cn(fieldsetLegendClass, config.className)),
+      h.Class(cx(fieldsetLegendClass, config.className)),
     ],
     children,
   )
@@ -91,7 +253,7 @@ export const fieldGroup = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.DataAttribute('slot', 'field-group'), h.Class(cn(fieldGroupClass, config.className))],
+    [h.DataAttribute('slot', 'field-group'), h.Class(cx(fieldGroupClass, config.className))],
     children,
   )
 
@@ -108,7 +270,7 @@ export const field = <M>(
       h.DataAttribute('slot', 'field'),
       h.DataAttribute('orientation', orientation),
       ...(config.isInvalid === true ? [h.DataAttribute('invalid', 'true')] : []),
-      h.Class(cn(fieldBaseClass, fieldOrientationClasses[orientation], config.className)),
+      h.Class(cx(fieldBaseClass, fieldOrientationClasses[orientation], config.className)),
     ],
     children,
   )
@@ -121,7 +283,7 @@ export const fieldContent = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.DataAttribute('slot', 'field-content'), h.Class(cn(fieldContentClass, config.className))],
+    [h.DataAttribute('slot', 'field-content'), h.Class(cx(fieldContentClass, config.className))],
     children,
   )
 
@@ -130,7 +292,7 @@ export const label = <M>(
   children: ReadonlyArray<Child>,
   h: HtmlBuilder<M>,
 ): Html =>
-  h.label([h.DataAttribute('slot', 'label'), h.Class(cn(labelClass, config.className))], children)
+  h.label([h.DataAttribute('slot', 'label'), h.Class(cx(labelClass, config.className))], children)
 
 /** Label for a field; optionally associates with its control via `for`. */
 export const fieldLabel = <M>(
@@ -142,7 +304,7 @@ export const fieldLabel = <M>(
     [
       ...(config.for === undefined ? [] : [h.For(config.for)]),
       h.DataAttribute('slot', 'field-label'),
-      h.Class(cn(labelClass, fieldLabelClass, config.className)),
+      h.Class(cx(labelClass, fieldLabelClass, config.className)),
     ],
     children,
   )
@@ -153,7 +315,7 @@ export const fieldTitle = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.DataAttribute('slot', 'field-label'), h.Class(cn(fieldTitleClass, config.className))],
+    [h.DataAttribute('slot', 'field-label'), h.Class(cx(fieldTitleClass, config.className))],
     children,
   )
 
@@ -165,7 +327,7 @@ export const fieldDescription = <M>(
   h.p(
     [
       h.DataAttribute('slot', 'field-description'),
-      h.Class(cn(fieldDescriptionClass, config.className)),
+      h.Class(cx(fieldDescriptionClass, config.className)),
     ],
     children,
   )
@@ -181,20 +343,20 @@ export const fieldSeparator = <M>(
     [
       h.DataAttribute('slot', 'field-separator'),
       h.DataAttribute('content', hasContent ? 'true' : 'false'),
-      h.Class(cn(fieldSeparatorClass, config.className)),
+      h.Class(cx(fieldSeparatorClass, config.className)),
     ],
     [
       h.div([
         h.Role('separator'),
         h.DataAttribute('horizontal', ''),
-        h.Class(cn(separatorClass, fieldSeparatorLineClass)),
+        h.Class(cx(separatorClass, fieldSeparatorLineClass)),
       ]),
       ...(hasContent
         ? [
             h.span(
               [
                 h.DataAttribute('slot', 'field-separator-content'),
-                h.Class(cn(fieldSeparatorContentClass)),
+                h.Class(cx(fieldSeparatorContentClass)),
               ],
               children,
             ),
@@ -230,7 +392,17 @@ export const fieldError = <M>(
   } else if (uniqueErrors.length > 1) {
     content = [
       h.ul(
-        [h.Class('ml-4 flex list-disc flex-col gap-1')],
+        [
+          h.Class(
+            css({
+              marginLeft: '4',
+              display: 'flex',
+              listStyleType: 'disc',
+              flexDirection: 'column',
+              gap: '1',
+            }),
+          ),
+        ],
         uniqueErrors.map((error) => h.li([], [error!.message!])),
       ),
     ]
@@ -244,7 +416,7 @@ export const fieldError = <M>(
     [
       h.Role('alert'),
       h.DataAttribute('slot', 'field-error'),
-      h.Class(cn(fieldErrorClass, config.className)),
+      h.Class(cx(fieldErrorClass, config.className)),
     ],
     content,
   )
@@ -275,7 +447,7 @@ export const fieldset = <M>(config: FieldsetConfig, h: HtmlBuilder<M>): Html =>
           [
             ...attributes.fieldset,
             h.DataAttribute('slot', 'field-set'),
-            h.Class(cn(fieldsetClass, config.className)),
+            h.Class(cx(fieldsetClass, config.className)),
           ],
           [
             h.legend(
@@ -283,7 +455,7 @@ export const fieldset = <M>(config: FieldsetConfig, h: HtmlBuilder<M>): Html =>
                 ...attributes.legend,
                 h.DataAttribute('slot', 'field-legend'),
                 h.DataAttribute('variant', 'legend'),
-                h.Class(cn(fieldsetLegendClass, config.legendClass)),
+                h.Class(cx(fieldsetLegendClass, config.legendClass)),
               ],
               [config.legend],
             ),
@@ -293,14 +465,14 @@ export const fieldset = <M>(config: FieldsetConfig, h: HtmlBuilder<M>): Html =>
                   [
                     ...attributes.description,
                     h.DataAttribute('slot', 'field-description'),
-                    h.Class(cn(fieldDescriptionClass, config.descriptionClass)),
+                    h.Class(cx(fieldDescriptionClass, config.descriptionClass)),
                   ],
                   [config.description],
                 ),
             h.div(
               [
                 h.DataAttribute('slot', 'field-group'),
-                h.Class(cn(fieldGroupClass, config.contentClass)),
+                h.Class(cx(fieldGroupClass, config.contentClass)),
               ],
               config.children,
             ),

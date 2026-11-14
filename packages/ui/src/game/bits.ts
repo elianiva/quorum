@@ -1,53 +1,115 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { IconNode } from 'lucide'
 import type { BuildGroup, InsightPool } from '@quorum/simulation/catalog'
-import { cn } from 'cn'
 import { icon } from '../primitives/icon.ts'
 import { GROUP_SHAPES, type GroupShape, STACK_LOGOS, type StackLogoId } from './icons.ts'
 import { POOL_ICONS, poolColor, poolName } from './pools.ts'
 
-export const EYEBROW =
-  'font-mono text-[calc(10.5px*var(--type-scale))] font-medium uppercase tracking-[0.08em] text-muted-foreground'
-export const SCROLL = 'overflow-auto [scrollbar-width:thin]'
-export const PANEL = 'rounded-2xl bg-surface shadow-card'
-export const FLOAT = 'rounded-2xl bg-surface shadow-float'
+export const EYEBROW = css({
+  fontFamily: 'mono',
+  fontSize: 'type.10-5',
+  fontWeight: 'medium',
+  textTransform: 'uppercase',
+  letterSpacing: 'eyebrow',
+  color: 'mutedForeground',
+})
+export const SCROLL = css({ overflow: 'auto', scrollbarWidth: 'thin' })
+export const PANEL = css({ borderRadius: '2xl', layerStyle: 'surface', boxShadow: 'card' })
+export const FLOAT = css({ borderRadius: '2xl', layerStyle: 'surface', boxShadow: 'float' })
 /** A group inside a panel, one step lighter, with hairline dividers. */
-export const NESTED =
-  'divide-y divide-hairline rounded-xl bg-nested shadow-[inset_0_0_0_1px_var(--hairline-soft)]'
+export const NESTED = css({
+  borderRadius: 'xl',
+  backgroundColor: 'nested',
+  boxShadow: 'line',
+  '& > :not(:last-child):not([data-slot="button"])': {
+    borderBottomWidth: '1px',
+    borderBottomStyle: 'solid',
+    borderColor: 'hairline',
+  },
+})
 /** A sunken strip: tracks, segmented controls, figure rows. */
-export const WELL = 'rounded-xl bg-well shadow-well'
+export const WELL = css({ borderRadius: 'xl', backgroundColor: 'well', boxShadow: 'well' })
 /** A phone shows the figures as one row of chips that scrolls sideways. */
-export const CHIPS =
-  'compact:flex-row compact:divide-x compact:divide-y-0 compact:overflow-x-auto compact:[scrollbar-width:none]'
+export const CHIPS = css({
+  _compact: {
+    flexDirection: 'row',
+    overflowX: 'auto',
+    scrollbarWidth: 'none',
+    '& > :not(:last-child)': {
+      borderTopWidth: '0px',
+      borderTopStyle: 'solid',
+      borderRightWidth: '1px',
+      borderRightStyle: 'solid',
+      borderBottomWidth: '0px',
+      borderBottomStyle: 'solid',
+      borderLeftWidth: '0px',
+      borderLeftStyle: 'solid',
+    },
+  },
+})
 
-export const FIGURE = 'font-mono tabular-nums tracking-[-0.01em]'
+export const FIGURE = css({
+  fontFamily: 'mono',
+  fontVariantNumeric: 'tabular-nums',
+  letterSpacing: 'subtle',
+})
 
 /** A square icon control inside a panel: flat at rest, a raised ink fill when on.
  *  On a dark board a white fill outshines the board, so on is a raised grey there. */
 export const tool = (active: boolean): string =>
-  cn(
-    'press relative grid size-10 shrink-0 place-items-center rounded-xl',
-    active
-      ? 'bg-primary-fill text-on-primary-fill shadow-primary dark:bg-raised dark:text-foreground dark:shadow-raised'
-      : 'text-muted-foreground hover:bg-well hover:text-foreground',
-  )
+  active
+    ? cx(
+        css({
+          position: 'relative',
+          display: 'grid',
+          width: '10',
+          height: '10',
+          flexShrink: 0,
+          placeItems: 'center',
+          borderRadius: 'xl',
+          layerStyle: 'primaryFill',
+          color: 'onPrimaryFill',
+          boxShadow: 'primary',
+          _dark: {
+            layerStyle: 'raised',
+            color: 'foreground',
+            boxShadow: 'raised',
+          },
+        }),
+        'press',
+      )
+    : cx(
+        css({
+          position: 'relative',
+          display: 'grid',
+          width: '10',
+          height: '10',
+          flexShrink: 0,
+          placeItems: 'center',
+          borderRadius: 'xl',
+          color: 'mutedForeground',
+          _hover: { backgroundColor: 'well', color: 'foreground' },
+        }),
+        'press',
+      )
 
 export type Tone = 'plain' | 'ok' | 'warn' | 'danger'
 
-export const toneText = (tone: Tone): string =>
-  tone === 'danger'
-    ? 'text-danger'
-    : tone === 'warn'
-      ? 'text-warn'
-      : tone === 'ok'
-        ? 'text-ok'
-        : 'text-foreground'
+const toneClasses: Record<Tone, string> = {
+  plain: css({ color: 'foreground' }),
+  ok: css({ color: 'ok' }),
+  warn: css({ color: 'warn' }),
+  danger: css({ color: 'danger' }),
+}
+
+export const toneText = (tone: Tone): string => toneClasses[tone]
 
 export const GROUP_TEXT: Record<BuildGroup, string> = {
-  edge: 'text-group-edge',
-  compute: 'text-group-compute',
-  data: 'text-group-data',
-  ops: 'text-group-ops',
+  edge: css({ color: 'groupEdge' }),
+  compute: css({ color: 'groupCompute' }),
+  data: css({ color: 'groupData' }),
+  ops: css({ color: 'groupOps' }),
 }
 
 /** Glyph scale inside each badge shape; a diamond has the least room. */
@@ -136,15 +198,28 @@ export const groupBadge = <M>(
   const shape = GROUP_SHAPES[group]
   const scale = GLYPH_SCALE[shape]
   const offset = 12 - 12 * scale
+  // A custom brand fill stays white. The theme's group fills turn pale in dark mode,
+  // so their glyph flips to the theme's paired ink instead.
+  const glyph = color && !muted ? 'white' : 'onGroup'
   return h.svg(
     [
       h.AriaHidden(true),
       h.Xmlns('http://www.w3.org/2000/svg'),
       h.ViewBox('0 0 24 24'),
       h.Class(
-        cn(
-          'shrink-0 overflow-visible drop-shadow-[0_1px_1px_oklch(0_0_0/0.18)]',
-          muted ? 'text-muted-foreground/35' : color ? '' : GROUP_TEXT[group],
+        cx(
+          css({
+            flexShrink: '0',
+            overflow: 'visible',
+            filter: 'drop-shadow(0 1px 1px oklch(0 0 0/0.18))',
+          }),
+          muted
+            ? css({
+                color: 'color-mix(in oklab, var(--muted-foreground) 35%, transparent)',
+              })
+            : color
+              ? ''
+              : GROUP_TEXT[group],
           className,
         ),
       ),
@@ -154,10 +229,25 @@ export const groupBadge = <M>(
       ...shapeOf(shape, h),
       h.g(
         [h.Transform(`translate(${offset} ${offset}) scale(${scale})`)],
-        // A nested 24-unit svg; its currentColor is white.
+        // A nested 24-unit svg; it takes the badge's paired glyph ink.
         'path' in content
-          ? [h.path([h.D(content.path), h.Fill('white')], [])]
-          : [icon(h, content, 'size-6 text-white')],
+          ? [
+              h.g(
+                [h.Class(css({ color: glyph }))],
+                [h.path([h.D(content.path), h.Fill('currentColor')], [])],
+              ),
+            ]
+          : [
+              icon(
+                h,
+                content,
+                css({
+                  width: '6',
+                  height: '6',
+                  color: glyph,
+                }),
+              ),
+            ],
       ),
     ],
   )
@@ -171,7 +261,19 @@ export const stackLogo = <M>(id: StackLogoId, className: string, h: HtmlBuilder<
       h.AriaHidden(true),
       h.Xmlns('http://www.w3.org/2000/svg'),
       h.ViewBox('0 0 24 24'),
-      h.Class(cn('shrink-0', logo.color ? '' : 'text-foreground', className)),
+      h.Class(
+        cx(
+          css({
+            flexShrink: '0',
+          }),
+          logo.color
+            ? ''
+            : css({
+                color: 'foreground',
+              }),
+          className,
+        ),
+      ),
     ],
     [h.path([h.D(logo.path), h.Fill(logo.color ?? 'currentColor')], [])],
   )
@@ -186,15 +288,34 @@ export const figure = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Key(name), h.Class('flex min-w-0 flex-col gap-1 px-3.5 py-2')],
+    [
+      h.Key(name),
+      h.Class(
+        css({
+          display: 'flex',
+          minWidth: '0',
+          flexDirection: 'column',
+          gap: '1',
+          paddingInline: '3.5',
+          paddingBlock: '2',
+        }),
+      ),
+    ],
     [
       h.span([h.Class(EYEBROW)], [name]),
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
-              'flex items-baseline gap-1.5 text-[calc(15px*var(--type-scale))] leading-none whitespace-nowrap',
+              css({
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: '1.5',
+                fontSize: 'type.15',
+                lineHeight: 'none',
+                whiteSpace: 'nowrap',
+              }),
             ),
           ),
         ],
@@ -204,9 +325,15 @@ export const figure = <M>(
             ? h.span(
                 [
                   h.Class(
-                    cn(
-                      'text-[calc(10.5px*var(--type-scale))]',
-                      noteTone === 'plain' ? 'text-muted-foreground' : toneText(noteTone),
+                    cx(
+                      css({
+                        fontSize: 'type.10-5',
+                      }),
+                      noteTone === 'plain'
+                        ? css({
+                            color: 'mutedForeground',
+                          })
+                        : toneText(noteTone),
                     ),
                   ),
                 ],
@@ -221,13 +348,42 @@ export const figure = <M>(
 /** A label and a value on one line, for nested groups. */
 export const row = <M>(name: string, value: string, tone: Tone, h: HtmlBuilder<M>): Html =>
   h.div(
-    [h.Key(name), h.Class('flex items-baseline justify-between gap-3 px-3 py-1.5')],
     [
-      h.span([h.Class('text-[calc(12.5px*var(--type-scale))] text-muted-foreground')], [name]),
+      h.Key(name),
+      h.Class(
+        css({
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          gap: '3',
+          paddingInline: '3',
+          paddingBlock: '1.5',
+        }),
+      ),
+    ],
+    [
       h.span(
         [
           h.Class(
-            cn(FIGURE, 'text-[calc(12px*var(--type-scale))] whitespace-nowrap', toneText(tone)),
+            css({
+              fontSize: 'type.12-5',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
+        [name],
+      ),
+      h.span(
+        [
+          h.Class(
+            cx(
+              FIGURE,
+              css({
+                fontSize: 'type.12',
+                whiteSpace: 'nowrap',
+              }),
+              toneText(tone),
+            ),
           ),
         ],
         [value],
@@ -238,13 +394,33 @@ export const row = <M>(name: string, value: string, tone: Tone, h: HtmlBuilder<M
 /** A sunken track with a rounded fill. */
 export const meter = <M>(share: number, fill: string, h: HtmlBuilder<M>): Html =>
   h.div(
-    [h.Class('h-1.5 overflow-hidden rounded-full bg-well shadow-well')],
+    [
+      h.Class(
+        css({
+          height: '1.5',
+          overflow: 'hidden',
+          borderRadius: 'full',
+          backgroundColor: 'well',
+          boxShadow: 'well',
+        }),
+      ),
+    ],
     [
       h.div(
         [
           // The fill slides rather than resizing: transform skips layout, and progress moves linearly.
           h.Class(
-            cn('h-full w-full rounded-full transition-transform duration-250 ease-linear', fill),
+            cx(
+              css({
+                height: '100%',
+                width: '100%',
+                borderRadius: 'full',
+                transitionProperty: 'transform',
+                transitionDuration: 'slow',
+                transitionTimingFunction: 'linear',
+              }),
+              fill,
+            ),
           ),
           h.Style({
             transform: `translateX(${(Math.max(0, Math.min(1, share)) - 1) * 100}%)`,
@@ -286,7 +462,13 @@ export const ring = <M>(share: number, className: string, h: HtmlBuilder<M>): Ht
         h.Attribute('stroke-dasharray', `${length}`),
         h.Attribute('stroke-dashoffset', `${length * (1 - Math.max(0, Math.min(1, share)))}`),
         h.Attribute('transform', 'rotate(-90 8 8)'),
-        h.Class('transition-[stroke-dashoffset] duration-200 ease-out'),
+        h.Class(
+          css({
+            transitionProperty: 'stroke-dashoffset',
+            transitionDuration: 'normal',
+            transitionTimingFunction: 'out',
+          }),
+        ),
       ]),
     ],
   )
@@ -308,20 +490,52 @@ export const insightChip = <M>(
     [
       h.Title(`${name} ${figure}`),
       h.AriaLabel(`${name} ${figure}`),
-      h.Class(cn(FIGURE, 'inline-flex items-center gap-[3px] whitespace-nowrap')),
+      h.Class(
+        cx(
+          FIGURE,
+          css({
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.75',
+            whiteSpace: 'nowrap',
+          }),
+        ),
+      ),
     ],
     [
       h.span(
         [
-          h.Class('inline-flex'),
+          h.Class(
+            css({
+              display: 'inline-flex',
+            }),
+          ),
           h.Style({ color: grey ? 'var(--muted-foreground)' : poolColor(pool) }),
         ],
-        [icon(h, POOL_ICONS[pool], 'size-3 shrink-0')],
+        [
+          icon(
+            h,
+            POOL_ICONS[pool],
+            css({
+              width: '3',
+              height: '3',
+              flexShrink: '0',
+            }),
+          ),
+        ],
       ),
       h.span(
         [
           h.AriaHidden(true),
-          h.Class(grey ? 'text-muted-foreground' : tone === 'plain' ? '' : toneText(tone)),
+          h.Class(
+            grey
+              ? css({
+                  color: 'mutedForeground',
+                })
+              : tone === 'plain'
+                ? ''
+                : toneText(tone),
+          ),
         ],
         [figure],
       ),

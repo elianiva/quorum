@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { formats } from '@/i18n/format.ts'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -26,15 +27,44 @@ const traffic = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): ReadonlyA
         const failing = (entry?.success ?? 1) < 0.95
         const slow = (entry?.p99 ?? 0) > PROFILES[kind].apdex
         const line = h.div(
-          [h.Key(kind), h.Class('flex items-center gap-2 text-[calc(12px*var(--type-scale))]')],
+          [
+            h.Key(kind),
+            h.Class(
+              css({
+                display: 'flex',
+                alignItems: 'center',
+                gap: '2',
+                fontSize: 'type.12',
+              }),
+            ),
+          ],
           [
             // The kind's packet shape, so the legend teaches what the belts carry (15).
             packetMark(kind, 8, h),
-            h.span([h.Class('flex-1')], [t.catalog.kinds[kind].label]),
             h.span(
               [
                 h.Class(
-                  `${FIGURE} text-[calc(11.5px*var(--type-scale))] ${failing ? 'text-danger' : slow ? 'text-warn' : 'text-muted-foreground'}`,
+                  css({
+                    flex: '1 1 0%',
+                  }),
+                ),
+              ],
+              [t.catalog.kinds[kind].label],
+            ),
+            h.span(
+              [
+                h.Class(
+                  cx(
+                    FIGURE,
+                    css({
+                      fontSize: 'type.11-5',
+                    }),
+                    failing
+                      ? css({ color: 'danger' })
+                      : slow
+                        ? css({ color: 'warn' })
+                        : css({ color: 'mutedForeground' }),
+                  ),
                 ),
               ],
               [
@@ -49,13 +79,29 @@ const traffic = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): ReadonlyA
         )
         if (!percentiles) return line
         return h.div(
-          [h.Key(kind), h.Class('flex flex-col gap-0.5')],
+          [
+            h.Key(kind),
+            h.Class(
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5',
+              }),
+            ),
+          ],
           [
             line,
             h.span(
               [
                 h.Class(
-                  `${FIGURE} pl-4 text-[calc(11.5px*var(--type-scale))] ${slow ? 'text-warn' : 'text-muted-foreground'}`,
+                  cx(
+                    FIGURE,
+                    css({
+                      paddingLeft: '4',
+                      fontSize: 'type.11-5',
+                    }),
+                    slow ? css({ color: 'warn' }) : css({ color: 'mutedForeground' }),
+                  ),
                 ),
               ],
               [

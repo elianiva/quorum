@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { Function, Schema as S, Match } from 'effect'
 import type { Html } from 'foldkit/html'
 import * as Update from 'foldkit/update'
@@ -5,8 +6,6 @@ import { defineMessageUnion } from 'foldkit/message'
 import type { Reflect } from 'foldkit/submodel'
 import { defineView } from 'foldkit/submodel'
 import { modifyFields } from 'foldkit/struct'
-
-import { cn } from 'cn'
 
 // Toggle is a two-state button (pressed / not) marked with `aria-pressed` and
 // `data-state`. It owns its pressed state as a Submodel: embed it with
@@ -17,23 +16,87 @@ export const toggleVariantKeys = ['default', 'outline'] as const
 export type ToggleVariant = (typeof toggleVariantKeys)[number]
 
 export const toggleVariants: Record<ToggleVariant, string> = {
-  default: 'bg-transparent',
-  outline: 'bg-well shadow-well',
+  default: css({ backgroundColor: 'transparent' }),
+  outline: css({
+    backgroundColor: 'well',
+    boxShadow: 'well',
+  }),
 }
 
 export const toggleSizeKeys = ['default', 'sm', 'lg'] as const
 export type ToggleSize = (typeof toggleSizeKeys)[number]
 
 export const toggleSizes: Record<ToggleSize, string> = {
-  default: 'h-8 min-w-8 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
-  sm: "h-7 min-w-7 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-  lg: 'h-9 min-w-9 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
+  default: css({
+    height: '8',
+    minWidth: '8',
+    paddingInline: '2.5',
+    '&:has([data-icon="inline-end"])': { paddingRight: '2' },
+    '&:has([data-icon="inline-start"])': { paddingLeft: '2' },
+  }),
+  sm: css({
+    height: '7',
+    minWidth: '7',
+    borderRadius: 'md',
+    paddingInline: '2.5',
+    fontSize: 'type.12-8',
+    '&:has([data-icon="inline-end"])': { paddingRight: '1.5' },
+    '&:has([data-icon="inline-start"])': { paddingLeft: '1.5' },
+    '& svg:not([data-svg-icon])': { width: '3.5', height: '3.5' },
+  }),
+  lg: css({
+    height: '9',
+    minWidth: '9',
+    paddingInline: '2.5',
+    '&:has([data-icon="inline-end"])': { paddingRight: '2' },
+    '&:has([data-icon="inline-start"])': { paddingLeft: '2' },
+  }),
 }
 
 /** Upstream cva base string. The disabled: variants are inert under foldkit
  *  (this view emits native disabled; twins kept for parity). */
-export const toggleBase =
-  "hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive data-[state=on]:bg-raised data-[state=on]:shadow-raised data-[state=on]:text-foreground text-muted-foreground gap-1 rounded-lg text-sm font-medium transition-all [&_svg:not([class*='size-'])]:size-4 group/toggle inline-flex items-center justify-center whitespace-nowrap outline-none hover:bg-foreground/5 data-[state=on]:hover:bg-raised focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0"
+export const toggleBase = css({
+  _hover: {
+    color: 'foreground',
+    backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+  },
+  _focusVisible: {
+    borderColor: 'ring',
+    boxShadow: 'focus',
+  },
+  '&[aria-invalid="true"]': {
+    borderColor: 'destructive',
+    boxShadow: 'invalid',
+  },
+  _dark: {
+    '&[aria-invalid="true"]': {
+      boxShadow: 'invalid',
+    },
+  },
+  '&[data-state=on]': {
+    layerStyle: 'raised',
+    boxShadow: 'raised',
+    color: 'foreground',
+    _hover: { layerStyle: 'raised' },
+  },
+  color: 'mutedForeground',
+  gap: '1',
+  borderRadius: 'lg',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
+  transitionProperty: 'all',
+  transitionDuration: 'fast',
+  transitionTimingFunction: 'default',
+  '& svg:not([data-svg-icon])': { width: '4', height: '4' },
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  whiteSpace: 'nowrap',
+  outlineStyle: 'none',
+  _disabled: { pointerEvents: 'none', opacity: 0.5 },
+  '& svg': { pointerEvents: 'none', flexShrink: '0' },
+})
 
 // MODEL
 
@@ -117,7 +180,7 @@ export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h
       h.DataAttribute('state', model.isPressed ? 'on' : 'off'),
       h.AriaPressed(model.isPressed ? 'true' : 'false'),
       h.Class(
-        cn(
+        cx(
           toggleBase,
           toggleVariants[viewInputs.variant ?? 'default'],
           toggleSizes[viewInputs.size ?? 'default'],

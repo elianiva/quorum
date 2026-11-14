@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { copy, nodeTitle } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { SYNC_MS } from '@quorum/simulation/catalog'
@@ -54,7 +55,9 @@ const replica = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyA
                   onClick: Message.PromoteReplica({ nodeId: node.id }),
                   variant: 'outline',
                   size: 'sm',
-                  className: 'self-start',
+                  className: css({
+                    alignSelf: 'flex-start',
+                  }),
                   isDisabled: false,
                 },
                 [t.inspectorDatabase.promote],

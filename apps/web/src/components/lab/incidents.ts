@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
   Check,
@@ -21,7 +22,6 @@ import type { Model } from '@/game/model.ts'
 import { badge } from '@quorum/ui/primitives/badge'
 import { button, closeButton } from '@quorum/ui/primitives/button'
 import { icon } from '@quorum/ui/primitives/icon'
-import { cn } from '@/lib/utils'
 import { compact } from '@quorum/ui/game/format'
 import { recipeOf } from '@quorum/ui/game/pools'
 import { EYEBROW, FIGURE, insightChip } from '@quorum/ui/game/bits'
@@ -34,11 +34,44 @@ import { EYEBROW, FIGURE, insightChip } from '@quorum/ui/game/bits'
  * Everything the player may want to reread is Mail. Nothing here is a record.
  */
 
-const ALARM =
-  'pointer-events-auto enter-down flex min-w-0 items-center gap-2.5 rounded-xl bg-danger py-1.5 pr-1.5 pl-3 text-[calc(13px*var(--type-scale))] font-semibold text-white shadow-[inset_0_1px_0_oklch(1_0_0/0.25),0_0_0_1px_color-mix(in_oklch,var(--danger),black_25%),0_10px_24px_-8px_color-mix(in_oklch,var(--danger)_60%,transparent)]'
+const ALARM = cx(
+  'enter-down',
+  css({
+    pointerEvents: 'auto',
+    display: 'flex',
+    minWidth: '0',
+    alignItems: 'center',
+    gap: '2.5',
+    borderRadius: 'xl',
+    backgroundColor: 'danger',
+    paddingBlock: '1.5',
+    paddingRight: '1.5',
+    paddingLeft: '3',
+    fontSize: 'type.13',
+    fontWeight: 'semibold',
+    color: 'white',
+    boxShadow:
+      'inset 0 1px 0 oklch(1 0 0/0.25), 0 0 0 1px color-mix(in oklch, var(--danger), black 25%), 0 10px 24px -8px color-mix(in oklch, var(--danger) 60%, transparent)',
+  }),
+)
 
-const STATE =
-  'pointer-events-auto enter-down flex min-w-0 items-center gap-2 rounded-xl bg-surface py-1 pr-1 pl-3 text-[calc(12.5px*var(--type-scale))] shadow-card'
+const STATE = cx(
+  'enter-down',
+  css({
+    pointerEvents: 'auto',
+    display: 'flex',
+    minWidth: '0',
+    alignItems: 'center',
+    gap: '2',
+    borderRadius: 'xl',
+    layerStyle: 'surface',
+    paddingBlock: '1',
+    paddingRight: '1',
+    paddingLeft: '3',
+    fontSize: 'type.12-5',
+    boxShadow: 'card',
+  }),
+)
 
 type IncidentAction = Readonly<{
   label: (t: Messages) => string
@@ -107,9 +140,16 @@ const severity = (value: number, t: Messages, h: HtmlBuilder<Message>): Html =>
   h.span(
     [
       h.Class(
-        cn(
+        cx(
           FIGURE,
-          'shrink-0 rounded-md px-1 text-[calc(10.5px*var(--type-scale))] font-medium shadow-[inset_0_0_0_1px_oklch(1_0_0/0.42)]',
+          css({
+            flexShrink: '0',
+            borderRadius: 'md',
+            paddingInline: '1',
+            fontSize: 'type.10-5',
+            fontWeight: 'medium',
+            boxShadow: 'highlightLineStrong',
+          }),
         ),
       ),
     ],
@@ -134,14 +174,50 @@ export const incidentNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.Class(ALARM),
     ],
     [
-      icon(h, TriangleAlert, 'size-4 shrink-0'),
+      icon(
+        h,
+        TriangleAlert,
+        css({
+          width: '4',
+          height: '4',
+          flexShrink: '0',
+        }),
+      ),
       h.div(
-        [h.Class('flex min-w-0 flex-col')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              minWidth: '0',
+              flexDirection: 'column',
+            }),
+          ),
+        ],
         [
           h.div(
-            [h.Class('flex min-w-0 items-center gap-2')],
             [
-              h.span([h.Class('truncate')], [t.catalog.incidents[incident.kind].name]),
+              h.Class(
+                css({
+                  display: 'flex',
+                  minWidth: '0',
+                  alignItems: 'center',
+                  gap: '2',
+                }),
+              ),
+            ],
+            [
+              h.span(
+                [
+                  h.Class(
+                    css({
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }),
+                  ),
+                ],
+                [t.catalog.incidents[incident.kind].name],
+              ),
               severity(incident.severity, t, h),
             ],
           ),
@@ -149,7 +225,15 @@ export const incidentNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
           // page and not the first.
           incident.causedBy
             ? h.span(
-                [h.Class('text-[calc(11.5px*var(--type-scale))] font-medium text-white/80')],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'type.11-5',
+                      fontWeight: 'medium',
+                      color: 'color-mix(in oklab, white 80%, transparent)',
+                    }),
+                  ),
+                ],
                 [t.incidents.followedLeftAlone(t.catalog.incidents[incident.causedBy].name)],
               )
             : h.empty,
@@ -164,7 +248,17 @@ export const incidentNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
               variant: 'outline',
               attributes: [h.Title(locked ?? action.label(t))],
             },
-            [icon(h, locked === null ? FileBadge : Lock, 'size-3.5'), action.label(t)],
+            [
+              icon(
+                h,
+                locked === null ? FileBadge : Lock,
+                css({
+                  width: '3.5',
+                  height: '3.5',
+                }),
+              ),
+              action.label(t),
+            ],
             h,
           )
         : h.empty,
@@ -176,10 +270,31 @@ export const incidentNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.AriaLabel(t.incidents.showOnBoard),
               h.OnClick(Message.RevealNode({ nodeId })),
               h.Class(
-                'grid size-7 shrink-0 place-items-center rounded-lg text-white/90 shadow-[inset_0_0_0_1px_oklch(1_0_0/0.4)] hover:bg-white/10',
+                css({
+                  display: 'grid',
+                  width: '7',
+                  height: '7',
+                  flexShrink: '0',
+                  placeItems: 'center',
+                  borderRadius: 'lg',
+                  color: 'color-mix(in oklab, white 90%, transparent)',
+                  boxShadow: 'highlightLine',
+                  _hover: {
+                    backgroundColor: 'color-mix(in oklab, white 10%, transparent)',
+                  },
+                }),
               ),
             ],
-            [icon(h, Crosshair, 'size-3.5')],
+            [
+              icon(
+                h,
+                Crosshair,
+                css({
+                  width: '3.5',
+                  height: '3.5',
+                }),
+              ),
+            ],
           )
         : h.empty,
     ],
@@ -221,16 +336,34 @@ export const alertsNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
         [
           h.AriaHidden(true),
           h.Class(
-            cn(
-              'size-[7px] shrink-0 rounded-full',
-              loud.length > 0 ? 'bg-warn' : 'bg-muted-foreground',
+            cx(
+              css({
+                width: '7px',
+                height: '7px',
+                flexShrink: '0',
+                borderRadius: 'full',
+              }),
+              loud.length > 0
+                ? css({
+                    backgroundColor: 'warn',
+                  })
+                : css({
+                    backgroundColor: 'mutedForeground',
+                  }),
             ),
           ),
         ],
         [],
       ),
       h.span(
-        [h.Class('shrink-0 font-semibold')],
+        [
+          h.Class(
+            css({
+              flexShrink: '0',
+              fontWeight: 'semibold',
+            }),
+          ),
+        ],
         [
           firing.length > 0
             ? t.incidents.alertsFiring(firing.length)
@@ -240,7 +373,17 @@ export const alertsNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
       detail === null
         ? h.empty
         : h.span(
-            [h.Class('min-w-0 truncate text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  minWidth: '0',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
             [others > 0 ? `${detail} ${t.incidents.andMore(others)}` : detail],
           ),
       muted.length > 0 ? badge({ variant: 'warn' }, [t.incidents.ignored], h) : h.empty,
@@ -252,7 +395,16 @@ export const alertsNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
               variant: 'ghost',
               attributes: [h.Title(t.incidents.acknowledge), h.AriaLabel(t.incidents.acknowledge)],
             },
-            [icon(h, Check, 'size-3.5')],
+            [
+              icon(
+                h,
+                Check,
+                css({
+                  width: '3.5',
+                  height: '3.5',
+                }),
+              ),
+            ],
             h,
           )
         : h.empty,
@@ -263,7 +415,17 @@ export const alertsNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
           variant: 'ghost',
           attributes: [h.Title(t.incidents.openAlerts)],
         },
-        [t.incidents.alerts, icon(h, ChevronRight, 'size-3.5')],
+        [
+          t.incidents.alerts,
+          icon(
+            h,
+            ChevronRight,
+            css({
+              width: '3.5',
+              height: '3.5',
+            }),
+          ),
+        ],
         h,
       ),
     ],
@@ -290,26 +452,92 @@ export const researchOffer = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.DataAttribute('morph', 'notice'),
       h.DataAttribute('exit', 'notice'),
       h.Class(
-        'pointer-events-auto enter-left fixed bottom-[76px] left-3 z-20 w-[min(21rem,calc(100%-16px))] overflow-hidden rounded-xl bg-surface shadow-float compact:relative compact:w-auto',
+        cx(
+          css({
+            pointerEvents: 'auto',
+            position: 'fixed',
+            bottom: '76px',
+            left: '3',
+            zIndex: '20',
+            width: 'min(21rem,calc(100%-16px))',
+            overflow: 'hidden',
+            borderRadius: 'xl',
+            layerStyle: 'surface',
+            boxShadow: 'float',
+            _compact: {
+              position: 'relative',
+              width: 'auto',
+            },
+          }),
+          'enter-left',
+        ),
       ),
     ],
     [
       h.div(
-        [h.Class('flex items-start gap-2 px-3 pt-2 pr-9 pb-1.5')],
         [
-          icon(h, FlaskConical, 'mt-0.5 size-4 shrink-0 text-muted-foreground'),
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '2',
+              paddingInline: '3',
+              paddingTop: '2',
+              paddingRight: '9',
+              paddingBottom: '1.5',
+            }),
+          ),
+        ],
+        [
+          icon(
+            h,
+            FlaskConical,
+            css({
+              marginTop: '0.5',
+              width: '4',
+              height: '4',
+              flexShrink: '0',
+              color: 'mutedForeground',
+            }),
+          ),
           h.div(
-            [h.Class('flex min-w-0 flex-col gap-0.5')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  minWidth: '0',
+                  flexDirection: 'column',
+                  gap: '0.5',
+                }),
+              ),
+            ],
             [
               // The option that was refused is context, so it gives way; the Research is the offer.
               h.span(
-                [h.Class(cn(EYEBROW, 'truncate'))],
+                [
+                  h.Class(
+                    cx(
+                      EYEBROW,
+                      css({
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }),
+                    ),
+                  ),
+                ],
                 [t.research.locked, ' · ', nameIn(t, offer.what)],
               ),
               h.span(
                 [
                   h.Class(
-                    'line-clamp-2 text-[calc(13px*var(--type-scale))] font-semibold leading-snug [text-wrap:pretty]',
+                    css({
+                      lineClamp: 2,
+                      fontSize: 'type.13',
+                      fontWeight: 'semibold',
+                      lineHeight: 'snug',
+                      textWrap: 'pretty',
+                    }),
                   ),
                 ],
                 [research.name],
@@ -320,13 +548,37 @@ export const researchOffer = (model: Model, h: HtmlBuilder<Message>): Html => {
       ),
       closeButton({ label: t.inbox.dismiss, onClick: Message.ResearchOfferDismissed() }, h),
       h.div(
-        [h.Class('flex items-center gap-2 border-t border-dashed border-hairline px-3 py-1.5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2',
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderStyle: 'dashed',
+              borderColor: 'hairline',
+              paddingInline: '3',
+              paddingBlock: '1.5',
+            }),
+          ),
+        ],
         [
           ...recipeOf(offer.id).map(([pool, cost]) =>
             insightChip(pool, compact(cost), h, false, 'plain', insightName(t, pool)),
           ),
           h.div(
-            [h.Class('ml-auto flex shrink-0 items-center gap-1')],
+            [
+              h.Class(
+                css({
+                  marginLeft: 'auto',
+                  display: 'flex',
+                  flexShrink: '0',
+                  alignItems: 'center',
+                  gap: '1',
+                }),
+              ),
+            ],
             [
               button(
                 {

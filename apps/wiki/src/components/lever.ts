@@ -1,10 +1,10 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
-import { cn } from 'cn'
 import type { LeverKind } from '@quorum/simulation/catalog'
 import { FIGURE } from '@quorum/ui/game/bits'
 import { localeOf } from '../i18n/builder.ts'
 import { langOf } from '../i18n/lang.ts'
 import { leverOf, leverRows } from '../reference/levers.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* A kind's Product lever as the game offers it: three steps, each with the share
    it gives the kind, its Dev Hours, and its growth cost. */
@@ -16,29 +16,90 @@ export const leverView = <M>(kind: LeverKind, h: HtmlBuilder<M>): Html => {
   const t = l.t.islands.lever
   const def = leverOf(l, kind)
   const rows = leverRows(kind)
-  const cell = 'px-3 py-1.5 text-left'
+  const cell = css({
+    paddingInline: '3',
+    paddingBlock: '1.5',
+    textAlign: 'left',
+  })
   return h.figure(
-    [h.Class('not-prose my-6 overflow-hidden rounded-lg border border-border')],
+    [
+      h.Class(
+        cx(
+          css({
+            marginBlock: '6',
+            overflow: 'hidden',
+            borderRadius: 'lg',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: 'border',
+          }),
+          'not-prose',
+        ),
+      ),
+    ],
     [
       h.div(
         [
           h.Class(
-            'flex items-baseline justify-between gap-3 border-b border-border bg-muted/40 px-3 py-2',
+            css({
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: '3',
+              borderBottomWidth: '1px',
+              borderBottomStyle: 'solid',
+              borderColor: 'border',
+              backgroundColor: 'color-mix(in oklab, var(--muted) 40%, transparent)',
+              paddingInline: '3',
+              paddingBlock: '2',
+            }),
           ),
         ],
         [
-          h.span([h.Class('text-[13px] font-medium')], [t.title(def.name)]),
           h.span(
-            [h.Class('text-[12px] text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.13',
+                  fontWeight: 'medium',
+                }),
+              ),
+            ],
+            [t.title(def.name)],
+          ),
+          h.span(
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.12',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
             [t.default(percent(def.base), def.era)],
           ),
         ],
       ),
       h.div(
-        [h.Class('overflow-x-auto')],
+        [
+          h.Class(
+            css({
+              overflowX: 'auto',
+            }),
+          ),
+        ],
         [
           h.table(
-            [h.Class('w-full border-collapse text-[13px] leading-snug')],
+            [
+              h.Class(
+                css({
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: 'type.13',
+                  lineHeight: 'snug',
+                }),
+              ),
+            ],
             [
               h.thead(
                 [],
@@ -50,7 +111,16 @@ export const leverView = <M>(kind: LeverKind, h: HtmlBuilder<M>): Html => {
                         [
                           h.Key(header),
                           h.Class(
-                            cn(cell, 'bg-muted/30 text-[12px] font-medium text-muted-foreground'),
+                            cx(
+                              cell,
+                              css({
+                                backgroundColor:
+                                  'color-mix(in oklab, var(--muted) 30%, transparent)',
+                                fontSize: 'type.12',
+                                fontWeight: 'medium',
+                                color: 'mutedForeground',
+                              }),
+                            ),
                           ),
                         ],
                         [header],
@@ -63,12 +133,24 @@ export const leverView = <M>(kind: LeverKind, h: HtmlBuilder<M>): Html => {
                 [],
                 rows.map((row) =>
                   h.tr(
-                    [h.Key(String(row.step)), h.Class('border-b border-border last:border-b-0')],
                     [
-                      h.td([h.Class(cn(cell, FIGURE))], [String(row.step)]),
-                      h.td([h.Class(cn(cell, FIGURE))], [percent(row.share)]),
-                      h.td([h.Class(cn(cell, FIGURE))], [String(row.dh)]),
-                      h.td([h.Class(cn(cell, FIGURE))], [`−${Math.round(row.growth * 100)}%`]),
+                      h.Key(String(row.step)),
+                      h.Class(
+                        css({
+                          borderBottomWidth: '1px',
+                          borderBottomStyle: 'solid',
+                          borderColor: 'border',
+                          '&:last-child': {
+                            borderBottomWidth: '0',
+                          },
+                        }),
+                      ),
+                    ],
+                    [
+                      h.td([h.Class(cx(cell, FIGURE))], [String(row.step)]),
+                      h.td([h.Class(cx(cell, FIGURE))], [percent(row.share)]),
+                      h.td([h.Class(cx(cell, FIGURE))], [String(row.dh)]),
+                      h.td([h.Class(cx(cell, FIGURE))], [`−${Math.round(row.growth * 100)}%`]),
                     ],
                   ),
                 ),
@@ -78,7 +160,19 @@ export const leverView = <M>(kind: LeverKind, h: HtmlBuilder<M>): Html => {
         ],
       ),
       h.figcaption(
-        [h.Class('border-t border-border px-3 py-2 text-[12px] text-muted-foreground')],
+        [
+          h.Class(
+            css({
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderColor: 'border',
+              paddingInline: '3',
+              paddingBlock: '2',
+              fontSize: 'type.12',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
         [t.note],
       ),
     ],

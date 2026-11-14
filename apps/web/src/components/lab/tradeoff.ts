@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { copy, localeOf, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { Check, Sparkles } from 'lucide'
@@ -21,7 +22,6 @@ import type { Model, PreviewFigures, TradeoffOption } from '@/game/model.ts'
 import type { TradeoffState } from '@/game/tradeoff-machine.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { button, closeButton } from '@quorum/ui/primitives/button'
-import { cn } from '@/lib/utils'
 import { FIGURE, PANEL } from '@quorum/ui/game/bits'
 
 const kindTitleOf = (t: Messages): Record<TradeoffOption['kind'], string> => ({
@@ -134,7 +134,15 @@ const radar = (now: Axes, next: Axes, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.svg(
     [
-      h.Class('mx-auto block h-[176px] w-[220px] overflow-visible'),
+      h.Class(
+        css({
+          marginInline: 'auto',
+          display: 'block',
+          height: '176px',
+          width: '220px',
+          overflow: 'visible',
+        }),
+      ),
       h.Xmlns('http://www.w3.org/2000/svg'),
       h.ViewBox(`0 22 ${SIZE} 176`),
       h.AriaLabel(t.tradeoff.sixAxesNowAndWithThis),
@@ -151,21 +159,35 @@ const radar = (now: Axes, next: Axes, h: HtmlBuilder<Message>): Html => {
             ).join(' '),
           ),
           h.Fill('none'),
-          h.Class('stroke-hairline'),
+          h.Class(
+            css({
+              stroke: 'hairline',
+            }),
+          ),
           h.StrokeWidth('1'),
         ]),
       ),
       h.polygon([
         h.Key('now'),
         h.Points(polygonOf(now)),
-        h.Class('fill-muted-foreground/10 stroke-muted-foreground'),
+        h.Class(
+          css({
+            fill: 'color-mix(in oklab, var(--muted-foreground) 10%, transparent)',
+            stroke: 'mutedForeground',
+          }),
+        ),
         h.StrokeWidth('1.25'),
         h.Attribute('stroke-dasharray', '3 2'),
       ]),
       h.polygon([
         h.Key('next'),
         h.Points(polygonOf(next)),
-        h.Class('fill-group-compute/20 stroke-group-compute'),
+        h.Class(
+          css({
+            fill: 'color-mix(in oklab, var(--group-compute) 20%, transparent)',
+            stroke: 'groupCompute',
+          }),
+        ),
         h.StrokeWidth('1.75'),
         h.StrokeLinejoin('round'),
       ]),
@@ -181,9 +203,22 @@ const radar = (now: Axes, next: Axes, h: HtmlBuilder<Message>): Html => {
             h.Attribute('y', (y + 3.5).toFixed(1)),
             h.Attribute('text-anchor', anchor),
             h.Class(
-              cn(
-                'text-[calc(10.5px*var(--type-scale))] font-medium',
-                up ? 'fill-ok' : down ? 'fill-danger' : 'fill-muted-foreground',
+              cx(
+                css({
+                  fontSize: 'type.10-5',
+                  fontWeight: 'medium',
+                }),
+                up
+                  ? css({
+                      fill: 'ok',
+                    })
+                  : down
+                    ? css({
+                        fill: 'danger',
+                      })
+                    : css({
+                        fill: 'mutedForeground',
+                      }),
               ),
             ),
           ],
@@ -231,21 +266,56 @@ const worse = (preview: PreviewFigures): boolean =>
 const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Html =>
   (card._tag === 'Hovering' || card._tag === 'Pinned') && card.preview
     ? h.div(
-        [h.Class('flex flex-col gap-0.5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5',
+            }),
+          ),
+        ],
         [
           h.div(
-            [h.Class('flex items-center gap-2')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '2',
+                }),
+              ),
+            ],
             [
               h.span(
                 [
                   h.Class(
-                    `size-2 shrink-0 rounded-full ${worse(card.preview) ? 'bg-danger' : 'bg-ok'}`,
+                    cx(
+                      css({
+                        width: '2',
+                        height: '2',
+                        flexShrink: '0',
+                        borderRadius: 'full',
+                      }),
+                      worse(card.preview)
+                        ? css({ backgroundColor: 'danger' })
+                        : css({ backgroundColor: 'ok' }),
+                    ),
                   ),
                 ],
                 [],
               ),
               h.span(
-                [h.Class(cn(FIGURE, 'text-[calc(12px*var(--type-scale))]'))],
+                [
+                  h.Class(
+                    cx(
+                      FIGURE,
+                      css({
+                        fontSize: 'type.12',
+                      }),
+                    ),
+                  ),
+                ],
                 [previewLine(copy(h), model, card.preview)],
               ),
             ],
@@ -254,7 +324,14 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
             ? h.span(
                 [
                   h.Class(
-                    cn(FIGURE, 'pl-4 text-[calc(11.5px*var(--type-scale))] text-muted-foreground'),
+                    cx(
+                      FIGURE,
+                      css({
+                        paddingLeft: '4',
+                        fontSize: 'type.11-5',
+                        color: 'mutedForeground',
+                      }),
+                    ),
                   ),
                 ],
                 [costLine(copy(h), model, card.preview)],
@@ -263,18 +340,53 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
         ],
       )
     : card._tag === 'Refused'
-      ? h.span([h.Class('text-[calc(12px*var(--type-scale))] text-warn')], [card.reason])
+      ? h.span(
+          [
+            h.Class(
+              css({
+                fontSize: 'type.12',
+                color: 'warn',
+              }),
+            ),
+          ],
+          [card.reason],
+        )
       : h.empty
 
-const PLACE = 'absolute top-[76px] right-[372px] z-20 w-[320px] short:right-[340px]'
+const PLACE = css({
+  position: 'absolute',
+  top: '76px',
+  right: '372px',
+  zIndex: '20',
+  width: '320px',
+  _short: { right: '340px' },
+})
 
 /** A phone shows the effect of an option as a strip above the safe area, not a floating card. */
-const PLACE_PHONE =
-  'compact:inset-x-2 compact:top-auto compact:right-2 compact:bottom-[max(8px,env(safe-area-inset-bottom))] compact:z-40 compact:w-auto'
+const PLACE_PHONE = css({
+  _compact: {
+    left: '2',
+    right: '2',
+    top: 'auto',
+    bottom: 'max(8px, env(safe-area-inset-bottom))',
+    zIndex: '40',
+    width: 'auto',
+  },
+})
 
 /** An unpinned option takes the whole screen on a phone, like every other action. */
-const PLACE_SCREEN =
-  'compact:inset-0 compact:z-40 compact:max-h-none compact:w-auto compact:overflow-y-auto compact:rounded-none compact:p-5 compact:shadow-none'
+const PLACE_SCREEN = css({
+  _compact: {
+    inset: '0',
+    zIndex: '40',
+    maxHeight: 'none',
+    width: 'auto',
+    overflowY: 'auto',
+    borderRadius: '0',
+    padding: '5',
+    boxShadow: 'none',
+  },
+})
 
 export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
@@ -291,11 +403,34 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
     return h.div(
       [
         h.Key('tradeoff-line'),
-        h.Class(cn(PLACE, PLACE_PHONE, PANEL, 'enter-panel flex flex-col gap-1 px-3.5 py-2.5')),
+        h.Class(
+          cx(
+            PLACE,
+            PLACE_PHONE,
+            PANEL,
+            cx(
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1',
+                paddingInline: '3.5',
+                paddingBlock: '2.5',
+              }),
+              'enter-panel',
+            ),
+          ),
+        ),
       ],
       [
         h.span(
-          [h.Class('text-[calc(12.5px*var(--type-scale))] font-semibold')],
+          [
+            h.Class(
+              css({
+                fontSize: 'type.12-5',
+                fontWeight: 'semibold',
+              }),
+            ),
+          ],
           [nameOf(t, card.option)],
         ),
         effect(model, card, h),
@@ -318,16 +453,58 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Key('tradeoff'),
-      h.Class(cn(PLACE, PLACE_SCREEN, PANEL, 'enter-panel flex flex-col gap-3 p-4')),
+      h.Class(
+        cx(
+          PLACE,
+          PLACE_SCREEN,
+          PANEL,
+          cx(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '3',
+              padding: '4',
+            }),
+            'enter-panel',
+          ),
+        ),
+      ),
       h.AriaLabel(title),
     ],
     [
       h.div(
-        [h.Class('flex items-center gap-2 pr-7')],
         [
-          icon(h, Sparkles, 'size-4 shrink-0 text-group-compute'),
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2',
+              paddingRight: '7',
+            }),
+          ),
+        ],
+        [
+          icon(
+            h,
+            Sparkles,
+            css({
+              width: '4',
+              height: '4',
+              flexShrink: '0',
+              color: 'groupCompute',
+            }),
+          ),
           h.span(
-            [h.Class('min-w-0 flex-1 text-[calc(13.5px*var(--type-scale))] font-semibold')],
+            [
+              h.Class(
+                css({
+                  minWidth: '0',
+                  flex: '1 1 0%',
+                  fontSize: 'type.13-5',
+                  fontWeight: 'semibold',
+                }),
+              ),
+            ],
             [title],
           ),
         ],
@@ -339,13 +516,29 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
       effect(model, card, h),
       migration && card._tag !== 'Refused'
         ? h.p(
-            [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.12',
+                  lineHeight: 'snug',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
             [t.tradeoff.migrationDHAcrossAllAppServers(migrationCost(model.board.game, migration))],
           )
         : h.empty,
       stack && stack.glossary.length > 0
         ? h.div(
-            [h.Class('flex flex-wrap gap-1.5')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '1.5',
+                }),
+              ),
+            ],
             stack.glossary.map((anchor) =>
               h.a(
                 [
@@ -354,7 +547,20 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.Target('_blank'),
                   h.Rel('noreferrer noopener'),
                   h.Class(
-                    'rounded-md bg-nested px-1.5 py-0.5 text-[calc(11px*var(--type-scale))] text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground',
+                    css({
+                      borderRadius: 'md',
+                      backgroundColor: 'nested',
+                      paddingInline: '1.5',
+                      paddingBlock: '0.5',
+                      fontSize: 'type.11',
+                      color: 'mutedForeground',
+                      textDecorationLine: 'underline',
+                      textDecorationStyle: 'dotted',
+                      textUnderlineOffset: '2',
+                      _hover: {
+                        color: 'foreground',
+                      },
+                    }),
                   ),
                 ],
                 [termsOf(t)[anchor] ?? anchor],
@@ -364,18 +570,34 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
         : h.empty,
       card._tag === 'Pinned'
         ? h.div(
-            [h.Class('flex gap-2')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  gap: '2',
+                }),
+              ),
+            ],
             [
               button(
                 {
                   onClick: Message.OptionConfirmed(),
                   isDisabled: card.preview === null,
                   size: 'lg',
-                  className: 'flex-1',
+                  className: css({
+                    flex: '1 1 0%',
+                  }),
                   attributes: [h.Title(t.tradeoff.confirmEnter)],
                 },
                 [
-                  icon(h, Check, 'size-4'),
+                  icon(
+                    h,
+                    Check,
+                    css({
+                      width: '4',
+                      height: '4',
+                    }),
+                  ),
                   migration ? t.tradeoff.startMigration : t.tradeoff.confirm,
                 ],
                 h,

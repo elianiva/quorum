@@ -19,6 +19,7 @@ export const chrome = {
     sections: 'Sections',
     wordmarkWiki: 'Wiki',
     language: 'Language',
+    theme: 'Switch between light and dark mode',
     switchTo: (name: string) => `Read this page in ${name}`,
   },
   quadrants: {
@@ -189,6 +190,7 @@ export const chrome = {
   search: {
     placeholder: 'Search',
     label: 'Search the wiki',
+    close: 'Close search',
     results: 'Search results',
     searching: 'Searching…',
     unavailable: 'Search is unavailable.',
@@ -203,12 +205,11 @@ export const chrome = {
   },
   spoilers: {
     title: 'Spoilers',
-    all: 'All',
-    allShow: 'All Eras show',
-    hidingAfter: (era: string) => `Hiding after ${era}`,
-    groupLabel: 'Hide content after the Era you reached',
+    hideFuture: 'Hide future Eras',
+    allEras: 'All Eras',
+    after: (era: string) => `After ${era}`,
+    chooseEra: 'Choose the last Era you reached',
     showEvery: 'Show every Era',
-    hideAfter: (era: string) => `Hide after ${era}`,
     upTo: (era: string) => `Up to ${era}`,
   },
   quiz: {

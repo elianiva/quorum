@@ -3,7 +3,7 @@ import { foldkit } from '@foldkit/vite-plugin'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
-import tailwindcss from '@tailwindcss/vite'
+import pandacss from '@pandacss/vite'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 import { simVersion } from '../../packages/simulation/sim-version.ts'
@@ -76,7 +76,7 @@ export default defineConfig({
   build: { sourcemap: authToken ? 'hidden' : false },
   plugins: [
     layoutHarness(),
-    tailwindcss(),
+    pandacss({ codegen: false }),
     foldkit().map(unbrandedModules),
     simVersion(),
     // Before the source-map upload, so the worker is written for every build.

@@ -1,5 +1,4 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
-import { cn } from 'cn'
 import { ArrowRight, BookOpen } from 'lucide'
 import {
   COMPONENTS,
@@ -25,6 +24,7 @@ import { componentBadge } from '../reference/components.ts'
 import { pathCard } from './path-nav.ts'
 import { projectCard } from './project.ts'
 import { quadrantBadge } from './quadrant.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The home page: what the wiki is, the guided paths, then the four kinds of page and the catalog. */
 
@@ -33,18 +33,72 @@ type H = HtmlBuilder<Message>
 /** One kind of page: its badge, what it is for, and its first pages. */
 const kind = (l: Lang, section: Section, h: H): Html =>
   h.section(
-    [h.Key(section), h.Class('flex flex-col bg-background p-5')],
+    [
+      h.Key(section),
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: 'background',
+          padding: '5',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex items-center gap-2')],
         [
-          quadrantBadge(section, 'size-5', h),
-          h.h3([h.Class('text-[15px] font-semibold')], [l.t.quadrants[section].label]),
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2',
+            }),
+          ),
+        ],
+        [
+          quadrantBadge(
+            section,
+            css({
+              width: '5',
+              height: '5',
+            }),
+            h,
+          ),
+          h.h3(
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.15',
+                  fontWeight: 'semibold',
+                }),
+              ),
+            ],
+            [l.t.quadrants[section].label],
+          ),
         ],
       ),
-      h.p([h.Class('mt-1 text-[13px] text-muted-foreground')], [l.t.quadrants[section].purpose]),
+      h.p(
+        [
+          h.Class(
+            css({
+              marginTop: '1',
+              fontSize: 'type.13',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
+        [l.t.quadrants[section].purpose],
+      ),
       h.ul(
-        [h.Class('mt-3 flex flex-col')],
+        [
+          h.Class(
+            css({
+              marginTop: '3',
+              display: 'flex',
+              flexDirection: 'column',
+            }),
+          ),
+        ],
         navOf(l.locale, section)
           .slice(0, 6)
           .map((target) =>
@@ -52,7 +106,22 @@ const kind = (l: Lang, section: Section, h: H): Html =>
               [h.Key(target.path)],
               [
                 h.a(
-                  [h.Href(target.path), h.Class('block truncate py-1 text-[14px] hover:underline')],
+                  [
+                    h.Href(target.path),
+                    h.Class(
+                      css({
+                        display: 'block',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        paddingBlock: '1',
+                        fontSize: 'type.14',
+                        _hover: {
+                          textDecorationLine: 'underline',
+                        },
+                      }),
+                    ),
+                  ],
                   [target.title],
                 ),
               ],
@@ -83,7 +152,23 @@ const countList = (
   h.dl(
     [
       h.Class(
-        'grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3 lg:grid-cols-6',
+        css({
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gap: '0.25',
+          overflow: 'hidden',
+          borderRadius: 'lg',
+          borderWidth: '1px',
+          borderStyle: 'solid',
+          borderColor: 'border',
+          backgroundColor: 'border',
+          sm: {
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          },
+          lg: {
+            gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
+          },
+        }),
       ),
     ],
     entries.map((entry) =>
@@ -92,16 +177,53 @@ const countList = (
           h.Key(entry.path),
           h.Href(entry.path),
           h.Class(
-            'group flex flex-col gap-1 bg-background p-5 transition-colors hover:bg-muted/60',
+            cx(
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1',
+                backgroundColor: 'background',
+                padding: '5',
+                transitionProperty:
+                  'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
+                transitionDuration: 'fast',
+                transitionTimingFunction: 'default',
+                _hover: {
+                  backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
+                },
+              }),
+              'group',
+            ),
           ),
         ],
         [
           h.dd(
-            [h.Class(cn(FIGURE, 'text-[32px] leading-none font-medium'))],
+            [
+              h.Class(
+                cx(
+                  FIGURE,
+                  css({
+                    fontSize: 'type.32',
+                    lineHeight: 'none',
+                    fontWeight: 'medium',
+                  }),
+                ),
+              ),
+            ],
             [String(entry.value)],
           ),
           h.dt(
-            [h.Class('text-[13px] text-muted-foreground group-hover:text-foreground')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.13',
+                  color: 'mutedForeground',
+                  '.group:hover &': {
+                    color: 'foreground',
+                  },
+                }),
+              ),
+            ],
             [entry.label],
           ),
         ],
@@ -123,18 +245,69 @@ const TROUBLE: ReadonlyArray<string> = [
 
 const grid = (columns: string, items: ReadonlyArray<Html>, h: H): Html =>
   h.div(
-    [h.Class(cn('grid gap-px overflow-hidden rounded-lg border border-border bg-border', columns))],
+    [
+      h.Class(
+        cx(
+          css({
+            display: 'grid',
+            gap: '0.25',
+            overflow: 'hidden',
+            borderRadius: 'lg',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: 'border',
+            backgroundColor: 'border',
+          }),
+          columns,
+        ),
+      ),
+    ],
     items,
   )
 
 /** A heading with the sentence that says what the block is for, under it. */
 const block = (title: string, lead: string, content: Html, h: H): Html =>
   h.section(
-    [h.Class('mt-12')],
     [
-      h.h2([h.Class('text-[20px] font-semibold tracking-tight')], [title]),
-      h.p([h.Class('mt-1 text-[14px] text-muted-foreground')], [lead]),
-      h.div([h.Class('mt-4')], [content]),
+      h.Class(
+        css({
+          marginTop: '12',
+        }),
+      ),
+    ],
+    [
+      h.h2(
+        [
+          h.Class(
+            css({
+              textStyle: 'sectionTitle',
+            }),
+          ),
+        ],
+        [title],
+      ),
+      h.p(
+        [
+          h.Class(
+            css({
+              marginTop: '1',
+              fontSize: 'type.14',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
+        [lead],
+      ),
+      h.div(
+        [
+          h.Class(
+            css({
+              marginTop: '4',
+            }),
+          ),
+        ],
+        [content],
+      ),
     ],
   )
 
@@ -143,22 +316,71 @@ const troubleLink = (target: Page, h: H): Html =>
     [
       h.Key(target.path),
       h.Href(target.path),
-      h.Class('group flex flex-col gap-1 bg-background p-5 transition-colors hover:bg-muted/60'),
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1',
+            backgroundColor: 'background',
+            padding: '5',
+            transitionProperty:
+              'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
+            transitionDuration: 'fast',
+            transitionTimingFunction: 'default',
+            _hover: {
+              backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
+            },
+          }),
+          'group',
+        ),
+      ),
     ],
     [
       h.span(
-        [h.Class('flex items-center justify-between gap-2 text-[15px] font-medium')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '2',
+              fontSize: 'type.15',
+              fontWeight: 'medium',
+            }),
+          ),
+        ],
         [
           target.title,
           icon(
             h,
             ArrowRight,
-            'size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5',
+            css({
+              width: '4',
+              height: '4',
+              flexShrink: '0',
+              color: 'mutedForeground',
+              transitionProperty: 'transform, translate, scale, rotate',
+              transitionDuration: 'fast',
+              transitionTimingFunction: 'default',
+              '.group:hover &': {
+                translate: '0.125rem',
+              },
+            }),
           ),
         ],
       ),
       h.span(
-        [h.Class('line-clamp-2 text-[13px] leading-snug text-muted-foreground')],
+        [
+          h.Class(
+            css({
+              lineClamp: '2',
+              fontSize: 'type.13',
+              lineHeight: 'snug',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
         [target.summary],
       ),
     ],
@@ -178,18 +400,77 @@ const flow = (h: H): Html =>
     [
       h.AriaHidden(true),
       h.Class(
-        'hidden items-start gap-2 rounded-lg border border-border bg-background/80 p-5 lg:flex',
+        css({
+          display: 'none',
+          alignItems: 'flex-start',
+          gap: '2',
+          borderRadius: 'lg',
+          borderWidth: '1px',
+          borderStyle: 'solid',
+          borderColor: 'border',
+          backgroundColor: 'color-mix(in oklab, var(--background) 80%, transparent)',
+          padding: '5',
+          lg: {
+            display: 'flex',
+          },
+        }),
       ),
     ],
     FLOW.flatMap((id, index) => [
       ...(index > 0
-        ? [h.li([h.Key(`to-${id}`), h.Class('mt-[18px] h-px w-6 bg-border')], [])]
+        ? [
+            h.li(
+              [
+                h.Key(`to-${id}`),
+                h.Class(
+                  css({
+                    marginTop: '18px',
+                    height: '1px',
+                    width: '6',
+                    backgroundColor: 'border',
+                  }),
+                ),
+              ],
+              [],
+            ),
+          ]
         : []),
       h.li(
-        [h.Key(id), h.Class('flex w-14 flex-col items-center gap-2')],
         [
-          componentBadge(id, 'size-10', h),
-          h.span([h.Class(cn(FIGURE, 'text-[11px] text-muted-foreground'))], [COMPONENTS[id].code]),
+          h.Key(id),
+          h.Class(
+            css({
+              display: 'flex',
+              width: '14',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '2',
+            }),
+          ),
+        ],
+        [
+          componentBadge(
+            id,
+            css({
+              width: '10',
+              height: '10',
+            }),
+            h,
+          ),
+          h.span(
+            [
+              h.Class(
+                cx(
+                  FIGURE,
+                  css({
+                    fontSize: 'type.11',
+                    color: 'mutedForeground',
+                  }),
+                ),
+              ),
+            ],
+            [COMPONENTS[id].code],
+          ),
         ],
       ),
     ]),
@@ -203,63 +484,195 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
     return target ? [target] : []
   })
   return h.div(
-    [h.Class('min-w-0 pb-16 lg:col-span-2 xl:col-span-3')],
+    [
+      h.Class(
+        css({
+          minWidth: '0',
+          paddingBottom: '16',
+          lg: {
+            gridColumn: 'span 2 / span 2',
+          },
+          xl: {
+            gridColumn: 'span 3 / span 3',
+          },
+        }),
+      ),
+    ],
     [
       h.header(
         [
           h.Class(
-            'mt-8 grid items-center gap-10 overflow-hidden rounded-xl border border-border bg-canvas px-6 py-12 sm:px-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:py-16',
+            css({
+              marginTop: '8',
+              display: 'grid',
+              alignItems: 'center',
+              gap: '10',
+              overflow: 'hidden',
+              borderRadius: 'xl',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'border',
+              backgroundColor: 'canvas',
+              paddingInline: '6',
+              paddingBlock: '12',
+              sm: {
+                paddingInline: '10',
+              },
+              lg: {
+                gridTemplateColumns: 'minmax(0,1fr) auto',
+                paddingBlock: '16',
+              },
+            }),
           ),
           h.Style(CANVAS),
         ],
         [
           h.div(
-            [h.Class('min-w-0')],
+            [
+              h.Class(
+                css({
+                  minWidth: '0',
+                }),
+              ),
+            ],
             [
               h.h1(
                 [
                   h.Class(
-                    'text-[44px] leading-[1.05] font-semibold tracking-[-0.035em] text-balance',
+                    css({
+                      textStyle: 'display',
+                      textWrap: 'balance',
+                    }),
                   ),
                 ],
                 [t.heroTitle],
               ),
               h.p(
-                [h.Class('mt-4 text-[16px] leading-relaxed text-pretty text-muted-foreground')],
+                [
+                  h.Class(
+                    css({
+                      marginTop: '4',
+                      fontSize: 'type.16',
+                      lineHeight: 'relaxed',
+                      textWrap: 'pretty',
+                      color: 'mutedForeground',
+                    }),
+                  ),
+                ],
                 [page.summary],
               ),
               h.div(
-                [h.Class('mt-7 flex flex-wrap items-center gap-3')],
+                [
+                  h.Class(
+                    css({
+                      marginTop: '7',
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: '3',
+                    }),
+                  ),
+                ],
                 [
                   pageIn(model.locale, FIRST_TUTORIAL)
                     ? h.a(
                         [
                           h.Href(FIRST_TUTORIAL),
                           h.Class(
-                            'inline-flex h-10 items-center gap-2 rounded-md bg-foreground px-4 text-[14px] font-medium text-background hover:opacity-90',
+                            css({
+                              display: 'inline-flex',
+                              height: '10',
+                              alignItems: 'center',
+                              gap: '2',
+                              borderRadius: 'md',
+                              backgroundColor: 'foreground',
+                              paddingInline: '4',
+                              fontSize: 'type.14',
+                              fontWeight: 'medium',
+                              color: 'background',
+                              _hover: {
+                                opacity: 0.9,
+                              },
+                            }),
                           ),
                         ],
-                        [t.start, icon(h, ArrowRight, 'size-4')],
+                        [
+                          t.start,
+                          icon(
+                            h,
+                            ArrowRight,
+                            css({
+                              width: '4',
+                              height: '4',
+                            }),
+                          ),
+                        ],
                       )
                     : h.empty,
                   h.a(
                     [
                       h.Href('/components'),
                       h.Class(
-                        'inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-4 text-[14px] font-medium hover:border-foreground/30',
+                        css({
+                          display: 'inline-flex',
+                          height: '10',
+                          alignItems: 'center',
+                          gap: '2',
+                          borderRadius: 'md',
+                          borderWidth: '1px',
+                          borderStyle: 'solid',
+                          borderColor: 'border',
+                          backgroundColor: 'background',
+                          paddingInline: '4',
+                          fontSize: 'type.14',
+                          fontWeight: 'medium',
+                          _hover: {
+                            borderColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
+                          },
+                        }),
                       ),
                     ],
-                    [icon(h, BookOpen, 'size-4'), t.browse],
+                    [
+                      icon(
+                        h,
+                        BookOpen,
+                        css({
+                          width: '4',
+                          height: '4',
+                        }),
+                      ),
+                      t.browse,
+                    ],
                   ),
                   h.a(
                     [
                       h.Href(REPOSITORY),
                       // The third action is a link, not a button, so the row does not wrap.
                       h.Class(
-                        'inline-flex items-center gap-1.5 text-[13px] text-muted-foreground underline underline-offset-4 hover:text-foreground',
+                        css({
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '1.5',
+                          fontSize: 'type.13',
+                          color: 'mutedForeground',
+                          textDecorationLine: 'underline',
+                          textUnderlineOffset: '4px',
+                          _hover: {
+                            color: 'foreground',
+                          },
+                        }),
                       ),
                     ],
-                    [githubMark(h, 'size-3.5'), t.openSource],
+                    [
+                      githubMark(
+                        h,
+                        css({
+                          width: '3.5',
+                          height: '3.5',
+                        }),
+                      ),
+                      t.openSource,
+                    ],
                   ),
                 ],
               ),
@@ -268,12 +681,24 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
           flow(h),
         ],
       ),
-      h.div([h.Class('mt-8')], [counts(l, h)]),
+      h.div(
+        [
+          h.Class(
+            css({
+              marginTop: '8',
+            }),
+          ),
+        ],
+        [counts(l, h)],
+      ),
       block(
         t.trouble.title,
         t.trouble.lead,
         grid(
-          'sm:grid-cols-2 lg:grid-cols-3',
+          css({
+            sm: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+            lg: { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' },
+          }),
           trouble.map((target) => troubleLink(target, h)),
           h,
         ),
@@ -283,7 +708,12 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
         t.guided.title,
         t.guided.lead,
         grid(
-          'md:grid-cols-2 md:[&>:last-child:nth-child(odd)]:col-span-2',
+          css({
+            md: {
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              '& > :last-child:nth-child(odd)': { gridColumn: 'span 2 / span 2' },
+            },
+          }),
           PATHS.filter((path) => stepsOf(model.locale, path).length > 0).map((path) =>
             pathCard(path, model, h),
           ),
@@ -295,7 +725,10 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
         t.kinds.title,
         t.kinds.lead,
         grid(
-          'sm:grid-cols-2 xl:grid-cols-3',
+          css({
+            sm: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+            xl: { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' },
+          }),
           (['play', 'tutorials', 'guides', 'explanation', 'patterns', 'reference'] as const).map(
             (section) => kind(l, section, h),
           ),
@@ -305,26 +738,72 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
       ),
       block(t.open.title, t.open.lead, projectCard(model.project, h), h),
       h.p(
-        [h.Class('mt-8 max-w-3xl text-[13px] leading-relaxed text-muted-foreground')],
+        [
+          h.Class(
+            css({
+              marginTop: '8',
+              maxWidth: '48rem',
+              fontSize: 'type.13',
+              lineHeight: 'relaxed',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
         [
           t.footer.before,
           h.a(
-            [h.Href('/design'), h.Class('text-foreground underline underline-offset-4')],
+            [
+              h.Href('/design'),
+              h.Class(
+                css({
+                  color: 'foreground',
+                  textDecorationLine: 'underline',
+                  textUnderlineOffset: '4px',
+                }),
+              ),
+            ],
             [t.footer.design],
           ),
           t.footer.afterDesign,
           h.a(
-            [h.Href('/about/changelog'), h.Class('text-foreground underline underline-offset-4')],
+            [
+              h.Href('/about/changelog'),
+              h.Class(
+                css({
+                  color: 'foreground',
+                  textDecorationLine: 'underline',
+                  textUnderlineOffset: '4px',
+                }),
+              ),
+            ],
             [t.footer.changelog],
           ),
           t.footer.afterChangelog,
           h.a(
-            [h.Href('/about/disclaimer'), h.Class('text-foreground underline underline-offset-4')],
+            [
+              h.Href('/about/disclaimer'),
+              h.Class(
+                css({
+                  color: 'foreground',
+                  textDecorationLine: 'underline',
+                  textUnderlineOffset: '4px',
+                }),
+              ),
+            ],
             [t.footer.disclaimer],
           ),
           t.footer.afterDisclaimer,
           h.a(
-            [h.Href(KOFI), h.Class('text-foreground underline underline-offset-4')],
+            [
+              h.Href(KOFI),
+              h.Class(
+                css({
+                  color: 'foreground',
+                  textDecorationLine: 'underline',
+                  textUnderlineOffset: '4px',
+                }),
+              ),
+            ],
             [t.footer.kofi],
           ),
           t.footer.end,

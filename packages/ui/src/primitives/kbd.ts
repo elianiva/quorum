@@ -1,13 +1,45 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
 
-import { cn } from 'cn'
+export const kbdClass = css({
+  layerStyle: 'raised',
+  boxShadow: 'raised',
+  color: 'color-mix(in oklab, var(--foreground) 75%, transparent)',
+  '[data-slot="tooltip-content"] &': {
+    backgroundColor: 'color-mix(in oklab, var(--background) 20%, transparent)',
+    backgroundImage: 'none',
+    boxShadow: 'none',
+    color: 'background',
+  },
+  _dark: {
+    '[data-slot="tooltip-content"] &': {
+      backgroundColor: 'color-mix(in oklab, var(--background) 10%, transparent)',
+    },
+  },
+  height: '5',
+  width: 'fit-content',
+  minWidth: '5',
+  gap: '1',
+  borderRadius: 'sm',
+  paddingInline: '1.5',
+  fontFamily: 'mono',
+  fontSize: 'type.10-5',
+  fontWeight: 'medium',
+  '& svg:not([data-svg-icon])': { width: '3', height: '3' },
+  pointerEvents: 'none',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  userSelect: 'none',
+})
 
-export const kbdClass =
-  "bg-raised shadow-raised text-foreground/75 in-data-[slot=tooltip-content]:bg-background/20 in-data-[slot=tooltip-content]:bg-none in-data-[slot=tooltip-content]:shadow-none in-data-[slot=tooltip-content]:text-background dark:in-data-[slot=tooltip-content]:bg-background/10 h-5 w-fit min-w-5 gap-1 rounded-[5px] px-1.5 font-mono text-[10.5px] font-medium [&_svg:not([class*='size-'])]:size-3 pointer-events-none inline-flex items-center justify-center select-none"
-
-export const kbdGroupClass = 'gap-1 inline-flex items-center'
+export const kbdGroupClass = css({
+  gap: '1',
+  display: 'inline-flex',
+  alignItems: 'center',
+})
 
 type StyleConfig = Readonly<{ className?: string }>
 
@@ -16,7 +48,7 @@ const kbdContainer = <M>(
   children: ReadonlyArray<Child>,
   h: HtmlBuilder<M>,
 ): Html =>
-  h.kbd([h.Class(cn(kbdClass, config.className)), h.DataAttribute('slot', 'kbd')], children)
+  h.kbd([h.Class(cx(kbdClass, config.className)), h.DataAttribute('slot', 'kbd')], children)
 
 const kbdGroup = <M>(
   config: StyleConfig,
@@ -24,7 +56,7 @@ const kbdGroup = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.kbd(
-    [h.Class(cn(kbdGroupClass, config.className)), h.DataAttribute('slot', 'kbd-group')],
+    [h.Class(cx(kbdGroupClass, config.className)), h.DataAttribute('slot', 'kbd-group')],
     children,
   )
 

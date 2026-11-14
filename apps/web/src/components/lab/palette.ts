@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { Effect, Option } from 'effect'
 import { Mount } from 'foldkit'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -5,7 +6,6 @@ import { Search } from 'lucide'
 import { EYEBROW } from '@quorum/ui/game/bits'
 import { icon } from '@quorum/ui/primitives/icon'
 import { Kbd } from '@quorum/ui/primitives/kbd'
-import { cn } from '@/lib/utils'
 import { copy, type Messages } from '@/i18n/messages.ts'
 import { Message } from '@/game/message.ts'
 import {
@@ -63,18 +63,56 @@ const shortcut = (command: PaletteCommand, h: HtmlBuilder<Message>): Html =>
   command.keys === undefined
     ? h.empty
     : h.span(
-        [h.Class('flex shrink-0 items-center gap-1'), h.AriaHidden(true)],
-        command.keys.map((key) => Kbd({ className: 'shrink-0 min-w-0 px-1.5' }, [key], h)),
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexShrink: '0',
+              alignItems: 'center',
+              gap: '1',
+            }),
+          ),
+          h.AriaHidden(true),
+        ],
+        command.keys.map((key) =>
+          Kbd(
+            {
+              className: css({
+                flexShrink: '0',
+                minWidth: '0',
+                paddingInline: '1.5',
+              }),
+            },
+            [key],
+            h,
+          ),
+        ),
       )
 
 /** What Enter does to the highlighted row: its one action, in the ink fill. */
 const runHint = (h: HtmlBuilder<Message>): Html =>
   h.span(
-    [h.Class('flex shrink-0 items-center'), h.AriaHidden(true)],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          flexShrink: '0',
+          alignItems: 'center',
+        }),
+      ),
+      h.AriaHidden(true),
+    ],
     [
       Kbd(
         {
-          className: 'shrink-0 min-w-0 px-1.5 bg-primary-fill text-on-primary-fill shadow-primary',
+          className: css({
+            flexShrink: '0',
+            minWidth: '0',
+            paddingInline: '1.5',
+            layerStyle: 'primaryFill',
+            color: 'onPrimaryFill',
+            boxShadow: 'primary',
+          }),
         },
         ['↵'],
         h,
@@ -91,18 +129,53 @@ const plainCell = (
   h.span(
     [
       h.Class(
-        cn(
-          'grid size-7 shrink-0 place-items-center rounded-lg',
+        cx(
+          css({
+            display: 'grid',
+            width: '7',
+            height: '7',
+            flexShrink: '0',
+            placeItems: 'center',
+            borderRadius: 'lg',
+          }),
           active
-            ? 'bg-raised text-foreground shadow-raised'
-            : 'bg-foreground/[0.06] text-muted-foreground',
+            ? css({
+                layerStyle: 'raised',
+                color: 'foreground',
+                boxShadow: 'raised',
+              })
+            : css({
+                backgroundColor: 'color-mix(in oklab, var(--foreground) 6%, transparent)',
+                color: 'mutedForeground',
+              }),
         ),
       ),
     ],
-    [icon(h, command.glyph, 'size-[15px]')],
+    [
+      icon(
+        h,
+        command.glyph,
+        css({
+          width: '15px',
+          height: '15px',
+        }),
+      ),
+    ],
   ),
   h.span(
-    [h.Class('min-w-0 flex-1 truncate text-[calc(13px*var(--type-scale))] leading-none')],
+    [
+      h.Class(
+        css({
+          minWidth: '0',
+          flex: '1 1 0%',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          fontSize: 'type.13',
+          lineHeight: 'none',
+        }),
+      ),
+    ],
     [command.label],
   ),
 ]
@@ -121,15 +194,45 @@ const row = (command: PaletteCommand, active: boolean, h: HtmlBuilder<Message>):
       h.OnClick(Message.PaletteChosen({ id: command.id })),
       h.OnMouseMove(Message.PaletteHighlighted({ id: command.id })),
       h.Class(
-        cn(
-          'press flex w-full items-center text-left',
+        cx(
+          cx(
+            css({
+              display: 'flex',
+              width: '100%',
+              alignItems: 'center',
+              textAlign: 'left',
+            }),
+            'press',
+          ),
           command.part === undefined
-            ? 'h-10 gap-2.5 rounded-lg px-2'
-            : 'h-12 gap-3 rounded-xl px-2',
-          command.part?.locked !== null && command.part !== undefined ? 'opacity-70' : '',
+            ? css({
+                height: '10',
+                gap: '2.5',
+                borderRadius: 'lg',
+                paddingInline: '2',
+              })
+            : css({
+                height: '12',
+                gap: '3',
+                borderRadius: 'xl',
+                paddingInline: '2',
+              }),
+          command.part?.locked !== null && command.part !== undefined
+            ? css({
+                opacity: 0.7,
+              })
+            : '',
           active
-            ? 'bg-foreground/10 text-foreground'
-            : 'text-foreground/85 hover:bg-foreground/[0.05]',
+            ? css({
+                backgroundColor: 'color-mix(in oklab, var(--foreground) 10%, transparent)',
+                color: 'foreground',
+              })
+            : css({
+                color: 'color-mix(in oklab, var(--foreground) 85%, transparent)',
+                _hover: {
+                  backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                },
+              }),
         ),
       ),
     ],
@@ -148,8 +251,13 @@ const results = (
   t: Messages,
   h: HtmlBuilder<Message>,
 ): Html => {
-  const frame =
-    'max-h-[min(52vh,420px)] overflow-y-auto overscroll-contain p-1.5 [scrollbar-width:thin]'
+  const frame = css({
+    maxHeight: 'min(52vh, 420px)',
+    overflowY: 'auto',
+    overscrollBehavior: 'contain',
+    padding: '1.5',
+    scrollbarWidth: 'thin',
+  })
   if (rows.length === 0)
     return h.div(
       [h.Id('palette-results'), h.Role('status'), h.Class(frame)],
@@ -157,7 +265,13 @@ const results = (
         h.p(
           [
             h.Class(
-              'px-2.5 py-10 text-center text-[calc(12.5px*var(--type-scale))] text-muted-foreground',
+              css({
+                paddingInline: '2.5',
+                paddingBlock: '10',
+                textAlign: 'center',
+                fontSize: 'type.12-5',
+                color: 'mutedForeground',
+              }),
             ),
           ],
           [t.palette.noMatches(query)],
@@ -176,7 +290,20 @@ const results = (
             h.div(
               [
                 h.Class(
-                  cn(EYEBROW, 'px-2.5 pb-1.5', group === PALETTE_GROUPS[0] ? 'pt-1' : 'pt-3'),
+                  cx(
+                    EYEBROW,
+                    css({
+                      paddingInline: '2.5',
+                      paddingBottom: '1.5',
+                    }),
+                    group === PALETTE_GROUPS[0]
+                      ? css({
+                          paddingTop: '1',
+                        })
+                      : css({
+                          paddingTop: '3',
+                        }),
+                  ),
                 ),
                 h.AriaHidden(true),
               ],
@@ -201,7 +328,23 @@ export const commandPalette = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.Key('palette'),
       h.DataAttribute('exit', 'gesture'),
       h.Class(
-        'modal-overlay absolute inset-0 z-40 flex items-start justify-center px-3 pt-[12vh] compact:px-2 compact:pt-[max(8px,env(safe-area-inset-top))]',
+        cx(
+          css({
+            position: 'absolute',
+            inset: '0',
+            zIndex: '40',
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            paddingInline: '3',
+            paddingTop: '12vh',
+            _compact: {
+              paddingInline: '2',
+              paddingTop: 'max(8px,env(safe-area-inset-top))',
+            },
+          }),
+          'modal-overlay',
+        ),
       ),
     ],
     [
@@ -212,14 +355,48 @@ export const commandPalette = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.AriaLabel(t.palette.title),
           h.OnMount(PaletteFocus()),
           h.Class(
-            'enter-modal flex w-[min(620px,100%)] flex-col overflow-hidden rounded-2xl bg-surface shadow-float',
+            cx(
+              css({
+                display: 'flex',
+                width: 'min(620px,100%)',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                borderRadius: '2xl',
+                layerStyle: 'surface',
+                boxShadow: 'float',
+              }),
+              'enter-modal',
+            ),
           ),
         ],
         [
           h.div(
-            [h.Class('flex h-12 shrink-0 items-center gap-2.5 border-b border-hairline px-3.5')],
             [
-              icon(h, Search, 'size-4 shrink-0 text-muted-foreground'),
+              h.Class(
+                css({
+                  display: 'flex',
+                  height: '12',
+                  flexShrink: '0',
+                  alignItems: 'center',
+                  gap: '2.5',
+                  borderBottomWidth: '1px',
+                  borderBottomStyle: 'solid',
+                  borderColor: 'hairline',
+                  paddingInline: '3.5',
+                }),
+              ),
+            ],
+            [
+              icon(
+                h,
+                Search,
+                css({
+                  width: '4',
+                  height: '4',
+                  flexShrink: '0',
+                  color: 'mutedForeground',
+                }),
+              ),
               h.input([
                 h.Id('palette-search'),
                 h.Type('text'),
@@ -233,7 +410,20 @@ export const commandPalette = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h.Autocomplete('off'),
                 h.Spellcheck(false),
                 h.Class(
-                  'h-full min-w-0 flex-1 bg-transparent text-[calc(15px*var(--type-scale))] tracking-[-0.01em] text-foreground caret-foreground outline-none placeholder:text-muted-foreground',
+                  css({
+                    height: '100%',
+                    minWidth: '0',
+                    flex: '1 1 0%',
+                    backgroundColor: 'transparent',
+                    fontSize: 'type.15',
+                    letterSpacing: 'subtle',
+                    color: 'foreground',
+                    caretColor: 'foreground',
+                    outlineStyle: 'none',
+                    '&::placeholder': {
+                      color: 'mutedForeground',
+                    },
+                  }),
                 ),
                 h.OnInput((query: string) => Message.PaletteQueryChanged({ query })),
                 h.OnKeyDownPreventDefault((key, modifiers) => {
@@ -251,7 +441,15 @@ export const commandPalette = (model: Model, h: HtmlBuilder<Message>): Html => {
                   return Option.none()
                 }),
               ]),
-              Kbd({ className: 'shrink-0' }, [t.panels.esc], h),
+              Kbd(
+                {
+                  className: css({
+                    flexShrink: '0',
+                  }),
+                },
+                [t.panels.esc],
+                h,
+              ),
             ],
           ),
           results(rows, active, model.palette.query, t, h),

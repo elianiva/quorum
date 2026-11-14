@@ -8,6 +8,7 @@ import type { Page } from './page.ts'
 import { PAGES, pageAt, pageIn, pagesFor } from './pages.ts'
 import { indexJson } from './search.ts'
 import { GAME_ORIGIN, WIKI_ORIGIN } from './site.ts'
+import { THEME_COLORS, themeScript } from './theme.ts'
 import { view } from './view.ts'
 // The translated bundles register themselves here, since the server renders every language.
 import './locales/es.ts'
@@ -96,7 +97,8 @@ export const renderDocument: Server.DocumentRenderer = (application, assets) => 
       `<meta name="description" content="${description}">`,
       // A 404 is not a page to index.
       ...(page ? [] : ['<meta name="robots" content="noindex">']),
-      '<meta name="theme-color" content="#f1f2f4">',
+      `<meta name="theme-color" content="${THEME_COLORS.light}">`,
+      `<script>${themeScript}</script>`,
       `<meta property="og:type" content="${page?.path === '/' ? 'website' : 'article'}">`,
       `<meta property="og:site_name" content="${escape(t.name)}">`,
       `<meta property="og:locale" content="${LOCALE_TAGS[locale].og}">`,

@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { GameNode } from '@quorum/simulation/state'
@@ -20,7 +21,7 @@ const pooler = (node: GameNode, h: HtmlBuilder<Message>): Html => {
         (mode) => Message.PoolerModeChosen({ nodeId: node.id, mode }),
         h,
         () => true,
-        'grid-cols-3',
+        css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
       ),
       caption(
         node.mode === 'statement'

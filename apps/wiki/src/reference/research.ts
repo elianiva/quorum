@@ -1,6 +1,5 @@
 import type { Html } from 'foldkit/html'
 import { Maximize2, Minimize2, type IconNode } from 'lucide'
-import { cn } from 'cn'
 import {
   COMPONENT_IDS,
   INSIGHT_POOLS,
@@ -33,6 +32,7 @@ import {
   type Lang,
 } from './shared.ts'
 import { componentPath } from './components.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* One page per Research item, and the Research tree as the hub. Layout and marks are the game's. */
 
@@ -48,7 +48,17 @@ const chip = (l: Lang, pool: (typeof INSIGHT_POOLS)[number], figure: string, h: 
 
 const recipe = (l: Lang, entry: ResearchDef, h: H): Html =>
   h.span(
-    [h.Class('inline-flex flex-wrap items-center justify-end gap-2')],
+    [
+      h.Class(
+        css({
+          display: 'inline-flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          gap: '2',
+        }),
+      ),
+    ],
     recipeOf(entry.id).map(([pool, cost]) => chip(l, pool, compact(cost), h)),
   )
 
@@ -211,10 +221,28 @@ const tree = (l: Lang, h: H, full = false): Html => {
     [
       // column-reverse opens the box scrolled to the bottom, where the Garage Era and the roots are.
       h.Class(
-        cn(
+        cx(
           SCROLL,
-          'not-prose flex flex-col-reverse overflow-auto rounded-lg border border-border bg-canvas',
-          full ? 'h-[calc(100dvh-210px)]' : 'max-h-[72vh]',
+          cx(
+            css({
+              display: 'flex',
+              flexDirection: 'column-reverse',
+              overflow: 'auto',
+              borderRadius: 'lg',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'border',
+              backgroundColor: 'canvas',
+            }),
+            'not-prose',
+          ),
+          full
+            ? css({
+                height: 'calc(100dvh - 210px)',
+              })
+            : css({
+                maxHeight: '72vh',
+              }),
         ),
       ),
       h.AriaLabel(l.t.reference.research.treeLabel),
@@ -222,7 +250,12 @@ const tree = (l: Lang, h: H, full = false): Html => {
     [
       h.div(
         [
-          h.Class('relative shrink-0'),
+          h.Class(
+            css({
+              position: 'relative',
+              flexShrink: '0',
+            }),
+          ),
           h.Style({ width: `${layout.width}px`, height: `${layout.height}px` }),
         ],
         [
@@ -230,7 +263,14 @@ const tree = (l: Lang, h: H, full = false): Html => {
             h.div(
               [
                 h.Key(`era-${band.era}`),
-                h.Class('absolute border-t border-hairline'),
+                h.Class(
+                  css({
+                    position: 'absolute',
+                    borderTopWidth: '1px',
+                    borderTopStyle: 'solid',
+                    borderColor: 'hairline',
+                  }),
+                ),
                 h.Style({
                   left: `${band.x}px`,
                   top: `${band.y}px`,
@@ -242,7 +282,19 @@ const tree = (l: Lang, h: H, full = false): Html => {
                 h.a(
                   [
                     h.Href(eraPath(band.era)),
-                    h.Class(cn(EYEBROW, 'absolute top-3 left-5 hover:text-foreground')),
+                    h.Class(
+                      cx(
+                        EYEBROW,
+                        css({
+                          position: 'absolute',
+                          top: '3',
+                          left: '5',
+                          _hover: {
+                            color: 'foreground',
+                          },
+                        }),
+                      ),
+                    ),
                   ],
                   [eraName(l, band.era)],
                 ),
@@ -254,7 +306,15 @@ const tree = (l: Lang, h: H, full = false): Html => {
               [
                 h.Key(`root-${track.track}`),
                 h.Class(
-                  'absolute flex w-[180px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2',
+                  css({
+                    position: 'absolute',
+                    display: 'flex',
+                    width: '180px',
+                    translate: '-50% -50%',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '2',
+                  }),
                 ),
                 h.Style({ left: `${track.x}px`, top: `${track.y}px` }),
               ],
@@ -262,19 +322,55 @@ const tree = (l: Lang, h: H, full = false): Html => {
                 h.span(
                   [
                     h.Class(
-                      'grid size-14 place-items-center rounded-xl border border-border bg-background',
+                      css({
+                        display: 'grid',
+                        width: '14',
+                        height: '14',
+                        placeItems: 'center',
+                        borderRadius: 'xl',
+                        borderWidth: '1px',
+                        borderStyle: 'solid',
+                        borderColor: 'border',
+                        backgroundColor: 'background',
+                      }),
                     ),
                   ],
-                  [icon(h, TRACK_ICONS[track.track], 'size-6')],
+                  [
+                    icon(
+                      h,
+                      TRACK_ICONS[track.track],
+                      css({
+                        width: '6',
+                        height: '6',
+                      }),
+                    ),
+                  ],
                 ),
-                h.span([h.Class('text-[14px] font-semibold')], [trackLabel(l, track.track)]),
+                h.span(
+                  [
+                    h.Class(
+                      css({
+                        fontSize: 'type.14',
+                        fontWeight: 'semibold',
+                      }),
+                    ),
+                  ],
+                  [trackLabel(l, track.track)],
+                ),
               ],
             ),
           ),
           h.svg(
             [
               h.AriaHidden(true),
-              h.Class('pointer-events-none absolute inset-0 overflow-visible'),
+              h.Class(
+                css({
+                  pointerEvents: 'none',
+                  position: 'absolute',
+                  inset: '0',
+                  overflow: 'visible',
+                }),
+              ),
               h.Width(String(layout.width)),
               h.Height(String(layout.height)),
               h.Fill('none'),
@@ -287,7 +383,15 @@ const tree = (l: Lang, h: H, full = false): Html => {
                   h.StrokeWidth(wire.root ? '2' : '1.5'),
                   h.StrokeLinecap('round'),
                   h.StrokeLinejoin('round'),
-                  h.Class(wire.root ? 'stroke-foreground/15' : 'stroke-foreground/25'),
+                  h.Class(
+                    wire.root
+                      ? css({
+                          stroke: 'color-mix(in oklab, var(--foreground) 15%, transparent)',
+                        })
+                      : css({
+                          stroke: 'color-mix(in oklab, var(--foreground) 25%, transparent)',
+                        }),
+                  ),
                 ],
                 [],
               ),
@@ -305,20 +409,69 @@ const tree = (l: Lang, h: H, full = false): Html => {
                   height: `${NODE_SIZE.h}px`,
                 }),
                 h.Class(
-                  'press absolute flex items-center gap-2.5 overflow-hidden rounded-xl bg-raised px-2.5 py-1 shadow-raised transition-[filter] hover:brightness-[0.985]',
+                  cx(
+                    css({
+                      position: 'absolute',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '2.5',
+                      overflow: 'hidden',
+                      borderRadius: 'xl',
+                      layerStyle: 'raised',
+                      paddingInline: '2.5',
+                      paddingBlock: '1',
+                      boxShadow: 'raised',
+                      transitionProperty: 'filter',
+                      transitionDuration: 'fast',
+                      transitionTimingFunction: 'default',
+                      _hover: {
+                        filter: 'brightness(0.985)',
+                      },
+                    }),
+                    'press',
+                  ),
                 ),
               ],
               [
                 researchMark(entry, 'sm', false, h),
                 h.span(
-                  [h.Class('flex min-w-0 flex-1 flex-col gap-1')],
+                  [
+                    h.Class(
+                      css({
+                        display: 'flex',
+                        minWidth: '0',
+                        flex: '1 1 0%',
+                        flexDirection: 'column',
+                        gap: '1',
+                      }),
+                    ),
+                  ],
                   [
                     h.span(
-                      [h.Class('line-clamp-2 text-[12px] leading-tight font-semibold')],
+                      [
+                        h.Class(
+                          css({
+                            lineClamp: '2',
+                            fontSize: 'type.12',
+                            lineHeight: 'tight',
+                            fontWeight: 'semibold',
+                          }),
+                        ),
+                      ],
                       [research[entry.id].name],
                     ),
                     h.span(
-                      [h.Class('flex w-fit items-center gap-2 text-[11px]')],
+                      [
+                        h.Class(
+                          css({
+                            display: 'flex',
+                            width: 'fit-content',
+                            alignItems: 'center',
+                            gap: '2',
+                            fontSize: 'type.11',
+                          }),
+                        ),
+                      ],
                       recipeOf(entry.id).map(([pool, cost]) => chip(l, pool, compact(cost), h)),
                     ),
                   ],
@@ -337,38 +490,137 @@ const byTrack = (l: Lang, h: H): Html =>
   h.div(
     [
       h.Class(
-        'not-prose my-6 grid gap-px overflow-hidden rounded-lg border border-border bg-border md:grid-cols-2 md:[&>:last-child:nth-child(odd)]:col-span-2',
+        cx(
+          css({
+            marginBlock: '6',
+            display: 'grid',
+            gap: '0.25',
+            overflow: 'hidden',
+            borderRadius: 'lg',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: 'border',
+            backgroundColor: 'border',
+            md: {
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              '& > :last-child:nth-child(odd)': {
+                gridColumn: 'span 2 / span 2',
+              },
+            },
+          }),
+          'not-prose',
+        ),
       ),
     ],
     l.cat.RESEARCH_TRACKS.map((track) => {
       const items = researchList.filter((entry) => entry.track === track.key)
       const eras = [...new Set(items.map((entry) => entry.era))].sort((a, b) => a - b)
       return h.section(
-        [h.Key(track.key), h.Class('bg-background p-4')],
+        [
+          h.Key(track.key),
+          h.Class(
+            css({
+              backgroundColor: 'background',
+              padding: '4',
+            }),
+          ),
+        ],
         [
           h.h3(
-            [h.Class('mt-0! flex items-center gap-2 text-[15px] font-semibold')],
             [
-              icon(h, TRACK_ICONS[track.key], 'size-4 text-muted-foreground'),
+              h.Class(
+                css({
+                  marginTop: '0 !important',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '2',
+                  fontSize: 'type.15',
+                  fontWeight: 'semibold',
+                }),
+              ),
+            ],
+            [
+              icon(
+                h,
+                TRACK_ICONS[track.key],
+                css({
+                  width: '4',
+                  height: '4',
+                  color: 'mutedForeground',
+                }),
+              ),
               track.label,
               h.span(
-                [h.Class(cn(FIGURE, 'ml-auto text-[12px] font-normal text-muted-foreground'))],
+                [
+                  h.Class(
+                    cx(
+                      FIGURE,
+                      css({
+                        marginLeft: 'auto',
+                        fontSize: 'type.12',
+                        fontWeight: 'normal',
+                        color: 'mutedForeground',
+                      }),
+                    ),
+                  ),
+                ],
                 [String(items.length)],
               ),
             ],
           ),
           h.dl(
-            [h.Class('mt-3 flex flex-col gap-3')],
+            [
+              h.Class(
+                css({
+                  marginTop: '3',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '3',
+                }),
+              ),
+            ],
             eras.flatMap((era) => [
               h.dt(
                 [
                   h.Key(`${era}-t`),
-                  h.Class('text-[12px] font-medium tracking-wide text-muted-foreground uppercase'),
+                  h.Class(
+                    css({
+                      fontSize: 'type.12',
+                      fontWeight: 'medium',
+                      letterSpacing: 'wide',
+                      color: 'mutedForeground',
+                      textTransform: 'uppercase',
+                    }),
+                  ),
                 ],
-                [h.a([h.Href(eraPath(era)), h.Class('hover:text-foreground')], [eraName(l, era)])],
+                [
+                  h.a(
+                    [
+                      h.Href(eraPath(era)),
+                      h.Class(
+                        css({
+                          _hover: {
+                            color: 'foreground',
+                          },
+                        }),
+                      ),
+                    ],
+                    [eraName(l, era)],
+                  ),
+                ],
               ),
               h.dd(
-                [h.Key(`${era}-d`), h.Class('mt-1 flex flex-col gap-1')],
+                [
+                  h.Key(`${era}-d`),
+                  h.Class(
+                    css({
+                      marginTop: '1',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1',
+                    }),
+                  ),
+                ],
                 items
                   .filter((entry) => entry.era === era)
                   .map((entry) =>
@@ -376,7 +628,18 @@ const byTrack = (l: Lang, h: H): Html =>
                       [
                         h.Key(entry.id),
                         h.Href(researchPath(entry.id)),
-                        h.Class('flex items-center gap-2 text-[14px] leading-snug hover:underline'),
+                        h.Class(
+                          css({
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '2',
+                            fontSize: 'type.14',
+                            lineHeight: 'snug',
+                            _hover: {
+                              textDecorationLine: 'underline',
+                            },
+                          }),
+                        ),
                       ],
                       [researchMark(entry, 'sm', false, h), l.cat.RESEARCH[entry.id].name],
                     ),
@@ -394,10 +657,38 @@ const treeButton = (href: string, label: string, mark: IconNode, h: H): Html =>
     [
       h.Href(href),
       h.Class(
-        'inline-flex h-8 items-center gap-2 rounded-md border border-border bg-background px-3 text-[13px] font-medium text-foreground no-underline hover:bg-muted',
+        css({
+          display: 'inline-flex',
+          height: '8',
+          alignItems: 'center',
+          gap: '2',
+          borderRadius: 'md',
+          borderWidth: '1px',
+          borderStyle: 'solid',
+          borderColor: 'border',
+          backgroundColor: 'background',
+          paddingInline: '3',
+          fontSize: 'type.13',
+          fontWeight: 'medium',
+          color: 'foreground',
+          textDecorationLine: 'none',
+          _hover: {
+            backgroundColor: 'muted',
+          },
+        }),
       ),
     ],
-    [icon(h, mark, 'size-4'), label],
+    [
+      icon(
+        h,
+        mark,
+        css({
+          width: '4',
+          height: '4',
+        }),
+      ),
+      label,
+    ],
   )
 
 /** Every Insight pool some item costs, in catalog order. */
@@ -409,33 +700,111 @@ const usedPools = INSIGHT_POOLS.filter((pool) =>
 const costLegend = (l: Lang, h: H): Html => {
   const t = l.t.reference.research
   return h.div(
-    [h.Class('not-prose my-5')],
+    [
+      h.Class(
+        cx(
+          css({
+            marginBlock: '5',
+          }),
+          'not-prose',
+        ),
+      ),
+    ],
     [
       h.ul(
         [
           h.Class(
-            'grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2',
+            css({
+              display: 'grid',
+              gap: '0.25',
+              overflow: 'hidden',
+              borderRadius: 'lg',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'border',
+              backgroundColor: 'border',
+              sm: {
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              },
+            }),
           ),
         ],
         [
           ...usedPools.map((pool) =>
             h.li(
-              [h.Key(pool), h.Class('flex items-center gap-3 bg-background px-3.5 py-2.5')],
+              [
+                h.Key(pool),
+                h.Class(
+                  css({
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '3',
+                    backgroundColor: 'background',
+                    paddingInline: '3.5',
+                    paddingBlock: '2.5',
+                  }),
+                ),
+              ],
               [
                 h.span(
                   [
                     h.AriaHidden(true),
-                    h.Class('grid size-8 shrink-0 place-items-center rounded-md bg-muted'),
+                    h.Class(
+                      css({
+                        display: 'grid',
+                        width: '8',
+                        height: '8',
+                        flexShrink: '0',
+                        placeItems: 'center',
+                        borderRadius: 'md',
+                        backgroundColor: 'muted',
+                      }),
+                    ),
                     h.Style({ color: poolColor(pool) }),
                   ],
-                  [icon(h, POOL_ICONS[pool], 'size-4')],
+                  [
+                    icon(
+                      h,
+                      POOL_ICONS[pool],
+                      css({
+                        width: '4',
+                        height: '4',
+                      }),
+                    ),
+                  ],
                 ),
                 h.span(
-                  [h.Class('min-w-0')],
                   [
-                    h.span([h.Class('block text-[14px] font-medium')], [poolLabel(l, pool)]),
+                    h.Class(
+                      css({
+                        minWidth: '0',
+                      }),
+                    ),
+                  ],
+                  [
                     h.span(
-                      [h.Class('block text-[12px] leading-snug text-muted-foreground')],
+                      [
+                        h.Class(
+                          css({
+                            display: 'block',
+                            fontSize: 'type.14',
+                            fontWeight: 'medium',
+                          }),
+                        ),
+                      ],
+                      [poolLabel(l, pool)],
+                    ),
+                    h.span(
+                      [
+                        h.Class(
+                          css({
+                            display: 'block',
+                            fontSize: 'type.12',
+                            lineHeight: 'snug',
+                            color: 'mutedForeground',
+                          }),
+                        ),
+                      ],
                       [pool === 'failure' ? t.failureEarned : t.sampled(l.cat.POOLS[pool].label)],
                     ),
                   ],
@@ -445,11 +814,39 @@ const costLegend = (l: Lang, h: H): Html => {
           ),
           // Blank cells finish the last row at two and three columns, so the hairlines do not show through.
           ...Array.from({ length: (3 - (usedPools.length % 3)) % 3 }, (_, index) =>
-            h.li([h.Key(`fill-3-${index}`), h.Class('hidden bg-background lg:block')], []),
+            h.li(
+              [
+                h.Key(`fill-3-${index}`),
+                h.Class(
+                  css({
+                    display: 'none',
+                    backgroundColor: 'background',
+                    lg: {
+                      display: 'block',
+                    },
+                  }),
+                ),
+              ],
+              [],
+            ),
           ),
           ...Array.from({ length: (2 - (usedPools.length % 2)) % 2 }, (_, index) =>
             h.li(
-              [h.Key(`fill-2-${index}`), h.Class('hidden bg-background sm:block lg:hidden')],
+              [
+                h.Key(`fill-2-${index}`),
+                h.Class(
+                  css({
+                    display: 'none',
+                    backgroundColor: 'background',
+                    sm: {
+                      display: 'block',
+                    },
+                    lg: {
+                      display: 'none',
+                    },
+                  }),
+                ),
+              ],
               [],
             ),
           ),
@@ -476,7 +873,15 @@ export const researchPages = (l: Lang): ReadonlyArray<Page> => {
         [],
         [
           h.div(
-            [h.Class('mb-4 flex justify-end')],
+            [
+              h.Class(
+                css({
+                  marginBottom: '4',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                }),
+              ),
+            ],
             [treeButton('/research', t.backToPage, Minimize2, h)],
           ),
           tree(l, h, true),
@@ -524,7 +929,18 @@ export const researchPages = (l: Lang): ReadonlyArray<Page> => {
             l.title('theTree'),
             [
               h.div(
-                [h.Class('not-prose mb-3 flex justify-end')],
+                [
+                  h.Class(
+                    cx(
+                      css({
+                        marginBottom: '3',
+                        display: 'flex',
+                        justifyContent: 'flex-end',
+                      }),
+                      'not-prose',
+                    ),
+                  ),
+                ],
                 [treeButton('/research/tree', t.openInFull, Maximize2, h)],
               ),
               tree(l, h),

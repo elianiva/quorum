@@ -1,10 +1,10 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { Lock } from 'lucide'
 import { FIGURE, groupBadge } from '@quorum/ui/game/bits'
 import { icon } from '@quorum/ui/primitives/icon'
 import type { Message } from '@/game/message.ts'
 import type { Part } from '@/game/parts.ts'
-import { cn } from '@/lib/utils'
 
 /* ==========================================================================
    A part as a list row shows it. The dock and the command palette draw the
@@ -19,19 +19,54 @@ const detail = (part: Part, h: HtmlBuilder<Message>): Html => {
       [
         h.Title(part.locked),
         h.Class(
-          'flex shrink-0 items-center gap-1 text-[calc(11px*var(--type-scale))] text-muted-foreground',
+          css({
+            display: 'flex',
+            flexShrink: '0',
+            alignItems: 'center',
+            gap: '1',
+            fontSize: 'type.11',
+            color: 'mutedForeground',
+          }),
         ),
       ],
-      [icon(h, Lock, 'size-3.5'), h.span([h.Class('compact:hidden')], [part.locked])],
+      [
+        icon(
+          h,
+          Lock,
+          css({
+            width: '3.5',
+            height: '3.5',
+          }),
+        ),
+        h.span(
+          [
+            h.Class(
+              css({
+                _compact: {
+                  display: 'none',
+                },
+              }),
+            ),
+          ],
+          [part.locked],
+        ),
+      ],
     )
   if (part.price === null) return h.empty
   return h.span(
     [
       h.Class(
-        cn(
+        cx(
           FIGURE,
-          'shrink-0 text-[calc(12.5px*var(--type-scale))]',
-          part.short ? 'text-danger' : '',
+          css({
+            flexShrink: '0',
+            fontSize: 'type.12-5',
+          }),
+          part.short
+            ? css({
+                color: 'danger',
+              })
+            : '',
         ),
       ),
     ],
@@ -41,18 +76,52 @@ const detail = (part: Part, h: HtmlBuilder<Message>): Html => {
 
 /** The shaped badge, the name over its blurb, and the price or the lock. */
 export const partCells = (part: Part, h: HtmlBuilder<Message>): ReadonlyArray<Html> => [
-  groupBadge(part.group, part.icon, 'size-8 shrink-0', h, part.locked !== null),
+  groupBadge(
+    part.group,
+    part.icon,
+    css({ width: '8', height: '8', flexShrink: '0' }),
+    h,
+    part.locked !== null,
+  ),
   h.span(
-    [h.Class('flex min-w-0 flex-1 flex-col gap-0.5')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          minWidth: '0',
+          flex: '1 1 0%',
+          flexDirection: 'column',
+          gap: '0.5',
+        }),
+      ),
+    ],
     [
       h.span(
-        [h.Class('truncate text-[calc(13px*var(--type-scale))] leading-none font-medium')],
+        [
+          h.Class(
+            css({
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: 'type.13',
+              lineHeight: 'none',
+              fontWeight: 'medium',
+            }),
+          ),
+        ],
         [part.name],
       ),
       h.span(
         [
           h.Class(
-            'truncate text-[calc(11.5px*var(--type-scale))] leading-tight text-muted-foreground',
+            css({
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: 'type.11-5',
+              lineHeight: 'tight',
+              color: 'mutedForeground',
+            }),
           ),
         ],
         [part.blurb],

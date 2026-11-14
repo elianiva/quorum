@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { formats } from '@/i18n/format.ts'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -18,7 +19,15 @@ const edge = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArra
       t.inspectorEdge.ceilings,
       [
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'type.12',
+                lineHeight: 'snug',
+                color: 'mutedForeground',
+              }),
+            ),
+          ],
           [t.inspectorEdge.aHandlerRunsIn(EDGE_MEMORY_MB, t.units.ms(EDGE_CPU_MS))],
         ),
         caption(
@@ -35,7 +44,15 @@ const edge = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArra
       t.inspectorEdge.edgeCache,
       [
         h.p(
-          [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+          [
+            h.Class(
+              css({
+                fontSize: 'type.12',
+                lineHeight: 'snug',
+                color: 'mutedForeground',
+              }),
+            ),
+          ],
           [t.inspectorEdge.aUserInItsRegion(t.units.ms(EDGE_MS), Math.round(EDGE_READ_HIT * 100))],
         ),
       ],

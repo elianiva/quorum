@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { formats } from '@/i18n/format.ts'
 import { copy, localized } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -23,7 +24,15 @@ const hubStack = (model: Model, node: GameNode, h: HtmlBuilder<Message>): Html =
     [
       runtimePickerView(model, node, h, null, false),
       h.p(
-        [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+        [
+          h.Class(
+            css({
+              fontSize: 'type.12',
+              lineHeight: 'snug',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
         [runtime.blurb],
       ),
       caption(

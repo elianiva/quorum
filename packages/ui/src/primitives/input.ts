@@ -1,22 +1,100 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { Input as FoldkitInput } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
-import { cn } from 'cn'
-
-export const inputClass =
-  'bg-well shadow-well border-transparent focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 h-8 rounded-lg border px-2.5 py-1 text-base transition-colors file:h-6 file:text-sm file:font-medium focus-visible:ring-3 aria-invalid:ring-3 md:text-sm aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50 aria-disabled:bg-input/50 data-disabled:bg-input/50 dark:aria-disabled:bg-input/80 dark:data-disabled:bg-input/80 w-full min-w-0 outline-none file:inline-flex file:border-0 file:bg-transparent file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50'
+export const inputClass = css({
+  backgroundColor: 'well',
+  boxShadow: 'well',
+  borderColor: 'transparent',
+  height: '8',
+  borderRadius: 'lg',
+  borderWidth: '1px',
+  paddingInline: '2.5',
+  paddingBlock: '1',
+  fontSize: 'type.16',
+  lineHeight: 'normal',
+  transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke',
+  transitionTimingFunction: 'default',
+  transitionDuration: 'fast',
+  width: '100%',
+  minWidth: '0',
+  outlineStyle: 'none',
+  '&::file-selector-button': {
+    height: '6',
+    fontSize: 'type.14',
+    lineHeight: 'fine',
+    fontWeight: 'medium',
+    display: 'inline-flex',
+    borderWidth: '0',
+    backgroundColor: 'transparent',
+    color: 'foreground',
+  },
+  '&::placeholder': { color: 'mutedForeground' },
+  '&:focus-visible': {
+    borderColor: 'ring',
+    boxShadow: 'focusWell',
+  },
+  '&[aria-invalid="true"]': {
+    borderColor: 'destructive',
+    boxShadow:
+      'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+  },
+  _dark: {
+    '&[aria-invalid="true"]': {
+      borderColor: 'color-mix(in oklab, var(--destructive) 50%, transparent)',
+      boxShadow:
+        'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+    },
+    '&[aria-disabled="true"], &[data-disabled]': {
+      backgroundColor: 'color-mix(in oklab, var(--input) 80%, transparent)',
+    },
+  },
+  '&[aria-disabled="true"], &[data-disabled]': {
+    pointerEvents: 'none',
+    cursor: 'not-allowed',
+    opacity: 0.5,
+    backgroundColor: 'color-mix(in oklab, var(--input) 50%, transparent)',
+  },
+  '&:disabled': {
+    pointerEvents: 'none',
+    cursor: 'not-allowed',
+    opacity: 0.5,
+  },
+  md: { fontSize: 'type.14', lineHeight: 'fine' },
+})
 
 /** Same string as the `label` item's component classes (upstream label.tsx). */
 /** Upstream string re-keyed for foldkit: the label precedes the control, so
  *  upstream's native peer-disabled sibling variant can never match; disabled
- *  state flows from the wrapper (group/field + data-disabled, mirroring
+ *  state flows from the wrapper (group-field + data-disabled, mirroring
  *  switch.ts). */
-export const inputLabelClass =
-  'gap-2 text-sm leading-none font-medium group-data-[disabled]:opacity-50 flex items-center select-none group-data-[disabled]/field:pointer-events-none group-data-[disabled]/field:cursor-not-allowed group-data-[disabled]/field:opacity-50'
+export const inputLabelClass = css({
+  gap: '2',
+  fontSize: 'type.14',
+  lineHeight: 'none',
+  fontWeight: 'medium',
+  display: 'flex',
+  alignItems: 'center',
+  userSelect: 'none',
+  '[data-disabled] &': {
+    pointerEvents: 'none',
+    cursor: 'not-allowed',
+    opacity: 0.5,
+  },
+})
 
-export const inputDescriptionClass = 'text-sm text-muted-foreground'
+export const inputDescriptionClass = css({
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  color: 'mutedForeground',
+})
 
-export const inputWrapperClass = 'group/field flex flex-col gap-1.5 w-full'
+export const inputWrapperClass = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1.5',
+  width: '100%',
+})
 
 export type InputConfig<M> = Readonly<{
   id: string
@@ -56,7 +134,7 @@ export const input = <M>(config: InputConfig<M>, h: HtmlBuilder<M>): Html =>
       toView: (attributes) =>
         h.div(
           [
-            h.Class(cn(inputWrapperClass, config.wrapperClass)),
+            h.Class(cx(inputWrapperClass, config.wrapperClass)),
             ...(config.isDisabled ? [h.DataAttribute('disabled', '')] : []),
           ],
           [
@@ -64,21 +142,21 @@ export const input = <M>(config: InputConfig<M>, h: HtmlBuilder<M>): Html =>
               [
                 ...attributes.label,
                 h.DataAttribute('slot', 'label'),
-                h.Class(cn(inputLabelClass, config.labelClass)),
+                h.Class(cx(inputLabelClass, config.labelClass)),
               ],
               [config.label],
             ),
             h.input([
               ...attributes.input,
               h.DataAttribute('slot', 'input'),
-              h.Class(cn(inputClass, config.className)),
+              h.Class(cx(inputClass, config.className)),
             ]),
             config.description === undefined
               ? h.empty
               : h.span(
                   [
                     ...attributes.description,
-                    h.Class(cn(inputDescriptionClass, config.descriptionClass)),
+                    h.Class(cx(inputDescriptionClass, config.descriptionClass)),
                   ],
                   [config.description],
                 ),

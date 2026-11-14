@@ -1,0 +1,26 @@
+{
+  "name": "@quorum/styled-system",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./css": {
+      "types": "./css/index.d.ts",
+      "import": "./css/index.js"
+    },
+    "./recipes": {
+      "types": "./recipes/index.d.ts",
+      "import": "./recipes/index.js"
+    },
+    "./patterns": {
+      "types": "./patterns/index.d.ts",
+      "import": "./patterns/index.js"
+    },
+    "./tokens": {
+      "types": "./tokens/index.d.ts",
+      "import": "./tokens/index.js"
+    },
+    "./types": {
+      "types": "./types/index.d.ts"
+    }
+  }
+}

@@ -23,6 +23,7 @@ export const chrome: Chrome = {
     sections: 'Secciones',
     wordmarkWiki: 'Wiki',
     language: 'Idioma',
+    theme: 'Cambiar entre el modo claro y el oscuro',
     switchTo: (name) => `Leer esta página en ${name}`,
   },
   quadrants: {
@@ -199,6 +200,7 @@ export const chrome: Chrome = {
   search: {
     placeholder: 'Buscar',
     label: 'Buscar en la wiki',
+    close: 'Cerrar la búsqueda',
     results: 'Resultados de la búsqueda',
     searching: 'Buscando…',
     unavailable: 'La búsqueda no está disponible.',
@@ -212,12 +214,11 @@ export const chrome: Chrome = {
   },
   spoilers: {
     title: 'Spoilers',
-    all: 'Todas',
-    allShow: 'Se muestran todas las Eras',
-    hidingAfter: (era) => `Se oculta tras ${era}`,
-    groupLabel: 'Oculta el contenido posterior a la Era que alcanzaste',
+    hideFuture: 'Ocultar Eras futuras',
+    allEras: 'Todas las Eras',
+    after: (era) => `Después de ${era}`,
+    chooseEra: 'Elige la última Era que alcanzaste',
     showEvery: 'Mostrar todas las Eras',
-    hideAfter: (era) => `Ocultar tras ${era}`,
     upTo: (era) => `Hasta ${era}`,
   },
   quiz: {

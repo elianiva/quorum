@@ -1,11 +1,20 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
-
-import { cn } from 'cn'
 
 export type SeparatorOrientation = 'horizontal' | 'vertical'
 
-export const separatorClass =
-  'shrink-0 bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch'
+export const separatorClass = css({
+  flexShrink: '0',
+  backgroundColor: 'border',
+  '&[data-horizontal]': {
+    height: '1px',
+    width: '100%',
+  },
+  '&[data-vertical]': {
+    width: '1px',
+    alignSelf: 'stretch',
+  },
+})
 
 type SeparatorConfig = Readonly<{
   orientation?: SeparatorOrientation
@@ -16,7 +25,7 @@ export const separator = <M>(config: SeparatorConfig, h: HtmlBuilder<M>): Html =
   const orientation = config.orientation ?? 'horizontal'
   return h.div(
     [
-      h.Class(cn(separatorClass, config.className)),
+      h.Class(cx(separatorClass, config.className)),
       h.Role('separator'),
       h.AriaOrientation(orientation),
       h.DataAttribute('slot', 'separator'),

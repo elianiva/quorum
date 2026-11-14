@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { formats } from '@/i18n/format.ts'
 import { copy, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -36,7 +37,6 @@ import {
 } from '@/game/model.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
-import { cn } from '@/lib/utils'
 import { CHIPS, FIGURE, PANEL, WELL, meter, toneText, type Tone } from '@quorum/ui/game/bits'
 import { shell } from './panels.ts'
 
@@ -61,13 +61,45 @@ const figureRow = (
   h: HtmlBuilder<Message>,
 ): Html =>
   h.div(
-    [h.Key(name), h.Class('flex h-8 items-center gap-2.5 px-2.5 compact:shrink-0 compact:px-3')],
     [
-      icon(h, glyph, 'size-3.5 shrink-0 text-muted-foreground'),
+      h.Key(name),
+      h.Class(
+        css({
+          display: 'flex',
+          height: '8',
+          alignItems: 'center',
+          gap: '2.5',
+          paddingInline: '2.5',
+          _compact: {
+            flexShrink: '0',
+            paddingInline: '3',
+          },
+        }),
+      ),
+    ],
+    [
+      icon(
+        h,
+        glyph,
+        css({
+          width: '3.5',
+          height: '3.5',
+          flexShrink: '0',
+          color: 'mutedForeground',
+        }),
+      ),
       h.span(
         [
           h.Class(
-            'w-[72px] shrink-0 text-[calc(11.5px*var(--type-scale))] text-muted-foreground compact:hidden',
+            css({
+              width: '72px',
+              flexShrink: '0',
+              fontSize: 'type.11-5',
+              color: 'mutedForeground',
+              _compact: {
+                display: 'none',
+              },
+            }),
           ),
         ],
         [name],
@@ -75,9 +107,13 @@ const figureRow = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
-              'ml-auto text-[calc(13.5px*var(--type-scale))] leading-none',
+              css({
+                marginLeft: 'auto',
+                fontSize: 'type.13-5',
+                lineHeight: 'none',
+              }),
               toneText(tone),
             ),
           ),
@@ -102,7 +138,23 @@ const figures = (
   const spent =
     challenge.devHours === undefined ? 0 : devHoursOf(challenge.start(), model.board.game)
   return h.div(
-    [h.Class(`flex flex-col divide-y divide-hairline ${WELL} ${CHIPS}`)],
+    [
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            '& > :not(:last-child)': {
+              borderBottomWidth: '1px',
+              borderBottomStyle: 'solid',
+              borderColor: 'hairline',
+            },
+          }),
+          WELL,
+          CHIPS,
+        ),
+      ),
+    ],
     [
       figureRow(
         t.challenge.cost,
@@ -215,7 +267,23 @@ const fixes = (model: Model, h: HtmlBuilder<Message>): Html => {
   if (!game.scenario?.tasks || open.length === 0) return h.empty
   const on = serviceOf(game).fixes
   return h.div(
-    [h.Class(`flex flex-col divide-y divide-hairline ${WELL} ${CHIPS}`)],
+    [
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            '& > :not(:last-child)': {
+              borderBottomWidth: '1px',
+              borderBottomStyle: 'solid',
+              borderColor: 'hairline',
+            },
+          }),
+          WELL,
+          CHIPS,
+        ),
+      ),
+    ],
     open.map((fix) => {
       const active = on.includes(fix)
       return h.button(
@@ -225,21 +293,70 @@ const fixes = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.AriaPressed(active ? 'true' : 'false'),
           h.OnClick(Message.FixChosen({ fix, on: !active })),
           h.Class(
-            'press flex h-8 items-center gap-2.5 px-2.5 text-left hover:bg-foreground/5 compact:px-3',
+            cx(
+              css({
+                display: 'flex',
+                height: '8',
+                alignItems: 'center',
+                gap: '2.5',
+                paddingInline: '2.5',
+                textAlign: 'left',
+                _hover: {
+                  backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                },
+                _compact: {
+                  paddingInline: '3',
+                },
+              }),
+              'press',
+            ),
           ),
         ],
         [
           icon(
             h,
             active ? Check : Hammer,
-            cn('size-3.5 shrink-0', active ? 'text-ok' : 'text-muted-foreground'),
+            cx(
+              css({
+                width: '3.5',
+                height: '3.5',
+                flexShrink: '0',
+              }),
+              active
+                ? css({
+                    color: 'ok',
+                  })
+                : css({
+                    color: 'mutedForeground',
+                  }),
+            ),
           ),
           h.span(
-            [h.Class('flex-1 truncate text-[calc(11.5px*var(--type-scale))]')],
+            [
+              h.Class(
+                css({
+                  flex: '1 1 0%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: 'type.11-5',
+                }),
+              ),
+            ],
             [t.catalog.tasks[fix].name],
           ),
           h.span(
-            [h.Class(cn(FIGURE, 'text-[calc(12px*var(--type-scale))] text-muted-foreground'))],
+            [
+              h.Class(
+                cx(
+                  FIGURE,
+                  css({
+                    fontSize: 'type.12',
+                    color: 'mutedForeground',
+                  }),
+                ),
+              ),
+            ],
             [t.challenge.dH(TASKS[fix].dh)],
           ),
         ],
@@ -251,25 +368,76 @@ const fixes = (model: Model, h: HtmlBuilder<Message>): Html => {
 const actions = (run: ChallengeRun, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
-    [h.Class('flex gap-1.5 px-1 pt-1')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          gap: '1.5',
+          paddingInline: '1',
+          paddingTop: '1',
+        }),
+      ),
+    ],
     run._tag === 'Building'
       ? [
           button(
-            { onClick: Message.ChallengeRan(), size: 'sm', className: 'flex-1' },
-            [icon(h, Play, 'size-3.5'), t.challenge.run],
+            {
+              onClick: Message.ChallengeRan(),
+              size: 'sm',
+              className: css({
+                flex: '1 1 0%',
+              }),
+            },
+            [
+              icon(
+                h,
+                Play,
+                css({
+                  width: '3.5',
+                  height: '3.5',
+                }),
+              ),
+              t.challenge.run,
+            ],
             h,
           ),
         ]
       : run._tag === 'Running'
         ? [
             button(
-              { onClick: Message.ChallengeFinished(), size: 'sm', className: 'flex-1' },
-              [icon(h, FastForward, 'size-3.5'), t.challenge.finish],
+              {
+                onClick: Message.ChallengeFinished(),
+                size: 'sm',
+                className: css({
+                  flex: '1 1 0%',
+                }),
+              },
+              [
+                icon(
+                  h,
+                  FastForward,
+                  css({
+                    width: '3.5',
+                    height: '3.5',
+                  }),
+                ),
+                t.challenge.finish,
+              ],
               h,
             ),
             button(
               { onClick: Message.ChallengeRebuilt(), variant: 'outline', size: 'sm' },
-              [icon(h, RotateCcw, 'size-3.5'), t.challenge.rebuild],
+              [
+                icon(
+                  h,
+                  RotateCcw,
+                  css({
+                    width: '3.5',
+                    height: '3.5',
+                  }),
+                ),
+                t.challenge.rebuild,
+              ],
               h,
             ),
           ]
@@ -278,14 +446,26 @@ const actions = (run: ChallengeRun, h: HtmlBuilder<Message>): Html => {
               {
                 onClick: Message.PanelOpened({ panel: 'challenge' }),
                 size: 'sm',
-                className: 'flex-1',
+                className: css({
+                  flex: '1 1 0%',
+                }),
               },
               t.challenge.result,
               h,
             ),
             button(
               { onClick: Message.ChallengeRebuilt(), variant: 'outline', size: 'sm' },
-              [icon(h, RotateCcw, 'size-3.5'), t.challenge.rebuild],
+              [
+                icon(
+                  h,
+                  RotateCcw,
+                  css({
+                    width: '3.5',
+                    height: '3.5',
+                  }),
+                ),
+                t.challenge.rebuild,
+              ],
               h,
             ),
           ],
@@ -301,30 +481,102 @@ export const challengeHud = (model: Model, ledger: Ledger, h: HtmlBuilder<Messag
   return h.header(
     [
       h.Class(
-        `absolute top-3 left-3 z-20 flex w-[248px] flex-col gap-1 p-1.5 ${PANEL} compact:pointer-events-auto compact:static compact:w-auto compact:p-1`,
+        cx(
+          css({
+            position: 'absolute',
+            top: '3',
+            left: '3',
+            zIndex: '20',
+            display: 'flex',
+            width: '248px',
+            flexDirection: 'column',
+            gap: '1',
+            padding: '1.5',
+          }),
+          PANEL,
+          css({
+            _compact: {
+              pointerEvents: 'auto',
+              position: 'static',
+              width: 'auto',
+              padding: '1',
+            },
+          }),
+        ),
       ),
     ],
     [
       h.div(
-        [h.Class('flex min-h-9 items-center gap-2 px-2.5 pt-1.5 pb-2')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              minHeight: '9',
+              alignItems: 'center',
+              gap: '2',
+              paddingInline: '2.5',
+              paddingTop: '1.5',
+              paddingBottom: '2',
+            }),
+          ),
+        ],
         [
           button(
             {
               onClick: Message.TitleOpened(),
               variant: 'ghost',
               size: 'icon-sm',
-              className: '-ml-1.5 text-muted-foreground',
+              className: css({
+                marginLeft: '-0.375rem',
+                color: 'mutedForeground',
+              }),
               attributes: [h.AriaLabel(t.challenge.challenges), h.Title(t.challenge.challenges)],
             },
-            icon(h, Menu, 'size-4'),
+            icon(
+              h,
+              Menu,
+              css({
+                width: '4',
+                height: '4',
+              }),
+            ),
             h,
           ),
           h.span(
-            [h.Class('truncate text-[calc(13px*var(--type-scale))] font-semibold')],
+            [
+              h.Class(
+                css({
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: 'type.13',
+                  fontWeight: 'semibold',
+                }),
+              ),
+            ],
             [t.catalog.challenges[challenge.id]?.name ?? challenge.name],
           ),
           model.founder.completed.includes(challenge.id)
-            ? h.span([h.Class('ml-auto')], [icon(h, Check, 'size-3.5 text-ok')])
+            ? h.span(
+                [
+                  h.Class(
+                    css({
+                      marginLeft: 'auto',
+                    }),
+                  ),
+                ],
+                [
+                  icon(
+                    h,
+                    Check,
+                    css({
+                      width: '3.5',
+                      height: '3.5',
+                      color: 'ok',
+                    }),
+                  ),
+                ],
+              )
             : h.empty,
         ],
       ),
@@ -347,19 +599,61 @@ export const challengeBar = (model: Model, h: HtmlBuilder<Message>): Html => {
     [
       h.Key(`challenge-${run._tag}`),
       h.Class(
-        'enter-down flex w-[420px] flex-col gap-2 compact:w-auto rounded-xl bg-surface px-3 py-2.5 text-[calc(12.5px*var(--type-scale))] shadow-card',
+        cx(
+          css({
+            display: 'flex',
+            width: '420px',
+            flexDirection: 'column',
+            gap: '2',
+            _compact: {
+              width: 'auto',
+            },
+            borderRadius: 'xl',
+            layerStyle: 'surface',
+            paddingInline: '3',
+            paddingBlock: '2.5',
+            fontSize: 'type.12-5',
+            boxShadow: 'card',
+          }),
+          'enter-down',
+        ),
       ),
     ],
     [
       h.div(
-        [h.Class('flex items-start gap-2.5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '2.5',
+            }),
+          ),
+        ],
         [
           h.span(
-            [h.Class('flex-1 leading-snug')],
+            [
+              h.Class(
+                css({
+                  flex: '1 1 0%',
+                  lineHeight: 'snug',
+                }),
+              ),
+            ],
             [t.catalog.challenges[challenge.id]?.brief ?? challenge.brief],
           ),
           h.span(
-            [h.Class(cn(FIGURE, 'text-[calc(11px*var(--type-scale))] text-muted-foreground'))],
+            [
+              h.Class(
+                cx(
+                  FIGURE,
+                  css({
+                    fontSize: 'type.11',
+                    color: 'mutedForeground',
+                  }),
+                ),
+              ),
+            ],
             [
               running
                 ? `${clock(elapsed)} / ${clock(challenge.duration)}`
@@ -369,10 +663,22 @@ export const challengeBar = (model: Model, h: HtmlBuilder<Message>): Html => {
         ],
       ),
       h.span(
-        [h.Class(cn(FIGURE, 'text-[calc(11px*var(--type-scale))] text-muted-foreground'))],
+        [
+          h.Class(
+            cx(
+              FIGURE,
+              css({
+                fontSize: 'type.11',
+                color: 'mutedForeground',
+              }),
+            ),
+          ),
+        ],
         [targetText(t, challenge)],
       ),
-      running ? meter(run.totals.step / stepsOf(challenge), 'bg-primary-fill', h) : h.empty,
+      running
+        ? meter(run.totals.step / stepsOf(challenge), css({ layerStyle: 'primaryFill' }), h)
+        : h.empty,
     ],
   )
 }
@@ -382,17 +688,51 @@ const axisRow = (axis: ScoreAxis, run: ChallengeResultRun, h: HtmlBuilder<Messag
 
   const value = run.result[axis]
   return h.div(
-    [h.Key(axis), h.Class('flex flex-col gap-1.5')],
+    [
+      h.Key(axis),
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.5',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex items-baseline justify-between gap-3')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: '3',
+            }),
+          ),
+        ],
         [
           h.span(
-            [h.Class('text-[calc(13px*var(--type-scale))] font-medium')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.13',
+                  fontWeight: 'medium',
+                }),
+              ),
+            ],
             [axisNamesOf(t)[axis]],
           ),
           h.span(
-            [h.Class(cn(FIGURE, 'text-[calc(13px*var(--type-scale))]'))],
+            [
+              h.Class(
+                cx(
+                  FIGURE,
+                  css({
+                    fontSize: 'type.13',
+                  }),
+                ),
+              ),
+            ],
             [axisValue(t, axis, value)],
           ),
         ],
@@ -414,14 +754,34 @@ export const challengePanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     [],
     [
       h.div(
-        [h.Class('flex flex-col gap-4 px-5 pb-5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4',
+              paddingInline: '5',
+              paddingBottom: '5',
+            }),
+          ),
+        ],
         [
           h.span(
             [
               h.Class(
-                cn(
-                  'text-[calc(22px*var(--type-scale))] font-semibold tracking-[-0.03em]',
-                  passed ? 'text-ok' : 'text-danger',
+                cx(
+                  css({
+                    fontSize: 'type.22',
+                    fontWeight: 'semibold',
+                    letterSpacing: 'title',
+                  }),
+                  passed
+                    ? css({
+                        color: 'ok',
+                      })
+                    : css({
+                        color: 'danger',
+                      }),
                 ),
               ),
             ],
@@ -431,22 +791,49 @@ export const challengePanel = (model: Model, h: HtmlBuilder<Message>): Html => {
         ],
       ),
       h.div(
-        [h.Class('flex justify-end gap-2 border-t border-hairline bg-nested px-5 py-3')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '2',
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderColor: 'hairline',
+              backgroundColor: 'nested',
+              paddingInline: '5',
+              paddingBlock: '3',
+            }),
+          ),
+        ],
         [
           button(
-            { onClick: Message.TitleOpened(), variant: 'outline', size: 'lg', className: 'px-3.5' },
+            {
+              onClick: Message.TitleOpened(),
+              variant: 'outline',
+              size: 'lg',
+              className: css({
+                paddingInline: '3.5',
+              }),
+            },
             t.challenge.challenges,
             h,
           ),
           button(
-            { onClick: Message.ChallengeRebuilt(), size: 'lg', className: 'px-4' },
+            {
+              onClick: Message.ChallengeRebuilt(),
+              size: 'lg',
+              className: css({
+                paddingInline: '4',
+              }),
+            },
             t.challenge.rebuild,
             h,
           ),
         ],
       ),
     ],
-    'max-w-[440px]',
+    css({ maxWidth: '440px' }),
     h,
   )
 }

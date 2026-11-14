@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { formats } from '@/i18n/format.ts'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -31,7 +32,7 @@ const cdnOptions = (node: GameNode, h: HtmlBuilder<Message>): Html => {
         (cacheKey) => Message.CdnOptionsChosen({ nodeId: node.id, cacheKey }),
         h,
         () => true,
-        'grid-cols-3',
+        css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
       ),
       caption(
         node.purge

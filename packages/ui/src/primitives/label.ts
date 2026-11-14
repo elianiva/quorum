@@ -1,16 +1,30 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
-
-import { cn } from 'cn'
 
 /** Upstream keys label disabling on a native peer-disabled sibling variant
  *  and `group-data-[disabled=true]`, neither of which matches under foldkit
  *  (no `.peer` sibling; `data-disabled` is emitted empty). Re-keyed onto a
  *  live `group` ancestor carrying data-disabled — e.g. the fieldset compound
  *  or switch wrapper. */
-export const labelClass =
-  'gap-2 text-sm leading-none font-medium group-data-[disabled]:opacity-50 flex items-center select-none group-data-[disabled]/field-set:pointer-events-none group-data-[disabled]/field-set:cursor-not-allowed group-data-[disabled]/field-set:opacity-50'
+export const labelClass = css({
+  gap: '2',
+  fontSize: 'type.14',
+  lineHeight: 'none',
+  fontWeight: 'medium',
+  '.group[data-disabled] &': {
+    opacity: 0.5,
+  },
+  display: 'flex',
+  alignItems: 'center',
+  userSelect: 'none',
+  '.group-field-set[data-disabled] &': {
+    pointerEvents: 'none',
+    cursor: 'not-allowed',
+    opacity: 0.5,
+  },
+})
 
 type LabelConfig = Readonly<{ forId?: string; className?: string }>
 
@@ -22,7 +36,7 @@ export const label = <M>(
 ): Html =>
   h.label(
     [
-      h.Class(cn(labelClass, config.className)),
+      h.Class(cx(labelClass, config.className)),
       h.DataAttribute('slot', 'label'),
       ...(config.forId === undefined ? [] : [h.For(config.forId)]),
     ],

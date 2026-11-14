@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { copy, insightName, localeOf, localized, type Messages } from '@/i18n/messages.ts'
 import {
   ResearchMessage,
@@ -68,7 +69,6 @@ import { POOL_ICONS, POOL_ORDER, poolColor, recipeOf } from '@quorum/ui/game/poo
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
 import { badge, type BadgeVariant } from '@quorum/ui/primitives/badge'
-import { cn } from '@/lib/utils'
 import { EYEBROW, FIGURE, FLOAT, PANEL, SCROLL, insightChip, meter } from '@quorum/ui/game/bits'
 import { LOOKS, TRACK_ICONS, colorOf, researchMark } from '@quorum/ui/game/research-marks'
 import {
@@ -108,10 +108,23 @@ const focusOf = (model: Model): ResearchDef => {
 }
 
 const NODE_CLASS: Record<State, string> = {
-  owned: 'bg-nested shadow-[inset_0_0_0_1px_var(--hairline-soft)]',
-  buy: 'bg-raised shadow-raised hover:brightness-[0.985]',
-  saving: 'bg-raised shadow-raised hover:brightness-[0.985]',
-  locked: 'border border-dashed border-border bg-canvas hover:bg-foreground/[0.03]',
+  owned: css({
+    backgroundColor: 'nested',
+    boxShadow: 'line',
+  }),
+  buy: css({ layerStyle: 'raised', boxShadow: 'raised', _hover: { filter: 'brightness(0.985)' } }),
+  saving: css({
+    layerStyle: 'raised',
+    boxShadow: 'raised',
+    _hover: { filter: 'brightness(0.985)' },
+  }),
+  locked: css({
+    borderWidth: '1px',
+    borderStyle: 'dashed',
+    borderColor: 'border',
+    backgroundColor: 'canvas',
+    _hover: { backgroundColor: 'color-mix(in oklab, var(--foreground) 3%, transparent)' },
+  }),
 }
 
 /** The recipe as pool chips, or a check once researched. */
@@ -119,20 +132,59 @@ const price = (entry: ResearchDef, state: State, grey: boolean, h: HtmlBuilder<M
   const t = copy(h)
   return state === 'owned'
     ? h.span(
-        [h.Class('flex items-center gap-1 text-[calc(11px*var(--type-scale))] text-ok')],
-        [icon(h, Check, 'size-3'), t.research.researched],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1',
+              fontSize: 'type.11',
+              color: 'ok',
+            }),
+          ),
+        ],
+        [
+          icon(
+            h,
+            Check,
+            css({
+              width: '3',
+              height: '3',
+            }),
+          ),
+          t.research.researched,
+        ],
       )
     : h.span(
         [
           h.Class(
-            cn(
-              'flex w-fit items-center gap-2 text-[calc(11px*var(--type-scale))]',
-              grey ? 'text-muted-foreground' : '',
+            cx(
+              css({
+                display: 'flex',
+                width: 'fit-content',
+                alignItems: 'center',
+                gap: '2',
+                fontSize: 'type.11',
+              }),
+              grey
+                ? css({
+                    color: 'mutedForeground',
+                  })
+                : '',
             ),
           ),
         ],
         [
-          state === 'locked' ? icon(h, Lock, 'size-2.5') : h.empty,
+          state === 'locked'
+            ? icon(
+                h,
+                Lock,
+                css({
+                  width: '2.5',
+                  height: '2.5',
+                }),
+              )
+            : h.empty,
           ...recipeOf(entry.id).map(([pool, cost]) =>
             insightChip(pool, compact(cost), h, grey, 'plain', insightName(t, pool)),
           ),
@@ -150,7 +202,13 @@ const duration = (t: Messages, game: Game, entry: ResearchDef): string => {
 const stepMeter = (step: number, h: HtmlBuilder<Message>): Html =>
   h.span(
     [
-      h.Class('inline-flex items-center gap-[3px]'),
+      h.Class(
+        css({
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.75',
+        }),
+      ),
       h.AriaHidden(true),
       h.Title(`${step} of ${MAX_LEVER_STEP}`),
     ],
@@ -159,7 +217,20 @@ const stepMeter = (step: number, h: HtmlBuilder<Message>): Html =>
         [
           h.Key(String(index)),
           h.Class(
-            cn('h-1.5 w-3 rounded-full', index < step ? 'bg-foreground/70' : 'bg-foreground/15'),
+            cx(
+              css({
+                height: '1.5',
+                width: '3',
+                borderRadius: 'full',
+              }),
+              index < step
+                ? css({
+                    backgroundColor: 'color-mix(in oklab, var(--foreground) 70%, transparent)',
+                  })
+                : css({
+                    backgroundColor: 'color-mix(in oklab, var(--foreground) 15%, transparent)',
+                  }),
+            ),
           ),
         ],
         [],
@@ -216,28 +287,77 @@ const leverRow = (
       ? refusalIn(t, buildRefusal)
       : t.levers.reaches(sharePercent(nextShare), nextGrowth)
   return h.div(
-    [h.Key(`${pool}-lever`), h.Class('my-1.5 rounded-lg bg-well px-2.5 py-2 shadow-well')],
+    [
+      h.Key(`${pool}-lever`),
+      h.Class(
+        css({
+          marginBlock: '1.5',
+          borderRadius: 'lg',
+          backgroundColor: 'well',
+          paddingInline: '2.5',
+          paddingBlock: '2',
+          boxShadow: 'well',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex items-start gap-2')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '2',
+            }),
+          ),
+        ],
         [
           h.p(
             [
               h.Class(
-                cn(
-                  'min-w-0 flex-1 text-[calc(12.5px*var(--type-scale))] leading-snug font-semibold',
-                  blocked ? 'text-warn' : 'text-foreground',
+                cx(
+                  css({
+                    minWidth: '0',
+                    flex: '1 1 0%',
+                    fontSize: 'type.12-5',
+                    lineHeight: 'snug',
+                    fontWeight: 'semibold',
+                  }),
+                  blocked
+                    ? css({
+                        color: 'warn',
+                      })
+                    : css({
+                        color: 'foreground',
+                      }),
                 ),
               ),
             ],
             [title],
           ),
           h.div(
-            [h.Class('flex shrink-0 items-center gap-1.5 whitespace-nowrap')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexShrink: '0',
+                  alignItems: 'center',
+                  gap: '1.5',
+                  whiteSpace: 'nowrap',
+                }),
+              ),
+            ],
             [
               stepMeter(step, h),
               h.span(
-                [h.Class('text-[calc(10.5px*var(--type-scale))] text-muted-foreground')],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'type.10-5',
+                      color: 'mutedForeground',
+                    }),
+                  ),
+                ],
                 [t.levers.count(step, MAX_LEVER_STEP)],
               ),
             ],
@@ -245,22 +365,50 @@ const leverRow = (
         ],
       ),
       h.p(
-        [h.Class('mt-1.5 text-[calc(12px*var(--type-scale))] leading-snug text-foreground/85')],
+        [
+          h.Class(
+            css({
+              marginTop: '1.5',
+              fontSize: 'type.12',
+              lineHeight: 'snug',
+              color: 'color-mix(in oklab, var(--foreground) 85%, transparent)',
+            }),
+          ),
+        ],
         [reason],
       ),
       h.p(
         [
           h.Class(
-            cn(
-              'mt-1 text-[calc(11px*var(--type-scale))] leading-snug',
-              buildable || last ? 'text-muted-foreground' : 'text-warn',
+            cx(
+              css({
+                marginTop: '1',
+                fontSize: 'type.11',
+                lineHeight: 'snug',
+              }),
+              buildable || last
+                ? css({
+                    color: 'mutedForeground',
+                  })
+                : css({
+                    color: 'warn',
+                  }),
             ),
           ),
         ],
         [note],
       ),
       h.div(
-        [h.Class('mt-2 flex items-center gap-1.5')],
+        [
+          h.Class(
+            css({
+              marginTop: '2',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1.5',
+            }),
+          ),
+        ],
         [
           last
             ? h.empty
@@ -272,7 +420,11 @@ const leverRow = (
                   isDisabled: buildRefusal !== null,
                   size: 'sm',
                   variant: 'outline',
-                  className: 'min-w-0 flex-1 text-[calc(12px*var(--type-scale))]',
+                  className: css({
+                    minWidth: '0',
+                    flex: '1 1 0%',
+                    fontSize: 'type.12',
+                  }),
                   attributes: [
                     h.Title(
                       buildRefusal === null
@@ -296,7 +448,10 @@ const leverRow = (
                   isDisabled: removeRefusal !== null,
                   size: 'sm',
                   variant: 'ghost',
-                  className: 'shrink-0 text-muted-foreground',
+                  className: css({
+                    flexShrink: '0',
+                    color: 'mutedForeground',
+                  }),
                   attributes: [
                     h.AriaLabel(t.levers.takeOff),
                     h.Title(
@@ -327,32 +482,97 @@ const costRows = (
   const running = game.studies[0]?.id === entry.id
   const limit = running ? limitingPool(game) : null
   return h.section(
-    [h.Key('cost'), h.Class('border-b border-hairline px-5 py-4 last:border-b-0')],
+    [
+      h.Key('cost'),
+      h.Class(
+        css({
+          borderBottomWidth: '1px',
+          borderBottomStyle: 'solid',
+          borderColor: 'hairline',
+          paddingInline: '5',
+          paddingBlock: '4',
+          '&:last-child': {
+            borderBottomWidth: '0px',
+          },
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex items-baseline justify-between gap-3')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: '3',
+            }),
+          ),
+        ],
         [
           h.span([h.Class(EYEBROW)], [t.research.costLabel]),
           h.span(
-            [h.Class('text-[calc(11.5px*var(--type-scale))] text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.11-5',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
             [duration(t, game, entry)],
           ),
         ],
       ),
       h.div(
-        [h.Class(cn(FIGURE, 'mt-2 flex flex-col divide-y divide-hairline'))],
+        [
+          h.Class(
+            cx(
+              FIGURE,
+              css({
+                marginTop: '2',
+                display: 'flex',
+                flexDirection: 'column',
+                '& > :not(:last-child)': {
+                  borderBottomWidth: '1px',
+                  borderBottomStyle: 'solid',
+                  borderColor: 'hairline',
+                },
+              }),
+            ),
+          ),
+        ],
         recipeOf(entry.id, game.discounts).flatMap(([pool, cost]) => [
           h.div(
             [
               h.Key(pool),
-              h.Class('flex items-center gap-3 py-1.5 text-[calc(12px*var(--type-scale))]'),
+              h.Class(
+                css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '3',
+                  paddingBlock: '1.5',
+                  fontSize: 'type.12',
+                }),
+              ),
             ],
             [
               insightChip(pool, compact(cost), h, false, 'plain', insightName(t, pool)),
               h.span(
                 [
                   h.Class(
-                    cn('ml-auto', game.pools[pool] < cost ? 'text-warn' : 'text-muted-foreground'),
+                    cx(
+                      css({
+                        marginLeft: 'auto',
+                      }),
+                      game.pools[pool] < cost
+                        ? css({
+                            color: 'warn',
+                          })
+                        : css({
+                            color: 'mutedForeground',
+                          }),
+                    ),
                   ),
                 ],
                 [t.research.held(compact(game.pools[pool]))],
@@ -360,10 +580,23 @@ const costRows = (
               h.span(
                 [
                   h.Class(
-                    cn(
-                      'w-[60px] text-right',
-                      ledger.insight[pool] > 0 ? 'text-ok' : 'text-warn',
-                      pool === limit ? 'font-semibold' : '',
+                    cx(
+                      css({
+                        width: '60px',
+                        textAlign: 'right',
+                      }),
+                      ledger.insight[pool] > 0
+                        ? css({
+                            color: 'ok',
+                          })
+                        : css({
+                            color: 'warn',
+                          }),
+                      pool === limit
+                        ? css({
+                            fontWeight: 'semibold',
+                          })
+                        : '',
                     ),
                   ),
                 ],
@@ -431,15 +664,43 @@ const requirement = (
 ): Html => {
   const gap = gapOf(t, stall)
   return h.section(
-    [h.Class('shrink-0 border-b border-hairline bg-[var(--warn-soft)] px-5 py-4')],
+    [
+      h.Class(
+        css({
+          flexShrink: '0',
+          borderBottomWidth: '1px',
+          borderBottomStyle: 'solid',
+          borderColor: 'hairline',
+          backgroundColor: 'warnSoft',
+          paddingInline: '5',
+          paddingBlock: '4',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex items-baseline justify-between gap-3')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: '3',
+            }),
+          ),
+        ],
         [
           h.span(
             [
               h.Class(
-                'font-mono text-[calc(10.5px*var(--type-scale))] font-medium tracking-[0.08em] text-warn uppercase',
+                css({
+                  fontFamily: 'mono',
+                  fontSize: 'type.10-5',
+                  fontWeight: 'medium',
+                  letterSpacing: 'eyebrow',
+                  color: 'warn',
+                  textTransform: 'uppercase',
+                }),
               ),
             ],
             [t.research.requirement],
@@ -449,7 +710,14 @@ const requirement = (
             : h.span(
                 [
                   h.Class(
-                    cn(FIGURE, 'text-[calc(11.5px*var(--type-scale))] font-semibold text-warn'),
+                    cx(
+                      FIGURE,
+                      css({
+                        fontSize: 'type.11-5',
+                        fontWeight: 'semibold',
+                        color: 'warn',
+                      }),
+                    ),
                   ),
                 ],
                 [gap.label],
@@ -459,7 +727,13 @@ const requirement = (
       h.p(
         [
           h.Class(
-            'mt-1.5 text-[calc(12.5px*var(--type-scale))] leading-snug font-semibold text-warn',
+            css({
+              marginTop: '1.5',
+              fontSize: 'type.12-5',
+              lineHeight: 'snug',
+              fontWeight: 'semibold',
+              color: 'warn',
+            }),
           ),
         ],
         [
@@ -468,13 +742,30 @@ const requirement = (
             : t.research.firstCannotRun(first, stallNeedIn(t, stall)),
         ],
       ),
-      gap === null ? h.empty : h.div([h.Class('mt-2.5')], [meter(gap.share, 'bg-warn', h)]),
+      gap === null
+        ? h.empty
+        : h.div(
+            [
+              h.Class(
+                css({
+                  marginTop: '2.5',
+                }),
+              ),
+            ],
+            [meter(gap.share, css({ backgroundColor: 'warn' }), h)],
+          ),
       consequence === null
         ? h.empty
         : h.p(
             [
               h.Class(
-                'mt-2 text-[calc(11.5px*var(--type-scale))] leading-snug text-warn opacity-80',
+                css({
+                  marginTop: '2',
+                  fontSize: 'type.11-5',
+                  lineHeight: 'snug',
+                  color: 'warn',
+                  opacity: 0.8,
+                }),
               ),
             ],
             [consequence],
@@ -493,11 +784,33 @@ const linkSection = (
   entries.length === 0
     ? h.empty
     : h.section(
-        [h.Class('border-b border-hairline px-5 py-4 last:border-b-0')],
+        [
+          h.Class(
+            css({
+              borderBottomWidth: '1px',
+              borderBottomStyle: 'solid',
+              borderColor: 'hairline',
+              paddingInline: '5',
+              paddingBlock: '4',
+              '&:last-child': {
+                borderBottomWidth: '0px',
+              },
+            }),
+          ),
+        ],
         [
           h.span([h.Class(EYEBROW)], [label]),
           h.div(
-            [h.Class('-mx-2 mt-2 flex flex-col')],
+            [
+              h.Class(
+                css({
+                  marginInline: '-0.5rem',
+                  marginTop: '2',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }),
+              ),
+            ],
             entries.map((entry) => linkRow(game, entry, h)),
           ),
         ],
@@ -519,14 +832,35 @@ const face = (
   return [
     researchMark(entry, 'sm', grey, h),
     h.span(
-      [h.Class('flex min-w-0 flex-1 flex-col gap-1')],
+      [
+        h.Class(
+          css({
+            display: 'flex',
+            minWidth: '0',
+            flex: '1 1 0%',
+            flexDirection: 'column',
+            gap: '1',
+          }),
+        ),
+      ],
       [
         h.span(
           [
             h.Class(
-              cn(
-                'flex items-start gap-1 text-[calc(12.5px*var(--type-scale))] leading-tight font-semibold',
-                grey ? 'text-muted-foreground' : '',
+              cx(
+                css({
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '1',
+                  fontSize: 'type.12-5',
+                  lineHeight: 'tight',
+                  fontWeight: 'semibold',
+                }),
+                grey
+                  ? css({
+                      color: 'mutedForeground',
+                    })
+                  : '',
               ),
             ),
           ],
@@ -536,10 +870,36 @@ const face = (
             // stays as the last guard against a name added later. `auto-phrase` breaks
             // Japanese at a phrase boundary rather than mid-term, where it is supported.
             h.span(
-              [h.Class(cn('[word-break:auto-phrase]', far ? 'line-clamp-1' : 'line-clamp-2'))],
+              [
+                h.Class(
+                  cx(
+                    css({
+                      wordBreak: 'auto-phrase',
+                    }),
+                    far
+                      ? css({
+                          lineClamp: 1,
+                        })
+                      : css({
+                          lineClamp: 2,
+                        }),
+                  ),
+                ),
+              ],
               [t.catalog.research[entry.id].name],
             ),
-            open ? icon(h, TriangleAlert, 'size-3 shrink-0 text-warn') : h.empty,
+            open
+              ? icon(
+                  h,
+                  TriangleAlert,
+                  css({
+                    width: '3',
+                    height: '3',
+                    flexShrink: '0',
+                    color: 'warn',
+                  }),
+                )
+              : h.empty,
           ],
         ),
         // Beyond the next Era the card is a silhouette: what the item is for, never its price.
@@ -547,7 +907,12 @@ const face = (
           ? h.span(
               [
                 h.Class(
-                  'line-clamp-1 text-[calc(10.5px*var(--type-scale))] leading-snug text-muted-foreground',
+                  css({
+                    lineClamp: 1,
+                    fontSize: 'type.10-5',
+                    lineHeight: 'snug',
+                    color: 'mutedForeground',
+                  }),
                 ),
               ],
               [t.catalog.research[entry.id].blurb],
@@ -577,7 +942,18 @@ const card = (
             h.Key('fill'),
             h.AriaHidden(true),
             h.Class(
-              'absolute inset-0 flex items-center gap-2.5 px-2.5 py-1 transition-[clip-path] duration-500 ease-linear',
+              css({
+                position: 'absolute',
+                inset: '0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '2.5',
+                paddingInline: '2.5',
+                paddingBlock: '1',
+                transitionProperty: 'clip-path',
+                transitionDuration: 'slowest',
+                transitionTimingFunction: 'linear',
+              }),
             ),
             h.Style({
               background: `linear-gradient(to right, color-mix(in oklab, ${color} 8%, var(--raised-top)), color-mix(in oklab, ${color} 22%, var(--raised-top)))`,
@@ -590,7 +966,16 @@ const card = (
           [
             h.Key('edge'),
             h.AriaHidden(true),
-            h.Class('absolute inset-y-0 w-[1.5px] transition-[left] duration-500 ease-linear'),
+            h.Class(
+              css({
+                position: 'absolute',
+                insetBlock: '0',
+                width: '1.5px',
+                transitionProperty: 'left',
+                transitionDuration: 'slowest',
+                transitionTimingFunction: 'linear',
+              }),
+            ),
             h.Style({ left: `${share * 100}%`, background: color, opacity: '0.55' }),
           ],
           [],
@@ -618,13 +1003,40 @@ const node = (model: Model, place: Placed, focused: boolean, h: HtmlBuilder<Mess
     height: `${size.h}px`,
   })
   const shape = h.Class(
-    cn(
-      'absolute flex items-center gap-2.5 overflow-hidden rounded-xl px-2.5 py-1 text-left transition-[filter,box-shadow,outline-color,opacity]',
+    cx(
+      css({
+        position: 'absolute',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '2.5',
+        overflow: 'hidden',
+        borderRadius: 'xl',
+        paddingInline: '2.5',
+        paddingBlock: '1',
+        textAlign: 'left',
+        transitionProperty: 'filter,box-shadow,outline-color,opacity',
+        transitionDuration: 'fast',
+        transitionTimingFunction: 'out',
+      }),
       NODE_CLASS[state],
       focused
-        ? 'outline-2 outline-offset-2 outline-primary-strong'
-        : 'outline-2 outline-offset-2 outline-transparent',
-      far ? 'opacity-45' : '',
+        ? css({
+            outlineWidth: '2px',
+            outlineStyle: 'solid',
+            outlineOffset: '0.5',
+            outlineColor: 'primaryStrong',
+          })
+        : css({
+            outlineWidth: '2px',
+            outlineStyle: 'solid',
+            outlineOffset: '0.5',
+            outlineColor: 'transparent',
+          }),
+      far
+        ? css({
+            opacity: 0.45,
+          })
+        : '',
     ),
   )
   const body = card(game, entry, state, large, far, h)
@@ -663,7 +1075,14 @@ const wires = (model: Model, layout: Layout, focus: ResearchDef, h: HtmlBuilder<
     [
       h.AriaHidden(true),
       h.Xmlns('http://www.w3.org/2000/svg'),
-      h.Class('pointer-events-none absolute inset-0 overflow-visible'),
+      h.Class(
+        css({
+          pointerEvents: 'none',
+          position: 'absolute',
+          inset: '0',
+          overflow: 'visible',
+        }),
+      ),
       h.Width(String(layout.width)),
       h.Height(String(layout.height)),
       h.Fill('none'),
@@ -683,15 +1102,27 @@ const wires = (model: Model, layout: Layout, focus: ResearchDef, h: HtmlBuilder<
           h.StrokeLinecap('round'),
           h.StrokeLinejoin('round'),
           h.Class(
-            cn(
+            cx(
               lit
-                ? 'stroke-primary-strong'
+                ? css({
+                    stroke: 'primaryStrong',
+                  })
                 : done
-                  ? 'stroke-foreground/40'
+                  ? css({
+                      stroke: 'color-mix(in oklab, var(--foreground) 40%, transparent)',
+                    })
                   : wire.root
-                    ? 'stroke-foreground/15'
-                    : 'stroke-foreground/20',
-              'transition-[stroke] duration-150',
+                    ? css({
+                        stroke: 'color-mix(in oklab, var(--foreground) 15%, transparent)',
+                      })
+                    : css({
+                        stroke: 'color-mix(in oklab, var(--foreground) 20%, transparent)',
+                      }),
+              css({
+                transitionProperty: 'stroke',
+                transitionDuration: 'fast',
+                transitionTimingFunction: 'out',
+              }),
             ),
           ),
           ...(done || wire.root ? [] : [h.Attribute('stroke-dasharray', '3 4')]),
@@ -714,14 +1145,43 @@ const progressBar = (
 ) => {
   const { owned, total } = progressOf(game, track)
   return h.div(
-    [h.Class(cn('flex items-center gap-2', className))],
+    [
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2',
+          }),
+          className,
+        ),
+      ),
+    ],
     [
       h.span(
-        [h.Class('h-1 flex-1 overflow-hidden rounded-full bg-well shadow-well')],
+        [
+          h.Class(
+            css({
+              height: '1',
+              flex: '1 1 0%',
+              overflow: 'hidden',
+              borderRadius: 'full',
+              backgroundColor: 'well',
+              boxShadow: 'well',
+            }),
+          ),
+        ],
         [
           h.span(
             [
-              h.Class('block h-full rounded-full bg-ok'),
+              h.Class(
+                css({
+                  display: 'block',
+                  height: '100%',
+                  borderRadius: 'full',
+                  backgroundColor: 'ok',
+                }),
+              ),
               h.Style({ width: `${(owned / total) * 100}%` }),
             ],
             [],
@@ -729,7 +1189,17 @@ const progressBar = (
         ],
       ),
       h.span(
-        [h.Class(cn(FIGURE, 'text-[calc(10.5px*var(--type-scale))] text-muted-foreground'))],
+        [
+          h.Class(
+            cx(
+              FIGURE,
+              css({
+                fontSize: 'type.10-5',
+                color: 'mutedForeground',
+              }),
+            ),
+          ),
+        ],
         [`${owned}/${total}`],
       ),
     ],
@@ -737,9 +1207,32 @@ const progressBar = (
 }
 
 const eraLabel = (game: Game, era: number, h: HtmlBuilder<Message>) => [
-  era > game.stage ? icon(h, Lock, 'size-3') : h.empty,
+  era > game.stage
+    ? icon(
+        h,
+        Lock,
+        css({
+          width: '3',
+          height: '3',
+        }),
+      )
+    : h.empty,
   copy(h).catalog.eras[era]?.name ?? eraName(era),
-  era === game.stage ? h.span([h.Class('size-1.5 rounded-full bg-ok')], []) : h.empty,
+  era === game.stage
+    ? h.span(
+        [
+          h.Class(
+            css({
+              width: '1.5',
+              height: '1.5',
+              borderRadius: 'full',
+              backgroundColor: 'ok',
+            }),
+          ),
+        ],
+        [],
+      )
+    : h.empty,
 ]
 
 const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
@@ -752,14 +1245,26 @@ const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
       [
         h.Key(`era-${band.era}`),
         h.Class(
-          cn(
-            'absolute border-t border-hairline',
+          cx(
+            css({
+              position: 'absolute',
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderColor: 'hairline',
+            }),
             band.era === game.stage
-              ? 'bg-ok/[0.035]'
+              ? css({
+                  backgroundColor:
+                    'color-mix(in oklab, var(--ok) 3.5000000000000004%, transparent)',
+                })
               : band.era > game.stage + 1
-                ? 'bg-foreground/[0.04]'
+                ? css({
+                    backgroundColor: 'color-mix(in oklab, var(--foreground) 4%, transparent)',
+                  })
                 : band.era > game.stage
-                  ? 'bg-foreground/[0.02]'
+                  ? css({
+                      backgroundColor: 'color-mix(in oklab, var(--foreground) 2%, transparent)',
+                    })
                   : '',
           ),
         ),
@@ -774,10 +1279,21 @@ const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
         h.span(
           [
             h.Class(
-              cn(
+              cx(
                 EYEBROW,
-                'absolute top-3 left-5 flex items-center gap-1.5',
-                band.era === game.stage ? 'text-foreground' : '',
+                css({
+                  position: 'absolute',
+                  top: '3',
+                  left: '5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1.5',
+                }),
+                band.era === game.stage
+                  ? css({
+                      color: 'foreground',
+                    })
+                  : '',
               ),
             ),
           ],
@@ -791,17 +1307,53 @@ const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
       [
         h.Key(`root-${track.track}`),
         h.Class(
-          'absolute flex w-[180px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2',
+          css({
+            position: 'absolute',
+            display: 'flex',
+            width: '180px',
+            translate: '-50% -50%',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '2',
+          }),
         ),
         h.Style({ left: `${track.x}px`, top: `${track.y}px` }),
       ],
       [
         h.span(
-          [h.Class('grid size-14 place-items-center rounded-2xl bg-surface shadow-card')],
-          [icon(h, TRACK_ICONS[track.track], 'size-6')],
+          [
+            h.Class(
+              css({
+                display: 'grid',
+                width: '14',
+                height: '14',
+                placeItems: 'center',
+                borderRadius: '2xl',
+                backgroundColor: 'card',
+                boxShadow: 'card',
+              }),
+            ),
+          ],
+          [
+            icon(
+              h,
+              TRACK_ICONS[track.track],
+              css({
+                width: '6',
+                height: '6',
+              }),
+            ),
+          ],
         ),
         h.span(
-          [h.Class('text-[calc(14px*var(--type-scale))] font-semibold')],
+          [
+            h.Class(
+              css({
+                fontSize: 'type.14',
+                fontWeight: 'semibold',
+              }),
+            ),
+          ],
           [t.catalog.researchTracks[track.track].label],
         ),
         progressBar(game, track.track, 'w-28', h),
@@ -919,17 +1471,55 @@ const linkRow = (game: Game, entry: ResearchDef, h: HtmlBuilder<Message>): Html 
   const far = entry.era > game.stage + 1 && !has(game, entry.id)
   const inner = [
     researchMark(entry, 'sm', stateOf(game, entry) === 'locked', h),
-    h.span([h.Class('min-w-0 flex-1 truncate')], [t.catalog.research[entry.id].name]),
+    h.span(
+      [
+        h.Class(
+          css({
+            minWidth: '0',
+            flex: '1 1 0%',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }),
+        ),
+      ],
+      [t.catalog.research[entry.id].name],
+    ),
     has(game, entry.id)
-      ? icon(h, Check, 'size-3.5 text-ok')
-      : icon(h, Lock, 'size-3 text-muted-foreground'),
+      ? icon(
+          h,
+          Check,
+          css({
+            width: '3.5',
+            height: '3.5',
+            color: 'ok',
+          }),
+        )
+      : icon(
+          h,
+          Lock,
+          css({
+            width: '3',
+            height: '3',
+            color: 'mutedForeground',
+          }),
+        ),
   ]
   return far
     ? h.div(
         [
           h.Key(entry.id),
           h.AriaDisabled(true),
-          h.Class('flex w-full items-center gap-2.5 px-2 py-1.5'),
+          h.Class(
+            css({
+              display: 'flex',
+              width: '100%',
+              alignItems: 'center',
+              gap: '2.5',
+              paddingInline: '2',
+              paddingBlock: '1.5',
+            }),
+          ),
         ],
         inner,
       )
@@ -941,7 +1531,20 @@ const linkRow = (game: Game, entry: ResearchDef, h: HtmlBuilder<Message>): Html 
             Message.ResearchChanged({ message: ResearchMessage.Focused({ id: entry.id }) }),
           ),
           h.Class(
-            'flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-[calc(12.5px*var(--type-scale))] hover:bg-foreground/5',
+            css({
+              display: 'flex',
+              width: '100%',
+              alignItems: 'center',
+              gap: '2.5',
+              borderRadius: 'lg',
+              paddingInline: '2',
+              paddingBlock: '1.5',
+              textAlign: 'left',
+              fontSize: 'type.12-5',
+              _hover: {
+                backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+              },
+            }),
           ),
         ],
         inner,
@@ -957,7 +1560,15 @@ const terms = (entry: ResearchDef, h: HtmlBuilder<Message>): Html => {
   )
   return entries.length > 0
     ? h.div(
-        [h.Class('flex flex-wrap gap-1.5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '1.5',
+            }),
+          ),
+        ],
         entries.map((term) =>
           h.a(
             [
@@ -967,11 +1578,32 @@ const terms = (entry: ResearchDef, h: HtmlBuilder<Message>): Html => {
               h.Rel('noreferrer noopener'),
               h.Title(t.research.glossary(t.catalog.glossary[term.id]?.term ?? term.term)),
               h.Class(
-                'flex items-center gap-1 rounded-md bg-nested px-1.5 py-0.5 text-[calc(11.5px*var(--type-scale))] text-muted-foreground hover:text-foreground',
+                css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1',
+                  borderRadius: 'md',
+                  backgroundColor: 'nested',
+                  paddingInline: '1.5',
+                  paddingBlock: '0.5',
+                  fontSize: 'type.11-5',
+                  color: 'mutedForeground',
+                  _hover: {
+                    color: 'foreground',
+                  },
+                }),
               ),
             ],
             [
-              icon(h, CircleHelp, 'size-3 shrink-0'),
+              icon(
+                h,
+                CircleHelp,
+                css({
+                  width: '3',
+                  height: '3',
+                  flexShrink: '0',
+                }),
+              ),
               t.catalog.glossary[term.id]?.term ?? term.term,
             ],
           ),
@@ -1008,10 +1640,19 @@ const queueButton = (
       isDisabled: !enabled,
       variant: 'ghost',
       size: 'icon-xs',
-      className: 'text-muted-foreground',
+      className: css({
+        color: 'mutedForeground',
+      }),
       attributes: [h.AriaLabel(label), h.Title(label)],
     },
-    icon(h, glyph, 'size-3.5'),
+    icon(
+      h,
+      glyph,
+      css({
+        width: '3.5',
+        height: '3.5',
+      }),
+    ),
     h,
   )
 
@@ -1047,7 +1688,17 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
     [
       h.Key('queue'),
       ...(dragging ? [h.DataAttribute('research-drag-active', '')] : []),
-      h.Class('flex max-h-[30%] shrink-0 flex-col border-b border-hairline'),
+      h.Class(
+        css({
+          display: 'flex',
+          maxHeight: '30%',
+          flexShrink: '0',
+          flexDirection: 'column',
+          borderBottomWidth: '1px',
+          borderBottomStyle: 'solid',
+          borderColor: 'hairline',
+        }),
+      ),
       // The queue is a listbox, so the window-level shortcuts ignore it; Escape still closes
       // the panel unless a drag is running (the drag component handles that Escape itself).
       h.OnKeyDownPreventDefault((key) =>
@@ -1056,11 +1707,34 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
     ],
     [
       h.div(
-        [h.Class('flex shrink-0 items-baseline justify-between gap-3 px-5 pt-4 pb-2')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexShrink: '0',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: '3',
+              paddingInline: '5',
+              paddingTop: '4',
+              paddingBottom: '2',
+            }),
+          ),
+        ],
         [
           h.span([h.Class(EYEBROW)], [t.research.studyQueue]),
           h.span(
-            [h.Class(cn(FIGURE, 'text-[calc(11px*var(--type-scale))] text-muted-foreground'))],
+            [
+              h.Class(
+                cx(
+                  FIGURE,
+                  css({
+                    fontSize: 'type.11',
+                    color: 'mutedForeground',
+                  }),
+                ),
+              ),
+            ],
             [t.research.queueCount(studies.length, MAX_STUDIES)],
           ),
         ],
@@ -1070,9 +1744,22 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
           ...DragAndDrop.droppable(STUDY_QUEUE, t.research.studyQueue),
           // Rows ring together while a drop lands, inset from the panel edge.
           h.Class(
-            cn(
-              'flex min-h-0 flex-1 flex-col gap-0.5 overflow-auto px-3 pb-3 [scrollbar-width:thin]',
-              overQueue && 'ring-2 ring-primary ring-offset-2',
+            cx(
+              css({
+                display: 'flex',
+                minHeight: '0',
+                flex: '1 1 0%',
+                flexDirection: 'column',
+                gap: '0.5',
+                overflow: 'auto',
+                paddingInline: '3',
+                paddingBottom: '3',
+                scrollbarWidth: 'thin',
+              }),
+              overQueue &&
+                css({
+                  boxShadow: 'selectedHalo',
+                }),
             ),
           ),
         ],
@@ -1095,17 +1782,49 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                 h.Key(item.id),
                 ...offset,
                 h.Class(
-                  cn(
-                    'flex items-center gap-1 rounded-lg pl-1',
+                  cx(
+                    css({
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '1',
+                      borderRadius: 'lg',
+                      paddingLeft: '1',
+                    }),
                     // A pointer drag slides its rows; the keyboard moves one at once.
-                    dragging && !keyboard && 'transition-[translate] duration-150 ease-out',
+                    dragging &&
+                      !keyboard &&
+                      css({
+                        transitionProperty: 'translate',
+                        transitionDuration: 'fast',
+                        transitionTimingFunction: 'out',
+                      }),
                     slot &&
-                      'pointer-events-none bg-primary/[0.05] ring-1 ring-inset ring-primary/30',
-                    !slot && item.id === focus && 'bg-nested',
-                    isDragged && landing === null && 'opacity-45',
+                      css({
+                        pointerEvents: 'none',
+                        backgroundColor: 'color-mix(in oklab, var(--primary) 5%, transparent)',
+                        boxShadow:
+                          'inset 0 0 0 1px color-mix(in oklab, var(--primary) 30%, transparent)',
+                      }),
+                    !slot &&
+                      item.id === focus &&
+                      css({
+                        backgroundColor: 'nested',
+                      }),
+                    isDragged &&
+                      landing === null &&
+                      css({
+                        opacity: 0.45,
+                      }),
                     slot &&
                       !keyboard &&
-                      '[&>*:not(:first-child)]:invisible [&>*:first-child]:opacity-40',
+                      css({
+                        '&>*:not(:first-child)': {
+                          visibility: 'hidden',
+                        },
+                        '&>*:first-child': {
+                          opacity: 0.4,
+                        },
+                      }),
                   ),
                 ),
               ],
@@ -1130,7 +1849,23 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                     h.AriaLabel(t.research.reorder(entry.name)),
                     h.Title(t.research.dragToReorder),
                     h.Class(
-                      'grid cursor-grab touch-none self-stretch place-items-center rounded-md px-0.5 active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-primary',
+                      css({
+                        display: 'grid',
+                        cursor: 'grab',
+                        touchAction: 'none',
+                        alignSelf: 'stretch',
+                        placeItems: 'center',
+                        borderRadius: 'md',
+                        paddingInline: '0.5',
+                        _active: {
+                          cursor: 'grabbing',
+                        },
+                        _focusVisible: {
+                          outlineWidth: '2px',
+                          outlineStyle: 'solid',
+                          outlineColor: 'primary',
+                        },
+                      }),
                     ),
                   ],
                   [researchMark(entry, 'sm', false, h)],
@@ -1144,24 +1879,71 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                       }),
                     ),
                     h.Class(
-                      'flex min-w-0 flex-1 items-center gap-2 rounded-md py-1 text-left text-[calc(12.5px*var(--type-scale))] hover:text-foreground',
+                      css({
+                        display: 'flex',
+                        minWidth: '0',
+                        flex: '1 1 0%',
+                        alignItems: 'center',
+                        gap: '2',
+                        borderRadius: 'md',
+                        paddingBlock: '1',
+                        textAlign: 'left',
+                        fontSize: 'type.12-5',
+                        _hover: {
+                          color: 'foreground',
+                        },
+                      }),
                     ),
                   ],
                   [
-                    h.span([h.Class('truncate font-medium')], [t.catalog.research[entry.id].name]),
+                    h.span(
+                      [
+                        h.Class(
+                          css({
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            fontWeight: 'medium',
+                          }),
+                        ),
+                      ],
+                      [t.catalog.research[entry.id].name],
+                    ),
                     h.span(
                       [
                         ...(stall ? [h.Title(stallReasonIn(t, stall))] : []),
                         h.Class(
-                          cn(
+                          cx(
                             FIGURE,
-                            'ml-auto flex shrink-0 items-center gap-1 text-[calc(11.5px*var(--type-scale))]',
-                            stall ? 'text-warn' : 'text-muted-foreground',
+                            css({
+                              marginLeft: 'auto',
+                              display: 'flex',
+                              flexShrink: '0',
+                              alignItems: 'center',
+                              gap: '1',
+                              fontSize: 'type.11-5',
+                            }),
+                            stall
+                              ? css({
+                                  color: 'warn',
+                                })
+                              : css({
+                                  color: 'mutedForeground',
+                                }),
                           ),
                         ),
                       ],
                       [
-                        stall ? icon(h, TriangleAlert, 'size-3') : h.empty,
+                        stall
+                          ? icon(
+                              h,
+                              TriangleAlert,
+                              css({
+                                width: '3',
+                                height: '3',
+                              }),
+                            )
+                          : h.empty,
                         stall
                           ? t.research.cannotRunShort
                           : `${Math.floor(Math.min(1, studyProgressOf(item)) * 100)}%`,
@@ -1214,9 +1996,19 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                       h.AriaHidden(true),
                       h.Style(style),
                       h.Class(
-                        cn(
+                        cx(
                           FLOAT,
-                          'pointer-events-none z-50 flex items-center gap-2 px-3 py-2 text-[calc(12.5px*var(--type-scale))] font-medium',
+                          css({
+                            pointerEvents: 'none',
+                            zIndex: '50',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '2',
+                            paddingInline: '3',
+                            paddingBlock: '2',
+                            fontSize: 'type.12-5',
+                            fontWeight: 'medium',
+                          }),
                         ),
                       ),
                     ],
@@ -1393,13 +2185,71 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
       h.Key('detail'),
       h.DataAttribute('exit', 'gesture'),
       h.Class(
-        'absolute inset-y-0 right-0 z-20 flex w-[var(--sheet-w)] flex-col overflow-hidden border-l border-hairline bg-surface enter-panel sheet compact:inset-x-0 compact:top-auto compact:bottom-0 compact:max-h-[66%] compact:w-auto compact:rounded-t-2xl compact:border-t compact:border-l-0 compact:pb-[env(safe-area-inset-bottom)] compact:shadow-float',
+        cx(
+          css({
+            position: 'absolute',
+            insetBlock: '0',
+            right: '0',
+            zIndex: '20',
+            display: 'flex',
+            width: 'var(--sheet-w)',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            borderLeftWidth: '1px',
+            borderLeftStyle: 'solid',
+            borderColor: 'hairline',
+            backgroundColor: 'card',
+            _compact: {
+              insetInline: '0',
+              top: 'auto',
+              bottom: '0',
+              maxHeight: '66%',
+              width: 'auto',
+              borderTopLeftRadius: '2xl',
+              borderTopRightRadius: '2xl',
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderLeftWidth: '0px',
+              paddingBottom: 'env(safe-area-inset-bottom)',
+              boxShadow: 'float',
+            },
+          }),
+          'enter-panel',
+          'sheet',
+        ),
       ),
     ],
     [
       h.div(
-        [h.Class('hidden shrink-0 justify-center pt-2 pb-0.5 compact:flex')],
-        [h.span([h.Class('h-1 w-10 rounded-full bg-foreground/15')], [])],
+        [
+          h.Class(
+            css({
+              display: 'none',
+              flexShrink: '0',
+              justifyContent: 'center',
+              paddingTop: '2',
+              paddingBottom: '0.5',
+              _compact: {
+                display: 'flex',
+              },
+            }),
+          ),
+        ],
+        [
+          h.span(
+            [
+              h.Class(
+                css({
+                  height: '1',
+                  width: '10',
+                  borderRadius: 'full',
+                  backgroundColor: 'color-mix(in oklab, var(--foreground) 15%, transparent)',
+                }),
+              ),
+            ],
+            [],
+          ),
+        ],
       ),
       // The pane's edge: drag it, or step it with the arrow keys. Home and End go to the bounds.
       h.div(
@@ -1415,14 +2265,50 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
           h.Tabindex(0),
           h.OnMount(ResearchResize({})),
           h.Class(
-            'group absolute inset-y-0 left-0 z-10 w-2 cursor-col-resize touch-none focus-visible:outline-2 focus-visible:outline-primary compact:hidden',
+            cx(
+              css({
+                position: 'absolute',
+                insetBlock: '0',
+                left: '0',
+                zIndex: '10',
+                width: '2',
+                cursor: 'col-resize',
+                touchAction: 'none',
+                _focusVisible: {
+                  outlineWidth: '2px',
+                  outlineStyle: 'solid',
+                  outlineColor: 'primary',
+                },
+                _compact: {
+                  display: 'none',
+                },
+              }),
+              'group',
+            ),
           ),
         ],
         [
           h.span(
             [
               h.Class(
-                'pointer-events-none absolute inset-y-0 left-0 w-0.5 bg-transparent transition-colors group-hover:bg-foreground/20 group-data-[resizing]:bg-primary-strong',
+                css({
+                  pointerEvents: 'none',
+                  position: 'absolute',
+                  insetBlock: '0',
+                  left: '0',
+                  width: '0.5',
+                  backgroundColor: 'transparent',
+                  transitionProperty:
+                    'color, background-color, border-color, text-decoration-color, fill, stroke',
+                  transitionDuration: 'fast',
+                  transitionTimingFunction: 'out',
+                  '.group:hover &': {
+                    backgroundColor: 'color-mix(in oklab, var(--foreground) 20%, transparent)',
+                  },
+                  '.group[data-resizing] &': {
+                    backgroundColor: 'primaryStrong',
+                  },
+                }),
               ),
             ],
             [],
@@ -1430,24 +2316,74 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
         ],
       ),
       h.div(
-        [h.Class('flex shrink-0 items-start gap-3 border-b border-hairline px-5 py-4')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexShrink: '0',
+              alignItems: 'flex-start',
+              gap: '3',
+              borderBottomWidth: '1px',
+              borderBottomStyle: 'solid',
+              borderColor: 'hairline',
+              paddingInline: '5',
+              paddingBlock: '4',
+            }),
+          ),
+        ],
         [
           researchMark(entry, 'lg', state === 'locked', h),
           h.div(
-            [h.Class('flex min-w-0 flex-1 flex-col gap-1')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  minWidth: '0',
+                  flex: '1 1 0%',
+                  flexDirection: 'column',
+                  gap: '1',
+                }),
+              ),
+            ],
             [
               h.div(
-                [h.Class('flex min-w-0 items-center gap-2')],
+                [
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      minWidth: '0',
+                      alignItems: 'center',
+                      gap: '2',
+                    }),
+                  ),
+                ],
                 [
                   h.span(
                     [
                       h.Class(
-                        'truncate text-[calc(17px*var(--type-scale))] leading-tight font-semibold tracking-[-0.025em]',
+                        css({
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          fontSize: 'type.17',
+                          lineHeight: 'tight',
+                          fontWeight: 'semibold',
+                          letterSpacing: 'tight',
+                        }),
                       ),
                     ],
                     [t.catalog.research[entry.id].name],
                   ),
-                  badge({ variant: status.tone, className: 'shrink-0' }, [status.label], h),
+                  badge(
+                    {
+                      variant: status.tone,
+                      className: css({
+                        flexShrink: '0',
+                      }),
+                    },
+                    [status.label],
+                    h,
+                  ),
                 ],
               ),
               h.span(
@@ -1461,10 +2397,20 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
               onClick: Message.PanelClosed(),
               variant: 'ghost',
               size: 'icon-sm',
-              className: 'shrink-0 text-muted-foreground',
+              className: css({
+                flexShrink: '0',
+                color: 'mutedForeground',
+              }),
               attributes: [h.AriaLabel(t.research.closeEsc), h.Title(t.research.closeEsc)],
             },
-            icon(h, X, 'size-4'),
+            icon(
+              h,
+              X,
+              css({
+                width: '4',
+                height: '4',
+              }),
+            ),
             h,
           ),
         ],
@@ -1472,30 +2418,102 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
       stalled?.stall ? requirement(t, stalled.stall, first, consequence, h) : h.empty,
       queuePanel(model, entry.id, h),
       h.div(
-        [h.Key(entry.id), h.Class('min-h-0 flex-1 overflow-auto [scrollbar-width:thin] enter-pop')],
+        [
+          h.Key(entry.id),
+          h.Class(
+            cx(
+              css({
+                minHeight: '0',
+                flex: '1 1 0%',
+                overflow: 'auto',
+                scrollbarWidth: 'thin',
+              }),
+              'enter-pop',
+            ),
+          ),
+        ],
         [
           h.section(
-            [h.Class('border-b border-hairline px-5 py-4 last:border-b-0')],
+            [
+              h.Class(
+                css({
+                  borderBottomWidth: '1px',
+                  borderBottomStyle: 'solid',
+                  borderColor: 'hairline',
+                  paddingInline: '5',
+                  paddingBlock: '4',
+                  '&:last-child': {
+                    borderBottomWidth: '0px',
+                  },
+                }),
+              ),
+            ],
             [
               h.p(
-                [h.Class('text-[calc(13px*var(--type-scale))] leading-relaxed text-foreground/85')],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'type.13',
+                      lineHeight: 'relaxed',
+                      color: 'color-mix(in oklab, var(--foreground) 85%, transparent)',
+                    }),
+                  ),
+                ],
                 [t.catalog.research[entry.id].blurb],
               ),
-              h.div([h.Class('mt-3')], [terms(entry, h)]),
+              h.div(
+                [
+                  h.Class(
+                    css({
+                      marginTop: '3',
+                    }),
+                  ),
+                ],
+                [terms(entry, h)],
+              ),
             ],
           ),
           open
             ? h.section(
-                [h.Class('border-b border-hairline px-5 py-4 last:border-b-0')],
+                [
+                  h.Class(
+                    css({
+                      borderBottomWidth: '1px',
+                      borderBottomStyle: 'solid',
+                      borderColor: 'hairline',
+                      paddingInline: '5',
+                      paddingBlock: '4',
+                      '&:last-child': {
+                        borderBottomWidth: '0px',
+                      },
+                    }),
+                  ),
+                ],
                 [
                   h.div(
                     [
                       h.Class(
-                        'flex items-start gap-2 text-[calc(12px*var(--type-scale))] leading-snug text-warn',
+                        css({
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '2',
+                          fontSize: 'type.12',
+                          lineHeight: 'snug',
+                          color: 'warn',
+                        }),
                       ),
                     ],
                     [
-                      icon(h, TriangleAlert, 'mt-px size-3.5 shrink-0'),
+                      icon(
+                        h,
+                        TriangleAlert,
+                        css({
+                          marginTop: '1px',
+                          width: '3.5',
+                          height: '3.5',
+                          flexShrink: '0',
+                        }),
+                      ),
                       t.research.openActionItemTheIncidentIt,
                     ],
                   ),
@@ -1513,7 +2531,19 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
         ],
       ),
       h.div(
-        [h.Class('flex shrink-0 gap-2 border-t border-hairline p-3')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexShrink: '0',
+              gap: '2',
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderColor: 'hairline',
+              padding: '3',
+            }),
+          ),
+        ],
         [
           button(
             {
@@ -1526,9 +2556,28 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
               isDisabled: !(state === 'buy' || queueable || (state === 'saving' && queued > 0)),
               size: 'lg',
               variant: state === 'buy' || queueable || queued > 0 ? 'default' : 'outline',
-              className: cn(FIGURE, 'min-w-0 flex-1'),
+              className: cx(
+                FIGURE,
+                css({
+                  minWidth: '0',
+                  flex: '1 1 0%',
+                }),
+              ),
             },
-            [state === 'owned' ? icon(h, Check, 'size-4 text-ok') : h.empty, label],
+            [
+              state === 'owned'
+                ? icon(
+                    h,
+                    Check,
+                    css({
+                      width: '4',
+                      height: '4',
+                      color: 'ok',
+                    }),
+                  )
+                : h.empty,
+              label,
+            ],
             h,
           ),
           queued >= 0
@@ -1574,22 +2623,59 @@ const poolCell = (
       h.DataAttribute('deck-pool', pool),
       h.Title(`${insightName(t, pool)} ${t.research.outOf(compact(held), compact(cap))}`),
       h.Class(
-        cn(
-          'relative flex items-center gap-1.5 rounded-md px-1.5 pt-0.5 pb-1.5',
+        cx(
+          css({
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1.5',
+            borderRadius: 'md',
+            paddingInline: '1.5',
+            paddingTop: '0.5',
+            paddingBottom: '1.5',
+          }),
           blocked &&
-            'bg-[var(--warn-soft)] shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--warn)_38%,transparent)]',
+            css({
+              backgroundColor: 'warnSoft',
+              boxShadow: 'warnLineStrong',
+            }),
         ),
       ),
     ],
     [
       h.span(
-        [h.Class('inline-flex'), h.Style({ color: poolColor(pool) })],
-        [icon(h, POOL_ICONS[pool], 'size-3 shrink-0')],
+        [
+          h.Class(
+            css({
+              display: 'inline-flex',
+            }),
+          ),
+          h.Style({ color: poolColor(pool) }),
+        ],
+        [
+          icon(
+            h,
+            POOL_ICONS[pool],
+            css({
+              width: '3',
+              height: '3',
+              flexShrink: '0',
+            }),
+          ),
+        ],
       ),
       h.span(
         [
           h.Class(
-            'min-w-0 flex-1 truncate text-[calc(10.5px*var(--type-scale))] text-muted-foreground',
+            css({
+              minWidth: '0',
+              flex: '1 1 0%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: 'type.10-5',
+              color: 'mutedForeground',
+            }),
           ),
         ],
         [t.catalog.pools[pool].label],
@@ -1597,10 +2683,16 @@ const poolCell = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
-              'text-[calc(11px*var(--type-scale))]',
-              blocked && 'font-semibold text-danger',
+              css({
+                fontSize: 'type.11',
+              }),
+              blocked &&
+                css({
+                  fontWeight: 'semibold',
+                  color: 'danger',
+                }),
             ),
           ),
         ],
@@ -1609,13 +2701,36 @@ const poolCell = (
       h.span(
         [
           h.Class(
-            'absolute inset-x-1.5 bottom-1 h-[3px] overflow-hidden rounded-full bg-foreground/10',
+            css({
+              position: 'absolute',
+              insetInline: '1.5',
+              bottom: '1',
+              height: '3px',
+              overflow: 'hidden',
+              borderRadius: 'full',
+              backgroundColor: 'color-mix(in oklab, var(--foreground) 10%, transparent)',
+            }),
           ),
         ],
         [
           h.span(
             [
-              h.Class(cn('block h-full rounded-full', blocked ? 'bg-danger' : 'bg-foreground/40')),
+              h.Class(
+                cx(
+                  css({
+                    display: 'block',
+                    height: '100%',
+                    borderRadius: 'full',
+                  }),
+                  blocked
+                    ? css({
+                        backgroundColor: 'danger',
+                      })
+                    : css({
+                        backgroundColor: 'color-mix(in oklab, var(--foreground) 40%, transparent)',
+                      }),
+                ),
+              ),
               h.Style({ width: `${share * 100}%` }),
             ],
             [],
@@ -1641,23 +2756,73 @@ const pinnedChip = (game: Game, pool: InsightPool, need: number, h: HtmlBuilder<
       h.Title(`${insightName(t, pool)} ${t.research.outOf(heldLabel, needLabel)}`),
       h.AriaLabel(`${insightName(t, pool)} ${t.research.outOf(heldLabel, needLabel)}`),
       h.Class(
-        cn(
+        cx(
           FIGURE,
-          'inline-flex shrink-0 items-center gap-1.5 rounded-md py-0.5 pr-1.5 pl-1 text-[calc(12.5px*var(--type-scale))] whitespace-nowrap',
-          blocked && 'bg-[var(--warn-soft)]',
+          css({
+            display: 'inline-flex',
+            flexShrink: '0',
+            alignItems: 'center',
+            gap: '1.5',
+            borderRadius: 'md',
+            paddingBlock: '0.5',
+            paddingRight: '1.5',
+            paddingLeft: '1',
+            fontSize: 'type.12-5',
+            whiteSpace: 'nowrap',
+          }),
+          blocked &&
+            css({
+              backgroundColor: 'warnSoft',
+            }),
         ),
       ),
     ],
     [
       h.span(
-        [h.Class('inline-flex'), h.Style({ color: poolColor(pool) })],
-        [icon(h, POOL_ICONS[pool], 'size-3 shrink-0')],
+        [
+          h.Class(
+            css({
+              display: 'inline-flex',
+            }),
+          ),
+          h.Style({ color: poolColor(pool) }),
+        ],
+        [
+          icon(
+            h,
+            POOL_ICONS[pool],
+            css({
+              width: '3',
+              height: '3',
+              flexShrink: '0',
+            }),
+          ),
+        ],
       ),
       h.span(
-        [h.Class('text-[calc(11px*var(--type-scale))] text-muted-foreground')],
+        [
+          h.Class(
+            css({
+              fontSize: 'type.11',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
         [t.catalog.pools[pool].label],
       ),
-      h.span([h.Class(blocked ? 'font-semibold text-danger' : '')], [figure]),
+      h.span(
+        [
+          h.Class(
+            blocked
+              ? css({
+                  fontWeight: 'semibold',
+                  color: 'danger',
+                })
+              : '',
+          ),
+        ],
+        [figure],
+      ),
     ],
   )
 }
@@ -1688,12 +2853,36 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.Key('deck'),
       // Pinned to the corner, so the top edge moves as the list opens.
       h.Class(
-        'pointer-events-auto absolute bottom-4 left-4 z-20 flex max-w-[calc(100%-2rem)] flex-col items-start compact:hidden',
+        css({
+          pointerEvents: 'auto',
+          position: 'absolute',
+          bottom: '4',
+          left: '4',
+          zIndex: '20',
+          display: 'flex',
+          maxWidth: 'calc(100%-2rem)',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          _compact: {
+            display: 'none',
+          },
+        }),
       ),
     ],
     [
       h.div(
-        [h.Class(cn(PANEL, 'flex flex-col p-2'))],
+        [
+          h.Class(
+            cx(
+              PANEL,
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                padding: '2',
+              }),
+            ),
+          ),
+        ],
         [
           // Always mounted, so the list can fold away instead of popping out of the row.
           h.div(
@@ -1711,7 +2900,17 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
                 [h.Class('deck-pools-clip')],
                 [
                   h.div(
-                    [h.Class('grid grid-cols-3 gap-x-1.5 gap-y-0.5 pb-2')],
+                    [
+                      h.Class(
+                        css({
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                          columnGap: '1.5',
+                          rowGap: '0.5',
+                          paddingBottom: '2',
+                        }),
+                      ),
+                    ],
                     POOL_ORDER.map((pool) =>
                       poolCell(game, ledger, pool, pool === limit && need > game.pools[pool], h),
                     ),
@@ -1721,7 +2920,17 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
             ],
           ),
           h.div(
-            [h.Class('flex flex-wrap items-center gap-x-3 gap-y-1')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  columnGap: '3',
+                  rowGap: '1',
+                }),
+              ),
+            ],
             [
               limit ? pinnedChip(game, limit, need, h) : h.empty,
               ...rest.map((pool) =>
@@ -1742,26 +2951,74 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.AriaExpanded(open),
                   h.OnClick(Message.ResearchChanged({ message: ResearchMessage.PoolsToggled() })),
                   h.Class(
-                    'press flex shrink-0 items-center gap-1 rounded-md bg-nested px-2 py-1 text-[calc(11.5px*var(--type-scale))] shadow-[inset_0_0_0_1px_var(--hairline-soft)] hover:bg-well',
+                    cx(
+                      css({
+                        display: 'flex',
+                        flexShrink: '0',
+                        alignItems: 'center',
+                        gap: '1',
+                        borderRadius: 'md',
+                        backgroundColor: 'nested',
+                        paddingInline: '2',
+                        paddingBlock: '1',
+                        fontSize: 'type.11-5',
+                        boxShadow: 'line',
+                        _hover: {
+                          backgroundColor: 'well',
+                        },
+                      }),
+                      'press',
+                    ),
                   ),
                 ],
                 [
                   // Both labels share one cell, so the longer one sets the width in either state
                   // and the deck does not resize as the label changes.
                   h.span(
-                    [h.Class('grid justify-items-center')],
+                    [
+                      h.Class(
+                        css({
+                          display: 'grid',
+                          justifyItems: 'center',
+                        }),
+                      ),
+                    ],
                     [
                       h.span(
-                        [h.Class('col-start-1 row-start-1')],
+                        [
+                          h.Class(
+                            css({
+                              gridColumnStart: '1',
+                              gridRowStart: '1',
+                            }),
+                          ),
+                        ],
                         [open ? t.research.fewerPools : t.research.allPools(POOL_ORDER.length)],
                       ),
                       h.span(
-                        [h.AriaHidden(true), h.Class('invisible col-start-1 row-start-1')],
+                        [
+                          h.AriaHidden(true),
+                          h.Class(
+                            css({
+                              visibility: 'hidden',
+                              gridColumnStart: '1',
+                              gridRowStart: '1',
+                            }),
+                          ),
+                        ],
                         [t.research.allPools(POOL_ORDER.length)],
                       ),
                     ],
                   ),
-                  icon(h, open ? ChevronUp : ChevronDown, 'size-3 text-muted-foreground'),
+                  icon(
+                    h,
+                    open ? ChevronUp : ChevronDown,
+                    css({
+                      width: '3',
+                      height: '3',
+                      color: 'mutedForeground',
+                    }),
+                  ),
                 ],
               ),
             ],
@@ -1784,20 +3041,60 @@ export const researchPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.DataAttribute('research-panel', ''),
       h.DataAttribute('exit', 'gesture'),
       h.Style({ '--sheet-w': `${model.board.research.sheetWidth}px` }),
-      h.Class('absolute inset-0 z-30 bg-canvas enter-backdrop'),
+      h.Class(
+        cx(
+          css({
+            position: 'absolute',
+            inset: '0',
+            zIndex: '30',
+            backgroundColor: 'canvas',
+          }),
+          'enter-backdrop',
+        ),
+      ),
     ],
     [
       h.div(
-        [h.Class('absolute inset-y-0 left-0 right-[var(--sheet-w)] flex flex-col compact:right-0')],
+        [
+          h.Class(
+            css({
+              position: 'absolute',
+              insetBlock: '0',
+              left: '0',
+              right: 'var(--sheet-w)',
+              display: 'flex',
+              flexDirection: 'column',
+              _compact: {
+                right: '0',
+              },
+            }),
+          ),
+        ],
         [
           // A page heading, not a bar: no fill and no rule, so the tree keeps the height.
           h.div(
-            [h.Class('flex h-11 shrink-0 items-center gap-3 px-4')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  height: '11',
+                  flexShrink: '0',
+                  alignItems: 'center',
+                  gap: '3',
+                  paddingInline: '4',
+                }),
+              ),
+            ],
             [
               h.span(
                 [
                   h.Class(
-                    'shrink-0 text-[calc(17px*var(--type-scale))] font-semibold tracking-[-0.025em]',
+                    css({
+                      flexShrink: '0',
+                      fontSize: 'type.17',
+                      fontWeight: 'semibold',
+                      letterSpacing: 'tight',
+                    }),
                   ),
                 ],
                 [t.research.research],
@@ -1808,12 +3105,26 @@ export const researchPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 ? h.span(
                     [
                       h.Class(
-                        'ml-auto flex items-center gap-1 text-[calc(11.5px*var(--type-scale))] text-warn',
+                        css({
+                          marginLeft: 'auto',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '1',
+                          fontSize: 'type.11-5',
+                          color: 'warn',
+                        }),
                       ),
                       h.Title(t.hud.unsampledHint),
                     ],
                     [
-                      icon(h, TriangleAlert, 'size-3'),
+                      icon(
+                        h,
+                        TriangleAlert,
+                        css({
+                          width: '3',
+                          height: '3',
+                        }),
+                      ),
                       t.hud.unsampled(Math.round(unsampled.share * 100)),
                     ],
                   )
@@ -1821,22 +3132,53 @@ export const researchPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             ],
           ),
           h.div(
-            [h.Class('relative min-h-0 flex-1')],
+            [
+              h.Class(
+                css({
+                  position: 'relative',
+                  minHeight: '0',
+                  flex: '1 1 0%',
+                }),
+              ),
+            ],
             [
               h.div(
                 [
                   h.Key('scroll'),
                   h.OnMount(ResearchScroll()),
-                  h.Class(`absolute inset-0 cursor-grab ${SCROLL}`),
+                  h.Class(
+                    cx(
+                      css({
+                        position: 'absolute',
+                        inset: '0',
+                        cursor: 'grab',
+                      }),
+                      SCROLL,
+                    ),
+                  ),
                 ],
                 [
                   // Room below for the detail sheet on a narrow screen.
                   h.div(
-                    [h.Class('w-fit p-4 compact:pb-[68vh]')],
+                    [
+                      h.Class(
+                        css({
+                          width: 'fit-content',
+                          padding: '4',
+                          _compact: {
+                            paddingBottom: '68vh',
+                          },
+                        }),
+                      ),
+                    ],
                     [
                       h.div(
                         [
-                          h.Class('relative'),
+                          h.Class(
+                            css({
+                              position: 'relative',
+                            }),
+                          ),
                           h.Style({ width: `${layout.width}px`, height: `${layout.height}px` }),
                         ],
                         [

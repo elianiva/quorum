@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { copy, localized, nodeTitle, type Messages } from '@/i18n/messages.ts'
 import { TeamMessage } from '@/game/team.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -137,7 +138,6 @@ import { glowing, shown } from '@/game/reveal.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { badge } from '@quorum/ui/primitives/badge'
 import { button } from '@quorum/ui/primitives/button'
-import { cn } from '@/lib/utils'
 import { EYEBROW, FIGURE, PANEL, SCROLL, WELL, ring, stackLogo } from '@quorum/ui/game/bits'
 import { shell } from './panels.ts'
 
@@ -310,21 +310,32 @@ const POLICY_ICONS: Record<PolicyId, Parameters<typeof icon>[1]> = {
 
 /** Work kinds keep the build-group colours, so a kind reads the same everywhere. */
 const kindOf = (t: Messages): Record<WorkKind, Readonly<{ label: string; fill: string }>> => ({
-  feature: { label: t.team.feature, fill: 'bg-group-edge' },
-  lever: { label: t.levers.label, fill: 'bg-group-edge' },
-  task: { label: t.team.engineering, fill: 'bg-group-data' },
-  migration: { label: t.team.migration, fill: 'bg-group-compute' },
-  spike: { label: t.team.spike, fill: 'bg-group-ops' },
-  patch: { label: t.team.security, fill: 'bg-danger' },
-  split: { label: t.team.split, fill: 'bg-group-ops' },
-  move: { label: t.team.move, fill: 'bg-group-compute' },
+  feature: { label: t.team.feature, fill: css({ backgroundColor: 'groupEdge' }) },
+  lever: { label: t.levers.label, fill: css({ backgroundColor: 'groupEdge' }) },
+  task: { label: t.team.engineering, fill: css({ backgroundColor: 'groupData' }) },
+  migration: { label: t.team.migration, fill: css({ backgroundColor: 'groupCompute' }) },
+  spike: { label: t.team.spike, fill: css({ backgroundColor: 'groupOps' }) },
+  patch: { label: t.team.security, fill: css({ backgroundColor: 'danger' }) },
+  split: { label: t.team.split, fill: css({ backgroundColor: 'groupOps' }) },
+  move: { label: t.team.move, fill: css({ backgroundColor: 'groupCompute' }) },
 })
 
 const STRIPES = 'repeating-linear-gradient(-45deg, oklch(1 0 0 / 0.28) 0 6px, transparent 6px 12px)'
 
 const heading = (title: string, right: Html, h: HtmlBuilder<Message>): Html =>
   h.div(
-    [h.Class('flex items-center justify-between gap-2 px-1 pt-2')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '2',
+          paddingInline: '1',
+          paddingTop: '2',
+        }),
+      ),
+    ],
     [h.span([h.Class(EYEBROW)], [title]), right],
   )
 
@@ -342,10 +353,22 @@ const iconButton = (
       isDisabled: !enabled,
       variant: 'ghost',
       size: 'icon-xs',
-      className: cn('text-muted-foreground', className),
+      className: cx(
+        css({
+          color: 'mutedForeground',
+        }),
+        className,
+      ),
       attributes: [h.AriaLabel(label), h.Title(label)],
     },
-    icon(h, glyph, 'size-3.5'),
+    icon(
+      h,
+      glyph,
+      css({
+        width: '3.5',
+        height: '3.5',
+      }),
+    ),
     h,
   )
 
@@ -358,7 +381,17 @@ const renameField = (
 ): Html => {
   const t = copy(h)
   return h.div(
-    [h.Class('flex min-w-0 flex-1 items-center gap-1')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          minWidth: '0',
+          flex: '1 1 0%',
+          alignItems: 'center',
+          gap: '1',
+        }),
+      ),
+    ],
     [
       h.input([
         h.Type('text'),
@@ -378,9 +411,17 @@ const renameField = (
               : Option.none(),
         ),
         h.Class(
-          cn(
+          cx(
             WELL,
-            'h-7 min-w-0 flex-1 rounded-lg px-2 text-[calc(12px*var(--type-scale))] outline-none',
+            css({
+              height: '7',
+              minWidth: '0',
+              flex: '1 1 0%',
+              borderRadius: 'lg',
+              paddingInline: '2',
+              fontSize: 'type.12',
+              outlineStyle: 'none',
+            }),
           ),
         ),
       ]),
@@ -412,7 +453,18 @@ const halo = (share: number, className: string, h: HtmlBuilder<Message>): Html =
       h.Xmlns('http://www.w3.org/2000/svg'),
       h.ViewBox('0 0 54 54'),
       h.Fill('none'),
-      h.Class(cn('pointer-events-none absolute -inset-[5px] size-[54px]', className)),
+      h.Class(
+        cx(
+          css({
+            pointerEvents: 'none',
+            position: 'absolute',
+            inset: '-5px',
+            width: '54px',
+            height: '54px',
+          }),
+          className,
+        ),
+      ),
     ],
     [
       h.circle([
@@ -433,7 +485,13 @@ const halo = (share: number, className: string, h: HtmlBuilder<Message>): Html =
         h.Attribute('stroke-dasharray', `${length}`),
         h.Attribute('stroke-dashoffset', `${length * (1 - clamp(share))}`),
         h.Attribute('transform', 'rotate(-90 27 27)'),
-        h.Class('transition-[stroke-dashoffset] duration-200 ease-out'),
+        h.Class(
+          css({
+            transitionProperty: 'stroke-dashoffset',
+            transitionDuration: 'normal',
+            transitionTimingFunction: 'out',
+          }),
+        ),
       ]),
     ],
   )
@@ -452,8 +510,23 @@ const seat = (
     [
       h.Key(key),
       h.Class(
-        cn(
-          'group relative flex min-w-0 flex-col items-center gap-1.5 rounded-xl px-1.5 pt-3.5 pb-2.5 text-center',
+        cx(
+          cx(
+            css({
+              position: 'relative',
+              display: 'flex',
+              minWidth: '0',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '1.5',
+              borderRadius: 'xl',
+              paddingInline: '1.5',
+              paddingTop: '3.5',
+              paddingBottom: '2.5',
+              textAlign: 'center',
+            }),
+            'group',
+          ),
           className,
         ),
       ),
@@ -461,15 +534,34 @@ const seat = (
     [
       face,
       h.span(
-        [h.Class('mt-1 w-full truncate text-[calc(12.5px*var(--type-scale))] font-medium')],
+        [
+          h.Class(
+            css({
+              marginTop: '1',
+              width: '100%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: 'type.12-5',
+              fontWeight: 'medium',
+            }),
+          ),
+        ],
         [name],
       ),
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
-              'w-full truncate text-[calc(10.5px*var(--type-scale))] text-muted-foreground',
+              css({
+                width: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                fontSize: 'type.10-5',
+                color: 'mutedForeground',
+              }),
             ),
           ),
         ],
@@ -483,9 +575,31 @@ const corner = (side: 'left' | 'right', control: Html, h: HtmlBuilder<Message>):
   h.div(
     [
       h.Class(
-        cn(
-          'absolute top-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100',
-          side === 'left' ? 'left-1' : 'right-1',
+        cx(
+          css({
+            position: 'absolute',
+            top: '1',
+            opacity: 0,
+            transitionProperty: 'opacity',
+            transitionDuration: 'fast',
+            transitionTimingFunction: 'out',
+            '.group:hover &': {
+              opacity: 1,
+            },
+            '.group:focus-within &': {
+              opacity: 1,
+            },
+            '@media(hover:none)': {
+              opacity: 1,
+            },
+          }),
+          side === 'left'
+            ? css({
+                left: '1',
+              })
+            : css({
+                right: '1',
+              }),
         ),
       ),
     ],
@@ -502,9 +616,25 @@ const face = (
   return h.span(
     [
       h.Class(
-        cn(
-          'relative grid size-11 shrink-0 place-items-center rounded-full text-[calc(17px*var(--type-scale))] font-semibold text-white shadow-[inset_0_-2px_0_oklch(0_0_0/0.12),0_1px_2px_oklch(0_0_0/0.12)]',
-          hue === null && 'bg-primary-fill text-on-primary-fill',
+        cx(
+          css({
+            position: 'relative',
+            display: 'grid',
+            width: '11',
+            height: '11',
+            flexShrink: '0',
+            placeItems: 'center',
+            borderRadius: 'full',
+            fontSize: 'type.17',
+            fontWeight: 'semibold',
+            color: 'white',
+            boxShadow: 'pressed',
+          }),
+          hue === null &&
+            css({
+              layerStyle: 'primaryFill',
+              color: 'onPrimaryFill',
+            }),
         ),
       ),
       ...(hue === null
@@ -523,10 +653,30 @@ const languageMark = (language: Engineer['language'], h: HtmlBuilder<Message>): 
   h.span(
     [
       h.Class(
-        'absolute -right-1 -bottom-1 grid size-[18px] place-items-center rounded-full bg-surface shadow-raised',
+        css({
+          position: 'absolute',
+          right: '-0.25rem',
+          bottom: '-0.25rem',
+          display: 'grid',
+          width: '18px',
+          height: '18px',
+          placeItems: 'center',
+          borderRadius: 'full',
+          backgroundColor: 'card',
+          boxShadow: 'raised',
+        }),
       ),
     ],
-    [stackLogo(language, 'size-3', h)],
+    [
+      stackLogo(
+        language,
+        css({
+          width: '3',
+          height: '3',
+        }),
+        h,
+      ),
+    ],
   )
 
 const engineerSeat = (game: Game, engineer: Engineer, h: HtmlBuilder<Message>): Html => {
@@ -545,7 +695,11 @@ const engineerSeat = (game: Game, engineer: Engineer, h: HtmlBuilder<Message>): 
       hueOf(engineer.id),
       h.span([], [name.slice(0, 1)]),
       languageMark(engineer.language, h),
-      training ? halo(learned, 'text-primary', h) : ramping ? halo(ramp, 'text-ok', h) : h.empty,
+      training
+        ? halo(learned, css({ color: 'primary' }), h)
+        : ramping
+          ? halo(ramp, css({ color: 'ok' }), h)
+          : h.empty,
       h,
     ),
     name,
@@ -555,7 +709,7 @@ const engineerSeat = (game: Game, engineer: Engineer, h: HtmlBuilder<Message>): 
         ? t.team.ramping
         : t.team.s(money(salaryOf(game, engineer.language))),
     [],
-    'bg-raised shadow-raised',
+    css({ layerStyle: 'raised', boxShadow: 'raised' }),
     h,
   )
 }
@@ -578,7 +732,13 @@ const engineerControls = (
       ? corner(
           'left',
           h.div(
-            [h.Class('flex')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                }),
+              ),
+            ],
             [
               teams.length > 1 && next
                 ? iconButton(
@@ -618,7 +778,7 @@ const engineerControls = (
         Message.TeamChanged({ message: TeamMessage.LayoffChosen({ engineerId: engineer.id }) }),
         true,
         h,
-        'hover:text-danger',
+        css({ _hover: { color: 'danger' } }),
       ),
       h,
     ),
@@ -629,11 +789,24 @@ const founderSeat = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return seat(
     'founder',
-    face(null, icon(h, Crown, 'size-[18px]'), h.empty, h.empty, h),
+    face(
+      null,
+      icon(
+        h,
+        Crown,
+        css({
+          width: '18px',
+          height: '18px',
+        }),
+      ),
+      h.empty,
+      h.empty,
+      h,
+    ),
     t.team.you,
     t.team.founder,
     [],
-    'bg-raised shadow-raised',
+    css({ layerStyle: 'raised', boxShadow: 'raised' }),
     h,
   )
 }
@@ -655,11 +828,39 @@ const hireSeat = (game: Game, h: HtmlBuilder<Message>): Html => {
         open ? t.team.hireEngineerFor(LANGUAGES[language].name, money(price)) : t.team.hiringLocked,
       ),
       h.Class(
-        cn(
-          'press group flex min-w-0 flex-col items-center gap-1.5 rounded-xl border-[1.5px] border-dashed px-1.5 pt-3.5 pb-2.5 text-center',
+        cx(
+          cx(
+            css({
+              display: 'flex',
+              minWidth: '0',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '1.5',
+              borderRadius: 'xl',
+              borderWidth: '1.5px',
+              borderStyle: 'dashed',
+              paddingInline: '1.5',
+              paddingTop: '3.5',
+              paddingBottom: '2.5',
+              textAlign: 'center',
+            }),
+            'press',
+            'group',
+          ),
           open && afford
-            ? 'border-foreground/25 text-foreground hover:border-foreground/45 hover:bg-foreground/[0.03]'
-            : 'cursor-not-allowed border-foreground/12 text-muted-foreground',
+            ? css({
+                borderColor: 'color-mix(in oklab, var(--foreground) 25%, transparent)',
+                color: 'foreground',
+                _hover: {
+                  borderColor: 'color-mix(in oklab, var(--foreground) 45%, transparent)',
+                  backgroundColor: 'color-mix(in oklab, var(--foreground) 3%, transparent)',
+                },
+              })
+            : css({
+                cursor: 'not-allowed',
+                borderColor: 'color-mix(in oklab, var(--foreground) 12%, transparent)',
+                color: 'mutedForeground',
+              }),
         ),
       ),
     ],
@@ -667,28 +868,74 @@ const hireSeat = (game: Game, h: HtmlBuilder<Message>): Html => {
       h.span(
         [
           h.Class(
-            cn(
-              'relative grid size-11 place-items-center rounded-full',
-              open && afford ? 'bg-primary-fill text-on-primary-fill shadow-primary' : WELL,
-              'rounded-full',
+            cx(
+              css({
+                position: 'relative',
+                display: 'grid',
+                width: '11',
+                height: '11',
+                placeItems: 'center',
+                borderRadius: 'full',
+              }),
+              open && afford
+                ? css({
+                    layerStyle: 'primaryFill',
+                    color: 'onPrimaryFill',
+                    boxShadow: 'primary',
+                  })
+                : WELL,
+              css({
+                borderRadius: 'full',
+              }),
             ),
           ),
         ],
         [
-          icon(h, open ? Plus : Lock, open ? 'size-5' : 'size-4'),
+          icon(
+            h,
+            open ? Plus : Lock,
+            open
+              ? css({
+                  width: '5',
+                  height: '5',
+                })
+              : css({
+                  width: '4',
+                  height: '4',
+                }),
+          ),
           open ? languageMark(language, h) : h.empty,
         ],
       ),
       h.span(
-        [h.Class('mt-1 w-full truncate text-[calc(12.5px*var(--type-scale))] font-medium')],
+        [
+          h.Class(
+            css({
+              marginTop: '1',
+              width: '100%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: 'type.12-5',
+              fontWeight: 'medium',
+            }),
+          ),
+        ],
         [open ? t.team.hire : t.team.locked],
       ),
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
-              'w-full truncate text-[calc(10.5px*var(--type-scale))] text-muted-foreground',
+              css({
+                width: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                fontSize: 'type.10-5',
+                color: 'mutedForeground',
+              }),
             ),
           ),
         ],
@@ -707,15 +954,38 @@ const pendingSeat = (game: Game, id: string, readyAt: number, h: HtmlBuilder<Mes
     h.span(
       [
         h.Class(
-          'relative grid size-11 place-items-center rounded-full border-[1.5px] border-dashed border-foreground/25 text-muted-foreground',
+          css({
+            position: 'relative',
+            display: 'grid',
+            width: '11',
+            height: '11',
+            placeItems: 'center',
+            borderRadius: 'full',
+            borderWidth: '1.5px',
+            borderStyle: 'dashed',
+            borderColor: 'color-mix(in oklab, var(--foreground) 25%, transparent)',
+            color: 'mutedForeground',
+          }),
         ),
       ],
-      [icon(h, Hourglass, 'size-4')],
+      [
+        icon(
+          h,
+          Hourglass,
+          css({
+            width: '4',
+            height: '4',
+          }),
+        ),
+      ],
     ),
     nameOf(id),
     t.team.inText(wait(t, left)),
     [],
-    'bg-foreground/[0.025] shadow-[inset_0_0_0_1px_var(--hairline-soft)]',
+    css({
+      backgroundColor: 'color-mix(in oklab, var(--foreground) 2.5%, transparent)',
+      boxShadow: 'line',
+    }),
     h,
   )
 }
@@ -723,7 +993,22 @@ const pendingSeat = (game: Game, id: string, readyAt: number, h: HtmlBuilder<Mes
 const policySwitch = (team: Team, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
-    [h.Class(cn('grid grid-cols-3 gap-[3px] p-[3px]', WELL, 'rounded-[11px]'))],
+    [
+      h.Class(
+        cx(
+          css({
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: '0.75',
+            padding: '0.75',
+          }),
+          WELL,
+          css({
+            borderRadius: 'lg',
+          }),
+        ),
+      ),
+    ],
     POLICY_IDS.map((policy) => {
       const selected = team.policy === policy
       return h.button(
@@ -735,17 +1020,59 @@ const policySwitch = (team: Team, h: HtmlBuilder<Message>): Html => {
             Message.TeamChanged({ message: TeamMessage.PolicyChosen({ teamId: team.id, policy }) }),
           ),
           h.Class(
-            cn(
-              'press flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 text-[calc(12px*var(--type-scale))] font-medium',
+            cx(
+              cx(
+                css({
+                  display: 'flex',
+                  height: '8',
+                  minWidth: '0',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '1.5',
+                  borderRadius: 'lg',
+                  paddingInline: '2',
+                  fontSize: 'type.12',
+                  fontWeight: 'medium',
+                }),
+                'press',
+              ),
               selected
-                ? 'bg-raised text-foreground shadow-raised'
-                : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground',
+                ? css({
+                    layerStyle: 'raised',
+                    color: 'foreground',
+                    boxShadow: 'raised',
+                  })
+                : css({
+                    color: 'mutedForeground',
+                    _hover: {
+                      backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                      color: 'foreground',
+                    },
+                  }),
             ),
           ),
         ],
         [
-          icon(h, POLICY_ICONS[policy], 'size-3.5'),
-          h.span([h.Class('truncate')], [t.catalog.policies[policy].label]),
+          icon(
+            h,
+            POLICY_ICONS[policy],
+            css({
+              width: '3.5',
+              height: '3.5',
+            }),
+          ),
+          h.span(
+            [
+              h.Class(
+                css({
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }),
+              ),
+            ],
+            [t.catalog.policies[policy].label],
+          ),
         ],
       )
     }),
@@ -767,7 +1094,21 @@ const kindsOf = (t: Messages): ReadonlyArray<readonly [TeamKind, string, Researc
 const kindSwitch = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
-    [h.Class(cn('flex gap-[3px] p-[3px]', WELL, 'rounded-[11px]'))],
+    [
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            gap: '0.75',
+            padding: '0.75',
+          }),
+          WELL,
+          css({
+            borderRadius: 'lg',
+          }),
+        ),
+      ),
+    ],
     kindsOf(t).map(([kind, label, research]) => {
       const selected = team.kind === kind
       const result = setTeamKind(game, team.id, kind)
@@ -787,17 +1128,66 @@ const kindSwitch = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
               : Message.TeamChanged({ message: TeamMessage.KindChosen({ teamId: team.id, kind }) }),
           ),
           h.Class(
-            cn(
-              'press flex h-8 min-w-0 flex-auto items-center justify-center rounded-lg px-1.5 text-[calc(12px*var(--type-scale))] font-medium',
+            cx(
+              cx(
+                css({
+                  display: 'flex',
+                  height: '8',
+                  minWidth: '0',
+                  flex: '1 1 auto',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 'lg',
+                  paddingInline: '1.5',
+                  fontSize: 'type.12',
+                  fontWeight: 'medium',
+                }),
+                'press',
+              ),
               selected
-                ? 'bg-raised text-foreground shadow-raised'
+                ? css({
+                    layerStyle: 'raised',
+                    color: 'foreground',
+                    boxShadow: 'raised',
+                  })
                 : refusal !== null
-                  ? 'text-muted-foreground/45 hover:bg-foreground/5 hover:text-muted-foreground enabled:cursor-pointer disabled:cursor-not-allowed'
-                  : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground',
+                  ? css({
+                      color: 'color-mix(in oklab, var(--muted-foreground) 45%, transparent)',
+                      _hover: {
+                        backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                        color: 'mutedForeground',
+                      },
+                      _enabled: {
+                        cursor: 'pointer',
+                      },
+                      _disabled: {
+                        cursor: 'not-allowed',
+                      },
+                    })
+                  : css({
+                      color: 'mutedForeground',
+                      _hover: {
+                        backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                        color: 'foreground',
+                      },
+                    }),
             ),
           ),
         ],
-        [h.span([h.Class('truncate')], [label])],
+        [
+          h.span(
+            [
+              h.Class(
+                css({
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }),
+              ),
+            ],
+            [label],
+          ),
+        ],
       )
     }),
   )
@@ -824,29 +1214,75 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
       h.Key(team.id),
       ...DragAndDrop.droppable(team.id, teamName(t, team)),
       h.Class(
-        cn(
+        cx(
           PANEL,
-          'flex flex-col gap-3 p-3 transition-shadow',
-          dropTarget && 'ring-2 ring-primary ring-offset-2',
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '3',
+            padding: '3',
+            transitionProperty: 'box-shadow',
+            transitionDuration: 'fast',
+            transitionTimingFunction: 'out',
+          }),
+          dropTarget &&
+            css({
+              boxShadow: 'selectedHalo',
+            }),
         ),
       ),
     ],
     [
       h.div(
-        [h.Class('flex items-start gap-2 px-1')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '2',
+              paddingInline: '1',
+            }),
+          ),
+        ],
         [
           h.div(
-            [h.Class('flex min-w-0 flex-1 flex-col')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  minWidth: '0',
+                  flex: '1 1 0%',
+                  flexDirection: 'column',
+                }),
+              ),
+            ],
             [
               h.div(
-                [h.Class('flex min-w-0 items-center gap-1')],
+                [
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      minWidth: '0',
+                      alignItems: 'center',
+                      gap: '1',
+                    }),
+                  ),
+                ],
                 [
                   editTeam
                     ? renameField(editTeam.draft, t.team.teamName, team.name, h)
                     : h.span(
                         [
                           h.Class(
-                            'min-w-0 truncate text-[calc(15px*var(--type-scale))] font-semibold tracking-[-0.02em]',
+                            css({
+                              minWidth: '0',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              fontSize: 'type.15',
+                              fontWeight: 'semibold',
+                              letterSpacing: 'body',
+                            }),
                           ),
                         ],
                         [teamName(t, team)],
@@ -868,24 +1304,56 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
                 ],
               ),
               h.span(
-                [h.Class('text-[calc(11.5px*var(--type-scale))] text-muted-foreground')],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'type.11-5',
+                      color: 'mutedForeground',
+                    }),
+                  ),
+                ],
                 [t.team.people(output?.headcount ?? 0)],
               ),
             ],
           ),
           h.div(
-            [h.Class('flex flex-col items-end')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                }),
+              ),
+            ],
             [
               h.span(
                 [
                   h.Class(
-                    cn(FIGURE, 'text-[calc(22px*var(--type-scale))] leading-none font-medium'),
+                    cx(
+                      FIGURE,
+                      css({
+                        fontSize: 'type.22',
+                        lineHeight: 'none',
+                        fontWeight: 'medium',
+                      }),
+                    ),
                   ),
                 ],
                 [perMinute(output?.devHoursPerSecond ?? 0)],
               ),
               h.span(
-                [h.Class(cn(EYEBROW, 'mt-1 text-[calc(9.5px*var(--type-scale))]'))],
+                [
+                  h.Class(
+                    cx(
+                      EYEBROW,
+                      css({
+                        marginTop: '1',
+                        fontSize: 'type.9-5',
+                      }),
+                    ),
+                  ),
+                ],
                 [t.team.dHMin],
               ),
             ],
@@ -905,17 +1373,44 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
       team.kind === 'product' ? policySwitch(team, h) : h.empty,
       team.kind === 'product' && now.id !== team.policy
         ? h.span(
-            [h.Class('-mt-1.5 px-1 text-[calc(11px*var(--type-scale))] text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  marginTop: '-0.375rem',
+                  paddingInline: '1',
+                  fontSize: 'type.11',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
             [t.team.untilTomorrow(t.catalog.policies[now.id].label)],
           )
         : h.empty,
       h.div(
-        [h.Class('grid grid-cols-3 gap-2')],
+        [
+          h.Class(
+            css({
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+              gap: '2',
+            }),
+          ),
+        ],
         [
           index === 0 ? founderSeat(h) : h.empty,
           ...members.map((engineer, memberIndex) =>
             h.div(
-              [h.Key(engineer.id), h.Class('group relative')],
+              [
+                h.Key(engineer.id),
+                h.Class(
+                  cx(
+                    css({
+                      position: 'relative',
+                    }),
+                    'group',
+                  ),
+                ),
+              ],
               [
                 h.div(
                   [
@@ -933,12 +1428,27 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
                     ...DragAndDrop.sortable(engineer.id),
                     h.AriaLabel(t.team.moveFrom(nameOf(engineer.id), teamName(t, team))),
                     h.Class(
-                      cn(
-                        'cursor-grab touch-none rounded-xl focus-visible:outline-2 focus-visible:outline-primary active:cursor-grabbing',
+                      cx(
+                        css({
+                          cursor: 'grab',
+                          touchAction: 'none',
+                          borderRadius: 'xl',
+                          _focusVisible: {
+                            outlineWidth: '2px',
+                            outlineStyle: 'solid',
+                            outlineColor: 'primary',
+                          },
+                          _active: {
+                            cursor: 'grabbing',
+                          },
+                        }),
                         Option.exists(
                           DragAndDrop.maybeDraggedItemId(model.board.team.drag),
                           (id) => id === engineer.id,
-                        ) && 'opacity-45',
+                        ) &&
+                          css({
+                            opacity: 0.45,
+                          }),
                       ),
                     ),
                   ],
@@ -984,11 +1494,42 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
 const sreWork = (game: Game, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
-    [h.Class(cn('flex items-center gap-2 px-2.5 py-2', WELL, 'rounded-[10px]'))],
     [
-      icon(h, Siren, 'size-3.5 text-muted-foreground'),
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2',
+            paddingInline: '2.5',
+            paddingBlock: '2',
+          }),
+          WELL,
+          css({
+            borderRadius: 'lg',
+          }),
+        ),
+      ),
+    ],
+    [
+      icon(
+        h,
+        Siren,
+        css({
+          width: '3.5',
+          height: '3.5',
+          color: 'mutedForeground',
+        }),
+      ),
       h.span(
-        [h.Class('text-[calc(12.5px*var(--type-scale))] text-muted-foreground')],
+        [
+          h.Class(
+            css({
+              fontSize: 'type.12-5',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
         [
           game.runbooks.length === 0
             ? t.team.holdsThePager
@@ -1003,11 +1544,42 @@ const sreWork = (game: Game, h: HtmlBuilder<Message>): Html => {
 const dataWork = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
-    [h.Class(cn('flex items-center gap-2 px-2.5 py-2', WELL, 'rounded-[10px]'))],
     [
-      icon(h, Database, 'size-3.5 text-muted-foreground'),
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2',
+            paddingInline: '2.5',
+            paddingBlock: '2',
+          }),
+          WELL,
+          css({
+            borderRadius: 'lg',
+          }),
+        ),
+      ),
+    ],
+    [
+      icon(
+        h,
+        Database,
+        css({
+          width: '3.5',
+          height: '3.5',
+          color: 'mutedForeground',
+        }),
+      ),
       h.span(
-        [h.Class('text-[calc(12.5px*var(--type-scale))] text-muted-foreground')],
+        [
+          h.Class(
+            css({
+              fontSize: 'type.12-5',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
         [t.team.runsTheWarehouseReportAndAI],
       ),
     ],
@@ -1018,11 +1590,42 @@ const dataWork = (h: HtmlBuilder<Message>): Html => {
 const platformWork = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
-    [h.Class(cn('flex items-center gap-2 px-2.5 py-2', WELL, 'rounded-[10px]'))],
     [
-      icon(h, Container, 'size-3.5 text-muted-foreground'),
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2',
+            paddingInline: '2.5',
+            paddingBlock: '2',
+          }),
+          WELL,
+          css({
+            borderRadius: 'lg',
+          }),
+        ),
+      ),
+    ],
+    [
+      icon(
+        h,
+        Container,
+        css({
+          width: '3.5',
+          height: '3.5',
+          color: 'mutedForeground',
+        }),
+      ),
       h.span(
-        [h.Class('text-[calc(12.5px*var(--type-scale))] text-muted-foreground')],
+        [
+          h.Class(
+            css({
+              fontSize: 'type.12-5',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
         [t.team.runsClustersAndDeploys],
       ),
     ],
@@ -1033,11 +1636,42 @@ const platformWork = (h: HtmlBuilder<Message>): Html => {
 const securityWork = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
-    [h.Class(cn('flex items-center gap-2 px-2.5 py-2', WELL, 'rounded-[10px]'))],
     [
-      icon(h, Shield, 'size-3.5 text-muted-foreground'),
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2',
+            paddingInline: '2.5',
+            paddingBlock: '2',
+          }),
+          WELL,
+          css({
+            borderRadius: 'lg',
+          }),
+        ),
+      ),
+    ],
+    [
+      icon(
+        h,
+        Shield,
+        css({
+          width: '3.5',
+          height: '3.5',
+          color: 'mutedForeground',
+        }),
+      ),
       h.span(
-        [h.Class('text-[calc(12.5px*var(--type-scale))] text-muted-foreground')],
+        [
+          h.Class(
+            css({
+              fontSize: 'type.12-5',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
         [t.team.securityDesk],
       ),
     ],
@@ -1052,27 +1686,82 @@ const working = (
 ): Html => {
   const t = copy(h)
   return h.div(
-    [h.Class(cn('flex items-center gap-2 px-2.5 py-2', WELL, 'rounded-[10px]'))],
+    [
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2',
+            paddingInline: '2.5',
+            paddingBlock: '2',
+          }),
+          WELL,
+          css({
+            borderRadius: 'lg',
+          }),
+        ),
+      ),
+    ],
     item
       ? [
           statusMark('building', item.spent / item.cost, h),
           h.span(
-            [h.Class(cn(FIGURE, 'text-[calc(11px*var(--type-scale))] text-muted-foreground'))],
+            [
+              h.Class(
+                cx(
+                  FIGURE,
+                  css({
+                    fontSize: 'type.11',
+                    color: 'mutedForeground',
+                  }),
+                ),
+              ),
+            ],
             [codeOf(item.kind, item.ref)],
           ),
           h.span(
-            [h.Class('min-w-0 flex-1 truncate text-[calc(12.5px*var(--type-scale))] font-medium')],
+            [
+              h.Class(
+                css({
+                  minWidth: '0',
+                  flex: '1 1 0%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: 'type.12-5',
+                  fontWeight: 'medium',
+                }),
+              ),
+            ],
             [workItemName(t, item)],
           ),
           h.span(
-            [h.Class(cn(FIGURE, 'text-[calc(11.5px*var(--type-scale))] text-muted-foreground'))],
+            [
+              h.Class(
+                cx(
+                  FIGURE,
+                  css({
+                    fontSize: 'type.11-5',
+                    color: 'mutedForeground',
+                  }),
+                ),
+              ),
+            ],
             [`${Math.floor(clamp(item.spent / item.cost) * 100)}%`],
           ),
         ]
       : [
           statusMark('queued', 0, h),
           h.span(
-            [h.Class('text-[calc(12.5px*var(--type-scale))] text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.12-5',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
             [
               staffed
                 ? waits > 0
@@ -1097,20 +1786,54 @@ const nodeRow = (
   return h.div(
     [
       h.Class(
-        'flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[calc(11.5px*var(--type-scale))]',
+        css({
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          columnGap: '2',
+          rowGap: '0.5',
+          fontSize: 'type.11-5',
+        }),
       ),
     ],
     [
-      h.span([h.Class('text-muted-foreground')], [t.team.labelColon(label)]),
+      h.span(
+        [
+          h.Class(
+            css({
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
+        [t.team.labelColon(label)],
+      ),
       ...(nodes.length === 0
-        ? [h.span([h.Class('text-muted-foreground')], [empty])]
+        ? [
+            h.span(
+              [
+                h.Class(
+                  css({
+                    color: 'mutedForeground',
+                  }),
+                ),
+              ],
+              [empty],
+            ),
+          ]
         : nodes.map((node) =>
             h.button(
               [
                 h.Type('button'),
                 h.OnClick(Message.RevealNode({ nodeId: node.id })),
                 h.AriaLabel(t.team.openNode(nodeTitle(t, game, node))),
-                h.Class('font-medium hover:underline'),
+                h.Class(
+                  css({
+                    fontWeight: 'medium',
+                    _hover: {
+                      textDecorationLine: 'underline',
+                    },
+                  }),
+                ),
               ],
               [nodeTitle(t, game, node)],
             ),
@@ -1137,12 +1860,38 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
   const shared = game.services.filter((service) => sharesDatabase(game, service)).length
   const renaming = model.board.team.rename
   return h.section(
-    [h.Key('services'), h.Class(cn(PANEL, 'flex shrink-0 flex-col gap-2.5 px-4 pt-3.5 pb-3'))],
+    [
+      h.Key('services'),
+      h.Class(
+        cx(
+          PANEL,
+          css({
+            display: 'flex',
+            flexShrink: '0',
+            flexDirection: 'column',
+            gap: '2.5',
+            paddingInline: '4',
+            paddingTop: '3.5',
+            paddingBottom: '3',
+          }),
+        ),
+      ),
+    ],
     [
       heading(
         t.team.services,
         h.span(
-          [h.Class(cn(FIGURE, 'text-[calc(11px*var(--type-scale))] text-muted-foreground'))],
+          [
+            h.Class(
+              cx(
+                FIGURE,
+                css({
+                  fontSize: 'type.11',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ),
+          ],
           [
             shared > 1
               ? t.team.codebasesOneDatabase(game.services.length)
@@ -1161,21 +1910,48 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
         return h.div(
           [
             h.Class(
-              cn(
+              cx(
                 WELL,
-                'flex flex-col gap-1 rounded-[10px] px-2.5 py-2',
-                paged && 'ring-1 ring-danger/60',
+                css({
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1',
+                  borderRadius: 'lg',
+                  paddingInline: '2.5',
+                  paddingBlock: '2',
+                }),
+                paged &&
+                  css({
+                    boxShadow: 'dangerLine',
+                  }),
               ),
             ),
           ],
           [
             h.div(
-              [h.Class('flex flex-wrap items-center gap-x-2 gap-y-1')],
+              [
+                h.Class(
+                  css({
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    columnGap: '2',
+                    rowGap: '1',
+                  }),
+                ),
+              ],
               [
                 editService
                   ? renameField(editService.draft, t.team.serviceNameLabel, service.name, h)
                   : h.span(
-                      [h.Class('text-[calc(12.5px*var(--type-scale))] font-medium')],
+                      [
+                        h.Class(
+                          css({
+                            fontSize: 'type.12-5',
+                            fontWeight: 'medium',
+                          }),
+                        ),
+                      ],
                       [serviceName(t, service)],
                     ),
                 editService
@@ -1197,22 +1973,37 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                   : badge(
                       {
                         variant: 'outline',
-                        className: 'text-[calc(10.5px*var(--type-scale))]',
+                        className: css({
+                          fontSize: 'type.10-5',
+                        }),
                       },
                       [t.team.ownedBy(teamName(t, owner))],
                       h,
                     ),
                 paged && !editService
-                  ? badge({ variant: 'outline', className: 'text-danger' }, [t.team.paged], h)
+                  ? badge(
+                      {
+                        variant: 'outline',
+                        className: css({
+                          color: 'danger',
+                        }),
+                      },
+                      [t.team.paged],
+                      h,
+                    )
                   : h.empty,
               ],
             ),
             h.span(
               [
                 h.Class(
-                  cn(
+                  cx(
                     FIGURE,
-                    'whitespace-nowrap text-[calc(10.5px*var(--type-scale))] text-muted-foreground',
+                    css({
+                      whiteSpace: 'nowrap',
+                      fontSize: 'type.10-5',
+                      color: 'mutedForeground',
+                    }),
                   ),
                 ),
               ],
@@ -1225,7 +2016,14 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
               ],
             ),
             h.span(
-              [h.Class('text-[calc(11.5px*var(--type-scale))] text-muted-foreground')],
+              [
+                h.Class(
+                  css({
+                    fontSize: 'type.11-5',
+                    color: 'mutedForeground',
+                  }),
+                ),
+              ],
               [
                 service.features.length === 0
                   ? t.team.carriesEveryFeature
@@ -1244,10 +2042,26 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
             ),
             game.nodes.filter((node) => node.type === 'database').length > 1
               ? h.div(
-                  [h.Class('flex items-center gap-1.5 pt-0.5')],
+                  [
+                    h.Class(
+                      css({
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1.5',
+                        paddingTop: '0.5',
+                      }),
+                    ),
+                  ],
                   [
                     h.span(
-                      [h.Class('text-[calc(11px*var(--type-scale))] text-muted-foreground')],
+                      [
+                        h.Class(
+                          css({
+                            fontSize: 'type.11',
+                            color: 'mutedForeground',
+                          }),
+                        ),
+                      ],
                       [t.team.datastore],
                     ),
                     h.select(
@@ -1261,7 +2075,15 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                           }),
                         ),
                         h.Class(
-                          cn(WELL, 'h-6 rounded-lg px-1.5 text-[calc(11px*var(--type-scale))]'),
+                          cx(
+                            WELL,
+                            css({
+                              height: '6',
+                              borderRadius: 'lg',
+                              paddingInline: '1.5',
+                              fontSize: 'type.11',
+                            }),
+                          ),
                         ),
                       ],
                       [
@@ -1290,10 +2112,26 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
               : h.empty,
             game.teams.length > 1
               ? h.div(
-                  [h.Class('flex items-center gap-1.5 pt-0.5')],
+                  [
+                    h.Class(
+                      css({
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1.5',
+                        paddingTop: '0.5',
+                      }),
+                    ),
+                  ],
                   [
                     h.span(
-                      [h.Class('text-[calc(11px*var(--type-scale))] text-muted-foreground')],
+                      [
+                        h.Class(
+                          css({
+                            fontSize: 'type.11',
+                            color: 'mutedForeground',
+                          }),
+                        ),
+                      ],
                       [t.team.moveServiceTo],
                     ),
                     h.select(
@@ -1305,7 +2143,15 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                           }),
                         ),
                         h.Class(
-                          cn(WELL, 'h-6 rounded-lg px-1.5 text-[calc(11px*var(--type-scale))]'),
+                          cx(
+                            WELL,
+                            css({
+                              height: '6',
+                              borderRadius: 'lg',
+                              paddingInline: '1.5',
+                              fontSize: 'type.11',
+                            }),
+                          ),
                         ),
                       ],
                       game.teams.map((entry) =>
@@ -1326,10 +2172,27 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
       }),
       has(game, 'service-boundaries')
         ? h.div(
-            [h.Class('flex flex-col gap-2 pt-1')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2',
+                  paddingTop: '1',
+                }),
+              ),
+            ],
             [
               h.div(
-                [h.Class('flex items-center gap-1.5')],
+                [
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '1.5',
+                    }),
+                  ),
+                ],
                 [
                   h.input([
                     h.Type('text'),
@@ -1340,9 +2203,17 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                       Message.TeamChanged({ message: TeamMessage.ServiceNamed({ name }) }),
                     ),
                     h.Class(
-                      cn(
+                      cx(
                         WELL,
-                        'h-7 min-w-0 flex-1 rounded-lg px-2 text-[calc(12px*var(--type-scale))] outline-none',
+                        css({
+                          height: '7',
+                          minWidth: '0',
+                          flex: '1 1 0%',
+                          borderRadius: 'lg',
+                          paddingInline: '2',
+                          fontSize: 'type.12',
+                          outlineStyle: 'none',
+                        }),
                       ),
                     ),
                   ]),
@@ -1355,7 +2226,15 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                         }),
                       ),
                       h.Class(
-                        cn(WELL, 'h-7 rounded-lg px-1.5 text-[calc(12px*var(--type-scale))]'),
+                        cx(
+                          WELL,
+                          css({
+                            height: '7',
+                            borderRadius: 'lg',
+                            paddingInline: '1.5',
+                            fontSize: 'type.12',
+                          }),
+                        ),
                       ),
                     ],
                     game.teams.map((entry) =>
@@ -1372,11 +2251,26 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
               ),
               candidates.length === 0
                 ? h.span(
-                    [h.Class('text-[calc(11.5px*var(--type-scale))] text-muted-foreground')],
+                    [
+                      h.Class(
+                        css({
+                          fontSize: 'type.11-5',
+                          color: 'mutedForeground',
+                        }),
+                      ),
+                    ],
                     [t.team.noLiveFeatureLeft],
                   )
                 : h.div(
-                    [h.Class('flex flex-wrap gap-1.5')],
+                    [
+                      h.Class(
+                        css({
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: '1.5',
+                        }),
+                      ),
+                    ],
                     candidates.map((id) => {
                       const on = draft.features.includes(id)
                       return h.button(
@@ -1389,20 +2283,63 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                             }),
                           ),
                           h.Class(
-                            cn(
-                              'flex h-6 items-center gap-1 rounded-full border px-2 text-[calc(11px*var(--type-scale))]',
+                            cx(
+                              css({
+                                display: 'flex',
+                                height: '6',
+                                alignItems: 'center',
+                                gap: '1',
+                                borderRadius: 'full',
+                                borderWidth: '1px',
+                                borderStyle: 'solid',
+                                paddingInline: '2',
+                                fontSize: 'type.11',
+                              }),
                               on
-                                ? 'border-primary/60 bg-primary/15 text-foreground'
-                                : 'border-foreground/15 text-muted-foreground hover:text-foreground',
+                                ? css({
+                                    borderColor:
+                                      'color-mix(in oklab, var(--primary) 60%, transparent)',
+                                    backgroundColor:
+                                      'color-mix(in oklab, var(--primary) 15%, transparent)',
+                                    color: 'foreground',
+                                  })
+                                : css({
+                                    borderColor:
+                                      'color-mix(in oklab, var(--foreground) 15%, transparent)',
+                                    color: 'mutedForeground',
+                                    _hover: {
+                                      color: 'foreground',
+                                    },
+                                  }),
                             ),
                           ),
                         ],
-                        [on ? icon(h, Check, 'size-3') : h.empty, t.catalog.features[id].name],
+                        [
+                          on
+                            ? icon(
+                                h,
+                                Check,
+                                css({
+                                  width: '3',
+                                  height: '3',
+                                }),
+                              )
+                            : h.empty,
+                          t.catalog.features[id].name,
+                        ],
                       )
                     }),
                   ),
               h.div(
-                [h.Class('flex items-center gap-2')],
+                [
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '2',
+                    }),
+                  ),
+                ],
                 [
                   button(
                     {
@@ -1420,14 +2357,38 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                     },
                     refusal === null
                       ? [
-                          icon(h, Container, 'size-3.5'),
+                          icon(
+                            h,
+                            Container,
+                            css({
+                              width: '3.5',
+                              height: '3.5',
+                            }),
+                          ),
                           t.team.splitFor(t.units.devHours(splitCost(draft.features))),
                         ]
-                      : [icon(h, Lock, 'size-3'), t.team.locked],
+                      : [
+                          icon(
+                            h,
+                            Lock,
+                            css({
+                              width: '3',
+                              height: '3',
+                            }),
+                          ),
+                          t.team.locked,
+                        ],
                     h,
                   ),
                   h.span(
-                    [h.Class('text-[calc(11px*var(--type-scale))] text-muted-foreground')],
+                    [
+                      h.Class(
+                        css({
+                          fontSize: 'type.11',
+                          color: 'mutedForeground',
+                        }),
+                      ),
+                    ],
                     [refusal === null ? '' : splitWhy(t, game, draft, refusal)],
                   ),
                 ],
@@ -1435,7 +2396,14 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
             ],
           )
         : h.span(
-            [h.Class('text-[calc(11.5px*var(--type-scale))] text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.11-5',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
             [
               t.team.serviceBoundariesSplits(
                 t.catalog.research['service-boundaries'].name,
@@ -1459,18 +2427,62 @@ const doraCard = (game: Game, h: HtmlBuilder<Message>): Html => {
   const dora = doraMetrics(game)
   const stat = (label: string, value: string): Html =>
     h.div(
-      [h.Class('flex flex-col gap-0.5')],
+      [
+        h.Class(
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5',
+          }),
+        ),
+      ],
       [
         h.span([h.Class(EYEBROW)], [label]),
-        h.span([h.Class(cn(FIGURE, 'text-[calc(13px*var(--type-scale))]'))], [value]),
+        h.span(
+          [
+            h.Class(
+              cx(
+                FIGURE,
+                css({
+                  fontSize: 'type.13',
+                }),
+              ),
+            ),
+          ],
+          [value],
+        ),
       ],
     )
   return h.section(
-    [h.Key('dora'), h.Class(cn(PANEL, 'flex shrink-0 flex-col gap-2.5 px-4 pt-3.5 pb-3'))],
+    [
+      h.Key('dora'),
+      h.Class(
+        cx(
+          PANEL,
+          css({
+            display: 'flex',
+            flexShrink: '0',
+            flexDirection: 'column',
+            gap: '2.5',
+            paddingInline: '4',
+            paddingTop: '3.5',
+            paddingBottom: '3',
+          }),
+        ),
+      ),
+    ],
     [
       heading(t.team.dORAMetrics, h.empty, h),
       h.div(
-        [h.Class('grid grid-cols-4 gap-3')],
+        [
+          h.Class(
+            css({
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              gap: '3',
+            }),
+          ),
+        ],
         [
           stat(t.team.deployFrequency, t.team.perDay(dora.deploysPerDay.toFixed(1))),
           stat(t.team.leadTime, wait(t, dora.leadTime)),
@@ -1488,7 +2500,23 @@ const floor = (model: Model, h: HtmlBuilder<Message>): Html => {
   const game = model.board.game
   return h.div(
     [
-      h.Class(`flex min-h-0 flex-col gap-3 p-4 ${SCROLL} compact:overflow-visible`),
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            minHeight: '0',
+            flexDirection: 'column',
+            gap: '3',
+            padding: '4',
+          }),
+          SCROLL,
+          css({
+            _compact: {
+              overflow: 'visible',
+            },
+          }),
+        ),
+      ),
       h.DataAttribute('team-drag-floor', ''),
       ...(DragAndDrop.isDragging(model.board.team.drag)
         ? [h.DataAttribute('team-drag-active', '')]
@@ -1507,7 +2535,20 @@ const floor = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.div(
                 [
                   h.Style(style),
-                  h.Class(cn(PANEL, 'pointer-events-none z-50 px-4 py-3 text-sm font-medium')),
+                  h.Class(
+                    cx(
+                      PANEL,
+                      css({
+                        pointerEvents: 'none',
+                        zIndex: '50',
+                        paddingInline: '4',
+                        paddingBlock: '3',
+                        fontSize: 'type.14',
+                        lineHeight: 'fine',
+                        fontWeight: 'medium',
+                      }),
+                    ),
+                  ),
                 ],
                 [nameOf(id)],
               ),
@@ -1520,10 +2561,41 @@ const floor = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Type('button'),
               h.OnClick(Message.TeamChanged({ message: TeamMessage.Created() })),
               h.Class(
-                'press flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-foreground/20 text-[calc(13px*var(--type-scale))] font-medium text-muted-foreground hover:border-foreground/40 hover:text-foreground',
+                cx(
+                  css({
+                    display: 'flex',
+                    height: '12',
+                    flexShrink: '0',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '2',
+                    borderRadius: '2xl',
+                    borderWidth: '1.5px',
+                    borderStyle: 'dashed',
+                    borderColor: 'color-mix(in oklab, var(--foreground) 20%, transparent)',
+                    fontSize: 'type.13',
+                    fontWeight: 'medium',
+                    color: 'mutedForeground',
+                    _hover: {
+                      borderColor: 'color-mix(in oklab, var(--foreground) 40%, transparent)',
+                      color: 'foreground',
+                    },
+                  }),
+                  'press',
+                ),
               ),
             ],
-            [icon(h, Plus, 'size-4'), t.team.newTeam],
+            [
+              icon(
+                h,
+                Plus,
+                css({
+                  width: '4',
+                  height: '4',
+                }),
+              ),
+              t.team.newTeam,
+            ],
           )
         : h.empty,
     ],
@@ -1547,50 +2619,176 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
   const step = game.backlog.find((item) => item.kind === 'migration')
   const percent = (share: number) => `${Math.round(share * 100)}%`
   return h.section(
-    [h.Key('migration'), h.Class(cn(PANEL, 'flex shrink-0 flex-col gap-3 px-4 pt-3.5 pb-3'))],
+    [
+      h.Key('migration'),
+      h.Class(
+        cx(
+          PANEL,
+          css({
+            display: 'flex',
+            flexShrink: '0',
+            flexDirection: 'column',
+            gap: '3',
+            paddingInline: '4',
+            paddingTop: '3.5',
+            paddingBottom: '3',
+          }),
+        ),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex flex-wrap items-center gap-x-3 gap-y-2')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              columnGap: '3',
+              rowGap: '2',
+            }),
+          ),
+        ],
         [
           h.div(
-            [h.Class('flex min-w-0 flex-1 items-center gap-2.5')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  minWidth: '0',
+                  flex: '1 1 0%',
+                  alignItems: 'center',
+                  gap: '2.5',
+                }),
+              ),
+            ],
             [
               h.span(
-                [h.Class('opacity-45 grayscale')],
-                [stackLogo(RUNTIMES[migration.fromRuntime].language, 'size-5', h)],
+                [
+                  h.Class(
+                    css({
+                      opacity: 0.45,
+                      filter: 'grayscale(100%)',
+                    }),
+                  ),
+                ],
+                [
+                  stackLogo(
+                    RUNTIMES[migration.fromRuntime].language,
+                    css({
+                      width: '5',
+                      height: '5',
+                    }),
+                    h,
+                  ),
+                ],
               ),
               h.span(
                 [
                   h.Class(
-                    'truncate text-[calc(13px*var(--type-scale))] text-muted-foreground line-through decoration-foreground/25',
+                    css({
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      fontSize: 'type.13',
+                      color: 'mutedForeground',
+                      textDecorationLine: 'line-through',
+                      textDecorationColor:
+                        'color-mix(in oklab, var(--foreground) 25%, transparent)',
+                    }),
                   ),
                 ],
                 [stackName(t, migration.fromRuntime, migration.fromFramework)],
               ),
-              icon(h, ArrowRight, 'size-3.5 shrink-0 text-muted-foreground'),
-              stackLogo(language, 'size-5', h),
+              icon(
+                h,
+                ArrowRight,
+                css({
+                  width: '3.5',
+                  height: '3.5',
+                  flexShrink: '0',
+                  color: 'mutedForeground',
+                }),
+              ),
+              stackLogo(
+                language,
+                css({
+                  width: '5',
+                  height: '5',
+                }),
+                h,
+              ),
               h.span(
                 [
                   h.Class(
-                    'truncate text-[calc(15px*var(--type-scale))] font-semibold tracking-[-0.02em]',
+                    css({
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      fontSize: 'type.15',
+                      fontWeight: 'semibold',
+                      letterSpacing: 'body',
+                    }),
                   ),
                 ],
                 [stackName(t, migration.runtime, migration.framework)],
               ),
               migration.bugs
-                ? badge({ variant: 'destructive' }, [icon(h, Bug, 'size-3'), t.team.bugs], h)
+                ? badge(
+                    { variant: 'destructive' },
+                    [
+                      icon(
+                        h,
+                        Bug,
+                        css({
+                          width: '3',
+                          height: '3',
+                        }),
+                      ),
+                      t.team.bugs,
+                    ],
+                    h,
+                  )
                 : h.empty,
             ],
           ),
           done
-            ? badge({ variant: 'secondary' }, [icon(h, Check, 'size-3'), t.team.migrated], h)
+            ? badge(
+                { variant: 'secondary' },
+                [
+                  icon(
+                    h,
+                    Check,
+                    css({
+                      width: '3',
+                      height: '3',
+                    }),
+                  ),
+                  t.team.migrated,
+                ],
+                h,
+              )
             : h.div(
-                [h.Class('flex items-center gap-2')],
+                [
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '2',
+                    }),
+                  ),
+                ],
                 [
                   h.span(
                     [
                       h.Class(
-                        cn(FIGURE, 'text-[calc(11.5px*var(--type-scale))] text-muted-foreground'),
+                        cx(
+                          FIGURE,
+                          css({
+                            fontSize: 'type.11-5',
+                            color: 'mutedForeground',
+                          }),
+                        ),
                       ),
                     ],
                     [
@@ -1612,7 +2810,17 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                       isDisabled: !isReady(migration),
                       size: 'sm',
                     },
-                    [icon(h, ArrowRight, 'size-3.5'), t.team.shiftTo(percent(next))],
+                    [
+                      icon(
+                        h,
+                        ArrowRight,
+                        css({
+                          width: '3.5',
+                          height: '3.5',
+                        }),
+                      ),
+                      t.team.shiftTo(percent(next)),
+                    ],
                     h,
                   ),
                 ],
@@ -1620,16 +2828,46 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
         ],
       ),
       h.div(
-        [h.Class('flex flex-col gap-1')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1',
+            }),
+          ),
+        ],
         [
           h.div(
-            [h.Class(cn('relative h-7 overflow-hidden', WELL, 'rounded-lg'))],
+            [
+              h.Class(
+                cx(
+                  css({
+                    position: 'relative',
+                    height: '7',
+                    overflow: 'hidden',
+                  }),
+                  WELL,
+                  css({
+                    borderRadius: 'lg',
+                  }),
+                ),
+              ),
+            ],
             [
               done
                 ? h.empty
                 : h.div(
                     [
-                      h.Class('absolute inset-0 transition-[clip-path] duration-500 ease-out'),
+                      h.Class(
+                        css({
+                          position: 'absolute',
+                          inset: '0',
+                          transitionProperty: 'clip-path',
+                          transitionDuration: 'slowest',
+                          transitionTimingFunction: 'out',
+                        }),
+                      ),
                       h.Style({
                         'background-color': `color-mix(in oklch, ${brand} ${isReady(migration) ? 45 : 18}%, transparent)`,
                         'background-image': STRIPES,
@@ -1641,7 +2879,14 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
               h.div(
                 [
                   h.Class(
-                    'absolute inset-0 shadow-[inset_0_1px_0_oklch(1_0_0/0.3)] transition-[clip-path] duration-700 [transition-timing-function:var(--ease-in-out)]',
+                    css({
+                      position: 'absolute',
+                      inset: '0',
+                      boxShadow: 'highlightTop',
+                      transitionProperty: 'clip-path',
+                      transitionDuration: 'glacial',
+                      transitionTimingFunction: 'in-out',
+                    }),
                   ),
                   h.Style({
                     'background-color': brand,
@@ -1654,7 +2899,14 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                 h.div(
                   [
                     h.Key(`tick-${at}`),
-                    h.Class('absolute inset-y-0 w-px bg-foreground/15'),
+                    h.Class(
+                      css({
+                        position: 'absolute',
+                        insetBlock: '0',
+                        width: '1px',
+                        backgroundColor: 'color-mix(in oklab, var(--foreground) 15%, transparent)',
+                      }),
+                    ),
                     h.Style({ left: `${share * 100}%` }),
                   ],
                   [],
@@ -1663,9 +2915,17 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
-                      'absolute inset-y-0 right-2.5 flex items-center text-[calc(11px*var(--type-scale))] text-muted-foreground',
+                      css({
+                        position: 'absolute',
+                        insetBlock: '0',
+                        right: '2.5',
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: 'type.11',
+                        color: 'mutedForeground',
+                      }),
                     ),
                   ),
                 ],
@@ -1674,17 +2934,40 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
             ],
           ),
           h.div(
-            [h.Class('relative h-3.5')],
+            [
+              h.Class(
+                css({
+                  position: 'relative',
+                  height: '3.5',
+                }),
+              ),
+            ],
             MIGRATION_STEPS.map((share, at) =>
               h.span(
                 [
                   h.Key(`label-${at}`),
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
-                      'absolute top-0 text-[calc(10px*var(--type-scale))]',
-                      at < shifted ? 'text-foreground' : 'text-muted-foreground',
-                      share >= 1 ? '-translate-x-full' : '-translate-x-1/2',
+                      css({
+                        position: 'absolute',
+                        top: '0',
+                        fontSize: 'type.10',
+                      }),
+                      at < shifted
+                        ? css({
+                            color: 'foreground',
+                          })
+                        : css({
+                            color: 'mutedForeground',
+                          }),
+                      share >= 1
+                        ? css({
+                            translate: '-100% 0',
+                          })
+                        : css({
+                            translate: '-50% 0',
+                          }),
                     ),
                   ),
                   h.Style({ left: `${share * 100}%` }),
@@ -1705,14 +2988,27 @@ type Status = 'queued' | 'building' | 'shipping' | 'live'
 const statusMark = (status: Status, share: number, h: HtmlBuilder<Message>): Html => {
   const pie = 2 * Math.PI * 2.5
   const tone =
-    status === 'building' ? 'text-warn' : status === 'queued' ? 'text-muted-foreground' : 'text-ok'
+    status === 'building'
+      ? css({ color: 'warn' })
+      : status === 'queued'
+        ? css({ color: 'mutedForeground' })
+        : css({ color: 'ok' })
   return h.svg(
     [
       h.AriaHidden(true),
       h.Xmlns('http://www.w3.org/2000/svg'),
       h.ViewBox('0 0 14 14'),
       h.Fill('none'),
-      h.Class(cn('size-3.5 shrink-0', tone)),
+      h.Class(
+        cx(
+          css({
+            width: '3.5',
+            height: '3.5',
+            flexShrink: '0',
+          }),
+          tone,
+        ),
+      ),
     ],
     status === 'live'
       ? [
@@ -1765,11 +3061,36 @@ const label = (kind: WorkKind, h: HtmlBuilder<Message>): Html => {
   return h.span(
     [
       h.Class(
-        'inline-flex h-5 items-center gap-1 rounded-full px-1.5 text-[calc(10.5px*var(--type-scale))] font-medium text-muted-foreground shadow-[inset_0_0_0_1px_var(--hairline-soft)]',
+        css({
+          display: 'inline-flex',
+          height: '5',
+          alignItems: 'center',
+          gap: '1',
+          borderRadius: 'full',
+          paddingInline: '1.5',
+          fontSize: 'type.10-5',
+          fontWeight: 'medium',
+          color: 'mutedForeground',
+          boxShadow: 'line',
+        }),
       ),
     ],
     [
-      h.span([h.Class(cn('size-1.5 rounded-full', kindOf(t)[kind].fill))], []),
+      h.span(
+        [
+          h.Class(
+            cx(
+              css({
+                width: '1.5',
+                height: '1.5',
+                borderRadius: 'full',
+              }),
+              kindOf(t)[kind].fill,
+            ),
+          ),
+        ],
+        [],
+      ),
       kindOf(t)[kind].label,
     ],
   )
@@ -1794,10 +3115,31 @@ const waitChip = (item: WorkItem, h: HtmlBuilder<Message>): Html | null => {
   return h.span(
     [
       h.Class(
-        'inline-flex h-5 items-center gap-1 rounded-full px-1.5 text-[calc(10.5px*var(--type-scale))] font-medium text-warn shadow-[inset_0_0_0_1px_var(--hairline-soft)]',
+        css({
+          display: 'inline-flex',
+          height: '5',
+          alignItems: 'center',
+          gap: '1',
+          borderRadius: 'full',
+          paddingInline: '1.5',
+          fontSize: 'type.10-5',
+          fontWeight: 'medium',
+          color: 'warn',
+          boxShadow: 'line',
+        }),
       ),
     ],
-    [icon(h, Hourglass, 'size-3'), t.team.waitingOnYou(waitOf(t)[item.block.reason])],
+    [
+      icon(
+        h,
+        Hourglass,
+        css({
+          width: '3',
+          height: '3',
+        }),
+      ),
+      t.team.waitingOnYou(waitOf(t)[item.block.reason]),
+    ],
   )
 }
 
@@ -1826,7 +3168,16 @@ const featureReadout = (game: Game, id: FeatureId, h: HtmlBuilder<Message>): Htm
       )
     : null
   return h.span(
-    [h.Class('flex flex-wrap items-center gap-1')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '1',
+        }),
+      ),
+    ],
     [
       badge({ variant: 'secondary' }, [t.team.adopted(adopted)], h),
       ...(lift ? [badge({ variant: 'secondary' }, [lift], h)] : []),
@@ -1844,13 +3195,32 @@ const upkeepPill = (game: Game, h: HtmlBuilder<Message>): Html => {
     [
       h.Key('upkeep'),
       h.Class(
-        cn(
-          'flex items-center gap-2 rounded-[10px] px-2.5 py-2 text-[calc(11.5px*var(--type-scale))] text-muted-foreground shadow-[inset_0_0_0_1px_var(--hairline-soft)]',
+        cx(
+          css({
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2',
+            borderRadius: 'lg',
+            paddingInline: '2.5',
+            paddingBlock: '2',
+            fontSize: 'type.11-5',
+            color: 'mutedForeground',
+            boxShadow: 'line',
+          }),
         ),
       ),
     ],
     [
-      h.span([h.Class('flex-1')], [t.team.upkeep]),
+      h.span(
+        [
+          h.Class(
+            css({
+              flex: '1 1 0%',
+            }),
+          ),
+        ],
+        [t.team.upkeep],
+      ),
       h.span([h.Class(FIGURE)], [t.team.shareOfDevHours(Math.round(share * 100))]),
     ],
   )
@@ -1865,12 +3235,27 @@ const deadline = (game: Game, item: WorkItem, h: HtmlBuilder<Message>): Html => 
   return h.span(
     [
       h.Class(
-        cn(
+        cx(
           FIGURE,
-          'inline-flex h-5 items-center rounded-full px-1.5 text-[calc(10.5px*var(--type-scale))] font-medium whitespace-nowrap',
+          css({
+            display: 'inline-flex',
+            height: '5',
+            alignItems: 'center',
+            borderRadius: 'full',
+            paddingInline: '1.5',
+            fontSize: 'type.10-5',
+            fontWeight: 'medium',
+            whiteSpace: 'nowrap',
+          }),
           late > 0
-            ? 'bg-danger text-white'
-            : 'text-muted-foreground shadow-[inset_0_0_0_1px_var(--hairline-soft)]',
+            ? css({
+                backgroundColor: 'danger',
+                color: 'white',
+              })
+            : css({
+                color: 'mutedForeground',
+                boxShadow: 'line',
+              }),
         ),
       ),
     ],
@@ -1886,9 +3271,19 @@ const estimate = (text: string, h: HtmlBuilder<Message>): Html =>
   h.span(
     [
       h.Class(
-        cn(
+        cx(
           FIGURE,
-          'inline-flex h-5 items-center rounded-full px-1.5 text-[calc(10.5px*var(--type-scale))] whitespace-nowrap text-muted-foreground shadow-[inset_0_0_0_1px_var(--hairline-soft)]',
+          css({
+            display: 'inline-flex',
+            height: '5',
+            alignItems: 'center',
+            borderRadius: 'full',
+            paddingInline: '1.5',
+            fontSize: 'type.10-5',
+            whiteSpace: 'nowrap',
+            color: 'mutedForeground',
+            boxShadow: 'line',
+          }),
         ),
       ),
     ],
@@ -1903,14 +3298,41 @@ const mini = (id: string | null, h: HtmlBuilder<Message>): Html => {
       h.Key(id ?? 'founder'),
       h.Title(id ? nameOf(id) : t.team.you),
       h.Class(
-        cn(
-          'grid size-5 shrink-0 place-items-center rounded-full text-[calc(9.5px*var(--type-scale))] font-semibold text-white ring-2 ring-[var(--card)] not-first:-ml-1.5',
-          id === null && 'bg-primary-fill text-on-primary-fill',
+        cx(
+          css({
+            display: 'grid',
+            width: '5',
+            height: '5',
+            flexShrink: '0',
+            placeItems: 'center',
+            borderRadius: 'full',
+            fontSize: 'type.9-5',
+            fontWeight: 'semibold',
+            color: 'white',
+            boxShadow: 'cardRing',
+            '&:not(:first-child)': { marginLeft: '-0.375rem' },
+          }),
+          id === null &&
+            css({
+              layerStyle: 'primaryFill',
+              color: 'onPrimaryFill',
+            }),
         ),
       ),
       ...(id === null ? [] : [h.Style({ 'background-color': `oklch(0.64 0.14 ${hueOf(id)})` })]),
     ],
-    [id ? nameOf(id).slice(0, 1) : icon(h, Crown, 'size-2.5')],
+    [
+      id
+        ? nameOf(id).slice(0, 1)
+        : icon(
+            h,
+            Crown,
+            css({
+              width: '2.5',
+              height: '2.5',
+            }),
+          ),
+    ],
   )
 }
 
@@ -1923,7 +3345,12 @@ const assignees = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
   const shown = people.slice(0, 4)
   return h.span(
     [
-      h.Class('flex items-center'),
+      h.Class(
+        css({
+          display: 'flex',
+          alignItems: 'center',
+        }),
+      ),
       h.Title(t.team.labelColon(teamName(t, team)) + ` ${people.length}`),
     ],
     [
@@ -1932,7 +3359,14 @@ const assignees = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
         ? h.span(
             [
               h.Class(
-                cn(FIGURE, 'ml-1 text-[calc(10.5px*var(--type-scale))] text-muted-foreground'),
+                cx(
+                  FIGURE,
+                  css({
+                    marginLeft: '1',
+                    fontSize: 'type.10-5',
+                    color: 'mutedForeground',
+                  }),
+                ),
               ),
             ],
             [`+${people.length - shown.length}`],
@@ -1947,7 +3381,16 @@ const unassigned = (h: HtmlBuilder<Message>): Html => {
   return h.span(
     [
       h.Title(t.team.unassigned),
-      h.Class('size-5 rounded-full border-[1.5px] border-dashed border-foreground/25'),
+      h.Class(
+        css({
+          width: '5',
+          height: '5',
+          borderRadius: 'full',
+          borderWidth: '1.5px',
+          borderStyle: 'dashed',
+          borderColor: 'color-mix(in oklab, var(--foreground) 25%, transparent)',
+        }),
+      ),
     ],
     [],
   )
@@ -1969,21 +3412,62 @@ const card = (
     [
       h.Key(key),
       h.Class(
-        cn(
-          late && 'ring-[1.5px] ring-danger',
-          'group relative flex flex-col gap-2 rounded-[10px] bg-surface px-3 py-2.5 shadow-[0_0_0_1px_var(--hairline-soft),0_1px_2px_oklch(0_0_0/0.05)] transition-shadow duration-150 hover:shadow-[0_0_0_1px_var(--hairline),0_2px_6px_oklch(0_0_0/0.07)]',
-          status === 'live' && 'bg-transparent shadow-[0_0_0_1px_var(--hairline-soft)]',
+        cx(
+          late &&
+            css({
+              boxShadow: 'dangerRing',
+            }),
+          cx(
+            css({
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2',
+              borderRadius: 'lg',
+              backgroundColor: 'card',
+              paddingInline: '3',
+              paddingBlock: '2.5',
+              boxShadow: 'hoverCard',
+              transitionProperty: 'box-shadow',
+              transitionDuration: 'fast',
+              transitionTimingFunction: 'out',
+              _hover: {
+                boxShadow: 'hoverCardStrong',
+              },
+            }),
+            'group',
+          ),
+          status === 'live' &&
+            css({
+              backgroundColor: 'transparent',
+              boxShadow: 'edge',
+            }),
         ),
       ),
     ],
     [
       h.div(
-        [h.Class('flex items-center gap-2')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2',
+            }),
+          ),
+        ],
         [
           h.span(
             [
               h.Class(
-                cn(FIGURE, 'flex-1 text-[calc(11px*var(--type-scale))] text-muted-foreground'),
+                cx(
+                  FIGURE,
+                  css({
+                    flex: '1 1 0%',
+                    fontSize: 'type.11',
+                    color: 'mutedForeground',
+                  }),
+                ),
               ),
             ],
             [code],
@@ -1992,15 +3476,40 @@ const card = (
         ],
       ),
       h.div(
-        [h.Class('flex items-start gap-2')],
         [
-          h.span([h.Class('mt-[2px]')], [statusMark(status, share, h)]),
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '2',
+            }),
+          ),
+        ],
+        [
           h.span(
             [
               h.Class(
-                cn(
-                  'line-clamp-2 text-[calc(13px*var(--type-scale))] leading-[1.35] font-medium',
-                  status === 'live' && 'text-muted-foreground',
+                css({
+                  marginTop: '2px',
+                }),
+              ),
+            ],
+            [statusMark(status, share, h)],
+          ),
+          h.span(
+            [
+              h.Class(
+                cx(
+                  css({
+                    lineClamp: 2,
+                    fontSize: 'type.13',
+                    lineHeight: 'dense',
+                    fontWeight: 'medium',
+                  }),
+                  status === 'live' &&
+                    css({
+                      color: 'mutedForeground',
+                    }),
                 ),
               ),
             ],
@@ -2009,13 +3518,46 @@ const card = (
         ],
       ),
       chips.length > 0
-        ? h.div([h.Class('flex min-h-5 flex-wrap items-center gap-1')], chips)
+        ? h.div(
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  minHeight: '5',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  gap: '1',
+                }),
+              ),
+            ],
+            chips,
+          )
         : h.empty,
       actions.length > 0
         ? h.div(
             [
               h.Class(
-                'absolute top-1.5 right-1.5 flex items-center rounded-lg bg-surface p-0.5 opacity-0 shadow-[0_0_0_1px_var(--hairline-soft),0_2px_6px_oklch(0_0_0/0.08)] transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
+                css({
+                  position: 'absolute',
+                  top: '1.5',
+                  right: '1.5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderRadius: 'lg',
+                  backgroundColor: 'card',
+                  padding: '0.5',
+                  opacity: 0,
+                  boxShadow: 'hoverCardElevated',
+                  transitionProperty: 'opacity',
+                  transitionDuration: 'fast',
+                  transitionTimingFunction: 'out',
+                  '.group:hover &': {
+                    opacity: 1,
+                  },
+                  '.group:focus-within &': {
+                    opacity: 1,
+                  },
+                }),
               ),
             ],
             actions,
@@ -2109,7 +3651,17 @@ const idleCard = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
     [
       h.Key(`idle-${team.id}`),
       h.Class(
-        'flex items-center gap-2 rounded-[10px] border-[1.5px] border-dashed border-foreground/15 px-3 py-2.5',
+        css({
+          display: 'flex',
+          alignItems: 'center',
+          gap: '2',
+          borderRadius: 'lg',
+          borderWidth: '1.5px',
+          borderStyle: 'dashed',
+          borderColor: 'color-mix(in oklab, var(--foreground) 15%, transparent)',
+          paddingInline: '3',
+          paddingBlock: '2.5',
+        }),
       ),
     ],
     [
@@ -2117,7 +3669,13 @@ const idleCard = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
       h.span(
         [
           h.Class(
-            'min-w-0 flex-1 text-[calc(12.5px*var(--type-scale))] leading-snug text-muted-foreground',
+            css({
+              minWidth: '0',
+              flex: '1 1 0%',
+              fontSize: 'type.12-5',
+              lineHeight: 'snug',
+              color: 'mutedForeground',
+            }),
           ),
         ],
         [
@@ -2144,16 +3702,59 @@ const column = (
   h.div(
     [
       h.Key(key),
-      h.Class('flex min-h-[260px] min-w-0 flex-col gap-1.5 rounded-xl bg-foreground/[0.028] p-1.5'),
+      h.Class(
+        css({
+          display: 'flex',
+          minHeight: '260px',
+          minWidth: '0',
+          flexDirection: 'column',
+          gap: '1.5',
+          borderRadius: 'xl',
+          backgroundColor:
+            'color-mix(in oklab, var(--foreground) 2.8000000000000003%, transparent)',
+          padding: '1.5',
+        }),
+      ),
     ],
     [
       h.div(
-        [h.Class('flex items-center gap-2 px-1.5 pt-1 pb-1')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2',
+              paddingInline: '1.5',
+              paddingTop: '1',
+              paddingBottom: '1',
+            }),
+          ),
+        ],
         [
           statusMark(status, status === 'building' ? 0.5 : 1, h),
-          h.span([h.Class('text-[calc(12.5px*var(--type-scale))] font-medium')], [title]),
           h.span(
-            [h.Class(cn(FIGURE, 'text-[calc(12px*var(--type-scale))] text-muted-foreground'))],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.12-5',
+                  fontWeight: 'medium',
+                }),
+              ),
+            ],
+            [title],
+          ),
+          h.span(
+            [
+              h.Class(
+                cx(
+                  FIGURE,
+                  css({
+                    fontSize: 'type.12',
+                    color: 'mutedForeground',
+                  }),
+                ),
+              ),
+            ],
             [String(count)],
           ),
         ],
@@ -2174,11 +3775,25 @@ const deployPill = (game: Game, h: HtmlBuilder<Message>): Html => {
     [
       h.Key('deploy'),
       h.Class(
-        cn(
-          'flex items-center gap-2.5 rounded-[10px] px-2.5 py-2',
+        cx(
+          css({
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2.5',
+            borderRadius: 'lg',
+            paddingInline: '2.5',
+            paddingBlock: '2',
+          }),
           built > 0
-            ? 'bg-primary-fill text-on-primary-fill shadow-primary'
-            : 'text-muted-foreground shadow-[inset_0_0_0_1px_var(--hairline-soft)]',
+            ? css({
+                layerStyle: 'primaryFill',
+                color: 'onPrimaryFill',
+                boxShadow: 'primary',
+              })
+            : css({
+                color: 'mutedForeground',
+                boxShadow: 'line',
+              }),
         ),
       ),
     ],
@@ -2186,31 +3801,89 @@ const deployPill = (game: Game, h: HtmlBuilder<Message>): Html => {
       h.span(
         [
           h.Class(
-            cn(
-              'relative grid size-8 shrink-0 place-items-center rounded-full',
+            cx(
+              css({
+                position: 'relative',
+                display: 'grid',
+                width: '8',
+                height: '8',
+                flexShrink: '0',
+                placeItems: 'center',
+                borderRadius: 'full',
+              }),
               built > 0 && !stalled
-                ? 'bg-ok text-white'
+                ? css({
+                    backgroundColor: 'ok',
+                    color: 'white',
+                  })
                 : stalled
-                  ? 'bg-danger text-white'
-                  : 'bg-well',
+                  ? css({
+                      backgroundColor: 'danger',
+                      color: 'white',
+                    })
+                  : css({
+                      backgroundColor: 'well',
+                    }),
             ),
           ),
         ],
         [
-          icon(h, Rocket, 'size-3.5'),
+          icon(
+            h,
+            Rocket,
+            css({
+              width: '3.5',
+              height: '3.5',
+            }),
+          ),
           built > 0 && !stalled
             ? h.span(
-                [h.Class('absolute -inset-[3px]')],
-                [ring(1 - left / deployEvery(game), 'size-[38px] text-ok', h)],
+                [
+                  h.Class(
+                    css({
+                      position: 'absolute',
+                      inset: '-3px',
+                    }),
+                  ),
+                ],
+                [
+                  ring(
+                    1 - left / deployEvery(game),
+                    css({
+                      width: '38px',
+                      height: '38px',
+                      color: 'ok',
+                    }),
+                    h,
+                  ),
+                ],
               )
             : h.empty,
         ],
       ),
       h.div(
-        [h.Class('flex min-w-0 flex-col')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              minWidth: '0',
+              flexDirection: 'column',
+            }),
+          ),
+        ],
         [
           h.span(
-            [h.Class('truncate text-[calc(12.5px*var(--type-scale))] font-medium')],
+            [
+              h.Class(
+                css({
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: 'type.12-5',
+                  fontWeight: 'medium',
+                }),
+              ),
+            ],
             [
               built === 0
                 ? t.team.nothingToShip
@@ -2223,10 +3896,18 @@ const deployPill = (game: Game, h: HtmlBuilder<Message>): Html => {
             ? h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
-                      'text-[calc(10.5px*var(--type-scale))]',
-                      chance >= 0.15 ? 'text-warn' : 'opacity-60',
+                      css({
+                        fontSize: 'type.10-5',
+                      }),
+                      chance >= 0.15
+                        ? css({
+                            color: 'warn',
+                          })
+                        : css({
+                            opacity: 0.6,
+                          }),
                     ),
                   ),
                   h.Title(t.team.chanceADeployShipsABug),
@@ -2251,7 +3932,18 @@ const board = (game: Game, h: HtmlBuilder<Message>): Html => {
   const builders = game.teams.filter((team) => team.kind === 'product')
   const live = [...liveFeatures(game)].reverse()
   return h.div(
-    [h.Class('grid grid-cols-4 gap-2 narrow:grid-cols-1')],
+    [
+      h.Class(
+        css({
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+          gap: '2',
+          _narrow: {
+            gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+          },
+        }),
+      ),
+    ],
     [
       column(
         'queued',
@@ -2323,7 +4015,7 @@ const board = (game: Game, h: HtmlBuilder<Message>): Html => {
                     Message.TeamChanged({ message: TeamMessage.FeatureRemoved({ id }) }),
                     removeRefusal(game, id) === null,
                     h,
-                    'text-danger',
+                    css({ color: 'danger' }),
                   ),
                 ],
                 false,
@@ -2335,9 +4027,14 @@ const board = (game: Game, h: HtmlBuilder<Message>): Html => {
                 [
                   h.Key('more'),
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
-                      'px-2 py-1 text-[calc(11px*var(--type-scale))] text-muted-foreground',
+                      css({
+                        paddingInline: '2',
+                        paddingBlock: '1',
+                        fontSize: 'type.11',
+                        color: 'mutedForeground',
+                      }),
                     ),
                   ),
                 ],
@@ -2362,26 +4059,71 @@ const autopilot = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.AriaChecked(game.autopilot),
       h.OnClick(Message.AutopilotToggled()),
       h.Class(
-        cn(
-          'press enter-pop inline-flex h-7 items-center gap-1.5 rounded-full pr-1 pl-2.5 text-[calc(11.5px*var(--type-scale))] font-medium',
+        cx(
+          cx(
+            css({
+              display: 'inline-flex',
+              height: '7',
+              alignItems: 'center',
+              gap: '1.5',
+              borderRadius: 'full',
+              paddingRight: '1',
+              paddingLeft: '2.5',
+              fontSize: 'type.11-5',
+              fontWeight: 'medium',
+            }),
+            'press',
+            'enter-pop',
+          ),
           glowing(model, 'autopilot') && 'cue-glow',
-          !shown(model, 'autopilot') && 'hidden',
+          !shown(model, 'autopilot') &&
+            css({
+              display: 'none',
+            }),
           game.autopilot
-            ? 'bg-primary-fill text-on-primary-fill shadow-primary'
-            : 'text-muted-foreground shadow-[inset_0_0_0_1px_var(--hairline-soft)] hover:text-foreground',
+            ? css({
+                layerStyle: 'primaryFill',
+                color: 'onPrimaryFill',
+                boxShadow: 'primary',
+              })
+            : css({
+                color: 'mutedForeground',
+                boxShadow: 'line',
+                _hover: {
+                  color: 'foreground',
+                },
+              }),
         ),
       ),
     ],
     [
-      icon(h, Bot, 'size-3.5'),
+      icon(
+        h,
+        Bot,
+        css({
+          width: '3.5',
+          height: '3.5',
+        }),
+      ),
       t.team.autopilot,
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
-              'rounded-full px-1.5 py-0.5 text-[calc(10px*var(--type-scale))]',
-              game.autopilot ? 'bg-white/20' : 'bg-well',
+              css({
+                borderRadius: 'full',
+                paddingInline: '1.5',
+                paddingBlock: '0.5',
+                fontSize: 'type.10',
+              }),
+              game.autopilot
+                ? css({
+                    backgroundColor: 'color-mix(in oklab, white 20%, transparent)',
+                  })
+                : css({
+                    backgroundColor: 'well',
+                  }),
             ),
           ),
         ],
@@ -2413,11 +4155,33 @@ const policies = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
           h.AriaChecked(game.policies[policy]),
           h.OnClick(Message.PolicyToggled({ policy, on: !game.policies[policy] })),
           h.Class(
-            cn(
-              'press inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[calc(11.5px*var(--type-scale))] font-medium',
+            cx(
+              cx(
+                css({
+                  display: 'inline-flex',
+                  height: '7',
+                  alignItems: 'center',
+                  gap: '1.5',
+                  borderRadius: 'full',
+                  paddingInline: '2.5',
+                  fontSize: 'type.11-5',
+                  fontWeight: 'medium',
+                }),
+                'press',
+              ),
               game.policies[policy]
-                ? 'bg-primary-fill text-on-primary-fill shadow-primary'
-                : 'text-muted-foreground shadow-[inset_0_0_0_1px_var(--hairline-soft)] hover:text-foreground',
+                ? css({
+                    layerStyle: 'primaryFill',
+                    color: 'onPrimaryFill',
+                    boxShadow: 'primary',
+                  })
+                : css({
+                    color: 'mutedForeground',
+                    boxShadow: 'line',
+                    _hover: {
+                      color: 'foreground',
+                    },
+                  }),
             ),
           ),
         ],
@@ -2444,24 +4208,65 @@ const chaos = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.Title(target ? t.team.chaosNextHits(target) : t.team.chaosExperiments),
       h.OnClick(Message.ChaosChosen({ chaos: !game.chaos })),
       h.Class(
-        cn(
-          'press inline-flex h-7 items-center gap-1.5 rounded-full pr-1 pl-2.5 text-[calc(11.5px*var(--type-scale))] font-medium',
+        cx(
+          cx(
+            css({
+              display: 'inline-flex',
+              height: '7',
+              alignItems: 'center',
+              gap: '1.5',
+              borderRadius: 'full',
+              paddingRight: '1',
+              paddingLeft: '2.5',
+              fontSize: 'type.11-5',
+              fontWeight: 'medium',
+            }),
+            'press',
+          ),
           game.chaos
-            ? 'bg-primary-fill text-on-primary-fill shadow-primary'
-            : 'text-muted-foreground shadow-[inset_0_0_0_1px_var(--hairline-soft)] hover:text-foreground',
+            ? css({
+                layerStyle: 'primaryFill',
+                color: 'onPrimaryFill',
+                boxShadow: 'primary',
+              })
+            : css({
+                color: 'mutedForeground',
+                boxShadow: 'line',
+                _hover: {
+                  color: 'foreground',
+                },
+              }),
         ),
       ),
     ],
     [
-      icon(h, FlaskConical, 'size-3.5'),
+      icon(
+        h,
+        FlaskConical,
+        css({
+          width: '3.5',
+          height: '3.5',
+        }),
+      ),
       t.team.chaos,
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
-              'rounded-full px-1.5 py-0.5 text-[calc(10px*var(--type-scale))]',
-              game.chaos ? 'bg-white/20' : 'bg-well',
+              css({
+                borderRadius: 'full',
+                paddingInline: '1.5',
+                paddingBlock: '0.5',
+                fontSize: 'type.10',
+              }),
+              game.chaos
+                ? css({
+                    backgroundColor: 'color-mix(in oklab, white 20%, transparent)',
+                  })
+                : css({
+                    backgroundColor: 'well',
+                  }),
             ),
           ),
         ],
@@ -2476,9 +4281,18 @@ const costPill = (cost: number, h: HtmlBuilder<Message>): Html => {
   return h.span(
     [
       h.Class(
-        cn(
+        cx(
           FIGURE,
-          'shrink-0 rounded-full bg-primary-fill px-2 py-0.5 text-[calc(10.5px*var(--type-scale))] text-on-primary-fill shadow-primary',
+          css({
+            flexShrink: '0',
+            borderRadius: 'full',
+            layerStyle: 'primaryFill',
+            paddingInline: '2',
+            paddingBlock: '0.5',
+            fontSize: 'type.10-5',
+            color: 'onPrimaryFill',
+            boxShadow: 'primary',
+          }),
         ),
       ),
     ],
@@ -2503,33 +4317,85 @@ const tile = (
     [
       h.Key(key),
       h.Class(
-        cn(
-          'flex min-w-0 flex-col gap-1.5 rounded-xl px-3 pt-2.5 pb-2.5',
+        cx(
+          css({
+            display: 'flex',
+            minWidth: '0',
+            flexDirection: 'column',
+            gap: '1.5',
+            borderRadius: 'xl',
+            paddingInline: '3',
+            paddingTop: '2.5',
+            paddingBottom: '2.5',
+          }),
           state === 'locked'
-            ? 'bg-foreground/[0.025] text-muted-foreground shadow-[inset_0_0_0_1px_var(--hairline-soft)]'
+            ? css({
+                backgroundColor: 'color-mix(in oklab, var(--foreground) 2.5%, transparent)',
+                color: 'mutedForeground',
+                boxShadow: 'line',
+              })
             : state === 'done'
-              ? 'bg-[var(--ok-soft)] shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--ok)_18%,transparent)]'
-              : 'bg-raised shadow-raised',
+              ? css({
+                  backgroundColor: 'okSoft',
+                  boxShadow: 'okLineFaint',
+                })
+              : css({
+                  layerStyle: 'raised',
+                  boxShadow: 'raised',
+                }),
         ),
       ),
     ],
     [
       h.div(
-        [h.Class('flex items-start gap-2')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '2',
+            }),
+          ),
+        ],
         [
           h.div(
-            [h.Class('flex min-w-0 flex-1 flex-col')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  minWidth: '0',
+                  flex: '1 1 0%',
+                  flexDirection: 'column',
+                }),
+              ),
+            ],
             [
               h.span(
                 [
                   h.Class(
-                    cn(FIGURE, 'text-[calc(10.5px*var(--type-scale))] text-muted-foreground'),
+                    cx(
+                      FIGURE,
+                      css({
+                        fontSize: 'type.10-5',
+                        color: 'mutedForeground',
+                      }),
+                    ),
                   ),
                 ],
                 [code],
               ),
               h.span(
-                [h.Class('truncate text-[calc(13px*var(--type-scale))] font-semibold')],
+                [
+                  h.Class(
+                    css({
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      fontSize: 'type.13',
+                      fontWeight: 'semibold',
+                    }),
+                  ),
+                ],
                 [name],
               ),
             ],
@@ -2540,15 +4406,46 @@ const tile = (
       h.span(
         [
           h.Class(
-            'line-clamp-2 min-h-[2lh] text-[calc(11.5px*var(--type-scale))] leading-snug text-muted-foreground',
+            css({
+              lineClamp: 2,
+              minHeight: '2lh',
+              fontSize: 'type.11-5',
+              lineHeight: 'snug',
+              color: 'mutedForeground',
+            }),
           ),
         ],
         [effect],
       ),
       extra
-        ? h.span([h.Class('truncate text-[calc(11.5px*var(--type-scale))] text-warn')], [extra])
+        ? h.span(
+            [
+              h.Class(
+                css({
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: 'type.11-5',
+                  color: 'warn',
+                }),
+              ),
+            ],
+            [extra],
+          )
         : h.empty,
-      h.div([h.Class('mt-auto flex justify-end pt-0.5')], [status]),
+      h.div(
+        [
+          h.Class(
+            css({
+              marginTop: 'auto',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              paddingTop: '0.5',
+            }),
+          ),
+        ],
+        [status],
+      ),
     ],
   )
 
@@ -2567,10 +4464,33 @@ const queueButton = (
         onClick: Message.ResearchShown({ id: needs }),
         variant: 'outline',
         size: 'sm',
-        className: 'max-w-full',
+        className: css({
+          maxWidth: '100%',
+        }),
         attributes: [h.Title(refusal)],
       },
-      [icon(h, Lock, 'size-3'), h.span([h.Class('truncate')], [t.catalog.research[needs].name])],
+      [
+        icon(
+          h,
+          Lock,
+          css({
+            width: '3',
+            height: '3',
+          }),
+        ),
+        h.span(
+          [
+            h.Class(
+              css({
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }),
+            ),
+          ],
+          [t.catalog.research[needs].name],
+        ),
+      ],
       h,
     )
   return button(
@@ -2581,7 +4501,29 @@ const queueButton = (
       size: 'sm',
       attributes: [h.Title(refusal ?? t.team.addToTheBacklog)],
     },
-    refusal ? [icon(h, Lock, 'size-3'), t.team.locked] : [icon(h, Plus, 'size-3.5'), label],
+    refusal
+      ? [
+          icon(
+            h,
+            Lock,
+            css({
+              width: '3',
+              height: '3',
+            }),
+          ),
+          t.team.locked,
+        ]
+      : [
+          icon(
+            h,
+            Plus,
+            css({
+              width: '3.5',
+              height: '3.5',
+            }),
+          ),
+          label,
+        ],
     h,
   )
 }
@@ -2590,8 +4532,20 @@ const queueButton = (
 const queuedBadge = (building: ReadonlySet<string>, ref: string, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return building.has(ref)
-    ? badge({ variant: 'outline' }, [statusMark('building', 0.5, h), t.team.inProgress], h)
-    : badge({ variant: 'outline' }, [statusMark('queued', 0, h), t.team.upNext], h)
+    ? badge(
+        {
+          variant: 'outline',
+        },
+        [statusMark('building', 0.5, h), t.team.inProgress],
+        h,
+      )
+    : badge(
+        {
+          variant: 'outline',
+        },
+        [statusMark('queued', 0, h), t.team.upNext],
+        h,
+      )
 }
 
 const featureTile = (
@@ -2625,12 +4579,43 @@ const featureTile = (
     state,
     live
       ? badge(
-          { variant: 'secondary', className: 'text-ok' },
-          [icon(h, Check, 'size-3'), t.team.live],
+          {
+            variant: 'secondary',
+            className: css({
+              color: 'ok',
+            }),
+          },
+          [
+            icon(
+              h,
+              Check,
+              css({
+                width: '3',
+                height: '3',
+              }),
+            ),
+            t.team.live,
+          ],
           h,
         )
       : built
-        ? badge({ variant: 'outline' }, [icon(h, Rocket, 'size-3'), t.team.shipping], h)
+        ? badge(
+            {
+              variant: 'outline',
+            },
+            [
+              icon(
+                h,
+                Rocket,
+                css({
+                  width: '3',
+                  height: '3',
+                }),
+              ),
+              t.team.shipping,
+            ],
+            h,
+          )
         : queued
           ? queuedBadge(building, id, h)
           : queueButton(
@@ -2651,11 +4636,26 @@ const runbookPicker = (game: Game, h: HtmlBuilder<Message>): Html => {
   const kinds = runbookKinds(game)
   if (kinds.length === 0)
     return h.span(
-      [h.Class('text-[calc(11.5px*var(--type-scale))] text-muted-foreground')],
+      [
+        h.Class(
+          css({
+            fontSize: 'type.11-5',
+            color: 'mutedForeground',
+          }),
+        ),
+      ],
       [t.team.handleIncidentFirst],
     )
   return h.div(
-    [h.Class('flex flex-wrap gap-1')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '1',
+        }),
+      ),
+    ],
     kinds.map((kind) => {
       const refusal = runbookRefusal(game, kind)
       const queued = game.backlog.some(
@@ -2673,12 +4673,53 @@ const runbookPicker = (game: Game, h: HtmlBuilder<Message>): Html => {
               : t.team.writeRunbookFor(t.catalog.incidents[kind].name),
           ),
           h.Class(
-            'flex h-6 items-center gap-1 rounded-md border border-hairline px-1.5 text-[calc(11px*var(--type-scale))] font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50',
+            css({
+              display: 'flex',
+              height: '6',
+              alignItems: 'center',
+              gap: '1',
+              borderRadius: 'md',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'hairline',
+              paddingInline: '1.5',
+              fontSize: 'type.11',
+              fontWeight: 'medium',
+              color: 'mutedForeground',
+              transitionProperty:
+                'color, background-color, border-color, text-decoration-color, fill, stroke',
+              transitionDuration: 'fast',
+              transitionTimingFunction: 'out',
+              _hover: {
+                color: 'foreground',
+              },
+              _disabled: {
+                opacity: 0.5,
+              },
+            }),
           ),
         ],
         [
-          icon(h, queued ? Hourglass : Plus, 'size-3'),
-          h.span([h.Class('truncate')], [t.catalog.incidents[kind].name]),
+          icon(
+            h,
+            queued ? Hourglass : Plus,
+            css({
+              width: '3',
+              height: '3',
+            }),
+          ),
+          h.span(
+            [
+              h.Class(
+                css({
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }),
+              ),
+            ],
+            [t.catalog.incidents[kind].name],
+          ),
         ],
       )
     }),
@@ -2712,8 +4753,23 @@ const taskTile = (
       ? runbookPicker(game, h)
       : done
         ? badge(
-            { variant: 'secondary', className: 'text-ok' },
-            [icon(h, Check, 'size-3'), t.team.done],
+            {
+              variant: 'secondary',
+              className: css({
+                color: 'ok',
+              }),
+            },
+            [
+              icon(
+                h,
+                Check,
+                css({
+                  width: '3',
+                  height: '3',
+                }),
+              ),
+              t.team.done,
+            ],
             h,
           )
         : queued
@@ -2729,7 +4785,11 @@ const taskTile = (
   )
 }
 
-const TILES = 'grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2'
+const TILES = css({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+  gap: '2',
+})
 
 const work = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
@@ -2745,13 +4805,39 @@ const work = (model: Model, h: HtmlBuilder<Message>): Html => {
   const review = has(game, 'code-review')
   const engineering = tasks.length > 0 && shown(model, 'engineering')
   return h.div(
-    [h.Class(`flex min-h-0 flex-col gap-3 p-4 ${SCROLL} compact:overflow-visible`)],
+    [
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            minHeight: '0',
+            flexDirection: 'column',
+            gap: '3',
+            padding: '4',
+          }),
+          SCROLL,
+          css({
+            _compact: {
+              overflow: 'visible',
+            },
+          }),
+        ),
+      ),
+    ],
     [
       migrationCard(game, h),
       heading(
         t.team.board,
         h.div(
-          [h.Class('flex items-center gap-2')],
+          [
+            h.Class(
+              css({
+                display: 'flex',
+                alignItems: 'center',
+                gap: '2',
+              }),
+            ),
+          ],
           [
             autopilot(model, h),
             ...policies(model, h),
@@ -2764,7 +4850,17 @@ const work = (model: Model, h: HtmlBuilder<Message>): Html => {
       heading(
         t.team.features,
         h.span(
-          [h.Class(cn(FIGURE, 'text-[calc(11px*var(--type-scale))] text-muted-foreground'))],
+          [
+            h.Class(
+              cx(
+                FIGURE,
+                css({
+                  fontSize: 'type.11',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ),
+          ],
           [t.team.live2(live, features.length)],
         ),
         h,
@@ -2778,7 +4874,16 @@ const work = (model: Model, h: HtmlBuilder<Message>): Html => {
         ? h.div(
             [
               h.Class(
-                cn(TILES, 'enter-pop rounded-xl', glowing(model, 'engineering') && 'cue-glow'),
+                cx(
+                  TILES,
+                  cx(
+                    css({
+                      borderRadius: 'xl',
+                    }),
+                    'enter-pop',
+                  ),
+                  glowing(model, 'engineering') && 'cue-glow',
+                ),
               ),
             ],
             tasks.map((id) => taskTile(game, id, building, h)),
@@ -2801,9 +4906,16 @@ export const teamPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
         ? h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
-                  'text-[calc(12px*var(--type-scale))] whitespace-nowrap text-muted-foreground compact:hidden',
+                  css({
+                    fontSize: 'type.12',
+                    whiteSpace: 'nowrap',
+                    color: 'mutedForeground',
+                    _compact: {
+                      display: 'none',
+                    },
+                  }),
                 ),
               ),
             ],
@@ -2813,16 +4925,34 @@ export const teamPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
-              'flex items-baseline gap-1.5 rounded-full bg-well px-3 py-1 text-[calc(15px*var(--type-scale))] whitespace-nowrap shadow-well',
+              css({
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: '1.5',
+                borderRadius: 'full',
+                backgroundColor: 'well',
+                paddingInline: '3',
+                paddingBlock: '1',
+                fontSize: 'type.15',
+                whiteSpace: 'nowrap',
+                boxShadow: 'well',
+              }),
             ),
           ),
         ],
         [
           dh(t, game.devHours),
           h.span(
-            [h.Class('text-[calc(11px*var(--type-scale))] text-ok')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.11',
+                  color: 'ok',
+                }),
+              ),
+            ],
             [t.team.min(perMinute(rate))],
           ),
         ],
@@ -2832,19 +4962,48 @@ export const teamPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.div(
         [
           h.Class(
-            `grid min-h-0 flex-1 grid-cols-[360px_minmax(0,1fr)] border-t border-hairline narrow:grid-cols-1 compact:block compact:overflow-y-auto compact:pb-[env(safe-area-inset-bottom)]`,
+            css({
+              display: 'grid',
+              minHeight: '0',
+              flex: '1 1 0%',
+              gridTemplateColumns: '360px minmax(0, 1fr)',
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderColor: 'hairline',
+              _narrow: { gridTemplateColumns: 'minmax(0, 1fr)' },
+              _compact: {
+                display: 'block',
+                overflowY: 'auto',
+                paddingBottom: 'env(safe-area-inset-bottom)',
+              },
+            }),
           ),
         ],
         [
           h.div(
-            [h.Class('flex min-h-0 flex-col border-r border-hairline bg-nested narrow:border-r-0')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  minHeight: '0',
+                  flexDirection: 'column',
+                  borderRightWidth: '1px',
+                  borderRightStyle: 'solid',
+                  borderColor: 'hairline',
+                  backgroundColor: 'nested',
+                  _narrow: {
+                    borderRightWidth: '0px',
+                  },
+                }),
+              ),
+            ],
             [floor(model, h)],
           ),
           work(model, h),
         ],
       ),
     ],
-    'max-w-[1360px] h-[min(820px,100%)]',
+    css({ maxWidth: '1360px', height: 'min(820px, 100%)' }),
     h,
   )
 }

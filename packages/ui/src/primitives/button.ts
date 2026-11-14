@@ -1,8 +1,9 @@
+import { css, cva, cx } from '@quorum/styled-system/css'
 import { Button as FoldkitButton } from '@foldkit/ui'
 import type { Attribute, Html, HtmlBuilder } from 'foldkit/html'
 import { X } from 'lucide'
+import type { SystemStyleObject } from '@quorum/styled-system/types'
 
-import { cn } from 'cn'
 import { icon } from './icon.ts'
 
 /** Button variant keys. Sync with `buttonVariants` is compiler-enforced:
@@ -17,21 +18,134 @@ export const buttonVariantKeys = [
   'link',
 ] as const
 
-export const buttonVariants: Record<ButtonVariant, string> = {
-  default:
-    'bg-primary-fill text-on-primary-fill shadow-primary hover:brightness-[1.06] active:brightness-95',
-  destructive:
-    'bg-destructive/10 shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--destructive)_22%,transparent)] hover:bg-destructive/15 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 text-destructive',
-  outline:
-    'bg-raised shadow-raised text-foreground hover:brightness-[0.985] dark:hover:brightness-110 aria-expanded:brightness-95',
-  secondary:
-    'bg-secondary text-secondary-foreground shadow-[inset_0_0_0_1px_var(--hairline-soft)] hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground',
-  ghost:
-    'hover:bg-muted hover:text-foreground dark:hover:bg-muted/50 aria-expanded:bg-muted aria-expanded:text-foreground',
-  link: 'text-primary underline-offset-4 hover:underline',
+const focusRing = '0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)'
+const invalidRing = '0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)'
+const darkInvalidRing = '0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)'
+const destructiveEdge = 'inset 0 0 0 1px color-mix(in oklch, var(--destructive) 22%, transparent)'
+
+const buttonBaseStyle: SystemStyleObject = {
+  borderRadius: 'lg',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  borderColor: 'transparent',
+  backgroundClip: 'padding-box',
+  // Grow with the 150% text setting while keeping a fixed line box at 100%.
+  fontSize: 'type.14',
+  // A unitless factor, so a nested 10.5px Kbd recomputes its own line box.
+  lineHeight: 'fine',
+  fontWeight: 'medium',
+  display: 'inline-flex',
+  flexShrink: 0,
+  alignItems: 'center',
+  justifyContent: 'center',
+  whiteSpace: 'nowrap',
+  outlineStyle: 'none',
+  userSelect: 'none',
+  '& svg': { pointerEvents: 'none', flexShrink: 0 },
+  '& svg:not([data-svg-icon])': { width: '4', height: '4' },
+  _focusVisible: { borderColor: 'ring' },
+  '[data-text="150"] &': { lineHeight: 'body' },
+  '&[aria-disabled="true"]': { pointerEvents: 'none', opacity: 0.5 },
+  '&[data-disabled]': { pointerEvents: 'none', opacity: 0.5 },
+  '&[aria-invalid="true"]': { borderColor: 'destructive' },
+  _dark: {
+    '&[aria-invalid="true"]': {
+      borderColor: 'color-mix(in oklab, var(--destructive) 50%, transparent)',
+    },
+  },
+  _disabled: { pointerEvents: 'none', opacity: 0.5 },
 }
 
-export type ButtonVariant = (typeof buttonVariantKeys)[number]
+const buttonVariantStyles: Record<ButtonVariant, SystemStyleObject> = {
+  default: {
+    layerStyle: 'primaryFill',
+    color: 'onPrimaryFill',
+    boxShadow: 'primary',
+    _hover: { filter: 'brightness(1.06)' },
+    _active: { filter: 'brightness(0.95)' },
+    _focusVisible: { boxShadow: `var(--elev-primary), ${focusRing}` },
+    '&[aria-invalid="true"]': { boxShadow: `var(--elev-primary), ${invalidRing}` },
+    _dark: {
+      '&[aria-invalid="true"]': {
+        boxShadow: `var(--elev-primary), ${darkInvalidRing}`,
+      },
+    },
+  },
+  destructive: {
+    backgroundColor: 'color-mix(in oklab, var(--destructive) 10%, transparent)',
+    color: 'destructive',
+    boxShadow: destructiveEdge,
+    _hover: {
+      backgroundColor: 'color-mix(in oklab, var(--destructive) 15%, transparent)',
+    },
+    _focusVisible: {
+      boxShadow: `${destructiveEdge}, 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)`,
+    },
+    _dark: {
+      _focusVisible: {
+        boxShadow: `${destructiveEdge}, 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)`,
+      },
+      '&[aria-invalid="true"]': { boxShadow: `${destructiveEdge}, ${darkInvalidRing}` },
+    },
+    '&[aria-invalid="true"]': { boxShadow: `${destructiveEdge}, ${invalidRing}` },
+  },
+  outline: {
+    layerStyle: 'raised',
+    boxShadow: 'raised',
+    color: 'foreground',
+    _hover: { filter: 'brightness(0.985)' },
+    _dark: {
+      _hover: { filter: 'brightness(1.1)' },
+      '&[aria-invalid="true"]': { boxShadow: `var(--elev-raised), ${darkInvalidRing}` },
+    },
+    _expanded: { filter: 'brightness(0.95)' },
+    _focusVisible: { boxShadow: `var(--elev-raised), ${focusRing}` },
+    '&[aria-invalid="true"]': { boxShadow: `var(--elev-raised), ${invalidRing}` },
+  },
+  secondary: {
+    backgroundColor: 'secondary',
+    color: 'secondaryForeground',
+    boxShadow: 'line',
+    _hover: {
+      backgroundColor: 'color-mix(in oklab, var(--secondary), var(--foreground) 5%)',
+    },
+    _expanded: {
+      backgroundColor: 'secondary',
+      color: 'secondaryForeground',
+    },
+    _focusVisible: {
+      boxShadow: `inset 0 0 0 1px var(--hairline-soft), ${focusRing}`,
+    },
+    '&[aria-invalid="true"]': {
+      boxShadow: `inset 0 0 0 1px var(--hairline-soft), ${invalidRing}`,
+    },
+    _dark: {
+      '&[aria-invalid="true"]': {
+        boxShadow: `inset 0 0 0 1px var(--hairline-soft), ${darkInvalidRing}`,
+      },
+    },
+  },
+  ghost: {
+    _hover: { backgroundColor: 'muted', color: 'foreground' },
+    _dark: {
+      _hover: {
+        backgroundColor: 'color-mix(in oklab, var(--muted) 50%, transparent)',
+      },
+      '&[aria-invalid="true"]': { boxShadow: darkInvalidRing },
+    },
+    _expanded: { backgroundColor: 'muted', color: 'foreground' },
+    _focusVisible: { boxShadow: focusRing },
+    '&[aria-invalid="true"]': { boxShadow: invalidRing },
+  },
+  link: {
+    color: 'primary',
+    textUnderlineOffset: '4px',
+    _hover: { textDecoration: 'underline' },
+    _focusVisible: { boxShadow: focusRing },
+    '&[aria-invalid="true"]': { boxShadow: invalidRing },
+    _dark: { '&[aria-invalid="true"]': { boxShadow: darkInvalidRing } },
+  },
+}
 
 /** Button size keys. Sync with `buttonSizes` is compiler-enforced (see above). */
 export const buttonSizeKeys = [
@@ -39,29 +153,121 @@ export const buttonSizeKeys = [
   'xs',
   'sm',
   'lg',
+  'row',
   'icon',
   'icon-xs',
   'icon-sm',
   'icon-lg',
 ] as const
 
-export const buttonSizes: Record<ButtonSize, string> = {
-  default: 'h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
-  xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-  sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-  lg: 'h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
-  icon: 'size-8',
-  'icon-xs':
-    "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-  'icon-sm': 'size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg',
-  'icon-lg': 'size-9',
+const iconSize = (size: string): SystemStyleObject => ({
+  '& svg:not([data-svg-icon])': { width: size, height: size },
+})
+
+const buttonSizeStyles: Record<ButtonSize, SystemStyleObject> = {
+  default: {
+    height: '8',
+    gap: '1.5',
+    paddingInline: '2.5',
+    '&:has([data-icon="inline-end"])': { paddingRight: '2' },
+    '&:has([data-icon="inline-start"])': { paddingLeft: '2' },
+  },
+  xs: {
+    height: '6',
+    gap: '1',
+    borderRadius: 'md',
+    paddingInline: '2',
+    fontSize: 'type.12',
+    lineHeight: 'compact',
+    '[data-text="150"] &': { lineHeight: 'body' },
+    '[data-slot="button-group"] &': { borderRadius: 'lg' },
+    '&:has([data-icon="inline-end"])': { paddingRight: '1.5' },
+    '&:has([data-icon="inline-start"])': { paddingLeft: '1.5' },
+    ...iconSize('3'),
+  },
+  sm: {
+    height: '7',
+    gap: '1',
+    borderRadius: 'md',
+    paddingInline: '2.5',
+    fontSize: 'type.12-8',
+    '[data-slot="button-group"] &': { borderRadius: 'lg' },
+    '&:has([data-icon="inline-end"])': { paddingRight: '1.5' },
+    '&:has([data-icon="inline-start"])': { paddingLeft: '1.5' },
+    ...iconSize('3.5'),
+  },
+  lg: {
+    height: '9',
+    gap: '1.5',
+    paddingInline: '2.5',
+    '&:has([data-icon="inline-end"])': { paddingRight: '2' },
+    '&:has([data-icon="inline-start"])': { paddingLeft: '2' },
+  },
+  row: {
+    height: '10',
+    gap: '2.5',
+    paddingInline: '3',
+  },
+  icon: { width: '8', height: '8' },
+  'icon-xs': {
+    width: '6',
+    height: '6',
+    borderRadius: 'md',
+    '[data-slot="button-group"] &': { borderRadius: 'lg' },
+    ...iconSize('3'),
+  },
+  'icon-sm': {
+    width: '7',
+    height: '7',
+    borderRadius: 'md',
+    '[data-slot="button-group"] &': { borderRadius: 'lg' },
+  },
+  'icon-lg': { width: '9', height: '9' },
 }
 
+export type ButtonVariant = (typeof buttonVariantKeys)[number]
 export type ButtonSize = (typeof buttonSizeKeys)[number]
 
 /** The classes every button shares, for an anchor that must look like a button. */
-export const buttonBase =
-  "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-lg border border-transparent bg-clip-padding text-sm font-medium focus-visible:ring-3 aria-invalid:ring-3 press [&_svg:not([class*='size-'])]:size-4 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap outline-none select-none [&_svg]:pointer-events-none [&_svg]:shrink-0 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50"
+export const buttonBase = cx(css(buttonBaseStyle), 'press')
+
+export const buttonVariants: Record<ButtonVariant, string> = {
+  default: css(buttonVariantStyles.default),
+  destructive: css(buttonVariantStyles.destructive),
+  outline: css(buttonVariantStyles.outline),
+  secondary: css(buttonVariantStyles.secondary),
+  ghost: css(buttonVariantStyles.ghost),
+  link: css(buttonVariantStyles.link),
+}
+
+export const buttonSizes: Record<ButtonSize, string> = {
+  default: css(buttonSizeStyles.default),
+  xs: css(buttonSizeStyles.xs),
+  sm: css(buttonSizeStyles.sm),
+  lg: css(buttonSizeStyles.lg),
+  row: css(buttonSizeStyles.row),
+  icon: css(buttonSizeStyles.icon),
+  'icon-xs': css(buttonSizeStyles['icon-xs']),
+  'icon-sm': css(buttonSizeStyles['icon-sm']),
+  'icon-lg': css(buttonSizeStyles['icon-lg']),
+}
+
+const buttonRecipe = cva({
+  base: buttonBaseStyle,
+  variants: {
+    variant: buttonVariantStyles,
+    size: buttonSizeStyles,
+  },
+  defaultVariants: { variant: 'default', size: 'default' },
+})
+
+/** A button's class list. `className` stays for a custom class or a
+ *  call-site `css()` result; Panda extracts styles at the call site. */
+export const buttonClass = (
+  variant: ButtonVariant = 'default',
+  size: ButtonSize = 'default',
+  className?: string | undefined,
+): string => cx(buttonRecipe({ variant, size }), 'press', className)
 
 export type ButtonConfig<M> = Readonly<{
   onClick?: M
@@ -90,14 +296,7 @@ export const button = <M>(config: ButtonConfig<M>, label: ButtonLabel, h: HtmlBu
         h.button(
           [
             ...attributes.button,
-            h.Class(
-              cn(
-                buttonBase,
-                buttonVariants[config.variant ?? 'default'],
-                buttonSizes[config.size ?? 'default'],
-                config.className,
-              ),
-            ),
+            h.Class(cx(buttonClass(config.variant, config.size), config.className)),
             h.DataAttribute('slot', 'button'),
             ...(config.attributes ?? []),
           ],
@@ -119,11 +318,36 @@ export const closeButton = <M>(
       h.Title(config.label),
       h.OnClick(config.onClick),
       h.Class(
-        cn(
-          'absolute top-1.5 right-1.5 z-10 grid size-7 place-items-center rounded-lg text-muted-foreground/80 hover:bg-well hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
+        cx(
+          css({
+            position: 'absolute',
+            top: '1.5',
+            right: '1.5',
+            zIndex: 10,
+            display: 'grid',
+            width: '7',
+            height: '7',
+            placeItems: 'center',
+            borderRadius: 'lg',
+            color: 'color-mix(in oklab, var(--muted-foreground) 80%, transparent)',
+            _hover: { backgroundColor: 'well', color: 'foreground' },
+            _focusVisible: {
+              boxShadow: 'focus',
+              outlineStyle: 'none',
+            },
+          }),
           config.className,
         ),
       ),
     ],
-    [icon(h, X, 'size-3.5')],
+    [
+      icon(
+        h,
+        X,
+        css({
+          width: '3.5',
+          height: '3.5',
+        }),
+      ),
+    ],
   )

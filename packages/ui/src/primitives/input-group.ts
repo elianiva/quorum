@@ -1,6 +1,6 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Attribute, Html, HtmlBuilder } from 'foldkit/html'
 
-import { cn } from 'cn'
 import { button, type ButtonConfig } from './button'
 import { inputClass } from './input'
 import { textareaClass } from './textarea'
@@ -12,20 +12,125 @@ type Child = Html | string
 // data-slot="input-group-control" so the group token's focus/invalid/disabled
 // frame states key off it.
 
-export const inputGroupClass =
-  'bg-well shadow-well border-transparent has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-ring/50 has-[[data-slot][aria-invalid=true]]:ring-destructive/20 has-[[data-slot][aria-invalid=true]]:border-destructive dark:has-[[data-slot][aria-invalid=true]]:ring-destructive/40 h-8 rounded-lg border transition-colors in-data-[slot=combobox-content]:focus-within:border-inherit in-data-[slot=combobox-content]:focus-within:ring-0 has-disabled:opacity-50 has-[[data-slot=input-group-control]:focus-visible]:ring-3 has-[[data-slot][aria-invalid=true]]:ring-3 has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col has-[>[data-align=block-end]]:[&>input]:pt-3 has-[>[data-align=block-start]]:[&>input]:pb-3 has-[>[data-align=inline-end]]:[&>input]:pr-1.5 has-[>[data-align=inline-start]]:[&>input]:pl-1.5 group/input-group relative flex w-full min-w-0 items-center outline-none has-[>textarea]:h-auto'
+export const inputGroupClass = cx(
+  css({
+    backgroundColor: 'well',
+    boxShadow: 'well',
+    borderColor: 'transparent',
+    '&:has([data-slot="input-group-control"]:focus-visible)': {
+      borderColor: 'ring',
+      boxShadow: 'focusWell',
+    },
+    '&:has([data-slot][aria-invalid="true"])': {
+      borderColor: 'destructive',
+      boxShadow:
+        'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+    },
+    _dark: {
+      '&:has([data-slot][aria-invalid="true"])': {
+        boxShadow:
+          'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+      },
+    },
+    height: '8',
+    borderRadius: 'lg',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    transitionProperty:
+      'color, background-color, border-color, text-decoration-color, fill, stroke',
+    transitionTimingFunction: 'default',
+    transitionDuration: 'fast',
+    '[data-slot="combobox-content"] &': {
+      _focusWithin: {
+        borderColor: 'inherit',
+        boxShadow: 'none',
+      },
+    },
+    '&:has(:disabled)': { opacity: 0.5 },
+    '&:has(> [data-align="block-end"])': {
+      height: 'auto',
+      flexDirection: 'column',
+      '& > input': { paddingTop: '3' },
+    },
+    '&:has(> [data-align="block-start"])': {
+      height: 'auto',
+      flexDirection: 'column',
+      '& > input': { paddingBottom: '3' },
+    },
+    '&:has(> [data-align="inline-end"])': {
+      '& > input': { paddingRight: '1.5' },
+    },
+    '&:has(> [data-align="inline-start"])': {
+      '& > input': { paddingLeft: '1.5' },
+    },
+    position: 'relative',
+    display: 'flex',
+    width: '100%',
+    minWidth: '0',
+    alignItems: 'center',
+    outlineStyle: 'none',
+    '&:has(> textarea)': { height: 'auto' },
+  }),
+  'group-input-group',
+)
 
 /** Upstream InputGroupAddon base string; alignment via the align tokens. */
-export const inputGroupAddonClass =
-  "text-muted-foreground h-auto gap-2 py-1.5 text-sm font-medium group-data-[disabled]/input-group:opacity-50 [&>kbd]:rounded-[calc(var(--radius)-5px)] [&>svg:not([class*='size-'])]:size-4 flex cursor-text items-center justify-center select-none"
+export const inputGroupAddonClass = css({
+  color: 'mutedForeground',
+  height: 'auto',
+  gap: '2',
+  paddingBlock: '1.5',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
+  '.group-input-group[data-disabled] &': {
+    opacity: 0.5,
+  },
+  '& > kbd': {
+    borderRadius: 'sm',
+  },
+  '& > svg:not([data-svg-icon])': {
+    width: '4',
+    height: '4',
+  },
+  display: 'flex',
+  cursor: 'text',
+  alignItems: 'center',
+  justifyContent: 'center',
+  userSelect: 'none',
+})
 
 export const inputGroupAddonAlignClasses = {
-  'inline-start': 'pl-2 has-[>button]:ml-[-0.3rem] has-[>kbd]:ml-[-0.15rem] order-first',
-  'inline-end': 'pr-2 has-[>button]:mr-[-0.3rem] has-[>kbd]:mr-[-0.15rem] order-last',
-  'block-start':
-    'px-2.5 pt-2 group-has-[>input]/input-group:pt-2 [.border-b]:pb-2 order-first w-full justify-start',
-  'block-end':
-    'px-2.5 pb-2 group-has-[>input]/input-group:pb-2 [.border-t]:pt-2 order-last w-full justify-start',
+  'inline-start': css({
+    paddingLeft: '2',
+    '&:has(> button)': { marginLeft: '-0.3rem' },
+    '&:has(> kbd)': { marginLeft: '-0.15rem' },
+    order: '-9999',
+  }),
+  'inline-end': css({
+    paddingRight: '2',
+    '&:has(> button)': { marginRight: '-0.3rem' },
+    '&:has(> kbd)': { marginRight: '-0.15rem' },
+    order: '9999',
+  }),
+  'block-start': css({
+    paddingInline: '2.5',
+    paddingTop: '2',
+    '.group-input-group:has(> input) &': { paddingTop: '2' },
+    '&[data-border="b"]': { paddingBottom: '2' },
+    order: '-9999',
+    width: '100%',
+    justifyContent: 'flex-start',
+  }),
+  'block-end': css({
+    paddingInline: '2.5',
+    paddingBottom: '2',
+    '.group-input-group:has(> input) &': { paddingBottom: '2' },
+    '&[data-border="t"]': { paddingTop: '2' },
+    order: '9999',
+    width: '100%',
+    justifyContent: 'flex-start',
+  }),
 } as const
 
 export type InputGroupAddonAlign = keyof typeof inputGroupAddonAlignClasses
@@ -34,14 +139,47 @@ export const inputGroupButtonSizeKeys = ['xs', 'sm', 'icon-xs', 'icon-sm'] as co
 export type InputGroupButtonSize = (typeof inputGroupButtonSizeKeys)[number]
 
 /** Upstream InputGroupButton base string (sizes are tokens). */
-export const inputGroupButtonClass = 'gap-2 text-sm flex items-center shadow-none'
+export const inputGroupButtonClass = css({
+  gap: '2',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  display: 'flex',
+  alignItems: 'center',
+  boxShadow: 'none',
+})
 
 /** Upstream InputGroupButton size tokens; keyed like upstream's cva variants. */
 export const inputGroupButtonSizeClasses = {
-  xs: "h-6 gap-1 rounded-[calc(var(--radius)-3px)] px-1.5 [&>svg:not([class*='size-'])]:size-3.5",
-  sm: 'gap-1',
-  'icon-xs': 'size-6 rounded-[calc(var(--radius)-3px)] p-0 has-[>svg]:p-0',
-  'icon-sm': 'size-8 p-0 has-[>svg]:p-0',
+  xs: css({
+    height: '6',
+    gap: '1',
+    borderRadius: 'sm',
+    paddingInline: '1.5',
+    '& > svg:not([data-svg-icon])': {
+      width: '3.5',
+      height: '3.5',
+    },
+  }),
+  sm: css({
+    gap: '1',
+  }),
+  'icon-xs': css({
+    width: '6',
+    height: '6',
+    borderRadius: 'sm',
+    padding: '0',
+    '&:has(> svg)': {
+      padding: '0',
+    },
+  }),
+  'icon-sm': css({
+    width: '8',
+    height: '8',
+    padding: '0',
+    '&:has(> svg)': {
+      padding: '0',
+    },
+  }),
 } as const
 
 export type InputGroupTextareaConfig<M> = Readonly<{
@@ -57,14 +195,53 @@ export type InputGroupTextareaConfig<M> = Readonly<{
   className?: string
 }>
 
-export const inputGroupTextareaClass =
-  'rounded-none border-0 bg-transparent py-2 shadow-none ring-0 focus-visible:ring-0 disabled:bg-transparent aria-invalid:ring-0 dark:bg-transparent dark:disabled:bg-transparent flex-1 resize-none'
+export const inputGroupTextareaClass = css({
+  borderRadius: '0',
+  borderWidth: '0',
+  backgroundColor: 'transparent',
+  paddingBlock: '2',
+  boxShadow: 'none',
+  _focusVisible: { boxShadow: 'none' },
+  '&:disabled': { backgroundColor: 'transparent' },
+  '&[aria-invalid="true"]': { boxShadow: 'none' },
+  _dark: {
+    backgroundColor: 'transparent',
+    '&:disabled': { backgroundColor: 'transparent' },
+  },
+  flex: '1 1 0%',
+  resize: 'none',
+})
 
-export const inputGroupTextClass =
-  "text-muted-foreground gap-2 text-sm [&_svg:not([class*='size-'])]:size-4 flex items-center [&_svg]:pointer-events-none"
+export const inputGroupTextClass = css({
+  color: 'mutedForeground',
+  gap: '2',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  '& svg:not([data-svg-icon])': {
+    width: '4',
+    height: '4',
+  },
+  display: 'flex',
+  alignItems: 'center',
+  '& svg': {
+    pointerEvents: 'none',
+  },
+})
 
-export const inputGroupInputClass =
-  'rounded-none border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0 disabled:bg-transparent aria-invalid:ring-0 dark:bg-transparent dark:disabled:bg-transparent flex-1'
+export const inputGroupInputClass = css({
+  borderRadius: '0',
+  borderWidth: '0',
+  backgroundColor: 'transparent',
+  boxShadow: 'none',
+  _focusVisible: { boxShadow: 'none' },
+  '&:disabled': { backgroundColor: 'transparent' },
+  '&[aria-invalid="true"]': { boxShadow: 'none' },
+  _dark: {
+    backgroundColor: 'transparent',
+    '&:disabled': { backgroundColor: 'transparent' },
+  },
+  flex: '1 1 0%',
+})
 
 /** The connected textarea for use inside `inputGroup`. Emits
  *  data-slot="input-group-control" so the group frame reacts to it. */
@@ -83,7 +260,7 @@ export const inputGroupTextarea = <M>(
     ...(config.rows === undefined ? [] : [h.Rows(config.rows)]),
     ...(config.placeholder === undefined ? [] : [h.Placeholder(config.placeholder)]),
     h.DataAttribute('slot', 'input-group-control'),
-    h.Class(cn(textareaClass, inputGroupTextareaClass, config.className)),
+    h.Class(cx(textareaClass, inputGroupTextareaClass, config.className)),
   ])
 
 export type InputGroupInputConfig<M> = Readonly<{
@@ -117,7 +294,7 @@ export const inputGroupInput = <M>(config: InputGroupInputConfig<M>, h: HtmlBuil
     ...(config.type === undefined ? [] : [h.Type(config.type)]),
     ...(config.placeholder === undefined ? [] : [h.Placeholder(config.placeholder)]),
     h.DataAttribute('slot', 'input-group-control'),
-    h.Class(cn(inputClass, inputGroupInputClass, config.className)),
+    h.Class(cx(inputClass, inputGroupInputClass, config.className)),
     ...(config.attributes ?? []),
   ])
 
@@ -140,7 +317,7 @@ export const inputGroupButton = <M>(
     {
       ...buttonConfig,
       variant: config.variant ?? 'ghost',
-      className: cn(inputGroupButtonClass, inputGroupButtonSizeClasses[size], config.className),
+      className: cx(inputGroupButtonClass, inputGroupButtonSizeClasses[size], config.className),
       attributes: [h.DataAttribute('size', size), ...(config.attributes ?? [])],
     },
     label,
@@ -166,7 +343,7 @@ export const inputGroupAddon = <M>(
       h.Role('group'),
       h.DataAttribute('slot', 'input-group-addon'),
       h.DataAttribute('align', align),
-      h.Class(cn(inputGroupAddonClass, inputGroupAddonAlignClasses[align], config.className)),
+      h.Class(cx(inputGroupAddonClass, inputGroupAddonAlignClasses[align], config.className)),
       h.Attribute(
         'onclick',
         "if(!event.target.closest('button'))this.parentElement?.querySelector('input')?.focus()",
@@ -183,7 +360,7 @@ export const inputGroupText = <M>(
   config: StyleConfig,
   children: ReadonlyArray<Child>,
   h: HtmlBuilder<M>,
-): Html => h.span([h.Class(cn(inputGroupTextClass, config.className))], children)
+): Html => h.span([h.Class(cx(inputGroupTextClass, config.className))], children)
 
 /** Segmented container — pass addons / controls as children. */
 export const inputGroup = <M>(
@@ -194,7 +371,7 @@ export const inputGroup = <M>(
   h.div(
     [
       h.Role('group'),
-      h.Class(cn(inputGroupClass, config.className)),
+      h.Class(cx(inputGroupClass, config.className)),
       h.DataAttribute('slot', 'input-group'),
     ],
     children,

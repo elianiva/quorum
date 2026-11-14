@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { Effect, Option, Queue, Schema as S, Stream } from 'effect'
 import * as Command from 'foldkit/command'
 import type { Html } from 'foldkit/html'
@@ -7,8 +8,6 @@ import { defineView } from 'foldkit/submodel'
 import * as Subscription from 'foldkit/subscription'
 import * as Update from 'foldkit/update'
 import { modifyFields } from 'foldkit/struct'
-
-import { cn } from 'cn'
 
 // Scroll-area has no @foldkit/ui primitive, so the scroll engine lives here:
 // the viewport scrolls natively on both axes with its native scrollbars hidden
@@ -27,19 +26,62 @@ import { cn } from 'cn'
 
 /** Upstream ScrollArea root string. `cn-scroll-area` is a no-op hook upstream
  *  too — the root only needs its position context, which `relative` carries. */
-export const scrollAreaClass = 'relative'
+export const scrollAreaClass = css({
+  position: 'relative',
+})
 
 /** Upstream Viewport string. `cn-scroll-area-viewport` is a no-op hook
  *  upstream (the primitive hides native scrollbars itself); foldkit has no
  *  primitive, so the viewport behavior (hidden native scrollbars + two-axis
  *  native scrolling) is carried by the token's cn-compat.css definition. */
-export const scrollAreaViewportClass =
-  'no-scrollbar overflow-scroll size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1'
+export const scrollAreaViewportClass = css({
+  scrollbarWidth: 'none',
+  '&::-webkit-scrollbar': { display: 'none' },
+  overflow: 'scroll',
+  width: '100%',
+  height: '100%',
+  borderRadius: 'inherit',
+  transitionProperty: 'color, box-shadow',
+  transitionTimingFunction: 'default',
+  transitionDuration: 'fast',
+  outlineStyle: 'none',
+  _focusVisible: {
+    boxShadow: 'focus',
+    outlineWidth: '1px',
+    outlineStyle: 'solid',
+  },
+})
 
-export const scrollAreaScrollbarClass =
-  'data-horizontal:h-2.5 data-horizontal:flex-col data-horizontal:border-t data-horizontal:border-t-transparent data-vertical:h-full data-vertical:w-2.5 data-vertical:border-l data-vertical:border-l-transparent flex touch-none p-px transition-colors select-none'
+export const scrollAreaScrollbarClass = css({
+  '&[data-horizontal]': {
+    height: '2.5',
+    flexDirection: 'column',
+    borderTopWidth: '1px',
+    borderTopStyle: 'solid',
+    borderTopColor: 'transparent',
+  },
+  '&[data-vertical]': {
+    height: '100%',
+    width: '2.5',
+    borderLeftWidth: '1px',
+    borderLeftStyle: 'solid',
+    borderLeftColor: 'transparent',
+  },
+  display: 'flex',
+  touchAction: 'none',
+  padding: '0.25',
+  transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke',
+  transitionTimingFunction: 'default',
+  transitionDuration: 'fast',
+  userSelect: 'none',
+})
 
-export const scrollAreaThumbClass = 'rounded-full relative flex-1 bg-border'
+export const scrollAreaThumbClass = css({
+  borderRadius: 'full',
+  position: 'relative',
+  flex: '1 1 0%',
+  backgroundColor: 'border',
+})
 
 const SCROLLBAR_PAD_PX = 1
 const MIN_THUMB_SIZE_PX = 16
@@ -532,7 +574,7 @@ export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h
     h.div(
       [
         h.Id(scrollbarId(model.id, axis)),
-        h.Class(cn(scrollAreaScrollbarClass)),
+        h.Class(cx(scrollAreaScrollbarClass)),
         h.DataAttribute('slot', 'scroll-area-scrollbar'),
         h.DataAttribute('orientation', axis),
         h.DataAttribute(axis, ''),
@@ -544,7 +586,7 @@ export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h
       [
         h.div(
           [
-            h.Class(cn(scrollAreaThumbClass)),
+            h.Class(cx(scrollAreaThumbClass)),
             h.DataAttribute('slot', 'scroll-area-thumb'),
             h.DataAttribute('orientation', axis),
             h.DataAttribute(axis, ''),
@@ -562,7 +604,7 @@ export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h
 
   return h.div(
     [
-      h.Class(cn(scrollAreaClass, viewInputs.className)),
+      h.Class(cx(scrollAreaClass, viewInputs.className)),
       h.DataAttribute('slot', 'scroll-area'),
       h.Role('presentation'),
     ],
@@ -570,7 +612,7 @@ export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h
       h.div(
         [
           h.Id(viewportId(model.id)),
-          h.Class(cn(scrollAreaViewportClass)),
+          h.Class(cx(scrollAreaViewportClass)),
           h.DataAttribute('slot', 'scroll-area-viewport'),
           h.Role('presentation'),
           // Keep non-scrollable viewports out of tab order (upstream parity).

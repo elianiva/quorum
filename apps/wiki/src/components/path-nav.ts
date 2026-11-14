@@ -1,5 +1,4 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
-import { cn } from 'cn'
 import { ArrowRight, Check } from 'lucide'
 import { FIGURE } from '@quorum/ui/game/bits'
 import { icon } from '@quorum/ui/primitives/icon'
@@ -8,6 +7,7 @@ import type { Message, Model } from '../main.ts'
 import type { Page } from '../page.ts'
 import { PATHS, placeOf, resumeOf, stepsOf, type Path } from '../paths.ts'
 import { quadrantColor } from './quadrant.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The guided paths in the page: where a reader is in one, and the step after it. */
 
@@ -22,10 +22,24 @@ const segments = (
   h: H,
 ): Html =>
   h.ol(
-    [h.Class('flex gap-1')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          gap: '1',
+        }),
+      ),
+    ],
     steps.map((step, index) =>
       h.li(
-        [h.Key(step.path), h.Class('flex-1')],
+        [
+          h.Key(step.path),
+          h.Class(
+            css({
+              flex: '1 1 0%',
+            }),
+          ),
+        ],
         [
           h.a(
             [
@@ -34,13 +48,35 @@ const segments = (
               h.AriaLabel(l.t.pathNav.stepLabel(index + 1, step.title)),
               ...(step.path === current ? [h.AriaCurrent('step')] : []),
               h.Class(
-                cn(
-                  'block h-1.5 rounded-full transition-colors',
+                cx(
+                  css({
+                    display: 'block',
+                    height: '1.5',
+                    borderRadius: 'full',
+                    transitionProperty:
+                      'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
+                    transitionDuration: 'fast',
+                    transitionTimingFunction: 'default',
+                  }),
                   step.path === current
                     ? ''
                     : model.progress.visited.includes(step.path)
-                      ? 'bg-foreground/45 hover:bg-foreground/60'
-                      : 'bg-foreground/10 hover:bg-foreground/25',
+                      ? css({
+                          backgroundColor:
+                            'color-mix(in oklab, var(--foreground) 45%, transparent)',
+                          _hover: {
+                            backgroundColor:
+                              'color-mix(in oklab, var(--foreground) 60%, transparent)',
+                          },
+                        })
+                      : css({
+                          backgroundColor:
+                            'color-mix(in oklab, var(--foreground) 10%, transparent)',
+                          _hover: {
+                            backgroundColor:
+                              'color-mix(in oklab, var(--foreground) 25%, transparent)',
+                          },
+                        }),
                 ),
               ),
               ...(step.path === current
@@ -62,14 +98,51 @@ export const pathBar = (page: Page, model: Model, h: H): Html => {
   const steps = stepsOf(page.locale, place.path)
   const title = l.t.paths[place.path.id].title
   return h.nav(
-    [h.AriaLabel(l.t.pathNav.guidedPath(title)), h.Class('mt-6')],
+    [
+      h.AriaLabel(l.t.pathNav.guidedPath(title)),
+      h.Class(
+        css({
+          marginTop: '6',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('mb-2 flex items-baseline justify-between gap-3')],
         [
-          h.span([h.Class('text-[12px] text-muted-foreground')], [l.t.pathNav.path(title)]),
+          h.Class(
+            css({
+              marginBottom: '2',
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: '3',
+            }),
+          ),
+        ],
+        [
           h.span(
-            [h.Class(cn(FIGURE, 'text-[12px] text-muted-foreground'))],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.12',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
+            [l.t.pathNav.path(title)],
+          ),
+          h.span(
+            [
+              h.Class(
+                cx(
+                  FIGURE,
+                  css({
+                    fontSize: 'type.12',
+                    color: 'mutedForeground',
+                  }),
+                ),
+              ),
+            ],
             [l.t.pathNav.place(place.index + 1, steps.length)],
           ),
         ],
@@ -82,22 +155,87 @@ export const pathBar = (page: Page, model: Model, h: H): Html => {
 /** The next page, as docs sites end a page: a bordered link on the right. */
 const nextCard = (label: string, target: Page, h: H): Html =>
   h.div(
-    [h.Class('mt-14 flex justify-end')],
+    [
+      h.Class(
+        css({
+          marginTop: '14',
+          display: 'flex',
+          justifyContent: 'flex-end',
+        }),
+      ),
+    ],
     [
       h.a(
         [
           h.Href(target.path),
           h.Class(
-            'group flex w-full max-w-sm flex-col items-end gap-1 rounded-lg border border-border px-4 py-3 text-right transition-colors hover:border-foreground/30',
+            cx(
+              css({
+                display: 'flex',
+                width: '100%',
+                maxWidth: '96',
+                flexDirection: 'column',
+                alignItems: 'flex-end',
+                gap: '1',
+                borderRadius: 'lg',
+                borderWidth: '1px',
+                borderStyle: 'solid',
+                borderColor: 'border',
+                paddingInline: '4',
+                paddingBlock: '3',
+                textAlign: 'right',
+                transitionProperty:
+                  'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
+                transitionDuration: 'fast',
+                transitionTimingFunction: 'default',
+                _hover: {
+                  borderColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
+                },
+              }),
+              'group',
+            ),
           ),
         ],
         [
-          h.span([h.Class('text-[12px] text-muted-foreground')], [label]),
           h.span(
-            [h.Class('flex items-center gap-1.5 text-[15px] font-medium')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.12',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
+            [label],
+          ),
+          h.span(
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1.5',
+                  fontSize: 'type.15',
+                  fontWeight: 'medium',
+                }),
+              ),
+            ],
             [
               target.title,
-              icon(h, ArrowRight, 'size-4 transition-transform group-hover:translate-x-0.5'),
+              icon(
+                h,
+                ArrowRight,
+                css({
+                  width: '4',
+                  height: '4',
+                  transitionProperty: 'transform, translate, scale, rotate',
+                  transitionDuration: 'fast',
+                  transitionTimingFunction: 'default',
+                  '.group:hover &': {
+                    translate: '0.125rem',
+                  },
+                }),
+              ),
             ],
           ),
         ],
@@ -130,47 +268,186 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
   const target = resume ?? steps[0]
   const label = read === 0 ? l.t.pathNav.start : resume ? l.t.pathNav.continue : l.t.pathNav.again
   return h.article(
-    [h.Key(path.id), h.Class('flex flex-col gap-4 bg-background p-5')],
+    [
+      h.Key(path.id),
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4',
+          backgroundColor: 'background',
+          padding: '5',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex items-baseline justify-between gap-3')],
         [
-          h.h3([h.Class('text-[16px] font-semibold tracking-tight')], [copy.title]),
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: '3',
+            }),
+          ),
+        ],
+        [
+          h.h3(
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.16',
+                  fontWeight: 'semibold',
+                  letterSpacing: 'tight',
+                }),
+              ),
+            ],
+            [copy.title],
+          ),
           read === steps.length && steps.length > 0
             ? h.span(
-                [h.Class('grid size-5 shrink-0 place-items-center rounded-full bg-ok text-white')],
-                [icon(h, Check, 'size-3')],
+                [
+                  h.Class(
+                    css({
+                      display: 'grid',
+                      width: '5',
+                      height: '5',
+                      flexShrink: '0',
+                      placeItems: 'center',
+                      borderRadius: 'full',
+                      backgroundColor: 'ok',
+                      color: 'background',
+                    }),
+                  ),
+                ],
+                [
+                  icon(
+                    h,
+                    Check,
+                    css({
+                      width: '3',
+                      height: '3',
+                    }),
+                  ),
+                ],
               )
             : h.span(
-                [h.Class(cn(FIGURE, 'shrink-0 text-[12px] text-muted-foreground'))],
+                [
+                  h.Class(
+                    cx(
+                      FIGURE,
+                      css({
+                        flexShrink: '0',
+                        fontSize: 'type.12',
+                        color: 'mutedForeground',
+                      }),
+                    ),
+                  ),
+                ],
                 [`${read}/${steps.length}`],
               ),
         ],
       ),
-      h.p([h.Class('text-[14px] leading-snug text-pretty text-muted-foreground')], [copy.summary]),
+      h.p(
+        [
+          h.Class(
+            css({
+              fontSize: 'type.14',
+              lineHeight: 'snug',
+              textWrap: 'pretty',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
+        [copy.summary],
+      ),
       segments(l, steps, null, model, h),
       target
         ? h.a(
             [
               h.Href(target.path),
               h.Class(
-                'group mt-auto flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-[14px] transition-colors hover:border-foreground/30 hover:bg-well',
+                cx(
+                  css({
+                    marginTop: 'auto',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '3',
+                    borderRadius: 'md',
+                    borderWidth: '1px',
+                    borderStyle: 'solid',
+                    borderColor: 'border',
+                    paddingInline: '3',
+                    paddingBlock: '2',
+                    fontSize: 'type.14',
+                    transitionProperty:
+                      'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
+                    transitionDuration: 'fast',
+                    transitionTimingFunction: 'default',
+                    _hover: {
+                      borderColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
+                      backgroundColor: 'well',
+                    },
+                  }),
+                  'group',
+                ),
               ),
             ],
             [
               h.span(
-                [h.Class('min-w-0 truncate')],
                 [
-                  h.span([h.Class('font-medium')], [label]),
+                  h.Class(
+                    css({
+                      minWidth: '0',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }),
+                  ),
+                ],
+                [
+                  h.span(
+                    [
+                      h.Class(
+                        css({
+                          fontWeight: 'medium',
+                        }),
+                      ),
+                    ],
+                    [label],
+                  ),
                   ...(label === l.t.pathNav.again
                     ? []
-                    : [h.span([h.Class('text-muted-foreground')], [` · ${target.title}`])]),
+                    : [
+                        h.span(
+                          [
+                            h.Class(
+                              css({
+                                color: 'mutedForeground',
+                              }),
+                            ),
+                          ],
+                          [` · ${target.title}`],
+                        ),
+                      ]),
                 ],
               ),
               icon(
                 h,
                 ArrowRight,
-                'size-4 shrink-0 transition-transform group-hover:translate-x-0.5',
+                css({
+                  width: '4',
+                  height: '4',
+                  flexShrink: '0',
+                  transitionProperty: 'transform, translate, scale, rotate',
+                  transitionDuration: 'fast',
+                  transitionTimingFunction: 'default',
+                  '.group:hover &': {
+                    translate: '0.125rem',
+                  },
+                }),
               ),
             ],
           )

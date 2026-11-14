@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import type { Mail, MailAction as MailActionSchema } from './model.ts'
 import { KIND_LABEL, needsAction, senderOf, type SenderKind } from './mail.ts'
 
@@ -23,8 +24,8 @@ export const priorityOf = (mail: Mail): Priority =>
 
 /** The coloured left bar's class, in the design's tones: danger for a clock, warn for a wait. */
 const BAR: Record<Priority, string | null> = {
-  clock: 'bg-danger',
-  decision: 'bg-warn',
+  clock: css({ backgroundColor: 'danger' }),
+  decision: css({ backgroundColor: 'warn' }),
   none: null,
 }
 

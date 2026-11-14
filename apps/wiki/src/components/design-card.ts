@@ -11,6 +11,7 @@ import { langOf, type Lang } from '../i18n/lang.ts'
 import { Message } from '../main.ts'
 import { DESIGNS, DESIGN_IDS } from '../patterns/designs/index.ts'
 import type { Setting } from '../patterns/design.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 // Defined on first use: this module is imported while main.ts is still loading.
 const defineDesignMounted = () =>
@@ -61,7 +62,15 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
       node.settings.map((setting) => ({
         key: `${node.id}-${setting.field}`,
         where: h.a(
-          [h.Href(`/components/${node.type}`), h.Class('underline underline-offset-4')],
+          [
+            h.Href(`/components/${node.type}`),
+            h.Class(
+              css({
+                textDecorationLine: 'underline',
+                textUnderlineOffset: '4px',
+              }),
+            ),
+          ],
           [COMPONENTS[node.type].name],
         ),
         unlock: COMPONENTS[node.type].unlock,
@@ -95,21 +104,61 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
     ...design.researched,
   ]
   return h.figure(
-    [h.Key(`design-${id}`), h.Class('not-prose my-6')],
+    [
+      h.Key(`design-${id}`),
+      h.Class(
+        cx(
+          css({
+            marginBlock: '6',
+          }),
+          'not-prose',
+        ),
+      ),
+    ],
     [
       h.div(
         [
           h.Role('img'),
           h.AriaLabel(t.aria(design.nodes.map((node) => COMPONENTS[node.type].name).join(', '))),
-          h.Class('relative w-full cursor-grab overflow-hidden rounded-lg border border-border'),
+          h.Class(
+            css({
+              position: 'relative',
+              width: '100%',
+              cursor: 'grab',
+              overflow: 'hidden',
+              borderRadius: 'lg',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'border',
+            }),
+          ),
           h.Style({ height: heightFor(id) }),
           h.OnMount((designMounted ??= defineDesignMounted())({ id })),
         ],
         [],
       ),
-      h.p([h.Class('mt-1.5 text-[12px] text-muted-foreground/80')], [t.hint]),
+      h.p(
+        [
+          h.Class(
+            css({
+              marginTop: '1.5',
+              fontSize: 'type.12',
+              color: 'color-mix(in oklab, var(--muted-foreground) 80%, transparent)',
+            }),
+          ),
+        ],
+        [t.hint],
+      ),
       h.figcaption(
-        [h.Class('mt-2 text-[12px] text-muted-foreground')],
+        [
+          h.Class(
+            css({
+              marginTop: '2',
+              fontSize: 'type.12',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
         [
           t.caption(
             compact(design.users),
@@ -125,10 +174,30 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
       ),
       rows.length > 0
         ? h.div(
-            [h.Class('mt-4 overflow-x-auto rounded-lg border border-border')],
+            [
+              h.Class(
+                css({
+                  marginTop: '4',
+                  overflowX: 'auto',
+                  borderRadius: 'lg',
+                  borderWidth: '1px',
+                  borderStyle: 'solid',
+                  borderColor: 'border',
+                }),
+              ),
+            ],
             [
               h.table(
-                [h.Class('w-full border-collapse text-[14px] leading-snug')],
+                [
+                  h.Class(
+                    css({
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      fontSize: 'type.14',
+                      lineHeight: 'snug',
+                    }),
+                  ),
+                ],
                 [
                   h.thead(
                     [],
@@ -139,7 +208,19 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
                           h.th(
                             [
                               h.Class(
-                                'border-b border-border bg-muted/50 px-3 py-2 text-left text-[12px] font-medium text-muted-foreground',
+                                css({
+                                  borderBottomWidth: '1px',
+                                  borderBottomStyle: 'solid',
+                                  borderColor: 'border',
+                                  backgroundColor:
+                                    'color-mix(in oklab, var(--muted) 50%, transparent)',
+                                  paddingInline: '3',
+                                  paddingBlock: '2',
+                                  textAlign: 'left',
+                                  fontSize: 'type.12',
+                                  fontWeight: 'medium',
+                                  color: 'mutedForeground',
+                                }),
                               ),
                             ],
                             [name],
@@ -149,19 +230,71 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
                     ],
                   ),
                   h.tbody(
-                    [h.Class('divide-y divide-border')],
+                    [
+                      h.Class(
+                        css({
+                          '& > * + *': {
+                            borderTopWidth: '1px',
+                            borderTopStyle: 'solid',
+                            borderColor: 'border',
+                          },
+                        }),
+                      ),
+                    ],
                     rows.map((row) =>
                       h.tr(
                         [h.Key(row.key)],
                         [
-                          h.td([h.Class('px-3 py-2 align-top whitespace-nowrap')], [row.where]),
-                          h.td([h.Class('px-3 py-2 align-top')], [row.setting.label]),
                           h.td(
-                            [h.Class('px-3 py-2 align-top whitespace-nowrap font-mono')],
+                            [
+                              h.Class(
+                                css({
+                                  paddingInline: '3',
+                                  paddingBlock: '2',
+                                  verticalAlign: 'top',
+                                  whiteSpace: 'nowrap',
+                                }),
+                              ),
+                            ],
+                            [row.where],
+                          ),
+                          h.td(
+                            [
+                              h.Class(
+                                css({
+                                  paddingInline: '3',
+                                  paddingBlock: '2',
+                                  verticalAlign: 'top',
+                                }),
+                              ),
+                            ],
+                            [row.setting.label],
+                          ),
+                          h.td(
+                            [
+                              h.Class(
+                                css({
+                                  paddingInline: '3',
+                                  paddingBlock: '2',
+                                  verticalAlign: 'top',
+                                  whiteSpace: 'nowrap',
+                                  fontFamily: 'mono',
+                                }),
+                              ),
+                            ],
                             [valueOf(l, row.setting)],
                           ),
                           h.td(
-                            [h.Class('px-3 py-2 align-top text-muted-foreground')],
+                            [
+                              h.Class(
+                                css({
+                                  paddingInline: '3',
+                                  paddingBlock: '2',
+                                  verticalAlign: 'top',
+                                  color: 'mutedForeground',
+                                }),
+                              ),
+                            ],
                             [row.setting.why],
                           ),
                         ],
@@ -175,13 +308,29 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
         : h.empty,
       needs.length > 0
         ? h.p(
-            [h.Class('mt-2 text-[12px] text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  marginTop: '2',
+                  fontSize: 'type.12',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
             [
               t.needs,
               ...needs.flatMap((research, index) => [
                 ...(index > 0 ? [l.t.reference.listSeparator] : []),
                 h.a(
-                  [h.Href(`/research/${research}`), h.Class('underline underline-offset-4')],
+                  [
+                    h.Href(`/research/${research}`),
+                    h.Class(
+                      css({
+                        textDecorationLine: 'underline',
+                        textUnderlineOffset: '4px',
+                      }),
+                    ),
+                  ],
                   [RESEARCH[research].name],
                 ),
               ]),

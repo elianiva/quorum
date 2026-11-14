@@ -1,13 +1,14 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { Message } from '@/game/message.ts'
 import type { Toast } from '@/game/model.ts'
 
 const TOAST_MARK: Record<Toast['tone'], string> = {
-  plain: 'bg-muted-foreground',
-  ok: 'bg-ok',
-  warn: 'bg-warn',
-  danger: 'bg-danger',
-  primary: 'bg-primary-strong',
+  plain: css({ backgroundColor: 'mutedForeground' }),
+  ok: css({ backgroundColor: 'ok' }),
+  warn: css({ backgroundColor: 'warn' }),
+  danger: css({ backgroundColor: 'danger' }),
+  primary: css({ backgroundColor: 'primaryStrong' }),
 }
 
 /**
@@ -32,16 +33,56 @@ export const toast = (
           h.DataAttribute('morph', 'notice'),
           h.DataAttribute('exit', 'notice'),
           // A panel can fill a short screen, so the toast moves above it rather than over its actions.
-          h.Class(
-            `pointer-events-none fixed bottom-[176px] left-1/2 z-50 flex max-w-[calc(100%-16px)] -translate-x-1/2 justify-center rounded-xl bg-surface px-3.5 py-2.5 text-[calc(13px*var(--type-scale))] shadow-float enter-toast compact:right-[max(8px,env(safe-area-inset-right))] compact:left-[max(8px,env(safe-area-inset-left))] compact:max-w-none compact:translate-x-0 compact:justify-start ${
+          h.Attribute(
+            'style',
+            `--toast-bottom:${
               dockRows > 0
-                ? `compact:bottom-[calc(max(8px,env(safe-area-inset-bottom))+min(${50 * dockRows + 70}px,calc(46dvh+68px)))]`
-                : 'compact:bottom-[calc(max(8px,env(safe-area-inset-bottom))+72px)]'
-            } ${
-              overPanel
-                ? 'short:top-[max(2px,env(safe-area-inset-top))]! short:right-auto! short:bottom-auto! short:left-1/2! short:max-w-[calc(100%-16px)]! short:translate-x-[-50%]! short:justify-center!'
-                : ''
+                ? `calc(max(8px, env(safe-area-inset-bottom)) + min(${50 * dockRows + 70}px, calc(46dvh + 68px)))`
+                : 'calc(max(8px, env(safe-area-inset-bottom)) + 72px)'
             }`,
+          ),
+          h.Class(
+            cx(
+              css({
+                pointerEvents: 'none',
+                position: 'fixed',
+                bottom: '44',
+                left: '50%',
+                zIndex: '50',
+                display: 'flex',
+                maxWidth: 'calc(100% - 16px)',
+                translate: '-50% 0',
+                justifyContent: 'center',
+                borderRadius: 'xl',
+                layerStyle: 'surface',
+                paddingInline: '3.5',
+                paddingBlock: '2.5',
+                fontSize: 'type.13',
+                boxShadow: 'float',
+                _compact: {
+                  right: 'max(8px, env(safe-area-inset-right))',
+                  left: 'max(8px, env(safe-area-inset-left))',
+                  bottom: 'var(--toast-bottom)',
+                  maxWidth: 'none',
+                  translate: '0 0',
+                  justifyContent: 'flex-start',
+                },
+              }),
+              overPanel
+                ? css({
+                    _short: {
+                      top: 'max(2px, env(safe-area-inset-top)) !important',
+                      right: 'auto !important',
+                      bottom: 'auto !important',
+                      left: '50% !important',
+                      maxWidth: 'calc(100% - 16px) !important',
+                      translate: '-50% 0 !important',
+                      justifyContent: 'center !important',
+                    },
+                  })
+                : '',
+              'enter-toast',
+            ),
           ),
         ],
         [
@@ -49,17 +90,50 @@ export const toast = (
             [
               h.Key(`toast-${value.id}`),
               h.DataAttribute('exit', 'notice'),
-              h.Class('swap flex w-max max-w-full shrink-0 items-center gap-2.5'),
+              h.Class(
+                cx(
+                  css({
+                    display: 'flex',
+                    width: 'max-content',
+                    maxWidth: '100%',
+                    flexShrink: '0',
+                    alignItems: 'center',
+                    gap: '2.5',
+                  }),
+                  'swap',
+                ),
+              ),
             ],
             [
-              h.span([h.Class(`size-2 shrink-0 rounded-full ${TOAST_MARK[value.tone]}`)], []),
+              h.span(
+                [
+                  h.Class(
+                    cx(
+                      css({
+                        width: '2',
+                        height: '2',
+                        flexShrink: '0',
+                        borderRadius: 'full',
+                      }),
+                      TOAST_MARK[value.tone],
+                    ),
+                  ),
+                ],
+                [],
+              ),
               value.message,
               value.count > 1
                 ? h.span(
                     [
                       h.AriaLabel(String(value.count)),
                       h.Class(
-                        'ml-0.5 shrink-0 font-mono text-[calc(11.5px*var(--type-scale))] text-muted-foreground',
+                        css({
+                          marginLeft: '0.5',
+                          flexShrink: '0',
+                          fontFamily: 'mono',
+                          fontSize: 'type.11-5',
+                          color: 'mutedForeground',
+                        }),
                       ),
                     ],
                     [`×${value.count}`],

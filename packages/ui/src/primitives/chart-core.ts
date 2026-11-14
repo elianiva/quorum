@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import {
   arc,
   area,
@@ -21,7 +22,6 @@ import {
 import type { CurveFactory } from 'd3-shape'
 import type { Attribute, Html, HtmlBuilder } from 'foldkit/html'
 import { Option } from 'effect'
-import { cn } from 'cn'
 import { isNumberRange, niceTickValues } from './line-chart'
 import type {
   AxisProps,
@@ -32,6 +32,37 @@ import type {
   DomainEnd,
   Margin,
 } from './line-chart'
+
+const chartTooltipClass = css({
+  borderColor: 'color-mix(in oklab, var(--border) 50%, transparent)',
+  backgroundColor: 'background',
+  gap: '1.5',
+  borderRadius: 'lg',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  paddingInline: '2.5',
+  paddingBlock: '1.5',
+  fontSize: 'type.12',
+  lineHeight: 'compact',
+  boxShadow: 'xl',
+})
+
+const chartTooltipOverlayClass = css({
+  borderColor: 'color-mix(in oklab, var(--border) 50%, transparent)',
+  backgroundColor: 'background',
+  gap: '1.5',
+  borderRadius: 'lg',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  paddingInline: '2.5',
+  paddingBlock: '1.5',
+  fontSize: 'type.12',
+  lineHeight: 'compact',
+  boxShadow: 'xl',
+  pointerEvents: 'none',
+  position: 'absolute',
+  zIndex: '10',
+})
 
 export {
   Brush,
@@ -268,7 +299,17 @@ const chart = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn('relative', className)), h.DataAttribute('slot', slot)],
+    [
+      h.Class(
+        cx(
+          css({
+            position: 'relative',
+          }),
+          className,
+        ),
+      ),
+      h.DataAttribute('slot', slot),
+    ],
     [
       h.svg(
         [
@@ -720,9 +761,7 @@ const scatterCartesian = <M>(props: CartesianChartProps<M>, h: HtmlBuilder<M>): 
         ? [
             h.div(
               [
-                h.Class(
-                  'border-border/50 bg-background gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl pointer-events-none absolute z-10',
-                ),
+                h.Class(chartTooltipOverlayClass),
                 h.Style({
                   left: `${Math.min(70, Math.max(5, (x(tooltipPoint.x) / width) * 100))}%`,
                   top: '0px',
@@ -731,7 +770,14 @@ const scatterCartesian = <M>(props: CartesianChartProps<M>, h: HtmlBuilder<M>): 
               ],
               [
                 h.div(
-                  [h.Class('mb-1 font-medium')],
+                  [
+                    h.Class(
+                      css({
+                        marginBottom: '1',
+                        fontWeight: 'medium',
+                      }),
+                    ),
+                  ],
                   [
                     tooltip.props.labelFormatter?.(
                       String(
@@ -750,7 +796,15 @@ const scatterCartesian = <M>(props: CartesianChartProps<M>, h: HtmlBuilder<M>): 
                   ],
                 ),
                 h.div(
-                  [h.Class('flex items-center gap-2')],
+                  [
+                    h.Class(
+                      css({
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '2',
+                      }),
+                    ),
+                  ],
                   [
                     `${tooltipPoint.item.props.name ?? keyName(tooltipPoint.item.props.dataKey)}: ${tooltip.props.formatter?.(numeric(at(tooltipPoint.row, tooltipPoint.item.props.dataKey)) ?? 0, tooltipPoint.item.props.name ?? keyName(tooltipPoint.item.props.dataKey)) ?? String(at(tooltipPoint.row, tooltipPoint.item.props.dataKey) ?? '')}`,
                   ],
@@ -762,11 +816,28 @@ const scatterCartesian = <M>(props: CartesianChartProps<M>, h: HtmlBuilder<M>): 
       ...(legend?.kind === 'legend'
         ? [
             h.div(
-              [h.Class('flex gap-2.5 text-sm text-muted-foreground justify-center')],
+              [
+                h.Class(
+                  css({
+                    display: 'flex',
+                    gap: '2.5',
+                    fontSize: 'type.14',
+                    lineHeight: 'fine',
+                    color: 'mutedForeground',
+                    justifyContent: 'center',
+                  }),
+                ),
+              ],
               series.map((item, index) =>
                 h.span(
                   [
-                    h.Class('inline-flex items-center gap-1'),
+                    h.Class(
+                      css({
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '1',
+                      }),
+                    ),
                     ...(props.onLegendHover === undefined
                       ? []
                       : [
@@ -780,7 +851,14 @@ const scatterCartesian = <M>(props: CartesianChartProps<M>, h: HtmlBuilder<M>): 
                   [
                     h.span(
                       [
-                        h.Class('inline-block size-3 rounded-full'),
+                        h.Class(
+                          css({
+                            display: 'inline-block',
+                            width: '3',
+                            height: '3',
+                            borderRadius: 'full',
+                          }),
+                        ),
                         h.Style({
                           backgroundColor:
                             item.props.fill ?? palette[index % palette.length] ?? '#8884d8',
@@ -2015,7 +2093,17 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
     })
   }
   return h.div(
-    [h.Class(cn('relative', props.className)), h.DataAttribute('slot', kind)],
+    [
+      h.Class(
+        cx(
+          css({
+            position: 'relative',
+          }),
+          props.className,
+        ),
+      ),
+      h.DataAttribute('slot', kind),
+    ],
     [
       ...(series.some((item) => item.kind === 'bar' && item.props.scrollAnimate)
         ? [
@@ -2085,9 +2173,7 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
         ? [
             h.div(
               [
-                h.Class(
-                  'border-border/50 bg-background gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl pointer-events-none absolute z-10',
-                ),
+                h.Class(chartTooltipOverlayClass),
                 h.Style({
                   left: `${Math.min(70, Math.max(5, (category(activeIndex ?? 0) / width) * 100))}%`,
                   top: '8px',
@@ -2096,7 +2182,14 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
               ],
               [
                 h.div(
-                  [h.Class('mb-1 font-medium')],
+                  [
+                    h.Class(
+                      css({
+                        marginBottom: '1',
+                        fontWeight: 'medium',
+                      }),
+                    ),
+                  ],
                   [tooltip.props.labelFormatter?.(activeLabel) ?? String(activeLabel)],
                 ),
                 ...series.flatMap((item) => {
@@ -2106,7 +2199,15 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
                     ? []
                     : [
                         h.div(
-                          [h.Class('flex items-center gap-2')],
+                          [
+                            h.Class(
+                              css({
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '2',
+                              }),
+                            ),
+                          ],
                           [`${name}: ${tooltip.props.formatter?.(value, name) ?? value}`],
                         ),
                       ]
@@ -2121,17 +2222,26 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
         ? [
             h.div(
               [
-                h.Class('flex gap-2.5 text-sm text-muted-foreground justify-center'),
+                h.Class(
+                  css({
+                    display: 'flex',
+                    gap: '2.5',
+                    fontSize: 'type.14',
+                    lineHeight: 'fine',
+                    color: 'mutedForeground',
+                    justifyContent: 'center',
+                  }),
+                ),
                 h.Style({
                   position: 'absolute',
                   bottom: `${props.margin?.bottom ?? 5}px`,
                   left: '0',
                   right: '0',
-                  padding: '3px',
+                  padding: '0.75',
                   paddingTop: legend.props.wrapperStyle?.paddingTop ?? '3px',
                   lineHeight: legend.props.wrapperStyle?.lineHeight ?? '18px',
                   backgroundColor: legend.props.wrapperStyle?.backgroundColor ?? '#fff',
-                  borderRadius: '4px',
+                  borderRadius: 'xs',
                 }),
               ],
               series
@@ -2139,7 +2249,13 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
                 .map((item, index) =>
                   h.span(
                     [
-                      h.Class('inline-flex items-center gap-1'),
+                      h.Class(
+                        css({
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '1',
+                        }),
+                      ),
                       ...(props.onLegendHover === undefined
                         ? []
                         : [
@@ -2155,8 +2271,16 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
                         [
                           h.Class(
                             item.kind === 'line'
-                              ? 'inline-block h-0.5 w-4'
-                              : 'inline-block size-3.5',
+                              ? css({
+                                  display: 'inline-block',
+                                  height: '0.5',
+                                  width: '4',
+                                })
+                              : css({
+                                  display: 'inline-block',
+                                  width: '3.5',
+                                  height: '3.5',
+                                }),
                           ),
                           h.Style({
                             backgroundColor:
@@ -3031,13 +3155,41 @@ const polar = <M>(
     [
       interactiveFigure,
       h.div(
-        [h.Class('flex gap-2.5 text-sm text-muted-foreground justify-center')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              gap: '2.5',
+              fontSize: 'type.14',
+              lineHeight: 'fine',
+              color: 'mutedForeground',
+              justifyContent: 'center',
+            }),
+          ),
+        ],
         items.map((item) =>
           h.span(
-            [h.Class('inline-flex items-center gap-1')],
+            [
+              h.Class(
+                css({
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '1',
+                }),
+              ),
+            ],
             [
               h.span(
-                [h.Class('inline-block size-3.5'), h.Style({ backgroundColor: item.color })],
+                [
+                  h.Class(
+                    css({
+                      display: 'inline-block',
+                      width: '3.5',
+                      height: '3.5',
+                    }),
+                  ),
+                  h.Style({ backgroundColor: item.color }),
+                ],
                 [],
               ),
               item.name,
@@ -3418,9 +3570,7 @@ export const Treemap = <M>(props: HierarchyChartProps<M>, h: HtmlBuilder<M>): Ht
         : [
             h.div(
               [
-                h.Class(
-                  'border-border/50 bg-background gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl',
-                ),
+                h.Class(chartTooltipClass),
                 h.Style({
                   position: 'absolute',
                   left: `${Math.min(85, (props.activeTooltip.x / width) * 100)}%`,

@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { Listbox } from '@foldkit/ui'
 import { Option } from 'effect'
 import type { HtmlBuilder } from 'foldkit/html'
@@ -25,34 +26,96 @@ export const languagePicker = (locale: Locale, model: Listbox.Model, h: HtmlBuil
           ariaLabel: copyIn(locale).panels.language,
           // Settings clips its overflow, so the menu portals out of it.
           anchor: { placement: 'bottom-end', gap: 6, portal: true },
-          buttonClassName:
-            'flex h-8 min-w-32 cursor-pointer items-center justify-between gap-3 rounded-lg bg-well px-2.5 text-sm text-foreground shadow-well outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50',
+          buttonClassName: css({
+            display: 'flex',
+            height: '8',
+            minWidth: '32',
+            cursor: 'pointer',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '3',
+            borderRadius: 'lg',
+            backgroundColor: 'well',
+            paddingInline: '2.5',
+            fontSize: 'type.14',
+            lineHeight: 'fine',
+            color: 'foreground',
+            boxShadow: 'well',
+            outlineStyle: 'none',
+            _hover: { backgroundColor: 'muted' },
+            _focusVisible: {
+              boxShadow:
+                'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+            },
+          }),
           buttonContent: h.span(
-            [h.Class('flex w-full items-center justify-between gap-3')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  width: '100%',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '3',
+                }),
+              ),
+            ],
             [
               h.span(
                 [h.Attribute('lang', locale)],
                 [supportedLocales.find((choice) => choice.value === locale)?.label ?? locale],
               ),
-              icon(h, ChevronDown, 'size-4 text-muted-foreground'),
+              icon(h, ChevronDown, css({ width: '4', height: '4', color: 'mutedForeground' })),
             ],
           ),
-          itemsClassName:
-            'z-50 min-w-40 rounded-xl border border-border bg-raised p-1 text-foreground shadow-lg outline-none',
-          itemsScrollClassName: 'max-h-64 overflow-y-auto',
-          backdropClassName: 'fixed inset-0 z-40',
+          itemsClassName: css({
+            zIndex: '50',
+            minWidth: '40',
+            borderRadius: 'xl',
+            borderWidth: '1px',
+            borderColor: 'border',
+            layerStyle: 'raised',
+            padding: '1',
+            color: 'foreground',
+            boxShadow: 'lg',
+            outlineStyle: 'none',
+          }),
+          itemsScrollClassName: css({ maxHeight: '64', overflowY: 'auto' }),
+          backdropClassName: css({ position: 'fixed', inset: '0', zIndex: '40' }),
           itemToConfig: (choice, { isActive, isSelected }) => ({
-            className: `flex min-h-9 cursor-pointer items-center gap-2 rounded-lg px-2.5 text-sm outline-none ${isActive ? 'bg-muted text-foreground' : ''}`,
+            className: cx(
+              css({
+                display: 'flex',
+                minHeight: '9',
+                cursor: 'pointer',
+                alignItems: 'center',
+                gap: '2',
+                borderRadius: 'lg',
+                paddingInline: '2.5',
+                fontSize: 'type.14',
+                lineHeight: 'fine',
+                outlineStyle: 'none',
+              }),
+              isActive ? css({ backgroundColor: 'muted', color: 'foreground' }) : '',
+            ),
             content: h.span(
               [
-                h.Class('flex w-full items-center justify-between gap-4'),
+                h.Class(
+                  css({
+                    display: 'flex',
+                    width: '100%',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '4',
+                  }),
+                ),
                 h.Attribute('lang', choice.value),
               ],
               [
                 h.span([], [choice.label]),
                 h.span(
-                  [h.AriaHidden(true), h.Class(isSelected ? '' : 'invisible')],
-                  [icon(h, Check, 'size-4 text-primary')],
+                  [h.AriaHidden(true), h.Class(isSelected ? '' : css({ visibility: 'hidden' }))],
+                  [icon(h, Check, css({ width: '4', height: '4', color: 'primary' }))],
                 ),
               ],
             ),

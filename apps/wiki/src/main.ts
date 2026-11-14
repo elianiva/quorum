@@ -17,6 +17,8 @@ export const Model = Schema.Struct({
   path: Schema.String,
   /** The navigation drawer is open on a phone. */
   menu: Schema.Boolean,
+  /** The language menu in the header is open. */
+  languageMenu: Schema.Boolean,
   /** Hubs the reader opened or closed by hand, against whether the current page opens them. */
   navToggled: Schema.Array(Schema.String),
   search: Search.Model,
@@ -33,6 +35,8 @@ export const Message = defineMessageUnion({
   ChangedUrl: { url: Url },
   Navigated: {},
   MenuToggled: {},
+  LanguageMenuToggled: {},
+  LanguageMenuClosed: {},
   NavToggled: { path: Schema.String },
   SearchChanged: { message: Search.Message },
   SpoilersChanged: { message: Spoilers.Message },
@@ -94,11 +98,18 @@ const scroller = (element: Element): Element | null => {
 /** The current tab and the current sidebar row come into view once the page has drawn. */
 const RevealCurrent = Command.define('RevealCurrent', {
   messages: [Message.Navigated],
-  execute: Effect.sync(() => {
-    setTimeout(() => {
-      for (const current of document.querySelectorAll('nav [aria-current]'))
-        if (scroller(current)) current.scrollIntoView({ block: 'nearest', inline: 'center' })
-    }, 60)
+  execute: Effect.promise(async () => {
+    // A tab is as wide as its label, so its place settles only after the web font loads.
+    await document.fonts.ready
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    const current = document.querySelectorAll('nav [aria-current]')
+    if (current.length === 0) {
+      for (const nav of document.querySelectorAll('nav'))
+        if (nav.scrollWidth > nav.clientWidth) nav.scrollLeft = 0
+      return Message.Navigated()
+    }
+    for (const entry of current)
+      if (scroller(entry)) entry.scrollIntoView({ block: 'nearest', inline: 'start' })
     return Message.Navigated()
   }),
 })
@@ -148,6 +159,7 @@ export const init: Runtime.RoutingApplicationInit<Model, Message> = (url) => {
       locale,
       path,
       menu: false,
+      languageMenu: false,
       navToggled: [],
       search: Search.init(locale),
       spoilers: Spoilers.init,
@@ -192,7 +204,14 @@ export const update = (model: Model, message: Message): Return =>
       // search, the drawer and the open hubs belong to the page, not to the scroll position.
       if (path === model.path) return hash ? { model, commands: [ScrollTo({ hash })] } : { model }
       const visited = foldProgress(
-        { ...model, path, menu: false, navToggled: [], search: Search.init(model.locale) },
+        {
+          ...model,
+          path,
+          menu: false,
+          languageMenu: false,
+          navToggled: [],
+          search: Search.init(model.locale),
+        },
         Progress.Message.Visited({ path }),
       )
       const wantProject = path === '/' && model.project.status === 'idle'
@@ -209,7 +228,11 @@ export const update = (model: Model, message: Message): Return =>
       }
     },
     Navigated: () => ({ model }),
-    MenuToggled: () => ({ model: { ...model, menu: !model.menu } }),
+    MenuToggled: () => ({ model: { ...model, menu: !model.menu, languageMenu: false } }),
+    LanguageMenuToggled: () => ({
+      model: { ...model, languageMenu: !model.languageMenu },
+    }),
+    LanguageMenuClosed: () => ({ model: { ...model, languageMenu: false } }),
     NavToggled: ({ path }) => ({
       model: {
         ...model,

@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
@@ -34,11 +35,20 @@ const routeTable = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readon
       return next.length === REQUEST_KINDS.length ? null : next
     }
     return h.div(
-      [h.Key(link.to), h.Class('flex flex-col gap-1.5')],
+      [
+        h.Key(link.to),
+        h.Class(
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5',
+          }),
+        ),
+      ],
       [
         nodeLink(game, target, h),
         segmented(
-          'grid-cols-4',
+          css({ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }),
           REQUEST_KINDS.map((kind) => {
             const next = toggled(kind)
             return choice(
@@ -48,7 +58,17 @@ const routeTable = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readon
               Message.LinkKindsChosen({ from: node.id, to: link.to, kinds: next }),
               [
                 h.span(
-                  [h.Class('w-full truncate text-center')],
+                  [
+                    h.Class(
+                      css({
+                        width: '100%',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        textAlign: 'center',
+                      }),
+                    ),
+                  ],
                   [t.inspectorShared.kindShort[kind]],
                 ),
               ],

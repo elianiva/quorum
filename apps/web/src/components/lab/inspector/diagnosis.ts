@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { ArrowUpRight, ChevronRight } from 'lucide'
 import { REQUEST_KINDS, type Kind } from '@quorum/simulation/catalog'
@@ -13,7 +14,6 @@ import { Message } from '@/game/message.ts'
 import type { Model } from '@/game/model.ts'
 import { hourBefore, loadChangeOf, type NodeSample } from '@/game/node-metrics.ts'
 import { WIKI_URL } from '@/platform/analytics.ts'
-import { cn } from '@/lib/utils'
 import { caption, percent } from './shared.ts'
 
 /*
@@ -36,7 +36,23 @@ const whyLink = (anchor: string, h: HtmlBuilder<Message>): Html => {
       h.Rel('noreferrer noopener'),
       h.AriaLabel(t.inspector.whyTitle),
       h.Class(
-        'group inline-flex items-center gap-0.5 text-[calc(12px*var(--type-scale))] text-muted-foreground underline decoration-foreground/25 underline-offset-[3px] hover:text-foreground hover:decoration-foreground',
+        cx(
+          css({
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5',
+            fontSize: 'type.12',
+            color: 'mutedForeground',
+            textDecorationLine: 'underline',
+            textDecorationColor: 'color-mix(in oklab, var(--foreground) 25%, transparent)',
+            textUnderlineOffset: '3px',
+            _hover: {
+              color: 'foreground',
+              textDecorationColor: 'foreground',
+            },
+          }),
+          'group',
+        ),
       ),
     ],
     [
@@ -44,7 +60,17 @@ const whyLink = (anchor: string, h: HtmlBuilder<Message>): Html => {
       icon(
         h,
         ArrowUpRight,
-        'size-3 shrink-0 transition-transform group-hover:translate-x-px group-hover:-translate-y-px',
+        css({
+          width: '3',
+          height: '3',
+          flexShrink: '0',
+          transitionProperty: 'transform',
+          transitionDuration: 'fast',
+          transitionTimingFunction: 'out',
+          '.group:hover &': {
+            translate: '1px -1px',
+          },
+        }),
       ),
     ],
   )
@@ -57,10 +83,28 @@ const block = (
   h: HtmlBuilder<Message>,
 ): Html =>
   h.div(
-    [h.Key(anchor), h.Class('flex flex-col gap-1')],
+    [
+      h.Key(anchor),
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex items-baseline justify-between gap-2')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: '2',
+            }),
+          ),
+        ],
         [caption(title, h), whyLink(anchor, h)],
       ),
       ...body,
@@ -254,38 +298,83 @@ export const costReceipts = (
         sorted.map((kind) => {
           const receipt = own.receipts[kind]!
           return h.details(
-            [h.Key(kind), h.Class('group/receipt')],
+            [h.Key(kind), h.Class('group-receipt')],
             [
               h.summary(
                 [
                   h.Class(
-                    'flex cursor-pointer list-none items-baseline justify-between gap-3 px-3 py-1.5 [&::-webkit-details-marker]:hidden',
+                    css({
+                      display: 'flex',
+                      cursor: 'pointer',
+                      listStyleType: 'none',
+                      alignItems: 'baseline',
+                      justifyContent: 'space-between',
+                      gap: '3',
+                      paddingInline: '3',
+                      paddingBlock: '1.5',
+                      '&::-webkit-details-marker': {
+                        display: 'none',
+                      },
+                    }),
                   ),
                 ],
                 [
                   h.span(
                     [
                       h.Class(
-                        'flex items-center gap-1 text-[calc(12.5px*var(--type-scale))] text-muted-foreground',
+                        css({
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '1',
+                          fontSize: 'type.12-5',
+                          color: 'mutedForeground',
+                        }),
                       ),
                     ],
                     [
                       icon(
                         h,
                         ChevronRight,
-                        'size-3 shrink-0 transition-transform group-open/receipt:rotate-90',
+                        css({
+                          width: '3',
+                          height: '3',
+                          flexShrink: '0',
+                          transitionProperty: 'transform',
+                          transitionDuration: 'fast',
+                          transitionTimingFunction: 'out',
+                          '.group-receipt[open] &': {
+                            rotate: '90deg',
+                          },
+                        }),
                       ),
                       t.catalog.kinds[kind].label,
                     ],
                   ),
                   h.span(
-                    [h.Class(cn(FIGURE, 'text-[calc(12px*var(--type-scale))] whitespace-nowrap'))],
+                    [
+                      h.Class(
+                        cx(
+                          FIGURE,
+                          css({
+                            fontSize: 'type.12',
+                            whiteSpace: 'nowrap',
+                          }),
+                        ),
+                      ),
+                    ],
                     [t.inspector.receiptTotal(ms(t, receipt.total), percent(cpu(kind) / total))],
                   ),
                 ],
               ),
               h.div(
-                [h.Class('pb-1 pl-4')],
+                [
+                  h.Class(
+                    css({
+                      paddingBottom: '1',
+                      paddingLeft: '4',
+                    }),
+                  ),
+                ],
                 [
                   row(t.inspector.receiptBase, ms(t, receipt.base), 'plain', h),
                   ...receipt.lines.map((line) =>

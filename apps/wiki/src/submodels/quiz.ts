@@ -2,11 +2,11 @@ import { Schema } from 'effect'
 import type { Update } from 'foldkit'
 import { defineView } from 'foldkit/submodel'
 import { defineMessageUnion } from 'foldkit/message'
-import { cn } from 'cn'
 import { Check, RotateCcw, X } from 'lucide'
 import { icon } from '@quorum/ui/primitives/icon'
 import { langOf } from '../i18n/lang.ts'
 import type { Locale } from '../i18n/locale.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The quizzes on a page: the option the reader chose for each, by `<page path>#<occurrence>`,
    counting from 1. A check, not a score: answers last until the page reloads. */
@@ -49,15 +49,63 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
   const correct = chosen === right
   const id = `quiz-${quiz.key.replace(/[^a-z0-9]+/gi, '-')}`
   return h.section(
-    [h.Class('not-prose my-8 border-y border-border py-5')],
     [
-      h.div([h.Class('text-[12px] font-medium text-muted-foreground')], [t.title]),
+      h.Class(
+        cx(
+          css({
+            marginBlock: '8',
+            borderTopWidth: '1px',
+            borderTopStyle: 'solid',
+            borderBottomWidth: '1px',
+            borderBottomStyle: 'solid',
+            borderColor: 'border',
+            paddingBlock: '5',
+          }),
+          'not-prose',
+        ),
+      ),
+    ],
+    [
+      h.div(
+        [
+          h.Class(
+            css({
+              fontSize: 'type.12',
+              fontWeight: 'medium',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
+        [t.title],
+      ),
       h.p(
-        [h.Id(id), h.Class('mt-1 text-[16px] leading-snug font-medium text-balance')],
+        [
+          h.Id(id),
+          h.Class(
+            css({
+              marginTop: '1',
+              fontSize: 'type.16',
+              lineHeight: 'snug',
+              fontWeight: 'medium',
+              textWrap: 'balance',
+            }),
+          ),
+        ],
         [quiz.question],
       ),
       h.div(
-        [h.Role('group'), h.AriaLabelledBy(id), h.Class('mt-3 flex flex-col gap-1.5')],
+        [
+          h.Role('group'),
+          h.AriaLabelledBy(id),
+          h.Class(
+            css({
+              marginTop: '3',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5',
+            }),
+          ),
+        ],
         options.map((option, at) => {
           const choice = at + 1
           const picked = choice === chosen
@@ -71,12 +119,48 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
               h.AriaPressed(picked ? 'true' : 'false'),
               h.OnClick(Message.Answered({ key: quiz.key, choice })),
               h.Class(
-                cn(
-                  'flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-[14px] transition-colors',
-                  state === 'open' && 'border-border hover:border-foreground/30 hover:bg-muted',
-                  state === 'right' && 'border-ok/50 bg-ok/8 font-medium',
-                  state === 'wrong' && 'border-danger/50 bg-danger/8',
-                  state === 'other' && 'border-border text-muted-foreground',
+                cx(
+                  css({
+                    display: 'flex',
+                    width: '100%',
+                    alignItems: 'center',
+                    gap: '3',
+                    borderRadius: 'md',
+                    borderWidth: '1px',
+                    borderStyle: 'solid',
+                    paddingInline: '3',
+                    paddingBlock: '2',
+                    textAlign: 'left',
+                    fontSize: 'type.14',
+                    transitionProperty:
+                      'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
+                    transitionDuration: 'fast',
+                    transitionTimingFunction: 'default',
+                  }),
+                  state === 'open' &&
+                    css({
+                      borderColor: 'border',
+                      _hover: {
+                        borderColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
+                        backgroundColor: 'muted',
+                      },
+                    }),
+                  state === 'right' &&
+                    css({
+                      borderColor: 'color-mix(in oklab, var(--ok) 50%, transparent)',
+                      backgroundColor: 'color-mix(in oklab, var(--ok) 8%, transparent)',
+                      fontWeight: 'medium',
+                    }),
+                  state === 'wrong' &&
+                    css({
+                      borderColor: 'color-mix(in oklab, var(--danger) 50%, transparent)',
+                      backgroundColor: 'color-mix(in oklab, var(--danger) 8%, transparent)',
+                    }),
+                  state === 'other' &&
+                    css({
+                      borderColor: 'border',
+                      color: 'mutedForeground',
+                    }),
                 ),
               ),
             ],
@@ -84,21 +168,54 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
               h.span(
                 [
                   h.Class(
-                    cn(
-                      'grid size-5 shrink-0 place-items-center rounded-full font-mono text-[11px]',
+                    cx(
+                      css({
+                        display: 'grid',
+                        width: '5',
+                        height: '5',
+                        flexShrink: '0',
+                        placeItems: 'center',
+                        borderRadius: 'full',
+                        fontFamily: 'mono',
+                        fontSize: 'type.11',
+                      }),
                       state === 'right'
-                        ? 'bg-ok text-white'
+                        ? css({
+                            backgroundColor: 'ok',
+                            color: 'background',
+                          })
                         : state === 'wrong'
-                          ? 'bg-danger text-white'
-                          : 'border border-border',
+                          ? css({
+                              backgroundColor: 'danger',
+                              color: 'background',
+                            })
+                          : css({
+                              borderWidth: '1px',
+                              borderStyle: 'solid',
+                              borderColor: 'border',
+                            }),
                     ),
                   ),
                 ],
                 [
                   state === 'right'
-                    ? icon(h, Check, 'size-3')
+                    ? icon(
+                        h,
+                        Check,
+                        css({
+                          width: '3',
+                          height: '3',
+                        }),
+                      )
                     : state === 'wrong'
-                      ? icon(h, X, 'size-3')
+                      ? icon(
+                          h,
+                          X,
+                          css({
+                            width: '3',
+                            height: '3',
+                          }),
+                        )
                       : String.fromCharCode(64 + choice),
                 ],
               ),
@@ -110,13 +227,41 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
       chosen === null
         ? h.empty
         : h.div(
-            [h.AriaLive('polite'), h.Class('mt-3 flex items-start gap-3')],
+            [
+              h.AriaLive('polite'),
+              h.Class(
+                css({
+                  marginTop: '3',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '3',
+                }),
+              ),
+            ],
             [
               h.p(
-                [h.Class('flex-1 text-[14px] leading-relaxed')],
+                [
+                  h.Class(
+                    css({
+                      flex: '1 1 0%',
+                      fontSize: 'type.14',
+                      lineHeight: 'relaxed',
+                    }),
+                  ),
+                ],
                 [
                   h.strong(
-                    [h.Class(correct ? 'text-ok' : 'text-danger')],
+                    [
+                      h.Class(
+                        correct
+                          ? css({
+                              color: 'ok',
+                            })
+                          : css({
+                              color: 'danger',
+                            }),
+                      ),
+                    ],
                     [correct ? t.right : t.wrong],
                   ),
                   quiz.explain,
@@ -129,10 +274,36 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                       h.Type('button'),
                       h.OnClick(Message.Reset({ key: quiz.key })),
                       h.Class(
-                        'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 text-[12px] font-medium hover:bg-muted',
+                        css({
+                          display: 'inline-flex',
+                          height: '8',
+                          flexShrink: '0',
+                          alignItems: 'center',
+                          gap: '1.5',
+                          borderRadius: 'md',
+                          borderWidth: '1px',
+                          borderStyle: 'solid',
+                          borderColor: 'border',
+                          paddingInline: '2.5',
+                          fontSize: 'type.12',
+                          fontWeight: 'medium',
+                          _hover: {
+                            backgroundColor: 'muted',
+                          },
+                        }),
                       ),
                     ],
-                    [icon(h, RotateCcw, 'size-3.5'), t.retry],
+                    [
+                      icon(
+                        h,
+                        RotateCcw,
+                        css({
+                          width: '3.5',
+                          height: '3.5',
+                        }),
+                      ),
+                      t.retry,
+                    ],
                   ),
             ],
           ),

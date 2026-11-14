@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
@@ -29,7 +30,7 @@ const search = (node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
           (searchVariant) => Message.SearchOptionsChosen({ nodeId: node.id, searchVariant }),
           h,
           () => true,
-          'grid-cols-3',
+          css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
         ),
         caption(
           variant.jvm
@@ -52,7 +53,7 @@ const search = (node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
                 (searchShards) => Message.SearchOptionsChosen({ nodeId: node.id, searchShards }),
                 h,
                 () => true,
-                'grid-cols-3',
+                css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
               ),
               picker(
                 'search-replicas',
@@ -64,7 +65,7 @@ const search = (node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
                   Message.SearchOptionsChosen({ nodeId: node.id, searchReplicas }),
                 h,
                 () => true,
-                'grid-cols-3',
+                css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
               ),
               caption(t.inspectorSearch.moreShardsParallelizeTheIndexAnd, h),
             ],
@@ -82,7 +83,7 @@ const search = (node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
                 (heap) => Message.SearchOptionsChosen({ nodeId: node.id, heap }),
                 h,
                 () => true,
-                'grid-cols-3',
+                css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
               ),
               caption(
                 node.heap === 'small'

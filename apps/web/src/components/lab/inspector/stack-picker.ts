@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { Option } from 'effect'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { Check, Lock, Search } from 'lucide'
@@ -17,7 +18,6 @@ import type { Model } from '@/game/model.ts'
 import { StackPickerMessage, type StackPicker } from '@/game/stack-picker.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { WELL, stackLogo } from '@quorum/ui/game/bits'
-import { cn } from '@/lib/utils'
 
 /** Accept unaccented keyboard input as well as the spelling shown in the list. */
 const searchable = (text: string): string =>
@@ -65,27 +65,103 @@ const row = <Item extends string>(
         : []),
       ...(isDisabled ? [] : [h.OnClick(config.onChoose(item))]),
       h.Class(
-        cn(
-          'flex min-h-8 items-center gap-2 px-2.5 text-[calc(12px*var(--type-scale))] transition-colors',
-          isActive ? 'bg-muted text-foreground' : 'text-muted-foreground',
-          isSelected && 'text-foreground',
+        cx(
+          css({
+            display: 'flex',
+            minHeight: '8',
+            alignItems: 'center',
+            gap: '2',
+            paddingInline: '2.5',
+            fontSize: 'type.12',
+            transitionProperty:
+              'color, background-color, border-color, text-decoration-color, fill, stroke',
+            transitionDuration: 'fast',
+            transitionTimingFunction: 'out',
+          }),
+          isActive
+            ? css({
+                backgroundColor: 'muted',
+                color: 'foreground',
+              })
+            : css({
+                color: 'mutedForeground',
+              }),
+          isSelected &&
+            css({
+              color: 'foreground',
+            }),
           isDisabled
-            ? 'cursor-not-allowed text-muted-foreground/45 [&_svg]:opacity-45 [&_svg]:grayscale'
-            : 'cursor-pointer hover:bg-muted hover:text-foreground',
+            ? css({
+                cursor: 'not-allowed',
+                color: 'color-mix(in oklab, var(--muted-foreground) 45%, transparent)',
+                '& svg': {
+                  opacity: 0.45,
+                  filter: 'grayscale(100%)',
+                },
+              })
+            : css({
+                cursor: 'pointer',
+                _hover: {
+                  backgroundColor: 'muted',
+                  color: 'foreground',
+                },
+              }),
         ),
       ),
     ],
     [
       ...(logo ? [logo] : []),
-      h.span([h.Class('min-w-0 flex-1 truncate')], [config.labelOf(item)]),
+      h.span(
+        [
+          h.Class(
+            css({
+              minWidth: '0',
+              flex: '1 1 0%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }),
+          ),
+        ],
+        [config.labelOf(item)],
+      ),
       config.proposed === item
         ? h.span(
-            [h.Class('text-[calc(10px*var(--type-scale))] text-group-compute')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.10',
+                  color: 'groupCompute',
+                }),
+              ),
+            ],
             [config.t.inspectorShared.proposed],
           )
         : h.empty,
-      isSelected ? icon(h, Check, 'size-3.5 shrink-0 text-primary') : h.empty,
-      isDisabled ? icon(h, Lock, 'size-3 shrink-0 text-muted-foreground/45') : h.empty,
+      isSelected
+        ? icon(
+            h,
+            Check,
+            css({
+              width: '3.5',
+              height: '3.5',
+              flexShrink: '0',
+              color: 'primary',
+            }),
+          )
+        : h.empty,
+      isDisabled
+        ? icon(
+            h,
+            Lock,
+            css({
+              width: '3',
+              height: '3',
+              flexShrink: '0',
+              color: 'color-mix(in oklab, var(--muted-foreground) 45%, transparent)',
+            }),
+          )
+        : h.empty,
     ],
   )
 }
@@ -102,16 +178,46 @@ const pickerView = <Item extends string>(
   const active = visible[config.picker.active]
   const activeIndex = active === undefined ? -1 : config.picker.active
   return h.div(
-    [h.Class(cn(WELL, 'flex flex-col overflow-hidden'))],
+    [
+      h.Class(
+        cx(
+          WELL,
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }),
+        ),
+      ),
+    ],
     [
       h.label(
         [
           h.Class(
-            'flex h-8 shrink-0 items-center gap-2 border-b border-hairline px-2.5 text-muted-foreground',
+            css({
+              display: 'flex',
+              height: '8',
+              flexShrink: '0',
+              alignItems: 'center',
+              gap: '2',
+              borderBottomWidth: '1px',
+              borderBottomStyle: 'solid',
+              borderColor: 'hairline',
+              paddingInline: '2.5',
+              color: 'mutedForeground',
+            }),
           ),
         ],
         [
-          icon(h, Search, 'size-3.5 shrink-0'),
+          icon(
+            h,
+            Search,
+            css({
+              width: '3.5',
+              height: '3.5',
+              flexShrink: '0',
+            }),
+          ),
           h.input([
             h.Id(`${config.id}-search`),
             h.Type('search'),
@@ -127,7 +233,18 @@ const pickerView = <Item extends string>(
             h.Autocomplete('off'),
             h.Spellcheck(false),
             h.Class(
-              'h-full min-w-0 flex-1 bg-transparent text-[calc(12px*var(--type-scale))] text-foreground outline-none placeholder:text-muted-foreground',
+              css({
+                height: '100%',
+                minWidth: '0',
+                flex: '1 1 0%',
+                backgroundColor: 'transparent',
+                fontSize: 'type.12',
+                color: 'foreground',
+                outlineStyle: 'none',
+                '&::placeholder': {
+                  color: 'mutedForeground',
+                },
+              }),
             ),
             h.OnInput((value) =>
               config.toParentMessage(StackPickerMessage.Searched({ query: value })),
@@ -155,7 +272,16 @@ const pickerView = <Item extends string>(
       ),
       visible.length === 0
         ? h.p(
-            [h.Class('px-2.5 py-2 text-[calc(11px*var(--type-scale))] text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  paddingInline: '2.5',
+                  paddingBlock: '2',
+                  fontSize: 'type.11',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
             [config.t.inspectorShared.noMatches],
           )
         : h.ul(
@@ -164,7 +290,17 @@ const pickerView = <Item extends string>(
               h.Role('listbox'),
               h.AriaLabel(config.ariaLabel),
               h.Class(
-                'max-h-40 divide-y divide-hairline overflow-y-auto overscroll-contain [scrollbar-width:thin]',
+                css({
+                  maxHeight: '40',
+                  '& > :not(:last-child)': {
+                    borderBottomWidth: '1px',
+                    borderBottomStyle: 'solid',
+                    borderColor: 'hairline',
+                  },
+                  overflowY: 'auto',
+                  overscrollBehavior: 'contain',
+                  scrollbarWidth: 'thin',
+                }),
               ),
             ],
             visible.map((item, index) => row(config, item, index, item === active, h)),
@@ -198,7 +334,15 @@ export const runtimePickerView = (
           RUNTIMES[id].name,
           LANGUAGES[RUNTIMES[id].language].name,
         ].join(' '),
-      logoOf: (id) => stackLogo(RUNTIMES[id].language, 'size-4', h),
+      logoOf: (id) =>
+        stackLogo(
+          RUNTIMES[id].language,
+          css({
+            width: '4',
+            height: '4',
+          }),
+          h,
+        ),
       isReady: (id) => runtimeReady(game, id),
       lockHintOf: (id) => t.inspectorShared.researchToUnlock(t.catalog.runtimes[id].name),
       proposed,
@@ -235,7 +379,17 @@ export const frameworkPickerView = (
       items,
       labelOf: (id) => t.catalog.frameworks[id].name,
       searchOf: (id) => `${t.catalog.frameworks[id].name} ${FRAMEWORKS[id].name}`,
-      logoOf: (id) => (id === 'none' ? null : stackLogo(id, 'size-4', h)),
+      logoOf: (id) =>
+        id === 'none'
+          ? null
+          : stackLogo(
+              id,
+              css({
+                width: '4',
+                height: '4',
+              }),
+              h,
+            ),
       isReady: (id) => frameworkReady(game, id),
       lockHintOf: (id) => t.inspectorShared.researchToUnlock(t.catalog.frameworks[id].name),
       proposed: null,

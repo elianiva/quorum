@@ -1,10 +1,17 @@
+import { css, keyframes, cx } from '@quorum/styled-system/css'
 import type { Attribute, ChildAttribute, Html, HtmlBuilder } from 'foldkit/html'
 import type { IconNode } from 'lucide'
 import { Loader2 } from 'lucide'
 
-import { cn } from 'cn'
+const spin = keyframes({
+  to: { transform: 'rotate(360deg)' },
+})
 
-export const spinnerClass = 'size-4 animate-spin'
+export const spinnerClass = css({
+  width: '4',
+  height: '4',
+  animation: `${spin} 1s linear infinite`,
+})
 
 type StyleConfig = Readonly<{ className?: string }>
 
@@ -30,7 +37,7 @@ export const spinner = <M>(config: StyleConfig, h: HtmlBuilder<M>): Html =>
       h.DataAttribute('slot', 'spinner'),
       h.Role('status'),
       h.AriaLabel('Loading'),
-      h.Class(cn(spinnerClass, config.className)),
+      h.Class(cx(spinnerClass, config.className)),
       h.Xmlns('http://www.w3.org/2000/svg'),
       h.Fill('none'),
       h.ViewBox('0 0 24 24'),

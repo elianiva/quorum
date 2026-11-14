@@ -1,9 +1,8 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { Dialog as FoldkitDialog } from '@foldkit/ui'
 import type { Attribute, ChildAttribute, Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
-
-import { cn } from 'cn'
 
 // Re-export the @foldkit/ui Dialog submodel surface so a foldcn Dialog is a
 // drop-in for wiring `h.submodel`.
@@ -34,33 +33,153 @@ export type RenderInfo = FoldkitDialog.RenderInfo
 /** foldkit delta: the host <dialog> element's own chrome (upstream Root renders
  *  nothing). Backdrop/panel are fixed-position; this only neutralizes the
  *  native dialog box. */
-export const dialogClass = 'bg-transparent p-0 open:flex items-center justify-center'
+export const dialogClass = css({
+  backgroundColor: 'transparent',
+  padding: '0',
+  _open: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+})
 
 // The @foldkit/ui Dialog defers Animation submodel attributes onto the
 // backdrop/panel elements: `data-enter` while entering, `data-leave` while
 // leaving (never `data-state`). The sync script rewrites upstream's
 // `data-open:`/`data-closed:` animation utilities to these windows during token
 // sync; persistent `data-open:` styling passes through untouched.
-export const dialogBackdropClass =
-  'data-enter:animate-in data-leave:animate-out data-leave:fade-out-0 data-enter:fade-in-0 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs fixed inset-0 isolate z-50'
+export const dialogBackdropClass = cx(
+  css({
+    backgroundColor: 'color-mix(in oklab, #000 10%, transparent)',
+    '@supports (backdrop-filter: blur(0))': {
+      backdropFilter: 'blur(4px)',
+    },
+    position: 'fixed',
+    inset: '0',
+    isolation: 'isolate',
+    zIndex: '50',
+  }),
+  'enter-backdrop',
+)
 
-export const dialogPanelClass =
-  'bg-surface text-popover-foreground shadow-float data-enter:animate-in data-leave:animate-out data-leave:fade-out-0 data-enter:fade-in-0 data-leave:zoom-out-95 data-enter:zoom-in-95 grid max-w-[calc(100%-2rem)] gap-4 rounded-2xl p-4 text-sm duration-100 sm:max-w-sm fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 outline-none'
+export const dialogPanelClass = cx(
+  css({
+    layerStyle: 'surface',
+    color: 'popoverForeground',
+    boxShadow: 'float',
+    display: 'grid',
+    maxWidth: 'calc(100% - 2rem)',
+    gap: '4',
+    borderRadius: '2xl',
+    padding: '4',
+    fontSize: 'type.14',
+    lineHeight: 'fine',
+    sm: { maxWidth: '96' },
+    position: 'fixed',
+    top: '50%',
+    left: '50%',
+    zIndex: '50',
+    width: '100%',
+    translate: '-50% -50%',
+    outlineStyle: 'none',
+  }),
+  'enter-modal',
+)
 
 /** Upstream renders its close control as `<Button variant="ghost" size="icon-sm"
  *  className="cn-dialog-close">`; compose the same tokens here. */
-export const dialogCloseButtonClass =
-  "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 border border-transparent bg-clip-padding text-sm font-medium focus-visible:ring-3 aria-invalid:ring-3 active:not-aria-[haspopup]:translate-y-px [&_svg:not([class*='size-'])]:size-4 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-all outline-none select-none [&_svg]:pointer-events-none [&_svg]:shrink-0 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50 hover:bg-muted hover:text-foreground dark:hover:bg-muted/50 aria-expanded:bg-muted aria-expanded:text-foreground size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg absolute top-2 right-2"
+export const dialogCloseButtonClass = css({
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  borderColor: 'transparent',
+  backgroundClip: 'padding-box',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
+  display: 'inline-flex',
+  flexShrink: '0',
+  alignItems: 'center',
+  justifyContent: 'center',
+  whiteSpace: 'nowrap',
+  transitionProperty: 'all',
+  transitionDuration: 'fast',
+  transitionTimingFunction: 'default',
+  outlineStyle: 'none',
+  userSelect: 'none',
+  '& svg': { pointerEvents: 'none', flexShrink: '0' },
+  '& svg:not([data-svg-icon])': { width: '4', height: '4' },
+  _focusVisible: {
+    borderColor: 'ring',
+    boxShadow: 'focus',
+  },
+  '[data-text="150"] &': { lineHeight: 'body' },
+  '&[aria-disabled="true"]': { pointerEvents: 'none', opacity: 0.5 },
+  '&[data-disabled]': { pointerEvents: 'none', opacity: 0.5 },
+  '&[aria-invalid="true"]': {
+    borderColor: 'destructive',
+    boxShadow: 'invalid',
+  },
+  _dark: {
+    '&[aria-invalid="true"]': {
+      borderColor: 'color-mix(in oklab, var(--destructive) 50%, transparent)',
+      boxShadow: 'invalid',
+    },
+  },
+  _disabled: { pointerEvents: 'none', opacity: 0.5 },
+  _hover: { backgroundColor: 'muted', color: 'foreground' },
+  _expanded: { backgroundColor: 'muted', color: 'foreground' },
+  width: '7',
+  height: '7',
+  borderRadius: 'md',
+  '&:active:not([aria-haspopup])': { translate: '0 1px' },
+  '[data-slot="button-group"] &': { borderRadius: 'lg' },
+  position: 'absolute',
+  top: '2',
+  right: '2',
+})
 
-export const dialogTitleClass = 'text-base leading-none font-medium font-heading'
+export const dialogTitleClass = css({
+  fontSize: 'type.16',
+  lineHeight: 'none',
+  fontWeight: 'medium',
+  fontFamily: 'heading',
+})
 
-export const dialogDescriptionClass =
-  'text-muted-foreground *:[a]:hover:text-foreground text-sm *:[a]:underline *:[a]:underline-offset-3'
+export const dialogDescriptionClass = css({
+  color: 'mutedForeground',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  '& > a': {
+    textDecorationLine: 'underline',
+    textUnderlineOffset: '3px',
+    _hover: { color: 'foreground' },
+  },
+})
 
-export const dialogHeaderClass = 'gap-2 flex flex-col'
+export const dialogHeaderClass = css({
+  gap: '2',
+  display: 'flex',
+  flexDirection: 'column',
+})
 
-export const dialogFooterClass =
-  'bg-nested -mx-4 -mb-4 rounded-b-2xl border-t border-hairline p-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end'
+export const dialogFooterClass = css({
+  backgroundColor: 'nested',
+  marginInline: '-1rem',
+  marginBottom: '-1rem',
+  borderBottomLeftRadius: '2xl',
+  borderBottomRightRadius: '2xl',
+  borderTopWidth: '1px',
+  borderTopStyle: 'solid',
+  borderColor: 'hairline',
+  padding: '4',
+  display: 'flex',
+  flexDirection: 'column-reverse',
+  gap: '2',
+  sm: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+})
 
 // These abstract away element types, base classes, and attribute spreading.
 // Use inside `styledViewInputs` content callbacks:
@@ -89,7 +208,7 @@ export const header = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.DataAttribute('slot', 'dialog-header'), h.Class(cn(dialogHeaderClass, config.className))],
+    [h.DataAttribute('slot', 'dialog-header'), h.Class(cx(dialogHeaderClass, config.className))],
     children,
   )
 
@@ -103,7 +222,7 @@ export const title = <M>(
     [
       ...(config.attributes ?? []),
       h.DataAttribute('slot', 'dialog-title'),
-      h.Class(cn(dialogTitleClass, config.className)),
+      h.Class(cx(dialogTitleClass, config.className)),
     ],
     children,
   )
@@ -118,7 +237,7 @@ export const description = <M>(
     [
       ...(config.attributes ?? []),
       h.DataAttribute('slot', 'dialog-description'),
-      h.Class(cn(dialogDescriptionClass, config.className)),
+      h.Class(cx(dialogDescriptionClass, config.className)),
     ],
     children,
   )
@@ -129,7 +248,7 @@ export const footer = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.DataAttribute('slot', 'dialog-footer'), h.Class(cn(dialogFooterClass, config.className))],
+    [h.DataAttribute('slot', 'dialog-footer'), h.Class(cx(dialogFooterClass, config.className))],
     children,
   )
 
@@ -143,7 +262,7 @@ export const closeButton = <M>(
     [
       ...(config.attributes ?? []),
       h.DataAttribute('slot', 'dialog-close'),
-      h.Class(cn(dialogCloseButtonClass, config.className)),
+      h.Class(cx(dialogCloseButtonClass, config.className)),
     ],
     children,
   )
@@ -180,20 +299,20 @@ export const styledViewInputs = <M>(
       [
         ...dialog,
         h.DataAttribute('slot', 'dialog'),
-        h.Class(cn(dialogClass, viewInputs.className)),
+        h.Class(cx(dialogClass, viewInputs.className)),
       ],
       isVisible
         ? [
             h.div([
               ...backdrop,
               h.DataAttribute('slot', 'dialog-overlay'),
-              h.Class(cn(dialogBackdropClass, viewInputs.backdropClass)),
+              h.Class(cx(dialogBackdropClass, viewInputs.backdropClass)),
             ]),
             h.div(
               [
                 ...panel,
                 h.DataAttribute('slot', 'dialog-content'),
-                h.Class(cn(dialogPanelClass, viewInputs.panelClass)),
+                h.Class(cx(dialogPanelClass, viewInputs.panelClass)),
               ],
               viewInputs.content({ closeButton, title, description }, h),
             ),

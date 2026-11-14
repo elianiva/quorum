@@ -1,8 +1,7 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
-
-import { cn } from 'cn'
 
 /**
  * foldkit gap: upstream drives the indicator transform and the value text
@@ -13,17 +12,48 @@ import { cn } from 'cn'
  *
  */
 
-export const progressClass = 'flex flex-wrap gap-3'
+export const progressClass = css({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '3',
+})
 
-export const progressTrackClass =
-  'bg-well shadow-well h-1.5 rounded-full relative flex w-full items-center overflow-x-hidden'
+export const progressTrackClass = css({
+  backgroundColor: 'well',
+  boxShadow: 'well',
+  height: '1.5',
+  borderRadius: 'full',
+  position: 'relative',
+  display: 'flex',
+  width: '100%',
+  alignItems: 'center',
+  overflowX: 'hidden',
+})
 
-export const progressIndicatorClass =
-  'bg-primary-fill rounded-full shadow-[inset_0_1px_0_oklch(1_0_0/0.3)] h-full w-full transition-all'
+export const progressIndicatorClass = css({
+  layerStyle: 'primaryFill',
+  borderRadius: 'full',
+  boxShadow: 'highlightTop',
+  height: '100%',
+  width: '100%',
+  transitionProperty: 'all',
+  transitionDuration: 'fast',
+  transitionTimingFunction: 'out',
+})
 
-export const progressLabelClass = 'text-sm font-medium'
+export const progressLabelClass = css({
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
+})
 
-export const progressValueClass = 'text-muted-foreground ml-auto text-sm tabular-nums'
+export const progressValueClass = css({
+  color: 'mutedForeground',
+  marginLeft: 'auto',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontVariantNumeric: 'tabular-nums',
+})
 
 type StyleConfig = Readonly<{ className?: string }>
 
@@ -53,7 +83,7 @@ const progressIndicator = <M>(value: number | undefined, h: HtmlBuilder<M>): Htm
 export const progress = <M>(config: ProgressConfig, h: HtmlBuilder<M>): Html =>
   h.div(
     [
-      h.Class(cn(progressClass, config.className)),
+      h.Class(cx(progressClass, config.className)),
       h.Role('progressbar'),
       h.AriaValuemin(0),
       h.AriaValuemax(100),
@@ -64,7 +94,7 @@ export const progress = <M>(config: ProgressConfig, h: HtmlBuilder<M>): Html =>
     [
       h.div(
         [
-          h.Class(cn(progressTrackClass, config.trackClassName)),
+          h.Class(cx(progressTrackClass, config.trackClassName)),
           h.DataAttribute('slot', 'progress-track'),
         ],
         [progressIndicator(config.value, h)],
@@ -79,7 +109,7 @@ export const progressLabel = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.span(
-    [h.Class(cn(progressLabelClass, config.className)), h.DataAttribute('slot', 'progress-label')],
+    [h.Class(cx(progressLabelClass, config.className)), h.DataAttribute('slot', 'progress-label')],
     children,
   )
 
@@ -90,7 +120,7 @@ export const progressValue = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.span(
-    [h.Class(cn(progressValueClass, config.className)), h.DataAttribute('slot', 'progress-value')],
+    [h.Class(cx(progressValueClass, config.className)), h.DataAttribute('slot', 'progress-value')],
     children,
   )
 
@@ -98,7 +128,7 @@ export const Progress = Object.assign(progress, {
   track: <M>(config: StyleConfig, children: ReadonlyArray<Child>, h: HtmlBuilder<M>): Html =>
     h.div(
       [
-        h.Class(cn(progressTrackClass, config.className)),
+        h.Class(cx(progressTrackClass, config.className)),
         h.DataAttribute('slot', 'progress-track'),
       ],
       children,

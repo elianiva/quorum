@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { copy, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { BurnLines } from '@quorum/simulation/ledger'
@@ -7,7 +8,6 @@ import { money } from '@quorum/ui/game/format'
 import type { Message } from '@/game/message.ts'
 import { ledgerOf, type Model } from '@/game/model.ts'
 import { FIGURE, WELL } from '@quorum/ui/game/bits'
-import { cn } from '@/lib/utils'
 import { shell } from './panels.ts'
 
 type Line = Readonly<{ key: keyof BurnLines; label: string; note: string }>
@@ -32,28 +32,81 @@ const row = (line: Line, value: number, total: number, h: HtmlBuilder<Message>):
   return h.div(
     [
       h.Class(
-        'grid grid-cols-[1fr_auto_64px] items-baseline gap-4 border-b border-border py-2 last:border-b-0',
+        css({
+          display: 'grid',
+          gridTemplateColumns: '1fr auto 64px',
+          alignItems: 'baseline',
+          gap: '4',
+          borderBottomWidth: '1px',
+          borderBottomStyle: 'solid',
+          borderColor: 'border',
+          paddingBlock: '2',
+          '&:last-child': {
+            borderBottomWidth: '0px',
+          },
+        }),
       ),
     ],
     [
       h.div(
-        [h.Class('min-w-0')],
         [
-          h.div([h.Class('text-[calc(13.5px*var(--type-scale))] text-foreground')], [line.label]),
+          h.Class(
+            css({
+              minWidth: '0',
+            }),
+          ),
+        ],
+        [
           h.div(
-            [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.13-5',
+                  color: 'foreground',
+                }),
+              ),
+            ],
+            [line.label],
+          ),
+          h.div(
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.12',
+                  lineHeight: 'snug',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
             [line.note],
           ),
         ],
       ),
       h.span(
-        [h.Class(cn(FIGURE, 'text-[calc(13.5px*var(--type-scale))] text-foreground'))],
+        [
+          h.Class(
+            cx(
+              FIGURE,
+              css({
+                fontSize: 'type.13-5',
+                color: 'foreground',
+              }),
+            ),
+          ),
+        ],
         [t.cost.s(money(value))],
       ),
       h.span(
         [
           h.Class(
-            cn(FIGURE, 'text-right text-[calc(12px*var(--type-scale))] text-muted-foreground'),
+            cx(
+              FIGURE,
+              css({
+                textAlign: 'right',
+                fontSize: 'type.12',
+                color: 'mutedForeground',
+              }),
+            ),
           ),
         ],
         [total > 0 ? `${Math.round((value / total) * 100)}%` : '—'],
@@ -67,13 +120,45 @@ const figureRow = (label: string, value: string, h: HtmlBuilder<Message>): Html 
   h.div(
     [
       h.Class(
-        'flex items-baseline justify-between gap-4 border-b border-border py-1.5 last:border-b-0',
+        css({
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          gap: '4',
+          borderBottomWidth: '1px',
+          borderBottomStyle: 'solid',
+          borderColor: 'border',
+          paddingBlock: '1.5',
+          '&:last-child': {
+            borderBottomWidth: '0px',
+          },
+        }),
       ),
     ],
     [
-      h.span([h.Class('text-[calc(12.5px*var(--type-scale))] text-foreground')], [label]),
       h.span(
-        [h.Class(cn(FIGURE, 'text-[calc(12.5px*var(--type-scale))] text-muted-foreground'))],
+        [
+          h.Class(
+            css({
+              fontSize: 'type.12-5',
+              color: 'foreground',
+            }),
+          ),
+        ],
+        [label],
+      ),
+      h.span(
+        [
+          h.Class(
+            cx(
+              FIGURE,
+              css({
+                fontSize: 'type.12-5',
+                color: 'mutedForeground',
+              }),
+            ),
+          ),
+        ],
         [value],
       ),
     ],
@@ -101,55 +186,128 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     [],
     [
       h.div(
-        [h.Class('flex items-baseline gap-6 px-5 pb-2')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: '6',
+              paddingInline: '5',
+              paddingBottom: '2',
+            }),
+          ),
+        ],
         [
           h.div(
-            [h.Class('flex flex-col')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexDirection: 'column',
+                }),
+              ),
+            ],
             [
               h.span(
                 [
                   h.Class(
-                    cn(FIGURE, 'text-[calc(20px*var(--type-scale))] leading-none font-medium'),
+                    cx(
+                      FIGURE,
+                      css({
+                        fontSize: 'type.20',
+                        lineHeight: 'none',
+                        fontWeight: 'medium',
+                      }),
+                    ),
                   ),
                 ],
                 [t.cost.s(money(total))],
               ),
               h.span(
-                [h.Class('text-[calc(12px*var(--type-scale))] text-muted-foreground')],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'type.12',
+                      color: 'mutedForeground',
+                    }),
+                  ),
+                ],
                 [t.cost.burn],
               ),
             ],
           ),
           h.div(
-            [h.Class('flex flex-col')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexDirection: 'column',
+                }),
+              ),
+            ],
             [
               h.span(
                 [
                   h.Class(
-                    cn(FIGURE, 'text-[calc(20px*var(--type-scale))] leading-none font-medium'),
+                    cx(
+                      FIGURE,
+                      css({
+                        fontSize: 'type.20',
+                        lineHeight: 'none',
+                        fontWeight: 'medium',
+                      }),
+                    ),
                   ),
                 ],
                 [t.cost.s(money(revenue))],
               ),
               h.span(
-                [h.Class('text-[calc(12px*var(--type-scale))] text-muted-foreground')],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'type.12',
+                      color: 'mutedForeground',
+                    }),
+                  ),
+                ],
                 [t.cost.revenue],
               ),
             ],
           ),
           h.div(
-            [h.Class('flex flex-col')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexDirection: 'column',
+                }),
+              ),
+            ],
             [
               h.span(
                 [
                   h.Class(
-                    cn(FIGURE, 'text-[calc(20px*var(--type-scale))] leading-none font-medium'),
+                    cx(
+                      FIGURE,
+                      css({
+                        fontSize: 'type.20',
+                        lineHeight: 'none',
+                        fontWeight: 'medium',
+                      }),
+                    ),
                   ),
                 ],
                 [margin === null ? '—' : `${Math.round(margin * 100)}%`],
               ),
               h.span(
-                [h.Class('text-[calc(12px*var(--type-scale))] text-muted-foreground')],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'type.12',
+                      color: 'mutedForeground',
+                    }),
+                  ),
+                ],
                 [t.cost.margin],
               ),
             ],
@@ -157,17 +315,50 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
         ],
       ),
       h.div(
-        [h.Class(cn(WELL, 'mx-5 mb-4 px-4 py-2'))],
+        [
+          h.Class(
+            cx(
+              WELL,
+              css({
+                marginInline: '5',
+                marginBottom: '4',
+                paddingInline: '4',
+                paddingBlock: '2',
+              }),
+            ),
+          ),
+        ],
         linesOf(t).map((line) => row(line, lines[line.key], total, h)),
       ),
       ...(unitEconomics.length > 0
         ? [
             h.div(
-              [h.Class('px-5 pb-1 text-[calc(12px*var(--type-scale))] text-muted-foreground')],
+              [
+                h.Class(
+                  css({
+                    paddingInline: '5',
+                    paddingBottom: '1',
+                    fontSize: 'type.12',
+                    color: 'mutedForeground',
+                  }),
+                ),
+              ],
               ['Unit economics · cost per served request'],
             ),
             h.div(
-              [h.Class(cn(WELL, 'mx-5 mb-4 px-4 py-2'))],
+              [
+                h.Class(
+                  cx(
+                    WELL,
+                    css({
+                      marginInline: '5',
+                      marginBottom: '4',
+                      paddingInline: '4',
+                      paddingBlock: '2',
+                    }),
+                  ),
+                ),
+              ],
               unitEconomics.map((kind) =>
                 figureRow(
                   t.catalog.kinds[kind].label,
@@ -181,11 +372,32 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       ...(costAllocation.length > 0
         ? [
             h.div(
-              [h.Class('px-5 pb-1 text-[calc(12px*var(--type-scale))] text-muted-foreground')],
+              [
+                h.Class(
+                  css({
+                    paddingInline: '5',
+                    paddingBottom: '1',
+                    fontSize: 'type.12',
+                    color: 'mutedForeground',
+                  }),
+                ),
+              ],
               ['Cost allocation · by Service'],
             ),
             h.div(
-              [h.Class(cn(WELL, 'mx-5 mb-4 px-4 py-2'))],
+              [
+                h.Class(
+                  cx(
+                    WELL,
+                    css({
+                      marginInline: '5',
+                      marginBottom: '4',
+                      paddingInline: '4',
+                      paddingBlock: '2',
+                    }),
+                  ),
+                ),
+              ],
               costAllocation.map(([id, cost]) => {
                 const service = game.services.find((entry) => entry.id === id)
                 const team = game.teams.find((entry) => entry.id === service?.owner)
@@ -201,13 +413,19 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.p(
         [
           h.Class(
-            'px-5 pb-4 text-[calc(12.5px*var(--type-scale))] leading-snug text-muted-foreground',
+            css({
+              paddingInline: '5',
+              paddingBottom: '4',
+              fontSize: 'type.12-5',
+              lineHeight: 'snug',
+              color: 'mutedForeground',
+            }),
           ),
         ],
         [t.cost.billExplainer],
       ),
     ],
-    'max-w-[560px]',
+    css({ maxWidth: '560px' }),
     h,
   )
 }

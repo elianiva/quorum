@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { formats } from '@/i18n/format.ts'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -21,7 +22,7 @@ const cache = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
         (cacheStrategy) => Message.CacheStrategyChosen({ nodeId: node.id, cacheStrategy }),
         h,
         (id) => id === 'aside' || has(game, 'cache-strategies'),
-        'grid-cols-2',
+        css({ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }),
       ),
       caption(
         CACHE_STRATEGIES[node.cacheStrategy].write === 'ahead'

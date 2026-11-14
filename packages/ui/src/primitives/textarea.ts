@@ -1,22 +1,86 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { Textarea as FoldkitTextarea } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
-import { cn } from 'cn'
-
-export const textareaClass =
-  'bg-well shadow-well border-transparent focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-lg border px-2.5 py-2 text-base transition-colors focus-visible:ring-3 aria-invalid:ring-3 md:text-sm aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:opacity-50 aria-disabled:bg-input/50 data-disabled:bg-input/50 dark:aria-disabled:bg-input/80 dark:data-disabled:bg-input/80 flex field-sizing-content min-h-16 w-full outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50'
+export const textareaClass = css({
+  backgroundColor: 'well',
+  boxShadow: 'well',
+  borderColor: 'transparent',
+  borderRadius: 'lg',
+  borderWidth: '1px',
+  paddingInline: '2.5',
+  paddingBlock: '2',
+  fontSize: 'type.16',
+  lineHeight: 'normal',
+  transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke',
+  transitionTimingFunction: 'default',
+  transitionDuration: 'fast',
+  display: 'flex',
+  minHeight: '16',
+  width: '100%',
+  outlineStyle: 'none',
+  '&::placeholder': { color: 'mutedForeground' },
+  '&:focus-visible': {
+    borderColor: 'ring',
+    boxShadow: 'focusWell',
+  },
+  '&[aria-invalid="true"]': {
+    borderColor: 'destructive',
+    boxShadow:
+      'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+  },
+  _dark: {
+    '&[aria-invalid="true"]': {
+      borderColor: 'color-mix(in oklab, var(--destructive) 50%, transparent)',
+      boxShadow:
+        'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+    },
+    '&[aria-disabled="true"], &[data-disabled]': {
+      backgroundColor: 'color-mix(in oklab, var(--input) 80%, transparent)',
+    },
+  },
+  '&[aria-disabled="true"], &[data-disabled]': {
+    cursor: 'not-allowed',
+    opacity: 0.5,
+    backgroundColor: 'color-mix(in oklab, var(--input) 50%, transparent)',
+  },
+  '&:disabled': { cursor: 'not-allowed', opacity: 0.5 },
+  md: { fontSize: 'type.14', lineHeight: 'fine' },
+  fieldSizing: 'content',
+})
 
 /** Same string as the `label` item's component classes (upstream label.tsx). */
 /** Upstream string re-keyed for foldkit: the label precedes the control, so
  *  upstream's native peer-disabled sibling variant can never match; disabled
- *  state flows from the wrapper (group/field + data-disabled, mirroring
+ *  state flows from the wrapper (group-field + data-disabled, mirroring
  *  switch.ts). */
-export const textareaLabelClass =
-  'gap-2 text-sm leading-none font-medium group-data-[disabled]:opacity-50 flex items-center select-none group-data-[disabled]/field:pointer-events-none group-data-[disabled]/field:cursor-not-allowed group-data-[disabled]/field:opacity-50'
+export const textareaLabelClass = css({
+  gap: '2',
+  fontSize: 'type.14',
+  lineHeight: 'none',
+  fontWeight: 'medium',
+  display: 'flex',
+  alignItems: 'center',
+  userSelect: 'none',
+  '[data-disabled] &': {
+    pointerEvents: 'none',
+    cursor: 'not-allowed',
+    opacity: 0.5,
+  },
+})
 
-export const textareaDescriptionClass = 'text-sm text-muted-foreground'
+export const textareaDescriptionClass = css({
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  color: 'mutedForeground',
+})
 
-export const textareaWrapperClass = 'group/field flex flex-col gap-1.5 w-full'
+export const textareaWrapperClass = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1.5',
+  width: '100%',
+})
 
 export type TextareaConfig<M> = Readonly<{
   id: string
@@ -56,7 +120,7 @@ export const textarea = <M>(config: TextareaConfig<M>, h: HtmlBuilder<M>): Html 
       toView: (attributes) =>
         h.div(
           [
-            h.Class(cn(textareaWrapperClass, config.wrapperClass)),
+            h.Class(cx(textareaWrapperClass, config.wrapperClass)),
             ...(config.isDisabled ? [h.DataAttribute('disabled', '')] : []),
           ],
           [
@@ -64,21 +128,21 @@ export const textarea = <M>(config: TextareaConfig<M>, h: HtmlBuilder<M>): Html 
               [
                 ...attributes.label,
                 h.DataAttribute('slot', 'label'),
-                h.Class(cn(textareaLabelClass, config.labelClass)),
+                h.Class(cx(textareaLabelClass, config.labelClass)),
               ],
               [config.label],
             ),
             h.textarea([
               ...attributes.textarea,
               h.DataAttribute('slot', 'textarea'),
-              h.Class(cn(textareaClass, config.className)),
+              h.Class(cx(textareaClass, config.className)),
             ]),
             config.description === undefined
               ? h.empty
               : h.span(
                   [
                     ...attributes.description,
-                    h.Class(cn(textareaDescriptionClass, config.descriptionClass)),
+                    h.Class(cx(textareaDescriptionClass, config.descriptionClass)),
                   ],
                   [config.description],
                 ),

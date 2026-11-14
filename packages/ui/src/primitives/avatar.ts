@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { Schema as S } from 'effect'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { defineMessageUnion } from 'foldkit/message'
@@ -5,8 +6,6 @@ import { defineView } from 'foldkit/submodel'
 import * as Update from 'foldkit/update'
 
 type Child = Html | string
-
-import { cn } from 'cn'
 
 /**
  * Known foldkit gap: upstream swaps image→fallback automatically via the
@@ -19,22 +18,125 @@ import { cn } from 'cn'
 export const avatarSizeKeys = ['default', 'sm', 'lg'] as const
 export type AvatarSize = (typeof avatarSizeKeys)[number]
 
-export const avatarClass =
-  'size-8 rounded-full after:rounded-full data-[size=lg]:size-10 data-[size=sm]:size-6 group/avatar relative flex shrink-0 select-none after:absolute after:inset-0 after:border after:border-border after:mix-blend-darken dark:after:mix-blend-lighten'
+export const avatarClass = cx(
+  css({
+    width: '8',
+    height: '8',
+    borderRadius: 'full',
+    '&::after': {
+      borderRadius: 'full',
+      position: 'absolute',
+      inset: '0',
+      borderWidth: '1px',
+      borderStyle: 'solid',
+      borderColor: 'border',
+      mixBlendMode: 'darken',
+    },
+    '&[data-size="lg"]': { width: '10', height: '10' },
+    '&[data-size="sm"]': { width: '6', height: '6' },
+    position: 'relative',
+    display: 'flex',
+    flexShrink: '0',
+    userSelect: 'none',
+    _dark: {
+      '&::after': { mixBlendMode: 'lighten' },
+    },
+  }),
+  'group-avatar',
+)
 
-export const avatarImageClass = 'rounded-full aspect-square size-full object-cover'
+export const avatarImageClass = css({
+  borderRadius: 'full',
+  aspectRatio: 'square',
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+})
 
-export const avatarFallbackClass =
-  'bg-raised shadow-raised text-muted-foreground rounded-full flex size-full items-center justify-center text-sm group-data-[size=sm]/avatar:text-xs'
+export const avatarFallbackClass = css({
+  layerStyle: 'raised',
+  boxShadow: 'raised',
+  color: 'mutedForeground',
+  borderRadius: 'full',
+  display: 'flex',
+  width: '100%',
+  height: '100%',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  '.group-avatar[data-size=sm] &': {
+    fontSize: 'type.12',
+    lineHeight: 'compact',
+  },
+})
 
-export const avatarBadgeClass =
-  'bg-primary text-primary-foreground ring-background absolute right-0 bottom-0 z-10 inline-flex items-center justify-center rounded-full bg-blend-color ring-2 select-none group-data-[size=sm]/avatar:size-2 group-data-[size=sm]/avatar:[&>svg]:hidden group-data-[size=default]/avatar:size-2.5 group-data-[size=default]/avatar:[&>svg]:size-2 group-data-[size=lg]/avatar:size-3 group-data-[size=lg]/avatar:[&>svg]:size-2'
+export const avatarBadgeClass = css({
+  backgroundColor: 'primary',
+  color: 'primaryForeground',
+  boxShadow: 'avatar',
+  position: 'absolute',
+  right: '0',
+  bottom: '0',
+  zIndex: '10',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 'full',
+  backgroundBlendMode: 'color',
+  userSelect: 'none',
+  '.group-avatar[data-size=sm] &': {
+    width: '2',
+    height: '2',
+    '& > svg': { display: 'none' },
+  },
+  '.group-avatar[data-size=default] &': {
+    width: '2.5',
+    height: '2.5',
+    '& > svg': { width: '2', height: '2' },
+  },
+  '.group-avatar[data-size=lg] &': {
+    width: '3',
+    height: '3',
+    '& > svg': { width: '2', height: '2' },
+  },
+})
 
-export const avatarGroupClass =
-  'group/avatar-group flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background'
+export const avatarGroupClass = cx(
+  css({
+    display: 'flex',
+    '& > :not(:last-child)': { marginInlineEnd: '-0.5rem' },
+    '& > [data-slot="avatar"]': { boxShadow: 'avatar' },
+  }),
+  'group-avatar-group',
+)
 
-export const avatarGroupCountClass =
-  'bg-muted text-muted-foreground size-8 rounded-full text-sm group-has-data-[size=lg]/avatar-group:size-10 group-has-data-[size=sm]/avatar-group:size-6 [&>svg]:size-4 group-has-data-[size=lg]/avatar-group:[&>svg]:size-5 group-has-data-[size=sm]/avatar-group:[&>svg]:size-3 relative flex shrink-0 items-center justify-center ring-2 ring-background'
+export const avatarGroupCountClass = css({
+  backgroundColor: 'muted',
+  color: 'mutedForeground',
+  width: '8',
+  height: '8',
+  borderRadius: 'full',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  '.group-avatar-group:has([data-size=lg]) &': {
+    width: '10',
+    height: '10',
+    '& > svg': { width: '5', height: '5' },
+  },
+  '.group-avatar-group:has([data-size=sm]) &': {
+    width: '6',
+    height: '6',
+    '& > svg': { width: '3', height: '3' },
+  },
+  '& > svg': { width: '4', height: '4' },
+  position: 'relative',
+  display: 'flex',
+  flexShrink: '0',
+  alignItems: 'center',
+  justifyContent: 'center',
+  boxShadow: 'avatar',
+})
 
 type StyleConfig = Readonly<{ className?: string }>
 
@@ -49,7 +151,7 @@ const avatarContainer = <M>(
 ): Html =>
   h.span(
     [
-      h.Class(cn(avatarClass, config.className)),
+      h.Class(cx(avatarClass, config.className)),
       h.DataAttribute('slot', 'avatar'),
       h.DataAttribute('size', config.size ?? 'default'),
     ],
@@ -60,7 +162,7 @@ const avatarImage = <M>(config: AvatarImageConfig, h: HtmlBuilder<M>): Html =>
   h.img([
     h.Src(config.src),
     ...(config.alt === undefined ? [] : [h.Alt(config.alt)]),
-    h.Class(cn(avatarImageClass, config.className)),
+    h.Class(cx(avatarImageClass, config.className)),
     h.DataAttribute('slot', 'avatar-image'),
   ])
 
@@ -99,7 +201,7 @@ const pictureView = defineView<Model, Message, PictureConfig>((model, config, h)
     : h.img([
         h.Src(config.src),
         ...(config.alt === undefined ? [] : [h.Alt(config.alt)]),
-        h.Class(cn(avatarImageClass, config.className)),
+        h.Class(cx(avatarImageClass, config.className)),
         h.DataAttribute('slot', 'avatar-image'),
         h.OnError(Message.ImageErrored()),
       ]),
@@ -132,7 +234,7 @@ const avatarFallback = <M>(
 ): Html =>
   h.span(
     [
-      h.Class(cn(avatarFallbackClass, config.className)),
+      h.Class(cx(avatarFallbackClass, config.className)),
       h.DataAttribute('slot', 'avatar-fallback'),
     ],
     children,
@@ -144,7 +246,7 @@ const avatarBadge = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.span(
-    [h.Class(cn(avatarBadgeClass, config.className)), h.DataAttribute('slot', 'avatar-badge')],
+    [h.Class(cx(avatarBadgeClass, config.className)), h.DataAttribute('slot', 'avatar-badge')],
     children,
   )
 
@@ -154,7 +256,7 @@ const avatarGroup = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(avatarGroupClass, config.className)), h.DataAttribute('slot', 'avatar-group')],
+    [h.Class(cx(avatarGroupClass, config.className)), h.DataAttribute('slot', 'avatar-group')],
     children,
   )
 
@@ -165,7 +267,7 @@ const avatarGroupCount = <M>(
 ): Html =>
   h.div(
     [
-      h.Class(cn(avatarGroupCountClass, config.className)),
+      h.Class(cx(avatarGroupCountClass, config.className)),
       h.DataAttribute('slot', 'avatar-group-count'),
     ],
     children,

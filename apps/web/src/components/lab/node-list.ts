@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { copy, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { Ledger } from '@quorum/simulation/ledger'
@@ -24,7 +25,22 @@ export const nodeList = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>):
     [
       h.Key('node-list'),
       h.DataAttribute('node-list', ''),
-      h.Class('node-list sr-only'),
+      h.Class(
+        cx(
+          css({
+            position: 'absolute',
+            width: '1px',
+            height: '1px',
+            padding: '0',
+            margin: '-1px',
+            overflow: 'hidden',
+            clip: 'rect(0, 0, 0, 0)',
+            whiteSpace: 'nowrap',
+            borderWidth: '0',
+          }),
+          'node-list',
+        ),
+      ),
       h.AriaLabel(t.nodeList.nodes),
     ],
     [

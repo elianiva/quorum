@@ -7,6 +7,7 @@ import { langOf } from '../i18n/lang.ts'
 import { COMPONENT_IDS, type ComponentId } from '@quorum/simulation/catalog'
 import { heightOf } from '@quorum/ui/board/geometry'
 import { Message } from '../main.ts'
+import { css } from '@quorum/styled-system/css'
 
 /** What node-board.ts asks the board for: the zoom it fits to at most, its fit margin, and its top and bottom insets. */
 const SCALE = 1.1
@@ -40,7 +41,13 @@ export const nodeCard = (type: ComponentId, h: HtmlBuilder<Message>): Html => {
       h.Role('img'),
       h.AriaLabel(l.t.islands.nodeCard(l.cat.COMPONENTS[type].name)),
       // The card is a picture here: the page scrolls, the board does not pan.
-      h.Class('pointer-events-none relative w-full'),
+      h.Class(
+        css({
+          pointerEvents: 'none',
+          position: 'relative',
+          width: '100%',
+        }),
+      ),
       h.Style({ height: `${Math.round((heightOf(type) + 2 * PAD) * SCALE) + 2 * INSET}px` }),
       h.OnMount((cardMounted ??= defineCardMounted())({ type })),
     ],

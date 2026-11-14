@@ -1,4 +1,3 @@
-import { cn } from 'cn'
 import { CVE_TERMS, GLOSSARY_CATEGORIES, type GlossaryEntry } from '@quorum/simulation/catalog'
 import { EYEBROW } from '@quorum/ui/game/bits'
 import type { Page } from '../page.ts'
@@ -15,6 +14,7 @@ import {
   titleOf,
   type Lang,
 } from './shared.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* One page per engineering term, and a hub grouped by category. The game links its terms here. */
 
@@ -58,7 +58,24 @@ const entity = (l: Lang, entry: GlossaryEntry, order: number): Page => {
       h.div(
         [h.Class('prose')],
         [
-          h.p([], [h.span([h.Class(cn(EYEBROW, 'mr-2'))], [category])]),
+          h.p(
+            [],
+            [
+              h.span(
+                [
+                  h.Class(
+                    cx(
+                      EYEBROW,
+                      css({
+                        marginRight: '2',
+                      }),
+                    ),
+                  ),
+                ],
+                [category],
+              ),
+            ],
+          ),
           section(l.title('inQuorum'), [paragraph(entry.inGame, h)], h),
           entry.design?.length
             ? section(
@@ -151,12 +168,33 @@ export const glossaryPages = (l: Lang): ReadonlyArray<Page> => {
               categories[index] ?? titleOf(category, category),
               [
                 h.ul(
-                  [h.Class('not-prose grid gap-x-6 gap-y-1.5 sm:grid-cols-2')],
+                  [
+                    h.Class(
+                      cx(
+                        css({
+                          display: 'grid',
+                          columnGap: '6',
+                          rowGap: '1.5',
+                          sm: {
+                            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                          },
+                        }),
+                        'not-prose',
+                      ),
+                    ),
+                  ],
                   sorted
                     .filter((entry) => entry.category === category)
                     .map((entry) =>
                       h.li(
-                        [h.Key(entry.id), h.Class('text-[14px]')],
+                        [
+                          h.Key(entry.id),
+                          h.Class(
+                            css({
+                              fontSize: 'type.14',
+                            }),
+                          ),
+                        ],
                         [link(termPath(entry.id), entry.term, h)],
                       ),
                     ),

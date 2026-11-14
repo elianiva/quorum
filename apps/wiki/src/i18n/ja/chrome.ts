@@ -23,6 +23,7 @@ export const chrome: Chrome = {
     sections: 'セクション',
     wordmarkWiki: 'Wiki',
     language: '言語',
+    theme: 'ライトモードとダークモードを切り替える',
     switchTo: (name) => `「${name}」でこのページを読みます`,
   },
   quadrants: {
@@ -196,6 +197,7 @@ export const chrome: Chrome = {
   search: {
     placeholder: '検索',
     label: 'Wiki を検索',
+    close: '検索を閉じる',
     results: '検索結果',
     searching: '検索中…',
     unavailable: '検索は利用できません。',
@@ -209,12 +211,11 @@ export const chrome: Chrome = {
   },
   spoilers: {
     title: 'スポイラー',
-    all: 'すべて',
-    allShow: 'すべての時代を表示',
-    hidingAfter: (era) => `${era}以降を非表示`,
-    groupLabel: '到達した時代より後の内容を隠す',
-    showEvery: 'すべての時代を表示する',
-    hideAfter: (era) => `${era}以降を隠す`,
+    hideFuture: '今後の時代を隠す',
+    allEras: 'すべての時代',
+    after: (era) => `${era}より後`,
+    chooseEra: '到達した最後の時代を選ぶ',
+    showEvery: 'すべての時代を表示',
     upTo: (era) => `${era}まで`,
   },
   quiz: {

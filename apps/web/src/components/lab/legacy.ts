@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
@@ -25,7 +26,6 @@ import { confirmSellOf, ledgerOf, type Model, stampedPlaybook } from '@/game/mod
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
 import { textarea } from '@quorum/ui/primitives/textarea'
-import { cn } from '@/lib/utils'
 import { EYEBROW, FIGURE, NESTED, SCROLL, WELL } from '@quorum/ui/game/bits'
 import { SurveyMessage } from '@/game/survey.ts'
 import { isSending, isSent, isSkipped } from '@/game/survey-machine.ts'
@@ -33,18 +33,77 @@ import { shell } from './panels.ts'
 
 const stat = (name: string, value: string, h: HtmlBuilder<Message>) =>
   h.div(
-    [h.Key(name), h.Class('flex flex-col gap-1 px-4 py-3')],
+    [
+      h.Key(name),
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1',
+          paddingInline: '4',
+          paddingBlock: '3',
+        }),
+      ),
+    ],
     [
       h.span([h.Class(EYEBROW)], [name]),
-      h.span([h.Class(cn(FIGURE, 'text-[calc(18px*var(--type-scale))]'))], [value]),
+      h.span(
+        [
+          h.Class(
+            cx(
+              FIGURE,
+              css({
+                fontSize: 'type.18',
+              }),
+            ),
+          ),
+        ],
+        [value],
+      ),
     ],
   )
 
 const stats = (columns: string, children: ReadonlyArray<Html>, h: HtmlBuilder<Message>) =>
-  h.div([h.Class(cn('grid w-full divide-x divide-hairline', WELL, columns))], children)
+  h.div(
+    [
+      h.Class(
+        cx(
+          css({
+            display: 'grid',
+            width: '100%',
+            '& > :not(:last-child)': {
+              borderRightWidth: '1px',
+              borderRightStyle: 'solid',
+              borderColor: 'hairline',
+            },
+          }),
+          WELL,
+          columns,
+        ),
+      ),
+    ],
+    children,
+  )
 
 const footer = (children: ReadonlyArray<Html>, h: HtmlBuilder<Message>) =>
-  h.div([h.Class('flex justify-end gap-2 border-t border-hairline bg-nested px-5 py-3')], children)
+  h.div(
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: '2',
+          borderTopWidth: '1px',
+          borderTopStyle: 'solid',
+          borderColor: 'hairline',
+          backgroundColor: 'nested',
+          paddingInline: '5',
+          paddingBlock: '3',
+        }),
+      ),
+    ],
+    children,
+  )
 
 export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
@@ -58,10 +117,27 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     [],
     [
       h.div(
-        [h.Class(`flex flex-col gap-4 px-5 pt-1 pb-5 ${SCROLL}`)],
+        [
+          h.Class(
+            cx(
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4',
+                paddingInline: '5',
+                paddingTop: '1',
+                paddingBottom: '5',
+              }),
+              SCROLL,
+            ),
+          ),
+        ],
         [
           stats(
-            'grid-cols-4 narrow:grid-cols-2',
+            css({
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              _narrow: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+            }),
             [
               stat(t.legacy.valuation, money(value.valuation), h),
               stat(t.legacy.ruleOf40, value.ruleOf40.toFixed(0), h),
@@ -71,24 +147,70 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             h,
           ),
           h.div(
-            [h.Class(cn(NESTED, 'flex flex-col divide-y divide-hairline'))],
+            [
+              h.Class(
+                cx(
+                  NESTED,
+                  css({
+                    display: 'flex',
+                    flexDirection: 'column',
+                    '& > :not(:last-child)': {
+                      borderBottomWidth: '1px',
+                      borderBottomStyle: 'solid',
+                      borderColor: 'hairline',
+                    },
+                  }),
+                ),
+              ),
+            ],
             offers.map((offer) =>
               h.div(
-                [h.Key(offer.id), h.Class('flex items-center gap-3 px-4 py-3')],
+                [
+                  h.Key(offer.id),
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '3',
+                      paddingInline: '4',
+                      paddingBlock: '3',
+                    }),
+                  ),
+                ],
                 [
                   h.div(
-                    [h.Class('flex min-w-0 flex-1 flex-col gap-0.5')],
+                    [
+                      h.Class(
+                        css({
+                          display: 'flex',
+                          minWidth: '0',
+                          flex: '1 1 0%',
+                          flexDirection: 'column',
+                          gap: '0.5',
+                        }),
+                      ),
+                    ],
                     [
                       h.span(
-                        [h.Class('text-[calc(14px*var(--type-scale))] font-semibold')],
+                        [
+                          h.Class(
+                            css({
+                              fontSize: 'type.14',
+                              fontWeight: 'semibold',
+                            }),
+                          ),
+                        ],
                         [t.catalog.exits[offer.id].name],
                       ),
                       h.span(
                         [
                           h.Class(
-                            cn(
+                            cx(
                               FIGURE,
-                              'text-[calc(11.5px*var(--type-scale))] text-muted-foreground',
+                              css({
+                                fontSize: 'type.11-5',
+                                color: 'mutedForeground',
+                              }),
                             ),
                           ),
                         ],
@@ -108,7 +230,7 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
         ],
       ),
     ],
-    'max-w-[620px]',
+    css({ maxWidth: '620px' }),
     h,
   )
 }
@@ -143,7 +265,11 @@ export const snapshotSvg = (
                 h.Key(`l${index}`),
                 h.D(`M${a.x + 108} ${a.y + 40} L${b.x + 108} ${b.y + 40}`),
                 h.StrokeWidth('6'),
-                h.Class('stroke-foreground/25'),
+                h.Class(
+                  css({
+                    stroke: 'color-mix(in oklab, var(--foreground) 25%, transparent)',
+                  }),
+                ),
               ],
               [],
             )
@@ -177,25 +303,72 @@ const surveySection = (model: Model, h: HtmlBuilder<Message>): Html => {
     return h.div(
       [
         h.Class(
-          cn(
+          cx(
             NESTED,
-            'flex w-full items-center gap-2 px-4 py-3 text-[calc(12.5px*var(--type-scale))]',
+            css({
+              display: 'flex',
+              width: '100%',
+              alignItems: 'center',
+              gap: '2',
+              paddingInline: '4',
+              paddingBlock: '3',
+              fontSize: 'type.12-5',
+            }),
           ),
         ),
       ],
-      [icon(h, Check, 'size-4 text-ok'), h.span([], [t.survey.sent])],
+      [
+        icon(
+          h,
+          Check,
+          css({
+            width: '4',
+            height: '4',
+            color: 'ok',
+          }),
+        ),
+        h.span([], [t.survey.sent]),
+      ],
     )
   const sending = isSending(survey.phase)
   const empty = survey.issues.trim() === '' && survey.likes.trim() === ''
   return h.div(
-    [h.Class('flex w-full flex-col gap-3 border-t border-hairline pt-4')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          width: '100%',
+          flexDirection: 'column',
+          gap: '3',
+          borderTopWidth: '1px',
+          borderTopStyle: 'solid',
+          borderColor: 'hairline',
+          paddingTop: '4',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class('flex flex-col gap-0.5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5',
+            }),
+          ),
+        ],
         [
           h.span([h.Class(EYEBROW)], [t.survey.title]),
           h.span(
-            [h.Class('text-[calc(11.5px*var(--type-scale))] text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.11-5',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
             [t.survey.note],
           ),
         ],
@@ -226,12 +399,27 @@ const surveySection = (model: Model, h: HtmlBuilder<Message>): Html => {
       ),
       survey.phase._tag === 'Failed'
         ? h.span(
-            [h.Class('text-[calc(11.5px*var(--type-scale))] text-warn')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'type.11-5',
+                  color: 'warn',
+                }),
+              ),
+            ],
             [t.survey.failed(survey.phase.note)],
           )
         : h.empty,
       h.div(
-        [h.Class('flex justify-end gap-2')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '2',
+            }),
+          ),
+        ],
         [
           button(
             { onClick: Message.SurveySkipped(), variant: 'ghost', size: 'sm' },
@@ -266,23 +454,57 @@ export const exitedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     [],
     [
       h.div(
-        [h.Class(`flex min-h-0 flex-col items-center gap-4 px-6 pt-1 pb-5 ${SCROLL}`)],
+        [
+          h.Class(
+            cx(
+              css({
+                display: 'flex',
+                minHeight: '0',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '4',
+                paddingInline: '6',
+                paddingTop: '1',
+                paddingBottom: '5',
+              }),
+              SCROLL,
+            ),
+          ),
+        ],
         [
           snapshotSvg(
             row.snapshot,
             h,
-            'h-[180px] w-full max-w-[520px] rounded-xl bg-well shadow-well p-2',
+            css({
+              height: '180px',
+              width: '100%',
+              maxWidth: '520px',
+              borderRadius: 'xl',
+              backgroundColor: 'well',
+              boxShadow: 'well',
+              padding: '2',
+            }),
           ),
           h.span(
             [
               h.Class(
-                cn(FIGURE, 'text-[calc(30px*var(--type-scale))] font-semibold tracking-[-0.035em]'),
+                cx(
+                  FIGURE,
+                  css({
+                    fontSize: 'type.30',
+                    fontWeight: 'semibold',
+                    letterSpacing: 'heading',
+                  }),
+                ),
               ),
             ],
             [t.legacy.legacy2(row.legacy)],
           ),
           stats(
-            'grid-cols-4 narrow:grid-cols-2',
+            css({
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              _narrow: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+            }),
             [
               stat(t.legacy.payout2, money(row.payout), h),
               stat(t.legacy.peakUsers, compact(row.peak), h),
@@ -293,11 +515,28 @@ export const exitedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           ),
           slots > 0
             ? h.div(
-                [h.Class('flex w-full flex-col gap-2')],
+                [
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      width: '100%',
+                      flexDirection: 'column',
+                      gap: '2',
+                    }),
+                  ),
+                ],
                 [
                   h.span([h.Class(EYEBROW)], [t.legacy.keepResearch(kept.length, slots)]),
                   h.div(
-                    [h.Class('flex flex-wrap gap-1.5')],
+                    [
+                      h.Class(
+                        css({
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: '1.5',
+                        }),
+                      ),
+                    ],
                     exited.researched.map((id) =>
                       button(
                         {
@@ -329,7 +568,7 @@ export const exitedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
         h,
       ),
     ],
-    'max-w-[680px]',
+    css({ maxWidth: '680px' }),
     h,
   )
 }
@@ -343,7 +582,23 @@ export const selectionBar = (model: Model, h: HtmlBuilder<Message>): Html => {
         [
           h.Key('selection'),
           h.Class(
-            'pointer-events-auto enter-pop flex h-[52px] items-center gap-2 rounded-2xl bg-surface py-1.5 pr-1.5 pl-3.5 text-[calc(12.5px*var(--type-scale))] shadow-card',
+            cx(
+              css({
+                pointerEvents: 'auto',
+                display: 'flex',
+                height: '52px',
+                alignItems: 'center',
+                gap: '2',
+                borderRadius: '2xl',
+                layerStyle: 'surface',
+                paddingBlock: '1.5',
+                paddingRight: '1.5',
+                paddingLeft: '3.5',
+                fontSize: 'type.12-5',
+                boxShadow: 'card',
+              }),
+              'enter-pop',
+            ),
           ),
         ],
         [
@@ -365,7 +620,14 @@ export const selectionBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                 variant: 'ghost',
                 attributes: [h.AriaLabel(label), h.Title(label)],
               },
-              icon(h, glyph, 'size-4'),
+              icon(
+                h,
+                glyph,
+                css({
+                  width: '4',
+                  height: '4',
+                }),
+              ),
               h,
             ),
           ),
@@ -386,7 +648,23 @@ export const sellBar = (model: Model, h: HtmlBuilder<Message>): Html => {
     [
       h.Key('sell'),
       h.Class(
-        'pointer-events-auto enter-pop flex h-[52px] items-center gap-2 rounded-2xl bg-surface py-1.5 pr-1.5 pl-3.5 text-[calc(12.5px*var(--type-scale))] shadow-card',
+        cx(
+          css({
+            pointerEvents: 'auto',
+            display: 'flex',
+            height: '52px',
+            alignItems: 'center',
+            gap: '2',
+            borderRadius: '2xl',
+            layerStyle: 'surface',
+            paddingBlock: '1.5',
+            paddingRight: '1.5',
+            paddingLeft: '3.5',
+            fontSize: 'type.12-5',
+            boxShadow: 'card',
+          }),
+          'enter-pop',
+        ),
       ),
     ],
     [
@@ -401,7 +679,17 @@ export const sellBar = (model: Model, h: HtmlBuilder<Message>): Html => {
       ),
       button(
         { onClick: Message.SellConfirmed(), size: 'sm', variant: 'destructive' },
-        [icon(h, Trash2, 'size-3.5'), t.legacy.sell2],
+        [
+          icon(
+            h,
+            Trash2,
+            css({
+              width: '3.5',
+              height: '3.5',
+            }),
+          ),
+          t.legacy.sell2,
+        ],
         h,
       ),
       button(
@@ -423,10 +711,34 @@ export const stampBar = (model: Model, h: HtmlBuilder<Message>): Html => {
         [
           h.Key('stamp'),
           h.Class(
-            'enter-pop flex h-[52px] items-center gap-2 rounded-2xl bg-surface px-3.5 text-[calc(12.5px*var(--type-scale))] shadow-card',
+            cx(
+              css({
+                display: 'flex',
+                height: '52px',
+                alignItems: 'center',
+                gap: '2',
+                borderRadius: '2xl',
+                layerStyle: 'surface',
+                paddingInline: '3.5',
+                fontSize: 'type.12-5',
+                boxShadow: 'card',
+              }),
+              'enter-pop',
+            ),
           ),
         ],
-        [icon(h, Stamp, 'size-3.5 text-primary-strong'), t.legacy.clickToPlaceEsc(playbook.name)],
+        [
+          icon(
+            h,
+            Stamp,
+            css({
+              width: '3.5',
+              height: '3.5',
+              color: 'primaryStrong',
+            }),
+          ),
+          t.legacy.clickToPlaceEsc(playbook.name),
+        ],
       )
     : h.empty
 }
@@ -439,36 +751,97 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     t.legacy.playbooks,
     [
       h.span(
-        [h.Class(cn(FIGURE, 'text-[calc(12px*var(--type-scale))] text-muted-foreground'))],
+        [
+          h.Class(
+            cx(
+              FIGURE,
+              css({
+                fontSize: 'type.12',
+                color: 'mutedForeground',
+              }),
+            ),
+          ),
+        ],
         [`${founder.playbooks.length}/${playbookSlots(founder)}`],
       ),
       button(
         { onClick: Message.PlaybookImportAsked(), variant: 'outline', size: 'sm' },
-        [icon(h, Upload, 'size-3.5'), t.legacy.importText],
+        [
+          icon(
+            h,
+            Upload,
+            css({
+              width: '3.5',
+              height: '3.5',
+            }),
+          ),
+          t.legacy.importText,
+        ],
         h,
       ),
     ],
     [
       h.div(
-        [h.Class(`flex flex-col gap-2 px-5 pt-1 pb-5 ${SCROLL}`)],
+        [
+          h.Class(
+            cx(
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2',
+                paddingInline: '5',
+                paddingTop: '1',
+                paddingBottom: '5',
+              }),
+              SCROLL,
+            ),
+          ),
+        ],
         founder.playbooks.length === 0
           ? [
               h.span(
                 [
                   h.Key('empty'),
-                  h.Class('text-[calc(12.5px*var(--type-scale))] text-muted-foreground'),
+                  h.Class(
+                    css({
+                      fontSize: 'type.12-5',
+                      color: 'mutedForeground',
+                    }),
+                  ),
                 ],
                 [t.legacy.shiftClickOrShiftDragNodes],
               ),
             ]
           : founder.playbooks.map((playbook, index) =>
               h.div(
-                [h.Key(`p${index}`), h.Class(cn(NESTED, 'flex items-center gap-2 px-3 py-2'))],
+                [
+                  h.Key(`p${index}`),
+                  h.Class(
+                    cx(
+                      NESTED,
+                      css({
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '2',
+                        paddingInline: '3',
+                        paddingBlock: '2',
+                      }),
+                    ),
+                  ),
+                ],
                 [
                   h.span(
                     [
                       h.Class(
-                        'min-w-0 flex-1 truncate text-[calc(13px*var(--type-scale))] font-medium',
+                        css({
+                          minWidth: '0',
+                          flex: '1 1 0%',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          fontSize: 'type.13',
+                          fontWeight: 'medium',
+                        }),
                       ),
                     ],
                     [playbook.name],
@@ -476,14 +849,30 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.span(
                     [
                       h.Class(
-                        cn(FIGURE, 'text-[calc(11.5px*var(--type-scale))] text-muted-foreground'),
+                        cx(
+                          FIGURE,
+                          css({
+                            fontSize: 'type.11-5',
+                            color: 'mutedForeground',
+                          }),
+                        ),
                       ),
                     ],
                     [t.legacy.nodes(playbook.nodes.length)],
                   ),
                   button(
                     { onClick: Message.PlaybookChosen({ index }), size: 'sm' },
-                    [icon(h, Plus, 'size-3.5'), t.legacy.place],
+                    [
+                      icon(
+                        h,
+                        Plus,
+                        css({
+                          width: '3.5',
+                          height: '3.5',
+                        }),
+                      ),
+                      t.legacy.place,
+                    ],
                     h,
                   ),
                   button(
@@ -493,7 +882,14 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                       size: 'icon-sm',
                       attributes: [h.AriaLabel(t.legacy.copy), h.Title(t.legacy.copyAsText)],
                     },
-                    icon(h, Clipboard, 'size-3.5'),
+                    icon(
+                      h,
+                      Clipboard,
+                      css({
+                        width: '3.5',
+                        height: '3.5',
+                      }),
+                    ),
                     h,
                   ),
                   button(
@@ -503,7 +899,14 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                       size: 'icon-sm',
                       attributes: [h.AriaLabel(t.legacy.deleteText), h.Title(t.legacy.deleteText)],
                     },
-                    icon(h, Trash2, 'size-3.5'),
+                    icon(
+                      h,
+                      Trash2,
+                      css({
+                        width: '3.5',
+                        height: '3.5',
+                      }),
+                    ),
                     h,
                   ),
                 ],
@@ -511,7 +914,7 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             ),
       ),
     ],
-    'max-w-[560px]',
+    css({ maxWidth: '560px' }),
     h,
   )
 }

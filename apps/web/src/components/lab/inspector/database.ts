@@ -1,3 +1,4 @@
+import { css } from '@quorum/styled-system/css'
 import { copy, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
@@ -77,7 +78,7 @@ const database = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readonly
           (chosen) => Message.DbTopologyChosen({ nodeId: node.id, topology: chosen }),
           h,
           () => true,
-          'grid-cols-3',
+          css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
         ),
         caption(
           node.topology === 'sharded'
@@ -90,12 +91,25 @@ const database = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readonly
         ...(leader && leader.id === node.id && node.topology === 'single'
           ? [
               h.div(
-                [h.Class('flex items-baseline justify-between gap-2')],
+                [
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      justifyContent: 'space-between',
+                      gap: '2',
+                    }),
+                  ),
+                ],
                 [
                   h.span(
                     [
                       h.Class(
-                        'text-[calc(12px*var(--type-scale))] font-medium text-muted-foreground',
+                        css({
+                          fontSize: 'type.12',
+                          fontWeight: 'medium',
+                          color: 'mutedForeground',
+                        }),
                       ),
                     ],
                     [t.inspectorDatabase.leader],
@@ -108,18 +122,41 @@ const database = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readonly
         ...(others.length > 0
           ? [
               h.div(
-                [h.Class('flex items-baseline justify-between gap-2')],
+                [
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      justifyContent: 'space-between',
+                      gap: '2',
+                    }),
+                  ),
+                ],
                 [
                   h.span(
                     [
                       h.Class(
-                        'text-[calc(12px*var(--type-scale))] font-medium text-muted-foreground',
+                        css({
+                          fontSize: 'type.12',
+                          fontWeight: 'medium',
+                          color: 'mutedForeground',
+                        }),
                       ),
                     ],
                     [t.inspectorDatabase.dataGroup],
                   ),
                   h.div(
-                    [h.Class('flex flex-wrap justify-end gap-x-2 gap-y-1')],
+                    [
+                      h.Class(
+                        css({
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          justifyContent: 'flex-end',
+                          columnGap: '2',
+                          rowGap: '1',
+                        }),
+                      ),
+                    ],
                     others.map((database) => nodeLink(game, database, h)),
                   ),
                 ],
@@ -149,7 +186,7 @@ const database = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readonly
           (chosen) => Message.StorageIopsChosen({ nodeId: node.id, iops: chosen }),
           h,
           () => true,
-          'grid-cols-2',
+          css({ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }),
         ),
         caption(t.inspectorDatabase.iOPSAtTheBoxSBurn(iops, volume.burn), h),
       ],
@@ -165,7 +202,7 @@ const database = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readonly
           (chosen) => Message.ShardsChosen({ nodeId: node.id, shards: chosen }),
           h,
           (count) => count === 1 || has(game, 'sharding'),
-          'grid-cols-4',
+          css({ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }),
         ),
         caption(
           shards > 1
@@ -190,7 +227,7 @@ const database = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readonly
                 (shardKey) => Message.ShardKeyChosen({ nodeId: node.id, shardKey }),
                 h,
                 () => true,
-                'grid-cols-2',
+                css({ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }),
               ),
               caption(shardKeyNote(t, node), h),
             ],
@@ -233,7 +270,7 @@ const database = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readonly
           (keep) => Message.DbRetentionChosen({ nodeId: node.id, keep }),
           h,
           (id) => id === 'keep' || has(game, 'retention'),
-          'grid-cols-3',
+          css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
         ),
         caption(
           node.keep === 'archive'
@@ -279,7 +316,9 @@ const backups = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
                 onClick: Message.RestoreDrilled({ nodeId: node.id }),
                 variant: 'outline',
                 size: 'sm',
-                className: 'self-start',
+                className: css({
+                  alignSelf: 'flex-start',
+                }),
                 isDisabled: game.devHours < RESTORE_DRILL_DH,
               },
               [t.inspectorDatabase.restoreDrillDH(RESTORE_DRILL_DH)],

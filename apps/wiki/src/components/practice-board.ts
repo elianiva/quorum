@@ -1,10 +1,11 @@
 import { Check, Circle, RotateCcw, X, createElement, type IconNode } from 'lucide'
 import { DOCK_OF } from '@quorum/simulation/catalog'
 import { priceOf } from '@quorum/simulation/lookups'
-import { attachBoard, fitBoard, setBoard } from '@quorum/ui/board/board'
+import { attachBoard, fitBoard, setBoard, watchBoardTheme } from '@quorum/ui/board/board'
 import { money } from '@quorum/ui/game/format'
 import { COMPONENT_ICONS, GROUP_ICONS } from '@quorum/ui/game/icons'
 import { GROUP_TEXT } from '@quorum/ui/game/bits'
+import { css, cx } from '@quorum/styled-system/css'
 import { en } from '../i18n/en/index.ts'
 import { langOf, type Lang } from '../i18n/lang.ts'
 import type { Locale } from '../i18n/locale.ts'
@@ -20,6 +21,8 @@ import {
   PracticeEvent,
   type PracticeId,
 } from './practice.ts'
+
+watchBoardTheme()
 
 /** A goal's label in the page's language. The practice logic names goals in English, which is also the key. */
 const goalLabel = (l: Lang, label: string): string => {
@@ -46,8 +49,27 @@ const el = <K extends keyof HTMLElementTagNameMap>(
   return node
 }
 
-const BUTTON =
-  'inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-[13px] hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
+const BUTTON = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '1.5',
+  borderRadius: 'md',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  borderColor: 'border',
+  paddingInline: '2.5',
+  paddingBlock: '1',
+  fontSize: 'type.13',
+  _hover: {
+    backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
+  },
+  _focusVisible: {
+    outlineWidth: '2px',
+    outlineStyle: 'solid',
+    outlineOffset: '0.5',
+    outlineColor: 'ring',
+  },
+})
 
 export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement): (() => void) => {
   const l = langOf(locale)
@@ -57,19 +79,58 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
   let openGroup: string | null = null
   const events = new AbortController()
 
-  const title = el('h3', 'm-0 text-[14px] font-semibold tracking-tight', [t.titles[id]])
+  const title = el(
+    'h3',
+    css({
+      margin: '0',
+      fontSize: 'type.14',
+      fontWeight: 'semibold',
+      letterSpacing: 'tight',
+    }),
+    [t.titles[id]],
+  )
   const reset = el('button', BUTTON, [svg(RotateCcw, 14), t.reset], { type: 'button' })
   const head = el(
     'div',
-    'flex items-center justify-between gap-3 border-b border-border px-4 py-2.5',
+    css({
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '3',
+      borderBottomWidth: '1px',
+      borderBottomStyle: 'solid',
+      borderColor: 'border',
+      paddingInline: '4',
+      paddingBlock: '2.5',
+    }),
     [title, reset],
   )
-  const intro = el('p', 'm-0 px-4 pt-3 text-[14px] leading-snug text-muted-foreground', [
-    t.intro[id],
-  ])
+  const intro = el(
+    'p',
+    css({
+      margin: '0',
+      paddingInline: '4',
+      paddingTop: '3',
+      fontSize: 'type.14',
+      lineHeight: 'snug',
+      color: 'mutedForeground',
+    }),
+    [t.intro[id]],
+  )
   const host = el(
     'div',
-    'relative mx-4 mt-3 h-[440px] overflow-hidden rounded-md border border-border bg-muted/30',
+    css({
+      position: 'relative',
+      marginInline: '4',
+      marginTop: '3',
+      height: '440px',
+      overflow: 'hidden',
+      borderRadius: 'md',
+      borderWidth: '1px',
+      borderStyle: 'solid',
+      borderColor: 'border',
+      backgroundColor: 'color-mix(in oklab, var(--muted) 30%, transparent)',
+    }),
     [],
     {
       role: 'application',
@@ -84,21 +145,61 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
     },
     { capture: true, signal: events.signal },
   )
-  const dockHost = el('div', 'px-4 pt-3 empty:hidden')
-  const cash = el('span', 'text-[12px] text-muted-foreground tabular-nums')
-  const checklist = el('ul', 'm-0 flex list-none flex-col gap-1 p-0', [], {
+  const dockHost = el(
+    'div',
+    css({
+      paddingInline: '4',
+      paddingTop: '3',
+      '&:empty': { display: 'none' },
+    }),
+  )
+  const cash = el(
+    'span',
+    css({
+      fontSize: 'type.12',
+      color: 'mutedForeground',
+      fontVariantNumeric: 'tabular-nums',
+    }),
+  )
+  const checklist = el(
+    'ul',
+    css({
+      margin: '0',
+      display: 'flex',
+      listStyleType: 'none',
+      flexDirection: 'column',
+      gap: '1',
+      padding: '0',
+    }),
+    [],
+    {
+      'aria-live': 'polite',
+      'aria-label': t.goalsLabel,
+    },
+  )
+  const note = el('p', css({ margin: '0', minHeight: '5', fontSize: 'type.13' }), [], {
+    role: 'status',
     'aria-live': 'polite',
-    'aria-label': t.goalsLabel,
   })
-  const note = el('p', 'm-0 min-h-5 text-[13px]', [], { role: 'status', 'aria-live': 'polite' })
-  const foot = el('div', 'flex flex-col gap-2 px-4 pt-3 pb-4', [
-    el('div', 'flex items-center justify-between', [
-      el('span', 'text-[12px] font-medium', [t.goalsLabel]),
-      cash,
-    ]),
-    checklist,
-    note,
-  ])
+  const foot = el(
+    'div',
+    css({
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '2',
+      paddingInline: '4',
+      paddingTop: '3',
+      paddingBottom: '4',
+    }),
+    [
+      el('div', css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }), [
+        el('span', css({ fontSize: 'type.12', fontWeight: 'medium' }), [t.goalsLabel]),
+        cash,
+      ]),
+      checklist,
+      note,
+    ],
+  )
   root.replaceChildren(head, intro, host, dockHost, foot)
 
   const renderDock = () => {
@@ -108,8 +209,8 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
       const open = openGroup === group.key
       const button = el(
         'button',
-        `${BUTTON} ${GROUP_TEXT[group.family]} ${open ? 'bg-muted' : ''}`,
-        [svg(GROUP_ICONS[group.family]), el('span', 'text-foreground', [group.label])],
+        `${BUTTON} ${GROUP_TEXT[group.family]} ${open ? css({ backgroundColor: 'muted' }) : ''}`,
+        [svg(GROUP_ICONS[group.family]), el('span', css({ color: 'foreground' }), [group.label])],
         { type: 'button', 'aria-pressed': String(open), title: group.label },
       )
       button.addEventListener('click', () => {
@@ -125,13 +226,17 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
         const armed = state.placing === type
         const button = el(
           'button',
-          `${BUTTON} ${armed ? 'bg-muted' : ''}`,
+          `${BUTTON} ${armed ? css({ backgroundColor: 'muted' }) : ''}`,
           [
             svg(COMPONENT_ICONS[type]),
-            el('span', 'font-medium', [l.cat.COMPONENTS[type].name]),
+            el('span', css({ fontWeight: 'medium' }), [l.cat.COMPONENTS[type].name]),
             el(
               'span',
-              `tabular-nums ${state.game.cash < price ? 'text-danger' : 'text-muted-foreground'}`,
+              `${css({ fontVariantNumeric: 'tabular-nums' })} ${
+                state.game.cash < price
+                  ? css({ color: 'danger' })
+                  : css({ color: 'mutedForeground' })
+              }`,
               [money(price)],
             ),
           ],
@@ -151,12 +256,15 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
       : null
     stop?.addEventListener('click', () => send(PracticeEvent.Arm({ type: null })))
     dockHost.replaceChildren(
-      el('div', 'flex flex-wrap items-center gap-2', [
-        el('div', 'flex gap-1.5', tabs, { role: 'group', 'aria-label': t.build }),
+      el('div', css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '2' }), [
+        el('div', css({ display: 'flex', gap: '1.5' }), tabs, {
+          role: 'group',
+          'aria-label': t.build,
+        }),
         ...rows,
         ...(armed
           ? [
-              el('span', 'text-[12px] text-muted-foreground', [
+              el('span', css({ fontSize: 'type.12', color: 'mutedForeground' }), [
                 t.clickToPlace(l.cat.COMPONENTS[armed].name),
               ]),
               ...(stop ? [stop] : []),
@@ -174,18 +282,43 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
       ...goals(state).map((goal) =>
         el(
           'li',
-          `flex items-center gap-2 text-[14px] ${goal.done ? 'text-ok' : 'text-foreground'}`,
+          cx(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2',
+              fontSize: 'type.14',
+            }),
+            goal.done ? css({ color: 'ok' }) : css({ color: 'foreground' }),
+          ),
           [
             svg(goal.done ? Check : Circle, 14),
             goalLabel(l, goal.label),
-            el('span', 'sr-only', [goal.done ? t.done : t.notYet]),
+            el(
+              'span',
+              css({
+                position: 'absolute',
+                width: '1px',
+                height: '1px',
+                padding: '0',
+                margin: '-1px',
+                overflow: 'hidden',
+                clip: 'rect(0, 0, 0, 0)',
+                whiteSpace: 'nowrap',
+                borderWidth: '0',
+              }),
+              [goal.done ? t.done : t.notYet],
+            ),
           ],
         ),
       ),
     )
     const finished = complete(state)
     title.dataset['done'] = String(finished)
-    note.className = `m-0 min-h-5 text-[13px] ${state.note?.tone === 'warn' ? 'text-warn' : 'text-ok'}`
+    note.className = cx(
+      css({ margin: '0', minHeight: '5', fontSize: 'type.13' }),
+      state.note?.tone === 'warn' ? css({ color: 'warn' }) : css({ color: 'ok' }),
+    )
     // The refusals are the game's English sentences; the one note the board writes itself is translated.
     note.textContent = state.note
       ? state.note.text === en.islands.practice.databaseMoved
@@ -194,7 +327,13 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
       : finished
         ? t.allDone
         : ''
-    if (finished && !state.note) note.className = 'm-0 min-h-5 text-[13px] text-ok'
+    if (finished && !state.note)
+      note.className = css({
+        margin: '0',
+        minHeight: '5',
+        fontSize: 'type.13',
+        color: 'ok',
+      })
   }
 
   const send = (event: PracticeEvent) => {

@@ -1,5 +1,4 @@
 import type { Html } from 'foldkit/html'
-import { cn } from 'cn'
 import {
   COMPONENTS,
   COMPONENT_IDS,
@@ -33,6 +32,7 @@ import {
   type H,
   type Lang,
 } from './shared.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* One page per Era, and a hub that runs them left to right as a timeline. */
 
@@ -73,9 +73,18 @@ const entity = (l: Lang, def: EraDef, index: number): Page => {
         h.span(
           [
             h.Class(
-              cn(
+              cx(
                 FIGURE,
-                'grid size-6 place-items-center rounded-md bg-foreground text-[11px] text-background',
+                css({
+                  display: 'grid',
+                  width: '6',
+                  height: '6',
+                  placeItems: 'center',
+                  borderRadius: 'md',
+                  backgroundColor: 'foreground',
+                  fontSize: 'type.11',
+                  color: 'background',
+                }),
               ),
             ),
           ],
@@ -146,7 +155,18 @@ const entity = (l: Lang, def: EraDef, index: number): Page => {
             l.title('whatArrives'),
             [
               h.dl(
-                [h.Class('grid gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]')],
+                [
+                  h.Class(
+                    css({
+                      display: 'grid',
+                      columnGap: '6',
+                      rowGap: '3',
+                      sm: {
+                        gridTemplateColumns: '10rem 1fr',
+                      },
+                    }),
+                  ),
+                ],
                 [
                   [
                     t.arrives.components,
@@ -169,11 +189,28 @@ const entity = (l: Lang, def: EraDef, index: number): Page => {
                   (items as ReadonlyArray<Html>).length
                     ? [
                         h.dt(
-                          [h.Key(`${label}-t`), h.Class(cn(EYEBROW, 'pt-1'))],
+                          [
+                            h.Key(`${label}-t`),
+                            h.Class(
+                              cx(
+                                EYEBROW,
+                                css({
+                                  paddingTop: '1',
+                                }),
+                              ),
+                            ),
+                          ],
                           [label as string],
                         ),
                         h.dd(
-                          [h.Key(`${label}-d`), h.Class('m-0')],
+                          [
+                            h.Key(`${label}-d`),
+                            h.Class(
+                              css({
+                                margin: '0',
+                              }),
+                            ),
+                          ],
                           [linkList(items as ReadonlyArray<Html>, h)],
                         ),
                       ]
@@ -207,7 +244,20 @@ const timeline = (l: Lang, h: H): Html => {
   const t = l.t.reference.eras
   const eras = l.cat.ERAS
   return h.ol(
-    [h.Class('not-prose relative my-8 border-l border-border')],
+    [
+      h.Class(
+        cx(
+          css({
+            position: 'relative',
+            marginBlock: '8',
+            borderLeftWidth: '1px',
+            borderLeftStyle: 'solid',
+            borderColor: 'border',
+          }),
+          'not-prose',
+        ),
+      ),
+    ],
     eras.map((def, index) => {
       const next = eras[index + 1]
       const figures: ReadonlyArray<readonly [string, string]> = [
@@ -221,47 +271,165 @@ const timeline = (l: Lang, h: H): Html => {
           : []),
       ]
       return h.li(
-        [h.Key(def.name), h.Class('relative pb-10 pl-8 last:pb-0')],
+        [
+          h.Key(def.name),
+          h.Class(
+            css({
+              position: 'relative',
+              paddingBottom: '10',
+              paddingLeft: '8',
+              '&:last-child': {
+                paddingBottom: '0',
+              },
+            }),
+          ),
+        ],
         [
           h.span(
             [
               h.AriaHidden(true),
               h.Class(
-                cn(
+                cx(
                   FIGURE,
-                  'absolute top-0 -left-3 grid size-6 place-items-center rounded-full border border-border bg-background text-[11px] text-muted-foreground',
+                  css({
+                    position: 'absolute',
+                    top: '0',
+                    left: '-0.75rem',
+                    display: 'grid',
+                    width: '6',
+                    height: '6',
+                    placeItems: 'center',
+                    borderRadius: 'full',
+                    borderWidth: '1px',
+                    borderStyle: 'solid',
+                    borderColor: 'border',
+                    backgroundColor: 'background',
+                    fontSize: 'type.11',
+                    color: 'mutedForeground',
+                  }),
                 ),
               ),
             ],
             [String(index + 1)],
           ),
           h.div(
-            [h.Class('flex flex-wrap items-baseline gap-x-3 gap-y-1')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'baseline',
+                  columnGap: '3',
+                  rowGap: '1',
+                }),
+              ),
+            ],
             [
               h.a(
                 [
                   h.Href(eraPath(index)),
-                  h.Class('text-[16px] font-semibold tracking-tight hover:underline'),
+                  h.Class(
+                    css({
+                      fontSize: 'type.16',
+                      fontWeight: 'semibold',
+                      letterSpacing: 'tight',
+                      _hover: {
+                        textDecorationLine: 'underline',
+                      },
+                    }),
+                  ),
                 ],
                 [def.name],
               ),
-              h.span([h.Class('text-[15px] text-muted-foreground')], [def.question]),
+              h.span(
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'type.15',
+                      color: 'mutedForeground',
+                    }),
+                  ),
+                ],
+                [def.question],
+              ),
             ],
           ),
           h.dl(
-            [h.Class('mt-2 flex flex-wrap gap-x-6 gap-y-1 text-[13px]')],
+            [
+              h.Class(
+                css({
+                  marginTop: '2',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  columnGap: '6',
+                  rowGap: '1',
+                  fontSize: 'type.13',
+                }),
+              ),
+            ],
             figures.map(([name, value]) =>
               h.div(
-                [h.Key(name), h.Class('flex items-baseline gap-1.5')],
                 [
-                  h.dt([h.Class('text-muted-foreground')], [name]),
-                  h.dd([h.Class(cn(FIGURE, 'text-[12px]'))], [value]),
+                  h.Key(name),
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      gap: '1.5',
+                    }),
+                  ),
+                ],
+                [
+                  h.dt(
+                    [
+                      h.Class(
+                        css({
+                          color: 'mutedForeground',
+                        }),
+                      ),
+                    ],
+                    [name],
+                  ),
+                  h.dd(
+                    [
+                      h.Class(
+                        cx(
+                          FIGURE,
+                          css({
+                            fontSize: 'type.12',
+                          }),
+                        ),
+                      ),
+                    ],
+                    [value],
+                  ),
                 ],
               ),
             ),
           ),
-          h.div([h.Class('mt-3 max-w-md')], [mixBar(def.mix, h, false)]),
-          h.p([h.Class('mt-2 text-[13px] text-muted-foreground')], [arrivals(l, index)]),
+          h.div(
+            [
+              h.Class(
+                css({
+                  marginTop: '3',
+                  maxWidth: '28rem',
+                }),
+              ),
+            ],
+            [mixBar(def.mix, h, false)],
+          ),
+          h.p(
+            [
+              h.Class(
+                css({
+                  marginTop: '2',
+                  fontSize: 'type.13',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
+            [arrivals(l, index)],
+          ),
         ],
       )
     }),

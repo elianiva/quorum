@@ -20,6 +20,7 @@ import {
   Store,
   Trophy,
 } from 'lucide'
+import { css, cx } from '@quorum/styled-system/css'
 import { icon } from '@quorum/ui/primitives/icon'
 import { githubMark } from '@quorum/ui/primitives/github'
 import { companyMark } from '@/components/company-mark.ts'
@@ -356,7 +357,7 @@ const row = (r: Row, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-const done = (h: HtmlBuilder<Message>) => icon(h, Check, 'booth-icon text-ok')
+const done = (h: HtmlBuilder<Message>) => icon(h, Check, cx('booth-icon', css({ color: 'ok' })))
 const locked = (h: HtmlBuilder<Message>) => icon(h, Lock, 'booth-icon')
 
 const backRow = (h: HtmlBuilder<Message>): Html => {
@@ -884,10 +885,27 @@ const achievementRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<H
           label: t.catalog.achievements[id].name,
           detail: t.catalog.achievements[id].condition,
           side: h.span(
-            [h.Class('flex items-center')],
+            [h.Class(css({ display: 'flex', alignItems: 'center' }))],
             [
               earned ? done(h) : locked(h),
-              h.span([h.Class('sr-only')], [earned ? t.title.earned : t.title.notYet]),
+              h.span(
+                [
+                  h.Class(
+                    css({
+                      position: 'absolute',
+                      width: '1px',
+                      height: '1px',
+                      padding: '0',
+                      margin: '-1px',
+                      overflow: 'hidden',
+                      clip: 'rect(0, 0, 0, 0)',
+                      whiteSpace: 'nowrap',
+                      borderWidth: '0',
+                    }),
+                  ),
+                ],
+                [earned ? t.title.earned : t.title.notYet],
+              ),
             ],
           ),
           message: null,
@@ -915,7 +933,7 @@ const featureKeyBlock = (label: string, model: Model, h: HtmlBuilder<Message>): 
   const checking = KeyPhase.guards.Checking(model.keyPhase)
   const canSubmit = model.pwa.online && !checking && model.keyDraft.trim() !== ''
   return h.div(
-    [h.Class('flex flex-col')],
+    [h.Class(css({ display: 'flex', flexDirection: 'column' }))],
     [
       h.div(
         [h.Class('booth-row is-text')],
@@ -1336,7 +1354,7 @@ const terminal = (model: Model, h: HtmlBuilder<Message>): Html => {
     [
       h.p([], [h.b([], [`$ ssh ${host}`])]),
       h.p([], [line]),
-      h.p([h.Class('text-ok')], [t.title.connected]),
+      h.p([h.Class(css({ color: 'ok' }))], [t.title.connected]),
       h.span([h.Class('booth-caret')], []),
     ],
   )
@@ -1355,7 +1373,24 @@ const screen = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.section(
         [h.Class('booth-home')],
         [
-          h.h1([h.Class('sr-only')], ['Quorum']),
+          h.h1(
+            [
+              h.Class(
+                css({
+                  position: 'absolute',
+                  width: '1px',
+                  height: '1px',
+                  padding: '0',
+                  margin: '-1px',
+                  overflow: 'hidden',
+                  clip: 'rect(0, 0, 0, 0)',
+                  whiteSpace: 'nowrap',
+                  borderWidth: '0',
+                }),
+              ),
+            ],
+            ['Quorum'],
+          ),
           wordmark(h),
           crumb(model, page, h),
           h.nav(
@@ -1451,7 +1486,7 @@ const strip = (h: HtmlBuilder<Message>): Html => {
           h.AriaLabel(`${t.title.build} ${build}`),
         ],
         [
-          icon(h, Hash, 'size-3.5'),
+          icon(h, Hash, css({ width: '3.5', height: '3.5' })),
           h.span([h.Class('booth-strip-label')], [`${t.title.build} ${build}`]),
         ],
       ),
@@ -1464,7 +1499,7 @@ const strip = (h: HtmlBuilder<Message>): Html => {
         [
           h.span([h.Class('booth-strip-dot')], []),
           h.span([], [t.title.feedback]),
-          icon(h, ArrowUpRight, 'size-3.5'),
+          icon(h, ArrowUpRight, css({ width: '3.5', height: '3.5' })),
         ],
       ),
       h.a(
@@ -1474,7 +1509,10 @@ const strip = (h: HtmlBuilder<Message>): Html => {
           h.Rel('noreferrer noopener'),
           h.AriaLabel(t.title.supportOnKofi),
         ],
-        [icon(h, Coffee, 'size-3.5'), h.span([h.Class('booth-strip-label')], [t.title.support])],
+        [
+          icon(h, Coffee, css({ width: '3.5', height: '3.5' })),
+          h.span([h.Class('booth-strip-label')], [t.title.support]),
+        ],
       ),
       h.a(
         [
@@ -1484,7 +1522,7 @@ const strip = (h: HtmlBuilder<Message>): Html => {
           h.Title(t.title.openSourceOnGitHub),
           h.AriaLabel(t.title.openSourceOnGitHub),
         ],
-        [githubMark(h, 'size-3.5')],
+        [githubMark(h, css({ width: '3.5', height: '3.5' }))],
       ),
     ],
   )
@@ -1530,13 +1568,33 @@ const reader = (model: Model, h: HtmlBuilder<Message>): Html => {
   return h.div(
     [h.Key('reader'), h.Class(`reader ${model.boot._tag === 'Clocking' ? 'is-in' : ''}`)],
     [
-      h.h1([h.Class('sr-only')], ['Quorum']),
+      h.h1(
+        [
+          h.Class(
+            css({
+              position: 'absolute',
+              width: '1px',
+              height: '1px',
+              padding: '0',
+              margin: '-1px',
+              overflow: 'hidden',
+              clip: 'rect(0, 0, 0, 0)',
+              whiteSpace: 'nowrap',
+              borderWidth: '0',
+            }),
+          ),
+        ],
+        ['Quorum'],
+      ),
       h.div(
         [h.Class('reader-body')],
         [
-          ...['top-3 left-3', 'top-3 right-3', 'bottom-3 left-3', 'bottom-3 right-3'].map((at) =>
-            h.span([h.Class(`reader-screw ${at}`)], []),
-          ),
+          ...[
+            css({ top: '3', left: '3' }),
+            css({ top: '3', right: '3' }),
+            css({ bottom: '3', left: '3' }),
+            css({ bottom: '3', right: '3' }),
+          ].map((at) => h.span([h.Class(cx('reader-screw', at))], [])),
           h.div(
             [h.Class('reader-screen'), h.AriaLive('polite')],
             [
@@ -1571,7 +1629,7 @@ const reader = (model: Model, h: HtmlBuilder<Message>): Html => {
                   ...GLYPHS[0]!.paths.map((d) =>
                     h.path([h.D(d), h.Fill('none'), h.Stroke('currentColor'), h.StrokeWidth('22')]),
                   ),
-                  h.circle([h.Class('fill-signal'), h.Cx('89'), h.Cy('180'), h.R('14')]),
+                  h.circle([h.Fill('var(--signal)'), h.Cx('89'), h.Cy('180'), h.R('14')]),
                 ],
               ),
               h.span([h.Class('reader-card-chip')], []),
@@ -1588,7 +1646,18 @@ export const titleScreen = (model: Model, h: HtmlBuilder<Message>): Html =>
   h.main(
     [
       h.Class(
-        'title-screen dark relative grid h-full place-items-center overflow-hidden bg-page text-foreground',
+        cx(
+          'title-screen dark',
+          css({
+            position: 'relative',
+            display: 'grid',
+            height: '100%',
+            placeItems: 'center',
+            overflow: 'hidden',
+            backgroundColor: 'page',
+            color: 'foreground',
+          }),
+        ),
       ),
     ],
     [

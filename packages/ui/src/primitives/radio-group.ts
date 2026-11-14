@@ -1,8 +1,8 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { RadioGroup as FoldkitRadioGroup } from '@foldkit/ui'
 import type { Option } from 'effect/Option'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
-import { cn } from 'cn'
 import {
   fieldBaseClass,
   fieldContentClass,
@@ -46,43 +46,192 @@ export type RenderInfo<Value extends string = string> = FoldkitRadioGroup.Render
 /** Upstream group component string. Horizontal orientation appends a
  *  responsive row extension (foldcn API exposes orientation; upstream leaves
  *  layout to the consumer). */
-export const radioGroupClass = 'grid gap-2 w-full'
+export const radioGroupClass = css({
+  display: 'grid',
+  gap: '2',
+  width: '100%',
+})
 
-export const radioGroupVerticalClass = 'grid gap-2 w-full'
+export const radioGroupVerticalClass = css({
+  display: 'grid',
+  gap: '2',
+  width: '100%',
+})
 
-export const radioGroupHorizontalClass = 'grid gap-2 w-full sm:flex-row sm:items-center'
+export const radioGroupHorizontalClass = css({
+  display: 'grid',
+  gap: '2',
+  width: '100%',
+  sm: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+})
 
 /** Upstream item component string. The disabled: variants are inert under
  *  foldkit (aria-/data- twins are inlined at style resolution). */
-export const radioItemClass =
-  'bg-well shadow-well border-transparent data-checked:bg-primary-fill data-checked:text-on-primary-fill data-checked:shadow-primary aria-invalid:aria-checked:border-primary aria-invalid:border-destructive focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 dark:aria-invalid:border-destructive/50 flex size-4 rounded-full focus-visible:ring-3 aria-invalid:ring-3 group-has-[:focus-visible]/field-label:ring-0 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:opacity-50 group/radio-group-item peer relative aspect-square shrink-0 border outline-none after:absolute after:-inset-x-3 after:-inset-y-2 disabled:cursor-not-allowed disabled:opacity-50'
+export const radioItemClass = cx(
+  css({
+    backgroundColor: 'well',
+    boxShadow: 'well',
+    borderColor: 'transparent',
+    '&[data-checked]': {
+      layerStyle: 'primaryFill',
+      color: 'onPrimaryFill',
+      boxShadow: 'primary',
+      _focusVisible: {
+        boxShadow:
+          'var(--elev-primary), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+      },
+    },
+    '&[aria-invalid="true"]': {
+      borderColor: 'destructive',
+      boxShadow:
+        'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+    },
+    '&[aria-invalid="true"][aria-checked="true"]': { borderColor: 'primary' },
+    _focusVisible: {
+      borderColor: 'ring',
+      boxShadow: 'focusWell',
+    },
+    _dark: {
+      '&[aria-invalid="true"]': {
+        borderColor: 'color-mix(in oklab, var(--destructive) 50%, transparent)',
+        boxShadow:
+          'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+      },
+    },
+    display: 'flex',
+    width: '4',
+    height: '4',
+    borderRadius: 'full',
+    '.group-field-label:has(:focus-visible) &': { boxShadow: 'none' },
+    '&[aria-disabled="true"]': { cursor: 'not-allowed', opacity: 0.5 },
+    '&[data-disabled]': { cursor: 'not-allowed', opacity: 0.5 },
+    position: 'relative',
+    aspectRatio: 'square',
+    flexShrink: '0',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    outlineStyle: 'none',
+    '&::after': {
+      position: 'absolute',
+      insetInline: '-0.75rem',
+      insetBlock: '-0.5rem',
+    },
+    '&:disabled': { cursor: 'not-allowed', opacity: 0.5 },
+  }),
+  'group-radio-group-item',
+  'peer-control',
+)
 
-export const radioIndicatorClass = 'flex size-4 items-center justify-center'
+export const radioIndicatorClass = css({
+  display: 'flex',
+  width: '4',
+  height: '4',
+  alignItems: 'center',
+  justifyContent: 'center',
+})
 
-export const radioDotClass =
-  'bg-primary-foreground absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full'
+export const radioDotClass = css({
+  backgroundColor: 'primaryForeground',
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  width: '2',
+  height: '2',
+  translate: '-50% -50%',
+  borderRadius: 'full',
+})
 
 /** Label for the upstream-anatomy option row. The circle control (radioItemClass)
  *  carries `peer` and precedes the label, and foldkit emits aria-disabled/
  *  data-disabled on it when disabled — so the peer twins below are live
  *  (upstream's native peer-disabled variant can never match). */
-export const radioItemLabelClass =
-  'gap-2 text-sm leading-none font-medium group-data-[disabled]:opacity-50 flex items-center select-none peer-aria-disabled:pointer-events-none peer-aria-disabled:cursor-not-allowed peer-data-[disabled]:pointer-events-none peer-data-[disabled]:cursor-not-allowed'
+export const radioItemLabelClass = css({
+  gap: '2',
+  fontSize: 'type.14',
+  lineHeight: 'none',
+  fontWeight: 'medium',
+  '.group[data-disabled] &': { opacity: 0.5 },
+  display: 'flex',
+  alignItems: 'center',
+  userSelect: 'none',
+  '.peer-control[aria-disabled="true"] ~ &': {
+    pointerEvents: 'none',
+    cursor: 'not-allowed',
+  },
+  '.peer-control[data-disabled] ~ &': {
+    pointerEvents: 'none',
+    cursor: 'not-allowed',
+  },
+})
 
-export const radioItemDescriptionClass = 'text-sm text-muted-foreground'
+export const radioItemDescriptionClass = css({
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  color: 'mutedForeground',
+})
 
 /** Legacy consumer-drawn row (used when `option` callback is supplied). */
-export const radioOptionClass =
-  'group/radio-group-item peer relative flex cursor-pointer select-none items-center justify-between rounded-lg border border-transparent bg-raised p-3 text-card-foreground shadow-raised transition-shadow after:absolute after:-inset-x-3 after:-inset-y-2 data-[checked]:shadow-[var(--elev-raised),0_0_0_1.5px_var(--primary)] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50'
+export const radioOptionClass = cx(
+  css({
+    position: 'relative',
+    display: 'flex',
+    cursor: 'pointer',
+    userSelect: 'none',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 'lg',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: 'transparent',
+    layerStyle: 'raised',
+    padding: '3',
+    color: 'cardForeground',
+    boxShadow: 'raised',
+    transitionProperty: 'box-shadow',
+    transitionTimingFunction: 'default',
+    transitionDuration: 'fast',
+    '&::after': {
+      position: 'absolute',
+      insetInline: '-0.75rem',
+      insetBlock: '-0.5rem',
+    },
+    '&[data-checked]': {
+      boxShadow: 'active',
+    },
+    _focusVisible: {
+      outlineStyle: 'none',
+      boxShadow: 'focusRaisedSoft',
+    },
+    '&:disabled': { cursor: 'not-allowed', opacity: 0.5 },
+    '&[data-disabled]': { cursor: 'not-allowed', opacity: 0.5 },
+    '&[aria-disabled="true"]': { cursor: 'not-allowed', opacity: 0.5 },
+  }),
+  'group-radio-group-item',
+  'peer-control',
+)
 
 /** Legacy path label: nested inside the option row (which itself is the
- *  `group/radio-group-item` carrying foldkit's data-disabled), so disabled
+ *  `group-radio-group-item` carrying foldkit's data-disabled), so disabled
  *  state flows via the group variant — a `peer-*` form can never match a
  *  descendant of the peer element. */
-export const radioOptionLabelClass =
-  'text-sm font-medium leading-none group-data-[disabled]/radio-group-item:cursor-not-allowed group-data-[disabled]/radio-group-item:opacity-70'
+export const radioOptionLabelClass = css({
+  fontSize: 'type.14',
+  lineHeight: 'none',
+  fontWeight: 'medium',
+  '.group-radio-group-item[data-disabled] &': {
+    cursor: 'not-allowed',
+    opacity: 0.7,
+  },
+})
 
-export const radioOptionDescriptionClass = 'text-sm text-muted-foreground'
+export const radioOptionDescriptionClass = css({
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  color: 'mutedForeground',
+})
 
 export type StyledViewInputs<M, Value extends string = string> = Readonly<{
   options: ReadonlyArray<Value>
@@ -146,7 +295,7 @@ const defaultOptionRow = <M, Value extends string>(
     return h.label(
       [
         h.DataAttribute('slot', 'field-label'),
-        h.Class(cn(labelClass, fieldLabelClass, optionClass)),
+        h.Class(cx(labelClass, fieldLabelClass, optionClass)),
       ],
       [
         h.div(
@@ -156,7 +305,7 @@ const defaultOptionRow = <M, Value extends string>(
             h.DataAttribute('orientation', 'horizontal'),
             ...(isDisabled ? [h.DataAttribute('disabled', 'true')] : []),
             ...(isInvalid ? [h.DataAttribute('invalid', 'true')] : []),
-            h.Class(cn(fieldBaseClass, fieldOrientationClasses.horizontal)),
+            h.Class(cx(fieldBaseClass, fieldOrientationClasses.horizontal)),
           ],
           [
             h.div(
@@ -173,7 +322,12 @@ const defaultOptionRow = <M, Value extends string>(
                         [
                           ...info.description,
                           h.DataAttribute('slot', 'field-description'),
-                          h.Class(cn(fieldDescriptionClass, 'rtl:text-right')),
+                          h.Class(
+                            cx(
+                              fieldDescriptionClass,
+                              css({ '[dir="rtl"] &': { textAlign: 'right' } }),
+                            ),
+                          ),
                         ],
                         [descriptionText],
                       ),
@@ -193,10 +347,14 @@ const defaultOptionRow = <M, Value extends string>(
       h.DataAttribute('slot', optionLayout === 'field' ? 'field-label' : 'radio-group-item-label'),
       h.Class(
         optionLayout === 'field'
-          ? cn(
+          ? cx(
               labelClass,
               fieldLabelClass,
-              descriptionText === undefined ? 'font-normal' : undefined,
+              descriptionText === undefined
+                ? css({
+                    fontWeight: 'normal',
+                  })
+                : undefined,
             )
           : radioItemLabelClass,
       ),
@@ -211,7 +369,7 @@ const defaultOptionRow = <M, Value extends string>(
         h.DataAttribute('orientation', 'horizontal'),
         ...(isDisabled ? [h.DataAttribute('disabled', 'true')] : []),
         ...(isInvalid ? [h.DataAttribute('invalid', 'true')] : []),
-        h.Class(cn(fieldBaseClass, fieldOrientationClasses.horizontal, optionClass)),
+        h.Class(cx(fieldBaseClass, fieldOrientationClasses.horizontal, optionClass)),
       ],
       [
         control,
@@ -225,7 +383,9 @@ const defaultOptionRow = <M, Value extends string>(
                   [
                     ...info.description,
                     h.DataAttribute('slot', 'field-description'),
-                    h.Class(cn(fieldDescriptionClass, 'rtl:text-right')),
+                    h.Class(
+                      cx(fieldDescriptionClass, css({ '[dir="rtl"] &': { textAlign: 'right' } })),
+                    ),
                   ],
                   [descriptionText],
                 ),
@@ -238,10 +398,23 @@ const defaultOptionRow = <M, Value extends string>(
   return h.label(
     [
       h.Class(
-        cn(
+        cx(
           descriptionText === undefined
-            ? 'flex w-full items-center gap-2'
-            : 'flex w-full items-start gap-2 [&>[role=radio]]:mt-0.5',
+            ? css({
+                display: 'flex',
+                width: '100%',
+                alignItems: 'center',
+                gap: '2',
+              })
+            : css({
+                display: 'flex',
+                width: '100%',
+                alignItems: 'flex-start',
+                gap: '2',
+                '&>[role=radio]': {
+                  marginTop: '0.5',
+                },
+              }),
           optionClass,
         ),
       ),
@@ -251,7 +424,18 @@ const defaultOptionRow = <M, Value extends string>(
       descriptionText === undefined
         ? label
         : h.span(
-            [h.Class('flex min-w-0 flex-1 flex-col gap-0.5 peer-aria-disabled:opacity-50')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  minWidth: '0',
+                  flex: '1 1 0%',
+                  flexDirection: 'column',
+                  gap: '0.5',
+                  '.peer-control[aria-disabled="true"] ~ &': { opacity: 0.5 },
+                }),
+              ),
+            ],
             [
               label,
               h.span(
@@ -294,7 +478,7 @@ export const styledViewInputs = <M, Value extends string = string>(
           ...group,
           h.DataAttribute('slot', 'radio-group'),
           h.Class(
-            cn(
+            cx(
               isHorizontal ? radioGroupHorizontalClass : radioGroupVerticalClass,
               viewInputs.groupClass,
             ),
@@ -310,7 +494,7 @@ export const styledViewInputs = <M, Value extends string = string>(
                   ...(option.isDisabled ? [h.Tabindex(-1)] : []),
                   ...(viewInputs.isInvalid ? [h.Attribute('aria-invalid', 'true')] : []),
                   h.DataAttribute('slot', 'radio-group-item'),
-                  h.Class(cn(radioOptionClass, viewInputs.optionClass)),
+                  h.Class(cx(radioOptionClass, viewInputs.optionClass)),
                 ],
                 [viewInputs.option(option.value, option, render, h)],
               )

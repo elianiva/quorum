@@ -1,6 +1,5 @@
+import { css, keyframes, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
-
-import { cn } from 'cn'
 
 type Child = Html | string
 
@@ -70,27 +69,117 @@ export const otpSlotStates = (
   }))
 }
 
-export const inputOtpClass = 'gap-2 relative flex items-center has-disabled:opacity-50'
+export const inputOtpClass = css({
+  gap: '2',
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  '&:has(:disabled)': { opacity: 0.5 },
+})
 
 /** Wrapper grouping the joined slots. Upstream keys the group's invalid ring
  *  off descendant `aria-invalid` (`has-aria-invalid:`), which the default
  *  layout threads onto every slot via `isInvalid`; custom `children`
  *  layouts must pass `isInvalid` to their own slots for the ring to light. */
-export const inputOtpGroupClass =
-  'has-aria-invalid:ring-destructive/20 dark:has-aria-invalid:ring-destructive/40 has-aria-invalid:border-destructive rounded-lg has-aria-invalid:ring-3 flex items-center gap-1.5'
+export const inputOtpGroupClass = css({
+  '&:has([aria-invalid="true"])': {
+    boxShadow: 'invalid',
+    borderColor: 'destructive',
+  },
+  _dark: {
+    '&:has([aria-invalid="true"])': {
+      boxShadow: 'invalid',
+    },
+  },
+  borderRadius: 'lg',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '1.5',
+})
 
-export const inputOtpInputClass =
-  'absolute inset-0 z-10 h-full w-full bg-transparent text-transparent caret-transparent outline-none disabled:cursor-not-allowed'
+export const inputOtpInputClass = css({
+  position: 'absolute',
+  inset: '0',
+  zIndex: '10',
+  height: '100%',
+  width: '100%',
+  backgroundColor: 'transparent',
+  color: 'transparent',
+  caretColor: 'transparent',
+  outlineStyle: 'none',
+  _disabled: {
+    cursor: 'not-allowed',
+  },
+})
 
-export const inputOtpSlotClass =
-  'bg-well shadow-well border-transparent data-[active=true]:border-ring data-[active=true]:ring-ring/50 data-[active=true]:aria-invalid:ring-destructive/20 dark:data-[active=true]:aria-invalid:ring-destructive/40 aria-invalid:border-destructive data-[active=true]:aria-invalid:border-destructive size-9 rounded-lg border font-mono text-sm transition-all outline-none data-[active=true]:ring-3 relative flex items-center justify-center data-[active=true]:z-10'
+export const inputOtpSlotClass = css({
+  backgroundColor: 'well',
+  boxShadow: 'well',
+  borderColor: 'transparent',
+  '&[data-active="true"]': {
+    borderColor: 'ring',
+    boxShadow: 'focusWell',
+    zIndex: '10',
+    '&[aria-invalid="true"]': {
+      boxShadow:
+        'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+      borderColor: 'destructive',
+    },
+  },
+  _dark: {
+    '&[data-active="true"][aria-invalid="true"]': {
+      boxShadow:
+        'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+    },
+  },
+  '&[aria-invalid="true"]': { borderColor: 'destructive' },
+  width: '9',
+  height: '9',
+  borderRadius: 'lg',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  fontFamily: 'mono',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  transitionProperty: 'all',
+  transitionDuration: 'fast',
+  transitionTimingFunction: 'default',
+  outlineStyle: 'none',
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+})
 
-export const inputOtpCaretClass =
-  'pointer-events-none absolute inset-0 flex items-center justify-center'
+export const inputOtpCaretClass = css({
+  pointerEvents: 'none',
+  position: 'absolute',
+  inset: '0',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+})
 
-export const inputOtpCaretLineClass = 'animate-caret-blink bg-foreground h-4 w-px duration-1000'
+const caretBlink = keyframes({
+  '0%, 70%, 100%': { opacity: 1 },
+  '20%, 50%': { opacity: 0 },
+})
 
-export const inputOtpSeparatorClass = "[&_svg:not([class*='size-'])]:size-4 flex items-center"
+export const inputOtpCaretLineClass = css({
+  animation: `${caretBlink} 1.25s ease-out infinite`,
+  backgroundColor: 'foreground',
+  height: '4',
+  width: '1px',
+})
+
+export const inputOtpSeparatorClass = css({
+  '& svg:not([data-svg-icon])': {
+    width: '4',
+    height: '4',
+  },
+  display: 'flex',
+  alignItems: 'center',
+})
 
 export type InputOtpConfig<M> = Readonly<{
   length: number
@@ -118,7 +207,7 @@ export const inputOtpSeparator = <M>(
     [
       h.DataAttribute('slot', 'input-otp-separator'),
       h.Role('separator'),
-      h.Class(cn(inputOtpSeparatorClass, config.className)),
+      h.Class(cx(inputOtpSeparatorClass, config.className)),
     ],
     ['−'],
   )
@@ -145,7 +234,7 @@ export const inputOtpSlot = <M>(config: InputOtpSlotConfig, h: HtmlBuilder<M>): 
   }
   return h.div(
     [
-      h.Class(cn(inputOtpSlotClass, config.className)),
+      h.Class(cx(inputOtpSlotClass, config.className)),
       h.DataAttribute('slot', 'input-otp-slot'),
       h.DataAttribute('active', state.isActive ? 'true' : 'false'),
       ...(config.isInvalid === true ? [h.AriaInvalid(true)] : []),
@@ -167,7 +256,7 @@ export const inputOtpGroup = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(inputOtpGroupClass, config.className)), h.DataAttribute('slot', 'input-otp-group')],
+    [h.Class(cx(inputOtpGroupClass, config.className)), h.DataAttribute('slot', 'input-otp-group')],
     children,
   )
 
@@ -190,7 +279,7 @@ export const inputOtp = <M>(config: InputOtpConfig<M>, h: HtmlBuilder<M>): Html 
   const value = normalizeOtpValue(config.value, config.length, alphabet)
 
   return h.div(
-    [h.Class(cn(inputOtpClass, config.className)), h.DataAttribute('slot', 'input-otp')],
+    [h.Class(cx(inputOtpClass, config.className)), h.DataAttribute('slot', 'input-otp')],
     [
       h.input([
         h.Type('text'),

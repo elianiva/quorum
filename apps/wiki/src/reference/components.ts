@@ -40,6 +40,7 @@ import {
   type H,
   type Lang,
 } from './shared.ts'
+import { css } from '@quorum/styled-system/css'
 
 /* One page per Component, and the Components hub. Every fact comes from COMPONENTS. */
 
@@ -167,17 +168,43 @@ const entity = (l: Lang, def: ComponentDef): Page => {
     text: `${def.product} ${def.blurb} ${text.text}`,
     aside: (_model, h) =>
       h.div(
-        [h.Class('flex flex-col gap-4')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }),
+          ),
+        ],
         [
           // The card as it stands on the board, drawn by the board itself.
           h.div(
-            [h.Class('overflow-hidden rounded-lg border border-border bg-canvas')],
+            [
+              h.Class(
+                css({
+                  overflow: 'hidden',
+                  borderRadius: 'lg',
+                  borderWidth: '1px',
+                  borderStyle: 'solid',
+                  borderColor: 'var(--border)',
+                  backgroundColor: 'var(--canvas)',
+                }),
+              ),
+            ],
             [nodeCard(def.id, h)],
           ),
           factsBox(
             l,
             def.name,
-            componentBadge(def.id, 'size-8', h),
+            componentBadge(
+              def.id,
+              css({
+                width: '2rem',
+                height: '2rem',
+              }),
+              h,
+            ),
             def.group,
             facts(l, def, h),
             h,
@@ -260,7 +287,15 @@ export const componentPages = (l: Lang): ReadonlyArray<Page> => {
                     )!
                     return hubCard(
                       entry,
-                      componentBadge(id, 'size-9 shrink-0', h),
+                      componentBadge(
+                        id,
+                        css({
+                          width: '2.25rem',
+                          height: '2.25rem',
+                          flexShrink: '0',
+                        }),
+                        h,
+                      ),
                       `${def.code} · ${eraName(l, componentEra(def))}`,
                       h,
                     )

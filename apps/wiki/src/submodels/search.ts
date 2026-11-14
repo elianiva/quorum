@@ -3,12 +3,12 @@ import { Command, type Update } from 'foldkit'
 import { pushUrl } from 'foldkit/navigation'
 import { defineView } from 'foldkit/submodel'
 import { defineMessageUnion } from 'foldkit/message'
-import { cn } from 'cn'
 import { Search as SearchIcon } from 'lucide'
 import { icon } from '@quorum/ui/primitives/icon'
 import { langOf } from '../i18n/lang.ts'
 import { Locale, withLocale } from '../i18n/locale.ts'
 import { indexUrl, loadIndex, search, type Hit, type Index } from '../search.ts'
+import { css, cx as cn } from '@quorum/styled-system/css'
 
 /* The search box in the header: the query, whether its results are open, and the index it loads
    on first use. Each language has its own index, built from its own titles and text. The index is
@@ -127,16 +127,54 @@ export const view = defineView<Model, Message>((model, h) => {
         ? t.search.unavailable
         : t.search.none
   return h.div(
-    [h.Class('relative min-w-0 flex-1 sm:max-w-sm')],
+    [
+      h.Class(
+        css({
+          position: 'relative',
+          minWidth: '0',
+          flex: '1 1 0%',
+          sm: {
+            maxWidth: '24rem',
+          },
+        }),
+      ),
+    ],
     [
       h.label(
         [
           h.Class(
-            'flex h-8 items-center gap-2 rounded-md border border-border bg-background px-2.5 text-muted-foreground transition-colors focus-within:border-foreground/30',
+            css({
+              display: 'flex',
+              height: '2rem',
+              alignItems: 'center',
+              gap: '0.5rem',
+              borderRadius: 'md',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'var(--border)',
+              backgroundColor: 'var(--background)',
+              paddingInline: '0.625rem',
+              color: 'var(--muted-foreground)',
+              transitionProperty:
+                'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
+              transitionDuration: '150ms',
+              transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:focus-within': {
+                borderColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
+              },
+            }),
           ),
         ],
         [
-          icon(h, SearchIcon, 'size-3.5 shrink-0'),
+          icon(
+            h,
+            SearchIcon,
+            css({
+              width: '0.875rem',
+              height: '0.875rem',
+              flexShrink: '0',
+            }),
+          ),
           h.input([
             h.Id('search'),
             h.Type('search'),
@@ -146,7 +184,21 @@ export const view = defineView<Model, Message>((model, h) => {
             h.Autocomplete('off'),
             h.Spellcheck(false),
             h.Class(
-              'h-full min-w-0 flex-1 bg-transparent text-[16px] text-foreground sm:text-[13px] outline-none placeholder:text-muted-foreground',
+              css({
+                height: '100%',
+                minWidth: '0',
+                flex: '1 1 0%',
+                backgroundColor: 'transparent',
+                fontSize: '16px',
+                color: 'var(--foreground)',
+                sm: {
+                  fontSize: '13px',
+                },
+                outlineStyle: 'none',
+                '&::placeholder': {
+                  color: 'var(--muted-foreground)',
+                },
+              }),
             ),
             h.OnInput((query) => Message.QueryChanged({ query })),
             h.Role('combobox'),
@@ -168,7 +220,20 @@ export const view = defineView<Model, Message>((model, h) => {
           h.kbd(
             [
               h.Class(
-                'hidden rounded border border-border px-1.5 font-mono text-[11px] leading-4 sm:block',
+                css({
+                  display: 'none',
+                  borderRadius: '0.25rem',
+                  borderWidth: '1px',
+                  borderStyle: 'solid',
+                  borderColor: 'var(--border)',
+                  paddingInline: '0.375rem',
+                  fontFamily: 'mono',
+                  fontSize: '11px',
+                  lineHeight: '1rem',
+                  sm: {
+                    display: 'block',
+                  },
+                }),
               ),
             ],
             ['/'],
@@ -183,11 +248,48 @@ export const view = defineView<Model, Message>((model, h) => {
               h.AriaLabel(t.search.results),
               h.AriaBusy(model.status === 'loading'),
               h.Class(
-                'fixed top-[52px] right-3 left-3 z-50 max-h-[70dvh] overflow-y-auto rounded-lg border border-border bg-card p-1 shadow-lg sm:absolute sm:top-10 sm:right-0 sm:left-0 sm:max-h-none sm:overflow-hidden',
+                css({
+                  position: 'fixed',
+                  top: '52px',
+                  right: '0.75rem',
+                  left: '0.75rem',
+                  zIndex: '50',
+                  maxHeight: '70dvh',
+                  overflowY: 'auto',
+                  borderRadius: 'lg',
+                  borderWidth: '1px',
+                  borderStyle: 'solid',
+                  borderColor: 'var(--border)',
+                  backgroundColor: 'var(--card)',
+                  padding: '0.25rem',
+                  boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+                  sm: {
+                    position: 'absolute',
+                    top: '2.5rem',
+                    right: '0',
+                    left: '0',
+                    maxHeight: 'none',
+                    overflow: 'hidden',
+                  },
+                }),
               ),
             ],
             hits.length === 0
-              ? [h.p([h.Class('px-3 py-2.5 text-[13px] text-muted-foreground')], [emptiness])]
+              ? [
+                  h.p(
+                    [
+                      h.Class(
+                        css({
+                          paddingInline: '0.75rem',
+                          paddingBlock: '0.625rem',
+                          fontSize: '13px',
+                          color: 'var(--muted-foreground)',
+                        }),
+                      ),
+                    ],
+                    [emptiness],
+                  ),
+                ]
               : hits.map((hit, position) => {
                   return h.a(
                     [
@@ -198,24 +300,75 @@ export const view = defineView<Model, Message>((model, h) => {
                       h.Href(hrefOf(hit)),
                       h.Class(
                         cn(
-                          'block rounded-md px-3 py-2 hover:bg-muted focus-visible:bg-muted focus-visible:outline-none',
-                          position === model.active && 'bg-muted',
+                          css({
+                            display: 'block',
+                            borderRadius: 'md',
+                            paddingInline: '0.75rem',
+                            paddingBlock: '0.5rem',
+                            _hover: {
+                              backgroundColor: 'var(--muted)',
+                            },
+                            _focusVisible: {
+                              backgroundColor: 'var(--muted)',
+                              outlineStyle: 'none',
+                            },
+                          }),
+                          position === model.active &&
+                            css({
+                              backgroundColor: 'var(--muted)',
+                            }),
                         ),
                       ),
                     ],
                     [
                       h.div(
-                        [h.Class('flex items-baseline justify-between gap-3')],
                         [
-                          h.span([h.Class('text-[14px] font-medium text-foreground')], [hit.title]),
+                          h.Class(
+                            css({
+                              display: 'flex',
+                              alignItems: 'baseline',
+                              justifyContent: 'space-between',
+                              gap: '0.75rem',
+                            }),
+                          ),
+                        ],
+                        [
                           h.span(
-                            [h.Class('text-[12px] text-muted-foreground')],
+                            [
+                              h.Class(
+                                css({
+                                  fontSize: '14px',
+                                  fontWeight: '500',
+                                  color: 'var(--foreground)',
+                                }),
+                              ),
+                            ],
+                            [hit.title],
+                          ),
+                          h.span(
+                            [
+                              h.Class(
+                                css({
+                                  fontSize: '12px',
+                                  color: 'var(--muted-foreground)',
+                                }),
+                              ),
+                            ],
                             [t.quadrants[hit.section].label],
                           ),
                         ],
                       ),
                       h.p(
-                        [h.Class('mt-0.5 line-clamp-1 text-[12px] text-muted-foreground')],
+                        [
+                          h.Class(
+                            css({
+                              marginTop: '0.125rem',
+                              lineClamp: '1',
+                              fontSize: '12px',
+                              color: 'var(--muted-foreground)',
+                            }),
+                          ),
+                        ],
                         [hit.summary],
                       ),
                     ],

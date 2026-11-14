@@ -13,6 +13,7 @@ import {
   titleOf,
   type Lang,
 } from './shared.ts'
+import { css } from '@quorum/styled-system/css'
 
 /* The Patterns hub: every page of the section, under its group, as cards. The pages themselves
    are authored (content/patterns); this page only lists them, so a new page appears here by its
@@ -75,12 +76,33 @@ export const patternsPages = (l: Lang): ReadonlyArray<Page> => {
                                 ? h.span(
                                     [
                                       h.Class(
-                                        'flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-[13px] font-semibold tabular-nums text-muted-foreground',
+                                        css({
+                                          display: 'flex',
+                                          width: '2.25rem',
+                                          height: '2.25rem',
+                                          flexShrink: '0',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          borderRadius: 'lg',
+                                          backgroundColor: 'var(--muted)',
+                                          fontSize: '13px',
+                                          fontWeight: '600',
+                                          fontVariantNumeric: 'tabular-nums',
+                                          color: 'var(--muted-foreground)',
+                                        }),
                                       ),
                                     ],
                                     [String(entry.order - 100)],
                                   )
-                                : quadrantBadge('patterns', 'size-9 shrink-0', h),
+                                : quadrantBadge(
+                                    'patterns',
+                                    css({
+                                      width: '2.25rem',
+                                      height: '2.25rem',
+                                      flexShrink: '0',
+                                    }),
+                                    h,
+                                  ),
                               '',
                               h,
                             ),

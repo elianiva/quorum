@@ -24,6 +24,7 @@ import {
   type H,
   type Lang,
 } from './shared.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The Ventures (13 "Ventures"): the traffic each one runs, when it is busy, and what it starts with. */
 
@@ -72,21 +73,94 @@ const ventureBlock = (l: Lang, id: VentureId, h: H): Html => {
       paragraph(def.summary, h),
       mixBar(trafficOf(def), h),
       h.dl(
-        [h.Class('not-prose my-4 grid gap-x-6 gap-y-2 text-[14px] sm:grid-cols-[9rem_1fr]')],
+        [
+          h.Class(
+            cx(
+              css({
+                marginBlock: '1rem',
+                display: 'grid',
+                columnGap: '1.5rem',
+                rowGap: '0.5rem',
+                fontSize: '14px',
+                sm: {
+                  gridTemplateColumns: '9rem 1fr',
+                },
+              }),
+              'not-prose',
+            ),
+          ),
+        ],
         [
           ...(def.signature === null
             ? []
             : [
-                h.dt([h.Key('incident-t'), h.Class('text-muted-foreground')], [t.signature]),
+                h.dt(
+                  [
+                    h.Key('incident-t'),
+                    h.Class(
+                      css({
+                        color: 'var(--muted-foreground)',
+                      }),
+                    ),
+                  ],
+                  [t.signature],
+                ),
                 h.dd(
-                  [h.Key('incident-d'), h.Class('m-0')],
+                  [
+                    h.Key('incident-d'),
+                    h.Class(
+                      css({
+                        margin: '0',
+                      }),
+                    ),
+                  ],
                   [link(incidentPath(def.signature), l.cat.INCIDENTS[def.signature].name, h)],
                 ),
               ]),
-          h.dt([h.Key('market-t'), h.Class('text-muted-foreground')], [t.market]),
-          h.dd([h.Key('market-d'), h.Class('m-0')], [`×${def.market}`]),
-          h.dt([h.Key('legacy-t'), h.Class('text-muted-foreground')], [t.legacy]),
-          h.dd([h.Key('legacy-d'), h.Class('m-0')], [`×${def.legacy}`]),
+          h.dt(
+            [
+              h.Key('market-t'),
+              h.Class(
+                css({
+                  color: 'var(--muted-foreground)',
+                }),
+              ),
+            ],
+            [t.market],
+          ),
+          h.dd(
+            [
+              h.Key('market-d'),
+              h.Class(
+                css({
+                  margin: '0',
+                }),
+              ),
+            ],
+            [`×${def.market}`],
+          ),
+          h.dt(
+            [
+              h.Key('legacy-t'),
+              h.Class(
+                css({
+                  color: 'var(--muted-foreground)',
+                }),
+              ),
+            ],
+            [t.legacy],
+          ),
+          h.dd(
+            [
+              h.Key('legacy-d'),
+              h.Class(
+                css({
+                  margin: '0',
+                }),
+              ),
+            ],
+            [`×${def.legacy}`],
+          ),
         ],
       ),
     ],

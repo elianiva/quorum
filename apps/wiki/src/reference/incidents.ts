@@ -1,5 +1,4 @@
 import type { Html } from 'foldkit/html'
-import { cn } from 'cn'
 import { INCIDENT_IDS, type IncidentDef } from '@quorum/simulation/catalog'
 import { BY_INCIDENT } from '@quorum/simulation/term-links'
 import { FIGURE } from '@quorum/ui/game/bits'
@@ -24,6 +23,7 @@ import {
   type H,
   type Lang,
 } from './shared.ts'
+import { css, cx as cn } from '@quorum/styled-system/css'
 
 /* One page per incident, and a hub that lists them by Era. */
 
@@ -37,9 +37,12 @@ const PRODUCTION: Partial<Record<IncidentDef['id'], string>> = {
 }
 
 const SEVERITY_CLASS: Record<1 | 2 | 3, string> = {
-  1: 'bg-danger text-white',
-  2: 'bg-warn text-white',
-  3: 'bg-foreground/10 text-foreground',
+  1: css({ backgroundColor: 'var(--danger)', color: 'white' }),
+  2: css({ backgroundColor: 'var(--warn)', color: 'white' }),
+  3: css({
+    backgroundColor: 'color-mix(in oklab, var(--foreground) 10%, transparent)',
+    color: 'var(--foreground)',
+  }),
 }
 
 /** SEV1 is the worst, as in a real on-call rotation. */
@@ -49,7 +52,14 @@ export const severityChip = (severity: 1 | 2 | 3, h: H): Html =>
       h.Class(
         cn(
           FIGURE,
-          'inline-flex rounded-md px-1.5 py-0.5 text-[11px] font-semibold',
+          css({
+            display: 'inline-flex',
+            borderRadius: 'md',
+            paddingInline: '0.375rem',
+            paddingBlock: '0.125rem',
+            fontSize: '11px',
+            fontWeight: '600',
+          }),
           SEVERITY_CLASS[severity],
         ),
       ),
@@ -203,7 +213,16 @@ export const incidentPages = (l: Lang): ReadonlyArray<Page> => {
                       cells: [
                         link(incidentPath(id), def.name, h),
                         // "Pre-seed" must not break at its hyphen in the narrow table.
-                        h.span([h.Class('whitespace-nowrap')], [eraName(l, def.era)]),
+                        h.span(
+                          [
+                            h.Class(
+                              css({
+                                whiteSpace: 'nowrap',
+                              }),
+                            ),
+                          ],
+                          [eraName(l, def.era)],
+                        ),
                         severityChip(def.severity, h),
                         def.actions[0] ? researchLink(l, def.actions[0], h) : '—',
                       ],

@@ -1,6 +1,5 @@
 import * as Markdown from '@foldkit/markdown'
 import type { HtmlBuilder } from 'foldkit/html'
-import { cn } from 'cn'
 import { ArrowRight, Info, Lightbulb, TriangleAlert } from 'lucide'
 import { researchList } from '@quorum/simulation/catalog'
 import { optionControls } from '../reference/options.ts'
@@ -17,13 +16,14 @@ import * as Quiz from '../submodels/quiz.ts'
 import { practiceView } from './practice-card.ts'
 import { sandboxView } from './sandbox-card.ts'
 import { designView } from './design-card.ts'
+import { css, cx, cx as cn } from '@quorum/styled-system/css'
 
 /* The live views behind each Markdown directive. src/islands.ts declares their attributes. */
 
 const NOTE = {
-  tip: { glyph: Lightbulb, tone: 'text-ok' },
-  warn: { glyph: TriangleAlert, tone: 'text-warn' },
-  real: { glyph: Info, tone: 'text-group-edge' },
+  tip: { glyph: Lightbulb, tone: css({ color: 'var(--ok)' }) },
+  warn: { glyph: TriangleAlert, tone: css({ color: 'var(--warn)' }) },
+  real: { glyph: Info, tone: css({ color: 'var(--group-edge)' }) },
 } as const
 
 export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Islands => {
@@ -34,13 +34,67 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
     Note: ({ tone }, content) => {
       const note = NOTE[tone ?? 'tip']
       return h.aside(
-        [h.Class('not-prose my-6 rounded-lg border border-border px-4 py-3')],
+        [
+          h.Class(
+            cx(
+              css({
+                marginBlock: '1.5rem',
+                borderRadius: 'lg',
+                borderWidth: '1px',
+                borderStyle: 'solid',
+                borderColor: 'var(--border)',
+                paddingInline: '1rem',
+                paddingBlock: '0.75rem',
+              }),
+              'not-prose',
+            ),
+          ),
+        ],
         [
           h.div(
-            [h.Class('mb-1 flex items-center gap-1.5 text-[13px] font-medium')],
-            [icon(h, note.glyph, `size-3.5 ${note.tone}`), t.note[tone ?? 'tip']],
+            [
+              h.Class(
+                css({
+                  marginBottom: '0.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.375rem',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                }),
+              ),
+            ],
+            [
+              icon(
+                h,
+                note.glyph,
+                cx(
+                  css({
+                    width: '0.875rem',
+                    height: '0.875rem',
+                  }),
+                  note.tone,
+                ),
+              ),
+              t.note[tone ?? 'tip'],
+            ],
           ),
-          h.div([h.Class('prose text-[14px] [&>*+*]:mt-2')], content),
+          h.div(
+            [
+              h.Class(
+                cx(
+                  css({
+                    fontSize: '14px',
+                    '& > * + *': {
+                      marginTop: '0.5rem',
+                    },
+                  }),
+                  'prose',
+                ),
+              ),
+            ],
+            content,
+          ),
         ],
       )
     },
@@ -58,10 +112,33 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
       const controls = controlsOf[id] ?? []
       if (controls.length === 0) return h.empty
       return h.div(
-        [h.Class('not-prose my-6 overflow-x-auto rounded-lg border border-border')],
+        [
+          h.Class(
+            cx(
+              css({
+                marginBlock: '1.5rem',
+                overflowX: 'auto',
+                borderRadius: 'lg',
+                borderWidth: '1px',
+                borderStyle: 'solid',
+                borderColor: 'var(--border)',
+              }),
+              'not-prose',
+            ),
+          ),
+        ],
         [
           h.table(
-            [h.Class('w-full border-collapse text-[14px] leading-snug')],
+            [
+              h.Class(
+                css({
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: '14px',
+                  lineHeight: '1.375',
+                }),
+              ),
+            ],
             [
               h.thead(
                 [],
@@ -73,7 +150,19 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                         [
                           h.Key(header),
                           h.Class(
-                            'border-b border-border bg-muted/50 px-3 py-2 text-left text-[12px] font-medium whitespace-nowrap text-muted-foreground',
+                            css({
+                              borderBottomWidth: '1px',
+                              borderBottomStyle: 'solid',
+                              borderColor: 'var(--border)',
+                              backgroundColor: 'color-mix(in oklab, var(--muted) 50%, transparent)',
+                              paddingInline: '0.75rem',
+                              paddingBlock: '0.5rem',
+                              textAlign: 'left',
+                              fontSize: '12px',
+                              fontWeight: '500',
+                              whiteSpace: 'nowrap',
+                              color: 'var(--muted-foreground)',
+                            }),
                           ),
                         ],
                         [header],
@@ -83,17 +172,60 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                 ],
               ),
               h.tbody(
-                [h.Class('divide-y divide-border')],
+                [
+                  h.Class(
+                    css({
+                      '& > * + *': {
+                        borderTopWidth: '1px',
+                        borderTopStyle: 'solid',
+                        borderColor: 'var(--border)',
+                      },
+                    }),
+                  ),
+                ],
                 controls.map((control) =>
                   h.tr(
                     [h.Key(control.name)],
                     [
-                      h.td([h.Class('px-3 py-2 align-top font-medium')], [control.name]),
                       h.td(
-                        [h.Class('px-3 py-2 align-top text-muted-foreground')],
+                        [
+                          h.Class(
+                            css({
+                              paddingInline: '0.75rem',
+                              paddingBlock: '0.5rem',
+                              verticalAlign: 'top',
+                              fontWeight: '500',
+                            }),
+                          ),
+                        ],
+                        [control.name],
+                      ),
+                      h.td(
+                        [
+                          h.Class(
+                            css({
+                              paddingInline: '0.75rem',
+                              paddingBlock: '0.5rem',
+                              verticalAlign: 'top',
+                              color: 'var(--muted-foreground)',
+                            }),
+                          ),
+                        ],
                         [control.settings],
                       ),
-                      h.td([h.Class('px-3 py-2 align-top text-muted-foreground')], [control.shown]),
+                      h.td(
+                        [
+                          h.Class(
+                            css({
+                              paddingInline: '0.75rem',
+                              paddingBlock: '0.5rem',
+                              verticalAlign: 'top',
+                              color: 'var(--muted-foreground)',
+                            }),
+                          ),
+                        ],
+                        [control.shown],
+                      ),
                     ],
                   ),
                 ),
@@ -110,24 +242,93 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
           h.Href(`/components/${id}`),
           h.Class(
             cn(
-              'not-prose group my-6 flex max-w-md items-center gap-3.5 rounded-lg border border-border px-4 py-3 transition-colors hover:bg-muted/60',
+              cx(
+                css({
+                  marginBlock: '1.5rem',
+                  display: 'flex',
+                  maxWidth: '28rem',
+                  alignItems: 'center',
+                  gap: '0.875rem',
+                  borderRadius: 'lg',
+                  borderWidth: '1px',
+                  borderStyle: 'solid',
+                  borderColor: 'var(--border)',
+                  paddingInline: '1rem',
+                  paddingBlock: '0.75rem',
+                  transitionProperty:
+                    'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
+                  transitionDuration: '150ms',
+                  transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                  _hover: {
+                    backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
+                  },
+                }),
+                'not-prose',
+                'group',
+              ),
             ),
           ),
         ],
         [
-          groupBadge(def.group, COMPONENT_ICONS[id], 'size-10', h),
+          groupBadge(def.group, COMPONENT_ICONS[id], css({ width: '2.5rem', height: '2.5rem' }), h),
           h.span(
-            [h.Class('min-w-0 flex-1')],
+            [
+              h.Class(
+                css({
+                  minWidth: '0',
+                  flex: '1 1 0%',
+                }),
+              ),
+            ],
             [
               h.span(
-                [h.Class('flex items-baseline gap-2')],
                 [
-                  h.span([h.Class('text-[15px] font-semibold tracking-tight')], [def.name]),
-                  h.span([h.Class('text-[12px] text-muted-foreground')], [def.product]),
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      gap: '0.5rem',
+                    }),
+                  ),
+                ],
+                [
+                  h.span(
+                    [
+                      h.Class(
+                        css({
+                          fontSize: '15px',
+                          fontWeight: '600',
+                          letterSpacing: '-0.025em',
+                        }),
+                      ),
+                    ],
+                    [def.name],
+                  ),
+                  h.span(
+                    [
+                      h.Class(
+                        css({
+                          fontSize: '12px',
+                          color: 'var(--muted-foreground)',
+                        }),
+                      ),
+                    ],
+                    [def.product],
+                  ),
                 ],
               ),
               h.span(
-                [h.Class('mt-0.5 block text-[13px] leading-snug text-muted-foreground')],
+                [
+                  h.Class(
+                    css({
+                      marginTop: '0.125rem',
+                      display: 'block',
+                      fontSize: '13px',
+                      lineHeight: '1.375',
+                      color: 'var(--muted-foreground)',
+                    }),
+                  ),
+                ],
                 [def.blurb],
               ),
             ],
@@ -135,7 +336,18 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
           icon(
             h,
             ArrowRight,
-            'size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5',
+            css({
+              width: '1rem',
+              height: '1rem',
+              flexShrink: '0',
+              color: 'var(--muted-foreground)',
+              transitionProperty: 'transform, translate, scale, rotate',
+              transitionDuration: '150ms',
+              transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+              '.group:hover &': {
+                translate: '0.125rem',
+              },
+            }),
           ),
         ],
       )
@@ -144,10 +356,29 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
       const def = l.cat.ERAS[Number(era)]
       return def
         ? h.figure(
-            [h.Class('not-prose my-5')],
+            [
+              h.Class(
+                cx(
+                  css({
+                    marginBlock: '1.25rem',
+                  }),
+                  'not-prose',
+                ),
+              ),
+            ],
             [
               mixBar(def.mix, h),
-              h.figcaption([h.Class('text-[12px] text-muted-foreground')], [t.mix(def.name)]),
+              h.figcaption(
+                [
+                  h.Class(
+                    css({
+                      fontSize: '12px',
+                      color: 'var(--muted-foreground)',
+                    }),
+                  ),
+                ],
+                [t.mix(def.name)],
+              ),
             ],
           )
         : h.empty
@@ -156,7 +387,19 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
     Lever: ({ kind }) => leverView(kind, h),
     Track: ({ track }) =>
       h.ol(
-        [h.Class('not-prose my-5 flex flex-wrap gap-2')],
+        [
+          h.Class(
+            cx(
+              css({
+                marginBlock: '1.25rem',
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
+              }),
+              'not-prose',
+            ),
+          ),
+        ],
         researchList
           .filter((entry) => entry.track === track)
           .map((entry) =>
@@ -167,7 +410,22 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                   [
                     h.Href(`/research/${entry.id}`),
                     h.Class(
-                      'flex items-center gap-2 rounded-md border border-border py-1 pr-3 pl-1 text-[13px] hover:bg-muted/60',
+                      css({
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        borderRadius: 'md',
+                        borderWidth: '1px',
+                        borderStyle: 'solid',
+                        borderColor: 'var(--border)',
+                        paddingBlock: '0.25rem',
+                        paddingRight: '0.75rem',
+                        paddingLeft: '0.25rem',
+                        fontSize: '13px',
+                        _hover: {
+                          backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
+                        },
+                      }),
                     ),
                   ],
                   [researchMark(entry, 'sm', false, h), l.cat.RESEARCH[entry.id].name],

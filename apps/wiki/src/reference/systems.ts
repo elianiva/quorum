@@ -37,6 +37,7 @@ import {
   titleOf,
   type Lang,
 } from './shared.ts'
+import { css } from '@quorum/styled-system/css'
 
 /* The systems around the board: the team, the infrastructure, prestige, and the Sandboxes. */
 
@@ -441,7 +442,13 @@ const sandbox = (l: Lang, def: GuidedSandbox): Page => {
                       objective.goal,
                       objective.users
                         ? h.span(
-                            [h.Class('text-muted-foreground')],
+                            [
+                              h.Class(
+                                css({
+                                  color: 'var(--muted-foreground)',
+                                }),
+                              ),
+                            ],
                             [t.users(compact(objective.users))],
                           )
                         : h.empty,

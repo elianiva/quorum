@@ -7,6 +7,7 @@ import { langOf } from '../i18n/lang.ts'
 import { Locale } from '../i18n/locale.ts'
 import { Message } from '../main.ts'
 import type { PracticeId } from './practice.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 const IDS = ['place', 'wire', 'rearrange'] as const
 
@@ -37,7 +38,19 @@ export const practiceView = (id: PracticeId, h: HtmlBuilder<Message>): Html => {
       h.AriaLabel(
         langOf(locale).t.islands.practice.boardLabel(langOf(locale).t.islands.practice.titles[id]),
       ),
-      h.Class('not-prose my-6 min-h-[520px] rounded-lg border border-border'),
+      h.Class(
+        cx(
+          css({
+            marginBlock: '1.5rem',
+            minHeight: '520px',
+            borderRadius: 'lg',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: 'var(--border)',
+          }),
+          'not-prose',
+        ),
+      ),
       h.OnMount((practiceMounted ??= definePracticeMounted())({ id, locale })),
     ],
     [],

@@ -1,9 +1,9 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
-import { cn } from 'cn'
 import { localeOf } from '../i18n/builder.ts'
 import { langOf } from '../i18n/lang.ts'
 import type { Message } from '../main.ts'
 import type { Page } from '../page.ts'
+import { css, cx as cn } from '@quorum/styled-system/css'
 
 /* The right rail: the page's headings. */
 
@@ -14,12 +14,41 @@ export const toc = (page: Page, h: HtmlBuilder<Message>): Html => {
     : h.nav(
         [
           h.AriaLabel(t.onThisPage),
-          h.Class('sticky top-[var(--header-height)] hidden self-start xl:block'),
+          h.Class(
+            css({
+              position: 'sticky',
+              top: 'var(--header-height)',
+              display: 'none',
+              alignSelf: 'flex-start',
+              xl: {
+                display: 'block',
+              },
+            }),
+          ),
         ],
         [
-          h.div([h.Class('mb-2 text-[12px] font-semibold')], [t.onThisPage]),
+          h.div(
+            [
+              h.Class(
+                css({
+                  marginBottom: '0.5rem',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                }),
+              ),
+            ],
+            [t.onThisPage],
+          ),
           h.ul(
-            [h.Class('border-l border-border')],
+            [
+              h.Class(
+                css({
+                  borderLeftWidth: '1px',
+                  borderLeftStyle: 'solid',
+                  borderColor: 'var(--border)',
+                }),
+              ),
+            ],
             page.headings.map((heading) =>
               h.li(
                 [h.Key(heading.id)],
@@ -29,8 +58,28 @@ export const toc = (page: Page, h: HtmlBuilder<Message>): Html => {
                       h.Href(`#${heading.id}`),
                       h.Class(
                         cn(
-                          '-ml-px block border-l border-transparent py-1 text-[13px] text-muted-foreground hover:border-foreground/40 hover:text-foreground',
-                          heading.level === 3 ? 'pl-6' : 'pl-3',
+                          css({
+                            marginLeft: '-1px',
+                            display: 'block',
+                            borderLeftWidth: '1px',
+                            borderLeftStyle: 'solid',
+                            borderColor: 'transparent',
+                            paddingBlock: '0.25rem',
+                            fontSize: '13px',
+                            color: 'var(--muted-foreground)',
+                            _hover: {
+                              borderColor:
+                                'color-mix(in oklab, var(--foreground) 40%, transparent)',
+                              color: 'var(--foreground)',
+                            },
+                          }),
+                          heading.level === 3
+                            ? css({
+                                paddingLeft: '1.5rem',
+                              })
+                            : css({
+                                paddingLeft: '0.75rem',
+                              }),
                         ),
                       ),
                     ],

@@ -8,6 +8,7 @@ import { diagramView } from './components/diagram.ts'
 import { mathView } from './components/math.ts'
 import { islandViews } from './components/islands.ts'
 import { type Heading, slug } from './page.ts'
+import { css, cx } from '@quorum/styled-system/css'
 
 type Inline = Markdown.Inline
 
@@ -212,11 +213,50 @@ export const prose = (
           ),
         Table: (_table, header, rows) =>
           h.div(
-            [h.Class('not-prose my-6 overflow-x-auto rounded-lg border border-border')],
+            [
+              h.Class(
+                cx(
+                  css({
+                    marginBlock: '1.5rem',
+                    overflowX: 'auto',
+                    borderRadius: 'lg',
+                    borderWidth: '1px',
+                    borderStyle: 'solid',
+                    borderColor: 'var(--border)',
+                  }),
+                  'not-prose',
+                ),
+              ),
+            ],
             [
               h.table(
-                [h.Class('w-full border-collapse text-[14px] leading-snug')],
-                [h.thead([], [header]), h.tbody([h.Class('divide-y divide-border')], rows)],
+                [
+                  h.Class(
+                    css({
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      fontSize: '14px',
+                      lineHeight: '1.375',
+                    }),
+                  ),
+                ],
+                [
+                  h.thead([], [header]),
+                  h.tbody(
+                    [
+                      h.Class(
+                        css({
+                          '& > * + *': {
+                            borderTopWidth: '1px',
+                            borderTopStyle: 'solid',
+                            borderColor: 'var(--border)',
+                          },
+                        }),
+                      ),
+                    ],
+                    rows,
+                  ),
+                ],
               ),
             ],
           ),
@@ -225,7 +265,18 @@ export const prose = (
             ? h.th(
                 [
                   h.Class(
-                    'border-b border-border bg-muted/50 px-3 py-2 text-left text-[12px] font-medium text-muted-foreground',
+                    css({
+                      borderBottomWidth: '1px',
+                      borderBottomStyle: 'solid',
+                      borderColor: 'var(--border)',
+                      backgroundColor: 'color-mix(in oklab, var(--muted) 50%, transparent)',
+                      paddingInline: '0.75rem',
+                      paddingBlock: '0.5rem',
+                      textAlign: 'left',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      color: 'var(--muted-foreground)',
+                    }),
                   ),
                   ...(alignment === 'Right' ? [h.Style({ textAlign: 'right' })] : []),
                 ],
@@ -233,7 +284,13 @@ export const prose = (
               )
             : h.td(
                 [
-                  h.Class('px-3 py-2 align-top'),
+                  h.Class(
+                    css({
+                      paddingInline: '0.75rem',
+                      paddingBlock: '0.5rem',
+                      verticalAlign: 'top',
+                    }),
+                  ),
                   ...(alignment === 'Right' ? [h.Style({ textAlign: 'right' })] : []),
                 ],
                 content,

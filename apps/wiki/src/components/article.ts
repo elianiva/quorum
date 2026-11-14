@@ -1,5 +1,4 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
-import { cn } from 'cn'
 import { ArrowUpRight, ChevronRight, Coffee, Pencil } from 'lucide'
 import { FIGURE } from '@quorum/ui/game/bits'
 import { icon } from '@quorum/ui/primitives/icon'
@@ -13,6 +12,7 @@ import { KOFI, editUrl } from '../site.ts'
 import { hides } from '../submodels/spoilers.ts'
 import { pathBar, pathNext } from './path-nav.ts'
 import { quadrantBadge } from './quadrant.ts'
+import { css, cx, cx as cn } from '@quorum/styled-system/css'
 
 /* One page: its header, its body (and facts beside it), and its footer. */
 
@@ -22,14 +22,52 @@ const breadcrumbs = (page: Page, h: H): Html => {
   const t = langOf(page.locale).t
   const parent = page.parent ? pageIn(page.locale, page.parent) : null
   return h.div(
-    [h.Class('flex flex-wrap items-center gap-1.5 text-[13px] text-muted-foreground')],
     [
-      quadrantBadge(page.section, 'size-4', h),
+      h.Class(
+        css({
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '0.375rem',
+          fontSize: '13px',
+          color: 'var(--muted-foreground)',
+        }),
+      ),
+    ],
+    [
+      quadrantBadge(
+        page.section,
+        css({
+          width: '1rem',
+          height: '1rem',
+        }),
+        h,
+      ),
       h.span([], [t.quadrants[page.section].label]),
       ...(parent
         ? [
-            icon(h, ChevronRight, 'size-3.5 opacity-60'),
-            h.a([h.Href(parent.path), h.Class('hover:text-foreground')], [parent.title]),
+            icon(
+              h,
+              ChevronRight,
+              css({
+                width: '0.875rem',
+                height: '0.875rem',
+                opacity: 0.6,
+              }),
+            ),
+            h.a(
+              [
+                h.Href(parent.path),
+                h.Class(
+                  css({
+                    _hover: {
+                      color: 'var(--foreground)',
+                    },
+                  }),
+                ),
+              ],
+              [parent.title],
+            ),
           ]
         : []),
     ],
@@ -46,18 +84,52 @@ const spoiler = (page: Page, model: Model, body: Html, h: H): Html => {
       h.summary(
         [
           h.Class(
-            'cursor-pointer list-none rounded-md border border-dashed border-border px-4 py-3 text-[14px]',
+            css({
+              cursor: 'pointer',
+              listStyleType: 'none',
+              borderRadius: 'md',
+              borderWidth: '1px',
+              borderStyle: 'dashed',
+              borderColor: 'var(--border)',
+              paddingInline: '1rem',
+              paddingBlock: '0.75rem',
+              fontSize: '14px',
+            }),
           ),
         ],
         [
           h.span(
-            [h.Class('font-medium')],
+            [
+              h.Class(
+                css({
+                  fontWeight: '500',
+                }),
+              ),
+            ],
             [l.t.article.spoilerAbout(l.cat.ERAS[page.era ?? 0]?.name ?? '')],
           ),
-          h.span([h.Class('text-muted-foreground')], [l.t.article.spoilerHidden]),
+          h.span(
+            [
+              h.Class(
+                css({
+                  color: 'var(--muted-foreground)',
+                }),
+              ),
+            ],
+            [l.t.article.spoilerHidden],
+          ),
         ],
       ),
-      h.div([h.Class('mt-6')], [body]),
+      h.div(
+        [
+          h.Class(
+            css({
+              marginTop: '1.5rem',
+            }),
+          ),
+        ],
+        [body],
+      ),
     ],
   )
 }
@@ -70,28 +142,101 @@ const footer = (page: Page, h: H): Html => {
     return target ? [target] : []
   })
   return h.footer(
-    [h.Class('mt-16')],
+    [
+      h.Class(
+        css({
+          marginTop: '4rem',
+        }),
+      ),
+    ],
     [
       related.length
         ? h.div(
-            [h.Class('mb-10')],
             [
-              h.div([h.Class('mb-3 text-[13px] font-semibold')], [t.seeAlso]),
+              h.Class(
+                css({
+                  marginBottom: '2.5rem',
+                }),
+              ),
+            ],
+            [
+              h.div(
+                [
+                  h.Class(
+                    css({
+                      marginBottom: '0.75rem',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                    }),
+                  ),
+                ],
+                [t.seeAlso],
+              ),
               h.ul(
-                [h.Class('divide-y divide-border border-y border-border')],
+                [
+                  h.Class(
+                    css({
+                      '& > * + *': {
+                        borderTopWidth: '1px',
+                        borderTopStyle: 'solid',
+                        borderColor: 'var(--border)',
+                      },
+                      borderTopWidth: '1px',
+                      borderTopStyle: 'solid',
+                      borderBottomWidth: '1px',
+                      borderBottomStyle: 'solid',
+                      borderColor: 'var(--border)',
+                    }),
+                  ),
+                ],
                 related.map((target) =>
                   h.li(
                     [h.Key(target.path)],
                     [
                       h.a(
-                        [h.Href(target.path), h.Class('group flex items-baseline gap-4 py-2.5')],
+                        [
+                          h.Href(target.path),
+                          h.Class(
+                            cx(
+                              css({
+                                display: 'flex',
+                                alignItems: 'baseline',
+                                gap: '1rem',
+                                paddingBlock: '0.625rem',
+                              }),
+                              'group',
+                            ),
+                          ),
+                        ],
                         [
                           h.span(
-                            [h.Class('shrink-0 text-[14px] font-medium group-hover:underline')],
+                            [
+                              h.Class(
+                                css({
+                                  flexShrink: '0',
+                                  fontSize: '14px',
+                                  fontWeight: '500',
+                                  '.group:hover &': {
+                                    textDecorationLine: 'underline',
+                                  },
+                                }),
+                              ),
+                            ],
                             [target.title],
                           ),
                           h.span(
-                            [h.Class('min-w-0 truncate text-[13px] text-muted-foreground')],
+                            [
+                              h.Class(
+                                css({
+                                  minWidth: '0',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  fontSize: '13px',
+                                  color: 'var(--muted-foreground)',
+                                }),
+                              ),
+                            ],
                             [target.summary],
                           ),
                         ],
@@ -106,7 +251,19 @@ const footer = (page: Page, h: H): Html => {
       h.div(
         [
           h.Class(
-            'flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-border pt-5 text-[12px] text-muted-foreground',
+            css({
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              columnGap: '1.25rem',
+              rowGap: '0.75rem',
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderColor: 'var(--border)',
+              paddingTop: '1.25rem',
+              fontSize: '12px',
+              color: 'var(--muted-foreground)',
+            }),
           ),
         ],
         [
@@ -114,29 +271,106 @@ const footer = (page: Page, h: H): Html => {
             ? h.a(
                 [
                   h.Href(editUrl(page.source)),
-                  h.Class('inline-flex items-center gap-1.5 hover:text-foreground'),
+                  h.Class(
+                    css({
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.375rem',
+                      _hover: {
+                        color: 'var(--foreground)',
+                      },
+                    }),
+                  ),
                 ],
-                [icon(h, Pencil, 'size-3.5'), t.editOnGitHub],
+                [
+                  icon(
+                    h,
+                    Pencil,
+                    css({
+                      width: '0.875rem',
+                      height: '0.875rem',
+                    }),
+                  ),
+                  t.editOnGitHub,
+                ],
               )
             : h.empty,
           page.gdd
             ? h.a(
-                [h.Href(page.gdd), h.Class('inline-flex items-center gap-1 hover:text-foreground')],
-                [t.designNotes, icon(h, ArrowUpRight, 'size-3.5')],
+                [
+                  h.Href(page.gdd),
+                  h.Class(
+                    css({
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                      _hover: {
+                        color: 'var(--foreground)',
+                      },
+                    }),
+                  ),
+                ],
+                [
+                  t.designNotes,
+                  icon(
+                    h,
+                    ArrowUpRight,
+                    css({
+                      width: '0.875rem',
+                      height: '0.875rem',
+                    }),
+                  ),
+                ],
               )
             : h.empty,
           h.a(
-            [h.Href(KOFI), h.Class('inline-flex items-center gap-1.5 hover:text-foreground')],
-            [icon(h, Coffee, 'size-3.5'), t.support],
+            [
+              h.Href(KOFI),
+              h.Class(
+                css({
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.375rem',
+                  _hover: {
+                    color: 'var(--foreground)',
+                  },
+                }),
+              ),
+            ],
+            [
+              icon(
+                h,
+                Coffee,
+                css({
+                  width: '0.875rem',
+                  height: '0.875rem',
+                }),
+              ),
+              t.support,
+            ],
           ),
           h.span(
-            [h.Class('ml-auto')],
+            [
+              h.Class(
+                css({
+                  marginLeft: 'auto',
+                }),
+              ),
+            ],
             [
               t.disclaimerLead,
               h.a(
                 [
                   h.Href('/about/disclaimer'),
-                  h.Class('underline underline-offset-2 hover:text-foreground'),
+                  h.Class(
+                    css({
+                      textDecorationLine: 'underline',
+                      textUnderlineOffset: '2px',
+                      _hover: {
+                        color: 'var(--foreground)',
+                      },
+                    }),
+                  ),
                 ],
                 [t.disclaimerLink],
               ),
@@ -144,7 +378,15 @@ const footer = (page: Page, h: H): Html => {
               h.a(
                 [
                   h.Href('/about/changelog'),
-                  h.Class('underline underline-offset-2 hover:text-foreground'),
+                  h.Class(
+                    css({
+                      textDecorationLine: 'underline',
+                      textUnderlineOffset: '2px',
+                      _hover: {
+                        color: 'var(--foreground)',
+                      },
+                    }),
+                  ),
                 ],
                 [t.changelogLink],
               ),
@@ -164,7 +406,17 @@ const notice = (page: Page, h: H): Html =>
         [
           h.Role('note'),
           h.Class(
-            'mb-6 rounded-md border border-dashed border-border px-4 py-2.5 text-[13px] text-muted-foreground',
+            css({
+              marginBottom: '1.5rem',
+              borderRadius: 'md',
+              borderWidth: '1px',
+              borderStyle: 'dashed',
+              borderColor: 'var(--border)',
+              paddingInline: '1rem',
+              paddingBlock: '0.625rem',
+              fontSize: '13px',
+              color: 'var(--muted-foreground)',
+            }),
           ),
         ],
         [langOf(page.locale).t.article.untranslated],
@@ -176,15 +428,44 @@ export const article = (page: Page, model: Model, h: H): Html => {
   return h.article(
     [
       // A wide page spans the frame; every other page fills its column.
-      h.Class(cn('min-w-0 py-8', page.wide && 'col-span-full')),
+      h.Class(
+        cn(
+          css({
+            minWidth: '0',
+            paddingBlock: '2rem',
+          }),
+          page.wide &&
+            css({
+              gridColumn: '1 / -1',
+            }),
+        ),
+      ),
       h.DataAttribute('kind', page.section),
     ],
     [
       h.header(
-        [h.Class('border-b border-border pb-8')],
+        [
+          h.Class(
+            css({
+              borderBottomWidth: '1px',
+              borderBottomStyle: 'solid',
+              borderColor: 'var(--border)',
+              paddingBottom: '2rem',
+            }),
+          ),
+        ],
         [
           h.div(
-            [h.Class('flex items-center justify-between gap-4')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '1rem',
+                }),
+              ),
+            ],
             [
               breadcrumbs(page, h),
               page.era !== null
@@ -192,7 +473,16 @@ export const article = (page: Page, model: Model, h: H): Html => {
                     [
                       h.Href(eraPath(page.era)),
                       h.Class(
-                        cn(FIGURE, 'text-[12px] text-muted-foreground hover:text-foreground'),
+                        cn(
+                          FIGURE,
+                          css({
+                            fontSize: '12px',
+                            color: 'var(--muted-foreground)',
+                            _hover: {
+                              color: 'var(--foreground)',
+                            },
+                          }),
+                        ),
                       ),
                     ],
                     [l.t.article.era(page.era, l.cat.ERAS[page.era]?.name ?? '')],
@@ -203,20 +493,43 @@ export const article = (page: Page, model: Model, h: H): Html => {
           h.h1(
             [
               h.Class(
-                'mt-4 text-[32px] leading-tight font-semibold tracking-[-0.025em] text-balance',
+                css({
+                  marginTop: '1rem',
+                  fontSize: '32px',
+                  lineHeight: '1.25',
+                  fontWeight: '600',
+                  letterSpacing: '-0.025em',
+                  textWrap: 'balance',
+                }),
               ),
             ],
             [page.title],
           ),
           h.p(
-            [h.Class('mt-2 text-[16px] leading-relaxed text-pretty text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  marginTop: '0.5rem',
+                  fontSize: '16px',
+                  lineHeight: '1.625',
+                  textWrap: 'pretty',
+                  color: 'var(--muted-foreground)',
+                }),
+              ),
+            ],
             [page.summary],
           ),
           pathBar(page, model, h),
         ],
       ),
       h.div(
-        [h.Class('pt-8')],
+        [
+          h.Class(
+            css({
+              paddingTop: '2rem',
+            }),
+          ),
+        ],
         [
           notice(page, h),
           // The text of a page that waits for its translation is English.
@@ -234,18 +547,66 @@ export const article = (page: Page, model: Model, h: H): Html => {
 export const notFound = (model: Model, h: H): Html => {
   const t = langOf(model.locale).t.article.notFound
   return h.article(
-    [h.Class('py-16')],
     [
-      h.div([h.Class(cn(FIGURE, 'text-[13px] text-muted-foreground'))], ['404']),
-      h.h1([h.Class('mt-2 text-[32px] font-semibold tracking-tight')], [t.heading]),
+      h.Class(
+        css({
+          paddingBlock: '4rem',
+        }),
+      ),
+    ],
+    [
+      h.div(
+        [
+          h.Class(
+            cn(
+              FIGURE,
+              css({
+                fontSize: '13px',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ),
+        ],
+        ['404'],
+      ),
+      h.h1(
+        [
+          h.Class(
+            css({
+              marginTop: '0.5rem',
+              fontSize: '32px',
+              fontWeight: '600',
+              letterSpacing: '-0.025em',
+            }),
+          ),
+        ],
+        [t.heading],
+      ),
       h.p(
-        [h.Class('mt-2 text-[15px] text-muted-foreground')],
+        [
+          h.Class(
+            css({
+              marginTop: '0.5rem',
+              fontSize: '15px',
+              color: 'var(--muted-foreground)',
+            }),
+          ),
+        ],
         [t.body(withLocale(model.locale, model.path))],
       ),
       h.a(
         [
           h.Href('/'),
-          h.Class('mt-6 inline-block text-[14px] font-medium underline underline-offset-4'),
+          h.Class(
+            css({
+              marginTop: '1.5rem',
+              display: 'inline-block',
+              fontSize: '14px',
+              fontWeight: '500',
+              textDecorationLine: 'underline',
+              textUnderlineOffset: '4px',
+            }),
+          ),
         ],
         [t.home],
       ),

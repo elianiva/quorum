@@ -2,10 +2,10 @@ import { Effect, Schema } from 'effect'
 import { Command, type Update } from 'foldkit'
 import { defineView } from 'foldkit/submodel'
 import { defineMessageUnion } from 'foldkit/message'
-import { cn } from 'cn'
 import { FIGURE } from '@quorum/ui/game/bits'
 import { langOf } from '../i18n/lang.ts'
 import type { Locale } from '../i18n/locale.ts'
+import { css, cx as cn } from '@quorum/styled-system/css'
 
 /* The spoiler filter: the last Era the reader reached. Pages about later Eras fold. Kept in the browser. */
 
@@ -63,22 +63,96 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
     const ERAS = l.cat.ERAS
     const all = model.era === ALL_ERAS
     const reached = all ? t.allShow : t.hidingAfter(ERAS[model.era]?.name ?? '')
-    const step = 'h-7 min-w-0 flex-1 cursor-pointer rounded-md text-[12px] transition-colors'
+    const step = css({
+      height: '1.75rem',
+      minWidth: '0',
+      flex: '1 1 0%',
+      cursor: 'pointer',
+      borderRadius: 'md',
+      fontSize: '12px',
+      transitionProperty:
+        'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
+      transitionDuration: '150ms',
+      transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    })
     // The first step says a word, not a number: it takes the room it needs, in every language.
-    const allStep =
-      'h-7 shrink-0 cursor-pointer rounded-md px-2 text-[12px] whitespace-nowrap transition-colors'
+    const allStep = css({
+      height: '1.75rem',
+      flexShrink: '0',
+      cursor: 'pointer',
+      borderRadius: 'md',
+      paddingInline: '0.5rem',
+      fontSize: '12px',
+      whiteSpace: 'nowrap',
+      transitionProperty:
+        'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
+      transitionDuration: '150ms',
+      transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    })
     return h.div(
-      [h.Class('border-t border-border pt-3')],
+      [
+        h.Class(
+          css({
+            borderTopWidth: '1px',
+            borderTopStyle: 'solid',
+            borderColor: 'var(--border)',
+            paddingTop: '0.75rem',
+          }),
+        ),
+      ],
       [
         h.div(
-          [h.Class('flex items-baseline justify-between gap-2')],
           [
-            h.span([h.Class('text-[12px] font-semibold text-foreground')], [t.title]),
-            h.span([h.Class('truncate text-[12px] text-muted-foreground')], [reached]),
+            h.Class(
+              css({
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                gap: '0.5rem',
+              }),
+            ),
+          ],
+          [
+            h.span(
+              [
+                h.Class(
+                  css({
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: 'var(--foreground)',
+                  }),
+                ),
+              ],
+              [t.title],
+            ),
+            h.span(
+              [
+                h.Class(
+                  css({
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontSize: '12px',
+                    color: 'var(--muted-foreground)',
+                  }),
+                ),
+              ],
+              [reached],
+            ),
           ],
         ),
         h.div(
-          [h.Role('group'), h.AriaLabel(t.groupLabel), h.Class('mt-2 flex gap-1')],
+          [
+            h.Role('group'),
+            h.AriaLabel(t.groupLabel),
+            h.Class(
+              css({
+                marginTop: '0.5rem',
+                display: 'flex',
+                gap: '0.25rem',
+              }),
+            ),
+          ],
           [
             h.button(
               [
@@ -90,8 +164,21 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
                   cn(
                     allStep,
                     all
-                      ? 'bg-foreground font-medium text-background'
-                      : 'border border-border text-muted-foreground hover:bg-muted hover:text-foreground',
+                      ? css({
+                          backgroundColor: 'var(--foreground)',
+                          fontWeight: '500',
+                          color: 'var(--background)',
+                        })
+                      : css({
+                          borderWidth: '1px',
+                          borderStyle: 'solid',
+                          borderColor: 'var(--border)',
+                          color: 'var(--muted-foreground)',
+                          _hover: {
+                            backgroundColor: 'var(--muted)',
+                            color: 'var(--foreground)',
+                          },
+                        }),
                   ),
                 ),
               ],
@@ -111,13 +198,28 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
                       step,
                       FIGURE,
                       all || index <= model.era
-                        ? cn(
-                            'text-foreground',
-                            model.era === index
-                              ? 'bg-foreground text-background'
-                              : 'bg-muted hover:bg-muted/70',
-                          )
-                        : 'border border-dashed border-border text-muted-foreground hover:bg-muted',
+                        ? model.era === index
+                          ? css({
+                              backgroundColor: 'var(--foreground)',
+                              color: 'var(--background)',
+                            })
+                          : css({
+                              backgroundColor: 'var(--muted)',
+                              color: 'var(--foreground)',
+                              _hover: {
+                                backgroundColor:
+                                  'color-mix(in oklab, var(--muted) 70%, transparent)',
+                              },
+                            })
+                        : css({
+                            borderWidth: '1px',
+                            borderStyle: 'dashed',
+                            borderColor: 'var(--border)',
+                            color: 'var(--muted-foreground)',
+                            _hover: {
+                              backgroundColor: 'var(--muted)',
+                            },
+                          }),
                     ),
                   ),
                 ],

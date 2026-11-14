@@ -5,8 +5,9 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import { localeOf } from '../i18n/builder.ts'
 import { langOf } from '../i18n/lang.ts'
 import { COMPONENT_IDS, type ComponentId } from '@quorum/simulation/catalog'
-import { heightOf } from '@quorum/ui/board/geometry'
+import { heightOf } from '@quorum/ui/board/size'
 import { Message } from '../main.ts'
+import { solverReadyForBoard } from '../solver.ts'
 import { css } from '@quorum/styled-system/css'
 
 /** What node-board.ts asks the board for: the zoom it fits to at most, its fit margin, and its top and bottom insets. */
@@ -21,6 +22,7 @@ const defineCardMounted = () =>
     messages: [Message.Navigated],
     execute: ({ element, type }) =>
       Effect.gen(function* () {
+        yield* Effect.promise(() => solverReadyForBoard())
         // Pixi loads only on pages that show a card.
         const { drawNodeCard } = yield* Effect.promise(() => import('./node-board.ts'))
         yield* Effect.acquireRelease(
@@ -40,6 +42,7 @@ export const nodeCard = (type: ComponentId, h: HtmlBuilder<Message>): Html => {
       h.Key(`card-${type}`),
       h.Role('img'),
       h.AriaLabel(l.t.islands.nodeCard(l.cat.COMPONENTS[type].name)),
+      h.DataAttribute('lazy-island', ''),
       // The card is a picture here: the page scrolls, the board does not pan.
       h.Class(
         css({

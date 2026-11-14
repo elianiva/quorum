@@ -7,6 +7,7 @@ import { foldkit } from '@foldkit/vite-plugin'
 import pandacss from '@pandacss/vite'
 import { defineConfig, type Plugin } from 'vite'
 import { simVersion } from '../../packages/simulation/sim-version.ts'
+import { contentIndex } from './src/content-index.ts'
 import { Frontmatter } from './src/frontmatter.ts'
 import { islandAttributes } from './src/islands.ts'
 import type { Locale } from './src/i18n/locale.ts'
@@ -48,12 +49,12 @@ const staticFiles = (): Plugin => ({
       const server = output('ssr')
       const manifest = JSON.parse(await readFile(resolve(server, 'foldkit.build.json'), 'utf8'))
       const entry = await import(pathToFileURL(resolve(server, manifest.serverEntry)).href)
-      const files: Record<string, string> = entry.markdownFiles()
+      const files: Record<string, string> = await entry.markdownFiles()
       for (const [name, text] of Object.entries(files)) {
         await mkdir(dirname(resolve(client, name)), { recursive: true })
         await writeFile(resolve(client, name), text)
       }
-      const indexes: Record<string, string> = entry.searchIndexes()
+      const indexes: Record<string, string> = await entry.searchIndexes()
       for (const [name, json] of Object.entries(indexes)) {
         await mkdir(dirname(resolve(client, name)), { recursive: true })
         await writeFile(resolve(client, name), json)
@@ -108,6 +109,7 @@ export default defineConfig(({ command }) => ({
   plugins: [
     pandacss({ codegen: false }),
     simVersion(),
+    contentIndex(),
     foldkit({
       // A dev server restart would otherwise mint a new build id while the browser still holds the
       // cached dependency with the old one, and hydration refuses the page. Builds stay unique.
@@ -123,4 +125,31 @@ export default defineConfig(({ command }) => ({
     searchIndexDev(),
   ],
   resolve: { dedupe: ['effect', 'foldkit'] },
+  build: {
+    rollupOptions: {
+      output: {
+        // The catalog is data every page may read. The rest of the Simulation (state, director,
+        // solve) is for a live board only: pin it to a chunk that the entry never imports, so a
+        // shared board module cannot drag it into the first load.
+        manualChunks(id) {
+          // The view-identity helper is the only Foldkit module the boot entry imports. Give it a
+          // chunk of its own so the home page does not fetch the framework or the catalog for it.
+          if (id.includes('/foldkit/dist/brand/')) return 'brand'
+          // The framework is needed on every page; its own chunk keeps the shared runtime from
+          // landing in the Simulation chunk and pulling the engine into the first load.
+          if (id.includes('/node_modules/.pnpm/effect@')) return 'framework'
+          if (id.includes('/node_modules/.pnpm/@effect+')) return 'framework'
+          if (id.includes('/node_modules/.pnpm/foldkit@')) return 'framework'
+          if (id.includes('/node_modules/.pnpm/@foldkit+')) return 'framework'
+          if (!id.includes('/packages/simulation/src/')) return
+          if (id.includes('/packages/simulation/src/catalog/') || id.endsWith('/catalog.ts'))
+            return 'catalog'
+          if (id.endsWith('/sandbox-summary.ts')) return 'catalog'
+          if (id.endsWith('/term-links.ts')) return 'catalog'
+          if (id.endsWith('/glossary-links.ts')) return 'catalog'
+          return 'simulation'
+        },
+      },
+    },
+  },
 }))

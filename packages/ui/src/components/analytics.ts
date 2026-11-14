@@ -1,6 +1,6 @@
 import { ChartLine } from 'lucide'
 import { rate } from '../game/format.ts'
-import { POOL_ORDER } from '../game/pools.ts'
+import { POOL_ORDER } from '../game/pool-visuals.ts'
 import { POOLS } from '@quorum/simulation/catalog'
 import { type ComponentView, type Row } from './shared.ts'
 

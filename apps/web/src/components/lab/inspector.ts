@@ -65,7 +65,7 @@ import {
   TRAFFIC_KINDS,
   type NodeSample,
 } from '@/game/node-metrics.ts'
-import { COMPONENT_ICONS } from '@quorum/ui/game/icons'
+import { COMPONENT_ICONS } from '@quorum/ui/game/component-icons'
 import { icon } from '@quorum/ui/primitives/icon'
 import { badge } from '@quorum/ui/primitives/badge'
 import { button, closeButton } from '@quorum/ui/primitives/button'

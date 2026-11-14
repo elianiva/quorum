@@ -34,13 +34,7 @@ import {
   siSpringboot,
   siSymfony,
 } from 'simple-icons'
-import { COMPONENT_VIEWS } from '../components/index.ts'
-import type { BuildGroup, ComponentId, FrameworkId, LanguageId } from '@quorum/simulation/catalog'
-
-/** One glyph per Component, shared by the board, the dock and the inspector. */
-export const COMPONENT_ICONS = Object.fromEntries(
-  Object.entries(COMPONENT_VIEWS).map(([id, view]) => [id, view.icon]),
-) as Record<ComponentId, IconNode>
+import type { BuildGroup, FrameworkId, LanguageId } from '@quorum/simulation/catalog'
 
 export const GROUP_ICONS: Record<BuildGroup, IconNode> = {
   edge: Globe,

@@ -8,7 +8,8 @@ import {
   type DockGroup,
   type ComponentId,
 } from '@quorum/simulation/catalog'
-import { COMPONENT_ICONS, GROUP_ICONS } from '@quorum/ui/game/icons'
+import { COMPONENT_ICONS } from '@quorum/ui/game/component-icons'
+import { GROUP_ICONS } from '@quorum/ui/game/icons'
 import { Message } from '@/game/message.ts'
 import { placingOf, type Model } from '@/game/model.ts'
 import { dockGroups, dockItems } from '@/game/reveal.ts'

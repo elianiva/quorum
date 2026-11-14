@@ -1,4 +1,4 @@
-import { COMPONENT_GLOSSARY } from './components/defs.ts'
+import { COMPONENT_GLOSSARY } from './glossary-links.ts'
 import type { ComponentId, IncidentId, ResearchId } from './catalog.ts'
 
 /** The entries each Component teaches; the wiki's Component page links to them. */

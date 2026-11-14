@@ -9,7 +9,7 @@ import {
   INCIDENT_IDS,
   researchList,
 } from '@quorum/simulation/catalog'
-import { SANDBOX_IDS } from '@quorum/simulation/sandbox'
+import { SANDBOX_IDS } from '@quorum/simulation/sandbox-summary'
 import { FIGURE } from '@quorum/ui/game/bits'
 import { githubMark } from '@quorum/ui/primitives/github'
 import { icon } from '@quorum/ui/primitives/icon'
@@ -149,7 +149,7 @@ const countList = (
   entries: ReadonlyArray<Readonly<{ path: string; value: number; label: string }>>,
   h: H,
 ): Html =>
-  h.dl(
+  h.ul(
     [
       h.Class(
         css({
@@ -172,59 +172,63 @@ const countList = (
       ),
     ],
     entries.map((entry) =>
-      h.a(
+      h.li(
+        [h.Key(entry.path), h.Class(css({ display: 'contents' }))],
         [
-          h.Key(entry.path),
-          h.Href(entry.path),
-          h.Class(
-            cx(
-              css({
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1',
-                backgroundColor: 'background',
-                padding: '5',
-                transitionProperty:
-                  'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
-                transitionDuration: 'fast',
-                transitionTimingFunction: 'default',
-                _hover: {
-                  backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
-                },
-              }),
-              'group',
-            ),
-          ),
-        ],
-        [
-          h.dd(
+          h.a(
             [
+              h.Href(entry.path),
               h.Class(
                 cx(
-                  FIGURE,
                   css({
-                    fontSize: 'type.32',
-                    lineHeight: 'none',
-                    fontWeight: 'medium',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1',
+                    backgroundColor: 'background',
+                    padding: '5',
+                    transitionProperty:
+                      'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
+                    transitionDuration: 'fast',
+                    transitionTimingFunction: 'default',
+                    _hover: {
+                      backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
+                    },
                   }),
+                  'group',
                 ),
               ),
             ],
-            [String(entry.value)],
-          ),
-          h.dt(
             [
-              h.Class(
-                css({
-                  fontSize: 'type.13',
-                  color: 'mutedForeground',
-                  '.group:hover &': {
-                    color: 'foreground',
-                  },
-                }),
+              h.span(
+                [
+                  h.Class(
+                    cx(
+                      FIGURE,
+                      css({
+                        fontSize: 'type.32',
+                        lineHeight: 'none',
+                        fontWeight: 'medium',
+                      }),
+                    ),
+                  ),
+                ],
+                [String(entry.value)],
+              ),
+              h.span(
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'type.13',
+                      color: 'mutedForeground',
+                      '.group:hover &': {
+                        color: 'foreground',
+                      },
+                    }),
+                  ),
+                ],
+                [entry.label],
               ),
             ],
-            [entry.label],
           ),
         ],
       ),
@@ -483,7 +487,7 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
     const target = pageIn(model.locale, path)
     return target ? [target] : []
   })
-  return h.div(
+  return h.main(
     [
       h.Class(
         css({

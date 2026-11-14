@@ -170,6 +170,7 @@ export const bindPointer = (c: BoardController): void => {
         c.world.position.y += dy
         gesture.x = event.clientX
         gesture.y = event.clientY
+        c.paint()
         canvas.style.cursor = 'grabbing'
         return
       }

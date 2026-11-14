@@ -244,6 +244,7 @@ export const view = defineView<Model, Message>((model, h) => {
           h.AriaControls('search'),
           h.AriaExpanded(model.panel),
           h.DataAttribute('search-trigger', ''),
+          h.DataAttribute('needs-hydration', 'search-trigger'),
           h.OnClick(Message.Focused()),
           h.Class(
             cx(
@@ -281,6 +282,7 @@ export const view = defineView<Model, Message>((model, h) => {
               h.input([
                 h.Id('search'),
                 h.Type('search'),
+                h.DataAttribute('needs-hydration', 'search-input'),
                 h.Value(model.query),
                 h.Placeholder(t.search.placeholder),
                 h.AriaLabel(t.search.label),

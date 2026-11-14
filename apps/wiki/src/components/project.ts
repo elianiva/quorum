@@ -78,6 +78,7 @@ export const projectCard = (project: Project.Model, h: H): Html => {
     : []
   return h.div(
     [
+      h.DataAttribute('lazy-island', ''),
       h.Class(
         css({
           overflow: 'hidden',

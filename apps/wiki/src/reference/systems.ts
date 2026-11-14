@@ -15,7 +15,7 @@ import {
   VENTURE_IDS,
   rttOf,
 } from '@quorum/simulation/catalog'
-import { GUIDED, SANDBOX_IDS, type GuidedSandbox } from '@quorum/simulation/sandbox'
+import { GUIDED_SUMMARY, SANDBOX_IDS, type GuidedSummary } from '@quorum/simulation/sandbox-summary'
 import { compact, money } from '@quorum/ui/game/format'
 import type { Page } from '../page.ts'
 import { componentList } from './components.ts'
@@ -392,9 +392,9 @@ const prestige = (l: Lang): Page => {
   })
 }
 
-export const sandboxPath = (id: GuidedSandbox['id']): string => `/sandboxes/${id}`
+export const sandboxPath = (id: GuidedSummary['id']): string => `/sandboxes/${id}`
 
-const sandbox = (l: Lang, def: GuidedSandbox): Page => {
+const sandbox = (l: Lang, def: GuidedSummary): Page => {
   const t = l.t.reference.sandboxes
   const path = sandboxPath(def.id)
   const text = authored(l, path)
@@ -508,7 +508,7 @@ export const systemPages = (l: Lang): ReadonlyArray<Page> => {
         [
           paragraph(t.intro, h),
           ...eraTitles.map((title, index) => {
-            const items = SANDBOX_IDS.filter((id) => GUIDED[id].stage === index)
+            const items = SANDBOX_IDS.filter((id) => GUIDED_SUMMARY[id].stage === index)
             return items.length
               ? section(
                   title,

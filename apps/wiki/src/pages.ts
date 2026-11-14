@@ -1,4 +1,4 @@
-import { authoredPages } from './content.ts'
+import { authoredPages, onProseLoaded } from './content.ts'
 import type { Section } from './frontmatter.ts'
 import { isLoaded, langOf } from './i18n/lang.ts'
 import { DEFAULT_LOCALE, localeOfPath, stripLocale, type Locale } from './i18n/locale.ts'
@@ -27,6 +27,10 @@ export const pagesFor = (locale: Locale): ReadonlyArray<Page> => buildFor(locale
 
 /** The English pages, which are also the list of every path the wiki has. */
 export const PAGES: ReadonlyArray<Page> = pagesFor(DEFAULT_LOCALE)
+
+// A reference page is built from its prose (headings and body); rebuild the cached pages when a
+// page's text arrives. Titles and paths never change, so `PAGES` stays a stable list of paths.
+onProseLoaded(() => built.clear())
 
 /** A page by its logical path in a language, such as `/glossary/latency`. */
 export const pageIn = (locale: Locale, path: string): Page | null =>

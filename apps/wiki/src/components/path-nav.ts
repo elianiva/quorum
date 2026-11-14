@@ -2,7 +2,7 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import { ArrowRight, Check } from 'lucide'
 import { FIGURE } from '@quorum/ui/game/bits'
 import { icon } from '@quorum/ui/primitives/icon'
-import { langOf, type Lang } from '../i18n/lang.ts'
+import { langOf } from '../i18n/lang.ts'
 import type { Message, Model } from '../main.ts'
 import type { Page } from '../page.ts'
 import { PATHS, placeOf, resumeOf, stepsOf, type Path } from '../paths.ts'
@@ -13,16 +13,13 @@ import { css, cx } from '@quorum/styled-system/css'
 
 type H = HtmlBuilder<Message>
 
-/** One segment per step: read steps fill, the current one takes its kind's colour. */
-const segments = (
-  l: Lang,
-  steps: ReadonlyArray<Page>,
-  current: string | null,
-  model: Model,
-  h: H,
-): Html =>
+/** One segment per step: read steps fill, the current one takes its kind's colour. The bar is a
+    progress indicator, not a row of controls: a 34-step path makes 6px targets, so the sidebar and
+    the next card carry the navigation. */
+const segments = (steps: ReadonlyArray<Page>, current: string | null, model: Model, h: H): Html =>
   h.ol(
     [
+      h.AriaHidden(true),
       h.Class(
         css({
           display: 'flex',
@@ -30,7 +27,7 @@ const segments = (
         }),
       ),
     ],
-    steps.map((step, index) =>
+    steps.map((step) =>
       h.li(
         [
           h.Key(step.path),
@@ -41,12 +38,8 @@ const segments = (
           ),
         ],
         [
-          h.a(
+          h.span(
             [
-              h.Href(step.path),
-              h.Title(l.t.pathNav.stepTitle(index + 1, step.title)),
-              h.AriaLabel(l.t.pathNav.stepLabel(index + 1, step.title)),
-              ...(step.path === current ? [h.AriaCurrent('step')] : []),
               h.Class(
                 cx(
                   css({
@@ -64,18 +57,10 @@ const segments = (
                       ? css({
                           backgroundColor:
                             'color-mix(in oklab, var(--foreground) 45%, transparent)',
-                          _hover: {
-                            backgroundColor:
-                              'color-mix(in oklab, var(--foreground) 60%, transparent)',
-                          },
                         })
                       : css({
                           backgroundColor:
                             'color-mix(in oklab, var(--foreground) 10%, transparent)',
-                          _hover: {
-                            backgroundColor:
-                              'color-mix(in oklab, var(--foreground) 25%, transparent)',
-                          },
                         }),
                 ),
               ),
@@ -147,7 +132,7 @@ export const pathBar = (page: Page, model: Model, h: H): Html => {
           ),
         ],
       ),
-      segments(l, steps, page.path, model, h),
+      segments(steps, page.path, model, h),
     ],
   )
 }
@@ -362,7 +347,7 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
         ],
         [copy.summary],
       ),
-      segments(l, steps, null, model, h),
+      segments(steps, null, model, h),
       target
         ? h.a(
             [

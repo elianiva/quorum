@@ -4,12 +4,14 @@ import { Mount } from 'foldkit'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { SIZES } from '@quorum/simulation/catalog'
 import { solveFlow } from '@quorum/simulation/solve'
-import { heightOf } from '@quorum/ui/board/geometry'
+import { heightOf } from '@quorum/ui/board/size'
 import { compact, money, ms } from '@quorum/ui/game/format'
 import { localeOf } from '../i18n/builder.ts'
 import { langOf, type Lang } from '../i18n/lang.ts'
 import { Message } from '../main.ts'
-import { DESIGNS, DESIGN_IDS } from '../patterns/designs/index.ts'
+import { solverReadyForBoard } from '../solver.ts'
+import { DESIGNS } from '../patterns/designs/index.ts'
+import { DESIGN_IDS, type DesignId } from '../patterns/designs/ids.ts'
 import type { Setting } from '../patterns/design.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
@@ -20,6 +22,7 @@ const defineDesignMounted = () =>
     messages: [Message.Navigated],
     execute: ({ element, id }) =>
       Effect.gen(function* () {
+        yield* Effect.promise(() => solverReadyForBoard())
         // Pixi loads only on pages that show a board.
         const { drawDesign } = yield* Effect.promise(() => import('./design-board.ts'))
         yield* Effect.acquireRelease(
@@ -50,7 +53,7 @@ const heightFor = (id: string): string => {
   return `min(${Math.round(Math.max(260, (bottom - top) * 0.8 + 56))}px, 70vh)`
 }
 
-export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
+export const designView = (id: DesignId, h: HtmlBuilder<Message>): Html => {
   const design = DESIGNS[id]
   if (!design) return h.empty
   const l = langOf(localeOf(h))
@@ -106,6 +109,7 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
   return h.figure(
     [
       h.Key(`design-${id}`),
+      h.DataAttribute('lazy-island', ''),
       h.Class(
         cx(
           css({
@@ -143,7 +147,7 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
             css({
               marginTop: '1.5',
               fontSize: 'type.12',
-              color: 'color-mix(in oklab, var(--muted-foreground) 80%, transparent)',
+              color: 'mutedForeground',
             }),
           ),
         ],

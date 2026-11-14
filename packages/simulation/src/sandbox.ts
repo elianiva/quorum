@@ -3,6 +3,7 @@ import type { ComponentId, IncidentId, RequestKind, ResearchId } from './catalog
 import { company, link, node } from './company.ts'
 import { forceIncident } from './director.ts'
 import type { Ledger } from './ledger.ts'
+import { type SandboxId } from './sandbox-summary.ts'
 import {
   RESEARCH_IDS,
   SIZES,
@@ -12,6 +13,8 @@ import {
 } from './catalog.ts'
 import { normalizeOrdinals } from './labels.ts'
 import type { Game, GameLink, GameNode } from './state.ts'
+
+export { SANDBOX_IDS, type SandboxId } from './sandbox-summary.ts'
 
 export type Objective = Condition &
   Readonly<{
@@ -33,28 +36,6 @@ export type Objective = Condition &
       magnitude?: number
     }>
   }>
-
-export const SANDBOX_IDS = [
-  'out-of-credits',
-  'shared-box',
-  'second-server',
-  'connection-limit',
-  'event-loop-stall',
-  'read-mostly',
-  'stampede',
-  'slow-uploads',
-  'bots',
-  'zone-outage',
-  'cold-start',
-  'stale-checkout',
-  'gc-pauses',
-  'retry-storm',
-  'analytics-primary',
-  'far-away',
-  'missed-write',
-  'hot-key',
-] as const
-export type SandboxId = (typeof SANDBOX_IDS)[number]
 
 export type GuidedSandbox = Readonly<{
   id: SandboxId

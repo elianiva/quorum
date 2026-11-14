@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest'
+import { beforeAll, expect, test } from 'vitest'
 import { Option } from 'effect'
 import type { Url } from 'foldkit/url'
 import {
@@ -12,10 +12,10 @@ import {
   researchList,
 } from '@quorum/simulation/catalog'
 import { SANDBOX_IDS } from '@quorum/simulation/sandbox'
-import { prosePaths } from './content.ts'
+import { prosePaths, loadAllProse } from './content.ts'
 import { Message, init, normalize, update } from './main.ts'
 import { renderPage } from './entry.server.ts'
-import { PAGES, SECTION_ORDER, navOf, pageAt } from './pages.ts'
+import { SECTION_ORDER, navOf, pageAt, pagesFor } from './pages.ts'
 import { componentsHitBy, sandboxesFiring } from './reference/graph.ts'
 import { buildIndex, indexJson, loadIndex, search } from './search.ts'
 import * as Search from './submodels/search.ts'
@@ -32,8 +32,12 @@ import {
 
 /* The wiki's contract: every page has one clean path, renders at build time, and can be found. */
 
+beforeAll(async () => {
+  await loadAllProse()
+})
+
 test('every page has one path, without a trailing slash', () => {
-  const paths = PAGES.map((page) => page.path)
+  const paths = pagesFor('en').map((page) => page.path)
   expect(new Set(paths).size).toBe(paths.length)
   expect(paths.filter((path) => normalize(path) !== path)).toEqual([])
 })
@@ -70,7 +74,7 @@ test('every catalog entry has its own page', () => {
     ...SANDBOX_IDS.map((id) => `/sandboxes/${id}`),
   ]
   expect(ids.filter((path) => !pageAt(path))).toEqual([])
-  expect(PAGES.filter((page) => page.parent === '/eras')).toHaveLength(ERAS.length)
+  expect(pagesFor('en').filter((page) => page.parent === '/eras')).toHaveLength(ERAS.length)
 })
 
 test('every prose file belongs to a page', () => {
@@ -88,7 +92,7 @@ test('a trailing slash reaches the same page', async () => {
 })
 
 test('search ranks a title match first, finds aliases, and survives a typo', () => {
-  const index = buildIndex(PAGES)
+  const index = buildIndex(pagesFor('en'))
   expect(search(index, 'improve the wiki')[0]?.path).toBe('/about/contributing')
   expect(search(index, 'github').map((hit) => hit.path)).toContain('/about/contributing')
   expect(search(index, 'lb')[0]?.path).toBe('/components/lb')
@@ -102,7 +106,7 @@ test('search ranks a title match first, finds aliases, and survives a typo', () 
 })
 
 test('the built search index loads the way the browser loads it', () => {
-  const loaded = loadIndex(indexJson(PAGES))
+  const loaded = loadIndex(indexJson(pagesFor('en')))
   expect(search(loaded, 'lb')[0]?.path).toBe('/components/lb')
   expect(search(loaded, 'kubernets')[0]?.path).toBe('/components/cluster')
 })
@@ -111,7 +115,7 @@ test('the play section comes first and its pages follow their order', () => {
   expect(SECTION_ORDER[0]).toBe('play')
   const orders = navOf('en', 'play').map((page) => page.order)
   expect(orders).toEqual([...orders].sort((a, b) => a - b))
-  expect(PAGES.filter((page) => page.section === 'play' && page.era !== null)).toEqual([])
+  expect(pagesFor('en').filter((page) => page.section === 'play' && page.era !== null)).toEqual([])
 })
 
 test('an incident page names the Components that teach it and the Sandboxes that fire it', () => {

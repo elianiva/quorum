@@ -179,6 +179,7 @@ const groupBlock = (
           h.Type('button'),
           h.AriaExpanded(isOpen),
           h.AriaLabel(isOpen ? l.t.sidebar.collapse(label) : l.t.sidebar.expand(label)),
+          h.DataAttribute('needs-hydration', 'nav-group'),
           h.OnClick(Message.NavToggled({ path: `group:${name}` })),
           h.Class(
             cx(
@@ -331,6 +332,7 @@ const hubLink = (
               h.Type('button'),
               h.AriaLabel(isOpen ? l.t.sidebar.collapse(hub.title) : l.t.sidebar.expand(hub.title)),
               h.AriaExpanded(isOpen),
+              h.DataAttribute('needs-hydration', 'nav-hub'),
               h.OnClick(Message.NavToggled({ path: hub.path })),
               h.Class(
                 cx(

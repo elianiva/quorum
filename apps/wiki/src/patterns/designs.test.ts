@@ -3,12 +3,17 @@ import { join } from 'node:path'
 import { expect, test } from 'vitest'
 import { solveFlow } from '@quorum/simulation/solve'
 import { boxOf, crowds } from '@quorum/ui/board/geometry'
+import { DESIGN_IDS } from './designs/ids.ts'
 import { DESIGNS } from './designs/index.ts'
 
 /* The Patterns section's contract with the game: every Design is a Board the Simulation can solve, its
    settings are fields the game has, and a page places each one. */
 
 const entries = Object.entries(DESIGNS)
+
+test('the island schema lists every Design', () => {
+  expect([...DESIGN_IDS].sort()).toEqual(entries.map(([id]) => id).sort())
+})
 
 test('every Design solves, links existing Nodes, and keeps its cards apart', () => {
   const bad: Array<string> = []

@@ -50,6 +50,7 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
   const id = `quiz-${quiz.key.replace(/[^a-z0-9]+/gi, '-')}`
   return h.section(
     [
+      h.DataAttribute('lazy-island', ''),
       h.Class(
         cx(
           css({

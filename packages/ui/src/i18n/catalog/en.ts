@@ -38,7 +38,7 @@ import {
   VEC_INDEXES,
   VENTURES,
 } from '@quorum/simulation/catalog'
-import { GUIDED } from '@quorum/simulation/sandbox'
+import { GUIDED_SUMMARY } from '@quorum/simulation/sandbox-summary'
 import { CHALLENGES } from '@quorum/simulation/challenges'
 import { copyOf, copyOfIndexed, copyOfList } from '../catalog-copy.ts'
 
@@ -82,7 +82,7 @@ export const catalog = {
   tasks: copyOf(TASKS, ['name', 'effect'], []),
   vecIndexes: copyOf(VEC_INDEXES, ['name'], []),
   ventures: copyOf(VENTURES, ['name', 'summary'], []),
-  guided: copyOf(GUIDED, ['name'], [], { objectives: ['goal'] }),
+  guided: copyOf(GUIDED_SUMMARY, ['name'], [], { objectives: ['goal'] }),
   challenges: copyOfList(CHALLENGES, 'id', ['name', 'brief', 'inspiredBy'], []),
 }
 

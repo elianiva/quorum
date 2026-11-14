@@ -133,6 +133,7 @@ export const languageSwitcher = (model: Model, l: Lang, h: H): Html =>
           h.AriaHasPopup('menu'),
           h.AriaExpanded(model.languageMenu),
           h.AriaControls('language-menu'),
+          h.DataAttribute('needs-hydration', 'language'),
           h.OnClick(Message.LanguageMenuToggled()),
           h.Class(languageSummary),
         ],
@@ -346,6 +347,7 @@ export const header = (model: Model, h: H): Html => {
               h.Type('button'),
               h.AriaLabel(model.menu ? l.t.header.closeMenu : l.t.header.openMenu),
               h.AriaExpanded(model.menu),
+              h.DataAttribute('needs-hydration', 'menu'),
               h.Class(
                 css({
                   marginLeft: '-0.25rem',
@@ -379,6 +381,7 @@ export const header = (model: Model, h: H): Html => {
           h.a(
             [
               h.Href('/'),
+              h.AriaLabel(l.t.site.name),
               h.Class(
                 css({
                   display: 'flex',

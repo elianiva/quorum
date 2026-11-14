@@ -48,3 +48,10 @@ Considered options:
 [ADR 0014](./0014-the-design-document-lives-in-the-wiki.md) moved the design document into the
 wiki's `design` section. The reasoning above still holds for the four Diátaxis kinds; the sentence
 that the GDD stays outside the wiki no longer does.
+
+## Amendment
+
+The wiki still prerenders every page. A reading page now starts the client only when the reader
+uses a header control, or when a quiz, live figure, or practice board nears the viewport. A page
+with none of those never downloads the app, catalog, or framework. The home page's first script is
+the boot entry and its view-identity helper; the app arrives on the first interaction.

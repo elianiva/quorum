@@ -1,6 +1,6 @@
 import type { ComponentId, IncidentId, RequestKind, ResearchId } from '@quorum/simulation/catalog'
 import { company, link, node } from '@quorum/simulation/company'
-import { heightOf } from '@quorum/ui/board/geometry'
+import { heightOf } from '@quorum/ui/board/size'
 import { normalizeOrdinals } from '@quorum/simulation/labels'
 import type { Game, GameLink, GameNode } from '@quorum/simulation/state'
 

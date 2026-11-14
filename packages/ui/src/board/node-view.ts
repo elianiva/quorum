@@ -1,7 +1,7 @@
 import { isDown, leftOf, warmOf } from '@quorum/simulation/life'
 import { Container, Graphics, Sprite, Text } from 'pixi.js'
 import { COMPONENTS, POOLS, type BuildGroup, type ComponentId } from '@quorum/simulation/catalog'
-import { POOL_ICONS } from '../game/pools.ts'
+import { POOL_ICONS } from '../game/pool-visuals.ts'
 import { type Ledger, type NodeStatus } from '@quorum/simulation/ledger'
 import { type Game, type GameNode, type Region } from '@quorum/simulation/state'
 import {
@@ -16,7 +16,7 @@ import {
   type Pt,
 } from './geometry.ts'
 import { FOOT_ICONS, ROW_ICONS, footerOf, levelOf, rowsOf, sizePips, type RowTone } from './card.ts'
-import { COMPONENT_ICONS } from '../game/icons.ts'
+import { COMPONENT_ICONS } from '../game/component-icons.ts'
 import { type Palette, mix, gradient } from './palette.ts'
 import { silhouette, badgeGlyph } from './shapes.ts'
 import { easeOut, ENTER_S, EXIT_S, reducedMotion, follow } from './motion.ts'

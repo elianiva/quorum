@@ -84,7 +84,8 @@ import {
   type ResearchTrack,
 } from '@quorum/simulation/catalog'
 import { groupBadge } from './bits.ts'
-import { COMPONENT_ICONS, STACK_LOGOS, type StackLogoId } from './icons.ts'
+import { COMPONENT_ICONS } from './component-icons.ts'
+import { STACK_LOGOS, type StackLogoId } from './icons.ts'
 
 /* The mark each Research item wears, in the game's Research tree and on the wiki. */
 

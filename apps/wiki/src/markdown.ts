@@ -1,17 +1,17 @@
 import * as Markdown from '@foldkit/markdown'
 import { Option, Schema } from 'effect'
 import { COMPONENTS, ERAS, KINDS, RESEARCH_TRACKS, researchList } from '@quorum/simulation/catalog'
-import { GUIDED } from '@quorum/simulation/sandbox'
+import { GUIDED_SUMMARY } from '@quorum/simulation/sandbox-summary'
 import { inertHtml } from 'foldkit/html'
 import type { Html, HtmlBuilder } from 'foldkit/html'
-import { documentOf } from './content.ts'
+import { documentOf, loadAllProse } from './content.ts'
 import type { Section } from './frontmatter.ts'
 import { langOf } from './i18n/lang.ts'
 import { islandAttributes } from './islands.ts'
 import { init, type Message, type Model } from './main.ts'
 import { leverOf, leverRows } from './reference/levers.ts'
 import type { Page } from './page.ts'
-import { PAGES, SECTION_ORDER, childrenOf, navOf, pageIn } from './pages.ts'
+import { SECTION_ORDER, childrenOf, navOf, pageIn, pagesFor } from './pages.ts'
 import { optionControls } from './reference/options.ts'
 import { WIKI_ORIGIN } from './site.ts'
 
@@ -97,7 +97,7 @@ const island = (block: Extract<Block, { _tag: 'Island' }>): string => {
     }
     case 'Sandbox': {
       const { id } = decode.Sandbox(block.attributes)
-      const def = GUIDED[id]
+      const def = GUIDED_SUMMARY[id]
       const goal = def.objectives[0]?.goal
       return `Sandbox: [${def.name}](${markdownUrl(`/sandboxes/${id}`)})${goal ? `: ${goal}` : ''}`
     }
@@ -400,15 +400,18 @@ export const llmsTxt = (): string => {
 }
 
 export const llmsFullTxt = (): string =>
-  PAGES.map((page) => `<!-- ${markdownUrl(page.path)} -->\n\n${pageMarkdown(page)}`).join(
-    '\n---\n\n',
-  )
+  pagesFor('en')
+    .map((page) => `<!-- ${markdownUrl(page.path)} -->\n\n${pageMarkdown(page)}`)
+    .join('\n---\n\n')
 
 /** Every file the build adds to the output, by path from its root. */
-export const markdownFiles = (): Readonly<Record<string, string>> => ({
-  'llms.txt': llmsTxt(),
-  'llms-full.txt': llmsFullTxt(),
-  ...Object.fromEntries(
-    PAGES.map((page) => [markdownPath(page.path).slice(1), pageMarkdown(page)]),
-  ),
-})
+export const markdownFiles = async (): Promise<Readonly<Record<string, string>>> => {
+  await loadAllProse()
+  return {
+    'llms.txt': llmsTxt(),
+    'llms-full.txt': llmsFullTxt(),
+    ...Object.fromEntries(
+      pagesFor('en').map((page) => [markdownPath(page.path).slice(1), pageMarkdown(page)]),
+    ),
+  }
+}

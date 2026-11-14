@@ -2,8 +2,16 @@ import { Effect } from 'effect'
 import { Server } from 'foldkit/experimental'
 // The prerender solves every board it draws, so it installs the Solver before any page.
 import '@quorum/simulation/host/node'
+import { loadAllProse, loadProse } from './content.ts'
 import { langOf } from './i18n/lang.ts'
-import { LOCALES, LOCALE_TAGS, localeOfPath, withLocale, type Locale } from './i18n/locale.ts'
+import {
+  LOCALES,
+  LOCALE_TAGS,
+  localeOfPath,
+  stripLocale,
+  withLocale,
+  type Locale,
+} from './i18n/locale.ts'
 import { init, normalize } from './main.ts'
 import { markdownPath } from './markdown.ts'
 import type { Page } from './page.ts'
@@ -15,9 +23,6 @@ import { view } from './view.ts'
 // The translated bundles register themselves here, since the server renders every language.
 import './locales/es.ts'
 import './locales/ja.ts'
-
-const FONTS =
-  'https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap'
 
 const escape = (text: string): string =>
   text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -129,9 +134,8 @@ export const renderDocument: Server.DocumentRenderer = (application, assets) => 
         : []),
       '<link rel="icon" type="image/svg+xml" href="/favicon.svg">',
       `<link rel="apple-touch-icon" href="${GAME_ORIGIN}/apple-touch-icon.png">`,
-      '<link rel="preconnect" href="https://fonts.googleapis.com">',
-      '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
-      `<link rel="stylesheet" href="${FONTS}">`,
+      '<link rel="preload" href="/fonts/geist-latin-v5.woff2" as="font" type="font/woff2" crossorigin>',
+      '<link rel="preload" href="/fonts/geist-mono-latin-v6.woff2" as="font" type="font/woff2" crossorigin>',
     ].join(''),
   })
 }
@@ -140,13 +144,15 @@ export const renderDocument: Server.DocumentRenderer = (application, assets) => 
 export { markdownFiles } from './markdown.ts'
 
 /** The search index of each language, by the file the build writes it to (vite.config.ts). */
-export const searchIndexes = (): Readonly<Record<string, string>> =>
-  Object.fromEntries(
+export const searchIndexes = async (): Promise<Readonly<Record<string, string>>> => {
+  await loadAllProse()
+  return Object.fromEntries(
     LOCALES.map((locale) => [
       withLocale(locale, '/search-index.json').slice(1),
       indexJson(pagesFor(locale), locale),
     ]),
   )
+}
 
 /** Every page in every language: English at its path, each translation under its prefix. */
 export const prerenderPaths: ReadonlyArray<string> = LOCALES.flatMap((locale) =>
@@ -173,8 +179,9 @@ export const sitemap = (lastmod: (source: string) => string | null): string =>
     '',
   ].join('\n')
 
-export const renderPage = (request: Request): Promise<Server.EntryResult> => {
+export const renderPage = async (request: Request): Promise<Server.EntryResult> => {
   const path = normalize(new URL(request.url).pathname)
+  await loadProse(localeOfPath(path), stripLocale(path))
   return Effect.runPromise(
     Server.renderToString({ routing: {}, init, view }, { url: request.url }).pipe(
       Effect.map((application) =>

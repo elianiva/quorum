@@ -1,30 +1,19 @@
 import type { ComponentId } from '@quorum/simulation/catalog'
 import type { GameNode } from '@quorum/simulation/state'
-import { COMPONENT_VIEWS } from '../components/index.ts'
 import type { Layout } from '../components/shared.ts'
+import { LAYOUTS } from './layouts.ts'
+import { CARD_W, heightOf, rowMid } from './size.ts'
 
 /* Card and port geometry, shared by the board, placement and link routing. */
 
 export type Placed = Pick<GameNode, 'type' | 'x' | 'y'>
 
-export const CARD_W = 216
-export const HEAD = 36
-export const ROW = 24
-export const FOOT = 44
-export const PORT_R = 6
+export { CARD_W, FOOT, HEAD, PORT_R, ROW, heightOf, rowMid, rowTop } from './size.ts'
 
 export type { Layout }
 
 /** Row count and port rows per Component. Fixed per type, so hit tests need no flow. */
-export const layoutOf = (type: ComponentId): Layout => COMPONENT_VIEWS[type].layout
-
-export const rowTop = (index: number): number => HEAD + 4 + index * ROW
-export const rowMid = (index: number): number => rowTop(index) + ROW / 2
-
-export const heightOf = (type: ComponentId): number => {
-  const layout = layoutOf(type)
-  return rowTop(layout.rows) + (layout.footer ? FOOT : 6)
-}
+export const layoutOf = (type: ComponentId): Layout => LAYOUTS[type]
 
 export type Pt = Readonly<{ x: number; y: number }>
 

@@ -6,6 +6,7 @@ import { localeOf } from '../i18n/builder.ts'
 import { langOf } from '../i18n/lang.ts'
 import { Locale } from '../i18n/locale.ts'
 import { Message } from '../main.ts'
+import { solverReadyForBoard } from '../solver.ts'
 import type { PracticeId } from './practice.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
@@ -18,6 +19,7 @@ const definePracticeMounted = () =>
     messages: [Message.Navigated],
     execute: ({ element, id, locale }) =>
       Effect.gen(function* () {
+        yield* Effect.promise(() => solverReadyForBoard())
         // Pixi loads only on pages that hold a board.
         const { mountPractice } = yield* Effect.promise(() => import('./practice-board.ts'))
         yield* Effect.acquireRelease(
@@ -35,6 +37,7 @@ export const practiceView = (id: PracticeId, h: HtmlBuilder<Message>): Html => {
   return h.section(
     [
       h.Key(`practice-${id}`),
+      h.DataAttribute('lazy-island', ''),
       h.AriaLabel(
         langOf(locale).t.islands.practice.boardLabel(langOf(locale).t.islands.practice.titles[id]),
       ),

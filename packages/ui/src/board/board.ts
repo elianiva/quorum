@@ -58,11 +58,15 @@ export const attachBoard = (key: string, host: HTMLElement, events: BoardEvents)
   }
   const controller = new BoardController(host, events)
   controllers.set(key, controller)
-  controller.start(desired.get(key)).catch((error: unknown) => {
-    console.error(`Quorum: the "${key}" board failed to start`, error)
-    host.dataset['boardUnavailable'] = 'error'
-    events.onStartFailed?.(error)
-  })
+  controller
+    .start(desired.get(key))
+    // The canvas joins the host after start: fit once more so the first view is the whole Design.
+    .then(() => controller.fit())
+    .catch((error: unknown) => {
+      console.error(`Quorum: the "${key}" board failed to start`, error)
+      host.dataset['boardUnavailable'] = 'error'
+      events.onStartFailed?.(error)
+    })
   return () => {
     controller.destroy()
     if (controllers.get(key) === controller) controllers.delete(key)

@@ -1,6 +1,23 @@
 @import 'katex/dist/katex.min.css';
 @import '@quorum/ui/theme.css';
 
+/* The two Geist faces, served from this origin: a reader never waits on a third-party stylesheet
+   before the first paint (apps/web/index.html loads the same files). */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/geist-latin-v5.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/geist-mono-latin-v6.woff2') format('woff2');
+}
+
 /* Panda's reset and base come first, then the shared hand-authored layers, then
    recipes and atomic utilities. A utility still wins over a component class. */
 @layer panda-reset, panda-base, panda-tokens, base, components, panda-recipes, panda-utilities;
@@ -134,9 +151,19 @@
     margin: 2rem 0;
   }
   .prose .anchor {
-    margin-left: 0.4em;
+    display: inline-flex;
+    min-width: 24px;
+    min-height: 24px;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.2em;
     color: transparent;
     text-decoration: none;
+  }
+  .prose :is(h2, h3) > a:not(.anchor) {
+    display: inline-block;
+    margin-block: -2px;
+    padding-block: 2px;
   }
   .prose :is(h2, h3):hover .anchor,
   .prose .anchor:focus-visible {
@@ -159,6 +186,21 @@
   }
   .prose .not-prose a {
     text-decoration: none;
+  }
+  /* A prose block inside a not-prose aside (an infobox's note) still underlines its links. */
+  .prose .not-prose .prose a {
+    text-decoration: underline;
+    text-decoration-color: color-mix(in oklch, var(--foreground) 30%, transparent);
+  }
+  /* A prose table keeps its own border and spacing, but its links are still links in a sentence. */
+  .prose .prose-table a {
+    color: var(--foreground);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in oklch, var(--foreground) 30%, transparent);
+    text-underline-offset: 3px;
+  }
+  .prose .prose-table a:hover {
+    text-decoration-color: var(--foreground);
   }
 }
 

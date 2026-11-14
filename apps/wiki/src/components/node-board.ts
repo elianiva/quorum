@@ -3,7 +3,13 @@ import { blankNode } from '@quorum/simulation/actions'
 import { nodeOrdinals } from '@quorum/simulation/labels'
 import { freeSandbox } from '@quorum/simulation/sandbox'
 import { solveFlow } from '@quorum/simulation/solve'
-import { attachBoard, setBoard, watchBoardTheme, type BoardState } from '@quorum/ui/board/board'
+import {
+  attachBoard,
+  fitBoard,
+  setBoard,
+  watchBoardTheme,
+  type BoardState,
+} from '@quorum/ui/board/board'
 
 const NOOP = () => {}
 watchBoardTheme()
@@ -31,6 +37,7 @@ export const drawNodeCard = (key: string, type: ComponentId, host: HTMLElement):
     suspended: false,
     cue: null,
     readOnly: true,
+    animate: false,
     inset: { top: 16, bottom: 16, left: 0 },
     pad: 8,
   }
@@ -46,16 +53,13 @@ export const drawNodeCard = (key: string, type: ComponentId, host: HTMLElement):
     onNodeToggle: NOOP,
     onBox: NOOP,
   })
-  // The board draws cards on a new state, and it starts asynchronously; send the state again
-  // over its first second so a draw lands once it has started.
-  let frames = 0
-  let frame = requestAnimationFrame(function again() {
-    setBoard(key, state)
-    frames += 1
-    if (frames < 60) frame = requestAnimationFrame(again)
-  })
+  // The board draws the state it was mounted with; fit it once the host has its size, and again
+  // after the card's layout settles. The board itself freezes after its first frames.
+  const frame = requestAnimationFrame(() => fitBoard(key))
+  const fitTimer = setTimeout(() => fitBoard(key), 400)
   return () => {
     cancelAnimationFrame(frame)
+    clearTimeout(fitTimer)
     detach()
   }
 }

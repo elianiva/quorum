@@ -1,7 +1,7 @@
 import { Schema } from 'effect'
 import { COMPONENT_IDS, ERAS, LEVER_KINDS, RESEARCH_TRACKS } from '@quorum/simulation/catalog'
-import { SANDBOX_IDS } from '@quorum/simulation/sandbox'
-import { DESIGN_IDS } from './patterns/designs/index.ts'
+import { SANDBOX_IDS } from '@quorum/simulation/sandbox-summary'
+import { DESIGN_IDS } from './patterns/designs/ids.ts'
 
 /* The live views a Markdown page may place with a directive, and the attributes each takes.
    vite.config.ts passes these to the Markdown plugin, so an unknown island or attribute fails

@@ -3,7 +3,8 @@ import { DOCK_OF } from '@quorum/simulation/catalog'
 import { priceOf } from '@quorum/simulation/lookups'
 import { attachBoard, fitBoard, setBoard, watchBoardTheme } from '@quorum/ui/board/board'
 import { money } from '@quorum/ui/game/format'
-import { COMPONENT_ICONS, GROUP_ICONS } from '@quorum/ui/game/icons'
+import { COMPONENT_ICONS } from '@quorum/ui/game/component-icons'
+import { GROUP_ICONS } from '@quorum/ui/game/icons'
 import { GROUP_TEXT } from '@quorum/ui/game/bits'
 import { css, cx } from '@quorum/styled-system/css'
 import { en } from '../i18n/en/index.ts'
@@ -380,17 +381,8 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
     onBox: (ids, mode) => send(PracticeEvent.Box({ ids, mode })),
   })
   render()
-  // The board starts asynchronously and draws a state sent before that; send it again over its
-  // first second, as the card boards do.
-  let frames = 0
-  let frame = requestAnimationFrame(function again() {
-    setBoard(key, boardState(state))
-    frames += 1
-    if (frames === 30) fitBoard(key)
-    if (frames < 60) frame = requestAnimationFrame(again)
-  })
+  // The board draws the state it was mounted with; no frame loop is needed.
   return () => {
-    cancelAnimationFrame(frame)
     events.abort()
     detach()
   }

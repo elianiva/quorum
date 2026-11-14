@@ -35,6 +35,7 @@ export const drawDesign = (id: string, host: HTMLElement): (() => void) => {
     suspended: false,
     cue: null,
     readOnly: true,
+    animate: false,
     inset: { top: 16, bottom: 16, left: 0 },
     pad: 16,
     minScale: 0.6,
@@ -51,16 +52,14 @@ export const drawDesign = (id: string, host: HTMLElement): (() => void) => {
     onNodeToggle: NOOP,
     onBox: NOOP,
   })
-  // The board starts asynchronously: send the state again over its first second, then fit it.
-  let frames = 0
-  let frame = requestAnimationFrame(function again() {
-    setBoard(key, state)
-    frames += 1
-    if (frames === 30 || frames === 60 || frames === 89) fitBoard(key)
-    if (frames < 90) frame = requestAnimationFrame(again)
-  })
+  // The board starts asynchronously and draws the state it was mounted with; fit it once the host
+  // has its size, and again after the cards' layout settles. The board itself freezes after its
+  // first frames, so a card is a picture, not a running game.
+  const frame = requestAnimationFrame(() => fitBoard(key))
+  const fitTimer = setTimeout(() => fitBoard(key), 400)
   return () => {
     cancelAnimationFrame(frame)
+    clearTimeout(fitTimer)
     detach()
   }
 }

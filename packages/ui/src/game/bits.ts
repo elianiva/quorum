@@ -5,7 +5,7 @@ import type { IconNode } from 'lucide'
 import type { BuildGroup, InsightPool } from '@quorum/simulation/catalog'
 import { icon } from '../primitives/icon.ts'
 import { GROUP_SHAPES, type GroupShape, STACK_LOGOS, type StackLogoId } from './icons.ts'
-import { POOL_ICONS, poolColor, poolName } from './pools.ts'
+import { POOL_ICONS, poolColor, poolName } from './pool-visuals.ts'
 
 export const EYEBROW_STYLE: SystemStyleObject = {
   fontFamily: 'mono',

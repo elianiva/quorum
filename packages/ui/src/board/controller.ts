@@ -23,7 +23,7 @@ import {
 import { compute } from './compute.ts'
 import { CHIP_NONE } from './lod.ts'
 import { type RoutedLink, type RoutedNode, type Wire } from './routing.ts'
-import { COMPONENT_ICONS } from '../game/icons.ts'
+import { COMPONENT_ICONS } from '../game/component-icons.ts'
 import { CursorOverlay, type SeatCursor } from './cursors.ts'
 import { animate } from './frame.ts'
 import { bindPointer } from './pointer.ts'
@@ -238,6 +238,9 @@ export class BoardController {
   /** The host width the view was fitted to: a wider or narrower screen refits, a taller one does not. */
   fittedWidth: number | null = null
   destroyed = false
+  /** A still picture runs the ticker for a moment, then paints only on change. */
+  stillSettled = false
+  stillTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(
     readonly host: HTMLElement,
@@ -252,10 +255,38 @@ export class BoardController {
     })
   }
 
-  /** Draws while the board is on screen and not suspended. */
+  /** Draws while the board is on screen and not suspended. A still picture settles, then paints. */
   run(): void {
+    if (this.state?.animate === false) {
+      if (this.stillSettled) {
+        this.app.stop()
+        this.paint()
+        return
+      }
+      if (this.stillTimer !== null) return
+      this.app.start()
+      // Let the ticker paint the first frames. One render can land before the cards' textures.
+      this.stillTimer = setTimeout(() => {
+        this.stillTimer = null
+        this.stillSettled = true
+        this.app.stop()
+        this.paint()
+      }, 600)
+      return
+    }
+    if (this.stillTimer !== null) {
+      clearTimeout(this.stillTimer)
+      this.stillTimer = null
+      this.stillSettled = false
+    }
     if (this.onScreen && !this.state?.suspended) this.app.start()
     else this.app.stop()
+  }
+
+  /** Paints one frame of a still picture: no ticker runs, so panning and routing ask for this. */
+  paint(): void {
+    if (!this.started || this.destroyed || this.state?.animate !== false) return
+    this.app.render()
   }
 
   async start(initial: BoardState | undefined): Promise<void> {
@@ -318,6 +349,9 @@ export class BoardController {
     this.resize.observe(this.host)
     this.sight.observe(this.host)
     this.onResize()
+    // A board mounted with a state already in hand draws it now. Callers used to resend the same
+    // state every frame until the board started; one draw here replaces that.
+    if (this.state !== null) this.draw(this.state)
     this.run()
   }
 
@@ -380,6 +414,8 @@ export class BoardController {
     this.abort.abort()
     this.resize.disconnect()
     this.sight.disconnect()
+    if (this.stillTimer !== null) clearTimeout(this.stillTimer)
+    this.stillTimer = null
     this.cursorLayer.destroy()
     this.events.onCursorGone?.()
     if (this.started) this.app.destroy(true, { children: true })
@@ -392,6 +428,7 @@ export class BoardController {
     // A rotation or a window resize fits the Design again; a phone's URL bar changing the height
     // does not, so a panned view stays where the player left it.
     if (!this.fitted || this.fittedWidth === null || Math.abs(w - this.fittedWidth) > 32) this.fit()
+    this.paint()
   }
 
   fit(): void {
@@ -430,6 +467,7 @@ export class BoardController {
     this.world.position.set(x, top + room / 2 - ((minY + maxY) / 2) * scale)
     this.fitted = true
     this.fittedWidth = w
+    this.paint()
   }
 
   /**
@@ -450,6 +488,7 @@ export class BoardController {
     const scale = Math.min(1.6, Math.max(0.25, this.world.scale.x * factor))
     this.world.scale.set(scale)
     this.world.position.set(center.x - before.x * scale, center.y - before.y * scale)
+    this.paint()
   }
 
   /** Centers a Node in the room the HUD, dock, and Inspector leave free. */
@@ -473,6 +512,7 @@ export class BoardController {
     )
     this.fitted = true
     this.fittedWidth = w
+    this.paint()
   }
 
   toWorld(event: PointerEvent | WheelEvent): Pt {
@@ -710,6 +750,7 @@ export class BoardController {
       if (wires) {
         this.routed = wires
         this.routedNodes = new Map(wanted.nodes.map((node) => [node.id, node]))
+        this.paint()
       }
       this.askRoute()
     })
@@ -864,6 +905,7 @@ export class BoardController {
       next.center.x - rect.left - from.x * scale,
       next.center.y - rect.top - from.y * scale,
     )
+    this.paint()
   }
 
   bindPointer(): void {

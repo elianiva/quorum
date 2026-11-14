@@ -69,6 +69,8 @@ export type BoardState = Readonly<{
   cue: string | null
   /** A board to watch, not to edit: the pointer only pans, and the wheel zooms only with Ctrl or Cmd. */
   readOnly?: boolean
+  /** A still picture: draw the state and paint on change, without running a ticker. */
+  animate?: boolean
   /** Room the host's own controls take at each edge, in pixels, when the view fits the Design. */
   inset?: Readonly<{ top: number; bottom: number; left: number }>
   /** Space kept around the Nodes when the board fits them; the game's 80 unless the host says. */

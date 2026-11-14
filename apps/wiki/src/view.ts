@@ -39,6 +39,9 @@ export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
   const wide = page?.wide === true
   const railPage = isHome || wide ? null : page
   const hasRail = railPage !== null && (railPage.aside !== null || railPage.headings.length >= 2)
+  // Reading pages start the app on demand: the header on intent, and a quiz, practice board, or
+  // live figure when it nears the viewport. A page whose board is already in view starts at once.
+  const hydration = 'visible'
   return {
     title: page ? (isHome ? t.name : t.title(page.title)) : t.notFoundTitle,
     lang: LOCALE_TAGS[model.locale].lang,
@@ -50,6 +53,7 @@ export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
             minHeight: '100dvh',
           }),
         ),
+        h.DataAttribute('hydration', hydration),
       ],
       [
         header(model, h),

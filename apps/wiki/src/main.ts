@@ -3,7 +3,9 @@ import { Command, Runtime, Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
 import { UrlRequest, load, pushUrl } from 'foldkit/navigation'
 import { Url, toString as urlToString } from 'foldkit/url'
+import { isProseLoaded, loadProse, needsProse } from './content.ts'
 import { Locale, localeOfPath, stripLocale } from './i18n/locale.ts'
+import { WIKI_ORIGIN } from './site.ts'
 import * as Progress from './submodels/progress.ts'
 import * as Project from './submodels/project.ts'
 import * as Quiz from './submodels/quiz.ts'
@@ -33,6 +35,7 @@ export type Model = typeof Model.Type
 export const Message = defineMessageUnion({
   ClickedLink: { request: UrlRequest },
   ChangedUrl: { url: Url },
+  PageLoaded: { path: Schema.String, hash: Schema.String },
   Navigated: {},
   MenuToggled: {},
   LanguageMenuToggled: {},
@@ -60,7 +63,26 @@ export const routeOf = (pathname: string): Readonly<{ locale: Locale; path: stri
 const Navigate = Command.define('Navigate', {
   args: { url: Schema.String },
   messages: [Message.Navigated],
-  execute: ({ url }) => pushUrl(url).pipe(Effect.as(Message.Navigated())),
+  execute: ({ url }) =>
+    Effect.gen(function* () {
+      // The page renders as soon as the URL changes, so its prose must be here first.
+      const { locale, path } = routeOf(new URL(url, WIKI_ORIGIN).pathname)
+      if (needsProse(locale, path)) yield* Effect.promise(() => loadProse(locale, path))
+      yield* pushUrl(url)
+      return Message.Navigated()
+    }),
+})
+
+/** A page the browser reached without a click, such as Back or Forward. Loads its prose, then
+    visits it; the URL has already changed, so the old page stays until the new one is ready. */
+const LoadPage = Command.define('LoadPage', {
+  args: { locale: Locale, path: Schema.String, hash: Schema.String },
+  messages: [Message.PageLoaded],
+  execute: ({ locale, path, hash }) =>
+    Effect.promise(async () => {
+      await loadProse(locale, path)
+      return Message.PageLoaded({ path, hash })
+    }),
 })
 
 const LoadExternal = Command.define('LoadExternal', {
@@ -181,6 +203,34 @@ export const init: Runtime.RoutingApplicationInit<Model, Message> = (url) => {
 
 type Return = Update.Return<Model, Message>
 
+/** Opens a path in the current language: resets what belongs to the page, records the visit, and
+    scrolls to the heading the URL names. */
+const visit = (model: Model, path: string, hash: string): Return => {
+  const visited = foldProgress(
+    {
+      ...model,
+      path,
+      menu: false,
+      languageMenu: false,
+      navToggled: [],
+      search: Search.init(model.locale),
+    },
+    Progress.Message.Visited({ path }),
+  )
+  const wantProject = path === '/' && model.project.status === 'idle'
+  return {
+    model: wantProject
+      ? { ...visited.model, project: { status: 'loading', stats: null } }
+      : visited.model,
+    commands: [
+      ScrollTo({ hash }),
+      RevealCurrent(),
+      ...(visited.commands ?? []),
+      ...(wantProject ? loadProject() : []),
+    ],
+  }
+}
+
 export const update = (model: Model, message: Message): Return =>
   Message.match<Return>(message, {
     ClickedLink: ({ request }) =>
@@ -203,30 +253,13 @@ export const update = (model: Model, message: Message): Return =>
       // A hash on the page you are reading moves to that heading and changes nothing else: the
       // search, the drawer and the open hubs belong to the page, not to the scroll position.
       if (path === model.path) return hash ? { model, commands: [ScrollTo({ hash })] } : { model }
-      const visited = foldProgress(
-        {
-          ...model,
-          path,
-          menu: false,
-          languageMenu: false,
-          navToggled: [],
-          search: Search.init(model.locale),
-        },
-        Progress.Message.Visited({ path }),
-      )
-      const wantProject = path === '/' && model.project.status === 'idle'
-      return {
-        model: wantProject
-          ? { ...visited.model, project: { status: 'loading', stats: null } }
-          : visited.model,
-        commands: [
-          ScrollTo({ hash }),
-          RevealCurrent(),
-          ...(visited.commands ?? []),
-          ...(wantProject ? loadProject() : []),
-        ],
-      }
+      // Back and Forward change the URL before the page's prose is here; keep the old page until
+      // the chunk arrives rather than drawing an empty one.
+      if (needsProse(model.locale, path) && !isProseLoaded(model.locale, path))
+        return { model, commands: [LoadPage({ locale: model.locale, path, hash })] }
+      return visit(model, path, hash)
     },
+    PageLoaded: ({ path, hash }) => visit(model, path, hash),
     Navigated: () => ({ model }),
     MenuToggled: () => ({ model: { ...model, menu: !model.menu, languageMenu: false } }),
     LanguageMenuToggled: () => ({

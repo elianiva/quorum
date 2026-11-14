@@ -9,7 +9,7 @@ import {
 import { BY_RESEARCH } from '@quorum/simulation/term-links'
 import { EYEBROW, FIGURE, SCROLL, insightChip } from '@quorum/ui/game/bits'
 import { compact } from '@quorum/ui/game/format'
-import { POOL_ICONS, poolColor, recipeOf } from '@quorum/ui/game/pools'
+import { POOL_ICONS, poolColor, recipeOf } from '@quorum/ui/game/pool-visuals'
 import { NODE_SIZE, researchLayout } from '@quorum/ui/game/research-layouts'
 import { TRACK_ICONS, researchMark } from '@quorum/ui/game/research-marks'
 import { icon } from '@quorum/ui/primitives/icon'

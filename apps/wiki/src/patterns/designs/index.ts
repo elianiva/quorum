@@ -20,4 +20,4 @@ export const DESIGNS: Readonly<Record<string, Design>> = {
   ...patternsProduction,
 }
 
-export const DESIGN_IDS: ReadonlyArray<string> = Object.keys(DESIGNS)
+export { DESIGN_IDS } from './ids.ts'

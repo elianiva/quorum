@@ -1,6 +1,7 @@
 import * as Markdown from '@foldkit/markdown'
 import { Option } from 'effect'
 import type { Html, HtmlBuilder } from 'foldkit/html'
+import { IMAGE_SIZES } from 'virtual:image-sizes'
 import { localeOf } from './i18n/builder.ts'
 import { langOf } from './i18n/lang.ts'
 import type { Message, Model } from './main.ts'
@@ -11,6 +12,17 @@ import { type Heading, slug } from './page.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
 type Inline = Markdown.Inline
+
+/** An image with its intrinsic size, so the text below it does not move when it loads. */
+const image = (url: string, alt: string, h: HtmlBuilder<Message>): Html => {
+  const size = IMAGE_SIZES[url]
+  return h.img([
+    h.Src(url),
+    h.Alt(alt),
+    h.Loading('lazy'),
+    ...(size === undefined ? [] : [h.Width(String(size.width)), h.Height(String(size.height))]),
+  ])
+}
 
 /** The plain text of inline content, for anchors and search. */
 export const plain = (content: ReadonlyArray<Inline>): string =>
@@ -106,52 +118,7 @@ export const textOf = (document: Markdown.MarkdownDocument): string =>
     .join(' ')
 
 /** Every wiki path a document links to, without hashes, and every Sandbox it places. */
-export const linksIn = (
-  document: Markdown.MarkdownDocument,
-): Readonly<{ paths: ReadonlySet<string>; sandboxes: ReadonlySet<string> }> => {
-  const paths = new Set<string>()
-  const sandboxes = new Set<string>()
-  const inlines = (content: ReadonlyArray<Inline>): void => {
-    for (const node of content) {
-      if (node._tag === 'Link') {
-        if (node.url.startsWith('/')) paths.add(node.url.split('#')[0] ?? node.url)
-        inlines(node.content)
-      } else if (
-        node._tag === 'Emphasis' ||
-        node._tag === 'Strong' ||
-        node._tag === 'Strikethrough'
-      )
-        inlines(node.content)
-    }
-  }
-  const blocks = (list: ReadonlyArray<Markdown.Block>): void => {
-    for (const block of list) {
-      switch (block._tag) {
-        case 'Heading':
-        case 'Paragraph':
-          inlines(block.content)
-          break
-        case 'List':
-          for (const item of block.items) blocks(item.blocks)
-          break
-        case 'Blockquote':
-          blocks(block.blocks)
-          break
-        case 'Table':
-          for (const row of [block.headerRow, ...block.bodyRows])
-            for (const cell of row.cells) inlines(cell.content)
-          break
-        case 'Island':
-          if (block.name === 'Sandbox' && block.attributes.id) sandboxes.add(block.attributes.id)
-          blocks(block.blocks)
-          break
-        default:
-      }
-    }
-  }
-  blocks(document.blocks)
-  return { paths, sandboxes }
-}
+export { linksIn } from './links.ts'
 
 const external = (url: string): boolean => /^https?:/.test(url)
 
@@ -193,16 +160,13 @@ export const prose = (
               ? h.h3([h.Id(id), h.Class('group')], [...content, anchor])
               : h.h4([h.Id(id)], content)
         },
-        Image: ({ url, alt }) => h.img([h.Src(url), h.Alt(alt), h.Loading('lazy')]),
+        Image: ({ url, alt }) => image(url, alt, h),
         Paragraph: (paragraph, content) => {
           const [only] = paragraph.content
           return paragraph.content.length === 1 && only?._tag === 'Image'
             ? h.figure(
                 [h.Class('prose-figure')],
-                [
-                  h.img([h.Src(only.url), h.Alt(only.alt), h.Loading('lazy')]),
-                  ...(only.alt ? [h.figcaption([], [only.alt])] : []),
-                ],
+                [image(only.url, only.alt, h), ...(only.alt ? [h.figcaption([], [only.alt])] : [])],
               )
             : h.p([], content)
         },
@@ -225,6 +189,7 @@ export const prose = (
                     borderColor: 'border',
                   }),
                   'not-prose',
+                  'prose-table',
                 ),
               ),
             ],

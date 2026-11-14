@@ -37,7 +37,7 @@ import {
   VEC_INDEXES,
   VENTURES,
 } from '@quorum/simulation/catalog'
-import { GUIDED } from '@quorum/simulation/sandbox'
+import { GUIDED_SUMMARY } from '@quorum/simulation/sandbox-summary'
 import { slug } from '../page.ts'
 import { en } from './en/index.ts'
 import type { Locale } from './locale.ts'
@@ -78,11 +78,11 @@ type GuidedWords = Readonly<{
   objectives?: ReadonlyArray<Readonly<{ goal?: string }>>
 }>
 
-const overlayGuided = (copy: Catalog['guided'] | undefined): typeof GUIDED =>
+const overlayGuided = (copy: Catalog['guided'] | undefined): typeof GUIDED_SUMMARY =>
   copy === undefined
-    ? GUIDED
+    ? GUIDED_SUMMARY
     : (Object.fromEntries(
-        Object.entries(GUIDED).map(([id, def]) => {
+        Object.entries(GUIDED_SUMMARY).map(([id, def]) => {
           const words = (copy as Readonly<Record<string, GuidedWords | undefined>>)[id]
           return [
             id,
@@ -96,7 +96,7 @@ const overlayGuided = (copy: Catalog['guided'] | undefined): typeof GUIDED =>
             },
           ]
         }),
-      ) as unknown as typeof GUIDED)
+      ) as unknown as typeof GUIDED_SUMMARY)
 
 const catalogView = (copy: Catalog | null) => ({
   ACHIEVEMENTS: overlay(ACHIEVEMENTS, copy?.achievements),

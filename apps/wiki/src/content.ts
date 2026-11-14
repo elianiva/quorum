@@ -1,82 +1,102 @@
 import * as Markdown from '@foldkit/markdown'
-import { Schema } from 'effect'
-import { Frontmatter } from './frontmatter.ts'
-import { DEFAULT_LOCALE, type Locale } from './i18n/locale.ts'
-import { anchorsFor, headingsOf, linksIn, prose, textOf, type Anchors } from './prose.ts'
+import { CONTENT as CONTENT_EN, LINKS, type ContentEntry } from 'virtual:content-index'
+import { type Locale } from './i18n/locale.ts'
+import { loadPageAssets } from './page-assets.ts'
+import { anchorsFor, headingsOf, prose, textOf, type Anchors } from './prose.ts'
 import type { Page } from './page.ts'
-
-export type ProseModule = Readonly<{ default: unknown; frontmatter: unknown }>
 
 /* Prose lives in `content/` (English) and in a directory per other language with the same relative
    paths: `content-es/` and `content-ja/`. English is the source of structure: a translated file
    replaces an English page's title, summary, aliases and body, while its section, group, order, era,
    gdd and toc always come from the English file. A page with no translation shows its English text.
-   A translation loads as a separate chunk (src/locales/<language>.ts) and registers its files
-   here. */
 
-const english = import.meta.glob<ProseModule>('../content/**/*.md', { eager: true })
+   The build's content index (src/content-index.ts) knows every file's frontmatter and links. A
+   page's prose itself is a chunk of its own: `loadProse` brings in the page the reader is on, and
+   `loadAllProse` brings in the whole corpus for the build's Markdown, search index, and tests. */
 
-const decodeFrontmatter = Schema.decodeUnknownSync(Frontmatter)
+export type ProseModule = Readonly<{ default: unknown }>
 
-/** The directory each language's files live in, as the repository names it. */
-const ROOTS: Readonly<Record<Locale, string>> = {
-  en: 'content',
-  es: 'content-es',
-  ja: 'content-ja',
+/** Each language's index arrives with its bundle (src/locales/<language>.ts). */
+const CONTENT: Record<Locale, Readonly<Record<string, ContentEntry>>> = {
+  en: CONTENT_EN,
+  es: {},
+  ja: {},
 }
 
-type Entry = Readonly<{
-  path: string
-  source: string
-  document: Markdown.MarkdownDocument
-  frontmatter: Frontmatter | null
-}>
-
-const pathOf = (file: string, root: string): string => {
-  const path = file
-    .slice(file.indexOf(`/${root}/`) + root.length + 1)
-    .replace(/\.md$/, '')
-    .replace(/\/index$/, '')
-  return path === '' ? '/' : path
-}
-
-const entriesOf = (
-  modules: Readonly<Record<string, ProseModule>>,
+export const registerContent = (
   locale: Locale,
-): ReadonlyArray<Entry> =>
-  Object.entries(modules).map(([file, module]) => {
-    const root = ROOTS[locale]
-    return {
-      path: pathOf(file, root),
-      source: `apps/wiki/${root}${file.slice(file.indexOf(`/${root}/`) + root.length + 1)}`,
-      document: Markdown.decodeDocument(module.default),
-      frontmatter: module.frontmatter === undefined ? null : decodeFrontmatter(module.frontmatter),
-    }
-  })
-
-const byLocale: Partial<Record<Locale, ReadonlyArray<Entry>>> = {
-  [DEFAULT_LOCALE]: entriesOf(english, DEFAULT_LOCALE),
-}
-
-const entriesIn = (locale: Locale): ReadonlyArray<Entry> => byLocale[locale] ?? []
-
-const englishEntries = (): ReadonlyArray<Entry> => entriesIn('en')
-
-/** Makes a language's files known. Done once, by the language's bundle. */
-export const registerProse = (
-  locale: Locale,
-  modules: Readonly<Record<string, ProseModule>>,
+  content: Readonly<Record<string, ContentEntry>>,
 ): void => {
-  byLocale[locale] = entriesOf(modules, locale)
+  CONTENT[locale] = content
 }
+
+/** One loader per file, relative to this directory. The keys match `ContentEntry.file`. */
+const LOADERS: Readonly<Record<Locale, Readonly<Record<string, () => Promise<ProseModule>>>>> = {
+  en: import.meta.glob<ProseModule>('../content/**/*.md'),
+  es: import.meta.glob<ProseModule>('../../content-es/**/*.md'),
+  ja: import.meta.glob<ProseModule>('../../content-ja/**/*.md'),
+}
+
+const PREFIX: Readonly<Record<Locale, string>> = {
+  en: '../content/',
+  es: '../../content-es/',
+  ja: '../../content-ja/',
+}
+
+const documents: Record<Locale, Map<string, Markdown.MarkdownDocument>> = {
+  en: new Map(),
+  es: new Map(),
+  ja: new Map(),
+}
+
+/** Called after a page's prose arrives, so cached page objects can rebuild their text and headings. */
+const listeners = new Set<() => void>()
+
+export const onProseLoaded = (listener: () => void): void => {
+  listeners.add(listener)
+}
+
+const loadOne = async (locale: Locale, path: string): Promise<void> => {
+  if (documents[locale].has(path)) return
+  const entry = CONTENT[locale][path]
+  if (entry === undefined) return
+  const load = LOADERS[locale][`${PREFIX[locale]}${entry.file}`]
+  if (load === undefined) return
+  const document = Markdown.decodeDocument((await load()).default)
+  documents[locale].set(path, document)
+  await loadPageAssets(document)
+  for (const listener of listeners) listener()
+}
+
+/** Loads the prose a page needs: its own language's file, and the English one for the anchors a
+    translation keeps and the English fallback. Loading a page twice is free. */
+export const loadProse = async (locale: Locale, path: string): Promise<void> => {
+  if (locale !== 'en') await loadOne('en', path)
+  await loadOne(locale, path)
+}
+
+/** Loads every file in every language: the build's Markdown twins and search indexes need it. */
+export const loadAllProse = async (): Promise<void> => {
+  for (const locale of Object.keys(CONTENT) as ReadonlyArray<Locale>)
+    await Promise.all(Object.keys(CONTENT[locale]).map((path) => loadOne(locale, path)))
+}
+
+/** Whether a page has prose to load, or is generated from the catalog alone. */
+export const needsProse = (locale: Locale, path: string): boolean =>
+  CONTENT[locale][path] !== undefined || CONTENT.en[path] !== undefined
+
+/** Whether the page the reader is on has its prose (and, in another language, its English base). */
+export const isProseLoaded = (locale: Locale, path: string): boolean =>
+  locale === 'en' ? documents.en.has(path) : documents[locale].has(path) || documents.en.has(path)
+
+const entryOf = (locale: Locale, path: string): ContentEntry | undefined => CONTENT[locale][path]
 
 /** The translation of an English entry, if its file exists. */
-const translation = (locale: Locale, path: string, structured: boolean): Entry | null =>
-  locale === 'en'
-    ? null
-    : (entriesIn(locale).find(
-        (candidate) => candidate.path === path && (candidate.frontmatter !== null) === structured,
-      ) ?? null)
+const translation = (locale: Locale, path: string, structured: boolean): ContentEntry | null => {
+  if (locale === 'en') return null
+  const entry = entryOf(locale, path)
+  return entry !== undefined && (entry.frontmatter !== null) === structured ? entry : null
+}
 
 export type Prose = Readonly<{
   document: Markdown.MarkdownDocument
@@ -88,50 +108,68 @@ export type Prose = Readonly<{
   fallback: boolean
 }>
 
-/** Prose for a catalog page, by its path, such as `/components/lb`. A translated file replaces the English one. */
-export const proseAt = (locale: Locale, path: string): Prose | null => {
-  const base = englishEntries().find((entry) => entry.path === path && !entry.frontmatter)
-  if (!base) return null
-  const own = translation(locale, path, false)
+/** Prose by its path. Authored pages pass `structured: true`, catalog prose `false`. */
+export const proseAt = (locale: Locale, path: string, structured = false): Prose | null => {
+  const baseMeta = entryOf('en', path)
+  if (baseMeta === undefined || (baseMeta.frontmatter !== null) !== structured) return null
+  const base = documents.en.get(path)
+  if (base === undefined) return null
+  const ownMeta = translation(locale, path, structured)
+  const own = ownMeta === null ? null : (documents[locale].get(path) ?? null)
   const chosen = own ?? base
   return {
-    document: chosen.document,
-    text: textOf(chosen.document),
-    source: chosen.source,
-    anchors: own ? anchorsFor(own.document, base.document) : null,
+    document: chosen,
+    text: textOf(chosen),
+    source: (ownMeta ?? baseMeta).source,
+    anchors: own === null ? null : anchorsFor(own, base),
     fallback: locale !== 'en' && own === null,
   }
 }
 
 /** The wiki paths and Sandboxes that a page's prose links to or places. The English text is the
     source of every relationship, so a translation never changes which pages are related. */
-export const linksFrom = (path: string): ReturnType<typeof linksIn> =>
-  linksIn(englishEntries().find((candidate) => candidate.path === path)?.document ?? { blocks: [] })
+export const linksFrom = (
+  path: string,
+): Readonly<{ paths: ReadonlySet<string>; sandboxes: ReadonlySet<string> }> => {
+  const found = LINKS[path]
+  return {
+    paths: new Set(found?.paths ?? []),
+    sandboxes: new Set(found?.sandboxes ?? []),
+  }
+}
 
-/** The English source document of an authored page, by its path. */
+/** The English source document of an authored page, once the corpus is loaded. */
 export const documentOf = (path: string): Markdown.MarkdownDocument | null =>
-  englishEntries().find((candidate) => candidate.path === path && candidate.frontmatter)
-    ?.document ?? null
+  documents.en.get(path) ?? null
 
 /** Every prose file that belongs to a catalog page, for the coverage tests. */
-export const prosePaths: ReadonlyArray<string> = englishEntries()
-  .filter((entry) => !entry.frontmatter)
-  .map((entry) => entry.path)
+export const prosePaths: ReadonlyArray<string> = Object.entries(CONTENT.en)
+  .filter(([, entry]) => entry.frontmatter === null)
+  .map(([path]) => path)
+
+const headingsOfPage = (
+  locale: Locale,
+  path: string,
+  structured: boolean,
+  top: boolean | undefined,
+): ReadonlyArray<Page['headings'][number]> => {
+  const found = proseAt(locale, path, structured)
+  if (found === null) return []
+  const headings = headingsOf(found.document, found.anchors ?? undefined)
+  return top === true ? headings.filter((heading) => heading.level === 2) : headings
+}
 
 /** The authored pages in a language: translated text where it exists, English where it does not. */
 export const authoredPages = (locale: Locale): ReadonlyArray<Page> =>
-  englishEntries().flatMap((base): ReadonlyArray<Page> => {
+  Object.entries(CONTENT.en).flatMap(([path, base]): ReadonlyArray<Page> => {
     const meta = base.frontmatter
-    if (!meta) return []
-    const own = translation(locale, base.path, true)
+    if (meta === null) return []
+    const own = translation(locale, path, true)
     const text = own?.frontmatter ?? meta
-    const document = (own ?? base).document
-    const anchors = own ? anchorsFor(own.document, base.document) : undefined
-    const headings = headingsOf(document, anchors)
     return [
       {
         locale,
-        path: base.path,
+        path,
         title: text.title,
         summary: text.summary,
         section: meta.section,
@@ -150,12 +188,21 @@ export const authoredPages = (locale: Locale): ReadonlyArray<Page> =>
         ],
         source: (own ?? base).source,
         gdd: meta.gdd ?? null,
-        headings: meta.toc === 'top' ? headings.filter((heading) => heading.level === 2) : headings,
+        get headings() {
+          return headingsOfPage(locale, path, true, meta.toc === 'top')
+        },
         wide: false,
         aside: null,
-        body: (model, h) => prose(document, model, h, anchors),
+        body: (model, h) => {
+          const found = proseAt(locale, path, true)
+          return found === null
+            ? h.empty
+            : prose(found.document, model, h, found.anchors ?? undefined)
+        },
         related: [],
-        text: textOf(document),
+        get text() {
+          return proseAt(locale, path, true)?.text ?? ''
+        },
         fallback: locale !== 'en' && own === null,
       },
     ]

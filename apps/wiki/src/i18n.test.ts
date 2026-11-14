@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { expect, test } from 'vitest'
+import { beforeAll, expect, test } from 'vitest'
+import { loadAllProse } from './content.ts'
 import { langOf } from './i18n/lang.ts'
 import { en } from './i18n/en/index.ts'
 import { es } from './i18n/es/index.ts'
@@ -30,6 +31,10 @@ import './locales/ja.ts'
 
 const TRANSLATIONS = ['es', 'ja'] as const
 type Translation = (typeof TRANSLATIONS)[number]
+
+beforeAll(async () => {
+  await loadAllProse()
+})
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 

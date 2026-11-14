@@ -6,7 +6,7 @@ import {
   type IncidentId,
   type ResearchId,
 } from '@quorum/simulation/catalog'
-import { GUIDED, SANDBOX_IDS, type SandboxId } from '@quorum/simulation/sandbox'
+import { GUIDED_SUMMARY, SANDBOX_IDS, type SandboxId } from '@quorum/simulation/sandbox-summary'
 import { linksFrom } from '../content.ts'
 
 const componentLinks = new Map(COMPONENT_IDS.map((id) => [id, linksFrom(`/components/${id}`)]))
@@ -23,7 +23,7 @@ export const incidentsOn = (component: ComponentId): ReadonlyArray<string> =>
 /** The guided Sandboxes that fire this incident. */
 export const sandboxesFiring = (incident: IncidentId): ReadonlyArray<SandboxId> =>
   SANDBOX_IDS.filter((id) =>
-    GUIDED[id].objectives.some((objective) => objective.incident?.kind === incident),
+    GUIDED_SUMMARY[id].objectives.some((objective) => objective.incident?.kind === incident),
   )
 
 /** The Components whose page places this Sandbox. */

@@ -53,7 +53,7 @@ import {
 import { has, researchReady, resizePrice } from '@quorum/simulation/lookups'
 import { openRegions, regionView } from '@quorum/simulation/regions'
 import { SHARED } from '@quorum/simulation/playbook'
-import { COMPONENT_ICONS } from '@quorum/ui/game/icons'
+import { COMPONENT_ICONS } from '@quorum/ui/game/component-icons'
 import { nodeTitle, type Messages } from '../i18n/messages.ts'
 import { partOf, type Part } from './parts.ts'
 import { Message } from './message.ts'

@@ -425,7 +425,7 @@ const notice = (page: Page, h: H): Html =>
 
 export const article = (page: Page, model: Model, h: H): Html => {
   const l = langOf(page.locale)
-  return h.article(
+  return h.main(
     [
       // A wide page spans the frame; every other page fills its column.
       h.Class(
@@ -543,7 +543,7 @@ export const article = (page: Page, model: Model, h: H): Html => {
 
 export const notFound = (model: Model, h: H): Html => {
   const t = langOf(model.locale).t.article.notFound
-  return h.article(
+  return h.main(
     [
       h.Class(
         css({

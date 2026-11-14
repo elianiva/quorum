@@ -3,7 +3,7 @@ import { COMPONENTS, type BuildGroup, type ComponentId } from '@quorum/simulatio
 import { isUnlocked, priceOf } from '@quorum/simulation/lookups'
 import type { Game } from '@quorum/simulation/state'
 import { money } from '@quorum/ui/game/format'
-import { COMPONENT_ICONS } from '@quorum/ui/game/icons'
+import { COMPONENT_ICONS } from '@quorum/ui/game/component-icons'
 import { localized, type Messages } from '../i18n/messages.ts'
 
 /* ==========================================================================

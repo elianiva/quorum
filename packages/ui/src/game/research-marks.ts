@@ -1,5 +1,5 @@
+import { css, cx as cn } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
-import { cn } from 'cn'
 import {
   Antenna,
   ArchiveRestore,
@@ -340,7 +340,15 @@ export const researchMark = <M>(
       ? groupBadge(
           COMPONENTS[look.component].group,
           COMPONENT_ICONS[look.component],
-          size === 'lg' ? 'size-11' : 'size-7',
+          size === 'lg'
+            ? css({
+                width: '2.75rem',
+                height: '2.75rem',
+              })
+            : css({
+                width: '1.75rem',
+                height: '1.75rem',
+              }),
           h,
           muted,
         )
@@ -349,13 +357,40 @@ export const researchMark = <M>(
           'glyph' in look
             ? look.glyph
             : { path: 'logo' in look ? STACK_LOGOS[look.logo].path : look.brand.path },
-          size === 'lg' ? 'size-11' : 'size-7',
+          size === 'lg'
+            ? css({
+                width: '2.75rem',
+                height: '2.75rem',
+              })
+            : css({
+                width: '1.75rem',
+                height: '1.75rem',
+              }),
           h,
           muted,
           colorOf(look),
         )
   return h.span(
-    [h.Class(cn('grid shrink-0 place-items-center', size === 'lg' ? 'size-12' : 'size-8'))],
+    [
+      h.Class(
+        cn(
+          css({
+            display: 'grid',
+            flexShrink: '0',
+            placeItems: 'center',
+          }),
+          size === 'lg'
+            ? css({
+                width: '3rem',
+                height: '3rem',
+              })
+            : css({
+                width: '2rem',
+                height: '2rem',
+              }),
+        ),
+      ),
+    ],
     [badge],
   )
 }

@@ -1,6 +1,5 @@
+import { css, cx as cn } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
-
-import { cn } from 'cn'
 
 type Child = Html | string
 
@@ -8,25 +7,85 @@ type Child = Html | string
 // (`table`); sub-builders are attached as properties: Table.header, Table.body,
 // Table.footer, Table.row, Table.head, Table.cell, Table.caption.
 
-export const tableContainerClass = 'relative w-full overflow-x-auto'
+export const tableContainerClass = css({
+  position: 'relative',
+  width: '100%',
+  overflowX: 'auto',
+})
 
-export const tableClass = 'w-full caption-bottom text-sm'
+export const tableClass = css({
+  width: '100%',
+  captionSide: 'bottom',
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: 'calc(1.25 / 0.875)',
+})
 
-export const tableHeaderClass = '[&_tr]:border-b'
+export const tableHeaderClass = css({
+  '& tr': {
+    borderBottomWidth: '1px',
+    borderBottomStyle: 'solid',
+  },
+})
 
-export const tableBodyClass = '[&_tr:last-child]:border-0'
+export const tableBodyClass = css({
+  '& tr:last-child': {
+    borderWidth: '0',
+  },
+})
 
-export const tableFooterClass = 'bg-muted/50 border-t font-medium [&>tr]:last:border-b-0'
+export const tableFooterClass = css({
+  backgroundColor: 'color-mix(in oklab, var(--muted) 50%, transparent)',
+  borderTopWidth: '1px',
+  borderTopStyle: 'solid',
+  fontWeight: '500',
+  '&>tr': {
+    '&:last-child': {
+      borderBottomWidth: '0px',
+    },
+  },
+})
 
-export const tableRowClass =
-  'hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors has-aria-expanded:bg-muted/50'
+export const tableRowClass = css({
+  _hover: { backgroundColor: 'color-mix(in oklab, var(--muted) 50%, transparent)' },
+  '&[data-state="selected"]': { backgroundColor: 'muted' },
+  borderBottomWidth: '1px',
+  borderBottomStyle: 'solid',
+  transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke',
+  transitionTimingFunction: 'var(--default-transition-timing-function)',
+  transitionDuration: 'var(--default-transition-duration)',
+  '&:has([aria-expanded])': {
+    backgroundColor: 'color-mix(in oklab, var(--muted) 50%, transparent)',
+  },
+})
 
-export const tableHeadClass =
-  'text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0'
+export const tableHeadClass = css({
+  color: 'var(--foreground)',
+  height: '2.5rem',
+  paddingInline: '0.5rem',
+  textAlign: 'left',
+  verticalAlign: 'middle',
+  fontWeight: '500',
+  whiteSpace: 'nowrap',
+  '&:has([role=checkbox])': {
+    paddingRight: '0',
+  },
+})
 
-export const tableCellClass = 'p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0'
+export const tableCellClass = css({
+  padding: '0.5rem',
+  verticalAlign: 'middle',
+  whiteSpace: 'nowrap',
+  '&:has([role=checkbox])': {
+    paddingRight: '0',
+  },
+})
 
-export const tableCaptionClass = 'text-muted-foreground mt-4 text-sm'
+export const tableCaptionClass = css({
+  color: 'var(--muted-foreground)',
+  marginTop: '1rem',
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: 'calc(1.25 / 0.875)',
+})
 
 type StyleConfig = Readonly<{ className?: string }>
 

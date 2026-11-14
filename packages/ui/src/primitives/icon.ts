@@ -1,6 +1,6 @@
+import { css } from '@quorum/styled-system/css'
 import type { Attribute, ChildAttribute, Html, HtmlBuilder } from 'foldkit/html'
 import type { IconNode, SVGProps } from 'lucide'
-import { css } from '@quorum/styled-system/css'
 
 /**
  * Render a lucide icon as Foldkit virtual DOM.

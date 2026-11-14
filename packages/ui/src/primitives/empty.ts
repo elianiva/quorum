@@ -1,32 +1,95 @@
+import { css, cx as cn } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
 
-import { cn } from 'cn'
+export const emptyClass = css({
+  gap: '1rem',
+  borderRadius: 'xl',
+  borderStyle: 'dashed',
+  padding: '1.5rem',
+  display: 'flex',
+  width: '100%',
+  minWidth: '0',
+  flex: '1 1 0%',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  textAlign: 'center',
+  textWrap: 'balance',
+})
 
-export const emptyClass =
-  'gap-4 rounded-xl border-dashed p-6 flex w-full min-w-0 flex-1 flex-col items-center justify-center text-center text-balance'
-
-export const emptyHeaderClass = 'gap-2 flex max-w-sm flex-col items-center'
+export const emptyHeaderClass = css({
+  gap: '0.5rem',
+  display: 'flex',
+  maxWidth: '24rem',
+  flexDirection: 'column',
+  alignItems: 'center',
+})
 
 export const emptyMediaVariantKeys = ['default', 'icon'] as const
 export type EmptyMediaVariant = (typeof emptyMediaVariantKeys)[number]
 
-export const emptyMediaClass =
-  'mb-2 flex shrink-0 items-center justify-center [&_svg]:pointer-events-none [&_svg]:shrink-0'
+export const emptyMediaClass = css({
+  marginBottom: '0.5rem',
+  display: 'flex',
+  flexShrink: '0',
+  alignItems: 'center',
+  justifyContent: 'center',
+  '& svg': {
+    pointerEvents: 'none',
+    flexShrink: '0',
+  },
+})
 
 export const emptyMediaVariants: Record<EmptyMediaVariant, string> = {
-  default: 'bg-transparent',
-  icon: 'bg-raised shadow-raised text-foreground flex size-9 shrink-0 items-center justify-center rounded-lg [&_svg:not([data-svg-icon])]:size-4',
+  default: css({ backgroundColor: 'transparent' }),
+  icon: css({
+    layerStyle: 'raised',
+    boxShadow: 'raised',
+    color: 'foreground',
+    display: 'flex',
+    width: '2.25rem',
+    height: '2.25rem',
+    flexShrink: '0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 'lg',
+    '& svg:not([data-svg-icon])': { width: '1rem', height: '1rem' },
+  }),
 }
 
-export const emptyTitleClass = 'text-sm font-medium tracking-tight font-heading'
+export const emptyTitleClass = css({
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: 'calc(1.25 / 0.875)',
+  fontWeight: '500',
+  letterSpacing: '-0.025em',
+  fontFamily: 'heading',
+})
 
-export const emptyDescriptionClass =
-  'text-sm/relaxed text-muted-foreground [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary'
+export const emptyDescriptionClass = css({
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: '1.625',
+  color: 'mutedForeground',
+  '& > a': {
+    textDecorationLine: 'underline',
+    textUnderlineOffset: '4px',
+    _hover: { color: 'primary' },
+  },
+})
 
-export const emptyContentClass =
-  'gap-2.5 text-sm flex w-full max-w-sm min-w-0 flex-col items-center text-balance'
+export const emptyContentClass = css({
+  gap: '0.625rem',
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: 'calc(1.25 / 0.875)',
+  display: 'flex',
+  width: '100%',
+  maxWidth: '24rem',
+  minWidth: '0',
+  flexDirection: 'column',
+  alignItems: 'center',
+  textWrap: 'balance',
+})
 
 type StyleConfig = Readonly<{ className?: string }>
 

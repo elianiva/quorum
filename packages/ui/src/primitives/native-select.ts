@@ -1,9 +1,9 @@
+import { css, cx as cn } from '@quorum/styled-system/css'
 import { Select as FoldkitSelect } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import { icon } from './icon'
 import { ChevronDown } from 'lucide'
-import { cn } from 'cn'
 
 /** Stateless styled native `<select>` — use when every option is always
  *  visible and plain. For a searchable/filterable dropdown submodel, use
@@ -12,22 +12,108 @@ import { cn } from 'cn'
 export const nativeSelectSizeKeys = ['default', 'sm'] as const
 export type NativeSelectSize = (typeof nativeSelectSizeKeys)[number]
 
-export const nativeSelectClass =
-  'bg-well shadow-well border-transparent placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 h-8 w-full min-w-0 appearance-none rounded-lg border py-1 pr-8 pl-2.5 text-sm transition-colors select-none focus-visible:ring-3 aria-invalid:ring-3 data-[size=sm]:h-7 data-[size=sm]:rounded-[min(var(--radius-md),10px)] data-[size=sm]:py-0.5 aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed data-disabled:pointer-events-none data-disabled:cursor-not-allowed outline-none disabled:pointer-events-none disabled:cursor-not-allowed'
+export const nativeSelectClass = css({
+  backgroundColor: 'well',
+  boxShadow: 'well',
+  borderColor: 'transparent',
+  '&::placeholder': { color: 'mutedForeground' },
+  '&::selection': { backgroundColor: 'primary', color: 'primaryForeground' },
+  _focusVisible: {
+    borderColor: 'ring',
+    boxShadow: 'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+  },
+  '&[aria-invalid="true"]': {
+    borderColor: 'destructive',
+    boxShadow:
+      'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+  },
+  _dark: {
+    '&[aria-invalid="true"]': {
+      borderColor: 'color-mix(in oklab, var(--destructive) 50%, transparent)',
+      boxShadow:
+        'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+    },
+  },
+  height: '2rem',
+  width: '100%',
+  minWidth: '0',
+  appearance: 'none',
+  borderRadius: 'lg',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  paddingBlock: '0.25rem',
+  paddingRight: '2rem',
+  paddingLeft: '0.625rem',
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: 'calc(1.25 / 0.875)',
+  transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke',
+  transitionTimingFunction: 'var(--default-transition-timing-function)',
+  transitionDuration: 'var(--default-transition-duration)',
+  userSelect: 'none',
+  '&[data-size="sm"]': {
+    height: '1.75rem',
+    borderRadius: 'min(var(--radius-md), 10px)',
+    paddingBlock: '0.125rem',
+  },
+  '&[aria-disabled="true"], &[data-disabled]': {
+    pointerEvents: 'none',
+    cursor: 'not-allowed',
+  },
+  outlineStyle: 'none',
+  '&:disabled': {
+    pointerEvents: 'none',
+    cursor: 'not-allowed',
+  },
+})
 
-export const nativeSelectWrapperClass =
-  'has-[select[aria-disabled=true]]:opacity-50 has-[select[data-disabled]]:opacity-50 group/native-select relative w-fit has-[select:disabled]:opacity-50'
+export const nativeSelectWrapperClass = css({
+  '&:has(select[aria-disabled="true"])': { opacity: 0.5 },
+  '&:has(select[data-disabled])': { opacity: 0.5 },
+  position: 'relative',
+  width: 'fit-content',
+  '&:has(select:disabled)': { opacity: 0.5 },
+})
 
-export const nativeSelectIconClass =
-  'text-muted-foreground top-1/2 right-2.5 size-4 -translate-y-1/2 pointer-events-none absolute select-none'
+export const nativeSelectIconClass = css({
+  color: 'var(--muted-foreground)',
+  top: '50%',
+  right: '0.625rem',
+  width: '1rem',
+  height: '1rem',
+  translate: '0 -50%',
+  pointerEvents: 'none',
+  position: 'absolute',
+  userSelect: 'none',
+})
 
-export const nativeSelectOptionClass = 'bg-[Canvas] text-[CanvasText]'
+export const nativeSelectOptionClass = css({
+  backgroundColor: 'Canvas',
+  color: 'CanvasText',
+})
 
-export const nativeSelectOptGroupClass = 'bg-[Canvas] text-[CanvasText]'
+export const nativeSelectOptGroupClass = css({
+  backgroundColor: 'Canvas',
+  color: 'CanvasText',
+})
 
-export const nativeSelectLabelClass = 'px-1.5 py-1 text-xs text-muted-foreground'
-export const nativeSelectDescriptionClass = 'text-sm text-muted-foreground'
-export const nativeSelectFieldWrapperClass = 'flex w-full flex-col gap-1.5'
+export const nativeSelectLabelClass = css({
+  paddingInline: '0.375rem',
+  paddingBlock: '0.25rem',
+  fontSize: 'calc(0.75rem * var(--type-scale))',
+  lineHeight: 'calc(1 / 0.75)',
+  color: 'var(--muted-foreground)',
+})
+export const nativeSelectDescriptionClass = css({
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: 'calc(1.25 / 0.875)',
+  color: 'var(--muted-foreground)',
+})
+export const nativeSelectFieldWrapperClass = css({
+  display: 'flex',
+  width: '100%',
+  flexDirection: 'column',
+  gap: '0.375rem',
+})
 
 export type NativeSelectConfig<M> = Readonly<{
   id: string
@@ -127,7 +213,15 @@ export const nativeSelect = <M>(config: NativeSelectConfig<M>, h: HtmlBuilder<M>
     h,
   )
 
-export const nativeSelectChevron = <M>(h: HtmlBuilder<M>): Html => icon(h, ChevronDown, 'size-4')
+export const nativeSelectChevron = <M>(h: HtmlBuilder<M>): Html =>
+  icon(
+    h,
+    ChevronDown,
+    css({
+      width: '1rem',
+      height: '1rem',
+    }),
+  )
 
 /** Helper to render an `<option>` with correct data-slot and Canvas colors. */
 export const nativeSelectOption = <M>(

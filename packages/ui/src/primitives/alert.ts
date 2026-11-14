@@ -1,28 +1,98 @@
+import { css, cx, cx as cn } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
-
-import { cn } from 'cn'
 
 export const alertVariantKeys = ['default', 'destructive'] as const
 export type AlertVariant = (typeof alertVariantKeys)[number]
 
 export const alertVariants: Record<AlertVariant, string> = {
-  default: 'bg-surface shadow-card text-card-foreground',
-  destructive:
-    'text-destructive bg-destructive/8 shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--destructive)_25%,transparent)] *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current',
+  default: css({
+    layerStyle: 'surface',
+    boxShadow: 'card',
+    color: 'cardForeground',
+  }),
+  destructive: css({
+    color: 'destructive',
+    backgroundColor: 'color-mix(in oklab, var(--destructive) 8%, transparent)',
+    boxShadow: 'inset 0 0 0 1px color-mix(in oklch, var(--destructive) 25%, transparent)',
+    '& > [data-slot="alert-description"]': {
+      color: 'color-mix(in oklab, var(--destructive) 90%, transparent)',
+    },
+    '& > svg': { color: 'currentColor' },
+  }),
 }
 
-export const alertClass =
-  'grid gap-0.5 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([data-svg-icon])]:size-4 group/alert relative w-full'
+export const alertClass = cx(
+  css({
+    display: 'grid',
+    gap: '0.125rem',
+    borderRadius: 'xl',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: 'transparent',
+    paddingInline: '0.75rem',
+    paddingBlock: '0.625rem',
+    textAlign: 'left',
+    fontSize: 'calc(0.875rem * var(--type-scale))',
+    lineHeight: 'calc(1.25 / 0.875)',
+    '&:has([data-slot="alert-action"])': {
+      position: 'relative',
+      paddingRight: '4.5rem',
+    },
+    '&:has(> svg)': {
+      gridTemplateColumns: 'auto 1fr',
+      columnGap: '0.5rem',
+    },
+    '& > svg': {
+      gridRow: 'span 2 / span 2',
+      translate: '0 0.125rem',
+      color: 'currentColor',
+    },
+    '& > svg:not([data-svg-icon])': { width: '1rem', height: '1rem' },
+    position: 'relative',
+    width: '100%',
+  }),
+  'group-alert',
+)
 
-export const alertTitleClass =
-  'font-medium group-has-[>svg]/alert:col-start-2 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground'
+export const alertTitleClass = css({
+  fontWeight: '500',
+  '.group-alert:has(> svg) &': {
+    gridColumnStart: '2',
+  },
+  '& a': {
+    textDecorationLine: 'underline',
+    textUnderlineOffset: '3px',
+    _hover: { color: 'var(--foreground)' },
+  },
+})
 
-export const alertDescriptionClass =
-  'text-muted-foreground text-sm text-balance md:text-pretty [&_p:not(:last-child)]:mb-4 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground'
+export const alertDescriptionClass = css({
+  color: 'var(--muted-foreground)',
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: 'calc(1.25 / 0.875)',
+  textWrap: 'balance',
+  md: {
+    textWrap: 'pretty',
+  },
+  '& p:not(:last-child)': {
+    marginBottom: '1rem',
+  },
+  '& a': {
+    textDecorationLine: 'underline',
+    textUnderlineOffset: '3px',
+    _hover: {
+      color: 'var(--foreground)',
+    },
+  },
+})
 
-export const alertActionClass = 'absolute top-2 right-2'
+export const alertActionClass = css({
+  position: 'absolute',
+  top: '0.5rem',
+  right: '0.5rem',
+})
 
 type StyleConfig = Readonly<{ className?: string; variant?: AlertVariant }>
 

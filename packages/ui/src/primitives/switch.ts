@@ -1,7 +1,6 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { Switch as FoldkitSwitch } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
-
-import { css, cx } from '@quorum/styled-system/css'
 
 /**
  * foldkit deltas (inlined at style resolution): foldkit emits aria-disabled/
@@ -19,8 +18,8 @@ export type SwitchSize = (typeof switchSizeKeys)[number]
 
 /** Upstream switch component; sizes come from the data-size attribute. */
 export const switchClass = cx(
-  'peer',
-  'group/switch',
+  'peer-control',
+  'group-switch',
   css({
     flexShrink: '0',
     borderRadius: '9999px',
@@ -65,7 +64,7 @@ export const switchClass = cx(
       insetBlock: '-0.5rem',
     },
     '&[data-disabled]': { cursor: 'not-allowed', opacity: 0.5 },
-    '.group\\/field-label:has(:focus-visible) &': {
+    '.group-field-label:has(:focus-visible) &': {
       boxShadow: 'none',
       borderColor: 'transparent',
     },
@@ -82,13 +81,13 @@ export const switchThumbClass = css({
   transitionProperty: 'transform',
   transitionDuration: '150ms',
   transitionTimingFunction: 'var(--ease-out)',
-  '.group\\/switch[data-size="default"] &': {
+  '.group-switch[data-size="default"] &': {
     width: '1rem',
     height: '1rem',
     '&[data-checked]': { transform: 'translateX(calc(100% - 1px))' },
     '&[data-unchecked]': { transform: 'translateX(1px)' },
   },
-  '.group\\/switch[data-size="sm"] &': {
+  '.group-switch[data-size="sm"] &': {
     width: '0.75rem',
     height: '0.75rem',
     '&[data-checked]': { transform: 'translateX(calc(100% - 2px))' },
@@ -97,23 +96,23 @@ export const switchThumbClass = css({
 })
 
 export const switchLabelClass = css({
-  fontSize: '0.875rem',
+  fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: '1',
   fontWeight: '500',
-  '.group\\/field[data-disabled] &': {
+  '.group-field[data-disabled] &': {
     cursor: 'not-allowed',
     opacity: 0.7,
   },
 })
 
 export const switchDescriptionClass = css({
-  fontSize: '0.875rem',
+  fontSize: 'calc(0.875rem * var(--type-scale))',
   lineHeight: 'calc(1.25 / 0.875)',
   color: 'mutedForeground',
 })
 
 export const switchWrapperClass = cx(
-  'group/field',
+  'group-field',
   css({ display: 'flex', alignItems: 'center', gap: '0.75rem' }),
 )
 

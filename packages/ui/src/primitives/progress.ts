@@ -1,8 +1,7 @@
+import { css, cx as cn } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
-
-import { cn } from 'cn'
 
 /**
  * foldkit gap: upstream drives the indicator transform and the value text
@@ -13,17 +12,48 @@ import { cn } from 'cn'
  *
  */
 
-export const progressClass = 'flex flex-wrap gap-3'
+export const progressClass = css({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '0.75rem',
+})
 
-export const progressTrackClass =
-  'bg-well shadow-well h-1.5 rounded-full relative flex w-full items-center overflow-x-hidden'
+export const progressTrackClass = css({
+  backgroundColor: 'well',
+  boxShadow: 'well',
+  height: '0.375rem',
+  borderRadius: '9999px',
+  position: 'relative',
+  display: 'flex',
+  width: '100%',
+  alignItems: 'center',
+  overflowX: 'hidden',
+})
 
-export const progressIndicatorClass =
-  'bg-primary-fill rounded-full shadow-[inset_0_1px_0_oklch(1_0_0/0.3)] h-full w-full transition-all'
+export const progressIndicatorClass = css({
+  layerStyle: 'primaryFill',
+  borderRadius: '9999px',
+  boxShadow: 'inset 0 1px 0 oklch(1 0 0/0.3)',
+  height: '100%',
+  width: '100%',
+  transitionProperty: 'all',
+  transitionDuration: '150ms',
+  transitionTimingFunction: 'var(--ease-out)',
+})
 
-export const progressLabelClass = 'text-sm font-medium'
+export const progressLabelClass = css({
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: 'calc(1.25 / 0.875)',
+  fontWeight: '500',
+})
 
-export const progressValueClass = 'text-muted-foreground ml-auto text-sm tabular-nums'
+export const progressValueClass = css({
+  color: 'mutedForeground',
+  marginLeft: 'auto',
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: 'calc(1.25 / 0.875)',
+  fontVariantNumeric: 'tabular-nums',
+})
 
 type StyleConfig = Readonly<{ className?: string }>
 

@@ -1,3 +1,4 @@
+import { css, cx as cn } from '@quorum/styled-system/css'
 import {
   curveBasis,
   curveCardinal,
@@ -11,7 +12,23 @@ import {
 import type { CurveFactory } from 'd3-shape'
 import { Option } from 'effect'
 import type { Attribute, Html, HtmlBuilder } from 'foldkit/html'
-import { cn } from 'cn'
+
+const chartTooltipOverlayClass = css({
+  borderColor: 'color-mix(in oklab, var(--border) 50%, transparent)',
+  backgroundColor: 'background',
+  gap: '0.375rem',
+  borderRadius: 'lg',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  paddingInline: '0.625rem',
+  paddingBlock: '0.375rem',
+  fontSize: 'calc(0.75rem * var(--type-scale))',
+  lineHeight: 'calc(1 / 0.75)',
+  boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+  pointerEvents: 'none',
+  position: 'absolute',
+  zIndex: '10',
+})
 
 /** Recharts names and prop names, with Foldkit descriptors in place of React children. */
 export type ChartValue = string | number | ReadonlyArray<number> | null | undefined
@@ -1228,7 +1245,17 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
   }
 
   return h.div(
-    [h.Class(cn('relative', props.className)), h.DataAttribute('slot', 'line-chart')],
+    [
+      h.Class(
+        cn(
+          css({
+            position: 'relative',
+          }),
+          props.className,
+        ),
+      ),
+      h.DataAttribute('slot', 'line-chart'),
+    ],
     [
       ...(props.children.some(
         (child) => child.kind === 'line' && child.props.animationKind === 'opacity',
@@ -1299,9 +1326,7 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
         ? [
             h.div(
               [
-                h.Class(
-                  'border-border/50 bg-background gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl pointer-events-none absolute z-10',
-                ),
+                h.Class(chartTooltipOverlayClass),
                 h.Style({
                   left: `${clamp((categoryPosition(activeIndex ?? 0) / width) * 100, 5, 70)}%`,
                   top: '8px',
@@ -1310,7 +1335,14 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
               ],
               [
                 h.div(
-                  [h.Class('mb-1 font-medium')],
+                  [
+                    h.Class(
+                      css({
+                        marginBottom: '0.25rem',
+                        fontWeight: '500',
+                      }),
+                    ),
+                  ],
                   [
                     tooltip.props.labelFormatter?.(labelFor(categories[activeIndex ?? 0])) ??
                       activeLabel,
@@ -1318,10 +1350,27 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
                 ),
                 ...activeRows.map((row) =>
                   h.div(
-                    [h.Class('flex items-center gap-2')],
+                    [
+                      h.Class(
+                        css({
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                        }),
+                      ),
+                    ],
                     [
                       h.span(
-                        [h.Style({ backgroundColor: row.color }), h.Class('size-2 rounded-full')],
+                        [
+                          h.Style({ backgroundColor: row.color }),
+                          h.Class(
+                            css({
+                              width: '0.5rem',
+                              height: '0.5rem',
+                              borderRadius: '9999px',
+                            }),
+                          ),
+                        ],
                         [],
                       ),
                       `${row.name}: ${tooltip.props.formatter?.(row.value, row.name) ?? row.value}`,
@@ -1338,12 +1387,24 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
               [
                 h.Class(
                   cn(
-                    'flex gap-2.5 text-sm text-muted-foreground',
+                    css({
+                      display: 'flex',
+                      gap: '0.625rem',
+                      fontSize: 'calc(0.875rem * var(--type-scale))',
+                      lineHeight: 'calc(1.25 / 0.875)',
+                      color: 'var(--muted-foreground)',
+                    }),
                     legend.props.align === 'right'
-                      ? 'justify-end'
+                      ? css({
+                          justifyContent: 'flex-end',
+                        })
                       : legend.props.align === 'left'
-                        ? 'justify-start'
-                        : 'justify-center',
+                        ? css({
+                            justifyContent: 'flex-start',
+                          })
+                        : css({
+                            justifyContent: 'center',
+                          }),
                   ),
                 ),
                 h.Style({
@@ -1375,7 +1436,13 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
                     : [
                         h.span(
                           [
-                            h.Class('inline-flex items-center gap-1'),
+                            h.Class(
+                              css({
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.25rem',
+                              }),
+                            ),
                             ...(props.onLegendHover === undefined ||
                             typeof child.props.dataKey !== 'string'
                               ? []
@@ -1387,7 +1454,13 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
                           [
                             h.span(
                               [
-                                h.Class('inline-block h-0.5 w-4'),
+                                h.Class(
+                                  css({
+                                    display: 'inline-block',
+                                    height: '0.125rem',
+                                    width: '1rem',
+                                  }),
+                                ),
                                 h.Style({ backgroundColor: lineColor(child) }),
                               ],
                               [],

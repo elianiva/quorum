@@ -1,3 +1,4 @@
+import { css, cx as cn } from '@quorum/styled-system/css'
 import { Function, Schema as S, Match } from 'effect'
 import type { Html } from 'foldkit/html'
 import * as Update from 'foldkit/update'
@@ -5,8 +6,6 @@ import { defineMessageUnion } from 'foldkit/message'
 import type { Reflect } from 'foldkit/submodel'
 import { defineView } from 'foldkit/submodel'
 import { modifyFields } from 'foldkit/struct'
-
-import { cn } from 'cn'
 
 // Toggle is a two-state button (pressed / not) marked with `aria-pressed` and
 // `data-state`. It owns its pressed state as a Submodel: embed it with
@@ -17,23 +16,87 @@ export const toggleVariantKeys = ['default', 'outline'] as const
 export type ToggleVariant = (typeof toggleVariantKeys)[number]
 
 export const toggleVariants: Record<ToggleVariant, string> = {
-  default: 'bg-transparent',
-  outline: 'bg-well shadow-well',
+  default: css({ backgroundColor: 'transparent' }),
+  outline: css({
+    backgroundColor: 'well',
+    boxShadow: 'well',
+  }),
 }
 
 export const toggleSizeKeys = ['default', 'sm', 'lg'] as const
 export type ToggleSize = (typeof toggleSizeKeys)[number]
 
 export const toggleSizes: Record<ToggleSize, string> = {
-  default: 'h-8 min-w-8 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
-  sm: 'h-7 min-w-7 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([data-svg-icon])]:size-3.5',
-  lg: 'h-9 min-w-9 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
+  default: css({
+    height: '2rem',
+    minWidth: '2rem',
+    paddingInline: '0.625rem',
+    '&:has([data-icon="inline-end"])': { paddingRight: '0.5rem' },
+    '&:has([data-icon="inline-start"])': { paddingLeft: '0.5rem' },
+  }),
+  sm: css({
+    height: '1.75rem',
+    minWidth: '1.75rem',
+    borderRadius: 'min(var(--radius-md), 12px)',
+    paddingInline: '0.625rem',
+    fontSize: 'calc(0.8rem * var(--type-scale))',
+    '&:has([data-icon="inline-end"])': { paddingRight: '0.375rem' },
+    '&:has([data-icon="inline-start"])': { paddingLeft: '0.375rem' },
+    '& svg:not([data-svg-icon])': { width: '0.875rem', height: '0.875rem' },
+  }),
+  lg: css({
+    height: '2.25rem',
+    minWidth: '2.25rem',
+    paddingInline: '0.625rem',
+    '&:has([data-icon="inline-end"])': { paddingRight: '0.5rem' },
+    '&:has([data-icon="inline-start"])': { paddingLeft: '0.5rem' },
+  }),
 }
 
 /** Upstream cva base string. The disabled: variants are inert under foldkit
  *  (this view emits native disabled; twins kept for parity). */
-export const toggleBase =
-  'hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive data-[state=on]:bg-raised data-[state=on]:shadow-raised data-[state=on]:text-foreground text-muted-foreground gap-1 rounded-lg text-sm font-medium transition-all [&_svg:not([data-svg-icon])]:size-4 group/toggle inline-flex items-center justify-center whitespace-nowrap outline-none hover:bg-foreground/5 data-[state=on]:hover:bg-raised focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0'
+export const toggleBase = css({
+  _hover: {
+    color: 'foreground',
+    backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+  },
+  _focusVisible: {
+    borderColor: 'ring',
+    boxShadow: '0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+  },
+  '&[aria-invalid="true"]': {
+    borderColor: 'destructive',
+    boxShadow: '0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+  },
+  _dark: {
+    '&[aria-invalid="true"]': {
+      boxShadow: '0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+    },
+  },
+  '&[data-state=on]': {
+    layerStyle: 'raised',
+    boxShadow: 'raised',
+    color: 'foreground',
+    _hover: { layerStyle: 'raised' },
+  },
+  color: 'mutedForeground',
+  gap: '0.25rem',
+  borderRadius: 'lg',
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: 'calc(1.25 / 0.875)',
+  fontWeight: '500',
+  transitionProperty: 'all',
+  transitionDuration: 'var(--default-transition-duration)',
+  transitionTimingFunction: 'var(--default-transition-timing-function)',
+  '& svg:not([data-svg-icon])': { width: '1rem', height: '1rem' },
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  whiteSpace: 'nowrap',
+  outlineStyle: 'none',
+  _disabled: { pointerEvents: 'none', opacity: 0.5 },
+  '& svg': { pointerEvents: 'none', flexShrink: '0' },
+})
 
 // MODEL
 

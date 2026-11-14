@@ -1,13 +1,45 @@
+import { css, cx as cn } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
 
-import { cn } from 'cn'
+export const kbdClass = css({
+  layerStyle: 'raised',
+  boxShadow: 'raised',
+  color: 'color-mix(in oklab, var(--foreground) 75%, transparent)',
+  '[data-slot="tooltip-content"] &': {
+    backgroundColor: 'color-mix(in oklab, var(--background) 20%, transparent)',
+    backgroundImage: 'none',
+    boxShadow: 'none',
+    color: 'background',
+  },
+  _dark: {
+    '[data-slot="tooltip-content"] &': {
+      backgroundColor: 'color-mix(in oklab, var(--background) 10%, transparent)',
+    },
+  },
+  height: '1.25rem',
+  width: 'fit-content',
+  minWidth: '1.25rem',
+  gap: '0.25rem',
+  borderRadius: '5px',
+  paddingInline: '0.375rem',
+  fontFamily: 'mono',
+  fontSize: '10.5px',
+  fontWeight: '500',
+  '& svg:not([data-svg-icon])': { width: '0.75rem', height: '0.75rem' },
+  pointerEvents: 'none',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  userSelect: 'none',
+})
 
-export const kbdClass =
-  'bg-raised shadow-raised text-foreground/75 in-data-[slot=tooltip-content]:bg-background/20 in-data-[slot=tooltip-content]:bg-none in-data-[slot=tooltip-content]:shadow-none in-data-[slot=tooltip-content]:text-background dark:in-data-[slot=tooltip-content]:bg-background/10 h-5 w-fit min-w-5 gap-1 rounded-[5px] px-1.5 font-mono text-[10.5px] font-medium [&_svg:not([data-svg-icon])]:size-3 pointer-events-none inline-flex items-center justify-center select-none'
-
-export const kbdGroupClass = 'gap-1 inline-flex items-center'
+export const kbdGroupClass = css({
+  gap: '0.25rem',
+  display: 'inline-flex',
+  alignItems: 'center',
+})
 
 type StyleConfig = Readonly<{ className?: string }>
 

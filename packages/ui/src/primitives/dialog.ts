@@ -1,9 +1,8 @@
+import { css, cx, cx as cn } from '@quorum/styled-system/css'
 import { Dialog as FoldkitDialog } from '@foldkit/ui'
 import type { Attribute, ChildAttribute, Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
-
-import { cn } from 'cn'
 
 // Re-export the @foldkit/ui Dialog submodel surface so a foldcn Dialog is a
 // drop-in for wiring `h.submodel`.
@@ -34,33 +33,153 @@ export type RenderInfo = FoldkitDialog.RenderInfo
 /** foldkit delta: the host <dialog> element's own chrome (upstream Root renders
  *  nothing). Backdrop/panel are fixed-position; this only neutralizes the
  *  native dialog box. */
-export const dialogClass = 'bg-transparent p-0 open:flex items-center justify-center'
+export const dialogClass = css({
+  backgroundColor: 'transparent',
+  padding: '0',
+  _open: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+})
 
 // The @foldkit/ui Dialog defers Animation submodel attributes onto the
 // backdrop/panel elements: `data-enter` while entering, `data-leave` while
 // leaving (never `data-state`). The sync script rewrites upstream's
 // `data-open:`/`data-closed:` animation utilities to these windows during token
 // sync; persistent `data-open:` styling passes through untouched.
-export const dialogBackdropClass =
-  'data-enter:animate-in data-leave:animate-out data-leave:fade-out-0 data-enter:fade-in-0 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs fixed inset-0 isolate z-50'
+export const dialogBackdropClass = cx(
+  css({
+    backgroundColor: 'color-mix(in oklab, #000 10%, transparent)',
+    '@supports (backdrop-filter: blur(0))': {
+      backdropFilter: 'blur(4px)',
+    },
+    position: 'fixed',
+    inset: '0',
+    isolation: 'isolate',
+    zIndex: '50',
+  }),
+  'enter-backdrop',
+)
 
-export const dialogPanelClass =
-  'bg-surface text-popover-foreground shadow-float data-enter:animate-in data-leave:animate-out data-leave:fade-out-0 data-enter:fade-in-0 data-leave:zoom-out-95 data-enter:zoom-in-95 grid max-w-[calc(100%-2rem)] gap-4 rounded-2xl p-4 text-sm duration-100 sm:max-w-sm fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 outline-none'
+export const dialogPanelClass = cx(
+  css({
+    layerStyle: 'surface',
+    color: 'popoverForeground',
+    boxShadow: 'float',
+    display: 'grid',
+    maxWidth: 'calc(100% - 2rem)',
+    gap: '1rem',
+    borderRadius: '2xl',
+    padding: '1rem',
+    fontSize: 'calc(0.875rem * var(--type-scale))',
+    lineHeight: 'calc(1.25 / 0.875)',
+    sm: { maxWidth: '24rem' },
+    position: 'fixed',
+    top: '50%',
+    left: '50%',
+    zIndex: '50',
+    width: '100%',
+    translate: '-50% -50%',
+    outlineStyle: 'none',
+  }),
+  'enter-modal',
+)
 
 /** Upstream renders its close control as `<Button variant="ghost" size="icon-sm"
  *  className="cn-dialog-close">`; compose the same tokens here. */
-export const dialogCloseButtonClass =
-  'focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 border border-transparent bg-clip-padding text-sm font-medium focus-visible:ring-3 aria-invalid:ring-3 active:not-aria-[haspopup]:translate-y-px [&_svg:not([data-svg-icon])]:size-4 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-all outline-none select-none [&_svg]:pointer-events-none [&_svg]:shrink-0 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50 hover:bg-muted hover:text-foreground dark:hover:bg-muted/50 aria-expanded:bg-muted aria-expanded:text-foreground size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg absolute top-2 right-2'
+export const dialogCloseButtonClass = css({
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  borderColor: 'transparent',
+  backgroundClip: 'padding-box',
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: '1.4285714285714286',
+  fontWeight: '500',
+  display: 'inline-flex',
+  flexShrink: '0',
+  alignItems: 'center',
+  justifyContent: 'center',
+  whiteSpace: 'nowrap',
+  transitionProperty: 'all',
+  transitionDuration: 'var(--default-transition-duration)',
+  transitionTimingFunction: 'var(--default-transition-timing-function)',
+  outlineStyle: 'none',
+  userSelect: 'none',
+  '& svg': { pointerEvents: 'none', flexShrink: '0' },
+  '& svg:not([data-svg-icon])': { width: '1rem', height: '1rem' },
+  _focusVisible: {
+    borderColor: 'ring',
+    boxShadow: '0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+  },
+  '[data-text="150"] &': { lineHeight: '1.45' },
+  '&[aria-disabled="true"]': { pointerEvents: 'none', opacity: 0.5 },
+  '&[data-disabled]': { pointerEvents: 'none', opacity: 0.5 },
+  '&[aria-invalid="true"]': {
+    borderColor: 'destructive',
+    boxShadow: '0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+  },
+  _dark: {
+    '&[aria-invalid="true"]': {
+      borderColor: 'color-mix(in oklab, var(--destructive) 50%, transparent)',
+      boxShadow: '0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+    },
+  },
+  _disabled: { pointerEvents: 'none', opacity: 0.5 },
+  _hover: { backgroundColor: 'muted', color: 'foreground' },
+  _expanded: { backgroundColor: 'muted', color: 'foreground' },
+  width: '1.75rem',
+  height: '1.75rem',
+  borderRadius: 'min(var(--radius-md), 12px)',
+  '&:active:not([aria-haspopup])': { translate: '0 1px' },
+  '[data-slot="button-group"] &': { borderRadius: 'lg' },
+  position: 'absolute',
+  top: '0.5rem',
+  right: '0.5rem',
+})
 
-export const dialogTitleClass = 'text-base leading-none font-medium font-heading'
+export const dialogTitleClass = css({
+  fontSize: 'calc(1rem * var(--type-scale))',
+  lineHeight: '1',
+  fontWeight: '500',
+  fontFamily: 'heading',
+})
 
-export const dialogDescriptionClass =
-  'text-muted-foreground *:[a]:hover:text-foreground text-sm *:[a]:underline *:[a]:underline-offset-3'
+export const dialogDescriptionClass = css({
+  color: 'mutedForeground',
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: 'calc(1.25 / 0.875)',
+  '& > a': {
+    textDecorationLine: 'underline',
+    textUnderlineOffset: '3px',
+    _hover: { color: 'var(--foreground)' },
+  },
+})
 
-export const dialogHeaderClass = 'gap-2 flex flex-col'
+export const dialogHeaderClass = css({
+  gap: '0.5rem',
+  display: 'flex',
+  flexDirection: 'column',
+})
 
-export const dialogFooterClass =
-  'bg-nested -mx-4 -mb-4 rounded-b-2xl border-t border-hairline p-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end'
+export const dialogFooterClass = css({
+  backgroundColor: 'nested',
+  marginInline: '-1rem',
+  marginBottom: '-1rem',
+  borderBottomLeftRadius: '2xl',
+  borderBottomRightRadius: '2xl',
+  borderTopWidth: '1px',
+  borderTopStyle: 'solid',
+  borderColor: 'hairline',
+  padding: '1rem',
+  display: 'flex',
+  flexDirection: 'column-reverse',
+  gap: '0.5rem',
+  sm: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+})
 
 // These abstract away element types, base classes, and attribute spreading.
 // Use inside `styledViewInputs` content callbacks:

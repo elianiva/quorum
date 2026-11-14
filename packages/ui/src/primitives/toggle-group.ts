@@ -1,3 +1,4 @@
+import { css, cx, cx as cn } from '@quorum/styled-system/css'
 import { Function, Schema as S, Match } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
 import type { Reflect } from 'foldkit/submodel'
@@ -5,7 +6,6 @@ import { defineView } from 'foldkit/submodel'
 import { modifyFields } from 'foldkit/struct'
 import * as Update from 'foldkit/update'
 
-import { cn } from 'cn'
 import { icon } from './icon'
 import {
   toggleBase,
@@ -27,12 +27,56 @@ type IconNode = Parameters<typeof icon>[1]
 // upstream). Item defaults follow upstream: variant "default", size
 // "default".
 
-export const toggleGroupClass =
-  'rounded-lg data-[size=sm]:rounded-[min(var(--radius-md),10px)] group/toggle-group flex w-fit flex-row items-center gap-[--spacing(var(--gap))] data-vertical:flex-col data-vertical:items-stretch'
+export const toggleGroupClass = cx(
+  css({
+    borderRadius: 'lg',
+    '&[data-size="sm"]': { borderRadius: 'min(var(--radius-md), 10px)' },
+    display: 'flex',
+    width: 'fit-content',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 'calc(var(--spacing) * var(--gap))',
+    '&[data-vertical]': { flexDirection: 'column', alignItems: 'stretch' },
+  }),
+  'group-toggle-group',
+)
 
 /** Upstream item string (joined-strip rules apply only at spacing 0). */
-export const toggleGroupItemClass =
-  'group-data-[spacing=0]/toggle-group:rounded-none group-data-[spacing=0]/toggle-group:px-2 group-data-[spacing=0]/toggle-group:has-data-[icon=inline-end]:pr-1.5 group-data-[spacing=0]/toggle-group:has-data-[icon=inline-start]:pl-1.5 group-data-horizontal/toggle-group:data-[spacing=0]:first:rounded-l-lg group-data-vertical/toggle-group:data-[spacing=0]:first:rounded-t-lg group-data-horizontal/toggle-group:data-[spacing=0]:last:rounded-r-lg group-data-vertical/toggle-group:data-[spacing=0]:last:rounded-b-lg shrink-0 focus:z-10 focus-visible:z-10 group-data-horizontal/toggle-group:data-[spacing=0]:data-[variant=outline]:border-l-0 group-data-vertical/toggle-group:data-[spacing=0]:data-[variant=outline]:border-t-0 group-data-horizontal/toggle-group:data-[spacing=0]:data-[variant=outline]:first:border-l group-data-vertical/toggle-group:data-[spacing=0]:data-[variant=outline]:first:border-t'
+export const toggleGroupItemClass = css({
+  '&[data-spacing="0"]': {
+    borderRadius: '0',
+    paddingInline: '0.5rem',
+    '&:has([data-icon="inline-end"])': { paddingRight: '0.375rem' },
+    '&:has([data-icon="inline-start"])': { paddingLeft: '0.375rem' },
+  },
+  '.group-toggle-group[data-horizontal] &': {
+    '&[data-spacing="0"]:first-child': {
+      borderTopLeftRadius: 'lg',
+      borderBottomLeftRadius: 'lg',
+    },
+    '&[data-spacing="0"]:last-child': {
+      borderTopRightRadius: 'lg',
+      borderBottomRightRadius: 'lg',
+    },
+    '&[data-spacing="0"][data-variant="outline"]': { borderLeftWidth: '0' },
+    '&[data-spacing="0"][data-variant="outline"]:first-child': { borderLeftWidth: '1px' },
+  },
+  '.group-toggle-group[data-vertical] &': {
+    '&[data-spacing="0"]:first-child': {
+      borderTopLeftRadius: 'lg',
+      borderTopRightRadius: 'lg',
+    },
+    '&[data-spacing="0"]:last-child': {
+      borderBottomLeftRadius: 'lg',
+      borderBottomRightRadius: 'lg',
+    },
+    '&[data-spacing="0"][data-variant="outline"]': { borderTopWidth: '0' },
+    '&[data-spacing="0"][data-variant="outline"]:first-child': { borderTopWidth: '1px' },
+  },
+  flexShrink: '0',
+  _focus: { zIndex: '10' },
+  _focusVisible: { zIndex: '10' },
+})
 
 export const Type = S.Literals(['single', 'multiple'])
 export type ToggleGroupType = typeof Type.Type

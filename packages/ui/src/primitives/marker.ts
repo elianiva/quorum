@@ -1,26 +1,82 @@
+import { css, cx, cx as cn } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
-
-import { cn } from 'cn'
 
 export const markerVariantKeys = ['default', 'separator', 'border'] as const
 export type MarkerVariant = (typeof markerVariantKeys)[number]
 
 export const markerVariants: Record<MarkerVariant, string> = {
   default: '',
-  separator:
-    'before:h-px before:min-w-0 before:flex-1 before:bg-border after:h-px after:min-w-0 after:flex-1 after:bg-border before:mr-1 after:ml-1',
-  border: 'border-b border-border pb-2',
+  separator: css({
+    '&::before': {
+      height: '1px',
+      minWidth: '0',
+      flex: '1 1 0%',
+      backgroundColor: 'var(--border)',
+      marginRight: '0.25rem',
+    },
+    '&::after': {
+      height: '1px',
+      minWidth: '0',
+      flex: '1 1 0%',
+      backgroundColor: 'var(--border)',
+      marginLeft: '0.25rem',
+    },
+  }),
+  border: css({
+    borderBottomWidth: '1px',
+    borderBottomStyle: 'solid',
+    borderColor: 'border',
+    paddingBottom: '0.5rem',
+  }),
 }
 
-export const markerClass =
-  'gap-2 text-sm text-muted-foreground [a]:hover:text-foreground [a]:underline-offset-3 [a]:underline [&_svg:not([data-svg-icon])]:size-4 min-h-4 text-left group/marker relative flex w-full items-center'
+export const markerClass = cx(
+  css({
+    gap: '0.5rem',
+    fontSize: 'calc(0.875rem * var(--type-scale))',
+    lineHeight: 'calc(1.25 / 0.875)',
+    color: 'mutedForeground',
+    '& a': {
+      _hover: { color: 'var(--foreground)' },
+      textUnderlineOffset: '3px',
+      textDecorationLine: 'underline',
+    },
+    '& svg:not([data-svg-icon])': { width: '1rem', height: '1rem' },
+    minHeight: '1rem',
+    textAlign: 'left',
+    position: 'relative',
+    display: 'flex',
+    width: '100%',
+    alignItems: 'center',
+  }),
+  'group-marker',
+)
 
-export const markerIconClass = 'size-4 [&_svg:not([data-svg-icon])]:size-4 shrink-0'
+export const markerIconClass = css({
+  width: '1rem',
+  height: '1rem',
+  '& svg:not([data-svg-icon])': {
+    width: '1rem',
+    height: '1rem',
+  },
+  flexShrink: '0',
+})
 
-export const markerContentClass =
-  'group-data-[variant=separator]/marker:flex-none group-data-[variant=separator]/marker:text-center *:[a]:hover:text-foreground *:[a]:underline *:[a]:underline-offset-3 min-w-0 wrap-break-word'
+export const markerContentClass = css({
+  '.group-marker[data-variant=separator] &': {
+    flex: 'none',
+    textAlign: 'center',
+  },
+  '& > a': {
+    _hover: { color: 'var(--foreground)' },
+    textDecorationLine: 'underline',
+    textUnderlineOffset: '3px',
+  },
+  minWidth: '0',
+  overflowWrap: 'break-word',
+})
 
 type StyleConfig = Readonly<{ className?: string; variant?: MarkerVariant }>
 

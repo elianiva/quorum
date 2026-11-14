@@ -1,6 +1,6 @@
+import { css, cx as cn } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
-import { cn } from 'cn'
 import { button, type ButtonConfig, type ButtonSize, type ButtonVariant } from './button'
 import { separatorClass } from './separator'
 
@@ -10,23 +10,96 @@ type Child = Html | string
 // Children keep their own outlines; the group's corner-cutting rules join
 // them (upstream model).
 
-export const buttonGroupClass =
-  "has-[>[data-slot=button-group]]:gap-2 has-[select[aria-hidden=true]:last-child]:[&>[data-slot=select-trigger]:last-of-type]:rounded-r-lg flex w-fit items-stretch *:focus-visible:relative *:focus-visible:z-10 [&>[data-slot=select-trigger]:not([class*='w-'])]:w-fit [&>input]:flex-1"
+export const buttonGroupClass = css({
+  '&:has(> [data-slot="button-group"])': {
+    gap: '0.5rem',
+  },
+  '&:has(select[aria-hidden="true"]:last-child)': {
+    '& > [data-slot="select-trigger"]:last-of-type': {
+      borderTopRightRadius: 'lg',
+      borderBottomRightRadius: 'lg',
+    },
+  },
+  display: 'flex',
+  width: 'fit-content',
+  alignItems: 'stretch',
+  '& > *': {
+    _focusVisible: {
+      position: 'relative',
+      zIndex: '10',
+    },
+  },
+  '& > [data-slot="select-trigger"]:not([data-width])': {
+    width: 'fit-content',
+  },
+  '& > input': {
+    flex: '1 1 0%',
+  },
+})
 
 export const buttonGroupOrientationClasses = {
-  horizontal:
-    '[&>[data-slot]:not(:has(~[data-slot]))]:rounded-r-lg! *:data-slot:rounded-r-none [&>[data-slot]~[data-slot]]:rounded-l-none [&>[data-slot]~[data-slot]]:border-l-0',
-  vertical:
-    '[&>[data-slot]:not(:has(~[data-slot]))]:rounded-b-lg! flex-col *:data-slot:rounded-b-none [&>[data-slot]~[data-slot]]:rounded-t-none [&>[data-slot]~[data-slot]]:border-t-0',
+  horizontal: css({
+    '& > [data-slot]:not(:has(~ [data-slot]))': {
+      borderTopRightRadius: 'lg!',
+      borderBottomRightRadius: 'lg!',
+    },
+    '& > [data-slot]': {
+      borderTopRightRadius: '0',
+      borderBottomRightRadius: '0',
+    },
+    '& > [data-slot] ~ [data-slot]': {
+      borderTopLeftRadius: '0',
+      borderBottomLeftRadius: '0',
+      borderLeftWidth: '0',
+    },
+  }),
+  vertical: css({
+    flexDirection: 'column',
+    '& > [data-slot]:not(:has(~ [data-slot]))': {
+      borderBottomLeftRadius: 'lg!',
+      borderBottomRightRadius: 'lg!',
+    },
+    '& > [data-slot]': {
+      borderBottomLeftRadius: '0',
+      borderBottomRightRadius: '0',
+    },
+    '& > [data-slot] ~ [data-slot]': {
+      borderTopLeftRadius: '0',
+      borderTopRightRadius: '0',
+      borderTopWidth: '0',
+    },
+  }),
 } as const
 
 export type ButtonGroupOrientation = keyof typeof buttonGroupOrientationClasses
 
-export const buttonGroupTextClass =
-  'bg-well shadow-well gap-2 rounded-lg px-2.5 text-sm font-medium [&_svg:not([data-svg-icon])]:size-4 flex items-center [&_svg]:pointer-events-none'
+export const buttonGroupTextClass = css({
+  backgroundColor: 'var(--well)',
+  boxShadow: 'well',
+  gap: '0.5rem',
+  borderRadius: 'lg',
+  paddingInline: '0.625rem',
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: 'calc(1.25 / 0.875)',
+  fontWeight: '500',
+  '& svg:not([data-svg-icon])': {
+    width: '1rem',
+    height: '1rem',
+  },
+  display: 'flex',
+  alignItems: 'center',
+  '& svg': {
+    pointerEvents: 'none',
+  },
+})
 
-export const buttonGroupSeparatorClass =
-  'bg-hairline relative self-stretch data-horizontal:mx-px data-horizontal:w-auto data-vertical:my-px data-vertical:h-auto'
+export const buttonGroupSeparatorClass = css({
+  backgroundColor: 'hairline',
+  position: 'relative',
+  alignSelf: 'stretch',
+  '&[data-horizontal]': { marginInline: '1px', width: 'auto' },
+  '&[data-vertical]': { marginBlock: '1px', height: 'auto' },
+})
 
 type StyleConfig = Readonly<{ className?: string; orientation?: ButtonGroupOrientation }>
 

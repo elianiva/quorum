@@ -1,10 +1,17 @@
+import { css, keyframes, cx as cn } from '@quorum/styled-system/css'
 import type { Attribute, ChildAttribute, Html, HtmlBuilder } from 'foldkit/html'
 import type { IconNode } from 'lucide'
 import { Loader2 } from 'lucide'
 
-import { cn } from 'cn'
+const spin = keyframes({
+  to: { transform: 'rotate(360deg)' },
+})
 
-export const spinnerClass = 'size-4 animate-spin'
+export const spinnerClass = css({
+  width: '1rem',
+  height: '1rem',
+  animation: `${spin} 1s linear infinite`,
+})
 
 type StyleConfig = Readonly<{ className?: string }>
 

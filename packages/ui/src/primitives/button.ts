@@ -1,7 +1,7 @@
+import { css, cva, cx } from '@quorum/styled-system/css'
 import { Button as FoldkitButton } from '@foldkit/ui'
 import type { Attribute, Html, HtmlBuilder } from 'foldkit/html'
 import { X } from 'lucide'
-import { css, cva, cx } from '@quorum/styled-system/css'
 import type { SystemStyleObject } from '@quorum/styled-system/types'
 
 import { icon } from './icon.ts'
@@ -29,12 +29,9 @@ const buttonBaseStyle: SystemStyleObject = {
   borderStyle: 'solid',
   borderColor: 'transparent',
   backgroundClip: 'padding-box',
-  // The current `.text-sm` grows with the 150% text setting and keeps a fixed
-  // line box at 100%. Reproduce both states here instead of relying on the
-  // Tailwind class override.
+  // Grow with the 150% text setting while keeping a fixed line box at 100%.
   fontSize: 'calc(0.875rem * var(--type-scale))',
-  // Tailwind's `text-sm` line-height is the unitless factor 1.25 / 0.875, so a
-  // nested 10.5px Kbd recomputes 15px. A fixed 1.25rem would leak 20px into it.
+  // A unitless factor, so a nested 10.5px Kbd recomputes its own line box.
   lineHeight: '1.4285714285714286',
   fontWeight: '500',
   display: 'inline-flex',
@@ -192,7 +189,7 @@ const buttonSizeStyles: Record<ButtonSize, SystemStyleObject> = {
     gap: '0.25rem',
     borderRadius: 'min(var(--radius-md), 12px)',
     paddingInline: '0.625rem',
-    fontSize: '0.8rem',
+    fontSize: 'calc(0.8rem * var(--type-scale))',
     '[data-slot="button-group"] &': { borderRadius: 'lg' },
     '&:has([data-icon="inline-end"])': { paddingRight: '0.375rem' },
     '&:has([data-icon="inline-start"])': { paddingLeft: '0.375rem' },
@@ -336,5 +333,14 @@ export const closeButton = <M>(
         ),
       ),
     ],
-    [icon(h, X, 'size-3.5')],
+    [
+      icon(
+        h,
+        X,
+        css({
+          width: '0.875rem',
+          height: '0.875rem',
+        }),
+      ),
+    ],
   )

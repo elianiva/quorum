@@ -1,10 +1,18 @@
+import { css, keyframes, cx as cn } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
 
-import { cn } from 'cn'
+const pulse = keyframes({
+  '0%, 100%': { opacity: 1 },
+  '50%': { opacity: 0.5 },
+})
 
-export const skeletonClass = 'bg-well rounded-md animate-pulse'
+export const skeletonClass = css({
+  backgroundColor: 'well',
+  borderRadius: 'md',
+  animation: `${pulse} 2s cubic-bezier(0.4, 0, 0.6, 1) infinite`,
+})
 
 type StyleConfig = Readonly<{ className?: string }>
 

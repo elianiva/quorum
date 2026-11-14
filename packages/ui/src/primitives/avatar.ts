@@ -1,3 +1,4 @@
+import { css, cx, cx as cn } from '@quorum/styled-system/css'
 import { Schema as S } from 'effect'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { defineMessageUnion } from 'foldkit/message'
@@ -5,8 +6,6 @@ import { defineView } from 'foldkit/submodel'
 import * as Update from 'foldkit/update'
 
 type Child = Html | string
-
-import { cn } from 'cn'
 
 /**
  * Known foldkit gap: upstream swaps image→fallback automatically via the
@@ -19,22 +18,125 @@ import { cn } from 'cn'
 export const avatarSizeKeys = ['default', 'sm', 'lg'] as const
 export type AvatarSize = (typeof avatarSizeKeys)[number]
 
-export const avatarClass =
-  'size-8 rounded-full after:rounded-full data-[size=lg]:size-10 data-[size=sm]:size-6 group/avatar relative flex shrink-0 select-none after:absolute after:inset-0 after:border after:border-border after:mix-blend-darken dark:after:mix-blend-lighten'
+export const avatarClass = cx(
+  css({
+    width: '2rem',
+    height: '2rem',
+    borderRadius: '9999px',
+    '&::after': {
+      borderRadius: '9999px',
+      position: 'absolute',
+      inset: '0',
+      borderWidth: '1px',
+      borderStyle: 'solid',
+      borderColor: 'var(--border)',
+      mixBlendMode: 'darken',
+    },
+    '&[data-size="lg"]': { width: '2.5rem', height: '2.5rem' },
+    '&[data-size="sm"]': { width: '1.5rem', height: '1.5rem' },
+    position: 'relative',
+    display: 'flex',
+    flexShrink: '0',
+    userSelect: 'none',
+    _dark: {
+      '&::after': { mixBlendMode: 'lighten' },
+    },
+  }),
+  'group-avatar',
+)
 
-export const avatarImageClass = 'rounded-full aspect-square size-full object-cover'
+export const avatarImageClass = css({
+  borderRadius: '9999px',
+  aspectRatio: '1 / 1',
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+})
 
-export const avatarFallbackClass =
-  'bg-raised shadow-raised text-muted-foreground rounded-full flex size-full items-center justify-center text-sm group-data-[size=sm]/avatar:text-xs'
+export const avatarFallbackClass = css({
+  layerStyle: 'raised',
+  boxShadow: 'raised',
+  color: 'var(--muted-foreground)',
+  borderRadius: '9999px',
+  display: 'flex',
+  width: '100%',
+  height: '100%',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: 'calc(1.25 / 0.875)',
+  '.group-avatar[data-size=sm] &': {
+    fontSize: 'calc(0.75rem * var(--type-scale))',
+    lineHeight: 'calc(1 / 0.75)',
+  },
+})
 
-export const avatarBadgeClass =
-  'bg-primary text-primary-foreground ring-background absolute right-0 bottom-0 z-10 inline-flex items-center justify-center rounded-full bg-blend-color ring-2 select-none group-data-[size=sm]/avatar:size-2 group-data-[size=sm]/avatar:[&>svg]:hidden group-data-[size=default]/avatar:size-2.5 group-data-[size=default]/avatar:[&>svg]:size-2 group-data-[size=lg]/avatar:size-3 group-data-[size=lg]/avatar:[&>svg]:size-2'
+export const avatarBadgeClass = css({
+  backgroundColor: 'primary',
+  color: 'primaryForeground',
+  boxShadow: '0 0 0 2px var(--background)',
+  position: 'absolute',
+  right: '0',
+  bottom: '0',
+  zIndex: '10',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: '9999px',
+  backgroundBlendMode: 'color',
+  userSelect: 'none',
+  '.group-avatar[data-size=sm] &': {
+    width: '0.5rem',
+    height: '0.5rem',
+    '& > svg': { display: 'none' },
+  },
+  '.group-avatar[data-size=default] &': {
+    width: '0.625rem',
+    height: '0.625rem',
+    '& > svg': { width: '0.5rem', height: '0.5rem' },
+  },
+  '.group-avatar[data-size=lg] &': {
+    width: '0.75rem',
+    height: '0.75rem',
+    '& > svg': { width: '0.5rem', height: '0.5rem' },
+  },
+})
 
-export const avatarGroupClass =
-  'group/avatar-group flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background'
+export const avatarGroupClass = cx(
+  css({
+    display: 'flex',
+    '& > :not(:last-child)': { marginInlineEnd: '-0.5rem' },
+    '& > [data-slot="avatar"]': { boxShadow: '0 0 0 2px var(--background)' },
+  }),
+  'group-avatar-group',
+)
 
-export const avatarGroupCountClass =
-  'bg-muted text-muted-foreground size-8 rounded-full text-sm group-has-data-[size=lg]/avatar-group:size-10 group-has-data-[size=sm]/avatar-group:size-6 [&>svg]:size-4 group-has-data-[size=lg]/avatar-group:[&>svg]:size-5 group-has-data-[size=sm]/avatar-group:[&>svg]:size-3 relative flex shrink-0 items-center justify-center ring-2 ring-background'
+export const avatarGroupCountClass = css({
+  backgroundColor: 'muted',
+  color: 'mutedForeground',
+  width: '2rem',
+  height: '2rem',
+  borderRadius: '9999px',
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: 'calc(1.25 / 0.875)',
+  '.group-avatar-group:has([data-size=lg]) &': {
+    width: '2.5rem',
+    height: '2.5rem',
+    '& > svg': { width: '1.25rem', height: '1.25rem' },
+  },
+  '.group-avatar-group:has([data-size=sm]) &': {
+    width: '1.5rem',
+    height: '1.5rem',
+    '& > svg': { width: '0.75rem', height: '0.75rem' },
+  },
+  '& > svg': { width: '1rem', height: '1rem' },
+  position: 'relative',
+  display: 'flex',
+  flexShrink: '0',
+  alignItems: 'center',
+  justifyContent: 'center',
+  boxShadow: '0 0 0 2px var(--background)',
+})
 
 type StyleConfig = Readonly<{ className?: string }>
 

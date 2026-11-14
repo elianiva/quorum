@@ -1,22 +1,86 @@
+import { css, cx as cn } from '@quorum/styled-system/css'
 import { Textarea as FoldkitTextarea } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
-import { cn } from 'cn'
-
-export const textareaClass =
-  'bg-well shadow-well border-transparent focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-lg border px-2.5 py-2 text-base transition-colors focus-visible:ring-3 aria-invalid:ring-3 md:text-sm aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:opacity-50 aria-disabled:bg-input/50 data-disabled:bg-input/50 dark:aria-disabled:bg-input/80 dark:data-disabled:bg-input/80 flex field-sizing-content min-h-16 w-full outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50'
+export const textareaClass = css({
+  backgroundColor: 'var(--well)',
+  boxShadow: 'well',
+  borderColor: 'transparent',
+  borderRadius: 'lg',
+  borderWidth: '1px',
+  paddingInline: '0.625rem',
+  paddingBlock: '0.5rem',
+  fontSize: 'calc(1rem * var(--type-scale))',
+  lineHeight: 'calc(1.5 / 1)',
+  transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke',
+  transitionTimingFunction: 'var(--default-transition-timing-function)',
+  transitionDuration: 'var(--default-transition-duration)',
+  display: 'flex',
+  minHeight: '4rem',
+  width: '100%',
+  outlineStyle: 'none',
+  '&::placeholder': { color: 'var(--muted-foreground)' },
+  '&:focus-visible': {
+    borderColor: 'var(--ring)',
+    boxShadow: 'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+  },
+  '&[aria-invalid="true"]': {
+    borderColor: 'var(--destructive)',
+    boxShadow:
+      'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+  },
+  _dark: {
+    '&[aria-invalid="true"]': {
+      borderColor: 'color-mix(in oklab, var(--destructive) 50%, transparent)',
+      boxShadow:
+        'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+    },
+    '&[aria-disabled="true"], &[data-disabled]': {
+      backgroundColor: 'color-mix(in oklab, var(--input) 80%, transparent)',
+    },
+  },
+  '&[aria-disabled="true"], &[data-disabled]': {
+    cursor: 'not-allowed',
+    opacity: 0.5,
+    backgroundColor: 'color-mix(in oklab, var(--input) 50%, transparent)',
+  },
+  '&:disabled': { cursor: 'not-allowed', opacity: 0.5 },
+  md: { fontSize: 'calc(0.875rem * var(--type-scale))', lineHeight: 'calc(1.25 / 0.875)' },
+  fieldSizing: 'content',
+})
 
 /** Same string as the `label` item's component classes (upstream label.tsx). */
 /** Upstream string re-keyed for foldkit: the label precedes the control, so
  *  upstream's native peer-disabled sibling variant can never match; disabled
- *  state flows from the wrapper (group/field + data-disabled, mirroring
+ *  state flows from the wrapper (group-field + data-disabled, mirroring
  *  switch.ts). */
-export const textareaLabelClass =
-  'gap-2 text-sm leading-none font-medium group-data-[disabled]:opacity-50 flex items-center select-none group-data-[disabled]/field:pointer-events-none group-data-[disabled]/field:cursor-not-allowed group-data-[disabled]/field:opacity-50'
+export const textareaLabelClass = css({
+  gap: '0.5rem',
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: '1',
+  fontWeight: '500',
+  display: 'flex',
+  alignItems: 'center',
+  userSelect: 'none',
+  '[data-disabled] &': {
+    pointerEvents: 'none',
+    cursor: 'not-allowed',
+    opacity: 0.5,
+  },
+})
 
-export const textareaDescriptionClass = 'text-sm text-muted-foreground'
+export const textareaDescriptionClass = css({
+  fontSize: 'calc(0.875rem * var(--type-scale))',
+  lineHeight: 'calc(1.25 / 0.875)',
+  color: 'var(--muted-foreground)',
+})
 
-export const textareaWrapperClass = 'group/field flex flex-col gap-1.5 w-full'
+export const textareaWrapperClass = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.375rem',
+  width: '100%',
+})
 
 export type TextareaConfig<M> = Readonly<{
   id: string

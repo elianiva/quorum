@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { formats, stallReasonIn } from '@/i18n/format.ts'
 import { type Messages, copy, eraWords, localized } from '@/i18n/messages.ts'
 import { Option } from 'effect'
@@ -88,7 +89,6 @@ import { WIKI_URL } from '@/platform/analytics.ts'
 import { glowing, playbooksShown, shown } from '@/game/reveal.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
-import { css, cx } from '@quorum/styled-system/css'
 import { cn } from '@/lib/utils'
 import {
   CHIPS,
@@ -144,18 +144,46 @@ const stat = (
         : []),
       h.Class(
         cn(
-          'flex h-8 items-center gap-2.5 px-2.5 compact:shrink-0 compact:gap-1.5 compact:px-3',
+          css({
+            display: 'flex',
+            height: '2rem',
+            alignItems: 'center',
+            gap: '0.625rem',
+            paddingInline: '0.625rem',
+            _compact: {
+              flexShrink: '0',
+              gap: '0.375rem',
+              paddingInline: '0.75rem',
+            },
+          }),
           CHIP_ORDER[name],
           className,
         ),
       ),
     ],
     [
-      icon(h, glyph, 'size-3.5 shrink-0 text-muted-foreground'),
+      icon(
+        h,
+        glyph,
+        css({
+          width: '0.875rem',
+          height: '0.875rem',
+          flexShrink: '0',
+          color: 'var(--muted-foreground)',
+        }),
+      ),
       h.span(
         [
           h.Class(
-            'w-[var(--hud-label-width,calc(46px*var(--type-scale)))] shrink-0 text-[calc(11.5px*var(--type-scale))] text-muted-foreground compact:hidden',
+            css({
+              width: 'var(--hud-label-width,calc(46px*var(--type-scale)))',
+              flexShrink: '0',
+              fontSize: 'calc(11.5px*var(--type-scale))',
+              color: 'var(--muted-foreground)',
+              _compact: {
+                display: 'none',
+              },
+            }),
           ),
         ],
         [name],
@@ -166,7 +194,11 @@ const stat = (
           h.Class(
             cn(
               FIGURE,
-              'text-[calc(13.5px*var(--type-scale))] leading-none whitespace-nowrap',
+              css({
+                fontSize: 'calc(13.5px*var(--type-scale))',
+                lineHeight: '1',
+                whiteSpace: 'nowrap',
+              }),
               note || tone === 'plain' ? '' : toneText(tone),
             ),
           ),
@@ -180,8 +212,23 @@ const stat = (
               h.Class(
                 cn(
                   FIGURE,
-                  'ml-auto min-w-0 truncate text-[calc(10px*var(--type-scale))] leading-none compact:ml-0.5',
-                  tone === 'plain' ? 'text-muted-foreground' : toneText(tone),
+                  css({
+                    marginLeft: 'auto',
+                    minWidth: '0',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontSize: 'calc(10px*var(--type-scale))',
+                    lineHeight: '1',
+                    _compact: {
+                      marginLeft: '0.125rem',
+                    },
+                  }),
+                  tone === 'plain'
+                    ? css({
+                        color: 'var(--muted-foreground)',
+                      })
+                    : toneText(tone),
                 ),
               ),
             ],
@@ -209,17 +256,50 @@ const insightHelp = (h: HtmlBuilder<Message>): Html => {
       h.AriaLabel(t.hud.aboutInsight),
       h.Class(
         cn(
-          'enter-pop absolute top-0 left-[calc(100%+8px)] z-30 flex w-[288px] flex-col gap-2.5 p-3.5 compact:top-[calc(100%+6px)] compact:left-0 compact:w-full',
+          cx(
+            css({
+              position: 'absolute',
+              top: '0',
+              left: 'calc(100%+8px)',
+              zIndex: '30',
+              display: 'flex',
+              width: '288px',
+              flexDirection: 'column',
+              gap: '0.625rem',
+              padding: '0.875rem',
+              _compact: {
+                top: 'calc(100%+6px)',
+                left: '0',
+                width: '100%',
+              },
+            }),
+            'enter-pop',
+          ),
           FLOAT,
         ),
       ),
     ],
     [
       h.div(
-        [h.Class('flex items-center justify-between')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }),
+          ),
+        ],
         [
           h.span(
-            [h.Class('text-[calc(13px*var(--type-scale))] font-semibold')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'calc(13px*var(--type-scale))',
+                  fontWeight: '600',
+                }),
+              ),
+            ],
             [t.hud.aboutInsight],
           ),
           h.button(
@@ -229,22 +309,67 @@ const insightHelp = (h: HtmlBuilder<Message>): Html => {
               h.Title(t.hud.closeEsc),
               h.OnClick(Message.InsightHelpToggled()),
               h.Class(
-                'grid size-6 place-items-center rounded-md text-muted-foreground hover:bg-foreground/5 hover:text-foreground',
+                css({
+                  display: 'grid',
+                  width: '1.5rem',
+                  height: '1.5rem',
+                  placeItems: 'center',
+                  borderRadius: 'md',
+                  color: 'var(--muted-foreground)',
+                  _hover: {
+                    backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                    color: 'var(--foreground)',
+                  },
+                }),
               ),
             ],
-            [icon(h, X, 'size-3.5')],
+            [
+              icon(
+                h,
+                X,
+                css({
+                  width: '0.875rem',
+                  height: '0.875rem',
+                }),
+              ),
+            ],
           ),
         ],
       ),
       h.dl(
-        [h.Class('flex flex-col gap-2.5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.625rem',
+            }),
+          ),
+        ],
         insightHelpOf(t).map(([term, text]) =>
           h.div(
-            [h.Key(term), h.Class('flex flex-col gap-0.5')],
+            [
+              h.Key(term),
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.125rem',
+                }),
+              ),
+            ],
             [
               h.dt([h.Class(EYEBROW)], [term]),
               h.dd(
-                [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-foreground/85')],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'calc(12px*var(--type-scale))',
+                      lineHeight: '1.375',
+                      color: 'color-mix(in oklab, var(--foreground) 85%, transparent)',
+                    }),
+                  ),
+                ],
                 [text],
               ),
             ],
@@ -270,25 +395,92 @@ const poolRow = (
       h.Key(pool),
       h.Class(
         cn(
-          'flex items-center gap-2 text-[calc(12px*var(--type-scale))] leading-none',
-          inStudy && 'font-semibold',
+          css({
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontSize: 'calc(12px*var(--type-scale))',
+            lineHeight: '1',
+          }),
+          inStudy &&
+            css({
+              fontWeight: '600',
+            }),
         ),
       ),
     ],
     [
       h.span(
-        [h.Class('inline-flex'), h.Style({ color: poolColor(pool) })],
-        [icon(h, POOL_ICONS[pool], 'size-3.5 shrink-0')],
+        [
+          h.Class(
+            css({
+              display: 'inline-flex',
+            }),
+          ),
+          h.Style({ color: poolColor(pool) }),
+        ],
+        [
+          icon(
+            h,
+            POOL_ICONS[pool],
+            css({
+              width: '0.875rem',
+              height: '0.875rem',
+              flexShrink: '0',
+            }),
+          ),
+        ],
       ),
-      h.span([h.Class('min-w-0 flex-1 truncate')], [t.catalog.pools[pool].label]),
-      h.span([h.Class(cn(FIGURE, limiting && 'text-danger'))], [compact(held)]),
+      h.span(
+        [
+          h.Class(
+            css({
+              minWidth: '0',
+              flex: '1 1 0%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }),
+          ),
+        ],
+        [t.catalog.pools[pool].label],
+      ),
       h.span(
         [
           h.Class(
             cn(
               FIGURE,
-              'w-[52px] text-right text-[calc(10.5px*var(--type-scale))] font-normal',
-              perSecond > 0 ? 'text-ok' : limiting ? 'text-danger' : 'text-muted-foreground',
+              limiting &&
+                css({
+                  color: 'var(--danger)',
+                }),
+            ),
+          ),
+        ],
+        [compact(held)],
+      ),
+      h.span(
+        [
+          h.Class(
+            cn(
+              FIGURE,
+              css({
+                width: '52px',
+                textAlign: 'right',
+                fontSize: 'calc(10.5px*var(--type-scale))',
+                fontWeight: '400',
+              }),
+              perSecond > 0
+                ? css({
+                    color: 'var(--ok)',
+                  })
+                : limiting
+                  ? css({
+                      color: 'var(--danger)',
+                    })
+                  : css({
+                      color: 'var(--muted-foreground)',
+                    }),
             ),
           ),
         ],
@@ -322,14 +514,35 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
       h.AriaLabel(t.hud.insight),
       h.Class(
         cn(
-          'enter-pop relative flex flex-col gap-2 p-2.5 compact:pointer-events-auto compact:p-2',
+          cx(
+            css({
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+              padding: '0.625rem',
+              _compact: {
+                pointerEvents: 'auto',
+                padding: '0.5rem',
+              },
+            }),
+            'enter-pop',
+          ),
           PANEL,
         ),
       ),
     ],
     [
       h.div(
-        [h.Class('flex items-center gap-1')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+            }),
+          ),
+        ],
         [
           h.button(
             [
@@ -339,17 +552,52 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                 Message.PanelOpened({ panel: model.panel === 'research' ? 'none' : 'research' }),
               ),
               h.Class(
-                'flex min-w-0 flex-1 items-center gap-2 rounded-md px-1 py-0.5 text-left text-[calc(12px*var(--type-scale))] hover:bg-foreground/5',
+                css({
+                  display: 'flex',
+                  minWidth: '0',
+                  flex: '1 1 0%',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  borderRadius: 'md',
+                  paddingInline: '0.25rem',
+                  paddingBlock: '0.125rem',
+                  textAlign: 'left',
+                  fontSize: 'calc(12px*var(--type-scale))',
+                  _hover: {
+                    backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                  },
+                }),
               ),
             ],
             [
-              icon(h, FlaskConical, 'size-3.5 shrink-0 text-muted-foreground'),
+              icon(
+                h,
+                FlaskConical,
+                css({
+                  width: '0.875rem',
+                  height: '0.875rem',
+                  flexShrink: '0',
+                  color: 'var(--muted-foreground)',
+                }),
+              ),
               h.span(
                 [
                   h.Class(
                     cn(
-                      'min-w-0 flex-1 truncate',
-                      running ? 'font-medium' : 'text-muted-foreground',
+                      css({
+                        minWidth: '0',
+                        flex: '1 1 0%',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }),
+                      running
+                        ? css({
+                            fontWeight: '500',
+                          })
+                        : css({
+                            color: 'var(--muted-foreground)',
+                          }),
                     ),
                   ),
                 ],
@@ -361,12 +609,35 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                       h.Class(
                         cn(
                           FIGURE,
-                          'flex items-center gap-1 text-[calc(10.5px*var(--type-scale))]',
-                          stall ? 'text-warn' : 'text-muted-foreground',
+                          css({
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
+                            fontSize: 'calc(10.5px*var(--type-scale))',
+                          }),
+                          stall
+                            ? css({
+                                color: 'var(--warn)',
+                              })
+                            : css({
+                                color: 'var(--muted-foreground)',
+                              }),
                         ),
                       ),
                     ],
-                    [stall ? icon(h, TriangleAlert, 'size-3') : h.empty, runningLabel],
+                    [
+                      stall
+                        ? icon(
+                            h,
+                            TriangleAlert,
+                            css({
+                              width: '0.75rem',
+                              height: '0.75rem',
+                            }),
+                          )
+                        : h.empty,
+                      runningLabel,
+                    ],
                   )
                 : h.empty,
             ],
@@ -380,26 +651,72 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
               h.OnClick(Message.InsightHelpToggled()),
               h.Class(
                 cn(
-                  'grid size-6 shrink-0 place-items-center rounded-md hover:bg-foreground/5',
+                  css({
+                    display: 'grid',
+                    width: '1.5rem',
+                    height: '1.5rem',
+                    flexShrink: '0',
+                    placeItems: 'center',
+                    borderRadius: 'md',
+                    _hover: {
+                      backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                    },
+                  }),
                   model.board.insightHelp
-                    ? 'bg-foreground/5 text-foreground'
-                    : 'text-muted-foreground',
+                    ? css({
+                        backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                        color: 'var(--foreground)',
+                      })
+                    : css({
+                        color: 'var(--muted-foreground)',
+                      }),
                 ),
               ),
             ],
-            [icon(h, CircleHelp, 'size-3.5')],
+            [
+              icon(
+                h,
+                CircleHelp,
+                css({
+                  width: '0.875rem',
+                  height: '0.875rem',
+                }),
+              ),
+            ],
           ),
         ],
       ),
-      running ? meter(studyProgressOf(running), stall ? 'bg-warn' : 'bg-ok', h) : h.empty,
+      running
+        ? meter(
+            studyProgressOf(running),
+            stall
+              ? css({
+                  backgroundColor: 'var(--warn)',
+                })
+              : css({ backgroundColor: 'ok' }),
+            h,
+          )
+        : h.empty,
       pools.length > 0
         ? h.div(
             [
               h.Class(
                 cn(
-                  'flex flex-col gap-2 rounded-lg px-2.5 py-2',
+                  css({
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem',
+                    borderRadius: 'lg',
+                    paddingInline: '0.625rem',
+                    paddingBlock: '0.5rem',
+                  }),
                   WELL,
-                  'compact:max-h-28 compact:overflow-y-auto',
+                  css({
+                    _compact: {
+                      maxHeight: '7rem',
+                      overflowY: 'auto',
+                    },
+                  }),
                 ),
               ),
             ],
@@ -461,26 +778,69 @@ const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
   const clock = clockOf(game.time)
   return h.div(
     [
-      h.Class('flex flex-col gap-1.5 px-2.5 pt-1.5 pb-2 compact:pb-1'),
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.375rem',
+          paddingInline: '0.625rem',
+          paddingTop: '0.375rem',
+          paddingBottom: '0.5rem',
+          _compact: {
+            paddingBottom: '0.25rem',
+          },
+        }),
+      ),
       h.Title(next ? t.hud.roundAtUsers(next.name, compact(era.raiseAt)) : era.name),
     ],
     [
       h.div(
-        [h.Class(`flex items-center gap-2 ${TOOLBAR_ROOM}`)],
+        [
+          h.Class(
+            cx(
+              css({
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }),
+              TOOLBAR_ROOM,
+            ),
+          ),
+        ],
         [
           button(
             {
               onClick: Message.PanelOpened({ panel: 'menu' }),
               variant: 'ghost',
               size: 'icon-sm',
-              className: '-ml-1.5 text-muted-foreground',
+              className: css({
+                marginLeft: '-0.375rem',
+                color: 'var(--muted-foreground)',
+              }),
               attributes: [h.AriaLabel(t.hud.menuEsc), h.Title(t.hud.menuEsc)],
             },
-            icon(h, Menu, 'size-4'),
+            icon(
+              h,
+              Menu,
+              css({
+                width: '1rem',
+                height: '1rem',
+              }),
+            ),
             h,
           ),
           h.span(
-            [h.Class('text-[calc(13px*var(--type-scale))] font-semibold compact:shrink-0')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'calc(13px*var(--type-scale))',
+                  fontWeight: '600',
+                  _compact: {
+                    flexShrink: '0',
+                  },
+                }),
+              ),
+            ],
             [era.name],
           ),
           h.span(
@@ -488,7 +848,14 @@ const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 cn(
                   FIGURE,
-                  'ml-auto text-[calc(10.5px*var(--type-scale))] text-muted-foreground compact:hidden',
+                  css({
+                    marginLeft: 'auto',
+                    fontSize: 'calc(10.5px*var(--type-scale))',
+                    color: 'var(--muted-foreground)',
+                    _compact: {
+                      display: 'none',
+                    },
+                  }),
                 ),
               ),
               h.Title(t.hud.calendarOneSecondIsOneMinute),
@@ -503,17 +870,39 @@ const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
           ),
         ],
       ),
-      meter(share, ready ? 'bg-ok' : 'bg-primary-fill', h),
+      meter(
+        share,
+        ready
+          ? css({
+              backgroundColor: 'var(--ok)',
+            })
+          : css({ layerStyle: 'primaryFill' }),
+        h,
+      ),
       ready && next
         ? button(
             {
               onClick: Message.PanelOpened({ panel: 'offer' }),
               size: 'sm',
-              className: 'enter-pop shine mt-1 w-full',
+              className: cx(
+                css({
+                  marginTop: '0.25rem',
+                  width: '100%',
+                }),
+                'enter-pop',
+                'shine',
+              ),
               attributes: [h.Key('offer'), h.DataAttribute('exit', 'gesture')],
             },
             [
-              icon(h, Rocket, 'size-3.5'),
+              icon(
+                h,
+                Rocket,
+                css({
+                  width: '0.875rem',
+                  height: '0.875rem',
+                }),
+              ),
               game.stage === PRE_IPO_STAGE ? t.hud.iPO : t.hud.offer(next.name),
             ],
             h,
@@ -542,22 +931,72 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
       h.OnClick(Message.PanelOpened({ panel: model.panel === 'team' ? 'none' : 'team' })),
       h.Class(
         cn(
-          'enter-pop flex flex-col gap-1.5 rounded-xl px-2.5 py-2 text-left hover:bg-foreground/5 compact:hidden',
+          cx(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.375rem',
+              borderRadius: 'xl',
+              paddingInline: '0.625rem',
+              paddingBlock: '0.5rem',
+              textAlign: 'left',
+              _hover: {
+                backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+              },
+              _compact: {
+                display: 'none',
+              },
+            }),
+            'enter-pop',
+          ),
         ),
       ),
     ],
     [
       h.div(
-        [h.Class('flex items-center gap-2 text-[calc(12px*var(--type-scale))]')],
         [
-          icon(h, Hammer, 'size-3.5 shrink-0 text-muted-foreground'),
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: 'calc(12px*var(--type-scale))',
+            }),
+          ),
+        ],
+        [
+          icon(
+            h,
+            Hammer,
+            css({
+              width: '0.875rem',
+              height: '0.875rem',
+              flexShrink: '0',
+              color: 'var(--muted-foreground)',
+            }),
+          ),
           h.span(
             [
               h.Class(
                 cn(
-                  'min-w-0 flex-1 truncate',
-                  item ? 'font-medium' : 'text-muted-foreground',
-                  late > 0 && 'text-danger',
+                  css({
+                    minWidth: '0',
+                    flex: '1 1 0%',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }),
+                  item
+                    ? css({
+                        fontWeight: '500',
+                      })
+                    : css({
+                        color: 'var(--muted-foreground)',
+                      }),
+                  late > 0 &&
+                    css({
+                      color: 'var(--danger)',
+                    }),
                 ),
               ),
             ],
@@ -569,8 +1008,17 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
                   h.Class(
                     cn(
                       FIGURE,
-                      'text-[calc(10.5px*var(--type-scale))]',
-                      late > 0 ? 'font-medium text-danger' : 'text-muted-foreground',
+                      css({
+                        fontSize: 'calc(10.5px*var(--type-scale))',
+                      }),
+                      late > 0
+                        ? css({
+                            fontWeight: '500',
+                            color: 'var(--danger)',
+                          })
+                        : css({
+                            color: 'var(--muted-foreground)',
+                          }),
                     ),
                   ),
                 ],
@@ -580,7 +1028,13 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
               ? h.span(
                   [
                     h.Class(
-                      cn(FIGURE, 'text-[calc(10.5px*var(--type-scale))] text-primary-strong'),
+                      cn(
+                        FIGURE,
+                        css({
+                          fontSize: 'calc(10.5px*var(--type-scale))',
+                          color: 'var(--primary-strong)',
+                        }),
+                      ),
                     ),
                   ],
                   [t.hud.toDeploy(ready)],
@@ -588,14 +1042,20 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
               : h.span(
                   [
                     h.Class(
-                      cn(FIGURE, 'text-[calc(10.5px*var(--type-scale))] text-muted-foreground'),
+                      cn(
+                        FIGURE,
+                        css({
+                          fontSize: 'calc(10.5px*var(--type-scale))',
+                          color: 'var(--muted-foreground)',
+                        }),
+                      ),
                     ),
                   ],
                   [t.hud.dHMin(rate < 10 ? rate.toFixed(1) : Math.round(rate))],
                 ),
         ],
       ),
-      item ? meter(item.spent / item.cost, 'bg-ok', h) : h.empty,
+      item ? meter(item.spent / item.cost, css({ backgroundColor: 'ok' }), h) : h.empty,
     ],
   )
 }
@@ -616,17 +1076,42 @@ const phoneFigure = (
       h.Title(label),
       ...(onClick ? [h.OnClick(onClick)] : [h.Disabled(true)]),
       h.Class(
-        'flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 px-1 disabled:opacity-100',
+        css({
+          display: 'flex',
+          height: '2.75rem',
+          minWidth: '0',
+          flex: '1 1 0%',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.375rem',
+          paddingInline: '0.25rem',
+          _disabled: {
+            opacity: 1,
+          },
+        }),
       ),
     ],
     [
-      icon(h, glyph, 'size-4 shrink-0 text-muted-foreground'),
+      icon(
+        h,
+        glyph,
+        css({
+          width: '1rem',
+          height: '1rem',
+          flexShrink: '0',
+          color: 'var(--muted-foreground)',
+        }),
+      ),
       h.span(
         [
           h.Class(
             cn(
               FIGURE,
-              'text-[calc(13.5px*var(--type-scale))] leading-none whitespace-nowrap',
+              css({
+                fontSize: 'calc(13.5px*var(--type-scale))',
+                lineHeight: '1',
+                whiteSpace: 'nowrap',
+              }),
               tone === 'plain' ? '' : toneText(tone),
             ),
           ),
@@ -655,12 +1140,34 @@ const phoneHud = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.Key('phone-hud'),
       h.Title(next ? t.hud.roundAtUsers(next.name, compact(era.raiseAt)) : era.name),
       h.Class(
-        'pointer-events-auto hidden flex-col gap-1.5 rounded-2xl bg-surface p-1.5 shadow-card compact:flex',
+        css({
+          pointerEvents: 'auto',
+          display: 'none',
+          flexDirection: 'column',
+          gap: '0.375rem',
+          borderRadius: '2xl',
+          layerStyle: 'surface',
+          padding: '0.375rem',
+          boxShadow: 'card',
+          _compact: {
+            display: 'flex',
+          },
+        }),
       ),
     ],
     [
       h.div(
-        [h.Class('flex h-11 items-center gap-1 pr-[var(--toolbar-w)]')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              height: '2.75rem',
+              alignItems: 'center',
+              gap: '0.25rem',
+              paddingRight: 'var(--toolbar-w)',
+            }),
+          ),
+        ],
         [
           h.button(
             [
@@ -669,20 +1176,85 @@ const phoneHud = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Title(t.hud.menuEsc),
               h.OnClick(Message.PanelOpened({ panel: 'menu' })),
               h.Class(
-                'grid size-11 shrink-0 place-items-center rounded-xl text-muted-foreground hover:bg-well hover:text-foreground',
+                css({
+                  display: 'grid',
+                  width: '2.75rem',
+                  height: '2.75rem',
+                  flexShrink: '0',
+                  placeItems: 'center',
+                  borderRadius: 'xl',
+                  color: 'var(--muted-foreground)',
+                  _hover: {
+                    backgroundColor: 'var(--well)',
+                    color: 'var(--foreground)',
+                  },
+                }),
               ),
             ],
-            [icon(h, Menu, 'size-5')],
+            [
+              icon(
+                h,
+                Menu,
+                css({
+                  width: '1.25rem',
+                  height: '1.25rem',
+                }),
+              ),
+            ],
           ),
           h.span(
-            [h.Class('min-w-0 truncate text-[calc(15px*var(--type-scale))] font-semibold')],
+            [
+              h.Class(
+                css({
+                  minWidth: '0',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: 'calc(15px*var(--type-scale))',
+                  fontWeight: '600',
+                }),
+              ),
+            ],
             [era.name],
           ),
         ],
       ),
-      h.div([h.Class('px-0.5')], [meter(share, ready ? 'bg-ok' : 'bg-primary-fill', h)]),
       h.div(
-        [h.Class(`flex divide-x divide-hairline ${WELL}`)],
+        [
+          h.Class(
+            css({
+              paddingInline: '0.125rem',
+            }),
+          ),
+        ],
+        [
+          meter(
+            share,
+            ready
+              ? css({
+                  backgroundColor: 'var(--ok)',
+                })
+              : css({ layerStyle: 'primaryFill' }),
+            h,
+          ),
+        ],
+      ),
+      h.div(
+        [
+          h.Class(
+            cx(
+              css({
+                display: 'flex',
+                '& > :not(:last-child)': {
+                  borderRightWidth: '1px',
+                  borderRightStyle: 'solid',
+                  borderColor: 'var(--hairline)',
+                },
+              }),
+              WELL,
+            ),
+          ),
+        ],
         [
           phoneFigure(
             t.hud.cash,
@@ -746,7 +1318,16 @@ const vitalRow = (
       ),
     ],
     [
-      icon(h, glyph, 'size-4 shrink-0 text-muted-foreground'),
+      icon(
+        h,
+        glyph,
+        css({
+          width: '1rem',
+          height: '1rem',
+          flexShrink: '0',
+          color: 'var(--muted-foreground)',
+        }),
+      ),
       h.span(
         [
           h.Class(
@@ -767,7 +1348,11 @@ const vitalRow = (
           h.Class(
             cn(
               FIGURE,
-              'shrink-0 text-[calc(14px*var(--type-scale))] leading-none',
+              css({
+                flexShrink: '0',
+                fontSize: 'calc(14px*var(--type-scale))',
+                lineHeight: '1',
+              }),
               tone === 'plain' ? '' : toneText(tone),
             ),
           ),
@@ -781,8 +1366,16 @@ const vitalRow = (
               h.Class(
                 cn(
                   FIGURE,
-                  'shrink-0 text-[calc(11px*var(--type-scale))] leading-none',
-                  tone === 'plain' ? 'text-muted-foreground' : toneText(tone),
+                  css({
+                    flexShrink: '0',
+                    fontSize: 'calc(11px*var(--type-scale))',
+                    lineHeight: '1',
+                  }),
+                  tone === 'plain'
+                    ? css({
+                        color: 'var(--muted-foreground)',
+                      })
+                    : toneText(tone),
                 ),
               ),
             ],
@@ -886,15 +1479,36 @@ export const vitalsPanel = (model: Model, ledger: Ledger, h: HtmlBuilder<Message
                     : h.empty,
                 ],
               ),
-              meter(share, ready ? 'bg-ok' : 'bg-primary-fill', h),
+              meter(
+                share,
+                ready
+                  ? css({
+                      backgroundColor: 'var(--ok)',
+                    })
+                  : css({ layerStyle: 'primaryFill' }),
+                h,
+              ),
               ready && next
                 ? button(
                     {
                       onClick: Message.PanelOpened({ panel: 'offer' }),
                       size: 'lg',
-                      className: 'mt-1 w-full',
+                      className: css({
+                        marginTop: '0.25rem',
+                        width: '100%',
+                      }),
                     },
-                    [icon(h, Rocket, 'size-4'), t.hud.offer(next.name)],
+                    [
+                      icon(
+                        h,
+                        Rocket,
+                        css({
+                          width: '1rem',
+                          height: '1rem',
+                        }),
+                      ),
+                      t.hud.offer(next.name),
+                    ],
                     h,
                   )
                 : h.empty,
@@ -1008,7 +1622,7 @@ export const vitalsPanel = (model: Model, ledger: Ledger, h: HtmlBuilder<Message
         ],
       ),
     ],
-    'max-w-[560px] h-full',
+    css({ maxWidth: '560px', height: '100%' }),
     h,
   )
 }
@@ -1025,12 +1639,35 @@ export const phoneOffer = (model: Model, h: HtmlBuilder<Message>): Html => {
     {
       onClick: Message.PanelOpened({ panel: 'offer' }),
       size: 'lg',
-      className: 'h-12! min-w-0 w-full px-3 compact:text-[calc(13px*var(--type-scale))]',
+      className: css({
+        height: '3rem !important',
+        minWidth: '0',
+        width: '100%',
+        paddingInline: '0.75rem',
+        _compact: {
+          fontSize: 'calc(13px*var(--type-scale))',
+        },
+      }),
     },
     [
-      icon(h, Rocket, 'size-4'),
+      icon(
+        h,
+        Rocket,
+        css({
+          width: '1rem',
+          height: '1rem',
+        }),
+      ),
       h.span(
-        [h.Class('truncate')],
+        [
+          h.Class(
+            css({
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }),
+          ),
+        ],
         [game.stage === PRE_IPO_STAGE ? t.hud.iPO : t.hud.offer(next.name)],
       ),
     ],
@@ -1072,12 +1709,44 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
   const header = h.header(
     [
       h.DataAttribute('morph', 'notice'),
-      h.Class(`flex flex-col gap-1 p-1.5 ${PANEL} compact:pointer-events-auto compact:p-1`),
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.25rem',
+            padding: '0.375rem',
+          }),
+          PANEL,
+          css({
+            _compact: {
+              pointerEvents: 'auto',
+              padding: '0.25rem',
+            },
+          }),
+        ),
+      ),
     ],
     [
       funding(model, h),
       h.div(
-        [h.Class(`flex flex-col divide-y divide-hairline ${WELL} ${CHIPS}`)],
+        [
+          h.Class(
+            cx(
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                '& > :not(:last-child)': {
+                  borderBottomWidth: '1px',
+                  borderBottomStyle: 'solid',
+                  borderColor: 'var(--hairline)',
+                },
+              }),
+              WELL,
+              CHIPS,
+            ),
+          ),
+        ],
         [
           stat(
             t.hud.cash,
@@ -1087,7 +1756,9 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
             game.cash < 0 || bridging ? 'danger' : net >= 0 && income > 0 ? 'ok' : 'plain',
             h,
             bridging ? t.hud.cashShortBridge : t.hud.cashAndNet,
-            short || bridging ? 'cursor-pointer rounded-lg hover:bg-muted' : '',
+            short || bridging
+              ? css({ cursor: 'pointer', borderRadius: 'lg', _hover: { backgroundColor: 'muted' } })
+              : '',
             short || bridging ? Message.PanelOpened({ panel: 'dashboard' }) : undefined,
           ),
           stat(
@@ -1098,7 +1769,7 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
             trend >= 0 ? 'ok' : 'danger',
             h,
             t.hud.whyUsersLeave,
-            'cursor-pointer rounded-lg hover:bg-muted',
+            css({ cursor: 'pointer', borderRadius: 'lg', _hover: { backgroundColor: 'muted' } }),
             Message.PanelOpened({ panel: model.panel === 'churn' ? 'none' : 'churn' }),
           ),
           stat(
@@ -1119,7 +1790,15 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
                 errors < 1 ? 'ok' : errors < 5 ? 'warn' : 'danger',
                 h,
                 t.hud.errors2(errorTitle),
-                cn('enter-pop rounded-lg', glowing(model, 'errors') && 'cue-glow'),
+                cn(
+                  cx(
+                    css({
+                      borderRadius: 'lg',
+                    }),
+                    'enter-pop',
+                  ),
+                  glowing(model, 'errors') && 'cue-glow',
+                ),
               )
             : h.empty,
           budgeted(game) ? slo(game, h) : h.empty,
@@ -1155,7 +1834,19 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
   return h.div(
     [
       h.Class(
-        'absolute top-3 left-3 z-20 flex w-[calc(276px*var(--type-scale))] flex-col gap-2 compact:contents',
+        css({
+          position: 'absolute',
+          top: '0.75rem',
+          left: '0.75rem',
+          zIndex: '20',
+          display: 'flex',
+          width: 'calc(276px*var(--type-scale))',
+          flexDirection: 'column',
+          gap: '0.5rem',
+          _compact: {
+            display: 'contents',
+          },
+        }),
       ),
       h.Style({
         // French, Spanish and Japanese labels need more columns than English does.
@@ -1168,7 +1859,18 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
     [
       phoneHud(model, h),
       h.div(
-        [h.Class('flex flex-col gap-2 compact:hidden')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+              _compact: {
+                display: 'none',
+              },
+            }),
+          ),
+        ],
         [header, shown(model, 'research') ? insightCard(model, ledger, h) : h.empty],
       ),
     ],
@@ -1180,7 +1882,16 @@ const line = (name: string, value: string, tone: Tone, h: HtmlBuilder<Message>, 
   h.div(
     [
       h.Key(name),
-      h.Class('flex h-6 items-center gap-2 px-2.5 text-[calc(11.5px*var(--type-scale))]'),
+      h.Class(
+        css({
+          display: 'flex',
+          height: '1.5rem',
+          alignItems: 'center',
+          gap: '0.5rem',
+          paddingInline: '0.625rem',
+          fontSize: 'calc(11.5px*var(--type-scale))',
+        }),
+      ),
     ],
     [
       mark === undefined
@@ -1188,15 +1899,41 @@ const line = (name: string, value: string, tone: Tone, h: HtmlBuilder<Message>, 
         : icon(
             h,
             mark ? CircleCheck : Circle,
-            cn('size-3.5 shrink-0', mark ? 'text-ok' : 'text-muted-foreground'),
+            cn(
+              css({
+                width: '0.875rem',
+                height: '0.875rem',
+                flexShrink: '0',
+              }),
+              mark
+                ? css({
+                    color: 'var(--ok)',
+                  })
+                : css({
+                    color: 'var(--muted-foreground)',
+                  }),
+            ),
           ),
-      h.span([h.Class('text-muted-foreground')], [name]),
+      h.span(
+        [
+          h.Class(
+            css({
+              color: 'var(--muted-foreground)',
+            }),
+          ),
+        ],
+        [name],
+      ),
       h.span(
         [
           h.Class(
             cn(
               FIGURE,
-              'ml-auto text-[calc(10.5px*var(--type-scale))] whitespace-nowrap',
+              css({
+                marginLeft: 'auto',
+                fontSize: 'calc(10.5px*var(--type-scale))',
+                whiteSpace: 'nowrap',
+              }),
               toneText(tone),
             ),
           ),
@@ -1250,7 +1987,24 @@ const checklist = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html 
   const items = checklistOf(game, ledger)
   const drillReady = has(game, 'dr-drills') && !game.incident && !(game.drill?._tag === 'Running')
   return h.div(
-    [h.Key('ipo'), h.Class(`flex flex-col py-1 ${WELL} compact:hidden`)],
+    [
+      h.Key('ipo'),
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            paddingBlock: '0.25rem',
+          }),
+          WELL,
+          css({
+            _compact: {
+              display: 'none',
+            },
+          }),
+        ),
+      ),
+    ],
     [
       ...items.map((item) =>
         line(
@@ -1263,17 +2017,36 @@ const checklist = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html 
       ),
       has(game, 'dr-drills')
         ? h.div(
-            [h.Class('px-1.5 pt-1')],
+            [
+              h.Class(
+                css({
+                  paddingInline: '0.375rem',
+                  paddingTop: '0.25rem',
+                }),
+              ),
+            ],
             [
               button(
                 {
                   onClick: Message.DrillRun(),
                   variant: 'outline',
                   size: 'sm',
-                  className: 'w-full',
+                  className: css({
+                    width: '100%',
+                  }),
                   attributes: [h.Disabled(!drillReady)],
                 },
-                [icon(h, DatabaseZap, 'size-3.5'), t.hud.runDRDrill],
+                [
+                  icon(
+                    h,
+                    DatabaseZap,
+                    css({
+                      width: '0.875rem',
+                      height: '0.875rem',
+                    }),
+                  ),
+                  t.hud.runDRDrill,
+                ],
                 h,
               ),
             ],
@@ -1298,10 +2071,29 @@ const guidance = (
   return h.div(
     [
       h.Key(label),
-      h.Class('flex h-7 items-center gap-1 px-2.5 text-[calc(11.5px*var(--type-scale))]'),
+      h.Class(
+        css({
+          display: 'flex',
+          height: '1.75rem',
+          alignItems: 'center',
+          gap: '0.25rem',
+          paddingInline: '0.625rem',
+          fontSize: 'calc(11.5px*var(--type-scale))',
+        }),
+      ),
     ],
     [
-      h.span([h.Class('mr-auto text-muted-foreground')], [label]),
+      h.span(
+        [
+          h.Class(
+            css({
+              marginRight: 'auto',
+              color: 'var(--muted-foreground)',
+            }),
+          ),
+        ],
+        [label],
+      ),
       ...values.map((value, level) =>
         h.button(
           [
@@ -1313,8 +2105,26 @@ const guidance = (
             h.Class(
               cn(
                 FIGURE,
-                'h-6 min-w-9 rounded-md px-1.5 text-[calc(10.5px*var(--type-scale))] disabled:opacity-35',
-                level === chosen ? 'bg-foreground text-background' : 'hover:bg-foreground/5',
+                css({
+                  height: '1.5rem',
+                  minWidth: '2.25rem',
+                  borderRadius: 'md',
+                  paddingInline: '0.375rem',
+                  fontSize: 'calc(10.5px*var(--type-scale))',
+                  _disabled: {
+                    opacity: 0.35,
+                  },
+                }),
+                level === chosen
+                  ? css({
+                      backgroundColor: 'var(--foreground)',
+                      color: 'var(--background)',
+                    })
+                  : css({
+                      _hover: {
+                        backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                      },
+                    }),
               ),
             ),
           ],
@@ -1337,7 +2147,24 @@ const quarterly = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html 
   const open = guidanceOpen(game)
   const growth = quarterGrowth(quarter, ledger)
   return h.div(
-    [h.Key('quarter'), h.Class(`flex flex-col py-1 ${WELL} compact:hidden`)],
+    [
+      h.Key('quarter'),
+      h.Class(
+        cx(
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            paddingBlock: '0.25rem',
+          }),
+          WELL,
+          css({
+            _compact: {
+              display: 'none',
+            },
+          }),
+        ),
+      ),
+    ],
     [
       line(t.hud.quarter(quarter.index), t.hud.dayOf7(day), 'plain', h),
       guidance(
@@ -1400,9 +2227,33 @@ const toolButton = (
       h.AriaLabel(label),
       h.AriaPressed(active ? 'true' : 'false'),
       h.OnClick(message),
-      h.Class(cn(tool(active), 'enter-pop compact:size-9', cue && 'cue-glow')),
+      h.Class(
+        cn(
+          tool(active),
+          cx(
+            css({
+              _compact: {
+                width: '2.25rem',
+                height: '2.25rem',
+              },
+            }),
+            'enter-pop',
+          ),
+          cue && 'cue-glow',
+        ),
+      ),
     ],
-    [icon(h, glyph, 'size-[18px]'), extra],
+    [
+      icon(
+        h,
+        glyph,
+        css({
+          width: '18px',
+          height: '18px',
+        }),
+      ),
+      extra,
+    ],
   )
 
 /** Undo or redo: dimmed when its stack is empty. */
@@ -1425,20 +2276,68 @@ const historyButton = (
       h.Class(
         cn(
           tool(false),
-          'enter-pop compact:size-9 disabled:opacity-35 disabled:pointer-events-none',
+          cx(
+            css({
+              _compact: {
+                width: '2.25rem',
+                height: '2.25rem',
+              },
+              _disabled: {
+                opacity: 0.35,
+                pointerEvents: 'none',
+              },
+            }),
+            'enter-pop',
+          ),
           cue && 'cue-glow',
         ),
       ),
     ],
-    [icon(h, glyph, 'size-[18px]')],
+    [
+      icon(
+        h,
+        glyph,
+        css({
+          width: '18px',
+          height: '18px',
+        }),
+      ),
+    ],
   )
 
 /** Controls a phone reaches through More instead. */
 const desktopOnly = (children: ReadonlyArray<Html>, h: HtmlBuilder<Message>): Html =>
-  h.div([h.Class('contents compact:hidden')], children)
+  h.div(
+    [
+      h.Class(
+        css({
+          display: 'contents',
+          _compact: {
+            display: 'none',
+          },
+        }),
+      ),
+    ],
+    children,
+  )
 
 const divider = (h: HtmlBuilder<Message>): Html =>
-  h.div([h.Class('mx-0.5 h-6 w-px bg-hairline compact:hidden')], [])
+  h.div(
+    [
+      h.Class(
+        css({
+          marginInline: '0.125rem',
+          height: '1.5rem',
+          width: '1px',
+          backgroundColor: 'var(--hairline)',
+          _compact: {
+            display: 'none',
+          },
+        }),
+      ),
+    ],
+    [],
+  )
 
 /** The Exit button, shown while an Exit is on the table; its badge is the best Legacy. */
 const exitButton = (model: Model, h: HtmlBuilder<Message>): Html => {
@@ -1457,13 +2356,54 @@ const exitButton = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.Class(
         cn(
           tool(model.panel === 'exit'),
-          'enter-pop flex w-auto gap-2 px-3 text-[calc(13px*var(--type-scale))] font-medium compact:size-9 compact:px-0 max-2xl:w-9 max-2xl:px-0 max-2xl:justify-center',
+          cx(
+            css({
+              display: 'flex',
+              width: 'auto',
+              gap: '0.5rem',
+              paddingInline: '0.75rem',
+              fontSize: 'calc(13px*var(--type-scale))',
+              fontWeight: '500',
+              _compact: {
+                width: '2.25rem',
+                height: '2.25rem',
+                paddingInline: '0',
+              },
+              '@media (max-width: 1535px)': {
+                width: '2.25rem',
+                paddingInline: '0',
+                justifyContent: 'center',
+              },
+            }),
+            'enter-pop',
+          ),
         ),
       ),
     ],
     [
-      icon(h, DoorOpen, 'size-[18px]'),
-      h.span([h.Class('compact:hidden max-2xl:hidden')], [t.hud.exit]),
+      icon(
+        h,
+        DoorOpen,
+        css({
+          width: '18px',
+          height: '18px',
+        }),
+      ),
+      h.span(
+        [
+          h.Class(
+            css({
+              _compact: {
+                display: 'none',
+              },
+              '@media (max-width: 1535px)': {
+                display: 'none',
+              },
+            }),
+          ),
+        ],
+        [t.hud.exit],
+      ),
       legacy > 0
         ? h.span(
             [
@@ -1471,7 +2411,26 @@ const exitButton = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 cn(
                   FIGURE,
-                  'enter-badge absolute -top-1 -right-1 grid h-4 min-w-4 place-items-center rounded-full bg-ok px-1 text-[calc(9.5px*var(--type-scale))] leading-none font-semibold text-white shadow-raised',
+                  cx(
+                    css({
+                      position: 'absolute',
+                      top: '-0.25rem',
+                      right: '-0.25rem',
+                      display: 'grid',
+                      height: '1rem',
+                      minWidth: '1rem',
+                      placeItems: 'center',
+                      borderRadius: '9999px',
+                      backgroundColor: 'var(--ok)',
+                      paddingInline: '0.25rem',
+                      fontSize: 'calc(9.5px*var(--type-scale))',
+                      lineHeight: '1',
+                      fontWeight: '600',
+                      color: 'white',
+                      boxShadow: 'raised',
+                    }),
+                    'enter-badge',
+                  ),
                 ),
               ),
             ],
@@ -1520,18 +2479,55 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
     toParentMessage: (message) => Message.MoreMenuChanged({ message }),
     viewInputs: {
       items: moreItems(model),
-      className: 'hidden compact:block',
+      className: css({
+        display: 'none',
+        _compact: {
+          display: 'block',
+        },
+      }),
       ariaLabel: t.hud.more,
-      buttonClassName: cn(tool(model.moreMenu.isOpen), 'relative size-11'),
+      buttonClassName: cn(
+        tool(model.moreMenu.isOpen),
+        css({
+          position: 'relative',
+          width: '2.75rem',
+          height: '2.75rem',
+        }),
+      ),
       buttonContent: h.span(
-        [h.Class('contents')],
         [
-          icon(h, Ellipsis, 'size-[18px]'),
+          h.Class(
+            css({
+              display: 'contents',
+            }),
+          ),
+        ],
+        [
+          icon(
+            h,
+            Ellipsis,
+            css({
+              width: '18px',
+              height: '18px',
+            }),
+          ),
           calling
             ? h.span(
                 [
                   h.Class(
-                    'enter-badge absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-ok shadow-raised',
+                    cx(
+                      css({
+                        position: 'absolute',
+                        top: '-0.125rem',
+                        right: '-0.125rem',
+                        width: '0.625rem',
+                        height: '0.625rem',
+                        borderRadius: '9999px',
+                        backgroundColor: 'var(--ok)',
+                        boxShadow: 'raised',
+                      }),
+                      'enter-badge',
+                    ),
                   ),
                 ],
                 [],
@@ -1547,19 +2543,76 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
         (item === 'redo' && !redoAvailable(model.board)),
       itemToConfig: (item, { isActive, isDisabled }) => ({
         className: cn(
-          'flex h-10 cursor-pointer items-center gap-2.5 rounded-xl px-2.5 text-[calc(13px*var(--type-scale))] outline-none',
-          isActive && 'bg-well',
-          isDisabled && 'opacity-35',
-          item === 'fullscreen' && 'narrow:hidden',
+          css({
+            display: 'flex',
+            height: '2.5rem',
+            cursor: 'pointer',
+            alignItems: 'center',
+            gap: '0.625rem',
+            borderRadius: 'xl',
+            paddingInline: '0.625rem',
+            fontSize: 'calc(13px*var(--type-scale))',
+            outlineStyle: 'none',
+          }),
+          isActive &&
+            css({
+              backgroundColor: 'var(--well)',
+            }),
+          isDisabled &&
+            css({
+              opacity: 0.35,
+            }),
+          item === 'fullscreen' &&
+            css({
+              _narrow: {
+                display: 'none',
+              },
+            }),
         ),
         content: h.span(
-          [h.Class('flex w-full items-center gap-2.5')],
           [
-            icon(h, moreOf(t)[item].glyph, 'size-[18px] text-muted-foreground'),
-            h.span([h.Class('flex-1')], [moreOf(t)[item].label]),
+            h.Class(
+              css({
+                display: 'flex',
+                width: '100%',
+                alignItems: 'center',
+                gap: '0.625rem',
+              }),
+            ),
+          ],
+          [
+            icon(
+              h,
+              moreOf(t)[item].glyph,
+              css({
+                width: '18px',
+                height: '18px',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+            h.span(
+              [
+                h.Class(
+                  css({
+                    flex: '1 1 0%',
+                  }),
+                ),
+              ],
+              [moreOf(t)[item].label],
+            ),
             item === 'exit' && (legacy ?? 0) > 0
               ? h.span(
-                  [h.Class(cn(FIGURE, 'text-[calc(11.5px*var(--type-scale))] text-ok'))],
+                  [
+                    h.Class(
+                      cn(
+                        FIGURE,
+                        css({
+                          fontSize: 'calc(11.5px*var(--type-scale))',
+                          color: 'var(--ok)',
+                        }),
+                      ),
+                    ),
+                  ],
                   [t.hud.legacy(legacy)],
                 )
               : h.empty,
@@ -1603,13 +2656,51 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                   tool(model.panel === 'research'),
                   'enter-pop',
                   glowing(model, 'research') && 'cue-glow',
-                  'flex w-auto gap-2 px-3 text-[calc(13px*var(--type-scale))] font-medium compact:size-11 compact:px-0 max-2xl:w-9 max-2xl:px-0 max-2xl:justify-center',
+                  css({
+                    display: 'flex',
+                    width: 'auto',
+                    gap: '0.5rem',
+                    paddingInline: '0.75rem',
+                    fontSize: 'calc(13px*var(--type-scale))',
+                    fontWeight: '500',
+                    _compact: {
+                      width: '2.75rem',
+                      height: '2.75rem',
+                      paddingInline: '0',
+                    },
+                    '@media (max-width: 1535px)': {
+                      width: '2.25rem',
+                      paddingInline: '0',
+                      justifyContent: 'center',
+                    },
+                  }),
                 ),
               ),
             ],
             [
-              icon(h, FlaskConical, 'size-[18px]'),
-              h.span([h.Class('compact:hidden max-2xl:hidden')], [t.hud.research]),
+              icon(
+                h,
+                FlaskConical,
+                css({
+                  width: '18px',
+                  height: '18px',
+                }),
+              ),
+              h.span(
+                [
+                  h.Class(
+                    css({
+                      _compact: {
+                        display: 'none',
+                      },
+                      '@media (max-width: 1535px)': {
+                        display: 'none',
+                      },
+                    }),
+                  ),
+                ],
+                [t.hud.research],
+              ),
               affordable > 0
                 ? h.span(
                     [
@@ -1618,7 +2709,26 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                       h.Class(
                         cn(
                           FIGURE,
-                          'enter-badge absolute -top-1 -right-1 grid h-4 min-w-4 place-items-center rounded-full bg-ok px-1 text-[calc(9.5px*var(--type-scale))] leading-none font-semibold text-white shadow-raised',
+                          cx(
+                            css({
+                              position: 'absolute',
+                              top: '-0.25rem',
+                              right: '-0.25rem',
+                              display: 'grid',
+                              height: '1rem',
+                              minWidth: '1rem',
+                              placeItems: 'center',
+                              borderRadius: '9999px',
+                              backgroundColor: 'var(--ok)',
+                              paddingInline: '0.25rem',
+                              fontSize: 'calc(9.5px*var(--type-scale))',
+                              lineHeight: '1',
+                              fontWeight: '600',
+                              color: 'white',
+                              boxShadow: 'raised',
+                            }),
+                            'enter-badge',
+                          ),
                         ),
                       ),
                     ],
@@ -1642,18 +2752,68 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                   tool(model.panel === 'team'),
                   'enter-pop',
                   glowing(model, 'team') && 'cue-glow',
-                  'flex w-auto gap-2 px-3 text-[calc(13px*var(--type-scale))] font-medium compact:size-11 compact:px-0 max-2xl:w-9 max-2xl:px-0 max-2xl:justify-center',
+                  css({
+                    display: 'flex',
+                    width: 'auto',
+                    gap: '0.5rem',
+                    paddingInline: '0.75rem',
+                    fontSize: 'calc(13px*var(--type-scale))',
+                    fontWeight: '500',
+                    _compact: {
+                      width: '2.75rem',
+                      height: '2.75rem',
+                      paddingInline: '0',
+                    },
+                    '@media (max-width: 1535px)': {
+                      width: '2.25rem',
+                      paddingInline: '0',
+                      justifyContent: 'center',
+                    },
+                  }),
                 ),
               ),
             ],
             [
-              icon(h, UsersRound, 'size-[18px]'),
-              h.span([h.Class('compact:hidden max-2xl:hidden')], [t.hud.team]),
+              icon(
+                h,
+                UsersRound,
+                css({
+                  width: '18px',
+                  height: '18px',
+                }),
+              ),
+              h.span(
+                [
+                  h.Class(
+                    css({
+                      _compact: {
+                        display: 'none',
+                      },
+                      '@media (max-width: 1535px)': {
+                        display: 'none',
+                      },
+                    }),
+                  ),
+                ],
+                [t.hud.team],
+              ),
               game.backlog.length === 0
                 ? h.span(
                     [
                       h.Class(
-                        'enter-badge absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-warn shadow-raised',
+                        cx(
+                          css({
+                            position: 'absolute',
+                            top: '-0.125rem',
+                            right: '-0.125rem',
+                            width: '0.625rem',
+                            height: '0.625rem',
+                            borderRadius: '9999px',
+                            backgroundColor: 'var(--warn)',
+                            boxShadow: 'raised',
+                          }),
+                          'enter-badge',
+                        ),
                       ),
                     ],
                     [],
@@ -1723,12 +2883,29 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 cn(
                   tool(false),
-                  'enter-pop compact:size-9',
+                  cx(
+                    css({
+                      _compact: {
+                        width: '2.25rem',
+                        height: '2.25rem',
+                      },
+                    }),
+                    'enter-pop',
+                  ),
                   glowing(model, 'glossary') && 'cue-glow',
                 ),
               ),
             ],
-            [icon(h, BookOpen, 'size-[18px]')],
+            [
+              icon(
+                h,
+                BookOpen,
+                css({
+                  width: '18px',
+                  height: '18px',
+                }),
+              ),
+            ],
           )
         : h.empty,
       ...(model.prefs.easyMode
@@ -1752,7 +2929,14 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                   cn(
                     tool(model.board.clock.speed > 1),
                     FIGURE,
-                    'text-[calc(12.5px*var(--type-scale))] font-medium compact:size-9',
+                    css({
+                      fontSize: 'calc(12.5px*var(--type-scale))',
+                      fontWeight: '500',
+                      _compact: {
+                        width: '2.25rem',
+                        height: '2.25rem',
+                      },
+                    }),
                   ),
                 ),
               ],
@@ -1771,7 +2955,16 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
         h,
       ),
       h.div(
-        [h.Class('hidden compact:block')],
+        [
+          h.Class(
+            css({
+              display: 'none',
+              _compact: {
+                display: 'block',
+              },
+            }),
+          ),
+        ],
         [toolButton(t.hud.fitTheBoardShiftF, Scan, Message.BoardFitted(), false, h)],
       ),
       moreButton(model, h),
@@ -1790,10 +2983,44 @@ export const screenshotExit = (h: HtmlBuilder<Message>): Html => {
       h.AriaLabel(t.hud.exitScreenshot),
       h.OnClick(Message.ScreenshotToggled()),
       h.Class(
-        'pointer-events-auto absolute top-3 right-3 z-40 grid size-8 place-items-center rounded-full bg-surface/40 text-muted-foreground opacity-30 shadow-card backdrop-blur-sm transition-opacity hover:opacity-100 focus-visible:opacity-100',
+        css({
+          pointerEvents: 'auto',
+          position: 'absolute',
+          top: '0.75rem',
+          right: '0.75rem',
+          zIndex: '40',
+          display: 'grid',
+          width: '2rem',
+          height: '2rem',
+          placeItems: 'center',
+          borderRadius: '9999px',
+          backgroundColor: 'color-mix(in oklab, var(--card) 40%, transparent)',
+          color: 'var(--muted-foreground)',
+          opacity: 0.3,
+          boxShadow: 'card',
+          backdropFilter: 'blur(8px)',
+          transitionProperty: 'opacity',
+          transitionDuration: '150ms',
+          transitionTimingFunction: 'var(--ease-out)',
+          _hover: {
+            opacity: 1,
+          },
+          _focusVisible: {
+            opacity: 1,
+          },
+        }),
       ),
     ],
-    [icon(h, CameraOff, 'size-4')],
+    [
+      icon(
+        h,
+        CameraOff,
+        css({
+          width: '1rem',
+          height: '1rem',
+        }),
+      ),
+    ],
   )
 }
 
@@ -1807,7 +3034,13 @@ const undoButton = (danger: boolean, h: HtmlBuilder<Message>): Html => {
       onClick: Message.UndoChosen(),
       variant: danger ? 'destructive' : 'outline',
       size: 'icon-sm',
-      className: 'enter-badge pointer-events-auto ml-1',
+      className: cx(
+        css({
+          pointerEvents: 'auto',
+          marginLeft: '0.25rem',
+        }),
+        'enter-badge',
+      ),
       attributes: [
         h.Key('undo'),
         h.DataAttribute('exit', 'notice'),
@@ -1815,7 +3048,14 @@ const undoButton = (danger: boolean, h: HtmlBuilder<Message>): Html => {
         h.AriaLabel(t.hud.undo),
       ],
     },
-    icon(h, Undo2, 'size-3.5'),
+    icon(
+      h,
+      Undo2,
+      css({
+        width: '0.875rem',
+        height: '0.875rem',
+      }),
+    ),
     h,
   )
 }
@@ -1855,12 +3095,37 @@ export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: stri
           [
             h.Key('settling'),
             h.DataAttribute('exit', 'notice'),
-            h.Class('swap flex items-center gap-2.5 whitespace-nowrap'),
+            h.Class(
+              cx(
+                css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.625rem',
+                  whiteSpace: 'nowrap',
+                }),
+                'swap',
+              ),
+            ),
           ],
           [
-            ring(settleProgress(model.board), 'size-3.5 shrink-0 text-muted-foreground', h),
+            ring(
+              settleProgress(model.board),
+              css({
+                width: '0.875rem',
+                height: '0.875rem',
+                flexShrink: '0',
+                color: 'var(--muted-foreground)',
+              }),
+              h,
+            ),
             h.span(
-              [h.Class('text-muted-foreground')],
+              [
+                h.Class(
+                  css({
+                    color: 'var(--muted-foreground)',
+                  }),
+                ),
+              ],
               [change.change.count > 1 ? t.hud.changes(change.change.count) : change.change.label],
             ),
           ],
@@ -1869,15 +3134,48 @@ export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: stri
           [
             h.Key(`delta-${delta?.id}`),
             h.DataAttribute('exit', 'notice'),
-            h.Class('swap flex items-center gap-2.5 whitespace-nowrap'),
+            h.Class(
+              cx(
+                css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.625rem',
+                  whiteSpace: 'nowrap',
+                }),
+                'swap',
+              ),
+            ),
           ],
           [
             h.span(
-              [h.Class(`size-2 shrink-0 rounded-full ${delta?.worse ? 'bg-danger' : 'bg-ok'}`)],
+              [
+                h.Class(
+                  cx(
+                    css({
+                      width: '0.5rem',
+                      height: '0.5rem',
+                      flexShrink: '0',
+                      borderRadius: '9999px',
+                    }),
+                    delta?.worse
+                      ? css({ backgroundColor: 'danger' })
+                      : css({ backgroundColor: 'ok' }),
+                  ),
+                ),
+              ],
               [],
             ),
             h.span(
-              [h.Class(cn(FIGURE, 'text-[calc(11.5px*var(--type-scale))]'))],
+              [
+                h.Class(
+                  cn(
+                    FIGURE,
+                    css({
+                      fontSize: 'calc(11.5px*var(--type-scale))',
+                    }),
+                  ),
+                ),
+              ],
               [delta ? deltaText(t, delta, has(model.board.game, 'percentiles')) : ''],
             ),
             change._tag === 'Settled' && change.ticks > 0
@@ -1885,7 +3183,14 @@ export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: stri
                   [
                     h.Key('stable'),
                     h.Class(
-                      'enter-badge text-[calc(11.5px*var(--type-scale))] font-medium text-ok',
+                      cx(
+                        css({
+                          fontSize: 'calc(11.5px*var(--type-scale))',
+                          fontWeight: '500',
+                          color: 'var(--ok)',
+                        }),
+                        'enter-badge',
+                      ),
                     ),
                   ],
                   [t.hud.stable],
@@ -1919,7 +3224,16 @@ export const regionTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.Key('regions'),
       h.AriaLabel(t.hud.regions),
       h.Class(
-        'pointer-events-auto flex items-center gap-0.5 rounded-xl bg-surface p-1 shadow-card',
+        css({
+          pointerEvents: 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.125rem',
+          borderRadius: 'xl',
+          layerStyle: 'surface',
+          padding: '0.25rem',
+          boxShadow: 'card',
+        }),
       ),
     ],
     REGIONS.map((region) => {
@@ -1942,12 +3256,31 @@ export const regionTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.Class(
             cn(
               FIGURE,
-              'h-7 rounded-lg px-2.5 text-[calc(11.5px*var(--type-scale))] font-medium',
+              css({
+                height: '1.75rem',
+                borderRadius: 'lg',
+                paddingInline: '0.625rem',
+                fontSize: 'calc(11.5px*var(--type-scale))',
+                fontWeight: '500',
+              }),
               model.board.region === region
-                ? 'bg-foreground text-background'
+                ? css({
+                    backgroundColor: 'var(--foreground)',
+                    color: 'var(--background)',
+                  })
                 : isOpen
-                  ? 'hover:bg-foreground/5'
-                  : 'text-muted-foreground opacity-60 hover:opacity-100',
+                  ? css({
+                      _hover: {
+                        backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                      },
+                    })
+                  : css({
+                      color: 'var(--muted-foreground)',
+                      opacity: 0.6,
+                      _hover: {
+                        opacity: 1,
+                      },
+                    }),
             ),
           ),
         ],
@@ -1957,7 +3290,17 @@ export const regionTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
             ? h.span(
                 [
                   h.Key('drift'),
-                  h.Class('ml-1 inline-block size-1.5 rounded-full bg-warn align-middle'),
+                  h.Class(
+                    css({
+                      marginLeft: '0.25rem',
+                      display: 'inline-block',
+                      width: '0.375rem',
+                      height: '0.375rem',
+                      borderRadius: '9999px',
+                      backgroundColor: 'var(--warn)',
+                      verticalAlign: 'middle',
+                    }),
+                  ),
                 ],
                 [],
               )
@@ -1977,8 +3320,22 @@ export const regionTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
                 ),
                 h.Class(
                   cn(
-                    'ml-0.5 h-7 rounded-lg px-2.5 text-[calc(11.5px*var(--type-scale))] font-medium shadow-[inset_1px_0_0_var(--hairline-soft)] hover:bg-foreground/5',
-                    model.panel === 'mirror' && 'bg-foreground/5',
+                    css({
+                      marginLeft: '0.125rem',
+                      height: '1.75rem',
+                      borderRadius: 'lg',
+                      paddingInline: '0.625rem',
+                      fontSize: 'calc(11.5px*var(--type-scale))',
+                      fontWeight: '500',
+                      boxShadow: 'inset 1px 0 0 var(--hairline-soft)',
+                      _hover: {
+                        backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                      },
+                    }),
+                    model.panel === 'mirror' &&
+                      css({
+                        backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                      }),
                   ),
                 ),
               ],

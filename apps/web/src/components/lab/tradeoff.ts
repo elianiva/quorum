@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { copy, localeOf, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { Check, Sparkles } from 'lucide'
@@ -134,7 +135,15 @@ const radar = (now: Axes, next: Axes, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.svg(
     [
-      h.Class('mx-auto block h-[176px] w-[220px] overflow-visible'),
+      h.Class(
+        css({
+          marginInline: 'auto',
+          display: 'block',
+          height: '176px',
+          width: '220px',
+          overflow: 'visible',
+        }),
+      ),
       h.Xmlns('http://www.w3.org/2000/svg'),
       h.ViewBox(`0 22 ${SIZE} 176`),
       h.AriaLabel(t.tradeoff.sixAxesNowAndWithThis),
@@ -151,21 +160,35 @@ const radar = (now: Axes, next: Axes, h: HtmlBuilder<Message>): Html => {
             ).join(' '),
           ),
           h.Fill('none'),
-          h.Class('stroke-hairline'),
+          h.Class(
+            css({
+              stroke: 'var(--hairline)',
+            }),
+          ),
           h.StrokeWidth('1'),
         ]),
       ),
       h.polygon([
         h.Key('now'),
         h.Points(polygonOf(now)),
-        h.Class('fill-muted-foreground/10 stroke-muted-foreground'),
+        h.Class(
+          css({
+            fill: 'color-mix(in oklab, var(--muted-foreground) 10%, transparent)',
+            stroke: 'var(--muted-foreground)',
+          }),
+        ),
         h.StrokeWidth('1.25'),
         h.Attribute('stroke-dasharray', '3 2'),
       ]),
       h.polygon([
         h.Key('next'),
         h.Points(polygonOf(next)),
-        h.Class('fill-group-compute/20 stroke-group-compute'),
+        h.Class(
+          css({
+            fill: 'color-mix(in oklab, var(--group-compute) 20%, transparent)',
+            stroke: 'var(--group-compute)',
+          }),
+        ),
         h.StrokeWidth('1.75'),
         h.StrokeLinejoin('round'),
       ]),
@@ -182,8 +205,21 @@ const radar = (now: Axes, next: Axes, h: HtmlBuilder<Message>): Html => {
             h.Attribute('text-anchor', anchor),
             h.Class(
               cn(
-                'text-[calc(10.5px*var(--type-scale))] font-medium',
-                up ? 'fill-ok' : down ? 'fill-danger' : 'fill-muted-foreground',
+                css({
+                  fontSize: 'calc(10.5px*var(--type-scale))',
+                  fontWeight: '500',
+                }),
+                up
+                  ? css({
+                      fill: 'var(--ok)',
+                    })
+                  : down
+                    ? css({
+                        fill: 'var(--danger)',
+                      })
+                    : css({
+                        fill: 'var(--muted-foreground)',
+                      }),
               ),
             ),
           ],
@@ -231,21 +267,56 @@ const worse = (preview: PreviewFigures): boolean =>
 const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Html =>
   (card._tag === 'Hovering' || card._tag === 'Pinned') && card.preview
     ? h.div(
-        [h.Class('flex flex-col gap-0.5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.125rem',
+            }),
+          ),
+        ],
         [
           h.div(
-            [h.Class('flex items-center gap-2')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }),
+              ),
+            ],
             [
               h.span(
                 [
                   h.Class(
-                    `size-2 shrink-0 rounded-full ${worse(card.preview) ? 'bg-danger' : 'bg-ok'}`,
+                    cx(
+                      css({
+                        width: '0.5rem',
+                        height: '0.5rem',
+                        flexShrink: '0',
+                        borderRadius: '9999px',
+                      }),
+                      worse(card.preview)
+                        ? css({ backgroundColor: 'danger' })
+                        : css({ backgroundColor: 'ok' }),
+                    ),
                   ),
                 ],
                 [],
               ),
               h.span(
-                [h.Class(cn(FIGURE, 'text-[calc(12px*var(--type-scale))]'))],
+                [
+                  h.Class(
+                    cn(
+                      FIGURE,
+                      css({
+                        fontSize: 'calc(12px*var(--type-scale))',
+                      }),
+                    ),
+                  ),
+                ],
                 [previewLine(copy(h), model, card.preview)],
               ),
             ],
@@ -254,7 +325,14 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
             ? h.span(
                 [
                   h.Class(
-                    cn(FIGURE, 'pl-4 text-[calc(11.5px*var(--type-scale))] text-muted-foreground'),
+                    cn(
+                      FIGURE,
+                      css({
+                        paddingLeft: '1rem',
+                        fontSize: 'calc(11.5px*var(--type-scale))',
+                        color: 'var(--muted-foreground)',
+                      }),
+                    ),
                   ),
                 ],
                 [costLine(copy(h), model, card.preview)],
@@ -263,7 +341,17 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
         ],
       )
     : card._tag === 'Refused'
-      ? h.span([h.Class('text-[calc(12px*var(--type-scale))] text-warn')], [card.reason])
+      ? h.span(
+          [
+            h.Class(
+              css({
+                fontSize: 'calc(12px*var(--type-scale))',
+                color: 'var(--warn)',
+              }),
+            ),
+          ],
+          [card.reason],
+        )
       : h.empty
 
 const PLACE = 'absolute top-[76px] right-[372px] z-20 w-[320px] short:right-[340px]'
@@ -291,11 +379,34 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
     return h.div(
       [
         h.Key('tradeoff-line'),
-        h.Class(cn(PLACE, PLACE_PHONE, PANEL, 'enter-panel flex flex-col gap-1 px-3.5 py-2.5')),
+        h.Class(
+          cn(
+            PLACE,
+            PLACE_PHONE,
+            PANEL,
+            cx(
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.25rem',
+                paddingInline: '0.875rem',
+                paddingBlock: '0.625rem',
+              }),
+              'enter-panel',
+            ),
+          ),
+        ),
       ],
       [
         h.span(
-          [h.Class('text-[calc(12.5px*var(--type-scale))] font-semibold')],
+          [
+            h.Class(
+              css({
+                fontSize: 'calc(12.5px*var(--type-scale))',
+                fontWeight: '600',
+              }),
+            ),
+          ],
           [nameOf(t, card.option)],
         ),
         effect(model, card, h),
@@ -318,16 +429,58 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Key('tradeoff'),
-      h.Class(cn(PLACE, PLACE_SCREEN, PANEL, 'enter-panel flex flex-col gap-3 p-4')),
+      h.Class(
+        cn(
+          PLACE,
+          PLACE_SCREEN,
+          PANEL,
+          cx(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+              padding: '1rem',
+            }),
+            'enter-panel',
+          ),
+        ),
+      ),
       h.AriaLabel(title),
     ],
     [
       h.div(
-        [h.Class('flex items-center gap-2 pr-7')],
         [
-          icon(h, Sparkles, 'size-4 shrink-0 text-group-compute'),
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              paddingRight: '1.75rem',
+            }),
+          ),
+        ],
+        [
+          icon(
+            h,
+            Sparkles,
+            css({
+              width: '1rem',
+              height: '1rem',
+              flexShrink: '0',
+              color: 'var(--group-compute)',
+            }),
+          ),
           h.span(
-            [h.Class('min-w-0 flex-1 text-[calc(13.5px*var(--type-scale))] font-semibold')],
+            [
+              h.Class(
+                css({
+                  minWidth: '0',
+                  flex: '1 1 0%',
+                  fontSize: 'calc(13.5px*var(--type-scale))',
+                  fontWeight: '600',
+                }),
+              ),
+            ],
             [title],
           ),
         ],
@@ -339,13 +492,29 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
       effect(model, card, h),
       migration && card._tag !== 'Refused'
         ? h.p(
-            [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'calc(12px*var(--type-scale))',
+                  lineHeight: '1.375',
+                  color: 'var(--muted-foreground)',
+                }),
+              ),
+            ],
             [t.tradeoff.migrationDHAcrossAllAppServers(migrationCost(model.board.game, migration))],
           )
         : h.empty,
       stack && stack.glossary.length > 0
         ? h.div(
-            [h.Class('flex flex-wrap gap-1.5')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '0.375rem',
+                }),
+              ),
+            ],
             stack.glossary.map((anchor) =>
               h.a(
                 [
@@ -354,7 +523,20 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.Target('_blank'),
                   h.Rel('noreferrer noopener'),
                   h.Class(
-                    'rounded-md bg-nested px-1.5 py-0.5 text-[calc(11px*var(--type-scale))] text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground',
+                    css({
+                      borderRadius: 'md',
+                      backgroundColor: 'var(--surface-nested)',
+                      paddingInline: '0.375rem',
+                      paddingBlock: '0.125rem',
+                      fontSize: 'calc(11px*var(--type-scale))',
+                      color: 'var(--muted-foreground)',
+                      textDecorationLine: 'underline',
+                      textDecorationStyle: 'dotted',
+                      textUnderlineOffset: '2',
+                      _hover: {
+                        color: 'var(--foreground)',
+                      },
+                    }),
                   ),
                 ],
                 [termsOf(t)[anchor] ?? anchor],
@@ -364,18 +546,34 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
         : h.empty,
       card._tag === 'Pinned'
         ? h.div(
-            [h.Class('flex gap-2')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  gap: '0.5rem',
+                }),
+              ),
+            ],
             [
               button(
                 {
                   onClick: Message.OptionConfirmed(),
                   isDisabled: card.preview === null,
                   size: 'lg',
-                  className: 'flex-1',
+                  className: css({
+                    flex: '1 1 0%',
+                  }),
                   attributes: [h.Title(t.tradeoff.confirmEnter)],
                 },
                 [
-                  icon(h, Check, 'size-4'),
+                  icon(
+                    h,
+                    Check,
+                    css({
+                      width: '1rem',
+                      height: '1rem',
+                    }),
+                  ),
                   migration ? t.tradeoff.startMigration : t.tradeoff.confirm,
                 ],
                 h,

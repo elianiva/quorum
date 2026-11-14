@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { Effect, Option } from 'effect'
 import { Mount } from 'foldkit'
 import { type Messages, copy, eraWords, localized } from '@/i18n/messages.ts'
@@ -60,7 +61,6 @@ import { KEY_FIELD_MAX, canPlayOnline, keyNote } from '@/game/access.ts'
 import { KeyPhase } from '@/game/key-machine.ts'
 import { languagePicker } from '@/i18n/picker.ts'
 import { EYEBROW, FIGURE, FLOAT, NESTED, SCROLL, WELL } from '@quorum/ui/game/bits'
-import { css, cx } from '@quorum/styled-system/css'
 
 const focusable =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -116,7 +116,21 @@ export const shell = (
     [
       h.DataAttribute('exit', 'gesture'),
       h.Class(
-        'modal-overlay absolute inset-0 z-30 grid place-items-center p-6 compact:p-0 short:[[data-toast=on]_&]:pt-12!',
+        cx(
+          'modal-overlay',
+          css({
+            position: 'absolute',
+            inset: '0',
+            zIndex: '30',
+            display: 'grid',
+            placeItems: 'center',
+            padding: '1.5rem',
+            _compact: { padding: '0' },
+            _short: {
+              '[data-toast="on"] &': { paddingTop: '3rem !important' },
+            },
+          }),
+        ),
       ),
     ],
     [

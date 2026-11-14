@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
   Check,
@@ -109,7 +110,14 @@ const severity = (value: number, t: Messages, h: HtmlBuilder<Message>): Html =>
       h.Class(
         cn(
           FIGURE,
-          'shrink-0 rounded-md px-1 text-[calc(10.5px*var(--type-scale))] font-medium shadow-[inset_0_0_0_1px_oklch(1_0_0/0.42)]',
+          css({
+            flexShrink: '0',
+            borderRadius: 'md',
+            paddingInline: '0.25rem',
+            fontSize: 'calc(10.5px*var(--type-scale))',
+            fontWeight: '500',
+            boxShadow: 'inset 0 0 0 1px oklch(1 0 0/0.42)',
+          }),
         ),
       ),
     ],
@@ -134,14 +142,50 @@ export const incidentNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.Class(ALARM),
     ],
     [
-      icon(h, TriangleAlert, 'size-4 shrink-0'),
+      icon(
+        h,
+        TriangleAlert,
+        css({
+          width: '1rem',
+          height: '1rem',
+          flexShrink: '0',
+        }),
+      ),
       h.div(
-        [h.Class('flex min-w-0 flex-col')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              minWidth: '0',
+              flexDirection: 'column',
+            }),
+          ),
+        ],
         [
           h.div(
-            [h.Class('flex min-w-0 items-center gap-2')],
             [
-              h.span([h.Class('truncate')], [t.catalog.incidents[incident.kind].name]),
+              h.Class(
+                css({
+                  display: 'flex',
+                  minWidth: '0',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }),
+              ),
+            ],
+            [
+              h.span(
+                [
+                  h.Class(
+                    css({
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }),
+                  ),
+                ],
+                [t.catalog.incidents[incident.kind].name],
+              ),
               severity(incident.severity, t, h),
             ],
           ),
@@ -149,7 +193,15 @@ export const incidentNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
           // page and not the first.
           incident.causedBy
             ? h.span(
-                [h.Class('text-[calc(11.5px*var(--type-scale))] font-medium text-white/80')],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'calc(11.5px*var(--type-scale))',
+                      fontWeight: '500',
+                      color: 'color-mix(in oklab, white 80%, transparent)',
+                    }),
+                  ),
+                ],
                 [t.incidents.followedLeftAlone(t.catalog.incidents[incident.causedBy].name)],
               )
             : h.empty,
@@ -164,7 +216,17 @@ export const incidentNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
               variant: 'outline',
               attributes: [h.Title(locked ?? action.label(t))],
             },
-            [icon(h, locked === null ? FileBadge : Lock, 'size-3.5'), action.label(t)],
+            [
+              icon(
+                h,
+                locked === null ? FileBadge : Lock,
+                css({
+                  width: '0.875rem',
+                  height: '0.875rem',
+                }),
+              ),
+              action.label(t),
+            ],
             h,
           )
         : h.empty,
@@ -176,10 +238,31 @@ export const incidentNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.AriaLabel(t.incidents.showOnBoard),
               h.OnClick(Message.RevealNode({ nodeId })),
               h.Class(
-                'grid size-7 shrink-0 place-items-center rounded-lg text-white/90 shadow-[inset_0_0_0_1px_oklch(1_0_0/0.4)] hover:bg-white/10',
+                css({
+                  display: 'grid',
+                  width: '1.75rem',
+                  height: '1.75rem',
+                  flexShrink: '0',
+                  placeItems: 'center',
+                  borderRadius: 'lg',
+                  color: 'color-mix(in oklab, white 90%, transparent)',
+                  boxShadow: 'inset 0 0 0 1px oklch(1 0 0/0.4)',
+                  _hover: {
+                    backgroundColor: 'color-mix(in oklab, white 10%, transparent)',
+                  },
+                }),
               ),
             ],
-            [icon(h, Crosshair, 'size-3.5')],
+            [
+              icon(
+                h,
+                Crosshair,
+                css({
+                  width: '0.875rem',
+                  height: '0.875rem',
+                }),
+              ),
+            ],
           )
         : h.empty,
     ],
@@ -222,15 +305,33 @@ export const alertsNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.AriaHidden(true),
           h.Class(
             cn(
-              'size-[7px] shrink-0 rounded-full',
-              loud.length > 0 ? 'bg-warn' : 'bg-muted-foreground',
+              css({
+                width: '7px',
+                height: '7px',
+                flexShrink: '0',
+                borderRadius: '9999px',
+              }),
+              loud.length > 0
+                ? css({
+                    backgroundColor: 'var(--warn)',
+                  })
+                : css({
+                    backgroundColor: 'var(--muted-foreground)',
+                  }),
             ),
           ),
         ],
         [],
       ),
       h.span(
-        [h.Class('shrink-0 font-semibold')],
+        [
+          h.Class(
+            css({
+              flexShrink: '0',
+              fontWeight: '600',
+            }),
+          ),
+        ],
         [
           firing.length > 0
             ? t.incidents.alertsFiring(firing.length)
@@ -240,7 +341,17 @@ export const alertsNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
       detail === null
         ? h.empty
         : h.span(
-            [h.Class('min-w-0 truncate text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  minWidth: '0',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  color: 'var(--muted-foreground)',
+                }),
+              ),
+            ],
             [others > 0 ? `${detail} ${t.incidents.andMore(others)}` : detail],
           ),
       muted.length > 0 ? badge({ variant: 'warn' }, [t.incidents.ignored], h) : h.empty,
@@ -252,7 +363,16 @@ export const alertsNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
               variant: 'ghost',
               attributes: [h.Title(t.incidents.acknowledge), h.AriaLabel(t.incidents.acknowledge)],
             },
-            [icon(h, Check, 'size-3.5')],
+            [
+              icon(
+                h,
+                Check,
+                css({
+                  width: '0.875rem',
+                  height: '0.875rem',
+                }),
+              ),
+            ],
             h,
           )
         : h.empty,
@@ -263,7 +383,17 @@ export const alertsNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
           variant: 'ghost',
           attributes: [h.Title(t.incidents.openAlerts)],
         },
-        [t.incidents.alerts, icon(h, ChevronRight, 'size-3.5')],
+        [
+          t.incidents.alerts,
+          icon(
+            h,
+            ChevronRight,
+            css({
+              width: '0.875rem',
+              height: '0.875rem',
+            }),
+          ),
+        ],
         h,
       ),
     ],
@@ -290,26 +420,92 @@ export const researchOffer = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.DataAttribute('morph', 'notice'),
       h.DataAttribute('exit', 'notice'),
       h.Class(
-        'pointer-events-auto enter-left fixed bottom-[76px] left-3 z-20 w-[min(21rem,calc(100%-16px))] overflow-hidden rounded-xl bg-surface shadow-float compact:relative compact:w-auto',
+        cx(
+          css({
+            pointerEvents: 'auto',
+            position: 'fixed',
+            bottom: '76px',
+            left: '0.75rem',
+            zIndex: '20',
+            width: 'min(21rem,calc(100%-16px))',
+            overflow: 'hidden',
+            borderRadius: 'xl',
+            layerStyle: 'surface',
+            boxShadow: 'float',
+            _compact: {
+              position: 'relative',
+              width: 'auto',
+            },
+          }),
+          'enter-left',
+        ),
       ),
     ],
     [
       h.div(
-        [h.Class('flex items-start gap-2 px-3 pt-2 pr-9 pb-1.5')],
         [
-          icon(h, FlaskConical, 'mt-0.5 size-4 shrink-0 text-muted-foreground'),
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '0.5rem',
+              paddingInline: '0.75rem',
+              paddingTop: '0.5rem',
+              paddingRight: '2.25rem',
+              paddingBottom: '0.375rem',
+            }),
+          ),
+        ],
+        [
+          icon(
+            h,
+            FlaskConical,
+            css({
+              marginTop: '0.125rem',
+              width: '1rem',
+              height: '1rem',
+              flexShrink: '0',
+              color: 'var(--muted-foreground)',
+            }),
+          ),
           h.div(
-            [h.Class('flex min-w-0 flex-col gap-0.5')],
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  minWidth: '0',
+                  flexDirection: 'column',
+                  gap: '0.125rem',
+                }),
+              ),
+            ],
             [
               // The option that was refused is context, so it gives way; the Research is the offer.
               h.span(
-                [h.Class(cn(EYEBROW, 'truncate'))],
+                [
+                  h.Class(
+                    cn(
+                      EYEBROW,
+                      css({
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }),
+                    ),
+                  ),
+                ],
                 [t.research.locked, ' · ', nameIn(t, offer.what)],
               ),
               h.span(
                 [
                   h.Class(
-                    'line-clamp-2 text-[calc(13px*var(--type-scale))] font-semibold leading-snug [text-wrap:pretty]',
+                    css({
+                      lineClamp: 2,
+                      fontSize: 'calc(13px*var(--type-scale))',
+                      fontWeight: '600',
+                      lineHeight: '1.375',
+                      textWrap: 'pretty',
+                    }),
                   ),
                 ],
                 [research.name],
@@ -320,13 +516,37 @@ export const researchOffer = (model: Model, h: HtmlBuilder<Message>): Html => {
       ),
       closeButton({ label: t.inbox.dismiss, onClick: Message.ResearchOfferDismissed() }, h),
       h.div(
-        [h.Class('flex items-center gap-2 border-t border-dashed border-hairline px-3 py-1.5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderStyle: 'dashed',
+              borderColor: 'var(--hairline)',
+              paddingInline: '0.75rem',
+              paddingBlock: '0.375rem',
+            }),
+          ),
+        ],
         [
           ...recipeOf(offer.id).map(([pool, cost]) =>
             insightChip(pool, compact(cost), h, false, 'plain', insightName(t, pool)),
           ),
           h.div(
-            [h.Class('ml-auto flex shrink-0 items-center gap-1')],
+            [
+              h.Class(
+                css({
+                  marginLeft: 'auto',
+                  display: 'flex',
+                  flexShrink: '0',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                }),
+              ),
+            ],
             [
               button(
                 {

@@ -1,13 +1,14 @@
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { Message } from '@/game/message.ts'
 import type { Toast } from '@/game/model.ts'
 
 const TOAST_MARK: Record<Toast['tone'], string> = {
-  plain: 'bg-muted-foreground',
-  ok: 'bg-ok',
-  warn: 'bg-warn',
-  danger: 'bg-danger',
-  primary: 'bg-primary-strong',
+  plain: css({ backgroundColor: 'mutedForeground' }),
+  ok: css({ backgroundColor: 'ok' }),
+  warn: css({ backgroundColor: 'warn' }),
+  danger: css({ backgroundColor: 'danger' }),
+  primary: css({ backgroundColor: 'primaryStrong' }),
 }
 
 /**
@@ -49,17 +50,50 @@ export const toast = (
             [
               h.Key(`toast-${value.id}`),
               h.DataAttribute('exit', 'notice'),
-              h.Class('swap flex w-max max-w-full shrink-0 items-center gap-2.5'),
+              h.Class(
+                cx(
+                  css({
+                    display: 'flex',
+                    width: 'max-content',
+                    maxWidth: '100%',
+                    flexShrink: '0',
+                    alignItems: 'center',
+                    gap: '0.625rem',
+                  }),
+                  'swap',
+                ),
+              ),
             ],
             [
-              h.span([h.Class(`size-2 shrink-0 rounded-full ${TOAST_MARK[value.tone]}`)], []),
+              h.span(
+                [
+                  h.Class(
+                    cx(
+                      css({
+                        width: '0.5rem',
+                        height: '0.5rem',
+                        flexShrink: '0',
+                        borderRadius: '9999px',
+                      }),
+                      TOAST_MARK[value.tone],
+                    ),
+                  ),
+                ],
+                [],
+              ),
               value.message,
               value.count > 1
                 ? h.span(
                     [
                       h.AriaLabel(String(value.count)),
                       h.Class(
-                        'ml-0.5 shrink-0 font-mono text-[calc(11.5px*var(--type-scale))] text-muted-foreground',
+                        css({
+                          marginLeft: '0.125rem',
+                          flexShrink: '0',
+                          fontFamily: 'mono',
+                          fontSize: 'calc(11.5px*var(--type-scale))',
+                          color: 'var(--muted-foreground)',
+                        }),
                       ),
                     ],
                     [`×${value.count}`],

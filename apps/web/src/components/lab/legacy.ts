@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
@@ -30,7 +31,6 @@ import { EYEBROW, FIGURE, NESTED, SCROLL, WELL } from '@quorum/ui/game/bits'
 import { SurveyMessage } from '@/game/survey.ts'
 import { isSending, isSent, isSkipped } from '@/game/survey-machine.ts'
 import { shell } from './panels.ts'
-import { css, cx } from '@quorum/styled-system/css'
 
 const stat = (name: string, value: string, h: HtmlBuilder<Message>) =>
   h.div(
@@ -318,7 +318,18 @@ const surveySection = (model: Model, h: HtmlBuilder<Message>): Html => {
           ),
         ),
       ],
-      [icon(h, Check, 'size-4 text-ok'), h.span([], [t.survey.sent])],
+      [
+        icon(
+          h,
+          Check,
+          css({
+            width: '1rem',
+            height: '1rem',
+            color: 'var(--ok)',
+          }),
+        ),
+        h.span([], [t.survey.sent]),
+      ],
     )
   const sending = isSending(survey.phase)
   const empty = survey.issues.trim() === '' && survey.likes.trim() === ''
@@ -610,7 +621,14 @@ export const selectionBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                 variant: 'ghost',
                 attributes: [h.AriaLabel(label), h.Title(label)],
               },
-              icon(h, glyph, 'size-4'),
+              icon(
+                h,
+                glyph,
+                css({
+                  width: '1rem',
+                  height: '1rem',
+                }),
+              ),
               h,
             ),
           ),
@@ -662,7 +680,17 @@ export const sellBar = (model: Model, h: HtmlBuilder<Message>): Html => {
       ),
       button(
         { onClick: Message.SellConfirmed(), size: 'sm', variant: 'destructive' },
-        [icon(h, Trash2, 'size-3.5'), t.legacy.sell2],
+        [
+          icon(
+            h,
+            Trash2,
+            css({
+              width: '0.875rem',
+              height: '0.875rem',
+            }),
+          ),
+          t.legacy.sell2,
+        ],
         h,
       ),
       button(
@@ -700,7 +728,18 @@ export const stampBar = (model: Model, h: HtmlBuilder<Message>): Html => {
             ),
           ),
         ],
-        [icon(h, Stamp, 'size-3.5 text-primary-strong'), t.legacy.clickToPlaceEsc(playbook.name)],
+        [
+          icon(
+            h,
+            Stamp,
+            css({
+              width: '0.875rem',
+              height: '0.875rem',
+              color: 'var(--primary-strong)',
+            }),
+          ),
+          t.legacy.clickToPlaceEsc(playbook.name),
+        ],
       )
     : h.empty
 }
@@ -728,7 +767,17 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       ),
       button(
         { onClick: Message.PlaybookImportAsked(), variant: 'outline', size: 'sm' },
-        [icon(h, Upload, 'size-3.5'), t.legacy.importText],
+        [
+          icon(
+            h,
+            Upload,
+            css({
+              width: '0.875rem',
+              height: '0.875rem',
+            }),
+          ),
+          t.legacy.importText,
+        ],
         h,
       ),
     ],
@@ -814,7 +863,17 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   ),
                   button(
                     { onClick: Message.PlaybookChosen({ index }), size: 'sm' },
-                    [icon(h, Plus, 'size-3.5'), t.legacy.place],
+                    [
+                      icon(
+                        h,
+                        Plus,
+                        css({
+                          width: '0.875rem',
+                          height: '0.875rem',
+                        }),
+                      ),
+                      t.legacy.place,
+                    ],
                     h,
                   ),
                   button(
@@ -824,7 +883,14 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                       size: 'icon-sm',
                       attributes: [h.AriaLabel(t.legacy.copy), h.Title(t.legacy.copyAsText)],
                     },
-                    icon(h, Clipboard, 'size-3.5'),
+                    icon(
+                      h,
+                      Clipboard,
+                      css({
+                        width: '0.875rem',
+                        height: '0.875rem',
+                      }),
+                    ),
                     h,
                   ),
                   button(
@@ -834,7 +900,14 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                       size: 'icon-sm',
                       attributes: [h.AriaLabel(t.legacy.deleteText), h.Title(t.legacy.deleteText)],
                     },
-                    icon(h, Trash2, 'size-3.5'),
+                    icon(
+                      h,
+                      Trash2,
+                      css({
+                        width: '0.875rem',
+                        height: '0.875rem',
+                      }),
+                    ),
                     h,
                   ),
                 ],

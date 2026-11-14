@@ -78,11 +78,11 @@ export const analyticsPanel: Panel = {
             [
               h.Class(
                 css({
-                  paddingInline: '1rem',
-                  paddingBottom: '0.5rem',
+                  paddingInline: '4',
+                  paddingBottom: '2',
                   fontSize: 'calc(12px*var(--type-scale))',
                   lineHeight: '1.375',
-                  color: 'var(--warn)',
+                  color: 'warn',
                 }),
               ),
             ],

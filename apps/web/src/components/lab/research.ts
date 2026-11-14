@@ -109,7 +109,7 @@ const focusOf = (model: Model): ResearchDef => {
 
 const NODE_CLASS: Record<State, string> = {
   owned: css({
-    backgroundColor: 'var(--surface-nested)',
+    backgroundColor: 'nested',
     boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
   }),
   buy: css({ layerStyle: 'raised', boxShadow: 'raised', _hover: { filter: 'brightness(0.985)' } }),
@@ -121,8 +121,8 @@ const NODE_CLASS: Record<State, string> = {
   locked: css({
     borderWidth: '1px',
     borderStyle: 'dashed',
-    borderColor: 'var(--border)',
-    backgroundColor: 'var(--canvas)',
+    borderColor: 'border',
+    backgroundColor: 'canvas',
     _hover: { backgroundColor: 'color-mix(in oklab, var(--foreground) 3%, transparent)' },
   }),
 }
@@ -137,9 +137,9 @@ const price = (entry: ResearchDef, state: State, grey: boolean, h: HtmlBuilder<M
             css({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.25rem',
+              gap: '1',
               fontSize: 'calc(11px*var(--type-scale))',
-              color: 'var(--ok)',
+              color: 'ok',
             }),
           ),
         ],
@@ -148,8 +148,8 @@ const price = (entry: ResearchDef, state: State, grey: boolean, h: HtmlBuilder<M
             h,
             Check,
             css({
-              width: '0.75rem',
-              height: '0.75rem',
+              width: '3',
+              height: '3',
             }),
           ),
           t.research.researched,
@@ -163,12 +163,12 @@ const price = (entry: ResearchDef, state: State, grey: boolean, h: HtmlBuilder<M
                 display: 'flex',
                 width: 'fit-content',
                 alignItems: 'center',
-                gap: '0.5rem',
+                gap: '2',
                 fontSize: 'calc(11px*var(--type-scale))',
               }),
               grey
                 ? css({
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   })
                 : '',
             ),
@@ -180,8 +180,8 @@ const price = (entry: ResearchDef, state: State, grey: boolean, h: HtmlBuilder<M
                 h,
                 Lock,
                 css({
-                  width: '0.625rem',
-                  height: '0.625rem',
+                  width: '2.5',
+                  height: '2.5',
                 }),
               )
             : h.empty,
@@ -219,8 +219,8 @@ const stepMeter = (step: number, h: HtmlBuilder<Message>): Html =>
           h.Class(
             cx(
               css({
-                height: '0.375rem',
-                width: '0.75rem',
+                height: '1.5',
+                width: '3',
                 borderRadius: '9999px',
               }),
               index < step
@@ -291,11 +291,11 @@ const leverRow = (
       h.Key(`${pool}-lever`),
       h.Class(
         css({
-          marginBlock: '0.375rem',
+          marginBlock: '1.5',
           borderRadius: 'lg',
-          backgroundColor: 'var(--well)',
-          paddingInline: '0.625rem',
-          paddingBlock: '0.5rem',
+          backgroundColor: 'well',
+          paddingInline: '2.5',
+          paddingBlock: '2',
           boxShadow: 'well',
         }),
       ),
@@ -307,7 +307,7 @@ const leverRow = (
             css({
               display: 'flex',
               alignItems: 'flex-start',
-              gap: '0.5rem',
+              gap: '2',
             }),
           ),
         ],
@@ -325,10 +325,10 @@ const leverRow = (
                   }),
                   blocked
                     ? css({
-                        color: 'var(--warn)',
+                        color: 'warn',
                       })
                     : css({
-                        color: 'var(--foreground)',
+                        color: 'foreground',
                       }),
                 ),
               ),
@@ -342,7 +342,7 @@ const leverRow = (
                   display: 'flex',
                   flexShrink: '0',
                   alignItems: 'center',
-                  gap: '0.375rem',
+                  gap: '1.5',
                   whiteSpace: 'nowrap',
                 }),
               ),
@@ -354,7 +354,7 @@ const leverRow = (
                   h.Class(
                     css({
                       fontSize: 'calc(10.5px*var(--type-scale))',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ],
@@ -368,7 +368,7 @@ const leverRow = (
         [
           h.Class(
             css({
-              marginTop: '0.375rem',
+              marginTop: '1.5',
               fontSize: 'calc(12px*var(--type-scale))',
               lineHeight: '1.375',
               color: 'color-mix(in oklab, var(--foreground) 85%, transparent)',
@@ -382,16 +382,16 @@ const leverRow = (
           h.Class(
             cx(
               css({
-                marginTop: '0.25rem',
+                marginTop: '1',
                 fontSize: 'calc(11px*var(--type-scale))',
                 lineHeight: '1.375',
               }),
               buildable || last
                 ? css({
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   })
                 : css({
-                    color: 'var(--warn)',
+                    color: 'warn',
                   }),
             ),
           ),
@@ -402,10 +402,10 @@ const leverRow = (
         [
           h.Class(
             css({
-              marginTop: '0.5rem',
+              marginTop: '2',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.375rem',
+              gap: '1.5',
             }),
           ),
         ],
@@ -450,7 +450,7 @@ const leverRow = (
                   variant: 'ghost',
                   className: css({
                     flexShrink: '0',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                   attributes: [
                     h.AriaLabel(t.levers.takeOff),
@@ -488,9 +488,9 @@ const costRows = (
         css({
           borderBottomWidth: '1px',
           borderBottomStyle: 'solid',
-          borderColor: 'var(--hairline)',
-          paddingInline: '1.25rem',
-          paddingBlock: '1rem',
+          borderColor: 'hairline',
+          paddingInline: '5',
+          paddingBlock: '4',
           '&:last-child': {
             borderBottomWidth: '0px',
           },
@@ -505,7 +505,7 @@ const costRows = (
               display: 'flex',
               alignItems: 'baseline',
               justifyContent: 'space-between',
-              gap: '0.75rem',
+              gap: '3',
             }),
           ),
         ],
@@ -516,7 +516,7 @@ const costRows = (
               h.Class(
                 css({
                   fontSize: 'calc(11.5px*var(--type-scale))',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -530,13 +530,13 @@ const costRows = (
             cx(
               FIGURE,
               css({
-                marginTop: '0.5rem',
+                marginTop: '2',
                 display: 'flex',
                 flexDirection: 'column',
                 '& > :not(:last-child)': {
                   borderBottomWidth: '1px',
                   borderBottomStyle: 'solid',
-                  borderColor: 'var(--hairline)',
+                  borderColor: 'hairline',
                 },
               }),
             ),
@@ -550,8 +550,8 @@ const costRows = (
                 css({
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.75rem',
-                  paddingBlock: '0.375rem',
+                  gap: '3',
+                  paddingBlock: '1.5',
                   fontSize: 'calc(12px*var(--type-scale))',
                 }),
               ),
@@ -567,10 +567,10 @@ const costRows = (
                       }),
                       game.pools[pool] < cost
                         ? css({
-                            color: 'var(--warn)',
+                            color: 'warn',
                           })
                         : css({
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                     ),
                   ),
@@ -587,10 +587,10 @@ const costRows = (
                       }),
                       ledger.insight[pool] > 0
                         ? css({
-                            color: 'var(--ok)',
+                            color: 'ok',
                           })
                         : css({
-                            color: 'var(--warn)',
+                            color: 'warn',
                           }),
                       pool === limit
                         ? css({
@@ -670,10 +670,10 @@ const requirement = (
           flexShrink: '0',
           borderBottomWidth: '1px',
           borderBottomStyle: 'solid',
-          borderColor: 'var(--hairline)',
-          backgroundColor: 'var(--warn-soft)',
-          paddingInline: '1.25rem',
-          paddingBlock: '1rem',
+          borderColor: 'hairline',
+          backgroundColor: 'warnSoft',
+          paddingInline: '5',
+          paddingBlock: '4',
         }),
       ),
     ],
@@ -685,7 +685,7 @@ const requirement = (
               display: 'flex',
               alignItems: 'baseline',
               justifyContent: 'space-between',
-              gap: '0.75rem',
+              gap: '3',
             }),
           ),
         ],
@@ -698,7 +698,7 @@ const requirement = (
                   fontSize: 'calc(10.5px*var(--type-scale))',
                   fontWeight: '500',
                   letterSpacing: '0.08em',
-                  color: 'var(--warn)',
+                  color: 'warn',
                   textTransform: 'uppercase',
                 }),
               ),
@@ -715,7 +715,7 @@ const requirement = (
                       css({
                         fontSize: 'calc(11.5px*var(--type-scale))',
                         fontWeight: '600',
-                        color: 'var(--warn)',
+                        color: 'warn',
                       }),
                     ),
                   ),
@@ -728,11 +728,11 @@ const requirement = (
         [
           h.Class(
             css({
-              marginTop: '0.375rem',
+              marginTop: '1.5',
               fontSize: 'calc(12.5px*var(--type-scale))',
               lineHeight: '1.375',
               fontWeight: '600',
-              color: 'var(--warn)',
+              color: 'warn',
             }),
           ),
         ],
@@ -748,7 +748,7 @@ const requirement = (
             [
               h.Class(
                 css({
-                  marginTop: '0.625rem',
+                  marginTop: '2.5',
                 }),
               ),
             ],
@@ -760,10 +760,10 @@ const requirement = (
             [
               h.Class(
                 css({
-                  marginTop: '0.5rem',
+                  marginTop: '2',
                   fontSize: 'calc(11.5px*var(--type-scale))',
                   lineHeight: '1.375',
-                  color: 'var(--warn)',
+                  color: 'warn',
                   opacity: 0.8,
                 }),
               ),
@@ -789,9 +789,9 @@ const linkSection = (
             css({
               borderBottomWidth: '1px',
               borderBottomStyle: 'solid',
-              borderColor: 'var(--hairline)',
-              paddingInline: '1.25rem',
-              paddingBlock: '1rem',
+              borderColor: 'hairline',
+              paddingInline: '5',
+              paddingBlock: '4',
               '&:last-child': {
                 borderBottomWidth: '0px',
               },
@@ -805,7 +805,7 @@ const linkSection = (
               h.Class(
                 css({
                   marginInline: '-0.5rem',
-                  marginTop: '0.5rem',
+                  marginTop: '2',
                   display: 'flex',
                   flexDirection: 'column',
                 }),
@@ -839,7 +839,7 @@ const face = (
             minWidth: '0',
             flex: '1 1 0%',
             flexDirection: 'column',
-            gap: '0.25rem',
+            gap: '1',
           }),
         ),
       ],
@@ -851,14 +851,14 @@ const face = (
                 css({
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: '0.25rem',
+                  gap: '1',
                   fontSize: 'calc(12.5px*var(--type-scale))',
                   lineHeight: '1.25',
                   fontWeight: '600',
                 }),
                 grey
                   ? css({
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     })
                   : '',
               ),
@@ -893,10 +893,10 @@ const face = (
                   h,
                   TriangleAlert,
                   css({
-                    width: '0.75rem',
-                    height: '0.75rem',
+                    width: '3',
+                    height: '3',
                     flexShrink: '0',
-                    color: 'var(--warn)',
+                    color: 'warn',
                   }),
                 )
               : h.empty,
@@ -911,7 +911,7 @@ const face = (
                     lineClamp: 1,
                     fontSize: 'calc(10.5px*var(--type-scale))',
                     lineHeight: '1.375',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ],
@@ -947,9 +947,9 @@ const card = (
                 inset: '0',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.625rem',
-                paddingInline: '0.625rem',
-                paddingBlock: '0.25rem',
+                gap: '2.5',
+                paddingInline: '2.5',
+                paddingBlock: '1',
                 transitionProperty: 'clip-path',
                 transitionDuration: '500ms',
                 transitionTimingFunction: 'linear',
@@ -1008,15 +1008,15 @@ const node = (model: Model, place: Placed, focused: boolean, h: HtmlBuilder<Mess
         position: 'absolute',
         display: 'flex',
         alignItems: 'center',
-        gap: '0.625rem',
+        gap: '2.5',
         overflow: 'hidden',
         borderRadius: 'xl',
-        paddingInline: '0.625rem',
-        paddingBlock: '0.25rem',
+        paddingInline: '2.5',
+        paddingBlock: '1',
         textAlign: 'left',
         transitionProperty: 'filter,box-shadow,outline-color,opacity',
         transitionDuration: '150ms',
-        transitionTimingFunction: 'var(--ease-out)',
+        transitionTimingFunction: 'out',
       }),
       NODE_CLASS[state],
       focused
@@ -1024,7 +1024,7 @@ const node = (model: Model, place: Placed, focused: boolean, h: HtmlBuilder<Mess
             outlineWidth: '2px',
             outlineStyle: 'solid',
             outlineOffset: '2px',
-            outlineColor: 'var(--primary-strong)',
+            outlineColor: 'primaryStrong',
           })
         : css({
             outlineWidth: '2px',
@@ -1105,7 +1105,7 @@ const wires = (model: Model, layout: Layout, focus: ResearchDef, h: HtmlBuilder<
             cx(
               lit
                 ? css({
-                    stroke: 'var(--primary-strong)',
+                    stroke: 'primaryStrong',
                   })
                 : done
                   ? css({
@@ -1121,7 +1121,7 @@ const wires = (model: Model, layout: Layout, focus: ResearchDef, h: HtmlBuilder<
               css({
                 transitionProperty: 'stroke',
                 transitionDuration: '150ms',
-                transitionTimingFunction: 'var(--ease-out)',
+                transitionTimingFunction: 'out',
               }),
             ),
           ),
@@ -1151,7 +1151,7 @@ const progressBar = (
           css({
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
+            gap: '2',
           }),
           className,
         ),
@@ -1162,11 +1162,11 @@ const progressBar = (
         [
           h.Class(
             css({
-              height: '0.25rem',
+              height: '1',
               flex: '1 1 0%',
               overflow: 'hidden',
               borderRadius: '9999px',
-              backgroundColor: 'var(--well)',
+              backgroundColor: 'well',
               boxShadow: 'well',
             }),
           ),
@@ -1179,7 +1179,7 @@ const progressBar = (
                   display: 'block',
                   height: '100%',
                   borderRadius: '9999px',
-                  backgroundColor: 'var(--ok)',
+                  backgroundColor: 'ok',
                 }),
               ),
               h.Style({ width: `${(owned / total) * 100}%` }),
@@ -1195,7 +1195,7 @@ const progressBar = (
               FIGURE,
               css({
                 fontSize: 'calc(10.5px*var(--type-scale))',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ),
@@ -1212,8 +1212,8 @@ const eraLabel = (game: Game, era: number, h: HtmlBuilder<Message>) => [
         h,
         Lock,
         css({
-          width: '0.75rem',
-          height: '0.75rem',
+          width: '3',
+          height: '3',
         }),
       )
     : h.empty,
@@ -1223,10 +1223,10 @@ const eraLabel = (game: Game, era: number, h: HtmlBuilder<Message>) => [
         [
           h.Class(
             css({
-              width: '0.375rem',
-              height: '0.375rem',
+              width: '1.5',
+              height: '1.5',
               borderRadius: '9999px',
-              backgroundColor: 'var(--ok)',
+              backgroundColor: 'ok',
             }),
           ),
         ],
@@ -1250,7 +1250,7 @@ const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
               position: 'absolute',
               borderTopWidth: '1px',
               borderTopStyle: 'solid',
-              borderColor: 'var(--hairline)',
+              borderColor: 'hairline',
             }),
             band.era === game.stage
               ? css({
@@ -1283,15 +1283,15 @@ const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
                 EYEBROW,
                 css({
                   position: 'absolute',
-                  top: '0.75rem',
-                  left: '1.25rem',
+                  top: '3',
+                  left: '5',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.375rem',
+                  gap: '1.5',
                 }),
                 band.era === game.stage
                   ? css({
-                      color: 'var(--foreground)',
+                      color: 'foreground',
                     })
                   : '',
               ),
@@ -1314,7 +1314,7 @@ const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
             translate: '-50% -50%',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '0.5rem',
+            gap: '2',
           }),
         ),
         h.Style({ left: `${track.x}px`, top: `${track.y}px` }),
@@ -1325,11 +1325,11 @@ const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
             h.Class(
               css({
                 display: 'grid',
-                width: '3.5rem',
-                height: '3.5rem',
+                width: '14',
+                height: '14',
                 placeItems: 'center',
                 borderRadius: '2xl',
-                backgroundColor: 'var(--card)',
+                backgroundColor: 'card',
                 boxShadow: 'card',
               }),
             ),
@@ -1339,8 +1339,8 @@ const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
               h,
               TRACK_ICONS[track.track],
               css({
-                width: '1.5rem',
-                height: '1.5rem',
+                width: '6',
+                height: '6',
               }),
             ),
           ],
@@ -1490,18 +1490,18 @@ const linkRow = (game: Game, entry: ResearchDef, h: HtmlBuilder<Message>): Html 
           h,
           Check,
           css({
-            width: '0.875rem',
-            height: '0.875rem',
-            color: 'var(--ok)',
+            width: '3.5',
+            height: '3.5',
+            color: 'ok',
           }),
         )
       : icon(
           h,
           Lock,
           css({
-            width: '0.75rem',
-            height: '0.75rem',
-            color: 'var(--muted-foreground)',
+            width: '3',
+            height: '3',
+            color: 'mutedForeground',
           }),
         ),
   ]
@@ -1515,9 +1515,9 @@ const linkRow = (game: Game, entry: ResearchDef, h: HtmlBuilder<Message>): Html 
               display: 'flex',
               width: '100%',
               alignItems: 'center',
-              gap: '0.625rem',
-              paddingInline: '0.5rem',
-              paddingBlock: '0.375rem',
+              gap: '2.5',
+              paddingInline: '2',
+              paddingBlock: '1.5',
             }),
           ),
         ],
@@ -1535,10 +1535,10 @@ const linkRow = (game: Game, entry: ResearchDef, h: HtmlBuilder<Message>): Html 
               display: 'flex',
               width: '100%',
               alignItems: 'center',
-              gap: '0.625rem',
+              gap: '2.5',
               borderRadius: 'lg',
-              paddingInline: '0.5rem',
-              paddingBlock: '0.375rem',
+              paddingInline: '2',
+              paddingBlock: '1.5',
               textAlign: 'left',
               fontSize: 'calc(12.5px*var(--type-scale))',
               _hover: {
@@ -1565,7 +1565,7 @@ const terms = (entry: ResearchDef, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               flexWrap: 'wrap',
-              gap: '0.375rem',
+              gap: '1.5',
             }),
           ),
         ],
@@ -1581,15 +1581,15 @@ const terms = (entry: ResearchDef, h: HtmlBuilder<Message>): Html => {
                 css({
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.25rem',
+                  gap: '1',
                   borderRadius: 'md',
-                  backgroundColor: 'var(--surface-nested)',
-                  paddingInline: '0.375rem',
-                  paddingBlock: '0.125rem',
+                  backgroundColor: 'nested',
+                  paddingInline: '1.5',
+                  paddingBlock: '0.5',
                   fontSize: 'calc(11.5px*var(--type-scale))',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                   _hover: {
-                    color: 'var(--foreground)',
+                    color: 'foreground',
                   },
                 }),
               ),
@@ -1599,8 +1599,8 @@ const terms = (entry: ResearchDef, h: HtmlBuilder<Message>): Html => {
                 h,
                 CircleHelp,
                 css({
-                  width: '0.75rem',
-                  height: '0.75rem',
+                  width: '3',
+                  height: '3',
                   flexShrink: '0',
                 }),
               ),
@@ -1641,7 +1641,7 @@ const queueButton = (
       variant: 'ghost',
       size: 'icon-xs',
       className: css({
-        color: 'var(--muted-foreground)',
+        color: 'mutedForeground',
       }),
       attributes: [h.AriaLabel(label), h.Title(label)],
     },
@@ -1649,8 +1649,8 @@ const queueButton = (
       h,
       glyph,
       css({
-        width: '0.875rem',
-        height: '0.875rem',
+        width: '3.5',
+        height: '3.5',
       }),
     ),
     h,
@@ -1696,7 +1696,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
           flexDirection: 'column',
           borderBottomWidth: '1px',
           borderBottomStyle: 'solid',
-          borderColor: 'var(--hairline)',
+          borderColor: 'hairline',
         }),
       ),
       // The queue is a listbox, so the window-level shortcuts ignore it; Escape still closes
@@ -1714,10 +1714,10 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
               flexShrink: '0',
               alignItems: 'baseline',
               justifyContent: 'space-between',
-              gap: '0.75rem',
-              paddingInline: '1.25rem',
-              paddingTop: '1rem',
-              paddingBottom: '0.5rem',
+              gap: '3',
+              paddingInline: '5',
+              paddingTop: '4',
+              paddingBottom: '2',
             }),
           ),
         ],
@@ -1730,7 +1730,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                   FIGURE,
                   css({
                     fontSize: 'calc(11px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -1750,10 +1750,10 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                 minHeight: '0',
                 flex: '1 1 0%',
                 flexDirection: 'column',
-                gap: '0.125rem',
+                gap: '0.5',
                 overflow: 'auto',
-                paddingInline: '0.75rem',
-                paddingBottom: '0.75rem',
+                paddingInline: '3',
+                paddingBottom: '3',
                 scrollbarWidth: 'thin',
               }),
               overQueue &&
@@ -1786,9 +1786,9 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                     css({
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.25rem',
+                      gap: '1',
                       borderRadius: 'lg',
-                      paddingLeft: '0.25rem',
+                      paddingLeft: '1',
                     }),
                     // A pointer drag slides its rows; the keyboard moves one at once.
                     dragging &&
@@ -1796,7 +1796,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                       css({
                         transitionProperty: 'translate',
                         transitionDuration: '150ms',
-                        transitionTimingFunction: 'var(--ease-out)',
+                        transitionTimingFunction: 'out',
                       }),
                     slot &&
                       css({
@@ -1808,7 +1808,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                     !slot &&
                       item.id === focus &&
                       css({
-                        backgroundColor: 'var(--surface-nested)',
+                        backgroundColor: 'nested',
                       }),
                     isDragged &&
                       landing === null &&
@@ -1856,14 +1856,14 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                         alignSelf: 'stretch',
                         placeItems: 'center',
                         borderRadius: 'md',
-                        paddingInline: '0.125rem',
+                        paddingInline: '0.5',
                         _active: {
                           cursor: 'grabbing',
                         },
                         _focusVisible: {
                           outlineWidth: '2px',
                           outlineStyle: 'solid',
-                          outlineColor: 'var(--primary)',
+                          outlineColor: 'primary',
                         },
                       }),
                     ),
@@ -1884,13 +1884,13 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                         minWidth: '0',
                         flex: '1 1 0%',
                         alignItems: 'center',
-                        gap: '0.5rem',
+                        gap: '2',
                         borderRadius: 'md',
-                        paddingBlock: '0.25rem',
+                        paddingBlock: '1',
                         textAlign: 'left',
                         fontSize: 'calc(12.5px*var(--type-scale))',
                         _hover: {
-                          color: 'var(--foreground)',
+                          color: 'foreground',
                         },
                       }),
                     ),
@@ -1920,15 +1920,15 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                               display: 'flex',
                               flexShrink: '0',
                               alignItems: 'center',
-                              gap: '0.25rem',
+                              gap: '1',
                               fontSize: 'calc(11.5px*var(--type-scale))',
                             }),
                             stall
                               ? css({
-                                  color: 'var(--warn)',
+                                  color: 'warn',
                                 })
                               : css({
-                                  color: 'var(--muted-foreground)',
+                                  color: 'mutedForeground',
                                 }),
                           ),
                         ),
@@ -1939,8 +1939,8 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                               h,
                               TriangleAlert,
                               css({
-                                width: '0.75rem',
-                                height: '0.75rem',
+                                width: '3',
+                                height: '3',
                               }),
                             )
                           : h.empty,
@@ -2003,9 +2003,9 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                             zIndex: '50',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.5rem',
-                            paddingInline: '0.75rem',
-                            paddingBlock: '0.5rem',
+                            gap: '2',
+                            paddingInline: '3',
+                            paddingBlock: '2',
                             fontSize: 'calc(12.5px*var(--type-scale))',
                             fontWeight: '500',
                           }),
@@ -2197,8 +2197,8 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
             overflow: 'hidden',
             borderLeftWidth: '1px',
             borderLeftStyle: 'solid',
-            borderColor: 'var(--hairline)',
-            backgroundColor: 'var(--card)',
+            borderColor: 'hairline',
+            backgroundColor: 'card',
             _compact: {
               insetInline: '0',
               top: 'auto',
@@ -2227,8 +2227,8 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
               display: 'none',
               flexShrink: '0',
               justifyContent: 'center',
-              paddingTop: '0.5rem',
-              paddingBottom: '0.125rem',
+              paddingTop: '2',
+              paddingBottom: '0.5',
               _compact: {
                 display: 'flex',
               },
@@ -2240,8 +2240,8 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
             [
               h.Class(
                 css({
-                  height: '0.25rem',
-                  width: '2.5rem',
+                  height: '1',
+                  width: '10',
                   borderRadius: '9999px',
                   backgroundColor: 'color-mix(in oklab, var(--foreground) 15%, transparent)',
                 }),
@@ -2271,13 +2271,13 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                 insetBlock: '0',
                 left: '0',
                 zIndex: '10',
-                width: '0.5rem',
+                width: '2',
                 cursor: 'col-resize',
                 touchAction: 'none',
                 _focusVisible: {
                   outlineWidth: '2px',
                   outlineStyle: 'solid',
-                  outlineColor: 'var(--primary)',
+                  outlineColor: 'primary',
                 },
                 _compact: {
                   display: 'none',
@@ -2296,17 +2296,17 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                   position: 'absolute',
                   insetBlock: '0',
                   left: '0',
-                  width: '0.125rem',
+                  width: '0.5',
                   backgroundColor: 'transparent',
                   transitionProperty:
                     'color, background-color, border-color, text-decoration-color, fill, stroke',
                   transitionDuration: '150ms',
-                  transitionTimingFunction: 'var(--ease-out)',
+                  transitionTimingFunction: 'out',
                   '.group:hover &': {
                     backgroundColor: 'color-mix(in oklab, var(--foreground) 20%, transparent)',
                   },
                   '.group[data-resizing] &': {
-                    backgroundColor: 'var(--primary-strong)',
+                    backgroundColor: 'primaryStrong',
                   },
                 }),
               ),
@@ -2322,12 +2322,12 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
               display: 'flex',
               flexShrink: '0',
               alignItems: 'flex-start',
-              gap: '0.75rem',
+              gap: '3',
               borderBottomWidth: '1px',
               borderBottomStyle: 'solid',
-              borderColor: 'var(--hairline)',
-              paddingInline: '1.25rem',
-              paddingBlock: '1rem',
+              borderColor: 'hairline',
+              paddingInline: '5',
+              paddingBlock: '4',
             }),
           ),
         ],
@@ -2341,7 +2341,7 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                   minWidth: '0',
                   flex: '1 1 0%',
                   flexDirection: 'column',
-                  gap: '0.25rem',
+                  gap: '1',
                 }),
               ),
             ],
@@ -2353,7 +2353,7 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                       display: 'flex',
                       minWidth: '0',
                       alignItems: 'center',
-                      gap: '0.5rem',
+                      gap: '2',
                     }),
                   ),
                 ],
@@ -2399,7 +2399,7 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
               size: 'icon-sm',
               className: css({
                 flexShrink: '0',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
               attributes: [h.AriaLabel(t.research.closeEsc), h.Title(t.research.closeEsc)],
             },
@@ -2407,8 +2407,8 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
               h,
               X,
               css({
-                width: '1rem',
-                height: '1rem',
+                width: '4',
+                height: '4',
               }),
             ),
             h,
@@ -2439,9 +2439,9 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                 css({
                   borderBottomWidth: '1px',
                   borderBottomStyle: 'solid',
-                  borderColor: 'var(--hairline)',
-                  paddingInline: '1.25rem',
-                  paddingBlock: '1rem',
+                  borderColor: 'hairline',
+                  paddingInline: '5',
+                  paddingBlock: '4',
                   '&:last-child': {
                     borderBottomWidth: '0px',
                   },
@@ -2465,7 +2465,7 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                 [
                   h.Class(
                     css({
-                      marginTop: '0.75rem',
+                      marginTop: '3',
                     }),
                   ),
                 ],
@@ -2480,9 +2480,9 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                     css({
                       borderBottomWidth: '1px',
                       borderBottomStyle: 'solid',
-                      borderColor: 'var(--hairline)',
-                      paddingInline: '1.25rem',
-                      paddingBlock: '1rem',
+                      borderColor: 'hairline',
+                      paddingInline: '5',
+                      paddingBlock: '4',
                       '&:last-child': {
                         borderBottomWidth: '0px',
                       },
@@ -2496,10 +2496,10 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                         css({
                           display: 'flex',
                           alignItems: 'flex-start',
-                          gap: '0.5rem',
+                          gap: '2',
                           fontSize: 'calc(12px*var(--type-scale))',
                           lineHeight: '1.375',
-                          color: 'var(--warn)',
+                          color: 'warn',
                         }),
                       ),
                     ],
@@ -2509,8 +2509,8 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                         TriangleAlert,
                         css({
                           marginTop: '1px',
-                          width: '0.875rem',
-                          height: '0.875rem',
+                          width: '3.5',
+                          height: '3.5',
                           flexShrink: '0',
                         }),
                       ),
@@ -2536,11 +2536,11 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
             css({
               display: 'flex',
               flexShrink: '0',
-              gap: '0.5rem',
+              gap: '2',
               borderTopWidth: '1px',
               borderTopStyle: 'solid',
-              borderColor: 'var(--hairline)',
-              padding: '0.75rem',
+              borderColor: 'hairline',
+              padding: '3',
             }),
           ),
         ],
@@ -2570,9 +2570,9 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                     h,
                     Check,
                     css({
-                      width: '1rem',
-                      height: '1rem',
-                      color: 'var(--ok)',
+                      width: '4',
+                      height: '4',
+                      color: 'ok',
                     }),
                   )
                 : h.empty,
@@ -2628,15 +2628,15 @@ const poolCell = (
             position: 'relative',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.375rem',
+            gap: '1.5',
             borderRadius: 'md',
-            paddingInline: '0.375rem',
-            paddingTop: '0.125rem',
-            paddingBottom: '0.375rem',
+            paddingInline: '1.5',
+            paddingTop: '0.5',
+            paddingBottom: '1.5',
           }),
           blocked &&
             css({
-              backgroundColor: 'var(--warn-soft)',
+              backgroundColor: 'warnSoft',
               boxShadow: 'inset 0 0 0 1px color-mix(in oklch,var(--warn) 38%,transparent)',
             }),
         ),
@@ -2657,8 +2657,8 @@ const poolCell = (
             h,
             POOL_ICONS[pool],
             css({
-              width: '0.75rem',
-              height: '0.75rem',
+              width: '3',
+              height: '3',
               flexShrink: '0',
             }),
           ),
@@ -2674,7 +2674,7 @@ const poolCell = (
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
               fontSize: 'calc(10.5px*var(--type-scale))',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -2691,7 +2691,7 @@ const poolCell = (
               blocked &&
                 css({
                   fontWeight: '600',
-                  color: 'var(--danger)',
+                  color: 'danger',
                 }),
             ),
           ),
@@ -2703,8 +2703,8 @@ const poolCell = (
           h.Class(
             css({
               position: 'absolute',
-              insetInline: '0.375rem',
-              bottom: '0.25rem',
+              insetInline: '1.5',
+              bottom: '1',
               height: '3px',
               overflow: 'hidden',
               borderRadius: '9999px',
@@ -2724,7 +2724,7 @@ const poolCell = (
                   }),
                   blocked
                     ? css({
-                        backgroundColor: 'var(--danger)',
+                        backgroundColor: 'danger',
                       })
                     : css({
                         backgroundColor: 'color-mix(in oklab, var(--foreground) 40%, transparent)',
@@ -2762,17 +2762,17 @@ const pinnedChip = (game: Game, pool: InsightPool, need: number, h: HtmlBuilder<
             display: 'inline-flex',
             flexShrink: '0',
             alignItems: 'center',
-            gap: '0.375rem',
+            gap: '1.5',
             borderRadius: 'md',
-            paddingBlock: '0.125rem',
-            paddingRight: '0.375rem',
-            paddingLeft: '0.25rem',
+            paddingBlock: '0.5',
+            paddingRight: '1.5',
+            paddingLeft: '1',
             fontSize: 'calc(12.5px*var(--type-scale))',
             whiteSpace: 'nowrap',
           }),
           blocked &&
             css({
-              backgroundColor: 'var(--warn-soft)',
+              backgroundColor: 'warnSoft',
             }),
         ),
       ),
@@ -2792,8 +2792,8 @@ const pinnedChip = (game: Game, pool: InsightPool, need: number, h: HtmlBuilder<
             h,
             POOL_ICONS[pool],
             css({
-              width: '0.75rem',
-              height: '0.75rem',
+              width: '3',
+              height: '3',
               flexShrink: '0',
             }),
           ),
@@ -2804,7 +2804,7 @@ const pinnedChip = (game: Game, pool: InsightPool, need: number, h: HtmlBuilder<
           h.Class(
             css({
               fontSize: 'calc(11px*var(--type-scale))',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -2816,7 +2816,7 @@ const pinnedChip = (game: Game, pool: InsightPool, need: number, h: HtmlBuilder<
             blocked
               ? css({
                   fontWeight: '600',
-                  color: 'var(--danger)',
+                  color: 'danger',
                 })
               : '',
           ),
@@ -2856,8 +2856,8 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
         css({
           pointerEvents: 'auto',
           position: 'absolute',
-          bottom: '1rem',
-          left: '1rem',
+          bottom: '4',
+          left: '4',
           zIndex: '20',
           display: 'flex',
           maxWidth: 'calc(100%-2rem)',
@@ -2878,7 +2878,7 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 display: 'flex',
                 flexDirection: 'column',
-                padding: '0.5rem',
+                padding: '2',
               }),
             ),
           ),
@@ -2905,9 +2905,9 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
                         css({
                           display: 'grid',
                           gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                          columnGap: '0.375rem',
-                          rowGap: '0.125rem',
-                          paddingBottom: '0.5rem',
+                          columnGap: '1.5',
+                          rowGap: '0.5',
+                          paddingBottom: '2',
                         }),
                       ),
                     ],
@@ -2926,8 +2926,8 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
                   display: 'flex',
                   flexWrap: 'wrap',
                   alignItems: 'center',
-                  columnGap: '0.75rem',
-                  rowGap: '0.25rem',
+                  columnGap: '3',
+                  rowGap: '1',
                 }),
               ),
             ],
@@ -2956,15 +2956,15 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
                         display: 'flex',
                         flexShrink: '0',
                         alignItems: 'center',
-                        gap: '0.25rem',
+                        gap: '1',
                         borderRadius: 'md',
-                        backgroundColor: 'var(--surface-nested)',
-                        paddingInline: '0.5rem',
-                        paddingBlock: '0.25rem',
+                        backgroundColor: 'nested',
+                        paddingInline: '2',
+                        paddingBlock: '1',
                         fontSize: 'calc(11.5px*var(--type-scale))',
                         boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
                         _hover: {
-                          backgroundColor: 'var(--well)',
+                          backgroundColor: 'well',
                         },
                       }),
                       'press',
@@ -3014,9 +3014,9 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
                     h,
                     open ? ChevronUp : ChevronDown,
                     css({
-                      width: '0.75rem',
-                      height: '0.75rem',
-                      color: 'var(--muted-foreground)',
+                      width: '3',
+                      height: '3',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ],
@@ -3047,7 +3047,7 @@ export const researchPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             position: 'absolute',
             inset: '0',
             zIndex: '30',
-            backgroundColor: 'var(--canvas)',
+            backgroundColor: 'canvas',
           }),
           'enter-backdrop',
         ),
@@ -3077,11 +3077,11 @@ export const researchPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 css({
                   display: 'flex',
-                  height: '2.75rem',
+                  height: '11',
                   flexShrink: '0',
                   alignItems: 'center',
-                  gap: '0.75rem',
-                  paddingInline: '1rem',
+                  gap: '3',
+                  paddingInline: '4',
                 }),
               ),
             ],
@@ -3109,9 +3109,9 @@ export const researchPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                           marginLeft: 'auto',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '0.25rem',
+                          gap: '1',
                           fontSize: 'calc(11.5px*var(--type-scale))',
-                          color: 'var(--warn)',
+                          color: 'warn',
                         }),
                       ),
                       h.Title(t.hud.unsampledHint),
@@ -3121,8 +3121,8 @@ export const researchPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                         h,
                         TriangleAlert,
                         css({
-                          width: '0.75rem',
-                          height: '0.75rem',
+                          width: '3',
+                          height: '3',
                         }),
                       ),
                       t.hud.unsampled(Math.round(unsampled.share * 100)),
@@ -3164,7 +3164,7 @@ export const researchPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                       h.Class(
                         css({
                           width: 'fit-content',
-                          padding: '1rem',
+                          padding: '4',
                           _compact: {
                             paddingBottom: '68vh',
                           },

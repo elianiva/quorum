@@ -40,8 +40,8 @@ const flags = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArr
                     css({
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '0.375rem',
-                      paddingBottom: '0.25rem',
+                      gap: '1.5',
+                      paddingBottom: '1',
                     }),
                   ),
                 ],
@@ -85,7 +85,7 @@ const flags = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArr
               css({
                 fontSize: 'calc(12px*var(--type-scale))',
                 lineHeight: '1.375',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ],
@@ -111,7 +111,7 @@ const flags = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArr
               css({
                 fontSize: 'calc(12px*var(--type-scale))',
                 lineHeight: '1.375',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ],

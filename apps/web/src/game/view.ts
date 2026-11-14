@@ -59,8 +59,8 @@ export const view = (model: Model, builder: HtmlBuilder<Message>): Document => {
             height: '100dvh',
             width: '100%',
             overflow: 'hidden',
-            backgroundColor: 'var(--background)',
-            color: 'var(--foreground)',
+            backgroundColor: 'background',
+            color: 'foreground',
             userSelect: 'none',
           }),
         ),
@@ -74,7 +74,7 @@ export const view = (model: Model, builder: HtmlBuilder<Message>): Document => {
               ? labScreen(model, h)
               : // A reload shows the board's canvas until its save fills it, never an empty Company.
                 screen
-                ? h.div([h.Class(css({ height: '100%', backgroundColor: 'var(--canvas)' }))])
+                ? h.div([h.Class(css({ height: '100%', backgroundColor: 'canvas' }))])
                 : titleScreen(model, h),
           ],
         ),

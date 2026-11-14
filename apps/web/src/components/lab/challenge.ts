@@ -66,13 +66,13 @@ const figureRow = (
       h.Class(
         css({
           display: 'flex',
-          height: '2rem',
+          height: '8',
           alignItems: 'center',
-          gap: '0.625rem',
-          paddingInline: '0.625rem',
+          gap: '2.5',
+          paddingInline: '2.5',
           _compact: {
             flexShrink: '0',
-            paddingInline: '0.75rem',
+            paddingInline: '3',
           },
         }),
       ),
@@ -82,10 +82,10 @@ const figureRow = (
         h,
         glyph,
         css({
-          width: '0.875rem',
-          height: '0.875rem',
+          width: '3.5',
+          height: '3.5',
           flexShrink: '0',
-          color: 'var(--muted-foreground)',
+          color: 'mutedForeground',
         }),
       ),
       h.span(
@@ -95,7 +95,7 @@ const figureRow = (
               width: '72px',
               flexShrink: '0',
               fontSize: 'calc(11.5px*var(--type-scale))',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
               _compact: {
                 display: 'none',
               },
@@ -147,7 +147,7 @@ const figures = (
             '& > :not(:last-child)': {
               borderBottomWidth: '1px',
               borderBottomStyle: 'solid',
-              borderColor: 'var(--hairline)',
+              borderColor: 'hairline',
             },
           }),
           WELL,
@@ -276,7 +276,7 @@ const fixes = (model: Model, h: HtmlBuilder<Message>): Html => {
             '& > :not(:last-child)': {
               borderBottomWidth: '1px',
               borderBottomStyle: 'solid',
-              borderColor: 'var(--hairline)',
+              borderColor: 'hairline',
             },
           }),
           WELL,
@@ -296,16 +296,16 @@ const fixes = (model: Model, h: HtmlBuilder<Message>): Html => {
             cx(
               css({
                 display: 'flex',
-                height: '2rem',
+                height: '8',
                 alignItems: 'center',
-                gap: '0.625rem',
-                paddingInline: '0.625rem',
+                gap: '2.5',
+                paddingInline: '2.5',
                 textAlign: 'left',
                 _hover: {
                   backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
                 },
                 _compact: {
-                  paddingInline: '0.75rem',
+                  paddingInline: '3',
                 },
               }),
               'press',
@@ -318,16 +318,16 @@ const fixes = (model: Model, h: HtmlBuilder<Message>): Html => {
             active ? Check : Hammer,
             cx(
               css({
-                width: '0.875rem',
-                height: '0.875rem',
+                width: '3.5',
+                height: '3.5',
                 flexShrink: '0',
               }),
               active
                 ? css({
-                    color: 'var(--ok)',
+                    color: 'ok',
                   })
                 : css({
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
             ),
           ),
@@ -352,7 +352,7 @@ const fixes = (model: Model, h: HtmlBuilder<Message>): Html => {
                   FIGURE,
                   css({
                     fontSize: 'calc(12px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -372,9 +372,9 @@ const actions = (run: ChallengeRun, h: HtmlBuilder<Message>): Html => {
       h.Class(
         css({
           display: 'flex',
-          gap: '0.375rem',
-          paddingInline: '0.25rem',
-          paddingTop: '0.25rem',
+          gap: '1.5',
+          paddingInline: '1',
+          paddingTop: '1',
         }),
       ),
     ],
@@ -393,8 +393,8 @@ const actions = (run: ChallengeRun, h: HtmlBuilder<Message>): Html => {
                 h,
                 Play,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
+                  width: '3.5',
+                  height: '3.5',
                 }),
               ),
               t.challenge.run,
@@ -417,8 +417,8 @@ const actions = (run: ChallengeRun, h: HtmlBuilder<Message>): Html => {
                   h,
                   FastForward,
                   css({
-                    width: '0.875rem',
-                    height: '0.875rem',
+                    width: '3.5',
+                    height: '3.5',
                   }),
                 ),
                 t.challenge.finish,
@@ -432,8 +432,8 @@ const actions = (run: ChallengeRun, h: HtmlBuilder<Message>): Html => {
                   h,
                   RotateCcw,
                   css({
-                    width: '0.875rem',
-                    height: '0.875rem',
+                    width: '3.5',
+                    height: '3.5',
                   }),
                 ),
                 t.challenge.rebuild,
@@ -460,8 +460,8 @@ const actions = (run: ChallengeRun, h: HtmlBuilder<Message>): Html => {
                   h,
                   RotateCcw,
                   css({
-                    width: '0.875rem',
-                    height: '0.875rem',
+                    width: '3.5',
+                    height: '3.5',
                   }),
                 ),
                 t.challenge.rebuild,
@@ -484,14 +484,14 @@ export const challengeHud = (model: Model, ledger: Ledger, h: HtmlBuilder<Messag
         cx(
           css({
             position: 'absolute',
-            top: '0.75rem',
-            left: '0.75rem',
+            top: '3',
+            left: '3',
             zIndex: '20',
             display: 'flex',
             width: '248px',
             flexDirection: 'column',
-            gap: '0.25rem',
-            padding: '0.375rem',
+            gap: '1',
+            padding: '1.5',
           }),
           PANEL,
           css({
@@ -499,7 +499,7 @@ export const challengeHud = (model: Model, ledger: Ledger, h: HtmlBuilder<Messag
               pointerEvents: 'auto',
               position: 'static',
               width: 'auto',
-              padding: '0.25rem',
+              padding: '1',
             },
           }),
         ),
@@ -511,12 +511,12 @@ export const challengeHud = (model: Model, ledger: Ledger, h: HtmlBuilder<Messag
           h.Class(
             css({
               display: 'flex',
-              minHeight: '2.25rem',
+              minHeight: '9',
               alignItems: 'center',
-              gap: '0.5rem',
-              paddingInline: '0.625rem',
-              paddingTop: '0.375rem',
-              paddingBottom: '0.5rem',
+              gap: '2',
+              paddingInline: '2.5',
+              paddingTop: '1.5',
+              paddingBottom: '2',
             }),
           ),
         ],
@@ -528,7 +528,7 @@ export const challengeHud = (model: Model, ledger: Ledger, h: HtmlBuilder<Messag
               size: 'icon-sm',
               className: css({
                 marginLeft: '-0.375rem',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
               attributes: [h.AriaLabel(t.challenge.challenges), h.Title(t.challenge.challenges)],
             },
@@ -536,8 +536,8 @@ export const challengeHud = (model: Model, ledger: Ledger, h: HtmlBuilder<Messag
               h,
               Menu,
               css({
-                width: '1rem',
-                height: '1rem',
+                width: '4',
+                height: '4',
               }),
             ),
             h,
@@ -570,9 +570,9 @@ export const challengeHud = (model: Model, ledger: Ledger, h: HtmlBuilder<Messag
                     h,
                     Check,
                     css({
-                      width: '0.875rem',
-                      height: '0.875rem',
-                      color: 'var(--ok)',
+                      width: '3.5',
+                      height: '3.5',
+                      color: 'ok',
                     }),
                   ),
                 ],
@@ -604,14 +604,14 @@ export const challengeBar = (model: Model, h: HtmlBuilder<Message>): Html => {
             display: 'flex',
             width: '420px',
             flexDirection: 'column',
-            gap: '0.5rem',
+            gap: '2',
             _compact: {
               width: 'auto',
             },
             borderRadius: 'xl',
             layerStyle: 'surface',
-            paddingInline: '0.75rem',
-            paddingBlock: '0.625rem',
+            paddingInline: '3',
+            paddingBlock: '2.5',
             fontSize: 'calc(12.5px*var(--type-scale))',
             boxShadow: 'card',
           }),
@@ -626,7 +626,7 @@ export const challengeBar = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               alignItems: 'flex-start',
-              gap: '0.625rem',
+              gap: '2.5',
             }),
           ),
         ],
@@ -649,7 +649,7 @@ export const challengeBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                   FIGURE,
                   css({
                     fontSize: 'calc(11px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -669,7 +669,7 @@ export const challengeBar = (model: Model, h: HtmlBuilder<Message>): Html => {
               FIGURE,
               css({
                 fontSize: 'calc(11px*var(--type-scale))',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ),
@@ -694,7 +694,7 @@ const axisRow = (axis: ScoreAxis, run: ChallengeResultRun, h: HtmlBuilder<Messag
         css({
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.375rem',
+          gap: '1.5',
         }),
       ),
     ],
@@ -706,7 +706,7 @@ const axisRow = (axis: ScoreAxis, run: ChallengeResultRun, h: HtmlBuilder<Messag
               display: 'flex',
               alignItems: 'baseline',
               justifyContent: 'space-between',
-              gap: '0.75rem',
+              gap: '3',
             }),
           ),
         ],
@@ -759,9 +759,9 @@ export const challengePanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               flexDirection: 'column',
-              gap: '1rem',
-              paddingInline: '1.25rem',
-              paddingBottom: '1.25rem',
+              gap: '4',
+              paddingInline: '5',
+              paddingBottom: '5',
             }),
           ),
         ],
@@ -777,10 +777,10 @@ export const challengePanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   }),
                   passed
                     ? css({
-                        color: 'var(--ok)',
+                        color: 'ok',
                       })
                     : css({
-                        color: 'var(--danger)',
+                        color: 'danger',
                       }),
                 ),
               ),
@@ -796,13 +796,13 @@ export const challengePanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               justifyContent: 'flex-end',
-              gap: '0.5rem',
+              gap: '2',
               borderTopWidth: '1px',
               borderTopStyle: 'solid',
-              borderColor: 'var(--hairline)',
-              backgroundColor: 'var(--surface-nested)',
-              paddingInline: '1.25rem',
-              paddingBlock: '0.75rem',
+              borderColor: 'hairline',
+              backgroundColor: 'nested',
+              paddingInline: '5',
+              paddingBlock: '3',
             }),
           ),
         ],
@@ -813,7 +813,7 @@ export const challengePanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               variant: 'outline',
               size: 'lg',
               className: css({
-                paddingInline: '0.875rem',
+                paddingInline: '3.5',
               }),
             },
             t.challenge.challenges,
@@ -824,7 +824,7 @@ export const challengePanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               onClick: Message.ChallengeRebuilt(),
               size: 'lg',
               className: css({
-                paddingInline: '1rem',
+                paddingInline: '4',
               }),
             },
             t.challenge.rebuild,

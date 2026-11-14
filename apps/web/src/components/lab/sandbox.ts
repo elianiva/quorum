@@ -65,14 +65,14 @@ const figureRow = (
       h.Class(
         css({
           display: 'flex',
-          height: '2rem',
+          height: '8',
           alignItems: 'center',
-          gap: '0.625rem',
-          paddingInline: '0.625rem',
+          gap: '2.5',
+          paddingInline: '2.5',
           _compact: {
             flexShrink: '0',
-            gap: '0.375rem',
-            paddingInline: '0.75rem',
+            gap: '1.5',
+            paddingInline: '3',
           },
         }),
       ),
@@ -82,10 +82,10 @@ const figureRow = (
         h,
         glyph,
         css({
-          width: '0.875rem',
-          height: '0.875rem',
+          width: '3.5',
+          height: '3.5',
           flexShrink: '0',
-          color: 'var(--muted-foreground)',
+          color: 'mutedForeground',
         }),
       ),
       h.span(
@@ -96,7 +96,7 @@ const figureRow = (
               flexShrink: '0',
               whiteSpace: 'nowrap',
               fontSize: 'calc(11.5px*var(--type-scale))',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
               _compact: {
                 display: 'none',
               },
@@ -150,7 +150,7 @@ const figures = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =>
             '& > :not(:last-child)': {
               borderBottomWidth: '1px',
               borderBottomStyle: 'solid',
-              borderColor: 'var(--hairline)',
+              borderColor: 'hairline',
             },
           }),
           WELL,
@@ -212,14 +212,14 @@ const header = (title: string, aside: Html, h: HtmlBuilder<Message>): Html => {
       h.Class(
         css({
           display: 'flex',
-          minHeight: '2.25rem',
+          minHeight: '9',
           alignItems: 'center',
-          gap: '0.5rem',
-          paddingInline: '0.625rem',
-          paddingTop: '0.375rem',
-          paddingBottom: '0.5rem',
+          gap: '2',
+          paddingInline: '2.5',
+          paddingTop: '1.5',
+          paddingBottom: '2',
           _compact: {
-            paddingBottom: '0.25rem',
+            paddingBottom: '1',
             paddingRight: 'var(--toolbar-w)',
           },
         }),
@@ -233,7 +233,7 @@ const header = (title: string, aside: Html, h: HtmlBuilder<Message>): Html => {
           size: 'icon-sm',
           className: css({
             marginLeft: '-0.375rem',
-            color: 'var(--muted-foreground)',
+            color: 'mutedForeground',
           }),
           attributes: [h.AriaLabel(t.hud.menuEsc), h.Title(t.hud.menuEsc)],
         },
@@ -241,8 +241,8 @@ const header = (title: string, aside: Html, h: HtmlBuilder<Message>): Html => {
           h,
           Menu,
           css({
-            width: '1rem',
-            height: '1rem',
+            width: '4',
+            height: '4',
           }),
         ),
         h,
@@ -285,7 +285,7 @@ const steps = (run: SandboxRun, id: SandboxId, h: HtmlBuilder<Message>): Html =>
         css({
           display: 'flex',
           alignItems: 'center',
-          gap: '0.25rem',
+          gap: '1',
         }),
       ),
       h.AriaLabel(t.sandbox.objectiveOf(run.progress.objective + 1, total)),
@@ -297,20 +297,20 @@ const steps = (run: SandboxRun, id: SandboxId, h: HtmlBuilder<Message>): Html =>
           h.Class(
             cx(
               css({
-                height: '0.375rem',
-                width: '0.75rem',
+                height: '1.5',
+                width: '3',
                 borderRadius: '9999px',
               }),
               index < run.progress.objective
                 ? css({
-                    backgroundColor: 'var(--ok)',
+                    backgroundColor: 'ok',
                   })
                 : index === run.progress.objective
                   ? css({
                       layerStyle: 'primaryFill',
                     })
                   : css({
-                      backgroundColor: 'var(--well)',
+                      backgroundColor: 'well',
                       boxShadow: 'well',
                     }),
             ),
@@ -340,14 +340,14 @@ export const objectiveBar = (model: Model, h: HtmlBuilder<Message>): Html => {
             display: 'flex',
             width: '420px',
             flexDirection: 'column',
-            gap: '0.5rem',
+            gap: '2',
             _compact: {
               width: 'auto',
             },
             borderRadius: 'xl',
             layerStyle: 'surface',
-            paddingInline: '0.75rem',
-            paddingBlock: '0.625rem',
+            paddingInline: '3',
+            paddingBlock: '2.5',
             fontSize: 'calc(12.5px*var(--type-scale))',
             boxShadow: 'card',
           }),
@@ -362,7 +362,7 @@ export const objectiveBar = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               alignItems: 'flex-start',
-              gap: '0.625rem',
+              gap: '2.5',
             }),
           ),
         ],
@@ -371,11 +371,11 @@ export const objectiveBar = (model: Model, h: HtmlBuilder<Message>): Html => {
             h,
             Flag,
             css({
-              marginTop: '0.125rem',
-              width: '0.875rem',
-              height: '0.875rem',
+              marginTop: '0.5',
+              width: '3.5',
+              height: '3.5',
               flexShrink: '0',
-              color: 'var(--primary-strong)',
+              color: 'primaryStrong',
             }),
           ),
           h.span(
@@ -396,7 +396,7 @@ export const objectiveBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                   FIGURE,
                   css({
                     fontSize: 'calc(11px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -409,7 +409,7 @@ export const objectiveBar = (model: Model, h: HtmlBuilder<Message>): Html => {
         share,
         share > 0
           ? css({
-              backgroundColor: 'var(--ok)',
+              backgroundColor: 'ok',
             })
           : css({ layerStyle: 'primaryFill' }),
         h,
@@ -426,9 +426,9 @@ const tiny = (label: string, message: Message, h: HtmlBuilder<Message>, active =
       size: 'sm',
       className: css({
         height: 'auto',
-        minHeight: '1.75rem',
-        paddingInline: '0.5rem',
-        paddingBlock: '0.25rem',
+        minHeight: '7',
+        paddingInline: '2',
+        paddingBlock: '1',
         fontSize: 'calc(11.5px*var(--type-scale))',
         lineHeight: '1.25',
         whiteSpace: 'normal',
@@ -456,7 +456,7 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
         css({
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.375rem',
+          gap: '1.5',
         }),
       ),
     ],
@@ -467,9 +467,9 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.Class(
             css({
               display: 'flex',
-              maxHeight: '11rem',
+              maxHeight: '44',
               flexDirection: 'column',
-              gap: '0.25rem',
+              gap: '1',
               overflow: 'auto',
               scrollbarWidth: 'thin',
             }),
@@ -484,7 +484,7 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
                 css({
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.375rem',
+                  gap: '1.5',
                 }),
               ),
               h.Title(
@@ -502,7 +502,7 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                       fontSize: 'calc(11.5px*var(--type-scale))',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ],
@@ -520,8 +520,8 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h,
                   Minus,
                   css({
-                    width: '0.75rem',
-                    height: '0.75rem',
+                    width: '3',
+                    height: '3',
                   }),
                 ),
                 h,
@@ -532,7 +532,7 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
                     cx(
                       FIGURE,
                       css({
-                        width: '1.5rem',
+                        width: '6',
                         textAlign: 'center',
                         fontSize: 'calc(11px*var(--type-scale))',
                       }),
@@ -553,8 +553,8 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h,
                   Plus,
                   css({
-                    width: '0.75rem',
-                    height: '0.75rem',
+                    width: '3',
+                    height: '3',
                   }),
                 ),
                 h,
@@ -582,12 +582,12 @@ const controls = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.Class(
             css({
               display: 'none',
-              height: '2.25rem',
+              height: '9',
               cursor: 'pointer',
               listStyleType: 'none',
               alignItems: 'center',
-              gap: '0.5rem',
-              paddingInline: '0.625rem',
+              gap: '2',
+              paddingInline: '2.5',
               fontSize: 'calc(12.5px*var(--type-scale))',
               fontWeight: '500',
               _compact: {
@@ -605,10 +605,10 @@ const controls = (model: Model, h: HtmlBuilder<Message>): Html => {
             ChevronRight,
             cx(
               css({
-                width: '0.875rem',
-                height: '0.875rem',
+                width: '3.5',
+                height: '3.5',
                 flexShrink: '0',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
                 '.group[open] &': {
                   rotate: '90deg',
                 },
@@ -632,10 +632,10 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
         css({
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.625rem',
-          paddingInline: '0.625rem',
-          paddingTop: '0.625rem',
-          paddingBottom: '0.375rem',
+          gap: '2.5',
+          paddingInline: '2.5',
+          paddingTop: '2.5',
+          paddingBottom: '1.5',
         }),
       ),
     ],
@@ -646,7 +646,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.375rem',
+              gap: '1.5',
             }),
           ),
         ],
@@ -675,8 +675,8 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
               h,
               Minus,
               css({
-                width: '0.875rem',
-                height: '0.875rem',
+                width: '3.5',
+                height: '3.5',
               }),
             ),
             h,
@@ -687,7 +687,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
                 cx(
                   FIGURE,
                   css({
-                    width: '3.5rem',
+                    width: '14',
                     textAlign: 'center',
                     fontSize: 'calc(13px*var(--type-scale))',
                   }),
@@ -707,8 +707,8 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
               h,
               Plus,
               css({
-                width: '0.875rem',
-                height: '0.875rem',
+                width: '3.5',
+                height: '3.5',
               }),
             ),
             h,
@@ -721,7 +721,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.375rem',
+              gap: '1.5',
             }),
           ),
         ],
@@ -733,7 +733,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
                 css({
                   display: 'grid',
                   gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                  gap: '0.375rem',
+                  gap: '1.5',
                 }),
               ),
             ],
@@ -762,7 +762,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
-            gap: '0.375rem',
+            gap: '1.5',
             '& > div': { flex: '1 1 0%' },
           }),
           labelClass: cx(
@@ -789,7 +789,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.Class(
             css({
               display: 'flex',
-              gap: '0.375rem',
+              gap: '1.5',
             }),
           ),
         ],
@@ -801,7 +801,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
               size: 'sm',
               className: css({
                 flex: '1 1 0%',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
               attributes: [h.Title(t.sandbox.loadACrowdedDesignToTest)],
             },
@@ -810,8 +810,8 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h,
                 Cable,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
+                  width: '3.5',
+                  height: '3.5',
                 }),
               ),
               t.sandbox.stressBoard,
@@ -825,7 +825,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
               size: 'sm',
               className: css({
                 flex: '1 1 0%',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
               attributes: [h.Title(t.sandbox.loadA61NodeDesignTo)],
             },
@@ -834,8 +834,8 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h,
                 Cable,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
+                  width: '3.5',
+                  height: '3.5',
                 }),
               ),
               t.sandbox.bigBoard,
@@ -849,7 +849,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.Class(
             css({
               display: 'flex',
-              gap: '0.375rem',
+              gap: '1.5',
             }),
           ),
         ],
@@ -861,7 +861,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
               size: 'sm',
               className: css({
                 flex: '1 1 0%',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             },
             [
@@ -869,8 +869,8 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h,
                 RotateCcw,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
+                  width: '3.5',
+                  height: '3.5',
                 }),
               ),
               t.sandbox.reset,
@@ -885,7 +885,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
                   size: 'sm',
                   className: css({
                     flex: '1 1 0%',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                   attributes: [h.Title(t.sandbox.copyTheCompanyDesignOntoThis)],
                 },
@@ -894,8 +894,8 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
                     h,
                     Copy,
                     css({
-                      width: '0.875rem',
-                      height: '0.875rem',
+                      width: '3.5',
+                      height: '3.5',
                     }),
                   ),
                   t.sandbox.copyCompany,
@@ -920,14 +920,14 @@ export const sandboxHud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>
         cx(
           css({
             position: 'absolute',
-            top: '0.75rem',
-            left: '0.75rem',
+            top: '3',
+            left: '3',
             zIndex: '20',
             display: 'flex',
             width: '248px',
             flexDirection: 'column',
-            gap: '0.25rem',
-            padding: '0.375rem',
+            gap: '1',
+            padding: '1.5',
           }),
           PANEL,
           css({
@@ -935,7 +935,7 @@ export const sandboxHud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>
               pointerEvents: 'auto',
               position: 'static',
               width: 'auto',
-              padding: '0.25rem',
+              padding: '1',
             },
           }),
         ),
@@ -950,9 +950,9 @@ export const sandboxHud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>
               h,
               Zap,
               css({
-                width: '0.875rem',
-                height: '0.875rem',
-                color: 'var(--muted-foreground)',
+                width: '3.5',
+                height: '3.5',
+                color: 'mutedForeground',
               }),
             ),
             h,
@@ -980,10 +980,10 @@ export const passedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '0.75rem',
-              paddingInline: '2rem',
-              paddingTop: '0.5rem',
-              paddingBottom: '1.5rem',
+              gap: '3',
+              paddingInline: '8',
+              paddingTop: '2',
+              paddingBottom: '6',
             }),
           ),
         ],
@@ -994,11 +994,11 @@ export const passedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 cx(
                   css({
                     display: 'grid',
-                    width: '3rem',
-                    height: '3rem',
+                    width: '12',
+                    height: '12',
                     placeItems: 'center',
                     borderRadius: '9999px',
-                    backgroundColor: 'var(--ok)',
+                    backgroundColor: 'ok',
                     color: 'white',
                     boxShadow: 'raised',
                   }),
@@ -1011,8 +1011,8 @@ export const passedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h,
                 Check,
                 css({
-                  width: '1.5rem',
-                  height: '1.5rem',
+                  width: '6',
+                  height: '6',
                 }),
               ),
             ],
@@ -1037,13 +1037,13 @@ export const passedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               justifyContent: 'flex-end',
-              gap: '0.5rem',
+              gap: '2',
               borderTopWidth: '1px',
               borderTopStyle: 'solid',
-              borderColor: 'var(--hairline)',
-              backgroundColor: 'var(--surface-nested)',
-              paddingInline: '1.25rem',
-              paddingBlock: '0.75rem',
+              borderColor: 'hairline',
+              backgroundColor: 'nested',
+              paddingInline: '5',
+              paddingBlock: '3',
             }),
           ),
         ],
@@ -1054,7 +1054,7 @@ export const passedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               variant: 'outline',
               size: 'lg',
               className: css({
-                paddingInline: '0.875rem',
+                paddingInline: '3.5',
               }),
             },
             t.sandbox.sandboxMenu,
@@ -1066,7 +1066,7 @@ export const passedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   onClick: Message.GuidedStarted({ id: next }),
                   size: 'lg',
                   className: css({
-                    paddingInline: '1rem',
+                    paddingInline: '4',
                   }),
                 },
                 t.catalog.guided[next].name,
@@ -1077,7 +1077,7 @@ export const passedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   onClick: Message.FreeSandboxStarted(),
                   size: 'lg',
                   className: css({
-                    paddingInline: '1rem',
+                    paddingInline: '4',
                   }),
                 },
                 t.sandbox.freeSandbox,

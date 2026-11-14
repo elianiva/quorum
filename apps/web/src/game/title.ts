@@ -357,8 +357,7 @@ const row = (r: Row, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-const done = (h: HtmlBuilder<Message>) =>
-  icon(h, Check, cx('booth-icon', css({ color: 'var(--ok)' })))
+const done = (h: HtmlBuilder<Message>) => icon(h, Check, cx('booth-icon', css({ color: 'ok' })))
 const locked = (h: HtmlBuilder<Message>) => icon(h, Lock, 'booth-icon')
 
 const backRow = (h: HtmlBuilder<Message>): Html => {
@@ -1355,7 +1354,7 @@ const terminal = (model: Model, h: HtmlBuilder<Message>): Html => {
     [
       h.p([], [h.b([], [`$ ssh ${host}`])]),
       h.p([], [line]),
-      h.p([h.Class(css({ color: 'var(--ok)' }))], [t.title.connected]),
+      h.p([h.Class(css({ color: 'ok' }))], [t.title.connected]),
       h.span([h.Class('booth-caret')], []),
     ],
   )
@@ -1487,7 +1486,7 @@ const strip = (h: HtmlBuilder<Message>): Html => {
           h.AriaLabel(`${t.title.build} ${build}`),
         ],
         [
-          icon(h, Hash, css({ width: '0.875rem', height: '0.875rem' })),
+          icon(h, Hash, css({ width: '3.5', height: '3.5' })),
           h.span([h.Class('booth-strip-label')], [`${t.title.build} ${build}`]),
         ],
       ),
@@ -1500,7 +1499,7 @@ const strip = (h: HtmlBuilder<Message>): Html => {
         [
           h.span([h.Class('booth-strip-dot')], []),
           h.span([], [t.title.feedback]),
-          icon(h, ArrowUpRight, css({ width: '0.875rem', height: '0.875rem' })),
+          icon(h, ArrowUpRight, css({ width: '3.5', height: '3.5' })),
         ],
       ),
       h.a(
@@ -1511,7 +1510,7 @@ const strip = (h: HtmlBuilder<Message>): Html => {
           h.AriaLabel(t.title.supportOnKofi),
         ],
         [
-          icon(h, Coffee, css({ width: '0.875rem', height: '0.875rem' })),
+          icon(h, Coffee, css({ width: '3.5', height: '3.5' })),
           h.span([h.Class('booth-strip-label')], [t.title.support]),
         ],
       ),
@@ -1523,7 +1522,7 @@ const strip = (h: HtmlBuilder<Message>): Html => {
           h.Title(t.title.openSourceOnGitHub),
           h.AriaLabel(t.title.openSourceOnGitHub),
         ],
-        [githubMark(h, css({ width: '0.875rem', height: '0.875rem' }))],
+        [githubMark(h, css({ width: '3.5', height: '3.5' }))],
       ),
     ],
   )
@@ -1591,10 +1590,10 @@ const reader = (model: Model, h: HtmlBuilder<Message>): Html => {
         [h.Class('reader-body')],
         [
           ...[
-            css({ top: '0.75rem', left: '0.75rem' }),
-            css({ top: '0.75rem', right: '0.75rem' }),
-            css({ bottom: '0.75rem', left: '0.75rem' }),
-            css({ bottom: '0.75rem', right: '0.75rem' }),
+            css({ top: '3', left: '3' }),
+            css({ top: '3', right: '3' }),
+            css({ bottom: '3', left: '3' }),
+            css({ bottom: '3', right: '3' }),
           ].map((at) => h.span([h.Class(cx('reader-screw', at))], [])),
           h.div(
             [h.Class('reader-screen'), h.AriaLive('polite')],
@@ -1655,8 +1654,8 @@ export const titleScreen = (model: Model, h: HtmlBuilder<Message>): Html =>
             height: '100%',
             placeItems: 'center',
             overflow: 'hidden',
-            backgroundColor: 'var(--page)',
-            color: 'var(--foreground)',
+            backgroundColor: 'page',
+            color: 'foreground',
           }),
         ),
       ),

@@ -33,7 +33,7 @@ const traffic = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): ReadonlyA
               css({
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
+                gap: '2',
                 fontSize: 'calc(12px*var(--type-scale))',
               }),
             ),
@@ -60,10 +60,10 @@ const traffic = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): ReadonlyA
                       fontSize: 'calc(11.5px*var(--type-scale))',
                     }),
                     failing
-                      ? css({ color: 'var(--danger)' })
+                      ? css({ color: 'danger' })
                       : slow
-                        ? css({ color: 'var(--warn)' })
-                        : css({ color: 'var(--muted-foreground)' }),
+                        ? css({ color: 'warn' })
+                        : css({ color: 'mutedForeground' }),
                   ),
                 ),
               ],
@@ -85,7 +85,7 @@ const traffic = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): ReadonlyA
               css({
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.125rem',
+                gap: '0.5',
               }),
             ),
           ],
@@ -97,12 +97,10 @@ const traffic = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): ReadonlyA
                   cx(
                     FIGURE,
                     css({
-                      paddingLeft: '1rem',
+                      paddingLeft: '4',
                       fontSize: 'calc(11.5px*var(--type-scale))',
                     }),
-                    slow
-                      ? css({ color: 'var(--warn)' })
-                      : css({ color: 'var(--muted-foreground)' }),
+                    slow ? css({ color: 'warn' }) : css({ color: 'mutedForeground' }),
                   ),
                 ),
               ],

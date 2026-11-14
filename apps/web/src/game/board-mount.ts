@@ -70,7 +70,7 @@ export const boardHost = (h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Key('board'),
-      h.Class(css({ position: 'absolute', inset: '0', backgroundColor: 'var(--canvas)' })),
+      h.Class(css({ position: 'absolute', inset: '0', backgroundColor: 'canvas' })),
       h.OnMount(BoardMounted({})),
     ],
     [

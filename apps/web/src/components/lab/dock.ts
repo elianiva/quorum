@@ -56,16 +56,16 @@ const row = (model: Model, type: ComponentId, index: number, h: HtmlBuilder<Mess
           cx(
             css({
               display: 'flex',
-              height: '3rem',
+              height: '12',
               width: '100%',
               flexShrink: '0',
               alignItems: 'center',
-              gap: '0.75rem',
+              gap: '3',
               borderRadius: 'xl',
-              paddingInline: '0.625rem',
+              paddingInline: '2.5',
               textAlign: 'left',
               _hover: {
-                backgroundColor: 'var(--well)',
+                backgroundColor: 'well',
               },
             }),
             'press',
@@ -109,10 +109,10 @@ const armed = (type: ComponentId, h: HtmlBuilder<Message>): Html => {
           css({
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            paddingRight: '0.25rem',
-            paddingBottom: '0.375rem',
-            paddingLeft: '0.5rem',
+            gap: '2',
+            paddingRight: '1',
+            paddingBottom: '1.5',
+            paddingLeft: '2',
             fontSize: 'calc(12.5px*var(--type-scale))',
             whiteSpace: 'nowrap',
           }),
@@ -124,7 +124,7 @@ const armed = (type: ComponentId, h: HtmlBuilder<Message>): Html => {
       groupBadge(
         COMPONENTS[type].group,
         COMPONENT_ICONS[type],
-        css({ width: '1.25rem', height: '1.25rem' }),
+        css({ width: '5', height: '5' }),
         h,
       ),
       h.span(
@@ -141,7 +141,7 @@ const armed = (type: ComponentId, h: HtmlBuilder<Message>): Html => {
         [
           h.Class(
             css({
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
               _compact: {
                 display: 'none',
               },
@@ -163,8 +163,8 @@ const armed = (type: ComponentId, h: HtmlBuilder<Message>): Html => {
             h,
             X,
             css({
-              width: '1rem',
-              height: '1rem',
+              width: '4',
+              height: '4',
             }),
           ),
         ],
@@ -188,8 +188,8 @@ const list = (model: Model, group: DockGroup, h: HtmlBuilder<Message>): Html =>
             width: '420px',
             maxWidth: '100%',
             flexDirection: 'column',
-            gap: '0.125rem',
-            paddingBottom: '0.25rem',
+            gap: '0.5',
+            paddingBottom: '1',
             _compact: {
               maxHeight: '46dvh',
               width: 'auto',
@@ -225,8 +225,8 @@ const inboxTab = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               position: 'relative',
               display: 'none',
-              width: '2.5rem',
-              height: '2.5rem',
+              width: '10',
+              height: '10',
               flexShrink: '0',
               placeItems: 'center',
               borderRadius: 'xl',
@@ -238,12 +238,12 @@ const inboxTab = (model: Model, h: HtmlBuilder<Message>): Html => {
           ),
           active
             ? css({
-                backgroundColor: 'var(--well)',
+                backgroundColor: 'well',
                 boxShadow: 'well',
               })
             : css({
                 _hover: {
-                  backgroundColor: 'var(--well)',
+                  backgroundColor: 'well',
                 },
               }),
         ),
@@ -254,9 +254,9 @@ const inboxTab = (model: Model, h: HtmlBuilder<Message>): Html => {
         h,
         Mail,
         css({
-          width: '1.25rem',
-          height: '1.25rem',
-          color: 'var(--muted-foreground)',
+          width: '5',
+          height: '5',
+          color: 'mutedForeground',
         }),
       ),
       unread > 0
@@ -272,11 +272,11 @@ const inboxTab = (model: Model, h: HtmlBuilder<Message>): Html => {
                       top: '-0.125rem',
                       right: '-0.125rem',
                       display: 'grid',
-                      height: '1rem',
-                      minWidth: '1rem',
+                      height: '4',
+                      minWidth: '4',
                       placeItems: 'center',
                       borderRadius: '9999px',
-                      paddingInline: '0.25rem',
+                      paddingInline: '1',
                       fontSize: 'calc(9.5px*var(--type-scale))',
                       lineHeight: '1',
                       fontWeight: '500',
@@ -287,7 +287,7 @@ const inboxTab = (model: Model, h: HtmlBuilder<Message>): Html => {
                   ),
                   waiting
                     ? css({
-                        backgroundColor: 'var(--danger)',
+                        backgroundColor: 'danger',
                       })
                     : css({
                         layerStyle: 'primaryFill',
@@ -328,7 +328,7 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'flex-end',
-            padding: '0.375rem',
+            padding: '1.5',
           }),
           PANEL,
           css({
@@ -353,7 +353,7 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
                 maxWidth: '100%',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.25rem',
+                gap: '1',
               }),
               allGroups ? 'compact:justify-start' : 'compact:justify-center',
               css({
@@ -372,7 +372,7 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
                 css({
                   position: 'relative',
                   display: 'flex',
-                  gap: '0.25rem',
+                  gap: '1',
                 }),
               ),
               h.Role('group'),
@@ -395,22 +395,22 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
                               position: 'absolute',
                               top: '0',
                               left: '0',
-                              width: '2.5rem',
-                              height: '2.5rem',
+                              width: '10',
+                              height: '10',
                               borderRadius: 'xl',
-                              backgroundColor: 'var(--well)',
+                              backgroundColor: 'well',
                               boxShadow: 'well',
                               transitionProperty: 'translate',
                               transitionDuration: '200ms',
                               transitionTimingFunction: 'cubic-bezier(0.32,0.72,0,1)',
                               animationName: highlightIn,
                               animationDuration: '200ms',
-                              animationTimingFunction: 'var(--ease-out)',
+                              animationTimingFunction: 'out',
                               animationFillMode: 'both',
                               '@media (prefers-reduced-motion: reduce)': {
                                 transitionProperty: 'none',
                                 transitionDuration: '150ms',
-                                transitionTimingFunction: 'var(--ease-out)',
+                                transitionTimingFunction: 'out',
                               },
                             }),
                           ),
@@ -436,8 +436,8 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
                           css({
                             position: 'relative',
                             display: 'grid',
-                            width: '2.5rem',
-                            height: '2.5rem',
+                            width: '10',
+                            height: '10',
                             flexShrink: '0',
                             placeItems: 'center',
                             borderRadius: 'xl',
@@ -448,7 +448,7 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
                           ? ''
                           : css({
                               _hover: {
-                                backgroundColor: 'var(--well)',
+                                backgroundColor: 'well',
                               },
                             }),
                       ),
@@ -458,7 +458,7 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
                     groupBadge(
                       group.family,
                       DOCK_ICONS[group.key],
-                      css({ width: '1.5rem', height: '1.5rem' }),
+                      css({ width: '6', height: '6' }),
                       h,
                     ),
                     // The open tab carries its group colour as an underline.
@@ -468,17 +468,17 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
                           cx(
                             css({
                               position: 'absolute',
-                              bottom: '0.25rem',
-                              height: '0.125rem',
+                              bottom: '1',
+                              height: '0.5',
                               borderRadius: '9999px',
                               backgroundColor: 'currentColor',
                               transitionProperty: 'width',
                               transitionDuration: '200ms',
-                              transitionTimingFunction: 'var(--ease-out)',
+                              transitionTimingFunction: 'out',
                             }),
                             group.key === open
                               ? css({
-                                  width: '1rem',
+                                  width: '4',
                                 })
                               : css({
                                   width: '0',
@@ -498,12 +498,12 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  marginInline: '0.125rem',
+                  marginInline: '0.5',
                   display: 'none',
-                  height: '1.5rem',
+                  height: '6',
                   width: '1px',
                   flexShrink: '0',
-                  backgroundColor: 'var(--hairline)',
+                  backgroundColor: 'hairline',
                   _compact: {
                     display: 'block',
                   },

@@ -33,7 +33,7 @@ const changes = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyA
               css({
                 fontSize: 'calc(12px*var(--type-scale))',
                 lineHeight: '1.375',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ],
@@ -54,7 +54,7 @@ const changes = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyA
               css({
                 fontSize: 'calc(12px*var(--type-scale))',
                 lineHeight: '1.375',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ],

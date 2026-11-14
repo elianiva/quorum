@@ -38,7 +38,7 @@ const fixOf = (game: Game, entry: ChurnRow, h: HtmlBuilder<Message>): Html => {
             css({
               fontSize: 'calc(12px*var(--type-scale))',
               lineHeight: '1.375',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -110,10 +110,10 @@ const row = (
                 h.Class(
                   cx(
                     css({
-                      paddingInline: '0.75rem',
-                      paddingBottom: '0.25rem',
+                      paddingInline: '3',
+                      paddingBottom: '1',
                       fontSize: 'calc(11.5px*var(--type-scale))',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                     !entry.needed &&
                       css({
@@ -145,9 +145,9 @@ const rowGrid = (
             display: 'grid',
             gridTemplateColumns: '88px 80px 1fr 44px minmax(0,180px)',
             alignItems: 'center',
-            gap: '0.75rem',
-            paddingInline: '0.75rem',
-            paddingBlock: '0.375rem',
+            gap: '3',
+            paddingInline: '3',
+            paddingBlock: '1.5',
             _compact: {
               gridTemplateColumns: '72px 64px 1fr 40px',
             },
@@ -183,10 +183,10 @@ const rowGrid = (
               }),
               entry.cause === 'slow' || entry.cause === 'far'
                 ? css({
-                    color: 'var(--warn)',
+                    color: 'warn',
                   })
                 : css({
-                    color: 'var(--danger)',
+                    color: 'danger',
                   }),
             ),
           ),
@@ -197,9 +197,9 @@ const rowGrid = (
         [
           h.Class(
             css({
-              height: '0.375rem',
+              height: '1.5',
               borderRadius: '9999px',
-              backgroundColor: 'var(--muted)',
+              backgroundColor: 'muted',
             }),
           ),
           h.Title(
@@ -219,10 +219,10 @@ const rowGrid = (
                   }),
                   entry.needed
                     ? css({
-                        backgroundColor: 'var(--danger)',
+                        backgroundColor: 'danger',
                       })
                     : css({
-                        backgroundColor: 'var(--muted-foreground)',
+                        backgroundColor: 'mutedForeground',
                       }),
                 ),
               ),
@@ -276,7 +276,7 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
           css({
             display: 'flex',
             flexDirection: 'column',
-            paddingBlock: '0.25rem',
+            paddingBlock: '1',
           }),
           WELL,
         ),
@@ -290,11 +290,11 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'baseline',
-              columnGap: '1rem',
-              rowGap: '0.25rem',
-              paddingInline: '0.75rem',
-              paddingTop: '0.5rem',
-              paddingBottom: '0.375rem',
+              columnGap: '4',
+              rowGap: '1',
+              paddingInline: '3',
+              paddingTop: '2',
+              paddingBottom: '1.5',
             }),
           ),
         ],
@@ -359,7 +359,7 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
                   css({
                     marginLeft: 'auto',
                     fontSize: 'calc(12.5px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -405,10 +405,10 @@ export const churnPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.75rem',
-                paddingInline: '1.25rem',
-                paddingTop: '0.25rem',
-                paddingBottom: '1.25rem',
+                gap: '3',
+                paddingInline: '5',
+                paddingTop: '1',
+                paddingBottom: '5',
               }),
               SCROLL,
             ),

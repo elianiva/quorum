@@ -118,10 +118,10 @@ const entryOf = (
           ? css({
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.125rem',
+              gap: '0.5',
               borderLeftWidth: '2px',
-              borderColor: 'var(--hairline)',
-              paddingLeft: '0.75rem',
+              borderColor: 'hairline',
+              paddingLeft: '3',
             })
           : css({
               display: 'flex',
@@ -138,7 +138,7 @@ const entryOf = (
                   FIGURE,
                   css({
                     fontSize: 'calc(10.5px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -152,7 +152,7 @@ const entryOf = (
             css({
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.75rem',
+              gap: '3',
               whiteSpace: 'pre-line',
             }),
           ),
@@ -197,14 +197,14 @@ export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
           cx(
             css({
               position: 'absolute',
-              right: '0.75rem',
+              right: '3',
               bottom: '68px',
               zIndex: '20',
               display: 'flex',
               width: 'min(380px,calc(100%-24px))',
               flexDirection: 'column',
-              gap: '0.625rem',
-              padding: '0.75rem',
+              gap: '2.5',
+              padding: '3',
             }),
             'enter-pop',
           ),
@@ -233,8 +233,8 @@ export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               alignItems: 'flex-start',
-              gap: '0.75rem',
-              paddingRight: '1.5rem',
+              gap: '3',
+              paddingRight: '6',
             }),
           ),
         ],
@@ -242,8 +242,8 @@ export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
           badge(
             sender,
             css({
-              width: '2rem',
-              height: '2rem',
+              width: '8',
+              height: '8',
             }),
             h,
           ),
@@ -255,7 +255,7 @@ export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
                   minWidth: '0',
                   flex: '1 1 0%',
                   flexDirection: 'column',
-                  gap: '0.125rem',
+                  gap: '0.5',
                 }),
               ),
             ],
@@ -268,7 +268,7 @@ export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
                       css({
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.375rem',
+                        gap: '1.5',
                       }),
                     ),
                   ),
@@ -315,8 +315,8 @@ export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
             cx(
               WELL,
               css({
-                paddingInline: '0.75rem',
-                paddingBlock: '0.5rem',
+                paddingInline: '3',
+                paddingBlock: '2',
                 _short: {
                   display: 'none',
                 },
@@ -332,7 +332,7 @@ export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
                   lineClamp: 2,
                   fontSize: 'calc(12px*var(--type-scale))',
                   lineHeight: '1.375',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -346,7 +346,7 @@ export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '2',
             }),
           ),
         ],
@@ -387,7 +387,7 @@ export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
               Kbd(
                 {
                   className: css({
-                    marginLeft: '0.25rem',
+                    marginLeft: '1',
                     opacity: 0.8,
                   }),
                 },
@@ -434,14 +434,14 @@ export const mailQueueRow = (model: Model, h: HtmlBuilder<Message>): Html => {
         css({
           pointerEvents: 'auto',
           display: 'flex',
-          minHeight: '3rem',
+          minHeight: '12',
           width: '100%',
           alignItems: 'center',
-          gap: '0.625rem',
+          gap: '2.5',
           borderRadius: 'xl',
           layerStyle: 'surface',
-          paddingInline: '0.75rem',
-          paddingBlock: '0.5rem',
+          paddingInline: '3',
+          paddingBlock: '2',
           textAlign: 'left',
           boxShadow: 'card',
         }),
@@ -451,8 +451,8 @@ export const mailQueueRow = (model: Model, h: HtmlBuilder<Message>): Html => {
       badge(
         sender,
         css({
-          width: '1.75rem',
-          height: '1.75rem',
+          width: '7',
+          height: '7',
         }),
         h,
       ),
@@ -464,7 +464,7 @@ export const mailQueueRow = (model: Model, h: HtmlBuilder<Message>): Html => {
               minWidth: '0',
               flex: '1 1 0%',
               flexDirection: 'column',
-              gap: '0.125rem',
+              gap: '0.5',
             }),
           ),
         ],
@@ -505,11 +505,11 @@ export const mailQueueRow = (model: Model, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  width: '0.5rem',
-                  height: '0.5rem',
+                  width: '2',
+                  height: '2',
                   flexShrink: '0',
                   borderRadius: '9999px',
-                  backgroundColor: 'var(--danger)',
+                  backgroundColor: 'danger',
                 }),
               ),
             ],
@@ -520,10 +520,10 @@ export const mailQueueRow = (model: Model, h: HtmlBuilder<Message>): Html => {
         h,
         ChevronRight,
         css({
-          width: '1rem',
-          height: '1rem',
+          width: '4',
+          height: '4',
           flexShrink: '0',
-          color: 'var(--muted-foreground)',
+          color: 'mutedForeground',
         }),
       ),
     ],
@@ -551,22 +551,22 @@ const inboxToggle = (
       h.Class(
         cx(
           waiting
-            ? cx('mail-ping', css({ color: 'var(--foreground)' }))
-            : css({ color: 'var(--muted-foreground)' }),
+            ? cx('mail-ping', css({ color: 'foreground' }))
+            : css({ color: 'mutedForeground' }),
           css({
             position: 'absolute',
-            right: '0.75rem',
-            bottom: '0.75rem',
+            right: '3',
+            bottom: '3',
             zIndex: '20',
             display: 'grid',
-            width: '2.75rem',
-            height: '2.75rem',
+            width: '11',
+            height: '11',
             placeItems: 'center',
           }),
           PANEL,
           css({
             _hover: {
-              color: 'var(--foreground)',
+              color: 'foreground',
             },
             _compact: {
               display: 'none',
@@ -601,7 +601,7 @@ const inboxToggle = (
                       minWidth: '18px',
                       placeItems: 'center',
                       borderRadius: '9999px',
-                      paddingInline: '0.25rem',
+                      paddingInline: '1',
                       fontSize: 'calc(10.5px*var(--type-scale))',
                       fontWeight: '500',
                       boxShadow: 'raised',
@@ -610,12 +610,12 @@ const inboxToggle = (
                   ),
                   waiting
                     ? css({
-                        backgroundColor: 'var(--danger)',
+                        backgroundColor: 'danger',
                         color: 'white',
                       })
                     : css({
                         layerStyle: 'primaryFill',
-                        color: 'var(--on-primary-fill)',
+                        color: 'onPrimaryFill',
                       }),
                 ),
               ),
@@ -655,19 +655,19 @@ const row = (
                 display: 'flex',
                 width: '100%',
                 alignItems: 'flex-start',
-                gap: '0.625rem',
-                paddingInline: '0.875rem',
-                paddingBlock: '0.5rem',
+                gap: '2.5',
+                paddingInline: '3.5',
+                paddingBlock: '2',
                 textAlign: 'left',
                 _compact: {
-                  gap: '0.75rem',
-                  paddingInline: '1rem',
-                  paddingBlock: '0.75rem',
+                  gap: '3',
+                  paddingInline: '4',
+                  paddingBlock: '3',
                 },
               }),
               open
                 ? css({
-                    backgroundColor: 'var(--well)',
+                    backgroundColor: 'well',
                   })
                 : css({
                     _hover: {
@@ -706,14 +706,14 @@ const row = (
                     css({
                       position: 'absolute',
                       top: '17px',
-                      left: '0.375rem',
-                      width: '0.375rem',
-                      height: '0.375rem',
+                      left: '1.5',
+                      width: '1.5',
+                      height: '1.5',
                       borderRadius: '9999px',
-                      backgroundColor: 'var(--primary-strong)',
+                      backgroundColor: 'primaryStrong',
                       _compact: {
                         top: '26px',
-                        left: '0.5rem',
+                        left: '2',
                       },
                     }),
                   ),
@@ -726,11 +726,11 @@ const row = (
             sender,
             css({
               marginTop: '1px',
-              width: '1.5rem',
-              height: '1.5rem',
+              width: '6',
+              height: '6',
               _compact: {
-                width: '2.25rem',
-                height: '2.25rem',
+                width: '9',
+                height: '9',
               },
             }),
             h,
@@ -743,7 +743,7 @@ const row = (
                   minWidth: '0',
                   flex: '1 1 0%',
                   flexDirection: 'column',
-                  gap: '0.125rem',
+                  gap: '0.5',
                 }),
               ),
             ],
@@ -754,7 +754,7 @@ const row = (
                     css({
                       display: 'flex',
                       alignItems: 'baseline',
-                      gap: '0.5rem',
+                      gap: '2',
                     }),
                   ),
                 ],
@@ -809,7 +809,7 @@ const row = (
                               FIGURE,
                               css({
                                 fontSize: 'calc(10.5px*var(--type-scale))',
-                                color: 'var(--muted-foreground)',
+                                color: 'mutedForeground',
                               }),
                             ),
                           ),
@@ -824,7 +824,7 @@ const row = (
                           FIGURE,
                           css({
                             fontSize: 'calc(10.5px*var(--type-scale))',
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                         ),
                       ),
@@ -848,7 +848,7 @@ const row = (
                       }),
                       mail.read
                         ? css({
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           })
                         : css({
                             color: 'color-mix(in oklab, var(--foreground) 85%, transparent)',
@@ -867,7 +867,7 @@ const row = (
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                       fontSize: 'calc(11.5px*var(--type-scale))',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                       _compact: {
                         display: 'block',
                       },
@@ -899,9 +899,9 @@ const digestLine = (mail: Mail, h: HtmlBuilder<Message>): Html => {
               display: 'flex',
               width: '100%',
               flexDirection: 'column',
-              gap: '0.125rem',
-              paddingInline: '0.875rem',
-              paddingBlock: '0.5rem',
+              gap: '0.5',
+              paddingInline: '3.5',
+              paddingBlock: '2',
               textAlign: 'left',
               _hover: {
                 backgroundColor: 'color-mix(in oklab, var(--well) 50%, transparent)',
@@ -916,7 +916,7 @@ const digestLine = (mail: Mail, h: HtmlBuilder<Message>): Html => {
                 css({
                   display: 'flex',
                   alignItems: 'baseline',
-                  gap: '0.5rem',
+                  gap: '2',
                 }),
               ),
             ],
@@ -942,7 +942,7 @@ const digestLine = (mail: Mail, h: HtmlBuilder<Message>): Html => {
                       FIGURE,
                       css({
                         fontSize: 'calc(10.5px*var(--type-scale))',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ),
@@ -973,7 +973,7 @@ const digestLine = (mail: Mail, h: HtmlBuilder<Message>): Html => {
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                   fontSize: 'calc(11.5px*var(--type-scale))',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -1008,19 +1008,19 @@ const digestRow = (
                 display: 'flex',
                 width: '100%',
                 alignItems: 'flex-start',
-                gap: '0.625rem',
-                paddingInline: '0.875rem',
-                paddingBlock: '0.5rem',
+                gap: '2.5',
+                paddingInline: '3.5',
+                paddingBlock: '2',
                 textAlign: 'left',
                 _compact: {
-                  gap: '0.75rem',
-                  paddingInline: '1rem',
-                  paddingBlock: '0.75rem',
+                  gap: '3',
+                  paddingInline: '4',
+                  paddingBlock: '3',
                 },
               }),
               open
                 ? css({
-                    backgroundColor: 'var(--well)',
+                    backgroundColor: 'well',
                   })
                 : css({
                     _hover: {
@@ -1037,11 +1037,11 @@ const digestRow = (
                 css({
                   marginTop: '1px',
                   display: 'grid',
-                  width: '1.5rem',
-                  height: '1.5rem',
+                  width: '6',
+                  height: '6',
                   flexShrink: '0',
                   placeItems: 'center',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -1050,8 +1050,8 @@ const digestRow = (
                 h,
                 Layers,
                 css({
-                  width: '1rem',
-                  height: '1rem',
+                  width: '4',
+                  height: '4',
                 }),
               ),
             ],
@@ -1064,7 +1064,7 @@ const digestRow = (
                   minWidth: '0',
                   flex: '1 1 0%',
                   flexDirection: 'column',
-                  gap: '0.125rem',
+                  gap: '0.5',
                 }),
               ),
             ],
@@ -1075,7 +1075,7 @@ const digestRow = (
                     css({
                       display: 'flex',
                       alignItems: 'baseline',
-                      gap: '0.5rem',
+                      gap: '2',
                     }),
                   ),
                 ],
@@ -1111,7 +1111,7 @@ const digestRow = (
                           FIGURE,
                           css({
                             fontSize: 'calc(10.5px*var(--type-scale))',
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                         ),
                       ),
@@ -1125,7 +1125,7 @@ const digestRow = (
                           FIGURE,
                           css({
                             fontSize: 'calc(10.5px*var(--type-scale))',
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                         ),
                       ),
@@ -1149,7 +1149,7 @@ const digestRow = (
                       }),
                       mail.read
                         ? css({
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           })
                         : css({
                             color: 'color-mix(in oklab, var(--foreground) 85%, transparent)',
@@ -1186,14 +1186,14 @@ const labelChip = (
           cx(
             css({
               display: 'flex',
-              height: '1.5rem',
+              height: '6',
               flexShrink: '0',
               alignItems: 'center',
-              gap: '0.375rem',
+              gap: '1.5',
               borderRadius: '9999px',
               borderWidth: '1px',
               borderStyle: 'solid',
-              paddingInline: '0.625rem',
+              paddingInline: '2.5',
               fontSize: 'calc(11px*var(--type-scale))',
               whiteSpace: 'nowrap',
             }),
@@ -1201,18 +1201,18 @@ const labelChip = (
           ),
           active
             ? css({
-                borderColor: 'var(--hairline)',
+                borderColor: 'hairline',
                 layerStyle: 'raised',
                 fontWeight: '500',
-                color: 'var(--foreground)',
+                color: 'foreground',
                 boxShadow: 'raised',
               })
             : css({
                 borderColor: 'color-mix(in oklab, var(--foreground) 15%, transparent)',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
                 _hover: {
                   borderColor: 'color-mix(in oklab, var(--foreground) 25%, transparent)',
-                  color: 'var(--foreground)',
+                  color: 'foreground',
                 },
               }),
         ),
@@ -1256,15 +1256,15 @@ const folderTab = (
           cx(
             css({
               display: 'flex',
-              height: '1.5rem',
+              height: '6',
               alignItems: 'center',
-              gap: '0.375rem',
+              gap: '1.5',
               borderRadius: 'lg',
-              paddingInline: '0.625rem',
+              paddingInline: '2.5',
               fontSize: 'calc(12px*var(--type-scale))',
               _compact: {
-                height: '2.25rem',
-                paddingInline: '0.75rem',
+                height: '9',
+                paddingInline: '3',
               },
             }),
             'press',
@@ -1273,13 +1273,13 @@ const folderTab = (
             ? css({
                 layerStyle: 'raised',
                 fontWeight: '500',
-                color: 'var(--foreground)',
+                color: 'foreground',
                 boxShadow: 'raised',
               })
             : css({
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
                 _hover: {
-                  color: 'var(--foreground)',
+                  color: 'foreground',
                 },
               }),
         ),
@@ -1312,10 +1312,10 @@ const tool = (label: string, glyph: IconNode, message: Message, h: HtmlBuilder<M
       variant: 'ghost',
       size: 'icon-sm',
       className: css({
-        color: 'var(--muted-foreground)',
+        color: 'mutedForeground',
         _compact: {
-          width: '2.75rem',
-          height: '2.75rem',
+          width: '11',
+          height: '11',
         },
       }),
       attributes: [h.AriaLabel(label), h.Title(label)],
@@ -1324,8 +1324,8 @@ const tool = (label: string, glyph: IconNode, message: Message, h: HtmlBuilder<M
       h,
       glyph,
       css({
-        width: '1rem',
-        height: '1rem',
+        width: '4',
+        height: '4',
       }),
     ),
     h,
@@ -1359,9 +1359,9 @@ const digestLetter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Me
                 minHeight: '0',
                 flex: '1 1 0%',
                 flexDirection: 'column',
-                gap: '0.75rem',
-                paddingInline: '1.25rem',
-                paddingBlock: '1rem',
+                gap: '3',
+                paddingInline: '5',
+                paddingBlock: '4',
               }),
               SCROLL,
             ),
@@ -1391,7 +1391,7 @@ const digestLetter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Me
                 css({
                   fontSize: 'calc(12px*var(--type-scale))',
                   lineHeight: '1.625',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -1407,13 +1407,13 @@ const digestLetter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Me
                   '& > :not(:last-child)': {
                     borderBottomWidth: '1px',
                     borderBottomStyle: 'solid',
-                    borderColor: 'var(--hairline)',
+                    borderColor: 'hairline',
                   },
                   borderTopWidth: '1px',
                   borderTopStyle: 'solid',
                   borderBottomWidth: '1px',
                   borderBottomStyle: 'solid',
-                  borderColor: 'var(--hairline)',
+                  borderColor: 'hairline',
                 }),
               ),
             ],
@@ -1427,13 +1427,13 @@ const digestLetter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Me
             css({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '2',
               borderTopWidth: '1px',
               borderTopStyle: 'solid',
-              borderColor: 'var(--hairline)',
-              backgroundColor: 'var(--surface-nested)',
-              paddingInline: '0.75rem',
-              paddingBlock: '0.5rem',
+              borderColor: 'hairline',
+              backgroundColor: 'nested',
+              paddingInline: '3',
+              paddingBlock: '2',
             }),
           ),
         ],
@@ -1444,7 +1444,7 @@ const digestLetter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Me
                 css({
                   flex: '1 1 0%',
                   fontSize: 'calc(11.5px*var(--type-scale))',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -1478,7 +1478,7 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                 css({
                   flex: '1 1 0%',
                   fontSize: 'calc(12px*var(--type-scale))',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -1496,8 +1496,8 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                 size: 'sm',
                 className: css({
                   _compact: {
-                    height: '2.75rem',
-                    paddingInline: '0.75rem',
+                    height: '11',
+                    paddingInline: '3',
                   },
                 }),
                 // The hover names where the button really goes: a trap names an off-site address.
@@ -1519,7 +1519,7 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                     Kbd(
                       {
                         className: css({
-                          marginLeft: '0.25rem',
+                          marginLeft: '1',
                           opacity: 0.8,
                         }),
                       },
@@ -1556,9 +1556,9 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                 minHeight: '0',
                 flex: '1 1 0%',
                 flexDirection: 'column',
-                gap: '0.75rem',
-                paddingInline: '1.25rem',
-                paddingBlock: '1rem',
+                gap: '3',
+                paddingInline: '5',
+                paddingBlock: '4',
               }),
               SCROLL,
             ),
@@ -1572,7 +1572,7 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                   display: 'flex',
                   flexWrap: 'wrap',
                   alignItems: 'center',
-                  gap: '0.5rem',
+                  gap: '2',
                 }),
               ),
             ],
@@ -1594,9 +1594,9 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                           buttonSizes.sm,
                           css({
                             marginLeft: '-0.25rem',
-                            height: '1.5rem',
-                            paddingInline: '0.375rem',
-                            color: 'var(--muted-foreground)',
+                            height: '6',
+                            paddingInline: '1.5',
+                            color: 'mutedForeground',
                           }),
                         ),
                       ),
@@ -1606,8 +1606,8 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                         h,
                         ShieldAlert,
                         css({
-                          width: '0.875rem',
-                          height: '0.875rem',
+                          width: '3.5',
+                          height: '3.5',
                         }),
                       ),
                       tell.id,
@@ -1622,10 +1622,10 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                         css({
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '0.25rem',
+                          gap: '1',
                           fontSize: 'calc(11.5px*var(--type-scale))',
                           fontWeight: '500',
-                          color: 'var(--ok)',
+                          color: 'ok',
                         }),
                       ),
                     ],
@@ -1634,8 +1634,8 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                         h,
                         CircleCheck,
                         css({
-                          width: '0.875rem',
-                          height: '0.875rem',
+                          width: '3.5',
+                          height: '3.5',
                         }),
                       ),
                       t.inbox.resolved(clock(mail.phase.at)),
@@ -1666,7 +1666,7 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                 css({
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.625rem',
+                  gap: '2.5',
                 }),
               ),
             ],
@@ -1674,11 +1674,11 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
               badge(
                 sender,
                 css({
-                  width: '1.75rem',
-                  height: '1.75rem',
+                  width: '7',
+                  height: '7',
                   _compact: {
-                    width: '2.25rem',
-                    height: '2.25rem',
+                    width: '9',
+                    height: '9',
                   },
                 }),
                 h,
@@ -1718,7 +1718,7 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
                             fontSize: 'calc(11px*var(--type-scale))',
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                         ),
                       ),
@@ -1735,7 +1735,7 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                 css({
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.75rem',
+                  gap: '3',
                   fontSize: 'calc(13px*var(--type-scale))',
                   lineHeight: '1.625',
                   _compact: {
@@ -1773,7 +1773,7 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                               cursor: 'pointer',
                               listStyleType: 'none',
                               alignItems: 'center',
-                              gap: '0.375rem',
+                              gap: '1.5',
                               '&::-webkit-details-marker': {
                                 display: 'none',
                               },
@@ -1786,10 +1786,10 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                             ChevronRight,
                             cx(
                               css({
-                                width: '0.875rem',
-                                height: '0.875rem',
+                                width: '3.5',
+                                height: '3.5',
                                 flexShrink: '0',
-                                color: 'var(--muted-foreground)',
+                                color: 'mutedForeground',
                                 '.group[open] &': {
                                   rotate: '90deg',
                                 },
@@ -1806,8 +1806,8 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                             css({
                               display: 'flex',
                               flexDirection: 'column',
-                              gap: '0.75rem',
-                              paddingTop: '0.5rem',
+                              gap: '3',
+                              paddingTop: '2',
                             }),
                           ),
                         ],
@@ -1824,7 +1824,7 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
               h.Class(
                 css({
                   fontSize: 'calc(11.5px*var(--type-scale))',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -1840,15 +1840,15 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
               flexShrink: '0',
               flexWrap: 'wrap',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '2',
               borderTopWidth: '1px',
               borderTopStyle: 'solid',
-              borderColor: 'var(--hairline)',
-              backgroundColor: 'var(--surface-nested)',
-              paddingInline: '0.75rem',
-              paddingBlock: '0.5rem',
+              borderColor: 'hairline',
+              backgroundColor: 'nested',
+              paddingInline: '3',
+              paddingBlock: '2',
               _compact: {
-                paddingBottom: '0.5rem',
+                paddingBottom: '2',
               },
             }),
           ),
@@ -1919,15 +1919,15 @@ const generator = (model: Model, h: HtmlBuilder<Message>): Html => {
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'flex-end',
-          gap: '0.5rem',
+          gap: '2',
           borderTopWidth: '1px',
           borderTopStyle: 'solid',
-          borderColor: 'var(--hairline)',
-          backgroundColor: 'var(--surface-nested)',
-          paddingInline: '0.75rem',
-          paddingBlock: '0.5rem',
+          borderColor: 'hairline',
+          backgroundColor: 'nested',
+          paddingInline: '3',
+          paddingBlock: '2',
           _compact: {
-            gap: '0.375rem',
+            gap: '1.5',
           },
         }),
       ),
@@ -1951,7 +1951,7 @@ const generator = (model: Model, h: HtmlBuilder<Message>): Html => {
           size: 'sm',
           value: model.board.inbox.sample,
           onChange: (id) => Message.InboxChanged({ message: InboxMessage.SampleChosen({ id }) }),
-          wrapperClass: css({ width: '16rem' }),
+          wrapperClass: css({ width: '64' }),
           options: [...new Set(SAMPLES.map((sample) => sample.group))].map((group) =>
             nativeSelectOptGroup(
               { label: group },
@@ -1984,8 +1984,8 @@ const generator = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h,
                   Dices,
                   css({
-                    width: '0.875rem',
-                    height: '0.875rem',
+                    width: '3.5',
+                    height: '3.5',
                   }),
                 ),
                 `×${count}`,
@@ -2048,7 +2048,7 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
         cx(
           css({
             position: 'absolute',
-            right: '0.75rem',
+            right: '3',
             bottom: '68px',
             zIndex: '30',
             display: 'flex',
@@ -2070,7 +2070,7 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               borderBottomRightRadius: '0',
               borderTopWidth: '1px',
               borderTopStyle: 'solid',
-              borderTopColor: 'var(--hairline)',
+              borderTopColor: 'hairline',
               paddingBottom: 'env(safe-area-inset-bottom)',
             },
           }),
@@ -2087,7 +2087,7 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               display: 'none',
               flexShrink: '0',
               justifyContent: 'center',
-              paddingTop: '0.5rem',
+              paddingTop: '2',
               _compact: {
                 display: 'flex',
               },
@@ -2099,8 +2099,8 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  height: '0.25rem',
-                  width: '2.5rem',
+                  height: '1',
+                  width: '10',
                   borderRadius: '9999px',
                   backgroundColor: 'color-mix(in oklab, var(--foreground) 15%, transparent)',
                 }),
@@ -2116,11 +2116,11 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              paddingInline: '0.75rem',
-              paddingBlock: '0.625rem',
+              gap: '2',
+              paddingInline: '3',
+              paddingBlock: '2.5',
               _compact: {
-                paddingTop: '0.25rem',
+                paddingTop: '1',
               },
             }),
           ),
@@ -2135,9 +2135,9 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   className: css({
                     marginLeft: '-0.25rem',
                     height: '2.75rem !important',
-                    gap: '0.375rem',
-                    paddingInline: '0.5rem',
-                    color: 'var(--muted-foreground)',
+                    gap: '1.5',
+                    paddingInline: '2',
+                    color: 'mutedForeground',
                   }),
                   attributes: [h.AriaLabel(t.inbox.inbox)],
                 },
@@ -2146,8 +2146,8 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                     h,
                     ArrowLeft,
                     css({
-                      width: '1rem',
-                      height: '1rem',
+                      width: '4',
+                      height: '4',
                     }),
                   ),
                   t.inbox.inbox,
@@ -2162,11 +2162,11 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   css({
                     display: 'flex',
                     maxWidth: '100%',
-                    gap: '0.125rem',
+                    gap: '0.5',
                     overflowX: 'auto',
                     borderRadius: 'xl',
-                    backgroundColor: 'var(--well)',
-                    padding: '0.125rem',
+                    backgroundColor: 'well',
+                    padding: '0.5',
                     boxShadow: 'well',
                     scrollbarWidth: 'none',
                   }),
@@ -2227,10 +2227,10 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                       cx(
                         css({
                           display: 'flex',
-                          height: '1.5rem',
+                          height: '6',
                           alignItems: 'center',
                           borderRadius: 'lg',
-                          paddingInline: '0.625rem',
+                          paddingInline: '2.5',
                           fontSize: 'calc(12px*var(--type-scale))',
                           _compact: {
                             display: 'none',
@@ -2241,11 +2241,11 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                       model.board.inbox.filter
                         ? css({
                             layerStyle: 'raised',
-                            color: 'var(--foreground)',
+                            color: 'foreground',
                             boxShadow: 'raised',
                           })
                         : css({
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                     ),
                   ),
@@ -2283,10 +2283,10 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               variant: 'ghost',
               size: 'icon-sm',
               className: css({
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
                 _compact: {
-                  width: '2.75rem',
-                  height: '2.75rem',
+                  width: '11',
+                  height: '11',
                 },
               }),
               attributes: [h.AriaLabel(t.inbox.closeEsc)],
@@ -2295,8 +2295,8 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               h,
               X,
               css({
-                width: '0.875rem',
-                height: '0.875rem',
+                width: '3.5',
+                height: '3.5',
               }),
             ),
             h,
@@ -2315,7 +2315,7 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 gridTemplateColumns: '264px minmax(0,1fr)',
                 borderTopWidth: '1px',
                 borderTopStyle: 'solid',
-                borderColor: 'var(--hairline)',
+                borderColor: 'hairline',
                 _compact: {
                   gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
                   gridTemplateRows: 'repeat(1, minmax(0, 1fr))',
@@ -2335,7 +2335,7 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                     flexDirection: 'column',
                     borderRightWidth: '1px',
                     borderRightStyle: 'solid',
-                    borderColor: 'var(--hairline)',
+                    borderColor: 'hairline',
                     _compact: {
                       borderRightWidth: '0px',
                       borderBottomWidth: '1px',
@@ -2358,13 +2358,13 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                       display: 'flex',
                       flexShrink: '0',
                       flexWrap: 'nowrap',
-                      gap: '0.375rem',
+                      gap: '1.5',
                       overflowX: 'auto',
                       borderBottomWidth: '1px',
                       borderBottomStyle: 'solid',
-                      borderColor: 'var(--hairline)',
-                      paddingInline: '0.75rem',
-                      paddingBlock: '0.5rem',
+                      borderColor: 'hairline',
+                      paddingInline: '3',
+                      paddingBlock: '2',
                     }),
                   ),
                 ],
@@ -2394,7 +2394,7 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                         '& > :not(:last-child)': {
                           borderBottomWidth: '1px',
                           borderBottomStyle: 'solid',
-                          borderColor: 'var(--hairline)',
+                          borderColor: 'hairline',
                         },
                       }),
                       SCROLL,
@@ -2407,10 +2407,10 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                         [
                           h.Class(
                             css({
-                              paddingInline: '1rem',
-                              paddingBlock: '1rem',
+                              paddingInline: '4',
+                              paddingBlock: '4',
                               fontSize: 'calc(12.5px*var(--type-scale))',
-                              color: 'var(--muted-foreground)',
+                              color: 'mutedForeground',
                             }),
                           ),
                         ],

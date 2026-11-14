@@ -69,7 +69,7 @@ const shortcut = (command: PaletteCommand, h: HtmlBuilder<Message>): Html =>
               display: 'flex',
               flexShrink: '0',
               alignItems: 'center',
-              gap: '0.25rem',
+              gap: '1',
             }),
           ),
           h.AriaHidden(true),
@@ -80,7 +80,7 @@ const shortcut = (command: PaletteCommand, h: HtmlBuilder<Message>): Html =>
               className: css({
                 flexShrink: '0',
                 minWidth: '0',
-                paddingInline: '0.375rem',
+                paddingInline: '1.5',
               }),
             },
             [key],
@@ -108,9 +108,9 @@ const runHint = (h: HtmlBuilder<Message>): Html =>
           className: css({
             flexShrink: '0',
             minWidth: '0',
-            paddingInline: '0.375rem',
+            paddingInline: '1.5',
             layerStyle: 'primaryFill',
-            color: 'var(--on-primary-fill)',
+            color: 'onPrimaryFill',
             boxShadow: 'primary',
           }),
         },
@@ -132,8 +132,8 @@ const plainCell = (
         cx(
           css({
             display: 'grid',
-            width: '1.75rem',
-            height: '1.75rem',
+            width: '7',
+            height: '7',
             flexShrink: '0',
             placeItems: 'center',
             borderRadius: 'lg',
@@ -141,12 +141,12 @@ const plainCell = (
           active
             ? css({
                 layerStyle: 'raised',
-                color: 'var(--foreground)',
+                color: 'foreground',
                 boxShadow: 'raised',
               })
             : css({
                 backgroundColor: 'color-mix(in oklab, var(--foreground) 6%, transparent)',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
         ),
       ),
@@ -206,16 +206,16 @@ const row = (command: PaletteCommand, active: boolean, h: HtmlBuilder<Message>):
           ),
           command.part === undefined
             ? css({
-                height: '2.5rem',
-                gap: '0.625rem',
+                height: '10',
+                gap: '2.5',
                 borderRadius: 'lg',
-                paddingInline: '0.5rem',
+                paddingInline: '2',
               })
             : css({
-                height: '3rem',
-                gap: '0.75rem',
+                height: '12',
+                gap: '3',
                 borderRadius: 'xl',
-                paddingInline: '0.5rem',
+                paddingInline: '2',
               }),
           command.part?.locked !== null && command.part !== undefined
             ? css({
@@ -225,7 +225,7 @@ const row = (command: PaletteCommand, active: boolean, h: HtmlBuilder<Message>):
           active
             ? css({
                 backgroundColor: 'color-mix(in oklab, var(--foreground) 10%, transparent)',
-                color: 'var(--foreground)',
+                color: 'foreground',
               })
             : css({
                 color: 'color-mix(in oklab, var(--foreground) 85%, transparent)',
@@ -255,7 +255,7 @@ const results = (
     maxHeight: 'min(52vh, 420px)',
     overflowY: 'auto',
     overscrollBehavior: 'contain',
-    padding: '0.375rem',
+    padding: '1.5',
     scrollbarWidth: 'thin',
   })
   if (rows.length === 0)
@@ -266,11 +266,11 @@ const results = (
           [
             h.Class(
               css({
-                paddingInline: '0.625rem',
-                paddingBlock: '2.5rem',
+                paddingInline: '2.5',
+                paddingBlock: '10',
                 textAlign: 'center',
                 fontSize: 'calc(12.5px*var(--type-scale))',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ],
@@ -293,15 +293,15 @@ const results = (
                   cx(
                     EYEBROW,
                     css({
-                      paddingInline: '0.625rem',
-                      paddingBottom: '0.375rem',
+                      paddingInline: '2.5',
+                      paddingBottom: '1.5',
                     }),
                     group === PALETTE_GROUPS[0]
                       ? css({
-                          paddingTop: '0.25rem',
+                          paddingTop: '1',
                         })
                       : css({
-                          paddingTop: '0.75rem',
+                          paddingTop: '3',
                         }),
                   ),
                 ),
@@ -336,10 +336,10 @@ export const commandPalette = (model: Model, h: HtmlBuilder<Message>): Html => {
             display: 'flex',
             alignItems: 'flex-start',
             justifyContent: 'center',
-            paddingInline: '0.75rem',
+            paddingInline: '3',
             paddingTop: '12vh',
             _compact: {
-              paddingInline: '0.5rem',
+              paddingInline: '2',
               paddingTop: 'max(8px,env(safe-area-inset-top))',
             },
           }),
@@ -375,14 +375,14 @@ export const commandPalette = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 css({
                   display: 'flex',
-                  height: '3rem',
+                  height: '12',
                   flexShrink: '0',
                   alignItems: 'center',
-                  gap: '0.625rem',
+                  gap: '2.5',
                   borderBottomWidth: '1px',
                   borderBottomStyle: 'solid',
-                  borderColor: 'var(--hairline)',
-                  paddingInline: '0.875rem',
+                  borderColor: 'hairline',
+                  paddingInline: '3.5',
                 }),
               ),
             ],
@@ -391,10 +391,10 @@ export const commandPalette = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h,
                 Search,
                 css({
-                  width: '1rem',
-                  height: '1rem',
+                  width: '4',
+                  height: '4',
                   flexShrink: '0',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
               h.input([
@@ -417,11 +417,11 @@ export const commandPalette = (model: Model, h: HtmlBuilder<Message>): Html => {
                     backgroundColor: 'transparent',
                     fontSize: 'calc(15px*var(--type-scale))',
                     letterSpacing: '-0.01em',
-                    color: 'var(--foreground)',
-                    caretColor: 'var(--foreground)',
+                    color: 'foreground',
+                    caretColor: 'foreground',
                     outlineStyle: 'none',
                     '&::placeholder': {
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     },
                   }),
                 ),

@@ -24,7 +24,7 @@ const edge = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArra
               css({
                 fontSize: 'calc(12px*var(--type-scale))',
                 lineHeight: '1.375',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ],
@@ -49,7 +49,7 @@ const edge = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArra
               css({
                 fontSize: 'calc(12px*var(--type-scale))',
                 lineHeight: '1.375',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ],

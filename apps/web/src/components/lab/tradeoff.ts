@@ -161,7 +161,7 @@ const radar = (now: Axes, next: Axes, h: HtmlBuilder<Message>): Html => {
           h.Fill('none'),
           h.Class(
             css({
-              stroke: 'var(--hairline)',
+              stroke: 'hairline',
             }),
           ),
           h.StrokeWidth('1'),
@@ -173,7 +173,7 @@ const radar = (now: Axes, next: Axes, h: HtmlBuilder<Message>): Html => {
         h.Class(
           css({
             fill: 'color-mix(in oklab, var(--muted-foreground) 10%, transparent)',
-            stroke: 'var(--muted-foreground)',
+            stroke: 'mutedForeground',
           }),
         ),
         h.StrokeWidth('1.25'),
@@ -185,7 +185,7 @@ const radar = (now: Axes, next: Axes, h: HtmlBuilder<Message>): Html => {
         h.Class(
           css({
             fill: 'color-mix(in oklab, var(--group-compute) 20%, transparent)',
-            stroke: 'var(--group-compute)',
+            stroke: 'groupCompute',
           }),
         ),
         h.StrokeWidth('1.75'),
@@ -210,14 +210,14 @@ const radar = (now: Axes, next: Axes, h: HtmlBuilder<Message>): Html => {
                 }),
                 up
                   ? css({
-                      fill: 'var(--ok)',
+                      fill: 'ok',
                     })
                   : down
                     ? css({
-                        fill: 'var(--danger)',
+                        fill: 'danger',
                       })
                     : css({
-                        fill: 'var(--muted-foreground)',
+                        fill: 'mutedForeground',
                       }),
               ),
             ),
@@ -271,7 +271,7 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
             css({
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.125rem',
+              gap: '0.5',
             }),
           ),
         ],
@@ -282,7 +282,7 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
                 css({
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.5rem',
+                  gap: '2',
                 }),
               ),
             ],
@@ -292,8 +292,8 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
                   h.Class(
                     cx(
                       css({
-                        width: '0.5rem',
-                        height: '0.5rem',
+                        width: '2',
+                        height: '2',
                         flexShrink: '0',
                         borderRadius: '9999px',
                       }),
@@ -327,9 +327,9 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
                     cx(
                       FIGURE,
                       css({
-                        paddingLeft: '1rem',
+                        paddingLeft: '4',
                         fontSize: 'calc(11.5px*var(--type-scale))',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ),
@@ -345,7 +345,7 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
             h.Class(
               css({
                 fontSize: 'calc(12px*var(--type-scale))',
-                color: 'var(--warn)',
+                color: 'warn',
               }),
             ),
           ],
@@ -365,8 +365,8 @@ const PLACE = css({
 /** A phone shows the effect of an option as a strip above the safe area, not a floating card. */
 const PLACE_PHONE = css({
   _compact: {
-    left: '0.5rem',
-    right: '0.5rem',
+    left: '2',
+    right: '2',
     top: 'auto',
     bottom: 'max(8px, env(safe-area-inset-bottom))',
     zIndex: '40',
@@ -383,7 +383,7 @@ const PLACE_SCREEN = css({
     width: 'auto',
     overflowY: 'auto',
     borderRadius: '0',
-    padding: '1.25rem',
+    padding: '5',
     boxShadow: 'none',
   },
 })
@@ -412,9 +412,9 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.25rem',
-                paddingInline: '0.875rem',
-                paddingBlock: '0.625rem',
+                gap: '1',
+                paddingInline: '3.5',
+                paddingBlock: '2.5',
               }),
               'enter-panel',
             ),
@@ -462,8 +462,8 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.75rem',
-              padding: '1rem',
+              gap: '3',
+              padding: '4',
             }),
             'enter-panel',
           ),
@@ -478,8 +478,8 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              paddingRight: '1.75rem',
+              gap: '2',
+              paddingRight: '7',
             }),
           ),
         ],
@@ -488,10 +488,10 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
             h,
             Sparkles,
             css({
-              width: '1rem',
-              height: '1rem',
+              width: '4',
+              height: '4',
               flexShrink: '0',
-              color: 'var(--group-compute)',
+              color: 'groupCompute',
             }),
           ),
           h.span(
@@ -521,7 +521,7 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                 css({
                   fontSize: 'calc(12px*var(--type-scale))',
                   lineHeight: '1.375',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -535,7 +535,7 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                 css({
                   display: 'flex',
                   flexWrap: 'wrap',
-                  gap: '0.375rem',
+                  gap: '1.5',
                 }),
               ),
             ],
@@ -549,16 +549,16 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.Class(
                     css({
                       borderRadius: 'md',
-                      backgroundColor: 'var(--surface-nested)',
-                      paddingInline: '0.375rem',
-                      paddingBlock: '0.125rem',
+                      backgroundColor: 'nested',
+                      paddingInline: '1.5',
+                      paddingBlock: '0.5',
                       fontSize: 'calc(11px*var(--type-scale))',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                       textDecorationLine: 'underline',
                       textDecorationStyle: 'dotted',
                       textUnderlineOffset: '2',
                       _hover: {
-                        color: 'var(--foreground)',
+                        color: 'foreground',
                       },
                     }),
                   ),
@@ -574,7 +574,7 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 css({
                   display: 'flex',
-                  gap: '0.5rem',
+                  gap: '2',
                 }),
               ),
             ],
@@ -594,8 +594,8 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                     h,
                     Check,
                     css({
-                      width: '1rem',
-                      height: '1rem',
+                      width: '4',
+                      height: '4',
                     }),
                   ),
                   migration ? t.tradeoff.startMigration : t.tradeoff.confirm,

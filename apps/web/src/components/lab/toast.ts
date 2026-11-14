@@ -55,8 +55,8 @@ export const toast = (
                 justifyContent: 'center',
                 borderRadius: 'xl',
                 layerStyle: 'surface',
-                paddingInline: '0.875rem',
-                paddingBlock: '0.625rem',
+                paddingInline: '3.5',
+                paddingBlock: '2.5',
                 fontSize: 'calc(13px * var(--type-scale))',
                 boxShadow: 'float',
                 _compact: {
@@ -98,7 +98,7 @@ export const toast = (
                     maxWidth: '100%',
                     flexShrink: '0',
                     alignItems: 'center',
-                    gap: '0.625rem',
+                    gap: '2.5',
                   }),
                   'swap',
                 ),
@@ -110,8 +110,8 @@ export const toast = (
                   h.Class(
                     cx(
                       css({
-                        width: '0.5rem',
-                        height: '0.5rem',
+                        width: '2',
+                        height: '2',
                         flexShrink: '0',
                         borderRadius: '9999px',
                       }),
@@ -128,11 +128,11 @@ export const toast = (
                       h.AriaLabel(String(value.count)),
                       h.Class(
                         css({
-                          marginLeft: '0.125rem',
+                          marginLeft: '0.5',
                           flexShrink: '0',
                           fontFamily: 'mono',
                           fontSize: 'calc(11.5px*var(--type-scale))',
-                          color: 'var(--muted-foreground)',
+                          color: 'mutedForeground',
                         }),
                       ),
                     ],

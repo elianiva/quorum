@@ -410,10 +410,10 @@ const panel = (
             display: 'flex',
             minWidth: '0',
             flexDirection: 'column',
-            gap: '0.25rem',
+            gap: '1',
             borderRadius: '2xl',
             layerStyle: 'surface',
-            padding: '0.375rem',
+            padding: '1.5',
             boxShadow: 'card',
             _compact: {
               gridColumn: 'span 24 / span 24',
@@ -436,11 +436,11 @@ const panel = (
           h.Class(
             css({
               display: 'flex',
-              height: '1.25rem',
+              height: '5',
               flexShrink: '0',
               alignItems: 'center',
-              gap: '0.5rem',
-              paddingInline: '0.375rem',
+              gap: '2',
+              paddingInline: '1.5',
             }),
           ),
         ],
@@ -472,7 +472,7 @@ const panel = (
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
                         fontSize: 'calc(10.5px*var(--type-scale))',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ),
@@ -526,10 +526,10 @@ const locked = (
                   css({
                     borderRadius: 'lg',
                     layerStyle: 'raised',
-                    paddingInline: '0.625rem',
-                    paddingBlock: '0.25rem',
+                    paddingInline: '2.5',
+                    paddingBlock: '1',
                     fontSize: 'calc(11px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                     boxShadow: 'raised',
                   }),
                 ),
@@ -554,8 +554,8 @@ const rowHeader = (label: string, count: number, h: HtmlBuilder<Message>): Html 
           gridColumn: 'span 24 / span 24',
           display: 'flex',
           alignItems: 'center',
-          gap: '0.375rem',
-          paddingTop: '0.5rem',
+          gap: '1.5',
+          paddingTop: '2',
           paddingBottom: '0',
         }),
       ),
@@ -565,9 +565,9 @@ const rowHeader = (label: string, count: number, h: HtmlBuilder<Message>): Html 
         h,
         ChevronDown,
         css({
-          width: '0.875rem',
-          height: '0.875rem',
-          color: 'var(--muted-foreground)',
+          width: '3.5',
+          height: '3.5',
+          color: 'mutedForeground',
         }),
       ),
       h.span(
@@ -588,7 +588,7 @@ const rowHeader = (label: string, count: number, h: HtmlBuilder<Message>): Html 
               FIGURE,
               css({
                 fontSize: 'calc(11px*var(--type-scale))',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ),
@@ -603,7 +603,7 @@ const PLOT = css({
   '& text': {
     fontFamily: 'mono',
     fontSize: 'calc(10px * var(--type-scale))',
-    fill: 'var(--muted-foreground)',
+    fill: 'mutedForeground',
     letterSpacing: '-0.01em',
     pointerEvents: 'none',
   },
@@ -843,7 +843,7 @@ const exemplarStrip = (exemplars: ReadonlyArray<Exemplar>, h: HtmlBuilder<Messag
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
-          gap: '0.5rem',
+          gap: '2',
         }),
       ),
     ],
@@ -853,7 +853,7 @@ const exemplarStrip = (exemplars: ReadonlyArray<Exemplar>, h: HtmlBuilder<Messag
           h.Class(
             css({
               fontSize: 'calc(12px*var(--type-scale))',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -1093,10 +1093,10 @@ const seriesLegend = (
         css({
           display: 'flex',
           flexWrap: 'wrap',
-          columnGap: '1rem',
-          rowGap: '0.125rem',
-          paddingInline: '0.375rem',
-          paddingBottom: '0.125rem',
+          columnGap: '4',
+          rowGap: '0.5',
+          paddingInline: '1.5',
+          paddingBottom: '0.5',
           fontSize: 'calc(11px*var(--type-scale))',
         }),
       ),
@@ -1111,7 +1111,7 @@ const seriesLegend = (
                   cx(
                     FIGURE,
                     css({
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ),
@@ -1132,7 +1132,7 @@ const seriesLegend = (
               css({
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.375rem',
+                gap: '1.5',
                 whiteSpace: 'nowrap',
               }),
             ),
@@ -1143,7 +1143,7 @@ const seriesLegend = (
                 h.Class(
                   css({
                     height: '3px',
-                    width: '0.875rem',
+                    width: '3.5',
                     borderRadius: '9999px',
                   }),
                 ),
@@ -1155,7 +1155,7 @@ const seriesLegend = (
               [
                 h.Class(
                   css({
-                    color: 'var(--foreground)',
+                    color: 'foreground',
                   }),
                 ),
               ],
@@ -1167,7 +1167,7 @@ const seriesLegend = (
                   cx(
                     FIGURE,
                     css({
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ),
@@ -1198,9 +1198,9 @@ const seriesTable = (
   const border = css({
     borderBottomWidth: '1px',
     borderBottomStyle: 'solid',
-    borderColor: 'var(--hairline)',
-    paddingInline: '0.5rem',
-    paddingBlock: '0.25rem',
+    borderColor: 'hairline',
+    paddingInline: '2',
+    paddingBlock: '1',
   })
   const figure = (row: Row, key: string): string => {
     const value = row[key]
@@ -1216,8 +1216,8 @@ const seriesTable = (
             minHeight: '0',
             flex: '1 1 0%',
             overflow: 'auto',
-            paddingInline: '0.25rem',
-            paddingBottom: '0.25rem',
+            paddingInline: '1',
+            paddingBottom: '1',
           }),
           SCROLL,
         ),
@@ -1262,7 +1262,7 @@ const seriesTable = (
                   h.Class(
                     css({
                       fontSize: 'calc(11px*var(--type-scale))',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ],
@@ -1402,8 +1402,8 @@ const timeSeries = (
                     css({
                       minHeight: '0',
                       flex: '1 1 0%',
-                      paddingInline: '0.25rem',
-                      paddingTop: '0.25rem',
+                      paddingInline: '1',
+                      paddingTop: '1',
                     }),
                   ),
                 ),
@@ -1603,8 +1603,8 @@ const stat = (
                   FIGURE,
                   css({
                     position: 'relative',
-                    paddingInline: '0.75rem',
-                    paddingBottom: '1.75rem',
+                    paddingInline: '3',
+                    paddingBottom: '7',
                     fontSize: 'calc(30px*var(--type-scale))',
                     lineHeight: '1',
                     fontWeight: '500',
@@ -1672,8 +1672,8 @@ const gauge = (
                 display: 'grid',
                 flex: '1 1 0%',
                 placeItems: 'center',
-                paddingInline: '0.5rem',
-                paddingBlock: '0.25rem',
+                paddingInline: '2',
+                paddingBlock: '1',
               }),
             ),
           ),
@@ -1766,7 +1766,7 @@ const lcd = (share: number, h: HtmlBuilder<Message>, cells = CELLS): Html =>
           flex: '1 1 0%',
           gap: '2px',
           borderRadius: 'md',
-          backgroundColor: 'var(--well)',
+          backgroundColor: 'well',
           padding: '3px',
           boxShadow: 'well',
         }),
@@ -1818,8 +1818,8 @@ const barGauge = (
                 flex: '1 1 0%',
                 flexDirection: 'column',
                 justifyContent: 'center',
-                gap: '0.625rem',
-                padding: '0.75rem',
+                gap: '2.5',
+                padding: '3',
               }),
             ),
           ),
@@ -1833,7 +1833,7 @@ const barGauge = (
                 css({
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.25rem',
+                  gap: '1',
                 }),
               ),
             ],
@@ -1854,7 +1854,7 @@ const barGauge = (
                     [
                       h.Class(
                         css({
-                          color: 'var(--muted-foreground)',
+                          color: 'mutedForeground',
                         }),
                       ),
                     ],
@@ -1881,7 +1881,7 @@ const barGauge = (
                   h.Class(
                     css({
                       display: 'flex',
-                      height: '1.25rem',
+                      height: '5',
                     }),
                   ),
                 ],
@@ -1932,7 +1932,7 @@ const swatch = (name: string, color: string, h: HtmlBuilder<Message>): Html =>
         css({
           display: 'flex',
           alignItems: 'center',
-          gap: '0.375rem',
+          gap: '1.5',
         }),
       ),
     ],
@@ -1941,8 +1941,8 @@ const swatch = (name: string, color: string, h: HtmlBuilder<Message>): Html =>
         [
           h.Class(
             css({
-              height: '0.5rem',
-              width: '0.625rem',
+              height: '2',
+              width: '2.5',
               borderRadius: '2px',
             }),
           ),
@@ -1983,8 +1983,8 @@ const laneTimeline = (
                 flex: '1 1 0%',
                 flexDirection: 'column',
                 justifyContent: 'center',
-                gap: '0.375rem',
-                padding: '0.75rem',
+                gap: '1.5',
+                padding: '3',
               }),
             ),
           ),
@@ -1998,7 +1998,7 @@ const laneTimeline = (
                   css({
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.75rem',
+                    gap: '3',
                   }),
                 ),
               ],
@@ -2007,13 +2007,13 @@ const laneTimeline = (
                   [
                     h.Class(
                       css({
-                        width: '7rem',
+                        width: '28',
                         flexShrink: '0',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
                         fontSize: 'calc(11.5px*var(--type-scale))',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ],
@@ -2024,12 +2024,12 @@ const laneTimeline = (
                     h.Class(
                       css({
                         position: 'relative',
-                        height: '1.75rem',
+                        height: '7',
                         minWidth: '0',
                         flex: '1 1 0%',
                         overflow: 'hidden',
                         borderRadius: 'md',
-                        backgroundColor: 'var(--card)',
+                        backgroundColor: 'card',
                         boxShadow: 'inset 0 0 0 1px var(--hairline)',
                       }),
                     ),
@@ -2048,7 +2048,7 @@ const laneTimeline = (
                               alignItems: 'center',
                               overflow: 'hidden',
                               borderRadius: '3px',
-                              paddingInline: '0.375rem',
+                              paddingInline: '1.5',
                               fontSize: 'calc(10px*var(--type-scale))',
                               fontWeight: '500',
                               whiteSpace: 'nowrap',
@@ -2081,7 +2081,7 @@ const laneTimeline = (
                     justifyContent: 'space-between',
                     paddingLeft: '124px',
                     fontSize: 'calc(10px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -2101,8 +2101,8 @@ const laneTimeline = (
                       css({
                         display: 'flex',
                         flexWrap: 'wrap',
-                        columnGap: '0.75rem',
-                        rowGap: '0.25rem',
+                        columnGap: '3',
+                        rowGap: '1',
                         paddingLeft: '124px',
                         fontSize: 'calc(10px*var(--type-scale))',
                       }),
@@ -2182,8 +2182,8 @@ const mix = (
                 display: 'flex',
                 flex: '1 1 0%',
                 alignItems: 'center',
-                gap: '0.75rem',
-                padding: '0.75rem',
+                gap: '3',
+                padding: '3',
               }),
             ),
           ),
@@ -2242,7 +2242,7 @@ const mix = (
                         [
                           h.Class(
                             css({
-                              paddingBlock: '0.125rem',
+                              paddingBlock: '0.5',
                             }),
                           ),
                         ],
@@ -2253,7 +2253,7 @@ const mix = (
                                 css({
                                   display: 'flex',
                                   alignItems: 'center',
-                                  gap: '0.375rem',
+                                  gap: '1.5',
                                 }),
                               ),
                             ],
@@ -2262,8 +2262,8 @@ const mix = (
                                 [
                                   h.Class(
                                     css({
-                                      width: '0.5rem',
-                                      height: '0.5rem',
+                                      width: '2',
+                                      height: '2',
                                       borderRadius: '2px',
                                     }),
                                   ),
@@ -2292,7 +2292,7 @@ const mix = (
                             cx(
                               FIGURE,
                               css({
-                                paddingBlock: '0.125rem',
+                                paddingBlock: '0.5',
                                 textAlign: 'right',
                               }),
                             ),
@@ -2306,10 +2306,10 @@ const mix = (
                             cx(
                               FIGURE,
                               css({
-                                width: '3rem',
-                                paddingBlock: '0.125rem',
+                                width: '12',
+                                paddingBlock: '0.5',
                                 textAlign: 'right',
-                                color: 'var(--muted-foreground)',
+                                color: 'mutedForeground',
                               }),
                             ),
                           ),
@@ -2354,8 +2354,8 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
                 flex: '1 1 0%',
                 flexDirection: 'column',
                 justifyContent: 'center',
-                gap: '0.375rem',
-                padding: '0.75rem',
+                gap: '1.5',
+                padding: '3',
               }),
             ),
           ),
@@ -2370,7 +2370,7 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
                       FIGURE,
                       css({
                         fontSize: 'calc(28px*var(--type-scale))',
-                        color: 'var(--ok)',
+                        color: 'ok',
                       }),
                     ),
                   ),
@@ -2387,7 +2387,7 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
                       display: 'grid',
                       gridTemplateColumns: '72px minmax(0,1fr) 56px',
                       alignItems: 'center',
-                      gap: '0.5rem',
+                      gap: '2',
                     }),
                   ),
                 ],
@@ -2398,7 +2398,7 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
                         css({
                           fontFamily: 'mono',
                           fontSize: 'calc(11px*var(--type-scale))',
-                          color: 'var(--muted-foreground)',
+                          color: 'mutedForeground',
                         }),
                       ),
                     ],
@@ -2408,9 +2408,9 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
                     [
                       h.Class(
                         css({
-                          height: '0.875rem',
+                          height: '3.5',
                           borderRadius: '3px',
-                          backgroundColor: 'var(--card)',
+                          backgroundColor: 'card',
                           boxShadow: 'inset 0 0 0 1px var(--hairline)',
                         }),
                       ),
@@ -2489,8 +2489,8 @@ const nodeTable = (
             cx(
               SCREEN,
               css({
-                paddingInline: '0.25rem',
-                paddingBottom: '0.25rem',
+                paddingInline: '1',
+                paddingBottom: '1',
               }),
               SCROLL,
             ),
@@ -2517,7 +2517,7 @@ const nodeTable = (
                       h.Class(
                         css({
                           fontSize: 'calc(11px*var(--type-scale))',
-                          color: 'var(--muted-foreground)',
+                          color: 'mutedForeground',
                         }),
                       ),
                     ],
@@ -2530,9 +2530,9 @@ const nodeTable = (
                               css({
                                 borderBottomWidth: '1px',
                                 borderBottomStyle: 'solid',
-                                borderColor: 'var(--hairline)',
-                                paddingInline: '0.5rem',
-                                paddingBlock: '0.25rem',
+                                borderColor: 'hairline',
+                                paddingInline: '2',
+                                paddingBlock: '1',
                                 fontWeight: '500',
                               }),
                               index === 0
@@ -2565,9 +2565,9 @@ const nodeTable = (
                   const cell = css({
                     borderBottomWidth: '1px',
                     borderBottomStyle: 'solid',
-                    borderColor: 'var(--hairline)',
-                    paddingInline: '0.5rem',
-                    paddingBlock: '0.25rem',
+                    borderColor: 'hairline',
+                    paddingInline: '2',
+                    paddingBlock: '1',
                   })
                   return h.tr(
                     [
@@ -2617,7 +2617,7 @@ const nodeTable = (
                               FIGURE,
                               css({
                                 textAlign: 'right',
-                                color: 'var(--muted-foreground)',
+                                color: 'mutedForeground',
                               }),
                             ),
                           ),
@@ -2632,9 +2632,9 @@ const nodeTable = (
                               h.Class(
                                 css({
                                   display: 'flex',
-                                  height: '0.875rem',
+                                  height: '3.5',
                                   alignItems: 'center',
-                                  gap: '0.5rem',
+                                  gap: '2',
                                 }),
                               ),
                             ],
@@ -2646,7 +2646,7 @@ const nodeTable = (
                                     cx(
                                       FIGURE,
                                       css({
-                                        width: '2.75rem',
+                                        width: '11',
                                         textAlign: 'right',
                                       }),
                                     ),
@@ -2698,10 +2698,10 @@ const nodeTable = (
                               }),
                               (own?.dropped ?? 0) > 0.05
                                 ? css({
-                                    color: 'var(--danger)',
+                                    color: 'danger',
                                   })
                                 : css({
-                                    color: 'var(--muted-foreground)',
+                                    color: 'mutedForeground',
                                   }),
                             ),
                           ),
@@ -2773,9 +2773,9 @@ const tablePanel = (
   const border = css({
     borderBottomWidth: '1px',
     borderBottomStyle: 'solid',
-    borderColor: 'var(--hairline)',
-    paddingInline: '0.5rem',
-    paddingBlock: '0.25rem',
+    borderColor: 'hairline',
+    paddingInline: '2',
+    paddingBlock: '1',
   })
   // A bar column keeps the width it has; a table of figures packs them to the right instead, so
   // the row reads name then figures rather than spreading both across the panel.
@@ -2800,8 +2800,8 @@ const tablePanel = (
             cx(
               SCREEN,
               css({
-                paddingInline: '0.25rem',
-                paddingBottom: '0.25rem',
+                paddingInline: '1',
+                paddingBottom: '1',
               }),
               SCROLL,
             ),
@@ -2816,10 +2816,10 @@ const tablePanel = (
                     cx(
                       FIGURE,
                       css({
-                        paddingInline: '0.5rem',
-                        paddingBlock: '0.75rem',
+                        paddingInline: '2',
+                        paddingBlock: '3',
                         fontSize: 'calc(12px*var(--type-scale))',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ),
@@ -2847,7 +2847,7 @@ const tablePanel = (
                           h.Class(
                             css({
                               fontSize: 'calc(11px*var(--type-scale))',
-                              color: 'var(--muted-foreground)',
+                              color: 'mutedForeground',
                             }),
                           ),
                         ],
@@ -2955,9 +2955,9 @@ const tablePanel = (
                                         h.Class(
                                           css({
                                             display: 'flex',
-                                            height: '0.875rem',
+                                            height: '3.5',
                                             alignItems: 'center',
-                                            gap: '0.5rem',
+                                            gap: '2',
                                           }),
                                         ),
                                       ],
@@ -2969,7 +2969,7 @@ const tablePanel = (
                                               cx(
                                                 FIGURE,
                                                 css({
-                                                  width: '2.75rem',
+                                                  width: '11',
                                                   textAlign: 'right',
                                                 }),
                                               ),
@@ -3023,8 +3023,8 @@ const barList = (
                 flex: '1 1 0%',
                 flexDirection: 'column',
                 justifyContent: 'center',
-                gap: '0.375rem',
-                padding: '0.75rem',
+                gap: '1.5',
+                padding: '3',
               }),
             ),
           ),
@@ -3039,7 +3039,7 @@ const barList = (
                       FIGURE,
                       css({
                         fontSize: 'calc(12px*var(--type-scale))',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ),
@@ -3057,7 +3057,7 @@ const barList = (
                       display: 'grid',
                       gridTemplateColumns: 'minmax(0,1fr) minmax(0,2fr) 60px',
                       alignItems: 'center',
-                      gap: '0.5rem',
+                      gap: '2',
                     }),
                   ),
                 ],
@@ -3070,7 +3070,7 @@ const barList = (
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
                           fontSize: 'calc(11.5px*var(--type-scale))',
-                          color: 'var(--muted-foreground)',
+                          color: 'mutedForeground',
                         }),
                       ),
                     ],
@@ -3080,9 +3080,9 @@ const barList = (
                     [
                       h.Class(
                         css({
-                          height: '0.875rem',
+                          height: '3.5',
                           borderRadius: '3px',
-                          backgroundColor: 'var(--card)',
+                          backgroundColor: 'card',
                           boxShadow: 'inset 0 0 0 1px var(--hairline)',
                         }),
                       ),
@@ -3153,11 +3153,11 @@ const cashSpark = (rows: ReadonlyArray<Row>, h: HtmlBuilder<Message>): Html => {
     [
       h.Class(
         css({
-          marginTop: '0.375rem',
+          marginTop: '1.5',
           display: 'flex',
           flexShrink: '0',
           flexDirection: 'column',
-          gap: '0.125rem',
+          gap: '0.5',
         }),
       ),
     ],
@@ -3173,8 +3173,8 @@ const cashSpark = (rows: ReadonlyArray<Row>, h: HtmlBuilder<Message>): Html => {
                 height: '76px',
                 flexDirection: 'column',
                 justifyContent: 'flex-end',
-                paddingInline: '0.25rem',
-                paddingTop: '0.25rem',
+                paddingInline: '1',
+                paddingTop: '1',
               }),
             ),
           ),
@@ -3478,8 +3478,8 @@ const incidentTimeline = (
               cx(
                 SCREEN,
                 css({
-                  paddingInline: '0.5rem',
-                  paddingBlock: '0.75rem',
+                  paddingInline: '2',
+                  paddingBlock: '3',
                 }),
               ),
             ),
@@ -3492,7 +3492,7 @@ const incidentTimeline = (
                     FIGURE,
                     css({
                       fontSize: 'calc(12px*var(--type-scale))',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ),
@@ -3675,8 +3675,8 @@ const postmortemDetail = (game: Game, postmortem: Postmortem, h: HtmlBuilder<Mes
               css({
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.75rem',
-                padding: '0.75rem',
+                gap: '3',
+                padding: '3',
               }),
             ),
           ),
@@ -3688,7 +3688,7 @@ const postmortemDetail = (game: Game, postmortem: Postmortem, h: HtmlBuilder<Mes
                 css({
                   fontSize: 'calc(12px*var(--type-scale))',
                   lineHeight: '1.375',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -3703,7 +3703,7 @@ const postmortemDetail = (game: Game, postmortem: Postmortem, h: HtmlBuilder<Mes
                   '& > :not(:last-child)': {
                     borderRightWidth: '1px',
                     borderRightStyle: 'solid',
-                    borderColor: 'var(--hairline)',
+                    borderColor: 'hairline',
                   },
                 }),
               ),
@@ -3716,9 +3716,9 @@ const postmortemDetail = (game: Game, postmortem: Postmortem, h: HtmlBuilder<Mes
                     css({
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '0.25rem',
-                      paddingInline: '0.625rem',
-                      paddingBlock: '0.375rem',
+                      gap: '1',
+                      paddingInline: '2.5',
+                      paddingBlock: '1.5',
                     }),
                   ),
                 ],
@@ -3762,10 +3762,10 @@ const postmortemDetail = (game: Game, postmortem: Postmortem, h: HtmlBuilder<Mes
                   }),
                   open
                     ? css({
-                        color: 'var(--warn)',
+                        color: 'warn',
                       })
                     : css({
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                 ),
               ),
@@ -3962,21 +3962,21 @@ const thresholdPicker = (rule: Rule, chosen: number, h: HtmlBuilder<Message>): H
             cx(
               FIGURE,
               css({
-                height: '1.25rem',
+                height: '5',
                 borderRadius: 'md',
-                paddingInline: '0.375rem',
+                paddingInline: '1.5',
                 fontSize: 'calc(11px*var(--type-scale))',
               }),
               threshold === chosen
                 ? css({
                     layerStyle: 'raised',
-                    color: 'var(--foreground)',
+                    color: 'foreground',
                     boxShadow: 'raised',
                   })
                 : css({
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                     _hover: {
-                      color: 'var(--foreground)',
+                      color: 'foreground',
                     },
                   }),
             ),
@@ -4649,11 +4649,11 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
-          gap: '0.5rem',
-          paddingInline: '1rem',
-          paddingTop: '1rem',
+          gap: '2',
+          paddingInline: '4',
+          paddingTop: '4',
           _compact: {
-            paddingInline: '0.75rem',
+            paddingInline: '3',
           },
         }),
       ),
@@ -4667,10 +4667,10 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.625rem',
-                paddingBlock: '0.5rem',
-                paddingRight: '0.75rem',
-                paddingLeft: '0.875rem',
+                gap: '2.5',
+                paddingBlock: '2',
+                paddingRight: '3',
+                paddingLeft: '3.5',
               }),
             ),
           ),
@@ -4680,9 +4680,9 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
             h,
             LayoutGrid,
             css({
-              width: '1rem',
-              height: '1rem',
-              color: 'var(--muted-foreground)',
+              width: '4',
+              height: '4',
+              color: 'mutedForeground',
             }),
           ),
           h.span(
@@ -4691,9 +4691,9 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                 css({
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.375rem',
+                  gap: '1.5',
                   fontSize: 'calc(13px*var(--type-scale))',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -4709,7 +4709,7 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                       fontSize: 'calc(15px*var(--type-scale))',
                       fontWeight: '600',
                       letterSpacing: '-0.02em',
-                      color: 'var(--foreground)',
+                      color: 'foreground',
                     }),
                   ),
                 ],
@@ -4721,9 +4721,9 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
             h,
             Star,
             css({
-              width: '0.875rem',
-              height: '0.875rem',
-              color: 'var(--muted-foreground)',
+              width: '3.5',
+              height: '3.5',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -4746,8 +4746,8 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.375rem',
-                padding: '0.375rem',
+                gap: '1.5',
+                padding: '1.5',
               }),
             ),
           ),
@@ -4758,10 +4758,10 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 css({
                   display: 'grid',
-                  height: '1.75rem',
+                  height: '7',
                   placeItems: 'center',
-                  paddingInline: '0.375rem',
-                  color: 'var(--muted-foreground)',
+                  paddingInline: '1.5',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -4770,8 +4770,8 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h,
                 Clock3,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
+                  width: '3.5',
+                  height: '3.5',
                 }),
               ),
             ],
@@ -4804,21 +4804,21 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.Class(
                     cx(
                       css({
-                        height: '1.5rem',
+                        height: '6',
                         borderRadius: 'md',
-                        paddingInline: '0.625rem',
+                        paddingInline: '2.5',
                         fontSize: 'calc(12px*var(--type-scale))',
                       }),
                       minutes === model.board.dashboard.range
                         ? css({
                             layerStyle: 'raised',
-                            color: 'var(--foreground)',
+                            color: 'foreground',
                             boxShadow: 'raised',
                           })
                         : css({
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                             _hover: {
-                              color: 'var(--foreground)',
+                              color: 'foreground',
                             },
                           }),
                     ),
@@ -4835,21 +4835,21 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                   FIGURE,
                   css({
                     display: 'flex',
-                    height: '1.75rem',
+                    height: '7',
                     alignItems: 'center',
-                    gap: '0.5rem',
+                    gap: '2',
                     borderRadius: 'lg',
                     layerStyle: 'raised',
-                    paddingInline: '0.625rem',
+                    paddingInline: '2.5',
                     fontSize: 'calc(12px*var(--type-scale))',
                     boxShadow: 'raised',
                   }),
                   clockPaused(model)
                     ? css({
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       })
                     : css({
-                        color: 'var(--foreground)',
+                        color: 'foreground',
                       }),
                 ),
               ),
@@ -4867,9 +4867,9 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h,
                 RefreshCw,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
-                  color: 'var(--muted-foreground)',
+                  width: '3.5',
+                  height: '3.5',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -4882,7 +4882,7 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
             cx(
               PANEL,
               css({
-                padding: '0.25rem',
+                padding: '1',
               }),
             ),
           ),
@@ -4894,7 +4894,7 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
               variant: 'ghost',
               size: 'icon',
               className: css({
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
               attributes: [h.AriaLabel(t.dashboard.closeEsc)],
             },
@@ -4902,8 +4902,8 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
               h,
               X,
               css({
-                width: '1rem',
-                height: '1rem',
+                width: '4',
+                height: '4',
               }),
             ),
             h,
@@ -4932,7 +4932,7 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
         h.Class(
           css({
             display: 'flex',
-            height: '1.75rem',
+            height: '7',
             alignItems: 'stretch',
             overflow: 'hidden',
             borderRadius: 'lg',
@@ -4951,10 +4951,10 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
                 placeItems: 'center',
                 borderRightWidth: '1px',
                 borderRightStyle: 'solid',
-                borderColor: 'var(--hairline)',
+                borderColor: 'hairline',
                 backgroundColor: 'color-mix(in oklab, var(--well) 60%, transparent)',
-                paddingInline: '0.5rem',
-                color: 'var(--muted-foreground)',
+                paddingInline: '2',
+                color: 'mutedForeground',
               }),
             ),
           ],
@@ -4966,7 +4966,7 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
               css({
                 display: 'grid',
                 placeItems: 'center',
-                paddingInline: '0.5rem',
+                paddingInline: '2',
                 fontFamily: 'mono',
                 fontSize: 'calc(11.5px*var(--type-scale))',
               }),
@@ -4989,13 +4989,13 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
         h.Class(
           css({
             display: 'flex',
-            height: '1.75rem',
+            height: '7',
             alignItems: 'center',
-            gap: '0.375rem',
+            gap: '1.5',
             borderRadius: 'lg',
             layerStyle: 'raised',
-            paddingRight: '0.25rem',
-            paddingLeft: '0.5rem',
+            paddingRight: '1',
+            paddingLeft: '2',
             fontSize: 'calc(11px*var(--type-scale))',
             boxShadow: 'raised',
           }),
@@ -5006,7 +5006,7 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
           [
             h.Class(
               css({
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ],
@@ -5019,17 +5019,17 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
             h.OnChange(chosen),
             h.Class(
               css({
-                height: '1.5rem',
+                height: '6',
                 maxWidth: '9.5rem',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
                 borderRadius: 'md',
-                backgroundColor: 'var(--well)',
-                paddingInline: '0.25rem',
+                backgroundColor: 'well',
+                paddingInline: '1',
                 fontFamily: 'mono',
                 fontSize: 'calc(11.5px*var(--type-scale))',
-                color: 'var(--foreground)',
+                color: 'foreground',
                 outlineStyle: 'none',
               }),
             ),
@@ -5052,17 +5052,17 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
           cx(
             css({
               display: 'flex',
-              height: '1.5rem',
+              height: '6',
               alignItems: 'center',
-              gap: '0.375rem',
+              gap: '1.5',
               borderRadius: 'md',
-              paddingInline: '0.375rem',
+              paddingInline: '1.5',
               fontSize: 'calc(11px*var(--type-scale))',
             }),
             on
               ? css({
                   layerStyle: 'raised',
-                  color: 'var(--foreground)',
+                  color: 'foreground',
                   boxShadow: 'raised',
                 })
               : css({
@@ -5079,7 +5079,7 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
                 [
                   h.Class(
                     css({
-                      height: '0.75rem',
+                      height: '3',
                       borderLeftWidth: '1px',
                       borderLeftStyle: 'solid',
                       borderStyle: 'dashed',
@@ -5100,11 +5100,11 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
-          gap: '0.5rem',
-          paddingInline: '1rem',
-          paddingTop: '1rem',
+          gap: '2',
+          paddingInline: '4',
+          paddingTop: '4',
           _compact: {
-            paddingInline: '0.75rem',
+            paddingInline: '3',
           },
         }),
       ),
@@ -5187,7 +5187,7 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'center',
-              gap: '0.25rem',
+              gap: '1',
             }),
           ),
         ],
@@ -5303,10 +5303,10 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   PANEL,
                   css({
                     gridColumn: 'span 24 / span 24',
-                    paddingInline: '1rem',
-                    paddingBlock: '1.5rem',
+                    paddingInline: '4',
+                    paddingBlock: '6',
                     fontSize: 'calc(13px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -5546,9 +5546,9 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                               flex: '1 1 0%',
                               flexDirection: 'column',
                               justifyContent: 'flex-end',
-                              paddingInline: '0.75rem',
-                              paddingTop: '0.5rem',
-                              paddingBottom: '0.75rem',
+                              paddingInline: '3',
+                              paddingTop: '2',
+                              paddingBottom: '3',
                             }),
                           ),
                         ),
@@ -5653,8 +5653,8 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             zIndex: '30',
             display: 'flex',
             flexDirection: 'column',
-            backgroundColor: 'var(--canvas)',
-            color: 'var(--foreground)',
+            backgroundColor: 'canvas',
+            color: 'foreground',
           }),
           'enter-backdrop',
         ),
@@ -5682,7 +5682,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   outlineWidth: '2px',
                   outlineStyle: 'solid',
                   outlineOffset: '-2px',
-                  outlineColor: 'var(--primary)',
+                  outlineColor: 'primary',
                 },
               }),
             ),
@@ -5696,12 +5696,12 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 css({
                   display: 'grid',
                   gridTemplateColumns: 'repeat(24, minmax(0, 1fr))',
-                  gap: '0.5rem',
-                  paddingInline: '1rem',
-                  paddingTop: '0.5rem',
-                  paddingBottom: '2rem',
+                  gap: '2',
+                  paddingInline: '4',
+                  paddingTop: '2',
+                  paddingBottom: '8',
                   _compact: {
-                    paddingInline: '0.75rem',
+                    paddingInline: '3',
                   },
                 }),
               ),

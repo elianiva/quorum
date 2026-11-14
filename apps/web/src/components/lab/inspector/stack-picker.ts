@@ -68,27 +68,27 @@ const row = <Item extends string>(
         cx(
           css({
             display: 'flex',
-            minHeight: '2rem',
+            minHeight: '8',
             alignItems: 'center',
-            gap: '0.5rem',
-            paddingInline: '0.625rem',
+            gap: '2',
+            paddingInline: '2.5',
             fontSize: 'calc(12px*var(--type-scale))',
             transitionProperty:
               'color, background-color, border-color, text-decoration-color, fill, stroke',
             transitionDuration: '150ms',
-            transitionTimingFunction: 'var(--ease-out)',
+            transitionTimingFunction: 'out',
           }),
           isActive
             ? css({
-                backgroundColor: 'var(--muted)',
-                color: 'var(--foreground)',
+                backgroundColor: 'muted',
+                color: 'foreground',
               })
             : css({
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
           isSelected &&
             css({
-              color: 'var(--foreground)',
+              color: 'foreground',
             }),
           isDisabled
             ? css({
@@ -102,8 +102,8 @@ const row = <Item extends string>(
             : css({
                 cursor: 'pointer',
                 _hover: {
-                  backgroundColor: 'var(--muted)',
-                  color: 'var(--foreground)',
+                  backgroundColor: 'muted',
+                  color: 'foreground',
                 },
               }),
         ),
@@ -131,7 +131,7 @@ const row = <Item extends string>(
               h.Class(
                 css({
                   fontSize: 'calc(10px*var(--type-scale))',
-                  color: 'var(--group-compute)',
+                  color: 'groupCompute',
                 }),
               ),
             ],
@@ -143,10 +143,10 @@ const row = <Item extends string>(
             h,
             Check,
             css({
-              width: '0.875rem',
-              height: '0.875rem',
+              width: '3.5',
+              height: '3.5',
               flexShrink: '0',
-              color: 'var(--primary)',
+              color: 'primary',
             }),
           )
         : h.empty,
@@ -155,8 +155,8 @@ const row = <Item extends string>(
             h,
             Lock,
             css({
-              width: '0.75rem',
-              height: '0.75rem',
+              width: '3',
+              height: '3',
               flexShrink: '0',
               color: 'color-mix(in oklab, var(--muted-foreground) 45%, transparent)',
             }),
@@ -196,15 +196,15 @@ const pickerView = <Item extends string>(
           h.Class(
             css({
               display: 'flex',
-              height: '2rem',
+              height: '8',
               flexShrink: '0',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '2',
               borderBottomWidth: '1px',
               borderBottomStyle: 'solid',
-              borderColor: 'var(--hairline)',
-              paddingInline: '0.625rem',
-              color: 'var(--muted-foreground)',
+              borderColor: 'hairline',
+              paddingInline: '2.5',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -213,8 +213,8 @@ const pickerView = <Item extends string>(
             h,
             Search,
             css({
-              width: '0.875rem',
-              height: '0.875rem',
+              width: '3.5',
+              height: '3.5',
               flexShrink: '0',
             }),
           ),
@@ -239,10 +239,10 @@ const pickerView = <Item extends string>(
                 flex: '1 1 0%',
                 backgroundColor: 'transparent',
                 fontSize: 'calc(12px*var(--type-scale))',
-                color: 'var(--foreground)',
+                color: 'foreground',
                 outlineStyle: 'none',
                 '&::placeholder': {
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 },
               }),
             ),
@@ -275,10 +275,10 @@ const pickerView = <Item extends string>(
             [
               h.Class(
                 css({
-                  paddingInline: '0.625rem',
-                  paddingBlock: '0.5rem',
+                  paddingInline: '2.5',
+                  paddingBlock: '2',
                   fontSize: 'calc(11px*var(--type-scale))',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -291,11 +291,11 @@ const pickerView = <Item extends string>(
               h.AriaLabel(config.ariaLabel),
               h.Class(
                 css({
-                  maxHeight: '10rem',
+                  maxHeight: '40',
                   '& > :not(:last-child)': {
                     borderBottomWidth: '1px',
                     borderBottomStyle: 'solid',
-                    borderColor: 'var(--hairline)',
+                    borderColor: 'hairline',
                   },
                   overflowY: 'auto',
                   overscrollBehavior: 'contain',
@@ -338,8 +338,8 @@ export const runtimePickerView = (
         stackLogo(
           RUNTIMES[id].language,
           css({
-            width: '1rem',
-            height: '1rem',
+            width: '4',
+            height: '4',
           }),
           h,
         ),
@@ -385,8 +385,8 @@ export const frameworkPickerView = (
           : stackLogo(
               id,
               css({
-                width: '1rem',
-                height: '1rem',
+                width: '4',
+                height: '4',
               }),
               h,
             ),

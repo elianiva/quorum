@@ -65,7 +65,7 @@ export const section = (
       h.Class(
         cx(
           css({
-            paddingInline: '1rem',
+            paddingInline: '4',
           }),
           'fold',
           'group',
@@ -81,11 +81,11 @@ export const section = (
               cursor: 'pointer',
               listStyleType: 'none',
               alignItems: 'center',
-              gap: '0.375rem',
-              paddingBlock: '0.625rem',
+              gap: '1.5',
+              paddingBlock: '2.5',
               _hover: {
                 '&>span': {
-                  color: 'var(--foreground)',
+                  color: 'foreground',
                 },
               },
               '&::-webkit-details-marker': {
@@ -100,10 +100,10 @@ export const section = (
             ChevronRight,
             cx(
               css({
-                width: '0.875rem',
-                height: '0.875rem',
+                width: '3.5',
+                height: '3.5',
                 flexShrink: '0',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
                 '.group[open] &': {
                   rotate: '90deg',
                 },
@@ -120,8 +120,8 @@ export const section = (
             css({
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.5rem',
-              paddingBottom: '0.75rem',
+              gap: '2',
+              paddingBottom: '3',
             }),
           ),
         ],
@@ -185,13 +185,13 @@ export const choice = (
         cx(
           css({
             display: 'flex',
-            minHeight: '2rem',
+            minHeight: '8',
             minWidth: '0',
             alignItems: 'center',
-            gap: '0.5rem',
+            gap: '2',
             borderRadius: 'lg',
-            paddingInline: '0.5rem',
-            paddingBlock: '0.25rem',
+            paddingInline: '2',
+            paddingBlock: '1',
             textAlign: 'left',
             fontSize: 'calc(12px*var(--type-scale))',
             fontWeight: '500',
@@ -199,20 +199,20 @@ export const choice = (
             transitionProperty:
               'color, background-color, border-color, text-decoration-color, fill, stroke',
             transitionDuration: '150ms',
-            transitionTimingFunction: 'var(--ease-out)',
+            transitionTimingFunction: 'out',
           }),
           selected
             ? css({
                 layerStyle: 'raised',
-                color: 'var(--foreground)',
+                color: 'foreground',
                 boxShadow: 'raised',
               })
             : ready
               ? css({
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                   _hover: {
                     backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
-                    color: 'var(--foreground)',
+                    color: 'foreground',
                   },
                 })
               : css({
@@ -293,8 +293,8 @@ export const smallButton = (
       h,
       glyph,
       css({
-        width: '0.875rem',
-        height: '0.875rem',
+        width: '3.5',
+        height: '3.5',
       }),
     ),
     h,
@@ -345,7 +345,7 @@ export const stack = (
               css({
                 fontSize: 'calc(12px*var(--type-scale))',
                 lineHeight: '1.375',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ],
@@ -366,7 +366,7 @@ export const stack = (
                     css({
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.5rem',
+                      gap: '2',
                     }),
                   ),
                 ],
@@ -387,7 +387,7 @@ export const stack = (
                         cx(
                           FIGURE,
                           css({
-                            width: '3rem',
+                            width: '12',
                             textAlign: 'center',
                             fontSize: 'calc(13px*var(--type-scale))',
                           }),
@@ -418,8 +418,8 @@ export const stack = (
                             fontSize: 'calc(11.5px*var(--type-scale))',
                           }),
                           node.workers > fit
-                            ? css({ color: 'var(--danger)' })
-                            : css({ color: 'var(--muted-foreground)' }),
+                            ? css({ color: 'danger' })
+                            : css({ color: 'mutedForeground' }),
                         ),
                       ),
                     ],
@@ -442,7 +442,7 @@ export const stack = (
               css({
                 fontSize: 'calc(12px*var(--type-scale))',
                 lineHeight: '1.375',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ],
@@ -491,7 +491,7 @@ export const stack = (
                     css({
                       fontSize: 'calc(12px*var(--type-scale))',
                       lineHeight: '1.375',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ],
@@ -573,13 +573,13 @@ export const nodeLink = (
             display: 'flex',
             minWidth: '0',
             alignItems: 'center',
-            gap: '0.25rem',
+            gap: '1',
             textAlign: 'left',
             fontSize: '12px',
             fontWeight: '500',
-            color: 'var(--muted-foreground)',
+            color: 'mutedForeground',
             _hover: {
-              color: 'var(--foreground)',
+              color: 'foreground',
             },
           }),
           className,
@@ -603,8 +603,8 @@ export const nodeLink = (
         h,
         ChevronRight,
         css({
-          width: '0.875rem',
-          height: '0.875rem',
+          width: '3.5',
+          height: '3.5',
           flexShrink: '0',
         }),
       ),
@@ -631,7 +631,7 @@ export const caption = (text: string, h: HtmlBuilder<Message>): Html =>
         css({
           fontSize: 'calc(12px*var(--type-scale))',
           fontWeight: '500',
-          color: 'var(--muted-foreground)',
+          color: 'mutedForeground',
         }),
       ),
     ],
@@ -680,7 +680,7 @@ export const replicaEngine = (game: Game, node: GameNode, h: HtmlBuilder<Message
               display: 'flex',
               alignItems: 'baseline',
               justifyContent: 'space-between',
-              gap: '0.5rem',
+              gap: '2',
             }),
           ),
         ],
@@ -691,7 +691,7 @@ export const replicaEngine = (game: Game, node: GameNode, h: HtmlBuilder<Message
                 css({
                   fontSize: 'calc(12px*var(--type-scale))',
                   fontWeight: '500',
-                  color: 'var(--foreground)',
+                  color: 'foreground',
                 }),
               ),
             ],

@@ -310,14 +310,14 @@ const POLICY_ICONS: Record<PolicyId, Parameters<typeof icon>[1]> = {
 
 /** Work kinds keep the build-group colours, so a kind reads the same everywhere. */
 const kindOf = (t: Messages): Record<WorkKind, Readonly<{ label: string; fill: string }>> => ({
-  feature: { label: t.team.feature, fill: css({ backgroundColor: 'var(--group-edge)' }) },
-  lever: { label: t.levers.label, fill: css({ backgroundColor: 'var(--group-edge)' }) },
-  task: { label: t.team.engineering, fill: css({ backgroundColor: 'var(--group-data)' }) },
-  migration: { label: t.team.migration, fill: css({ backgroundColor: 'var(--group-compute)' }) },
-  spike: { label: t.team.spike, fill: css({ backgroundColor: 'var(--group-ops)' }) },
+  feature: { label: t.team.feature, fill: css({ backgroundColor: 'groupEdge' }) },
+  lever: { label: t.levers.label, fill: css({ backgroundColor: 'groupEdge' }) },
+  task: { label: t.team.engineering, fill: css({ backgroundColor: 'groupData' }) },
+  migration: { label: t.team.migration, fill: css({ backgroundColor: 'groupCompute' }) },
+  spike: { label: t.team.spike, fill: css({ backgroundColor: 'groupOps' }) },
   patch: { label: t.team.security, fill: css({ backgroundColor: 'danger' }) },
-  split: { label: t.team.split, fill: css({ backgroundColor: 'var(--group-ops)' }) },
-  move: { label: t.team.move, fill: css({ backgroundColor: 'var(--group-compute)' }) },
+  split: { label: t.team.split, fill: css({ backgroundColor: 'groupOps' }) },
+  move: { label: t.team.move, fill: css({ backgroundColor: 'groupCompute' }) },
 })
 
 const STRIPES = 'repeating-linear-gradient(-45deg, oklch(1 0 0 / 0.28) 0 6px, transparent 6px 12px)'
@@ -330,9 +330,9 @@ const heading = (title: string, right: Html, h: HtmlBuilder<Message>): Html =>
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '0.5rem',
-          paddingInline: '0.25rem',
-          paddingTop: '0.5rem',
+          gap: '2',
+          paddingInline: '1',
+          paddingTop: '2',
         }),
       ),
     ],
@@ -355,7 +355,7 @@ const iconButton = (
       size: 'icon-xs',
       className: cx(
         css({
-          color: 'var(--muted-foreground)',
+          color: 'mutedForeground',
         }),
         className,
       ),
@@ -365,8 +365,8 @@ const iconButton = (
       h,
       glyph,
       css({
-        width: '0.875rem',
-        height: '0.875rem',
+        width: '3.5',
+        height: '3.5',
       }),
     ),
     h,
@@ -388,7 +388,7 @@ const renameField = (
           minWidth: '0',
           flex: '1 1 0%',
           alignItems: 'center',
-          gap: '0.25rem',
+          gap: '1',
         }),
       ),
     ],
@@ -414,11 +414,11 @@ const renameField = (
           cx(
             WELL,
             css({
-              height: '1.75rem',
+              height: '7',
               minWidth: '0',
               flex: '1 1 0%',
               borderRadius: 'lg',
-              paddingInline: '0.5rem',
+              paddingInline: '2',
               fontSize: 'calc(12px*var(--type-scale))',
               outlineStyle: 'none',
             }),
@@ -489,7 +489,7 @@ const halo = (share: number, className: string, h: HtmlBuilder<Message>): Html =
           css({
             transitionProperty: 'stroke-dashoffset',
             transitionDuration: '200ms',
-            transitionTimingFunction: 'var(--ease-out)',
+            transitionTimingFunction: 'out',
           }),
         ),
       ]),
@@ -518,11 +518,11 @@ const seat = (
               minWidth: '0',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '0.375rem',
+              gap: '1.5',
               borderRadius: 'xl',
-              paddingInline: '0.375rem',
-              paddingTop: '0.875rem',
-              paddingBottom: '0.625rem',
+              paddingInline: '1.5',
+              paddingTop: '3.5',
+              paddingBottom: '2.5',
               textAlign: 'center',
             }),
             'group',
@@ -537,7 +537,7 @@ const seat = (
         [
           h.Class(
             css({
-              marginTop: '0.25rem',
+              marginTop: '1',
               width: '100%',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -560,7 +560,7 @@ const seat = (
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
                 fontSize: 'calc(10.5px*var(--type-scale))',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ),
@@ -578,11 +578,11 @@ const corner = (side: 'left' | 'right', control: Html, h: HtmlBuilder<Message>):
         cx(
           css({
             position: 'absolute',
-            top: '0.25rem',
+            top: '1',
             opacity: 0,
             transitionProperty: 'opacity',
             transitionDuration: '150ms',
-            transitionTimingFunction: 'var(--ease-out)',
+            transitionTimingFunction: 'out',
             '.group:hover &': {
               opacity: 1,
             },
@@ -595,10 +595,10 @@ const corner = (side: 'left' | 'right', control: Html, h: HtmlBuilder<Message>):
           }),
           side === 'left'
             ? css({
-                left: '0.25rem',
+                left: '1',
               })
             : css({
-                right: '0.25rem',
+                right: '1',
               }),
         ),
       ),
@@ -620,8 +620,8 @@ const face = (
           css({
             position: 'relative',
             display: 'grid',
-            width: '2.75rem',
-            height: '2.75rem',
+            width: '11',
+            height: '11',
             flexShrink: '0',
             placeItems: 'center',
             borderRadius: '9999px',
@@ -633,7 +633,7 @@ const face = (
           hue === null &&
             css({
               layerStyle: 'primaryFill',
-              color: 'var(--on-primary-fill)',
+              color: 'onPrimaryFill',
             }),
         ),
       ),
@@ -662,7 +662,7 @@ const languageMark = (language: Engineer['language'], h: HtmlBuilder<Message>): 
           height: '18px',
           placeItems: 'center',
           borderRadius: '9999px',
-          backgroundColor: 'var(--card)',
+          backgroundColor: 'card',
           boxShadow: 'raised',
         }),
       ),
@@ -671,8 +671,8 @@ const languageMark = (language: Engineer['language'], h: HtmlBuilder<Message>): 
       stackLogo(
         language,
         css({
-          width: '0.75rem',
-          height: '0.75rem',
+          width: '3',
+          height: '3',
         }),
         h,
       ),
@@ -696,9 +696,9 @@ const engineerSeat = (game: Game, engineer: Engineer, h: HtmlBuilder<Message>): 
       h.span([], [name.slice(0, 1)]),
       languageMark(engineer.language, h),
       training
-        ? halo(learned, css({ color: 'var(--primary)' }), h)
+        ? halo(learned, css({ color: 'primary' }), h)
         : ramping
-          ? halo(ramp, css({ color: 'var(--ok)' }), h)
+          ? halo(ramp, css({ color: 'ok' }), h)
           : h.empty,
       h,
     ),
@@ -778,7 +778,7 @@ const engineerControls = (
         Message.TeamChanged({ message: TeamMessage.LayoffChosen({ engineerId: engineer.id }) }),
         true,
         h,
-        css({ _hover: { color: 'var(--danger)' } }),
+        css({ _hover: { color: 'danger' } }),
       ),
       h,
     ),
@@ -835,13 +835,13 @@ const hireSeat = (game: Game, h: HtmlBuilder<Message>): Html => {
               minWidth: '0',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '0.375rem',
+              gap: '1.5',
               borderRadius: 'xl',
               borderWidth: '1.5px',
               borderStyle: 'dashed',
-              paddingInline: '0.375rem',
-              paddingTop: '0.875rem',
-              paddingBottom: '0.625rem',
+              paddingInline: '1.5',
+              paddingTop: '3.5',
+              paddingBottom: '2.5',
               textAlign: 'center',
             }),
             'press',
@@ -850,7 +850,7 @@ const hireSeat = (game: Game, h: HtmlBuilder<Message>): Html => {
           open && afford
             ? css({
                 borderColor: 'color-mix(in oklab, var(--foreground) 25%, transparent)',
-                color: 'var(--foreground)',
+                color: 'foreground',
                 _hover: {
                   borderColor: 'color-mix(in oklab, var(--foreground) 45%, transparent)',
                   backgroundColor: 'color-mix(in oklab, var(--foreground) 3%, transparent)',
@@ -859,7 +859,7 @@ const hireSeat = (game: Game, h: HtmlBuilder<Message>): Html => {
             : css({
                 cursor: 'not-allowed',
                 borderColor: 'color-mix(in oklab, var(--foreground) 12%, transparent)',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
         ),
       ),
@@ -872,15 +872,15 @@ const hireSeat = (game: Game, h: HtmlBuilder<Message>): Html => {
               css({
                 position: 'relative',
                 display: 'grid',
-                width: '2.75rem',
-                height: '2.75rem',
+                width: '11',
+                height: '11',
                 placeItems: 'center',
                 borderRadius: '9999px',
               }),
               open && afford
                 ? css({
                     layerStyle: 'primaryFill',
-                    color: 'var(--on-primary-fill)',
+                    color: 'onPrimaryFill',
                     boxShadow: 'primary',
                   })
                 : WELL,
@@ -896,12 +896,12 @@ const hireSeat = (game: Game, h: HtmlBuilder<Message>): Html => {
             open ? Plus : Lock,
             open
               ? css({
-                  width: '1.25rem',
-                  height: '1.25rem',
+                  width: '5',
+                  height: '5',
                 })
               : css({
-                  width: '1rem',
-                  height: '1rem',
+                  width: '4',
+                  height: '4',
                 }),
           ),
           open ? languageMark(language, h) : h.empty,
@@ -911,7 +911,7 @@ const hireSeat = (game: Game, h: HtmlBuilder<Message>): Html => {
         [
           h.Class(
             css({
-              marginTop: '0.25rem',
+              marginTop: '1',
               width: '100%',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -934,7 +934,7 @@ const hireSeat = (game: Game, h: HtmlBuilder<Message>): Html => {
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
                 fontSize: 'calc(10.5px*var(--type-scale))',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ),
@@ -957,14 +957,14 @@ const pendingSeat = (game: Game, id: string, readyAt: number, h: HtmlBuilder<Mes
           css({
             position: 'relative',
             display: 'grid',
-            width: '2.75rem',
-            height: '2.75rem',
+            width: '11',
+            height: '11',
             placeItems: 'center',
             borderRadius: '9999px',
             borderWidth: '1.5px',
             borderStyle: 'dashed',
             borderColor: 'color-mix(in oklab, var(--foreground) 25%, transparent)',
-            color: 'var(--muted-foreground)',
+            color: 'mutedForeground',
           }),
         ),
       ],
@@ -973,8 +973,8 @@ const pendingSeat = (game: Game, id: string, readyAt: number, h: HtmlBuilder<Mes
           h,
           Hourglass,
           css({
-            width: '1rem',
-            height: '1rem',
+            width: '4',
+            height: '4',
           }),
         ),
       ],
@@ -1024,13 +1024,13 @@ const policySwitch = (team: Team, h: HtmlBuilder<Message>): Html => {
               cx(
                 css({
                   display: 'flex',
-                  height: '2rem',
+                  height: '8',
                   minWidth: '0',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '0.375rem',
+                  gap: '1.5',
                   borderRadius: 'lg',
-                  paddingInline: '0.5rem',
+                  paddingInline: '2',
                   fontSize: 'calc(12px*var(--type-scale))',
                   fontWeight: '500',
                 }),
@@ -1039,14 +1039,14 @@ const policySwitch = (team: Team, h: HtmlBuilder<Message>): Html => {
               selected
                 ? css({
                     layerStyle: 'raised',
-                    color: 'var(--foreground)',
+                    color: 'foreground',
                     boxShadow: 'raised',
                   })
                 : css({
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                     _hover: {
                       backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
-                      color: 'var(--foreground)',
+                      color: 'foreground',
                     },
                   }),
             ),
@@ -1057,8 +1057,8 @@ const policySwitch = (team: Team, h: HtmlBuilder<Message>): Html => {
             h,
             POLICY_ICONS[policy],
             css({
-              width: '0.875rem',
-              height: '0.875rem',
+              width: '3.5',
+              height: '3.5',
             }),
           ),
           h.span(
@@ -1132,13 +1132,13 @@ const kindSwitch = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
               cx(
                 css({
                   display: 'flex',
-                  height: '2rem',
+                  height: '8',
                   minWidth: '0',
                   flex: '1 1 auto',
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderRadius: 'lg',
-                  paddingInline: '0.375rem',
+                  paddingInline: '1.5',
                   fontSize: 'calc(12px*var(--type-scale))',
                   fontWeight: '500',
                 }),
@@ -1147,7 +1147,7 @@ const kindSwitch = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
               selected
                 ? css({
                     layerStyle: 'raised',
-                    color: 'var(--foreground)',
+                    color: 'foreground',
                     boxShadow: 'raised',
                   })
                 : refusal !== null
@@ -1155,7 +1155,7 @@ const kindSwitch = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
                       color: 'color-mix(in oklab, var(--muted-foreground) 45%, transparent)',
                       _hover: {
                         backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       },
                       _enabled: {
                         cursor: 'pointer',
@@ -1165,10 +1165,10 @@ const kindSwitch = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
                       },
                     })
                   : css({
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                       _hover: {
                         backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
-                        color: 'var(--foreground)',
+                        color: 'foreground',
                       },
                     }),
             ),
@@ -1219,11 +1219,11 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
           css({
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.75rem',
-            padding: '0.75rem',
+            gap: '3',
+            padding: '3',
             transitionProperty: 'box-shadow',
             transitionDuration: '150ms',
-            transitionTimingFunction: 'var(--ease-out)',
+            transitionTimingFunction: 'out',
           }),
           dropTarget &&
             css({
@@ -1239,8 +1239,8 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
             css({
               display: 'flex',
               alignItems: 'flex-start',
-              gap: '0.5rem',
-              paddingInline: '0.25rem',
+              gap: '2',
+              paddingInline: '1',
             }),
           ),
         ],
@@ -1264,7 +1264,7 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
                       display: 'flex',
                       minWidth: '0',
                       alignItems: 'center',
-                      gap: '0.25rem',
+                      gap: '1',
                     }),
                   ),
                 ],
@@ -1308,7 +1308,7 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
                   h.Class(
                     css({
                       fontSize: 'calc(11.5px*var(--type-scale))',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ],
@@ -1348,7 +1348,7 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
                     cx(
                       EYEBROW,
                       css({
-                        marginTop: '0.25rem',
+                        marginTop: '1',
                         fontSize: 'calc(9.5px*var(--type-scale))',
                       }),
                     ),
@@ -1377,9 +1377,9 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
               h.Class(
                 css({
                   marginTop: '-0.375rem',
-                  paddingInline: '0.25rem',
+                  paddingInline: '1',
                   fontSize: 'calc(11px*var(--type-scale))',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -1392,7 +1392,7 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
             css({
               display: 'grid',
               gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-              gap: '0.5rem',
+              gap: '2',
             }),
           ),
         ],
@@ -1436,7 +1436,7 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
                           _focusVisible: {
                             outlineWidth: '2px',
                             outlineStyle: 'solid',
-                            outlineColor: 'var(--primary)',
+                            outlineColor: 'primary',
                           },
                           _active: {
                             cursor: 'grabbing',
@@ -1500,9 +1500,9 @@ const sreWork = (game: Game, h: HtmlBuilder<Message>): Html => {
           css({
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            paddingInline: '0.625rem',
-            paddingBlock: '0.5rem',
+            gap: '2',
+            paddingInline: '2.5',
+            paddingBlock: '2',
           }),
           WELL,
           css({
@@ -1516,9 +1516,9 @@ const sreWork = (game: Game, h: HtmlBuilder<Message>): Html => {
         h,
         Siren,
         css({
-          width: '0.875rem',
-          height: '0.875rem',
-          color: 'var(--muted-foreground)',
+          width: '3.5',
+          height: '3.5',
+          color: 'mutedForeground',
         }),
       ),
       h.span(
@@ -1526,7 +1526,7 @@ const sreWork = (game: Game, h: HtmlBuilder<Message>): Html => {
           h.Class(
             css({
               fontSize: 'calc(12.5px*var(--type-scale))',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -1550,9 +1550,9 @@ const dataWork = (h: HtmlBuilder<Message>): Html => {
           css({
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            paddingInline: '0.625rem',
-            paddingBlock: '0.5rem',
+            gap: '2',
+            paddingInline: '2.5',
+            paddingBlock: '2',
           }),
           WELL,
           css({
@@ -1566,9 +1566,9 @@ const dataWork = (h: HtmlBuilder<Message>): Html => {
         h,
         Database,
         css({
-          width: '0.875rem',
-          height: '0.875rem',
-          color: 'var(--muted-foreground)',
+          width: '3.5',
+          height: '3.5',
+          color: 'mutedForeground',
         }),
       ),
       h.span(
@@ -1576,7 +1576,7 @@ const dataWork = (h: HtmlBuilder<Message>): Html => {
           h.Class(
             css({
               fontSize: 'calc(12.5px*var(--type-scale))',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -1596,9 +1596,9 @@ const platformWork = (h: HtmlBuilder<Message>): Html => {
           css({
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            paddingInline: '0.625rem',
-            paddingBlock: '0.5rem',
+            gap: '2',
+            paddingInline: '2.5',
+            paddingBlock: '2',
           }),
           WELL,
           css({
@@ -1612,9 +1612,9 @@ const platformWork = (h: HtmlBuilder<Message>): Html => {
         h,
         Container,
         css({
-          width: '0.875rem',
-          height: '0.875rem',
-          color: 'var(--muted-foreground)',
+          width: '3.5',
+          height: '3.5',
+          color: 'mutedForeground',
         }),
       ),
       h.span(
@@ -1622,7 +1622,7 @@ const platformWork = (h: HtmlBuilder<Message>): Html => {
           h.Class(
             css({
               fontSize: 'calc(12.5px*var(--type-scale))',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -1642,9 +1642,9 @@ const securityWork = (h: HtmlBuilder<Message>): Html => {
           css({
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            paddingInline: '0.625rem',
-            paddingBlock: '0.5rem',
+            gap: '2',
+            paddingInline: '2.5',
+            paddingBlock: '2',
           }),
           WELL,
           css({
@@ -1658,9 +1658,9 @@ const securityWork = (h: HtmlBuilder<Message>): Html => {
         h,
         Shield,
         css({
-          width: '0.875rem',
-          height: '0.875rem',
-          color: 'var(--muted-foreground)',
+          width: '3.5',
+          height: '3.5',
+          color: 'mutedForeground',
         }),
       ),
       h.span(
@@ -1668,7 +1668,7 @@ const securityWork = (h: HtmlBuilder<Message>): Html => {
           h.Class(
             css({
               fontSize: 'calc(12.5px*var(--type-scale))',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -1692,9 +1692,9 @@ const working = (
           css({
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            paddingInline: '0.625rem',
-            paddingBlock: '0.5rem',
+            gap: '2',
+            paddingInline: '2.5',
+            paddingBlock: '2',
           }),
           WELL,
           css({
@@ -1713,7 +1713,7 @@ const working = (
                   FIGURE,
                   css({
                     fontSize: 'calc(11px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -1743,7 +1743,7 @@ const working = (
                   FIGURE,
                   css({
                     fontSize: 'calc(11.5px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -1758,7 +1758,7 @@ const working = (
               h.Class(
                 css({
                   fontSize: 'calc(12.5px*var(--type-scale))',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -1790,8 +1790,8 @@ const nodeRow = (
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
-          columnGap: '0.5rem',
-          rowGap: '0.125rem',
+          columnGap: '2',
+          rowGap: '0.5',
           fontSize: 'calc(11.5px*var(--type-scale))',
         }),
       ),
@@ -1801,7 +1801,7 @@ const nodeRow = (
         [
           h.Class(
             css({
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -1813,7 +1813,7 @@ const nodeRow = (
               [
                 h.Class(
                   css({
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ],
@@ -1869,10 +1869,10 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
             display: 'flex',
             flexShrink: '0',
             flexDirection: 'column',
-            gap: '0.625rem',
-            paddingInline: '1rem',
-            paddingTop: '0.875rem',
-            paddingBottom: '0.75rem',
+            gap: '2.5',
+            paddingInline: '4',
+            paddingTop: '3.5',
+            paddingBottom: '3',
           }),
         ),
       ),
@@ -1887,7 +1887,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                 FIGURE,
                 css({
                   fontSize: 'calc(11px*var(--type-scale))',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ),
@@ -1915,10 +1915,10 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                 css({
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.25rem',
+                  gap: '1',
                   borderRadius: '10px',
-                  paddingInline: '0.625rem',
-                  paddingBlock: '0.5rem',
+                  paddingInline: '2.5',
+                  paddingBlock: '2',
                 }),
                 paged &&
                   css({
@@ -1935,8 +1935,8 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                     display: 'flex',
                     flexWrap: 'wrap',
                     alignItems: 'center',
-                    columnGap: '0.5rem',
-                    rowGap: '0.25rem',
+                    columnGap: '2',
+                    rowGap: '1',
                   }),
                 ),
               ],
@@ -1985,7 +1985,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                       {
                         variant: 'outline',
                         className: css({
-                          color: 'var(--danger)',
+                          color: 'danger',
                         }),
                       },
                       [t.team.paged],
@@ -2002,7 +2002,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                     css({
                       whiteSpace: 'nowrap',
                       fontSize: 'calc(10.5px*var(--type-scale))',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ),
@@ -2020,7 +2020,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h.Class(
                   css({
                     fontSize: 'calc(11.5px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ],
@@ -2047,8 +2047,8 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                       css({
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.375rem',
-                        paddingTop: '0.125rem',
+                        gap: '1.5',
+                        paddingTop: '0.5',
                       }),
                     ),
                   ],
@@ -2058,7 +2058,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                         h.Class(
                           css({
                             fontSize: 'calc(11px*var(--type-scale))',
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                         ),
                       ],
@@ -2078,9 +2078,9 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                           cx(
                             WELL,
                             css({
-                              height: '1.5rem',
+                              height: '6',
                               borderRadius: 'lg',
-                              paddingInline: '0.375rem',
+                              paddingInline: '1.5',
                               fontSize: 'calc(11px*var(--type-scale))',
                             }),
                           ),
@@ -2117,8 +2117,8 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                       css({
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.375rem',
-                        paddingTop: '0.125rem',
+                        gap: '1.5',
+                        paddingTop: '0.5',
                       }),
                     ),
                   ],
@@ -2128,7 +2128,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                         h.Class(
                           css({
                             fontSize: 'calc(11px*var(--type-scale))',
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                         ),
                       ],
@@ -2146,9 +2146,9 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                           cx(
                             WELL,
                             css({
-                              height: '1.5rem',
+                              height: '6',
                               borderRadius: 'lg',
-                              paddingInline: '0.375rem',
+                              paddingInline: '1.5',
                               fontSize: 'calc(11px*var(--type-scale))',
                             }),
                           ),
@@ -2177,8 +2177,8 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                 css({
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.5rem',
-                  paddingTop: '0.25rem',
+                  gap: '2',
+                  paddingTop: '1',
                 }),
               ),
             ],
@@ -2189,7 +2189,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                     css({
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.375rem',
+                      gap: '1.5',
                     }),
                   ),
                 ],
@@ -2206,11 +2206,11 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                       cx(
                         WELL,
                         css({
-                          height: '1.75rem',
+                          height: '7',
                           minWidth: '0',
                           flex: '1 1 0%',
                           borderRadius: 'lg',
-                          paddingInline: '0.5rem',
+                          paddingInline: '2',
                           fontSize: 'calc(12px*var(--type-scale))',
                           outlineStyle: 'none',
                         }),
@@ -2229,9 +2229,9 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                         cx(
                           WELL,
                           css({
-                            height: '1.75rem',
+                            height: '7',
                             borderRadius: 'lg',
-                            paddingInline: '0.375rem',
+                            paddingInline: '1.5',
                             fontSize: 'calc(12px*var(--type-scale))',
                           }),
                         ),
@@ -2255,7 +2255,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                       h.Class(
                         css({
                           fontSize: 'calc(11.5px*var(--type-scale))',
-                          color: 'var(--muted-foreground)',
+                          color: 'mutedForeground',
                         }),
                       ),
                     ],
@@ -2267,7 +2267,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                         css({
                           display: 'flex',
                           flexWrap: 'wrap',
-                          gap: '0.375rem',
+                          gap: '1.5',
                         }),
                       ),
                     ],
@@ -2286,13 +2286,13 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                             cx(
                               css({
                                 display: 'flex',
-                                height: '1.5rem',
+                                height: '6',
                                 alignItems: 'center',
-                                gap: '0.25rem',
+                                gap: '1',
                                 borderRadius: '9999px',
                                 borderWidth: '1px',
                                 borderStyle: 'solid',
-                                paddingInline: '0.5rem',
+                                paddingInline: '2',
                                 fontSize: 'calc(11px*var(--type-scale))',
                               }),
                               on
@@ -2301,14 +2301,14 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                                       'color-mix(in oklab, var(--primary) 60%, transparent)',
                                     backgroundColor:
                                       'color-mix(in oklab, var(--primary) 15%, transparent)',
-                                    color: 'var(--foreground)',
+                                    color: 'foreground',
                                   })
                                 : css({
                                     borderColor:
                                       'color-mix(in oklab, var(--foreground) 15%, transparent)',
-                                    color: 'var(--muted-foreground)',
+                                    color: 'mutedForeground',
                                     _hover: {
-                                      color: 'var(--foreground)',
+                                      color: 'foreground',
                                     },
                                   }),
                             ),
@@ -2320,8 +2320,8 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                                 h,
                                 Check,
                                 css({
-                                  width: '0.75rem',
-                                  height: '0.75rem',
+                                  width: '3',
+                                  height: '3',
                                 }),
                               )
                             : h.empty,
@@ -2336,7 +2336,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                     css({
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.5rem',
+                      gap: '2',
                     }),
                   ),
                 ],
@@ -2361,8 +2361,8 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                             h,
                             Container,
                             css({
-                              width: '0.875rem',
-                              height: '0.875rem',
+                              width: '3.5',
+                              height: '3.5',
                             }),
                           ),
                           t.team.splitFor(t.units.devHours(splitCost(draft.features))),
@@ -2372,8 +2372,8 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                             h,
                             Lock,
                             css({
-                              width: '0.75rem',
-                              height: '0.75rem',
+                              width: '3',
+                              height: '3',
                             }),
                           ),
                           t.team.locked,
@@ -2385,7 +2385,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                       h.Class(
                         css({
                           fontSize: 'calc(11px*var(--type-scale))',
-                          color: 'var(--muted-foreground)',
+                          color: 'mutedForeground',
                         }),
                       ),
                     ],
@@ -2400,7 +2400,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 css({
                   fontSize: 'calc(11.5px*var(--type-scale))',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -2432,7 +2432,7 @@ const doraCard = (game: Game, h: HtmlBuilder<Message>): Html => {
           css({
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.125rem',
+            gap: '0.5',
           }),
         ),
       ],
@@ -2463,10 +2463,10 @@ const doraCard = (game: Game, h: HtmlBuilder<Message>): Html => {
             display: 'flex',
             flexShrink: '0',
             flexDirection: 'column',
-            gap: '0.625rem',
-            paddingInline: '1rem',
-            paddingTop: '0.875rem',
-            paddingBottom: '0.75rem',
+            gap: '2.5',
+            paddingInline: '4',
+            paddingTop: '3.5',
+            paddingBottom: '3',
           }),
         ),
       ),
@@ -2479,7 +2479,7 @@ const doraCard = (game: Game, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'grid',
               gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-              gap: '0.75rem',
+              gap: '3',
             }),
           ),
         ],
@@ -2506,8 +2506,8 @@ const floor = (model: Model, h: HtmlBuilder<Message>): Html => {
             display: 'flex',
             minHeight: '0',
             flexDirection: 'column',
-            gap: '0.75rem',
-            padding: '1rem',
+            gap: '3',
+            padding: '4',
           }),
           SCROLL,
           css({
@@ -2541,8 +2541,8 @@ const floor = (model: Model, h: HtmlBuilder<Message>): Html => {
                       css({
                         pointerEvents: 'none',
                         zIndex: '50',
-                        paddingInline: '1rem',
-                        paddingBlock: '0.75rem',
+                        paddingInline: '4',
+                        paddingBlock: '3',
                         fontSize: 'calc(0.875rem * var(--type-scale))',
                         lineHeight: 'calc(1.25 / 0.875)',
                         fontWeight: '500',
@@ -2564,21 +2564,21 @@ const floor = (model: Model, h: HtmlBuilder<Message>): Html => {
                 cx(
                   css({
                     display: 'flex',
-                    height: '3rem',
+                    height: '12',
                     flexShrink: '0',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '0.5rem',
+                    gap: '2',
                     borderRadius: '2xl',
                     borderWidth: '1.5px',
                     borderStyle: 'dashed',
                     borderColor: 'color-mix(in oklab, var(--foreground) 20%, transparent)',
                     fontSize: 'calc(13px*var(--type-scale))',
                     fontWeight: '500',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                     _hover: {
                       borderColor: 'color-mix(in oklab, var(--foreground) 40%, transparent)',
-                      color: 'var(--foreground)',
+                      color: 'foreground',
                     },
                   }),
                   'press',
@@ -2590,8 +2590,8 @@ const floor = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h,
                 Plus,
                 css({
-                  width: '1rem',
-                  height: '1rem',
+                  width: '4',
+                  height: '4',
                 }),
               ),
               t.team.newTeam,
@@ -2628,10 +2628,10 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
             display: 'flex',
             flexShrink: '0',
             flexDirection: 'column',
-            gap: '0.75rem',
-            paddingInline: '1rem',
-            paddingTop: '0.875rem',
-            paddingBottom: '0.75rem',
+            gap: '3',
+            paddingInline: '4',
+            paddingTop: '3.5',
+            paddingBottom: '3',
           }),
         ),
       ),
@@ -2644,8 +2644,8 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'center',
-              columnGap: '0.75rem',
-              rowGap: '0.5rem',
+              columnGap: '3',
+              rowGap: '2',
             }),
           ),
         ],
@@ -2658,7 +2658,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                   minWidth: '0',
                   flex: '1 1 0%',
                   alignItems: 'center',
-                  gap: '0.625rem',
+                  gap: '2.5',
                 }),
               ),
             ],
@@ -2676,8 +2676,8 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                   stackLogo(
                     RUNTIMES[migration.fromRuntime].language,
                     css({
-                      width: '1.25rem',
-                      height: '1.25rem',
+                      width: '5',
+                      height: '5',
                     }),
                     h,
                   ),
@@ -2691,7 +2691,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                       fontSize: 'calc(13px*var(--type-scale))',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                       textDecorationLine: 'line-through',
                       textDecorationColor:
                         'color-mix(in oklab, var(--foreground) 25%, transparent)',
@@ -2704,17 +2704,17 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                 h,
                 ArrowRight,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
+                  width: '3.5',
+                  height: '3.5',
                   flexShrink: '0',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
               stackLogo(
                 language,
                 css({
-                  width: '1.25rem',
-                  height: '1.25rem',
+                  width: '5',
+                  height: '5',
                 }),
                 h,
               ),
@@ -2741,8 +2741,8 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                         h,
                         Bug,
                         css({
-                          width: '0.75rem',
-                          height: '0.75rem',
+                          width: '3',
+                          height: '3',
                         }),
                       ),
                       t.team.bugs,
@@ -2760,8 +2760,8 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                     h,
                     Check,
                     css({
-                      width: '0.75rem',
-                      height: '0.75rem',
+                      width: '3',
+                      height: '3',
                     }),
                   ),
                   t.team.migrated,
@@ -2774,7 +2774,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                     css({
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.5rem',
+                      gap: '2',
                     }),
                   ),
                 ],
@@ -2786,7 +2786,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                           FIGURE,
                           css({
                             fontSize: 'calc(11.5px*var(--type-scale))',
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                         ),
                       ),
@@ -2815,8 +2815,8 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                         h,
                         ArrowRight,
                         css({
-                          width: '0.875rem',
-                          height: '0.875rem',
+                          width: '3.5',
+                          height: '3.5',
                         }),
                       ),
                       t.team.shiftTo(percent(next)),
@@ -2833,7 +2833,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.25rem',
+              gap: '1',
             }),
           ),
         ],
@@ -2844,7 +2844,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                 cx(
                   css({
                     position: 'relative',
-                    height: '1.75rem',
+                    height: '7',
                     overflow: 'hidden',
                   }),
                   WELL,
@@ -2865,7 +2865,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                           inset: '0',
                           transitionProperty: 'clip-path',
                           transitionDuration: '500ms',
-                          transitionTimingFunction: 'var(--ease-out)',
+                          transitionTimingFunction: 'out',
                         }),
                       ),
                       h.Style({
@@ -2885,7 +2885,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                       boxShadow: 'inset 0 1px 0 oklch(1 0 0/0.3)',
                       transitionProperty: 'clip-path',
                       transitionDuration: '700ms',
-                      transitionTimingFunction: 'var(--ease-in-out)',
+                      transitionTimingFunction: 'in-out',
                     }),
                   ),
                   h.Style({
@@ -2920,11 +2920,11 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                       css({
                         position: 'absolute',
                         insetBlock: '0',
-                        right: '0.625rem',
+                        right: '2.5',
                         display: 'flex',
                         alignItems: 'center',
                         fontSize: 'calc(11px*var(--type-scale))',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ),
@@ -2938,7 +2938,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 css({
                   position: 'relative',
-                  height: '0.875rem',
+                  height: '3.5',
                 }),
               ),
             ],
@@ -2956,10 +2956,10 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                       }),
                       at < shifted
                         ? css({
-                            color: 'var(--foreground)',
+                            color: 'foreground',
                           })
                         : css({
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                       share >= 1
                         ? css({
@@ -2989,10 +2989,10 @@ const statusMark = (status: Status, share: number, h: HtmlBuilder<Message>): Htm
   const pie = 2 * Math.PI * 2.5
   const tone =
     status === 'building'
-      ? css({ color: 'var(--warn)' })
+      ? css({ color: 'warn' })
       : status === 'queued'
-        ? css({ color: 'var(--muted-foreground)' })
-        : css({ color: 'var(--ok)' })
+        ? css({ color: 'mutedForeground' })
+        : css({ color: 'ok' })
   return h.svg(
     [
       h.AriaHidden(true),
@@ -3002,8 +3002,8 @@ const statusMark = (status: Status, share: number, h: HtmlBuilder<Message>): Htm
       h.Class(
         cx(
           css({
-            width: '0.875rem',
-            height: '0.875rem',
+            width: '3.5',
+            height: '3.5',
             flexShrink: '0',
           }),
           tone,
@@ -3063,14 +3063,14 @@ const label = (kind: WorkKind, h: HtmlBuilder<Message>): Html => {
       h.Class(
         css({
           display: 'inline-flex',
-          height: '1.25rem',
+          height: '5',
           alignItems: 'center',
-          gap: '0.25rem',
+          gap: '1',
           borderRadius: '9999px',
-          paddingInline: '0.375rem',
+          paddingInline: '1.5',
           fontSize: 'calc(10.5px*var(--type-scale))',
           fontWeight: '500',
-          color: 'var(--muted-foreground)',
+          color: 'mutedForeground',
           boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
         }),
       ),
@@ -3081,8 +3081,8 @@ const label = (kind: WorkKind, h: HtmlBuilder<Message>): Html => {
           h.Class(
             cx(
               css({
-                width: '0.375rem',
-                height: '0.375rem',
+                width: '1.5',
+                height: '1.5',
                 borderRadius: '9999px',
               }),
               kindOf(t)[kind].fill,
@@ -3117,14 +3117,14 @@ const waitChip = (item: WorkItem, h: HtmlBuilder<Message>): Html | null => {
       h.Class(
         css({
           display: 'inline-flex',
-          height: '1.25rem',
+          height: '5',
           alignItems: 'center',
-          gap: '0.25rem',
+          gap: '1',
           borderRadius: '9999px',
-          paddingInline: '0.375rem',
+          paddingInline: '1.5',
           fontSize: 'calc(10.5px*var(--type-scale))',
           fontWeight: '500',
-          color: 'var(--warn)',
+          color: 'warn',
           boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
         }),
       ),
@@ -3134,8 +3134,8 @@ const waitChip = (item: WorkItem, h: HtmlBuilder<Message>): Html | null => {
         h,
         Hourglass,
         css({
-          width: '0.75rem',
-          height: '0.75rem',
+          width: '3',
+          height: '3',
         }),
       ),
       t.team.waitingOnYou(waitOf(t)[item.block.reason]),
@@ -3174,7 +3174,7 @@ const featureReadout = (game: Game, id: FeatureId, h: HtmlBuilder<Message>): Htm
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
-          gap: '0.25rem',
+          gap: '1',
         }),
       ),
     ],
@@ -3199,12 +3199,12 @@ const upkeepPill = (game: Game, h: HtmlBuilder<Message>): Html => {
           css({
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
+            gap: '2',
             borderRadius: '10px',
-            paddingInline: '0.625rem',
-            paddingBlock: '0.5rem',
+            paddingInline: '2.5',
+            paddingBlock: '2',
             fontSize: 'calc(11.5px*var(--type-scale))',
-            color: 'var(--muted-foreground)',
+            color: 'mutedForeground',
             boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
           }),
         ),
@@ -3239,21 +3239,21 @@ const deadline = (game: Game, item: WorkItem, h: HtmlBuilder<Message>): Html => 
           FIGURE,
           css({
             display: 'inline-flex',
-            height: '1.25rem',
+            height: '5',
             alignItems: 'center',
             borderRadius: '9999px',
-            paddingInline: '0.375rem',
+            paddingInline: '1.5',
             fontSize: 'calc(10.5px*var(--type-scale))',
             fontWeight: '500',
             whiteSpace: 'nowrap',
           }),
           late > 0
             ? css({
-                backgroundColor: 'var(--danger)',
+                backgroundColor: 'danger',
                 color: 'white',
               })
             : css({
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
                 boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
               }),
         ),
@@ -3275,13 +3275,13 @@ const estimate = (text: string, h: HtmlBuilder<Message>): Html =>
           FIGURE,
           css({
             display: 'inline-flex',
-            height: '1.25rem',
+            height: '5',
             alignItems: 'center',
             borderRadius: '9999px',
-            paddingInline: '0.375rem',
+            paddingInline: '1.5',
             fontSize: 'calc(10.5px*var(--type-scale))',
             whiteSpace: 'nowrap',
-            color: 'var(--muted-foreground)',
+            color: 'mutedForeground',
             boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
           }),
         ),
@@ -3301,8 +3301,8 @@ const mini = (id: string | null, h: HtmlBuilder<Message>): Html => {
         cx(
           css({
             display: 'grid',
-            width: '1.25rem',
-            height: '1.25rem',
+            width: '5',
+            height: '5',
             flexShrink: '0',
             placeItems: 'center',
             borderRadius: '9999px',
@@ -3315,7 +3315,7 @@ const mini = (id: string | null, h: HtmlBuilder<Message>): Html => {
           id === null &&
             css({
               layerStyle: 'primaryFill',
-              color: 'var(--on-primary-fill)',
+              color: 'onPrimaryFill',
             }),
         ),
       ),
@@ -3328,8 +3328,8 @@ const mini = (id: string | null, h: HtmlBuilder<Message>): Html => {
             h,
             Crown,
             css({
-              width: '0.625rem',
-              height: '0.625rem',
+              width: '2.5',
+              height: '2.5',
             }),
           ),
     ],
@@ -3362,9 +3362,9 @@ const assignees = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
                 cx(
                   FIGURE,
                   css({
-                    marginLeft: '0.25rem',
+                    marginLeft: '1',
                     fontSize: 'calc(10.5px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -3383,8 +3383,8 @@ const unassigned = (h: HtmlBuilder<Message>): Html => {
       h.Title(t.team.unassigned),
       h.Class(
         css({
-          width: '1.25rem',
-          height: '1.25rem',
+          width: '5',
+          height: '5',
           borderRadius: '9999px',
           borderWidth: '1.5px',
           borderStyle: 'dashed',
@@ -3422,15 +3422,15 @@ const card = (
               position: 'relative',
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.5rem',
+              gap: '2',
               borderRadius: '10px',
-              backgroundColor: 'var(--card)',
-              paddingInline: '0.75rem',
-              paddingBlock: '0.625rem',
+              backgroundColor: 'card',
+              paddingInline: '3',
+              paddingBlock: '2.5',
               boxShadow: '0 0 0 1px var(--hairline-soft),0 1px 2px oklch(0 0 0/0.05)',
               transitionProperty: 'box-shadow',
               transitionDuration: '150ms',
-              transitionTimingFunction: 'var(--ease-out)',
+              transitionTimingFunction: 'out',
               _hover: {
                 boxShadow: '0 0 0 1px var(--hairline),0 2px 6px oklch(0 0 0/0.07)',
               },
@@ -3452,7 +3452,7 @@ const card = (
             css({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '2',
             }),
           ),
         ],
@@ -3465,7 +3465,7 @@ const card = (
                   css({
                     flex: '1 1 0%',
                     fontSize: 'calc(11px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -3481,7 +3481,7 @@ const card = (
             css({
               display: 'flex',
               alignItems: 'flex-start',
-              gap: '0.5rem',
+              gap: '2',
             }),
           ),
         ],
@@ -3508,7 +3508,7 @@ const card = (
                   }),
                   status === 'live' &&
                     css({
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                 ),
               ),
@@ -3523,10 +3523,10 @@ const card = (
               h.Class(
                 css({
                   display: 'flex',
-                  minHeight: '1.25rem',
+                  minHeight: '5',
                   flexWrap: 'wrap',
                   alignItems: 'center',
-                  gap: '0.25rem',
+                  gap: '1',
                 }),
               ),
             ],
@@ -3539,18 +3539,18 @@ const card = (
               h.Class(
                 css({
                   position: 'absolute',
-                  top: '0.375rem',
-                  right: '0.375rem',
+                  top: '1.5',
+                  right: '1.5',
                   display: 'flex',
                   alignItems: 'center',
                   borderRadius: 'lg',
-                  backgroundColor: 'var(--card)',
-                  padding: '0.125rem',
+                  backgroundColor: 'card',
+                  padding: '0.5',
                   opacity: 0,
                   boxShadow: '0 0 0 1px var(--hairline-soft),0 2px 6px oklch(0 0 0/0.08)',
                   transitionProperty: 'opacity',
                   transitionDuration: '150ms',
-                  transitionTimingFunction: 'var(--ease-out)',
+                  transitionTimingFunction: 'out',
                   '.group:hover &': {
                     opacity: 1,
                   },
@@ -3654,13 +3654,13 @@ const idleCard = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
         css({
           display: 'flex',
           alignItems: 'center',
-          gap: '0.5rem',
+          gap: '2',
           borderRadius: '10px',
           borderWidth: '1.5px',
           borderStyle: 'dashed',
           borderColor: 'color-mix(in oklab, var(--foreground) 15%, transparent)',
-          paddingInline: '0.75rem',
-          paddingBlock: '0.625rem',
+          paddingInline: '3',
+          paddingBlock: '2.5',
         }),
       ),
     ],
@@ -3674,7 +3674,7 @@ const idleCard = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
               flex: '1 1 0%',
               fontSize: 'calc(12.5px*var(--type-scale))',
               lineHeight: '1.375',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -3708,11 +3708,11 @@ const column = (
           minHeight: '260px',
           minWidth: '0',
           flexDirection: 'column',
-          gap: '0.375rem',
+          gap: '1.5',
           borderRadius: 'xl',
           backgroundColor:
             'color-mix(in oklab, var(--foreground) 2.8000000000000003%, transparent)',
-          padding: '0.375rem',
+          padding: '1.5',
         }),
       ),
     ],
@@ -3723,10 +3723,10 @@ const column = (
             css({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              paddingInline: '0.375rem',
-              paddingTop: '0.25rem',
-              paddingBottom: '0.25rem',
+              gap: '2',
+              paddingInline: '1.5',
+              paddingTop: '1',
+              paddingBottom: '1',
             }),
           ),
         ],
@@ -3750,7 +3750,7 @@ const column = (
                   FIGURE,
                   css({
                     fontSize: 'calc(12px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -3779,19 +3779,19 @@ const deployPill = (game: Game, h: HtmlBuilder<Message>): Html => {
           css({
             display: 'flex',
             alignItems: 'center',
-            gap: '0.625rem',
+            gap: '2.5',
             borderRadius: '10px',
-            paddingInline: '0.625rem',
-            paddingBlock: '0.5rem',
+            paddingInline: '2.5',
+            paddingBlock: '2',
           }),
           built > 0
             ? css({
                 layerStyle: 'primaryFill',
-                color: 'var(--on-primary-fill)',
+                color: 'onPrimaryFill',
                 boxShadow: 'primary',
               })
             : css({
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
                 boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
               }),
         ),
@@ -3805,24 +3805,24 @@ const deployPill = (game: Game, h: HtmlBuilder<Message>): Html => {
               css({
                 position: 'relative',
                 display: 'grid',
-                width: '2rem',
-                height: '2rem',
+                width: '8',
+                height: '8',
                 flexShrink: '0',
                 placeItems: 'center',
                 borderRadius: '9999px',
               }),
               built > 0 && !stalled
                 ? css({
-                    backgroundColor: 'var(--ok)',
+                    backgroundColor: 'ok',
                     color: 'white',
                   })
                 : stalled
                   ? css({
-                      backgroundColor: 'var(--danger)',
+                      backgroundColor: 'danger',
                       color: 'white',
                     })
                   : css({
-                      backgroundColor: 'var(--well)',
+                      backgroundColor: 'well',
                     }),
             ),
           ),
@@ -3832,8 +3832,8 @@ const deployPill = (game: Game, h: HtmlBuilder<Message>): Html => {
             h,
             Rocket,
             css({
-              width: '0.875rem',
-              height: '0.875rem',
+              width: '3.5',
+              height: '3.5',
             }),
           ),
           built > 0 && !stalled
@@ -3852,7 +3852,7 @@ const deployPill = (game: Game, h: HtmlBuilder<Message>): Html => {
                     css({
                       width: '38px',
                       height: '38px',
-                      color: 'var(--ok)',
+                      color: 'ok',
                     }),
                     h,
                   ),
@@ -3903,7 +3903,7 @@ const deployPill = (game: Game, h: HtmlBuilder<Message>): Html => {
                       }),
                       chance >= 0.15
                         ? css({
-                            color: 'var(--warn)',
+                            color: 'warn',
                           })
                         : css({
                             opacity: 0.6,
@@ -3937,7 +3937,7 @@ const board = (game: Game, h: HtmlBuilder<Message>): Html => {
         css({
           display: 'grid',
           gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-          gap: '0.5rem',
+          gap: '2',
           _narrow: {
             gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
           },
@@ -4015,7 +4015,7 @@ const board = (game: Game, h: HtmlBuilder<Message>): Html => {
                     Message.TeamChanged({ message: TeamMessage.FeatureRemoved({ id }) }),
                     removeRefusal(game, id) === null,
                     h,
-                    css({ color: 'var(--danger)' }),
+                    css({ color: 'danger' }),
                   ),
                 ],
                 false,
@@ -4030,10 +4030,10 @@ const board = (game: Game, h: HtmlBuilder<Message>): Html => {
                     cx(
                       FIGURE,
                       css({
-                        paddingInline: '0.5rem',
-                        paddingBlock: '0.25rem',
+                        paddingInline: '2',
+                        paddingBlock: '1',
                         fontSize: 'calc(11px*var(--type-scale))',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ),
@@ -4063,12 +4063,12 @@ const autopilot = (model: Model, h: HtmlBuilder<Message>): Html => {
           cx(
             css({
               display: 'inline-flex',
-              height: '1.75rem',
+              height: '7',
               alignItems: 'center',
-              gap: '0.375rem',
+              gap: '1.5',
               borderRadius: '9999px',
-              paddingRight: '0.25rem',
-              paddingLeft: '0.625rem',
+              paddingRight: '1',
+              paddingLeft: '2.5',
               fontSize: 'calc(11.5px*var(--type-scale))',
               fontWeight: '500',
             }),
@@ -4083,14 +4083,14 @@ const autopilot = (model: Model, h: HtmlBuilder<Message>): Html => {
           game.autopilot
             ? css({
                 layerStyle: 'primaryFill',
-                color: 'var(--on-primary-fill)',
+                color: 'onPrimaryFill',
                 boxShadow: 'primary',
               })
             : css({
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
                 boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
                 _hover: {
-                  color: 'var(--foreground)',
+                  color: 'foreground',
                 },
               }),
         ),
@@ -4101,8 +4101,8 @@ const autopilot = (model: Model, h: HtmlBuilder<Message>): Html => {
         h,
         Bot,
         css({
-          width: '0.875rem',
-          height: '0.875rem',
+          width: '3.5',
+          height: '3.5',
         }),
       ),
       t.team.autopilot,
@@ -4113,8 +4113,8 @@ const autopilot = (model: Model, h: HtmlBuilder<Message>): Html => {
               FIGURE,
               css({
                 borderRadius: '9999px',
-                paddingInline: '0.375rem',
-                paddingBlock: '0.125rem',
+                paddingInline: '1.5',
+                paddingBlock: '0.5',
                 fontSize: 'calc(10px*var(--type-scale))',
               }),
               game.autopilot
@@ -4122,7 +4122,7 @@ const autopilot = (model: Model, h: HtmlBuilder<Message>): Html => {
                     backgroundColor: 'color-mix(in oklab, white 20%, transparent)',
                   })
                 : css({
-                    backgroundColor: 'var(--well)',
+                    backgroundColor: 'well',
                   }),
             ),
           ),
@@ -4159,11 +4159,11 @@ const policies = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
               cx(
                 css({
                   display: 'inline-flex',
-                  height: '1.75rem',
+                  height: '7',
                   alignItems: 'center',
-                  gap: '0.375rem',
+                  gap: '1.5',
                   borderRadius: '9999px',
-                  paddingInline: '0.625rem',
+                  paddingInline: '2.5',
                   fontSize: 'calc(11.5px*var(--type-scale))',
                   fontWeight: '500',
                 }),
@@ -4172,14 +4172,14 @@ const policies = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
               game.policies[policy]
                 ? css({
                     layerStyle: 'primaryFill',
-                    color: 'var(--on-primary-fill)',
+                    color: 'onPrimaryFill',
                     boxShadow: 'primary',
                   })
                 : css({
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                     boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
                     _hover: {
-                      color: 'var(--foreground)',
+                      color: 'foreground',
                     },
                   }),
             ),
@@ -4212,12 +4212,12 @@ const chaos = (model: Model, h: HtmlBuilder<Message>): Html => {
           cx(
             css({
               display: 'inline-flex',
-              height: '1.75rem',
+              height: '7',
               alignItems: 'center',
-              gap: '0.375rem',
+              gap: '1.5',
               borderRadius: '9999px',
-              paddingRight: '0.25rem',
-              paddingLeft: '0.625rem',
+              paddingRight: '1',
+              paddingLeft: '2.5',
               fontSize: 'calc(11.5px*var(--type-scale))',
               fontWeight: '500',
             }),
@@ -4226,14 +4226,14 @@ const chaos = (model: Model, h: HtmlBuilder<Message>): Html => {
           game.chaos
             ? css({
                 layerStyle: 'primaryFill',
-                color: 'var(--on-primary-fill)',
+                color: 'onPrimaryFill',
                 boxShadow: 'primary',
               })
             : css({
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
                 boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
                 _hover: {
-                  color: 'var(--foreground)',
+                  color: 'foreground',
                 },
               }),
         ),
@@ -4244,8 +4244,8 @@ const chaos = (model: Model, h: HtmlBuilder<Message>): Html => {
         h,
         FlaskConical,
         css({
-          width: '0.875rem',
-          height: '0.875rem',
+          width: '3.5',
+          height: '3.5',
         }),
       ),
       t.team.chaos,
@@ -4256,8 +4256,8 @@ const chaos = (model: Model, h: HtmlBuilder<Message>): Html => {
               FIGURE,
               css({
                 borderRadius: '9999px',
-                paddingInline: '0.375rem',
-                paddingBlock: '0.125rem',
+                paddingInline: '1.5',
+                paddingBlock: '0.5',
                 fontSize: 'calc(10px*var(--type-scale))',
               }),
               game.chaos
@@ -4265,7 +4265,7 @@ const chaos = (model: Model, h: HtmlBuilder<Message>): Html => {
                     backgroundColor: 'color-mix(in oklab, white 20%, transparent)',
                   })
                 : css({
-                    backgroundColor: 'var(--well)',
+                    backgroundColor: 'well',
                   }),
             ),
           ),
@@ -4287,10 +4287,10 @@ const costPill = (cost: number, h: HtmlBuilder<Message>): Html => {
             flexShrink: '0',
             borderRadius: '9999px',
             layerStyle: 'primaryFill',
-            paddingInline: '0.5rem',
-            paddingBlock: '0.125rem',
+            paddingInline: '2',
+            paddingBlock: '0.5',
             fontSize: 'calc(10.5px*var(--type-scale))',
-            color: 'var(--on-primary-fill)',
+            color: 'onPrimaryFill',
             boxShadow: 'primary',
           }),
         ),
@@ -4322,21 +4322,21 @@ const tile = (
             display: 'flex',
             minWidth: '0',
             flexDirection: 'column',
-            gap: '0.375rem',
+            gap: '1.5',
             borderRadius: 'xl',
-            paddingInline: '0.75rem',
-            paddingTop: '0.625rem',
-            paddingBottom: '0.625rem',
+            paddingInline: '3',
+            paddingTop: '2.5',
+            paddingBottom: '2.5',
           }),
           state === 'locked'
             ? css({
                 backgroundColor: 'color-mix(in oklab, var(--foreground) 2.5%, transparent)',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
                 boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
               })
             : state === 'done'
               ? css({
-                  backgroundColor: 'var(--ok-soft)',
+                  backgroundColor: 'okSoft',
                   boxShadow: 'inset 0 0 0 1px color-mix(in oklch,var(--ok) 18%,transparent)',
                 })
               : css({
@@ -4353,7 +4353,7 @@ const tile = (
             css({
               display: 'flex',
               alignItems: 'flex-start',
-              gap: '0.5rem',
+              gap: '2',
             }),
           ),
         ],
@@ -4377,7 +4377,7 @@ const tile = (
                       FIGURE,
                       css({
                         fontSize: 'calc(10.5px*var(--type-scale))',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ),
@@ -4411,7 +4411,7 @@ const tile = (
               minHeight: '2lh',
               fontSize: 'calc(11.5px*var(--type-scale))',
               lineHeight: '1.375',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -4426,7 +4426,7 @@ const tile = (
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                   fontSize: 'calc(11.5px*var(--type-scale))',
-                  color: 'var(--warn)',
+                  color: 'warn',
                 }),
               ),
             ],
@@ -4440,7 +4440,7 @@ const tile = (
               marginTop: 'auto',
               display: 'flex',
               justifyContent: 'flex-end',
-              paddingTop: '0.125rem',
+              paddingTop: '0.5',
             }),
           ),
         ],
@@ -4474,8 +4474,8 @@ const queueButton = (
           h,
           Lock,
           css({
-            width: '0.75rem',
-            height: '0.75rem',
+            width: '3',
+            height: '3',
           }),
         ),
         h.span(
@@ -4507,8 +4507,8 @@ const queueButton = (
             h,
             Lock,
             css({
-              width: '0.75rem',
-              height: '0.75rem',
+              width: '3',
+              height: '3',
             }),
           ),
           t.team.locked,
@@ -4518,8 +4518,8 @@ const queueButton = (
             h,
             Plus,
             css({
-              width: '0.875rem',
-              height: '0.875rem',
+              width: '3.5',
+              height: '3.5',
             }),
           ),
           label,
@@ -4582,7 +4582,7 @@ const featureTile = (
           {
             variant: 'secondary',
             className: css({
-              color: 'var(--ok)',
+              color: 'ok',
             }),
           },
           [
@@ -4590,8 +4590,8 @@ const featureTile = (
               h,
               Check,
               css({
-                width: '0.75rem',
-                height: '0.75rem',
+                width: '3',
+                height: '3',
               }),
             ),
             t.team.live,
@@ -4608,8 +4608,8 @@ const featureTile = (
                 h,
                 Rocket,
                 css({
-                  width: '0.75rem',
-                  height: '0.75rem',
+                  width: '3',
+                  height: '3',
                 }),
               ),
               t.team.shipping,
@@ -4640,7 +4640,7 @@ const runbookPicker = (game: Game, h: HtmlBuilder<Message>): Html => {
         h.Class(
           css({
             fontSize: 'calc(11.5px*var(--type-scale))',
-            color: 'var(--muted-foreground)',
+            color: 'mutedForeground',
           }),
         ),
       ],
@@ -4652,7 +4652,7 @@ const runbookPicker = (game: Game, h: HtmlBuilder<Message>): Html => {
         css({
           display: 'flex',
           flexWrap: 'wrap',
-          gap: '0.25rem',
+          gap: '1',
         }),
       ),
     ],
@@ -4675,23 +4675,23 @@ const runbookPicker = (game: Game, h: HtmlBuilder<Message>): Html => {
           h.Class(
             css({
               display: 'flex',
-              height: '1.5rem',
+              height: '6',
               alignItems: 'center',
-              gap: '0.25rem',
+              gap: '1',
               borderRadius: 'md',
               borderWidth: '1px',
               borderStyle: 'solid',
-              borderColor: 'var(--hairline)',
-              paddingInline: '0.375rem',
+              borderColor: 'hairline',
+              paddingInline: '1.5',
               fontSize: 'calc(11px*var(--type-scale))',
               fontWeight: '500',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
               transitionProperty:
                 'color, background-color, border-color, text-decoration-color, fill, stroke',
               transitionDuration: '150ms',
-              transitionTimingFunction: 'var(--ease-out)',
+              transitionTimingFunction: 'out',
               _hover: {
-                color: 'var(--foreground)',
+                color: 'foreground',
               },
               _disabled: {
                 opacity: 0.5,
@@ -4704,8 +4704,8 @@ const runbookPicker = (game: Game, h: HtmlBuilder<Message>): Html => {
             h,
             queued ? Hourglass : Plus,
             css({
-              width: '0.75rem',
-              height: '0.75rem',
+              width: '3',
+              height: '3',
             }),
           ),
           h.span(
@@ -4756,7 +4756,7 @@ const taskTile = (
             {
               variant: 'secondary',
               className: css({
-                color: 'var(--ok)',
+                color: 'ok',
               }),
             },
             [
@@ -4764,8 +4764,8 @@ const taskTile = (
                 h,
                 Check,
                 css({
-                  width: '0.75rem',
-                  height: '0.75rem',
+                  width: '3',
+                  height: '3',
                 }),
               ),
               t.team.done,
@@ -4788,7 +4788,7 @@ const taskTile = (
 const TILES = css({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-  gap: '0.5rem',
+  gap: '2',
 })
 
 const work = (model: Model, h: HtmlBuilder<Message>): Html => {
@@ -4812,8 +4812,8 @@ const work = (model: Model, h: HtmlBuilder<Message>): Html => {
             display: 'flex',
             minHeight: '0',
             flexDirection: 'column',
-            gap: '0.75rem',
-            padding: '1rem',
+            gap: '3',
+            padding: '4',
           }),
           SCROLL,
           css({
@@ -4834,7 +4834,7 @@ const work = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
+                gap: '2',
               }),
             ),
           ],
@@ -4856,7 +4856,7 @@ const work = (model: Model, h: HtmlBuilder<Message>): Html => {
                 FIGURE,
                 css({
                   fontSize: 'calc(11px*var(--type-scale))',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ),
@@ -4911,7 +4911,7 @@ export const teamPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   css({
                     fontSize: 'calc(12px*var(--type-scale))',
                     whiteSpace: 'nowrap',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                     _compact: {
                       display: 'none',
                     },
@@ -4930,11 +4930,11 @@ export const teamPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 display: 'flex',
                 alignItems: 'baseline',
-                gap: '0.375rem',
+                gap: '1.5',
                 borderRadius: '9999px',
-                backgroundColor: 'var(--well)',
-                paddingInline: '0.75rem',
-                paddingBlock: '0.25rem',
+                backgroundColor: 'well',
+                paddingInline: '3',
+                paddingBlock: '1',
                 fontSize: 'calc(15px*var(--type-scale))',
                 whiteSpace: 'nowrap',
                 boxShadow: 'well',
@@ -4949,7 +4949,7 @@ export const teamPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 css({
                   fontSize: 'calc(11px*var(--type-scale))',
-                  color: 'var(--ok)',
+                  color: 'ok',
                 }),
               ),
             ],
@@ -4969,7 +4969,7 @@ export const teamPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               gridTemplateColumns: '360px minmax(0, 1fr)',
               borderTopWidth: '1px',
               borderTopStyle: 'solid',
-              borderColor: 'var(--hairline)',
+              borderColor: 'hairline',
               _narrow: { gridTemplateColumns: 'minmax(0, 1fr)' },
               _compact: {
                 display: 'block',
@@ -4989,8 +4989,8 @@ export const teamPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   flexDirection: 'column',
                   borderRightWidth: '1px',
                   borderRightStyle: 'solid',
-                  borderColor: 'var(--hairline)',
-                  backgroundColor: 'var(--surface-nested)',
+                  borderColor: 'hairline',
+                  backgroundColor: 'nested',
                   _narrow: {
                     borderRightWidth: '0px',
                   },

@@ -23,9 +23,9 @@ const detail = (part: Part, h: HtmlBuilder<Message>): Html => {
             display: 'flex',
             flexShrink: '0',
             alignItems: 'center',
-            gap: '0.25rem',
+            gap: '1',
             fontSize: 'calc(11px*var(--type-scale))',
-            color: 'var(--muted-foreground)',
+            color: 'mutedForeground',
           }),
         ),
       ],
@@ -34,8 +34,8 @@ const detail = (part: Part, h: HtmlBuilder<Message>): Html => {
           h,
           Lock,
           css({
-            width: '0.875rem',
-            height: '0.875rem',
+            width: '3.5',
+            height: '3.5',
           }),
         ),
         h.span(
@@ -64,7 +64,7 @@ const detail = (part: Part, h: HtmlBuilder<Message>): Html => {
           }),
           part.short
             ? css({
-                color: 'var(--danger)',
+                color: 'danger',
               })
             : '',
         ),
@@ -79,7 +79,7 @@ export const partCells = (part: Part, h: HtmlBuilder<Message>): ReadonlyArray<Ht
   groupBadge(
     part.group,
     part.icon,
-    css({ width: '2rem', height: '2rem', flexShrink: '0' }),
+    css({ width: '8', height: '8', flexShrink: '0' }),
     h,
     part.locked !== null,
   ),
@@ -91,7 +91,7 @@ export const partCells = (part: Part, h: HtmlBuilder<Message>): ReadonlyArray<Ht
           minWidth: '0',
           flex: '1 1 0%',
           flexDirection: 'column',
-          gap: '0.125rem',
+          gap: '0.5',
         }),
       ),
     ],
@@ -120,7 +120,7 @@ export const partCells = (part: Part, h: HtmlBuilder<Message>): ReadonlyArray<Ht
               whiteSpace: 'nowrap',
               fontSize: 'calc(11.5px*var(--type-scale))',
               lineHeight: '1.25',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],

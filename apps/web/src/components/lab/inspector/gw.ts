@@ -41,7 +41,7 @@ const routeTable = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readon
           css({
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.375rem',
+            gap: '1.5',
           }),
         ),
       ],

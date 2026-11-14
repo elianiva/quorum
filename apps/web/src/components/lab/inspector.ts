@@ -119,8 +119,8 @@ const gauge = (
         css({
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.375rem',
-          paddingBlock: '0.125rem',
+          gap: '1.5',
+          paddingBlock: '0.5',
         }),
       ),
     ],
@@ -141,7 +141,7 @@ const gauge = (
               h.Class(
                 css({
                   fontSize: 'calc(12.5px*var(--type-scale))',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -157,11 +157,11 @@ const gauge = (
                   }),
                   level >= 0.9
                     ? css({
-                        color: 'var(--danger)',
+                        color: 'danger',
                       })
                     : level >= 0.7
                       ? css({
-                          color: 'var(--warn)',
+                          color: 'warn',
                         })
                       : '',
                 ),
@@ -189,26 +189,26 @@ const callout = (
       h.Class(
         cx(
           css({
-            marginInline: '1rem',
-            marginBottom: '0.75rem',
+            marginInline: '4',
+            marginBottom: '3',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.5rem',
+            gap: '2',
             borderRadius: 'xl',
-            paddingInline: '0.75rem',
-            paddingBlock: '0.625rem',
+            paddingInline: '3',
+            paddingBlock: '2.5',
             fontSize: 'calc(12px*var(--type-scale))',
             lineHeight: '1.375',
           }),
           tone === 'danger'
             ? css({
                 backgroundColor: 'color-mix(in oklab, var(--danger) 8%, transparent)',
-                color: 'var(--danger)',
+                color: 'danger',
                 boxShadow: 'inset 0 0 0 1px color-mix(in oklch,var(--danger) 25%,transparent)',
               })
             : css({
                 backgroundColor: 'color-mix(in oklab, var(--warn) 10%, transparent)',
-                color: 'var(--warn)',
+                color: 'warn',
                 boxShadow: 'inset 0 0 0 1px color-mix(in oklch,var(--warn) 28%,transparent)',
               }),
           className,
@@ -243,7 +243,7 @@ const warnings = (
             size: 'sm',
             className: css({
               alignSelf: 'flex-start',
-              color: 'var(--danger)',
+              color: 'danger',
             }),
           },
           [t.inspector.replace, h.span([h.Class(FIGURE)], [priceLabel(game.sandbox, price)])],
@@ -266,7 +266,7 @@ const warnings = (
             size: 'sm',
             className: css({
               alignSelf: 'flex-start',
-              color: 'var(--danger)',
+              color: 'danger',
             }),
           },
           [t.inspector.throttleConnects],
@@ -291,7 +291,7 @@ const warnings = (
             size: 'sm',
             className: css({
               alignSelf: 'flex-start',
-              color: 'var(--danger)',
+              color: 'danger',
             }),
           },
           [t.inspector.moveLogin],
@@ -345,7 +345,7 @@ const warnings = (
             size: 'sm',
             className: css({
               alignSelf: 'flex-start',
-              color: 'var(--danger)',
+              color: 'danger',
             }),
           },
           [
@@ -353,8 +353,8 @@ const warnings = (
               h,
               RotateCcw,
               css({
-                width: '0.875rem',
-                height: '0.875rem',
+                width: '3.5',
+                height: '3.5',
               }),
             ),
             t.inspector.restart,
@@ -463,7 +463,7 @@ const warnings = (
                 size: 'sm',
                 className: css({
                   alignSelf: 'flex-start',
-                  color: 'var(--danger)',
+                  color: 'danger',
                 }),
               },
               [t.inspector.deleteMessage],
@@ -487,7 +487,7 @@ const warnings = (
                 size: 'sm',
                 className: css({
                   alignSelf: 'flex-start',
-                  color: 'var(--danger)',
+                  color: 'danger',
                 }),
               },
               [t.inspector.switchToOnDemand],
@@ -510,7 +510,7 @@ const warnings = (
             size: 'sm',
             className: css({
               alignSelf: 'flex-start',
-              color: 'var(--danger)',
+              color: 'danger',
             }),
           },
           [label],
@@ -547,7 +547,7 @@ const warnings = (
             size: 'sm',
             className: css({
               alignSelf: 'flex-start',
-              color: 'var(--danger)',
+              color: 'danger',
             }),
           },
           [t.inspector.underAttack],
@@ -570,7 +570,7 @@ const warnings = (
                 size: 'sm',
                 className: css({
                   alignSelf: 'flex-start',
-                  color: 'var(--danger)',
+                  color: 'danger',
                 }),
               },
               [t.inspector.addIndex],
@@ -787,7 +787,7 @@ const sparkline = (
       h.Class(
         cx(
           css({
-            height: '2.75rem',
+            height: '11',
             width: '100%',
           }),
           selected !== null
@@ -884,8 +884,8 @@ const pricing = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
         css({
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.375rem',
-          paddingTop: '0.25rem',
+          gap: '1.5',
+          paddingTop: '1',
         }),
       ),
     ],
@@ -896,8 +896,8 @@ const pricing = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
             cx(
               EYEBROW,
               css({
-                paddingInline: '0.25rem',
-                color: 'var(--muted-foreground)',
+                paddingInline: '1',
+                color: 'mutedForeground',
               }),
             ),
           ),
@@ -957,8 +957,8 @@ const upgradeAll = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html =
     [
       h.Class(
         css({
-          paddingInline: '1rem',
-          paddingBlock: '0.75rem',
+          paddingInline: '4',
+          paddingBlock: '3',
         }),
       ),
     ],
@@ -985,7 +985,7 @@ const upgradeAll = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html =
                 css({
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.375rem',
+                  gap: '1.5',
                 }),
               ),
             ],
@@ -994,8 +994,8 @@ const upgradeAll = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html =
                 h,
                 ArrowUp,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
+                  width: '3.5',
+                  height: '3.5',
                 }),
               ),
               growable.length > 0
@@ -1026,8 +1026,8 @@ const instance = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: '0.5rem',
-                padding: '0.25rem',
+                gap: '2',
+                padding: '1',
               }),
               WELL,
             ),
@@ -1081,9 +1081,9 @@ const instance = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => 
             css({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              paddingInline: '0.25rem',
-              paddingTop: '0.25rem',
+              gap: '2',
+              paddingInline: '1',
+              paddingTop: '1',
             }),
           ),
         ],
@@ -1188,8 +1188,8 @@ const connectionGrid = (
             ? css({ gridTemplateColumns: 'repeat(1, minmax(0, 1fr))' })
             : css({ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }),
           css({
-            columnGap: '0.25rem',
-            rowGap: '0.125rem',
+            columnGap: '1',
+            rowGap: '0.5',
           }),
         ),
       ),
@@ -1215,17 +1215,17 @@ const connectionGrid = (
                 display: 'flex',
                 minWidth: '0',
                 alignItems: 'center',
-                gap: '0.25rem',
+                gap: '1',
                 borderRadius: 'md',
-                paddingInline: '0.375rem',
-                paddingBlock: '0.25rem',
+                paddingInline: '1.5',
+                paddingBlock: '1',
                 textAlign: 'left',
                 transitionProperty:
                   'color, background-color, border-color, text-decoration-color, fill, stroke',
                 transitionDuration: '150ms',
-                transitionTimingFunction: 'var(--ease-out)',
+                transitionTimingFunction: 'out',
                 _hover: {
-                  backgroundColor: 'var(--well)',
+                  backgroundColor: 'well',
                 },
               }),
               'group',
@@ -1236,7 +1236,7 @@ const connectionGrid = (
           groupBadge(
             COMPONENTS[other.type].group,
             COMPONENT_ICONS[other.type],
-            css({ width: '1rem', height: '1rem', flexShrink: '0' }),
+            css({ width: '4', height: '4', flexShrink: '0' }),
             h,
           ),
           h.span(
@@ -1266,7 +1266,7 @@ const connectionGrid = (
                   }),
                   rateNow > 0.01
                     ? css({
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       })
                     : css({
                         color: 'color-mix(in oklab, var(--muted-foreground) 55%, transparent)',
@@ -1307,7 +1307,7 @@ const capacityMeter = (
         css({
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.375rem',
+          gap: '1.5',
         }),
       ),
     ],
@@ -1319,7 +1319,7 @@ const capacityMeter = (
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '0.75rem',
+              gap: '3',
             }),
           ),
         ],
@@ -1330,7 +1330,7 @@ const capacityMeter = (
                 css({
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.375rem',
+                  gap: '1.5',
                 }),
               ),
             ],
@@ -1339,10 +1339,10 @@ const capacityMeter = (
                 h,
                 glyph,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
+                  width: '3.5',
+                  height: '3.5',
                   flexShrink: '0',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
               h.span([h.Class(EYEBROW)], [label]),
@@ -1355,7 +1355,7 @@ const capacityMeter = (
                   FIGURE,
                   css({
                     fontSize: 'calc(11px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -1409,9 +1409,9 @@ const trafficMeters = (
           css({
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.75rem',
-            paddingInline: '1rem',
-            paddingBottom: '0.75rem',
+            gap: '3',
+            paddingInline: '4',
+            paddingBottom: '3',
           }),
         ),
       ],
@@ -1529,7 +1529,7 @@ const calls = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArr
               css({
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.375rem',
+                gap: '1.5',
               }),
             ),
           ],
@@ -1638,9 +1638,9 @@ const breakdown = (
           display: 'flex',
           alignItems: 'baseline',
           justifyContent: 'space-between',
-          gap: '0.75rem',
-          paddingInline: '0.75rem',
-          paddingBlock: '0.375rem',
+          gap: '3',
+          paddingInline: '3',
+          paddingBlock: '1.5',
         }),
       ),
     ],
@@ -1652,7 +1652,7 @@ const breakdown = (
               minWidth: '0',
               overflowWrap: 'break-word',
               fontSize: 'calc(12.5px*var(--type-scale))',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -1667,7 +1667,7 @@ const breakdown = (
                 display: 'flex',
                 alignItems: 'baseline',
                 justifyContent: 'flex-end',
-                gap: '0.375rem',
+                gap: '1.5',
                 fontSize: 'calc(12px*var(--type-scale))',
                 whiteSpace: 'nowrap',
               }),
@@ -1686,7 +1686,7 @@ const breakdown = (
                     h.Class(
                       css({
                         fontSize: 'calc(11.5px*var(--type-scale))',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ],
@@ -1748,7 +1748,7 @@ const trafficBreakdown = (
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '0.5rem',
+              gap: '2',
             }),
           ),
         ],
@@ -1767,8 +1767,8 @@ const trafficBreakdown = (
                       h,
                       ChevronsRight,
                       css({
-                        width: '0.75rem',
-                        height: '0.75rem',
+                        width: '3',
+                        height: '3',
                       }),
                     ),
                     t.inspector.backToLive,
@@ -1800,8 +1800,8 @@ const trafficBreakdown = (
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      gap: '0.5rem',
-                      padding: '0.25rem',
+                      gap: '2',
+                      padding: '1',
                     }),
                     WELL,
                   ),
@@ -1850,7 +1850,7 @@ const trafficBreakdown = (
                   css({
                     fontSize: 'calc(12px*var(--type-scale))',
                     lineHeight: '1.375',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ],
@@ -1919,7 +1919,7 @@ const trafficBreakdown = (
             css({
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.25rem',
+              gap: '1',
             }),
           ),
         ],
@@ -1946,9 +1946,9 @@ const trafficBreakdown = (
                   [
                     h.Class(
                       css({
-                        paddingInline: '0.75rem',
+                        paddingInline: '3',
                         fontSize: 'calc(12px*var(--type-scale))',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ],
@@ -1959,10 +1959,10 @@ const trafficBreakdown = (
             [
               h.Class(
                 css({
-                  paddingInline: '0.75rem',
+                  paddingInline: '3',
                   fontSize: 'calc(12px*var(--type-scale))',
                   lineHeight: '1.375',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -1983,7 +1983,7 @@ const trafficBreakdown = (
                   css({
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '0.25rem',
+                    gap: '1',
                   }),
                 ),
               ],
@@ -2066,8 +2066,8 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
           css({
             position: 'absolute',
             top: '76px',
-            right: '0.75rem',
-            bottom: '0.75rem',
+            right: '3',
+            bottom: '3',
             zIndex: '20',
             display: 'flex',
             width: '348px',
@@ -2103,8 +2103,8 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
           className: css({
             _compact: {
               top: 'max(6px,env(safe-area-inset-top))',
-              width: '2.75rem',
-              height: '2.75rem',
+              width: '11',
+              height: '11',
             },
           }),
         },
@@ -2116,24 +2116,19 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
             css({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.75rem',
-              paddingInline: '1rem',
-              paddingTop: '1rem',
-              paddingRight: '2.5rem',
-              paddingBottom: '0.5rem',
+              gap: '3',
+              paddingInline: '4',
+              paddingTop: '4',
+              paddingRight: '10',
+              paddingBottom: '2',
               _compact: {
-                paddingRight: '3.5rem',
+                paddingRight: '14',
               },
             }),
           ),
         ],
         [
-          groupBadge(
-            def.group,
-            COMPONENT_ICONS[node.type],
-            css({ width: '2.5rem', height: '2.5rem' }),
-            h,
-          ),
+          groupBadge(def.group, COMPONENT_ICONS[node.type], css({ width: '10', height: '10' }), h),
           h.div(
             [
               h.Class(
@@ -2165,7 +2160,7 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                       FIGURE,
                       css({
                         fontSize: 'calc(11.5px*var(--type-scale))',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ),
@@ -2192,11 +2187,11 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
         [
           h.Class(
             css({
-              paddingInline: '1rem',
-              paddingBottom: '0.75rem',
+              paddingInline: '4',
+              paddingBottom: '3',
               fontSize: 'calc(12.5px*var(--type-scale))',
               lineHeight: '1.375',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -2216,7 +2211,7 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                 '& > :not(:last-child)': {
                   borderBottomWidth: '1px',
                   borderBottomStyle: 'solid',
-                  borderColor: 'var(--hairline)',
+                  borderColor: 'hairline',
                 },
               }),
               SCROLL,
@@ -2228,9 +2223,9 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
             [
               h.Class(
                 css({
-                  paddingInline: '1rem',
-                  paddingTop: '0.25rem',
-                  paddingBottom: '0.5rem',
+                  paddingInline: '4',
+                  paddingTop: '1',
+                  paddingBottom: '2',
                 }),
               ),
             ],
@@ -2243,8 +2238,8 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                           cx(
                             EYEBROW,
                             css({
-                              marginBottom: '0.5rem',
-                              color: 'var(--muted-foreground)',
+                              marginBottom: '2',
+                              color: 'mutedForeground',
                             }),
                           ),
                         ),
@@ -2287,12 +2282,12 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
           h.Class(
             css({
               display: 'flex',
-              gap: '0.5rem',
+              gap: '2',
               borderTopWidth: '1px',
               borderTopStyle: 'solid',
-              borderColor: 'var(--hairline)',
-              backgroundColor: 'var(--surface-nested)',
-              padding: '0.75rem',
+              borderColor: 'hairline',
+              backgroundColor: 'nested',
+              padding: '3',
             }),
           ),
         ],
@@ -2305,13 +2300,13 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                   h.Class(
                     css({
                       display: 'flex',
-                      height: '2.25rem',
+                      height: '9',
                       flex: '1 1 0%',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '0.5rem',
+                      gap: '2',
                       borderRadius: 'lg',
-                      backgroundColor: 'var(--ok)',
+                      backgroundColor: 'ok',
                       fontSize: 'calc(13px*var(--type-scale))',
                       fontWeight: '500',
                       color: 'white',
@@ -2319,7 +2314,7 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                         'inset 0 1px 0 oklch(1 0 0/0.25),0 0 0 1px color-mix(in oklch,var(--ok),black 25%),0 2px 6px -2px color-mix(in oklch,var(--ok) 50%,transparent)',
                       transitionProperty: 'filter',
                       transitionDuration: '150ms',
-                      transitionTimingFunction: 'var(--ease-out)',
+                      transitionTimingFunction: 'out',
                       _hover: {
                         filter: 'brightness(105%)',
                       },
@@ -2342,7 +2337,7 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                     minWidth: '0',
                     flex: '1 1 0%',
                     justifyContent: 'space-between',
-                    paddingInline: '0.75rem',
+                    paddingInline: '3',
                   }),
                   attributes: [h.Title('U')],
                 },
@@ -2353,7 +2348,7 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                         css({
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '0.375rem',
+                          gap: '1.5',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -2365,8 +2360,8 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                         h,
                         ArrowUp,
                         css({
-                          width: '1rem',
-                          height: '1rem',
+                          width: '4',
+                          height: '4',
                           flexShrink: '0',
                         }),
                       ),
@@ -2397,8 +2392,8 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                   h,
                   RotateCcw,
                   css({
-                    width: '1rem',
-                    height: '1rem',
+                    width: '4',
+                    height: '4',
                   }),
                 ),
                 h,
@@ -2419,8 +2414,8 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                   h,
                   ArrowRightLeft,
                   css({
-                    width: '1rem',
-                    height: '1rem',
+                    width: '4',
+                    height: '4',
                   }),
                 ),
                 h,
@@ -2441,8 +2436,8 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                   h,
                   ArrowDownToLine,
                   css({
-                    width: '1rem',
-                    height: '1rem',
+                    width: '4',
+                    height: '4',
                   }),
                 ),
                 h,
@@ -2456,9 +2451,9 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                   variant: 'outline',
                   size: 'icon-lg',
                   className: css({
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                     _hover: {
-                      color: 'var(--danger)',
+                      color: 'danger',
                     },
                   }),
                   attributes: [
@@ -2470,8 +2465,8 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                   h,
                   Trash2,
                   css({
-                    width: '1rem',
-                    height: '1rem',
+                    width: '4',
+                    height: '4',
                   }),
                 ),
                 h,

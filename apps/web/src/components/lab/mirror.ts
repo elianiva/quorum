@@ -192,27 +192,27 @@ const segmented = <A>(
           h.Class(
             cx(
               css({
-                height: '1.75rem',
+                height: '7',
                 borderRadius: 'lg',
-                paddingInline: '0.5rem',
+                paddingInline: '2',
                 fontSize: 'calc(12px*var(--type-scale))',
                 fontWeight: '500',
                 transitionProperty:
                   'color, background-color, border-color, text-decoration-color, fill, stroke',
                 transitionDuration: '150ms',
-                transitionTimingFunction: 'var(--ease-out)',
+                transitionTimingFunction: 'out',
               }),
               value === current
                 ? css({
                     layerStyle: 'raised',
-                    color: 'var(--foreground)',
+                    color: 'foreground',
                     boxShadow: 'raised',
                   })
                 : css({
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                     _hover: {
                       backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
-                      color: 'var(--foreground)',
+                      color: 'foreground',
                     },
                   }),
             ),
@@ -230,7 +230,7 @@ const heading = (text: string, h: HtmlBuilder<Message>): Html =>
         cx(
           EYEBROW,
           css({
-            paddingInline: '0.25rem',
+            paddingInline: '1',
           }),
         ),
       ),
@@ -250,7 +250,7 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
         css({
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.5rem',
+          gap: '2',
         }),
       ),
     ],
@@ -267,7 +267,7 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'grid',
               gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-              gap: '0.5rem',
+              gap: '2',
               _compact: {
                 gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
               },
@@ -286,14 +286,14 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
                   css({
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '0.375rem',
+                    gap: '1.5',
                     borderRadius: 'xl',
-                    padding: '0.75rem',
+                    padding: '3',
                     textAlign: 'left',
                     transitionProperty:
                       'color, background-color, border-color, text-decoration-color, fill, stroke',
                     transitionDuration: '150ms',
-                    transitionTimingFunction: 'var(--ease-out)',
+                    transitionTimingFunction: 'out',
                   }),
                   current === tool
                     ? css({
@@ -319,7 +319,7 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
                       display: 'flex',
                       alignItems: 'baseline',
                       justifyContent: 'space-between',
-                      gap: '0.5rem',
+                      gap: '2',
                     }),
                   ),
                 ],
@@ -340,7 +340,7 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
                       h.Class(
                         css({
                           fontSize: 'calc(11.5px*var(--type-scale))',
-                          color: 'var(--muted-foreground)',
+                          color: 'mutedForeground',
                         }),
                       ),
                     ],
@@ -356,7 +356,7 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
                       css({
                         display: 'flex',
                         justifyContent: 'space-between',
-                        gap: '0.5rem',
+                        gap: '2',
                         fontSize: 'calc(12px*var(--type-scale))',
                       }),
                     ),
@@ -366,7 +366,7 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
                       [
                         h.Class(
                           css({
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                         ),
                       ],
@@ -404,7 +404,7 @@ const gitops = (game: Game, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.5rem',
+              gap: '2',
             }),
           ),
         ],
@@ -483,9 +483,9 @@ const changeRow = (
           display: 'grid',
           gridTemplateColumns: '16px 1fr auto',
           alignItems: 'center',
-          gap: '0.5rem',
-          paddingInline: '0.75rem',
-          paddingBlock: '0.25rem',
+          gap: '2',
+          paddingInline: '3',
+          paddingBlock: '1',
           fontSize: 'calc(12.5px*var(--type-scale))',
         }),
       ),
@@ -498,10 +498,10 @@ const changeRow = (
               FIGURE,
               hand
                 ? css({
-                    color: 'var(--danger)',
+                    color: 'danger',
                   })
                 : css({
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
             ),
           ),
@@ -519,7 +519,7 @@ const changeRow = (
               }),
               hand &&
                 css({
-                  color: 'var(--danger)',
+                  color: 'danger',
                 }),
             ),
           ),
@@ -547,7 +547,7 @@ const dataChoices = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Html 
         css({
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.375rem',
+          gap: '1.5',
         }),
       ),
     ],
@@ -562,7 +562,7 @@ const dataChoices = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Html 
                 display: 'grid',
                 gridTemplateColumns: '140px 1fr',
                 alignItems: 'center',
-                gap: '0.75rem',
+                gap: '3',
               }),
             ),
           ],
@@ -613,7 +613,7 @@ const overrides = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Html =>
         css({
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.25rem',
+          gap: '1',
         }),
       ),
     ],
@@ -628,8 +628,8 @@ const overrides = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Html =>
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: '0.5rem',
-                paddingInline: '0.25rem',
+                gap: '2',
+                paddingInline: '1',
                 fontSize: 'calc(12.5px*var(--type-scale))',
               }),
             ),
@@ -688,7 +688,7 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
         css({
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.75rem',
+          gap: '3',
         }),
       ),
     ],
@@ -700,8 +700,8 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'baseline',
-              columnGap: '0.75rem',
-              rowGap: '0.25rem',
+              columnGap: '3',
+              rowGap: '1',
             }),
           ),
         ],
@@ -732,14 +732,14 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
                   }),
                   drift.hand > 0
                     ? css({
-                        color: 'var(--danger)',
+                        color: 'danger',
                       })
                     : drift.behind > 0
                       ? css({
-                          color: 'var(--warn)',
+                          color: 'warn',
                         })
                       : css({
-                          color: 'var(--ok)',
+                          color: 'ok',
                         }),
                 ),
               ),
@@ -758,7 +758,7 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
                   display: 'grid',
                   gridTemplateColumns: '140px 1fr',
                   alignItems: 'center',
-                  gap: '0.75rem',
+                  gap: '3',
                 }),
               ),
             ],
@@ -796,7 +796,7 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
                   css({
                     display: 'flex',
                     flexDirection: 'column',
-                    paddingBlock: '0.375rem',
+                    paddingBlock: '1.5',
                   }),
                   WELL,
                   SCROLL,
@@ -817,7 +817,7 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '2',
             }),
           ),
         ],
@@ -840,7 +840,7 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
                       FIGURE,
                       css({
                         fontSize: 'calc(12px*var(--type-scale))',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ),
@@ -921,7 +921,7 @@ const startSection = (game: Game, region: RegionId, h: HtmlBuilder<Message>): Ht
         css({
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.5rem',
+          gap: '2',
         }),
       ),
     ],
@@ -932,9 +932,9 @@ const startSection = (game: Game, region: RegionId, h: HtmlBuilder<Message>): Ht
             [
               h.Class(
                 css({
-                  paddingInline: '0.25rem',
+                  paddingInline: '1',
                   fontSize: 'calc(12.5px*var(--type-scale))',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -946,7 +946,7 @@ const startSection = (game: Game, region: RegionId, h: HtmlBuilder<Message>): Ht
                 css({
                   display: 'flex',
                   flexWrap: 'wrap',
-                  gap: '0.5rem',
+                  gap: '2',
                 }),
               ),
             ],
@@ -988,10 +988,10 @@ export const mirrorPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '1.25rem',
-                paddingInline: '1.25rem',
-                paddingTop: '0.25rem',
-                paddingBottom: '1.25rem',
+                gap: '5',
+                paddingInline: '5',
+                paddingTop: '1',
+                paddingBottom: '5',
               }),
               SCROLL,
             ),

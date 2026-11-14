@@ -145,14 +145,14 @@ const stat = (
         cx(
           css({
             display: 'flex',
-            height: '2rem',
+            height: '8',
             alignItems: 'center',
-            gap: '0.625rem',
-            paddingInline: '0.625rem',
+            gap: '2.5',
+            paddingInline: '2.5',
             _compact: {
               flexShrink: '0',
-              gap: '0.375rem',
-              paddingInline: '0.75rem',
+              gap: '1.5',
+              paddingInline: '3',
             },
           }),
           CHIP_ORDER[name],
@@ -165,10 +165,10 @@ const stat = (
         h,
         glyph,
         css({
-          width: '0.875rem',
-          height: '0.875rem',
+          width: '3.5',
+          height: '3.5',
           flexShrink: '0',
-          color: 'var(--muted-foreground)',
+          color: 'mutedForeground',
         }),
       ),
       h.span(
@@ -178,7 +178,7 @@ const stat = (
               width: 'var(--hud-label-width,calc(46px*var(--type-scale)))',
               flexShrink: '0',
               fontSize: 'calc(11.5px*var(--type-scale))',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
               _compact: {
                 display: 'none',
               },
@@ -220,12 +220,12 @@ const stat = (
                     fontSize: 'calc(10px*var(--type-scale))',
                     lineHeight: '1',
                     _compact: {
-                      marginLeft: '0.125rem',
+                      marginLeft: '0.5',
                     },
                   }),
                   tone === 'plain'
                     ? css({
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       })
                     : toneText(tone),
                 ),
@@ -264,8 +264,8 @@ const insightHelp = (h: HtmlBuilder<Message>): Html => {
               display: 'flex',
               width: '288px',
               flexDirection: 'column',
-              gap: '0.625rem',
-              padding: '0.875rem',
+              gap: '2.5',
+              padding: '3.5',
               _compact: {
                 top: 'calc(100%+6px)',
                 left: '0',
@@ -310,14 +310,14 @@ const insightHelp = (h: HtmlBuilder<Message>): Html => {
               h.Class(
                 css({
                   display: 'grid',
-                  width: '1.5rem',
-                  height: '1.5rem',
+                  width: '6',
+                  height: '6',
                   placeItems: 'center',
                   borderRadius: 'md',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                   _hover: {
                     backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
-                    color: 'var(--foreground)',
+                    color: 'foreground',
                   },
                 }),
               ),
@@ -327,8 +327,8 @@ const insightHelp = (h: HtmlBuilder<Message>): Html => {
                 h,
                 X,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
+                  width: '3.5',
+                  height: '3.5',
                 }),
               ),
             ],
@@ -341,7 +341,7 @@ const insightHelp = (h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.625rem',
+              gap: '2.5',
             }),
           ),
         ],
@@ -353,7 +353,7 @@ const insightHelp = (h: HtmlBuilder<Message>): Html => {
                 css({
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.125rem',
+                  gap: '0.5',
                 }),
               ),
             ],
@@ -397,7 +397,7 @@ const poolRow = (
           css({
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
+            gap: '2',
             fontSize: 'calc(12px*var(--type-scale))',
             lineHeight: '1',
           }),
@@ -423,8 +423,8 @@ const poolRow = (
             h,
             POOL_ICONS[pool],
             css({
-              width: '0.875rem',
-              height: '0.875rem',
+              width: '3.5',
+              height: '3.5',
               flexShrink: '0',
             }),
           ),
@@ -451,7 +451,7 @@ const poolRow = (
               FIGURE,
               limiting &&
                 css({
-                  color: 'var(--danger)',
+                  color: 'danger',
                 }),
             ),
           ),
@@ -471,14 +471,14 @@ const poolRow = (
               }),
               perSecond > 0
                 ? css({
-                    color: 'var(--ok)',
+                    color: 'ok',
                   })
                 : limiting
                   ? css({
-                      color: 'var(--danger)',
+                      color: 'danger',
                     })
                   : css({
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
             ),
           ),
@@ -518,11 +518,11 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
               position: 'relative',
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.5rem',
-              padding: '0.625rem',
+              gap: '2',
+              padding: '2.5',
               _compact: {
                 pointerEvents: 'auto',
-                padding: '0.5rem',
+                padding: '2',
               },
             }),
             'enter-pop',
@@ -538,7 +538,7 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
             css({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.25rem',
+              gap: '1',
             }),
           ),
         ],
@@ -556,10 +556,10 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                   minWidth: '0',
                   flex: '1 1 0%',
                   alignItems: 'center',
-                  gap: '0.5rem',
+                  gap: '2',
                   borderRadius: 'md',
-                  paddingInline: '0.25rem',
-                  paddingBlock: '0.125rem',
+                  paddingInline: '1',
+                  paddingBlock: '0.5',
                   textAlign: 'left',
                   fontSize: 'calc(12px*var(--type-scale))',
                   _hover: {
@@ -573,10 +573,10 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                 h,
                 FlaskConical,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
+                  width: '3.5',
+                  height: '3.5',
                   flexShrink: '0',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
               h.span(
@@ -595,7 +595,7 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                             fontWeight: '500',
                           })
                         : css({
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                     ),
                   ),
@@ -611,15 +611,15 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                           css({
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.25rem',
+                            gap: '1',
                             fontSize: 'calc(10.5px*var(--type-scale))',
                           }),
                           stall
                             ? css({
-                                color: 'var(--warn)',
+                                color: 'warn',
                               })
                             : css({
-                                color: 'var(--muted-foreground)',
+                                color: 'mutedForeground',
                               }),
                         ),
                       ),
@@ -630,8 +630,8 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                             h,
                             TriangleAlert,
                             css({
-                              width: '0.75rem',
-                              height: '0.75rem',
+                              width: '3',
+                              height: '3',
                             }),
                           )
                         : h.empty,
@@ -652,8 +652,8 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                 cx(
                   css({
                     display: 'grid',
-                    width: '1.5rem',
-                    height: '1.5rem',
+                    width: '6',
+                    height: '6',
                     flexShrink: '0',
                     placeItems: 'center',
                     borderRadius: 'md',
@@ -664,10 +664,10 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                   model.board.insightHelp
                     ? css({
                         backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
-                        color: 'var(--foreground)',
+                        color: 'foreground',
                       })
                     : css({
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                 ),
               ),
@@ -677,8 +677,8 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                 h,
                 CircleHelp,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
+                  width: '3.5',
+                  height: '3.5',
                 }),
               ),
             ],
@@ -690,7 +690,7 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
             studyProgressOf(running),
             stall
               ? css({
-                  backgroundColor: 'var(--warn)',
+                  backgroundColor: 'warn',
                 })
               : css({ backgroundColor: 'ok' }),
             h,
@@ -704,15 +704,15 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                   css({
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '0.5rem',
+                    gap: '2',
                     borderRadius: 'lg',
-                    paddingInline: '0.625rem',
-                    paddingBlock: '0.5rem',
+                    paddingInline: '2.5',
+                    paddingBlock: '2',
                   }),
                   WELL,
                   css({
                     _compact: {
-                      maxHeight: '7rem',
+                      maxHeight: '28',
                       overflowY: 'auto',
                     },
                   }),
@@ -764,7 +764,7 @@ const slo = (game: Board['game'], h: HtmlBuilder<Message>): Html => {
 
 /** What the toolbar takes from the top row of a phone: the funding row leaves it free. */
 const TOOLBAR_ROOM = css({
-  _compact: { minHeight: '2.25rem', paddingRight: 'var(--toolbar-w)' },
+  _compact: { minHeight: '9', paddingRight: 'var(--toolbar-w)' },
 })
 
 const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
@@ -783,12 +783,12 @@ const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
         css({
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.375rem',
-          paddingInline: '0.625rem',
-          paddingTop: '0.375rem',
-          paddingBottom: '0.5rem',
+          gap: '1.5',
+          paddingInline: '2.5',
+          paddingTop: '1.5',
+          paddingBottom: '2',
           _compact: {
-            paddingBottom: '0.25rem',
+            paddingBottom: '1',
           },
         }),
       ),
@@ -802,7 +802,7 @@ const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
+                gap: '2',
               }),
               TOOLBAR_ROOM,
             ),
@@ -816,7 +816,7 @@ const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
               size: 'icon-sm',
               className: css({
                 marginLeft: '-0.375rem',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
               attributes: [h.AriaLabel(t.hud.menuEsc), h.Title(t.hud.menuEsc)],
             },
@@ -824,8 +824,8 @@ const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
               h,
               Menu,
               css({
-                width: '1rem',
-                height: '1rem',
+                width: '4',
+                height: '4',
               }),
             ),
             h,
@@ -852,7 +852,7 @@ const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
                   css({
                     marginLeft: 'auto',
                     fontSize: 'calc(10.5px*var(--type-scale))',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                     _compact: {
                       display: 'none',
                     },
@@ -875,7 +875,7 @@ const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
         share,
         ready
           ? css({
-              backgroundColor: 'var(--ok)',
+              backgroundColor: 'ok',
             })
           : css({ layerStyle: 'primaryFill' }),
         h,
@@ -887,7 +887,7 @@ const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
               size: 'sm',
               className: cx(
                 css({
-                  marginTop: '0.25rem',
+                  marginTop: '1',
                   width: '100%',
                 }),
                 'enter-pop',
@@ -900,8 +900,8 @@ const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h,
                 Rocket,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
+                  width: '3.5',
+                  height: '3.5',
                 }),
               ),
               game.stage === PRE_IPO_STAGE ? t.hud.iPO : t.hud.offer(next.name),
@@ -936,10 +936,10 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
             css({
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.375rem',
+              gap: '1.5',
               borderRadius: 'xl',
-              paddingInline: '0.625rem',
-              paddingBlock: '0.5rem',
+              paddingInline: '2.5',
+              paddingBlock: '2',
               textAlign: 'left',
               _hover: {
                 backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
@@ -960,7 +960,7 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
             css({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '2',
               fontSize: 'calc(12px*var(--type-scale))',
             }),
           ),
@@ -970,10 +970,10 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
             h,
             Hammer,
             css({
-              width: '0.875rem',
-              height: '0.875rem',
+              width: '3.5',
+              height: '3.5',
               flexShrink: '0',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
           h.span(
@@ -992,11 +992,11 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
                         fontWeight: '500',
                       })
                     : css({
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                   late > 0 &&
                     css({
-                      color: 'var(--danger)',
+                      color: 'danger',
                     }),
                 ),
               ),
@@ -1015,10 +1015,10 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
                       late > 0
                         ? css({
                             fontWeight: '500',
-                            color: 'var(--danger)',
+                            color: 'danger',
                           })
                         : css({
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                     ),
                   ),
@@ -1033,7 +1033,7 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
                         FIGURE,
                         css({
                           fontSize: 'calc(10.5px*var(--type-scale))',
-                          color: 'var(--primary-strong)',
+                          color: 'primaryStrong',
                         }),
                       ),
                     ),
@@ -1047,7 +1047,7 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
                         FIGURE,
                         css({
                           fontSize: 'calc(10.5px*var(--type-scale))',
-                          color: 'var(--muted-foreground)',
+                          color: 'mutedForeground',
                         }),
                       ),
                     ),
@@ -1079,13 +1079,13 @@ const phoneFigure = (
       h.Class(
         css({
           display: 'flex',
-          height: '2.75rem',
+          height: '11',
           minWidth: '0',
           flex: '1 1 0%',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '0.375rem',
-          paddingInline: '0.25rem',
+          gap: '1.5',
+          paddingInline: '1',
           _disabled: {
             opacity: 1,
           },
@@ -1097,10 +1097,10 @@ const phoneFigure = (
         h,
         glyph,
         css({
-          width: '1rem',
-          height: '1rem',
+          width: '4',
+          height: '4',
           flexShrink: '0',
-          color: 'var(--muted-foreground)',
+          color: 'mutedForeground',
         }),
       ),
       h.span(
@@ -1145,10 +1145,10 @@ const phoneHud = (model: Model, h: HtmlBuilder<Message>): Html => {
           pointerEvents: 'auto',
           display: 'none',
           flexDirection: 'column',
-          gap: '0.375rem',
+          gap: '1.5',
           borderRadius: '2xl',
           layerStyle: 'surface',
-          padding: '0.375rem',
+          padding: '1.5',
           boxShadow: 'card',
           _compact: {
             display: 'flex',
@@ -1162,9 +1162,9 @@ const phoneHud = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.Class(
             css({
               display: 'flex',
-              height: '2.75rem',
+              height: '11',
               alignItems: 'center',
-              gap: '0.25rem',
+              gap: '1',
               paddingRight: 'var(--toolbar-w)',
             }),
           ),
@@ -1179,15 +1179,15 @@ const phoneHud = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 css({
                   display: 'grid',
-                  width: '2.75rem',
-                  height: '2.75rem',
+                  width: '11',
+                  height: '11',
                   flexShrink: '0',
                   placeItems: 'center',
                   borderRadius: 'xl',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                   _hover: {
-                    backgroundColor: 'var(--well)',
-                    color: 'var(--foreground)',
+                    backgroundColor: 'well',
+                    color: 'foreground',
                   },
                 }),
               ),
@@ -1197,8 +1197,8 @@ const phoneHud = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h,
                 Menu,
                 css({
-                  width: '1.25rem',
-                  height: '1.25rem',
+                  width: '5',
+                  height: '5',
                 }),
               ),
             ],
@@ -1224,7 +1224,7 @@ const phoneHud = (model: Model, h: HtmlBuilder<Message>): Html => {
         [
           h.Class(
             css({
-              paddingInline: '0.125rem',
+              paddingInline: '0.5',
             }),
           ),
         ],
@@ -1233,7 +1233,7 @@ const phoneHud = (model: Model, h: HtmlBuilder<Message>): Html => {
             share,
             ready
               ? css({
-                  backgroundColor: 'var(--ok)',
+                  backgroundColor: 'ok',
                 })
               : css({ layerStyle: 'primaryFill' }),
             h,
@@ -1249,7 +1249,7 @@ const phoneHud = (model: Model, h: HtmlBuilder<Message>): Html => {
                 '& > :not(:last-child)': {
                   borderRightWidth: '1px',
                   borderRightStyle: 'solid',
-                  borderColor: 'var(--hairline)',
+                  borderColor: 'hairline',
                 },
               }),
               WELL,
@@ -1307,11 +1307,11 @@ const vitalRow = (
       h.Class(
         css({
           display: 'flex',
-          minHeight: '3rem',
+          minHeight: '12',
           width: '100%',
           alignItems: 'center',
-          gap: '0.75rem',
-          paddingInline: '0.875rem',
+          gap: '3',
+          paddingInline: '3.5',
           textAlign: 'left',
           _disabled: { opacity: 1 },
           _enabled: { _hover: { backgroundColor: 'well' } },
@@ -1323,10 +1323,10 @@ const vitalRow = (
         h,
         glyph,
         css({
-          width: '1rem',
-          height: '1rem',
+          width: '4',
+          height: '4',
           flexShrink: '0',
-          color: 'var(--muted-foreground)',
+          color: 'mutedForeground',
         }),
       ),
       h.span(
@@ -1374,7 +1374,7 @@ const vitalRow = (
                   }),
                   tone === 'plain'
                     ? css({
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       })
                     : toneText(tone),
                 ),
@@ -1426,10 +1426,10 @@ export const vitalsPanel = (model: Model, ledger: Ledger, h: HtmlBuilder<Message
               css({
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '1.25rem',
-                paddingInline: '1rem',
-                paddingTop: '0.25rem',
-                paddingBottom: '1.5rem',
+                gap: '5',
+                paddingInline: '4',
+                paddingTop: '1',
+                paddingBottom: '6',
               }),
               SCROLL,
             ),
@@ -1437,7 +1437,7 @@ export const vitalsPanel = (model: Model, ledger: Ledger, h: HtmlBuilder<Message
         ],
         [
           h.div(
-            [h.Class(css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' }))],
+            [h.Class(css({ display: 'flex', flexDirection: 'column', gap: '2' }))],
             [
               h.div(
                 [
@@ -1446,7 +1446,7 @@ export const vitalsPanel = (model: Model, ledger: Ledger, h: HtmlBuilder<Message
                       display: 'flex',
                       alignItems: 'baseline',
                       justifyContent: 'space-between',
-                      gap: '0.75rem',
+                      gap: '3',
                     }),
                   ),
                 ],
@@ -1484,7 +1484,7 @@ export const vitalsPanel = (model: Model, ledger: Ledger, h: HtmlBuilder<Message
                 share,
                 ready
                   ? css({
-                      backgroundColor: 'var(--ok)',
+                      backgroundColor: 'ok',
                     })
                   : css({ layerStyle: 'primaryFill' }),
                 h,
@@ -1495,7 +1495,7 @@ export const vitalsPanel = (model: Model, ledger: Ledger, h: HtmlBuilder<Message
                       onClick: Message.PanelOpened({ panel: 'offer' }),
                       size: 'lg',
                       className: css({
-                        marginTop: '0.25rem',
+                        marginTop: '1',
                         width: '100%',
                       }),
                     },
@@ -1504,8 +1504,8 @@ export const vitalsPanel = (model: Model, ledger: Ledger, h: HtmlBuilder<Message
                         h,
                         Rocket,
                         css({
-                          width: '1rem',
-                          height: '1rem',
+                          width: '4',
+                          height: '4',
                         }),
                       ),
                       t.hud.offer(next.name),
@@ -1644,7 +1644,7 @@ export const phoneOffer = (model: Model, h: HtmlBuilder<Message>): Html => {
         height: '3rem !important',
         minWidth: '0',
         width: '100%',
-        paddingInline: '0.75rem',
+        paddingInline: '3',
         _compact: {
           fontSize: 'calc(13px*var(--type-scale))',
         },
@@ -1655,8 +1655,8 @@ export const phoneOffer = (model: Model, h: HtmlBuilder<Message>): Html => {
         h,
         Rocket,
         css({
-          width: '1rem',
-          height: '1rem',
+          width: '4',
+          height: '4',
         }),
       ),
       h.span(
@@ -1715,14 +1715,14 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
           css({
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.25rem',
-            padding: '0.375rem',
+            gap: '1',
+            padding: '1.5',
           }),
           PANEL,
           css({
             _compact: {
               pointerEvents: 'auto',
-              padding: '0.25rem',
+              padding: '1',
             },
           }),
         ),
@@ -1740,7 +1740,7 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
                 '& > :not(:last-child)': {
                   borderBottomWidth: '1px',
                   borderBottomStyle: 'solid',
-                  borderColor: 'var(--hairline)',
+                  borderColor: 'hairline',
                 },
               }),
               WELL,
@@ -1837,13 +1837,13 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
       h.Class(
         css({
           position: 'absolute',
-          top: '0.75rem',
-          left: '0.75rem',
+          top: '3',
+          left: '3',
           zIndex: '20',
           display: 'flex',
           width: 'calc(276px*var(--type-scale))',
           flexDirection: 'column',
-          gap: '0.5rem',
+          gap: '2',
           _compact: {
             display: 'contents',
           },
@@ -1865,7 +1865,7 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
             css({
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.5rem',
+              gap: '2',
               _compact: {
                 display: 'none',
               },
@@ -1886,10 +1886,10 @@ const line = (name: string, value: string, tone: Tone, h: HtmlBuilder<Message>, 
       h.Class(
         css({
           display: 'flex',
-          height: '1.5rem',
+          height: '6',
           alignItems: 'center',
-          gap: '0.5rem',
-          paddingInline: '0.625rem',
+          gap: '2',
+          paddingInline: '2.5',
           fontSize: 'calc(11.5px*var(--type-scale))',
         }),
       ),
@@ -1902,16 +1902,16 @@ const line = (name: string, value: string, tone: Tone, h: HtmlBuilder<Message>, 
             mark ? CircleCheck : Circle,
             cx(
               css({
-                width: '0.875rem',
-                height: '0.875rem',
+                width: '3.5',
+                height: '3.5',
                 flexShrink: '0',
               }),
               mark
                 ? css({
-                    color: 'var(--ok)',
+                    color: 'ok',
                   })
                 : css({
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
             ),
           ),
@@ -1919,7 +1919,7 @@ const line = (name: string, value: string, tone: Tone, h: HtmlBuilder<Message>, 
         [
           h.Class(
             css({
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -1995,7 +1995,7 @@ const checklist = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html 
           css({
             display: 'flex',
             flexDirection: 'column',
-            paddingBlock: '0.25rem',
+            paddingBlock: '1',
           }),
           WELL,
           css({
@@ -2021,8 +2021,8 @@ const checklist = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html 
             [
               h.Class(
                 css({
-                  paddingInline: '0.375rem',
-                  paddingTop: '0.25rem',
+                  paddingInline: '1.5',
+                  paddingTop: '1',
                 }),
               ),
             ],
@@ -2042,8 +2042,8 @@ const checklist = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html 
                     h,
                     DatabaseZap,
                     css({
-                      width: '0.875rem',
-                      height: '0.875rem',
+                      width: '3.5',
+                      height: '3.5',
                     }),
                   ),
                   t.hud.runDRDrill,
@@ -2075,10 +2075,10 @@ const guidance = (
       h.Class(
         css({
           display: 'flex',
-          height: '1.75rem',
+          height: '7',
           alignItems: 'center',
-          gap: '0.25rem',
-          paddingInline: '0.625rem',
+          gap: '1',
+          paddingInline: '2.5',
           fontSize: 'calc(11.5px*var(--type-scale))',
         }),
       ),
@@ -2089,7 +2089,7 @@ const guidance = (
           h.Class(
             css({
               marginRight: 'auto',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -2107,10 +2107,10 @@ const guidance = (
               cx(
                 FIGURE,
                 css({
-                  height: '1.5rem',
-                  minWidth: '2.25rem',
+                  height: '6',
+                  minWidth: '9',
                   borderRadius: 'md',
-                  paddingInline: '0.375rem',
+                  paddingInline: '1.5',
                   fontSize: 'calc(10.5px*var(--type-scale))',
                   _disabled: {
                     opacity: 0.35,
@@ -2118,8 +2118,8 @@ const guidance = (
                 }),
                 level === chosen
                   ? css({
-                      backgroundColor: 'var(--foreground)',
-                      color: 'var(--background)',
+                      backgroundColor: 'foreground',
+                      color: 'background',
                     })
                   : css({
                       _hover: {
@@ -2155,7 +2155,7 @@ const quarterly = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html 
           css({
             display: 'flex',
             flexDirection: 'column',
-            paddingBlock: '0.25rem',
+            paddingBlock: '1',
           }),
           WELL,
           css({
@@ -2234,8 +2234,8 @@ const toolButton = (
           cx(
             css({
               _compact: {
-                width: '2.25rem',
-                height: '2.25rem',
+                width: '9',
+                height: '9',
               },
             }),
             'enter-pop',
@@ -2280,8 +2280,8 @@ const historyButton = (
           cx(
             css({
               _compact: {
-                width: '2.25rem',
-                height: '2.25rem',
+                width: '9',
+                height: '9',
               },
               _disabled: {
                 opacity: 0.35,
@@ -2327,10 +2327,10 @@ const divider = (h: HtmlBuilder<Message>): Html =>
     [
       h.Class(
         css({
-          marginInline: '0.125rem',
-          height: '1.5rem',
+          marginInline: '0.5',
+          height: '6',
           width: '1px',
-          backgroundColor: 'var(--hairline)',
+          backgroundColor: 'hairline',
           _compact: {
             display: 'none',
           },
@@ -2361,17 +2361,17 @@ const exitButton = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               display: 'flex',
               width: 'auto',
-              gap: '0.5rem',
-              paddingInline: '0.75rem',
+              gap: '2',
+              paddingInline: '3',
               fontSize: 'calc(13px*var(--type-scale))',
               fontWeight: '500',
               _compact: {
-                width: '2.25rem',
-                height: '2.25rem',
+                width: '9',
+                height: '9',
                 paddingInline: '0',
               },
               '@media (max-width: 1535px)': {
-                width: '2.25rem',
+                width: '9',
                 paddingInline: '0',
                 justifyContent: 'center',
               },
@@ -2418,12 +2418,12 @@ const exitButton = (model: Model, h: HtmlBuilder<Message>): Html => {
                       top: '-0.25rem',
                       right: '-0.25rem',
                       display: 'grid',
-                      height: '1rem',
-                      minWidth: '1rem',
+                      height: '4',
+                      minWidth: '4',
                       placeItems: 'center',
                       borderRadius: '9999px',
-                      backgroundColor: 'var(--ok)',
-                      paddingInline: '0.25rem',
+                      backgroundColor: 'ok',
+                      paddingInline: '1',
                       fontSize: 'calc(9.5px*var(--type-scale))',
                       lineHeight: '1',
                       fontWeight: '600',
@@ -2491,8 +2491,8 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
         tool(model.moreMenu.isOpen),
         css({
           position: 'relative',
-          width: '2.75rem',
-          height: '2.75rem',
+          width: '11',
+          height: '11',
         }),
       ),
       buttonContent: h.span(
@@ -2521,10 +2521,10 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
                         position: 'absolute',
                         top: '-0.125rem',
                         right: '-0.125rem',
-                        width: '0.625rem',
-                        height: '0.625rem',
+                        width: '2.5',
+                        height: '2.5',
                         borderRadius: '9999px',
-                        backgroundColor: 'var(--ok)',
+                        backgroundColor: 'ok',
                         boxShadow: 'raised',
                       }),
                       'enter-badge',
@@ -2539,7 +2539,7 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
       anchor: { placement: 'bottom-end', gap: 6, padding: 8 },
       backdropClassName: css({ position: 'fixed', inset: '0', zIndex: '40' }),
       itemsClassName: cx(
-        css({ zIndex: '50', minWidth: '12rem', padding: '0.25rem', outlineStyle: 'none' }),
+        css({ zIndex: '50', minWidth: '48', padding: '1', outlineStyle: 'none' }),
         FLOAT,
       ),
       isItemDisabled: (item) =>
@@ -2549,18 +2549,18 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
         className: cx(
           css({
             display: 'flex',
-            height: '2.5rem',
+            height: '10',
             cursor: 'pointer',
             alignItems: 'center',
-            gap: '0.625rem',
+            gap: '2.5',
             borderRadius: 'xl',
-            paddingInline: '0.625rem',
+            paddingInline: '2.5',
             fontSize: 'calc(13px*var(--type-scale))',
             outlineStyle: 'none',
           }),
           isActive &&
             css({
-              backgroundColor: 'var(--well)',
+              backgroundColor: 'well',
             }),
           isDisabled &&
             css({
@@ -2580,7 +2580,7 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
                 display: 'flex',
                 width: '100%',
                 alignItems: 'center',
-                gap: '0.625rem',
+                gap: '2.5',
               }),
             ),
           ],
@@ -2591,7 +2591,7 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 width: '18px',
                 height: '18px',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
             h.span(
@@ -2612,7 +2612,7 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
                         FIGURE,
                         css({
                           fontSize: 'calc(11.5px*var(--type-scale))',
-                          color: 'var(--ok)',
+                          color: 'ok',
                         }),
                       ),
                     ),
@@ -2646,13 +2646,13 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
             display: 'flex',
             flexShrink: '0',
             alignItems: 'center',
-            gap: '0.25rem',
-            padding: '0.375rem',
+            gap: '1',
+            padding: '1.5',
             _compact: {
               position: 'absolute',
               top: 'calc(max(8px, env(safe-area-inset-top)) + 10px)',
               right: 'calc(max(8px, env(safe-area-inset-right)) + 10px)',
-              gap: '0.75rem',
+              gap: '3',
               backgroundImage: 'none',
               padding: '0',
               boxShadow: 'none',
@@ -2684,17 +2684,17 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                   css({
                     display: 'flex',
                     width: 'auto',
-                    gap: '0.5rem',
-                    paddingInline: '0.75rem',
+                    gap: '2',
+                    paddingInline: '3',
                     fontSize: 'calc(13px*var(--type-scale))',
                     fontWeight: '500',
                     _compact: {
-                      width: '2.75rem',
-                      height: '2.75rem',
+                      width: '11',
+                      height: '11',
                       paddingInline: '0',
                     },
                     '@media (max-width: 1535px)': {
-                      width: '2.25rem',
+                      width: '9',
                       paddingInline: '0',
                       justifyContent: 'center',
                     },
@@ -2740,12 +2740,12 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                               top: '-0.25rem',
                               right: '-0.25rem',
                               display: 'grid',
-                              height: '1rem',
-                              minWidth: '1rem',
+                              height: '4',
+                              minWidth: '4',
                               placeItems: 'center',
                               borderRadius: '9999px',
-                              backgroundColor: 'var(--ok)',
-                              paddingInline: '0.25rem',
+                              backgroundColor: 'ok',
+                              paddingInline: '1',
                               fontSize: 'calc(9.5px*var(--type-scale))',
                               lineHeight: '1',
                               fontWeight: '600',
@@ -2780,17 +2780,17 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                   css({
                     display: 'flex',
                     width: 'auto',
-                    gap: '0.5rem',
-                    paddingInline: '0.75rem',
+                    gap: '2',
+                    paddingInline: '3',
                     fontSize: 'calc(13px*var(--type-scale))',
                     fontWeight: '500',
                     _compact: {
-                      width: '2.75rem',
-                      height: '2.75rem',
+                      width: '11',
+                      height: '11',
                       paddingInline: '0',
                     },
                     '@media (max-width: 1535px)': {
-                      width: '2.25rem',
+                      width: '9',
                       paddingInline: '0',
                       justifyContent: 'center',
                     },
@@ -2831,10 +2831,10 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                             position: 'absolute',
                             top: '-0.125rem',
                             right: '-0.125rem',
-                            width: '0.625rem',
-                            height: '0.625rem',
+                            width: '2.5',
+                            height: '2.5',
                             borderRadius: '9999px',
-                            backgroundColor: 'var(--warn)',
+                            backgroundColor: 'warn',
                             boxShadow: 'raised',
                           }),
                           'enter-badge',
@@ -2911,8 +2911,8 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                   cx(
                     css({
                       _compact: {
-                        width: '2.25rem',
-                        height: '2.25rem',
+                        width: '9',
+                        height: '9',
                       },
                     }),
                     'enter-pop',
@@ -2958,8 +2958,8 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                       fontSize: 'calc(12.5px*var(--type-scale))',
                       fontWeight: '500',
                       _compact: {
-                        width: '2.25rem',
-                        height: '2.25rem',
+                        width: '9',
+                        height: '9',
                       },
                     }),
                   ),
@@ -3011,22 +3011,22 @@ export const screenshotExit = (h: HtmlBuilder<Message>): Html => {
         css({
           pointerEvents: 'auto',
           position: 'absolute',
-          top: '0.75rem',
-          right: '0.75rem',
+          top: '3',
+          right: '3',
           zIndex: '40',
           display: 'grid',
-          width: '2rem',
-          height: '2rem',
+          width: '8',
+          height: '8',
           placeItems: 'center',
           borderRadius: '9999px',
           backgroundColor: 'color-mix(in oklab, var(--card) 40%, transparent)',
-          color: 'var(--muted-foreground)',
+          color: 'mutedForeground',
           opacity: 0.3,
           boxShadow: 'card',
           backdropFilter: 'blur(8px)',
           transitionProperty: 'opacity',
           transitionDuration: '150ms',
-          transitionTimingFunction: 'var(--ease-out)',
+          transitionTimingFunction: 'out',
           _hover: {
             opacity: 1,
           },
@@ -3041,8 +3041,8 @@ export const screenshotExit = (h: HtmlBuilder<Message>): Html => {
         h,
         CameraOff,
         css({
-          width: '1rem',
-          height: '1rem',
+          width: '4',
+          height: '4',
         }),
       ),
     ],
@@ -3053,11 +3053,11 @@ const pill = css({
   display: 'flex',
   maxWidth: '480px',
   alignItems: 'center',
-  gap: '0.625rem',
+  gap: '2.5',
   borderRadius: 'xl',
   layerStyle: 'surface',
-  paddingInline: '0.75rem',
-  paddingBlock: '0.5rem',
+  paddingInline: '3',
+  paddingBlock: '2',
   fontSize: 'calc(12.5px * var(--type-scale))',
   boxShadow: 'card',
   _compact: { maxWidth: 'none' },
@@ -3074,7 +3074,7 @@ const undoButton = (danger: boolean, h: HtmlBuilder<Message>): Html => {
       className: cx(
         css({
           pointerEvents: 'auto',
-          marginLeft: '0.25rem',
+          marginLeft: '1',
         }),
         'enter-badge',
       ),
@@ -3089,8 +3089,8 @@ const undoButton = (danger: boolean, h: HtmlBuilder<Message>): Html => {
       h,
       Undo2,
       css({
-        width: '0.875rem',
-        height: '0.875rem',
+        width: '3.5',
+        height: '3.5',
       }),
     ),
     h,
@@ -3137,7 +3137,7 @@ export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: stri
                 css({
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.625rem',
+                  gap: '2.5',
                   whiteSpace: 'nowrap',
                 }),
                 'swap',
@@ -3148,10 +3148,10 @@ export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: stri
             ring(
               settleProgress(model.board),
               css({
-                width: '0.875rem',
-                height: '0.875rem',
+                width: '3.5',
+                height: '3.5',
                 flexShrink: '0',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
               h,
             ),
@@ -3159,7 +3159,7 @@ export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: stri
               [
                 h.Class(
                   css({
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ],
@@ -3176,7 +3176,7 @@ export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: stri
                 css({
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.625rem',
+                  gap: '2.5',
                   whiteSpace: 'nowrap',
                 }),
                 'swap',
@@ -3189,8 +3189,8 @@ export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: stri
                 h.Class(
                   cx(
                     css({
-                      width: '0.5rem',
-                      height: '0.5rem',
+                      width: '2',
+                      height: '2',
                       flexShrink: '0',
                       borderRadius: '9999px',
                     }),
@@ -3224,7 +3224,7 @@ export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: stri
                         css({
                           fontSize: 'calc(11.5px*var(--type-scale))',
                           fontWeight: '500',
-                          color: 'var(--ok)',
+                          color: 'ok',
                         }),
                         'enter-badge',
                       ),
@@ -3265,10 +3265,10 @@ export const regionTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
           pointerEvents: 'auto',
           display: 'flex',
           alignItems: 'center',
-          gap: '0.125rem',
+          gap: '0.5',
           borderRadius: 'xl',
           layerStyle: 'surface',
-          padding: '0.25rem',
+          padding: '1',
           boxShadow: 'card',
         }),
       ),
@@ -3294,16 +3294,16 @@ export const regionTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
             cx(
               FIGURE,
               css({
-                height: '1.75rem',
+                height: '7',
                 borderRadius: 'lg',
-                paddingInline: '0.625rem',
+                paddingInline: '2.5',
                 fontSize: 'calc(11.5px*var(--type-scale))',
                 fontWeight: '500',
               }),
               model.board.region === region
                 ? css({
-                    backgroundColor: 'var(--foreground)',
-                    color: 'var(--background)',
+                    backgroundColor: 'foreground',
+                    color: 'background',
                   })
                 : isOpen
                   ? css({
@@ -3312,7 +3312,7 @@ export const regionTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
                       },
                     })
                   : css({
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                       opacity: 0.6,
                       _hover: {
                         opacity: 1,
@@ -3329,12 +3329,12 @@ export const regionTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.Key('drift'),
                   h.Class(
                     css({
-                      marginLeft: '0.25rem',
+                      marginLeft: '1',
                       display: 'inline-block',
-                      width: '0.375rem',
-                      height: '0.375rem',
+                      width: '1.5',
+                      height: '1.5',
                       borderRadius: '9999px',
-                      backgroundColor: 'var(--warn)',
+                      backgroundColor: 'warn',
                       verticalAlign: 'middle',
                     }),
                   ),
@@ -3358,10 +3358,10 @@ export const regionTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h.Class(
                   cx(
                     css({
-                      marginLeft: '0.125rem',
-                      height: '1.75rem',
+                      marginLeft: '0.5',
+                      height: '7',
                       borderRadius: 'lg',
-                      paddingInline: '0.625rem',
+                      paddingInline: '2.5',
                       fontSize: 'calc(11.5px*var(--type-scale))',
                       fontWeight: '500',
                       boxShadow: 'inset 1px 0 0 var(--hairline-soft)',

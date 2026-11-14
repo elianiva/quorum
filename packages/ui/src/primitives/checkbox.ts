@@ -43,20 +43,20 @@ export const checkboxClass = cx(
     },
     _focusVisible: {
       borderColor: 'ring',
-      boxShadow: 'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+      boxShadow: 'focusWell',
     },
     display: 'flex',
     width: '4',
     height: '4',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: '4px',
+    borderRadius: 'xs',
     borderWidth: '1px',
     borderStyle: 'solid',
     transitionProperty:
       'color, background-color, border-color, text-decoration-color, fill, stroke',
     transitionTimingFunction: 'default',
-    transitionDuration: 'default',
+    transitionDuration: 'fast',
     '.group-field:has(:disabled) &': { opacity: 0.5 },
     '.group-field-label:has(:focus-visible) &': { boxShadow: 'none' },
     '&[aria-disabled="true"]': { cursor: 'not-allowed', opacity: 0.5 },
@@ -78,7 +78,7 @@ export const checkboxIndicatorClass = css({
   '& > svg': { width: '3.5', height: '3.5' },
   display: 'grid',
   placeContent: 'center',
-  color: 'currentColor',
+  color: 'current',
   transitionProperty: 'none',
 })
 
@@ -175,9 +175,9 @@ export const checkbox = <M>(config: CheckboxConfig<M>, h: HtmlBuilder<M>): Html 
                     h.Class(
                       cx(
                         css({
-                          fontSize: 'calc(0.875rem * var(--type-scale))',
-                          fontWeight: '500',
-                          lineHeight: '1',
+                          fontSize: 'type.14',
+                          fontWeight: 'medium',
+                          lineHeight: 'none',
                           '.peer-control[aria-disabled="true"] ~ &': {
                             cursor: 'not-allowed',
                             opacity: 0.7,
@@ -200,8 +200,8 @@ export const checkbox = <M>(config: CheckboxConfig<M>, h: HtmlBuilder<M>): Html 
                     h.Class(
                       cx(
                         css({
-                          fontSize: 'calc(0.875rem * var(--type-scale))',
-                          lineHeight: 'calc(1.25 / 0.875)',
+                          fontSize: 'type.14',
+                          lineHeight: 'fine',
                           color: 'mutedForeground',
                         }),
                         config.descriptionClass,

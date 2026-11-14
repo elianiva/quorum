@@ -375,7 +375,7 @@ const led = (color: string, h: HtmlBuilder<Message>): Html =>
           width: '7px',
           height: '7px',
           flexShrink: '0',
-          borderRadius: '9999px',
+          borderRadius: 'full',
         }),
       ),
       h.Style({
@@ -453,9 +453,9 @@ const panel = (
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  fontSize: 'calc(12.5px*var(--type-scale))',
-                  fontWeight: '600',
-                  letterSpacing: '-0.01em',
+                  fontSize: 'type.12-5',
+                  fontWeight: 'semibold',
+                  letterSpacing: 'subtle',
                 }),
               ),
             ],
@@ -471,7 +471,7 @@ const panel = (
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        fontSize: 'calc(10.5px*var(--type-scale))',
+                        fontSize: 'type.10-5',
                         color: 'mutedForeground',
                       }),
                     ),
@@ -528,7 +528,7 @@ const locked = (
                     layerStyle: 'raised',
                     paddingInline: '2.5',
                     paddingBlock: '1',
-                    fontSize: 'calc(11px*var(--type-scale))',
+                    fontSize: 'type.11',
                     color: 'mutedForeground',
                     boxShadow: 'raised',
                   }),
@@ -574,8 +574,8 @@ const rowHeader = (label: string, count: number, h: HtmlBuilder<Message>): Html 
         [
           h.Class(
             css({
-              fontSize: 'calc(13px*var(--type-scale))',
-              fontWeight: '600',
+              fontSize: 'type.13',
+              fontWeight: 'semibold',
             }),
           ),
         ],
@@ -587,7 +587,7 @@ const rowHeader = (label: string, count: number, h: HtmlBuilder<Message>): Html 
             cx(
               FIGURE,
               css({
-                fontSize: 'calc(11px*var(--type-scale))',
+                fontSize: 'type.11',
                 color: 'mutedForeground',
               }),
             ),
@@ -602,9 +602,9 @@ const rowHeader = (label: string, count: number, h: HtmlBuilder<Message>): Html 
 const PLOT = css({
   '& text': {
     fontFamily: 'mono',
-    fontSize: 'calc(10px * var(--type-scale))',
+    fontSize: 'type.10',
     fill: 'mutedForeground',
-    letterSpacing: '-0.01em',
+    letterSpacing: 'subtle',
     pointerEvents: 'none',
   },
   '& path': { pointerEvents: 'none' },
@@ -852,7 +852,7 @@ const exemplarStrip = (exemplars: ReadonlyArray<Exemplar>, h: HtmlBuilder<Messag
         [
           h.Class(
             css({
-              fontSize: 'calc(12px*var(--type-scale))',
+              fontSize: 'type.12',
               color: 'mutedForeground',
             }),
           ),
@@ -1097,7 +1097,7 @@ const seriesLegend = (
           rowGap: '0.5',
           paddingInline: '1.5',
           paddingBottom: '0.5',
-          fontSize: 'calc(11px*var(--type-scale))',
+          fontSize: 'type.11',
         }),
       ),
     ],
@@ -1144,7 +1144,7 @@ const seriesLegend = (
                   css({
                     height: '3px',
                     width: '3.5',
-                    borderRadius: '9999px',
+                    borderRadius: 'full',
                   }),
                 ),
                 h.Style({ background: entry.color }),
@@ -1231,7 +1231,7 @@ const seriesTable = (
             css({
               width: '100%',
               borderCollapse: 'collapse',
-              fontSize: 'calc(11.5px*var(--type-scale))',
+              fontSize: 'type.11-5',
             }),
           ),
         ],
@@ -1261,7 +1261,7 @@ const seriesTable = (
                 [
                   h.Class(
                     css({
-                      fontSize: 'calc(11px*var(--type-scale))',
+                      fontSize: 'type.11',
                       color: 'mutedForeground',
                     }),
                   ),
@@ -1274,7 +1274,7 @@ const seriesTable = (
                           border,
                           css({
                             textAlign: 'left',
-                            fontWeight: '500',
+                            fontWeight: 'medium',
                           }),
                         ),
                       ),
@@ -1290,7 +1290,7 @@ const seriesTable = (
                             border,
                             css({
                               textAlign: 'right',
-                              fontWeight: '500',
+                              fontWeight: 'medium',
                             }),
                           ),
                         ),
@@ -1605,10 +1605,10 @@ const stat = (
                     position: 'relative',
                     paddingInline: '3',
                     paddingBottom: '7',
-                    fontSize: 'calc(30px*var(--type-scale))',
-                    lineHeight: '1',
-                    fontWeight: '500',
-                    letterSpacing: '-0.03em',
+                    fontSize: 'type.30',
+                    lineHeight: 'none',
+                    fontWeight: 'medium',
+                    letterSpacing: 'title',
                     textShadow: '0 1px 0 var(--highlight)',
                   }),
                 ),
@@ -1732,9 +1732,9 @@ const gauge = (
                   h.Class(
                     css({
                       fontFamily: 'mono',
-                      fontSize: 'calc(30px*var(--type-scale))',
-                      fontWeight: '500',
-                      letterSpacing: '-0.03em',
+                      fontSize: 'type.30',
+                      fontWeight: 'medium',
+                      letterSpacing: 'title',
                     }),
                   ),
                 ],
@@ -1764,10 +1764,10 @@ const lcd = (share: number, h: HtmlBuilder<Message>, cells = CELLS): Html =>
           height: '100%',
           minWidth: '0',
           flex: '1 1 0%',
-          gap: '2px',
+          gap: '0.5',
           borderRadius: 'md',
           backgroundColor: 'well',
-          padding: '3px',
+          padding: '0.75',
           boxShadow: 'well',
         }),
       ),
@@ -1782,7 +1782,7 @@ const lcd = (share: number, h: HtmlBuilder<Message>, cells = CELLS): Html =>
             css({
               minWidth: '0',
               flex: '1 1 0%',
-              borderRadius: '2px',
+              borderRadius: '2xs',
             }),
           ),
           h.Style({
@@ -1845,7 +1845,7 @@ const barGauge = (
                       display: 'flex',
                       alignItems: 'baseline',
                       justifyContent: 'space-between',
-                      fontSize: 'calc(11.5px*var(--type-scale))',
+                      fontSize: 'type.11-5',
                     }),
                   ),
                 ],
@@ -1866,7 +1866,7 @@ const barGauge = (
                         cx(
                           FIGURE,
                           css({
-                            fontSize: 'calc(13px*var(--type-scale))',
+                            fontSize: 'type.13',
                           }),
                         ),
                       ),
@@ -1943,7 +1943,7 @@ const swatch = (name: string, color: string, h: HtmlBuilder<Message>): Html =>
             css({
               height: '2',
               width: '2.5',
-              borderRadius: '2px',
+              borderRadius: '2xs',
             }),
           ),
           h.Style({ background: color }),
@@ -2012,7 +2012,7 @@ const laneTimeline = (
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        fontSize: 'calc(11.5px*var(--type-scale))',
+                        fontSize: 'type.11-5',
                         color: 'mutedForeground',
                       }),
                     ),
@@ -2030,7 +2030,7 @@ const laneTimeline = (
                         overflow: 'hidden',
                         borderRadius: 'md',
                         backgroundColor: 'card',
-                        boxShadow: 'inset 0 0 0 1px var(--hairline)',
+                        boxShadow: 'lineStrong',
                       }),
                     ),
                   ],
@@ -2043,17 +2043,17 @@ const laneTimeline = (
                             FIGURE,
                             css({
                               position: 'absolute',
-                              insetBlock: '3px',
+                              insetBlock: '0.75',
                               display: 'flex',
                               alignItems: 'center',
                               overflow: 'hidden',
-                              borderRadius: '3px',
+                              borderRadius: 'xs',
                               paddingInline: '1.5',
-                              fontSize: 'calc(10px*var(--type-scale))',
-                              fontWeight: '500',
+                              fontSize: 'type.10',
+                              fontWeight: 'medium',
                               whiteSpace: 'nowrap',
                               color: 'color-mix(in oklab, black 70%, transparent)',
-                              boxShadow: 'inset 0 1px 0 oklch(1 0 0/0.35)',
+                              boxShadow: 'highlightTopStrong',
                             }),
                           ),
                         ),
@@ -2080,7 +2080,7 @@ const laneTimeline = (
                     display: 'flex',
                     justifyContent: 'space-between',
                     paddingLeft: '124px',
-                    fontSize: 'calc(10px*var(--type-scale))',
+                    fontSize: 'type.10',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -2104,7 +2104,7 @@ const laneTimeline = (
                         columnGap: '3',
                         rowGap: '1',
                         paddingLeft: '124px',
-                        fontSize: 'calc(10px*var(--type-scale))',
+                        fontSize: 'type.10',
                       }),
                     ),
                   ],
@@ -2227,7 +2227,7 @@ const mix = (
               h.Class(
                 css({
                   width: '100%',
-                  fontSize: 'calc(11.5px*var(--type-scale))',
+                  fontSize: 'type.11-5',
                 }),
               ),
             ],
@@ -2264,7 +2264,7 @@ const mix = (
                                     css({
                                       width: '2',
                                       height: '2',
-                                      borderRadius: '2px',
+                                      borderRadius: '2xs',
                                     }),
                                   ),
                                   h.Style({ background: kindColor(kind) }),
@@ -2276,7 +2276,7 @@ const mix = (
                                   h.Class(
                                     css({
                                       fontFamily: 'mono',
-                                      fontSize: 'calc(11px*var(--type-scale))',
+                                      fontSize: 'type.11',
                                     }),
                                   ),
                                 ],
@@ -2369,7 +2369,7 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
                     cx(
                       FIGURE,
                       css({
-                        fontSize: 'calc(28px*var(--type-scale))',
+                        fontSize: 'type.28',
                         color: 'ok',
                       }),
                     ),
@@ -2397,7 +2397,7 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
                       h.Class(
                         css({
                           fontFamily: 'mono',
-                          fontSize: 'calc(11px*var(--type-scale))',
+                          fontSize: 'type.11',
                           color: 'mutedForeground',
                         }),
                       ),
@@ -2409,9 +2409,9 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
                       h.Class(
                         css({
                           height: '3.5',
-                          borderRadius: '3px',
+                          borderRadius: 'xs',
                           backgroundColor: 'card',
-                          boxShadow: 'inset 0 0 0 1px var(--hairline)',
+                          boxShadow: 'lineStrong',
                         }),
                       ),
                     ],
@@ -2421,7 +2421,7 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
                           h.Class(
                             css({
                               height: '100%',
-                              borderRadius: '2px',
+                              borderRadius: '2xs',
                             }),
                           ),
                           h.Style({
@@ -2440,7 +2440,7 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
                           FIGURE,
                           css({
                             textAlign: 'right',
-                            fontSize: 'calc(11.5px*var(--type-scale))',
+                            fontSize: 'type.11-5',
                           }),
                         ),
                       ),
@@ -2504,7 +2504,7 @@ const nodeTable = (
                   width: '100%',
                   minWidth: '720px',
                   borderCollapse: 'collapse',
-                  fontSize: 'calc(12px*var(--type-scale))',
+                  fontSize: 'type.12',
                 }),
               ),
             ],
@@ -2516,7 +2516,7 @@ const nodeTable = (
                     [
                       h.Class(
                         css({
-                          fontSize: 'calc(11px*var(--type-scale))',
+                          fontSize: 'type.11',
                           color: 'mutedForeground',
                         }),
                       ),
@@ -2533,7 +2533,7 @@ const nodeTable = (
                                 borderColor: 'hairline',
                                 paddingInline: '2',
                                 paddingBlock: '1',
-                                fontWeight: '500',
+                                fontWeight: 'medium',
                               }),
                               index === 0
                                 ? css({
@@ -2588,7 +2588,7 @@ const nodeTable = (
                             cx(
                               cell,
                               css({
-                                fontWeight: '500',
+                                fontWeight: 'medium',
                               }),
                             ),
                           ),
@@ -2716,8 +2716,8 @@ const nodeTable = (
                               FIGURE,
                               css({
                                 textAlign: 'right',
-                                fontSize: 'calc(11px*var(--type-scale))',
-                                fontWeight: '500',
+                                fontSize: 'type.11',
+                                fontWeight: 'medium',
                                 color: 'color-mix(in oklab, black 75%, transparent)',
                               }),
                             ),
@@ -2818,7 +2818,7 @@ const tablePanel = (
                       css({
                         paddingInline: '2',
                         paddingBlock: '3',
-                        fontSize: 'calc(12px*var(--type-scale))',
+                        fontSize: 'type.12',
                         color: 'mutedForeground',
                       }),
                     ),
@@ -2834,7 +2834,7 @@ const tablePanel = (
                     css({
                       width: '100%',
                       borderCollapse: 'collapse',
-                      fontSize: 'calc(12px*var(--type-scale))',
+                      fontSize: 'type.12',
                     }),
                   ),
                 ],
@@ -2846,7 +2846,7 @@ const tablePanel = (
                         [
                           h.Class(
                             css({
-                              fontSize: 'calc(11px*var(--type-scale))',
+                              fontSize: 'type.11',
                               color: 'mutedForeground',
                             }),
                           ),
@@ -2859,7 +2859,7 @@ const tablePanel = (
                                 cx(
                                   border,
                                   css({
-                                    fontWeight: '500',
+                                    fontWeight: 'medium',
                                   }),
                                   columnClass(index),
                                 ),
@@ -2895,15 +2895,15 @@ const tablePanel = (
                                   border,
                                   index === 0
                                     ? css({
-                                        fontWeight: '500',
+                                        fontWeight: 'medium',
                                       })
                                     : FIGURE,
                                   columnClass(index),
                                   cell.fill === undefined
                                     ? undefined
                                     : css({
-                                        fontSize: 'calc(11px*var(--type-scale))',
-                                        fontWeight: '500',
+                                        fontSize: 'type.11',
+                                        fontWeight: 'medium',
                                         color: 'color-mix(in oklab, black 75%, transparent)',
                                       }),
                                 ),
@@ -2935,7 +2935,7 @@ const tablePanel = (
                                             h.Class(
                                               css({
                                                 textAlign: 'left',
-                                                fontWeight: '500',
+                                                fontWeight: 'medium',
                                                 textUnderlineOffset: '2',
                                                 _hover: {
                                                   textDecorationLine: 'underline',
@@ -3038,7 +3038,7 @@ const barList = (
                     cx(
                       FIGURE,
                       css({
-                        fontSize: 'calc(12px*var(--type-scale))',
+                        fontSize: 'type.12',
                         color: 'mutedForeground',
                       }),
                     ),
@@ -3069,7 +3069,7 @@ const barList = (
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
-                          fontSize: 'calc(11.5px*var(--type-scale))',
+                          fontSize: 'type.11-5',
                           color: 'mutedForeground',
                         }),
                       ),
@@ -3081,9 +3081,9 @@ const barList = (
                       h.Class(
                         css({
                           height: '3.5',
-                          borderRadius: '3px',
+                          borderRadius: 'xs',
                           backgroundColor: 'card',
-                          boxShadow: 'inset 0 0 0 1px var(--hairline)',
+                          boxShadow: 'lineStrong',
                         }),
                       ),
                     ],
@@ -3093,7 +3093,7 @@ const barList = (
                           h.Class(
                             css({
                               height: '100%',
-                              borderRadius: '2px',
+                              borderRadius: '2xs',
                             }),
                           ),
                           h.Style({
@@ -3112,7 +3112,7 @@ const barList = (
                           FIGURE,
                           css({
                             textAlign: 'right',
-                            fontSize: 'calc(11.5px*var(--type-scale))',
+                            fontSize: 'type.11-5',
                           }),
                         ),
                       ),
@@ -3491,7 +3491,7 @@ const incidentTimeline = (
                   cx(
                     FIGURE,
                     css({
-                      fontSize: 'calc(12px*var(--type-scale))',
+                      fontSize: 'type.12',
                       color: 'mutedForeground',
                     }),
                   ),
@@ -3686,8 +3686,8 @@ const postmortemDetail = (game: Game, postmortem: Postmortem, h: HtmlBuilder<Mes
             [
               h.Class(
                 css({
-                  fontSize: 'calc(12px*var(--type-scale))',
-                  lineHeight: '1.375',
+                  fontSize: 'type.12',
+                  lineHeight: 'snug',
                   color: 'mutedForeground',
                 }),
               ),
@@ -3730,7 +3730,7 @@ const postmortemDetail = (game: Game, postmortem: Postmortem, h: HtmlBuilder<Mes
                         cx(
                           FIGURE,
                           css({
-                            fontSize: 'calc(12.5px*var(--type-scale))',
+                            fontSize: 'type.12-5',
                           }),
                         ),
                       ),
@@ -3745,8 +3745,8 @@ const postmortemDetail = (game: Game, postmortem: Postmortem, h: HtmlBuilder<Mes
             [
               h.Class(
                 css({
-                  fontSize: 'calc(12px*var(--type-scale))',
-                  lineHeight: '1.375',
+                  fontSize: 'type.12',
+                  lineHeight: 'snug',
                 }),
               ),
             ],
@@ -3757,8 +3757,8 @@ const postmortemDetail = (game: Game, postmortem: Postmortem, h: HtmlBuilder<Mes
               h.Class(
                 cx(
                   css({
-                    fontSize: 'calc(12px*var(--type-scale))',
-                    lineHeight: '1.375',
+                    fontSize: 'type.12',
+                    lineHeight: 'snug',
                   }),
                   open
                     ? css({
@@ -3943,9 +3943,9 @@ const thresholdPicker = (rule: Rule, chosen: number, h: HtmlBuilder<Message>): H
         cx(
           css({
             display: 'inline-flex',
-            gap: '3px',
+            gap: '0.75',
             borderRadius: 'lg',
-            padding: '3px',
+            padding: '0.75',
           }),
           WELL,
         ),
@@ -3965,7 +3965,7 @@ const thresholdPicker = (rule: Rule, chosen: number, h: HtmlBuilder<Message>): H
                 height: '5',
                 borderRadius: 'md',
                 paddingInline: '1.5',
-                fontSize: 'calc(11px*var(--type-scale))',
+                fontSize: 'type.11',
               }),
               threshold === chosen
                 ? css({
@@ -4692,7 +4692,7 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '1.5',
-                  fontSize: 'calc(13px*var(--type-scale))',
+                  fontSize: 'type.13',
                   color: 'mutedForeground',
                 }),
               ),
@@ -4706,9 +4706,9 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                 [
                   h.Class(
                     css({
-                      fontSize: 'calc(15px*var(--type-scale))',
-                      fontWeight: '600',
-                      letterSpacing: '-0.02em',
+                      fontSize: 'type.15',
+                      fontWeight: 'semibold',
+                      letterSpacing: 'body',
                       color: 'foreground',
                     }),
                   ),
@@ -4782,9 +4782,9 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                 cx(
                   css({
                     display: 'flex',
-                    gap: '3px',
+                    gap: '0.75',
                     borderRadius: 'lg',
-                    padding: '3px',
+                    padding: '0.75',
                   }),
                   WELL,
                 ),
@@ -4807,7 +4807,7 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                         height: '6',
                         borderRadius: 'md',
                         paddingInline: '2.5',
-                        fontSize: 'calc(12px*var(--type-scale))',
+                        fontSize: 'type.12',
                       }),
                       minutes === model.board.dashboard.range
                         ? css({
@@ -4841,7 +4841,7 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                     borderRadius: 'lg',
                     layerStyle: 'raised',
                     paddingInline: '2.5',
-                    fontSize: 'calc(12px*var(--type-scale))',
+                    fontSize: 'type.12',
                     boxShadow: 'raised',
                   }),
                   clockPaused(model)
@@ -4937,7 +4937,7 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
             overflow: 'hidden',
             borderRadius: 'lg',
             layerStyle: 'raised',
-            fontSize: 'calc(12px*var(--type-scale))',
+            fontSize: 'type.12',
             boxShadow: 'raised',
           }),
         ),
@@ -4968,7 +4968,7 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
                 placeItems: 'center',
                 paddingInline: '2',
                 fontFamily: 'mono',
-                fontSize: 'calc(11.5px*var(--type-scale))',
+                fontSize: 'type.11-5',
               }),
             ),
           ],
@@ -4996,7 +4996,7 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
             layerStyle: 'raised',
             paddingRight: '1',
             paddingLeft: '2',
-            fontSize: 'calc(11px*var(--type-scale))',
+            fontSize: 'type.11',
             boxShadow: 'raised',
           }),
         ),
@@ -5028,7 +5028,7 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
                 backgroundColor: 'well',
                 paddingInline: '1',
                 fontFamily: 'mono',
-                fontSize: 'calc(11.5px*var(--type-scale))',
+                fontSize: 'type.11-5',
                 color: 'foreground',
                 outlineStyle: 'none',
               }),
@@ -5057,7 +5057,7 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
               gap: '1.5',
               borderRadius: 'md',
               paddingInline: '1.5',
-              fontSize: 'calc(11px*var(--type-scale))',
+              fontSize: 'type.11',
             }),
             on
               ? css({
@@ -5305,7 +5305,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                     gridColumn: 'span 24 / span 24',
                     paddingInline: '4',
                     paddingBlock: '6',
-                    fontSize: 'calc(13px*var(--type-scale))',
+                    fontSize: 'type.13',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -5560,10 +5560,10 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                               cx(
                                 FIGURE,
                                 css({
-                                  fontSize: 'calc(30px*var(--type-scale))',
-                                  lineHeight: '1',
-                                  fontWeight: '500',
-                                  letterSpacing: '-0.03em',
+                                  fontSize: 'type.30',
+                                  lineHeight: 'none',
+                                  fontWeight: 'medium',
+                                  letterSpacing: 'title',
                                 }),
                               ),
                             ),

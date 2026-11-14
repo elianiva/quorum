@@ -52,11 +52,11 @@ const segments = (
                   css({
                     display: 'block',
                     height: '1.5',
-                    borderRadius: '9999px',
+                    borderRadius: 'full',
                     transitionProperty:
                       'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
-                    transitionDuration: '150ms',
-                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                    transitionDuration: 'fast',
+                    transitionTimingFunction: 'default',
                   }),
                   step.path === current
                     ? ''
@@ -124,7 +124,7 @@ export const pathBar = (page: Page, model: Model, h: H): Html => {
             [
               h.Class(
                 css({
-                  fontSize: '12px',
+                  fontSize: 'type.12',
                   color: 'mutedForeground',
                 }),
               ),
@@ -137,7 +137,7 @@ export const pathBar = (page: Page, model: Model, h: H): Html => {
                 cx(
                   FIGURE,
                   css({
-                    fontSize: '12px',
+                    fontSize: 'type.12',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -186,8 +186,8 @@ const nextCard = (label: string, target: Page, h: H): Html =>
                 textAlign: 'right',
                 transitionProperty:
                   'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
-                transitionDuration: '150ms',
-                transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                transitionDuration: 'fast',
+                transitionTimingFunction: 'default',
                 _hover: {
                   borderColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
                 },
@@ -201,7 +201,7 @@ const nextCard = (label: string, target: Page, h: H): Html =>
             [
               h.Class(
                 css({
-                  fontSize: '12px',
+                  fontSize: 'type.12',
                   color: 'mutedForeground',
                 }),
               ),
@@ -215,8 +215,8 @@ const nextCard = (label: string, target: Page, h: H): Html =>
                   display: 'flex',
                   alignItems: 'center',
                   gap: '1.5',
-                  fontSize: '15px',
-                  fontWeight: '500',
+                  fontSize: 'type.15',
+                  fontWeight: 'medium',
                 }),
               ),
             ],
@@ -229,8 +229,8 @@ const nextCard = (label: string, target: Page, h: H): Html =>
                   width: '4',
                   height: '4',
                   transitionProperty: 'transform, translate, scale, rotate',
-                  transitionDuration: '150ms',
-                  transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                  transitionDuration: 'fast',
+                  transitionTimingFunction: 'default',
                   '.group:hover &': {
                     translate: '0.125rem',
                   },
@@ -297,9 +297,9 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
             [
               h.Class(
                 css({
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  letterSpacing: '-0.025em',
+                  fontSize: 'type.16',
+                  fontWeight: 'semibold',
+                  letterSpacing: 'tight',
                 }),
               ),
             ],
@@ -315,7 +315,7 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
                       height: '5',
                       flexShrink: '0',
                       placeItems: 'center',
-                      borderRadius: '9999px',
+                      borderRadius: 'full',
                       backgroundColor: 'ok',
                       color: 'background',
                     }),
@@ -339,7 +339,7 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
                       FIGURE,
                       css({
                         flexShrink: '0',
-                        fontSize: '12px',
+                        fontSize: 'type.12',
                         color: 'mutedForeground',
                       }),
                     ),
@@ -353,8 +353,8 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
         [
           h.Class(
             css({
-              fontSize: '14px',
-              lineHeight: '1.375',
+              fontSize: 'type.14',
+              lineHeight: 'snug',
               textWrap: 'pretty',
               color: 'mutedForeground',
             }),
@@ -381,11 +381,11 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
                     borderColor: 'border',
                     paddingInline: '3',
                     paddingBlock: '2',
-                    fontSize: '14px',
+                    fontSize: 'type.14',
                     transitionProperty:
                       'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
-                    transitionDuration: '150ms',
-                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                    transitionDuration: 'fast',
+                    transitionTimingFunction: 'default',
                     _hover: {
                       borderColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
                       backgroundColor: 'well',
@@ -412,7 +412,7 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
                     [
                       h.Class(
                         css({
-                          fontWeight: '500',
+                          fontWeight: 'medium',
                         }),
                       ),
                     ],
@@ -442,8 +442,8 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
                   height: '4',
                   flexShrink: '0',
                   transitionProperty: 'transform, translate, scale, rotate',
-                  transitionDuration: '150ms',
-                  transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                  transitionDuration: 'fast',
+                  transitionTimingFunction: 'default',
                   '.group:hover &': {
                     translate: '0.125rem',
                   },

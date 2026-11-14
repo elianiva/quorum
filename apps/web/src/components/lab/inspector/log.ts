@@ -109,8 +109,8 @@ const events = (node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
           [
             h.Class(
               css({
-                fontSize: 'calc(12px*var(--type-scale))',
-                lineHeight: '1.375',
+                fontSize: 'type.12',
+                lineHeight: 'snug',
                 color: 'mutedForeground',
               }),
             ),

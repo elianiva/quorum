@@ -171,12 +171,12 @@ const segmented = <A>(
         cx(
           css({
             display: 'grid',
-            gap: '3px',
-            padding: '3px',
+            gap: '0.75',
+            padding: '0.75',
           }),
           WELL,
           css({
-            borderRadius: '11px',
+            borderRadius: 'lg',
           }),
         ),
       ),
@@ -195,11 +195,11 @@ const segmented = <A>(
                 height: '7',
                 borderRadius: 'lg',
                 paddingInline: '2',
-                fontSize: 'calc(12px*var(--type-scale))',
-                fontWeight: '500',
+                fontSize: 'type.12',
+                fontWeight: 'medium',
                 transitionProperty:
                   'color, background-color, border-color, text-decoration-color, fill, stroke',
-                transitionDuration: '150ms',
+                transitionDuration: 'fast',
                 transitionTimingFunction: 'out',
               }),
               value === current
@@ -292,7 +292,7 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
                     textAlign: 'left',
                     transitionProperty:
                       'color, background-color, border-color, text-decoration-color, fill, stroke',
-                    transitionDuration: '150ms',
+                    transitionDuration: 'fast',
                     transitionTimingFunction: 'out',
                   }),
                   current === tool
@@ -328,8 +328,8 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
                     [
                       h.Class(
                         css({
-                          fontSize: 'calc(14px*var(--type-scale))',
-                          fontWeight: '600',
+                          fontSize: 'type.14',
+                          fontWeight: 'semibold',
                         }),
                       ),
                     ],
@@ -339,7 +339,7 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
                     [
                       h.Class(
                         css({
-                          fontSize: 'calc(11.5px*var(--type-scale))',
+                          fontSize: 'type.11-5',
                           color: 'mutedForeground',
                         }),
                       ),
@@ -357,7 +357,7 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
                         display: 'flex',
                         justifyContent: 'space-between',
                         gap: '2',
-                        fontSize: 'calc(12px*var(--type-scale))',
+                        fontSize: 'type.12',
                       }),
                     ),
                   ],
@@ -376,7 +376,7 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
                       [
                         h.Class(
                           css({
-                            fontWeight: '500',
+                            fontWeight: 'medium',
                           }),
                         ),
                       ],
@@ -486,7 +486,7 @@ const changeRow = (
           gap: '2',
           paddingInline: '3',
           paddingBlock: '1',
-          fontSize: 'calc(12.5px*var(--type-scale))',
+          fontSize: 'type.12-5',
         }),
       ),
     ],
@@ -571,8 +571,8 @@ const dataChoices = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Html 
               [
                 h.Class(
                   css({
-                    fontSize: 'calc(12.5px*var(--type-scale))',
-                    fontWeight: '500',
+                    fontSize: 'type.12-5',
+                    fontWeight: 'medium',
                   }),
                 ),
               ],
@@ -630,7 +630,7 @@ const overrides = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Html =>
                 justifyContent: 'space-between',
                 gap: '2',
                 paddingInline: '1',
-                fontSize: 'calc(12.5px*var(--type-scale))',
+                fontSize: 'type.12-5',
               }),
             ),
           ],
@@ -710,8 +710,8 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
             [
               h.Class(
                 css({
-                  fontSize: 'calc(14px*var(--type-scale))',
-                  fontWeight: '600',
+                  fontSize: 'type.14',
+                  fontWeight: 'semibold',
                 }),
               ),
             ],
@@ -728,7 +728,7 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(12.5px*var(--type-scale))',
+                    fontSize: 'type.12-5',
                   }),
                   drift.hand > 0
                     ? css({
@@ -767,8 +767,8 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
                 [
                   h.Class(
                     css({
-                      fontSize: 'calc(12.5px*var(--type-scale))',
-                      fontWeight: '500',
+                      fontSize: 'type.12-5',
+                      fontWeight: 'medium',
                     }),
                   ),
                 ],
@@ -839,7 +839,7 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
                     cx(
                       FIGURE,
                       css({
-                        fontSize: 'calc(12px*var(--type-scale))',
+                        fontSize: 'type.12',
                         color: 'mutedForeground',
                       }),
                     ),
@@ -933,7 +933,7 @@ const startSection = (game: Game, region: RegionId, h: HtmlBuilder<Message>): Ht
               h.Class(
                 css({
                   paddingInline: '1',
-                  fontSize: 'calc(12.5px*var(--type-scale))',
+                  fontSize: 'type.12-5',
                   color: 'mutedForeground',
                 }),
               ),

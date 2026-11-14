@@ -42,9 +42,9 @@ const chartTooltipClass = css({
   borderStyle: 'solid',
   paddingInline: '2.5',
   paddingBlock: '1.5',
-  fontSize: 'calc(0.75rem * var(--type-scale))',
-  lineHeight: 'calc(1 / 0.75)',
-  boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+  fontSize: 'type.12',
+  lineHeight: 'compact',
+  boxShadow: 'xl',
 })
 
 const chartTooltipOverlayClass = css({
@@ -56,9 +56,9 @@ const chartTooltipOverlayClass = css({
   borderStyle: 'solid',
   paddingInline: '2.5',
   paddingBlock: '1.5',
-  fontSize: 'calc(0.75rem * var(--type-scale))',
-  lineHeight: 'calc(1 / 0.75)',
-  boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+  fontSize: 'type.12',
+  lineHeight: 'compact',
+  boxShadow: 'xl',
   pointerEvents: 'none',
   position: 'absolute',
   zIndex: '10',
@@ -774,7 +774,7 @@ const scatterCartesian = <M>(props: CartesianChartProps<M>, h: HtmlBuilder<M>): 
                     h.Class(
                       css({
                         marginBottom: '1',
-                        fontWeight: '500',
+                        fontWeight: 'medium',
                       }),
                     ),
                   ],
@@ -821,8 +821,8 @@ const scatterCartesian = <M>(props: CartesianChartProps<M>, h: HtmlBuilder<M>): 
                   css({
                     display: 'flex',
                     gap: '2.5',
-                    fontSize: 'calc(0.875rem * var(--type-scale))',
-                    lineHeight: 'calc(1.25 / 0.875)',
+                    fontSize: 'type.14',
+                    lineHeight: 'fine',
                     color: 'mutedForeground',
                     justifyContent: 'center',
                   }),
@@ -856,7 +856,7 @@ const scatterCartesian = <M>(props: CartesianChartProps<M>, h: HtmlBuilder<M>): 
                             display: 'inline-block',
                             width: '3',
                             height: '3',
-                            borderRadius: '9999px',
+                            borderRadius: 'full',
                           }),
                         ),
                         h.Style({
@@ -2186,7 +2186,7 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
                     h.Class(
                       css({
                         marginBottom: '1',
-                        fontWeight: '500',
+                        fontWeight: 'medium',
                       }),
                     ),
                   ],
@@ -2226,8 +2226,8 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
                   css({
                     display: 'flex',
                     gap: '2.5',
-                    fontSize: 'calc(0.875rem * var(--type-scale))',
-                    lineHeight: 'calc(1.25 / 0.875)',
+                    fontSize: 'type.14',
+                    lineHeight: 'fine',
                     color: 'mutedForeground',
                     justifyContent: 'center',
                   }),
@@ -2237,11 +2237,11 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
                   bottom: `${props.margin?.bottom ?? 5}px`,
                   left: '0',
                   right: '0',
-                  padding: '3px',
+                  padding: '0.75',
                   paddingTop: legend.props.wrapperStyle?.paddingTop ?? '3px',
                   lineHeight: legend.props.wrapperStyle?.lineHeight ?? '18px',
                   backgroundColor: legend.props.wrapperStyle?.backgroundColor ?? '#fff',
-                  borderRadius: '4px',
+                  borderRadius: 'xs',
                 }),
               ],
               series
@@ -3160,8 +3160,8 @@ const polar = <M>(
             css({
               display: 'flex',
               gap: '2.5',
-              fontSize: 'calc(0.875rem * var(--type-scale))',
-              lineHeight: 'calc(1.25 / 0.875)',
+              fontSize: 'type.14',
+              lineHeight: 'fine',
               color: 'mutedForeground',
               justifyContent: 'center',
             }),

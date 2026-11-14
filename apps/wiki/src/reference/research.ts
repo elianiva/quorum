@@ -350,8 +350,8 @@ const tree = (l: Lang, h: H, full = false): Html => {
                   [
                     h.Class(
                       css({
-                        fontSize: '14px',
-                        fontWeight: '600',
+                        fontSize: 'type.14',
+                        fontWeight: 'semibold',
                       }),
                     ),
                   ],
@@ -422,8 +422,8 @@ const tree = (l: Lang, h: H, full = false): Html => {
                       paddingBlock: '1',
                       boxShadow: 'raised',
                       transitionProperty: 'filter',
-                      transitionDuration: '150ms',
-                      transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                      transitionDuration: 'fast',
+                      transitionTimingFunction: 'default',
                       _hover: {
                         filter: 'brightness(0.985)',
                       },
@@ -452,9 +452,9 @@ const tree = (l: Lang, h: H, full = false): Html => {
                         h.Class(
                           css({
                             lineClamp: '2',
-                            fontSize: '12px',
-                            lineHeight: '1.25',
-                            fontWeight: '600',
+                            fontSize: 'type.12',
+                            lineHeight: 'tight',
+                            fontWeight: 'semibold',
                           }),
                         ),
                       ],
@@ -468,7 +468,7 @@ const tree = (l: Lang, h: H, full = false): Html => {
                             width: 'fit-content',
                             alignItems: 'center',
                             gap: '2',
-                            fontSize: '11px',
+                            fontSize: 'type.11',
                           }),
                         ),
                       ],
@@ -494,7 +494,7 @@ const byTrack = (l: Lang, h: H): Html =>
           css({
             marginBlock: '6',
             display: 'grid',
-            gap: '1px',
+            gap: '0.25',
             overflow: 'hidden',
             borderRadius: 'lg',
             borderWidth: '1px',
@@ -534,8 +534,8 @@ const byTrack = (l: Lang, h: H): Html =>
                   display: 'flex',
                   alignItems: 'center',
                   gap: '2',
-                  fontSize: '15px',
-                  fontWeight: '600',
+                  fontSize: 'type.15',
+                  fontWeight: 'semibold',
                 }),
               ),
             ],
@@ -557,8 +557,8 @@ const byTrack = (l: Lang, h: H): Html =>
                       FIGURE,
                       css({
                         marginLeft: 'auto',
-                        fontSize: '12px',
-                        fontWeight: '400',
+                        fontSize: 'type.12',
+                        fontWeight: 'normal',
                         color: 'mutedForeground',
                       }),
                     ),
@@ -585,9 +585,9 @@ const byTrack = (l: Lang, h: H): Html =>
                   h.Key(`${era}-t`),
                   h.Class(
                     css({
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      letterSpacing: '0.025em',
+                      fontSize: 'type.12',
+                      fontWeight: 'medium',
+                      letterSpacing: 'wide',
                       color: 'mutedForeground',
                       textTransform: 'uppercase',
                     }),
@@ -633,8 +633,8 @@ const byTrack = (l: Lang, h: H): Html =>
                             display: 'flex',
                             alignItems: 'center',
                             gap: '2',
-                            fontSize: '14px',
-                            lineHeight: '1.375',
+                            fontSize: 'type.14',
+                            lineHeight: 'snug',
                             _hover: {
                               textDecorationLine: 'underline',
                             },
@@ -668,8 +668,8 @@ const treeButton = (href: string, label: string, mark: IconNode, h: H): Html =>
           borderColor: 'border',
           backgroundColor: 'background',
           paddingInline: '3',
-          fontSize: '13px',
-          fontWeight: '500',
+          fontSize: 'type.13',
+          fontWeight: 'medium',
           color: 'foreground',
           textDecorationLine: 'none',
           _hover: {
@@ -716,7 +716,7 @@ const costLegend = (l: Lang, h: H): Html => {
           h.Class(
             css({
               display: 'grid',
-              gap: '1px',
+              gap: '0.25',
               overflow: 'hidden',
               borderRadius: 'lg',
               borderWidth: '1px',
@@ -787,8 +787,8 @@ const costLegend = (l: Lang, h: H): Html => {
                         h.Class(
                           css({
                             display: 'block',
-                            fontSize: '14px',
-                            fontWeight: '500',
+                            fontSize: 'type.14',
+                            fontWeight: 'medium',
                           }),
                         ),
                       ],
@@ -799,8 +799,8 @@ const costLegend = (l: Lang, h: H): Html => {
                         h.Class(
                           css({
                             display: 'block',
-                            fontSize: '12px',
-                            lineHeight: '1.375',
+                            fontSize: 'type.12',
+                            lineHeight: 'snug',
                             color: 'mutedForeground',
                           }),
                         ),

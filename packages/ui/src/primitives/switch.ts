@@ -22,7 +22,7 @@ export const switchClass = cx(
   'group-switch',
   css({
     flexShrink: '0',
-    borderRadius: '9999px',
+    borderRadius: 'full',
     borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: 'transparent',
@@ -31,11 +31,11 @@ export const switchClass = cx(
     alignItems: 'center',
     outlineStyle: 'none',
     transitionProperty: 'all',
-    transitionDuration: '150ms',
+    transitionDuration: 'fast',
     transitionTimingFunction: 'out',
     '&[data-checked]': {
       layerStyle: 'primaryFill',
-      boxShadow: 'inset 0 1px 2px oklch(0 0 0 / 0.3)',
+      boxShadow: 'insetTop',
     },
     '&[data-unchecked]': {
       backgroundColor: 'well',
@@ -43,16 +43,16 @@ export const switchClass = cx(
     },
     _focusVisible: {
       borderColor: 'ring',
-      boxShadow: '0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+      boxShadow: 'focus',
     },
     '&[aria-invalid="true"]': {
       borderColor: 'destructive',
-      boxShadow: '0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+      boxShadow: 'invalid',
     },
     _dark: {
       '&[aria-invalid="true"]': {
         borderColor: 'color-mix(in oklab, var(--destructive) 50%, transparent)',
-        boxShadow: '0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+        boxShadow: 'invalid',
       },
     },
     '&[data-size="default"]': { height: '5', width: '34px' },
@@ -75,11 +75,11 @@ export const switchClass = cx(
 export const switchThumbClass = css({
   layerStyle: 'raised',
   boxShadow: 'raised',
-  borderRadius: '9999px',
+  borderRadius: 'full',
   pointerEvents: 'none',
   display: 'block',
   transitionProperty: 'transform',
-  transitionDuration: '150ms',
+  transitionDuration: 'fast',
   transitionTimingFunction: 'out',
   '.group-switch[data-size="default"] &': {
     width: '4',
@@ -96,9 +96,9 @@ export const switchThumbClass = css({
 })
 
 export const switchLabelClass = css({
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: '1',
-  fontWeight: '500',
+  fontSize: 'type.14',
+  lineHeight: 'none',
+  fontWeight: 'medium',
   '.group-field[data-disabled] &': {
     cursor: 'not-allowed',
     opacity: 0.7,
@@ -106,8 +106,8 @@ export const switchLabelClass = css({
 })
 
 export const switchDescriptionClass = css({
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   color: 'mutedForeground',
 })
 

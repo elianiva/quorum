@@ -47,7 +47,7 @@ export const sliderRootClass = css({
 export const sliderTrackClass = css({
   backgroundColor: 'well',
   boxShadow: 'well',
-  borderRadius: '9999px',
+  borderRadius: 'full',
   '&[data-horizontal]': { height: '1.5', width: '100%' },
   '&[data-vertical]': { height: '100%', width: '1.5' },
   position: 'relative',
@@ -58,7 +58,7 @@ export const sliderTrackClass = css({
 
 export const sliderFilledTrackClass = css({
   layerStyle: 'primaryFill',
-  borderRadius: '9999px',
+  borderRadius: 'full',
   userSelect: 'none',
   '&[data-horizontal]': { height: '100%' },
   '&[data-vertical]': { width: '100%' },
@@ -70,22 +70,22 @@ export const sliderThumbClass = css({
   position: 'relative',
   width: '4',
   height: '4',
-  borderRadius: '9999px',
+  borderRadius: 'full',
   layerStyle: 'raised',
   boxShadow: 'raised',
   transitionProperty: 'color, box-shadow',
   transitionTimingFunction: 'default',
-  transitionDuration: 'default',
+  transitionDuration: 'fast',
   '&::after': { position: 'absolute', inset: '-0.5rem' },
   _hover: {
-    boxShadow: 'var(--elev-raised), 0 0 0 4px color-mix(in oklab, var(--primary) 25%, transparent)',
+    boxShadow: 'selected',
   },
   _focusVisible: {
-    boxShadow: 'var(--elev-raised), 0 0 0 4px color-mix(in oklab, var(--primary) 25%, transparent)',
+    boxShadow: 'selected',
     outlineStyle: 'hidden',
   },
   '&:active': {
-    boxShadow: 'var(--elev-raised), 0 0 0 6px color-mix(in oklab, var(--primary) 25%, transparent)',
+    boxShadow: 'selectedStrong',
   },
   '&[aria-disabled="true"]': { pointerEvents: 'none', opacity: 0.5 },
   '&[data-disabled]': { pointerEvents: 'none', opacity: 0.5 },
@@ -96,14 +96,14 @@ export const sliderThumbClass = css({
 })
 
 export const sliderLabelClass = css({
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
-  fontWeight: '500',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
 })
 
 export const sliderValueClass = css({
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   fontVariantNumeric: 'tabular-nums',
   color: 'mutedForeground',
 })

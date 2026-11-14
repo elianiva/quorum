@@ -189,9 +189,9 @@ export const shell = (
                 [
                   h.Class(
                     css({
-                      fontSize: 'calc(17px*var(--type-scale))',
-                      fontWeight: '600',
-                      letterSpacing: '-0.025em',
+                      fontSize: 'type.17',
+                      fontWeight: 'semibold',
+                      letterSpacing: 'tight',
                     }),
                   ),
                 ],
@@ -330,8 +330,8 @@ const agentRoomRow = (model: Model, h: HtmlBuilder<Message>) => {
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                   fontFamily: 'mono',
-                  fontSize: 'calc(0.75rem * var(--type-scale))',
-                  lineHeight: 'calc(1 / 0.75)',
+                  fontSize: 'type.12',
+                  lineHeight: 'compact',
                 }),
               ),
             ],
@@ -386,7 +386,7 @@ const stat = (name: string, value: string, h: HtmlBuilder<Message>) =>
             cx(
               FIGURE,
               css({
-                fontSize: 'calc(18px*var(--type-scale))',
+                fontSize: 'type.18',
               }),
             ),
           ),
@@ -521,8 +521,8 @@ const keyRow = ([key, action]: readonly [string, string], h: HtmlBuilder<Message
           justifyContent: 'space-between',
           gap: '3',
           paddingBlock: '0.5',
-          fontSize: 'calc(12px*var(--type-scale))',
-          lineHeight: '1.375',
+          fontSize: 'type.12',
+          lineHeight: 'snug',
         }),
       ),
     ],
@@ -588,10 +588,10 @@ const stepCell = (
             cx(
               FIGURE,
               css({
-                fontSize: 'calc(23px*var(--type-scale))',
-                lineHeight: '1',
-                fontWeight: '500',
-                letterSpacing: '-0.05em',
+                fontSize: 'type.23',
+                lineHeight: 'none',
+                fontWeight: 'medium',
+                letterSpacing: 'tighter',
               }),
               first
                 ? css({
@@ -613,9 +613,9 @@ const stepCell = (
           h.Class(
             css({
               marginTop: '2',
-              fontSize: 'calc(15px*var(--type-scale))',
-              fontWeight: '600',
-              letterSpacing: '-0.02em',
+              fontSize: 'type.15',
+              fontWeight: 'semibold',
+              letterSpacing: 'body',
             }),
           ),
         ],
@@ -627,8 +627,8 @@ const stepCell = (
             cx(
               css({
                 marginTop: '1',
-                fontSize: 'calc(12px*var(--type-scale))',
-                lineHeight: '1.625',
+                fontSize: 'type.12',
+                lineHeight: 'relaxed',
               }),
               first
                 ? css({
@@ -685,11 +685,11 @@ export const helpPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   display: 'grid',
                   flexShrink: '0',
                   gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                  gap: '1px',
+                  gap: '0.25',
                   overflow: 'hidden',
                   borderRadius: 'xl',
                   backgroundColor: 'hairline',
-                  boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
+                  boxShadow: 'line',
                   '@media (max-width: 1000px)': {
                     gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
                   },
@@ -723,7 +723,7 @@ export const helpPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                       overflow: 'hidden',
                       borderRadius: 'xl',
                       backgroundColor: 'nested',
-                      boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
+                      boxShadow: 'line',
                       '@media (max-width: 1000px)': {
                         gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
                       },
@@ -914,8 +914,8 @@ export const menuPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            fontSize: 'calc(15px*var(--type-scale))',
-                            fontWeight: '600',
+                            fontSize: 'type.15',
+                            fontWeight: 'semibold',
                           }),
                         ),
                       ],
@@ -928,8 +928,8 @@ export const menuPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            fontSize: 'calc(0.75rem * var(--type-scale))',
-                            lineHeight: 'calc(1 / 0.75)',
+                            fontSize: 'type.12',
+                            lineHeight: 'compact',
                             color: 'mutedForeground',
                           }),
                         ),
@@ -1052,9 +1052,9 @@ const voteCard = (model: Model, open: Vote, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  fontSize: 'calc(0.875rem * var(--type-scale))',
-                  lineHeight: 'calc(1.25 / 0.875)',
-                  fontWeight: '500',
+                  fontSize: 'type.14',
+                  lineHeight: 'fine',
+                  fontWeight: 'medium',
                 }),
               ),
             ],
@@ -1066,8 +1066,8 @@ const voteCard = (model: Model, open: Vote, h: HtmlBuilder<Message>): Html => {
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(0.75rem * var(--type-scale))',
-                    lineHeight: 'calc(1 / 0.75)',
+                    fontSize: 'type.12',
+                    lineHeight: 'compact',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -1098,7 +1098,7 @@ const voteCard = (model: Model, open: Vote, h: HtmlBuilder<Message>): Html => {
                 css({
                   width: '2',
                   height: '2',
-                  borderRadius: '9999px',
+                  borderRadius: 'full',
                 }),
               ),
               h.Style({
@@ -1227,9 +1227,9 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   cx(
                     FIGURE,
                     css({
-                      fontSize: 'calc(20px*var(--type-scale))',
-                      fontWeight: '500',
-                      letterSpacing: '0.16em',
+                      fontSize: 'type.20',
+                      fontWeight: 'medium',
+                      letterSpacing: 'overline',
                     }),
                   ),
                 ),
@@ -1310,8 +1310,8 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 width: '100%',
                 minWidth: '0',
                 backgroundColor: 'transparent',
-                fontSize: 'calc(0.875rem * var(--type-scale))',
-                lineHeight: 'calc(1.25 / 0.875)',
+                fontSize: 'type.14',
+                lineHeight: 'fine',
                 outlineStyle: 'none',
               }),
             ),
@@ -1352,13 +1352,13 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               minWidth: '0',
               alignItems: 'center',
               gap: '1.5',
-              borderRadius: '9999px',
+              borderRadius: 'full',
               backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
               paddingBlock: '1',
               paddingRight: '1.5',
               paddingLeft: '2',
-              fontSize: 'calc(0.75rem * var(--type-scale))',
-              lineHeight: 'calc(1 / 0.75)',
+              fontSize: 'type.12',
+              lineHeight: 'compact',
             }),
           ),
         ],
@@ -1370,7 +1370,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   width: '1.5',
                   height: '1.5',
                   flexShrink: '0',
-                  borderRadius: '9999px',
+                  borderRadius: 'full',
                 }),
               ),
               h.Style({ background: colour }),
@@ -1386,7 +1386,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  fontWeight: '500',
+                  fontWeight: 'medium',
                 }),
               ),
             ],
@@ -1398,9 +1398,9 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.Class(
                     css({
                       flexShrink: '0',
-                      fontSize: 'calc(10px*var(--type-scale))',
+                      fontSize: 'type.10',
                       textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
+                      letterSpacing: 'eyebrow',
                       color: 'mutedForeground',
                     }),
                   ),
@@ -1553,8 +1553,8 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               paddingInline: '5',
               paddingTop: '4',
-              fontSize: 'calc(0.875rem * var(--type-scale))',
-              lineHeight: 'calc(1.25 / 0.875)',
+              fontSize: 'type.14',
+              lineHeight: 'fine',
               color: 'mutedForeground',
             }),
           ),
@@ -1573,8 +1573,8 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 gap: '2',
                 paddingInline: '5',
                 paddingTop: '3',
-                fontSize: 'calc(0.875rem * var(--type-scale))',
-                lineHeight: 'calc(1.25 / 0.875)',
+                fontSize: 'type.14',
+                lineHeight: 'fine',
                 color: 'mutedForeground',
               }),
             ),
@@ -1607,8 +1607,8 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                     display: 'flex',
                     alignItems: 'flex-start',
                     gap: '2',
-                    fontSize: 'calc(0.875rem * var(--type-scale))',
-                    lineHeight: 'calc(1.25 / 0.875)',
+                    fontSize: 'type.14',
+                    lineHeight: 'fine',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -1686,8 +1686,8 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h.Class(
                   css({
                     paddingTop: '2',
-                    fontSize: 'calc(0.75rem * var(--type-scale))',
-                    lineHeight: 'calc(1 / 0.75)',
+                    fontSize: 'type.12',
+                    lineHeight: 'compact',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -1705,8 +1705,8 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 paddingInline: '5',
                 paddingTop: '3',
-                fontSize: 'calc(0.875rem * var(--type-scale))',
-                lineHeight: 'calc(1.25 / 0.875)',
+                fontSize: 'type.14',
+                lineHeight: 'fine',
                 color: 'mutedForeground',
               }),
             ),
@@ -1723,8 +1723,8 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 paddingInline: '5',
                 paddingTop: '4',
-                fontSize: 'calc(0.875rem * var(--type-scale))',
-                lineHeight: 'calc(1.25 / 0.875)',
+                fontSize: 'type.14',
+                lineHeight: 'fine',
                 color: 'mutedForeground',
               }),
             ),
@@ -1743,8 +1743,8 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 css({
                   paddingInline: '5',
                   paddingTop: '3',
-                  fontSize: 'calc(0.75rem * var(--type-scale))',
-                  lineHeight: 'calc(1 / 0.75)',
+                  fontSize: 'type.12',
+                  lineHeight: 'compact',
                   color: 'mutedForeground',
                 }),
               ),
@@ -1835,9 +1835,9 @@ const settingSection = (label: string, rows: ReadonlyArray<Html>, h: HtmlBuilder
 
 /** A setting's name on the left, its control on the right. */
 const settingLabelClass = css({
-  fontSize: 'calc(13px * var(--type-scale))',
-  fontWeight: '500',
-  lineHeight: '1.375',
+  fontSize: 'type.13',
+  fontWeight: 'medium',
+  lineHeight: 'snug',
 })
 const settingRowClass = css({
   width: '100%',
@@ -2041,8 +2041,8 @@ const featureKeyRow = (label: string, model: Model, h: HtmlBuilder<Message>): Ht
                     minWidth: '0',
                     backgroundColor: 'transparent',
                     fontFamily: 'mono',
-                    fontSize: 'calc(0.875rem * var(--type-scale))',
-                    lineHeight: 'calc(1.25 / 0.875)',
+                    fontSize: 'type.14',
+                    lineHeight: 'fine',
                     textTransform: 'uppercase',
                     outlineStyle: 'none',
                     '&::placeholder': {
@@ -2086,8 +2086,8 @@ const featureKeyRow = (label: string, model: Model, h: HtmlBuilder<Message>): Ht
               h.Class(
                 cx(
                   css({
-                    fontSize: 'calc(0.75rem * var(--type-scale))',
-                    lineHeight: '1.375',
+                    fontSize: 'type.12',
+                    lineHeight: 'snug',
                   }),
                   toneClass(note.tone),
                 ),
@@ -2171,8 +2171,8 @@ const pwaSettingsSection = (model: Model, h: HtmlBuilder<Message>): Html => {
                 [
                   h.Class(
                     css({
-                      fontSize: 'calc(0.75rem * var(--type-scale))',
-                      lineHeight: '1.375',
+                      fontSize: 'type.12',
+                      lineHeight: 'snug',
                       color: 'mutedForeground',
                     }),
                   ),
@@ -2190,8 +2190,8 @@ const pwaSettingsSection = (model: Model, h: HtmlBuilder<Message>): Html => {
               css({
                 paddingInline: '4',
                 paddingBlock: '3',
-                fontSize: 'calc(0.75rem * var(--type-scale))',
-                lineHeight: '1.375',
+                fontSize: 'type.12',
+                lineHeight: 'snug',
                 color: 'mutedForeground',
               }),
             ),
@@ -2209,8 +2209,8 @@ const pwaSettingsSection = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               paddingInline: '4',
               paddingBottom: '3',
-              fontSize: 'calc(0.75rem * var(--type-scale))',
-              lineHeight: '1.375',
+              fontSize: 'type.12',
+              lineHeight: 'snug',
               color: 'mutedForeground',
             }),
           ),
@@ -2393,8 +2393,8 @@ export const offerPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 [
                   h.Class(
                     css({
-                      fontSize: 'calc(15px*var(--type-scale))',
-                      fontWeight: '600',
+                      fontSize: 'type.15',
+                      fontWeight: 'semibold',
                     }),
                   ),
                 ],
@@ -2408,7 +2408,7 @@ export const offerPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                       flex: '1 1 0%',
                       flexDirection: 'column',
                       gap: '0.5',
-                      fontSize: 'calc(13px*var(--type-scale))',
+                      fontSize: 'type.13',
                       color: 'mutedForeground',
                     }),
                   ),
@@ -2442,7 +2442,7 @@ export const offerPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                       borderRadius: 'xl',
                       backgroundColor: 'nested',
                       padding: '4',
-                      boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
+                      boxShadow: 'line',
                     }),
                   ),
                 ],
@@ -2451,8 +2451,8 @@ export const offerPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                     [
                       h.Class(
                         css({
-                          fontSize: 'calc(15px*var(--type-scale))',
-                          fontWeight: '600',
+                          fontSize: 'type.15',
+                          fontWeight: 'semibold',
                         }),
                       ),
                     ],
@@ -2466,7 +2466,7 @@ export const offerPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                           flex: '1 1 0%',
                           flexDirection: 'column',
                           gap: '0.5',
-                          fontSize: 'calc(13px*var(--type-scale))',
+                          fontSize: 'type.13',
                           color: 'mutedForeground',
                         }),
                       ),
@@ -2532,10 +2532,10 @@ export const eraPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  fontSize: 'calc(26px*var(--type-scale))',
-                  fontWeight: '600',
-                  lineHeight: '1.25',
-                  letterSpacing: '-0.035em',
+                  fontSize: 'type.26',
+                  fontWeight: 'semibold',
+                  lineHeight: 'tight',
+                  letterSpacing: 'heading',
                 }),
               ),
             ],
@@ -2545,8 +2545,8 @@ export const eraPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  fontSize: 'calc(14px*var(--type-scale))',
-                  lineHeight: '1.625',
+                  fontSize: 'type.14',
+                  lineHeight: 'relaxed',
                   color: 'mutedForeground',
                 }),
               ),
@@ -2619,9 +2619,9 @@ export const endPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  fontSize: 'calc(30px*var(--type-scale))',
-                  fontWeight: '600',
-                  letterSpacing: '-0.035em',
+                  fontSize: 'type.30',
+                  fontWeight: 'semibold',
+                  letterSpacing: 'heading',
                 }),
               ),
             ],

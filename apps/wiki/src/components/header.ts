@@ -87,10 +87,10 @@ export const languageSwitcher = (model: Model, l: Lang, h: H, inMenu = false): H
           height: '100%',
           minWidth: '6',
           placeItems: 'center',
-          borderRadius: '0.25rem',
+          borderRadius: 'xs',
           paddingInline: '1',
-          fontSize: '11px',
-          fontWeight: '600',
+          fontSize: 'type.11',
+          fontWeight: 'semibold',
           textTransform: 'uppercase',
         }),
         current
@@ -265,9 +265,9 @@ export const header = (model: Model, h: H): Html => {
                   h.Class(
                     css({
                       display: 'none',
-                      fontSize: '15px',
-                      fontWeight: '600',
-                      letterSpacing: '-0.025em',
+                      fontSize: 'type.15',
+                      fontWeight: 'semibold',
+                      letterSpacing: 'tight',
                       '@media (min-width: 430px)': {
                         display: 'inline',
                       },
@@ -281,7 +281,7 @@ export const header = (model: Model, h: H): Html => {
                   h.Class(
                     css({
                       display: 'none',
-                      fontSize: '15px',
+                      fontSize: 'type.15',
                       color: 'mutedForeground',
                       sm: {
                         display: 'inline',
@@ -365,8 +365,8 @@ export const header = (model: Model, h: H): Html => {
                   borderRadius: 'md',
                   backgroundColor: 'foreground',
                   paddingInline: '3',
-                  fontSize: '13px',
-                  fontWeight: '500',
+                  fontSize: 'type.13',
+                  fontWeight: 'medium',
                   color: 'background',
                   _hover: {
                     opacity: 0.9,
@@ -439,16 +439,16 @@ const sections = (model: Model, l: Lang, h: H): Html => {
                       gap: '2',
                       borderBottomWidth: '2px',
                       borderBottomStyle: 'solid',
-                      fontSize: '14px',
+                      fontSize: 'type.14',
                       transitionProperty:
                         'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
-                      transitionDuration: '150ms',
-                      transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                      transitionDuration: 'fast',
+                      transitionTimingFunction: 'default',
                     }),
                     section === current
                       ? css({
                           borderColor: 'foreground',
-                          fontWeight: '500',
+                          fontWeight: 'medium',
                           color: 'foreground',
                         })
                       : css({

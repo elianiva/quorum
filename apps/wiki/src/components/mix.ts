@@ -39,9 +39,9 @@ export const mixBar = <M>(mix: EraDef['mix'], h: HtmlBuilder<M>, legend = true):
             css({
               display: 'flex',
               height: '2',
-              gap: '1px',
+              gap: '0.25',
               overflow: 'hidden',
-              borderRadius: '9999px',
+              borderRadius: 'full',
             }),
           ),
           ...(legend
@@ -75,7 +75,7 @@ export const mixBar = <M>(mix: EraDef['mix'], h: HtmlBuilder<M>, legend = true):
                   flexWrap: 'wrap',
                   columnGap: '4',
                   rowGap: '1.5',
-                  fontSize: '12px',
+                  fontSize: 'type.12',
                 }),
               ),
             ],

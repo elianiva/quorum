@@ -22,9 +22,9 @@ const chartTooltipOverlayClass = css({
   borderStyle: 'solid',
   paddingInline: '2.5',
   paddingBlock: '1.5',
-  fontSize: 'calc(0.75rem * var(--type-scale))',
-  lineHeight: 'calc(1 / 0.75)',
-  boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+  fontSize: 'type.12',
+  lineHeight: 'compact',
+  boxShadow: 'xl',
   pointerEvents: 'none',
   position: 'absolute',
   zIndex: '10',
@@ -1339,7 +1339,7 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
                     h.Class(
                       css({
                         marginBottom: '1',
-                        fontWeight: '500',
+                        fontWeight: 'medium',
                       }),
                     ),
                   ],
@@ -1367,7 +1367,7 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
                             css({
                               width: '2',
                               height: '2',
-                              borderRadius: '9999px',
+                              borderRadius: 'full',
                             }),
                           ),
                         ],
@@ -1390,8 +1390,8 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
                     css({
                       display: 'flex',
                       gap: '2.5',
-                      fontSize: 'calc(0.875rem * var(--type-scale))',
-                      lineHeight: 'calc(1.25 / 0.875)',
+                      fontSize: 'type.14',
+                      lineHeight: 'fine',
                       color: 'mutedForeground',
                     }),
                     legend.props.align === 'right'
@@ -1412,11 +1412,11 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
                   bottom: `${props.margin?.bottom ?? defaultMargin}px`,
                   left: '0',
                   right: '0',
-                  padding: '3px',
+                  padding: '0.75',
                   paddingTop: legend.props.wrapperStyle?.paddingTop ?? '3px',
                   lineHeight: legend.props.wrapperStyle?.lineHeight ?? '18px',
                   backgroundColor: legend.props.wrapperStyle?.backgroundColor ?? '#fff',
-                  borderRadius: '4px',
+                  borderRadius: 'xs',
                 }),
               ],
               [...lines]

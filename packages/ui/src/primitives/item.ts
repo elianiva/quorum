@@ -28,7 +28,7 @@ export const itemVariants: Record<ItemVariant, string> = {
   }),
   muted: css({
     backgroundColor: 'nested',
-    boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
+    boxShadow: 'line',
     borderColor: 'transparent',
   }),
 }
@@ -62,13 +62,13 @@ export const itemClass = cx(
       transitionProperty:
         'color, background-color, border-color, text-decoration-color, fill, stroke',
       transitionTimingFunction: 'default',
-      transitionDuration: 'default',
+      transitionDuration: 'fast',
     },
     borderRadius: 'xl',
     borderWidth: '1px',
     borderStyle: 'solid',
-    fontSize: 'calc(0.875rem * var(--type-scale))',
-    lineHeight: 'calc(1.25 / 0.875)',
+    fontSize: 'type.14',
+    lineHeight: 'fine',
     display: 'flex',
     width: '100%',
     flexWrap: 'wrap',
@@ -76,11 +76,11 @@ export const itemClass = cx(
     transitionProperty:
       'color, background-color, border-color, text-decoration-color, fill, stroke',
     transitionTimingFunction: 'default',
-    transitionDuration: '100ms',
+    transitionDuration: 'faster',
     outlineStyle: 'none',
     _focusVisible: {
       borderColor: 'ring',
-      boxShadow: '0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+      boxShadow: 'focus',
     },
   }),
   'group-item',
@@ -133,9 +133,9 @@ export const itemContentClass = css({
 
 export const itemTitleClass = css({
   gap: '2',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: '1.375',
-  fontWeight: '500',
+  fontSize: 'type.14',
+  lineHeight: 'snug',
+  fontWeight: 'medium',
   textUnderlineOffset: '4',
   lineClamp: '1',
   display: 'flex',
@@ -146,14 +146,14 @@ export const itemTitleClass = css({
 export const itemDescriptionClass = css({
   color: 'mutedForeground',
   textAlign: 'left',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: '1.5',
+  fontSize: 'type.14',
+  lineHeight: 'normal',
   '.group-item[data-size=xs] &': {
-    fontSize: 'calc(0.75rem * var(--type-scale))',
-    lineHeight: 'calc(1 / 0.75)',
+    fontSize: 'type.12',
+    lineHeight: 'compact',
   },
   lineClamp: '2',
-  fontWeight: '400',
+  fontWeight: 'normal',
   '&>a': {
     textDecorationLine: 'underline',
     textUnderlineOffset: '4',

@@ -177,7 +177,7 @@ const stat = (
             css({
               width: 'var(--hud-label-width,calc(46px*var(--type-scale)))',
               flexShrink: '0',
-              fontSize: 'calc(11.5px*var(--type-scale))',
+              fontSize: 'type.11-5',
               color: 'mutedForeground',
               _compact: {
                 display: 'none',
@@ -194,8 +194,8 @@ const stat = (
             cx(
               FIGURE,
               css({
-                fontSize: 'calc(13.5px*var(--type-scale))',
-                lineHeight: '1',
+                fontSize: 'type.13-5',
+                lineHeight: 'none',
                 whiteSpace: 'nowrap',
               }),
               note || tone === 'plain' ? '' : toneText(tone),
@@ -217,8 +217,8 @@ const stat = (
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    fontSize: 'calc(10px*var(--type-scale))',
-                    lineHeight: '1',
+                    fontSize: 'type.10',
+                    lineHeight: 'none',
                     _compact: {
                       marginLeft: '0.5',
                     },
@@ -294,8 +294,8 @@ const insightHelp = (h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  fontSize: 'calc(13px*var(--type-scale))',
-                  fontWeight: '600',
+                  fontSize: 'type.13',
+                  fontWeight: 'semibold',
                 }),
               ),
             ],
@@ -363,8 +363,8 @@ const insightHelp = (h: HtmlBuilder<Message>): Html => {
                 [
                   h.Class(
                     css({
-                      fontSize: 'calc(12px*var(--type-scale))',
-                      lineHeight: '1.375',
+                      fontSize: 'type.12',
+                      lineHeight: 'snug',
                       color: 'color-mix(in oklab, var(--foreground) 85%, transparent)',
                     }),
                   ),
@@ -398,12 +398,12 @@ const poolRow = (
             display: 'flex',
             alignItems: 'center',
             gap: '2',
-            fontSize: 'calc(12px*var(--type-scale))',
-            lineHeight: '1',
+            fontSize: 'type.12',
+            lineHeight: 'none',
           }),
           inStudy &&
             css({
-              fontWeight: '600',
+              fontWeight: 'semibold',
             }),
         ),
       ),
@@ -466,8 +466,8 @@ const poolRow = (
               css({
                 width: '52px',
                 textAlign: 'right',
-                fontSize: 'calc(10.5px*var(--type-scale))',
-                fontWeight: '400',
+                fontSize: 'type.10-5',
+                fontWeight: 'normal',
               }),
               perSecond > 0
                 ? css({
@@ -561,7 +561,7 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                   paddingInline: '1',
                   paddingBlock: '0.5',
                   textAlign: 'left',
-                  fontSize: 'calc(12px*var(--type-scale))',
+                  fontSize: 'type.12',
                   _hover: {
                     backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
                   },
@@ -592,7 +592,7 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                       }),
                       running
                         ? css({
-                            fontWeight: '500',
+                            fontWeight: 'medium',
                           })
                         : css({
                             color: 'mutedForeground',
@@ -612,7 +612,7 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                             display: 'flex',
                             alignItems: 'center',
                             gap: '1',
-                            fontSize: 'calc(10.5px*var(--type-scale))',
+                            fontSize: 'type.10-5',
                           }),
                           stall
                             ? css({
@@ -834,8 +834,8 @@ const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  fontSize: 'calc(13px*var(--type-scale))',
-                  fontWeight: '600',
+                  fontSize: 'type.13',
+                  fontWeight: 'semibold',
                   _compact: {
                     flexShrink: '0',
                   },
@@ -851,7 +851,7 @@ const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
                   FIGURE,
                   css({
                     marginLeft: 'auto',
-                    fontSize: 'calc(10.5px*var(--type-scale))',
+                    fontSize: 'type.10-5',
                     color: 'mutedForeground',
                     _compact: {
                       display: 'none',
@@ -961,7 +961,7 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
               display: 'flex',
               alignItems: 'center',
               gap: '2',
-              fontSize: 'calc(12px*var(--type-scale))',
+              fontSize: 'type.12',
             }),
           ),
         ],
@@ -989,7 +989,7 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
                   }),
                   item
                     ? css({
-                        fontWeight: '500',
+                        fontWeight: 'medium',
                       })
                     : css({
                         color: 'mutedForeground',
@@ -1010,11 +1010,11 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
                     cx(
                       FIGURE,
                       css({
-                        fontSize: 'calc(10.5px*var(--type-scale))',
+                        fontSize: 'type.10-5',
                       }),
                       late > 0
                         ? css({
-                            fontWeight: '500',
+                            fontWeight: 'medium',
                             color: 'danger',
                           })
                         : css({
@@ -1032,7 +1032,7 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
                       cx(
                         FIGURE,
                         css({
-                          fontSize: 'calc(10.5px*var(--type-scale))',
+                          fontSize: 'type.10-5',
                           color: 'primaryStrong',
                         }),
                       ),
@@ -1046,7 +1046,7 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
                       cx(
                         FIGURE,
                         css({
-                          fontSize: 'calc(10.5px*var(--type-scale))',
+                          fontSize: 'type.10-5',
                           color: 'mutedForeground',
                         }),
                       ),
@@ -1109,8 +1109,8 @@ const phoneFigure = (
             cx(
               FIGURE,
               css({
-                fontSize: 'calc(13.5px*var(--type-scale))',
-                lineHeight: '1',
+                fontSize: 'type.13-5',
+                lineHeight: 'none',
                 whiteSpace: 'nowrap',
               }),
               tone === 'plain' ? '' : toneText(tone),
@@ -1211,8 +1211,8 @@ const phoneHud = (model: Model, h: HtmlBuilder<Message>): Html => {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  fontSize: 'calc(15px*var(--type-scale))',
-                  fontWeight: '600',
+                  fontSize: 'type.15',
+                  fontWeight: 'semibold',
                 }),
               ),
             ],
@@ -1338,7 +1338,7 @@ const vitalRow = (
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              fontSize: 'calc(13px * var(--type-scale))',
+              fontSize: 'type.13',
             }),
           ),
         ],
@@ -1351,8 +1351,8 @@ const vitalRow = (
               FIGURE,
               css({
                 flexShrink: '0',
-                fontSize: 'calc(14px*var(--type-scale))',
-                lineHeight: '1',
+                fontSize: 'type.14',
+                lineHeight: 'none',
               }),
               tone === 'plain' ? '' : toneText(tone),
             ),
@@ -1369,8 +1369,8 @@ const vitalRow = (
                   FIGURE,
                   css({
                     flexShrink: '0',
-                    fontSize: 'calc(11px*var(--type-scale))',
-                    lineHeight: '1',
+                    fontSize: 'type.11',
+                    lineHeight: 'none',
                   }),
                   tone === 'plain'
                     ? css({
@@ -1455,8 +1455,8 @@ export const vitalsPanel = (model: Model, ledger: Ledger, h: HtmlBuilder<Message
                     [
                       h.Class(
                         css({
-                          fontSize: 'calc(15px * var(--type-scale))',
-                          fontWeight: '600',
+                          fontSize: 'type.15',
+                          fontWeight: 'semibold',
                         }),
                       ),
                     ],
@@ -1469,7 +1469,7 @@ export const vitalsPanel = (model: Model, ledger: Ledger, h: HtmlBuilder<Message
                             cx(
                               FIGURE,
                               css({
-                                fontSize: 'calc(11.5px * var(--type-scale))',
+                                fontSize: 'type.11-5',
                                 color: 'mutedForeground',
                               }),
                             ),
@@ -1646,7 +1646,7 @@ export const phoneOffer = (model: Model, h: HtmlBuilder<Message>): Html => {
         width: '100%',
         paddingInline: '3',
         _compact: {
-          fontSize: 'calc(13px*var(--type-scale))',
+          fontSize: 'type.13',
         },
       }),
     },
@@ -1890,7 +1890,7 @@ const line = (name: string, value: string, tone: Tone, h: HtmlBuilder<Message>, 
           alignItems: 'center',
           gap: '2',
           paddingInline: '2.5',
-          fontSize: 'calc(11.5px*var(--type-scale))',
+          fontSize: 'type.11-5',
         }),
       ),
     ],
@@ -1932,7 +1932,7 @@ const line = (name: string, value: string, tone: Tone, h: HtmlBuilder<Message>, 
               FIGURE,
               css({
                 marginLeft: 'auto',
-                fontSize: 'calc(10.5px*var(--type-scale))',
+                fontSize: 'type.10-5',
                 whiteSpace: 'nowrap',
               }),
               toneText(tone),
@@ -2079,7 +2079,7 @@ const guidance = (
           alignItems: 'center',
           gap: '1',
           paddingInline: '2.5',
-          fontSize: 'calc(11.5px*var(--type-scale))',
+          fontSize: 'type.11-5',
         }),
       ),
     ],
@@ -2111,7 +2111,7 @@ const guidance = (
                   minWidth: '9',
                   borderRadius: 'md',
                   paddingInline: '1.5',
-                  fontSize: 'calc(10.5px*var(--type-scale))',
+                  fontSize: 'type.10-5',
                   _disabled: {
                     opacity: 0.35,
                   },
@@ -2363,8 +2363,8 @@ const exitButton = (model: Model, h: HtmlBuilder<Message>): Html => {
               width: 'auto',
               gap: '2',
               paddingInline: '3',
-              fontSize: 'calc(13px*var(--type-scale))',
-              fontWeight: '500',
+              fontSize: 'type.13',
+              fontWeight: 'medium',
               _compact: {
                 width: '9',
                 height: '9',
@@ -2421,12 +2421,12 @@ const exitButton = (model: Model, h: HtmlBuilder<Message>): Html => {
                       height: '4',
                       minWidth: '4',
                       placeItems: 'center',
-                      borderRadius: '9999px',
+                      borderRadius: 'full',
                       backgroundColor: 'ok',
                       paddingInline: '1',
-                      fontSize: 'calc(9.5px*var(--type-scale))',
-                      lineHeight: '1',
-                      fontWeight: '600',
+                      fontSize: 'type.9-5',
+                      lineHeight: 'none',
+                      fontWeight: 'semibold',
                       color: 'white',
                       boxShadow: 'raised',
                     }),
@@ -2523,7 +2523,7 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
                         right: '-0.125rem',
                         width: '2.5',
                         height: '2.5',
-                        borderRadius: '9999px',
+                        borderRadius: 'full',
                         backgroundColor: 'ok',
                         boxShadow: 'raised',
                       }),
@@ -2555,7 +2555,7 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
             gap: '2.5',
             borderRadius: 'xl',
             paddingInline: '2.5',
-            fontSize: 'calc(13px*var(--type-scale))',
+            fontSize: 'type.13',
             outlineStyle: 'none',
           }),
           isActive &&
@@ -2611,7 +2611,7 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
                       cx(
                         FIGURE,
                         css({
-                          fontSize: 'calc(11.5px*var(--type-scale))',
+                          fontSize: 'type.11-5',
                           color: 'ok',
                         }),
                       ),
@@ -2686,8 +2686,8 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                     width: 'auto',
                     gap: '2',
                     paddingInline: '3',
-                    fontSize: 'calc(13px*var(--type-scale))',
-                    fontWeight: '500',
+                    fontSize: 'type.13',
+                    fontWeight: 'medium',
                     _compact: {
                       width: '11',
                       height: '11',
@@ -2743,12 +2743,12 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                               height: '4',
                               minWidth: '4',
                               placeItems: 'center',
-                              borderRadius: '9999px',
+                              borderRadius: 'full',
                               backgroundColor: 'ok',
                               paddingInline: '1',
-                              fontSize: 'calc(9.5px*var(--type-scale))',
-                              lineHeight: '1',
-                              fontWeight: '600',
+                              fontSize: 'type.9-5',
+                              lineHeight: 'none',
+                              fontWeight: 'semibold',
                               color: 'white',
                               boxShadow: 'raised',
                             }),
@@ -2782,8 +2782,8 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                     width: 'auto',
                     gap: '2',
                     paddingInline: '3',
-                    fontSize: 'calc(13px*var(--type-scale))',
-                    fontWeight: '500',
+                    fontSize: 'type.13',
+                    fontWeight: 'medium',
                     _compact: {
                       width: '11',
                       height: '11',
@@ -2833,7 +2833,7 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                             right: '-0.125rem',
                             width: '2.5',
                             height: '2.5',
-                            borderRadius: '9999px',
+                            borderRadius: 'full',
                             backgroundColor: 'warn',
                             boxShadow: 'raised',
                           }),
@@ -2955,8 +2955,8 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                     tool(model.board.clock.speed > 1),
                     FIGURE,
                     css({
-                      fontSize: 'calc(12.5px*var(--type-scale))',
-                      fontWeight: '500',
+                      fontSize: 'type.12-5',
+                      fontWeight: 'medium',
                       _compact: {
                         width: '9',
                         height: '9',
@@ -3018,14 +3018,14 @@ export const screenshotExit = (h: HtmlBuilder<Message>): Html => {
           width: '8',
           height: '8',
           placeItems: 'center',
-          borderRadius: '9999px',
+          borderRadius: 'full',
           backgroundColor: 'color-mix(in oklab, var(--card) 40%, transparent)',
           color: 'mutedForeground',
           opacity: 0.3,
           boxShadow: 'card',
           backdropFilter: 'blur(8px)',
           transitionProperty: 'opacity',
-          transitionDuration: '150ms',
+          transitionDuration: 'fast',
           transitionTimingFunction: 'out',
           _hover: {
             opacity: 1,
@@ -3058,7 +3058,7 @@ const pill = css({
   layerStyle: 'surface',
   paddingInline: '3',
   paddingBlock: '2',
-  fontSize: 'calc(12.5px * var(--type-scale))',
+  fontSize: 'type.12-5',
   boxShadow: 'card',
   _compact: { maxWidth: 'none' },
 })
@@ -3192,7 +3192,7 @@ export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: stri
                       width: '2',
                       height: '2',
                       flexShrink: '0',
-                      borderRadius: '9999px',
+                      borderRadius: 'full',
                     }),
                     delta?.worse
                       ? css({ backgroundColor: 'danger' })
@@ -3208,7 +3208,7 @@ export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: stri
                   cx(
                     FIGURE,
                     css({
-                      fontSize: 'calc(11.5px*var(--type-scale))',
+                      fontSize: 'type.11-5',
                     }),
                   ),
                 ),
@@ -3222,8 +3222,8 @@ export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: stri
                     h.Class(
                       cx(
                         css({
-                          fontSize: 'calc(11.5px*var(--type-scale))',
-                          fontWeight: '500',
+                          fontSize: 'type.11-5',
+                          fontWeight: 'medium',
                           color: 'ok',
                         }),
                         'enter-badge',
@@ -3297,8 +3297,8 @@ export const regionTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
                 height: '7',
                 borderRadius: 'lg',
                 paddingInline: '2.5',
-                fontSize: 'calc(11.5px*var(--type-scale))',
-                fontWeight: '500',
+                fontSize: 'type.11-5',
+                fontWeight: 'medium',
               }),
               model.board.region === region
                 ? css({
@@ -3333,7 +3333,7 @@ export const regionTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
                       display: 'inline-block',
                       width: '1.5',
                       height: '1.5',
-                      borderRadius: '9999px',
+                      borderRadius: 'full',
                       backgroundColor: 'warn',
                       verticalAlign: 'middle',
                     }),
@@ -3362,9 +3362,9 @@ export const regionTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
                       height: '7',
                       borderRadius: 'lg',
                       paddingInline: '2.5',
-                      fontSize: 'calc(11.5px*var(--type-scale))',
-                      fontWeight: '500',
-                      boxShadow: 'inset 1px 0 0 var(--hairline-soft)',
+                      fontSize: 'type.11-5',
+                      fontWeight: 'medium',
+                      boxShadow: 'dividerStart',
                       _hover: {
                         backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
                       },

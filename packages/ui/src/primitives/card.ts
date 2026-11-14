@@ -20,8 +20,8 @@ export const cardClass = cx(
     overflow: 'hidden',
     borderRadius: '2xl',
     paddingBlock: 'var(--card-spacing)',
-    fontSize: 'calc(0.875rem * var(--type-scale))',
-    lineHeight: 'calc(1.25 / 0.875)',
+    fontSize: 'type.14',
+    lineHeight: 'fine',
     '--card-spacing': '1rem',
     '&:has([data-slot="card-footer"])': { paddingBottom: '0' },
     '&:has(> img:first-child)': { paddingTop: '0' },
@@ -57,20 +57,20 @@ export const cardHeaderClass = css({
 })
 
 export const cardTitleClass = css({
-  fontSize: 'calc(1rem * var(--type-scale))',
-  lineHeight: '1.375',
-  fontWeight: '500',
+  fontSize: 'type.16',
+  lineHeight: 'snug',
+  fontWeight: 'medium',
   '.group-card[data-size=sm] &': {
-    fontSize: 'calc(0.875rem * var(--type-scale))',
-    lineHeight: 'calc(1.25 / 0.875)',
+    fontSize: 'type.14',
+    lineHeight: 'fine',
   },
   fontFamily: 'heading',
 })
 
 export const cardDescriptionClass = css({
   color: 'mutedForeground',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
 })
 
 export const cardContentClass = css({

@@ -79,9 +79,9 @@ export const buttonGroupTextClass = css({
   gap: '2',
   borderRadius: 'lg',
   paddingInline: '2.5',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
-  fontWeight: '500',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
   '& svg:not([data-svg-icon])': {
     width: '4',
     height: '4',

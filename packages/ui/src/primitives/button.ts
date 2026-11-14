@@ -30,10 +30,10 @@ const buttonBaseStyle: SystemStyleObject = {
   borderColor: 'transparent',
   backgroundClip: 'padding-box',
   // Grow with the 150% text setting while keeping a fixed line box at 100%.
-  fontSize: 'calc(0.875rem * var(--type-scale))',
+  fontSize: 'type.14',
   // A unitless factor, so a nested 10.5px Kbd recomputes its own line box.
-  lineHeight: '1.4285714285714286',
-  fontWeight: '500',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
   display: 'inline-flex',
   flexShrink: 0,
   alignItems: 'center',
@@ -44,7 +44,7 @@ const buttonBaseStyle: SystemStyleObject = {
   '& svg': { pointerEvents: 'none', flexShrink: 0 },
   '& svg:not([data-svg-icon])': { width: '4', height: '4' },
   _focusVisible: { borderColor: 'ring' },
-  '[data-text="150"] &': { lineHeight: '1.45' },
+  '[data-text="150"] &': { lineHeight: 'body' },
   '&[aria-disabled="true"]': { pointerEvents: 'none', opacity: 0.5 },
   '&[data-disabled]': { pointerEvents: 'none', opacity: 0.5 },
   '&[aria-invalid="true"]': { borderColor: 'destructive' },
@@ -60,7 +60,7 @@ const buttonVariantStyles: Record<ButtonVariant, SystemStyleObject> = {
   default: {
     layerStyle: 'primaryFill',
     color: 'onPrimaryFill',
-    boxShadow: 'var(--elev-primary)',
+    boxShadow: 'primary',
     _hover: { filter: 'brightness(1.06)' },
     _active: { filter: 'brightness(0.95)' },
     _focusVisible: { boxShadow: `var(--elev-primary), ${focusRing}` },
@@ -91,7 +91,7 @@ const buttonVariantStyles: Record<ButtonVariant, SystemStyleObject> = {
   },
   outline: {
     layerStyle: 'raised',
-    boxShadow: 'var(--elev-raised)',
+    boxShadow: 'raised',
     color: 'foreground',
     _hover: { filter: 'brightness(0.985)' },
     _dark: {
@@ -105,7 +105,7 @@ const buttonVariantStyles: Record<ButtonVariant, SystemStyleObject> = {
   secondary: {
     backgroundColor: 'secondary',
     color: 'secondaryForeground',
-    boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
+    boxShadow: 'line',
     _hover: {
       backgroundColor: 'color-mix(in oklab, var(--secondary), var(--foreground) 5%)',
     },
@@ -175,11 +175,11 @@ const buttonSizeStyles: Record<ButtonSize, SystemStyleObject> = {
   xs: {
     height: '6',
     gap: '1',
-    borderRadius: 'min(var(--radius-md), 10px)',
+    borderRadius: 'md',
     paddingInline: '2',
-    fontSize: 'calc(0.75rem * var(--type-scale))',
-    lineHeight: '1.3333333333333333',
-    '[data-text="150"] &': { lineHeight: '1.45' },
+    fontSize: 'type.12',
+    lineHeight: 'compact',
+    '[data-text="150"] &': { lineHeight: 'body' },
     '[data-slot="button-group"] &': { borderRadius: 'lg' },
     '&:has([data-icon="inline-end"])': { paddingRight: '1.5' },
     '&:has([data-icon="inline-start"])': { paddingLeft: '1.5' },
@@ -188,9 +188,9 @@ const buttonSizeStyles: Record<ButtonSize, SystemStyleObject> = {
   sm: {
     height: '7',
     gap: '1',
-    borderRadius: 'min(var(--radius-md), 12px)',
+    borderRadius: 'md',
     paddingInline: '2.5',
-    fontSize: 'calc(0.8rem * var(--type-scale))',
+    fontSize: 'type.12-8',
     '[data-slot="button-group"] &': { borderRadius: 'lg' },
     '&:has([data-icon="inline-end"])': { paddingRight: '1.5' },
     '&:has([data-icon="inline-start"])': { paddingLeft: '1.5' },
@@ -212,14 +212,14 @@ const buttonSizeStyles: Record<ButtonSize, SystemStyleObject> = {
   'icon-xs': {
     width: '6',
     height: '6',
-    borderRadius: 'min(var(--radius-md), 10px)',
+    borderRadius: 'md',
     '[data-slot="button-group"] &': { borderRadius: 'lg' },
     ...iconSize('3'),
   },
   'icon-sm': {
     width: '7',
     height: '7',
-    borderRadius: 'min(var(--radius-md), 12px)',
+    borderRadius: 'md',
     '[data-slot="button-group"] &': { borderRadius: 'lg' },
   },
   'icon-lg': { width: '9', height: '9' },
@@ -332,7 +332,7 @@ export const closeButton = <M>(
             color: 'color-mix(in oklab, var(--muted-foreground) 80%, transparent)',
             _hover: { backgroundColor: 'well', color: 'foreground' },
             _focusVisible: {
-              boxShadow: '0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+              boxShadow: 'focus',
               outlineStyle: 'none',
             },
           }),

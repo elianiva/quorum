@@ -140,7 +140,7 @@ const gauge = (
             [
               h.Class(
                 css({
-                  fontSize: 'calc(12.5px*var(--type-scale))',
+                  fontSize: 'type.12-5',
                   color: 'mutedForeground',
                 }),
               ),
@@ -153,7 +153,7 @@ const gauge = (
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(12px*var(--type-scale))',
+                    fontSize: 'type.12',
                   }),
                   level >= 0.9
                     ? css({
@@ -197,19 +197,19 @@ const callout = (
             borderRadius: 'xl',
             paddingInline: '3',
             paddingBlock: '2.5',
-            fontSize: 'calc(12px*var(--type-scale))',
-            lineHeight: '1.375',
+            fontSize: 'type.12',
+            lineHeight: 'snug',
           }),
           tone === 'danger'
             ? css({
                 backgroundColor: 'color-mix(in oklab, var(--danger) 8%, transparent)',
                 color: 'danger',
-                boxShadow: 'inset 0 0 0 1px color-mix(in oklch,var(--danger) 25%,transparent)',
+                boxShadow: 'dangerLineInset',
               })
             : css({
                 backgroundColor: 'color-mix(in oklab, var(--warn) 10%, transparent)',
                 color: 'warn',
-                boxShadow: 'inset 0 0 0 1px color-mix(in oklch,var(--warn) 28%,transparent)',
+                boxShadow: 'warnLine',
               }),
           className,
         ),
@@ -1049,7 +1049,7 @@ const instance = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => 
                   css({
                     flex: '1 1 0%',
                     textAlign: 'center',
-                    fontSize: 'calc(12.5px*var(--type-scale))',
+                    fontSize: 'type.12-5',
                   }),
                 ),
               ),
@@ -1222,7 +1222,7 @@ const connectionGrid = (
                 textAlign: 'left',
                 transitionProperty:
                   'color, background-color, border-color, text-decoration-color, fill, stroke',
-                transitionDuration: '150ms',
+                transitionDuration: 'fast',
                 transitionTimingFunction: 'out',
                 _hover: {
                   backgroundColor: 'well',
@@ -1248,8 +1248,8 @@ const connectionGrid = (
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  fontSize: 'calc(11px*var(--type-scale))',
-                  fontWeight: '500',
+                  fontSize: 'type.11',
+                  fontWeight: 'medium',
                 }),
               ),
             ],
@@ -1262,7 +1262,7 @@ const connectionGrid = (
                   FIGURE,
                   css({
                     flexShrink: '0',
-                    fontSize: 'calc(10.5px*var(--type-scale))',
+                    fontSize: 'type.10-5',
                   }),
                   rateNow > 0.01
                     ? css({
@@ -1354,7 +1354,7 @@ const capacityMeter = (
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(11px*var(--type-scale))',
+                    fontSize: 'type.11',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -1651,7 +1651,7 @@ const breakdown = (
             css({
               minWidth: '0',
               overflowWrap: 'break-word',
-              fontSize: 'calc(12.5px*var(--type-scale))',
+              fontSize: 'type.12-5',
               color: 'mutedForeground',
             }),
           ),
@@ -1668,7 +1668,7 @@ const breakdown = (
                 alignItems: 'baseline',
                 justifyContent: 'flex-end',
                 gap: '1.5',
-                fontSize: 'calc(12px*var(--type-scale))',
+                fontSize: 'type.12',
                 whiteSpace: 'nowrap',
               }),
             ),
@@ -1685,7 +1685,7 @@ const breakdown = (
                   [
                     h.Class(
                       css({
-                        fontSize: 'calc(11.5px*var(--type-scale))',
+                        fontSize: 'type.11-5',
                         color: 'mutedForeground',
                       }),
                     ),
@@ -1823,7 +1823,7 @@ const trafficBreakdown = (
                         css({
                           flex: '1 1 0%',
                           textAlign: 'center',
-                          fontSize: 'calc(12.5px*var(--type-scale))',
+                          fontSize: 'type.12-5',
                         }),
                       ),
                     ),
@@ -1848,8 +1848,8 @@ const trafficBreakdown = (
               [
                 h.Class(
                   css({
-                    fontSize: 'calc(12px*var(--type-scale))',
-                    lineHeight: '1.375',
+                    fontSize: 'type.12',
+                    lineHeight: 'snug',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -1947,7 +1947,7 @@ const trafficBreakdown = (
                     h.Class(
                       css({
                         paddingInline: '3',
-                        fontSize: 'calc(12px*var(--type-scale))',
+                        fontSize: 'type.12',
                         color: 'mutedForeground',
                       }),
                     ),
@@ -1960,8 +1960,8 @@ const trafficBreakdown = (
               h.Class(
                 css({
                   paddingInline: '3',
-                  fontSize: 'calc(12px*var(--type-scale))',
-                  lineHeight: '1.375',
+                  fontSize: 'type.12',
+                  lineHeight: 'snug',
                   color: 'mutedForeground',
                 }),
               ),
@@ -2145,9 +2145,9 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                 [
                   h.Class(
                     css({
-                      fontSize: 'calc(17px*var(--type-scale))',
-                      fontWeight: '600',
-                      letterSpacing: '-0.025em',
+                      fontSize: 'type.17',
+                      fontWeight: 'semibold',
+                      letterSpacing: 'tight',
                     }),
                   ),
                 ],
@@ -2159,7 +2159,7 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                     cx(
                       FIGURE,
                       css({
-                        fontSize: 'calc(11.5px*var(--type-scale))',
+                        fontSize: 'type.11-5',
                         color: 'mutedForeground',
                       }),
                     ),
@@ -2189,8 +2189,8 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
             css({
               paddingInline: '4',
               paddingBottom: '3',
-              fontSize: 'calc(12.5px*var(--type-scale))',
-              lineHeight: '1.375',
+              fontSize: 'type.12-5',
+              lineHeight: 'snug',
               color: 'mutedForeground',
             }),
           ),
@@ -2307,13 +2307,13 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                       gap: '2',
                       borderRadius: 'lg',
                       backgroundColor: 'ok',
-                      fontSize: 'calc(13px*var(--type-scale))',
-                      fontWeight: '500',
+                      fontSize: 'type.13',
+                      fontWeight: 'medium',
                       color: 'white',
                       boxShadow:
                         'inset 0 1px 0 oklch(1 0 0/0.25),0 0 0 1px color-mix(in oklch,var(--ok),black 25%),0 2px 6px -2px color-mix(in oklch,var(--ok) 50%,transparent)',
                       transitionProperty: 'filter',
-                      transitionDuration: '150ms',
+                      transitionDuration: 'fast',
                       transitionTimingFunction: 'out',
                       _hover: {
                         filter: 'brightness(105%)',

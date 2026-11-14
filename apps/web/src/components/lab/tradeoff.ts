@@ -205,8 +205,8 @@ const radar = (now: Axes, next: Axes, h: HtmlBuilder<Message>): Html => {
             h.Class(
               cx(
                 css({
-                  fontSize: 'calc(10.5px*var(--type-scale))',
-                  fontWeight: '500',
+                  fontSize: 'type.10-5',
+                  fontWeight: 'medium',
                 }),
                 up
                   ? css({
@@ -295,7 +295,7 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
                         width: '2',
                         height: '2',
                         flexShrink: '0',
-                        borderRadius: '9999px',
+                        borderRadius: 'full',
                       }),
                       worse(card.preview)
                         ? css({ backgroundColor: 'danger' })
@@ -311,7 +311,7 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
                     cx(
                       FIGURE,
                       css({
-                        fontSize: 'calc(12px*var(--type-scale))',
+                        fontSize: 'type.12',
                       }),
                     ),
                   ),
@@ -328,7 +328,7 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
                       FIGURE,
                       css({
                         paddingLeft: '4',
-                        fontSize: 'calc(11.5px*var(--type-scale))',
+                        fontSize: 'type.11-5',
                         color: 'mutedForeground',
                       }),
                     ),
@@ -344,7 +344,7 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
           [
             h.Class(
               css({
-                fontSize: 'calc(12px*var(--type-scale))',
+                fontSize: 'type.12',
                 color: 'warn',
               }),
             ),
@@ -426,8 +426,8 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
           [
             h.Class(
               css({
-                fontSize: 'calc(12.5px*var(--type-scale))',
-                fontWeight: '600',
+                fontSize: 'type.12-5',
+                fontWeight: 'semibold',
               }),
             ),
           ],
@@ -500,8 +500,8 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                 css({
                   minWidth: '0',
                   flex: '1 1 0%',
-                  fontSize: 'calc(13.5px*var(--type-scale))',
-                  fontWeight: '600',
+                  fontSize: 'type.13-5',
+                  fontWeight: 'semibold',
                 }),
               ),
             ],
@@ -519,8 +519,8 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  fontSize: 'calc(12px*var(--type-scale))',
-                  lineHeight: '1.375',
+                  fontSize: 'type.12',
+                  lineHeight: 'snug',
                   color: 'mutedForeground',
                 }),
               ),
@@ -552,7 +552,7 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                       backgroundColor: 'nested',
                       paddingInline: '1.5',
                       paddingBlock: '0.5',
-                      fontSize: 'calc(11px*var(--type-scale))',
+                      fontSize: 'type.11',
                       color: 'mutedForeground',
                       textDecorationLine: 'underline',
                       textDecorationStyle: 'dotted',

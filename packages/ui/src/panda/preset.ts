@@ -209,6 +209,10 @@ export const quorumPreset = definePreset({
             value:
               '{shadows.raised}, 0 0 0 3px color-mix(in oklab, {colors.ring} 50%, transparent)',
           },
+          focusRaisedSoft: {
+            value:
+              '{shadows.raised}, 0 0 0 3px color-mix(in oklab, {colors.ring} 40%, transparent)',
+          },
           invalid: {
             value: {
               base: '0 0 0 3px color-mix(in oklab, {colors.destructive} 20%, transparent)',

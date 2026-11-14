@@ -106,8 +106,8 @@ const database = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readonly
                     [
                       h.Class(
                         css({
-                          fontSize: 'calc(12px*var(--type-scale))',
-                          fontWeight: '500',
+                          fontSize: 'type.12',
+                          fontWeight: 'medium',
                           color: 'mutedForeground',
                         }),
                       ),
@@ -137,8 +137,8 @@ const database = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readonly
                     [
                       h.Class(
                         css({
-                          fontSize: 'calc(12px*var(--type-scale))',
-                          fontWeight: '500',
+                          fontSize: 'type.12',
+                          fontWeight: 'medium',
                           color: 'mutedForeground',
                         }),
                       ),

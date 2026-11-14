@@ -10,9 +10,9 @@ type Child = Html | string
  *  or switch wrapper. */
 export const labelClass = css({
   gap: '2',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: '1',
-  fontWeight: '500',
+  fontSize: 'type.14',
+  lineHeight: 'none',
+  fontWeight: 'medium',
   '.group[data-disabled] &': {
     opacity: 0.5,
   },

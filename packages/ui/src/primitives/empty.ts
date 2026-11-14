@@ -60,16 +60,16 @@ export const emptyMediaVariants: Record<EmptyMediaVariant, string> = {
 }
 
 export const emptyTitleClass = css({
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
-  fontWeight: '500',
-  letterSpacing: '-0.025em',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
+  letterSpacing: 'tight',
   fontFamily: 'heading',
 })
 
 export const emptyDescriptionClass = css({
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: '1.625',
+  fontSize: 'type.14',
+  lineHeight: 'relaxed',
   color: 'mutedForeground',
   '& > a': {
     textDecorationLine: 'underline',
@@ -80,8 +80,8 @@ export const emptyDescriptionClass = css({
 
 export const emptyContentClass = css({
   gap: '2.5',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   display: 'flex',
   width: '100%',
   maxWidth: '96',

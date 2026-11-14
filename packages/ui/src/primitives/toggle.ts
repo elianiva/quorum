@@ -37,9 +37,9 @@ export const toggleSizes: Record<ToggleSize, string> = {
   sm: css({
     height: '7',
     minWidth: '7',
-    borderRadius: 'min(var(--radius-md), 12px)',
+    borderRadius: 'md',
     paddingInline: '2.5',
-    fontSize: 'calc(0.8rem * var(--type-scale))',
+    fontSize: 'type.12-8',
     '&:has([data-icon="inline-end"])': { paddingRight: '1.5' },
     '&:has([data-icon="inline-start"])': { paddingLeft: '1.5' },
     '& svg:not([data-svg-icon])': { width: '3.5', height: '3.5' },
@@ -62,15 +62,15 @@ export const toggleBase = css({
   },
   _focusVisible: {
     borderColor: 'ring',
-    boxShadow: '0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+    boxShadow: 'focus',
   },
   '&[aria-invalid="true"]': {
     borderColor: 'destructive',
-    boxShadow: '0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+    boxShadow: 'invalid',
   },
   _dark: {
     '&[aria-invalid="true"]': {
-      boxShadow: '0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+      boxShadow: 'invalid',
     },
   },
   '&[data-state=on]': {
@@ -82,11 +82,11 @@ export const toggleBase = css({
   color: 'mutedForeground',
   gap: '1',
   borderRadius: 'lg',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
-  fontWeight: '500',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
   transitionProperty: 'all',
-  transitionDuration: 'default',
+  transitionDuration: 'fast',
   transitionTimingFunction: 'default',
   '& svg:not([data-svg-icon])': { width: '4', height: '4' },
   display: 'inline-flex',

@@ -142,7 +142,7 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
           h.Class(
             css({
               marginTop: '1.5',
-              fontSize: '12px',
+              fontSize: 'type.12',
               color: 'color-mix(in oklab, var(--muted-foreground) 80%, transparent)',
             }),
           ),
@@ -154,7 +154,7 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
           h.Class(
             css({
               marginTop: '2',
-              fontSize: '12px',
+              fontSize: 'type.12',
               color: 'mutedForeground',
             }),
           ),
@@ -193,8 +193,8 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
                     css({
                       width: '100%',
                       borderCollapse: 'collapse',
-                      fontSize: '14px',
-                      lineHeight: '1.375',
+                      fontSize: 'type.14',
+                      lineHeight: 'snug',
                     }),
                   ),
                 ],
@@ -217,8 +217,8 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
                                   paddingInline: '3',
                                   paddingBlock: '2',
                                   textAlign: 'left',
-                                  fontSize: '12px',
-                                  fontWeight: '500',
+                                  fontSize: 'type.12',
+                                  fontWeight: 'medium',
                                   color: 'mutedForeground',
                                 }),
                               ),
@@ -312,7 +312,7 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 css({
                   marginTop: '2',
-                  fontSize: '12px',
+                  fontSize: 'type.12',
                   color: 'mutedForeground',
                 }),
               ),

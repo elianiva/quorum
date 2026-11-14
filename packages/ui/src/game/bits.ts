@@ -8,10 +8,10 @@ import { POOL_ICONS, poolColor, poolName } from './pools.ts'
 
 export const EYEBROW = css({
   fontFamily: 'mono',
-  fontSize: 'calc(10.5px * var(--type-scale))',
-  fontWeight: '500',
+  fontSize: 'type.10-5',
+  fontWeight: 'medium',
   textTransform: 'uppercase',
-  letterSpacing: '0.08em',
+  letterSpacing: 'eyebrow',
   color: 'mutedForeground',
 })
 export const SCROLL = css({ overflow: 'auto', scrollbarWidth: 'thin' })
@@ -21,7 +21,7 @@ export const FLOAT = css({ borderRadius: '2xl', layerStyle: 'surface', boxShadow
 export const NESTED = css({
   borderRadius: 'xl',
   backgroundColor: 'nested',
-  boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
+  boxShadow: 'line',
   '& > :not(:last-child):not([data-slot="button"])': {
     borderBottomWidth: '1px',
     borderBottomStyle: 'solid',
@@ -52,7 +52,7 @@ export const CHIPS = css({
 export const FIGURE = css({
   fontFamily: 'mono',
   fontVariantNumeric: 'tabular-nums',
-  letterSpacing: '-0.01em',
+  letterSpacing: 'subtle',
 })
 
 /** A square icon control inside a panel: flat at rest, a raised ink fill when on.
@@ -304,8 +304,8 @@ export const figure = <M>(
                 display: 'flex',
                 alignItems: 'baseline',
                 gap: '1.5',
-                fontSize: 'calc(15px*var(--type-scale))',
-                lineHeight: '1',
+                fontSize: 'type.15',
+                lineHeight: 'none',
                 whiteSpace: 'nowrap',
               }),
             ),
@@ -319,7 +319,7 @@ export const figure = <M>(
                   h.Class(
                     cx(
                       css({
-                        fontSize: 'calc(10.5px*var(--type-scale))',
+                        fontSize: 'type.10-5',
                       }),
                       noteTone === 'plain'
                         ? css({
@@ -358,7 +358,7 @@ export const row = <M>(name: string, value: string, tone: Tone, h: HtmlBuilder<M
         [
           h.Class(
             css({
-              fontSize: 'calc(12.5px*var(--type-scale))',
+              fontSize: 'type.12-5',
               color: 'mutedForeground',
             }),
           ),
@@ -371,7 +371,7 @@ export const row = <M>(name: string, value: string, tone: Tone, h: HtmlBuilder<M
             cx(
               FIGURE,
               css({
-                fontSize: 'calc(12px*var(--type-scale))',
+                fontSize: 'type.12',
                 whiteSpace: 'nowrap',
               }),
               toneText(tone),
@@ -391,7 +391,7 @@ export const meter = <M>(share: number, fill: string, h: HtmlBuilder<M>): Html =
         css({
           height: '1.5',
           overflow: 'hidden',
-          borderRadius: '9999px',
+          borderRadius: 'full',
           backgroundColor: 'well',
           boxShadow: 'well',
         }),
@@ -406,9 +406,9 @@ export const meter = <M>(share: number, fill: string, h: HtmlBuilder<M>): Html =
               css({
                 height: '100%',
                 width: '100%',
-                borderRadius: '9999px',
+                borderRadius: 'full',
                 transitionProperty: 'transform',
-                transitionDuration: '250ms',
+                transitionDuration: 'slow',
                 transitionTimingFunction: 'linear',
               }),
               fill,
@@ -457,7 +457,7 @@ export const ring = <M>(share: number, className: string, h: HtmlBuilder<M>): Ht
         h.Class(
           css({
             transitionProperty: 'stroke-dashoffset',
-            transitionDuration: '200ms',
+            transitionDuration: 'normal',
             transitionTimingFunction: 'out',
           }),
         ),
@@ -488,7 +488,7 @@ export const insightChip = <M>(
           css({
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '3px',
+            gap: '0.75',
             whiteSpace: 'nowrap',
           }),
         ),

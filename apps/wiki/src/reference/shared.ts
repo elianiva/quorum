@@ -115,8 +115,8 @@ export const factsBox = (
             [
               h.Class(
                 css({
-                  fontSize: '14px',
-                  fontWeight: '600',
+                  fontSize: 'type.14',
+                  fontWeight: 'semibold',
                 }),
               ),
             ],
@@ -157,7 +157,7 @@ export const factsBox = (
                   h.Class(
                     css({
                       flexShrink: '0',
-                      fontSize: '13px',
+                      fontSize: 'type.13',
                       color: 'mutedForeground',
                     }),
                   ),
@@ -172,7 +172,7 @@ export const factsBox = (
                       css({
                         minWidth: '0',
                         textAlign: 'right',
-                        fontSize: '12px',
+                        fontSize: 'type.12',
                         overflowWrap: 'anywhere',
                       }),
                     ),
@@ -258,8 +258,8 @@ export const hubCard = (page: Page, mark: Html, meta: string, h: H): Html =>
             padding: '4',
             transitionProperty:
               'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
-            transitionDuration: '150ms',
-            transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+            transitionDuration: 'fast',
+            transitionTimingFunction: 'default',
             _hover: {
               backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
             },
@@ -294,8 +294,8 @@ export const hubCard = (page: Page, mark: Html, meta: string, h: H): Html =>
                 [
                   h.Class(
                     css({
-                      fontSize: '14px',
-                      fontWeight: '500',
+                      fontSize: 'type.14',
+                      fontWeight: 'medium',
                     }),
                   ),
                 ],
@@ -308,7 +308,7 @@ export const hubCard = (page: Page, mark: Html, meta: string, h: H): Html =>
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
-                      fontSize: '12px',
+                      fontSize: 'type.12',
                       color: 'mutedForeground',
                     }),
                   ),
@@ -323,8 +323,8 @@ export const hubCard = (page: Page, mark: Html, meta: string, h: H): Html =>
                 css({
                   marginTop: '0.5',
                   lineClamp: '2',
-                  fontSize: '13px',
-                  lineHeight: '1.375',
+                  fontSize: 'type.13',
+                  lineHeight: 'snug',
                   color: 'mutedForeground',
                 }),
               ),
@@ -368,8 +368,8 @@ export const table = (
             css({
               width: '100%',
               borderCollapse: 'collapse',
-              fontSize: '14px',
-              lineHeight: '1.375',
+              fontSize: 'type.14',
+              lineHeight: 'snug',
             }),
           ),
         ],
@@ -393,8 +393,8 @@ export const table = (
                             paddingInline: '3',
                             paddingBlock: '2',
                             textAlign: 'left',
-                            fontSize: '12px',
-                            fontWeight: '500',
+                            fontSize: 'type.12',
+                            fontWeight: 'medium',
                             whiteSpace: 'nowrap',
                             color: 'mutedForeground',
                           }),
@@ -441,7 +441,7 @@ export const table = (
                               FIGURE,
                               css({
                                 textAlign: 'right',
-                                fontSize: '12px',
+                                fontSize: 'type.12',
                                 whiteSpace: 'nowrap',
                               }),
                             ),
@@ -470,7 +470,7 @@ export const cardGrid = (cards: ReadonlyArray<Html>, h: H): Html =>
           css({
             marginBlock: '6',
             display: 'grid',
-            gap: '1px',
+            gap: '0.25',
             overflow: 'hidden',
             borderRadius: 'lg',
             borderWidth: '1px',

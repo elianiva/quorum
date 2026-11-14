@@ -94,7 +94,7 @@ const figureRow = (
             css({
               width: '72px',
               flexShrink: '0',
-              fontSize: 'calc(11.5px*var(--type-scale))',
+              fontSize: 'type.11-5',
               color: 'mutedForeground',
               _compact: {
                 display: 'none',
@@ -111,8 +111,8 @@ const figureRow = (
               FIGURE,
               css({
                 marginLeft: 'auto',
-                fontSize: 'calc(13.5px*var(--type-scale))',
-                lineHeight: '1',
+                fontSize: 'type.13-5',
+                lineHeight: 'none',
               }),
               toneText(tone),
             ),
@@ -339,7 +339,7 @@ const fixes = (model: Model, h: HtmlBuilder<Message>): Html => {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  fontSize: 'calc(11.5px*var(--type-scale))',
+                  fontSize: 'type.11-5',
                 }),
               ),
             ],
@@ -351,7 +351,7 @@ const fixes = (model: Model, h: HtmlBuilder<Message>): Html => {
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(12px*var(--type-scale))',
+                    fontSize: 'type.12',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -549,8 +549,8 @@ export const challengeHud = (model: Model, ledger: Ledger, h: HtmlBuilder<Messag
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  fontSize: 'calc(13px*var(--type-scale))',
-                  fontWeight: '600',
+                  fontSize: 'type.13',
+                  fontWeight: 'semibold',
                 }),
               ),
             ],
@@ -612,7 +612,7 @@ export const challengeBar = (model: Model, h: HtmlBuilder<Message>): Html => {
             layerStyle: 'surface',
             paddingInline: '3',
             paddingBlock: '2.5',
-            fontSize: 'calc(12.5px*var(--type-scale))',
+            fontSize: 'type.12-5',
             boxShadow: 'card',
           }),
           'enter-down',
@@ -636,7 +636,7 @@ export const challengeBar = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 css({
                   flex: '1 1 0%',
-                  lineHeight: '1.375',
+                  lineHeight: 'snug',
                 }),
               ),
             ],
@@ -648,7 +648,7 @@ export const challengeBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(11px*var(--type-scale))',
+                    fontSize: 'type.11',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -668,7 +668,7 @@ export const challengeBar = (model: Model, h: HtmlBuilder<Message>): Html => {
             cx(
               FIGURE,
               css({
-                fontSize: 'calc(11px*var(--type-scale))',
+                fontSize: 'type.11',
                 color: 'mutedForeground',
               }),
             ),
@@ -715,8 +715,8 @@ const axisRow = (axis: ScoreAxis, run: ChallengeResultRun, h: HtmlBuilder<Messag
             [
               h.Class(
                 css({
-                  fontSize: 'calc(13px*var(--type-scale))',
-                  fontWeight: '500',
+                  fontSize: 'type.13',
+                  fontWeight: 'medium',
                 }),
               ),
             ],
@@ -728,7 +728,7 @@ const axisRow = (axis: ScoreAxis, run: ChallengeResultRun, h: HtmlBuilder<Messag
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(13px*var(--type-scale))',
+                    fontSize: 'type.13',
                   }),
                 ),
               ),
@@ -771,9 +771,9 @@ export const challengePanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 cx(
                   css({
-                    fontSize: 'calc(22px*var(--type-scale))',
-                    fontWeight: '600',
-                    letterSpacing: '-0.03em',
+                    fontSize: 'type.22',
+                    fontWeight: 'semibold',
+                    letterSpacing: 'title',
                   }),
                   passed
                     ? css({

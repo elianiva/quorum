@@ -81,7 +81,7 @@ const ventureBlock = (l: Lang, id: VentureId, h: H): Html => {
                 display: 'grid',
                 columnGap: '6',
                 rowGap: '2',
-                fontSize: '14px',
+                fontSize: 'type.14',
                 sm: {
                   gridTemplateColumns: '9rem 1fr',
                 },

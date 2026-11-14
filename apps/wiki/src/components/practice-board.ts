@@ -59,14 +59,14 @@ const BUTTON = css({
   borderColor: 'border',
   paddingInline: '2.5',
   paddingBlock: '1',
-  fontSize: '13px',
+  fontSize: 'type.13',
   _hover: {
     backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
   },
   _focusVisible: {
     outlineWidth: '2px',
     outlineStyle: 'solid',
-    outlineOffset: '2px',
+    outlineOffset: '0.5',
     outlineColor: 'ring',
   },
 })
@@ -83,9 +83,9 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
     'h3',
     css({
       margin: '0',
-      fontSize: '14px',
-      fontWeight: '600',
-      letterSpacing: '-0.025em',
+      fontSize: 'type.14',
+      fontWeight: 'semibold',
+      letterSpacing: 'tight',
     }),
     [t.titles[id]],
   )
@@ -111,8 +111,8 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
       margin: '0',
       paddingInline: '4',
       paddingTop: '3',
-      fontSize: '14px',
-      lineHeight: '1.375',
+      fontSize: 'type.14',
+      lineHeight: 'snug',
       color: 'mutedForeground',
     }),
     [t.intro[id]],
@@ -156,7 +156,7 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
   const cash = el(
     'span',
     css({
-      fontSize: '12px',
+      fontSize: 'type.12',
       color: 'mutedForeground',
       fontVariantNumeric: 'tabular-nums',
     }),
@@ -177,7 +177,7 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
       'aria-label': t.goalsLabel,
     },
   )
-  const note = el('p', css({ margin: '0', minHeight: '5', fontSize: '13px' }), [], {
+  const note = el('p', css({ margin: '0', minHeight: '5', fontSize: 'type.13' }), [], {
     role: 'status',
     'aria-live': 'polite',
   })
@@ -193,7 +193,7 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
     }),
     [
       el('div', css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }), [
-        el('span', css({ fontSize: '12px', fontWeight: '500' }), [t.goalsLabel]),
+        el('span', css({ fontSize: 'type.12', fontWeight: 'medium' }), [t.goalsLabel]),
         cash,
       ]),
       checklist,
@@ -229,7 +229,7 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
           `${BUTTON} ${armed ? css({ backgroundColor: 'muted' }) : ''}`,
           [
             svg(COMPONENT_ICONS[type]),
-            el('span', css({ fontWeight: '500' }), [l.cat.COMPONENTS[type].name]),
+            el('span', css({ fontWeight: 'medium' }), [l.cat.COMPONENTS[type].name]),
             el(
               'span',
               `${css({ fontVariantNumeric: 'tabular-nums' })} ${
@@ -264,7 +264,7 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
         ...rows,
         ...(armed
           ? [
-              el('span', css({ fontSize: '12px', color: 'mutedForeground' }), [
+              el('span', css({ fontSize: 'type.12', color: 'mutedForeground' }), [
                 t.clickToPlace(l.cat.COMPONENTS[armed].name),
               ]),
               ...(stop ? [stop] : []),
@@ -287,7 +287,7 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
               display: 'flex',
               alignItems: 'center',
               gap: '2',
-              fontSize: '14px',
+              fontSize: 'type.14',
             }),
             goal.done ? css({ color: 'ok' }) : css({ color: 'foreground' }),
           ),
@@ -316,7 +316,7 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
     const finished = complete(state)
     title.dataset['done'] = String(finished)
     note.className = cx(
-      css({ margin: '0', minHeight: '5', fontSize: '13px' }),
+      css({ margin: '0', minHeight: '5', fontSize: 'type.13' }),
       state.note?.tone === 'warn' ? css({ color: 'warn' }) : css({ color: 'ok' }),
     )
     // The refusals are the game's English sentences; the one note the board writes itself is translated.
@@ -331,7 +331,7 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
       note.className = css({
         margin: '0',
         minHeight: '5',
-        fontSize: '13px',
+        fontSize: 'type.13',
         color: 'ok',
       })
   }

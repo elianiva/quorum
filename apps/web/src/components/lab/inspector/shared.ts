@@ -143,12 +143,12 @@ export const segmented = (
           css({
             display: 'grid',
             gridAutoRows: 'fr',
-            gap: '3px',
-            padding: '3px',
+            gap: '0.75',
+            padding: '0.75',
           }),
           WELL,
           css({
-            borderRadius: '11px',
+            borderRadius: 'lg',
           }),
           columns,
         ),
@@ -193,12 +193,12 @@ export const choice = (
             paddingInline: '2',
             paddingBlock: '1',
             textAlign: 'left',
-            fontSize: 'calc(12px*var(--type-scale))',
-            fontWeight: '500',
-            lineHeight: '1.25',
+            fontSize: 'type.12',
+            fontWeight: 'medium',
+            lineHeight: 'tight',
             transitionProperty:
               'color, background-color, border-color, text-decoration-color, fill, stroke',
-            transitionDuration: '150ms',
+            transitionDuration: 'fast',
             transitionTimingFunction: 'out',
           }),
           selected
@@ -343,8 +343,8 @@ export const stack = (
           [
             h.Class(
               css({
-                fontSize: 'calc(12px*var(--type-scale))',
-                lineHeight: '1.375',
+                fontSize: 'type.12',
+                lineHeight: 'snug',
                 color: 'mutedForeground',
               }),
             ),
@@ -389,7 +389,7 @@ export const stack = (
                           css({
                             width: '12',
                             textAlign: 'center',
-                            fontSize: 'calc(13px*var(--type-scale))',
+                            fontSize: 'type.13',
                           }),
                         ),
                       ),
@@ -415,7 +415,7 @@ export const stack = (
                           }),
                           FIGURE,
                           css({
-                            fontSize: 'calc(11.5px*var(--type-scale))',
+                            fontSize: 'type.11-5',
                           }),
                           node.workers > fit
                             ? css({ color: 'danger' })
@@ -440,8 +440,8 @@ export const stack = (
           [
             h.Class(
               css({
-                fontSize: 'calc(12px*var(--type-scale))',
-                lineHeight: '1.375',
+                fontSize: 'type.12',
+                lineHeight: 'snug',
                 color: 'mutedForeground',
               }),
             ),
@@ -489,8 +489,8 @@ export const stack = (
                 [
                   h.Class(
                     css({
-                      fontSize: 'calc(12px*var(--type-scale))',
-                      lineHeight: '1.375',
+                      fontSize: 'type.12',
+                      lineHeight: 'snug',
                       color: 'mutedForeground',
                     }),
                   ),
@@ -575,8 +575,8 @@ export const nodeLink = (
             alignItems: 'center',
             gap: '1',
             textAlign: 'left',
-            fontSize: '12px',
-            fontWeight: '500',
+            fontSize: 'type.12',
+            fontWeight: 'medium',
             color: 'mutedForeground',
             _hover: {
               color: 'foreground',
@@ -629,8 +629,8 @@ export const caption = (text: string, h: HtmlBuilder<Message>): Html =>
     [
       h.Class(
         css({
-          fontSize: 'calc(12px*var(--type-scale))',
-          fontWeight: '500',
+          fontSize: 'type.12',
+          fontWeight: 'medium',
           color: 'mutedForeground',
         }),
       ),
@@ -689,8 +689,8 @@ export const replicaEngine = (game: Game, node: GameNode, h: HtmlBuilder<Message
             [
               h.Class(
                 css({
-                  fontSize: 'calc(12px*var(--type-scale))',
-                  fontWeight: '500',
+                  fontSize: 'type.12',
+                  fontWeight: 'medium',
                   color: 'foreground',
                 }),
               ),

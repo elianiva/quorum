@@ -36,8 +36,8 @@ const fixOf = (game: Game, entry: ChurnRow, h: HtmlBuilder<Message>): Html => {
         [
           h.Class(
             css({
-              fontSize: 'calc(12px*var(--type-scale))',
-              lineHeight: '1.375',
+              fontSize: 'type.12',
+              lineHeight: 'snug',
               color: 'mutedForeground',
             }),
           ),
@@ -112,7 +112,7 @@ const row = (
                     css({
                       paddingInline: '3',
                       paddingBottom: '1',
-                      fontSize: 'calc(11.5px*var(--type-scale))',
+                      fontSize: 'type.11-5',
                       color: 'mutedForeground',
                     }),
                     !entry.needed &&
@@ -167,8 +167,8 @@ const rowGrid = (
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              fontSize: 'calc(12.5px*var(--type-scale))',
-              fontWeight: '500',
+              fontSize: 'type.12-5',
+              fontWeight: 'medium',
             }),
           ),
         ],
@@ -179,7 +179,7 @@ const rowGrid = (
           h.Class(
             cx(
               css({
-                fontSize: 'calc(12px*var(--type-scale))',
+                fontSize: 'type.12',
               }),
               entry.cause === 'slow' || entry.cause === 'far'
                 ? css({
@@ -198,7 +198,7 @@ const rowGrid = (
           h.Class(
             css({
               height: '1.5',
-              borderRadius: '9999px',
+              borderRadius: 'full',
               backgroundColor: 'muted',
             }),
           ),
@@ -215,7 +215,7 @@ const rowGrid = (
                 cx(
                   css({
                     height: '100%',
-                    borderRadius: '9999px',
+                    borderRadius: 'full',
                   }),
                   entry.needed
                     ? css({
@@ -239,7 +239,7 @@ const rowGrid = (
               FIGURE,
               css({
                 textAlign: 'right',
-                fontSize: 'calc(12px*var(--type-scale))',
+                fontSize: 'type.12',
               }),
             ),
           ),
@@ -303,8 +303,8 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
             [
               h.Class(
                 css({
-                  fontSize: 'calc(14px*var(--type-scale))',
-                  fontWeight: '600',
+                  fontSize: 'type.14',
+                  fontWeight: 'semibold',
                 }),
               ),
             ],
@@ -316,7 +316,7 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(12.5px*var(--type-scale))',
+                    fontSize: 'type.12-5',
                   }),
                 ),
               ),
@@ -329,7 +329,7 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(12.5px*var(--type-scale))',
+                    fontSize: 'type.12-5',
                   }),
                   toneText(region.now >= region.target ? 'ok' : 'danger'),
                 ),
@@ -343,7 +343,7 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(12.5px*var(--type-scale))',
+                    fontSize: 'type.12-5',
                   }),
                   toneText(falling ? 'danger' : 'ok'),
                 ),
@@ -358,7 +358,7 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
                   FIGURE,
                   css({
                     marginLeft: 'auto',
-                    fontSize: 'calc(12.5px*var(--type-scale))',
+                    fontSize: 'type.12-5',
                     color: 'mutedForeground',
                   }),
                 ),

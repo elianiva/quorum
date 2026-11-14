@@ -22,7 +22,7 @@ export const progressTrackClass = css({
   backgroundColor: 'well',
   boxShadow: 'well',
   height: '1.5',
-  borderRadius: '9999px',
+  borderRadius: 'full',
   position: 'relative',
   display: 'flex',
   width: '100%',
@@ -32,26 +32,26 @@ export const progressTrackClass = css({
 
 export const progressIndicatorClass = css({
   layerStyle: 'primaryFill',
-  borderRadius: '9999px',
-  boxShadow: 'inset 0 1px 0 oklch(1 0 0/0.3)',
+  borderRadius: 'full',
+  boxShadow: 'highlightTop',
   height: '100%',
   width: '100%',
   transitionProperty: 'all',
-  transitionDuration: '150ms',
+  transitionDuration: 'fast',
   transitionTimingFunction: 'out',
 })
 
 export const progressLabelClass = css({
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
-  fontWeight: '500',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
 })
 
 export const progressValueClass = css({
   color: 'mutedForeground',
   marginLeft: 'auto',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   fontVariantNumeric: 'tabular-nums',
 })
 

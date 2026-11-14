@@ -20,7 +20,7 @@ export const nativeSelectClass = css({
   '&::selection': { backgroundColor: 'primary', color: 'primaryForeground' },
   _focusVisible: {
     borderColor: 'ring',
-    boxShadow: 'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+    boxShadow: 'focusWell',
   },
   '&[aria-invalid="true"]': {
     borderColor: 'destructive',
@@ -44,15 +44,15 @@ export const nativeSelectClass = css({
   paddingBlock: '1',
   paddingRight: '8',
   paddingLeft: '2.5',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke',
   transitionTimingFunction: 'default',
-  transitionDuration: 'default',
+  transitionDuration: 'fast',
   userSelect: 'none',
   '&[data-size="sm"]': {
     height: '7',
-    borderRadius: 'min(var(--radius-md), 10px)',
+    borderRadius: 'md',
     paddingBlock: '0.5',
   },
   '&[aria-disabled="true"], &[data-disabled]': {
@@ -99,13 +99,13 @@ export const nativeSelectOptGroupClass = css({
 export const nativeSelectLabelClass = css({
   paddingInline: '1.5',
   paddingBlock: '1',
-  fontSize: 'calc(0.75rem * var(--type-scale))',
-  lineHeight: 'calc(1 / 0.75)',
+  fontSize: 'type.12',
+  lineHeight: 'compact',
   color: 'mutedForeground',
 })
 export const nativeSelectDescriptionClass = css({
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   color: 'mutedForeground',
 })
 export const nativeSelectFieldWrapperClass = css({

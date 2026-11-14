@@ -39,12 +39,12 @@ const navLink = (
             display: 'block',
             borderRadius: 'md',
             paddingBlock: '1.5',
-            fontSize: '14px',
-            lineHeight: '1.375',
+            fontSize: 'type.14',
+            lineHeight: 'snug',
             transitionProperty:
               'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
-            transitionDuration: '150ms',
-            transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+            transitionDuration: 'fast',
+            transitionTimingFunction: 'default',
           }),
           nested
             ? css({
@@ -62,7 +62,7 @@ const navLink = (
           active
             ? css({
                 backgroundColor: 'muted',
-                fontWeight: '500',
+                fontWeight: 'medium',
                 color: 'foreground',
               })
             : css({
@@ -87,7 +87,7 @@ const navLink = (
                   bottom: '1.5',
                   left: '0',
                   width: '0.5',
-                  borderRadius: '9999px',
+                  borderRadius: 'full',
                 }),
               ),
               h.Style({ background: color }),
@@ -117,7 +117,7 @@ const navLink = (
                         width: '4',
                         flexShrink: '0',
                         textAlign: 'right',
-                        fontSize: '11px',
+                        fontSize: 'type.11',
                       }),
                       active
                         ? css({
@@ -195,8 +195,8 @@ const groupBlock = (
                 textAlign: 'left',
                 transitionProperty:
                   'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
-                transitionDuration: '150ms',
-                transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                transitionDuration: 'fast',
+                transitionTimingFunction: 'default',
                 _hover: {
                   backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
                 },
@@ -220,7 +220,7 @@ const groupBlock = (
                   width: '1.5',
                   height: '1.5',
                   flexShrink: '0',
-                  borderRadius: '9999px',
+                  borderRadius: 'full',
                 }),
               ),
               h.Style({ background: color }),
@@ -236,8 +236,8 @@ const groupBlock = (
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  fontSize: '13px',
-                  fontWeight: '600',
+                  fontSize: 'type.13',
+                  fontWeight: 'semibold',
                 }),
               ),
             ],
@@ -249,7 +249,7 @@ const groupBlock = (
                 cx(
                   FIGURE,
                   css({
-                    fontSize: '11px',
+                    fontSize: 'type.11',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -343,13 +343,13 @@ const hubLink = (
                     cursor: 'pointer',
                     alignItems: 'center',
                     gap: '1',
-                    borderRadius: '0.25rem',
+                    borderRadius: 'xs',
                     paddingInline: '1.5',
                     color: 'mutedForeground',
                     transitionProperty:
                       'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
-                    transitionDuration: '150ms',
-                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                    transitionDuration: 'fast',
+                    transitionTimingFunction: 'default',
                     _hover: {
                       backgroundColor: 'color-mix(in oklab, var(--foreground) 10%, transparent)',
                       color: 'foreground',
@@ -369,7 +369,7 @@ const hubLink = (
                     cx(
                       FIGURE,
                       css({
-                        fontSize: '11px',
+                        fontSize: 'type.11',
                       }),
                     ),
                   ),
@@ -492,8 +492,8 @@ export const sidebar = (model: Model, h: H): Html => {
                 [
                   h.Class(
                     css({
-                      fontSize: '13px',
-                      fontWeight: '600',
+                      fontSize: 'type.13',
+                      fontWeight: 'semibold',
                       color: 'foreground',
                     }),
                   ),
@@ -580,7 +580,7 @@ export const sidebar = (model: Model, h: H): Html => {
             [
               h.Class(
                 css({
-                  fontSize: '12px',
+                  fontSize: 'type.12',
                   color: 'mutedForeground',
                 }),
               ),

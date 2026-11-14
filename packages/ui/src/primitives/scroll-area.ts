@@ -43,10 +43,10 @@ export const scrollAreaViewportClass = css({
   borderRadius: 'inherit',
   transitionProperty: 'color, box-shadow',
   transitionTimingFunction: 'default',
-  transitionDuration: 'default',
+  transitionDuration: 'fast',
   outlineStyle: 'none',
   _focusVisible: {
-    boxShadow: '0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+    boxShadow: 'focus',
     outlineWidth: '1px',
     outlineStyle: 'solid',
   },
@@ -69,15 +69,15 @@ export const scrollAreaScrollbarClass = css({
   },
   display: 'flex',
   touchAction: 'none',
-  padding: '1px',
+  padding: '0.25',
   transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke',
   transitionTimingFunction: 'default',
-  transitionDuration: 'default',
+  transitionDuration: 'fast',
   userSelect: 'none',
 })
 
 export const scrollAreaThumbClass = css({
-  borderRadius: '9999px',
+  borderRadius: 'full',
   position: 'relative',
   flex: '1 1 0%',
   backgroundColor: 'border',

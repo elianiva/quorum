@@ -68,8 +68,8 @@ const kind = (l: Lang, section: Section, h: H): Html =>
             [
               h.Class(
                 css({
-                  fontSize: '15px',
-                  fontWeight: '600',
+                  fontSize: 'type.15',
+                  fontWeight: 'semibold',
                 }),
               ),
             ],
@@ -82,7 +82,7 @@ const kind = (l: Lang, section: Section, h: H): Html =>
           h.Class(
             css({
               marginTop: '1',
-              fontSize: '13px',
+              fontSize: 'type.13',
               color: 'mutedForeground',
             }),
           ),
@@ -115,7 +115,7 @@ const kind = (l: Lang, section: Section, h: H): Html =>
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
                         paddingBlock: '1',
-                        fontSize: '14px',
+                        fontSize: 'type.14',
                         _hover: {
                           textDecorationLine: 'underline',
                         },
@@ -155,7 +155,7 @@ const countList = (
         css({
           display: 'grid',
           gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-          gap: '1px',
+          gap: '0.25',
           overflow: 'hidden',
           borderRadius: 'lg',
           borderWidth: '1px',
@@ -186,8 +186,8 @@ const countList = (
                 padding: '5',
                 transitionProperty:
                   'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
-                transitionDuration: '150ms',
-                transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                transitionDuration: 'fast',
+                transitionTimingFunction: 'default',
                 _hover: {
                   backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
                 },
@@ -203,9 +203,9 @@ const countList = (
                 cx(
                   FIGURE,
                   css({
-                    fontSize: '32px',
-                    lineHeight: '1',
-                    fontWeight: '500',
+                    fontSize: 'type.32',
+                    lineHeight: 'none',
+                    fontWeight: 'medium',
                   }),
                 ),
               ),
@@ -216,7 +216,7 @@ const countList = (
             [
               h.Class(
                 css({
-                  fontSize: '13px',
+                  fontSize: 'type.13',
                   color: 'mutedForeground',
                   '.group:hover &': {
                     color: 'foreground',
@@ -250,7 +250,7 @@ const grid = (columns: string, items: ReadonlyArray<Html>, h: H): Html =>
         cx(
           css({
             display: 'grid',
-            gap: '1px',
+            gap: '0.25',
             overflow: 'hidden',
             borderRadius: 'lg',
             borderWidth: '1px',
@@ -280,9 +280,7 @@ const block = (title: string, lead: string, content: Html, h: H): Html =>
         [
           h.Class(
             css({
-              fontSize: '20px',
-              fontWeight: '600',
-              letterSpacing: '-0.025em',
+              textStyle: 'sectionTitle',
             }),
           ),
         ],
@@ -293,7 +291,7 @@ const block = (title: string, lead: string, content: Html, h: H): Html =>
           h.Class(
             css({
               marginTop: '1',
-              fontSize: '14px',
+              fontSize: 'type.14',
               color: 'mutedForeground',
             }),
           ),
@@ -328,8 +326,8 @@ const troubleLink = (target: Page, h: H): Html =>
             padding: '5',
             transitionProperty:
               'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
-            transitionDuration: '150ms',
-            transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+            transitionDuration: 'fast',
+            transitionTimingFunction: 'default',
             _hover: {
               backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
             },
@@ -347,8 +345,8 @@ const troubleLink = (target: Page, h: H): Html =>
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: '2',
-              fontSize: '15px',
-              fontWeight: '500',
+              fontSize: 'type.15',
+              fontWeight: 'medium',
             }),
           ),
         ],
@@ -363,8 +361,8 @@ const troubleLink = (target: Page, h: H): Html =>
               flexShrink: '0',
               color: 'mutedForeground',
               transitionProperty: 'transform, translate, scale, rotate',
-              transitionDuration: '150ms',
-              transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+              transitionDuration: 'fast',
+              transitionTimingFunction: 'default',
               '.group:hover &': {
                 translate: '0.125rem',
               },
@@ -377,8 +375,8 @@ const troubleLink = (target: Page, h: H): Html =>
           h.Class(
             css({
               lineClamp: '2',
-              fontSize: '13px',
-              lineHeight: '1.375',
+              fontSize: 'type.13',
+              lineHeight: 'snug',
               color: 'mutedForeground',
             }),
           ),
@@ -465,7 +463,7 @@ const flow = (h: H): Html =>
                 cx(
                   FIGURE,
                   css({
-                    fontSize: '11px',
+                    fontSize: 'type.11',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -542,10 +540,7 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
                 [
                   h.Class(
                     css({
-                      fontSize: '44px',
-                      lineHeight: '1.05',
-                      fontWeight: '600',
-                      letterSpacing: '-0.035em',
+                      textStyle: 'display',
                       textWrap: 'balance',
                     }),
                   ),
@@ -557,8 +552,8 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
                   h.Class(
                     css({
                       marginTop: '4',
-                      fontSize: '16px',
-                      lineHeight: '1.625',
+                      fontSize: 'type.16',
+                      lineHeight: 'relaxed',
                       textWrap: 'pretty',
                       color: 'mutedForeground',
                     }),
@@ -592,8 +587,8 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
                               borderRadius: 'md',
                               backgroundColor: 'foreground',
                               paddingInline: '4',
-                              fontSize: '14px',
-                              fontWeight: '500',
+                              fontSize: 'type.14',
+                              fontWeight: 'medium',
                               color: 'background',
                               _hover: {
                                 opacity: 0.9,
@@ -629,8 +624,8 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
                           borderColor: 'border',
                           backgroundColor: 'background',
                           paddingInline: '4',
-                          fontSize: '14px',
-                          fontWeight: '500',
+                          fontSize: 'type.14',
+                          fontWeight: 'medium',
                           _hover: {
                             borderColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
                           },
@@ -658,7 +653,7 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '1.5',
-                          fontSize: '13px',
+                          fontSize: 'type.13',
                           color: 'mutedForeground',
                           textDecorationLine: 'underline',
                           textUnderlineOffset: '4px',
@@ -748,8 +743,8 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
             css({
               marginTop: '8',
               maxWidth: '48rem',
-              fontSize: '13px',
-              lineHeight: '1.625',
+              fontSize: 'type.13',
+              lineHeight: 'relaxed',
               color: 'mutedForeground',
             }),
           ),

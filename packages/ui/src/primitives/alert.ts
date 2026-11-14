@@ -15,11 +15,11 @@ export const alertVariants: Record<AlertVariant, string> = {
   destructive: css({
     color: 'destructive',
     backgroundColor: 'color-mix(in oklab, var(--destructive) 8%, transparent)',
-    boxShadow: 'inset 0 0 0 1px color-mix(in oklch, var(--destructive) 25%, transparent)',
+    boxShadow: 'invalidLine',
     '& > [data-slot="alert-description"]': {
       color: 'color-mix(in oklab, var(--destructive) 90%, transparent)',
     },
-    '& > svg': { color: 'currentColor' },
+    '& > svg': { color: 'current' },
   }),
 }
 
@@ -34,8 +34,8 @@ export const alertClass = cx(
     paddingInline: '3',
     paddingBlock: '2.5',
     textAlign: 'left',
-    fontSize: 'calc(0.875rem * var(--type-scale))',
-    lineHeight: 'calc(1.25 / 0.875)',
+    fontSize: 'type.14',
+    lineHeight: 'fine',
     '&:has([data-slot="alert-action"])': {
       position: 'relative',
       paddingRight: '18',
@@ -47,7 +47,7 @@ export const alertClass = cx(
     '& > svg': {
       gridRow: 'span 2 / span 2',
       translate: '0 0.125rem',
-      color: 'currentColor',
+      color: 'current',
     },
     '& > svg:not([data-svg-icon])': { width: '4', height: '4' },
     position: 'relative',
@@ -57,7 +57,7 @@ export const alertClass = cx(
 )
 
 export const alertTitleClass = css({
-  fontWeight: '500',
+  fontWeight: 'medium',
   '.group-alert:has(> svg) &': {
     gridColumnStart: '2',
   },
@@ -70,8 +70,8 @@ export const alertTitleClass = css({
 
 export const alertDescriptionClass = css({
   color: 'mutedForeground',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   textWrap: 'balance',
   md: {
     textWrap: 'pretty',

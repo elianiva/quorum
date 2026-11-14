@@ -19,7 +19,7 @@ export const inputGroupClass = cx(
     borderColor: 'transparent',
     '&:has([data-slot="input-group-control"]:focus-visible)': {
       borderColor: 'ring',
-      boxShadow: 'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+      boxShadow: 'focusWell',
     },
     '&:has([data-slot][aria-invalid="true"])': {
       borderColor: 'destructive',
@@ -39,7 +39,7 @@ export const inputGroupClass = cx(
     transitionProperty:
       'color, background-color, border-color, text-decoration-color, fill, stroke',
     transitionTimingFunction: 'default',
-    transitionDuration: 'default',
+    transitionDuration: 'fast',
     '[data-slot="combobox-content"] &': {
       _focusWithin: {
         borderColor: 'inherit',
@@ -80,14 +80,14 @@ export const inputGroupAddonClass = css({
   height: 'auto',
   gap: '2',
   paddingBlock: '1.5',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
-  fontWeight: '500',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
   '.group-input-group[data-disabled] &': {
     opacity: 0.5,
   },
   '& > kbd': {
-    borderRadius: 'calc(var(--radius) - 5px)',
+    borderRadius: 'sm',
   },
   '& > svg:not([data-svg-icon])': {
     width: '4',
@@ -141,8 +141,8 @@ export type InputGroupButtonSize = (typeof inputGroupButtonSizeKeys)[number]
 /** Upstream InputGroupButton base string (sizes are tokens). */
 export const inputGroupButtonClass = css({
   gap: '2',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   display: 'flex',
   alignItems: 'center',
   boxShadow: 'none',
@@ -153,7 +153,7 @@ export const inputGroupButtonSizeClasses = {
   xs: css({
     height: '6',
     gap: '1',
-    borderRadius: 'calc(var(--radius) - 3px)',
+    borderRadius: 'sm',
     paddingInline: '1.5',
     '& > svg:not([data-svg-icon])': {
       width: '3.5',
@@ -166,7 +166,7 @@ export const inputGroupButtonSizeClasses = {
   'icon-xs': css({
     width: '6',
     height: '6',
-    borderRadius: 'calc(var(--radius) - 3px)',
+    borderRadius: 'sm',
     padding: '0',
     '&:has(> svg)': {
       padding: '0',
@@ -215,8 +215,8 @@ export const inputGroupTextareaClass = css({
 export const inputGroupTextClass = css({
   color: 'mutedForeground',
   gap: '2',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   '& svg:not([data-svg-icon])': {
     width: '4',
     height: '4',

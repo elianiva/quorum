@@ -83,12 +83,12 @@ export const inputOtpClass = css({
  *  layouts must pass `isInvalid` to their own slots for the ring to light. */
 export const inputOtpGroupClass = css({
   '&:has([aria-invalid="true"])': {
-    boxShadow: '0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)',
+    boxShadow: 'invalid',
     borderColor: 'destructive',
   },
   _dark: {
     '&:has([aria-invalid="true"])': {
-      boxShadow: '0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)',
+      boxShadow: 'invalid',
     },
   },
   borderRadius: 'lg',
@@ -118,7 +118,7 @@ export const inputOtpSlotClass = css({
   borderColor: 'transparent',
   '&[data-active="true"]': {
     borderColor: 'ring',
-    boxShadow: 'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+    boxShadow: 'focusWell',
     zIndex: '10',
     '&[aria-invalid="true"]': {
       boxShadow:
@@ -139,10 +139,10 @@ export const inputOtpSlotClass = css({
   borderWidth: '1px',
   borderStyle: 'solid',
   fontFamily: 'mono',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   transitionProperty: 'all',
-  transitionDuration: 'default',
+  transitionDuration: 'fast',
   transitionTimingFunction: 'default',
   outlineStyle: 'none',
   position: 'relative',

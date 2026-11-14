@@ -137,7 +137,7 @@ const entryOf = (
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(10.5px*var(--type-scale))',
+                    fontSize: 'type.10-5',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -295,10 +295,10 @@ export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.Class(
                     css({
                       lineClamp: 2,
-                      fontSize: 'calc(14.5px*var(--type-scale))',
-                      lineHeight: '1.375',
-                      fontWeight: '600',
-                      letterSpacing: '-0.01em',
+                      fontSize: 'type.14-5',
+                      lineHeight: 'snug',
+                      fontWeight: 'semibold',
+                      letterSpacing: 'subtle',
                     }),
                   ),
                 ],
@@ -330,8 +330,8 @@ export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 css({
                   lineClamp: 2,
-                  fontSize: 'calc(12px*var(--type-scale))',
-                  lineHeight: '1.375',
+                  fontSize: 'type.12',
+                  lineHeight: 'snug',
                   color: 'mutedForeground',
                 }),
               ),
@@ -491,8 +491,8 @@ export const mailQueueRow = (model: Model, h: HtmlBuilder<Message>): Html => {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  fontSize: 'calc(13px*var(--type-scale))',
-                  fontWeight: '500',
+                  fontSize: 'type.13',
+                  fontWeight: 'medium',
                 }),
               ),
             ],
@@ -508,7 +508,7 @@ export const mailQueueRow = (model: Model, h: HtmlBuilder<Message>): Html => {
                   width: '2',
                   height: '2',
                   flexShrink: '0',
-                  borderRadius: '9999px',
+                  borderRadius: 'full',
                   backgroundColor: 'danger',
                 }),
               ),
@@ -600,10 +600,10 @@ const inboxToggle = (
                       height: '18px',
                       minWidth: '18px',
                       placeItems: 'center',
-                      borderRadius: '9999px',
+                      borderRadius: 'full',
                       paddingInline: '1',
-                      fontSize: 'calc(10.5px*var(--type-scale))',
-                      fontWeight: '500',
+                      fontSize: 'type.10-5',
+                      fontWeight: 'medium',
                       boxShadow: 'raised',
                     }),
                     'enter-badge',
@@ -709,7 +709,7 @@ const row = (
                       left: '1.5',
                       width: '1.5',
                       height: '1.5',
-                      borderRadius: '9999px',
+                      borderRadius: 'full',
                       backgroundColor: 'primaryStrong',
                       _compact: {
                         top: '26px',
@@ -768,15 +768,15 @@ const row = (
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            fontSize: 'calc(12.5px*var(--type-scale))',
+                            fontSize: 'type.12-5',
                             _compact: {
-                              fontSize: 'calc(13.5px*var(--type-scale))',
+                              fontSize: 'type.13-5',
                             },
                           }),
                           mail.read
                             ? ''
                             : css({
-                                fontWeight: '600',
+                                fontWeight: 'semibold',
                               }),
                         ),
                       ),
@@ -808,7 +808,7 @@ const row = (
                             cx(
                               FIGURE,
                               css({
-                                fontSize: 'calc(10.5px*var(--type-scale))',
+                                fontSize: 'type.10-5',
                                 color: 'mutedForeground',
                               }),
                             ),
@@ -823,7 +823,7 @@ const row = (
                         cx(
                           FIGURE,
                           css({
-                            fontSize: 'calc(10.5px*var(--type-scale))',
+                            fontSize: 'type.10-5',
                             color: 'mutedForeground',
                           }),
                         ),
@@ -841,9 +841,9 @@ const row = (
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        fontSize: 'calc(12px*var(--type-scale))',
+                        fontSize: 'type.12',
                         _compact: {
-                          fontSize: 'calc(13.5px*var(--type-scale))',
+                          fontSize: 'type.13-5',
                         },
                       }),
                       mail.read
@@ -866,7 +866,7 @@ const row = (
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
-                      fontSize: 'calc(11.5px*var(--type-scale))',
+                      fontSize: 'type.11-5',
                       color: 'mutedForeground',
                       _compact: {
                         display: 'block',
@@ -929,7 +929,7 @@ const digestLine = (mail: Mail, h: HtmlBuilder<Message>): Html => {
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
-                      fontSize: 'calc(12.5px*var(--type-scale))',
+                      fontSize: 'type.12-5',
                     }),
                   ),
                 ],
@@ -941,7 +941,7 @@ const digestLine = (mail: Mail, h: HtmlBuilder<Message>): Html => {
                     cx(
                       FIGURE,
                       css({
-                        fontSize: 'calc(10.5px*var(--type-scale))',
+                        fontSize: 'type.10-5',
                         color: 'mutedForeground',
                       }),
                     ),
@@ -958,7 +958,7 @@ const digestLine = (mail: Mail, h: HtmlBuilder<Message>): Html => {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  fontSize: 'calc(12px*var(--type-scale))',
+                  fontSize: 'type.12',
                   color: 'color-mix(in oklab, var(--foreground) 85%, transparent)',
                 }),
               ),
@@ -972,7 +972,7 @@ const digestLine = (mail: Mail, h: HtmlBuilder<Message>): Html => {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  fontSize: 'calc(11.5px*var(--type-scale))',
+                  fontSize: 'type.11-5',
                   color: 'mutedForeground',
                 }),
               ),
@@ -1089,15 +1089,15 @@ const digestRow = (
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            fontSize: 'calc(12.5px*var(--type-scale))',
+                            fontSize: 'type.12-5',
                             _compact: {
-                              fontSize: 'calc(13.5px*var(--type-scale))',
+                              fontSize: 'type.13-5',
                             },
                           }),
                           mail.read
                             ? ''
                             : css({
-                                fontWeight: '600',
+                                fontWeight: 'semibold',
                               }),
                         ),
                       ),
@@ -1110,7 +1110,7 @@ const digestRow = (
                         cx(
                           FIGURE,
                           css({
-                            fontSize: 'calc(10.5px*var(--type-scale))',
+                            fontSize: 'type.10-5',
                             color: 'mutedForeground',
                           }),
                         ),
@@ -1124,7 +1124,7 @@ const digestRow = (
                         cx(
                           FIGURE,
                           css({
-                            fontSize: 'calc(10.5px*var(--type-scale))',
+                            fontSize: 'type.10-5',
                             color: 'mutedForeground',
                           }),
                         ),
@@ -1142,9 +1142,9 @@ const digestRow = (
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        fontSize: 'calc(12px*var(--type-scale))',
+                        fontSize: 'type.12',
                         _compact: {
-                          fontSize: 'calc(13.5px*var(--type-scale))',
+                          fontSize: 'type.13-5',
                         },
                       }),
                       mail.read
@@ -1190,11 +1190,11 @@ const labelChip = (
               flexShrink: '0',
               alignItems: 'center',
               gap: '1.5',
-              borderRadius: '9999px',
+              borderRadius: 'full',
               borderWidth: '1px',
               borderStyle: 'solid',
               paddingInline: '2.5',
-              fontSize: 'calc(11px*var(--type-scale))',
+              fontSize: 'type.11',
               whiteSpace: 'nowrap',
             }),
             'press',
@@ -1203,7 +1203,7 @@ const labelChip = (
             ? css({
                 borderColor: 'hairline',
                 layerStyle: 'raised',
-                fontWeight: '500',
+                fontWeight: 'medium',
                 color: 'foreground',
                 boxShadow: 'raised',
               })
@@ -1228,7 +1228,7 @@ const labelChip = (
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(10px*var(--type-scale))',
+                    fontSize: 'type.10',
                   }),
                 ),
               ),
@@ -1261,7 +1261,7 @@ const folderTab = (
               gap: '1.5',
               borderRadius: 'lg',
               paddingInline: '2.5',
-              fontSize: 'calc(12px*var(--type-scale))',
+              fontSize: 'type.12',
               _compact: {
                 height: '9',
                 paddingInline: '3',
@@ -1272,7 +1272,7 @@ const folderTab = (
           active
             ? css({
                 layerStyle: 'raised',
-                fontWeight: '500',
+                fontWeight: 'medium',
                 color: 'foreground',
                 boxShadow: 'raised',
               })
@@ -1294,7 +1294,7 @@ const folderTab = (
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(10.5px*var(--type-scale))',
+                    fontSize: 'type.10-5',
                   }),
                 ),
               ),
@@ -1373,12 +1373,12 @@ const digestLetter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Me
             [
               h.Class(
                 css({
-                  fontSize: 'calc(16px*var(--type-scale))',
-                  lineHeight: '1.375',
-                  fontWeight: '600',
-                  letterSpacing: '-0.02em',
+                  fontSize: 'type.16',
+                  lineHeight: 'snug',
+                  fontWeight: 'semibold',
+                  letterSpacing: 'body',
                   _compact: {
-                    fontSize: 'calc(18px*var(--type-scale))',
+                    fontSize: 'type.18',
                   },
                 }),
               ),
@@ -1389,8 +1389,8 @@ const digestLetter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Me
             [
               h.Class(
                 css({
-                  fontSize: 'calc(12px*var(--type-scale))',
-                  lineHeight: '1.625',
+                  fontSize: 'type.12',
+                  lineHeight: 'relaxed',
                   color: 'mutedForeground',
                 }),
               ),
@@ -1443,7 +1443,7 @@ const digestLetter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Me
               h.Class(
                 css({
                   flex: '1 1 0%',
-                  fontSize: 'calc(11.5px*var(--type-scale))',
+                  fontSize: 'type.11-5',
                   color: 'mutedForeground',
                 }),
               ),
@@ -1477,7 +1477,7 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
               h.Class(
                 css({
                   flex: '1 1 0%',
-                  fontSize: 'calc(12px*var(--type-scale))',
+                  fontSize: 'type.12',
                   color: 'mutedForeground',
                 }),
               ),
@@ -1623,8 +1623,8 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                           display: 'flex',
                           alignItems: 'center',
                           gap: '1',
-                          fontSize: 'calc(11.5px*var(--type-scale))',
-                          fontWeight: '500',
+                          fontSize: 'type.11-5',
+                          fontWeight: 'medium',
                           color: 'ok',
                         }),
                       ),
@@ -1648,12 +1648,12 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
             [
               h.Class(
                 css({
-                  fontSize: 'calc(16px*var(--type-scale))',
-                  lineHeight: '1.375',
-                  fontWeight: '600',
-                  letterSpacing: '-0.02em',
+                  fontSize: 'type.16',
+                  lineHeight: 'snug',
+                  fontWeight: 'semibold',
+                  letterSpacing: 'body',
                   _compact: {
-                    fontSize: 'calc(18px*var(--type-scale))',
+                    fontSize: 'type.18',
                   },
                 }),
               ),
@@ -1701,8 +1701,8 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
-                          fontSize: 'calc(12.5px*var(--type-scale))',
-                          fontWeight: '500',
+                          fontSize: 'type.12-5',
+                          fontWeight: 'medium',
                         }),
                       ),
                     ],
@@ -1717,7 +1717,7 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            fontSize: 'calc(11px*var(--type-scale))',
+                            fontSize: 'type.11',
                             color: 'mutedForeground',
                           }),
                         ),
@@ -1736,11 +1736,11 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '3',
-                  fontSize: 'calc(13px*var(--type-scale))',
-                  lineHeight: '1.625',
+                  fontSize: 'type.13',
+                  lineHeight: 'relaxed',
                   _compact: {
-                    fontSize: 'calc(15px*var(--type-scale))',
-                    lineHeight: '1.625',
+                    fontSize: 'type.15',
+                    lineHeight: 'relaxed',
                   },
                 }),
               ),
@@ -1823,7 +1823,7 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
             [
               h.Class(
                 css({
-                  fontSize: 'calc(11.5px*var(--type-scale))',
+                  fontSize: 'type.11-5',
                   color: 'mutedForeground',
                 }),
               ),
@@ -2101,7 +2101,7 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 css({
                   height: '1',
                   width: '10',
-                  borderRadius: '9999px',
+                  borderRadius: 'full',
                   backgroundColor: 'color-mix(in oklab, var(--foreground) 15%, transparent)',
                 }),
               ),
@@ -2231,7 +2231,7 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                           alignItems: 'center',
                           borderRadius: 'lg',
                           paddingInline: '2.5',
-                          fontSize: 'calc(12px*var(--type-scale))',
+                          fontSize: 'type.12',
                           _compact: {
                             display: 'none',
                           },
@@ -2409,7 +2409,7 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                             css({
                               paddingInline: '4',
                               paddingBlock: '4',
-                              fontSize: 'calc(12.5px*var(--type-scale))',
+                              fontSize: 'type.12-5',
                               color: 'mutedForeground',
                             }),
                           ),

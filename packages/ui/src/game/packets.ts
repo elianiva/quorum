@@ -45,12 +45,12 @@ export const packetMark = <M>(kind: Kind, size: number, h: HtmlBuilder<M>): Html
           }),
           shape === 'circle'
             ? css({
-                borderRadius: '9999px',
+                borderRadius: 'full',
               })
             : '',
           shape === 'square'
             ? css({
-                borderRadius: '1.5px',
+                borderRadius: '2xs',
               })
             : '',
           shape === 'triangle'
@@ -61,7 +61,7 @@ export const packetMark = <M>(kind: Kind, size: number, h: HtmlBuilder<M>): Html
           shape === 'diamond'
             ? css({
                 rotate: '45deg',
-                borderRadius: '1px',
+                borderRadius: '2xs',
               })
             : '',
         ),

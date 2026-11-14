@@ -92,7 +92,7 @@ export const radioItemClass = cx(
     '&[aria-invalid="true"][aria-checked="true"]': { borderColor: 'primary' },
     _focusVisible: {
       borderColor: 'ring',
-      boxShadow: 'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+      boxShadow: 'focusWell',
     },
     _dark: {
       '&[aria-invalid="true"]': {
@@ -104,12 +104,12 @@ export const radioItemClass = cx(
     display: 'flex',
     width: '4',
     height: '4',
-    borderRadius: '9999px',
+    borderRadius: 'full',
     '.group-field-label:has(:focus-visible) &': { boxShadow: 'none' },
     '&[aria-disabled="true"]': { cursor: 'not-allowed', opacity: 0.5 },
     '&[data-disabled]': { cursor: 'not-allowed', opacity: 0.5 },
     position: 'relative',
-    aspectRatio: '1 / 1',
+    aspectRatio: 'square',
     flexShrink: '0',
     borderWidth: '1px',
     borderStyle: 'solid',
@@ -141,7 +141,7 @@ export const radioDotClass = css({
   width: '2',
   height: '2',
   translate: '-50% -50%',
-  borderRadius: '9999px',
+  borderRadius: 'full',
 })
 
 /** Label for the upstream-anatomy option row. The circle control (radioItemClass)
@@ -150,9 +150,9 @@ export const radioDotClass = css({
  *  (upstream's native peer-disabled variant can never match). */
 export const radioItemLabelClass = css({
   gap: '2',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: '1',
-  fontWeight: '500',
+  fontSize: 'type.14',
+  lineHeight: 'none',
+  fontWeight: 'medium',
   '.group[data-disabled] &': { opacity: 0.5 },
   display: 'flex',
   alignItems: 'center',
@@ -168,8 +168,8 @@ export const radioItemLabelClass = css({
 })
 
 export const radioItemDescriptionClass = css({
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   color: 'mutedForeground',
 })
 
@@ -192,18 +192,18 @@ export const radioOptionClass = cx(
     boxShadow: 'raised',
     transitionProperty: 'box-shadow',
     transitionTimingFunction: 'default',
-    transitionDuration: 'default',
+    transitionDuration: 'fast',
     '&::after': {
       position: 'absolute',
       insetInline: '-0.75rem',
       insetBlock: '-0.5rem',
     },
     '&[data-checked]': {
-      boxShadow: 'var(--elev-raised), 0 0 0 1.5px var(--primary)',
+      boxShadow: 'active',
     },
     _focusVisible: {
       outlineStyle: 'none',
-      boxShadow: 'var(--elev-raised), 0 0 0 3px color-mix(in oklab, var(--ring) 40%, transparent)',
+      boxShadow: 'focusRaisedSoft',
     },
     '&:disabled': { cursor: 'not-allowed', opacity: 0.5 },
     '&[data-disabled]': { cursor: 'not-allowed', opacity: 0.5 },
@@ -218,9 +218,9 @@ export const radioOptionClass = cx(
  *  state flows via the group variant — a `peer-*` form can never match a
  *  descendant of the peer element. */
 export const radioOptionLabelClass = css({
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: '1',
-  fontWeight: '500',
+  fontSize: 'type.14',
+  lineHeight: 'none',
+  fontWeight: 'medium',
   '.group-radio-group-item[data-disabled] &': {
     cursor: 'not-allowed',
     opacity: 0.7,
@@ -228,8 +228,8 @@ export const radioOptionLabelClass = css({
 })
 
 export const radioOptionDescriptionClass = css({
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   color: 'mutedForeground',
 })
 
@@ -352,7 +352,7 @@ const defaultOptionRow = <M, Value extends string>(
               fieldLabelClass,
               descriptionText === undefined
                 ? css({
-                    fontWeight: '400',
+                    fontWeight: 'normal',
                   })
                 : undefined,
             )

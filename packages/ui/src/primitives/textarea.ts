@@ -10,11 +10,11 @@ export const textareaClass = css({
   borderWidth: '1px',
   paddingInline: '2.5',
   paddingBlock: '2',
-  fontSize: 'calc(1rem * var(--type-scale))',
-  lineHeight: 'calc(1.5 / 1)',
+  fontSize: 'type.16',
+  lineHeight: 'normal',
   transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke',
   transitionTimingFunction: 'default',
-  transitionDuration: 'default',
+  transitionDuration: 'fast',
   display: 'flex',
   minHeight: '16',
   width: '100%',
@@ -22,7 +22,7 @@ export const textareaClass = css({
   '&::placeholder': { color: 'mutedForeground' },
   '&:focus-visible': {
     borderColor: 'ring',
-    boxShadow: 'var(--elev-well), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+    boxShadow: 'focusWell',
   },
   '&[aria-invalid="true"]': {
     borderColor: 'destructive',
@@ -45,7 +45,7 @@ export const textareaClass = css({
     backgroundColor: 'color-mix(in oklab, var(--input) 50%, transparent)',
   },
   '&:disabled': { cursor: 'not-allowed', opacity: 0.5 },
-  md: { fontSize: 'calc(0.875rem * var(--type-scale))', lineHeight: 'calc(1.25 / 0.875)' },
+  md: { fontSize: 'type.14', lineHeight: 'fine' },
   fieldSizing: 'content',
 })
 
@@ -56,9 +56,9 @@ export const textareaClass = css({
  *  switch.ts). */
 export const textareaLabelClass = css({
   gap: '2',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: '1',
-  fontWeight: '500',
+  fontSize: 'type.14',
+  lineHeight: 'none',
+  fontWeight: 'medium',
   display: 'flex',
   alignItems: 'center',
   userSelect: 'none',
@@ -70,8 +70,8 @@ export const textareaLabelClass = css({
 })
 
 export const textareaDescriptionClass = css({
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   color: 'mutedForeground',
 })
 

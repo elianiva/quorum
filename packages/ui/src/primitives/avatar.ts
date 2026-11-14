@@ -22,9 +22,9 @@ export const avatarClass = cx(
   css({
     width: '8',
     height: '8',
-    borderRadius: '9999px',
+    borderRadius: 'full',
     '&::after': {
-      borderRadius: '9999px',
+      borderRadius: 'full',
       position: 'absolute',
       inset: '0',
       borderWidth: '1px',
@@ -46,8 +46,8 @@ export const avatarClass = cx(
 )
 
 export const avatarImageClass = css({
-  borderRadius: '9999px',
-  aspectRatio: '1 / 1',
+  borderRadius: 'full',
+  aspectRatio: 'square',
   width: '100%',
   height: '100%',
   objectFit: 'cover',
@@ -57,24 +57,24 @@ export const avatarFallbackClass = css({
   layerStyle: 'raised',
   boxShadow: 'raised',
   color: 'mutedForeground',
-  borderRadius: '9999px',
+  borderRadius: 'full',
   display: 'flex',
   width: '100%',
   height: '100%',
   alignItems: 'center',
   justifyContent: 'center',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   '.group-avatar[data-size=sm] &': {
-    fontSize: 'calc(0.75rem * var(--type-scale))',
-    lineHeight: 'calc(1 / 0.75)',
+    fontSize: 'type.12',
+    lineHeight: 'compact',
   },
 })
 
 export const avatarBadgeClass = css({
   backgroundColor: 'primary',
   color: 'primaryForeground',
-  boxShadow: '0 0 0 2px var(--background)',
+  boxShadow: 'avatar',
   position: 'absolute',
   right: '0',
   bottom: '0',
@@ -82,7 +82,7 @@ export const avatarBadgeClass = css({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  borderRadius: '9999px',
+  borderRadius: 'full',
   backgroundBlendMode: 'color',
   userSelect: 'none',
   '.group-avatar[data-size=sm] &': {
@@ -106,7 +106,7 @@ export const avatarGroupClass = cx(
   css({
     display: 'flex',
     '& > :not(:last-child)': { marginInlineEnd: '-0.5rem' },
-    '& > [data-slot="avatar"]': { boxShadow: '0 0 0 2px var(--background)' },
+    '& > [data-slot="avatar"]': { boxShadow: 'avatar' },
   }),
   'group-avatar-group',
 )
@@ -116,9 +116,9 @@ export const avatarGroupCountClass = css({
   color: 'mutedForeground',
   width: '8',
   height: '8',
-  borderRadius: '9999px',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  borderRadius: 'full',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   '.group-avatar-group:has([data-size=lg]) &': {
     width: '10',
     height: '10',
@@ -135,7 +135,7 @@ export const avatarGroupCountClass = css({
   flexShrink: '0',
   alignItems: 'center',
   justifyContent: 'center',
-  boxShadow: '0 0 0 2px var(--background)',
+  boxShadow: 'avatar',
 })
 
 type StyleConfig = Readonly<{ className?: string }>

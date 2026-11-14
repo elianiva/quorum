@@ -35,8 +35,8 @@ export const markerVariants: Record<MarkerVariant, string> = {
 export const markerClass = cx(
   css({
     gap: '2',
-    fontSize: 'calc(0.875rem * var(--type-scale))',
-    lineHeight: 'calc(1.25 / 0.875)',
+    fontSize: 'type.14',
+    lineHeight: 'fine',
     color: 'mutedForeground',
     '& a': {
       _hover: { color: 'foreground' },

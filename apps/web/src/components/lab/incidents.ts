@@ -47,8 +47,8 @@ const ALARM = cx(
     paddingBlock: '1.5',
     paddingRight: '1.5',
     paddingLeft: '3',
-    fontSize: 'calc(13px * var(--type-scale))',
-    fontWeight: '600',
+    fontSize: 'type.13',
+    fontWeight: 'semibold',
     color: 'white',
     boxShadow:
       'inset 0 1px 0 oklch(1 0 0/0.25), 0 0 0 1px color-mix(in oklch, var(--danger), black 25%), 0 10px 24px -8px color-mix(in oklch, var(--danger) 60%, transparent)',
@@ -68,7 +68,7 @@ const STATE = cx(
     paddingBlock: '1',
     paddingRight: '1',
     paddingLeft: '3',
-    fontSize: 'calc(12.5px * var(--type-scale))',
+    fontSize: 'type.12-5',
     boxShadow: 'card',
   }),
 )
@@ -146,9 +146,9 @@ const severity = (value: number, t: Messages, h: HtmlBuilder<Message>): Html =>
             flexShrink: '0',
             borderRadius: 'md',
             paddingInline: '1',
-            fontSize: 'calc(10.5px*var(--type-scale))',
-            fontWeight: '500',
-            boxShadow: 'inset 0 0 0 1px oklch(1 0 0/0.42)',
+            fontSize: 'type.10-5',
+            fontWeight: 'medium',
+            boxShadow: 'highlightLineStrong',
           }),
         ),
       ),
@@ -228,8 +228,8 @@ export const incidentNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
                 [
                   h.Class(
                     css({
-                      fontSize: 'calc(11.5px*var(--type-scale))',
-                      fontWeight: '500',
+                      fontSize: 'type.11-5',
+                      fontWeight: 'medium',
                       color: 'color-mix(in oklab, white 80%, transparent)',
                     }),
                   ),
@@ -278,7 +278,7 @@ export const incidentNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
                   placeItems: 'center',
                   borderRadius: 'lg',
                   color: 'color-mix(in oklab, white 90%, transparent)',
-                  boxShadow: 'inset 0 0 0 1px oklch(1 0 0/0.4)',
+                  boxShadow: 'highlightLine',
                   _hover: {
                     backgroundColor: 'color-mix(in oklab, white 10%, transparent)',
                   },
@@ -341,7 +341,7 @@ export const alertsNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
                 width: '7px',
                 height: '7px',
                 flexShrink: '0',
-                borderRadius: '9999px',
+                borderRadius: 'full',
               }),
               loud.length > 0
                 ? css({
@@ -360,7 +360,7 @@ export const alertsNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.Class(
             css({
               flexShrink: '0',
-              fontWeight: '600',
+              fontWeight: 'semibold',
             }),
           ),
         ],
@@ -533,9 +533,9 @@ export const researchOffer = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.Class(
                     css({
                       lineClamp: 2,
-                      fontSize: 'calc(13px*var(--type-scale))',
-                      fontWeight: '600',
-                      lineHeight: '1.375',
+                      fontSize: 'type.13',
+                      fontWeight: 'semibold',
+                      lineHeight: 'snug',
                       textWrap: 'pretty',
                     }),
                   ),

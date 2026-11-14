@@ -95,7 +95,7 @@ const figureRow = (
               minWidth: '52px',
               flexShrink: '0',
               whiteSpace: 'nowrap',
-              fontSize: 'calc(11.5px*var(--type-scale))',
+              fontSize: 'type.11-5',
               color: 'mutedForeground',
               _compact: {
                 display: 'none',
@@ -112,8 +112,8 @@ const figureRow = (
               FIGURE,
               css({
                 marginLeft: 'auto',
-                fontSize: 'calc(13.5px*var(--type-scale))',
-                lineHeight: '1',
+                fontSize: 'type.13-5',
+                lineHeight: 'none',
                 whiteSpace: 'nowrap',
                 _compact: {
                   marginLeft: '0',
@@ -254,8 +254,8 @@ const header = (title: string, aside: Html, h: HtmlBuilder<Message>): Html => {
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              fontSize: 'calc(13px*var(--type-scale))',
-              fontWeight: '600',
+              fontSize: 'type.13',
+              fontWeight: 'semibold',
             }),
           ),
         ],
@@ -299,7 +299,7 @@ const steps = (run: SandboxRun, id: SandboxId, h: HtmlBuilder<Message>): Html =>
               css({
                 height: '1.5',
                 width: '3',
-                borderRadius: '9999px',
+                borderRadius: 'full',
               }),
               index < run.progress.objective
                 ? css({
@@ -348,7 +348,7 @@ export const objectiveBar = (model: Model, h: HtmlBuilder<Message>): Html => {
             layerStyle: 'surface',
             paddingInline: '3',
             paddingBlock: '2.5',
-            fontSize: 'calc(12.5px*var(--type-scale))',
+            fontSize: 'type.12-5',
             boxShadow: 'card',
           }),
           'enter-down',
@@ -383,7 +383,7 @@ export const objectiveBar = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 css({
                   flex: '1 1 0%',
-                  lineHeight: '1.375',
+                  lineHeight: 'snug',
                 }),
               ),
             ],
@@ -395,7 +395,7 @@ export const objectiveBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(11px*var(--type-scale))',
+                    fontSize: 'type.11',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -429,8 +429,8 @@ const tiny = (label: string, message: Message, h: HtmlBuilder<Message>, active =
         minHeight: '7',
         paddingInline: '2',
         paddingBlock: '1',
-        fontSize: 'calc(11.5px*var(--type-scale))',
-        lineHeight: '1.25',
+        fontSize: 'type.11-5',
+        lineHeight: 'tight',
         whiteSpace: 'normal',
         textWrap: 'balance',
       }),
@@ -501,7 +501,7 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
-                      fontSize: 'calc(11.5px*var(--type-scale))',
+                      fontSize: 'type.11-5',
                       color: 'mutedForeground',
                     }),
                   ),
@@ -534,7 +534,7 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
                       css({
                         width: '6',
                         textAlign: 'center',
-                        fontSize: 'calc(11px*var(--type-scale))',
+                        fontSize: 'type.11',
                       }),
                     ),
                   ),
@@ -588,8 +588,8 @@ const controls = (model: Model, h: HtmlBuilder<Message>): Html => {
               alignItems: 'center',
               gap: '2',
               paddingInline: '2.5',
-              fontSize: 'calc(12.5px*var(--type-scale))',
-              fontWeight: '500',
+              fontSize: 'type.12-5',
+              fontWeight: 'medium',
               _compact: {
                 display: 'flex',
               },
@@ -689,7 +689,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
                   css({
                     width: '14',
                     textAlign: 'center',
-                    fontSize: 'calc(13px*var(--type-scale))',
+                    fontSize: 'type.13',
                   }),
                 ),
               ),
@@ -773,7 +773,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
             }),
           ),
           className: css({
-            fontSize: 'calc(11.5px*var(--type-scale))',
+            fontSize: 'type.11-5',
           }),
           options: [
             nativeSelectOption({ value: '', label: t.sandbox.none }, h),
@@ -997,7 +997,7 @@ export const passedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                     width: '12',
                     height: '12',
                     placeItems: 'center',
-                    borderRadius: '9999px',
+                    borderRadius: 'full',
                     backgroundColor: 'ok',
                     color: 'white',
                     boxShadow: 'raised',
@@ -1021,9 +1021,9 @@ export const passedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  fontSize: 'calc(26px*var(--type-scale))',
-                  fontWeight: '600',
-                  letterSpacing: '-0.035em',
+                  fontSize: 'type.26',
+                  fontWeight: 'semibold',
+                  letterSpacing: 'heading',
                 }),
               ),
             ],

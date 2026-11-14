@@ -22,8 +22,8 @@ const edge = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArra
           [
             h.Class(
               css({
-                fontSize: 'calc(12px*var(--type-scale))',
-                lineHeight: '1.375',
+                fontSize: 'type.12',
+                lineHeight: 'snug',
                 color: 'mutedForeground',
               }),
             ),
@@ -47,8 +47,8 @@ const edge = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArra
           [
             h.Class(
               css({
-                fontSize: 'calc(12px*var(--type-scale))',
-                lineHeight: '1.375',
+                fontSize: 'type.12',
+                lineHeight: 'snug',
                 color: 'mutedForeground',
               }),
             ),

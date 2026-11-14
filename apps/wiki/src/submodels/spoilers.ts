@@ -141,7 +141,7 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
       backgroundColor: 'transparent',
       color: 'foreground',
       cursor: 'pointer',
-      fontSize: 'calc(12px * var(--type-scale))',
+      fontSize: 'type.12',
       _hover: { backgroundColor: 'muted' },
     })
     const menu = css({
@@ -173,11 +173,11 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
       backgroundColor: 'transparent',
       color: 'foreground',
       cursor: 'pointer',
-      fontSize: 'calc(12px * var(--type-scale))',
+      fontSize: 'type.12',
       textAlign: 'left',
       _hover: { backgroundColor: 'muted' },
     })
-    const chosen = css({ backgroundColor: 'muted', fontWeight: '500' })
+    const chosen = css({ backgroundColor: 'muted', fontWeight: 'medium' })
     const check = css({ width: '3', height: '3', flexShrink: '0', color: 'mutedForeground' })
     const itemFor = (name: string, index: number) =>
       h.button(
@@ -212,8 +212,8 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
           [
             h.Class(
               css({
-                fontSize: 'calc(12px * var(--type-scale))',
-                fontWeight: '600',
+                fontSize: 'type.12',
+                fontWeight: 'semibold',
                 color: 'foreground',
               }),
             ),

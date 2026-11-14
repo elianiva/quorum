@@ -191,7 +191,7 @@ export const glossaryPages = (l: Lang): ReadonlyArray<Page> => {
                           h.Key(entry.id),
                           h.Class(
                             css({
-                              fontSize: '14px',
+                              fontSize: 'type.14',
                             }),
                           ),
                         ],

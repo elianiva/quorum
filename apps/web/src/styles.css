@@ -148,7 +148,7 @@
   width: max-content;
   max-width: 60%;
   font-family: var(--font-mono);
-  font-size: calc(10.5px * var(--type-scale));
+  font-size: var(--type-10-5);
   text-align: center;
   color: var(--muted-foreground);
   opacity: 0.7;
@@ -315,18 +315,18 @@
   max-width: calc(var(--s) * 62);
   min-height: calc(var(--s) * 2.6);
   font-family: var(--font-mono);
-  font-size: max(calc(10px * var(--type-scale)), calc(var(--s) * 1.3 * var(--type-scale)));
-  letter-spacing: 0.12em;
+  font-size: max(var(--type-10), calc(var(--s) * 1.3 * var(--type-scale)));
+  letter-spacing: var(--quorum-letter-spacings-badge);
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
 .booth-crumb b {
-  font-weight: 500;
+  font-weight: var(--quorum-font-weights-medium);
   color: var(--signal);
 }
 .booth-crumb .booth-figure {
   margin-left: auto;
-  letter-spacing: 0;
+  letter-spacing: var(--quorum-letter-spacings-normal);
   text-transform: none;
 }
 .booth-list {
@@ -360,16 +360,16 @@
   padding: calc(var(--s) * 0.3) calc(var(--s) * 1.4);
   border-radius: calc(var(--s) * 0.8);
   color: var(--muted-foreground);
-  font-size: max(calc(12px * var(--type-scale)), calc(var(--s) * 1.6 * var(--type-scale)));
-  font-weight: 500;
+  font-size: max(var(--type-12), calc(var(--s) * 1.6 * var(--type-scale)));
+  font-weight: var(--quorum-font-weights-medium);
   text-align: left;
   outline: none;
 }
 .booth-row.is-big {
   min-height: calc(var(--s) * 4.8);
   color: var(--foreground);
-  font-size: max(calc(14px * var(--type-scale)), calc(var(--s) * 2.1 * var(--type-scale)));
-  font-weight: 600;
+  font-size: max(var(--type-14), calc(var(--s) * 2.1 * var(--type-scale)));
+  font-weight: var(--quorum-font-weights-semibold);
 }
 .booth-row:focus {
   color: var(--foreground);
@@ -406,8 +406,8 @@
   border-radius: calc(var(--s) * 0.5);
   color: var(--muted-foreground);
   font-family: var(--font-mono);
-  font-size: max(calc(10px * var(--type-scale)), calc(var(--s) * 1.3 * var(--type-scale)));
-  letter-spacing: 0.1em;
+  font-size: max(var(--type-10), calc(var(--s) * 1.3 * var(--type-scale)));
+  letter-spacing: var(--quorum-letter-spacings-banner);
   text-align: left;
   text-overflow: ellipsis;
   text-transform: uppercase;
@@ -448,8 +448,8 @@
   margin: calc(var(--s) * 0.4) 0 calc(var(--s) * 0.6);
   padding: 0 calc(var(--s) * 1.4);
   color: var(--muted-foreground);
-  font-size: max(calc(10px * var(--type-scale)), calc(var(--s) * 1.3 * var(--type-scale)));
-  line-height: 1.4;
+  font-size: max(var(--type-10), calc(var(--s) * 1.3 * var(--type-scale)));
+  line-height: var(--quorum-line-heights-body-tight);
 }
 .booth-logo-mini {
   flex: none;
@@ -477,8 +477,8 @@
 }
 .booth-field-label {
   font-family: var(--font-mono);
-  font-size: max(9px, calc(var(--s) * 1.15));
-  letter-spacing: 0.12em;
+  font-size: max(var(--type-9), calc(var(--s) * 1.15));
+  letter-spacing: var(--quorum-letter-spacings-badge);
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
@@ -490,13 +490,13 @@
   box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.12);
   color: var(--foreground);
   font: inherit;
-  font-size: max(14px, calc(var(--s) * 2));
-  font-weight: 600;
+  font-size: max(var(--type-14), calc(var(--s) * 2));
+  font-weight: var(--quorum-font-weights-semibold);
   outline: none;
 }
 .booth-input::placeholder {
   color: var(--muted-foreground);
-  font-weight: 500;
+  font-weight: var(--quorum-font-weights-medium);
   opacity: 0.7;
 }
 .booth-input:focus-visible {
@@ -554,8 +554,8 @@
 .booth-file-name {
   overflow: hidden;
   color: var(--foreground);
-  font-size: max(16px, calc(var(--s) * 2.4));
-  font-weight: 600;
+  font-size: max(var(--type-16), calc(var(--s) * 2.4));
+  font-weight: var(--quorum-font-weights-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -572,8 +572,8 @@
 .booth-detail {
   overflow: hidden;
   font-family: var(--font-mono);
-  font-size: max(calc(10px * var(--type-scale)), calc(var(--s) * 1.3 * var(--type-scale)));
-  font-weight: 400;
+  font-size: max(var(--type-10), calc(var(--s) * 1.3 * var(--type-scale)));
+  font-weight: var(--quorum-font-weights-normal);
   opacity: 0.65;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -583,14 +583,14 @@
   flex: none;
   align-items: center;
   font-family: var(--font-mono);
-  font-size: max(calc(10px * var(--type-scale)), calc(var(--s) * 1.3 * var(--type-scale)));
-  font-weight: 400;
+  font-size: max(var(--type-10), calc(var(--s) * 1.3 * var(--type-scale)));
+  font-weight: var(--quorum-font-weights-normal);
   opacity: 0.8;
   font-variant-numeric: tabular-nums;
 }
 .booth-icon {
-  width: max(calc(14px * var(--type-scale)), calc(var(--s) * 1.9 * var(--type-scale)));
-  height: max(calc(14px * var(--type-scale)), calc(var(--s) * 1.9 * var(--type-scale)));
+  width: max(var(--type-14), calc(var(--s) * 1.9 * var(--type-scale)));
+  height: max(var(--type-14), calc(var(--s) * 1.9 * var(--type-scale)));
 }
 .booth-group {
   display: flex;
@@ -600,9 +600,9 @@
   margin: 0;
   padding: calc(var(--s) * 1) calc(var(--s) * 1.4) calc(var(--s) * 0.2);
   font-family: var(--font-mono);
-  font-size: max(calc(9px * var(--type-scale)), calc(var(--s) * 1.15 * var(--type-scale)));
-  font-weight: 400;
-  letter-spacing: 0.14em;
+  font-size: max(var(--type-9), calc(var(--s) * 1.15 * var(--type-scale)));
+  font-weight: var(--quorum-font-weights-normal);
+  letter-spacing: var(--quorum-letter-spacings-badge-wide);
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
@@ -662,8 +662,8 @@
   border-radius: calc(var(--s) * 0.6);
   color: var(--foreground);
   font-family: var(--font-mono);
-  font-size: max(calc(11px * var(--type-scale)), calc(var(--s) * 1.45 * var(--type-scale)));
-  letter-spacing: 0.12em;
+  font-size: max(var(--type-11), calc(var(--s) * 1.45 * var(--type-scale)));
+  letter-spacing: var(--quorum-letter-spacings-badge);
   text-transform: uppercase;
   background: oklch(0 0 0 / 0.28);
   box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.12);
@@ -676,7 +676,7 @@
 }
 .booth-row.is-text input::placeholder {
   color: var(--muted-foreground);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--quorum-letter-spacings-badge);
   opacity: 0.5;
 }
 /* A note under a setting: the state, or why a check failed. `.booth-note` styles the rest. */
@@ -696,7 +696,7 @@
   margin-top: auto;
   padding: calc(var(--s) * 1.4) 0 calc(var(--s) * 2);
   font-family: var(--font-mono);
-  font-size: max(calc(10px * var(--type-scale)), calc(var(--s) * 1.25 * var(--type-scale)));
+  font-size: max(var(--type-10), calc(var(--s) * 1.25 * var(--type-scale)));
   color: var(--muted-foreground);
 }
 .booth-hint kbd {
@@ -713,7 +713,7 @@
   gap: calc(var(--s) * 0.8);
   padding: calc(var(--s) * 4.6) calc(var(--s) * 4) 0 0;
   font-family: var(--font-mono);
-  font-size: max(calc(10px * var(--type-scale)), calc(var(--s) * 1.35 * var(--type-scale)));
+  font-size: max(var(--type-10), calc(var(--s) * 1.35 * var(--type-scale)));
   color: var(--muted-foreground);
 }
 .booth-status-brand {
@@ -727,8 +727,8 @@
 .booth-status-brand span {
   overflow: hidden;
   font-family: var(--font-sans);
-  font-size: max(11px, calc(var(--s) * 1.6));
-  font-weight: 600;
+  font-size: max(var(--type-11), calc(var(--s) * 1.6));
+  font-weight: var(--quorum-font-weights-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -739,7 +739,7 @@
 }
 .booth-status-users {
   font-size: calc(var(--s) * 4.6 * var(--type-scale));
-  line-height: 1;
+  line-height: var(--quorum-line-heights-none);
   color: var(--foreground);
   font-variant-numeric: tabular-nums;
 }
@@ -789,7 +789,7 @@
   background: oklch(0 0 0 / 0.35);
   box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.06);
   font-family: var(--font-mono);
-  font-size: max(calc(10px * var(--type-scale)), calc(var(--s) * 1.35 * var(--type-scale)));
+  font-size: max(var(--type-10), calc(var(--s) * 1.35 * var(--type-scale)));
   color: var(--muted-foreground);
 }
 .booth-taskbar button,
@@ -816,8 +816,8 @@
   color: var(--signal);
 }
 .booth-taskbar-label {
-  font-size: max(calc(9px * var(--type-scale)), calc(var(--s) * 1.2 * var(--type-scale)));
-  letter-spacing: 0.1em;
+  font-size: max(var(--type-9), calc(var(--s) * 1.2 * var(--type-scale)));
+  letter-spacing: var(--quorum-letter-spacings-banner);
   text-transform: uppercase;
 }
 .booth-clock {
@@ -831,12 +831,12 @@
   padding: calc(var(--s) * 4.6) calc(var(--s) * 5);
   background: oklch(0.1 0.01 215);
   font-family: var(--font-mono);
-  font-size: max(calc(12px * var(--type-scale)), calc(var(--s) * 1.7 * var(--type-scale)));
-  line-height: 1.8;
+  font-size: max(var(--type-12), calc(var(--s) * 1.7 * var(--type-scale)));
+  line-height: var(--quorum-line-heights-loose);
   color: var(--muted-foreground);
 }
 .booth-term b {
-  font-weight: 500;
+  font-weight: var(--quorum-font-weights-medium);
   color: var(--foreground);
 }
 .booth-term p {
@@ -872,8 +872,8 @@
   justify-content: space-between;
   gap: 16px;
   font-family: var(--font-mono);
-  font-size: calc(10.5px * var(--type-scale));
-  letter-spacing: 0.12em;
+  font-size: var(--type-10-5);
+  letter-spacing: var(--quorum-letter-spacings-badge);
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
@@ -946,8 +946,8 @@
     top: 16px;
     right: 18px;
     left: 18px;
-    font-size: calc(9.5px * var(--type-scale));
-    letter-spacing: 0.06em;
+    font-size: var(--type-9-5);
+    letter-spacing: var(--quorum-letter-spacings-tag);
   }
   .booth-strip > * {
     white-space: nowrap;
@@ -996,8 +996,8 @@
 .reader-hint {
   color: var(--muted-foreground);
   font-family: var(--font-mono);
-  font-size: max(calc(11px * var(--type-scale)), calc(var(--s) * 1.2 * var(--type-scale)));
-  letter-spacing: 0.14em;
+  font-size: max(var(--type-11), calc(var(--s) * 1.2 * var(--type-scale)));
+  letter-spacing: var(--quorum-letter-spacings-badge-wide);
   text-transform: uppercase;
   animation: reader-in 500ms var(--ease-out) 200ms both;
 }
@@ -1059,14 +1059,14 @@
   text-shadow: 0 0 10px oklch(0.8 0.12 225 / 0.55);
 }
 .reader-time {
-  font-size: calc(34px * var(--type-scale));
+  font-size: var(--type-34);
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--quorum-letter-spacings-label);
 }
 .reader-status {
   display: grid;
-  font-size: calc(10.5px * var(--type-scale));
-  letter-spacing: 0.18em;
+  font-size: var(--type-10-5);
+  letter-spacing: var(--quorum-letter-spacings-stamp);
   text-transform: uppercase;
 }
 .reader-status > * {
@@ -1217,8 +1217,8 @@
   bottom: 22px;
   color: oklch(0.7 0.006 260);
   font-family: var(--font-mono);
-  font-size: calc(10px * var(--type-scale));
-  letter-spacing: 0.18em;
+  font-size: var(--type-10);
+  letter-spacing: var(--quorum-letter-spacings-stamp);
   text-transform: uppercase;
 }
 
@@ -1266,8 +1266,8 @@
 .node-list-title {
   margin: 0 0 4px;
   font-family: var(--heading);
-  font-size: calc(13px * var(--type-scale));
-  font-weight: 600;
+  font-size: var(--type-13);
+  font-weight: var(--quorum-font-weights-semibold);
   white-space: nowrap;
 }
 .node-list ul {
@@ -1284,7 +1284,7 @@
   padding: 3px 6px;
   border-radius: 7px;
   color: var(--foreground);
-  font-size: calc(12px * var(--type-scale));
+  font-size: var(--type-12);
   text-align: left;
 }
 .node-list button:hover {
@@ -1383,7 +1383,7 @@
 }
 .board-unavailable p {
   max-width: 380px;
-  line-height: 1.5;
+  line-height: var(--quorum-line-heights-normal);
 }
 .board-unavailable a {
   color: var(--signal);
@@ -1406,9 +1406,9 @@
   background: color-mix(in oklch, var(--page) 82%, transparent);
   color: var(--warn);
   font-family: var(--font-mono);
-  font-size: calc(10.5px * var(--type-scale));
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-size: var(--type-10-5);
+  font-weight: var(--quorum-font-weights-semibold);
+  letter-spacing: var(--quorum-letter-spacings-eyebrow);
   text-transform: uppercase;
   pointer-events: none;
   backdrop-filter: blur(6px);

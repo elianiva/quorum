@@ -30,7 +30,7 @@ type IconNode = Parameters<typeof icon>[1]
 export const toggleGroupClass = cx(
   css({
     borderRadius: 'lg',
-    '&[data-size="sm"]': { borderRadius: 'min(var(--radius-md), 10px)' },
+    '&[data-size="sm"]': { borderRadius: 'md' },
     display: 'flex',
     width: 'fit-content',
     flexDirection: 'row',

@@ -16,8 +16,8 @@ export const tableContainerClass = css({
 export const tableClass = css({
   width: '100%',
   captionSide: 'bottom',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
 })
 
 export const tableHeaderClass = css({
@@ -37,7 +37,7 @@ export const tableFooterClass = css({
   backgroundColor: 'color-mix(in oklab, var(--muted) 50%, transparent)',
   borderTopWidth: '1px',
   borderTopStyle: 'solid',
-  fontWeight: '500',
+  fontWeight: 'medium',
   '&>tr': {
     '&:last-child': {
       borderBottomWidth: '0px',
@@ -52,7 +52,7 @@ export const tableRowClass = css({
   borderBottomStyle: 'solid',
   transitionProperty: 'color, background-color, border-color, text-decoration-color, fill, stroke',
   transitionTimingFunction: 'default',
-  transitionDuration: 'default',
+  transitionDuration: 'fast',
   '&:has([aria-expanded])': {
     backgroundColor: 'color-mix(in oklab, var(--muted) 50%, transparent)',
   },
@@ -64,7 +64,7 @@ export const tableHeadClass = css({
   paddingInline: '2',
   textAlign: 'left',
   verticalAlign: 'middle',
-  fontWeight: '500',
+  fontWeight: 'medium',
   whiteSpace: 'nowrap',
   '&:has([role=checkbox])': {
     paddingRight: '0',
@@ -83,8 +83,8 @@ export const tableCellClass = css({
 export const tableCaptionClass = css({
   color: 'mutedForeground',
   marginTop: '4',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
 })
 
 type StyleConfig = Readonly<{ className?: string }>

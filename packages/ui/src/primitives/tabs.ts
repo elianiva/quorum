@@ -31,7 +31,7 @@ export type TabsListVariant = 'default' | 'line'
 const tabsListBaseClass = cx(
   css({
     borderRadius: 'lg',
-    padding: '3px',
+    padding: '0.75',
     '.group-tabs[data-horizontal] &': { height: '9' },
     '&[data-variant="line"]': { borderRadius: '0' },
     display: 'inline-flex',
@@ -68,9 +68,9 @@ export const tabsTriggerClass = css({
   borderColor: 'transparent',
   paddingInline: '1.5',
   paddingBlock: '0.5',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
-  fontWeight: '500',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
   '& svg:not([data-svg-icon])': { width: '4', height: '4' },
   '&:has([data-icon="inline-end"])': { paddingRight: '1' },
   '&:has([data-icon="inline-start"])': { paddingLeft: '1' },
@@ -83,12 +83,12 @@ export const tabsTriggerClass = css({
   whiteSpace: 'nowrap',
   color: 'color-mix(in oklab, var(--foreground) 60%, transparent)',
   transitionProperty: 'all',
-  transitionDuration: 'default',
+  transitionDuration: 'fast',
   transitionTimingFunction: 'default',
   _hover: { color: 'foreground' },
   _focusVisible: {
     borderColor: 'ring',
-    boxShadow: '0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+    boxShadow: 'focus',
     outlineWidth: '1px',
     outlineStyle: 'solid',
     outlineColor: 'ring',
@@ -116,7 +116,7 @@ export const tabsTriggerClass = css({
     opacity: 0,
     transitionProperty: 'opacity',
     transitionTimingFunction: 'default',
-    transitionDuration: 'default',
+    transitionDuration: 'fast',
   },
   '.group-tabs[data-horizontal] &': {
     '&::after': {
@@ -143,8 +143,8 @@ export const tabsTriggerClass = css({
 })
 
 export const tabsContentClass = css({
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   flex: '1 1 0%',
   outlineStyle: 'none',
 })

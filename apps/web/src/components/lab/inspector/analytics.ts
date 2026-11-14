@@ -80,8 +80,8 @@ export const analyticsPanel: Panel = {
                 css({
                   paddingInline: '4',
                   paddingBottom: '2',
-                  fontSize: 'calc(12px*var(--type-scale))',
-                  lineHeight: '1.375',
+                  fontSize: 'type.12',
+                  lineHeight: 'snug',
                   color: 'warn',
                 }),
               ),

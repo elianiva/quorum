@@ -20,14 +20,14 @@ export const fieldsetClass = css({
 
 export const fieldsetLegendClass = css({
   marginBottom: '1.5',
-  fontWeight: '500',
+  fontWeight: 'medium',
   '&[data-variant="label"]': {
-    fontSize: 'calc(0.875rem * var(--type-scale))',
-    lineHeight: 'calc(1.25 / 0.875)',
+    fontSize: 'type.14',
+    lineHeight: 'fine',
   },
   '&[data-variant="legend"]': {
-    fontSize: 'calc(1rem * var(--type-scale))',
-    lineHeight: 'calc(1.5 / 1)',
+    fontSize: 'type.16',
+    lineHeight: 'normal',
   },
 })
 
@@ -101,7 +101,7 @@ export const fieldContentClass = css({
   display: 'flex',
   flex: '1 1 0%',
   flexDirection: 'column',
-  lineHeight: '1.375',
+  lineHeight: 'snug',
 })
 
 /** Upstream keys label disabling on a native peer-disabled sibling variant
@@ -110,9 +110,9 @@ export const fieldContentClass = css({
  *  fieldset wrapper's live group + data-disabled signal. */
 export const labelClass = css({
   gap: '2',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: '1',
-  fontWeight: '500',
+  fontSize: 'type.14',
+  lineHeight: 'none',
+  fontWeight: 'medium',
   '.group[data-disabled] &': {
     opacity: 0.5,
   },
@@ -129,7 +129,7 @@ export const labelClass = css({
 export const fieldLabelClass = cx(
   css({
     gap: '2',
-    lineHeight: '1.375',
+    lineHeight: 'snug',
     '.group-field[data-disabled] &': { opacity: 0.5 },
     '&:has(> [data-slot="field"])': {
       borderRadius: 'xl',
@@ -137,16 +137,15 @@ export const fieldLabelClass = cx(
       boxShadow: 'raised',
       transitionProperty: 'box-shadow',
       transitionTimingFunction: 'default',
-      transitionDuration: 'default',
+      transitionDuration: 'fast',
       width: '100%',
       flexDirection: 'column',
       '&:has(:focus-visible)': {
-        boxShadow:
-          'var(--elev-raised), 0 0 0 3px color-mix(in oklab, var(--ring) 40%, transparent)',
+        boxShadow: 'focusRaisedSoft',
       },
     },
     '&:has([data-checked])': {
-      boxShadow: 'var(--elev-raised), 0 0 0 1.5px var(--primary)',
+      boxShadow: 'active',
     },
     '& > [data-slot="field"]': { padding: '3' },
     display: 'flex',
@@ -157,9 +156,9 @@ export const fieldLabelClass = cx(
 
 export const fieldTitleClass = css({
   gap: '2',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
-  fontWeight: '500',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
   '.group-field[data-disabled] &': {
     opacity: 0.5,
   },
@@ -171,10 +170,10 @@ export const fieldTitleClass = css({
 export const fieldDescriptionClass = css({
   color: 'mutedForeground',
   textAlign: 'left',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
+  fontSize: 'type.14',
   '[data-variant="legend"] + &': { marginTop: '-0.375rem' },
-  lineHeight: '1.5',
-  fontWeight: '400',
+  lineHeight: 'normal',
+  fontWeight: 'normal',
   '.group-field:has([data-horizontal]) &': { textWrap: 'balance' },
   '&:last-child': { marginTop: '0' },
   '&:nth-last-child(2)': { marginTop: '-0.25rem' },
@@ -188,8 +187,8 @@ export const fieldDescriptionClass = css({
 export const fieldSeparatorClass = css({
   marginBlock: '-0.5rem',
   height: '5',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
   '.group-field-group[data-variant=outline] &': {
     marginBottom: '-0.5rem',
   },
@@ -214,9 +213,9 @@ export const fieldSeparatorContentClass = css({
 
 export const fieldErrorClass = css({
   color: 'destructive',
-  fontSize: 'calc(0.875rem * var(--type-scale))',
-  lineHeight: 'calc(1.25 / 0.875)',
-  fontWeight: '400',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'normal',
 })
 
 type StyleConfig = Readonly<{ className?: string }>

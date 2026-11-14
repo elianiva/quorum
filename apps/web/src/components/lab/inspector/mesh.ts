@@ -42,8 +42,8 @@ const sidecars = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readonly
           [
             h.Class(
               css({
-                fontSize: 'calc(12px*var(--type-scale))',
-                lineHeight: '1.375',
+                fontSize: 'type.12',
+                lineHeight: 'snug',
                 color: 'mutedForeground',
               }),
             ),

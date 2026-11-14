@@ -34,7 +34,7 @@ const traffic = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): ReadonlyA
                 display: 'flex',
                 alignItems: 'center',
                 gap: '2',
-                fontSize: 'calc(12px*var(--type-scale))',
+                fontSize: 'type.12',
               }),
             ),
           ],
@@ -57,7 +57,7 @@ const traffic = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): ReadonlyA
                   cx(
                     FIGURE,
                     css({
-                      fontSize: 'calc(11.5px*var(--type-scale))',
+                      fontSize: 'type.11-5',
                     }),
                     failing
                       ? css({ color: 'danger' })
@@ -98,7 +98,7 @@ const traffic = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): ReadonlyA
                     FIGURE,
                     css({
                       paddingLeft: '4',
-                      fontSize: 'calc(11.5px*var(--type-scale))',
+                      fontSize: 'type.11-5',
                     }),
                     slow ? css({ color: 'warn' }) : css({ color: 'mutedForeground' }),
                   ),

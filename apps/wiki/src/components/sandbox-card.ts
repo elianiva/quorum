@@ -59,7 +59,7 @@ export const sandboxView = (
             [
               h.Class(
                 css({
-                  fontSize: '12px',
+                  fontSize: 'type.12',
                   color: 'mutedForeground',
                 }),
               ),
@@ -72,9 +72,9 @@ export const sandboxView = (
                 css({
                   marginTop: '1',
                   display: 'block',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  letterSpacing: '-0.025em',
+                  fontSize: 'type.16',
+                  fontWeight: 'semibold',
+                  letterSpacing: 'tight',
                 }),
               ),
             ],
@@ -85,7 +85,7 @@ export const sandboxView = (
               h.Class(
                 css({
                   display: 'block',
-                  fontSize: '13px',
+                  fontSize: 'type.13',
                   color: 'mutedForeground',
                 }),
               ),

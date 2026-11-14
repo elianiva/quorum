@@ -29,7 +29,7 @@ const breadcrumbs = (page: Page, h: H): Html => {
           flexWrap: 'wrap',
           alignItems: 'center',
           gap: '1.5',
-          fontSize: '13px',
+          fontSize: 'type.13',
           color: 'mutedForeground',
         }),
       ),
@@ -93,7 +93,7 @@ const spoiler = (page: Page, model: Model, body: Html, h: H): Html => {
               borderColor: 'border',
               paddingInline: '4',
               paddingBlock: '3',
-              fontSize: '14px',
+              fontSize: 'type.14',
             }),
           ),
         ],
@@ -102,7 +102,7 @@ const spoiler = (page: Page, model: Model, body: Html, h: H): Html => {
             [
               h.Class(
                 css({
-                  fontWeight: '500',
+                  fontWeight: 'medium',
                 }),
               ),
             ],
@@ -165,8 +165,8 @@ const footer = (page: Page, h: H): Html => {
                   h.Class(
                     css({
                       marginBottom: '3',
-                      fontSize: '13px',
-                      fontWeight: '600',
+                      fontSize: 'type.13',
+                      fontWeight: 'semibold',
                     }),
                   ),
                 ],
@@ -214,8 +214,8 @@ const footer = (page: Page, h: H): Html => {
                               h.Class(
                                 css({
                                   flexShrink: '0',
-                                  fontSize: '14px',
-                                  fontWeight: '500',
+                                  fontSize: 'type.14',
+                                  fontWeight: 'medium',
                                   '.group:hover &': {
                                     textDecorationLine: 'underline',
                                   },
@@ -232,7 +232,7 @@ const footer = (page: Page, h: H): Html => {
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
                                   whiteSpace: 'nowrap',
-                                  fontSize: '13px',
+                                  fontSize: 'type.13',
                                   color: 'mutedForeground',
                                 }),
                               ),
@@ -261,7 +261,7 @@ const footer = (page: Page, h: H): Html => {
               borderTopStyle: 'solid',
               borderColor: 'border',
               paddingTop: '5',
-              fontSize: '12px',
+              fontSize: 'type.12',
               color: 'mutedForeground',
             }),
           ),
@@ -414,7 +414,7 @@ const notice = (page: Page, h: H): Html =>
               borderColor: 'border',
               paddingInline: '4',
               paddingBlock: '2.5',
-              fontSize: '13px',
+              fontSize: 'type.13',
               color: 'mutedForeground',
             }),
           ),
@@ -476,7 +476,7 @@ export const article = (page: Page, model: Model, h: H): Html => {
                         cx(
                           FIGURE,
                           css({
-                            fontSize: '12px',
+                            fontSize: 'type.12',
                             color: 'mutedForeground',
                             _hover: {
                               color: 'foreground',
@@ -495,10 +495,7 @@ export const article = (page: Page, model: Model, h: H): Html => {
               h.Class(
                 css({
                   marginTop: '4',
-                  fontSize: '32px',
-                  lineHeight: '1.25',
-                  fontWeight: '600',
-                  letterSpacing: '-0.025em',
+                  textStyle: 'pageTitle',
                   textWrap: 'balance',
                 }),
               ),
@@ -510,8 +507,8 @@ export const article = (page: Page, model: Model, h: H): Html => {
               h.Class(
                 css({
                   marginTop: '2',
-                  fontSize: '16px',
-                  lineHeight: '1.625',
+                  fontSize: 'type.16',
+                  lineHeight: 'relaxed',
                   textWrap: 'pretty',
                   color: 'mutedForeground',
                 }),
@@ -561,7 +558,7 @@ export const notFound = (model: Model, h: H): Html => {
             cx(
               FIGURE,
               css({
-                fontSize: '13px',
+                fontSize: 'type.13',
                 color: 'mutedForeground',
               }),
             ),
@@ -574,9 +571,7 @@ export const notFound = (model: Model, h: H): Html => {
           h.Class(
             css({
               marginTop: '2',
-              fontSize: '32px',
-              fontWeight: '600',
-              letterSpacing: '-0.025em',
+              textStyle: 'pageTitle',
             }),
           ),
         ],
@@ -587,7 +582,7 @@ export const notFound = (model: Model, h: H): Html => {
           h.Class(
             css({
               marginTop: '2',
-              fontSize: '15px',
+              fontSize: 'type.15',
               color: 'mutedForeground',
             }),
           ),
@@ -601,8 +596,8 @@ export const notFound = (model: Model, h: H): Html => {
             css({
               marginTop: '6',
               display: 'inline-block',
-              fontSize: '14px',
-              fontWeight: '500',
+              fontSize: 'type.14',
+              fontWeight: 'medium',
               textDecorationLine: 'underline',
               textUnderlineOffset: '4px',
             }),

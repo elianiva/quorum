@@ -32,8 +32,8 @@ export const toc = (page: Page, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 css({
                   marginBottom: '2',
-                  fontSize: '12px',
-                  fontWeight: '600',
+                  fontSize: 'type.12',
+                  fontWeight: 'semibold',
                 }),
               ),
             ],
@@ -65,7 +65,7 @@ export const toc = (page: Page, h: HtmlBuilder<Message>): Html => {
                             borderLeftStyle: 'solid',
                             borderColor: 'transparent',
                             paddingBlock: '1',
-                            fontSize: '13px',
+                            fontSize: 'type.13',
                             color: 'mutedForeground',
                             _hover: {
                               borderColor:

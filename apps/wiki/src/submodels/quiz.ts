@@ -70,8 +70,8 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
         [
           h.Class(
             css({
-              fontSize: '12px',
-              fontWeight: '500',
+              fontSize: 'type.12',
+              fontWeight: 'medium',
               color: 'mutedForeground',
             }),
           ),
@@ -84,9 +84,9 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
           h.Class(
             css({
               marginTop: '1',
-              fontSize: '16px',
-              lineHeight: '1.375',
-              fontWeight: '500',
+              fontSize: 'type.16',
+              lineHeight: 'snug',
+              fontWeight: 'medium',
               textWrap: 'balance',
             }),
           ),
@@ -131,11 +131,11 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                     paddingInline: '3',
                     paddingBlock: '2',
                     textAlign: 'left',
-                    fontSize: '14px',
+                    fontSize: 'type.14',
                     transitionProperty:
                       'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
-                    transitionDuration: '150ms',
-                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                    transitionDuration: 'fast',
+                    transitionTimingFunction: 'default',
                   }),
                   state === 'open' &&
                     css({
@@ -149,7 +149,7 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                     css({
                       borderColor: 'color-mix(in oklab, var(--ok) 50%, transparent)',
                       backgroundColor: 'color-mix(in oklab, var(--ok) 8%, transparent)',
-                      fontWeight: '500',
+                      fontWeight: 'medium',
                     }),
                   state === 'wrong' &&
                     css({
@@ -175,9 +175,9 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                         height: '5',
                         flexShrink: '0',
                         placeItems: 'center',
-                        borderRadius: '9999px',
+                        borderRadius: 'full',
                         fontFamily: 'mono',
-                        fontSize: '11px',
+                        fontSize: 'type.11',
                       }),
                       state === 'right'
                         ? css({
@@ -244,8 +244,8 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                   h.Class(
                     css({
                       flex: '1 1 0%',
-                      fontSize: '14px',
-                      lineHeight: '1.625',
+                      fontSize: 'type.14',
+                      lineHeight: 'relaxed',
                     }),
                   ),
                 ],
@@ -285,8 +285,8 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                           borderStyle: 'solid',
                           borderColor: 'border',
                           paddingInline: '2.5',
-                          fontSize: '12px',
-                          fontWeight: '500',
+                          fontSize: 'type.12',
+                          fontWeight: 'medium',
                           _hover: {
                             backgroundColor: 'muted',
                           },

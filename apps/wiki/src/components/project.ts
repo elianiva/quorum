@@ -41,9 +41,9 @@ const cell = (value: string, label: string, h: H): Html =>
             cx(
               FIGURE,
               css({
-                fontSize: '20px',
-                lineHeight: '1',
-                fontWeight: '500',
+                fontSize: 'type.20',
+                lineHeight: 'none',
+                fontWeight: 'medium',
                 fontVariantNumeric: 'tabular-nums',
               }),
             ),
@@ -55,7 +55,7 @@ const cell = (value: string, label: string, h: H): Html =>
         [
           h.Class(
             css({
-              fontSize: '12px',
+              fontSize: 'type.12',
               color: 'mutedForeground',
             }),
           ),
@@ -157,8 +157,8 @@ export const projectCard = (project: Project.Model, h: H): Html => {
                         cx(
                           FIGURE,
                           css({
-                            fontSize: '14px',
-                            fontWeight: '500',
+                            fontSize: 'type.14',
+                            fontWeight: 'medium',
                             _hover: {
                               textDecorationLine: 'underline',
                             },
@@ -175,8 +175,8 @@ export const projectCard = (project: Project.Model, h: H): Html => {
                         css({
                           marginTop: '1',
                           maxWidth: '96',
-                          fontSize: '13px',
-                          lineHeight: '1.375',
+                          fontSize: 'type.13',
+                          lineHeight: 'snug',
                           color: 'mutedForeground',
                         }),
                       ),
@@ -211,8 +211,8 @@ export const projectCard = (project: Project.Model, h: H): Html => {
                       borderRadius: 'md',
                       backgroundColor: 'foreground',
                       paddingInline: '3',
-                      fontSize: '13px',
-                      fontWeight: '500',
+                      fontSize: 'type.13',
+                      fontWeight: 'medium',
                       color: 'background',
                       _hover: {
                         opacity: 0.9,
@@ -237,7 +237,7 @@ export const projectCard = (project: Project.Model, h: H): Html => {
                   h.Href('/about/contributing'),
                   h.Class(
                     css({
-                      fontSize: '13px',
+                      fontSize: 'type.13',
                       color: 'mutedForeground',
                       textDecorationLine: 'underline',
                       textUnderlineOffset: '4px',
@@ -260,7 +260,7 @@ export const projectCard = (project: Project.Model, h: H): Html => {
                 css({
                   display: 'grid',
                   gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                  gap: '1px',
+                  gap: '0.25',
                   borderTopWidth: '1px',
                   borderTopStyle: 'solid',
                   borderColor: 'border',
@@ -287,7 +287,7 @@ export const projectCard = (project: Project.Model, h: H): Html => {
               borderColor: 'border',
               paddingInline: '4',
               paddingBlock: '2.5',
-              fontSize: '12px',
+              fontSize: 'type.12',
               color: 'mutedForeground',
             }),
           ),

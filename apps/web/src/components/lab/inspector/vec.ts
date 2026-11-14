@@ -40,8 +40,8 @@ const vector = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyAr
           [
             h.Class(
               css({
-                fontSize: 'calc(12px*var(--type-scale))',
-                lineHeight: '1.375',
+                fontSize: 'type.12',
+                lineHeight: 'snug',
                 color: 'mutedForeground',
               }),
             ),
@@ -66,8 +66,8 @@ const vector = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyAr
           [
             h.Class(
               css({
-                fontSize: 'calc(12px*var(--type-scale))',
-                lineHeight: '1.375',
+                fontSize: 'type.12',
+                lineHeight: 'snug',
                 color: 'mutedForeground',
               }),
             ),

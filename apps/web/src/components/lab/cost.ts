@@ -61,7 +61,7 @@ const row = (line: Line, value: number, total: number, h: HtmlBuilder<Message>):
             [
               h.Class(
                 css({
-                  fontSize: 'calc(13.5px*var(--type-scale))',
+                  fontSize: 'type.13-5',
                   color: 'foreground',
                 }),
               ),
@@ -72,8 +72,8 @@ const row = (line: Line, value: number, total: number, h: HtmlBuilder<Message>):
             [
               h.Class(
                 css({
-                  fontSize: 'calc(12px*var(--type-scale))',
-                  lineHeight: '1.375',
+                  fontSize: 'type.12',
+                  lineHeight: 'snug',
                   color: 'mutedForeground',
                 }),
               ),
@@ -88,7 +88,7 @@ const row = (line: Line, value: number, total: number, h: HtmlBuilder<Message>):
             cx(
               FIGURE,
               css({
-                fontSize: 'calc(13.5px*var(--type-scale))',
+                fontSize: 'type.13-5',
                 color: 'foreground',
               }),
             ),
@@ -103,7 +103,7 @@ const row = (line: Line, value: number, total: number, h: HtmlBuilder<Message>):
               FIGURE,
               css({
                 textAlign: 'right',
-                fontSize: 'calc(12px*var(--type-scale))',
+                fontSize: 'type.12',
                 color: 'mutedForeground',
               }),
             ),
@@ -140,7 +140,7 @@ const figureRow = (label: string, value: string, h: HtmlBuilder<Message>): Html 
         [
           h.Class(
             css({
-              fontSize: 'calc(12.5px*var(--type-scale))',
+              fontSize: 'type.12-5',
               color: 'foreground',
             }),
           ),
@@ -153,7 +153,7 @@ const figureRow = (label: string, value: string, h: HtmlBuilder<Message>): Html 
             cx(
               FIGURE,
               css({
-                fontSize: 'calc(12.5px*var(--type-scale))',
+                fontSize: 'type.12-5',
                 color: 'mutedForeground',
               }),
             ),
@@ -214,9 +214,9 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                     cx(
                       FIGURE,
                       css({
-                        fontSize: 'calc(20px*var(--type-scale))',
-                        lineHeight: '1',
-                        fontWeight: '500',
+                        fontSize: 'type.20',
+                        lineHeight: 'none',
+                        fontWeight: 'medium',
                       }),
                     ),
                   ),
@@ -227,7 +227,7 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 [
                   h.Class(
                     css({
-                      fontSize: 'calc(12px*var(--type-scale))',
+                      fontSize: 'type.12',
                       color: 'mutedForeground',
                     }),
                   ),
@@ -252,9 +252,9 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                     cx(
                       FIGURE,
                       css({
-                        fontSize: 'calc(20px*var(--type-scale))',
-                        lineHeight: '1',
-                        fontWeight: '500',
+                        fontSize: 'type.20',
+                        lineHeight: 'none',
+                        fontWeight: 'medium',
                       }),
                     ),
                   ),
@@ -265,7 +265,7 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 [
                   h.Class(
                     css({
-                      fontSize: 'calc(12px*var(--type-scale))',
+                      fontSize: 'type.12',
                       color: 'mutedForeground',
                     }),
                   ),
@@ -290,9 +290,9 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                     cx(
                       FIGURE,
                       css({
-                        fontSize: 'calc(20px*var(--type-scale))',
-                        lineHeight: '1',
-                        fontWeight: '500',
+                        fontSize: 'type.20',
+                        lineHeight: 'none',
+                        fontWeight: 'medium',
                       }),
                     ),
                   ),
@@ -303,7 +303,7 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 [
                   h.Class(
                     css({
-                      fontSize: 'calc(12px*var(--type-scale))',
+                      fontSize: 'type.12',
                       color: 'mutedForeground',
                     }),
                   ),
@@ -338,7 +338,7 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   css({
                     paddingInline: '5',
                     paddingBottom: '1',
-                    fontSize: 'calc(12px*var(--type-scale))',
+                    fontSize: 'type.12',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -377,7 +377,7 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   css({
                     paddingInline: '5',
                     paddingBottom: '1',
-                    fontSize: 'calc(12px*var(--type-scale))',
+                    fontSize: 'type.12',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -416,8 +416,8 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             css({
               paddingInline: '5',
               paddingBottom: '4',
-              fontSize: 'calc(12.5px*var(--type-scale))',
-              lineHeight: '1.375',
+              fontSize: 'type.12-5',
+              lineHeight: 'snug',
               color: 'mutedForeground',
             }),
           ),

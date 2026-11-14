@@ -53,7 +53,7 @@ const stat = (name: string, value: string, h: HtmlBuilder<Message>) =>
             cx(
               FIGURE,
               css({
-                fontSize: 'calc(18px*var(--type-scale))',
+                fontSize: 'type.18',
               }),
             ),
           ),
@@ -195,8 +195,8 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                         [
                           h.Class(
                             css({
-                              fontSize: 'calc(14px*var(--type-scale))',
-                              fontWeight: '600',
+                              fontSize: 'type.14',
+                              fontWeight: 'semibold',
                             }),
                           ),
                         ],
@@ -208,7 +208,7 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                             cx(
                               FIGURE,
                               css({
-                                fontSize: 'calc(11.5px*var(--type-scale))',
+                                fontSize: 'type.11-5',
                                 color: 'mutedForeground',
                               }),
                             ),
@@ -312,7 +312,7 @@ const surveySection = (model: Model, h: HtmlBuilder<Message>): Html => {
               gap: '2',
               paddingInline: '4',
               paddingBlock: '3',
-              fontSize: 'calc(12.5px*var(--type-scale))',
+              fontSize: 'type.12-5',
             }),
           ),
         ),
@@ -364,7 +364,7 @@ const surveySection = (model: Model, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  fontSize: 'calc(11.5px*var(--type-scale))',
+                  fontSize: 'type.11-5',
                   color: 'mutedForeground',
                 }),
               ),
@@ -402,7 +402,7 @@ const surveySection = (model: Model, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  fontSize: 'calc(11.5px*var(--type-scale))',
+                  fontSize: 'type.11-5',
                   color: 'warn',
                 }),
               ),
@@ -491,9 +491,9 @@ export const exitedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(30px*var(--type-scale))',
-                    fontWeight: '600',
-                    letterSpacing: '-0.035em',
+                    fontSize: 'type.30',
+                    fontWeight: 'semibold',
+                    letterSpacing: 'heading',
                   }),
                 ),
               ),
@@ -594,7 +594,7 @@ export const selectionBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                 paddingBlock: '1.5',
                 paddingRight: '1.5',
                 paddingLeft: '3.5',
-                fontSize: 'calc(12.5px*var(--type-scale))',
+                fontSize: 'type.12-5',
                 boxShadow: 'card',
               }),
               'enter-pop',
@@ -660,7 +660,7 @@ export const sellBar = (model: Model, h: HtmlBuilder<Message>): Html => {
             paddingBlock: '1.5',
             paddingRight: '1.5',
             paddingLeft: '3.5',
-            fontSize: 'calc(12.5px*var(--type-scale))',
+            fontSize: 'type.12-5',
             boxShadow: 'card',
           }),
           'enter-pop',
@@ -720,7 +720,7 @@ export const stampBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                 borderRadius: '2xl',
                 layerStyle: 'surface',
                 paddingInline: '3.5',
-                fontSize: 'calc(12.5px*var(--type-scale))',
+                fontSize: 'type.12-5',
                 boxShadow: 'card',
               }),
               'enter-pop',
@@ -756,7 +756,7 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             cx(
               FIGURE,
               css({
-                fontSize: 'calc(12px*var(--type-scale))',
+                fontSize: 'type.12',
                 color: 'mutedForeground',
               }),
             ),
@@ -804,7 +804,7 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.Key('empty'),
                   h.Class(
                     css({
-                      fontSize: 'calc(12.5px*var(--type-scale))',
+                      fontSize: 'type.12-5',
                       color: 'mutedForeground',
                     }),
                   ),
@@ -839,8 +839,8 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
-                          fontSize: 'calc(13px*var(--type-scale))',
-                          fontWeight: '500',
+                          fontSize: 'type.13',
+                          fontWeight: 'medium',
                         }),
                       ),
                     ],
@@ -852,7 +852,7 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                         cx(
                           FIGURE,
                           css({
-                            fontSize: 'calc(11.5px*var(--type-scale))',
+                            fontSize: 'type.11-5',
                             color: 'mutedForeground',
                           }),
                         ),

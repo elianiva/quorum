@@ -72,10 +72,10 @@ const row = <Item extends string>(
             alignItems: 'center',
             gap: '2',
             paddingInline: '2.5',
-            fontSize: 'calc(12px*var(--type-scale))',
+            fontSize: 'type.12',
             transitionProperty:
               'color, background-color, border-color, text-decoration-color, fill, stroke',
-            transitionDuration: '150ms',
+            transitionDuration: 'fast',
             transitionTimingFunction: 'out',
           }),
           isActive
@@ -130,7 +130,7 @@ const row = <Item extends string>(
             [
               h.Class(
                 css({
-                  fontSize: 'calc(10px*var(--type-scale))',
+                  fontSize: 'type.10',
                   color: 'groupCompute',
                 }),
               ),
@@ -238,7 +238,7 @@ const pickerView = <Item extends string>(
                 minWidth: '0',
                 flex: '1 1 0%',
                 backgroundColor: 'transparent',
-                fontSize: 'calc(12px*var(--type-scale))',
+                fontSize: 'type.12',
                 color: 'foreground',
                 outlineStyle: 'none',
                 '&::placeholder': {
@@ -277,7 +277,7 @@ const pickerView = <Item extends string>(
                 css({
                   paddingInline: '2.5',
                   paddingBlock: '2',
-                  fontSize: 'calc(11px*var(--type-scale))',
+                  fontSize: 'type.11',
                   color: 'mutedForeground',
                 }),
               ),

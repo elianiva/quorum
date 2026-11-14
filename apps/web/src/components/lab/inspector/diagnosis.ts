@@ -41,7 +41,7 @@ const whyLink = (anchor: string, h: HtmlBuilder<Message>): Html => {
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.5',
-            fontSize: 'calc(12px*var(--type-scale))',
+            fontSize: 'type.12',
             color: 'mutedForeground',
             textDecorationLine: 'underline',
             textDecorationColor: 'color-mix(in oklab, var(--foreground) 25%, transparent)',
@@ -65,7 +65,7 @@ const whyLink = (anchor: string, h: HtmlBuilder<Message>): Html => {
           height: '3',
           flexShrink: '0',
           transitionProperty: 'transform',
-          transitionDuration: '150ms',
+          transitionDuration: 'fast',
           transitionTimingFunction: 'out',
           '.group:hover &': {
             translate: '1px -1px',
@@ -326,7 +326,7 @@ export const costReceipts = (
                           display: 'flex',
                           alignItems: 'center',
                           gap: '1',
-                          fontSize: 'calc(12.5px*var(--type-scale))',
+                          fontSize: 'type.12-5',
                           color: 'mutedForeground',
                         }),
                       ),
@@ -340,7 +340,7 @@ export const costReceipts = (
                           height: '3',
                           flexShrink: '0',
                           transitionProperty: 'transform',
-                          transitionDuration: '150ms',
+                          transitionDuration: 'fast',
                           transitionTimingFunction: 'out',
                           '.group-receipt[open] &': {
                             rotate: '90deg',
@@ -356,7 +356,7 @@ export const costReceipts = (
                         cx(
                           FIGURE,
                           css({
-                            fontSize: 'calc(12px*var(--type-scale))',
+                            fontSize: 'type.12',
                             whiteSpace: 'nowrap',
                           }),
                         ),

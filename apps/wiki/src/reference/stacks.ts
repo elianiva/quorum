@@ -62,13 +62,13 @@ const axes = (l: Lang, values: Axes, h: H): Html => {
                     ? css({
                         width: '2',
                         height: '2',
-                        borderRadius: '9999px',
+                        borderRadius: 'full',
                         backgroundColor: 'color-mix(in oklab, var(--foreground) 70%, transparent)',
                       })
                     : css({
                         width: '2',
                         height: '2',
-                        borderRadius: '9999px',
+                        borderRadius: 'full',
                         backgroundColor: 'color-mix(in oklab, var(--foreground) 12%, transparent)',
                       }),
                 ),

@@ -110,7 +110,7 @@ const focusOf = (model: Model): ResearchDef => {
 const NODE_CLASS: Record<State, string> = {
   owned: css({
     backgroundColor: 'nested',
-    boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
+    boxShadow: 'line',
   }),
   buy: css({ layerStyle: 'raised', boxShadow: 'raised', _hover: { filter: 'brightness(0.985)' } }),
   saving: css({
@@ -138,7 +138,7 @@ const price = (entry: ResearchDef, state: State, grey: boolean, h: HtmlBuilder<M
               display: 'flex',
               alignItems: 'center',
               gap: '1',
-              fontSize: 'calc(11px*var(--type-scale))',
+              fontSize: 'type.11',
               color: 'ok',
             }),
           ),
@@ -164,7 +164,7 @@ const price = (entry: ResearchDef, state: State, grey: boolean, h: HtmlBuilder<M
                 width: 'fit-content',
                 alignItems: 'center',
                 gap: '2',
-                fontSize: 'calc(11px*var(--type-scale))',
+                fontSize: 'type.11',
               }),
               grey
                 ? css({
@@ -206,7 +206,7 @@ const stepMeter = (step: number, h: HtmlBuilder<Message>): Html =>
         css({
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '3px',
+          gap: '0.75',
         }),
       ),
       h.AriaHidden(true),
@@ -221,7 +221,7 @@ const stepMeter = (step: number, h: HtmlBuilder<Message>): Html =>
               css({
                 height: '1.5',
                 width: '3',
-                borderRadius: '9999px',
+                borderRadius: 'full',
               }),
               index < step
                 ? css({
@@ -319,9 +319,9 @@ const leverRow = (
                   css({
                     minWidth: '0',
                     flex: '1 1 0%',
-                    fontSize: 'calc(12.5px*var(--type-scale))',
-                    lineHeight: '1.375',
-                    fontWeight: '600',
+                    fontSize: 'type.12-5',
+                    lineHeight: 'snug',
+                    fontWeight: 'semibold',
                   }),
                   blocked
                     ? css({
@@ -353,7 +353,7 @@ const leverRow = (
                 [
                   h.Class(
                     css({
-                      fontSize: 'calc(10.5px*var(--type-scale))',
+                      fontSize: 'type.10-5',
                       color: 'mutedForeground',
                     }),
                   ),
@@ -369,8 +369,8 @@ const leverRow = (
           h.Class(
             css({
               marginTop: '1.5',
-              fontSize: 'calc(12px*var(--type-scale))',
-              lineHeight: '1.375',
+              fontSize: 'type.12',
+              lineHeight: 'snug',
               color: 'color-mix(in oklab, var(--foreground) 85%, transparent)',
             }),
           ),
@@ -383,8 +383,8 @@ const leverRow = (
             cx(
               css({
                 marginTop: '1',
-                fontSize: 'calc(11px*var(--type-scale))',
-                lineHeight: '1.375',
+                fontSize: 'type.11',
+                lineHeight: 'snug',
               }),
               buildable || last
                 ? css({
@@ -423,7 +423,7 @@ const leverRow = (
                   className: css({
                     minWidth: '0',
                     flex: '1 1 0%',
-                    fontSize: 'calc(12px*var(--type-scale))',
+                    fontSize: 'type.12',
                   }),
                   attributes: [
                     h.Title(
@@ -515,7 +515,7 @@ const costRows = (
             [
               h.Class(
                 css({
-                  fontSize: 'calc(11.5px*var(--type-scale))',
+                  fontSize: 'type.11-5',
                   color: 'mutedForeground',
                 }),
               ),
@@ -552,7 +552,7 @@ const costRows = (
                   alignItems: 'center',
                   gap: '3',
                   paddingBlock: '1.5',
-                  fontSize: 'calc(12px*var(--type-scale))',
+                  fontSize: 'type.12',
                 }),
               ),
             ],
@@ -594,7 +594,7 @@ const costRows = (
                           }),
                       pool === limit
                         ? css({
-                            fontWeight: '600',
+                            fontWeight: 'semibold',
                           })
                         : '',
                     ),
@@ -695,9 +695,9 @@ const requirement = (
               h.Class(
                 css({
                   fontFamily: 'mono',
-                  fontSize: 'calc(10.5px*var(--type-scale))',
-                  fontWeight: '500',
-                  letterSpacing: '0.08em',
+                  fontSize: 'type.10-5',
+                  fontWeight: 'medium',
+                  letterSpacing: 'eyebrow',
                   color: 'warn',
                   textTransform: 'uppercase',
                 }),
@@ -713,8 +713,8 @@ const requirement = (
                     cx(
                       FIGURE,
                       css({
-                        fontSize: 'calc(11.5px*var(--type-scale))',
-                        fontWeight: '600',
+                        fontSize: 'type.11-5',
+                        fontWeight: 'semibold',
                         color: 'warn',
                       }),
                     ),
@@ -729,9 +729,9 @@ const requirement = (
           h.Class(
             css({
               marginTop: '1.5',
-              fontSize: 'calc(12.5px*var(--type-scale))',
-              lineHeight: '1.375',
-              fontWeight: '600',
+              fontSize: 'type.12-5',
+              lineHeight: 'snug',
+              fontWeight: 'semibold',
               color: 'warn',
             }),
           ),
@@ -761,8 +761,8 @@ const requirement = (
               h.Class(
                 css({
                   marginTop: '2',
-                  fontSize: 'calc(11.5px*var(--type-scale))',
-                  lineHeight: '1.375',
+                  fontSize: 'type.11-5',
+                  lineHeight: 'snug',
                   color: 'warn',
                   opacity: 0.8,
                 }),
@@ -852,9 +852,9 @@ const face = (
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: '1',
-                  fontSize: 'calc(12.5px*var(--type-scale))',
-                  lineHeight: '1.25',
-                  fontWeight: '600',
+                  fontSize: 'type.12-5',
+                  lineHeight: 'tight',
+                  fontWeight: 'semibold',
                 }),
                 grey
                   ? css({
@@ -909,8 +909,8 @@ const face = (
                 h.Class(
                   css({
                     lineClamp: 1,
-                    fontSize: 'calc(10.5px*var(--type-scale))',
-                    lineHeight: '1.375',
+                    fontSize: 'type.10-5',
+                    lineHeight: 'snug',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -951,7 +951,7 @@ const card = (
                 paddingInline: '2.5',
                 paddingBlock: '1',
                 transitionProperty: 'clip-path',
-                transitionDuration: '500ms',
+                transitionDuration: 'slowest',
                 transitionTimingFunction: 'linear',
               }),
             ),
@@ -972,7 +972,7 @@ const card = (
                 insetBlock: '0',
                 width: '1.5px',
                 transitionProperty: 'left',
-                transitionDuration: '500ms',
+                transitionDuration: 'slowest',
                 transitionTimingFunction: 'linear',
               }),
             ),
@@ -1015,7 +1015,7 @@ const node = (model: Model, place: Placed, focused: boolean, h: HtmlBuilder<Mess
         paddingBlock: '1',
         textAlign: 'left',
         transitionProperty: 'filter,box-shadow,outline-color,opacity',
-        transitionDuration: '150ms',
+        transitionDuration: 'fast',
         transitionTimingFunction: 'out',
       }),
       NODE_CLASS[state],
@@ -1023,13 +1023,13 @@ const node = (model: Model, place: Placed, focused: boolean, h: HtmlBuilder<Mess
         ? css({
             outlineWidth: '2px',
             outlineStyle: 'solid',
-            outlineOffset: '2px',
+            outlineOffset: '0.5',
             outlineColor: 'primaryStrong',
           })
         : css({
             outlineWidth: '2px',
             outlineStyle: 'solid',
-            outlineOffset: '2px',
+            outlineOffset: '0.5',
             outlineColor: 'transparent',
           }),
       far
@@ -1120,7 +1120,7 @@ const wires = (model: Model, layout: Layout, focus: ResearchDef, h: HtmlBuilder<
                       }),
               css({
                 transitionProperty: 'stroke',
-                transitionDuration: '150ms',
+                transitionDuration: 'fast',
                 transitionTimingFunction: 'out',
               }),
             ),
@@ -1165,7 +1165,7 @@ const progressBar = (
               height: '1',
               flex: '1 1 0%',
               overflow: 'hidden',
-              borderRadius: '9999px',
+              borderRadius: 'full',
               backgroundColor: 'well',
               boxShadow: 'well',
             }),
@@ -1178,7 +1178,7 @@ const progressBar = (
                 css({
                   display: 'block',
                   height: '100%',
-                  borderRadius: '9999px',
+                  borderRadius: 'full',
                   backgroundColor: 'ok',
                 }),
               ),
@@ -1194,7 +1194,7 @@ const progressBar = (
             cx(
               FIGURE,
               css({
-                fontSize: 'calc(10.5px*var(--type-scale))',
+                fontSize: 'type.10-5',
                 color: 'mutedForeground',
               }),
             ),
@@ -1225,7 +1225,7 @@ const eraLabel = (game: Game, era: number, h: HtmlBuilder<Message>) => [
             css({
               width: '1.5',
               height: '1.5',
-              borderRadius: '9999px',
+              borderRadius: 'full',
               backgroundColor: 'ok',
             }),
           ),
@@ -1349,8 +1349,8 @@ const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
           [
             h.Class(
               css({
-                fontSize: 'calc(14px*var(--type-scale))',
-                fontWeight: '600',
+                fontSize: 'type.14',
+                fontWeight: 'semibold',
               }),
             ),
           ],
@@ -1540,7 +1540,7 @@ const linkRow = (game: Game, entry: ResearchDef, h: HtmlBuilder<Message>): Html 
               paddingInline: '2',
               paddingBlock: '1.5',
               textAlign: 'left',
-              fontSize: 'calc(12.5px*var(--type-scale))',
+              fontSize: 'type.12-5',
               _hover: {
                 backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
               },
@@ -1586,7 +1586,7 @@ const terms = (entry: ResearchDef, h: HtmlBuilder<Message>): Html => {
                   backgroundColor: 'nested',
                   paddingInline: '1.5',
                   paddingBlock: '0.5',
-                  fontSize: 'calc(11.5px*var(--type-scale))',
+                  fontSize: 'type.11-5',
                   color: 'mutedForeground',
                   _hover: {
                     color: 'foreground',
@@ -1729,7 +1729,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                 cx(
                   FIGURE,
                   css({
-                    fontSize: 'calc(11px*var(--type-scale))',
+                    fontSize: 'type.11',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -1758,7 +1758,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
               }),
               overQueue &&
                 css({
-                  boxShadow: '0 0 0 2px #fff, 0 0 0 4px var(--primary)',
+                  boxShadow: 'selectedHalo',
                 }),
             ),
           ),
@@ -1795,7 +1795,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                       !keyboard &&
                       css({
                         transitionProperty: 'translate',
-                        transitionDuration: '150ms',
+                        transitionDuration: 'fast',
                         transitionTimingFunction: 'out',
                       }),
                     slot &&
@@ -1888,7 +1888,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                         borderRadius: 'md',
                         paddingBlock: '1',
                         textAlign: 'left',
-                        fontSize: 'calc(12.5px*var(--type-scale))',
+                        fontSize: 'type.12-5',
                         _hover: {
                           color: 'foreground',
                         },
@@ -1903,7 +1903,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            fontWeight: '500',
+                            fontWeight: 'medium',
                           }),
                         ),
                       ],
@@ -1921,7 +1921,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                               flexShrink: '0',
                               alignItems: 'center',
                               gap: '1',
-                              fontSize: 'calc(11.5px*var(--type-scale))',
+                              fontSize: 'type.11-5',
                             }),
                             stall
                               ? css({
@@ -2006,8 +2006,8 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                             gap: '2',
                             paddingInline: '3',
                             paddingBlock: '2',
-                            fontSize: 'calc(12.5px*var(--type-scale))',
-                            fontWeight: '500',
+                            fontSize: 'type.12-5',
+                            fontWeight: 'medium',
                           }),
                         ),
                       ),
@@ -2242,7 +2242,7 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                 css({
                   height: '1',
                   width: '10',
-                  borderRadius: '9999px',
+                  borderRadius: 'full',
                   backgroundColor: 'color-mix(in oklab, var(--foreground) 15%, transparent)',
                 }),
               ),
@@ -2300,7 +2300,7 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                   backgroundColor: 'transparent',
                   transitionProperty:
                     'color, background-color, border-color, text-decoration-color, fill, stroke',
-                  transitionDuration: '150ms',
+                  transitionDuration: 'fast',
                   transitionTimingFunction: 'out',
                   '.group:hover &': {
                     backgroundColor: 'color-mix(in oklab, var(--foreground) 20%, transparent)',
@@ -2365,10 +2365,10 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
-                          fontSize: 'calc(17px*var(--type-scale))',
-                          lineHeight: '1.25',
-                          fontWeight: '600',
-                          letterSpacing: '-0.025em',
+                          fontSize: 'type.17',
+                          lineHeight: 'tight',
+                          fontWeight: 'semibold',
+                          letterSpacing: 'tight',
                         }),
                       ),
                     ],
@@ -2453,8 +2453,8 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                 [
                   h.Class(
                     css({
-                      fontSize: 'calc(13px*var(--type-scale))',
-                      lineHeight: '1.625',
+                      fontSize: 'type.13',
+                      lineHeight: 'relaxed',
                       color: 'color-mix(in oklab, var(--foreground) 85%, transparent)',
                     }),
                   ),
@@ -2497,8 +2497,8 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                           display: 'flex',
                           alignItems: 'flex-start',
                           gap: '2',
-                          fontSize: 'calc(12px*var(--type-scale))',
-                          lineHeight: '1.375',
+                          fontSize: 'type.12',
+                          lineHeight: 'snug',
                           color: 'warn',
                         }),
                       ),
@@ -2637,7 +2637,7 @@ const poolCell = (
           blocked &&
             css({
               backgroundColor: 'warnSoft',
-              boxShadow: 'inset 0 0 0 1px color-mix(in oklch,var(--warn) 38%,transparent)',
+              boxShadow: 'warnLineStrong',
             }),
         ),
       ),
@@ -2673,7 +2673,7 @@ const poolCell = (
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              fontSize: 'calc(10.5px*var(--type-scale))',
+              fontSize: 'type.10-5',
               color: 'mutedForeground',
             }),
           ),
@@ -2686,11 +2686,11 @@ const poolCell = (
             cx(
               FIGURE,
               css({
-                fontSize: 'calc(11px*var(--type-scale))',
+                fontSize: 'type.11',
               }),
               blocked &&
                 css({
-                  fontWeight: '600',
+                  fontWeight: 'semibold',
                   color: 'danger',
                 }),
             ),
@@ -2707,7 +2707,7 @@ const poolCell = (
               bottom: '1',
               height: '3px',
               overflow: 'hidden',
-              borderRadius: '9999px',
+              borderRadius: 'full',
               backgroundColor: 'color-mix(in oklab, var(--foreground) 10%, transparent)',
             }),
           ),
@@ -2720,7 +2720,7 @@ const poolCell = (
                   css({
                     display: 'block',
                     height: '100%',
-                    borderRadius: '9999px',
+                    borderRadius: 'full',
                   }),
                   blocked
                     ? css({
@@ -2767,7 +2767,7 @@ const pinnedChip = (game: Game, pool: InsightPool, need: number, h: HtmlBuilder<
             paddingBlock: '0.5',
             paddingRight: '1.5',
             paddingLeft: '1',
-            fontSize: 'calc(12.5px*var(--type-scale))',
+            fontSize: 'type.12-5',
             whiteSpace: 'nowrap',
           }),
           blocked &&
@@ -2803,7 +2803,7 @@ const pinnedChip = (game: Game, pool: InsightPool, need: number, h: HtmlBuilder<
         [
           h.Class(
             css({
-              fontSize: 'calc(11px*var(--type-scale))',
+              fontSize: 'type.11',
               color: 'mutedForeground',
             }),
           ),
@@ -2815,7 +2815,7 @@ const pinnedChip = (game: Game, pool: InsightPool, need: number, h: HtmlBuilder<
           h.Class(
             blocked
               ? css({
-                  fontWeight: '600',
+                  fontWeight: 'semibold',
                   color: 'danger',
                 })
               : '',
@@ -2961,8 +2961,8 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
                         backgroundColor: 'nested',
                         paddingInline: '2',
                         paddingBlock: '1',
-                        fontSize: 'calc(11.5px*var(--type-scale))',
-                        boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
+                        fontSize: 'type.11-5',
+                        boxShadow: 'line',
                         _hover: {
                           backgroundColor: 'well',
                         },
@@ -3091,9 +3091,9 @@ export const researchPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.Class(
                     css({
                       flexShrink: '0',
-                      fontSize: 'calc(17px*var(--type-scale))',
-                      fontWeight: '600',
-                      letterSpacing: '-0.025em',
+                      fontSize: 'type.17',
+                      fontWeight: 'semibold',
+                      letterSpacing: 'tight',
                     }),
                   ),
                 ],
@@ -3110,7 +3110,7 @@ export const researchPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                           display: 'flex',
                           alignItems: 'center',
                           gap: '1',
-                          fontSize: 'calc(11.5px*var(--type-scale))',
+                          fontSize: 'type.11-5',
                           color: 'warn',
                         }),
                       ),

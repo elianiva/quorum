@@ -23,7 +23,7 @@ export const badgeVariants: Record<BadgeVariant, string> = {
   default: css({
     backgroundColor: 'color-mix(in oklab, var(--primary) 14%, transparent)',
     color: 'primaryStrong',
-    boxShadow: 'inset 0 0 0 1px color-mix(in oklch, var(--primary) 28%, transparent)',
+    boxShadow: 'primaryLineInset',
     _focusVisible: {
       boxShadow:
         'inset 0 0 0 1px color-mix(in oklch, var(--primary) 28%, transparent), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
@@ -52,7 +52,7 @@ export const badgeVariants: Record<BadgeVariant, string> = {
   destructive: css({
     backgroundColor: 'color-mix(in oklab, var(--destructive) 10%, transparent)',
     color: 'destructive',
-    boxShadow: 'inset 0 0 0 1px color-mix(in oklch, var(--destructive) 25%, transparent)',
+    boxShadow: 'invalidLine',
     _focusVisible: {
       boxShadow:
         'inset 0 0 0 1px color-mix(in oklch, var(--destructive) 25%, transparent), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
@@ -71,7 +71,7 @@ export const badgeVariants: Record<BadgeVariant, string> = {
   ok: css({
     backgroundColor: 'color-mix(in oklab, var(--ok) 12%, transparent)',
     color: 'ok',
-    boxShadow: 'inset 0 0 0 1px color-mix(in oklch, var(--ok) 25%, transparent)',
+    boxShadow: 'okLine',
     _focusVisible: {
       boxShadow:
         'inset 0 0 0 1px color-mix(in oklch, var(--ok) 25%, transparent), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
@@ -90,7 +90,7 @@ export const badgeVariants: Record<BadgeVariant, string> = {
   warn: css({
     backgroundColor: 'color-mix(in oklab, var(--warn) 14%, transparent)',
     color: 'warn',
-    boxShadow: 'inset 0 0 0 1px color-mix(in oklch, var(--warn) 28%, transparent)',
+    boxShadow: 'warnLine',
     _focusVisible: {
       boxShadow:
         'inset 0 0 0 1px color-mix(in oklch, var(--warn) 28%, transparent), 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
@@ -146,10 +146,10 @@ export const badgeClass = css({
   borderColor: 'transparent',
   paddingInline: '1.5',
   paddingBlock: '0.5',
-  fontSize: '11px',
-  fontWeight: '500',
+  fontSize: 'type.11',
+  fontWeight: 'medium',
   transitionProperty: 'all',
-  transitionDuration: 'default',
+  transitionDuration: 'fast',
   transitionTimingFunction: 'default',
   '&:has([data-icon="inline-end"])': { paddingRight: '1.5' },
   '&:has([data-icon="inline-start"])': { paddingLeft: '1.5' },

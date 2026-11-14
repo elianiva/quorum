@@ -60,8 +60,8 @@ export const leverView = <M>(kind: LeverKind, h: HtmlBuilder<M>): Html => {
             [
               h.Class(
                 css({
-                  fontSize: '13px',
-                  fontWeight: '500',
+                  fontSize: 'type.13',
+                  fontWeight: 'medium',
                 }),
               ),
             ],
@@ -71,7 +71,7 @@ export const leverView = <M>(kind: LeverKind, h: HtmlBuilder<M>): Html => {
             [
               h.Class(
                 css({
-                  fontSize: '12px',
+                  fontSize: 'type.12',
                   color: 'mutedForeground',
                 }),
               ),
@@ -95,8 +95,8 @@ export const leverView = <M>(kind: LeverKind, h: HtmlBuilder<M>): Html => {
                 css({
                   width: '100%',
                   borderCollapse: 'collapse',
-                  fontSize: '13px',
-                  lineHeight: '1.375',
+                  fontSize: 'type.13',
+                  lineHeight: 'snug',
                 }),
               ),
             ],
@@ -116,8 +116,8 @@ export const leverView = <M>(kind: LeverKind, h: HtmlBuilder<M>): Html => {
                               css({
                                 backgroundColor:
                                   'color-mix(in oklab, var(--muted) 30%, transparent)',
-                                fontSize: '12px',
-                                fontWeight: '500',
+                                fontSize: 'type.12',
+                                fontWeight: 'medium',
                                 color: 'mutedForeground',
                               }),
                             ),
@@ -168,7 +168,7 @@ export const leverView = <M>(kind: LeverKind, h: HtmlBuilder<M>): Html => {
               borderColor: 'border',
               paddingInline: '3',
               paddingBlock: '2',
-              fontSize: '12px',
+              fontSize: 'type.12',
               color: 'mutedForeground',
             }),
           ),

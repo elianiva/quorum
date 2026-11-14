@@ -82,7 +82,7 @@ const entity = (l: Lang, def: EraDef, index: number): Page => {
                   placeItems: 'center',
                   borderRadius: 'md',
                   backgroundColor: 'foreground',
-                  fontSize: '11px',
+                  fontSize: 'type.11',
                   color: 'background',
                 }),
               ),
@@ -299,12 +299,12 @@ const timeline = (l: Lang, h: H): Html => {
                     width: '6',
                     height: '6',
                     placeItems: 'center',
-                    borderRadius: '9999px',
+                    borderRadius: 'full',
                     borderWidth: '1px',
                     borderStyle: 'solid',
                     borderColor: 'border',
                     backgroundColor: 'background',
-                    fontSize: '11px',
+                    fontSize: 'type.11',
                     color: 'mutedForeground',
                   }),
                 ),
@@ -330,9 +330,9 @@ const timeline = (l: Lang, h: H): Html => {
                   h.Href(eraPath(index)),
                   h.Class(
                     css({
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      letterSpacing: '-0.025em',
+                      fontSize: 'type.16',
+                      fontWeight: 'semibold',
+                      letterSpacing: 'tight',
                       _hover: {
                         textDecorationLine: 'underline',
                       },
@@ -345,7 +345,7 @@ const timeline = (l: Lang, h: H): Html => {
                 [
                   h.Class(
                     css({
-                      fontSize: '15px',
+                      fontSize: 'type.15',
                       color: 'mutedForeground',
                     }),
                   ),
@@ -363,7 +363,7 @@ const timeline = (l: Lang, h: H): Html => {
                   flexWrap: 'wrap',
                   columnGap: '6',
                   rowGap: '1',
-                  fontSize: '13px',
+                  fontSize: 'type.13',
                 }),
               ),
             ],
@@ -396,7 +396,7 @@ const timeline = (l: Lang, h: H): Html => {
                         cx(
                           FIGURE,
                           css({
-                            fontSize: '12px',
+                            fontSize: 'type.12',
                           }),
                         ),
                       ),
@@ -423,7 +423,7 @@ const timeline = (l: Lang, h: H): Html => {
               h.Class(
                 css({
                   marginTop: '2',
-                  fontSize: '13px',
+                  fontSize: 'type.13',
                   color: 'mutedForeground',
                 }),
               ),

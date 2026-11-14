@@ -157,8 +157,8 @@ export const view = defineView<Model, Message>((model, h) => {
               color: 'mutedForeground',
               transitionProperty:
                 'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
-              transitionDuration: '150ms',
-              transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+              transitionDuration: 'fast',
+              transitionTimingFunction: 'default',
               '&:focus-within': {
                 borderColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
               },
@@ -189,10 +189,10 @@ export const view = defineView<Model, Message>((model, h) => {
                 minWidth: '0',
                 flex: '1 1 0%',
                 backgroundColor: 'transparent',
-                fontSize: '16px',
+                fontSize: 'type.16',
                 color: 'foreground',
                 sm: {
-                  fontSize: '13px',
+                  fontSize: 'type.13',
                 },
                 outlineStyle: 'none',
                 '&::placeholder': {
@@ -222,14 +222,14 @@ export const view = defineView<Model, Message>((model, h) => {
               h.Class(
                 css({
                   display: 'none',
-                  borderRadius: '0.25rem',
+                  borderRadius: 'xs',
                   borderWidth: '1px',
                   borderStyle: 'solid',
                   borderColor: 'border',
                   paddingInline: '1.5',
                   fontFamily: 'mono',
-                  fontSize: '11px',
-                  lineHeight: '1rem',
+                  fontSize: 'type.11',
+                  lineHeight: 'fixed',
                   sm: {
                     display: 'block',
                   },
@@ -262,7 +262,7 @@ export const view = defineView<Model, Message>((model, h) => {
                   borderColor: 'border',
                   backgroundColor: 'card',
                   padding: '1',
-                  boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+                  boxShadow: 'lg',
                   sm: {
                     position: 'absolute',
                     top: '10',
@@ -282,7 +282,7 @@ export const view = defineView<Model, Message>((model, h) => {
                         css({
                           paddingInline: '3',
                           paddingBlock: '2.5',
-                          fontSize: '13px',
+                          fontSize: 'type.13',
                           color: 'mutedForeground',
                         }),
                       ),
@@ -337,8 +337,8 @@ export const view = defineView<Model, Message>((model, h) => {
                             [
                               h.Class(
                                 css({
-                                  fontSize: '14px',
-                                  fontWeight: '500',
+                                  fontSize: 'type.14',
+                                  fontWeight: 'medium',
                                   color: 'foreground',
                                 }),
                               ),
@@ -349,7 +349,7 @@ export const view = defineView<Model, Message>((model, h) => {
                             [
                               h.Class(
                                 css({
-                                  fontSize: '12px',
+                                  fontSize: 'type.12',
                                   color: 'mutedForeground',
                                 }),
                               ),
@@ -364,7 +364,7 @@ export const view = defineView<Model, Message>((model, h) => {
                             css({
                               marginTop: '0.5',
                               lineClamp: '1',
-                              fontSize: '12px',
+                              fontSize: 'type.12',
                               color: 'mutedForeground',
                             }),
                           ),

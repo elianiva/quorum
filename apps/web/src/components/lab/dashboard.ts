@@ -1,3 +1,4 @@
+import { css, cx } from '@quorum/styled-system/css'
 import { serviceName, teamName } from './team.ts'
 import { formats } from '@/i18n/format.ts'
 import { changeIn } from '@/i18n/refusal.ts'
@@ -370,7 +371,14 @@ const actionText = (t: Messages, game: Game, postmortem: Postmortem): string =>
 const led = (color: string, h: HtmlBuilder<Message>): Html =>
   h.span(
     [
-      h.Class('size-[7px] shrink-0 rounded-full'),
+      h.Class(
+        css({
+          width: '7px',
+          height: '7px',
+          flexShrink: '0',
+          borderRadius: '9999px',
+        }),
+      ),
       h.Style({
         background: color,
         boxShadow: `0 0 0 2px color-mix(in oklab, ${color} 22%, transparent), 0 0 6px color-mix(in oklab, ${color} 55%, transparent)`,
@@ -380,7 +388,7 @@ const led = (color: string, h: HtmlBuilder<Message>): Html =>
   )
 
 /** A sunken display inside a panel: the well recipe, where every plot sits. */
-const SCREEN = 'rounded-xl bg-well shadow-well'
+const SCREEN = css({ borderRadius: 'xl', backgroundColor: 'well', boxShadow: 'well' })
 
 /** A Grafana panel as a Board card: raised, with a lamp and a title. `tint` is Grafana's background colour mode. */
 const panel = (
@@ -399,7 +407,19 @@ const panel = (
       h.DataAttribute('panel', key),
       h.Class(
         cn(
-          'flex min-w-0 flex-col gap-1 rounded-2xl bg-surface p-1.5 shadow-card compact:col-span-24',
+          css({
+            display: 'flex',
+            minWidth: '0',
+            flexDirection: 'column',
+            gap: '0.25rem',
+            borderRadius: '2xl',
+            layerStyle: 'surface',
+            padding: '0.375rem',
+            boxShadow: 'card',
+            _compact: {
+              gridColumn: 'span 24 / span 24',
+            },
+          }),
           span,
         ),
       ),
@@ -413,13 +433,31 @@ const panel = (
     ],
     [
       h.div(
-        [h.Class('flex h-5 shrink-0 items-center gap-2 px-1.5')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              height: '1.25rem',
+              flexShrink: '0',
+              alignItems: 'center',
+              gap: '0.5rem',
+              paddingInline: '0.375rem',
+            }),
+          ),
+        ],
         [
           led(tint ? LEVEL_COLOR[tint] : accent, h),
           h.span(
             [
               h.Class(
-                'truncate text-[calc(12.5px*var(--type-scale))] font-semibold tracking-[-0.01em]',
+                css({
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: 'calc(12.5px*var(--type-scale))',
+                  fontWeight: '600',
+                  letterSpacing: '-0.01em',
+                }),
               ),
             ],
             [title],
@@ -430,7 +468,13 @@ const panel = (
                   h.Class(
                     cn(
                       FIGURE,
-                      'truncate text-[calc(10.5px*var(--type-scale))] text-muted-foreground',
+                      css({
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        fontSize: 'calc(10.5px*var(--type-scale))',
+                        color: 'var(--muted-foreground)',
+                      }),
                     ),
                   ),
                 ],
@@ -463,7 +507,14 @@ const locked = (
           h.Class(
             cn(
               SCREEN,
-              'grid min-h-[120px] flex-1 place-items-center bg-[repeating-linear-gradient(135deg,transparent_0_7px,var(--hairline)_7px_8px)]',
+              css({
+                display: 'grid',
+                minHeight: '120px',
+                flex: '1 1 0%',
+                placeItems: 'center',
+                backgroundImage:
+                  'repeating-linear-gradient(135deg,transparent 0 7px,var(--hairline) 7px 8px)',
+              }),
             ),
           ),
         ],
@@ -473,7 +524,15 @@ const locked = (
               h.Class(
                 cn(
                   FIGURE,
-                  'rounded-lg bg-raised px-2.5 py-1 text-[calc(11px*var(--type-scale))] text-muted-foreground shadow-raised',
+                  css({
+                    borderRadius: 'lg',
+                    layerStyle: 'raised',
+                    paddingInline: '0.625rem',
+                    paddingBlock: '0.25rem',
+                    fontSize: 'calc(11px*var(--type-scale))',
+                    color: 'var(--muted-foreground)',
+                    boxShadow: 'raised',
+                  }),
                 ),
               ),
             ],
@@ -491,13 +550,50 @@ const rowHeader = (label: string, count: number, h: HtmlBuilder<Message>): Html 
     [
       h.Key(`row-${label}`),
       h.DataAttribute('row', label),
-      h.Class('col-span-24 flex items-center gap-1.5 pt-2 pb-0'),
+      h.Class(
+        css({
+          gridColumn: 'span 24 / span 24',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.375rem',
+          paddingTop: '0.5rem',
+          paddingBottom: '0',
+        }),
+      ),
     ],
     [
-      icon(h, ChevronDown, 'size-3.5 text-muted-foreground'),
-      h.span([h.Class('text-[calc(13px*var(--type-scale))] font-semibold')], [label]),
+      icon(
+        h,
+        ChevronDown,
+        css({
+          width: '0.875rem',
+          height: '0.875rem',
+          color: 'var(--muted-foreground)',
+        }),
+      ),
       h.span(
-        [h.Class(cn(FIGURE, 'text-[calc(11px*var(--type-scale))] text-muted-foreground'))],
+        [
+          h.Class(
+            css({
+              fontSize: 'calc(13px*var(--type-scale))',
+              fontWeight: '600',
+            }),
+          ),
+        ],
+        [label],
+      ),
+      h.span(
+        [
+          h.Class(
+            cn(
+              FIGURE,
+              css({
+                fontSize: 'calc(11px*var(--type-scale))',
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ),
+        ],
         [copy(h).dashboard.panelCount(count)],
       ),
     ],
@@ -731,10 +827,28 @@ const exemplarMarks = (
 const exemplarStrip = (exemplars: ReadonlyArray<Exemplar>, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
-    [h.Key('exemplars'), h.Class('col-span-24 flex flex-wrap items-center gap-2')],
+    [
+      h.Key('exemplars'),
+      h.Class(
+        css({
+          gridColumn: 'span 24 / span 24',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '0.5rem',
+        }),
+      ),
+    ],
     [
       h.span(
-        [h.Class('text-[calc(12px*var(--type-scale))] text-muted-foreground')],
+        [
+          h.Class(
+            css({
+              fontSize: 'calc(12px*var(--type-scale))',
+              color: 'var(--muted-foreground)',
+            }),
+          ),
+        ],
         [exemplars.length === 0 ? t.dashboard.noExemplarInThisRange : t.dashboard.exemplars],
       ),
       ...exemplars.map((exemplar) =>
@@ -966,10 +1080,37 @@ const seriesLegend = (
 ): Html => {
   const t = copy(h)
   return h.div(
-    [h.Class('flex flex-wrap gap-x-4 gap-y-0.5 px-1.5 pb-0.5 text-[calc(11px*var(--type-scale))]')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          flexWrap: 'wrap',
+          columnGap: '1rem',
+          rowGap: '0.125rem',
+          paddingInline: '0.375rem',
+          paddingBottom: '0.125rem',
+          fontSize: 'calc(11px*var(--type-scale))',
+        }),
+      ),
+    ],
     [
       ...(hovered
-        ? [h.span([h.Key('at'), h.Class(cn(FIGURE, 'text-muted-foreground'))], [String(hovered.t)])]
+        ? [
+            h.span(
+              [
+                h.Key('at'),
+                h.Class(
+                  cn(
+                    FIGURE,
+                    css({
+                      color: 'var(--muted-foreground)',
+                    }),
+                  ),
+                ),
+              ],
+              [String(hovered.t)],
+            ),
+          ]
         : []),
       ...series.map((entry) => {
         const values = figuresOf(rows, entry.key)
@@ -977,15 +1118,52 @@ const seriesLegend = (
         const max = Math.max(...values)
         const mean = values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length)
         return h.span(
-          [h.Key(entry.key), h.Class('flex items-center gap-1.5 whitespace-nowrap')],
+          [
+            h.Key(entry.key),
+            h.Class(
+              css({
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.375rem',
+                whiteSpace: 'nowrap',
+              }),
+            ),
+          ],
           [
             h.span(
-              [h.Class('h-[3px] w-3.5 rounded-full'), h.Style({ background: entry.color })],
+              [
+                h.Class(
+                  css({
+                    height: '3px',
+                    width: '0.875rem',
+                    borderRadius: '9999px',
+                  }),
+                ),
+                h.Style({ background: entry.color }),
+              ],
               [],
             ),
-            h.span([h.Class('text-foreground')], [entry.name]),
             h.span(
-              [h.Class(cn(FIGURE, 'text-muted-foreground'))],
+              [
+                h.Class(
+                  css({
+                    color: 'var(--foreground)',
+                  }),
+                ),
+              ],
+              [entry.name],
+            ),
+            h.span(
+              [
+                h.Class(
+                  cn(
+                    FIGURE,
+                    css({
+                      color: 'var(--muted-foreground)',
+                    }),
+                  ),
+                ),
+              ],
               hovered
                 ? [spec.format(Number(hovered[entry.key]))]
                 : [t.dashboard.meanMaxLast(spec.format(mean), spec.format(max), spec.format(last))],
@@ -1009,31 +1187,106 @@ const seriesTable = (
 ): Html => {
   const t = copy(h)
 
-  const border = 'border-b border-hairline px-2 py-1'
+  const border = css({
+    borderBottomWidth: '1px',
+    borderBottomStyle: 'solid',
+    borderColor: 'var(--hairline)',
+    paddingInline: '0.5rem',
+    paddingBlock: '0.25rem',
+  })
   const figure = (row: Row, key: string): string => {
     const value = row[key]
     return typeof value === 'number' ? spec.format(value) : '—'
   }
   return h.div(
-    [h.Class(cn(SCREEN, 'max-h-[210px] min-h-0 flex-1 overflow-auto px-1 pb-1', SCROLL))],
+    [
+      h.Class(
+        cn(
+          SCREEN,
+          css({
+            maxHeight: '210px',
+            minHeight: '0',
+            flex: '1 1 0%',
+            overflow: 'auto',
+            paddingInline: '0.25rem',
+            paddingBottom: '0.25rem',
+          }),
+          SCROLL,
+        ),
+      ),
+    ],
     [
       h.table(
         [
           h.DataAttribute('table', spec.key),
-          h.Class('w-full border-collapse text-[calc(11.5px*var(--type-scale))]'),
+          h.Class(
+            css({
+              width: '100%',
+              borderCollapse: 'collapse',
+              fontSize: 'calc(11.5px*var(--type-scale))',
+            }),
+          ),
         ],
         [
-          h.caption([h.Class('sr-only')], [`${spec.title} · ${spec.unit}`]),
+          h.caption(
+            [
+              h.Class(
+                css({
+                  position: 'absolute',
+                  width: '1px',
+                  height: '1px',
+                  padding: '0',
+                  margin: '-1px',
+                  overflow: 'hidden',
+                  clip: 'rect(0, 0, 0, 0)',
+                  whiteSpace: 'nowrap',
+                  borderWidth: '0',
+                }),
+              ),
+            ],
+            [`${spec.title} · ${spec.unit}`],
+          ),
           h.thead(
             [],
             [
               h.tr(
-                [h.Class('text-[calc(11px*var(--type-scale))] text-muted-foreground')],
                 [
-                  h.th([h.Class(cn(border, 'text-left font-medium'))], [t.dashboard.time]),
+                  h.Class(
+                    css({
+                      fontSize: 'calc(11px*var(--type-scale))',
+                      color: 'var(--muted-foreground)',
+                    }),
+                  ),
+                ],
+                [
+                  h.th(
+                    [
+                      h.Class(
+                        cn(
+                          border,
+                          css({
+                            textAlign: 'left',
+                            fontWeight: '500',
+                          }),
+                        ),
+                      ),
+                    ],
+                    [t.dashboard.time],
+                  ),
                   ...series.map((entry) =>
                     h.th(
-                      [h.Key(entry.key), h.Class(cn(border, 'text-right font-medium'))],
+                      [
+                        h.Key(entry.key),
+                        h.Class(
+                          cn(
+                            border,
+                            css({
+                              textAlign: 'right',
+                              fontWeight: '500',
+                            }),
+                          ),
+                        ),
+                      ],
                       [entry.name],
                     ),
                   ),
@@ -1045,12 +1298,32 @@ const seriesTable = (
             [],
             data.map((row, index) =>
               h.tr(
-                [h.Key(`${String(row.t)}-${index}`), h.Class('hover:bg-foreground/[0.03]')],
+                [
+                  h.Key(`${String(row.t)}-${index}`),
+                  h.Class(
+                    css({
+                      _hover: {
+                        backgroundColor: 'color-mix(in oklab, var(--foreground) 3%, transparent)',
+                      },
+                    }),
+                  ),
+                ],
                 [
                   h.td([h.Class(cn(border, FIGURE))], [String(row.t)]),
                   ...series.map((entry) =>
                     h.td(
-                      [h.Key(entry.key), h.Class(cn(border, FIGURE, 'text-right'))],
+                      [
+                        h.Key(entry.key),
+                        h.Class(
+                          cn(
+                            border,
+                            FIGURE,
+                            css({
+                              textAlign: 'right',
+                            }),
+                          ),
+                        ),
+                      ],
                       [figure(row, entry.key)],
                     ),
                   ),
@@ -1114,7 +1387,19 @@ const timeSeries = (
         ? [seriesTable(data, series, spec, h)]
         : [
             h.div(
-              [h.Class(cn(SCREEN, 'min-h-0 flex-1 px-1 pt-1'))],
+              [
+                h.Class(
+                  cn(
+                    SCREEN,
+                    css({
+                      minHeight: '0',
+                      flex: '1 1 0%',
+                      paddingInline: '0.25rem',
+                      paddingTop: '0.25rem',
+                    }),
+                  ),
+                ),
+              ],
               [
                 ComposedChart(
                   {
@@ -1242,7 +1527,18 @@ const stat = (
       h.div(
         [
           h.Class(
-            cn(SCREEN, 'relative flex min-h-[92px] flex-1 flex-col justify-center overflow-hidden'),
+            cn(
+              SCREEN,
+              css({
+                position: 'relative',
+                display: 'flex',
+                minHeight: '92px',
+                flex: '1 1 0%',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }),
+            ),
           ),
           ...(background && level !== 'plain' && level !== 'ok'
             ? [
@@ -1254,7 +1550,17 @@ const stat = (
         ],
         [
           h.div(
-            [h.Class('absolute inset-x-0 bottom-0 h-[46px] opacity-90')],
+            [
+              h.Class(
+                css({
+                  position: 'absolute',
+                  insetInline: '0',
+                  bottom: '0',
+                  height: '46px',
+                  opacity: 0.9,
+                }),
+              ),
+            ],
             [
               ComposedChart(
                 {
@@ -1287,7 +1593,16 @@ const stat = (
               h.Class(
                 cn(
                   FIGURE,
-                  'relative px-3 pb-7 text-[calc(30px*var(--type-scale))] leading-none font-medium tracking-[-0.03em] [text-shadow:0_1px_0_var(--highlight)]',
+                  css({
+                    position: 'relative',
+                    paddingInline: '0.75rem',
+                    paddingBottom: '1.75rem',
+                    fontSize: 'calc(30px*var(--type-scale))',
+                    lineHeight: '1',
+                    fontWeight: '500',
+                    letterSpacing: '-0.03em',
+                    textShadow: '0 1px 0 var(--highlight)',
+                  }),
                 ),
               ),
               h.Style({ color: level === 'plain' ? 'var(--foreground)' : LEVEL_COLOR[level] }),
@@ -1341,10 +1656,32 @@ const gauge = (
     '',
     [
       h.div(
-        [h.Class(cn(SCREEN, 'grid flex-1 place-items-center px-2 py-1'))],
+        [
+          h.Class(
+            cn(
+              SCREEN,
+              css({
+                display: 'grid',
+                flex: '1 1 0%',
+                placeItems: 'center',
+                paddingInline: '0.5rem',
+                paddingBlock: '0.25rem',
+              }),
+            ),
+          ),
+        ],
         [
           h.svg(
-            [h.ViewBox('0 0 200 140'), h.Class('h-[96px] w-full max-w-[200px]')],
+            [
+              h.ViewBox('0 0 200 140'),
+              h.Class(
+                css({
+                  height: '96px',
+                  width: '100%',
+                  maxWidth: '200px',
+                }),
+              ),
+            ],
             [
               ...bands.map(([from, to, band]) =>
                 h.path(
@@ -1385,7 +1722,12 @@ const gauge = (
                   h.Attribute('text-anchor', 'middle'),
                   h.Attribute('fill', LEVEL_COLOR[level]),
                   h.Class(
-                    'font-mono text-[calc(30px*var(--type-scale))] font-medium tracking-[-0.03em]',
+                    css({
+                      fontFamily: 'mono',
+                      fontSize: 'calc(30px*var(--type-scale))',
+                      fontWeight: '500',
+                      letterSpacing: '-0.03em',
+                    }),
                   ),
                 ],
                 [label],
@@ -1407,14 +1749,34 @@ const CELLS = 32
 /** Grafana's retro LCD bar gauge: lit cells take the colour of the threshold they sit in. */
 const lcd = (share: number, h: HtmlBuilder<Message>, cells = CELLS): Html =>
   h.div(
-    [h.Class('flex h-full min-w-0 flex-1 gap-[2px] rounded-md bg-well p-[3px] shadow-well')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          height: '100%',
+          minWidth: '0',
+          flex: '1 1 0%',
+          gap: '2px',
+          borderRadius: 'md',
+          backgroundColor: 'var(--well)',
+          padding: '3px',
+          boxShadow: 'well',
+        }),
+      ),
+    ],
     Array.from({ length: cells }, (_, index) => {
       const position = (index + 0.5) / cells
       const lit = position <= Math.min(share, 1)
       return h.span(
         [
           h.Key(String(index)),
-          h.Class('min-w-0 flex-1 rounded-[2px]'),
+          h.Class(
+            css({
+              minWidth: '0',
+              flex: '1 1 0%',
+              borderRadius: '2px',
+            }),
+          ),
           h.Style({
             background: lit
               ? LEVEL_COLOR[levelOf(position, UTILIZATION)]
@@ -1439,30 +1801,84 @@ const barGauge = (
     t.dashboard.ofCapacity,
     [
       h.div(
-        [h.Class(cn(SCREEN, 'flex flex-1 flex-col justify-center gap-2.5 p-3'))],
+        [
+          h.Class(
+            cn(
+              SCREEN,
+              css({
+                display: 'flex',
+                flex: '1 1 0%',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: '0.625rem',
+                padding: '0.75rem',
+              }),
+            ),
+          ),
+        ],
         tracks.map((track) => {
           const share = ledger.nodes[track.id]?.utilization ?? 0
           return h.div(
-            [h.Key(track.id), h.Class('flex flex-col gap-1')],
+            [
+              h.Key(track.id),
+              h.Class(
+                css({
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.25rem',
+                }),
+              ),
+            ],
             [
               h.div(
                 [
                   h.Class(
-                    'flex items-baseline justify-between text-[calc(11.5px*var(--type-scale))]',
+                    css({
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      justifyContent: 'space-between',
+                      fontSize: 'calc(11.5px*var(--type-scale))',
+                    }),
                   ),
                 ],
                 [
-                  h.span([h.Class('text-muted-foreground')], [track.name]),
                   h.span(
                     [
-                      h.Class(cn(FIGURE, 'text-[calc(13px*var(--type-scale))]')),
+                      h.Class(
+                        css({
+                          color: 'var(--muted-foreground)',
+                        }),
+                      ),
+                    ],
+                    [track.name],
+                  ),
+                  h.span(
+                    [
+                      h.Class(
+                        cn(
+                          FIGURE,
+                          css({
+                            fontSize: 'calc(13px*var(--type-scale))',
+                          }),
+                        ),
+                      ),
                       h.Style({ color: LEVEL_COLOR[levelOf(share, UTILIZATION)] }),
                     ],
                     [percent(Math.min(share, 9.99))],
                   ),
                 ],
               ),
-              h.div([h.Class('flex h-5')], [lcd(share, h)]),
+              h.div(
+                [
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      height: '1.25rem',
+                    }),
+                  ),
+                ],
+                [lcd(share, h)],
+              ),
             ],
           )
         }),
@@ -1502,8 +1918,32 @@ const runsOf = <S extends string>(
 /** A colour swatch and a name, for a timeline's legend. */
 const swatch = (name: string, color: string, h: HtmlBuilder<Message>): Html =>
   h.span(
-    [h.Key(name), h.Class('flex items-center gap-1.5')],
-    [h.span([h.Class('h-2 w-2.5 rounded-[2px]'), h.Style({ background: color })], []), name],
+    [
+      h.Key(name),
+      h.Class(
+        css({
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.375rem',
+        }),
+      ),
+    ],
+    [
+      h.span(
+        [
+          h.Class(
+            css({
+              height: '0.5rem',
+              width: '0.625rem',
+              borderRadius: '2px',
+            }),
+          ),
+          h.Style({ background: color }),
+        ],
+        [],
+      ),
+      name,
+    ],
   )
 
 /** Grafana's state timeline: one lane per series, a block per run of the same state. */
@@ -1526,16 +1966,47 @@ const laneTimeline = (
     unit,
     [
       h.div(
-        [h.Class(cn(SCREEN, 'flex flex-1 flex-col justify-center gap-1.5 p-3'))],
+        [
+          h.Class(
+            cn(
+              SCREEN,
+              css({
+                display: 'flex',
+                flex: '1 1 0%',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: '0.375rem',
+                padding: '0.75rem',
+              }),
+            ),
+          ),
+        ],
         [
           ...lanes.map((lane) =>
             h.div(
-              [h.Key(lane.key), h.Class('flex items-center gap-3')],
+              [
+                h.Key(lane.key),
+                h.Class(
+                  css({
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                  }),
+                ),
+              ],
               [
                 h.span(
                   [
                     h.Class(
-                      'w-28 shrink-0 truncate text-[calc(11.5px*var(--type-scale))] text-muted-foreground',
+                      css({
+                        width: '7rem',
+                        flexShrink: '0',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        fontSize: 'calc(11.5px*var(--type-scale))',
+                        color: 'var(--muted-foreground)',
+                      }),
                     ),
                   ],
                   [lane.name],
@@ -1543,7 +2014,16 @@ const laneTimeline = (
                 h.div(
                   [
                     h.Class(
-                      'relative h-7 min-w-0 flex-1 overflow-hidden rounded-md bg-card shadow-[inset_0_0_0_1px_var(--hairline)]',
+                      css({
+                        position: 'relative',
+                        height: '1.75rem',
+                        minWidth: '0',
+                        flex: '1 1 0%',
+                        overflow: 'hidden',
+                        borderRadius: 'md',
+                        backgroundColor: 'var(--card)',
+                        boxShadow: 'inset 0 0 0 1px var(--hairline)',
+                      }),
                     ),
                   ],
                   lane.runs.map((run, index) =>
@@ -1553,7 +2033,20 @@ const laneTimeline = (
                         h.Class(
                           cn(
                             FIGURE,
-                            'absolute inset-y-[3px] flex items-center overflow-hidden rounded-[3px] px-1.5 text-[calc(10px*var(--type-scale))] font-medium whitespace-nowrap text-black/70 shadow-[inset_0_1px_0_oklch(1_0_0/0.35)]',
+                            css({
+                              position: 'absolute',
+                              insetBlock: '3px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              overflow: 'hidden',
+                              borderRadius: '3px',
+                              paddingInline: '0.375rem',
+                              fontSize: 'calc(10px*var(--type-scale))',
+                              fontWeight: '500',
+                              whiteSpace: 'nowrap',
+                              color: 'color-mix(in oklab, black 70%, transparent)',
+                              boxShadow: 'inset 0 1px 0 oklch(1 0 0/0.35)',
+                            }),
                           ),
                         ),
                         h.Style({
@@ -1575,7 +2068,13 @@ const laneTimeline = (
               h.Class(
                 cn(
                   FIGURE,
-                  'flex justify-between pl-[124px] text-[calc(10px*var(--type-scale))] text-muted-foreground',
+                  css({
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    paddingLeft: '124px',
+                    fontSize: 'calc(10px*var(--type-scale))',
+                    color: 'var(--muted-foreground)',
+                  }),
                 ),
               ),
             ],
@@ -1591,7 +2090,14 @@ const laneTimeline = (
                 h.div(
                   [
                     h.Class(
-                      'flex flex-wrap gap-x-3 gap-y-1 pl-[124px] text-[calc(10px*var(--type-scale))]',
+                      css({
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        columnGap: '0.75rem',
+                        rowGap: '0.25rem',
+                        paddingLeft: '124px',
+                        fontSize: 'calc(10px*var(--type-scale))',
+                      }),
                     ),
                   ],
                   legend,
@@ -1660,10 +2166,30 @@ const mix = (
     t.dashboard.reqPerSecondByKind,
     [
       h.div(
-        [h.Class(cn(SCREEN, 'flex flex-1 items-center gap-3 p-3'))],
+        [
+          h.Class(
+            cn(
+              SCREEN,
+              css({
+                display: 'flex',
+                flex: '1 1 0%',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.75rem',
+              }),
+            ),
+          ),
+        ],
         [
           h.div(
-            [h.Class('w-[118px] shrink-0')],
+            [
+              h.Class(
+                css({
+                  width: '118px',
+                  flexShrink: '0',
+                }),
+              ),
+            ],
             [
               PieChart(
                 {
@@ -1689,7 +2215,14 @@ const mix = (
             ],
           ),
           h.table(
-            [h.Class('w-full text-[calc(11.5px*var(--type-scale))]')],
+            [
+              h.Class(
+                css({
+                  width: '100%',
+                  fontSize: 'calc(11.5px*var(--type-scale))',
+                }),
+              ),
+            ],
             [
               h.tbody(
                 [],
@@ -1698,20 +2231,47 @@ const mix = (
                     [h.Key(kind)],
                     [
                       h.td(
-                        [h.Class('py-0.5')],
+                        [
+                          h.Class(
+                            css({
+                              paddingBlock: '0.125rem',
+                            }),
+                          ),
+                        ],
                         [
                           h.span(
-                            [h.Class('flex items-center gap-1.5')],
+                            [
+                              h.Class(
+                                css({
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.375rem',
+                                }),
+                              ),
+                            ],
                             [
                               h.span(
                                 [
-                                  h.Class('size-2 rounded-[2px]'),
+                                  h.Class(
+                                    css({
+                                      width: '0.5rem',
+                                      height: '0.5rem',
+                                      borderRadius: '2px',
+                                    }),
+                                  ),
                                   h.Style({ background: kindColor(kind) }),
                                 ],
                                 [],
                               ),
                               h.span(
-                                [h.Class('font-mono text-[calc(11px*var(--type-scale))]')],
+                                [
+                                  h.Class(
+                                    css({
+                                      fontFamily: 'mono',
+                                      fontSize: 'calc(11px*var(--type-scale))',
+                                    }),
+                                  ),
+                                ],
                                 [kind],
                               ),
                             ],
@@ -1719,11 +2279,33 @@ const mix = (
                         ],
                       ),
                       h.td(
-                        [h.Class(cn(FIGURE, 'py-0.5 text-right'))],
+                        [
+                          h.Class(
+                            cn(
+                              FIGURE,
+                              css({
+                                paddingBlock: '0.125rem',
+                                textAlign: 'right',
+                              }),
+                            ),
+                          ),
+                        ],
                         [t.dashboard.s(compact(entry.rate))],
                       ),
                       h.td(
-                        [h.Class(cn(FIGURE, 'w-12 py-0.5 text-right text-muted-foreground'))],
+                        [
+                          h.Class(
+                            cn(
+                              FIGURE,
+                              css({
+                                width: '3rem',
+                                paddingBlock: '0.125rem',
+                                textAlign: 'right',
+                                color: 'var(--muted-foreground)',
+                              }),
+                            ),
+                          ),
+                        ],
                         [percent(total > 0 ? entry.rate / total : 0)],
                       ),
                     ],
@@ -1755,11 +2337,36 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
     t.dashboard.reqPerSecondNow,
     [
       h.div(
-        [h.Class(cn(SCREEN, 'flex flex-1 flex-col justify-center gap-1.5 p-3'))],
+        [
+          h.Class(
+            cn(
+              SCREEN,
+              css({
+                display: 'flex',
+                flex: '1 1 0%',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: '0.375rem',
+                padding: '0.75rem',
+              }),
+            ),
+          ),
+        ],
         entries.length === 0
           ? [
               h.span(
-                [h.Key('none'), h.Class(cn(FIGURE, 'text-[calc(28px*var(--type-scale))] text-ok'))],
+                [
+                  h.Key('none'),
+                  h.Class(
+                    cn(
+                      FIGURE,
+                      css({
+                        fontSize: 'calc(28px*var(--type-scale))',
+                        color: 'var(--ok)',
+                      }),
+                    ),
+                  ),
+                ],
                 [t.dashboard.n0Errors],
               ),
             ]
@@ -1767,13 +2374,24 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
               h.div(
                 [
                   h.Key(cause),
-                  h.Class('grid grid-cols-[72px_minmax(0,1fr)_56px] items-center gap-2'),
+                  h.Class(
+                    css({
+                      display: 'grid',
+                      gridTemplateColumns: '72px minmax(0,1fr) 56px',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }),
+                  ),
                 ],
                 [
                   h.span(
                     [
                       h.Class(
-                        'font-mono text-[calc(11px*var(--type-scale))] text-muted-foreground',
+                        css({
+                          fontFamily: 'mono',
+                          fontSize: 'calc(11px*var(--type-scale))',
+                          color: 'var(--muted-foreground)',
+                        }),
                       ),
                     ],
                     [t.dashboard.errorCauses[cause]],
@@ -1781,13 +2399,23 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
                   h.div(
                     [
                       h.Class(
-                        'h-3.5 rounded-[3px] bg-card shadow-[inset_0_0_0_1px_var(--hairline)]',
+                        css({
+                          height: '0.875rem',
+                          borderRadius: '3px',
+                          backgroundColor: 'var(--card)',
+                          boxShadow: 'inset 0 0 0 1px var(--hairline)',
+                        }),
                       ),
                     ],
                     [
                       h.div(
                         [
-                          h.Class('h-full rounded-[2px]'),
+                          h.Class(
+                            css({
+                              height: '100%',
+                              borderRadius: '2px',
+                            }),
+                          ),
                           h.Style({
                             width: `${(rate / max) * 100}%`,
                             background: `linear-gradient(90deg, color-mix(in oklab, ${RED} 35%, transparent), ${RED})`,
@@ -1798,7 +2426,17 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
                     ],
                   ),
                   h.span(
-                    [h.Class(cn(FIGURE, 'text-right text-[calc(11.5px*var(--type-scale))]'))],
+                    [
+                      h.Class(
+                        cn(
+                          FIGURE,
+                          css({
+                            textAlign: 'right',
+                            fontSize: 'calc(11.5px*var(--type-scale))',
+                          }),
+                        ),
+                      ),
+                    ],
                     [t.dashboard.s(compact(rate))],
                   ),
                 ],
@@ -1838,28 +2476,69 @@ const nodeTable = (
     t.dashboard.rows(tracks.length),
     [
       h.div(
-        [h.Class(cn(SCREEN, 'px-1 pb-1', SCROLL))],
+        [
+          h.Class(
+            cn(
+              SCREEN,
+              css({
+                paddingInline: '0.25rem',
+                paddingBottom: '0.25rem',
+              }),
+              SCROLL,
+            ),
+          ),
+        ],
         [
           h.table(
-            [h.Class('w-full min-w-[720px] border-collapse text-[calc(12px*var(--type-scale))]')],
+            [
+              h.Class(
+                css({
+                  width: '100%',
+                  minWidth: '720px',
+                  borderCollapse: 'collapse',
+                  fontSize: 'calc(12px*var(--type-scale))',
+                }),
+              ),
+            ],
             [
               h.thead(
                 [],
                 [
                   h.tr(
-                    [h.Class('text-[calc(11px*var(--type-scale))] text-muted-foreground')],
+                    [
+                      h.Class(
+                        css({
+                          fontSize: 'calc(11px*var(--type-scale))',
+                          color: 'var(--muted-foreground)',
+                        }),
+                      ),
+                    ],
                     head.map((label, index) =>
                       h.th(
                         [
                           h.Key(label),
                           h.Class(
                             cn(
-                              'border-b border-hairline px-2 py-1 font-medium',
+                              css({
+                                borderBottomWidth: '1px',
+                                borderBottomStyle: 'solid',
+                                borderColor: 'var(--hairline)',
+                                paddingInline: '0.5rem',
+                                paddingBlock: '0.25rem',
+                                fontWeight: '500',
+                              }),
                               index === 0
-                                ? 'text-left'
+                                ? css({
+                                    textAlign: 'left',
+                                  })
                                 : index === 3
-                                  ? 'w-[30%] text-left'
-                                  : 'text-right',
+                                  ? css({
+                                      width: '30%',
+                                      textAlign: 'left',
+                                    })
+                                  : css({
+                                      textAlign: 'right',
+                                    }),
                             ),
                           ),
                         ],
@@ -1875,29 +2554,95 @@ const nodeTable = (
                   const own = ledger.nodes[track.id]
                   const share = own?.utilization ?? 0
                   const level = own?.status === 'down' ? 'danger' : levelOf(share, UTILIZATION)
-                  const cell = 'border-b border-hairline px-2 py-1'
+                  const cell = css({
+                    borderBottomWidth: '1px',
+                    borderBottomStyle: 'solid',
+                    borderColor: 'var(--hairline)',
+                    paddingInline: '0.5rem',
+                    paddingBlock: '0.25rem',
+                  })
                   return h.tr(
-                    [h.Key(track.id), h.Class('hover:bg-foreground/[0.03]')],
                     [
-                      h.td([h.Class(cn(cell, 'font-medium'))], [track.name]),
+                      h.Key(track.id),
+                      h.Class(
+                        css({
+                          _hover: {
+                            backgroundColor:
+                              'color-mix(in oklab, var(--foreground) 3%, transparent)',
+                          },
+                        }),
+                      ),
+                    ],
+                    [
                       h.td(
-                        [h.Class(cn(cell, FIGURE, 'text-right'))],
+                        [
+                          h.Class(
+                            cn(
+                              cell,
+                              css({
+                                fontWeight: '500',
+                              }),
+                            ),
+                          ),
+                        ],
+                        [track.name],
+                      ),
+                      h.td(
+                        [
+                          h.Class(
+                            cn(
+                              cell,
+                              FIGURE,
+                              css({
+                                textAlign: 'right',
+                              }),
+                            ),
+                          ),
+                        ],
                         [t.dashboard.s(compact(own?.inbound ?? 0))],
                       ),
                       h.td(
-                        [h.Class(cn(cell, FIGURE, 'text-right text-muted-foreground'))],
+                        [
+                          h.Class(
+                            cn(
+                              cell,
+                              FIGURE,
+                              css({
+                                textAlign: 'right',
+                                color: 'var(--muted-foreground)',
+                              }),
+                            ),
+                          ),
+                        ],
                         [t.dashboard.s(compact(own?.capacity ?? 0))],
                       ),
                       h.td(
                         [h.Class(cell)],
                         [
                           h.div(
-                            [h.Class('flex h-3.5 items-center gap-2')],
+                            [
+                              h.Class(
+                                css({
+                                  display: 'flex',
+                                  height: '0.875rem',
+                                  alignItems: 'center',
+                                  gap: '0.5rem',
+                                }),
+                              ),
+                            ],
                             [
                               lcd(share, h, 24),
                               h.span(
                                 [
-                                  h.Class(cn(FIGURE, 'w-11 text-right')),
+                                  h.Class(
+                                    cn(
+                                      FIGURE,
+                                      css({
+                                        width: '2.75rem',
+                                        textAlign: 'right',
+                                      }),
+                                    ),
+                                  ),
                                   h.Style({ color: LEVEL_COLOR[levelOf(share, UTILIZATION)] }),
                                 ],
                                 [percent(Math.min(share, 9.99))],
@@ -1907,11 +2652,31 @@ const nodeTable = (
                         ],
                       ),
                       h.td(
-                        [h.Class(cn(cell, FIGURE, 'text-right'))],
+                        [
+                          h.Class(
+                            cn(
+                              cell,
+                              FIGURE,
+                              css({
+                                textAlign: 'right',
+                              }),
+                            ),
+                          ),
+                        ],
                         [formats(t).ms(own?.latency ?? 0)],
                       ),
                       h.td(
-                        [h.Class(cn(cell, FIGURE, 'text-right'))],
+                        [
+                          h.Class(
+                            cn(
+                              cell,
+                              FIGURE,
+                              css({
+                                textAlign: 'right',
+                              }),
+                            ),
+                          ),
+                        ],
                         [formats(t).ms(own?.p99 ?? 0)],
                       ),
                       h.td(
@@ -1920,8 +2685,16 @@ const nodeTable = (
                             cn(
                               cell,
                               FIGURE,
-                              'text-right',
-                              (own?.dropped ?? 0) > 0.05 ? 'text-danger' : 'text-muted-foreground',
+                              css({
+                                textAlign: 'right',
+                              }),
+                              (own?.dropped ?? 0) > 0.05
+                                ? css({
+                                    color: 'var(--danger)',
+                                  })
+                                : css({
+                                    color: 'var(--muted-foreground)',
+                                  }),
                             ),
                           ),
                         ],
@@ -1933,7 +2706,12 @@ const nodeTable = (
                             cn(
                               cell,
                               FIGURE,
-                              'text-right text-[calc(11px*var(--type-scale))] font-medium text-black/75',
+                              css({
+                                textAlign: 'right',
+                                fontSize: 'calc(11px*var(--type-scale))',
+                                fontWeight: '500',
+                                color: 'color-mix(in oklab, black 75%, transparent)',
+                              }),
                             ),
                           ),
                           h.Style({
@@ -1984,7 +2762,13 @@ const tablePanel = (
   /** A plot under the table, as the Money card's Cash series. */
   extra: ReadonlyArray<Html> = [],
 ): Html => {
-  const border = 'border-b border-hairline px-2 py-1'
+  const border = css({
+    borderBottomWidth: '1px',
+    borderBottomStyle: 'solid',
+    borderColor: 'var(--hairline)',
+    paddingInline: '0.5rem',
+    paddingBlock: '0.25rem',
+  })
   // A bar column keeps the width it has; a table of figures packs them to the right instead, so
   // the row reads name then figures rather than spreading both across the panel.
   const bars = rows.some((row) => row.cells.some((cell) => cell.bar !== undefined))
@@ -1995,7 +2779,7 @@ const tablePanel = (
         : 'text-right'
       : index === 0
         ? 'w-full text-left'
-        : 'w-px min-w-[88px] text-right whitespace-nowrap'
+        : css({ width: '1px', minWidth: '88px', textAlign: 'right', whiteSpace: 'nowrap' })
   return panel(
     key,
     span,
@@ -2003,7 +2787,18 @@ const tablePanel = (
     unit,
     [
       h.div(
-        [h.Class(cn(SCREEN, 'px-1 pb-1', SCROLL))],
+        [
+          h.Class(
+            cn(
+              SCREEN,
+              css({
+                paddingInline: '0.25rem',
+                paddingBottom: '0.25rem',
+              }),
+              SCROLL,
+            ),
+          ),
+        ],
         rows.length === 0
           ? [
               h.span(
@@ -2012,7 +2807,12 @@ const tablePanel = (
                   h.Class(
                     cn(
                       FIGURE,
-                      'px-2 py-3 text-[calc(12px*var(--type-scale))] text-muted-foreground',
+                      css({
+                        paddingInline: '0.5rem',
+                        paddingBlock: '0.75rem',
+                        fontSize: 'calc(12px*var(--type-scale))',
+                        color: 'var(--muted-foreground)',
+                      }),
                     ),
                   ),
                 ],
@@ -2021,16 +2821,42 @@ const tablePanel = (
             ]
           : [
               h.table(
-                [h.Class('w-full border-collapse text-[calc(12px*var(--type-scale))]')],
+                [
+                  h.Class(
+                    css({
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      fontSize: 'calc(12px*var(--type-scale))',
+                    }),
+                  ),
+                ],
                 [
                   h.thead(
                     [],
                     [
                       h.tr(
-                        [h.Class('text-[calc(11px*var(--type-scale))] text-muted-foreground')],
+                        [
+                          h.Class(
+                            css({
+                              fontSize: 'calc(11px*var(--type-scale))',
+                              color: 'var(--muted-foreground)',
+                            }),
+                          ),
+                        ],
                         head.map((label, index) =>
                           h.th(
-                            [h.Key(label), h.Class(cn(border, 'font-medium', columnClass(index)))],
+                            [
+                              h.Key(label),
+                              h.Class(
+                                cn(
+                                  border,
+                                  css({
+                                    fontWeight: '500',
+                                  }),
+                                  columnClass(index),
+                                ),
+                              ),
+                            ],
                             [label],
                           ),
                         ),
@@ -2041,7 +2867,17 @@ const tablePanel = (
                     [],
                     rows.map((row) =>
                       h.tr(
-                        [h.Key(row.key), h.Class('hover:bg-foreground/[0.03]')],
+                        [
+                          h.Key(row.key),
+                          h.Class(
+                            css({
+                              _hover: {
+                                backgroundColor:
+                                  'color-mix(in oklab, var(--foreground) 3%, transparent)',
+                              },
+                            }),
+                          ),
+                        ],
                         row.cells.map((cell, index) =>
                           h.td(
                             [
@@ -2049,11 +2885,19 @@ const tablePanel = (
                               h.Class(
                                 cn(
                                   border,
-                                  index === 0 ? 'font-medium' : FIGURE,
+                                  index === 0
+                                    ? css({
+                                        fontWeight: '500',
+                                      })
+                                    : FIGURE,
                                   columnClass(index),
                                   cell.fill === undefined
                                     ? undefined
-                                    : 'text-[calc(11px*var(--type-scale))] font-medium text-black/75',
+                                    : css({
+                                        fontSize: 'calc(11px*var(--type-scale))',
+                                        fontWeight: '500',
+                                        color: 'color-mix(in oklab, black 75%, transparent)',
+                                      }),
                                 ),
                               ),
                               ...(cell.fill === undefined
@@ -2081,7 +2925,14 @@ const tablePanel = (
                                             h.Type('button'),
                                             h.OnClick(cell.onClick),
                                             h.Class(
-                                              'text-left font-medium underline-offset-2 hover:underline',
+                                              css({
+                                                textAlign: 'left',
+                                                fontWeight: '500',
+                                                textUnderlineOffset: '2',
+                                                _hover: {
+                                                  textDecorationLine: 'underline',
+                                                },
+                                              }),
                                             ),
                                             ...(cell.hint === undefined
                                               ? []
@@ -2092,11 +2943,30 @@ const tablePanel = (
                                   ]
                                 : [
                                     h.div(
-                                      [h.Class('flex h-3.5 items-center gap-2')],
+                                      [
+                                        h.Class(
+                                          css({
+                                            display: 'flex',
+                                            height: '0.875rem',
+                                            alignItems: 'center',
+                                            gap: '0.5rem',
+                                          }),
+                                        ),
+                                      ],
                                       [
                                         lcd(cell.bar.share, h, 24),
                                         h.span(
-                                          [h.Class(cn(FIGURE, 'w-11 text-right'))],
+                                          [
+                                            h.Class(
+                                              cn(
+                                                FIGURE,
+                                                css({
+                                                  width: '2.75rem',
+                                                  textAlign: 'right',
+                                                }),
+                                              ),
+                                            ),
+                                          ],
                                           [cell.text],
                                         ),
                                       ],
@@ -2136,13 +3006,35 @@ const barList = (
     unit,
     [
       h.div(
-        [h.Class(cn(SCREEN, 'flex flex-1 flex-col justify-center gap-1.5 p-3'))],
+        [
+          h.Class(
+            cn(
+              SCREEN,
+              css({
+                display: 'flex',
+                flex: '1 1 0%',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: '0.375rem',
+                padding: '0.75rem',
+              }),
+            ),
+          ),
+        ],
         entries.length === 0
           ? [
               h.span(
                 [
                   h.Key('none'),
-                  h.Class(cn(FIGURE, 'text-[calc(12px*var(--type-scale))] text-muted-foreground')),
+                  h.Class(
+                    cn(
+                      FIGURE,
+                      css({
+                        fontSize: 'calc(12px*var(--type-scale))',
+                        color: 'var(--muted-foreground)',
+                      }),
+                    ),
+                  ),
                 ],
                 [copy(h).dashboard.noNodeToShow],
               ),
@@ -2152,13 +3044,26 @@ const barList = (
               return h.div(
                 [
                   h.Key(entry.key),
-                  h.Class('grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_60px] items-center gap-2'),
+                  h.Class(
+                    css({
+                      display: 'grid',
+                      gridTemplateColumns: 'minmax(0,1fr) minmax(0,2fr) 60px',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }),
+                  ),
                 ],
                 [
                   h.span(
                     [
                       h.Class(
-                        'truncate text-[calc(11.5px*var(--type-scale))] text-muted-foreground',
+                        css({
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          fontSize: 'calc(11.5px*var(--type-scale))',
+                          color: 'var(--muted-foreground)',
+                        }),
                       ),
                     ],
                     [entry.name],
@@ -2166,13 +3071,23 @@ const barList = (
                   h.div(
                     [
                       h.Class(
-                        'h-3.5 rounded-[3px] bg-card shadow-[inset_0_0_0_1px_var(--hairline)]',
+                        css({
+                          height: '0.875rem',
+                          borderRadius: '3px',
+                          backgroundColor: 'var(--card)',
+                          boxShadow: 'inset 0 0 0 1px var(--hairline)',
+                        }),
                       ),
                     ],
                     [
                       h.div(
                         [
-                          h.Class('h-full rounded-[2px]'),
+                          h.Class(
+                            css({
+                              height: '100%',
+                              borderRadius: '2px',
+                            }),
+                          ),
                           h.Style({
                             width: `${Math.max(2, (Math.abs(entry.value) / widest) * 100)}%`,
                             background: `linear-gradient(90deg, color-mix(in oklab, ${color} 35%, transparent), ${color})`,
@@ -2183,7 +3098,17 @@ const barList = (
                     ],
                   ),
                   h.span(
-                    [h.Class(cn(FIGURE, 'text-right text-[calc(11.5px*var(--type-scale))]'))],
+                    [
+                      h.Class(
+                        cn(
+                          FIGURE,
+                          css({
+                            textAlign: 'right',
+                            fontSize: 'calc(11.5px*var(--type-scale))',
+                          }),
+                        ),
+                      ),
+                    ],
                     [entry.text],
                   ),
                 ],
@@ -2217,10 +3142,35 @@ const cashSpark = (rows: ReadonlyArray<Row>, h: HtmlBuilder<Message>): Html => {
     format: (value) => money(value),
   }
   return h.div(
-    [h.Class('mt-1.5 flex shrink-0 flex-col gap-0.5')],
+    [
+      h.Class(
+        css({
+          marginTop: '0.375rem',
+          display: 'flex',
+          flexShrink: '0',
+          flexDirection: 'column',
+          gap: '0.125rem',
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class(cn(SCREEN, 'relative flex h-[76px] flex-col justify-end px-1 pt-1'))],
+        [
+          h.Class(
+            cn(
+              SCREEN,
+              css({
+                position: 'relative',
+                display: 'flex',
+                height: '76px',
+                flexDirection: 'column',
+                justifyContent: 'flex-end',
+                paddingInline: '0.25rem',
+                paddingTop: '0.25rem',
+              }),
+            ),
+          ),
+        ],
         [
           ComposedChart(
             {
@@ -2515,10 +3465,30 @@ const incidentTimeline = (
       rangeLabel(t, range),
       [
         h.div(
-          [h.Class(cn(SCREEN, 'px-2 py-3'))],
+          [
+            h.Class(
+              cn(
+                SCREEN,
+                css({
+                  paddingInline: '0.5rem',
+                  paddingBlock: '0.75rem',
+                }),
+              ),
+            ),
+          ],
           [
             h.span(
-              [h.Class(cn(FIGURE, 'text-[calc(12px*var(--type-scale))] text-muted-foreground'))],
+              [
+                h.Class(
+                  cn(
+                    FIGURE,
+                    css({
+                      fontSize: 'calc(12px*var(--type-scale))',
+                      color: 'var(--muted-foreground)',
+                    }),
+                  ),
+                ),
+              ],
               [t.dashboard.noRunInThisRange],
             ),
           ],
@@ -2690,31 +3660,105 @@ const postmortemDetail = (game: Game, postmortem: Postmortem, h: HtmlBuilder<Mes
     `SEV${postmortem.severity}${postmortem.target === null ? '' : ` · ${postmortem.target}`}`,
     [
       h.div(
-        [h.Class(cn(SCREEN, 'flex flex-col gap-3 p-3'))],
+        [
+          h.Class(
+            cn(
+              SCREEN,
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem',
+                padding: '0.75rem',
+              }),
+            ),
+          ),
+        ],
         [
           h.p(
-            [h.Class('text-[calc(12px*var(--type-scale))] leading-snug text-muted-foreground')],
+            [
+              h.Class(
+                css({
+                  fontSize: 'calc(12px*var(--type-scale))',
+                  lineHeight: '1.375',
+                  color: 'var(--muted-foreground)',
+                }),
+              ),
+            ],
             [def.cause],
           ),
           h.div(
-            [h.Class('grid grid-cols-7 divide-x divide-hairline')],
+            [
+              h.Class(
+                css({
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+                  '& > :not(:last-child)': {
+                    borderRightWidth: '1px',
+                    borderRightStyle: 'solid',
+                    borderColor: 'var(--hairline)',
+                  },
+                }),
+              ),
+            ],
             facts.map(([name, value]) =>
               h.div(
-                [h.Key(name), h.Class('flex flex-col gap-1 px-2.5 py-1.5')],
+                [
+                  h.Key(name),
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.25rem',
+                      paddingInline: '0.625rem',
+                      paddingBlock: '0.375rem',
+                    }),
+                  ),
+                ],
                 [
                   h.span([h.Class(EYEBROW)], [name]),
-                  h.span([h.Class(cn(FIGURE, 'text-[calc(12.5px*var(--type-scale))]'))], [value]),
+                  h.span(
+                    [
+                      h.Class(
+                        cn(
+                          FIGURE,
+                          css({
+                            fontSize: 'calc(12.5px*var(--type-scale))',
+                          }),
+                        ),
+                      ),
+                    ],
+                    [value],
+                  ),
                 ],
               ),
             ),
           ),
-          h.p([h.Class('text-[calc(12px*var(--type-scale))] leading-snug')], [def.prevention]),
+          h.p(
+            [
+              h.Class(
+                css({
+                  fontSize: 'calc(12px*var(--type-scale))',
+                  lineHeight: '1.375',
+                }),
+              ),
+            ],
+            [def.prevention],
+          ),
           h.p(
             [
               h.Class(
                 cn(
-                  'text-[calc(12px*var(--type-scale))] leading-snug',
-                  open ? 'text-warn' : 'text-muted-foreground',
+                  css({
+                    fontSize: 'calc(12px*var(--type-scale))',
+                    lineHeight: '1.375',
+                  }),
+                  open
+                    ? css({
+                        color: 'var(--warn)',
+                      })
+                    : css({
+                        color: 'var(--muted-foreground)',
+                      }),
                 ),
               ),
             ],
@@ -2886,7 +3930,19 @@ const thresholdPicker = (rule: Rule, chosen: number, h: HtmlBuilder<Message>): H
         ? t.dashboard.s3(threshold)
         : `${Math.round(threshold * 1000) / 10}%`
   return h.div(
-    [h.Class(cn('inline-flex gap-[3px] rounded-lg p-[3px]', WELL))],
+    [
+      h.Class(
+        cn(
+          css({
+            display: 'inline-flex',
+            gap: '3px',
+            borderRadius: 'lg',
+            padding: '3px',
+          }),
+          WELL,
+        ),
+      ),
+    ],
     ALERT_THRESHOLDS[rule].map((threshold) =>
       h.button(
         [
@@ -2897,10 +3953,24 @@ const thresholdPicker = (rule: Rule, chosen: number, h: HtmlBuilder<Message>): H
           h.Class(
             cn(
               FIGURE,
-              'h-5 rounded-md px-1.5 text-[calc(11px*var(--type-scale))]',
+              css({
+                height: '1.25rem',
+                borderRadius: 'md',
+                paddingInline: '0.375rem',
+                fontSize: 'calc(11px*var(--type-scale))',
+              }),
               threshold === chosen
-                ? 'bg-raised text-foreground shadow-raised'
-                : 'text-muted-foreground hover:text-foreground',
+                ? css({
+                    layerStyle: 'raised',
+                    color: 'var(--foreground)',
+                    boxShadow: 'raised',
+                  })
+                : css({
+                    color: 'var(--muted-foreground)',
+                    _hover: {
+                      color: 'var(--foreground)',
+                    },
+                  }),
             ),
           ),
         ],
@@ -3565,16 +4635,58 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
       : t.dashboard.sandbox
     : t.dashboard.company
   return h.div(
-    [h.Class('flex flex-wrap items-center gap-2 px-4 pt-4 compact:px-3')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '0.5rem',
+          paddingInline: '1rem',
+          paddingTop: '1rem',
+          _compact: {
+            paddingInline: '0.75rem',
+          },
+        }),
+      ),
+    ],
     [
       h.div(
-        [h.Class(cn(PANEL, 'flex items-center gap-2.5 py-2 pr-3 pl-3.5'))],
         [
-          icon(h, LayoutGrid, 'size-4 text-muted-foreground'),
+          h.Class(
+            cn(
+              PANEL,
+              css({
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.625rem',
+                paddingBlock: '0.5rem',
+                paddingRight: '0.75rem',
+                paddingLeft: '0.875rem',
+              }),
+            ),
+          ),
+        ],
+        [
+          icon(
+            h,
+            LayoutGrid,
+            css({
+              width: '1rem',
+              height: '1rem',
+              color: 'var(--muted-foreground)',
+            }),
+          ),
           h.span(
             [
               h.Class(
-                'flex items-center gap-1.5 text-[calc(13px*var(--type-scale))] text-muted-foreground',
+                css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.375rem',
+                  fontSize: 'calc(13px*var(--type-scale))',
+                  color: 'var(--muted-foreground)',
+                }),
               ),
             ],
             [
@@ -3585,26 +4697,91 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.span(
                 [
                   h.Class(
-                    'text-[calc(15px*var(--type-scale))] font-semibold tracking-[-0.02em] text-foreground',
+                    css({
+                      fontSize: 'calc(15px*var(--type-scale))',
+                      fontWeight: '600',
+                      letterSpacing: '-0.02em',
+                      color: 'var(--foreground)',
+                    }),
                   ),
                 ],
                 [t.dashboard.overview],
               ),
             ],
           ),
-          icon(h, Star, 'size-3.5 text-muted-foreground'),
+          icon(
+            h,
+            Star,
+            css({
+              width: '0.875rem',
+              height: '0.875rem',
+              color: 'var(--muted-foreground)',
+            }),
+          ),
         ],
       ),
-      h.span([h.Class('flex-1')], []),
+      h.span(
+        [
+          h.Class(
+            css({
+              flex: '1 1 0%',
+            }),
+          ),
+        ],
+        [],
+      ),
       h.div(
-        [h.Class(cn(PANEL, 'flex items-center gap-1.5 p-1.5'))],
+        [
+          h.Class(
+            cn(
+              PANEL,
+              css({
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.375rem',
+                padding: '0.375rem',
+              }),
+            ),
+          ),
+        ],
         [
           h.span(
-            [h.Class('grid h-7 place-items-center px-1.5 text-muted-foreground')],
-            [icon(h, Clock3, 'size-3.5')],
+            [
+              h.Class(
+                css({
+                  display: 'grid',
+                  height: '1.75rem',
+                  placeItems: 'center',
+                  paddingInline: '0.375rem',
+                  color: 'var(--muted-foreground)',
+                }),
+              ),
+            ],
+            [
+              icon(
+                h,
+                Clock3,
+                css({
+                  width: '0.875rem',
+                  height: '0.875rem',
+                }),
+              ),
+            ],
           ),
           h.div(
-            [h.Class(cn('flex gap-[3px] rounded-lg p-[3px]', WELL))],
+            [
+              h.Class(
+                cn(
+                  css({
+                    display: 'flex',
+                    gap: '3px',
+                    borderRadius: 'lg',
+                    padding: '3px',
+                  }),
+                  WELL,
+                ),
+              ),
+            ],
             DASHBOARD_RANGES.map((minutes) =>
               h.button(
                 [
@@ -3618,10 +4795,24 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                   ),
                   h.Class(
                     cn(
-                      'h-6 rounded-md px-2.5 text-[calc(12px*var(--type-scale))]',
+                      css({
+                        height: '1.5rem',
+                        borderRadius: 'md',
+                        paddingInline: '0.625rem',
+                        fontSize: 'calc(12px*var(--type-scale))',
+                      }),
                       minutes === model.board.dashboard.range
-                        ? 'bg-raised text-foreground shadow-raised'
-                        : 'text-muted-foreground hover:text-foreground',
+                        ? css({
+                            layerStyle: 'raised',
+                            color: 'var(--foreground)',
+                            boxShadow: 'raised',
+                          })
+                        : css({
+                            color: 'var(--muted-foreground)',
+                            _hover: {
+                              color: 'var(--foreground)',
+                            },
+                          }),
                     ),
                   ),
                 ],
@@ -3634,8 +4825,24 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 cn(
                   FIGURE,
-                  'flex h-7 items-center gap-2 rounded-lg bg-raised px-2.5 text-[calc(12px*var(--type-scale))] shadow-raised',
-                  clockPaused(model) ? 'text-muted-foreground' : 'text-foreground',
+                  css({
+                    display: 'flex',
+                    height: '1.75rem',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    borderRadius: 'lg',
+                    layerStyle: 'raised',
+                    paddingInline: '0.625rem',
+                    fontSize: 'calc(12px*var(--type-scale))',
+                    boxShadow: 'raised',
+                  }),
+                  clockPaused(model)
+                    ? css({
+                        color: 'var(--muted-foreground)',
+                      })
+                    : css({
+                        color: 'var(--foreground)',
+                      }),
                 ),
               ),
             ],
@@ -3648,23 +4855,49 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                     String(now.hour).padStart(2, '0'),
                     String(now.minute).padStart(2, '0'),
                   ),
-              icon(h, RefreshCw, 'size-3.5 text-muted-foreground'),
+              icon(
+                h,
+                RefreshCw,
+                css({
+                  width: '0.875rem',
+                  height: '0.875rem',
+                  color: 'var(--muted-foreground)',
+                }),
+              ),
             ],
           ),
         ],
       ),
       h.div(
-        [h.Class(cn(PANEL, 'p-1'))],
+        [
+          h.Class(
+            cn(
+              PANEL,
+              css({
+                padding: '0.25rem',
+              }),
+            ),
+          ),
+        ],
         [
           button(
             {
               onClick: Message.PanelClosed(),
               variant: 'ghost',
               size: 'icon',
-              className: 'text-muted-foreground',
+              className: css({
+                color: 'var(--muted-foreground)',
+              }),
               attributes: [h.AriaLabel(t.dashboard.closeEsc)],
             },
-            icon(h, X, 'size-4'),
+            icon(
+              h,
+              X,
+              css({
+                width: '1rem',
+                height: '1rem',
+              }),
+            ),
             h,
           ),
         ],
@@ -3689,20 +4922,48 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
       [
         h.Key(name),
         h.Class(
-          'flex h-7 items-stretch overflow-hidden rounded-lg bg-raised text-[calc(12px*var(--type-scale))] shadow-raised',
+          css({
+            display: 'flex',
+            height: '1.75rem',
+            alignItems: 'stretch',
+            overflow: 'hidden',
+            borderRadius: 'lg',
+            layerStyle: 'raised',
+            fontSize: 'calc(12px*var(--type-scale))',
+            boxShadow: 'raised',
+          }),
         ),
       ],
       [
         h.span(
           [
             h.Class(
-              'grid place-items-center border-r border-hairline bg-well/60 px-2 text-muted-foreground',
+              css({
+                display: 'grid',
+                placeItems: 'center',
+                borderRightWidth: '1px',
+                borderRightStyle: 'solid',
+                borderColor: 'var(--hairline)',
+                backgroundColor: 'color-mix(in oklab, var(--well) 60%, transparent)',
+                paddingInline: '0.5rem',
+                color: 'var(--muted-foreground)',
+              }),
             ),
           ],
           [name],
         ),
         h.span(
-          [h.Class('grid place-items-center px-2 font-mono text-[calc(11.5px*var(--type-scale))]')],
+          [
+            h.Class(
+              css({
+                display: 'grid',
+                placeItems: 'center',
+                paddingInline: '0.5rem',
+                fontFamily: 'mono',
+                fontSize: 'calc(11.5px*var(--type-scale))',
+              }),
+            ),
+          ],
           [value],
         ),
       ],
@@ -3718,18 +4979,51 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
         h.Key(name),
         h.DataAttribute('variable', name),
         h.Class(
-          'flex h-7 items-center gap-1.5 rounded-lg bg-raised pr-1 pl-2 text-[calc(11px*var(--type-scale))] shadow-raised',
+          css({
+            display: 'flex',
+            height: '1.75rem',
+            alignItems: 'center',
+            gap: '0.375rem',
+            borderRadius: 'lg',
+            layerStyle: 'raised',
+            paddingRight: '0.25rem',
+            paddingLeft: '0.5rem',
+            fontSize: 'calc(11px*var(--type-scale))',
+            boxShadow: 'raised',
+          }),
         ),
       ],
       [
-        h.span([h.Class('text-muted-foreground')], [name]),
+        h.span(
+          [
+            h.Class(
+              css({
+                color: 'var(--muted-foreground)',
+              }),
+            ),
+          ],
+          [name],
+        ),
         h.select(
           [
             h.Value(value),
             h.AriaLabel(name),
             h.OnChange(chosen),
             h.Class(
-              'h-6 max-w-[9.5rem] truncate rounded-md bg-well px-1 font-mono text-[calc(11.5px*var(--type-scale))] text-foreground outline-none',
+              css({
+                height: '1.5rem',
+                maxWidth: '9.5rem',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                borderRadius: 'md',
+                backgroundColor: 'var(--well)',
+                paddingInline: '0.25rem',
+                fontFamily: 'mono',
+                fontSize: 'calc(11.5px*var(--type-scale))',
+                color: 'var(--foreground)',
+                outlineStyle: 'none',
+              }),
             ),
           ],
           options.map(([option, label]) =>
@@ -3748,8 +5042,24 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
         h.OnClick(click),
         h.Class(
           cn(
-            'flex h-6 items-center gap-1.5 rounded-md px-1.5 text-[calc(11px*var(--type-scale))]',
-            on ? 'bg-raised text-foreground shadow-raised' : 'text-muted-foreground/70',
+            css({
+              display: 'flex',
+              height: '1.5rem',
+              alignItems: 'center',
+              gap: '0.375rem',
+              borderRadius: 'md',
+              paddingInline: '0.375rem',
+              fontSize: 'calc(11px*var(--type-scale))',
+            }),
+            on
+              ? css({
+                  layerStyle: 'raised',
+                  color: 'var(--foreground)',
+                  boxShadow: 'raised',
+                })
+              : css({
+                  color: 'color-mix(in oklab, var(--muted-foreground) 70%, transparent)',
+                }),
           ),
         ),
       ],
@@ -3759,7 +5069,14 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
           : [
               h.span(
                 [
-                  h.Class('h-3 border-l border-dashed'),
+                  h.Class(
+                    css({
+                      height: '0.75rem',
+                      borderLeftWidth: '1px',
+                      borderLeftStyle: 'solid',
+                      borderStyle: 'dashed',
+                    }),
+                  ),
                   h.Style({ borderColor: color, opacity: on ? '1' : '0.4' }),
                 ],
                 [],
@@ -3769,7 +5086,21 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
       ],
     )
   return h.div(
-    [h.Class('flex flex-wrap items-center gap-2 px-4 pt-4 compact:px-3')],
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '0.5rem',
+          paddingInline: '1rem',
+          paddingTop: '1rem',
+          _compact: {
+            paddingInline: '0.75rem',
+          },
+        }),
+      ),
+    ],
     [
       select(
         t.dashboard.kind,
@@ -3821,7 +5152,16 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
         : chip(t.dashboard.region2, model.board.region),
       chip(t.dashboard.eraVariable, eraWords(t, game).name),
       chip(t.dashboard.sloVariable, sloText(slo)),
-      h.span([h.Class('flex-1')], []),
+      h.span(
+        [
+          h.Class(
+            css({
+              flex: '1 1 0%',
+            }),
+          ),
+        ],
+        [],
+      ),
       toggle(
         t.dashboard.compare,
         dashboard.compare,
@@ -3833,7 +5173,16 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
         Message.DashboardChanged({ message: DashboardMessage.TableToggled() }),
       ),
       h.div(
-        [h.Class('flex flex-wrap items-center gap-1')],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: '0.25rem',
+            }),
+          ),
+        ],
         ANNOTATION_GROUPS.map((group) =>
           toggle(
             annotationNameOf(t)[group],
@@ -3944,7 +5293,13 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Class(
                 cn(
                   PANEL,
-                  'col-span-24 px-4 py-6 text-[calc(13px*var(--type-scale))] text-muted-foreground',
+                  css({
+                    gridColumn: 'span 24 / span 24',
+                    paddingInline: '1rem',
+                    paddingBlock: '1.5rem',
+                    fontSize: 'calc(13px*var(--type-scale))',
+                    color: 'var(--muted-foreground)',
+                  }),
                 ),
               ),
             ],
@@ -4177,7 +5532,16 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                         h.Class(
                           cn(
                             SCREEN,
-                            'flex min-h-[92px] flex-1 flex-col justify-end px-3 pt-2 pb-3',
+                            css({
+                              display: 'flex',
+                              minHeight: '92px',
+                              flex: '1 1 0%',
+                              flexDirection: 'column',
+                              justifyContent: 'flex-end',
+                              paddingInline: '0.75rem',
+                              paddingTop: '0.5rem',
+                              paddingBottom: '0.75rem',
+                            }),
                           ),
                         ),
                       ],
@@ -4187,7 +5551,12 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                             h.Class(
                               cn(
                                 FIGURE,
-                                'text-[calc(30px*var(--type-scale))] leading-none font-medium tracking-[-0.03em]',
+                                css({
+                                  fontSize: 'calc(30px*var(--type-scale))',
+                                  lineHeight: '1',
+                                  fontWeight: '500',
+                                  letterSpacing: '-0.03em',
+                                }),
                               ),
                             ),
                             h.Style({ color: credit > 0 ? RED : MUTED }),
@@ -4268,7 +5637,20 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.Key('dashboard'),
       h.DataAttribute('dashboard', ''),
       h.DataAttribute('exit', 'gesture'),
-      h.Class('absolute inset-0 z-30 flex flex-col bg-canvas text-foreground enter-backdrop'),
+      h.Class(
+        cx(
+          css({
+            position: 'absolute',
+            inset: '0',
+            zIndex: '30',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: 'var(--canvas)',
+            color: 'var(--foreground)',
+          }),
+          'enter-backdrop',
+        ),
+      ),
     ],
     [
       topBar(model, h),
@@ -4282,15 +5664,42 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.AriaLabel(t.dashboard.dashboardScrollForTheCompanyAnd),
           h.Class(
             cn(
-              'min-h-0 flex-1',
+              css({
+                minHeight: '0',
+                flex: '1 1 0%',
+              }),
               SCROLL,
-              'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary',
+              css({
+                _focusVisible: {
+                  outlineWidth: '2px',
+                  outlineStyle: 'solid',
+                  outlineOffset: '-2px',
+                  outlineColor: 'var(--primary)',
+                },
+              }),
             ),
           ),
         ],
         [
           variables(model, slo, h),
-          h.div([h.Class('grid grid-cols-24 gap-2 px-4 pt-2 pb-8 compact:px-3')], panels),
+          h.div(
+            [
+              h.Class(
+                css({
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(24, minmax(0, 1fr))',
+                  gap: '0.5rem',
+                  paddingInline: '1rem',
+                  paddingTop: '0.5rem',
+                  paddingBottom: '2rem',
+                  _compact: {
+                    paddingInline: '0.75rem',
+                  },
+                }),
+              ),
+            ],
+            panels,
+          ),
         ],
       ),
     ],

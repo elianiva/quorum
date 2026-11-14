@@ -1,53 +1,116 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { IconNode } from 'lucide'
 import type { BuildGroup, InsightPool } from '@quorum/simulation/catalog'
+import { css, cx } from '@quorum/styled-system/css'
 import { cn } from 'cn'
 import { icon } from '../primitives/icon.ts'
 import { GROUP_SHAPES, type GroupShape, STACK_LOGOS, type StackLogoId } from './icons.ts'
 import { POOL_ICONS, poolColor, poolName } from './pools.ts'
 
-export const EYEBROW =
-  'font-mono text-[calc(10.5px*var(--type-scale))] font-medium uppercase tracking-[0.08em] text-muted-foreground'
-export const SCROLL = 'overflow-auto [scrollbar-width:thin]'
-export const PANEL = 'rounded-2xl bg-surface shadow-card'
-export const FLOAT = 'rounded-2xl bg-surface shadow-float'
+export const EYEBROW = css({
+  fontFamily: 'mono',
+  fontSize: 'calc(10.5px * var(--type-scale))',
+  fontWeight: '500',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  color: 'mutedForeground',
+})
+export const SCROLL = css({ overflow: 'auto', scrollbarWidth: 'thin' })
+export const PANEL = css({ borderRadius: '2xl', layerStyle: 'surface', boxShadow: 'card' })
+export const FLOAT = css({ borderRadius: '2xl', layerStyle: 'surface', boxShadow: 'float' })
 /** A group inside a panel, one step lighter, with hairline dividers. */
-export const NESTED =
-  'divide-y divide-hairline rounded-xl bg-nested shadow-[inset_0_0_0_1px_var(--hairline-soft)]'
+export const NESTED = css({
+  borderRadius: 'xl',
+  backgroundColor: 'nested',
+  boxShadow: 'inset 0 0 0 1px var(--hairline-soft)',
+  '& > :not(:last-child):not([data-slot="button"])': {
+    borderBottomWidth: '1px',
+    borderBottomStyle: 'solid',
+    borderColor: 'hairline',
+  },
+})
 /** A sunken strip: tracks, segmented controls, figure rows. */
-export const WELL = 'rounded-xl bg-well shadow-well'
+export const WELL = css({ borderRadius: 'xl', backgroundColor: 'well', boxShadow: 'well' })
 /** A phone shows the figures as one row of chips that scrolls sideways. */
-export const CHIPS =
-  'compact:flex-row compact:divide-x compact:divide-y-0 compact:overflow-x-auto compact:[scrollbar-width:none]'
+export const CHIPS = css({
+  _compact: {
+    flexDirection: 'row',
+    overflowX: 'auto',
+    scrollbarWidth: 'none',
+    '& > :not(:last-child)': {
+      borderTopWidth: '0px',
+      borderTopStyle: 'solid',
+      borderRightWidth: '1px',
+      borderRightStyle: 'solid',
+      borderBottomWidth: '0px',
+      borderBottomStyle: 'solid',
+      borderLeftWidth: '0px',
+      borderLeftStyle: 'solid',
+    },
+  },
+})
 
-export const FIGURE = 'font-mono tabular-nums tracking-[-0.01em]'
+export const FIGURE = css({
+  fontFamily: 'mono',
+  fontVariantNumeric: 'tabular-nums',
+  letterSpacing: '-0.01em',
+})
 
 /** A square icon control inside a panel: flat at rest, a raised ink fill when on.
  *  On a dark board a white fill outshines the board, so on is a raised grey there. */
 export const tool = (active: boolean): string =>
-  cn(
-    'press relative grid size-10 shrink-0 place-items-center rounded-xl',
-    active
-      ? 'bg-primary-fill text-on-primary-fill shadow-primary dark:bg-raised dark:text-foreground dark:shadow-raised'
-      : 'text-muted-foreground hover:bg-well hover:text-foreground',
-  )
+  active
+    ? cx(
+        css({
+          position: 'relative',
+          display: 'grid',
+          width: '2.5rem',
+          height: '2.5rem',
+          flexShrink: 0,
+          placeItems: 'center',
+          borderRadius: 'xl',
+          layerStyle: 'primaryFill',
+          color: 'onPrimaryFill',
+          boxShadow: 'var(--elev-primary)',
+          _dark: {
+            layerStyle: 'raised',
+            color: 'foreground',
+            boxShadow: 'var(--elev-raised)',
+          },
+        }),
+        'press',
+      )
+    : cx(
+        css({
+          position: 'relative',
+          display: 'grid',
+          width: '2.5rem',
+          height: '2.5rem',
+          flexShrink: 0,
+          placeItems: 'center',
+          borderRadius: 'xl',
+          color: 'mutedForeground',
+          _hover: { backgroundColor: 'well', color: 'foreground' },
+        }),
+        'press',
+      )
 
 export type Tone = 'plain' | 'ok' | 'warn' | 'danger'
 
-export const toneText = (tone: Tone): string =>
-  tone === 'danger'
-    ? 'text-danger'
-    : tone === 'warn'
-      ? 'text-warn'
-      : tone === 'ok'
-        ? 'text-ok'
-        : 'text-foreground'
+const toneClasses: Record<Tone, string> = {
+  plain: css({ color: 'foreground' }),
+  ok: css({ color: 'ok' }),
+  warn: css({ color: 'warn' }),
+  danger: css({ color: 'danger' }),
+}
+
+export const toneText = (tone: Tone): string => toneClasses[tone]
 
 export const GROUP_TEXT: Record<BuildGroup, string> = {
-  edge: 'text-group-edge',
-  compute: 'text-group-compute',
-  data: 'text-group-data',
-  ops: 'text-group-ops',
+  edge: css({ color: 'groupEdge' }),
+  compute: css({ color: 'groupCompute' }),
+  data: css({ color: 'groupData' }),
+  ops: css({ color: 'groupOps' }),
 }
 
 /** Glyph scale inside each badge shape; a diamond has the least room. */
@@ -238,7 +301,17 @@ export const row = <M>(name: string, value: string, tone: Tone, h: HtmlBuilder<M
 /** A sunken track with a rounded fill. */
 export const meter = <M>(share: number, fill: string, h: HtmlBuilder<M>): Html =>
   h.div(
-    [h.Class('h-1.5 overflow-hidden rounded-full bg-well shadow-well')],
+    [
+      h.Class(
+        css({
+          height: '0.375rem',
+          overflow: 'hidden',
+          borderRadius: '9999px',
+          backgroundColor: 'well',
+          boxShadow: 'well',
+        }),
+      ),
+    ],
     [
       h.div(
         [

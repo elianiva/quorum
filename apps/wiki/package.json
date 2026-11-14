@@ -15,6 +15,7 @@
     "@foldkit/ui": "0.170.0",
     "@foldkit/vite-plugin": "0.29.0",
     "@quorum/simulation": "workspace:*",
+    "@quorum/styled-system": "workspace:*",
     "@quorum/ui": "workspace:*",
     "cn": "0.5.2",
     "effect": "4.1.2",
@@ -27,6 +28,10 @@
     "vite": "8.3.6"
   },
   "devDependencies": {
+    "@pandacss/dev": "catalog:",
+    "@pandacss/preset-base": "catalog:",
+    "@pandacss/preset-panda": "catalog:",
+    "@pandacss/vite": "catalog:",
     "@tailwindcss/vite": "4.3.4",
     "@types/node": "26.6.6",
     "tailwindcss": "4.3.4",

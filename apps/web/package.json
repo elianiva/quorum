@@ -13,6 +13,7 @@
     "@quorum/agent": "workspace:*",
     "@quorum/rpc": "workspace:*",
     "@quorum/simulation": "workspace:*",
+    "@quorum/styled-system": "workspace:*",
     "@quorum/ui": "workspace:*",
     "@sentry/browser": "11.11.0",
     "@sentry/cloudflare": "11.11.0",
@@ -27,6 +28,10 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20261106.1",
+    "@pandacss/dev": "catalog:",
+    "@pandacss/preset-base": "catalog:",
+    "@pandacss/preset-panda": "catalog:",
+    "@pandacss/vite": "catalog:",
     "@sentry/vite-plugin": "11.11.0",
     "@tailwindcss/vite": "4.3.4",
     "tailwindcss": "4.3.4",

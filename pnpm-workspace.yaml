@@ -2,11 +2,17 @@ packages:
   - apps/*
   - packages/*
   - examples/*
+catalog:
+  '@pandacss/dev': 2.5.0
+  '@pandacss/preset-base': 2.5.0
+  '@pandacss/preset-panda': 2.5.0
+  '@pandacss/vite': 2.5.0
 allowBuilds:
   lefthook: true
   workerd: true
   esbuild: true
   core-js: false
+  '@parcel/watcher': false
 overrides:
   effect: 4.1.2
   workerd: 1.20261106.1

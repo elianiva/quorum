@@ -769,9 +769,11 @@ let converged = new WeakSet<Game>()
 /** The flow solve: the pass loop and its Ledger, without the Bottleneck search. */
 export const solverFlow = (game: Game): Ledger => {
   const exports = installed()
+  // Forget the last Game first: once the write starts, the blocks no longer hold it.
+  converged = new WeakSet()
   write(exports, game)
   check(exports.solve_run(-1, 0, 0), 'solve_run')
-  converged = new WeakSet([game])
+  converged.add(game)
   return readLedger(exports, game)
 }
 

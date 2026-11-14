@@ -355,7 +355,7 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
                 justifyContent: 'center',
                 gap: '1',
               }),
-              allGroups ? 'compact:justify-start' : 'compact:justify-center',
+              css({ _compact: { justifyContent: allGroups ? 'flex-start' : 'center' } }),
               css({
                 _compact: {
                   overflowX: 'auto',

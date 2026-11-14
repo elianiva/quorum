@@ -1370,7 +1370,7 @@ const capacityMeter = (
           className: css({
             gap: '0',
           }),
-          trackClassName: 'h-2',
+          trackClassName: css({ height: '2' }),
           label: `${label} ${valueText}`,
         },
         h,

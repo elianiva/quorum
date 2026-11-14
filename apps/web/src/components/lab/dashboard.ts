@@ -389,6 +389,18 @@ const led = (color: string, h: HtmlBuilder<Message>): Html =>
 /** A sunken display inside a panel: the well recipe, where every plot sits. */
 const SCREEN = css({ borderRadius: 'xl', backgroundColor: 'well', boxShadow: 'well' })
 
+/** A panel's width in the Dashboard's 24-column grid. Every panel is full width on a phone, a Stat pair-up excepted. */
+const SPAN = {
+  stat: css({ gridColumn: 'span 4 / span 4', _compact: { gridColumn: 'span 12 / span 12' } }),
+  third: css({ gridColumn: 'span 8 / span 8', _compact: { gridColumn: 'span 24 / span 24' } }),
+  half: css({ gridColumn: 'span 12 / span 12', _compact: { gridColumn: 'span 24 / span 24' } }),
+  twoThirds: css({
+    gridColumn: 'span 16 / span 16',
+    _compact: { gridColumn: 'span 24 / span 24' },
+  }),
+  full: css({ gridColumn: 'span 24 / span 24' }),
+}
+
 /** A Grafana panel as a Board card: raised, with a lamp and a title. `tint` is Grafana's background colour mode. */
 const panel = (
   key: string,
@@ -415,9 +427,6 @@ const panel = (
             layerStyle: 'surface',
             padding: '1.5',
             boxShadow: 'card',
-            _compact: {
-              gridColumn: 'span 24 / span 24',
-            },
           }),
           span,
         ),
@@ -1528,7 +1537,7 @@ const stat = (
 ): Html =>
   panel(
     key,
-    'col-span-4 compact:col-span-12',
+    SPAN.stat,
     title,
     '',
     [
@@ -1659,7 +1668,7 @@ const gauge = (
       ]
   return panel(
     key,
-    'col-span-4 compact:col-span-12',
+    SPAN.stat,
     title,
     '',
     [
@@ -1804,7 +1813,7 @@ const barGauge = (
   const t = copy(h)
   return panel(
     'bar-gauge',
-    'col-span-8',
+    SPAN.third,
     t.dashboard.utilizationNow,
     t.dashboard.ofCapacity,
     [
@@ -2169,7 +2178,7 @@ const mix = (
   const total = kinds.reduce((sum, [, entry]) => sum + entry.rate, 0)
   return panel(
     'mix',
-    'col-span-8',
+    SPAN.third,
     t.dashboard.requestMix,
     t.dashboard.reqPerSecondByKind,
     [
@@ -2340,7 +2349,7 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const max = Math.max(...entries.map(([, rate]) => rate), 0.001)
   return panel(
     'causes',
-    'col-span-8',
+    SPAN.third,
     t.dashboard.errorsByCause,
     t.dashboard.reqPerSecondNow,
     [
@@ -2479,7 +2488,7 @@ const nodeTable = (
   ]
   return panel(
     'nodes',
-    'col-span-24',
+    SPAN.full,
     t.dashboard.nodes,
     t.dashboard.rows(tracks.length),
     [
@@ -3263,7 +3272,7 @@ const companyPanels = (
   return [
     tablePanel(
       'company-money',
-      'col-span-8',
+      SPAN.third,
       t.dashboard.money,
       t.dashboard.nowCash(rangeLabel(t, model.board.dashboard.range)),
       [t.dashboard.line, t.dashboard.value],
@@ -3285,7 +3294,7 @@ const companyPanels = (
     ),
     tablePanel(
       'company-team',
-      'col-span-16',
+      SPAN.twoThirds,
       t.dashboard.team,
       teamUnit,
       [
@@ -3311,7 +3320,7 @@ const companyPanels = (
     ),
     tablePanel(
       'company-funding',
-      'col-span-24',
+      SPAN.full,
       t.dashboard.funding,
       t.dashboard.roundsFromTheInbox,
       [
@@ -3468,7 +3477,7 @@ const incidentTimeline = (
   if (lanes.length === 0)
     return panel(
       'incident-timeline',
-      'col-span-24',
+      SPAN.full,
       t.dashboard.incidentTimeline,
       rangeLabel(t, range),
       [
@@ -3506,7 +3515,7 @@ const incidentTimeline = (
     )
   return laneTimeline(
     'incident-timeline',
-    'col-span-24',
+    SPAN.full,
     t.dashboard.incidentTimeline,
     t.dashboard.runRange(rangeLabel(t, range)),
     lanes,
@@ -3539,7 +3548,7 @@ const runningIncident = (game: Game, h: HtmlBuilder<Message>): Html => {
   if (incident === null)
     return tablePanel(
       'incident-running',
-      'col-span-8',
+      SPAN.third,
       t.dashboard.runningIncident,
       t.dashboard.none,
       [t.dashboard.fact, t.dashboard.value],
@@ -3584,7 +3593,7 @@ const runningIncident = (game: Game, h: HtmlBuilder<Message>): Html => {
   ]
   return tablePanel(
     'incident-running',
-    'col-span-8',
+    SPAN.third,
     t.dashboard.runningIncident,
     t.catalog.incidents[incident.kind].name,
     [t.dashboard.fact, t.dashboard.value],
@@ -3597,7 +3606,7 @@ const incidentHistory = (game: Game, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return tablePanel(
     'incident-history',
-    'col-span-16',
+    SPAN.twoThirds,
     t.dashboard.incidentHistory,
     t.dashboard.postmortemCount(game.postmortems.length),
     [
@@ -3663,7 +3672,7 @@ const postmortemDetail = (game: Game, postmortem: Postmortem, h: HtmlBuilder<Mes
   const open = postmortem.action !== null && !has(game, postmortem.action)
   return panel(
     `pm-detail-${postmortem.id}`,
-    'col-span-24',
+    SPAN.full,
     t.dashboard.postmortemOf(def.name),
     `SEV${postmortem.severity}${postmortem.target === null ? '' : ` · ${postmortem.target}`}`,
     [
@@ -3915,7 +3924,7 @@ const alertTimeline = (model: Model, rows: ReadonlyArray<Row>, h: HtmlBuilder<Me
   const end = Number(rows[last]?.at ?? first) + Number(rows[last]?.span ?? 1)
   return laneTimeline(
     'alert-state',
-    'col-span-12',
+    SPAN.half,
     t.dashboard.alertState,
     t.dashboard.pagesTheInboxKept,
     lanes,
@@ -4015,7 +4024,7 @@ const alertTable = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html =
             : percent(watched.saturation)
   return tablePanel(
     'alert-rules',
-    'col-span-12',
+    SPAN.half,
     t.dashboard.alertRules,
     t.dashboard.thePagersConditions,
     [t.dashboard.rule, t.dashboard.threshold, t.dashboard.now, t.dashboard.held, t.dashboard.state],
@@ -4057,7 +4066,7 @@ const servicesTable = (
   const total = kinds.reduce((sum, { entry }) => sum + entry.rate, 0)
   return tablePanel(
     'services',
-    'col-span-24',
+    SPAN.full,
     t.dashboard.services,
     t.dashboard.rateErrorsDurationNow,
     [
@@ -4104,7 +4113,7 @@ const serviceTable = (
   const total = rows.reduce((sum, { entry }) => sum + entry.rate, 0)
   return tablePanel(
     'service-red',
-    'col-span-12',
+    SPAN.half,
     t.dashboard.code,
     t.dashboard.rateErrorsDurationPerCodebase,
     [
@@ -4181,7 +4190,7 @@ const waterfallTable = (
   }
   return tablePanel(
     'waterfall',
-    'col-span-12',
+    SPAN.half,
     t.dashboard.waterfall,
     t.dashboard.waterfallOf(t.catalog.kinds[kind].label),
     [t.dashboard.node, t.dashboard.hopTime, t.dashboard.wait, t.dashboard.bottleneck],
@@ -4262,7 +4271,7 @@ const resourceTimeline = (
   ]
   return laneTimeline(
     'resources',
-    'col-span-8',
+    SPAN.third,
     t.dashboard.resources,
     t.dashboard.theLimitingResource,
     lanes,
@@ -4292,7 +4301,7 @@ const usersTable = (
   const split = regional(game)
   return tablePanel(
     'users-region',
-    'col-span-12',
+    SPAN.half,
     t.dashboard.users,
     t.dashboard.byRegionMarketAndChurn,
     [
@@ -4339,7 +4348,7 @@ const deviceTable = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return tablePanel(
     'devices',
-    'col-span-12',
+    SPAN.half,
     t.dashboard.realUserMonitoring,
     t.dashboard.meanLatencyByDevice,
     [t.dashboard.device, t.dashboard.latency],
@@ -4375,7 +4384,7 @@ const loadBalancer = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html
   )
   return barList(
     'load-balancer',
-    'col-span-12',
+    SPAN.half,
     t.dashboard.loadBalancer,
     entries.length === 0
       ? t.dashboard.noBackend
@@ -4392,7 +4401,7 @@ const appServers = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html =
   const names = namesOf(t, game)
   return tablePanel(
     'app-server',
-    'col-span-12',
+    SPAN.half,
     t.dashboard.appServer,
     t.dashboard.copiesBusyWorkers,
     [t.dashboard.node, t.dashboard.copies, t.dashboard.busyWorkers],
@@ -4433,7 +4442,7 @@ const databases = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html =>
   const names = namesOf(t, game)
   return tablePanel(
     'database',
-    'col-span-12',
+    SPAN.half,
     t.dashboard.database,
     t.dashboard.connectionsRefusedLag,
     [
@@ -4481,7 +4490,7 @@ const evictions = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html =>
   const names = namesOf(t, game)
   return barList(
     'evictions',
-    'col-span-12',
+    SPAN.half,
     t.dashboard.cacheEvictions,
     t.dashboard.keysEvictedNow,
     game.nodes
@@ -4516,7 +4525,7 @@ const hits = (
   const names = namesOf(t, game)
   return barList(
     key,
-    'col-span-12',
+    SPAN.half,
     title,
     unit,
     game.nodes
@@ -4542,7 +4551,7 @@ const queues = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const names = namesOf(t, game)
   return tablePanel(
     'queue',
-    'col-span-12',
+    SPAN.half,
     t.dashboard.queue,
     t.dashboard.depthAndOldestAge,
     [
@@ -4593,7 +4602,7 @@ const managed = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const names = namesOf(t, game)
   return tablePanel(
     'managed',
-    'col-span-12',
+    SPAN.half,
     t.dashboard.managedComponents,
     t.dashboard.callsLatencyOutage,
     [
@@ -5367,13 +5376,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h,
                 true,
               )
-            : locked(
-                t.dashboard.errors2,
-                'col-span-4 compact:col-span-12',
-                t.dashboard.errorRate,
-                'logs',
-                h,
-              ),
+            : locked(t.dashboard.errors2, SPAN.stat, t.dashboard.errorRate, 'logs', h),
           stat(
             'latency',
             percentiles ? t.dashboard.p99Latency : t.dashboard.meanLatency,
@@ -5388,7 +5391,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           rowHeader(t.dashboard.goldenSignals, 5, h),
           series({
             key: 'traffic',
-            span: 'col-span-12',
+            span: SPAN.half,
             columns: 12,
             title: t.dashboard.traffic,
             unit: t.dashboard.reqPerSecond,
@@ -5414,7 +5417,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           }),
           series({
             key: 'latency',
-            span: 'col-span-12',
+            span: SPAN.half,
             columns: 12,
             title: t.dashboard.latency,
             unit: percentiles ? t.dashboard.meanP99 : t.dashboard.meanUnit,
@@ -5442,7 +5445,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           has(game, 'logs')
             ? series({
                 key: 'errors-series',
-                span: 'col-span-8',
+                span: SPAN.third,
                 columns: 8,
                 title: t.dashboard.errors,
                 unit: t.dashboard.failed2,
@@ -5458,7 +5461,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   },
                 ],
               })
-            : locked('errors-series', 'col-span-8', t.dashboard.errors, 'logs', h),
+            : locked('errors-series', SPAN.third, t.dashboard.errors, 'logs', h),
           causes(ledger, h),
           mix(ledger, shownKind, h),
 
@@ -5484,18 +5487,18 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
 
           rowHeader(t.dashboard.saturation, resourcesShown ? 4 : 3, h),
           barGauge(ledger, tracks, h),
-          stateTimeline(model, tracks, resourcesShown ? 'col-span-8' : 'col-span-16', h),
+          stateTimeline(model, tracks, resourcesShown ? SPAN.third : SPAN.twoThirds, h),
           ...(has(game, 'profiling')
             ? [resourceTimeline(model, tracks, h)]
             : has(game, 'tracing')
-              ? [locked('resources', 'col-span-8', t.dashboard.resourcesUse, 'profiling', h)]
+              ? [locked('resources', SPAN.third, t.dashboard.resourcesUse, 'profiling', h)]
               : []),
           nodeTable(ledger, tracks, h),
 
           rowHeader(t.dashboard.money, 1, h),
           series({
             key: 'money',
-            span: 'col-span-24',
+            span: SPAN.full,
             columns: 24,
             title: t.dashboard.revenueAndBurn,
             unit: t.dashboard.s4,
@@ -5531,7 +5534,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 ),
                 panel(
                   'sla-credit',
-                  'col-span-4 compact:col-span-12',
+                  SPAN.stat,
                   t.dashboard.sLACredits,
                   credit > 0 ? t.dashboard.paid : '',
                   [
@@ -5588,7 +5591,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 ),
                 series({
                   key: 'burn-rate',
-                  span: 'col-span-12',
+                  span: SPAN.half,
                   columns: 12,
                   title: t.dashboard.errorBudgetBurnRate,
                   unit: t.dashboard.budgetSLO(sloText(slo)),
@@ -5606,7 +5609,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 rowHeader('SLO', 1, h),
                 locked(
                   'burn-rate',
-                  'col-span-12',
+                  SPAN.half,
                   t.dashboard.errorBudgetBurnRate,
                   'slo-dashboards',
                   h,

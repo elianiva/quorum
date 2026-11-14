@@ -107,11 +107,11 @@ import { shell } from './panels.ts'
 
 /** A phone shows Apdex before Errors and Latency, which scroll off the edge. */
 const CHIP_ORDER: Record<string, string> = {
-  Errors: 'compact:order-2',
-  p99: 'compact:order-3',
-  Latency: 'compact:order-3',
-  SLO: 'compact:order-2',
-  SLA: 'compact:order-2',
+  Errors: css({ _compact: { order: 2 } }),
+  p99: css({ _compact: { order: 3 } }),
+  Latency: css({ _compact: { order: 3 } }),
+  SLO: css({ _compact: { order: 2 } }),
+  SLA: css({ _compact: { order: 2 } }),
 }
 
 /** One stat: a glyph and its name, then the value and a short note. */

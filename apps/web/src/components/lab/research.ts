@@ -1356,7 +1356,7 @@ const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
           ],
           [t.catalog.researchTracks[track.track].label],
         ),
-        progressBar(game, track.track, 'w-28', h),
+        progressBar(game, track.track, css({ width: '28' }), h),
       ],
     ),
   )

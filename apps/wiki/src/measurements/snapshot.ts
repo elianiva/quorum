@@ -3,14 +3,14 @@
  * `packages/simulation/src/pacing.ts`. Do not edit: change the Simulation or the measurement and
  * run the script again.
  *
- * Taken at Simulation version df91c12b on 2026-11-13.
+ * Taken at Simulation version 5eb84851 on 2026-11-14.
  */
 
 import type { Measurements } from './measure.ts'
 
 export const SNAPSHOT: Measurements = {
-  version: 'df91c12b',
-  takenOn: '2026-11-13',
+  version: '5eb84851',
+  takenOn: '2026-11-14',
   pacing: [
     {
       label: 'First research',
@@ -38,7 +38,7 @@ export const SNAPSHOT: Measurements = {
     },
     {
       label: 'Second App Server',
-      value: '36.4–54.3',
+      value: '36.4–50.4',
     },
     {
       label: 'First incident',
@@ -46,7 +46,7 @@ export const SNAPSHOT: Measurements = {
     },
     {
       label: 'Seed',
-      value: '34.7–42.4',
+      value: '34.7–42.0',
     },
     {
       label: 'Engineers at Seed',
@@ -58,7 +58,7 @@ export const SNAPSHOT: Measurements = {
     },
     {
       label: 'Margin at Seed entry',
-      value: '39%–64%',
+      value: '40%–64%',
     },
   ],
   live: [
@@ -72,59 +72,59 @@ export const SNAPSHOT: Measurements = {
     },
     {
       label: 'Series A',
-      value: '63.6–65.9',
+      value: '60.8–65.9',
     },
     {
       label: 'Series B',
-      value: '117.1–117.2',
+      value: '114.4–117.2',
     },
   ],
   seed: [
     {
       label: 'Seed',
-      value: '34.7–42.4',
+      value: '34.7–42.0',
     },
     {
       label: 'Search Engine placed',
-      value: '36.9–44.8',
+      value: '36.9–44.1',
     },
     {
       label: 'WAF placed',
-      value: '46.8–53.3',
+      value: '46.1–53.3',
     },
     {
       label: 'Second App Server',
-      value: '36.4–54.3',
+      value: '36.4–37.7',
     },
     {
       label: 'Series A',
-      value: '83.2–83.8',
+      value: '71.4–83.8',
     },
     {
       label: 'Seed length',
-      value: '40.8–49.1',
+      value: '29.4–49.1',
     },
   ],
   series: [
     {
       label: 'Series A',
-      value: '83.2–83.8',
+      value: '71.4–83.8',
     },
     {
       label: 'Second zone and standbys',
-      value: '88.3–91.8',
+      value: '75.5–91.8',
     },
     {
       label: 'Series B',
-      value: '124.8–127.7',
+      value: '124.8–124.9',
     },
     {
       label: 'Users at 130 min',
-      value: '165,683–194,035',
+      value: '185,758–194,033',
     },
     {
       label: 'Availability at 130 min',
-      value: '98.05%–99.55%',
+      value: '97.98%–98.05%',
     },
   ],
   legacy: [
@@ -132,11 +132,11 @@ export const SNAPSHOT: Measurements = {
       seed: '1',
       first: {
         preseed: '11.4',
-        seed: '42.4',
+        seed: '42.0',
       },
       second: {
         preseed: '10.5',
-        seed: '41.5',
+        seed: '41.8',
       },
     },
     {
@@ -147,7 +147,7 @@ export const SNAPSHOT: Measurements = {
       },
       second: {
         preseed: '10.5',
-        seed: '33.0',
+        seed: '32.6',
       },
     },
     {
@@ -158,9 +158,9 @@ export const SNAPSHOT: Measurements = {
       },
       second: {
         preseed: '10.5',
-        seed: '34.5',
+        seed: '34.7',
       },
     },
   ],
-  reach: '165,683–194,035',
+  reach: '185,758–194,033',
 }

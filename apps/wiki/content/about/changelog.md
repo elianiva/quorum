@@ -9,6 +9,21 @@ toc: top
 
 Quorum has no versions. It changes all the time, and this page lists the latest days, newest first, so you can see what moved since you last played. A page on this wiki can lag behind the game by a few days. Older days are in the [full changelog](/about/changelog/all).
 
+## Friday, 13 November 2026
+
+### Changed
+
+- Serve the wiki in Japanese ([86704dd](https://github.com/elianiva/quorum/commit/86704ddb17d43b7fdcc5c76af3f46610f3927433))
+- Write the wiki's pages in Japanese ([b68afe7](https://github.com/elianiva/quorum/commit/b68afe7797487f790b413eeb5c0bdffc7d121999))
+- Translate the wiki's interface copy into Japanese ([18838f6](https://github.com/elianiva/quorum/commit/18838f64b1937987904b72d345cfc785f650d048))
+- Add the changelog entry for 2026-11-12 (#53) ([faa9781](https://github.com/elianiva/quorum/commit/faa9781ff220f726e824a67ac7810d4d267b9f77))
+- Reuse each Node's calls and cost table while the Design holds ([7bd3cfa](https://github.com/elianiva/quorum/commit/7bd3cfaffbe1902de8662dfc5132fb8ef3bebea6))
+- Serve the wiki in Spanish (#51) ([6b464be](https://github.com/elianiva/quorum/commit/6b464bedc4b33f51853653b29b0d6773312b3d8f))
+- Keep the Graph while the Design holds, and stop copying lists on every Link ([1e82900](https://github.com/elianiva/quorum/commit/1e82900ac337f52c280431c9558fa55bc2195596))
+- Build the Era's mix once per Game, and share one probe record across its Nodes ([9bffae3](https://github.com/elianiva/quorum/commit/9bffae348c0a0a52ac5da80bb401d2eace341087))
+- Make the solve stop when it settles, and score the bottleneck on revenue alone ([674b035](https://github.com/elianiva/quorum/commit/674b035724e5a76de3101bdf213a3805368a2e1f))
+- Add the installable PWA shell and offline play ([e86e17a](https://github.com/elianiva/quorum/commit/e86e17ace69a469b4e00ee66f02e4b2ad03ecf24))
+
 ## Thursday, 12 November 2026
 
 ### Changed
@@ -120,22 +135,3 @@ Quorum has no versions. It changes all the time, and this page lists the latest 
 ### Fixed
 
 - The game starts reliably in any browser, and a stray key press or automatic page translation no longer crashes it. ([7e6b2fc](https://github.com/elianiva/quorum/commit/7e6b2fc72dc971b5d028b7df5b990aaf159f6f35))
-
-## Thursday, 5 November 2026
-
-### Added
-
-- In the Inspector, a “Recycle workers” picker lets you toggle periodic worker recycling, and a “Sessions” sticky picker for Load Balancers lets you choose balanced or sticky session handling. ([588eaf6](https://github.com/elianiva/quorum/commit/588eaf6e294a2a64c5eeffb2453de2ddabf7a708))
-- The Inspector displays a warning with a “Move auth in-house” button that queues the authentication migration and shows its cost. ([88e315b](https://github.com/elianiva/quorum/commit/88e315b95f4765f27c67f1d74341cbbec54ee297))
-- On the Dashboard, a Waterfall table appears under Services and a Real-User-Monitoring table appears under Users. ([84b24bd](https://github.com/elianiva/quorum/commit/84b24bd9422124bc07175727e2c6f2214b782e2b))
-- The Cost panel adds rows that break down the cost of each request after you unlock research. ([8f2d60a](https://github.com/elianiva/quorum/commit/8f2d60aff1875d8ebff57de3c1fc5e18ae6d35b1))
-- The Team panel shows DORA metrics, deploy frequency, lead time, change-failure rate, and MTTR, once you add a CI/CD pipeline. ([8f2d60a](https://github.com/elianiva/quorum/commit/8f2d60aff1875d8ebff57de3c1fc5e18ae6d35b1))
-- The Incident panel displays detection time, acknowledgement time, a Runbook button, a Drain button to remove a Node from rotation, and SLA credit information for missed SLO targets. ([88d1a09](https://github.com/elianiva/quorum/commit/88d1a099a300059e7d1803f64a0e68d9f08cc07f))
-
-### Changed
-
-- The Churn panel lists the slowest hop and the internet hop for each device, showing the added latency for each. ([4fd2a3a](https://github.com/elianiva/quorum/commit/4fd2a3ae7d1d10fd250ea644303f7e23e5242134))
-
-### Fixed
-
-- Incident alarms now show queue and budget fields. ([4fd2a3a](https://github.com/elianiva/quorum/commit/4fd2a3ae7d1d10fd250ea644303f7e23e5242134))

@@ -14,7 +14,7 @@ import {
   titleOf,
   type Lang,
 } from './shared.ts'
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* One page per engineering term, and a hub grouped by category. The game links its terms here. */
 
@@ -64,7 +64,7 @@ const entity = (l: Lang, entry: GlossaryEntry, order: number): Page => {
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       EYEBROW,
                       css({
                         marginRight: '0.5rem',

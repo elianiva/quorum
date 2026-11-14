@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { Select as FoldkitSelect } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
@@ -166,15 +166,15 @@ export const nativeSelect = <M>(config: NativeSelectConfig<M>, h: HtmlBuilder<M>
       ...(config.name === undefined ? {} : { name: config.name }),
       toView: (attributes) =>
         h.div(
-          [h.Class(cn(nativeSelectFieldWrapperClass, config.wrapperClass))],
+          [h.Class(cx(nativeSelectFieldWrapperClass, config.wrapperClass))],
           [
             h.label(
-              [...attributes.label, h.Class(cn(nativeSelectLabelClass, config.labelClass))],
+              [...attributes.label, h.Class(cx(nativeSelectLabelClass, config.labelClass))],
               [config.label],
             ),
             h.div(
               [
-                h.Class(cn(nativeSelectWrapperClass)),
+                h.Class(cx(nativeSelectWrapperClass)),
                 h.DataAttribute('slot', 'native-select-wrapper'),
                 h.DataAttribute('size', config.size ?? 'default'),
               ],
@@ -184,7 +184,7 @@ export const nativeSelect = <M>(config: NativeSelectConfig<M>, h: HtmlBuilder<M>
                     ...attributes.select,
                     h.DataAttribute('slot', 'native-select'),
                     h.DataAttribute('size', config.size ?? 'default'),
-                    h.Class(cn(nativeSelectClass, config.className)),
+                    h.Class(cx(nativeSelectClass, config.className)),
                   ],
                   config.options,
                 ),
@@ -203,7 +203,7 @@ export const nativeSelect = <M>(config: NativeSelectConfig<M>, h: HtmlBuilder<M>
               : h.span(
                   [
                     ...attributes.description,
-                    h.Class(cn(nativeSelectDescriptionClass, config.descriptionClass)),
+                    h.Class(cx(nativeSelectDescriptionClass, config.descriptionClass)),
                   ],
                   [config.description],
                 ),
@@ -232,7 +232,7 @@ export const nativeSelectOption = <M>(
     [
       h.Value(config.value),
       h.DataAttribute('slot', 'native-select-option'),
-      h.Class(cn(nativeSelectOptionClass, config.className)),
+      h.Class(cx(nativeSelectOptionClass, config.className)),
       ...(config.isDisabled === true ? [h.Disabled(true)] : []),
     ],
     [config.label],
@@ -247,7 +247,7 @@ export const nativeSelectOptGroup = <M>(
   h.optgroup(
     [
       h.DataAttribute('slot', 'native-select-optgroup'),
-      h.Class(cn(nativeSelectOptGroupClass, config.className)),
+      h.Class(cx(nativeSelectOptGroupClass, config.className)),
       h.Attribute('label', config.label),
     ],
     [...children],

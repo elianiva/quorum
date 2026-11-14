@@ -23,7 +23,7 @@ import {
   type H,
   type Lang,
 } from './shared.ts'
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* One page per incident, and a hub that lists them by Era. */
 
@@ -50,7 +50,7 @@ export const severityChip = (severity: 1 | 2 | 3, h: H): Html =>
   h.span(
     [
       h.Class(
-        cn(
+        cx(
           FIGURE,
           css({
             display: 'inline-flex',

@@ -1,4 +1,4 @@
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { Function, Schema as S, Match } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
 import type { Reflect } from 'foldkit/submodel'
@@ -187,7 +187,7 @@ export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h
     [
       ...(viewInputs.ariaLabel === undefined ? [] : [h.AriaLabel(viewInputs.ariaLabel)]),
       h.Role('group'),
-      h.Class(cn(toggleGroupClass, viewInputs.className)),
+      h.Class(cx(toggleGroupClass, viewInputs.className)),
       h.DataAttribute('slot', 'toggle-group'),
       h.DataAttribute('orientation', orientation),
       h.DataAttribute('spacing', String(spacing)),
@@ -212,7 +212,7 @@ export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h
           h.DataAttribute('state', model.value.includes(item.value) ? 'on' : 'off'),
           h.AriaPressed(model.value.includes(item.value) ? 'true' : 'false'),
           h.Class(
-            cn(
+            cx(
               toggleBase,
               toggleVariants[viewInputs.variant ?? 'default'],
               toggleSizes[viewInputs.size ?? 'default'],

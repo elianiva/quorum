@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import {
   curveBasis,
   curveCardinal,
@@ -1247,7 +1247,7 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             position: 'relative',
           }),
@@ -1386,7 +1386,7 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
             h.div(
               [
                 h.Class(
-                  cn(
+                  cx(
                     css({
                       display: 'flex',
                       gap: '0.625rem',

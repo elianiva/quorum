@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { Function, Schema as S, Match } from 'effect'
 import type { Html } from 'foldkit/html'
 import * as Update from 'foldkit/update'
@@ -180,7 +180,7 @@ export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h
       h.DataAttribute('state', model.isPressed ? 'on' : 'off'),
       h.AriaPressed(model.isPressed ? 'true' : 'false'),
       h.Class(
-        cn(
+        cx(
           toggleBase,
           toggleVariants[viewInputs.variant ?? 'default'],
           toggleSizes[viewInputs.size ?? 'default'],

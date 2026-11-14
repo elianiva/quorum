@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
@@ -95,10 +95,10 @@ const tableContainer = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(tableContainerClass)), h.DataAttribute('slot', 'table-container')],
+    [h.Class(cx(tableContainerClass)), h.DataAttribute('slot', 'table-container')],
     [
       h.table(
-        [h.Class(cn(tableClass, config.className)), h.DataAttribute('slot', 'table')],
+        [h.Class(cx(tableClass, config.className)), h.DataAttribute('slot', 'table')],
         children,
       ),
     ],
@@ -110,7 +110,7 @@ const tableHeader = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.thead(
-    [h.Class(cn(tableHeaderClass, config.className)), h.DataAttribute('slot', 'table-header')],
+    [h.Class(cx(tableHeaderClass, config.className)), h.DataAttribute('slot', 'table-header')],
     children,
   )
 
@@ -120,7 +120,7 @@ const tableBody = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.tbody(
-    [h.Class(cn(tableBodyClass, config.className)), h.DataAttribute('slot', 'table-body')],
+    [h.Class(cx(tableBodyClass, config.className)), h.DataAttribute('slot', 'table-body')],
     children,
   )
 
@@ -130,7 +130,7 @@ const tableFooter = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.tfoot(
-    [h.Class(cn(tableFooterClass, config.className)), h.DataAttribute('slot', 'table-footer')],
+    [h.Class(cx(tableFooterClass, config.className)), h.DataAttribute('slot', 'table-footer')],
     children,
   )
 
@@ -140,7 +140,7 @@ const tableRow = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.tr(
-    [h.Class(cn(tableRowClass, config.className)), h.DataAttribute('slot', 'table-row')],
+    [h.Class(cx(tableRowClass, config.className)), h.DataAttribute('slot', 'table-row')],
     children,
   )
 
@@ -150,7 +150,7 @@ const tableHead = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.th(
-    [h.Class(cn(tableHeadClass, config.className)), h.DataAttribute('slot', 'table-head')],
+    [h.Class(cx(tableHeadClass, config.className)), h.DataAttribute('slot', 'table-head')],
     children,
   )
 
@@ -160,7 +160,7 @@ const tableCell = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.td(
-    [h.Class(cn(tableCellClass, config.className)), h.DataAttribute('slot', 'table-cell')],
+    [h.Class(cx(tableCellClass, config.className)), h.DataAttribute('slot', 'table-cell')],
     children,
   )
 
@@ -170,7 +170,7 @@ const tableCaption = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.caption(
-    [h.Class(cn(tableCaptionClass, config.className)), h.DataAttribute('slot', 'table-caption')],
+    [h.Class(cx(tableCaptionClass, config.className)), h.DataAttribute('slot', 'table-caption')],
     children,
   )
 

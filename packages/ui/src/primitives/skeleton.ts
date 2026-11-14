@@ -1,4 +1,4 @@
-import { css, keyframes, cx as cn } from '@quorum/styled-system/css'
+import { css, keyframes, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
@@ -24,6 +24,6 @@ export const skeleton = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(skeletonClass, config.className)), h.DataAttribute('slot', 'skeleton')],
+    [h.Class(cx(skeletonClass, config.className)), h.DataAttribute('slot', 'skeleton')],
     children,
   )

@@ -1,4 +1,4 @@
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { Fieldset as FoldkitFieldset } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
@@ -227,7 +227,7 @@ export const fieldSet = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.fieldset(
-    [h.DataAttribute('slot', 'field-set'), h.Class(cn(fieldsetClass, config.className))],
+    [h.DataAttribute('slot', 'field-set'), h.Class(cx(fieldsetClass, config.className))],
     children,
   )
 
@@ -241,7 +241,7 @@ export const fieldLegend = <M>(
     [
       h.DataAttribute('slot', 'field-legend'),
       h.DataAttribute('variant', config.variant ?? 'legend'),
-      h.Class(cn(fieldsetLegendClass, config.className)),
+      h.Class(cx(fieldsetLegendClass, config.className)),
     ],
     children,
   )
@@ -254,7 +254,7 @@ export const fieldGroup = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.DataAttribute('slot', 'field-group'), h.Class(cn(fieldGroupClass, config.className))],
+    [h.DataAttribute('slot', 'field-group'), h.Class(cx(fieldGroupClass, config.className))],
     children,
   )
 
@@ -271,7 +271,7 @@ export const field = <M>(
       h.DataAttribute('slot', 'field'),
       h.DataAttribute('orientation', orientation),
       ...(config.isInvalid === true ? [h.DataAttribute('invalid', 'true')] : []),
-      h.Class(cn(fieldBaseClass, fieldOrientationClasses[orientation], config.className)),
+      h.Class(cx(fieldBaseClass, fieldOrientationClasses[orientation], config.className)),
     ],
     children,
   )
@@ -284,7 +284,7 @@ export const fieldContent = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.DataAttribute('slot', 'field-content'), h.Class(cn(fieldContentClass, config.className))],
+    [h.DataAttribute('slot', 'field-content'), h.Class(cx(fieldContentClass, config.className))],
     children,
   )
 
@@ -293,7 +293,7 @@ export const label = <M>(
   children: ReadonlyArray<Child>,
   h: HtmlBuilder<M>,
 ): Html =>
-  h.label([h.DataAttribute('slot', 'label'), h.Class(cn(labelClass, config.className))], children)
+  h.label([h.DataAttribute('slot', 'label'), h.Class(cx(labelClass, config.className))], children)
 
 /** Label for a field; optionally associates with its control via `for`. */
 export const fieldLabel = <M>(
@@ -305,7 +305,7 @@ export const fieldLabel = <M>(
     [
       ...(config.for === undefined ? [] : [h.For(config.for)]),
       h.DataAttribute('slot', 'field-label'),
-      h.Class(cn(labelClass, fieldLabelClass, config.className)),
+      h.Class(cx(labelClass, fieldLabelClass, config.className)),
     ],
     children,
   )
@@ -316,7 +316,7 @@ export const fieldTitle = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.DataAttribute('slot', 'field-label'), h.Class(cn(fieldTitleClass, config.className))],
+    [h.DataAttribute('slot', 'field-label'), h.Class(cx(fieldTitleClass, config.className))],
     children,
   )
 
@@ -328,7 +328,7 @@ export const fieldDescription = <M>(
   h.p(
     [
       h.DataAttribute('slot', 'field-description'),
-      h.Class(cn(fieldDescriptionClass, config.className)),
+      h.Class(cx(fieldDescriptionClass, config.className)),
     ],
     children,
   )
@@ -344,20 +344,20 @@ export const fieldSeparator = <M>(
     [
       h.DataAttribute('slot', 'field-separator'),
       h.DataAttribute('content', hasContent ? 'true' : 'false'),
-      h.Class(cn(fieldSeparatorClass, config.className)),
+      h.Class(cx(fieldSeparatorClass, config.className)),
     ],
     [
       h.div([
         h.Role('separator'),
         h.DataAttribute('horizontal', ''),
-        h.Class(cn(separatorClass, fieldSeparatorLineClass)),
+        h.Class(cx(separatorClass, fieldSeparatorLineClass)),
       ]),
       ...(hasContent
         ? [
             h.span(
               [
                 h.DataAttribute('slot', 'field-separator-content'),
-                h.Class(cn(fieldSeparatorContentClass)),
+                h.Class(cx(fieldSeparatorContentClass)),
               ],
               children,
             ),
@@ -417,7 +417,7 @@ export const fieldError = <M>(
     [
       h.Role('alert'),
       h.DataAttribute('slot', 'field-error'),
-      h.Class(cn(fieldErrorClass, config.className)),
+      h.Class(cx(fieldErrorClass, config.className)),
     ],
     content,
   )
@@ -448,7 +448,7 @@ export const fieldset = <M>(config: FieldsetConfig, h: HtmlBuilder<M>): Html =>
           [
             ...attributes.fieldset,
             h.DataAttribute('slot', 'field-set'),
-            h.Class(cn(fieldsetClass, config.className)),
+            h.Class(cx(fieldsetClass, config.className)),
           ],
           [
             h.legend(
@@ -456,7 +456,7 @@ export const fieldset = <M>(config: FieldsetConfig, h: HtmlBuilder<M>): Html =>
                 ...attributes.legend,
                 h.DataAttribute('slot', 'field-legend'),
                 h.DataAttribute('variant', 'legend'),
-                h.Class(cn(fieldsetLegendClass, config.legendClass)),
+                h.Class(cx(fieldsetLegendClass, config.legendClass)),
               ],
               [config.legend],
             ),
@@ -466,14 +466,14 @@ export const fieldset = <M>(config: FieldsetConfig, h: HtmlBuilder<M>): Html =>
                   [
                     ...attributes.description,
                     h.DataAttribute('slot', 'field-description'),
-                    h.Class(cn(fieldDescriptionClass, config.descriptionClass)),
+                    h.Class(cx(fieldDescriptionClass, config.descriptionClass)),
                   ],
                   [config.description],
                 ),
             h.div(
               [
                 h.DataAttribute('slot', 'field-group'),
-                h.Class(cn(fieldGroupClass, config.contentClass)),
+                h.Class(cx(fieldGroupClass, config.contentClass)),
               ],
               config.children,
             ),

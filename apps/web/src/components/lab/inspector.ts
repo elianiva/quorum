@@ -70,7 +70,6 @@ import { icon } from '@quorum/ui/primitives/icon'
 import { badge } from '@quorum/ui/primitives/badge'
 import { button, closeButton } from '@quorum/ui/primitives/button'
 import { progress } from '@quorum/ui/primitives/progress'
-import { cn } from '@/lib/utils'
 import {
   EYEBROW,
   FIGURE,
@@ -151,7 +150,7 @@ const gauge = (
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(12px*var(--type-scale))',
@@ -188,7 +187,7 @@ const callout = (
     [
       h.Key(text),
       h.Class(
-        cn(
+        cx(
           css({
             marginInline: '1rem',
             marginBottom: '0.75rem',
@@ -786,7 +785,7 @@ const sparkline = (
   return h.svg(
     [
       h.Class(
-        cn(
+        cx(
           css({
             height: '2.75rem',
             width: '100%',
@@ -894,7 +893,7 @@ const pricing = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               EYEBROW,
               css({
                 paddingInline: '0.25rem',
@@ -1022,7 +1021,7 @@ const instance = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => 
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               css({
                 display: 'flex',
                 alignItems: 'center',
@@ -1045,7 +1044,7 @@ const instance = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => 
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     flex: '1 1 0%',
@@ -1259,7 +1258,7 @@ const connectionGrid = (
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     flexShrink: '0',
@@ -1352,7 +1351,7 @@ const capacityMeter = (
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(11px*var(--type-scale))',
@@ -1662,7 +1661,7 @@ const breakdown = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 display: 'flex',
@@ -1796,7 +1795,7 @@ const trafficBreakdown = (
             h.div(
               [
                 h.Class(
-                  cn(
+                  cx(
                     css({
                       display: 'flex',
                       alignItems: 'center',
@@ -1819,7 +1818,7 @@ const trafficBreakdown = (
                 h.span(
                   [
                     h.Class(
-                      cn(
+                      cx(
                         FIGURE,
                         css({
                           flex: '1 1 0%',
@@ -2162,7 +2161,7 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         fontSize: 'calc(11.5px*var(--type-scale))',

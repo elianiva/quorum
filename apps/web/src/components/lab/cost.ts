@@ -1,4 +1,4 @@
-import { css } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { copy, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { BurnLines } from '@quorum/simulation/ledger'
@@ -8,7 +8,6 @@ import { money } from '@quorum/ui/game/format'
 import type { Message } from '@/game/message.ts'
 import { ledgerOf, type Model } from '@/game/model.ts'
 import { FIGURE, WELL } from '@quorum/ui/game/bits'
-import { cn } from '@/lib/utils'
 import { shell } from './panels.ts'
 
 type Line = Readonly<{ key: keyof BurnLines; label: string; note: string }>
@@ -86,7 +85,7 @@ const row = (line: Line, value: number, total: number, h: HtmlBuilder<Message>):
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 fontSize: 'calc(13.5px*var(--type-scale))',
@@ -100,7 +99,7 @@ const row = (line: Line, value: number, total: number, h: HtmlBuilder<Message>):
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 textAlign: 'right',
@@ -151,7 +150,7 @@ const figureRow = (label: string, value: string, h: HtmlBuilder<Message>): Html 
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 fontSize: 'calc(12.5px*var(--type-scale))',
@@ -212,7 +211,7 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         fontSize: 'calc(20px*var(--type-scale))',
@@ -250,7 +249,7 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         fontSize: 'calc(20px*var(--type-scale))',
@@ -288,7 +287,7 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         fontSize: 'calc(20px*var(--type-scale))',
@@ -318,7 +317,7 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               WELL,
               css({
                 marginInline: '1.25rem',
@@ -349,7 +348,7 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             h.div(
               [
                 h.Class(
-                  cn(
+                  cx(
                     WELL,
                     css({
                       marginInline: '1.25rem',
@@ -388,7 +387,7 @@ export const costPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             h.div(
               [
                 h.Class(
-                  cn(
+                  cx(
                     WELL,
                     css({
                       marginInline: '1.25rem',

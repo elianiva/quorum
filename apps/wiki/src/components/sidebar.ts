@@ -9,7 +9,7 @@ import type { Page } from '../page.ts'
 import { childrenOf, navOf, pageIn } from '../pages.ts'
 import * as Spoilers from '../submodels/spoilers.ts'
 import { quadrantBadge, quadrantColor } from './quadrant.ts'
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The navigation rail: the current section's pages, and the open hub's pages beneath it. */
 
@@ -32,7 +32,7 @@ const navLink = (
       h.Href(page.path),
       ...(active ? [h.AriaCurrent('page')] : []),
       h.Class(
-        cn(
+        cx(
           css({
             position: 'relative',
             display: 'block',
@@ -110,7 +110,7 @@ const navLink = (
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         width: '1rem',
@@ -181,7 +181,7 @@ const groupBlock = (
           h.AriaLabel(isOpen ? l.t.sidebar.collapse(label) : l.t.sidebar.expand(label)),
           h.OnClick(Message.NavToggled({ path: `group:${name}` })),
           h.Class(
-            cn(
+            cx(
               css({
                 display: 'flex',
                 width: '100%',
@@ -245,7 +245,7 @@ const groupBlock = (
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: '11px',
@@ -333,7 +333,7 @@ const hubLink = (
               h.AriaExpanded(isOpen),
               h.OnClick(Message.NavToggled({ path: hub.path })),
               h.Class(
-                cn(
+                cx(
                   css({
                     position: 'absolute',
                     right: '0.25rem',
@@ -365,7 +365,7 @@ const hubLink = (
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         fontSize: '11px',
@@ -413,7 +413,7 @@ export const sidebar = (model: Model, h: H): Html => {
     [
       h.AriaLabel(l.t.quadrants[section].label),
       h.Class(
-        cn(
+        cx(
           SCROLL,
           // A phone opens the menu over the page; a desktop keeps it as a sticky rail.
           css({

@@ -16,7 +16,7 @@ import * as Quiz from '../submodels/quiz.ts'
 import { practiceView } from './practice-card.ts'
 import { sandboxView } from './sandbox-card.ts'
 import { designView } from './design-card.ts'
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The live views behind each Markdown directive. src/islands.ts declares their attributes. */
 
@@ -241,7 +241,7 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
         [
           h.Href(`/components/${id}`),
           h.Class(
-            cn(
+            cx(
               cx(
                 css({
                   marginBlock: '1.5rem',

@@ -22,7 +22,6 @@ import type { Model } from '@/game/model.ts'
 import { badge } from '@quorum/ui/primitives/badge'
 import { button, closeButton } from '@quorum/ui/primitives/button'
 import { icon } from '@quorum/ui/primitives/icon'
-import { cn } from '@/lib/utils'
 import { compact } from '@quorum/ui/game/format'
 import { recipeOf } from '@quorum/ui/game/pools'
 import { EYEBROW, FIGURE, insightChip } from '@quorum/ui/game/bits'
@@ -141,7 +140,7 @@ const severity = (value: number, t: Messages, h: HtmlBuilder<Message>): Html =>
   h.span(
     [
       h.Class(
-        cn(
+        cx(
           FIGURE,
           css({
             flexShrink: '0',
@@ -337,7 +336,7 @@ export const alertsNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
         [
           h.AriaHidden(true),
           h.Class(
-            cn(
+            cx(
               css({
                 width: '7px',
                 height: '7px',
@@ -517,7 +516,7 @@ export const researchOffer = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       EYEBROW,
                       css({
                         overflow: 'hidden',

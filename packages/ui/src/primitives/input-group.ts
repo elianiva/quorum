@@ -1,4 +1,4 @@
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Attribute, Html, HtmlBuilder } from 'foldkit/html'
 
 import { button, type ButtonConfig } from './button'
@@ -260,7 +260,7 @@ export const inputGroupTextarea = <M>(
     ...(config.rows === undefined ? [] : [h.Rows(config.rows)]),
     ...(config.placeholder === undefined ? [] : [h.Placeholder(config.placeholder)]),
     h.DataAttribute('slot', 'input-group-control'),
-    h.Class(cn(textareaClass, inputGroupTextareaClass, config.className)),
+    h.Class(cx(textareaClass, inputGroupTextareaClass, config.className)),
   ])
 
 export type InputGroupInputConfig<M> = Readonly<{
@@ -294,7 +294,7 @@ export const inputGroupInput = <M>(config: InputGroupInputConfig<M>, h: HtmlBuil
     ...(config.type === undefined ? [] : [h.Type(config.type)]),
     ...(config.placeholder === undefined ? [] : [h.Placeholder(config.placeholder)]),
     h.DataAttribute('slot', 'input-group-control'),
-    h.Class(cn(inputClass, inputGroupInputClass, config.className)),
+    h.Class(cx(inputClass, inputGroupInputClass, config.className)),
     ...(config.attributes ?? []),
   ])
 
@@ -317,7 +317,7 @@ export const inputGroupButton = <M>(
     {
       ...buttonConfig,
       variant: config.variant ?? 'ghost',
-      className: cn(inputGroupButtonClass, inputGroupButtonSizeClasses[size], config.className),
+      className: cx(inputGroupButtonClass, inputGroupButtonSizeClasses[size], config.className),
       attributes: [h.DataAttribute('size', size), ...(config.attributes ?? [])],
     },
     label,
@@ -343,7 +343,7 @@ export const inputGroupAddon = <M>(
       h.Role('group'),
       h.DataAttribute('slot', 'input-group-addon'),
       h.DataAttribute('align', align),
-      h.Class(cn(inputGroupAddonClass, inputGroupAddonAlignClasses[align], config.className)),
+      h.Class(cx(inputGroupAddonClass, inputGroupAddonAlignClasses[align], config.className)),
       h.Attribute(
         'onclick',
         "if(!event.target.closest('button'))this.parentElement?.querySelector('input')?.focus()",
@@ -360,7 +360,7 @@ export const inputGroupText = <M>(
   config: StyleConfig,
   children: ReadonlyArray<Child>,
   h: HtmlBuilder<M>,
-): Html => h.span([h.Class(cn(inputGroupTextClass, config.className))], children)
+): Html => h.span([h.Class(cx(inputGroupTextClass, config.className))], children)
 
 /** Segmented container — pass addons / controls as children. */
 export const inputGroup = <M>(
@@ -371,7 +371,7 @@ export const inputGroup = <M>(
   h.div(
     [
       h.Role('group'),
-      h.Class(cn(inputGroupClass, config.className)),
+      h.Class(cx(inputGroupClass, config.className)),
       h.DataAttribute('slot', 'input-group'),
     ],
     children,

@@ -8,7 +8,7 @@ import { icon } from '@quorum/ui/primitives/icon'
 import { langOf } from '../i18n/lang.ts'
 import { Locale, withLocale } from '../i18n/locale.ts'
 import { indexUrl, loadIndex, search, type Hit, type Index } from '../search.ts'
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The search box in the header: the query, whether its results are open, and the index it loads
    on first use. Each language has its own index, built from its own titles and text. The index is
@@ -299,7 +299,7 @@ export const view = defineView<Model, Message>((model, h) => {
                       h.AriaSelected(position === model.active),
                       h.Href(hrefOf(hit)),
                       h.Class(
-                        cn(
+                        cx(
                           css({
                             display: 'block',
                             borderRadius: 'md',

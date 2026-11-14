@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { Input as FoldkitInput } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
@@ -134,7 +134,7 @@ export const input = <M>(config: InputConfig<M>, h: HtmlBuilder<M>): Html =>
       toView: (attributes) =>
         h.div(
           [
-            h.Class(cn(inputWrapperClass, config.wrapperClass)),
+            h.Class(cx(inputWrapperClass, config.wrapperClass)),
             ...(config.isDisabled ? [h.DataAttribute('disabled', '')] : []),
           ],
           [
@@ -142,21 +142,21 @@ export const input = <M>(config: InputConfig<M>, h: HtmlBuilder<M>): Html =>
               [
                 ...attributes.label,
                 h.DataAttribute('slot', 'label'),
-                h.Class(cn(inputLabelClass, config.labelClass)),
+                h.Class(cx(inputLabelClass, config.labelClass)),
               ],
               [config.label],
             ),
             h.input([
               ...attributes.input,
               h.DataAttribute('slot', 'input'),
-              h.Class(cn(inputClass, config.className)),
+              h.Class(cx(inputClass, config.className)),
             ]),
             config.description === undefined
               ? h.empty
               : h.span(
                   [
                     ...attributes.description,
-                    h.Class(cn(inputDescriptionClass, config.descriptionClass)),
+                    h.Class(cx(inputDescriptionClass, config.descriptionClass)),
                   ],
                   [config.description],
                 ),

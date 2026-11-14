@@ -89,7 +89,6 @@ import { WIKI_URL } from '@/platform/analytics.ts'
 import { glowing, playbooksShown, shown } from '@/game/reveal.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
-import { cn } from '@/lib/utils'
 import {
   CHIPS,
   EYEBROW,
@@ -143,7 +142,7 @@ const stat = (
           ]
         : []),
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             height: '2rem',
@@ -192,7 +191,7 @@ const stat = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 fontSize: 'calc(13.5px*var(--type-scale))',
@@ -210,7 +209,7 @@ const stat = (
             [
               h.Title(note),
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     marginLeft: 'auto',
@@ -255,7 +254,7 @@ const insightHelp = (h: HtmlBuilder<Message>): Html => {
       h.Role('dialog'),
       h.AriaLabel(t.hud.aboutInsight),
       h.Class(
-        cn(
+        cx(
           cx(
             css({
               position: 'absolute',
@@ -394,7 +393,7 @@ const poolRow = (
     [
       h.Key(pool),
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             alignItems: 'center',
@@ -448,7 +447,7 @@ const poolRow = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               limiting &&
                 css({
@@ -462,7 +461,7 @@ const poolRow = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 width: '52px',
@@ -513,7 +512,7 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
       h.Key('insight'),
       h.AriaLabel(t.hud.insight),
       h.Class(
-        cn(
+        cx(
           cx(
             css({
               position: 'relative',
@@ -583,7 +582,7 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       css({
                         minWidth: '0',
                         flex: '1 1 0%',
@@ -607,7 +606,7 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
                 ? h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             display: 'flex',
@@ -650,7 +649,7 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
               h.AriaExpanded(model.board.insightHelp),
               h.OnClick(Message.InsightHelpToggled()),
               h.Class(
-                cn(
+                cx(
                   css({
                     display: 'grid',
                     width: '1.5rem',
@@ -701,7 +700,7 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
         ? h.div(
             [
               h.Class(
-                cn(
+                cx(
                   css({
                     display: 'flex',
                     flexDirection: 'column',
@@ -848,7 +847,7 @@ const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     marginLeft: 'auto',
@@ -932,7 +931,7 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
       h.Title(t.hud.teamT),
       h.OnClick(Message.PanelOpened({ panel: model.panel === 'team' ? 'none' : 'team' })),
       h.Class(
-        cn(
+        cx(
           cx(
             css({
               display: 'flex',
@@ -980,7 +979,7 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   css({
                     minWidth: '0',
                     flex: '1 1 0%',
@@ -1008,7 +1007,7 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
             ? h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         fontSize: 'calc(10.5px*var(--type-scale))',
@@ -1030,7 +1029,7 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
               ? h.span(
                   [
                     h.Class(
-                      cn(
+                      cx(
                         FIGURE,
                         css({
                           fontSize: 'calc(10.5px*var(--type-scale))',
@@ -1044,7 +1043,7 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
               : h.span(
                   [
                     h.Class(
-                      cn(
+                      cx(
                         FIGURE,
                         css({
                           fontSize: 'calc(10.5px*var(--type-scale))',
@@ -1107,7 +1106,7 @@ const phoneFigure = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 fontSize: 'calc(13.5px*var(--type-scale))',
@@ -1348,7 +1347,7 @@ const vitalRow = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 flexShrink: '0',
@@ -1366,7 +1365,7 @@ const vitalRow = (
             [
               h.Title(note),
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     flexShrink: '0',
@@ -1792,7 +1791,7 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
                 errors < 1 ? 'ok' : errors < 5 ? 'warn' : 'danger',
                 h,
                 t.hud.errors2(errorTitle),
-                cn(
+                cx(
                   cx(
                     css({
                       borderRadius: 'lg',
@@ -1901,7 +1900,7 @@ const line = (name: string, value: string, tone: Tone, h: HtmlBuilder<Message>, 
         : icon(
             h,
             mark ? CircleCheck : Circle,
-            cn(
+            cx(
               css({
                 width: '0.875rem',
                 height: '0.875rem',
@@ -1929,7 +1928,7 @@ const line = (name: string, value: string, tone: Tone, h: HtmlBuilder<Message>, 
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 marginLeft: 'auto',
@@ -2105,7 +2104,7 @@ const guidance = (
             h.AriaPressed(level === chosen ? 'true' : 'false'),
             h.OnClick(pick(level)),
             h.Class(
-              cn(
+              cx(
                 FIGURE,
                 css({
                   height: '1.5rem',
@@ -2230,7 +2229,7 @@ const toolButton = (
       h.AriaPressed(active ? 'true' : 'false'),
       h.OnClick(message),
       h.Class(
-        cn(
+        cx(
           tool(active),
           cx(
             css({
@@ -2276,7 +2275,7 @@ const historyButton = (
       h.Disabled(!ready),
       h.OnClick(message),
       h.Class(
-        cn(
+        cx(
           tool(false),
           cx(
             css({
@@ -2356,7 +2355,7 @@ const exitButton = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.AriaPressed(model.panel === 'exit' ? 'true' : 'false'),
       h.OnClick(Message.PanelOpened({ panel: model.panel === 'exit' ? 'none' : 'exit' })),
       h.Class(
-        cn(
+        cx(
           tool(model.panel === 'exit'),
           cx(
             css({
@@ -2411,7 +2410,7 @@ const exitButton = (model: Model, h: HtmlBuilder<Message>): Html => {
             [
               h.Key('badge'),
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   cx(
                     css({
@@ -2488,7 +2487,7 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
         },
       }),
       ariaLabel: t.hud.more,
-      buttonClassName: cn(
+      buttonClassName: cx(
         tool(model.moreMenu.isOpen),
         css({
           position: 'relative',
@@ -2547,7 +2546,7 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
         (item === 'undo' && !undoAvailable(model.board)) ||
         (item === 'redo' && !redoAvailable(model.board)),
       itemToConfig: (item, { isActive, isDisabled }) => ({
-        className: cn(
+        className: cx(
           css({
             display: 'flex',
             height: '2.5rem',
@@ -2609,7 +2608,7 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
               ? h.span(
                   [
                     h.Class(
-                      cn(
+                      cx(
                         FIGURE,
                         css({
                           fontSize: 'calc(11.5px*var(--type-scale))',
@@ -2678,7 +2677,7 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                 Message.PanelOpened({ panel: model.panel === 'research' ? 'none' : 'research' }),
               ),
               h.Class(
-                cn(
+                cx(
                   tool(model.panel === 'research'),
                   'enter-pop',
                   glowing(model, 'research') && 'cue-glow',
@@ -2733,7 +2732,7 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                       h.Key('badge'),
                       h.DataAttribute('exit', 'notice'),
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           cx(
                             css({
@@ -2774,7 +2773,7 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.AriaPressed(model.panel === 'team' ? 'true' : 'false'),
               h.OnClick(Message.PanelOpened({ panel: model.panel === 'team' ? 'none' : 'team' })),
               h.Class(
-                cn(
+                cx(
                   tool(model.panel === 'team'),
                   'enter-pop',
                   glowing(model, 'team') && 'cue-glow',
@@ -2907,7 +2906,7 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.Title(t.hud.glossary),
               h.AriaLabel(t.hud.glossary),
               h.Class(
-                cn(
+                cx(
                   tool(false),
                   cx(
                     css({
@@ -2952,7 +2951,7 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
                 h.AriaLabel(t.hud.speedS),
                 h.OnClick(Message.SpeedCycled()),
                 h.Class(
-                  cn(
+                  cx(
                     tool(model.board.clock.speed > 1),
                     FIGURE,
                     css({
@@ -3206,7 +3205,7 @@ export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: stri
             h.span(
               [
                 h.Class(
-                  cn(
+                  cx(
                     FIGURE,
                     css({
                       fontSize: 'calc(11.5px*var(--type-scale))',
@@ -3241,7 +3240,7 @@ export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: stri
       h.Key('change'),
       h.DataAttribute('morph', 'notice'),
       h.DataAttribute('exit', 'notice'),
-      h.Class(cn(pill, className)),
+      h.Class(cx(pill, className)),
     ],
     [body, undo ? undoButton(false, h) : h.empty],
   )
@@ -3292,7 +3291,7 @@ export const regionTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.AriaPressed(model.board.region === region ? 'true' : 'false'),
           h.OnClick(isOpen ? Message.RegionPicked({ region }) : Message.RegionOpened({ region })),
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 height: '1.75rem',
@@ -3357,7 +3356,7 @@ export const regionTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
                   Message.PanelOpened({ panel: model.panel === 'mirror' ? 'none' : 'mirror' }),
                 ),
                 h.Class(
-                  cn(
+                  cx(
                     css({
                       marginLeft: '0.125rem',
                       height: '1.75rem',

@@ -37,7 +37,6 @@ import {
 } from '@/game/model.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
-import { cn } from '@/lib/utils'
 import { CHIPS, FIGURE, PANEL, WELL, meter, toneText, type Tone } from '@quorum/ui/game/bits'
 import { shell } from './panels.ts'
 
@@ -108,7 +107,7 @@ const figureRow = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 marginLeft: 'auto',
@@ -317,7 +316,7 @@ const fixes = (model: Model, h: HtmlBuilder<Message>): Html => {
           icon(
             h,
             active ? Check : Hammer,
-            cn(
+            cx(
               css({
                 width: '0.875rem',
                 height: '0.875rem',
@@ -349,7 +348,7 @@ const fixes = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(12px*var(--type-scale))',
@@ -646,7 +645,7 @@ export const challengeBar = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(11px*var(--type-scale))',
@@ -666,7 +665,7 @@ export const challengeBar = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 fontSize: 'calc(11px*var(--type-scale))',
@@ -726,7 +725,7 @@ const axisRow = (axis: ScoreAxis, run: ChallengeResultRun, h: HtmlBuilder<Messag
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(13px*var(--type-scale))',
@@ -770,7 +769,7 @@ export const challengePanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   css({
                     fontSize: 'calc(22px*var(--type-scale))',
                     fontWeight: '600',

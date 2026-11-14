@@ -4,7 +4,7 @@ import { FIGURE } from '@quorum/ui/game/bits'
 import { localeOf } from '../i18n/builder.ts'
 import { langOf } from '../i18n/lang.ts'
 import { leverOf, leverRows } from '../reference/levers.ts'
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* A kind's Product lever as the game offers it: three steps, each with the share
    it gives the kind, its Dev Hours, and its growth cost. */
@@ -111,7 +111,7 @@ export const leverView = <M>(kind: LeverKind, h: HtmlBuilder<M>): Html => {
                         [
                           h.Key(header),
                           h.Class(
-                            cn(
+                            cx(
                               cell,
                               css({
                                 backgroundColor:
@@ -147,10 +147,10 @@ export const leverView = <M>(kind: LeverKind, h: HtmlBuilder<M>): Html => {
                       ),
                     ],
                     [
-                      h.td([h.Class(cn(cell, FIGURE))], [String(row.step)]),
-                      h.td([h.Class(cn(cell, FIGURE))], [percent(row.share)]),
-                      h.td([h.Class(cn(cell, FIGURE))], [String(row.dh)]),
-                      h.td([h.Class(cn(cell, FIGURE))], [`−${Math.round(row.growth * 100)}%`]),
+                      h.td([h.Class(cx(cell, FIGURE))], [String(row.step)]),
+                      h.td([h.Class(cx(cell, FIGURE))], [percent(row.share)]),
+                      h.td([h.Class(cx(cell, FIGURE))], [String(row.dh)]),
+                      h.td([h.Class(cx(cell, FIGURE))], [`−${Math.round(row.growth * 100)}%`]),
                     ],
                   ),
                 ),

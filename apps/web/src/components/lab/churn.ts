@@ -1,4 +1,4 @@
-import { css } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { formats } from '@/i18n/format.ts'
 import { copy, nodeTitle, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -10,7 +10,6 @@ import { compact } from '@quorum/ui/game/format'
 import { Message } from '@/game/message.ts'
 import { ledgerOf, type Model } from '@/game/model.ts'
 import { button } from '@quorum/ui/primitives/button'
-import { cn } from '@/lib/utils'
 import { FIGURE, SCROLL, WELL, toneText } from '@quorum/ui/game/bits'
 import { shell } from './panels.ts'
 
@@ -109,7 +108,7 @@ const row = (
             h.div(
               [
                 h.Class(
-                  cn(
+                  cx(
                     css({
                       paddingInline: '0.75rem',
                       paddingBottom: '0.25rem',
@@ -141,7 +140,7 @@ const rowGrid = (
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'grid',
             gridTemplateColumns: '88px 80px 1fr 44px minmax(0,180px)',
@@ -178,7 +177,7 @@ const rowGrid = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               css({
                 fontSize: 'calc(12px*var(--type-scale))',
               }),
@@ -213,7 +212,7 @@ const rowGrid = (
           h.div(
             [
               h.Class(
-                cn(
+                cx(
                   css({
                     height: '100%',
                     borderRadius: '9999px',
@@ -236,7 +235,7 @@ const rowGrid = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 textAlign: 'right',
@@ -273,7 +272,7 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
     [
       h.Key(region.region),
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             flexDirection: 'column',
@@ -314,7 +313,7 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(12.5px*var(--type-scale))',
@@ -327,7 +326,7 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(12.5px*var(--type-scale))',
@@ -341,7 +340,7 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(12.5px*var(--type-scale))',
@@ -355,7 +354,7 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     marginLeft: 'auto',
@@ -402,7 +401,7 @@ export const churnPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               css({
                 display: 'flex',
                 flexDirection: 'column',

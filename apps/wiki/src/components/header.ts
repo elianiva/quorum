@@ -10,7 +10,7 @@ import { SECTION_ORDER, navOf, pageIn } from '../pages.ts'
 import { QUADRANTS } from './quadrant.ts'
 import { GAME_ORIGIN, REPOSITORY } from '../site.ts'
 import * as Search from '../submodels/search.ts'
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The header bar: the wordmark, the search, the language switcher, and Play. */
 
@@ -75,7 +75,7 @@ const switcher = (model: Model, l: Lang, h: H): Html =>
     LOCALES.map((locale) => {
       const tag = LOCALE_TAGS[locale].lang
       const current = locale === model.locale
-      const look = cn(
+      const look = cx(
         css({
           display: 'grid',
           height: '100%',
@@ -374,7 +374,7 @@ const sections = (model: Model, l: Lang, h: H): Html => {
                 h.Href(first.path),
                 ...(section === current ? [h.AriaCurrent('true')] : []),
                 h.Class(
-                  cn(
+                  cx(
                     css({
                       display: 'flex',
                       flexShrink: '0',

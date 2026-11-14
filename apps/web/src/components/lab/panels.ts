@@ -55,7 +55,6 @@ import { button } from '@quorum/ui/primitives/button'
 import { Kbd } from '@quorum/ui/primitives/kbd'
 import { switch_ } from '@quorum/ui/primitives/switch'
 import * as VolumeSlider from '@quorum/ui/primitives/slider'
-import { cn } from '@/lib/utils'
 import { settingsSections, type Setting } from '@/game/settings.ts'
 import { KEY_FIELD_MAX, canPlayOnline, keyNote } from '@/game/access.ts'
 import { KeyPhase } from '@/game/key-machine.ts'
@@ -384,7 +383,7 @@ const stat = (name: string, value: string, h: HtmlBuilder<Message>) =>
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 fontSize: 'calc(18px*var(--type-scale))',
@@ -401,7 +400,7 @@ const stats = (columns: string, children: ReadonlyArray<Html>, h: HtmlBuilder<Me
   h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'grid',
             width: '100%',
@@ -560,7 +559,7 @@ const stepCell = (
     [
       h.Key(title),
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             flexDirection: 'column',
@@ -586,7 +585,7 @@ const stepCell = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 fontSize: 'calc(23px*var(--type-scale))',
@@ -625,7 +624,7 @@ const stepCell = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               css({
                 marginTop: '0.25rem',
                 fontSize: 'calc(12px*var(--type-scale))',
@@ -738,7 +737,7 @@ export const helpPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.div(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           css({
                             display: 'flex',
                             flexDirection: 'column',
@@ -807,7 +806,7 @@ const menuItem = (
       onClick: message,
       variant,
       size: 'lg',
-      className: cn(
+      className: cx(
         css({
           height: '2.5rem',
           width: '100%',
@@ -1028,7 +1027,7 @@ const voteCard = (model: Model, open: Vote, h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           WELL,
           css({
             display: 'flex',
@@ -1067,7 +1066,7 @@ const voteCard = (model: Model, open: Vote, h: HtmlBuilder<Message>): Html => {
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(0.75rem * var(--type-scale))',
@@ -1228,7 +1227,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             h.span(
               [
                 h.Class(
-                  cn(
+                  cx(
                     FIGURE,
                     css({
                       fontSize: 'calc(20px*var(--type-scale))',
@@ -1284,7 +1283,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.label(
         [
           h.Class(
-            cn(
+            cx(
               WELL,
               css({
                 display: 'flex',
@@ -1532,7 +1531,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           onClick: Message.RoomSpeedChosen({ value: speed }),
           variant: model.room.speed === speed ? 'default' : 'outline',
           size: 'lg',
-          className: cn(
+          className: cx(
             FIGURE,
             css({
               flex: '1 1 0%',
@@ -1830,7 +1829,7 @@ const settingSection = (label: string, rows: ReadonlyArray<Html>, h: HtmlBuilder
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               NESTED,
               css({
                 display: 'flex',
@@ -2017,7 +2016,7 @@ const featureKeyRow = (label: string, model: Model, h: HtmlBuilder<Message>): Ht
           h.label(
             [
               h.Class(
-                cn(
+                cx(
                   WELL,
                   css({
                     display: 'flex',
@@ -2725,7 +2724,7 @@ export const devPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                       onClick: Message.SpeedChosen({ speed }),
                       variant: model.board.clock.speed === speed ? 'default' : 'outline',
                       size: 'lg',
-                      className: cn(
+                      className: cx(
                         FIGURE,
                         css({
                           width: '4rem',

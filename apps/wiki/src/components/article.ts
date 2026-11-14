@@ -12,7 +12,7 @@ import { KOFI, editUrl } from '../site.ts'
 import { hides } from '../submodels/spoilers.ts'
 import { pathBar, pathNext } from './path-nav.ts'
 import { quadrantBadge } from './quadrant.ts'
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* One page: its header, its body (and facts beside it), and its footer. */
 
@@ -429,7 +429,7 @@ export const article = (page: Page, model: Model, h: H): Html => {
     [
       // A wide page spans the frame; every other page fills its column.
       h.Class(
-        cn(
+        cx(
           css({
             minWidth: '0',
             paddingBlock: '2rem',
@@ -473,7 +473,7 @@ export const article = (page: Page, model: Model, h: H): Html => {
                     [
                       h.Href(eraPath(page.era)),
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             fontSize: '12px',
@@ -558,7 +558,7 @@ export const notFound = (model: Model, h: H): Html => {
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 fontSize: '13px',

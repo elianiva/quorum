@@ -1,4 +1,4 @@
-import { css, keyframes, cx as cn } from '@quorum/styled-system/css'
+import { css, keyframes, cx } from '@quorum/styled-system/css'
 import type { Attribute, ChildAttribute, Html, HtmlBuilder } from 'foldkit/html'
 import type { IconNode } from 'lucide'
 import { Loader2 } from 'lucide'
@@ -37,7 +37,7 @@ export const spinner = <M>(config: StyleConfig, h: HtmlBuilder<M>): Html =>
       h.DataAttribute('slot', 'spinner'),
       h.Role('status'),
       h.AriaLabel('Loading'),
-      h.Class(cn(spinnerClass, config.className)),
+      h.Class(cx(spinnerClass, config.className)),
       h.Xmlns('http://www.w3.org/2000/svg'),
       h.Fill('none'),
       h.ViewBox('0 0 24 24'),

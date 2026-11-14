@@ -26,7 +26,6 @@ import { confirmSellOf, ledgerOf, type Model, stampedPlaybook } from '@/game/mod
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
 import { textarea } from '@quorum/ui/primitives/textarea'
-import { cn } from '@/lib/utils'
 import { EYEBROW, FIGURE, NESTED, SCROLL, WELL } from '@quorum/ui/game/bits'
 import { SurveyMessage } from '@/game/survey.ts'
 import { isSending, isSent, isSkipped } from '@/game/survey-machine.ts'
@@ -51,7 +50,7 @@ const stat = (name: string, value: string, h: HtmlBuilder<Message>) =>
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 fontSize: 'calc(18px*var(--type-scale))',
@@ -68,7 +67,7 @@ const stats = (columns: string, children: ReadonlyArray<Html>, h: HtmlBuilder<Me
   h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'grid',
             width: '100%',
@@ -150,7 +149,7 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.div(
             [
               h.Class(
-                cn(
+                cx(
                   NESTED,
                   css({
                     display: 'flex',
@@ -206,7 +205,7 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                       h.span(
                         [
                           h.Class(
-                            cn(
+                            cx(
                               FIGURE,
                               css({
                                 fontSize: 'calc(11.5px*var(--type-scale))',
@@ -304,7 +303,7 @@ const surveySection = (model: Model, h: HtmlBuilder<Message>): Html => {
     return h.div(
       [
         h.Class(
-          cn(
+          cx(
             NESTED,
             css({
               display: 'flex',
@@ -489,7 +488,7 @@ export const exitedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(30px*var(--type-scale))',
@@ -754,7 +753,7 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 fontSize: 'calc(12px*var(--type-scale))',
@@ -818,7 +817,7 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 [
                   h.Key(`p${index}`),
                   h.Class(
-                    cn(
+                    cx(
                       NESTED,
                       css({
                         display: 'flex',
@@ -850,7 +849,7 @@ export const playbooksPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             fontSize: 'calc(11.5px*var(--type-scale))',

@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
@@ -83,7 +83,7 @@ const progressIndicator = <M>(value: number | undefined, h: HtmlBuilder<M>): Htm
 export const progress = <M>(config: ProgressConfig, h: HtmlBuilder<M>): Html =>
   h.div(
     [
-      h.Class(cn(progressClass, config.className)),
+      h.Class(cx(progressClass, config.className)),
       h.Role('progressbar'),
       h.AriaValuemin(0),
       h.AriaValuemax(100),
@@ -94,7 +94,7 @@ export const progress = <M>(config: ProgressConfig, h: HtmlBuilder<M>): Html =>
     [
       h.div(
         [
-          h.Class(cn(progressTrackClass, config.trackClassName)),
+          h.Class(cx(progressTrackClass, config.trackClassName)),
           h.DataAttribute('slot', 'progress-track'),
         ],
         [progressIndicator(config.value, h)],
@@ -109,7 +109,7 @@ export const progressLabel = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.span(
-    [h.Class(cn(progressLabelClass, config.className)), h.DataAttribute('slot', 'progress-label')],
+    [h.Class(cx(progressLabelClass, config.className)), h.DataAttribute('slot', 'progress-label')],
     children,
   )
 
@@ -120,7 +120,7 @@ export const progressValue = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.span(
-    [h.Class(cn(progressValueClass, config.className)), h.DataAttribute('slot', 'progress-value')],
+    [h.Class(cx(progressValueClass, config.className)), h.DataAttribute('slot', 'progress-value')],
     children,
   )
 
@@ -128,7 +128,7 @@ export const Progress = Object.assign(progress, {
   track: <M>(config: StyleConfig, children: ReadonlyArray<Child>, h: HtmlBuilder<M>): Html =>
     h.div(
       [
-        h.Class(cn(progressTrackClass, config.className)),
+        h.Class(cx(progressTrackClass, config.className)),
         h.DataAttribute('slot', 'progress-track'),
       ],
       children,

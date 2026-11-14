@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
@@ -188,7 +188,7 @@ export const badge = <M>(
 ): Html =>
   h.span(
     [
-      h.Class(cn(badgeClass, badgeVariants[config.variant ?? 'default'], config.className)),
+      h.Class(cx(badgeClass, badgeVariants[config.variant ?? 'default'], config.className)),
       h.DataAttribute('slot', 'badge'),
       h.DataAttribute('variant', config.variant ?? 'default'),
     ],

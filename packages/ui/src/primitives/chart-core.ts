@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import {
   arc,
   area,
@@ -301,7 +301,7 @@ const chart = <M>(
   h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             position: 'relative',
           }),
@@ -2095,7 +2095,7 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             position: 'relative',
           }),

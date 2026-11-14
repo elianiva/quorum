@@ -7,7 +7,7 @@ import type { Message, Model } from '../main.ts'
 import type { Page } from '../page.ts'
 import { PATHS, placeOf, resumeOf, stepsOf, type Path } from '../paths.ts'
 import { quadrantColor } from './quadrant.ts'
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The guided paths in the page: where a reader is in one, and the step after it. */
 
@@ -48,7 +48,7 @@ const segments = (
               h.AriaLabel(l.t.pathNav.stepLabel(index + 1, step.title)),
               ...(step.path === current ? [h.AriaCurrent('step')] : []),
               h.Class(
-                cn(
+                cx(
                   css({
                     display: 'block',
                     height: '0.375rem',
@@ -134,7 +134,7 @@ export const pathBar = (page: Page, model: Model, h: H): Html => {
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: '12px',
@@ -335,7 +335,7 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
             : h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         flexShrink: '0',

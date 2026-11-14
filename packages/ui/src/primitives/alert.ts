@@ -1,4 +1,4 @@
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
@@ -103,7 +103,7 @@ const alertContainer = <M>(
 ): Html =>
   h.div(
     [
-      h.Class(cn(alertClass, alertVariants[config.variant ?? 'default'], config.className)),
+      h.Class(cx(alertClass, alertVariants[config.variant ?? 'default'], config.className)),
       h.Role('alert'),
       h.DataAttribute('slot', 'alert'),
       h.DataAttribute('variant', config.variant ?? 'default'),
@@ -117,7 +117,7 @@ const alertTitle = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(alertTitleClass, config.className)), h.DataAttribute('slot', 'alert-title')],
+    [h.Class(cx(alertTitleClass, config.className)), h.DataAttribute('slot', 'alert-title')],
     children,
   )
 
@@ -128,7 +128,7 @@ const alertDescription = <M>(
 ): Html =>
   h.div(
     [
-      h.Class(cn(alertDescriptionClass, config.className)),
+      h.Class(cx(alertDescriptionClass, config.className)),
       h.DataAttribute('slot', 'alert-description'),
     ],
     children,
@@ -142,7 +142,7 @@ const alertAction = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(alertActionClass, config.className)), h.DataAttribute('slot', 'alert-action')],
+    [h.Class(cx(alertActionClass, config.className)), h.DataAttribute('slot', 'alert-action')],
     children,
   )
 

@@ -6,7 +6,6 @@ import { Search } from 'lucide'
 import { EYEBROW } from '@quorum/ui/game/bits'
 import { icon } from '@quorum/ui/primitives/icon'
 import { Kbd } from '@quorum/ui/primitives/kbd'
-import { cn } from '@/lib/utils'
 import { copy, type Messages } from '@/i18n/messages.ts'
 import { Message } from '@/game/message.ts'
 import {
@@ -130,7 +129,7 @@ const plainCell = (
   h.span(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'grid',
             width: '1.75rem',
@@ -195,7 +194,7 @@ const row = (command: PaletteCommand, active: boolean, h: HtmlBuilder<Message>):
       h.OnClick(Message.PaletteChosen({ id: command.id })),
       h.OnMouseMove(Message.PaletteHighlighted({ id: command.id })),
       h.Class(
-        cn(
+        cx(
           cx(
             css({
               display: 'flex',
@@ -291,7 +290,7 @@ const results = (
             h.div(
               [
                 h.Class(
-                  cn(
+                  cx(
                     EYEBROW,
                     css({
                       paddingInline: '0.625rem',

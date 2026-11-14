@@ -1,11 +1,10 @@
-import { css } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { Lock } from 'lucide'
 import { FIGURE, groupBadge } from '@quorum/ui/game/bits'
 import { icon } from '@quorum/ui/primitives/icon'
 import type { Message } from '@/game/message.ts'
 import type { Part } from '@/game/parts.ts'
-import { cn } from '@/lib/utils'
 
 /* ==========================================================================
    A part as a list row shows it. The dock and the command palette draw the
@@ -57,7 +56,7 @@ const detail = (part: Part, h: HtmlBuilder<Message>): Html => {
   return h.span(
     [
       h.Class(
-        cn(
+        cx(
           FIGURE,
           css({
             flexShrink: '0',

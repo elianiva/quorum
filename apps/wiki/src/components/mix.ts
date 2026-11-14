@@ -3,7 +3,7 @@ import { localeOf } from '../i18n/builder.ts'
 import { langOf } from '../i18n/lang.ts'
 import { KINDS, type EraDef, type RequestKind } from '@quorum/simulation/catalog'
 import { FIGURE } from '@quorum/ui/game/bits'
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* An Era's request mix, in each kind's colour from the game. */
 
@@ -18,7 +18,7 @@ export const mixBar = <M>(mix: EraDef['mix'], h: HtmlBuilder<M>, legend = true):
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             flexDirection: 'column',
@@ -109,7 +109,7 @@ export const mixBar = <M>(mix: EraDef['mix'], h: HtmlBuilder<M>, legend = true):
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             color: 'var(--muted-foreground)',

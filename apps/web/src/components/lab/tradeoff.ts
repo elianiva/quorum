@@ -22,7 +22,6 @@ import type { Model, PreviewFigures, TradeoffOption } from '@/game/model.ts'
 import type { TradeoffState } from '@/game/tradeoff-machine.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { button, closeButton } from '@quorum/ui/primitives/button'
-import { cn } from '@/lib/utils'
 import { FIGURE, PANEL } from '@quorum/ui/game/bits'
 
 const kindTitleOf = (t: Messages): Record<TradeoffOption['kind'], string> => ({
@@ -204,7 +203,7 @@ const radar = (now: Axes, next: Axes, h: HtmlBuilder<Message>): Html => {
             h.Attribute('y', (y + 3.5).toFixed(1)),
             h.Attribute('text-anchor', anchor),
             h.Class(
-              cn(
+              cx(
                 css({
                   fontSize: 'calc(10.5px*var(--type-scale))',
                   fontWeight: '500',
@@ -309,7 +308,7 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         fontSize: 'calc(12px*var(--type-scale))',
@@ -325,7 +324,7 @@ const effect = (model: Model, card: TradeoffState, h: HtmlBuilder<Message>): Htm
             ? h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         paddingLeft: '1rem',
@@ -405,7 +404,7 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
       [
         h.Key('tradeoff-line'),
         h.Class(
-          cn(
+          cx(
             PLACE,
             PLACE_PHONE,
             PANEL,
@@ -455,7 +454,7 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
     [
       h.Key('tradeoff'),
       h.Class(
-        cn(
+        cx(
           PLACE,
           PLACE_SCREEN,
           PANEL,

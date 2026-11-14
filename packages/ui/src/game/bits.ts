@@ -1,4 +1,4 @@
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { IconNode } from 'lucide'
 import type { BuildGroup, InsightPool } from '@quorum/simulation/catalog'
@@ -204,7 +204,7 @@ export const groupBadge = <M>(
       h.Xmlns('http://www.w3.org/2000/svg'),
       h.ViewBox('0 0 24 24'),
       h.Class(
-        cn(
+        cx(
           css({
             flexShrink: '0',
             overflow: 'visible',
@@ -254,7 +254,7 @@ export const stackLogo = <M>(id: StackLogoId, className: string, h: HtmlBuilder<
       h.Xmlns('http://www.w3.org/2000/svg'),
       h.ViewBox('0 0 24 24'),
       h.Class(
-        cn(
+        cx(
           css({
             flexShrink: '0',
           }),
@@ -298,7 +298,7 @@ export const figure = <M>(
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 display: 'flex',
@@ -317,7 +317,7 @@ export const figure = <M>(
             ? h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       css({
                         fontSize: 'calc(10.5px*var(--type-scale))',
                       }),
@@ -368,7 +368,7 @@ export const row = <M>(name: string, value: string, tone: Tone, h: HtmlBuilder<M
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 fontSize: 'calc(12px*var(--type-scale))',
@@ -402,7 +402,7 @@ export const meter = <M>(share: number, fill: string, h: HtmlBuilder<M>): Html =
         [
           // The fill slides rather than resizing: transform skips layout, and progress moves linearly.
           h.Class(
-            cn(
+            cx(
               css({
                 height: '100%',
                 width: '100%',
@@ -483,7 +483,7 @@ export const insightChip = <M>(
       h.Title(`${name} ${figure}`),
       h.AriaLabel(`${name} ${figure}`),
       h.Class(
-        cn(
+        cx(
           FIGURE,
           css({
             display: 'inline-flex',

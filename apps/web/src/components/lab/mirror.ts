@@ -1,4 +1,4 @@
-import { css } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { copy, nodeTitle, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
@@ -33,7 +33,6 @@ import { money } from '@quorum/ui/game/format'
 import { Message } from '@/game/message.ts'
 import type { Model } from '@/game/model.ts'
 import { button } from '@quorum/ui/primitives/button'
-import { cn } from '@/lib/utils'
 import { EYEBROW, FIGURE, SCROLL, WELL } from '@quorum/ui/game/bits'
 import { shell } from './panels.ts'
 
@@ -169,7 +168,7 @@ const segmented = <A>(
     [
       h.Key(key),
       h.Class(
-        cn(
+        cx(
           css({
             display: 'grid',
             gap: '3px',
@@ -191,7 +190,7 @@ const segmented = <A>(
           h.AriaPressed(value === current ? 'true' : 'false'),
           h.OnClick(message(value)),
           h.Class(
-            cn(
+            cx(
               css({
                 height: '1.75rem',
                 borderRadius: 'lg',
@@ -228,7 +227,7 @@ const heading = (text: string, h: HtmlBuilder<Message>): Html =>
   h.span(
     [
       h.Class(
-        cn(
+        cx(
           EYEBROW,
           css({
             paddingInline: '0.25rem',
@@ -283,7 +282,7 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
               h.AriaPressed(current === tool ? 'true' : 'false'),
               h.OnClick(Message.IacToolPicked({ tool })),
               h.Class(
-                cn(
+                cx(
                   css({
                     display: 'flex',
                     flexDirection: 'column',
@@ -301,7 +300,7 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
                         layerStyle: 'raised',
                         boxShadow: 'raised',
                       })
-                    : cn(
+                    : cx(
                         WELL,
                         css({
                           _hover: {
@@ -495,7 +494,7 @@ const changeRow = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               hand
                 ? css({
@@ -512,7 +511,7 @@ const changeRow = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               css({
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -726,7 +725,7 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(12.5px*var(--type-scale))',
@@ -793,7 +792,7 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
             [
               h.Key('plan'),
               h.Class(
-                cn(
+                cx(
                   css({
                     display: 'flex',
                     flexDirection: 'column',
@@ -837,7 +836,7 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
                 [
                   h.Key('burn'),
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         fontSize: 'calc(12px*var(--type-scale))',
@@ -985,7 +984,7 @@ export const mirrorPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               css({
                 display: 'flex',
                 flexDirection: 'column',

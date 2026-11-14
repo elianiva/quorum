@@ -14,7 +14,6 @@ import { Message } from '@/game/message.ts'
 import type { Model } from '@/game/model.ts'
 import { hourBefore, loadChangeOf, type NodeSample } from '@/game/node-metrics.ts'
 import { WIKI_URL } from '@/platform/analytics.ts'
-import { cn } from '@/lib/utils'
 import { caption, percent } from './shared.ts'
 
 /*
@@ -354,7 +353,7 @@ export const costReceipts = (
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             fontSize: 'calc(12px*var(--type-scale))',

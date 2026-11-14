@@ -1,4 +1,4 @@
-import { css } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { Option } from 'effect'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { Check, Lock, Search } from 'lucide'
@@ -18,7 +18,6 @@ import type { Model } from '@/game/model.ts'
 import { StackPickerMessage, type StackPicker } from '@/game/stack-picker.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { WELL, stackLogo } from '@quorum/ui/game/bits'
-import { cn } from '@/lib/utils'
 
 /** Accept unaccented keyboard input as well as the spelling shown in the list. */
 const searchable = (text: string): string =>
@@ -66,7 +65,7 @@ const row = <Item extends string>(
         : []),
       ...(isDisabled ? [] : [h.OnClick(config.onChoose(item))]),
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             minHeight: '2rem',
@@ -181,7 +180,7 @@ const pickerView = <Item extends string>(
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           WELL,
           css({
             display: 'flex',

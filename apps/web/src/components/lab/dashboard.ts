@@ -55,7 +55,6 @@ import {
   boardSandbox,
 } from '@/game/model.ts'
 import { icon } from '@quorum/ui/primitives/icon'
-import { cn } from '@/lib/utils'
 import { button } from '@quorum/ui/primitives/button'
 import { Pie, PieChart } from '@quorum/ui/primitives/chart-core'
 import {
@@ -406,7 +405,7 @@ const panel = (
       h.Key(key),
       h.DataAttribute('panel', key),
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             minWidth: '0',
@@ -466,7 +465,7 @@ const panel = (
             ? h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         overflow: 'hidden',
@@ -505,7 +504,7 @@ const locked = (
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               SCREEN,
               css({
                 display: 'grid',
@@ -522,7 +521,7 @@ const locked = (
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     borderRadius: 'lg',
@@ -585,7 +584,7 @@ const rowHeader = (label: string, count: number, h: HtmlBuilder<Message>): Html 
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 fontSize: 'calc(11px*var(--type-scale))',
@@ -1109,7 +1108,7 @@ const seriesLegend = (
               [
                 h.Key('at'),
                 h.Class(
-                  cn(
+                  cx(
                     FIGURE,
                     css({
                       color: 'var(--muted-foreground)',
@@ -1165,7 +1164,7 @@ const seriesLegend = (
             h.span(
               [
                 h.Class(
-                  cn(
+                  cx(
                     FIGURE,
                     css({
                       color: 'var(--muted-foreground)',
@@ -1210,7 +1209,7 @@ const seriesTable = (
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           SCREEN,
           css({
             maxHeight: '210px',
@@ -1271,7 +1270,7 @@ const seriesTable = (
                   h.th(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           border,
                           css({
                             textAlign: 'left',
@@ -1287,7 +1286,7 @@ const seriesTable = (
                       [
                         h.Key(entry.key),
                         h.Class(
-                          cn(
+                          cx(
                             border,
                             css({
                               textAlign: 'right',
@@ -1318,13 +1317,13 @@ const seriesTable = (
                   ),
                 ],
                 [
-                  h.td([h.Class(cn(border, FIGURE))], [String(row.t)]),
+                  h.td([h.Class(cx(border, FIGURE))], [String(row.t)]),
                   ...series.map((entry) =>
                     h.td(
                       [
                         h.Key(entry.key),
                         h.Class(
-                          cn(
+                          cx(
                             border,
                             FIGURE,
                             css({
@@ -1398,7 +1397,7 @@ const timeSeries = (
             h.div(
               [
                 h.Class(
-                  cn(
+                  cx(
                     SCREEN,
                     css({
                       minHeight: '0',
@@ -1536,7 +1535,7 @@ const stat = (
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               SCREEN,
               css({
                 position: 'relative',
@@ -1600,7 +1599,7 @@ const stat = (
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     position: 'relative',
@@ -1667,7 +1666,7 @@ const gauge = (
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               SCREEN,
               css({
                 display: 'grid',
@@ -1812,7 +1811,7 @@ const barGauge = (
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               SCREEN,
               css({
                 display: 'flex',
@@ -1864,7 +1863,7 @@ const barGauge = (
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             fontSize: 'calc(13px*var(--type-scale))',
@@ -1977,7 +1976,7 @@ const laneTimeline = (
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               SCREEN,
               css({
                 display: 'flex',
@@ -2040,7 +2039,7 @@ const laneTimeline = (
                       [
                         h.Key(String(index)),
                         h.Class(
-                          cn(
+                          cx(
                             FIGURE,
                             css({
                               position: 'absolute',
@@ -2075,7 +2074,7 @@ const laneTimeline = (
           h.div(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     display: 'flex',
@@ -2177,7 +2176,7 @@ const mix = (
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               SCREEN,
               css({
                 display: 'flex',
@@ -2290,7 +2289,7 @@ const mix = (
                       h.td(
                         [
                           h.Class(
-                            cn(
+                            cx(
                               FIGURE,
                               css({
                                 paddingBlock: '0.125rem',
@@ -2304,7 +2303,7 @@ const mix = (
                       h.td(
                         [
                           h.Class(
-                            cn(
+                            cx(
                               FIGURE,
                               css({
                                 width: '3rem',
@@ -2348,7 +2347,7 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               SCREEN,
               css({
                 display: 'flex',
@@ -2367,7 +2366,7 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
                 [
                   h.Key('none'),
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         fontSize: 'calc(28px*var(--type-scale))',
@@ -2437,7 +2436,7 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             textAlign: 'right',
@@ -2487,7 +2486,7 @@ const nodeTable = (
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               SCREEN,
               css({
                 paddingInline: '0.25rem',
@@ -2527,7 +2526,7 @@ const nodeTable = (
                         [
                           h.Key(label),
                           h.Class(
-                            cn(
+                            cx(
                               css({
                                 borderBottomWidth: '1px',
                                 borderBottomStyle: 'solid',
@@ -2586,7 +2585,7 @@ const nodeTable = (
                       h.td(
                         [
                           h.Class(
-                            cn(
+                            cx(
                               cell,
                               css({
                                 fontWeight: '500',
@@ -2599,7 +2598,7 @@ const nodeTable = (
                       h.td(
                         [
                           h.Class(
-                            cn(
+                            cx(
                               cell,
                               FIGURE,
                               css({
@@ -2613,7 +2612,7 @@ const nodeTable = (
                       h.td(
                         [
                           h.Class(
-                            cn(
+                            cx(
                               cell,
                               FIGURE,
                               css({
@@ -2644,7 +2643,7 @@ const nodeTable = (
                               h.span(
                                 [
                                   h.Class(
-                                    cn(
+                                    cx(
                                       FIGURE,
                                       css({
                                         width: '2.75rem',
@@ -2663,7 +2662,7 @@ const nodeTable = (
                       h.td(
                         [
                           h.Class(
-                            cn(
+                            cx(
                               cell,
                               FIGURE,
                               css({
@@ -2677,7 +2676,7 @@ const nodeTable = (
                       h.td(
                         [
                           h.Class(
-                            cn(
+                            cx(
                               cell,
                               FIGURE,
                               css({
@@ -2691,7 +2690,7 @@ const nodeTable = (
                       h.td(
                         [
                           h.Class(
-                            cn(
+                            cx(
                               cell,
                               FIGURE,
                               css({
@@ -2712,7 +2711,7 @@ const nodeTable = (
                       h.td(
                         [
                           h.Class(
-                            cn(
+                            cx(
                               cell,
                               FIGURE,
                               css({
@@ -2798,7 +2797,7 @@ const tablePanel = (
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               SCREEN,
               css({
                 paddingInline: '0.25rem',
@@ -2814,7 +2813,7 @@ const tablePanel = (
                 [
                   h.Key('none'),
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         paddingInline: '0.5rem',
@@ -2857,7 +2856,7 @@ const tablePanel = (
                             [
                               h.Key(label),
                               h.Class(
-                                cn(
+                                cx(
                                   border,
                                   css({
                                     fontWeight: '500',
@@ -2892,7 +2891,7 @@ const tablePanel = (
                             [
                               h.Key(head[index] ?? String(index)),
                               h.Class(
-                                cn(
+                                cx(
                                   border,
                                   index === 0
                                     ? css({
@@ -2967,7 +2966,7 @@ const tablePanel = (
                                         h.span(
                                           [
                                             h.Class(
-                                              cn(
+                                              cx(
                                                 FIGURE,
                                                 css({
                                                   width: '2.75rem',
@@ -3017,7 +3016,7 @@ const barList = (
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               SCREEN,
               css({
                 display: 'flex',
@@ -3036,7 +3035,7 @@ const barList = (
                 [
                   h.Key('none'),
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         fontSize: 'calc(12px*var(--type-scale))',
@@ -3109,7 +3108,7 @@ const barList = (
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             textAlign: 'right',
@@ -3166,7 +3165,7 @@ const cashSpark = (rows: ReadonlyArray<Row>, h: HtmlBuilder<Message>): Html => {
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               SCREEN,
               css({
                 position: 'relative',
@@ -3476,7 +3475,7 @@ const incidentTimeline = (
         h.div(
           [
             h.Class(
-              cn(
+              cx(
                 SCREEN,
                 css({
                   paddingInline: '0.5rem',
@@ -3489,7 +3488,7 @@ const incidentTimeline = (
             h.span(
               [
                 h.Class(
-                  cn(
+                  cx(
                     FIGURE,
                     css({
                       fontSize: 'calc(12px*var(--type-scale))',
@@ -3671,7 +3670,7 @@ const postmortemDetail = (game: Game, postmortem: Postmortem, h: HtmlBuilder<Mes
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               SCREEN,
               css({
                 display: 'flex',
@@ -3728,7 +3727,7 @@ const postmortemDetail = (game: Game, postmortem: Postmortem, h: HtmlBuilder<Mes
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             fontSize: 'calc(12.5px*var(--type-scale))',
@@ -3756,7 +3755,7 @@ const postmortemDetail = (game: Game, postmortem: Postmortem, h: HtmlBuilder<Mes
           h.p(
             [
               h.Class(
-                cn(
+                cx(
                   css({
                     fontSize: 'calc(12px*var(--type-scale))',
                     lineHeight: '1.375',
@@ -3941,7 +3940,7 @@ const thresholdPicker = (rule: Rule, chosen: number, h: HtmlBuilder<Message>): H
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'inline-flex',
             gap: '3px',
@@ -3960,7 +3959,7 @@ const thresholdPicker = (rule: Rule, chosen: number, h: HtmlBuilder<Message>): H
           h.AriaPressed(threshold === chosen ? 'true' : 'false'),
           h.OnClick(Message.AlertRuleChosen({ rule, threshold })),
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 height: '1.25rem',
@@ -4663,7 +4662,7 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               PANEL,
               css({
                 display: 'flex',
@@ -4742,7 +4741,7 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               PANEL,
               css({
                 display: 'flex',
@@ -4780,7 +4779,7 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.div(
             [
               h.Class(
-                cn(
+                cx(
                   css({
                     display: 'flex',
                     gap: '3px',
@@ -4803,7 +4802,7 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                     }),
                   ),
                   h.Class(
-                    cn(
+                    cx(
                       css({
                         height: '1.5rem',
                         borderRadius: 'md',
@@ -4832,7 +4831,7 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     display: 'flex',
@@ -4880,7 +4879,7 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               PANEL,
               css({
                 padding: '0.25rem',
@@ -5050,7 +5049,7 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
         h.AriaPressed(on ? 'true' : 'false'),
         h.OnClick(click),
         h.Class(
-          cn(
+          cx(
             css({
               display: 'flex',
               height: '1.5rem',
@@ -5300,7 +5299,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             [
               h.Key('empty'),
               h.Class(
-                cn(
+                cx(
                   PANEL,
                   css({
                     gridColumn: 'span 24 / span 24',
@@ -5539,7 +5538,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                     h.div(
                       [
                         h.Class(
-                          cn(
+                          cx(
                             SCREEN,
                             css({
                               display: 'flex',
@@ -5558,7 +5557,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                         h.span(
                           [
                             h.Class(
-                              cn(
+                              cx(
                                 FIGURE,
                                 css({
                                   fontSize: 'calc(30px*var(--type-scale))',
@@ -5672,7 +5671,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.Role('region'),
           h.AriaLabel(t.dashboard.dashboardScrollForTheCompanyAnd),
           h.Class(
-            cn(
+            cx(
               css({
                 minHeight: '0',
                 flex: '1 1 0%',

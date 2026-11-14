@@ -6,7 +6,7 @@ import { Check, RotateCcw, X } from 'lucide'
 import { icon } from '@quorum/ui/primitives/icon'
 import { langOf } from '../i18n/lang.ts'
 import type { Locale } from '../i18n/locale.ts'
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The quizzes on a page: the option the reader chose for each, by `<page path>#<occurrence>`,
    counting from 1. A check, not a score: answers last until the page reloads. */
@@ -119,7 +119,7 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
               h.AriaPressed(picked ? 'true' : 'false'),
               h.OnClick(Message.Answered({ key: quiz.key, choice })),
               h.Class(
-                cn(
+                cx(
                   css({
                     display: 'flex',
                     width: '100%',
@@ -168,7 +168,7 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       css({
                         display: 'grid',
                         width: '1.25rem',

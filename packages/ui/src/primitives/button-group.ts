@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 import { button, type ButtonConfig, type ButtonSize, type ButtonVariant } from './button'
@@ -113,7 +113,7 @@ export const buttonGroup = <M>(
   return h.div(
     [
       h.Role('group'),
-      h.Class(cn(buttonGroupClass, buttonGroupOrientationClasses[orientation], config.className)),
+      h.Class(cx(buttonGroupClass, buttonGroupOrientationClasses[orientation], config.className)),
       h.DataAttribute('slot', 'button-group'),
       h.DataAttribute('orientation', orientation),
     ],
@@ -129,7 +129,7 @@ export const buttonGroupText = <M>(
   h.div(
     [
       h.DataAttribute('slot', 'button-group-text'),
-      h.Class(cn(buttonGroupTextClass, config.className)),
+      h.Class(cx(buttonGroupTextClass, config.className)),
     ],
     children,
   )
@@ -151,7 +151,7 @@ export const buttonGroupSeparator = <M>(config: StyleConfig, h: HtmlBuilder<M>):
       h.DataAttribute('slot', 'button-group-separator'),
       h.DataAttribute('orientation', orientation),
       h.DataAttribute(orientation, ''),
-      h.Class(cn(separatorClass, buttonGroupSeparatorClass, config.className)),
+      h.Class(cx(separatorClass, buttonGroupSeparatorClass, config.className)),
     ],
     [],
   )
@@ -168,7 +168,7 @@ export const buttonGroupItem = <M>(
       ...config,
       size: config.size ?? ('default' satisfies ButtonSize),
       variant: config.variant ?? ('outline' satisfies ButtonVariant),
-      className: cn(config.className),
+      className: cx(config.className),
     },
     label,
     h,

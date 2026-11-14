@@ -21,7 +21,6 @@ import { Message } from '@/game/message.ts'
 import type { Model } from '@/game/model.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
-import { cn } from '@/lib/utils'
 import { EYEBROW, FIGURE, WELL } from '@quorum/ui/game/bits'
 import { frameworkPickerView, runtimePickerView } from './stack-picker.ts'
 
@@ -140,7 +139,7 @@ export const segmented = (
   h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'grid',
             gridAutoRows: 'fr',
@@ -385,7 +384,7 @@ export const stack = (
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             width: '3rem',
@@ -569,7 +568,7 @@ export const nodeLink = (
       h.OnClick(Message.RevealNode({ nodeId: node.id })),
       h.AriaLabel(t.inspectorShared.openNode(nodeTitle(t, game, node))),
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             minWidth: '0',

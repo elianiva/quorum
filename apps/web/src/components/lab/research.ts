@@ -69,7 +69,6 @@ import { POOL_ICONS, POOL_ORDER, poolColor, recipeOf } from '@quorum/ui/game/poo
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
 import { badge, type BadgeVariant } from '@quorum/ui/primitives/badge'
-import { cn } from '@/lib/utils'
 import { EYEBROW, FIGURE, FLOAT, PANEL, SCROLL, insightChip, meter } from '@quorum/ui/game/bits'
 import { LOOKS, TRACK_ICONS, colorOf, researchMark } from '@quorum/ui/game/research-marks'
 import {
@@ -159,7 +158,7 @@ const price = (entry: ResearchDef, state: State, grey: boolean, h: HtmlBuilder<M
     : h.span(
         [
           h.Class(
-            cn(
+            cx(
               css({
                 display: 'flex',
                 width: 'fit-content',
@@ -218,7 +217,7 @@ const stepMeter = (step: number, h: HtmlBuilder<Message>): Html =>
         [
           h.Key(String(index)),
           h.Class(
-            cn(
+            cx(
               css({
                 height: '0.375rem',
                 width: '0.75rem',
@@ -316,7 +315,7 @@ const leverRow = (
           h.p(
             [
               h.Class(
-                cn(
+                cx(
                   css({
                     minWidth: '0',
                     flex: '1 1 0%',
@@ -381,7 +380,7 @@ const leverRow = (
       h.p(
         [
           h.Class(
-            cn(
+            cx(
               css({
                 marginTop: '0.25rem',
                 fontSize: 'calc(11px*var(--type-scale))',
@@ -528,7 +527,7 @@ const costRows = (
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 marginTop: '0.5rem',
@@ -562,7 +561,7 @@ const costRows = (
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       css({
                         marginLeft: 'auto',
                       }),
@@ -581,7 +580,7 @@ const costRows = (
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       css({
                         width: '60px',
                         textAlign: 'right',
@@ -711,7 +710,7 @@ const requirement = (
             : h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         fontSize: 'calc(11.5px*var(--type-scale))',
@@ -848,7 +847,7 @@ const face = (
         h.span(
           [
             h.Class(
-              cn(
+              cx(
                 css({
                   display: 'flex',
                   alignItems: 'flex-start',
@@ -873,7 +872,7 @@ const face = (
             h.span(
               [
                 h.Class(
-                  cn(
+                  cx(
                     css({
                       wordBreak: 'auto-phrase',
                     }),
@@ -1004,7 +1003,7 @@ const node = (model: Model, place: Placed, focused: boolean, h: HtmlBuilder<Mess
     height: `${size.h}px`,
   })
   const shape = h.Class(
-    cn(
+    cx(
       css({
         position: 'absolute',
         display: 'flex',
@@ -1103,7 +1102,7 @@ const wires = (model: Model, layout: Layout, focus: ResearchDef, h: HtmlBuilder<
           h.StrokeLinecap('round'),
           h.StrokeLinejoin('round'),
           h.Class(
-            cn(
+            cx(
               lit
                 ? css({
                     stroke: 'var(--primary-strong)',
@@ -1148,7 +1147,7 @@ const progressBar = (
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             alignItems: 'center',
@@ -1192,7 +1191,7 @@ const progressBar = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 fontSize: 'calc(10.5px*var(--type-scale))',
@@ -1246,7 +1245,7 @@ const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
       [
         h.Key(`era-${band.era}`),
         h.Class(
-          cn(
+          cx(
             css({
               position: 'absolute',
               borderTopWidth: '1px',
@@ -1280,7 +1279,7 @@ const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
         h.span(
           [
             h.Class(
-              cn(
+              cx(
                 EYEBROW,
                 css({
                   position: 'absolute',
@@ -1727,7 +1726,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(11px*var(--type-scale))',
@@ -1745,7 +1744,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
           ...DragAndDrop.droppable(STUDY_QUEUE, t.research.studyQueue),
           // Rows ring together while a drop lands, inset from the panel edge.
           h.Class(
-            cn(
+            cx(
               css({
                 display: 'flex',
                 minHeight: '0',
@@ -1783,7 +1782,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                 h.Key(item.id),
                 ...offset,
                 h.Class(
-                  cn(
+                  cx(
                     css({
                       display: 'flex',
                       alignItems: 'center',
@@ -1914,7 +1913,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                       [
                         ...(stall ? [h.Title(stallReasonIn(t, stall))] : []),
                         h.Class(
-                          cn(
+                          cx(
                             FIGURE,
                             css({
                               marginLeft: 'auto',
@@ -1997,7 +1996,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                       h.AriaHidden(true),
                       h.Style(style),
                       h.Class(
-                        cn(
+                        cx(
                           FLOAT,
                           css({
                             pointerEvents: 'none',
@@ -2557,7 +2556,7 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
               isDisabled: !(state === 'buy' || queueable || (state === 'saving' && queued > 0)),
               size: 'lg',
               variant: state === 'buy' || queueable || queued > 0 ? 'default' : 'outline',
-              className: cn(
+              className: cx(
                 FIGURE,
                 css({
                   minWidth: '0',
@@ -2624,7 +2623,7 @@ const poolCell = (
       h.DataAttribute('deck-pool', pool),
       h.Title(`${insightName(t, pool)} ${t.research.outOf(compact(held), compact(cap))}`),
       h.Class(
-        cn(
+        cx(
           css({
             position: 'relative',
             display: 'flex',
@@ -2684,7 +2683,7 @@ const poolCell = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 fontSize: 'calc(11px*var(--type-scale))',
@@ -2717,7 +2716,7 @@ const poolCell = (
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   css({
                     display: 'block',
                     height: '100%',
@@ -2757,7 +2756,7 @@ const pinnedChip = (game: Game, pool: InsightPool, need: number, h: HtmlBuilder<
       h.Title(`${insightName(t, pool)} ${t.research.outOf(heldLabel, needLabel)}`),
       h.AriaLabel(`${insightName(t, pool)} ${t.research.outOf(heldLabel, needLabel)}`),
       h.Class(
-        cn(
+        cx(
           FIGURE,
           css({
             display: 'inline-flex',
@@ -2874,7 +2873,7 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               PANEL,
               css({
                 display: 'flex',

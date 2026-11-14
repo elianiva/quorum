@@ -1,4 +1,4 @@
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
@@ -108,7 +108,7 @@ const cardContainer = <M>(
 ): Html =>
   h.div(
     [
-      h.Class(cn(cardClass, config.className)),
+      h.Class(cx(cardClass, config.className)),
       h.DataAttribute('slot', 'card'),
       h.DataAttribute('size', config.size ?? 'default'),
     ],
@@ -122,7 +122,7 @@ const cardHeader = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(cardHeaderClass, config.className)), h.DataAttribute('slot', 'card-header')],
+    [h.Class(cx(cardHeaderClass, config.className)), h.DataAttribute('slot', 'card-header')],
     children,
   )
 
@@ -132,7 +132,7 @@ const cardTitle = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(cardTitleClass, config.className)), h.DataAttribute('slot', 'card-title')],
+    [h.Class(cx(cardTitleClass, config.className)), h.DataAttribute('slot', 'card-title')],
     children,
   )
 
@@ -143,7 +143,7 @@ const cardDescription = <M>(
 ): Html =>
   h.div(
     [
-      h.Class(cn(cardDescriptionClass, config.className)),
+      h.Class(cx(cardDescriptionClass, config.className)),
       h.DataAttribute('slot', 'card-description'),
     ],
     children,
@@ -156,7 +156,7 @@ const cardAction = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(cardActionClass, config.className)), h.DataAttribute('slot', 'card-action')],
+    [h.Class(cx(cardActionClass, config.className)), h.DataAttribute('slot', 'card-action')],
     children,
   )
 
@@ -166,7 +166,7 @@ const cardContent = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(cardContentClass, config.className)), h.DataAttribute('slot', 'card-content')],
+    [h.Class(cx(cardContentClass, config.className)), h.DataAttribute('slot', 'card-content')],
     children,
   )
 
@@ -176,7 +176,7 @@ const cardFooter = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(cardFooterClass, config.className)), h.DataAttribute('slot', 'card-footer')],
+    [h.Class(cx(cardFooterClass, config.className)), h.DataAttribute('slot', 'card-footer')],
     children,
   )
 

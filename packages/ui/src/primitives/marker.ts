@@ -1,4 +1,4 @@
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
@@ -87,7 +87,7 @@ const markerContainer = <M>(
 ): Html =>
   h.div(
     [
-      h.Class(cn(markerClass, markerVariants[config.variant ?? 'default'], config.className)),
+      h.Class(cx(markerClass, markerVariants[config.variant ?? 'default'], config.className)),
       h.DataAttribute('slot', 'marker'),
       h.DataAttribute('variant', config.variant ?? 'default'),
     ],
@@ -101,7 +101,7 @@ const markerIcon = <M>(
 ): Html =>
   h.span(
     [
-      h.Class(cn(markerIconClass, config.className)),
+      h.Class(cx(markerIconClass, config.className)),
       h.AriaHidden(true),
       h.DataAttribute('slot', 'marker-icon'),
     ],
@@ -114,7 +114,7 @@ const markerContent = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.span(
-    [h.Class(cn(markerContentClass, config.className)), h.DataAttribute('slot', 'marker-content')],
+    [h.Class(cx(markerContentClass, config.className)), h.DataAttribute('slot', 'marker-content')],
     children,
   )
 

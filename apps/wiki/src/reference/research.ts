@@ -32,7 +32,7 @@ import {
   type Lang,
 } from './shared.ts'
 import { componentPath } from './components.ts'
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* One page per Research item, and the Research tree as the hub. Layout and marks are the game's. */
 
@@ -221,7 +221,7 @@ const tree = (l: Lang, h: H, full = false): Html => {
     [
       // column-reverse opens the box scrolled to the bottom, where the Garage Era and the roots are.
       h.Class(
-        cn(
+        cx(
           SCROLL,
           cx(
             css({
@@ -283,7 +283,7 @@ const tree = (l: Lang, h: H, full = false): Html => {
                   [
                     h.Href(eraPath(band.era)),
                     h.Class(
-                      cn(
+                      cx(
                         EYEBROW,
                         css({
                           position: 'absolute',
@@ -553,7 +553,7 @@ const byTrack = (l: Lang, h: H): Html =>
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         marginLeft: 'auto',

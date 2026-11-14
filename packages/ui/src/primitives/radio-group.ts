@@ -1,4 +1,4 @@
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { RadioGroup as FoldkitRadioGroup } from '@foldkit/ui'
 import type { Option } from 'effect/Option'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -295,7 +295,7 @@ const defaultOptionRow = <M, Value extends string>(
     return h.label(
       [
         h.DataAttribute('slot', 'field-label'),
-        h.Class(cn(labelClass, fieldLabelClass, optionClass)),
+        h.Class(cx(labelClass, fieldLabelClass, optionClass)),
       ],
       [
         h.div(
@@ -305,7 +305,7 @@ const defaultOptionRow = <M, Value extends string>(
             h.DataAttribute('orientation', 'horizontal'),
             ...(isDisabled ? [h.DataAttribute('disabled', 'true')] : []),
             ...(isInvalid ? [h.DataAttribute('invalid', 'true')] : []),
-            h.Class(cn(fieldBaseClass, fieldOrientationClasses.horizontal)),
+            h.Class(cx(fieldBaseClass, fieldOrientationClasses.horizontal)),
           ],
           [
             h.div(
@@ -323,7 +323,7 @@ const defaultOptionRow = <M, Value extends string>(
                           ...info.description,
                           h.DataAttribute('slot', 'field-description'),
                           h.Class(
-                            cn(
+                            cx(
                               fieldDescriptionClass,
                               css({ '[dir="rtl"] &': { textAlign: 'right' } }),
                             ),
@@ -347,7 +347,7 @@ const defaultOptionRow = <M, Value extends string>(
       h.DataAttribute('slot', optionLayout === 'field' ? 'field-label' : 'radio-group-item-label'),
       h.Class(
         optionLayout === 'field'
-          ? cn(
+          ? cx(
               labelClass,
               fieldLabelClass,
               descriptionText === undefined
@@ -369,7 +369,7 @@ const defaultOptionRow = <M, Value extends string>(
         h.DataAttribute('orientation', 'horizontal'),
         ...(isDisabled ? [h.DataAttribute('disabled', 'true')] : []),
         ...(isInvalid ? [h.DataAttribute('invalid', 'true')] : []),
-        h.Class(cn(fieldBaseClass, fieldOrientationClasses.horizontal, optionClass)),
+        h.Class(cx(fieldBaseClass, fieldOrientationClasses.horizontal, optionClass)),
       ],
       [
         control,
@@ -384,7 +384,7 @@ const defaultOptionRow = <M, Value extends string>(
                     ...info.description,
                     h.DataAttribute('slot', 'field-description'),
                     h.Class(
-                      cn(fieldDescriptionClass, css({ '[dir="rtl"] &': { textAlign: 'right' } })),
+                      cx(fieldDescriptionClass, css({ '[dir="rtl"] &': { textAlign: 'right' } })),
                     ),
                   ],
                   [descriptionText],
@@ -398,7 +398,7 @@ const defaultOptionRow = <M, Value extends string>(
   return h.label(
     [
       h.Class(
-        cn(
+        cx(
           descriptionText === undefined
             ? css({
                 display: 'flex',
@@ -478,7 +478,7 @@ export const styledViewInputs = <M, Value extends string = string>(
           ...group,
           h.DataAttribute('slot', 'radio-group'),
           h.Class(
-            cn(
+            cx(
               isHorizontal ? radioGroupHorizontalClass : radioGroupVerticalClass,
               viewInputs.groupClass,
             ),
@@ -494,7 +494,7 @@ export const styledViewInputs = <M, Value extends string = string>(
                   ...(option.isDisabled ? [h.Tabindex(-1)] : []),
                   ...(viewInputs.isInvalid ? [h.Attribute('aria-invalid', 'true')] : []),
                   h.DataAttribute('slot', 'radio-group-item'),
-                  h.Class(cn(radioOptionClass, viewInputs.optionClass)),
+                  h.Class(cx(radioOptionClass, viewInputs.optionClass)),
                 ],
                 [viewInputs.option(option.value, option, render, h)],
               )

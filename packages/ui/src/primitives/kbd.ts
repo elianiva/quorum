@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
@@ -48,7 +48,7 @@ const kbdContainer = <M>(
   children: ReadonlyArray<Child>,
   h: HtmlBuilder<M>,
 ): Html =>
-  h.kbd([h.Class(cn(kbdClass, config.className)), h.DataAttribute('slot', 'kbd')], children)
+  h.kbd([h.Class(cx(kbdClass, config.className)), h.DataAttribute('slot', 'kbd')], children)
 
 const kbdGroup = <M>(
   config: StyleConfig,
@@ -56,7 +56,7 @@ const kbdGroup = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.kbd(
-    [h.Class(cn(kbdGroupClass, config.className)), h.DataAttribute('slot', 'kbd-group')],
+    [h.Class(cx(kbdGroupClass, config.className)), h.DataAttribute('slot', 'kbd-group')],
     children,
   )
 

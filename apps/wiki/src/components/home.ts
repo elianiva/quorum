@@ -24,7 +24,7 @@ import { componentBadge } from '../reference/components.ts'
 import { pathCard } from './path-nav.ts'
 import { projectCard } from './project.ts'
 import { quadrantBadge } from './quadrant.ts'
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The home page: what the wiki is, the guided paths, then the four kinds of page and the catalog. */
 
@@ -200,7 +200,7 @@ const countList = (
           h.dd(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: '32px',
@@ -247,7 +247,7 @@ const grid = (columns: string, items: ReadonlyArray<Html>, h: H): Html =>
   h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'grid',
             gap: '1px',
@@ -462,7 +462,7 @@ const flow = (h: H): Html =>
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: '11px',

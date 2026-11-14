@@ -7,7 +7,7 @@ import type { Message } from '../main.ts'
 import { proseAt } from '../content.ts'
 import { headingsOf, prose } from '../prose.ts'
 import { slug, type Heading, type Page, type View } from '../page.ts'
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 export type { Lang, Title }
 
@@ -167,7 +167,7 @@ export const factsBox = (
               h.dd(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         minWidth: '0',
@@ -384,7 +384,7 @@ export const table = (
                     [
                       h.Key(header),
                       h.Class(
-                        cn(
+                        cx(
                           css({
                             borderBottomWidth: '1px',
                             borderBottomStyle: 'solid',
@@ -430,14 +430,14 @@ export const table = (
                   h.td(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           css({
                             paddingInline: '0.75rem',
                             paddingBlock: '0.5rem',
                             verticalAlign: 'top',
                           }),
                           figures.includes(index) &&
-                            cn(
+                            cx(
                               FIGURE,
                               css({
                                 textAlign: 'right',

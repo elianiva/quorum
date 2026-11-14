@@ -51,7 +51,6 @@ import { Message } from '@/game/message.ts'
 import { boardSandbox, type Folder, type Mail, type MailLabel, type Model } from '@/game/model.ts'
 import { isPhone } from '@/game/viewport.ts'
 import { icon } from '@quorum/ui/primitives/icon'
-import { cn } from '@/lib/utils'
 import { EYEBROW, FIGURE, FLOAT, PANEL, SCROLL, WELL, groupBadge } from '@quorum/ui/game/bits'
 
 /** Where a button really goes, in words of the builder's language (a trap's names an off-site address). */
@@ -135,7 +134,7 @@ const entryOf = (
         ? h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(10.5px*var(--type-scale))',
@@ -264,7 +263,7 @@ export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       EYEBROW,
                       css({
                         display: 'flex',
@@ -313,7 +312,7 @@ export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               WELL,
               css({
                 paddingInline: '0.75rem',
@@ -473,7 +472,7 @@ export const mailQueueRow = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   EYEBROW,
                   css({
                     overflow: 'hidden',
@@ -590,7 +589,7 @@ const inboxToggle = (
             [
               h.Key(`unread-${unread}`),
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   cx(
                     css({
@@ -650,7 +649,7 @@ const row = (
           h.AriaCurrent(open ? 'true' : 'false'),
           h.OnClick(Message.InboxChanged({ message: InboxMessage.Opened({ id: mail.id }) })),
           h.Class(
-            cn(
+            cx(
               css({
                 position: 'relative',
                 display: 'flex',
@@ -684,7 +683,7 @@ const row = (
             : h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       css({
                         position: 'absolute',
                         insetBlock: '0',
@@ -763,7 +762,7 @@ const row = (
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           css({
                             flex: '1 1 0%',
                             overflow: 'hidden',
@@ -789,7 +788,7 @@ const row = (
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           EYEBROW,
                           css({
                             flexShrink: '0',
@@ -806,7 +805,7 @@ const row = (
                     ? h.span(
                         [
                           h.Class(
-                            cn(
+                            cx(
                               FIGURE,
                               css({
                                 fontSize: 'calc(10.5px*var(--type-scale))',
@@ -821,7 +820,7 @@ const row = (
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             fontSize: 'calc(10.5px*var(--type-scale))',
@@ -837,7 +836,7 @@ const row = (
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       css({
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -939,7 +938,7 @@ const digestLine = (mail: Mail, h: HtmlBuilder<Message>): Html => {
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         fontSize: 'calc(10.5px*var(--type-scale))',
@@ -1003,7 +1002,7 @@ const digestRow = (
           h.AriaCurrent(open ? 'true' : 'false'),
           h.OnClick(Message.InboxChanged({ message: InboxMessage.Opened({ id: DIGEST_ID }) })),
           h.Class(
-            cn(
+            cx(
               css({
                 position: 'relative',
                 display: 'flex',
@@ -1084,7 +1083,7 @@ const digestRow = (
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           css({
                             flex: '1 1 0%',
                             overflow: 'hidden',
@@ -1108,7 +1107,7 @@ const digestRow = (
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             fontSize: 'calc(10.5px*var(--type-scale))',
@@ -1122,7 +1121,7 @@ const digestRow = (
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             fontSize: 'calc(10.5px*var(--type-scale))',
@@ -1138,7 +1137,7 @@ const digestRow = (
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       css({
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -1183,7 +1182,7 @@ const labelChip = (
       h.AriaCurrent(active ? 'true' : 'false'),
       h.OnClick(Message.InboxChanged({ message: InboxMessage.LabelChosen({ label }) })),
       h.Class(
-        cn(
+        cx(
           cx(
             css({
               display: 'flex',
@@ -1226,7 +1225,7 @@ const labelChip = (
         : h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(10px*var(--type-scale))',
@@ -1253,7 +1252,7 @@ const folderTab = (
       h.AriaCurrent(active ? 'true' : 'false'),
       h.OnClick(Message.InboxChanged({ message: InboxMessage.FolderChosen({ folder }) })),
       h.Class(
-        cn(
+        cx(
           cx(
             css({
               display: 'flex',
@@ -1292,7 +1291,7 @@ const folderTab = (
         ? h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(10.5px*var(--type-scale))',
@@ -1354,7 +1353,7 @@ const digestLetter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Me
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               css({
                 display: 'flex',
                 minHeight: '0',
@@ -1551,7 +1550,7 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               css({
                 display: 'flex',
                 minHeight: '0',
@@ -1589,7 +1588,7 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                       h.Rel('noreferrer noopener'),
                       h.Title(t.inbox.opensTheGlossaryOnThisAdvisory),
                       h.Class(
-                        cn(
+                        cx(
                           buttonBase,
                           buttonVariants.ghost,
                           buttonSizes.sm,
@@ -1712,7 +1711,7 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             overflow: 'hidden',
@@ -2159,7 +2158,7 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.div(
             [
               h.Class(
-                cn(
+                cx(
                   css({
                     display: 'flex',
                     maxWidth: '100%',
@@ -2224,7 +2223,7 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   h.AriaPressed(model.board.inbox.filter ? 'true' : 'false'),
                   h.OnClick(Message.InboxChanged({ message: InboxMessage.FilterToggled() })),
                   h.Class(
-                    cn(
+                    cx(
                       cx(
                         css({
                           display: 'flex',
@@ -2308,7 +2307,7 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.div(
         [
           h.Class(
-            cn(
+            cx(
               css({
                 display: 'grid',
                 minHeight: '0',
@@ -2386,7 +2385,7 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 [
                   h.AriaLabel(t.inbox.mail),
                   h.Class(
-                    cn(
+                    cx(
                       css({
                         display: 'flex',
                         minHeight: '0',

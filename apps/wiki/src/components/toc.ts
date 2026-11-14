@@ -3,7 +3,7 @@ import { localeOf } from '../i18n/builder.ts'
 import { langOf } from '../i18n/lang.ts'
 import type { Message } from '../main.ts'
 import type { Page } from '../page.ts'
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The right rail: the page's headings. */
 
@@ -57,7 +57,7 @@ export const toc = (page: Page, h: HtmlBuilder<Message>): Html => {
                     [
                       h.Href(`#${heading.id}`),
                       h.Class(
-                        cn(
+                        cx(
                           css({
                             marginLeft: '-1px',
                             display: 'block',

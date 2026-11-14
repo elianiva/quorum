@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { BACKEND_KINDS, KINDS, REQUEST_KINDS, type Kind } from '@quorum/simulation/catalog'
 
@@ -38,7 +38,7 @@ export const packetMark = <M>(kind: Kind, size: number, h: HtmlBuilder<M>): Html
   return h.span(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'inline-block',
             flexShrink: '0',

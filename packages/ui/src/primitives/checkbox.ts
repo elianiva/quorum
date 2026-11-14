@@ -1,4 +1,4 @@
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { Checkbox as FoldkitCheckbox } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
@@ -117,7 +117,7 @@ export const checkbox = <M>(config: CheckboxConfig<M>, h: HtmlBuilder<M>): Html 
         h.div(
           [
             h.Class(
-              cn(
+              cx(
                 css({
                   display: 'flex',
                   flexDirection: 'column',
@@ -143,7 +143,7 @@ export const checkbox = <M>(config: CheckboxConfig<M>, h: HtmlBuilder<M>): Html 
                   [
                     ...attributes.checkbox,
                     h.DataAttribute('slot', 'checkbox'),
-                    h.Class(cn(checkboxClass, config.className)),
+                    h.Class(cx(checkboxClass, config.className)),
                   ],
                   config.isChecked || config.isIndeterminate === true
                     ? [
@@ -173,7 +173,7 @@ export const checkbox = <M>(config: CheckboxConfig<M>, h: HtmlBuilder<M>): Html 
                   [
                     ...attributes.label,
                     h.Class(
-                      cn(
+                      cx(
                         css({
                           fontSize: 'calc(0.875rem * var(--type-scale))',
                           fontWeight: '500',
@@ -198,7 +198,7 @@ export const checkbox = <M>(config: CheckboxConfig<M>, h: HtmlBuilder<M>): Html 
                   [
                     ...attributes.description,
                     h.Class(
-                      cn(
+                      cx(
                         css({
                           fontSize: 'calc(0.875rem * var(--type-scale))',
                           lineHeight: 'calc(1.25 / 0.875)',

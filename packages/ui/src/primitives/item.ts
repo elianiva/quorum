@@ -1,4 +1,4 @@
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
@@ -206,7 +206,7 @@ const itemGroup = <M>(
   h.div(
     [
       h.Role('list'),
-      h.Class(cn(itemGroupClass, config.className)),
+      h.Class(cx(itemGroupClass, config.className)),
       h.DataAttribute('slot', 'item-group'),
     ],
     children,
@@ -215,7 +215,7 @@ const itemGroup = <M>(
 const itemSeparator = <M>(config: ItemSeparatorConfig, h: HtmlBuilder<M>): Html =>
   h.div(
     [
-      h.Class(cn(itemSeparatorClass, config.className)),
+      h.Class(cx(itemSeparatorClass, config.className)),
       h.Role('separator'),
       h.AriaOrientation(config.orientation ?? 'horizontal'),
       h.DataAttribute('slot', 'item-separator'),
@@ -233,7 +233,7 @@ const itemContainer = <M>(
   h.div(
     [
       h.Class(
-        cn(
+        cx(
           itemClass,
           itemVariants[config.variant ?? 'default'],
           itemSizes[config.size ?? 'default'],
@@ -254,7 +254,7 @@ const itemMedia = <M>(
 ): Html =>
   h.div(
     [
-      h.Class(cn(itemMediaClass, itemMediaVariants[config.variant ?? 'default'], config.className)),
+      h.Class(cx(itemMediaClass, itemMediaVariants[config.variant ?? 'default'], config.className)),
       h.DataAttribute('slot', 'item-media'),
       h.DataAttribute('variant', config.variant ?? 'default'),
     ],
@@ -267,7 +267,7 @@ const itemContent = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(itemContentClass, config.className)), h.DataAttribute('slot', 'item-content')],
+    [h.Class(cx(itemContentClass, config.className)), h.DataAttribute('slot', 'item-content')],
     children,
   )
 
@@ -277,7 +277,7 @@ const itemTitle = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(itemTitleClass, config.className)), h.DataAttribute('slot', 'item-title')],
+    [h.Class(cx(itemTitleClass, config.className)), h.DataAttribute('slot', 'item-title')],
     children,
   )
 
@@ -288,7 +288,7 @@ const itemDescription = <M>(
 ): Html =>
   h.p(
     [
-      h.Class(cn(itemDescriptionClass, config.className)),
+      h.Class(cx(itemDescriptionClass, config.className)),
       h.DataAttribute('slot', 'item-description'),
     ],
     children,
@@ -300,7 +300,7 @@ const itemActions = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(itemActionsClass, config.className)), h.DataAttribute('slot', 'item-actions')],
+    [h.Class(cx(itemActionsClass, config.className)), h.DataAttribute('slot', 'item-actions')],
     children,
   )
 
@@ -310,7 +310,7 @@ const itemHeader = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(itemHeaderClass, config.className)), h.DataAttribute('slot', 'item-header')],
+    [h.Class(cx(itemHeaderClass, config.className)), h.DataAttribute('slot', 'item-header')],
     children,
   )
 
@@ -320,7 +320,7 @@ const itemFooter = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(itemFooterClass, config.className)), h.DataAttribute('slot', 'item-footer')],
+    [h.Class(cx(itemFooterClass, config.className)), h.DataAttribute('slot', 'item-footer')],
     children,
   )
 

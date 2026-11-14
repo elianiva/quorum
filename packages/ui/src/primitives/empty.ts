@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
@@ -100,7 +100,7 @@ const emptyContainer = <M>(
   children: ReadonlyArray<Child>,
   h: HtmlBuilder<M>,
 ): Html =>
-  h.div([h.Class(cn(emptyClass, config.className)), h.DataAttribute('slot', 'empty')], children)
+  h.div([h.Class(cx(emptyClass, config.className)), h.DataAttribute('slot', 'empty')], children)
 
 const emptyHeader = <M>(
   config: StyleConfig,
@@ -108,7 +108,7 @@ const emptyHeader = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(emptyHeaderClass, config.className)), h.DataAttribute('slot', 'empty-header')],
+    [h.Class(cx(emptyHeaderClass, config.className)), h.DataAttribute('slot', 'empty-header')],
     children,
   )
 
@@ -120,7 +120,7 @@ const emptyMedia = <M>(
   h.div(
     [
       h.Class(
-        cn(emptyMediaClass, emptyMediaVariants[config.variant ?? 'default'], config.className),
+        cx(emptyMediaClass, emptyMediaVariants[config.variant ?? 'default'], config.className),
       ),
       h.DataAttribute('slot', 'empty-icon'),
       h.DataAttribute('variant', config.variant ?? 'default'),
@@ -134,7 +134,7 @@ const emptyTitle = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(emptyTitleClass, config.className)), h.DataAttribute('slot', 'empty-title')],
+    [h.Class(cx(emptyTitleClass, config.className)), h.DataAttribute('slot', 'empty-title')],
     children,
   )
 
@@ -145,7 +145,7 @@ const emptyDescription = <M>(
 ): Html =>
   h.div(
     [
-      h.Class(cn(emptyDescriptionClass, config.className)),
+      h.Class(cx(emptyDescriptionClass, config.className)),
       h.DataAttribute('slot', 'empty-description'),
     ],
     children,
@@ -157,7 +157,7 @@ const emptyContent = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(emptyContentClass, config.className)), h.DataAttribute('slot', 'empty-content')],
+    [h.Class(cx(emptyContentClass, config.className)), h.DataAttribute('slot', 'empty-content')],
     children,
   )
 

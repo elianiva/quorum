@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { Effect, Option, Queue, Schema as S, Stream } from 'effect'
 import * as Command from 'foldkit/command'
 import type { Html } from 'foldkit/html'
@@ -574,7 +574,7 @@ export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h
     h.div(
       [
         h.Id(scrollbarId(model.id, axis)),
-        h.Class(cn(scrollAreaScrollbarClass)),
+        h.Class(cx(scrollAreaScrollbarClass)),
         h.DataAttribute('slot', 'scroll-area-scrollbar'),
         h.DataAttribute('orientation', axis),
         h.DataAttribute(axis, ''),
@@ -586,7 +586,7 @@ export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h
       [
         h.div(
           [
-            h.Class(cn(scrollAreaThumbClass)),
+            h.Class(cx(scrollAreaThumbClass)),
             h.DataAttribute('slot', 'scroll-area-thumb'),
             h.DataAttribute('orientation', axis),
             h.DataAttribute(axis, ''),
@@ -604,7 +604,7 @@ export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h
 
   return h.div(
     [
-      h.Class(cn(scrollAreaClass, viewInputs.className)),
+      h.Class(cx(scrollAreaClass, viewInputs.className)),
       h.DataAttribute('slot', 'scroll-area'),
       h.Role('presentation'),
     ],
@@ -612,7 +612,7 @@ export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h
       h.div(
         [
           h.Id(viewportId(model.id)),
-          h.Class(cn(scrollAreaViewportClass)),
+          h.Class(cx(scrollAreaViewportClass)),
           h.DataAttribute('slot', 'scroll-area-viewport'),
           h.Role('presentation'),
           // Keep non-scrollable viewports out of tab order (upstream parity).

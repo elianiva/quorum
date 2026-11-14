@@ -14,7 +14,6 @@ import { placingOf, type Model } from '@/game/model.ts'
 import { dockGroups, dockItems } from '@/game/reveal.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { Kbd } from '@quorum/ui/primitives/kbd'
-import { cn } from '@/lib/utils'
 import { FIGURE, GROUP_TEXT, PANEL, groupBadge, tool } from '@quorum/ui/game/bits'
 import { partOf } from '@/game/parts.ts'
 import { partCells } from './part-row.ts'
@@ -53,7 +52,7 @@ const row = (model: Model, type: ComponentId, index: number, h: HtmlBuilder<Mess
       h.Type('button'),
       h.OnClick(Message.PlacingChosen({ type })),
       h.Class(
-        cn(
+        cx(
           cx(
             css({
               display: 'flex',
@@ -221,7 +220,7 @@ const inboxTab = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.AriaPressed(active ? 'true' : 'false'),
       h.OnClick(Message.PanelOpened({ panel: active ? 'none' : 'inbox' })),
       h.Class(
-        cn(
+        cx(
           cx(
             css({
               position: 'relative',
@@ -265,7 +264,7 @@ const inboxTab = (model: Model, h: HtmlBuilder<Message>): Html => {
             [
               h.Key(`unread-${unread}`),
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   cx(
                     css({
@@ -389,7 +388,7 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
                       // The offset is a class, not an inline style: a style set after the element
                       // is inserted would transition from the left edge.
                       h.Class(
-                        cn(
+                        cx(
                           cx(
                             css({
                               pointerEvents: 'none',
@@ -432,7 +431,7 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
                     h.AriaPressed(group.key === open ? 'true' : 'false'),
                     h.OnClick(Message.BuildGroupChosen({ group: group.key })),
                     h.Class(
-                      cn(
+                      cx(
                         cx(
                           css({
                             position: 'relative',
@@ -466,7 +465,7 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
                     h.span(
                       [
                         h.Class(
-                          cn(
+                          cx(
                             css({
                               position: 'absolute',
                               bottom: '0.25rem',

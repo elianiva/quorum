@@ -138,7 +138,6 @@ import { glowing, shown } from '@/game/reveal.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { badge } from '@quorum/ui/primitives/badge'
 import { button } from '@quorum/ui/primitives/button'
-import { cn } from '@/lib/utils'
 import { EYEBROW, FIGURE, PANEL, SCROLL, WELL, ring, stackLogo } from '@quorum/ui/game/bits'
 import { shell } from './panels.ts'
 
@@ -354,7 +353,7 @@ const iconButton = (
       isDisabled: !enabled,
       variant: 'ghost',
       size: 'icon-xs',
-      className: cn(
+      className: cx(
         css({
           color: 'var(--muted-foreground)',
         }),
@@ -412,7 +411,7 @@ const renameField = (
               : Option.none(),
         ),
         h.Class(
-          cn(
+          cx(
             WELL,
             css({
               height: '1.75rem',
@@ -455,7 +454,7 @@ const halo = (share: number, className: string, h: HtmlBuilder<Message>): Html =
       h.ViewBox('0 0 54 54'),
       h.Fill('none'),
       h.Class(
-        cn(
+        cx(
           css({
             pointerEvents: 'none',
             position: 'absolute',
@@ -511,7 +510,7 @@ const seat = (
     [
       h.Key(key),
       h.Class(
-        cn(
+        cx(
           cx(
             css({
               position: 'relative',
@@ -553,7 +552,7 @@ const seat = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 width: '100%',
@@ -576,7 +575,7 @@ const corner = (side: 'left' | 'right', control: Html, h: HtmlBuilder<Message>):
   h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             position: 'absolute',
             top: '0.25rem',
@@ -617,7 +616,7 @@ const face = (
   return h.span(
     [
       h.Class(
-        cn(
+        cx(
           css({
             position: 'relative',
             display: 'grid',
@@ -829,7 +828,7 @@ const hireSeat = (game: Game, h: HtmlBuilder<Message>): Html => {
         open ? t.team.hireEngineerFor(LANGUAGES[language].name, money(price)) : t.team.hiringLocked,
       ),
       h.Class(
-        cn(
+        cx(
           cx(
             css({
               display: 'flex',
@@ -869,7 +868,7 @@ const hireSeat = (game: Game, h: HtmlBuilder<Message>): Html => {
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               css({
                 position: 'relative',
                 display: 'grid',
@@ -927,7 +926,7 @@ const hireSeat = (game: Game, h: HtmlBuilder<Message>): Html => {
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 width: '100%',
@@ -996,7 +995,7 @@ const policySwitch = (team: Team, h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'grid',
             gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
@@ -1021,7 +1020,7 @@ const policySwitch = (team: Team, h: HtmlBuilder<Message>): Html => {
             Message.TeamChanged({ message: TeamMessage.PolicyChosen({ teamId: team.id, policy }) }),
           ),
           h.Class(
-            cn(
+            cx(
               cx(
                 css({
                   display: 'flex',
@@ -1097,7 +1096,7 @@ const kindSwitch = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             gap: '3px',
@@ -1129,7 +1128,7 @@ const kindSwitch = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
               : Message.TeamChanged({ message: TeamMessage.KindChosen({ teamId: team.id, kind }) }),
           ),
           h.Class(
-            cn(
+            cx(
               cx(
                 css({
                   display: 'flex',
@@ -1215,7 +1214,7 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
       h.Key(team.id),
       ...DragAndDrop.droppable(team.id, teamName(t, team)),
       h.Class(
-        cn(
+        cx(
           PANEL,
           css({
             display: 'flex',
@@ -1331,7 +1330,7 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         fontSize: 'calc(22px*var(--type-scale))',
@@ -1346,7 +1345,7 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       EYEBROW,
                       css({
                         marginTop: '0.25rem',
@@ -1429,7 +1428,7 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
                     ...DragAndDrop.sortable(engineer.id),
                     h.AriaLabel(t.team.moveFrom(nameOf(engineer.id), teamName(t, team))),
                     h.Class(
-                      cn(
+                      cx(
                         css({
                           cursor: 'grab',
                           touchAction: 'none',
@@ -1497,7 +1496,7 @@ const sreWork = (game: Game, h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             alignItems: 'center',
@@ -1547,7 +1546,7 @@ const dataWork = (h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             alignItems: 'center',
@@ -1593,7 +1592,7 @@ const platformWork = (h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             alignItems: 'center',
@@ -1639,7 +1638,7 @@ const securityWork = (h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             alignItems: 'center',
@@ -1689,7 +1688,7 @@ const working = (
   return h.div(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             alignItems: 'center',
@@ -1710,7 +1709,7 @@ const working = (
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(11px*var(--type-scale))',
@@ -1740,7 +1739,7 @@ const working = (
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(11.5px*var(--type-scale))',
@@ -1864,7 +1863,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
     [
       h.Key('services'),
       h.Class(
-        cn(
+        cx(
           PANEL,
           css({
             display: 'flex',
@@ -1884,7 +1883,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
         h.span(
           [
             h.Class(
-              cn(
+              cx(
                 FIGURE,
                 css({
                   fontSize: 'calc(11px*var(--type-scale))',
@@ -1911,7 +1910,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
         return h.div(
           [
             h.Class(
-              cn(
+              cx(
                 WELL,
                 css({
                   display: 'flex',
@@ -1998,7 +1997,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
             h.span(
               [
                 h.Class(
-                  cn(
+                  cx(
                     FIGURE,
                     css({
                       whiteSpace: 'nowrap',
@@ -2076,7 +2075,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                           }),
                         ),
                         h.Class(
-                          cn(
+                          cx(
                             WELL,
                             css({
                               height: '1.5rem',
@@ -2144,7 +2143,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                           }),
                         ),
                         h.Class(
-                          cn(
+                          cx(
                             WELL,
                             css({
                               height: '1.5rem',
@@ -2204,7 +2203,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                       Message.TeamChanged({ message: TeamMessage.ServiceNamed({ name }) }),
                     ),
                     h.Class(
-                      cn(
+                      cx(
                         WELL,
                         css({
                           height: '1.75rem',
@@ -2227,7 +2226,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                         }),
                       ),
                       h.Class(
-                        cn(
+                        cx(
                           WELL,
                           css({
                             height: '1.75rem',
@@ -2284,7 +2283,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                             }),
                           ),
                           h.Class(
-                            cn(
+                            cx(
                               css({
                                 display: 'flex',
                                 height: '1.5rem',
@@ -2442,7 +2441,7 @@ const doraCard = (game: Game, h: HtmlBuilder<Message>): Html => {
         h.span(
           [
             h.Class(
-              cn(
+              cx(
                 FIGURE,
                 css({
                   fontSize: 'calc(13px*var(--type-scale))',
@@ -2458,7 +2457,7 @@ const doraCard = (game: Game, h: HtmlBuilder<Message>): Html => {
     [
       h.Key('dora'),
       h.Class(
-        cn(
+        cx(
           PANEL,
           css({
             display: 'flex',
@@ -2537,7 +2536,7 @@ const floor = (model: Model, h: HtmlBuilder<Message>): Html => {
                 [
                   h.Style(style),
                   h.Class(
-                    cn(
+                    cx(
                       PANEL,
                       css({
                         pointerEvents: 'none',
@@ -2623,7 +2622,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
     [
       h.Key('migration'),
       h.Class(
-        cn(
+        cx(
           PANEL,
           css({
             display: 'flex',
@@ -2783,7 +2782,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                   h.span(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             fontSize: 'calc(11.5px*var(--type-scale))',
@@ -2842,7 +2841,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
           h.div(
             [
               h.Class(
-                cn(
+                cx(
                   css({
                     position: 'relative',
                     height: '1.75rem',
@@ -2916,7 +2915,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         position: 'absolute',
@@ -2948,7 +2947,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                 [
                   h.Key(`label-${at}`),
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         position: 'absolute',
@@ -3001,7 +3000,7 @@ const statusMark = (status: Status, share: number, h: HtmlBuilder<Message>): Htm
       h.ViewBox('0 0 14 14'),
       h.Fill('none'),
       h.Class(
-        cn(
+        cx(
           css({
             width: '0.875rem',
             height: '0.875rem',
@@ -3080,7 +3079,7 @@ const label = (kind: WorkKind, h: HtmlBuilder<Message>): Html => {
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               css({
                 width: '0.375rem',
                 height: '0.375rem',
@@ -3196,7 +3195,7 @@ const upkeepPill = (game: Game, h: HtmlBuilder<Message>): Html => {
     [
       h.Key('upkeep'),
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             alignItems: 'center',
@@ -3236,7 +3235,7 @@ const deadline = (game: Game, item: WorkItem, h: HtmlBuilder<Message>): Html => 
   return h.span(
     [
       h.Class(
-        cn(
+        cx(
           FIGURE,
           css({
             display: 'inline-flex',
@@ -3272,7 +3271,7 @@ const estimate = (text: string, h: HtmlBuilder<Message>): Html =>
   h.span(
     [
       h.Class(
-        cn(
+        cx(
           FIGURE,
           css({
             display: 'inline-flex',
@@ -3299,7 +3298,7 @@ const mini = (id: string | null, h: HtmlBuilder<Message>): Html => {
       h.Key(id ?? 'founder'),
       h.Title(id ? nameOf(id) : t.team.you),
       h.Class(
-        cn(
+        cx(
           css({
             display: 'grid',
             width: '1.25rem',
@@ -3360,7 +3359,7 @@ const assignees = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
         ? h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     marginLeft: '0.25rem',
@@ -3413,7 +3412,7 @@ const card = (
     [
       h.Key(key),
       h.Class(
-        cn(
+        cx(
           late &&
             css({
               boxShadow: '0 0 0 1.5px var(--danger)',
@@ -3461,7 +3460,7 @@ const card = (
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     flex: '1 1 0%',
@@ -3500,7 +3499,7 @@ const card = (
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   css({
                     lineClamp: 2,
                     fontSize: 'calc(13px*var(--type-scale))',
@@ -3747,7 +3746,7 @@ const column = (
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(12px*var(--type-scale))',
@@ -3776,7 +3775,7 @@ const deployPill = (game: Game, h: HtmlBuilder<Message>): Html => {
     [
       h.Key('deploy'),
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             alignItems: 'center',
@@ -3802,7 +3801,7 @@ const deployPill = (game: Game, h: HtmlBuilder<Message>): Html => {
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               css({
                 position: 'relative',
                 display: 'grid',
@@ -3897,7 +3896,7 @@ const deployPill = (game: Game, h: HtmlBuilder<Message>): Html => {
             ? h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         fontSize: 'calc(10.5px*var(--type-scale))',
@@ -4028,7 +4027,7 @@ const board = (game: Game, h: HtmlBuilder<Message>): Html => {
                 [
                   h.Key('more'),
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         paddingInline: '0.5rem',
@@ -4060,7 +4059,7 @@ const autopilot = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.AriaChecked(game.autopilot),
       h.OnClick(Message.AutopilotToggled()),
       h.Class(
-        cn(
+        cx(
           cx(
             css({
               display: 'inline-flex',
@@ -4110,7 +4109,7 @@ const autopilot = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 borderRadius: '9999px',
@@ -4156,7 +4155,7 @@ const policies = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
           h.AriaChecked(game.policies[policy]),
           h.OnClick(Message.PolicyToggled({ policy, on: !game.policies[policy] })),
           h.Class(
-            cn(
+            cx(
               cx(
                 css({
                   display: 'inline-flex',
@@ -4209,7 +4208,7 @@ const chaos = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.Title(target ? t.team.chaosNextHits(target) : t.team.chaosExperiments),
       h.OnClick(Message.ChaosChosen({ chaos: !game.chaos })),
       h.Class(
-        cn(
+        cx(
           cx(
             css({
               display: 'inline-flex',
@@ -4253,7 +4252,7 @@ const chaos = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 borderRadius: '9999px',
@@ -4282,7 +4281,7 @@ const costPill = (cost: number, h: HtmlBuilder<Message>): Html => {
   return h.span(
     [
       h.Class(
-        cn(
+        cx(
           FIGURE,
           css({
             flexShrink: '0',
@@ -4318,7 +4317,7 @@ const tile = (
     [
       h.Key(key),
       h.Class(
-        cn(
+        cx(
           css({
             display: 'flex',
             minWidth: '0',
@@ -4374,7 +4373,7 @@ const tile = (
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         fontSize: 'calc(10.5px*var(--type-scale))',
@@ -4853,7 +4852,7 @@ const work = (model: Model, h: HtmlBuilder<Message>): Html => {
         h.span(
           [
             h.Class(
-              cn(
+              cx(
                 FIGURE,
                 css({
                   fontSize: 'calc(11px*var(--type-scale))',
@@ -4875,7 +4874,7 @@ const work = (model: Model, h: HtmlBuilder<Message>): Html => {
         ? h.div(
             [
               h.Class(
-                cn(
+                cx(
                   TILES,
                   cx(
                     css({
@@ -4907,7 +4906,7 @@ export const teamPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
         ? h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(12px*var(--type-scale))',
@@ -4926,7 +4925,7 @@ export const teamPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 display: 'flex',

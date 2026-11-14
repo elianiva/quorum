@@ -9,7 +9,7 @@ import { langOf } from '../i18n/lang.ts'
 import type { Message } from '../main.ts'
 import { REPOSITORY } from '../site.ts'
 import type * as Project from '../submodels/project.ts'
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The repository behind the game and the wiki, as a card: where the code is, and what other
    people have made of it. */
@@ -38,7 +38,7 @@ const cell = (value: string, label: string, h: H): Html =>
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 fontSize: '20px',
@@ -154,7 +154,7 @@ export const projectCard = (project: Project.Model, h: H): Html => {
                     [
                       h.Href(REPOSITORY),
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             fontSize: '14px',

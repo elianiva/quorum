@@ -1,4 +1,4 @@
-import { css, keyframes, cx as cn } from '@quorum/styled-system/css'
+import { css, keyframes, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
@@ -207,7 +207,7 @@ export const inputOtpSeparator = <M>(
     [
       h.DataAttribute('slot', 'input-otp-separator'),
       h.Role('separator'),
-      h.Class(cn(inputOtpSeparatorClass, config.className)),
+      h.Class(cx(inputOtpSeparatorClass, config.className)),
     ],
     ['−'],
   )
@@ -234,7 +234,7 @@ export const inputOtpSlot = <M>(config: InputOtpSlotConfig, h: HtmlBuilder<M>): 
   }
   return h.div(
     [
-      h.Class(cn(inputOtpSlotClass, config.className)),
+      h.Class(cx(inputOtpSlotClass, config.className)),
       h.DataAttribute('slot', 'input-otp-slot'),
       h.DataAttribute('active', state.isActive ? 'true' : 'false'),
       ...(config.isInvalid === true ? [h.AriaInvalid(true)] : []),
@@ -256,7 +256,7 @@ export const inputOtpGroup = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(inputOtpGroupClass, config.className)), h.DataAttribute('slot', 'input-otp-group')],
+    [h.Class(cx(inputOtpGroupClass, config.className)), h.DataAttribute('slot', 'input-otp-group')],
     children,
   )
 
@@ -279,7 +279,7 @@ export const inputOtp = <M>(config: InputOtpConfig<M>, h: HtmlBuilder<M>): Html 
   const value = normalizeOtpValue(config.value, config.length, alphabet)
 
   return h.div(
-    [h.Class(cn(inputOtpClass, config.className)), h.DataAttribute('slot', 'input-otp')],
+    [h.Class(cx(inputOtpClass, config.className)), h.DataAttribute('slot', 'input-otp')],
     [
       h.input([
         h.Type('text'),

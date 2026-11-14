@@ -1,4 +1,4 @@
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { Tooltip as FoldkitTooltip } from '@foldkit/ui'
 import type { AnchorConfig } from '@foldkit/ui/tooltip'
 import type { Attribute, ChildAttribute, Html, HtmlBuilder } from 'foldkit/html'
@@ -219,7 +219,7 @@ export const styledViewInputs = <M>(
     toView: ({ trigger, panel, isVisible }) =>
       h.div(
         [
-          h.Class(cn(tooltipWrapperClass, viewInputs.wrapperClass)),
+          h.Class(cx(tooltipWrapperClass, viewInputs.wrapperClass)),
           h.DataAttribute('slot', 'tooltip'),
         ],
         [
@@ -228,7 +228,7 @@ export const styledViewInputs = <M>(
               ...(viewInputs.triggerAttributes ?? []),
               ...trigger,
               ...(viewInputs.hoverOnly === true ? [h.Attribute('tabindex', '-1')] : []),
-              h.Class(cn(tooltipTriggerClass, viewInputs.triggerClass)),
+              h.Class(cx(tooltipTriggerClass, viewInputs.triggerClass)),
               h.DataAttribute('slot', 'tooltip-trigger'),
             ],
             [viewInputs.trigger],
@@ -240,7 +240,7 @@ export const styledViewInputs = <M>(
                     ...panel,
                     h.DataAttribute('slot', 'tooltip-content'),
                     h.DataAttribute('side', side),
-                    h.Class(cn(tooltipContentClass, viewInputs.contentClass)),
+                    h.Class(cx(tooltipContentClass, viewInputs.contentClass)),
                   ],
                   [
                     viewInputs.content,

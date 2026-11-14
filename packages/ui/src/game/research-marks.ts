@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
   Antenna,
@@ -373,7 +373,7 @@ export const researchMark = <M>(
   return h.span(
     [
       h.Class(
-        cn(
+        cx(
           css({
             display: 'grid',
             flexShrink: '0',

@@ -32,7 +32,7 @@ import {
   type H,
   type Lang,
 } from './shared.ts'
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* One page per Era, and a hub that runs them left to right as a timeline. */
 
@@ -73,7 +73,7 @@ const entity = (l: Lang, def: EraDef, index: number): Page => {
         h.span(
           [
             h.Class(
-              cn(
+              cx(
                 FIGURE,
                 css({
                   display: 'grid',
@@ -192,7 +192,7 @@ const entity = (l: Lang, def: EraDef, index: number): Page => {
                           [
                             h.Key(`${label}-t`),
                             h.Class(
-                              cn(
+                              cx(
                                 EYEBROW,
                                 css({
                                   paddingTop: '0.25rem',
@@ -289,7 +289,7 @@ const timeline = (l: Lang, h: H): Html => {
             [
               h.AriaHidden(true),
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     position: 'absolute',
@@ -393,7 +393,7 @@ const timeline = (l: Lang, h: H): Html => {
                   h.dd(
                     [
                       h.Class(
-                        cn(
+                        cx(
                           FIGURE,
                           css({
                             fontSize: '12px',

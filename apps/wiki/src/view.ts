@@ -10,7 +10,7 @@ import { LOCALE_TAGS, withLocale } from './i18n/locale.ts'
 import type { Message, Model } from './main.ts'
 import { pageIn } from './pages.ts'
 import { WIKI_ORIGIN } from './site.ts'
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The page frame: the header, the navigation rail, the page, and the facts rail. Each rail takes
    one step of the width scale, and the page fills what the frame has left. */
@@ -54,7 +54,7 @@ export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
       [
         header(model, h),
         h.div(
-          [h.Class(cn(FRAME, GRID))],
+          [h.Class(cx(FRAME, GRID))],
           [
             (!isHome && !wide) || model.menu ? sidebar(model, h) : h.empty,
             page
@@ -67,7 +67,7 @@ export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
               ? h.div(
                   [
                     h.Class(
-                      cn(
+                      cx(
                         css({
                           flexDirection: 'column',
                           gap: '2.5rem',

@@ -1,4 +1,4 @@
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { Schema as S } from 'effect'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { defineMessageUnion } from 'foldkit/message'
@@ -151,7 +151,7 @@ const avatarContainer = <M>(
 ): Html =>
   h.span(
     [
-      h.Class(cn(avatarClass, config.className)),
+      h.Class(cx(avatarClass, config.className)),
       h.DataAttribute('slot', 'avatar'),
       h.DataAttribute('size', config.size ?? 'default'),
     ],
@@ -162,7 +162,7 @@ const avatarImage = <M>(config: AvatarImageConfig, h: HtmlBuilder<M>): Html =>
   h.img([
     h.Src(config.src),
     ...(config.alt === undefined ? [] : [h.Alt(config.alt)]),
-    h.Class(cn(avatarImageClass, config.className)),
+    h.Class(cx(avatarImageClass, config.className)),
     h.DataAttribute('slot', 'avatar-image'),
   ])
 
@@ -201,7 +201,7 @@ const pictureView = defineView<Model, Message, PictureConfig>((model, config, h)
     : h.img([
         h.Src(config.src),
         ...(config.alt === undefined ? [] : [h.Alt(config.alt)]),
-        h.Class(cn(avatarImageClass, config.className)),
+        h.Class(cx(avatarImageClass, config.className)),
         h.DataAttribute('slot', 'avatar-image'),
         h.OnError(Message.ImageErrored()),
       ]),
@@ -234,7 +234,7 @@ const avatarFallback = <M>(
 ): Html =>
   h.span(
     [
-      h.Class(cn(avatarFallbackClass, config.className)),
+      h.Class(cx(avatarFallbackClass, config.className)),
       h.DataAttribute('slot', 'avatar-fallback'),
     ],
     children,
@@ -246,7 +246,7 @@ const avatarBadge = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.span(
-    [h.Class(cn(avatarBadgeClass, config.className)), h.DataAttribute('slot', 'avatar-badge')],
+    [h.Class(cx(avatarBadgeClass, config.className)), h.DataAttribute('slot', 'avatar-badge')],
     children,
   )
 
@@ -256,7 +256,7 @@ const avatarGroup = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.Class(cn(avatarGroupClass, config.className)), h.DataAttribute('slot', 'avatar-group')],
+    [h.Class(cx(avatarGroupClass, config.className)), h.DataAttribute('slot', 'avatar-group')],
     children,
   )
 
@@ -267,7 +267,7 @@ const avatarGroupCount = <M>(
 ): Html =>
   h.div(
     [
-      h.Class(cn(avatarGroupCountClass, config.className)),
+      h.Class(cx(avatarGroupCountClass, config.className)),
       h.DataAttribute('slot', 'avatar-group-count'),
     ],
     children,

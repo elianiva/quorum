@@ -1,4 +1,4 @@
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { Tabs as FoldkitTabs } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
@@ -56,7 +56,7 @@ const tabsListVariantClasses: Record<TabsListVariant, string> = {
 }
 
 export const tabsListClass = (variant: TabsListVariant = 'default') =>
-  cn(tabsListBaseClass, tabsListVariantClasses[variant])
+  cx(tabsListBaseClass, tabsListVariantClasses[variant])
 
 /** Upstream TabsTrigger string with data-active → data-selected prefix swaps
  *  (foldkit attr name). */
@@ -162,7 +162,7 @@ export const list = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.DataAttribute('slot', 'tabs-list'), h.Class(cn(tabsListClass(), config.className))],
+    [h.DataAttribute('slot', 'tabs-list'), h.Class(cx(tabsListClass(), config.className))],
     children,
   )
 
@@ -172,7 +172,7 @@ export const trigger = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.button(
-    [h.DataAttribute('slot', 'tabs-trigger'), h.Class(cn(tabsTriggerClass, config.className))],
+    [h.DataAttribute('slot', 'tabs-trigger'), h.Class(cx(tabsTriggerClass, config.className))],
     children,
   )
 
@@ -182,7 +182,7 @@ export const content = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.DataAttribute('slot', 'tabs-content'), h.Class(cn(tabsContentClass, config.className))],
+    [h.DataAttribute('slot', 'tabs-content'), h.Class(cx(tabsContentClass, config.className))],
     children,
   )
 
@@ -223,7 +223,7 @@ export const styledViewInputs = <M, Value extends string = string>(
           h.DataAttribute('orientation', isVertical ? 'vertical' : 'horizontal'),
           ...(isVertical ? [h.DataAttribute('vertical', '')] : [h.DataAttribute('horizontal', '')]),
           h.Class(
-            cn(
+            cx(
               css({
                 gap: '0.5rem',
                 display: 'flex',
@@ -247,14 +247,14 @@ export const styledViewInputs = <M, Value extends string = string>(
               ...tablist,
               h.DataAttribute('slot', 'tabs-list'),
               h.Attribute('data-variant', variant),
-              h.Class(cn(tabsListClass(variant), viewInputs.listClass)),
+              h.Class(cx(tabsListClass(variant), viewInputs.listClass)),
             ],
             tabs.map((tab) =>
               h.button(
                 [
                   ...tab.tab,
                   h.DataAttribute('slot', 'tabs-trigger'),
-                  h.Class(cn(tabsTriggerClass, viewInputs.triggerClass)),
+                  h.Class(cx(tabsTriggerClass, viewInputs.triggerClass)),
                 ],
                 [h.span([], [tab.value])],
               ),
@@ -267,7 +267,7 @@ export const styledViewInputs = <M, Value extends string = string>(
                 [
                   ...tab.panel,
                   h.DataAttribute('slot', 'tabs-content'),
-                  h.Class(cn(tabsContentClass, viewInputs.contentClass)),
+                  h.Class(cx(tabsContentClass, viewInputs.contentClass)),
                 ],
                 [viewInputs.panel(tab.value, { tablist, tabs, activeIndex }, h)],
               ),

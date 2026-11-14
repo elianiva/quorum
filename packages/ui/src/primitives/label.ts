@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
@@ -36,7 +36,7 @@ export const label = <M>(
 ): Html =>
   h.label(
     [
-      h.Class(cn(labelClass, config.className)),
+      h.Class(cx(labelClass, config.className)),
       h.DataAttribute('slot', 'label'),
       ...(config.forId === undefined ? [] : [h.For(config.forId)]),
     ],

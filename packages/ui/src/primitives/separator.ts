@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
 export type SeparatorOrientation = 'horizontal' | 'vertical'
@@ -25,7 +25,7 @@ export const separator = <M>(config: SeparatorConfig, h: HtmlBuilder<M>): Html =
   const orientation = config.orientation ?? 'horizontal'
   return h.div(
     [
-      h.Class(cn(separatorClass, config.className)),
+      h.Class(cx(separatorClass, config.className)),
       h.Role('separator'),
       h.AriaOrientation(orientation),
       h.DataAttribute('slot', 'separator'),

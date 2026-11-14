@@ -34,7 +34,6 @@ import { boardSandbox, hasCompany, type Model, type SandboxRun } from '@/game/mo
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
 import { nativeSelect, nativeSelectOption } from '@quorum/ui/primitives/native-select'
-import { cn } from '@/lib/utils'
 import {
   CHIPS,
   EYEBROW,
@@ -109,7 +108,7 @@ const figureRow = (
       h.span(
         [
           h.Class(
-            cn(
+            cx(
               FIGURE,
               css({
                 marginLeft: 'auto',
@@ -296,7 +295,7 @@ const steps = (run: SandboxRun, id: SandboxId, h: HtmlBuilder<Message>): Html =>
         [
           h.Key(String(index)),
           h.Class(
-            cn(
+            cx(
               css({
                 height: '0.375rem',
                 width: '0.75rem',
@@ -393,7 +392,7 @@ export const objectiveBar = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     fontSize: 'calc(11px*var(--type-scale))',
@@ -530,7 +529,7 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.span(
                 [
                   h.Class(
-                    cn(
+                    cx(
                       FIGURE,
                       css({
                         width: '1.5rem',
@@ -655,7 +654,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   EYEBROW,
                   css({
                     marginRight: 'auto',
@@ -685,7 +684,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.span(
             [
               h.Class(
-                cn(
+                cx(
                   FIGURE,
                   css({
                     width: '3.5rem',
@@ -766,7 +765,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
             gap: '0.375rem',
             '& > div': { flex: '1 1 0%' },
           }),
-          labelClass: cn(
+          labelClass: cx(
             EYEBROW,
             css({
               marginRight: 'auto',

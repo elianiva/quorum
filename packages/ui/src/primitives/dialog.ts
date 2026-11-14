@@ -1,4 +1,4 @@
-import { css, cx, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { Dialog as FoldkitDialog } from '@foldkit/ui'
 import type { Attribute, ChildAttribute, Html, HtmlBuilder } from 'foldkit/html'
 
@@ -208,7 +208,7 @@ export const header = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.DataAttribute('slot', 'dialog-header'), h.Class(cn(dialogHeaderClass, config.className))],
+    [h.DataAttribute('slot', 'dialog-header'), h.Class(cx(dialogHeaderClass, config.className))],
     children,
   )
 
@@ -222,7 +222,7 @@ export const title = <M>(
     [
       ...(config.attributes ?? []),
       h.DataAttribute('slot', 'dialog-title'),
-      h.Class(cn(dialogTitleClass, config.className)),
+      h.Class(cx(dialogTitleClass, config.className)),
     ],
     children,
   )
@@ -237,7 +237,7 @@ export const description = <M>(
     [
       ...(config.attributes ?? []),
       h.DataAttribute('slot', 'dialog-description'),
-      h.Class(cn(dialogDescriptionClass, config.className)),
+      h.Class(cx(dialogDescriptionClass, config.className)),
     ],
     children,
   )
@@ -248,7 +248,7 @@ export const footer = <M>(
   h: HtmlBuilder<M>,
 ): Html =>
   h.div(
-    [h.DataAttribute('slot', 'dialog-footer'), h.Class(cn(dialogFooterClass, config.className))],
+    [h.DataAttribute('slot', 'dialog-footer'), h.Class(cx(dialogFooterClass, config.className))],
     children,
   )
 
@@ -262,7 +262,7 @@ export const closeButton = <M>(
     [
       ...(config.attributes ?? []),
       h.DataAttribute('slot', 'dialog-close'),
-      h.Class(cn(dialogCloseButtonClass, config.className)),
+      h.Class(cx(dialogCloseButtonClass, config.className)),
     ],
     children,
   )
@@ -299,20 +299,20 @@ export const styledViewInputs = <M>(
       [
         ...dialog,
         h.DataAttribute('slot', 'dialog'),
-        h.Class(cn(dialogClass, viewInputs.className)),
+        h.Class(cx(dialogClass, viewInputs.className)),
       ],
       isVisible
         ? [
             h.div([
               ...backdrop,
               h.DataAttribute('slot', 'dialog-overlay'),
-              h.Class(cn(dialogBackdropClass, viewInputs.backdropClass)),
+              h.Class(cx(dialogBackdropClass, viewInputs.backdropClass)),
             ]),
             h.div(
               [
                 ...panel,
                 h.DataAttribute('slot', 'dialog-content'),
-                h.Class(cn(dialogPanelClass, viewInputs.panelClass)),
+                h.Class(cx(dialogPanelClass, viewInputs.panelClass)),
               ],
               viewInputs.content({ closeButton, title, description }, h),
             ),

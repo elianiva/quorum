@@ -5,7 +5,7 @@ import { defineMessageUnion } from 'foldkit/message'
 import { FIGURE } from '@quorum/ui/game/bits'
 import { langOf } from '../i18n/lang.ts'
 import type { Locale } from '../i18n/locale.ts'
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 
 /* The spoiler filter: the last Era the reader reached. Pages about later Eras fold. Kept in the browser. */
 
@@ -161,7 +161,7 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
                 h.Title(t.showEvery),
                 h.OnClick(Message.Chosen({ era: ALL_ERAS })),
                 h.Class(
-                  cn(
+                  cx(
                     allStep,
                     all
                       ? css({
@@ -194,7 +194,7 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
                   h.Title(t.upTo(era.name)),
                   h.OnClick(Message.Chosen({ era: index })),
                   h.Class(
-                    cn(
+                    cx(
                       step,
                       FIGURE,
                       all || index <= model.era

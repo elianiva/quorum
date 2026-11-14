@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { Textarea as FoldkitTextarea } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
@@ -120,7 +120,7 @@ export const textarea = <M>(config: TextareaConfig<M>, h: HtmlBuilder<M>): Html 
       toView: (attributes) =>
         h.div(
           [
-            h.Class(cn(textareaWrapperClass, config.wrapperClass)),
+            h.Class(cx(textareaWrapperClass, config.wrapperClass)),
             ...(config.isDisabled ? [h.DataAttribute('disabled', '')] : []),
           ],
           [
@@ -128,21 +128,21 @@ export const textarea = <M>(config: TextareaConfig<M>, h: HtmlBuilder<M>): Html 
               [
                 ...attributes.label,
                 h.DataAttribute('slot', 'label'),
-                h.Class(cn(textareaLabelClass, config.labelClass)),
+                h.Class(cx(textareaLabelClass, config.labelClass)),
               ],
               [config.label],
             ),
             h.textarea([
               ...attributes.textarea,
               h.DataAttribute('slot', 'textarea'),
-              h.Class(cn(textareaClass, config.className)),
+              h.Class(cx(textareaClass, config.className)),
             ]),
             config.description === undefined
               ? h.empty
               : h.span(
                   [
                     ...attributes.description,
-                    h.Class(cn(textareaDescriptionClass, config.descriptionClass)),
+                    h.Class(cx(textareaDescriptionClass, config.descriptionClass)),
                   ],
                   [config.description],
                 ),

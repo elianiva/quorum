@@ -1,4 +1,4 @@
-import { css, cx as cn } from '@quorum/styled-system/css'
+import { css, cx } from '@quorum/styled-system/css'
 import { Effect, Equal, Match as M, Option, Schema as S, Stream, pipe } from 'effect'
 import { Slider as FoldkitSlider } from '@foldkit/ui'
 import { childAttributes, type Html, type HtmlBuilder } from 'foldkit/html'
@@ -520,10 +520,10 @@ export const styledViewInputs = <M>(
         viewInputs.label === undefined
           ? h.empty
           : h.div(
-              [h.Class(cn(sliderHeaderClass, viewInputs.headerClass))],
+              [h.Class(cx(sliderHeaderClass, viewInputs.headerClass))],
               [
                 h.label(
-                  [...attributes.label, h.Class(cn(sliderLabelClass, viewInputs.labelClass))],
+                  [...attributes.label, h.Class(cx(sliderLabelClass, viewInputs.labelClass))],
                   [viewInputs.label],
                 ),
                 h.div(
@@ -538,7 +538,7 @@ export const styledViewInputs = <M>(
                   ],
                   [
                     h.span(
-                      [h.Class(cn(sliderValueClass, viewInputs.valueClass))],
+                      [h.Class(cx(sliderValueClass, viewInputs.valueClass))],
                       [
                         viewInputs.formatValue === undefined
                           ? String(viewInputs.value)
@@ -555,34 +555,34 @@ export const styledViewInputs = <M>(
         attributes.hiddenInput.length > 0 ? h.input([...attributes.hiddenInput]) : h.empty
 
       return h.div(
-        [h.Class(cn(sliderRowClass, viewInputs.rowClass))],
+        [h.Class(cx(sliderRowClass, viewInputs.rowClass))],
         [
           maybeHeader,
           h.div(
             [
               ...attributes.root,
               h.DataAttribute('slot', 'slider'),
-              h.Class(cn(sliderRootClass, viewInputs.rootClass)),
+              h.Class(cx(sliderRootClass, viewInputs.rootClass)),
             ],
             [
               h.div(
                 [
                   ...attributes.track,
                   h.DataAttribute('slot', 'slider-track'),
-                  h.Class(cn(sliderTrackClass, viewInputs.trackClass)),
+                  h.Class(cx(sliderTrackClass, viewInputs.trackClass)),
                 ],
                 [
                   h.div([
                     ...attributes.filledTrack,
                     h.DataAttribute('slot', 'slider-range'),
-                    h.Class(cn(sliderFilledTrackClass, viewInputs.filledTrackClass)),
+                    h.Class(cx(sliderFilledTrackClass, viewInputs.filledTrackClass)),
                   ]),
                 ],
               ),
               h.div([
                 ...attributes.thumb,
                 h.DataAttribute('slot', 'slider-thumb'),
-                h.Class(cn(sliderThumbClass, viewInputs.thumbClass)),
+                h.Class(cx(sliderThumbClass, viewInputs.thumbClass)),
               ]),
             ],
           ),

@@ -1,12 +1,9 @@
-/* Coexistence order. Tailwind's base must stay before Panda so its button
-   preflight cannot reset a Panda component. Tailwind utilities stay after
-   Panda so a call site that still passes an old utility class keeps winning. */
-@layer theme, base, components, panda-reset, panda-base, panda-tokens, panda-recipes, panda-utilities, utilities;
-
-@import 'tailwindcss';
-@import 'tw-animate-css';
-@import '@quorum/ui/theme.css';
 @import 'katex/dist/katex.min.css';
+@import '@quorum/ui/theme.css';
+
+/* Panda's reset and base come first, then the shared hand-authored layers, then
+   recipes and atomic utilities. A utility still wins over a component class. */
+@layer panda-reset, panda-base, panda-tokens, base, components, panda-recipes, panda-utilities;
 
 /* ==========================================================================
    The wiki wears the game's Graphite theme (packages/ui/src/theme.css). It is

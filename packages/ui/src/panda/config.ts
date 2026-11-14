@@ -13,7 +13,7 @@ export const quorumConfig = (include: ReadonlyArray<string>, outdir = 'styled-sy
     exclude: ['**/*.test.ts', '**/*.perf.ts'],
     importMap: '@quorum/styled-system',
     outdir,
-    preflight: false,
+    preflight: true,
     prefix: { className: 'panda', cssVar: 'quorum' },
     layers: {
       reset: 'panda-reset',

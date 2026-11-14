@@ -4,7 +4,6 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
 import pandacss from '@pandacss/vite'
-import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 import { simVersion } from '../../packages/simulation/sim-version.ts'
@@ -77,7 +76,6 @@ export default defineConfig({
   build: { sourcemap: authToken ? 'hidden' : false },
   plugins: [
     layoutHarness(),
-    tailwindcss(),
     pandacss({ codegen: false }),
     foldkit().map(unbrandedModules),
     simVersion(),

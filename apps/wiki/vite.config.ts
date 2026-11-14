@@ -5,7 +5,6 @@ import { pathToFileURL } from 'node:url'
 import { markdown } from '@foldkit/markdown/vite'
 import { foldkit } from '@foldkit/vite-plugin'
 import pandacss from '@pandacss/vite'
-import tailwindcss from '@tailwindcss/vite'
 import { defineConfig, type Plugin } from 'vite'
 import { simVersion } from '../../packages/simulation/sim-version.ts'
 import { Frontmatter } from './src/frontmatter.ts'
@@ -106,7 +105,6 @@ const searchIndexDev = (): Plugin => ({
    island schemas, so a bad page fails the build. */
 export default defineConfig(({ command }) => ({
   plugins: [
-    tailwindcss(),
     pandacss({ codegen: false }),
     simVersion(),
     foldkit({

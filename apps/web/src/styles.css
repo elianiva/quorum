@@ -1,11 +1,8 @@
-/* Coexistence order. Tailwind's base must stay before Panda so its button
-   preflight cannot reset a Panda component. Tailwind utilities stay after
-   Panda so a call site that still passes an old utility class keeps winning. */
-@layer theme, base, components, panda-reset, panda-base, panda-tokens, panda-recipes, panda-utilities, utilities;
-
-@import 'tailwindcss';
-@import 'tw-animate-css';
 @import '@quorum/ui/theme.css';
+
+/* Panda's reset and base come first, then the shared hand-authored layers, then
+   recipes and atomic utilities. A utility still wins over a component class. */
+@layer panda-reset, panda-base, panda-tokens, base, components, panda-recipes, panda-utilities;
 
 @layer base {
   html,
@@ -1235,30 +1232,10 @@
 }
 
 /* The Text at 150% setting (15 "Accessibility"): the type grows, the boxes around it keep their
-   size, so a card still holds its rows. Components size their text as `calc(Npx*var(--type-scale))`;
-   the shared primitives use Tailwind's named sizes, which this raises in step. */
+   size, so a card still holds its rows. Text sizes multiply their px or rem value by
+   `--type-scale`. */
 :root[data-text='150'] {
   --type-scale: 1.5;
-}
-:root[data-text='150'] .text-xs {
-  font-size: calc(0.75rem * var(--type-scale));
-  line-height: 1.45;
-}
-:root[data-text='150'] .text-sm {
-  font-size: calc(0.875rem * var(--type-scale));
-  line-height: 1.45;
-}
-:root[data-text='150'] .text-base {
-  font-size: calc(1rem * var(--type-scale));
-  line-height: 1.45;
-}
-:root[data-text='150'] .text-lg {
-  font-size: calc(1.125rem * var(--type-scale));
-  line-height: 1.45;
-}
-:root[data-text='150'] .text-xl {
-  font-size: calc(1.25rem * var(--type-scale));
-  line-height: 1.45;
 }
 
 /* The screen reader's Node list (15 "Accessibility"): hidden until a keyboard player tabs into
@@ -1291,6 +1268,7 @@
   font-family: var(--heading);
   font-size: calc(13px * var(--type-scale));
   font-weight: 600;
+  white-space: nowrap;
 }
 .node-list ul {
   display: flex;

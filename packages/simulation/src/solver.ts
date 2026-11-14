@@ -99,29 +99,37 @@ const FUNCTIONS = [
 ] as const
 
 let solver: Exports | null = null
+/** Makes a fresh instance, so a trap does not leave the solve without a solver. */
+let instantiate: (() => Readonly<Record<string, unknown>>) | null = null
 
 /**
- * Hands the solve a solver instance's exports. Every host calls it once at start, before the
- * first solve: `new WebAssembly.Instance(module).exports`.
+ * Hands the solve a function that instantiates the solver and returns its exports. Every host
+ * calls it once at start, before the first solve: `() => new WebAssembly.Instance(module).exports`.
  */
-export const installSolver = (exports: Readonly<Record<string, unknown>>): void => {
+export const installSolver = (create: () => Readonly<Record<string, unknown>>): void => {
+  solver = checked(create())
+  instantiate = create
+  converged = new WeakSet()
+}
+
+/** The exports, once they have the memory, every function, and the block layout the host writes. */
+const checked = (exports: Readonly<Record<string, unknown>>): Exports => {
   const memory = exports['memory']
   if (typeof memory !== 'object' || memory === null || !('buffer' in memory))
     throw new Error('The solver exports no memory.')
   for (const name of FUNCTIONS)
     if (typeof exports[name] !== 'function') throw new Error(`The solver exports no ${name}.`)
   // Checked above: the memory and every function the solve calls.
-  const checked = exports as Exports
-  if (checked.scalar_len() !== SCALARS)
+  const typed = exports as Exports
+  if (typed.scalar_len() !== SCALARS)
     throw new Error(
-      `The solver has ${checked.scalar_len()} scalar slots; the host writes ${SCALARS}.`,
+      `The solver has ${typed.scalar_len()} scalar slots; the host writes ${SCALARS}.`,
     )
-  if (checked.node_field_len() !== NODE_FIELDS)
+  if (typed.node_field_len() !== NODE_FIELDS)
     throw new Error(
-      `The solver reads ${checked.node_field_len()} Node fields; the host writes ${NODE_FIELDS}.`,
+      `The solver reads ${typed.node_field_len()} Node fields; the host writes ${NODE_FIELDS}.`,
     )
-  solver = checked
-  converged = new WeakSet()
+  return typed
 }
 
 /** The `CATALOG_HASH` the installed solver was built with, so a check can tell a stale build. */
@@ -130,6 +138,23 @@ export const solverCatalogHash = (): number => installed().catalog_hash()
 const installed = (): Exports => {
   if (solver === null) throw new Error('No Solver is installed. Call installSolver first.')
   return solver
+}
+
+/**
+ * Runs `body` on the installed solver. A trap leaves the instance's state borrowed, so every
+ * later call would trap too: the solver is replaced with a fresh instance and the trap rethrown.
+ */
+const guarded = <T>(body: (exports: Exports) => T): T => {
+  const exports = installed()
+  try {
+    return body(exports)
+  } catch (error) {
+    if (error instanceof Error && error.name === 'RuntimeError' && instantiate !== null) {
+      solver = checked(instantiate())
+      converged = new WeakSet()
+    }
+    throw error
+  }
 }
 
 const ALL: ReadonlyArray<Kind> = [...S.REQUEST_KINDS, ...S.BACKEND_KINDS]
@@ -142,12 +167,8 @@ const BLOCK = {
   edgeFields: 3,
   outStarts: 4,
   outEdges: 5,
-  weights: 6,
-  nominal: 7,
-  sick: 8,
   demand: 9,
   intake: 10,
-  latency: 11,
   payload: 12,
   probe: 13,
   routes: 14,
@@ -327,7 +348,6 @@ const IOPS = ['general', 'provisioned']
 const RETENTION = ['keep', 'archive', 'delete']
 const TOPOLOGY = ['single', 'multi', 'sharded']
 
-/** The index of `value` in `list`, or 0 when it is not there. */
 /** Each catalog list's or record's keys, as a map from name to position, built once. */
 const positions = new WeakMap<object, ReadonlyMap<string, number>>()
 
@@ -346,6 +366,7 @@ const positionOf = (source: ReadonlyArray<string> | object, value: string): numb
   return map.get(value) ?? -1
 }
 
+/** The position of `value` in `source`, or 0 when it is not there. */
 const indexIn = (source: ReadonlyArray<string> | object, value: string): number =>
   Math.max(0, positionOf(source, value))
 
@@ -377,12 +398,6 @@ const reserve = (exports: Exports, block: number, length: number): void => {
 const fill = (exports: Exports, block: number, values: ArrayLike<number>): void => {
   reserve(exports, block, values.length)
   view(exports, Float64Array, block, values.length).set(values)
-}
-
-/** Sets every slot of a block to one value, in place, so nothing is allocated to copy in. */
-const fillWith = (exports: Exports, block: number, length: number, value: number): void => {
-  reserve(exports, block, length)
-  view(exports, Float64Array, block, length).fill(value)
 }
 
 const fillInt = (exports: Exports, block: number, values: ArrayLike<number>): void => {
@@ -462,11 +477,6 @@ const writeDesign = (exports: Exports, game: Game, design: Graph): void => {
   fill(exports, BLOCK.edgeFields, edgeFields)
   fillInt(exports, BLOCK.outStarts, starts)
   fillInt(exports, BLOCK.outEdges, outEdges)
-  // The solver probes each Node's capacity itself; these are the probe's starting points.
-  fillWith(exports, BLOCK.weights, nodes, 1)
-  fillWith(exports, BLOCK.nominal, nodes, 1)
-  reserve(exports, BLOCK.sick, nodes)
-  view(exports, Uint8Array, BLOCK.sick, nodes).fill(0)
 }
 
 /** Writes every Game-level block: the scalar rows, research, demand, intake, routes, and factors. */
@@ -500,6 +510,16 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
       )
     : 0
   const runtimeFailure = incident ? (S.RUNTIME_INCIDENT_FAILURES[incident.kind] ?? 0) : 0
+  // `solver.poisoned`: the Nodes a poisoned Queue with no DLQ feeds.
+  const poisonQueue =
+    incident?.kind === 'poison'
+      ? game.nodes.find((entry) => entry.id === incident.nodeId)
+      : undefined
+  const poisoned = new Set(
+    poisonQueue && !poisonQueue.dlq
+      ? game.links.filter((link) => link.from === poisonQueue.id).map((link) => link.to)
+      : [],
+  )
   fill(
     exports,
     BLOCK.kindService,
@@ -606,15 +626,7 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
     row[SLOT.databasesInGroup] = data ? databasesOfGroup(game, group).length : 0
     row[SLOT.syncStalled] = syncStalled(game, group) ? 1 : 0
     row[SLOT.primary] = node.type === 'replica' && primaryOf(game, node) !== undefined ? 1 : 0
-    // `solver.poisoned`: a poison message sits in a Queue with no DLQ that feeds this Node.
-    row[SLOT.poisoned] =
-      incident?.kind === 'poison' &&
-      game.links.some((link) => {
-        const queue = game.nodes.find((entry) => entry.id === link.from)
-        return link.to === node.id && link.from === incident.nodeId && queue && !queue.dlq
-      })
-        ? 1
-        : 0
+    row[SLOT.poisoned] = poisoned.has(node.id) ? 1 : 0
     row[SLOT.ramped] = rampedOf(game, node) ? 1 : 0
     const cluster = clusterOf(game, node)
     row[SLOT.cluster] = cluster === undefined ? -1 : (design.at.get(cluster) ?? -1)
@@ -741,7 +753,6 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
     BLOCK.query,
     S.BACKEND_KINDS.map((kind) => queryFactor(game, kind)),
   )
-  fillWith(exports, BLOCK.latency, nodes * NK, 0)
 }
 
 /** Writes a Game into the solver and compiles its Design. */
@@ -767,15 +778,15 @@ const chaosTarget = (game: Game): string | null =>
 let converged = new WeakSet<Game>()
 
 /** The flow solve: the pass loop and its Ledger, without the Bottleneck search. */
-export const solverFlow = (game: Game): Ledger => {
-  const exports = installed()
-  // Forget the last Game first: once the write starts, the blocks no longer hold it.
-  converged = new WeakSet()
-  write(exports, game)
-  check(exports.solve_run(-1, 0, 0), 'solve_run')
-  converged.add(game)
-  return readLedger(exports, game)
-}
+export const solverFlow = (game: Game): Ledger =>
+  guarded((exports) => {
+    // Forget the last Game first: once the write starts, the blocks no longer hold it.
+    converged = new WeakSet()
+    write(exports, game)
+    check(exports.solve_run(-1, 0, 0), 'solve_run')
+    converged.add(game)
+    return readLedger(exports, game)
+  })
 
 /** `to` holds the state `from` solved to: the Step between them changed nothing the solve reads. */
 export const carrySolver = (from: Game, to: Game): void => {
@@ -784,12 +795,13 @@ export const carrySolver = (from: Game, to: Game): void => {
 
 /** The Node whose doubled capacity would earn the most, searched from the flow solve's state. */
 export const solverBottleneck = (game: Game): string | null => {
-  const exports = installed()
   if (!converged.has(game)) solverFlow(game)
-  check(exports.bottleneck_run(0), 'bottleneck_run')
-  const slot =
-    view(exports, Float64Array, BLOCK.summary, exports.summary_len())[SUMMARY_BOTTLENECK] ?? -1
-  return slot >= 0 ? (game.nodes[slot]?.id ?? null) : null
+  return guarded((exports) => {
+    check(exports.bottleneck_run(0), 'bottleneck_run')
+    const slot =
+      view(exports, Float64Array, BLOCK.summary, exports.summary_len())[SUMMARY_BOTTLENECK] ?? -1
+    return slot >= 0 ? (game.nodes[slot]?.id ?? null) : null
+  })
 }
 
 /* ==========================================================================

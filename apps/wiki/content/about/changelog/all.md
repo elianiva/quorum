@@ -9,6 +9,21 @@ toc: top
 
 Every day that changed Quorum, newest first. The [changelog](/about/changelog) shows only the latest days.
 
+## Friday, 13 November 2026
+
+### Changed
+
+- Serve the wiki in Japanese ([86704dd](https://github.com/elianiva/quorum/commit/86704ddb17d43b7fdcc5c76af3f46610f3927433))
+- Write the wiki's pages in Japanese ([b68afe7](https://github.com/elianiva/quorum/commit/b68afe7797487f790b413eeb5c0bdffc7d121999))
+- Translate the wiki's interface copy into Japanese ([18838f6](https://github.com/elianiva/quorum/commit/18838f64b1937987904b72d345cfc785f650d048))
+- Add the changelog entry for 2026-11-12 (#53) ([faa9781](https://github.com/elianiva/quorum/commit/faa9781ff220f726e824a67ac7810d4d267b9f77))
+- Reuse each Node's calls and cost table while the Design holds ([7bd3cfa](https://github.com/elianiva/quorum/commit/7bd3cfaffbe1902de8662dfc5132fb8ef3bebea6))
+- Serve the wiki in Spanish (#51) ([6b464be](https://github.com/elianiva/quorum/commit/6b464bedc4b33f51853653b29b0d6773312b3d8f))
+- Keep the Graph while the Design holds, and stop copying lists on every Link ([1e82900](https://github.com/elianiva/quorum/commit/1e82900ac337f52c280431c9558fa55bc2195596))
+- Build the Era's mix once per Game, and share one probe record across its Nodes ([9bffae3](https://github.com/elianiva/quorum/commit/9bffae348c0a0a52ac5da80bb401d2eace341087))
+- Make the solve stop when it settles, and score the bottleneck on revenue alone ([674b035](https://github.com/elianiva/quorum/commit/674b035724e5a76de3101bdf213a3805368a2e1f))
+- Add the installable PWA shell and offline play ([e86e17a](https://github.com/elianiva/quorum/commit/e86e17ace69a469b4e00ee66f02e4b2ad03ecf24))
+
 ## Thursday, 12 November 2026
 
 ### Changed

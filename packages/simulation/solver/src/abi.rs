@@ -3,9 +3,11 @@
 //! Every input and output is a `Vec` inside one of two arenas. The host asks for
 //! a block's pointer with `ptr`, fills it through a `Float64Array` view, then
 //! calls a run function that reads the block with checked indexing. Nothing here
-//! uses `unsafe`: a short, unknown, or out-of-range block makes a run function
-//! return a status code instead of trapping, and the host re-reads `ptr` after
-//! any call that may grow memory, because a grown memory detaches its views.
+//! uses `unsafe`. An unknown block, a short block, or an Edge or Link that names
+//! a Node outside the Design makes a run function return a status code. A catalog
+//! index in a Node's row is not range-checked: the host writes it from the same
+//! catalog, and an index past a table traps. The host re-reads `ptr` after any
+//! call that may grow memory, because a grown memory detaches its views.
 //!
 //! Block ids are stable: they are the ABI.
 
@@ -187,12 +189,8 @@ pub const BLOCK_NODE_FIELDS: i32 = 2;
 pub const BLOCK_EDGE_FIELDS: i32 = 3;
 pub const BLOCK_OUT_STARTS: i32 = 4;
 pub const BLOCK_OUT_EDGES: i32 = 5;
-pub const BLOCK_WEIGHTS: i32 = 6;
-pub const BLOCK_NOMINAL: i32 = 7;
-pub const BLOCK_SICK: i32 = 8;
 pub const BLOCK_DEMAND: i32 = 9;
 pub const BLOCK_INTAKE: i32 = 10;
-pub const BLOCK_LATENCY: i32 = 11;
 /// `payloadFactor` per request kind: how big a response is with the shipped Features.
 pub const BLOCK_PAYLOAD: i32 = 12;
 pub const BLOCK_PROBE: i32 = 13;
@@ -227,12 +225,8 @@ pub struct Inputs {
     pub edge_fields: Vec<f64>,
     pub out_starts: Vec<i32>,
     pub out_edges: Vec<i32>,
-    pub weights: Vec<f64>,
-    pub nominal: Vec<f64>,
-    pub sick: Vec<u8>,
     pub demand: Vec<f64>,
     pub intake: Vec<f64>,
-    pub latency: Vec<f64>,
     pub payload: Vec<f64>,
     pub value: Vec<f64>,
     pub probe: Vec<f64>,
@@ -324,11 +318,8 @@ pub extern "C" fn reserve(block: i32, len: i32) -> i32 {
             BLOCK_SCALARS => Some(&mut inputs.scalars),
             BLOCK_NODE_FIELDS => Some(&mut inputs.node_fields),
             BLOCK_EDGE_FIELDS => Some(&mut inputs.edge_fields),
-            BLOCK_WEIGHTS => Some(&mut inputs.weights),
-            BLOCK_NOMINAL => Some(&mut inputs.nominal),
             BLOCK_DEMAND => Some(&mut inputs.demand),
             BLOCK_INTAKE => Some(&mut inputs.intake),
-            BLOCK_LATENCY => Some(&mut inputs.latency),
             BLOCK_PAYLOAD => Some(&mut inputs.payload),
             BLOCK_QUERY => Some(&mut inputs.query),
             BLOCK_VALUE => Some(&mut inputs.value),
@@ -366,7 +357,6 @@ pub extern "C" fn reserve(block: i32, len: i32) -> i32 {
     let sized = INPUT.with(|cell| {
         let mut inputs = cell.borrow_mut();
         match block {
-            BLOCK_SICK => Some(&mut inputs.sick),
             BLOCK_RESEARCH => Some(&mut inputs.research),
             _ => None,
         }
@@ -409,11 +399,8 @@ pub extern "C" fn ptr(block: i32) -> usize {
             BLOCK_SCALARS => Some(inputs.scalars.as_ptr()),
             BLOCK_NODE_FIELDS => Some(inputs.node_fields.as_ptr().cast::<f64>()),
             BLOCK_EDGE_FIELDS => Some(inputs.edge_fields.as_ptr()),
-            BLOCK_WEIGHTS => Some(inputs.weights.as_ptr()),
-            BLOCK_NOMINAL => Some(inputs.nominal.as_ptr()),
             BLOCK_DEMAND => Some(inputs.demand.as_ptr()),
             BLOCK_INTAKE => Some(inputs.intake.as_ptr()),
-            BLOCK_LATENCY => Some(inputs.latency.as_ptr()),
             BLOCK_PAYLOAD => Some(inputs.payload.as_ptr()),
             BLOCK_QUERY => Some(inputs.query.as_ptr()),
             BLOCK_VALUE => Some(inputs.value.as_ptr()),
@@ -423,7 +410,6 @@ pub extern "C" fn ptr(block: i32) -> usize {
             BLOCK_KIND_SERVICE => Some(inputs.kind_service.as_ptr()),
             BLOCK_OUT_STARTS => Some(inputs.out_starts.as_ptr().cast::<f64>()),
             BLOCK_OUT_EDGES => Some(inputs.out_edges.as_ptr().cast::<f64>()),
-            BLOCK_SICK => Some(inputs.sick.as_ptr().cast::<f64>()),
             BLOCK_RESEARCH => Some(inputs.research.as_ptr().cast::<f64>()),
             _ => None,
         }
@@ -451,11 +437,8 @@ pub extern "C" fn len(block: i32) -> i32 {
             BLOCK_SCALARS => Some(inputs.scalars.len()),
             BLOCK_NODE_FIELDS => Some(inputs.node_fields.len()),
             BLOCK_EDGE_FIELDS => Some(inputs.edge_fields.len()),
-            BLOCK_WEIGHTS => Some(inputs.weights.len()),
-            BLOCK_NOMINAL => Some(inputs.nominal.len()),
             BLOCK_DEMAND => Some(inputs.demand.len()),
             BLOCK_INTAKE => Some(inputs.intake.len()),
-            BLOCK_LATENCY => Some(inputs.latency.len()),
             BLOCK_PAYLOAD => Some(inputs.payload.len()),
             BLOCK_QUERY => Some(inputs.query.len()),
             BLOCK_VALUE => Some(inputs.value.len()),
@@ -465,7 +448,6 @@ pub extern "C" fn len(block: i32) -> i32 {
             BLOCK_KIND_SERVICE => Some(inputs.kind_service.len()),
             BLOCK_OUT_STARTS => Some(inputs.out_starts.len()),
             BLOCK_OUT_EDGES => Some(inputs.out_edges.len()),
-            BLOCK_SICK => Some(inputs.sick.len()),
             BLOCK_RESEARCH => Some(inputs.research.len()),
             _ => None,
         }

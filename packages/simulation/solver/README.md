@@ -6,7 +6,8 @@ dependencies.
 
 `packages/simulation/src/solver.ts` is the host side. It writes a Game into the solver's
 blocks and decodes the Ledger. The Simulation package names no host globals, so each host
-loads the module and passes its exports to `installSolver`:
+loads the module and passes `installSolver` a function that instantiates it. A trap leaves an
+instance unusable, so the host side replaces it with a fresh one and rethrows the trap.
 
 | Host              | Loads the module with                                         |
 | ----------------- | ------------------------------------------------------------- |
@@ -88,7 +89,7 @@ scalar count and the Node row length, so a slot added on one side only fails at 
 | `src/abi.rs`      | The blocks, the status codes, and the scalar row layout         |
 | `src/wire.rs`     | The Ledger stream the host decodes                              |
 
-`NOTES.md` records the Rust patterns the crate uses and the bugs the port found.
+[`docs/research/rust-solver.md`](../../../docs/research/rust-solver.md) records the Rust patterns the crate uses and the bugs the port found.
 
 ## Performance
 

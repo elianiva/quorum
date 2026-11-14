@@ -1,6 +1,6 @@
-# Patterns this solver uses, and why
+# Patterns the Rust Solver uses, and why
 
-This note was written while the solver was research. The TypeScript harnesses it names
+This note was written while the Solver in `packages/simulation/solver` was research. The TypeScript harnesses it names
 (`forward.ts`, `challenges.ts`, `trajectory.ts`, and the others) compared the solver with
 the TypeScript solve, and were deleted with that solve. The game's test suites now check
 the solver.

@@ -4,6 +4,7 @@
 //! short block, an Edge that names a Node outside the Design, a Component whose
 //! rule is not ported, or a Game outside the ported surface returns a code
 //! instead of a figure, so a host never reads a number that only looks right.
+//! A catalog index past its table is not checked and traps (see `abi.rs`).
 
 use crate::abi::{self, Inputs};
 use crate::catalog::*;
@@ -63,12 +64,7 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
     if inputs.scalars.len() < count * abi::SCALARS {
         return Err(abi::SHORT_BLOCK);
     }
-    if inputs.weights.len() < count
-        || inputs.nominal.len() < count
-        || inputs.sick.len() < count
-        || inputs.intake.len() < count
-        || inputs.demand.len() < NK
-    {
+    if inputs.intake.len() < count || inputs.demand.len() < NK {
         return Err(abi::SHORT_BLOCK);
     }
     let mut nodes: Vec<Node> = (0..count).map(|slot| abi::node_of(inputs.row(slot))).collect();
@@ -339,7 +335,8 @@ fn solve_impl(boost_slot: i32, passes: i32, revenue_only: i32, search: bool) -> 
             outputs.summary[SUMMARY_BOTTLENECK] = bottleneck as f64;
             outputs.summary[SUMMARY_PASSES] = solved.passes as f64;
             outputs.summary[SUMMARY_NODES] = count as f64;
-            if let Some(ledger) = solved.ledger.as_ref() {
+            // A search reports only the summary; the host already decoded the flow solve's Ledger.
+            if let Some(ledger) = solved.ledger.as_ref().filter(|_| !search) {
                 outputs.ledger = crate::wire::Wire::ledger(ledger);
             }
             abi::OK
@@ -350,4 +347,44 @@ fn solve_impl(boost_slot: i32, passes: i32, revenue_only: i32, search: bool) -> 
         }
         status
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::routing::compile;
+
+    /// Two Nodes with no Edges, and every block a run reads at full length.
+    fn inputs() -> Inputs {
+        Inputs {
+            node_fields: vec![0.0; 2 * abi::NODE_FIELDS],
+            out_starts: vec![0; 3],
+            scalars: vec![0.0; 2 * abi::SCALARS],
+            intake: vec![0.0; 2],
+            demand: vec![0.0; NK],
+            ..Inputs::default()
+        }
+    }
+
+    #[test]
+    fn a_bad_block_returns_a_status_instead_of_a_figure() {
+        let full = inputs();
+        let design = compile(&full).expect("the full blocks compile");
+        assert!(prepare(&design, &full).is_ok());
+
+        let short = Inputs { scalars: vec![0.0; abi::SCALARS], ..inputs() };
+        assert_eq!(prepare(&design, &short).err(), Some(abi::SHORT_BLOCK));
+
+        // An Edge to a Node past the Design.
+        let mut edge = vec![0.0; abi::EDGE_FIELDS];
+        edge[1] = 2.0;
+        assert_eq!(compile(&Inputs { edge_fields: edge, ..inputs() }).err(), Some(abi::BAD_EDGE));
+
+        // An incident from a catalog newer than the solver's.
+        let mut newer = inputs();
+        newer.scalars[abi::S_INCIDENT] = (INCIDENT_IDS.len() + 1) as f64;
+        assert_eq!(prepare(&design, &newer).err(), Some(abi::UNSUPPORTED));
+
+        assert_eq!(abi::reserve(99, 1), abi::UNKNOWN_BLOCK);
+    }
 }

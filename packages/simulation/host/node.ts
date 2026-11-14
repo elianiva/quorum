@@ -8,4 +8,5 @@ import { installSolver } from '../src/solver.ts'
  * still finds it.
  */
 const path = createRequire(import.meta.url).resolve('@quorum/simulation/solver.wasm')
-installSolver(new WebAssembly.Instance(new WebAssembly.Module(readFileSync(path))).exports)
+const module = new WebAssembly.Module(readFileSync(path))
+installSolver(() => new WebAssembly.Instance(module).exports)

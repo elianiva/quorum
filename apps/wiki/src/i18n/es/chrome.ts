@@ -213,12 +213,11 @@ export const chrome: Chrome = {
   },
   spoilers: {
     title: 'Spoilers',
-    all: 'Todas',
-    allShow: 'Se muestran todas las Eras',
-    hidingAfter: (era) => `Se oculta tras ${era}`,
-    groupLabel: 'Oculta el contenido posterior a la Era que alcanzaste',
+    hideFuture: 'Ocultar Eras futuras',
+    allEras: 'Todas las Eras',
+    after: (era) => `Después de ${era}`,
+    chooseEra: 'Elige la última Era que alcanzaste',
     showEvery: 'Mostrar todas las Eras',
-    hideAfter: (era) => `Ocultar tras ${era}`,
     upTo: (era) => `Hasta ${era}`,
   },
   quiz: {

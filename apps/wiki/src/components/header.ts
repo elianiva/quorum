@@ -1,5 +1,5 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
-import { ArrowUpRight, Menu, Moon, Sun, X } from 'lucide'
+import { ArrowUpRight, Check, ChevronDown, Globe, Menu, Moon, Sun, X } from 'lucide'
 import { githubMark } from '@quorum/ui/primitives/github'
 import { icon } from '@quorum/ui/primitives/icon'
 import { rootBuilder } from '../i18n/builder.ts'
@@ -50,76 +50,210 @@ export const mark = (h: H): Html =>
     ],
   )
 
-/** Every language the wiki has, with the current one marked. A link, so the page loads whole in its
-    language; the current language is a label, since it already is the page. */
-const languageSwitcherClass = css({
+/** The languages the wiki has, as a menu. A phone shows the current code, a desktop the full name. */
+const languageSummary = css({
+  display: 'flex',
   height: '8',
+  width: '8',
   flexShrink: '0',
   alignItems: 'center',
-  gap: '0.5',
+  justifyContent: 'center',
+  gap: '1.5',
+  cursor: 'pointer',
   borderRadius: 'md',
   borderWidth: '1px',
   borderStyle: 'solid',
   borderColor: 'border',
-  padding: '0.5',
+  color: 'mutedForeground',
+  transitionProperty:
+    'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
+  transitionDuration: 'fast',
+  transitionTimingFunction: 'default',
+  _hover: {
+    borderColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
+    color: 'foreground',
+  },
+  sm: {
+    width: 'auto',
+    paddingInline: '2.5',
+  },
 })
-const languageSwitcherHeaderClass = css({
-  display: 'none',
-  sm: { display: 'flex' },
+const languageMenu = css({
+  position: 'absolute',
+  top: 'calc(100% + 6px)',
+  right: '0',
+  zIndex: '50',
+  minWidth: '12rem',
+  borderRadius: 'lg',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  borderColor: 'border',
+  backgroundColor: 'popover',
+  boxShadow: 'float',
+  padding: '1',
 })
-const languageSwitcherMenuClass = css({ display: 'flex' })
+const languageBackdrop = css({
+  position: 'fixed',
+  inset: '0',
+  zIndex: '40',
+  cursor: 'default',
+})
+const languageItem = css({
+  display: 'flex',
+  width: '100%',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '3',
+  borderRadius: 'md',
+  paddingInline: '2',
+  paddingBlock: '2',
+  color: 'foreground',
+  fontSize: 'type.13',
+  _hover: { backgroundColor: 'muted' },
+})
+const languageCode = css({
+  fontFamily: 'mono',
+  fontSize: 'type.11',
+  color: 'mutedForeground',
+})
 
-export const languageSwitcher = (model: Model, l: Lang, h: H, inMenu = false): Html =>
+export const languageSwitcher = (model: Model, l: Lang, h: H): Html =>
   h.nav(
     [
       h.Key('language'),
       h.AriaLabel(l.t.header.language),
-      h.Class(
-        cx(languageSwitcherClass, inMenu ? languageSwitcherMenuClass : languageSwitcherHeaderClass),
-      ),
+      h.Class(css({ position: 'relative', flexShrink: '0' })),
     ],
-    LOCALES.map((locale) => {
-      const tag = LOCALE_TAGS[locale].lang
-      const current = locale === model.locale
-      const look = cx(
-        css({
-          display: 'grid',
-          height: '100%',
-          minWidth: '6',
-          placeItems: 'center',
-          borderRadius: 'xs',
-          paddingInline: '1',
-          fontSize: 'type.11',
-          fontWeight: 'semibold',
-          textTransform: 'uppercase',
-        }),
-        current
-          ? css({
-              backgroundColor: 'foreground',
-              color: 'background',
-            })
-          : css({
-              color: 'mutedForeground',
-              _hover: {
-                color: 'foreground',
-              },
+    [
+      h.button(
+        [
+          h.Type('button'),
+          h.Title(l.t.header.language),
+          h.AriaLabel(l.t.header.language),
+          h.AriaHasPopup('menu'),
+          h.AriaExpanded(model.languageMenu),
+          h.AriaControls('language-menu'),
+          h.OnClick(Message.LanguageMenuToggled()),
+          h.Class(languageSummary),
+        ],
+        [
+          icon(
+            h,
+            Globe,
+            css({
+              display: 'none',
+              width: '4',
+              height: '4',
+              flexShrink: '0',
+              sm: { display: 'block' },
             }),
-      )
-      return current
-        ? h.span([h.Key(locale), h.AriaCurrent('page'), h.Class(look)], [tag])
-        : h.a(
+          ),
+          h.span(
             [
-              h.Key(locale),
-              // The builder that points links into the page's language would point this one back.
-              rootBuilder(h).Href(withLocale(locale, model.path)),
-              h.Attribute('hreflang', tag),
-              h.Attribute('lang', tag),
-              h.Title(l.t.header.switchTo(LOCALE_NAMES[locale])),
-              h.Class(look),
+              h.Class(
+                css({
+                  fontSize: 'type.11',
+                  fontWeight: 'semibold',
+                  textTransform: 'uppercase',
+                  sm: { display: 'none' },
+                }),
+              ),
             ],
-            [tag],
+            [LOCALE_TAGS[model.locale].lang],
+          ),
+          h.span(
+            [
+              h.Class(
+                css({
+                  display: 'none',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: 'type.12',
+                  fontWeight: 'medium',
+                  sm: { display: 'inline' },
+                }),
+              ),
+            ],
+            [LOCALE_NAMES[model.locale]],
+          ),
+          icon(
+            h,
+            ChevronDown,
+            css({
+              display: 'none',
+              width: '3.5',
+              height: '3.5',
+              flexShrink: '0',
+              sm: { display: 'block' },
+            }),
+          ),
+        ],
+      ),
+      // A click anywhere else, or Escape, closes the menu.
+      model.languageMenu
+        ? h.div(
+            [
+              h.Key('language-dismiss'),
+              h.AriaHidden(true),
+              h.OnClick(Message.LanguageMenuClosed()),
+              h.Class(languageBackdrop),
+            ],
+            [],
           )
-    }),
+        : h.empty,
+      model.languageMenu
+        ? h.div(
+            [
+              h.Id('language-menu'),
+              h.Role('menu'),
+              h.AriaLabel(l.t.header.language),
+              h.Class(languageMenu),
+            ],
+            LOCALES.map((locale) => {
+              const tag = LOCALE_TAGS[locale].lang
+              const current = locale === model.locale
+              return current
+                ? h.span(
+                    [
+                      h.Key(locale),
+                      h.Role('menuitem'),
+                      h.AriaCurrent('page'),
+                      h.AriaLabel(LOCALE_NAMES[locale]),
+                      h.Class(languageItem),
+                    ],
+                    [
+                      h.span([], [LOCALE_NAMES[locale]]),
+                      icon(
+                        h,
+                        Check,
+                        css({
+                          width: '3.5',
+                          height: '3.5',
+                          flexShrink: '0',
+                          color: 'mutedForeground',
+                        }),
+                      ),
+                    ],
+                  )
+                : h.a(
+                    [
+                      h.Key(locale),
+                      // The builder that points links into the page's language would point this one back.
+                      rootBuilder(h).Href(withLocale(locale, model.path)),
+                      h.Attribute('hreflang', tag),
+                      h.Attribute('lang', tag),
+                      h.Title(l.t.header.switchTo(LOCALE_NAMES[locale])),
+                      h.Role('menuitem'),
+                      h.AriaLabel(LOCALE_NAMES[locale]),
+                      h.Class(languageItem),
+                    ],
+                    [h.span([], [LOCALE_NAMES[locale]]), h.span([h.Class(languageCode)], [tag])],
+                  )
+            }),
+          )
+        : h.empty,
+    ],
   )
 
 /** The theme switch. The icon follows `html.dark`, so it has one source of truth. */
@@ -411,12 +545,15 @@ const sections = (model: Model, l: Lang, h: H): Html => {
               gap: '6',
               overflowX: 'auto',
               paddingInline: '4',
+              // Room after the last tab, so the current one can sit at the start edge on a phone.
+              paddingRight: '24',
               sm: {
                 paddingInline: '6',
               },
               scrollbarWidth: 'none',
               '@media (max-width: 1023px)': {
-                maskImage: 'linear-gradient(to right,#000 85%,transparent)',
+                maskImage:
+                  'linear-gradient(to right,transparent 0.5rem,#000 1rem,#000 calc(100% - 3rem),transparent)',
               },
             }),
           ),
@@ -439,6 +576,7 @@ const sections = (model: Model, l: Lang, h: H): Html => {
                       gap: '2',
                       borderBottomWidth: '2px',
                       borderBottomStyle: 'solid',
+                      scrollMarginInlineStart: '4',
                       fontSize: 'type.14',
                       transitionProperty:
                         'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',

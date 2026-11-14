@@ -8,7 +8,6 @@ import { Message, type Model } from '../main.ts'
 import type { Page } from '../page.ts'
 import { childrenOf, navOf, pageIn } from '../pages.ts'
 import * as Spoilers from '../submodels/spoilers.ts'
-import { languageSwitcher } from './header.ts'
 import { quadrantBadge, quadrantColor } from './quadrant.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
@@ -558,36 +557,6 @@ export const sidebar = (model: Model, h: H): Html => {
                   ]),
             ),
           ),
-        ],
-      ),
-      // A phone keeps the language switch in the menu, which leaves the search room in the header.
-      h.div(
-        [
-          h.Class(
-            css({
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '3',
-              paddingInline: '2.5',
-              paddingBottom: '4',
-              sm: { display: 'none' },
-            }),
-          ),
-        ],
-        [
-          h.span(
-            [
-              h.Class(
-                css({
-                  fontSize: 'type.12',
-                  color: 'mutedForeground',
-                }),
-              ),
-            ],
-            [l.t.header.language],
-          ),
-          languageSwitcher(model, l, h, true),
         ],
       ),
       // The spoiler filter stays in reach at the foot, however long the list.

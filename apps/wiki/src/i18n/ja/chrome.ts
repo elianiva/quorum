@@ -197,6 +197,7 @@ export const chrome: Chrome = {
   search: {
     placeholder: '検索',
     label: 'Wiki を検索',
+    close: '検索を閉じる',
     results: '検索結果',
     searching: '検索中…',
     unavailable: '検索は利用できません。',

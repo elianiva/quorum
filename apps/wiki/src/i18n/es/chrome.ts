@@ -200,6 +200,7 @@ export const chrome: Chrome = {
   search: {
     placeholder: 'Buscar',
     label: 'Buscar en la wiki',
+    close: 'Cerrar la búsqueda',
     results: 'Resultados de la búsqueda',
     searching: 'Buscando…',
     unavailable: 'La búsqueda no está disponible.',

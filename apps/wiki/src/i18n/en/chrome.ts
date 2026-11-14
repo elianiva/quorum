@@ -190,6 +190,7 @@ export const chrome = {
   search: {
     placeholder: 'Search',
     label: 'Search the wiki',
+    close: 'Close search',
     results: 'Search results',
     searching: 'Searching…',
     unavailable: 'Search is unavailable.',

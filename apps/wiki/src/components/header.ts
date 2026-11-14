@@ -1,5 +1,5 @@
 import type { Html, HtmlBuilder } from 'foldkit/html'
-import { ArrowUpRight, Menu, X } from 'lucide'
+import { ArrowUpRight, Menu, Moon, Sun, X } from 'lucide'
 import { githubMark } from '@quorum/ui/primitives/github'
 import { icon } from '@quorum/ui/primitives/icon'
 import { rootBuilder } from '../i18n/builder.ts'
@@ -52,24 +52,30 @@ export const mark = (h: H): Html =>
 
 /** Every language the wiki has, with the current one marked. A link, so the page loads whole in its
     language; the current language is a label, since it already is the page. */
-const switcher = (model: Model, l: Lang, h: H): Html =>
+const languageSwitcherClass = css({
+  height: '8',
+  flexShrink: '0',
+  alignItems: 'center',
+  gap: '0.5',
+  borderRadius: 'md',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  borderColor: 'border',
+  padding: '0.5',
+})
+const languageSwitcherHeaderClass = css({
+  display: 'none',
+  sm: { display: 'flex' },
+})
+const languageSwitcherMenuClass = css({ display: 'flex' })
+
+export const languageSwitcher = (model: Model, l: Lang, h: H, inMenu = false): Html =>
   h.nav(
     [
       h.Key('language'),
       h.AriaLabel(l.t.header.language),
       h.Class(
-        css({
-          display: 'flex',
-          height: '8',
-          flexShrink: '0',
-          alignItems: 'center',
-          gap: '0.5',
-          borderRadius: 'md',
-          borderWidth: '1px',
-          borderStyle: 'solid',
-          borderColor: 'border',
-          padding: '0.5',
-        }),
+        cx(languageSwitcherClass, inMenu ? languageSwitcherMenuClass : languageSwitcherHeaderClass),
       ),
     ],
     LOCALES.map((locale) => {
@@ -114,6 +120,56 @@ const switcher = (model: Model, l: Lang, h: H): Html =>
             [tag],
           )
     }),
+  )
+
+/** The theme switch. The icon follows `html.dark`, so it has one source of truth. */
+const themeToggle = (l: Lang, h: H): Html =>
+  h.button(
+    [
+      h.Type('button'),
+      h.DataAttribute('theme-toggle', ''),
+      h.AriaLabel(l.t.header.theme),
+      h.Title(l.t.header.theme),
+      h.Class(
+        css({
+          display: 'grid',
+          width: '8',
+          height: '8',
+          flexShrink: '0',
+          placeItems: 'center',
+          borderRadius: 'md',
+          borderWidth: '1px',
+          borderStyle: 'solid',
+          borderColor: 'border',
+          color: 'mutedForeground',
+          _hover: {
+            borderColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
+            color: 'foreground',
+          },
+        }),
+      ),
+    ],
+    [
+      icon(
+        h,
+        Sun,
+        css({
+          width: '4',
+          height: '4',
+          _dark: { display: 'none' },
+        }),
+      ),
+      icon(
+        h,
+        Moon,
+        css({
+          display: 'none',
+          width: '4',
+          height: '4',
+          _dark: { display: 'block' },
+        }),
+      ),
+    ],
   )
 
 export const header = (model: Model, h: H): Html => {
@@ -257,7 +313,8 @@ export const header = (model: Model, h: H): Html => {
             ],
             [],
           ),
-          switcher(model, l, h),
+          languageSwitcher(model, l, h),
+          themeToggle(l, h),
           h.a(
             [
               h.Href(REPOSITORY),

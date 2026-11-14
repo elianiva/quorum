@@ -33,6 +33,15 @@ export const repaintBoards = (): void => {
   for (const controller of controllers.values()) controller.repaint()
 }
 
+let watchingTheme = false
+
+/** Redraws every mounted board when the page theme changes. Safe to call more than once. */
+export const watchBoardTheme = (): void => {
+  if (watchingTheme) return
+  watchingTheme = true
+  window.addEventListener('quorum:theme', repaintBoards)
+}
+
 const hasWebgl = (): boolean => {
   try {
     const canvas = document.createElement('canvas')

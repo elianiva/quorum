@@ -19,6 +19,7 @@ import { prerenderPaths, renderDocument, renderPage, sitemap } from './entry.ser
 import { PAGES, pageAt, pageIn, pagesFor } from './pages.ts'
 import { slug } from './page.ts'
 import { buildIndex, search } from './search.ts'
+import { THEME_KEY } from './theme.ts'
 // The translated bundles register their copy and prose when they load.
 import './locales/es.ts'
 import './locales/ja.ts'
@@ -417,6 +418,14 @@ test('the head of an English page names English and links its Markdown twin', as
   expect(page).toContain(
     `hreflang="ja" href="https://wiki.playquorum.dev/ja/glossary/cache-stampede"`,
   )
+})
+
+test('the page offers a theme switch and applies the saved theme before paint', async () => {
+  const assets = { entryScript: '/entry.js', stylesheets: [], modulePreloads: [] }
+  const page = renderDocument((await rendered('/glossary/cache-stampede')).application, assets)
+  expect(page).toContain('data-theme-toggle')
+  expect(page).toContain(THEME_KEY)
+  expect(page).toContain('prefers-color-scheme: dark')
 })
 
 const escapeHtml = (text: string): string =>

@@ -1,10 +1,17 @@
 import { HOME_REGION } from '@quorum/simulation/catalog'
 import { nodeOrdinals } from '@quorum/simulation/labels'
 import { solveFlow } from '@quorum/simulation/solve'
-import { attachBoard, fitBoard, setBoard, type BoardState } from '@quorum/ui/board/board'
+import {
+  attachBoard,
+  fitBoard,
+  setBoard,
+  watchBoardTheme,
+  type BoardState,
+} from '@quorum/ui/board/board'
 import { DESIGNS } from '../patterns/designs/index.ts'
 
 const NOOP = () => {}
+watchBoardTheme()
 
 export const drawDesign = (id: string, host: HTMLElement): (() => void) => {
   const design = DESIGNS[id]

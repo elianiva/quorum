@@ -182,12 +182,12 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                       state === 'right'
                         ? css({
                             backgroundColor: 'ok',
-                            color: 'white',
+                            color: 'background',
                           })
                         : state === 'wrong'
                           ? css({
                               backgroundColor: 'danger',
-                              color: 'white',
+                              color: 'background',
                             })
                           : css({
                               borderWidth: '1px',

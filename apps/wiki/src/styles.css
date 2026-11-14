@@ -18,6 +18,11 @@
 
   html {
     scroll-padding-top: calc(var(--header-height) + 24px);
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   body {

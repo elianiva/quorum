@@ -37,8 +37,8 @@ const PRODUCTION: Partial<Record<IncidentDef['id'], string>> = {
 }
 
 const SEVERITY_CLASS: Record<1 | 2 | 3, string> = {
-  1: css({ backgroundColor: 'danger', color: 'white' }),
-  2: css({ backgroundColor: 'warn', color: 'white' }),
+  1: css({ backgroundColor: 'danger', color: 'background' }),
+  2: css({ backgroundColor: 'warn', color: 'background' }),
   3: css({
     backgroundColor: 'color-mix(in oklab, var(--foreground) 10%, transparent)',
     color: 'foreground',

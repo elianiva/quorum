@@ -317,7 +317,7 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
                       placeItems: 'center',
                       borderRadius: '9999px',
                       backgroundColor: 'ok',
-                      color: 'white',
+                      color: 'background',
                     }),
                   ),
                 ],

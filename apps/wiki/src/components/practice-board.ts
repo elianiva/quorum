@@ -1,7 +1,7 @@
 import { Check, Circle, RotateCcw, X, createElement, type IconNode } from 'lucide'
 import { DOCK_OF } from '@quorum/simulation/catalog'
 import { priceOf } from '@quorum/simulation/lookups'
-import { attachBoard, fitBoard, setBoard } from '@quorum/ui/board/board'
+import { attachBoard, fitBoard, setBoard, watchBoardTheme } from '@quorum/ui/board/board'
 import { money } from '@quorum/ui/game/format'
 import { COMPONENT_ICONS, GROUP_ICONS } from '@quorum/ui/game/icons'
 import { GROUP_TEXT } from '@quorum/ui/game/bits'
@@ -21,6 +21,8 @@ import {
   PracticeEvent,
   type PracticeId,
 } from './practice.ts'
+
+watchBoardTheme()
 
 /** A goal's label in the page's language. The practice logic names goals in English, which is also the key. */
 const goalLabel = (l: Lang, label: string): string => {

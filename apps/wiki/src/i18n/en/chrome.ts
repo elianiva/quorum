@@ -19,6 +19,7 @@ export const chrome = {
     sections: 'Sections',
     wordmarkWiki: 'Wiki',
     language: 'Language',
+    theme: 'Switch between light and dark mode',
     switchTo: (name: string) => `Read this page in ${name}`,
   },
   quadrants: {

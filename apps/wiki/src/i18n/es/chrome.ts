@@ -23,6 +23,7 @@ export const chrome: Chrome = {
     sections: 'Secciones',
     wordmarkWiki: 'Wiki',
     language: 'Idioma',
+    theme: 'Cambiar entre el modo claro y el oscuro',
     switchTo: (name) => `Leer esta página en ${name}`,
   },
   quadrants: {

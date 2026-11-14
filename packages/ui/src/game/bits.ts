@@ -1,4 +1,5 @@
 import { css, cx } from '@quorum/styled-system/css'
+import type { SystemStyleObject } from '@quorum/styled-system/types'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { IconNode } from 'lucide'
 import type { BuildGroup, InsightPool } from '@quorum/simulation/catalog'
@@ -6,16 +7,22 @@ import { icon } from '../primitives/icon.ts'
 import { GROUP_SHAPES, type GroupShape, STACK_LOGOS, type StackLogoId } from './icons.ts'
 import { POOL_ICONS, poolColor, poolName } from './pools.ts'
 
-export const EYEBROW = css({
+export const EYEBROW_STYLE: SystemStyleObject = {
   fontFamily: 'mono',
   fontSize: 'type.10-5',
   fontWeight: 'medium',
   textTransform: 'uppercase',
   letterSpacing: 'eyebrow',
   color: 'mutedForeground',
-})
+}
+export const EYEBROW = css(EYEBROW_STYLE)
 export const SCROLL = css({ overflow: 'auto', scrollbarWidth: 'thin' })
-export const PANEL = css({ borderRadius: '2xl', layerStyle: 'surface', boxShadow: 'card' })
+export const PANEL_STYLE: SystemStyleObject = {
+  borderRadius: '2xl',
+  layerStyle: 'surface',
+  boxShadow: 'card',
+}
+export const PANEL = css(PANEL_STYLE)
 export const FLOAT = css({ borderRadius: '2xl', layerStyle: 'surface', boxShadow: 'float' })
 /** A group inside a panel, one step lighter, with hairline dividers. */
 export const NESTED = css({
@@ -29,7 +36,12 @@ export const NESTED = css({
   },
 })
 /** A sunken strip: tracks, segmented controls, figure rows. */
-export const WELL = css({ borderRadius: 'xl', backgroundColor: 'well', boxShadow: 'well' })
+export const WELL_STYLE: SystemStyleObject = {
+  borderRadius: 'xl',
+  backgroundColor: 'well',
+  boxShadow: 'well',
+}
+export const WELL = css(WELL_STYLE)
 /** A phone shows the figures as one row of chips that scrolls sideways. */
 export const CHIPS = css({
   _compact: {
@@ -49,50 +61,45 @@ export const CHIPS = css({
   },
 })
 
-export const FIGURE = css({
+export const FIGURE_STYLE: SystemStyleObject = {
   fontFamily: 'mono',
   fontVariantNumeric: 'tabular-nums',
   letterSpacing: 'subtle',
-})
+}
+export const FIGURE = css(FIGURE_STYLE)
+
+const toolBase: SystemStyleObject = {
+  position: 'relative',
+  display: 'grid',
+  width: '10',
+  height: '10',
+  flexShrink: 0,
+  placeItems: 'center',
+  borderRadius: 'xl',
+}
+
+const toolOn: SystemStyleObject = {
+  layerStyle: 'primaryFill',
+  color: 'onPrimaryFill',
+  boxShadow: 'primary',
+  _dark: {
+    layerStyle: 'raised',
+    color: 'foreground',
+    boxShadow: 'raised',
+  },
+}
+
+const toolOff: SystemStyleObject = {
+  color: 'mutedForeground',
+  _hover: { backgroundColor: 'well', color: 'foreground' },
+}
 
 /** A square icon control inside a panel: flat at rest, a raised ink fill when on.
- *  On a dark board a white fill outshines the board, so on is a raised grey there. */
-export const tool = (active: boolean): string =>
-  active
-    ? cx(
-        css({
-          position: 'relative',
-          display: 'grid',
-          width: '10',
-          height: '10',
-          flexShrink: 0,
-          placeItems: 'center',
-          borderRadius: 'xl',
-          layerStyle: 'primaryFill',
-          color: 'onPrimaryFill',
-          boxShadow: 'primary',
-          _dark: {
-            layerStyle: 'raised',
-            color: 'foreground',
-            boxShadow: 'raised',
-          },
-        }),
-        'press',
-      )
-    : cx(
-        css({
-          position: 'relative',
-          display: 'grid',
-          width: '10',
-          height: '10',
-          flexShrink: 0,
-          placeItems: 'center',
-          borderRadius: 'xl',
-          color: 'mutedForeground',
-          _hover: { backgroundColor: 'well', color: 'foreground' },
-        }),
-        'press',
-      )
+ *  On a dark board a white fill outshines the board, so on is a raised grey there.
+ *  Pass `style` as `css.raw({...})` to change its shape: `css` merges it over the base, while
+ *  a second class from `cx` would leave two atoms for one property and let stylesheet order pick. */
+export const tool = (active: boolean, style: SystemStyleObject = {}): string =>
+  cx(css(toolBase, active ? toolOn : toolOff, style), 'press')
 
 export type Tone = 'plain' | 'ok' | 'warn' | 'danger'
 

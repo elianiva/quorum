@@ -26,7 +26,7 @@ import { confirmSellOf, ledgerOf, type Model, stampedPlaybook } from '@/game/mod
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
 import { textarea } from '@quorum/ui/primitives/textarea'
-import { EYEBROW, FIGURE, NESTED, SCROLL, WELL } from '@quorum/ui/game/bits'
+import { EYEBROW, FIGURE, NESTED, SCROLL, WELL, FIGURE_STYLE } from '@quorum/ui/game/bits'
 import { SurveyMessage } from '@/game/survey.ts'
 import { isSending, isSent, isSkipped } from '@/game/survey-machine.ts'
 import { shell } from './panels.ts'
@@ -488,14 +488,11 @@ export const exitedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.span(
             [
               h.Class(
-                cx(
-                  FIGURE,
-                  css({
-                    fontSize: 'type.30',
-                    fontWeight: 'semibold',
-                    letterSpacing: 'heading',
-                  }),
-                ),
+                css(FIGURE_STYLE, {
+                  fontSize: 'type.30',
+                  fontWeight: 'semibold',
+                  letterSpacing: 'heading',
+                }),
               ),
             ],
             [t.legacy.legacy2(row.legacy)],

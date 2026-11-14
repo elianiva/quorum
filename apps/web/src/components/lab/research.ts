@@ -69,7 +69,16 @@ import { POOL_ICONS, POOL_ORDER, poolColor, recipeOf } from '@quorum/ui/game/poo
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
 import { badge, type BadgeVariant } from '@quorum/ui/primitives/badge'
-import { EYEBROW, FIGURE, FLOAT, PANEL, SCROLL, insightChip, meter } from '@quorum/ui/game/bits'
+import {
+  EYEBROW,
+  FIGURE,
+  FLOAT,
+  PANEL,
+  SCROLL,
+  insightChip,
+  meter,
+  EYEBROW_STYLE,
+} from '@quorum/ui/game/bits'
 import { LOOKS, TRACK_ICONS, colorOf, researchMark } from '@quorum/ui/game/research-marks'
 import {
   eraName,
@@ -1279,21 +1288,19 @@ const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
         h.span(
           [
             h.Class(
-              cx(
-                EYEBROW,
-                css({
+              css(
+                EYEBROW_STYLE,
+                {
                   position: 'absolute',
                   top: '3',
                   left: '5',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '1.5',
-                }),
-                band.era === game.stage
-                  ? css({
-                      color: 'foreground',
-                    })
-                  : '',
+                },
+                band.era === game.stage && {
+                  color: 'foreground',
+                },
               ),
             ),
           ],

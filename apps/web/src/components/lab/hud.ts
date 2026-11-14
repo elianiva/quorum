@@ -88,6 +88,7 @@ import { WIKI_URL } from '@/platform/analytics.ts'
 import { glowing, playbooksShown, shown } from '@/game/reveal.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
+import { css, cx } from '@quorum/styled-system/css'
 import { cn } from '@/lib/utils'
 import {
   CHIPS,
@@ -731,12 +732,36 @@ const vitalRow = (
       h.AriaLabel(title),
       ...(onClick ? [h.OnClick(onClick)] : [h.Disabled(true)]),
       h.Class(
-        'flex min-h-12 w-full items-center gap-3 px-3.5 text-left disabled:opacity-100 enabled:hover:bg-well',
+        css({
+          display: 'flex',
+          minHeight: '3rem',
+          width: '100%',
+          alignItems: 'center',
+          gap: '0.75rem',
+          paddingInline: '0.875rem',
+          textAlign: 'left',
+          _disabled: { opacity: 1 },
+          _enabled: { _hover: { backgroundColor: 'well' } },
+        }),
       ),
     ],
     [
       icon(h, glyph, 'size-4 shrink-0 text-muted-foreground'),
-      h.span([h.Class('min-w-0 flex-1 truncate text-[calc(13px*var(--type-scale))]')], [name]),
+      h.span(
+        [
+          h.Class(
+            css({
+              minWidth: 0,
+              flex: '1 1 0%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: 'calc(13px * var(--type-scale))',
+            }),
+          ),
+        ],
+        [name],
+      ),
       h.span(
         [
           h.Class(
@@ -801,23 +826,59 @@ export const vitalsPanel = (model: Model, ledger: Ledger, h: HtmlBuilder<Message
     [],
     [
       h.div(
-        [h.Class(cn('flex flex-col gap-5 px-4 pt-1 pb-6', SCROLL))],
+        [
+          h.Class(
+            cx(
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1.25rem',
+                paddingInline: '1rem',
+                paddingTop: '0.25rem',
+                paddingBottom: '1.5rem',
+              }),
+              SCROLL,
+            ),
+          ),
+        ],
         [
           h.div(
-            [h.Class('flex flex-col gap-2')],
+            [h.Class(css({ display: 'flex', flexDirection: 'column', gap: '0.5rem' }))],
             [
               h.div(
-                [h.Class('flex items-baseline justify-between gap-3')],
+                [
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      justifyContent: 'space-between',
+                      gap: '0.75rem',
+                    }),
+                  ),
+                ],
                 [
                   h.span(
-                    [h.Class('text-[calc(15px*var(--type-scale))] font-semibold')],
+                    [
+                      h.Class(
+                        css({
+                          fontSize: 'calc(15px * var(--type-scale))',
+                          fontWeight: '600',
+                        }),
+                      ),
+                    ],
                     [era.name],
                   ),
                   next
                     ? h.span(
                         [
                           h.Class(
-                            FIGURE + ' text-[calc(11.5px*var(--type-scale))] text-muted-foreground',
+                            cx(
+                              FIGURE,
+                              css({
+                                fontSize: 'calc(11.5px * var(--type-scale))',
+                                color: 'mutedForeground',
+                              }),
+                            ),
                           ),
                         ],
                         [t.hud.roundAtUsers(next.name, compact(era.raiseAt))],
@@ -840,7 +901,24 @@ export const vitalsPanel = (model: Model, ledger: Ledger, h: HtmlBuilder<Message
             ],
           ),
           h.div(
-            [h.Class('flex flex-col divide-y divide-hairline rounded-xl bg-well shadow-well')],
+            [
+              h.Class(
+                cx(
+                  WELL,
+                  css({
+                    display: 'flex',
+                    flexDirection: 'column',
+                    '& > :not(:last-child)': {
+                      borderTopWidth: '0px',
+                      borderTopStyle: 'solid',
+                      borderBottomWidth: '1px',
+                      borderBottomStyle: 'solid',
+                      borderColor: 'hairline',
+                    },
+                  }),
+                ),
+              ),
+            ],
             [
               vitalRow(
                 t.hud.cash,

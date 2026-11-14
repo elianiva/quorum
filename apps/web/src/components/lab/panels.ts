@@ -864,7 +864,7 @@ const settingSection = (label: string, rows: ReadonlyArray<Html>, h: HtmlBuilder
     [h.Class('flex flex-col gap-2')],
     [
       h.span([h.Class(EYEBROW)], [label]),
-      h.div([h.Class(cn(NESTED, 'flex flex-col divide-y divide-hairline overflow-hidden'))], rows),
+      h.div([h.Class(cn(NESTED, 'flex flex-col overflow-hidden'))], rows),
     ],
   )
 

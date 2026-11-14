@@ -21,9 +21,9 @@ import { css, cx } from '@quorum/styled-system/css'
 /* The live views behind each Markdown directive. src/islands.ts declares their attributes. */
 
 const NOTE = {
-  tip: { glyph: Lightbulb, tone: css({ color: 'var(--ok)' }) },
-  warn: { glyph: TriangleAlert, tone: css({ color: 'var(--warn)' }) },
-  real: { glyph: Info, tone: css({ color: 'var(--group-edge)' }) },
+  tip: { glyph: Lightbulb, tone: css({ color: 'ok' }) },
+  warn: { glyph: TriangleAlert, tone: css({ color: 'warn' }) },
+  real: { glyph: Info, tone: css({ color: 'groupEdge' }) },
 } as const
 
 export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Islands => {
@@ -38,13 +38,13 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
           h.Class(
             cx(
               css({
-                marginBlock: '1.5rem',
+                marginBlock: '6',
                 borderRadius: 'lg',
                 borderWidth: '1px',
                 borderStyle: 'solid',
-                borderColor: 'var(--border)',
-                paddingInline: '1rem',
-                paddingBlock: '0.75rem',
+                borderColor: 'border',
+                paddingInline: '4',
+                paddingBlock: '3',
               }),
               'not-prose',
             ),
@@ -55,10 +55,10 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
             [
               h.Class(
                 css({
-                  marginBottom: '0.25rem',
+                  marginBottom: '1',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.375rem',
+                  gap: '1.5',
                   fontSize: '13px',
                   fontWeight: '500',
                 }),
@@ -70,8 +70,8 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                 note.glyph,
                 cx(
                   css({
-                    width: '0.875rem',
-                    height: '0.875rem',
+                    width: '3.5',
+                    height: '3.5',
                   }),
                   note.tone,
                 ),
@@ -86,7 +86,7 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                   css({
                     fontSize: '14px',
                     '& > * + *': {
-                      marginTop: '0.5rem',
+                      marginTop: '2',
                     },
                   }),
                   'prose',
@@ -116,12 +116,12 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
           h.Class(
             cx(
               css({
-                marginBlock: '1.5rem',
+                marginBlock: '6',
                 overflowX: 'auto',
                 borderRadius: 'lg',
                 borderWidth: '1px',
                 borderStyle: 'solid',
-                borderColor: 'var(--border)',
+                borderColor: 'border',
               }),
               'not-prose',
             ),
@@ -153,15 +153,15 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                             css({
                               borderBottomWidth: '1px',
                               borderBottomStyle: 'solid',
-                              borderColor: 'var(--border)',
+                              borderColor: 'border',
                               backgroundColor: 'color-mix(in oklab, var(--muted) 50%, transparent)',
-                              paddingInline: '0.75rem',
-                              paddingBlock: '0.5rem',
+                              paddingInline: '3',
+                              paddingBlock: '2',
                               textAlign: 'left',
                               fontSize: '12px',
                               fontWeight: '500',
                               whiteSpace: 'nowrap',
-                              color: 'var(--muted-foreground)',
+                              color: 'mutedForeground',
                             }),
                           ),
                         ],
@@ -178,7 +178,7 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                       '& > * + *': {
                         borderTopWidth: '1px',
                         borderTopStyle: 'solid',
-                        borderColor: 'var(--border)',
+                        borderColor: 'border',
                       },
                     }),
                   ),
@@ -191,8 +191,8 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                         [
                           h.Class(
                             css({
-                              paddingInline: '0.75rem',
-                              paddingBlock: '0.5rem',
+                              paddingInline: '3',
+                              paddingBlock: '2',
                               verticalAlign: 'top',
                               fontWeight: '500',
                             }),
@@ -204,10 +204,10 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                         [
                           h.Class(
                             css({
-                              paddingInline: '0.75rem',
-                              paddingBlock: '0.5rem',
+                              paddingInline: '3',
+                              paddingBlock: '2',
                               verticalAlign: 'top',
-                              color: 'var(--muted-foreground)',
+                              color: 'mutedForeground',
                             }),
                           ),
                         ],
@@ -217,10 +217,10 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                         [
                           h.Class(
                             css({
-                              paddingInline: '0.75rem',
-                              paddingBlock: '0.5rem',
+                              paddingInline: '3',
+                              paddingBlock: '2',
                               verticalAlign: 'top',
-                              color: 'var(--muted-foreground)',
+                              color: 'mutedForeground',
                             }),
                           ),
                         ],
@@ -244,17 +244,17 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
             cx(
               cx(
                 css({
-                  marginBlock: '1.5rem',
+                  marginBlock: '6',
                   display: 'flex',
                   maxWidth: '28rem',
                   alignItems: 'center',
-                  gap: '0.875rem',
+                  gap: '3.5',
                   borderRadius: 'lg',
                   borderWidth: '1px',
                   borderStyle: 'solid',
-                  borderColor: 'var(--border)',
-                  paddingInline: '1rem',
-                  paddingBlock: '0.75rem',
+                  borderColor: 'border',
+                  paddingInline: '4',
+                  paddingBlock: '3',
                   transitionProperty:
                     'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
                   transitionDuration: '150ms',
@@ -270,7 +270,7 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
           ),
         ],
         [
-          groupBadge(def.group, COMPONENT_ICONS[id], css({ width: '2.5rem', height: '2.5rem' }), h),
+          groupBadge(def.group, COMPONENT_ICONS[id], css({ width: '10', height: '10' }), h),
           h.span(
             [
               h.Class(
@@ -287,7 +287,7 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                     css({
                       display: 'flex',
                       alignItems: 'baseline',
-                      gap: '0.5rem',
+                      gap: '2',
                     }),
                   ),
                 ],
@@ -309,7 +309,7 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                       h.Class(
                         css({
                           fontSize: '12px',
-                          color: 'var(--muted-foreground)',
+                          color: 'mutedForeground',
                         }),
                       ),
                     ],
@@ -321,11 +321,11 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                 [
                   h.Class(
                     css({
-                      marginTop: '0.125rem',
+                      marginTop: '0.5',
                       display: 'block',
                       fontSize: '13px',
                       lineHeight: '1.375',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ],
@@ -337,10 +337,10 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
             h,
             ArrowRight,
             css({
-              width: '1rem',
-              height: '1rem',
+              width: '4',
+              height: '4',
               flexShrink: '0',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
               transitionProperty: 'transform, translate, scale, rotate',
               transitionDuration: '150ms',
               transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
@@ -360,7 +360,7 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
               h.Class(
                 cx(
                   css({
-                    marginBlock: '1.25rem',
+                    marginBlock: '5',
                   }),
                   'not-prose',
                 ),
@@ -373,7 +373,7 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                   h.Class(
                     css({
                       fontSize: '12px',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ],
@@ -391,10 +391,10 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
           h.Class(
             cx(
               css({
-                marginBlock: '1.25rem',
+                marginBlock: '5',
                 display: 'flex',
                 flexWrap: 'wrap',
-                gap: '0.5rem',
+                gap: '2',
               }),
               'not-prose',
             ),
@@ -413,14 +413,14 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                       css({
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.5rem',
+                        gap: '2',
                         borderRadius: 'md',
                         borderWidth: '1px',
                         borderStyle: 'solid',
-                        borderColor: 'var(--border)',
-                        paddingBlock: '0.25rem',
-                        paddingRight: '0.75rem',
-                        paddingLeft: '0.25rem',
+                        borderColor: 'border',
+                        paddingBlock: '1',
+                        paddingRight: '3',
+                        paddingLeft: '1',
                         fontSize: '13px',
                         _hover: {
                           backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',

@@ -22,12 +22,12 @@ export const mixBar = <M>(mix: EraDef['mix'], h: HtmlBuilder<M>, legend = true):
           css({
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.75rem',
+            gap: '3',
           }),
           'not-prose',
           legend &&
             css({
-              marginBlock: '1.25rem',
+              marginBlock: '5',
             }),
         ),
       ),
@@ -38,7 +38,7 @@ export const mixBar = <M>(mix: EraDef['mix'], h: HtmlBuilder<M>, legend = true):
           h.Class(
             css({
               display: 'flex',
-              height: '0.5rem',
+              height: '2',
               gap: '1px',
               overflow: 'hidden',
               borderRadius: '9999px',
@@ -73,8 +73,8 @@ export const mixBar = <M>(mix: EraDef['mix'], h: HtmlBuilder<M>, legend = true):
                 css({
                   display: 'flex',
                   flexWrap: 'wrap',
-                  columnGap: '1rem',
-                  rowGap: '0.375rem',
+                  columnGap: '4',
+                  rowGap: '1.5',
                   fontSize: '12px',
                 }),
               ),
@@ -87,7 +87,7 @@ export const mixBar = <M>(mix: EraDef['mix'], h: HtmlBuilder<M>, legend = true):
                     css({
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '0.375rem',
+                      gap: '1.5',
                     }),
                   ),
                 ],
@@ -96,8 +96,8 @@ export const mixBar = <M>(mix: EraDef['mix'], h: HtmlBuilder<M>, legend = true):
                     [
                       h.Class(
                         css({
-                          width: '0.625rem',
-                          height: '0.625rem',
+                          width: '2.5',
+                          height: '2.5',
                           borderRadius: 'sm',
                         }),
                       ),
@@ -112,7 +112,7 @@ export const mixBar = <M>(mix: EraDef['mix'], h: HtmlBuilder<M>, legend = true):
                         cx(
                           FIGURE,
                           css({
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                         ),
                       ),

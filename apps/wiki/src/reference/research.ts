@@ -55,7 +55,7 @@ const recipe = (l: Lang, entry: ResearchDef, h: H): Html =>
           flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'flex-end',
-          gap: '0.5rem',
+          gap: '2',
         }),
       ),
     ],
@@ -231,8 +231,8 @@ const tree = (l: Lang, h: H, full = false): Html => {
               borderRadius: 'lg',
               borderWidth: '1px',
               borderStyle: 'solid',
-              borderColor: 'var(--border)',
-              backgroundColor: 'var(--canvas)',
+              borderColor: 'border',
+              backgroundColor: 'canvas',
             }),
             'not-prose',
           ),
@@ -268,7 +268,7 @@ const tree = (l: Lang, h: H, full = false): Html => {
                     position: 'absolute',
                     borderTopWidth: '1px',
                     borderTopStyle: 'solid',
-                    borderColor: 'var(--hairline)',
+                    borderColor: 'hairline',
                   }),
                 ),
                 h.Style({
@@ -287,10 +287,10 @@ const tree = (l: Lang, h: H, full = false): Html => {
                         EYEBROW,
                         css({
                           position: 'absolute',
-                          top: '0.75rem',
-                          left: '1.25rem',
+                          top: '3',
+                          left: '5',
                           _hover: {
-                            color: 'var(--foreground)',
+                            color: 'foreground',
                           },
                         }),
                       ),
@@ -313,7 +313,7 @@ const tree = (l: Lang, h: H, full = false): Html => {
                     translate: '-50% -50%',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '0.5rem',
+                    gap: '2',
                   }),
                 ),
                 h.Style({ left: `${track.x}px`, top: `${track.y}px` }),
@@ -324,14 +324,14 @@ const tree = (l: Lang, h: H, full = false): Html => {
                     h.Class(
                       css({
                         display: 'grid',
-                        width: '3.5rem',
-                        height: '3.5rem',
+                        width: '14',
+                        height: '14',
                         placeItems: 'center',
                         borderRadius: 'xl',
                         borderWidth: '1px',
                         borderStyle: 'solid',
-                        borderColor: 'var(--border)',
-                        backgroundColor: 'var(--background)',
+                        borderColor: 'border',
+                        backgroundColor: 'background',
                       }),
                     ),
                   ],
@@ -340,8 +340,8 @@ const tree = (l: Lang, h: H, full = false): Html => {
                       h,
                       TRACK_ICONS[track.track],
                       css({
-                        width: '1.5rem',
-                        height: '1.5rem',
+                        width: '6',
+                        height: '6',
                       }),
                     ),
                   ],
@@ -414,12 +414,12 @@ const tree = (l: Lang, h: H, full = false): Html => {
                       position: 'absolute',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.625rem',
+                      gap: '2.5',
                       overflow: 'hidden',
                       borderRadius: 'xl',
                       layerStyle: 'raised',
-                      paddingInline: '0.625rem',
-                      paddingBlock: '0.25rem',
+                      paddingInline: '2.5',
+                      paddingBlock: '1',
                       boxShadow: 'raised',
                       transitionProperty: 'filter',
                       transitionDuration: '150ms',
@@ -442,7 +442,7 @@ const tree = (l: Lang, h: H, full = false): Html => {
                         minWidth: '0',
                         flex: '1 1 0%',
                         flexDirection: 'column',
-                        gap: '0.25rem',
+                        gap: '1',
                       }),
                     ),
                   ],
@@ -467,7 +467,7 @@ const tree = (l: Lang, h: H, full = false): Html => {
                             display: 'flex',
                             width: 'fit-content',
                             alignItems: 'center',
-                            gap: '0.5rem',
+                            gap: '2',
                             fontSize: '11px',
                           }),
                         ),
@@ -492,15 +492,15 @@ const byTrack = (l: Lang, h: H): Html =>
       h.Class(
         cx(
           css({
-            marginBlock: '1.5rem',
+            marginBlock: '6',
             display: 'grid',
             gap: '1px',
             overflow: 'hidden',
             borderRadius: 'lg',
             borderWidth: '1px',
             borderStyle: 'solid',
-            borderColor: 'var(--border)',
-            backgroundColor: 'var(--border)',
+            borderColor: 'border',
+            backgroundColor: 'border',
             md: {
               gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
               '& > :last-child:nth-child(odd)': {
@@ -520,8 +520,8 @@ const byTrack = (l: Lang, h: H): Html =>
           h.Key(track.key),
           h.Class(
             css({
-              backgroundColor: 'var(--background)',
-              padding: '1rem',
+              backgroundColor: 'background',
+              padding: '4',
             }),
           ),
         ],
@@ -533,7 +533,7 @@ const byTrack = (l: Lang, h: H): Html =>
                   marginTop: '0 !important',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.5rem',
+                  gap: '2',
                   fontSize: '15px',
                   fontWeight: '600',
                 }),
@@ -544,9 +544,9 @@ const byTrack = (l: Lang, h: H): Html =>
                 h,
                 TRACK_ICONS[track.key],
                 css({
-                  width: '1rem',
-                  height: '1rem',
-                  color: 'var(--muted-foreground)',
+                  width: '4',
+                  height: '4',
+                  color: 'mutedForeground',
                 }),
               ),
               track.label,
@@ -559,7 +559,7 @@ const byTrack = (l: Lang, h: H): Html =>
                         marginLeft: 'auto',
                         fontSize: '12px',
                         fontWeight: '400',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ),
@@ -572,10 +572,10 @@ const byTrack = (l: Lang, h: H): Html =>
             [
               h.Class(
                 css({
-                  marginTop: '0.75rem',
+                  marginTop: '3',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.75rem',
+                  gap: '3',
                 }),
               ),
             ],
@@ -588,7 +588,7 @@ const byTrack = (l: Lang, h: H): Html =>
                       fontSize: '12px',
                       fontWeight: '500',
                       letterSpacing: '0.025em',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                       textTransform: 'uppercase',
                     }),
                   ),
@@ -600,7 +600,7 @@ const byTrack = (l: Lang, h: H): Html =>
                       h.Class(
                         css({
                           _hover: {
-                            color: 'var(--foreground)',
+                            color: 'foreground',
                           },
                         }),
                       ),
@@ -614,10 +614,10 @@ const byTrack = (l: Lang, h: H): Html =>
                   h.Key(`${era}-d`),
                   h.Class(
                     css({
-                      marginTop: '0.25rem',
+                      marginTop: '1',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '0.25rem',
+                      gap: '1',
                     }),
                   ),
                 ],
@@ -632,7 +632,7 @@ const byTrack = (l: Lang, h: H): Html =>
                           css({
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.5rem',
+                            gap: '2',
                             fontSize: '14px',
                             lineHeight: '1.375',
                             _hover: {
@@ -659,21 +659,21 @@ const treeButton = (href: string, label: string, mark: IconNode, h: H): Html =>
       h.Class(
         css({
           display: 'inline-flex',
-          height: '2rem',
+          height: '8',
           alignItems: 'center',
-          gap: '0.5rem',
+          gap: '2',
           borderRadius: 'md',
           borderWidth: '1px',
           borderStyle: 'solid',
-          borderColor: 'var(--border)',
-          backgroundColor: 'var(--background)',
-          paddingInline: '0.75rem',
+          borderColor: 'border',
+          backgroundColor: 'background',
+          paddingInline: '3',
           fontSize: '13px',
           fontWeight: '500',
-          color: 'var(--foreground)',
+          color: 'foreground',
           textDecorationLine: 'none',
           _hover: {
-            backgroundColor: 'var(--muted)',
+            backgroundColor: 'muted',
           },
         }),
       ),
@@ -683,8 +683,8 @@ const treeButton = (href: string, label: string, mark: IconNode, h: H): Html =>
         h,
         mark,
         css({
-          width: '1rem',
-          height: '1rem',
+          width: '4',
+          height: '4',
         }),
       ),
       label,
@@ -704,7 +704,7 @@ const costLegend = (l: Lang, h: H): Html => {
       h.Class(
         cx(
           css({
-            marginBlock: '1.25rem',
+            marginBlock: '5',
           }),
           'not-prose',
         ),
@@ -721,8 +721,8 @@ const costLegend = (l: Lang, h: H): Html => {
               borderRadius: 'lg',
               borderWidth: '1px',
               borderStyle: 'solid',
-              borderColor: 'var(--border)',
-              backgroundColor: 'var(--border)',
+              borderColor: 'border',
+              backgroundColor: 'border',
               sm: {
                 gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
               },
@@ -738,10 +738,10 @@ const costLegend = (l: Lang, h: H): Html => {
                   css({
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.75rem',
-                    backgroundColor: 'var(--background)',
-                    paddingInline: '0.875rem',
-                    paddingBlock: '0.625rem',
+                    gap: '3',
+                    backgroundColor: 'background',
+                    paddingInline: '3.5',
+                    paddingBlock: '2.5',
                   }),
                 ),
               ],
@@ -752,12 +752,12 @@ const costLegend = (l: Lang, h: H): Html => {
                     h.Class(
                       css({
                         display: 'grid',
-                        width: '2rem',
-                        height: '2rem',
+                        width: '8',
+                        height: '8',
                         flexShrink: '0',
                         placeItems: 'center',
                         borderRadius: 'md',
-                        backgroundColor: 'var(--muted)',
+                        backgroundColor: 'muted',
                       }),
                     ),
                     h.Style({ color: poolColor(pool) }),
@@ -767,8 +767,8 @@ const costLegend = (l: Lang, h: H): Html => {
                       h,
                       POOL_ICONS[pool],
                       css({
-                        width: '1rem',
-                        height: '1rem',
+                        width: '4',
+                        height: '4',
                       }),
                     ),
                   ],
@@ -801,7 +801,7 @@ const costLegend = (l: Lang, h: H): Html => {
                             display: 'block',
                             fontSize: '12px',
                             lineHeight: '1.375',
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                         ),
                       ],
@@ -820,7 +820,7 @@ const costLegend = (l: Lang, h: H): Html => {
                 h.Class(
                   css({
                     display: 'none',
-                    backgroundColor: 'var(--background)',
+                    backgroundColor: 'background',
                     lg: {
                       display: 'block',
                     },
@@ -837,7 +837,7 @@ const costLegend = (l: Lang, h: H): Html => {
                 h.Class(
                   css({
                     display: 'none',
-                    backgroundColor: 'var(--background)',
+                    backgroundColor: 'background',
                     sm: {
                       display: 'block',
                     },
@@ -876,7 +876,7 @@ export const researchPages = (l: Lang): ReadonlyArray<Page> => {
             [
               h.Class(
                 css({
-                  marginBottom: '1rem',
+                  marginBottom: '4',
                   display: 'flex',
                   justifyContent: 'flex-end',
                 }),
@@ -933,7 +933,7 @@ export const researchPages = (l: Lang): ReadonlyArray<Page> => {
                   h.Class(
                     cx(
                       css({
-                        marginBottom: '0.75rem',
+                        marginBottom: '3',
                         display: 'flex',
                         justifyContent: 'flex-end',
                       }),

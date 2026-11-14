@@ -445,7 +445,7 @@ const sandbox = (l: Lang, def: GuidedSandbox): Page => {
                             [
                               h.Class(
                                 css({
-                                  color: 'var(--muted-foreground)',
+                                  color: 'mutedForeground',
                                 }),
                               ),
                             ],

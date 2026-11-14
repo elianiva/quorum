@@ -134,7 +134,7 @@ export const view = defineView<Model, Message>((model, h) => {
           minWidth: '0',
           flex: '1 1 0%',
           sm: {
-            maxWidth: '24rem',
+            maxWidth: '96',
           },
         }),
       ),
@@ -145,16 +145,16 @@ export const view = defineView<Model, Message>((model, h) => {
           h.Class(
             css({
               display: 'flex',
-              height: '2rem',
+              height: '8',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '2',
               borderRadius: 'md',
               borderWidth: '1px',
               borderStyle: 'solid',
-              borderColor: 'var(--border)',
-              backgroundColor: 'var(--background)',
-              paddingInline: '0.625rem',
-              color: 'var(--muted-foreground)',
+              borderColor: 'border',
+              backgroundColor: 'background',
+              paddingInline: '2.5',
+              color: 'mutedForeground',
               transitionProperty:
                 'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
               transitionDuration: '150ms',
@@ -170,8 +170,8 @@ export const view = defineView<Model, Message>((model, h) => {
             h,
             SearchIcon,
             css({
-              width: '0.875rem',
-              height: '0.875rem',
+              width: '3.5',
+              height: '3.5',
               flexShrink: '0',
             }),
           ),
@@ -190,13 +190,13 @@ export const view = defineView<Model, Message>((model, h) => {
                 flex: '1 1 0%',
                 backgroundColor: 'transparent',
                 fontSize: '16px',
-                color: 'var(--foreground)',
+                color: 'foreground',
                 sm: {
                   fontSize: '13px',
                 },
                 outlineStyle: 'none',
                 '&::placeholder': {
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 },
               }),
             ),
@@ -225,8 +225,8 @@ export const view = defineView<Model, Message>((model, h) => {
                   borderRadius: '0.25rem',
                   borderWidth: '1px',
                   borderStyle: 'solid',
-                  borderColor: 'var(--border)',
-                  paddingInline: '0.375rem',
+                  borderColor: 'border',
+                  paddingInline: '1.5',
                   fontFamily: 'mono',
                   fontSize: '11px',
                   lineHeight: '1rem',
@@ -251,21 +251,21 @@ export const view = defineView<Model, Message>((model, h) => {
                 css({
                   position: 'fixed',
                   top: '52px',
-                  right: '0.75rem',
-                  left: '0.75rem',
+                  right: '3',
+                  left: '3',
                   zIndex: '50',
                   maxHeight: '70dvh',
                   overflowY: 'auto',
                   borderRadius: 'lg',
                   borderWidth: '1px',
                   borderStyle: 'solid',
-                  borderColor: 'var(--border)',
-                  backgroundColor: 'var(--card)',
-                  padding: '0.25rem',
+                  borderColor: 'border',
+                  backgroundColor: 'card',
+                  padding: '1',
                   boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
                   sm: {
                     position: 'absolute',
-                    top: '2.5rem',
+                    top: '10',
                     right: '0',
                     left: '0',
                     maxHeight: 'none',
@@ -280,10 +280,10 @@ export const view = defineView<Model, Message>((model, h) => {
                     [
                       h.Class(
                         css({
-                          paddingInline: '0.75rem',
-                          paddingBlock: '0.625rem',
+                          paddingInline: '3',
+                          paddingBlock: '2.5',
                           fontSize: '13px',
-                          color: 'var(--muted-foreground)',
+                          color: 'mutedForeground',
                         }),
                       ),
                     ],
@@ -303,19 +303,19 @@ export const view = defineView<Model, Message>((model, h) => {
                           css({
                             display: 'block',
                             borderRadius: 'md',
-                            paddingInline: '0.75rem',
-                            paddingBlock: '0.5rem',
+                            paddingInline: '3',
+                            paddingBlock: '2',
                             _hover: {
-                              backgroundColor: 'var(--muted)',
+                              backgroundColor: 'muted',
                             },
                             _focusVisible: {
-                              backgroundColor: 'var(--muted)',
+                              backgroundColor: 'muted',
                               outlineStyle: 'none',
                             },
                           }),
                           position === model.active &&
                             css({
-                              backgroundColor: 'var(--muted)',
+                              backgroundColor: 'muted',
                             }),
                         ),
                       ),
@@ -328,7 +328,7 @@ export const view = defineView<Model, Message>((model, h) => {
                               display: 'flex',
                               alignItems: 'baseline',
                               justifyContent: 'space-between',
-                              gap: '0.75rem',
+                              gap: '3',
                             }),
                           ),
                         ],
@@ -339,7 +339,7 @@ export const view = defineView<Model, Message>((model, h) => {
                                 css({
                                   fontSize: '14px',
                                   fontWeight: '500',
-                                  color: 'var(--foreground)',
+                                  color: 'foreground',
                                 }),
                               ),
                             ],
@@ -350,7 +350,7 @@ export const view = defineView<Model, Message>((model, h) => {
                               h.Class(
                                 css({
                                   fontSize: '12px',
-                                  color: 'var(--muted-foreground)',
+                                  color: 'mutedForeground',
                                 }),
                               ),
                             ],
@@ -362,10 +362,10 @@ export const view = defineView<Model, Message>((model, h) => {
                         [
                           h.Class(
                             css({
-                              marginTop: '0.125rem',
+                              marginTop: '0.5',
                               lineClamp: '1',
                               fontSize: '12px',
-                              color: 'var(--muted-foreground)',
+                              color: 'mutedForeground',
                             }),
                           ),
                         ],

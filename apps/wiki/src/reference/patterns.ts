@@ -78,17 +78,17 @@ export const patternsPages = (l: Lang): ReadonlyArray<Page> => {
                                       h.Class(
                                         css({
                                           display: 'flex',
-                                          width: '2.25rem',
-                                          height: '2.25rem',
+                                          width: '9',
+                                          height: '9',
                                           flexShrink: '0',
                                           alignItems: 'center',
                                           justifyContent: 'center',
                                           borderRadius: 'lg',
-                                          backgroundColor: 'var(--muted)',
+                                          backgroundColor: 'muted',
                                           fontSize: '13px',
                                           fontWeight: '600',
                                           fontVariantNumeric: 'tabular-nums',
-                                          color: 'var(--muted-foreground)',
+                                          color: 'mutedForeground',
                                         }),
                                       ),
                                     ],
@@ -97,8 +97,8 @@ export const patternsPages = (l: Lang): ReadonlyArray<Page> => {
                                 : quadrantBadge(
                                     'patterns',
                                     css({
-                                      width: '2.25rem',
-                                      height: '2.25rem',
+                                      width: '9',
+                                      height: '9',
                                       flexShrink: '0',
                                     }),
                                     h,

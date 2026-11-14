@@ -26,7 +26,7 @@ const segments = (
       h.Class(
         css({
           display: 'flex',
-          gap: '0.25rem',
+          gap: '1',
         }),
       ),
     ],
@@ -51,7 +51,7 @@ const segments = (
                 cx(
                   css({
                     display: 'block',
-                    height: '0.375rem',
+                    height: '1.5',
                     borderRadius: '9999px',
                     transitionProperty:
                       'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
@@ -102,7 +102,7 @@ export const pathBar = (page: Page, model: Model, h: H): Html => {
       h.AriaLabel(l.t.pathNav.guidedPath(title)),
       h.Class(
         css({
-          marginTop: '1.5rem',
+          marginTop: '6',
         }),
       ),
     ],
@@ -111,11 +111,11 @@ export const pathBar = (page: Page, model: Model, h: H): Html => {
         [
           h.Class(
             css({
-              marginBottom: '0.5rem',
+              marginBottom: '2',
               display: 'flex',
               alignItems: 'baseline',
               justifyContent: 'space-between',
-              gap: '0.75rem',
+              gap: '3',
             }),
           ),
         ],
@@ -125,7 +125,7 @@ export const pathBar = (page: Page, model: Model, h: H): Html => {
               h.Class(
                 css({
                   fontSize: '12px',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -138,7 +138,7 @@ export const pathBar = (page: Page, model: Model, h: H): Html => {
                   FIGURE,
                   css({
                     fontSize: '12px',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -158,7 +158,7 @@ const nextCard = (label: string, target: Page, h: H): Html =>
     [
       h.Class(
         css({
-          marginTop: '3.5rem',
+          marginTop: '14',
           display: 'flex',
           justifyContent: 'flex-end',
         }),
@@ -173,16 +173,16 @@ const nextCard = (label: string, target: Page, h: H): Html =>
               css({
                 display: 'flex',
                 width: '100%',
-                maxWidth: '24rem',
+                maxWidth: '96',
                 flexDirection: 'column',
                 alignItems: 'flex-end',
-                gap: '0.25rem',
+                gap: '1',
                 borderRadius: 'lg',
                 borderWidth: '1px',
                 borderStyle: 'solid',
-                borderColor: 'var(--border)',
-                paddingInline: '1rem',
-                paddingBlock: '0.75rem',
+                borderColor: 'border',
+                paddingInline: '4',
+                paddingBlock: '3',
                 textAlign: 'right',
                 transitionProperty:
                   'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
@@ -202,7 +202,7 @@ const nextCard = (label: string, target: Page, h: H): Html =>
               h.Class(
                 css({
                   fontSize: '12px',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -214,7 +214,7 @@ const nextCard = (label: string, target: Page, h: H): Html =>
                 css({
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.375rem',
+                  gap: '1.5',
                   fontSize: '15px',
                   fontWeight: '500',
                 }),
@@ -226,8 +226,8 @@ const nextCard = (label: string, target: Page, h: H): Html =>
                 h,
                 ArrowRight,
                 css({
-                  width: '1rem',
-                  height: '1rem',
+                  width: '4',
+                  height: '4',
                   transitionProperty: 'transform, translate, scale, rotate',
                   transitionDuration: '150ms',
                   transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
@@ -274,9 +274,9 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
         css({
           display: 'flex',
           flexDirection: 'column',
-          gap: '1rem',
-          backgroundColor: 'var(--background)',
-          padding: '1.25rem',
+          gap: '4',
+          backgroundColor: 'background',
+          padding: '5',
         }),
       ),
     ],
@@ -288,7 +288,7 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
               display: 'flex',
               alignItems: 'baseline',
               justifyContent: 'space-between',
-              gap: '0.75rem',
+              gap: '3',
             }),
           ),
         ],
@@ -311,12 +311,12 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
                   h.Class(
                     css({
                       display: 'grid',
-                      width: '1.25rem',
-                      height: '1.25rem',
+                      width: '5',
+                      height: '5',
                       flexShrink: '0',
                       placeItems: 'center',
                       borderRadius: '9999px',
-                      backgroundColor: 'var(--ok)',
+                      backgroundColor: 'ok',
                       color: 'white',
                     }),
                   ),
@@ -326,8 +326,8 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
                     h,
                     Check,
                     css({
-                      width: '0.75rem',
-                      height: '0.75rem',
+                      width: '3',
+                      height: '3',
                     }),
                   ),
                 ],
@@ -340,7 +340,7 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
                       css({
                         flexShrink: '0',
                         fontSize: '12px',
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ),
@@ -356,7 +356,7 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
               fontSize: '14px',
               lineHeight: '1.375',
               textWrap: 'pretty',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -374,13 +374,13 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: '0.75rem',
+                    gap: '3',
                     borderRadius: 'md',
                     borderWidth: '1px',
                     borderStyle: 'solid',
-                    borderColor: 'var(--border)',
-                    paddingInline: '0.75rem',
-                    paddingBlock: '0.5rem',
+                    borderColor: 'border',
+                    paddingInline: '3',
+                    paddingBlock: '2',
                     fontSize: '14px',
                     transitionProperty:
                       'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
@@ -388,7 +388,7 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
                     transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
                     _hover: {
                       borderColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
-                      backgroundColor: 'var(--well)',
+                      backgroundColor: 'well',
                     },
                   }),
                   'group',
@@ -425,7 +425,7 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
                           [
                             h.Class(
                               css({
-                                color: 'var(--muted-foreground)',
+                                color: 'mutedForeground',
                               }),
                             ),
                           ],
@@ -438,8 +438,8 @@ export const pathCard = (path: Path, model: Model, h: H): Html => {
                 h,
                 ArrowRight,
                 css({
-                  width: '1rem',
-                  height: '1rem',
+                  width: '4',
+                  height: '4',
                   flexShrink: '0',
                   transitionProperty: 'transform, translate, scale, rotate',
                   transitionDuration: '150ms',

@@ -64,7 +64,7 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
     const all = model.era === ALL_ERAS
     const reached = all ? t.allShow : t.hidingAfter(ERAS[model.era]?.name ?? '')
     const step = css({
-      height: '1.75rem',
+      height: '7',
       minWidth: '0',
       flex: '1 1 0%',
       cursor: 'pointer',
@@ -77,11 +77,11 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
     })
     // The first step says a word, not a number: it takes the room it needs, in every language.
     const allStep = css({
-      height: '1.75rem',
+      height: '7',
       flexShrink: '0',
       cursor: 'pointer',
       borderRadius: 'md',
-      paddingInline: '0.5rem',
+      paddingInline: '2',
       fontSize: '12px',
       whiteSpace: 'nowrap',
       transitionProperty:
@@ -95,8 +95,8 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
           css({
             borderTopWidth: '1px',
             borderTopStyle: 'solid',
-            borderColor: 'var(--border)',
-            paddingTop: '0.75rem',
+            borderColor: 'border',
+            paddingTop: '3',
           }),
         ),
       ],
@@ -108,7 +108,7 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
                 display: 'flex',
                 alignItems: 'baseline',
                 justifyContent: 'space-between',
-                gap: '0.5rem',
+                gap: '2',
               }),
             ),
           ],
@@ -119,7 +119,7 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
                   css({
                     fontSize: '12px',
                     fontWeight: '600',
-                    color: 'var(--foreground)',
+                    color: 'foreground',
                   }),
                 ),
               ],
@@ -133,7 +133,7 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                     fontSize: '12px',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ],
@@ -147,9 +147,9 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
             h.AriaLabel(t.groupLabel),
             h.Class(
               css({
-                marginTop: '0.5rem',
+                marginTop: '2',
                 display: 'flex',
-                gap: '0.25rem',
+                gap: '1',
               }),
             ),
           ],
@@ -165,18 +165,18 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
                     allStep,
                     all
                       ? css({
-                          backgroundColor: 'var(--foreground)',
+                          backgroundColor: 'foreground',
                           fontWeight: '500',
-                          color: 'var(--background)',
+                          color: 'background',
                         })
                       : css({
                           borderWidth: '1px',
                           borderStyle: 'solid',
-                          borderColor: 'var(--border)',
-                          color: 'var(--muted-foreground)',
+                          borderColor: 'border',
+                          color: 'mutedForeground',
                           _hover: {
-                            backgroundColor: 'var(--muted)',
-                            color: 'var(--foreground)',
+                            backgroundColor: 'muted',
+                            color: 'foreground',
                           },
                         }),
                   ),
@@ -200,12 +200,12 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
                       all || index <= model.era
                         ? model.era === index
                           ? css({
-                              backgroundColor: 'var(--foreground)',
-                              color: 'var(--background)',
+                              backgroundColor: 'foreground',
+                              color: 'background',
                             })
                           : css({
-                              backgroundColor: 'var(--muted)',
-                              color: 'var(--foreground)',
+                              backgroundColor: 'muted',
+                              color: 'foreground',
                               _hover: {
                                 backgroundColor:
                                   'color-mix(in oklab, var(--muted) 70%, transparent)',
@@ -214,10 +214,10 @@ export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
                         : css({
                             borderWidth: '1px',
                             borderStyle: 'dashed',
-                            borderColor: 'var(--border)',
-                            color: 'var(--muted-foreground)',
+                            borderColor: 'border',
+                            color: 'mutedForeground',
                             _hover: {
-                              backgroundColor: 'var(--muted)',
+                              backgroundColor: 'muted',
                             },
                           }),
                     ),

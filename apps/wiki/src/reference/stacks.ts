@@ -49,7 +49,7 @@ const axes = (l: Lang, values: Axes, h: H): Html => {
             h.Class(
               css({
                 display: 'inline-flex',
-                gap: '0.25rem',
+                gap: '1',
               }),
             ),
           ],
@@ -60,14 +60,14 @@ const axes = (l: Lang, values: Axes, h: H): Html => {
                 h.Class(
                   step <= values[axis]
                     ? css({
-                        width: '0.5rem',
-                        height: '0.5rem',
+                        width: '2',
+                        height: '2',
                         borderRadius: '9999px',
                         backgroundColor: 'color-mix(in oklab, var(--foreground) 70%, transparent)',
                       })
                     : css({
-                        width: '0.5rem',
-                        height: '0.5rem',
+                        width: '2',
+                        height: '2',
                         borderRadius: '9999px',
                         backgroundColor: 'color-mix(in oklab, var(--foreground) 12%, transparent)',
                       }),
@@ -125,8 +125,8 @@ const runtimePage = (l: Lang, def: RuntimeDef): Page => {
         stackLogo(
           def.language,
           css({
-            width: '1.5rem',
-            height: '1.5rem',
+            width: '6',
+            height: '6',
           }),
           h,
         ),
@@ -206,8 +206,8 @@ const frameworkPage = (l: Lang, def: FrameworkDef): Page => {
           : stackLogo(
               def.id,
               css({
-                width: '1.5rem',
-                height: '1.5rem',
+                width: '6',
+                height: '6',
               }),
               h,
             ),
@@ -286,7 +286,7 @@ export const stackPages = (l: Lang): ReadonlyArray<Page> => {
                             css({
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '0.5rem',
+                              gap: '2',
                             }),
                           ),
                         ],
@@ -294,8 +294,8 @@ export const stackPages = (l: Lang): ReadonlyArray<Page> => {
                           stackLogo(
                             id,
                             css({
-                              width: '1rem',
-                              height: '1rem',
+                              width: '4',
+                              height: '4',
                             }),
                             h,
                           ),

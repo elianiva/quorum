@@ -31,7 +31,7 @@ export const toc = (page: Page, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  marginBottom: '0.5rem',
+                  marginBottom: '2',
                   fontSize: '12px',
                   fontWeight: '600',
                 }),
@@ -45,7 +45,7 @@ export const toc = (page: Page, h: HtmlBuilder<Message>): Html => {
                 css({
                   borderLeftWidth: '1px',
                   borderLeftStyle: 'solid',
-                  borderColor: 'var(--border)',
+                  borderColor: 'border',
                 }),
               ),
             ],
@@ -64,21 +64,21 @@ export const toc = (page: Page, h: HtmlBuilder<Message>): Html => {
                             borderLeftWidth: '1px',
                             borderLeftStyle: 'solid',
                             borderColor: 'transparent',
-                            paddingBlock: '0.25rem',
+                            paddingBlock: '1',
                             fontSize: '13px',
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                             _hover: {
                               borderColor:
                                 'color-mix(in oklab, var(--foreground) 40%, transparent)',
-                              color: 'var(--foreground)',
+                              color: 'foreground',
                             },
                           }),
                           heading.level === 3
                             ? css({
-                                paddingLeft: '1.5rem',
+                                paddingLeft: '6',
                               })
                             : css({
-                                paddingLeft: '0.75rem',
+                                paddingLeft: '3',
                               }),
                         ),
                       ),

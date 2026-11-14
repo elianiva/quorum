@@ -67,7 +67,7 @@ const entity = (l: Lang, entry: GlossaryEntry, order: number): Page => {
                     cx(
                       EYEBROW,
                       css({
-                        marginRight: '0.5rem',
+                        marginRight: '2',
                       }),
                     ),
                   ),
@@ -173,8 +173,8 @@ export const glossaryPages = (l: Lang): ReadonlyArray<Page> => {
                       cx(
                         css({
                           display: 'grid',
-                          columnGap: '1.5rem',
-                          rowGap: '0.375rem',
+                          columnGap: '6',
+                          rowGap: '1.5',
                           sm: {
                             gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
                           },

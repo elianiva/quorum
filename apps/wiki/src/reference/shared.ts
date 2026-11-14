@@ -39,7 +39,7 @@ export const link = (path: string, text: string, h: H): Html =>
           textDecorationColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
           textUnderlineOffset: '3px',
           _hover: {
-            textDecorationColor: 'var(--foreground)',
+            textDecorationColor: 'foreground',
           },
         }),
       ),
@@ -58,7 +58,7 @@ export const linkList = (items: ReadonlyArray<Html>, h: H): Html => {
         [
           h.Class(
             css({
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -89,7 +89,7 @@ export const factsBox = (
           borderRadius: 'lg',
           borderWidth: '1px',
           borderStyle: 'solid',
-          borderColor: 'var(--border)',
+          borderColor: 'border',
         }),
       ),
     ],
@@ -100,12 +100,12 @@ export const factsBox = (
             css({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.625rem',
+              gap: '2.5',
               borderBottomWidth: '1px',
               borderBottomStyle: 'solid',
-              borderColor: 'var(--border)',
-              paddingInline: '1rem',
-              paddingBlock: '0.75rem',
+              borderColor: 'border',
+              paddingInline: '4',
+              paddingBlock: '3',
             }),
           ),
         ],
@@ -131,7 +131,7 @@ export const factsBox = (
               '& > * + *': {
                 borderTopWidth: '1px',
                 borderTopStyle: 'solid',
-                borderColor: 'var(--border)',
+                borderColor: 'border',
               },
             }),
           ),
@@ -145,9 +145,9 @@ export const factsBox = (
                   display: 'flex',
                   alignItems: 'baseline',
                   justifyContent: 'space-between',
-                  gap: '0.75rem',
-                  paddingInline: '1rem',
-                  paddingBlock: '0.5rem',
+                  gap: '3',
+                  paddingInline: '4',
+                  paddingBlock: '2',
                 }),
               ),
             ],
@@ -158,7 +158,7 @@ export const factsBox = (
                     css({
                       flexShrink: '0',
                       fontSize: '13px',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ],
@@ -253,9 +253,9 @@ export const hubCard = (page: Page, mark: Html, meta: string, h: H): Html =>
         cx(
           css({
             display: 'flex',
-            gap: '0.75rem',
-            backgroundColor: 'var(--background)',
-            padding: '1rem',
+            gap: '3',
+            backgroundColor: 'background',
+            padding: '4',
             transitionProperty:
               'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
             transitionDuration: '150ms',
@@ -285,7 +285,7 @@ export const hubCard = (page: Page, mark: Html, meta: string, h: H): Html =>
                 css({
                   display: 'flex',
                   alignItems: 'baseline',
-                  gap: '0.5rem',
+                  gap: '2',
                 }),
               ),
             ],
@@ -309,7 +309,7 @@ export const hubCard = (page: Page, mark: Html, meta: string, h: H): Html =>
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                       fontSize: '12px',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ],
@@ -321,11 +321,11 @@ export const hubCard = (page: Page, mark: Html, meta: string, h: H): Html =>
             [
               h.Class(
                 css({
-                  marginTop: '0.125rem',
+                  marginTop: '0.5',
                   lineClamp: '2',
                   fontSize: '13px',
                   lineHeight: '1.375',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -350,12 +350,12 @@ export const table = (
       h.Class(
         cx(
           css({
-            marginBlock: '1.5rem',
+            marginBlock: '6',
             overflowX: 'auto',
             borderRadius: 'lg',
             borderWidth: '1px',
             borderStyle: 'solid',
-            borderColor: 'var(--border)',
+            borderColor: 'border',
           }),
           'not-prose',
         ),
@@ -388,15 +388,15 @@ export const table = (
                           css({
                             borderBottomWidth: '1px',
                             borderBottomStyle: 'solid',
-                            borderColor: 'var(--border)',
+                            borderColor: 'border',
                             backgroundColor: 'color-mix(in oklab, var(--muted) 50%, transparent)',
-                            paddingInline: '0.75rem',
-                            paddingBlock: '0.5rem',
+                            paddingInline: '3',
+                            paddingBlock: '2',
                             textAlign: 'left',
                             fontSize: '12px',
                             fontWeight: '500',
                             whiteSpace: 'nowrap',
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                           }),
                           figures.includes(index) &&
                             css({
@@ -418,7 +418,7 @@ export const table = (
                   '& > * + *': {
                     borderTopWidth: '1px',
                     borderTopStyle: 'solid',
-                    borderColor: 'var(--border)',
+                    borderColor: 'border',
                   },
                 }),
               ),
@@ -432,8 +432,8 @@ export const table = (
                       h.Class(
                         cx(
                           css({
-                            paddingInline: '0.75rem',
-                            paddingBlock: '0.5rem',
+                            paddingInline: '3',
+                            paddingBlock: '2',
                             verticalAlign: 'top',
                           }),
                           figures.includes(index) &&
@@ -468,15 +468,15 @@ export const cardGrid = (cards: ReadonlyArray<Html>, h: H): Html =>
       h.Class(
         cx(
           css({
-            marginBlock: '1.5rem',
+            marginBlock: '6',
             display: 'grid',
             gap: '1px',
             overflow: 'hidden',
             borderRadius: 'lg',
             borderWidth: '1px',
             borderStyle: 'solid',
-            borderColor: 'var(--border)',
-            backgroundColor: 'var(--border)',
+            borderColor: 'border',
+            backgroundColor: 'border',
             sm: {
               gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
               '& > :last-child:nth-child(odd)': {

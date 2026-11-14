@@ -19,13 +19,13 @@ import { css, cx } from '@quorum/styled-system/css'
 export const FRAME = css({
   marginInline: 'auto',
   maxWidth: '80rem',
-  paddingInline: '1rem',
-  sm: { paddingInline: '1.5rem' },
+  paddingInline: '4',
+  sm: { paddingInline: '6' },
 })
 
 const GRID = css({
   display: 'grid',
-  columnGap: '2rem',
+  columnGap: '8',
   lg: { gridTemplateColumns: '16rem minmax(0,1fr)' },
   xl: { gridTemplateColumns: '16rem minmax(0,1fr) 16rem' },
 })
@@ -70,7 +70,7 @@ export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
                       cx(
                         css({
                           flexDirection: 'column',
-                          gap: '2.5rem',
+                          gap: '10',
                         }),
                         railPage.aside
                           ? css({
@@ -82,7 +82,7 @@ export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
                               xl: {
                                 gridColumnStart: '3',
                                 gridRowStart: '1',
-                                paddingTop: '2rem',
+                                paddingTop: '8',
                               },
                             })
                           : css({
@@ -91,7 +91,7 @@ export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
                                 display: 'flex',
                                 gridColumnStart: '3',
                                 gridRowStart: '1',
-                                paddingTop: '2rem',
+                                paddingTop: '8',
                               },
                             }),
                       ),
@@ -103,7 +103,7 @@ export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
                           [
                             h.Class(
                               css({
-                                lg: { maxWidth: '20rem' },
+                                lg: { maxWidth: '80' },
                               }),
                             ),
                           ],

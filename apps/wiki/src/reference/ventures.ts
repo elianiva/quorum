@@ -77,10 +77,10 @@ const ventureBlock = (l: Lang, id: VentureId, h: H): Html => {
           h.Class(
             cx(
               css({
-                marginBlock: '1rem',
+                marginBlock: '4',
                 display: 'grid',
-                columnGap: '1.5rem',
-                rowGap: '0.5rem',
+                columnGap: '6',
+                rowGap: '2',
                 fontSize: '14px',
                 sm: {
                   gridTemplateColumns: '9rem 1fr',
@@ -99,7 +99,7 @@ const ventureBlock = (l: Lang, id: VentureId, h: H): Html => {
                     h.Key('incident-t'),
                     h.Class(
                       css({
-                        color: 'var(--muted-foreground)',
+                        color: 'mutedForeground',
                       }),
                     ),
                   ],
@@ -122,7 +122,7 @@ const ventureBlock = (l: Lang, id: VentureId, h: H): Html => {
               h.Key('market-t'),
               h.Class(
                 css({
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -144,7 +144,7 @@ const ventureBlock = (l: Lang, id: VentureId, h: H): Html => {
               h.Key('legacy-t'),
               h.Class(
                 css({
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],

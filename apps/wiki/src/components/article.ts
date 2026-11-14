@@ -28,9 +28,9 @@ const breadcrumbs = (page: Page, h: H): Html => {
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
-          gap: '0.375rem',
+          gap: '1.5',
           fontSize: '13px',
-          color: 'var(--muted-foreground)',
+          color: 'mutedForeground',
         }),
       ),
     ],
@@ -38,8 +38,8 @@ const breadcrumbs = (page: Page, h: H): Html => {
       quadrantBadge(
         page.section,
         css({
-          width: '1rem',
-          height: '1rem',
+          width: '4',
+          height: '4',
         }),
         h,
       ),
@@ -50,8 +50,8 @@ const breadcrumbs = (page: Page, h: H): Html => {
               h,
               ChevronRight,
               css({
-                width: '0.875rem',
-                height: '0.875rem',
+                width: '3.5',
+                height: '3.5',
                 opacity: 0.6,
               }),
             ),
@@ -61,7 +61,7 @@ const breadcrumbs = (page: Page, h: H): Html => {
                 h.Class(
                   css({
                     _hover: {
-                      color: 'var(--foreground)',
+                      color: 'foreground',
                     },
                   }),
                 ),
@@ -90,9 +90,9 @@ const spoiler = (page: Page, model: Model, body: Html, h: H): Html => {
               borderRadius: 'md',
               borderWidth: '1px',
               borderStyle: 'dashed',
-              borderColor: 'var(--border)',
-              paddingInline: '1rem',
-              paddingBlock: '0.75rem',
+              borderColor: 'border',
+              paddingInline: '4',
+              paddingBlock: '3',
               fontSize: '14px',
             }),
           ),
@@ -112,7 +112,7 @@ const spoiler = (page: Page, model: Model, body: Html, h: H): Html => {
             [
               h.Class(
                 css({
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -124,7 +124,7 @@ const spoiler = (page: Page, model: Model, body: Html, h: H): Html => {
         [
           h.Class(
             css({
-              marginTop: '1.5rem',
+              marginTop: '6',
             }),
           ),
         ],
@@ -145,7 +145,7 @@ const footer = (page: Page, h: H): Html => {
     [
       h.Class(
         css({
-          marginTop: '4rem',
+          marginTop: '16',
         }),
       ),
     ],
@@ -155,7 +155,7 @@ const footer = (page: Page, h: H): Html => {
             [
               h.Class(
                 css({
-                  marginBottom: '2.5rem',
+                  marginBottom: '10',
                 }),
               ),
             ],
@@ -164,7 +164,7 @@ const footer = (page: Page, h: H): Html => {
                 [
                   h.Class(
                     css({
-                      marginBottom: '0.75rem',
+                      marginBottom: '3',
                       fontSize: '13px',
                       fontWeight: '600',
                     }),
@@ -179,13 +179,13 @@ const footer = (page: Page, h: H): Html => {
                       '& > * + *': {
                         borderTopWidth: '1px',
                         borderTopStyle: 'solid',
-                        borderColor: 'var(--border)',
+                        borderColor: 'border',
                       },
                       borderTopWidth: '1px',
                       borderTopStyle: 'solid',
                       borderBottomWidth: '1px',
                       borderBottomStyle: 'solid',
-                      borderColor: 'var(--border)',
+                      borderColor: 'border',
                     }),
                   ),
                 ],
@@ -201,8 +201,8 @@ const footer = (page: Page, h: H): Html => {
                               css({
                                 display: 'flex',
                                 alignItems: 'baseline',
-                                gap: '1rem',
-                                paddingBlock: '0.625rem',
+                                gap: '4',
+                                paddingBlock: '2.5',
                               }),
                               'group',
                             ),
@@ -233,7 +233,7 @@ const footer = (page: Page, h: H): Html => {
                                   textOverflow: 'ellipsis',
                                   whiteSpace: 'nowrap',
                                   fontSize: '13px',
-                                  color: 'var(--muted-foreground)',
+                                  color: 'mutedForeground',
                                 }),
                               ),
                             ],
@@ -255,14 +255,14 @@ const footer = (page: Page, h: H): Html => {
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'center',
-              columnGap: '1.25rem',
-              rowGap: '0.75rem',
+              columnGap: '5',
+              rowGap: '3',
               borderTopWidth: '1px',
               borderTopStyle: 'solid',
-              borderColor: 'var(--border)',
-              paddingTop: '1.25rem',
+              borderColor: 'border',
+              paddingTop: '5',
               fontSize: '12px',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -275,9 +275,9 @@ const footer = (page: Page, h: H): Html => {
                     css({
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '0.375rem',
+                      gap: '1.5',
                       _hover: {
-                        color: 'var(--foreground)',
+                        color: 'foreground',
                       },
                     }),
                   ),
@@ -287,8 +287,8 @@ const footer = (page: Page, h: H): Html => {
                     h,
                     Pencil,
                     css({
-                      width: '0.875rem',
-                      height: '0.875rem',
+                      width: '3.5',
+                      height: '3.5',
                     }),
                   ),
                   t.editOnGitHub,
@@ -303,9 +303,9 @@ const footer = (page: Page, h: H): Html => {
                     css({
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '0.25rem',
+                      gap: '1',
                       _hover: {
-                        color: 'var(--foreground)',
+                        color: 'foreground',
                       },
                     }),
                   ),
@@ -316,8 +316,8 @@ const footer = (page: Page, h: H): Html => {
                     h,
                     ArrowUpRight,
                     css({
-                      width: '0.875rem',
-                      height: '0.875rem',
+                      width: '3.5',
+                      height: '3.5',
                     }),
                   ),
                 ],
@@ -330,9 +330,9 @@ const footer = (page: Page, h: H): Html => {
                 css({
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '0.375rem',
+                  gap: '1.5',
                   _hover: {
-                    color: 'var(--foreground)',
+                    color: 'foreground',
                   },
                 }),
               ),
@@ -342,8 +342,8 @@ const footer = (page: Page, h: H): Html => {
                 h,
                 Coffee,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
+                  width: '3.5',
+                  height: '3.5',
                 }),
               ),
               t.support,
@@ -367,7 +367,7 @@ const footer = (page: Page, h: H): Html => {
                       textDecorationLine: 'underline',
                       textUnderlineOffset: '2px',
                       _hover: {
-                        color: 'var(--foreground)',
+                        color: 'foreground',
                       },
                     }),
                   ),
@@ -383,7 +383,7 @@ const footer = (page: Page, h: H): Html => {
                       textDecorationLine: 'underline',
                       textUnderlineOffset: '2px',
                       _hover: {
-                        color: 'var(--foreground)',
+                        color: 'foreground',
                       },
                     }),
                   ),
@@ -407,15 +407,15 @@ const notice = (page: Page, h: H): Html =>
           h.Role('note'),
           h.Class(
             css({
-              marginBottom: '1.5rem',
+              marginBottom: '6',
               borderRadius: 'md',
               borderWidth: '1px',
               borderStyle: 'dashed',
-              borderColor: 'var(--border)',
-              paddingInline: '1rem',
-              paddingBlock: '0.625rem',
+              borderColor: 'border',
+              paddingInline: '4',
+              paddingBlock: '2.5',
               fontSize: '13px',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -432,7 +432,7 @@ export const article = (page: Page, model: Model, h: H): Html => {
         cx(
           css({
             minWidth: '0',
-            paddingBlock: '2rem',
+            paddingBlock: '8',
           }),
           page.wide &&
             css({
@@ -449,8 +449,8 @@ export const article = (page: Page, model: Model, h: H): Html => {
             css({
               borderBottomWidth: '1px',
               borderBottomStyle: 'solid',
-              borderColor: 'var(--border)',
-              paddingBottom: '2rem',
+              borderColor: 'border',
+              paddingBottom: '8',
             }),
           ),
         ],
@@ -462,7 +462,7 @@ export const article = (page: Page, model: Model, h: H): Html => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: '1rem',
+                  gap: '4',
                 }),
               ),
             ],
@@ -477,9 +477,9 @@ export const article = (page: Page, model: Model, h: H): Html => {
                           FIGURE,
                           css({
                             fontSize: '12px',
-                            color: 'var(--muted-foreground)',
+                            color: 'mutedForeground',
                             _hover: {
-                              color: 'var(--foreground)',
+                              color: 'foreground',
                             },
                           }),
                         ),
@@ -494,7 +494,7 @@ export const article = (page: Page, model: Model, h: H): Html => {
             [
               h.Class(
                 css({
-                  marginTop: '1rem',
+                  marginTop: '4',
                   fontSize: '32px',
                   lineHeight: '1.25',
                   fontWeight: '600',
@@ -509,11 +509,11 @@ export const article = (page: Page, model: Model, h: H): Html => {
             [
               h.Class(
                 css({
-                  marginTop: '0.5rem',
+                  marginTop: '2',
                   fontSize: '16px',
                   lineHeight: '1.625',
                   textWrap: 'pretty',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -526,7 +526,7 @@ export const article = (page: Page, model: Model, h: H): Html => {
         [
           h.Class(
             css({
-              paddingTop: '2rem',
+              paddingTop: '8',
             }),
           ),
         ],
@@ -550,7 +550,7 @@ export const notFound = (model: Model, h: H): Html => {
     [
       h.Class(
         css({
-          paddingBlock: '4rem',
+          paddingBlock: '16',
         }),
       ),
     ],
@@ -562,7 +562,7 @@ export const notFound = (model: Model, h: H): Html => {
               FIGURE,
               css({
                 fontSize: '13px',
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
               }),
             ),
           ),
@@ -573,7 +573,7 @@ export const notFound = (model: Model, h: H): Html => {
         [
           h.Class(
             css({
-              marginTop: '0.5rem',
+              marginTop: '2',
               fontSize: '32px',
               fontWeight: '600',
               letterSpacing: '-0.025em',
@@ -586,9 +586,9 @@ export const notFound = (model: Model, h: H): Html => {
         [
           h.Class(
             css({
-              marginTop: '0.5rem',
+              marginTop: '2',
               fontSize: '15px',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -599,7 +599,7 @@ export const notFound = (model: Model, h: H): Html => {
           h.Href('/'),
           h.Class(
             css({
-              marginTop: '1.5rem',
+              marginTop: '6',
               display: 'inline-block',
               fontSize: '14px',
               fontWeight: '500',

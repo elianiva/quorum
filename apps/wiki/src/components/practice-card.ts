@@ -41,12 +41,12 @@ export const practiceView = (id: PracticeId, h: HtmlBuilder<Message>): Html => {
       h.Class(
         cx(
           css({
-            marginBlock: '1.5rem',
+            marginBlock: '6',
             minHeight: '520px',
             borderRadius: 'lg',
             borderWidth: '1px',
             borderStyle: 'solid',
-            borderColor: 'var(--border)',
+            borderColor: 'border',
           }),
           'not-prose',
         ),

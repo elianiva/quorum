@@ -24,8 +24,8 @@ export const mark = (h: H): Html =>
       h.ViewBox('0 0 64 64'),
       h.Class(
         css({
-          width: '1.75rem',
-          height: '1.75rem',
+          width: '7',
+          height: '7',
           flexShrink: '0',
         }),
       ),
@@ -60,15 +60,15 @@ const switcher = (model: Model, l: Lang, h: H): Html =>
       h.Class(
         css({
           display: 'flex',
-          height: '2rem',
+          height: '8',
           flexShrink: '0',
           alignItems: 'center',
-          gap: '0.125rem',
+          gap: '0.5',
           borderRadius: 'md',
           borderWidth: '1px',
           borderStyle: 'solid',
-          borderColor: 'var(--border)',
-          padding: '0.125rem',
+          borderColor: 'border',
+          padding: '0.5',
         }),
       ),
     ],
@@ -79,23 +79,23 @@ const switcher = (model: Model, l: Lang, h: H): Html =>
         css({
           display: 'grid',
           height: '100%',
-          minWidth: '1.5rem',
+          minWidth: '6',
           placeItems: 'center',
           borderRadius: '0.25rem',
-          paddingInline: '0.25rem',
+          paddingInline: '1',
           fontSize: '11px',
           fontWeight: '600',
           textTransform: 'uppercase',
         }),
         current
           ? css({
-              backgroundColor: 'var(--foreground)',
-              color: 'var(--background)',
+              backgroundColor: 'foreground',
+              color: 'background',
             })
           : css({
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
               _hover: {
-                color: 'var(--foreground)',
+                color: 'foreground',
               },
             }),
       )
@@ -127,8 +127,8 @@ export const header = (model: Model, h: H): Html => {
           zIndex: '40',
           borderBottomWidth: '1px',
           borderBottomStyle: 'solid',
-          borderColor: 'var(--border)',
-          backgroundColor: 'var(--background)',
+          borderColor: 'border',
+          backgroundColor: 'background',
         }),
       ),
     ],
@@ -139,13 +139,13 @@ export const header = (model: Model, h: H): Html => {
             css({
               marginInline: 'auto',
               display: 'flex',
-              height: '3.5rem',
+              height: '14',
               maxWidth: '80rem',
               alignItems: 'center',
-              gap: '0.75rem',
-              paddingInline: '1rem',
+              gap: '3',
+              paddingInline: '4',
               sm: {
-                paddingInline: '1.5rem',
+                paddingInline: '6',
               },
             }),
           ),
@@ -160,13 +160,13 @@ export const header = (model: Model, h: H): Html => {
                 css({
                   marginLeft: '-0.25rem',
                   display: 'grid',
-                  width: '2.25rem',
-                  height: '2.25rem',
+                  width: '9',
+                  height: '9',
                   placeItems: 'center',
                   borderRadius: 'md',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                   _hover: {
-                    color: 'var(--foreground)',
+                    color: 'foreground',
                   },
                   lg: {
                     display: 'none',
@@ -194,10 +194,10 @@ export const header = (model: Model, h: H): Html => {
                   display: 'flex',
                   flexShrink: '0',
                   alignItems: 'center',
-                  gap: '0.5rem',
-                  paddingRight: '0.25rem',
+                  gap: '2',
+                  paddingRight: '1',
                   sm: {
-                    paddingRight: '0.75rem',
+                    paddingRight: '3',
                   },
                 }),
               ),
@@ -226,7 +226,7 @@ export const header = (model: Model, h: H): Html => {
                     css({
                       display: 'none',
                       fontSize: '15px',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                       sm: {
                         display: 'inline',
                       },
@@ -266,18 +266,18 @@ export const header = (model: Model, h: H): Html => {
               h.Class(
                 css({
                   display: 'none',
-                  height: '2rem',
-                  width: '2rem',
+                  height: '8',
+                  width: '8',
                   flexShrink: '0',
                   placeItems: 'center',
                   borderRadius: 'md',
                   borderWidth: '1px',
                   borderStyle: 'solid',
-                  borderColor: 'var(--border)',
-                  color: 'var(--muted-foreground)',
+                  borderColor: 'border',
+                  color: 'mutedForeground',
                   _hover: {
                     borderColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
-                    color: 'var(--foreground)',
+                    color: 'foreground',
                   },
                   sm: {
                     display: 'grid',
@@ -301,16 +301,16 @@ export const header = (model: Model, h: H): Html => {
               h.Class(
                 css({
                   display: 'flex',
-                  height: '2rem',
+                  height: '8',
                   flexShrink: '0',
                   alignItems: 'center',
-                  gap: '0.25rem',
+                  gap: '1',
                   borderRadius: 'md',
-                  backgroundColor: 'var(--foreground)',
-                  paddingInline: '0.75rem',
+                  backgroundColor: 'foreground',
+                  paddingInline: '3',
                   fontSize: '13px',
                   fontWeight: '500',
-                  color: 'var(--background)',
+                  color: 'background',
                   _hover: {
                     opacity: 0.9,
                   },
@@ -323,8 +323,8 @@ export const header = (model: Model, h: H): Html => {
                 h,
                 ArrowUpRight,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
+                  width: '3.5',
+                  height: '3.5',
                 }),
               ),
             ],
@@ -348,14 +348,14 @@ const sections = (model: Model, l: Lang, h: H): Html => {
             css({
               marginInline: 'auto',
               display: 'flex',
-              height: '2.75rem',
+              height: '11',
               maxWidth: '80rem',
               alignItems: 'stretch',
-              gap: '1.5rem',
+              gap: '6',
               overflowX: 'auto',
-              paddingInline: '1rem',
+              paddingInline: '4',
               sm: {
-                paddingInline: '1.5rem',
+                paddingInline: '6',
               },
               scrollbarWidth: 'none',
               '@media (max-width: 1023px)': {
@@ -379,7 +379,7 @@ const sections = (model: Model, l: Lang, h: H): Html => {
                       display: 'flex',
                       flexShrink: '0',
                       alignItems: 'center',
-                      gap: '0.5rem',
+                      gap: '2',
                       borderBottomWidth: '2px',
                       borderBottomStyle: 'solid',
                       fontSize: '14px',
@@ -390,15 +390,15 @@ const sections = (model: Model, l: Lang, h: H): Html => {
                     }),
                     section === current
                       ? css({
-                          borderColor: 'var(--foreground)',
+                          borderColor: 'foreground',
                           fontWeight: '500',
-                          color: 'var(--foreground)',
+                          color: 'foreground',
                         })
                       : css({
                           borderColor: 'transparent',
-                          color: 'var(--muted-foreground)',
+                          color: 'mutedForeground',
                           _hover: {
-                            color: 'var(--foreground)',
+                            color: 'foreground',
                           },
                         }),
                   ),
@@ -409,8 +409,8 @@ const sections = (model: Model, l: Lang, h: H): Html => {
                   h,
                   QUADRANTS[section].icon,
                   css({
-                    width: '1rem',
-                    height: '1rem',
+                    width: '4',
+                    height: '4',
                   }),
                 ),
                 l.t.quadrants[section].label,

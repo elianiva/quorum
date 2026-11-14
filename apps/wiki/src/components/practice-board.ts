@@ -50,13 +50,13 @@ const el = <K extends keyof HTMLElementTagNameMap>(
 const BUTTON = css({
   display: 'inline-flex',
   alignItems: 'center',
-  gap: '0.375rem',
+  gap: '1.5',
   borderRadius: 'md',
   borderWidth: '1px',
   borderStyle: 'solid',
-  borderColor: 'var(--border)',
-  paddingInline: '0.625rem',
-  paddingBlock: '0.25rem',
+  borderColor: 'border',
+  paddingInline: '2.5',
+  paddingBlock: '1',
   fontSize: '13px',
   _hover: {
     backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
@@ -65,7 +65,7 @@ const BUTTON = css({
     outlineWidth: '2px',
     outlineStyle: 'solid',
     outlineOffset: '2px',
-    outlineColor: 'var(--ring)',
+    outlineColor: 'ring',
   },
 })
 
@@ -94,12 +94,12 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: '0.75rem',
+      gap: '3',
       borderBottomWidth: '1px',
       borderBottomStyle: 'solid',
-      borderColor: 'var(--border)',
-      paddingInline: '1rem',
-      paddingBlock: '0.625rem',
+      borderColor: 'border',
+      paddingInline: '4',
+      paddingBlock: '2.5',
     }),
     [title, reset],
   )
@@ -107,11 +107,11 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
     'p',
     css({
       margin: '0',
-      paddingInline: '1rem',
-      paddingTop: '0.75rem',
+      paddingInline: '4',
+      paddingTop: '3',
       fontSize: '14px',
       lineHeight: '1.375',
-      color: 'var(--muted-foreground)',
+      color: 'mutedForeground',
     }),
     [t.intro[id]],
   )
@@ -119,14 +119,14 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
     'div',
     css({
       position: 'relative',
-      marginInline: '1rem',
-      marginTop: '0.75rem',
+      marginInline: '4',
+      marginTop: '3',
       height: '440px',
       overflow: 'hidden',
       borderRadius: 'md',
       borderWidth: '1px',
       borderStyle: 'solid',
-      borderColor: 'var(--border)',
+      borderColor: 'border',
       backgroundColor: 'color-mix(in oklab, var(--muted) 30%, transparent)',
     }),
     [],
@@ -146,8 +146,8 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
   const dockHost = el(
     'div',
     css({
-      paddingInline: '1rem',
-      paddingTop: '0.75rem',
+      paddingInline: '4',
+      paddingTop: '3',
       '&:empty': { display: 'none' },
     }),
   )
@@ -155,7 +155,7 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
     'span',
     css({
       fontSize: '12px',
-      color: 'var(--muted-foreground)',
+      color: 'mutedForeground',
       fontVariantNumeric: 'tabular-nums',
     }),
   )
@@ -166,7 +166,7 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
       display: 'flex',
       listStyleType: 'none',
       flexDirection: 'column',
-      gap: '0.25rem',
+      gap: '1',
       padding: '0',
     }),
     [],
@@ -175,7 +175,7 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
       'aria-label': t.goalsLabel,
     },
   )
-  const note = el('p', css({ margin: '0', minHeight: '1.25rem', fontSize: '13px' }), [], {
+  const note = el('p', css({ margin: '0', minHeight: '5', fontSize: '13px' }), [], {
     role: 'status',
     'aria-live': 'polite',
   })
@@ -184,10 +184,10 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
     css({
       display: 'flex',
       flexDirection: 'column',
-      gap: '0.5rem',
-      paddingInline: '1rem',
-      paddingTop: '0.75rem',
-      paddingBottom: '1rem',
+      gap: '2',
+      paddingInline: '4',
+      paddingTop: '3',
+      paddingBottom: '4',
     }),
     [
       el('div', css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }), [
@@ -207,11 +207,8 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
       const open = openGroup === group.key
       const button = el(
         'button',
-        `${BUTTON} ${GROUP_TEXT[group.family]} ${open ? css({ backgroundColor: 'var(--muted)' }) : ''}`,
-        [
-          svg(GROUP_ICONS[group.family]),
-          el('span', css({ color: 'var(--foreground)' }), [group.label]),
-        ],
+        `${BUTTON} ${GROUP_TEXT[group.family]} ${open ? css({ backgroundColor: 'muted' }) : ''}`,
+        [svg(GROUP_ICONS[group.family]), el('span', css({ color: 'foreground' }), [group.label])],
         { type: 'button', 'aria-pressed': String(open), title: group.label },
       )
       button.addEventListener('click', () => {
@@ -227,7 +224,7 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
         const armed = state.placing === type
         const button = el(
           'button',
-          `${BUTTON} ${armed ? css({ backgroundColor: 'var(--muted)' }) : ''}`,
+          `${BUTTON} ${armed ? css({ backgroundColor: 'muted' }) : ''}`,
           [
             svg(COMPONENT_ICONS[type]),
             el('span', css({ fontWeight: '500' }), [l.cat.COMPONENTS[type].name]),
@@ -235,8 +232,8 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
               'span',
               `${css({ fontVariantNumeric: 'tabular-nums' })} ${
                 state.game.cash < price
-                  ? css({ color: 'var(--danger)' })
-                  : css({ color: 'var(--muted-foreground)' })
+                  ? css({ color: 'danger' })
+                  : css({ color: 'mutedForeground' })
               }`,
               [money(price)],
             ),
@@ -257,15 +254,15 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
       : null
     stop?.addEventListener('click', () => send(PracticeEvent.Arm({ type: null })))
     dockHost.replaceChildren(
-      el('div', css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }), [
-        el('div', css({ display: 'flex', gap: '0.375rem' }), tabs, {
+      el('div', css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '2' }), [
+        el('div', css({ display: 'flex', gap: '1.5' }), tabs, {
           role: 'group',
           'aria-label': t.build,
         }),
         ...rows,
         ...(armed
           ? [
-              el('span', css({ fontSize: '12px', color: 'var(--muted-foreground)' }), [
+              el('span', css({ fontSize: '12px', color: 'mutedForeground' }), [
                 t.clickToPlace(l.cat.COMPONENTS[armed].name),
               ]),
               ...(stop ? [stop] : []),
@@ -287,10 +284,10 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
             css({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '2',
               fontSize: '14px',
             }),
-            goal.done ? css({ color: 'var(--ok)' }) : css({ color: 'var(--foreground)' }),
+            goal.done ? css({ color: 'ok' }) : css({ color: 'foreground' }),
           ),
           [
             svg(goal.done ? Check : Circle, 14),
@@ -317,8 +314,8 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
     const finished = complete(state)
     title.dataset['done'] = String(finished)
     note.className = cx(
-      css({ margin: '0', minHeight: '1.25rem', fontSize: '13px' }),
-      state.note?.tone === 'warn' ? css({ color: 'var(--warn)' }) : css({ color: 'var(--ok)' }),
+      css({ margin: '0', minHeight: '5', fontSize: '13px' }),
+      state.note?.tone === 'warn' ? css({ color: 'warn' }) : css({ color: 'ok' }),
     )
     // The refusals are the game's English sentences; the one note the board writes itself is translated.
     note.textContent = state.note
@@ -331,9 +328,9 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
     if (finished && !state.note)
       note.className = css({
         margin: '0',
-        minHeight: '1.25rem',
+        minHeight: '5',
         fontSize: '13px',
-        color: 'var(--ok)',
+        color: 'ok',
       })
   }
 

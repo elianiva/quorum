@@ -37,11 +37,11 @@ const PRODUCTION: Partial<Record<IncidentDef['id'], string>> = {
 }
 
 const SEVERITY_CLASS: Record<1 | 2 | 3, string> = {
-  1: css({ backgroundColor: 'var(--danger)', color: 'white' }),
-  2: css({ backgroundColor: 'var(--warn)', color: 'white' }),
+  1: css({ backgroundColor: 'danger', color: 'white' }),
+  2: css({ backgroundColor: 'warn', color: 'white' }),
   3: css({
     backgroundColor: 'color-mix(in oklab, var(--foreground) 10%, transparent)',
-    color: 'var(--foreground)',
+    color: 'foreground',
   }),
 }
 
@@ -55,8 +55,8 @@ export const severityChip = (severity: 1 | 2 | 3, h: H): Html =>
           css({
             display: 'inline-flex',
             borderRadius: 'md',
-            paddingInline: '0.375rem',
-            paddingBlock: '0.125rem',
+            paddingInline: '1.5',
+            paddingBlock: '0.5',
             fontSize: '11px',
             fontWeight: '600',
           }),

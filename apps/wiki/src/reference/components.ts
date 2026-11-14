@@ -173,7 +173,7 @@ const entity = (l: Lang, def: ComponentDef): Page => {
             css({
               display: 'flex',
               flexDirection: 'column',
-              gap: '1rem',
+              gap: '4',
             }),
           ),
         ],
@@ -187,8 +187,8 @@ const entity = (l: Lang, def: ComponentDef): Page => {
                   borderRadius: 'lg',
                   borderWidth: '1px',
                   borderStyle: 'solid',
-                  borderColor: 'var(--border)',
-                  backgroundColor: 'var(--canvas)',
+                  borderColor: 'border',
+                  backgroundColor: 'canvas',
                 }),
               ),
             ],
@@ -200,8 +200,8 @@ const entity = (l: Lang, def: ComponentDef): Page => {
             componentBadge(
               def.id,
               css({
-                width: '2rem',
-                height: '2rem',
+                width: '8',
+                height: '8',
               }),
               h,
             ),
@@ -290,8 +290,8 @@ export const componentPages = (l: Lang): ReadonlyArray<Page> => {
                       componentBadge(
                         id,
                         css({
-                          width: '2.25rem',
-                          height: '2.25rem',
+                          width: '9',
+                          height: '9',
                           flexShrink: '0',
                         }),
                         h,

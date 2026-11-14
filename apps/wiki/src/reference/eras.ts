@@ -77,13 +77,13 @@ const entity = (l: Lang, def: EraDef, index: number): Page => {
                 FIGURE,
                 css({
                   display: 'grid',
-                  width: '1.5rem',
-                  height: '1.5rem',
+                  width: '6',
+                  height: '6',
                   placeItems: 'center',
                   borderRadius: 'md',
-                  backgroundColor: 'var(--foreground)',
+                  backgroundColor: 'foreground',
                   fontSize: '11px',
-                  color: 'var(--background)',
+                  color: 'background',
                 }),
               ),
             ),
@@ -159,8 +159,8 @@ const entity = (l: Lang, def: EraDef, index: number): Page => {
                   h.Class(
                     css({
                       display: 'grid',
-                      columnGap: '1.5rem',
-                      rowGap: '0.75rem',
+                      columnGap: '6',
+                      rowGap: '3',
                       sm: {
                         gridTemplateColumns: '10rem 1fr',
                       },
@@ -195,7 +195,7 @@ const entity = (l: Lang, def: EraDef, index: number): Page => {
                               cx(
                                 EYEBROW,
                                 css({
-                                  paddingTop: '0.25rem',
+                                  paddingTop: '1',
                                 }),
                               ),
                             ),
@@ -249,10 +249,10 @@ const timeline = (l: Lang, h: H): Html => {
         cx(
           css({
             position: 'relative',
-            marginBlock: '2rem',
+            marginBlock: '8',
             borderLeftWidth: '1px',
             borderLeftStyle: 'solid',
-            borderColor: 'var(--border)',
+            borderColor: 'border',
           }),
           'not-prose',
         ),
@@ -276,8 +276,8 @@ const timeline = (l: Lang, h: H): Html => {
           h.Class(
             css({
               position: 'relative',
-              paddingBottom: '2.5rem',
-              paddingLeft: '2rem',
+              paddingBottom: '10',
+              paddingLeft: '8',
               '&:last-child': {
                 paddingBottom: '0',
               },
@@ -296,16 +296,16 @@ const timeline = (l: Lang, h: H): Html => {
                     top: '0',
                     left: '-0.75rem',
                     display: 'grid',
-                    width: '1.5rem',
-                    height: '1.5rem',
+                    width: '6',
+                    height: '6',
                     placeItems: 'center',
                     borderRadius: '9999px',
                     borderWidth: '1px',
                     borderStyle: 'solid',
-                    borderColor: 'var(--border)',
-                    backgroundColor: 'var(--background)',
+                    borderColor: 'border',
+                    backgroundColor: 'background',
                     fontSize: '11px',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -319,8 +319,8 @@ const timeline = (l: Lang, h: H): Html => {
                   display: 'flex',
                   flexWrap: 'wrap',
                   alignItems: 'baseline',
-                  columnGap: '0.75rem',
-                  rowGap: '0.25rem',
+                  columnGap: '3',
+                  rowGap: '1',
                 }),
               ),
             ],
@@ -346,7 +346,7 @@ const timeline = (l: Lang, h: H): Html => {
                   h.Class(
                     css({
                       fontSize: '15px',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ],
@@ -358,11 +358,11 @@ const timeline = (l: Lang, h: H): Html => {
             [
               h.Class(
                 css({
-                  marginTop: '0.5rem',
+                  marginTop: '2',
                   display: 'flex',
                   flexWrap: 'wrap',
-                  columnGap: '1.5rem',
-                  rowGap: '0.25rem',
+                  columnGap: '6',
+                  rowGap: '1',
                   fontSize: '13px',
                 }),
               ),
@@ -375,7 +375,7 @@ const timeline = (l: Lang, h: H): Html => {
                     css({
                       display: 'flex',
                       alignItems: 'baseline',
-                      gap: '0.375rem',
+                      gap: '1.5',
                     }),
                   ),
                 ],
@@ -384,7 +384,7 @@ const timeline = (l: Lang, h: H): Html => {
                     [
                       h.Class(
                         css({
-                          color: 'var(--muted-foreground)',
+                          color: 'mutedForeground',
                         }),
                       ),
                     ],
@@ -411,7 +411,7 @@ const timeline = (l: Lang, h: H): Html => {
             [
               h.Class(
                 css({
-                  marginTop: '0.75rem',
+                  marginTop: '3',
                   maxWidth: '28rem',
                 }),
               ),
@@ -422,9 +422,9 @@ const timeline = (l: Lang, h: H): Html => {
             [
               h.Class(
                 css({
-                  marginTop: '0.5rem',
+                  marginTop: '2',
                   fontSize: '13px',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],

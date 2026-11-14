@@ -39,8 +39,8 @@ const kind = (l: Lang, section: Section, h: H): Html =>
         css({
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: 'var(--background)',
-          padding: '1.25rem',
+          backgroundColor: 'background',
+          padding: '5',
         }),
       ),
     ],
@@ -51,7 +51,7 @@ const kind = (l: Lang, section: Section, h: H): Html =>
             css({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '2',
             }),
           ),
         ],
@@ -59,8 +59,8 @@ const kind = (l: Lang, section: Section, h: H): Html =>
           quadrantBadge(
             section,
             css({
-              width: '1.25rem',
-              height: '1.25rem',
+              width: '5',
+              height: '5',
             }),
             h,
           ),
@@ -81,9 +81,9 @@ const kind = (l: Lang, section: Section, h: H): Html =>
         [
           h.Class(
             css({
-              marginTop: '0.25rem',
+              marginTop: '1',
               fontSize: '13px',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -93,7 +93,7 @@ const kind = (l: Lang, section: Section, h: H): Html =>
         [
           h.Class(
             css({
-              marginTop: '0.75rem',
+              marginTop: '3',
               display: 'flex',
               flexDirection: 'column',
             }),
@@ -114,7 +114,7 @@ const kind = (l: Lang, section: Section, h: H): Html =>
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        paddingBlock: '0.25rem',
+                        paddingBlock: '1',
                         fontSize: '14px',
                         _hover: {
                           textDecorationLine: 'underline',
@@ -160,8 +160,8 @@ const countList = (
           borderRadius: 'lg',
           borderWidth: '1px',
           borderStyle: 'solid',
-          borderColor: 'var(--border)',
-          backgroundColor: 'var(--border)',
+          borderColor: 'border',
+          backgroundColor: 'border',
           sm: {
             gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
           },
@@ -181,9 +181,9 @@ const countList = (
               css({
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.25rem',
-                backgroundColor: 'var(--background)',
-                padding: '1.25rem',
+                gap: '1',
+                backgroundColor: 'background',
+                padding: '5',
                 transitionProperty:
                   'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
                 transitionDuration: '150ms',
@@ -217,9 +217,9 @@ const countList = (
               h.Class(
                 css({
                   fontSize: '13px',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                   '.group:hover &': {
-                    color: 'var(--foreground)',
+                    color: 'foreground',
                   },
                 }),
               ),
@@ -255,8 +255,8 @@ const grid = (columns: string, items: ReadonlyArray<Html>, h: H): Html =>
             borderRadius: 'lg',
             borderWidth: '1px',
             borderStyle: 'solid',
-            borderColor: 'var(--border)',
-            backgroundColor: 'var(--border)',
+            borderColor: 'border',
+            backgroundColor: 'border',
           }),
           columns,
         ),
@@ -271,7 +271,7 @@ const block = (title: string, lead: string, content: Html, h: H): Html =>
     [
       h.Class(
         css({
-          marginTop: '3rem',
+          marginTop: '12',
         }),
       ),
     ],
@@ -292,9 +292,9 @@ const block = (title: string, lead: string, content: Html, h: H): Html =>
         [
           h.Class(
             css({
-              marginTop: '0.25rem',
+              marginTop: '1',
               fontSize: '14px',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -304,7 +304,7 @@ const block = (title: string, lead: string, content: Html, h: H): Html =>
         [
           h.Class(
             css({
-              marginTop: '1rem',
+              marginTop: '4',
             }),
           ),
         ],
@@ -323,9 +323,9 @@ const troubleLink = (target: Page, h: H): Html =>
           css({
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.25rem',
-            backgroundColor: 'var(--background)',
-            padding: '1.25rem',
+            gap: '1',
+            backgroundColor: 'background',
+            padding: '5',
             transitionProperty:
               'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
             transitionDuration: '150ms',
@@ -346,7 +346,7 @@ const troubleLink = (target: Page, h: H): Html =>
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '0.5rem',
+              gap: '2',
               fontSize: '15px',
               fontWeight: '500',
             }),
@@ -358,10 +358,10 @@ const troubleLink = (target: Page, h: H): Html =>
             h,
             ArrowRight,
             css({
-              width: '1rem',
-              height: '1rem',
+              width: '4',
+              height: '4',
               flexShrink: '0',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
               transitionProperty: 'transform, translate, scale, rotate',
               transitionDuration: '150ms',
               transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
@@ -379,7 +379,7 @@ const troubleLink = (target: Page, h: H): Html =>
               lineClamp: '2',
               fontSize: '13px',
               lineHeight: '1.375',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -405,13 +405,13 @@ const flow = (h: H): Html =>
         css({
           display: 'none',
           alignItems: 'flex-start',
-          gap: '0.5rem',
+          gap: '2',
           borderRadius: 'lg',
           borderWidth: '1px',
           borderStyle: 'solid',
-          borderColor: 'var(--border)',
+          borderColor: 'border',
           backgroundColor: 'color-mix(in oklab, var(--background) 80%, transparent)',
-          padding: '1.25rem',
+          padding: '5',
           lg: {
             display: 'flex',
           },
@@ -428,8 +428,8 @@ const flow = (h: H): Html =>
                   css({
                     marginTop: '18px',
                     height: '1px',
-                    width: '1.5rem',
-                    backgroundColor: 'var(--border)',
+                    width: '6',
+                    backgroundColor: 'border',
                   }),
                 ),
               ],
@@ -443,10 +443,10 @@ const flow = (h: H): Html =>
           h.Class(
             css({
               display: 'flex',
-              width: '3.5rem',
+              width: '14',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '2',
             }),
           ),
         ],
@@ -454,8 +454,8 @@ const flow = (h: H): Html =>
           componentBadge(
             id,
             css({
-              width: '2.5rem',
-              height: '2.5rem',
+              width: '10',
+              height: '10',
             }),
             h,
           ),
@@ -466,7 +466,7 @@ const flow = (h: H): Html =>
                   FIGURE,
                   css({
                     fontSize: '11px',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -490,7 +490,7 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
       h.Class(
         css({
           minWidth: '0',
-          paddingBottom: '4rem',
+          paddingBottom: '16',
           lg: {
             gridColumn: 'span 2 / span 2',
           },
@@ -505,24 +505,24 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
         [
           h.Class(
             css({
-              marginTop: '2rem',
+              marginTop: '8',
               display: 'grid',
               alignItems: 'center',
-              gap: '2.5rem',
+              gap: '10',
               overflow: 'hidden',
               borderRadius: 'xl',
               borderWidth: '1px',
               borderStyle: 'solid',
-              borderColor: 'var(--border)',
-              backgroundColor: 'var(--canvas)',
-              paddingInline: '1.5rem',
-              paddingBlock: '3rem',
+              borderColor: 'border',
+              backgroundColor: 'canvas',
+              paddingInline: '6',
+              paddingBlock: '12',
               sm: {
-                paddingInline: '2.5rem',
+                paddingInline: '10',
               },
               lg: {
                 gridTemplateColumns: 'minmax(0,1fr) auto',
-                paddingBlock: '4rem',
+                paddingBlock: '16',
               },
             }),
           ),
@@ -556,11 +556,11 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
                 [
                   h.Class(
                     css({
-                      marginTop: '1rem',
+                      marginTop: '4',
                       fontSize: '16px',
                       lineHeight: '1.625',
                       textWrap: 'pretty',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                 ],
@@ -570,11 +570,11 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
                 [
                   h.Class(
                     css({
-                      marginTop: '1.75rem',
+                      marginTop: '7',
                       display: 'flex',
                       flexWrap: 'wrap',
                       alignItems: 'center',
-                      gap: '0.75rem',
+                      gap: '3',
                     }),
                   ),
                 ],
@@ -586,15 +586,15 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
                           h.Class(
                             css({
                               display: 'inline-flex',
-                              height: '2.5rem',
+                              height: '10',
                               alignItems: 'center',
-                              gap: '0.5rem',
+                              gap: '2',
                               borderRadius: 'md',
-                              backgroundColor: 'var(--foreground)',
-                              paddingInline: '1rem',
+                              backgroundColor: 'foreground',
+                              paddingInline: '4',
                               fontSize: '14px',
                               fontWeight: '500',
-                              color: 'var(--background)',
+                              color: 'background',
                               _hover: {
                                 opacity: 0.9,
                               },
@@ -607,8 +607,8 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
                             h,
                             ArrowRight,
                             css({
-                              width: '1rem',
-                              height: '1rem',
+                              width: '4',
+                              height: '4',
                             }),
                           ),
                         ],
@@ -620,15 +620,15 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
                       h.Class(
                         css({
                           display: 'inline-flex',
-                          height: '2.5rem',
+                          height: '10',
                           alignItems: 'center',
-                          gap: '0.5rem',
+                          gap: '2',
                           borderRadius: 'md',
                           borderWidth: '1px',
                           borderStyle: 'solid',
-                          borderColor: 'var(--border)',
-                          backgroundColor: 'var(--background)',
-                          paddingInline: '1rem',
+                          borderColor: 'border',
+                          backgroundColor: 'background',
+                          paddingInline: '4',
                           fontSize: '14px',
                           fontWeight: '500',
                           _hover: {
@@ -642,8 +642,8 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
                         h,
                         BookOpen,
                         css({
-                          width: '1rem',
-                          height: '1rem',
+                          width: '4',
+                          height: '4',
                         }),
                       ),
                       t.browse,
@@ -657,13 +657,13 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
                         css({
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '0.375rem',
+                          gap: '1.5',
                           fontSize: '13px',
-                          color: 'var(--muted-foreground)',
+                          color: 'mutedForeground',
                           textDecorationLine: 'underline',
                           textUnderlineOffset: '4px',
                           _hover: {
-                            color: 'var(--foreground)',
+                            color: 'foreground',
                           },
                         }),
                       ),
@@ -672,8 +672,8 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
                       githubMark(
                         h,
                         css({
-                          width: '0.875rem',
-                          height: '0.875rem',
+                          width: '3.5',
+                          height: '3.5',
                         }),
                       ),
                       t.openSource,
@@ -690,7 +690,7 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
         [
           h.Class(
             css({
-              marginTop: '2rem',
+              marginTop: '8',
             }),
           ),
         ],
@@ -746,11 +746,11 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
         [
           h.Class(
             css({
-              marginTop: '2rem',
+              marginTop: '8',
               maxWidth: '48rem',
               fontSize: '13px',
               lineHeight: '1.625',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -761,7 +761,7 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
               h.Href('/design'),
               h.Class(
                 css({
-                  color: 'var(--foreground)',
+                  color: 'foreground',
                   textDecorationLine: 'underline',
                   textUnderlineOffset: '4px',
                 }),
@@ -775,7 +775,7 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
               h.Href('/about/changelog'),
               h.Class(
                 css({
-                  color: 'var(--foreground)',
+                  color: 'foreground',
                   textDecorationLine: 'underline',
                   textUnderlineOffset: '4px',
                 }),
@@ -789,7 +789,7 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
               h.Href('/about/disclaimer'),
               h.Class(
                 css({
-                  color: 'var(--foreground)',
+                  color: 'foreground',
                   textDecorationLine: 'underline',
                   textUnderlineOffset: '4px',
                 }),
@@ -803,7 +803,7 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
               h.Href(KOFI),
               h.Class(
                 css({
-                  color: 'var(--foreground)',
+                  color: 'foreground',
                   textDecorationLine: 'underline',
                   textUnderlineOffset: '4px',
                 }),

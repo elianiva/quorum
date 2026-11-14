@@ -109,7 +109,7 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
       h.Class(
         cx(
           css({
-            marginBlock: '1.5rem',
+            marginBlock: '6',
           }),
           'not-prose',
         ),
@@ -129,7 +129,7 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
               borderRadius: 'lg',
               borderWidth: '1px',
               borderStyle: 'solid',
-              borderColor: 'var(--border)',
+              borderColor: 'border',
             }),
           ),
           h.Style({ height: heightFor(id) }),
@@ -141,7 +141,7 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
         [
           h.Class(
             css({
-              marginTop: '0.375rem',
+              marginTop: '1.5',
               fontSize: '12px',
               color: 'color-mix(in oklab, var(--muted-foreground) 80%, transparent)',
             }),
@@ -153,9 +153,9 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
         [
           h.Class(
             css({
-              marginTop: '0.5rem',
+              marginTop: '2',
               fontSize: '12px',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -177,12 +177,12 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  marginTop: '1rem',
+                  marginTop: '4',
                   overflowX: 'auto',
                   borderRadius: 'lg',
                   borderWidth: '1px',
                   borderStyle: 'solid',
-                  borderColor: 'var(--border)',
+                  borderColor: 'border',
                 }),
               ),
             ],
@@ -211,15 +211,15 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
                                 css({
                                   borderBottomWidth: '1px',
                                   borderBottomStyle: 'solid',
-                                  borderColor: 'var(--border)',
+                                  borderColor: 'border',
                                   backgroundColor:
                                     'color-mix(in oklab, var(--muted) 50%, transparent)',
-                                  paddingInline: '0.75rem',
-                                  paddingBlock: '0.5rem',
+                                  paddingInline: '3',
+                                  paddingBlock: '2',
                                   textAlign: 'left',
                                   fontSize: '12px',
                                   fontWeight: '500',
-                                  color: 'var(--muted-foreground)',
+                                  color: 'mutedForeground',
                                 }),
                               ),
                             ],
@@ -236,7 +236,7 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
                           '& > * + *': {
                             borderTopWidth: '1px',
                             borderTopStyle: 'solid',
-                            borderColor: 'var(--border)',
+                            borderColor: 'border',
                           },
                         }),
                       ),
@@ -249,8 +249,8 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
                             [
                               h.Class(
                                 css({
-                                  paddingInline: '0.75rem',
-                                  paddingBlock: '0.5rem',
+                                  paddingInline: '3',
+                                  paddingBlock: '2',
                                   verticalAlign: 'top',
                                   whiteSpace: 'nowrap',
                                 }),
@@ -262,8 +262,8 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
                             [
                               h.Class(
                                 css({
-                                  paddingInline: '0.75rem',
-                                  paddingBlock: '0.5rem',
+                                  paddingInline: '3',
+                                  paddingBlock: '2',
                                   verticalAlign: 'top',
                                 }),
                               ),
@@ -274,8 +274,8 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
                             [
                               h.Class(
                                 css({
-                                  paddingInline: '0.75rem',
-                                  paddingBlock: '0.5rem',
+                                  paddingInline: '3',
+                                  paddingBlock: '2',
                                   verticalAlign: 'top',
                                   whiteSpace: 'nowrap',
                                   fontFamily: 'mono',
@@ -288,10 +288,10 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
                             [
                               h.Class(
                                 css({
-                                  paddingInline: '0.75rem',
-                                  paddingBlock: '0.5rem',
+                                  paddingInline: '3',
+                                  paddingBlock: '2',
                                   verticalAlign: 'top',
-                                  color: 'var(--muted-foreground)',
+                                  color: 'mutedForeground',
                                 }),
                               ),
                             ],
@@ -311,9 +311,9 @@ export const designView = (id: string, h: HtmlBuilder<Message>): Html => {
             [
               h.Class(
                 css({
-                  marginTop: '0.5rem',
+                  marginTop: '2',
                   fontSize: '12px',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],

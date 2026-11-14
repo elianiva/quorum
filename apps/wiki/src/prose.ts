@@ -217,12 +217,12 @@ export const prose = (
               h.Class(
                 cx(
                   css({
-                    marginBlock: '1.5rem',
+                    marginBlock: '6',
                     overflowX: 'auto',
                     borderRadius: 'lg',
                     borderWidth: '1px',
                     borderStyle: 'solid',
-                    borderColor: 'var(--border)',
+                    borderColor: 'border',
                   }),
                   'not-prose',
                 ),
@@ -249,7 +249,7 @@ export const prose = (
                           '& > * + *': {
                             borderTopWidth: '1px',
                             borderTopStyle: 'solid',
-                            borderColor: 'var(--border)',
+                            borderColor: 'border',
                           },
                         }),
                       ),
@@ -268,14 +268,14 @@ export const prose = (
                     css({
                       borderBottomWidth: '1px',
                       borderBottomStyle: 'solid',
-                      borderColor: 'var(--border)',
+                      borderColor: 'border',
                       backgroundColor: 'color-mix(in oklab, var(--muted) 50%, transparent)',
-                      paddingInline: '0.75rem',
-                      paddingBlock: '0.5rem',
+                      paddingInline: '3',
+                      paddingBlock: '2',
                       textAlign: 'left',
                       fontSize: '12px',
                       fontWeight: '500',
-                      color: 'var(--muted-foreground)',
+                      color: 'mutedForeground',
                     }),
                   ),
                   ...(alignment === 'Right' ? [h.Style({ textAlign: 'right' })] : []),
@@ -286,8 +286,8 @@ export const prose = (
                 [
                   h.Class(
                     css({
-                      paddingInline: '0.75rem',
-                      paddingBlock: '0.5rem',
+                      paddingInline: '3',
+                      paddingBlock: '2',
                       verticalAlign: 'top',
                     }),
                   ),

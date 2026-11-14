@@ -37,7 +37,7 @@ const navLink = (
             position: 'relative',
             display: 'block',
             borderRadius: 'md',
-            paddingBlock: '0.375rem',
+            paddingBlock: '1.5',
             fontSize: '14px',
             lineHeight: '1.375',
             transitionProperty:
@@ -47,28 +47,28 @@ const navLink = (
           }),
           nested
             ? css({
-                paddingRight: '0.5rem',
-                paddingLeft: '0.75rem',
+                paddingRight: '2',
+                paddingLeft: '3',
               })
             : room
               ? css({
-                  paddingRight: '3.5rem',
-                  paddingLeft: '0.625rem',
+                  paddingRight: '14',
+                  paddingLeft: '2.5',
                 })
               : css({
-                  paddingInline: '0.625rem',
+                  paddingInline: '2.5',
                 }),
           active
             ? css({
-                backgroundColor: 'var(--muted)',
+                backgroundColor: 'muted',
                 fontWeight: '500',
-                color: 'var(--foreground)',
+                color: 'foreground',
               })
             : css({
-                color: 'var(--muted-foreground)',
+                color: 'mutedForeground',
                 _hover: {
                   backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
-                  color: 'var(--foreground)',
+                  color: 'foreground',
                 },
               }),
         ),
@@ -82,10 +82,10 @@ const navLink = (
               h.Class(
                 css({
                   position: 'absolute',
-                  top: '0.375rem',
-                  bottom: '0.375rem',
+                  top: '1.5',
+                  bottom: '1.5',
                   left: '0',
-                  width: '0.125rem',
+                  width: '0.5',
                   borderRadius: '9999px',
                 }),
               ),
@@ -102,7 +102,7 @@ const navLink = (
                 css({
                   display: 'flex',
                   alignItems: 'baseline',
-                  gap: '0.375rem',
+                  gap: '1.5',
                 }),
               ),
             ],
@@ -113,14 +113,14 @@ const navLink = (
                     cx(
                       FIGURE,
                       css({
-                        width: '1rem',
+                        width: '4',
                         flexShrink: '0',
                         textAlign: 'right',
                         fontSize: '11px',
                       }),
                       active
                         ? css({
-                            color: 'var(--foreground)',
+                            color: 'foreground',
                           })
                         : css({
                             color: 'color-mix(in oklab, var(--muted-foreground) 70%, transparent)',
@@ -169,7 +169,7 @@ const groupBlock = (
       h.Key(`group-${name}`),
       h.Class(
         css({
-          marginTop: '0.5rem',
+          marginTop: '2',
         }),
       ),
     ],
@@ -187,10 +187,10 @@ const groupBlock = (
                 width: '100%',
                 cursor: 'pointer',
                 alignItems: 'center',
-                gap: '0.5rem',
+                gap: '2',
                 borderRadius: 'md',
-                paddingInline: '0.625rem',
-                paddingBlock: '0.375rem',
+                paddingInline: '2.5',
+                paddingBlock: '1.5',
                 textAlign: 'left',
                 transitionProperty:
                   'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
@@ -202,10 +202,10 @@ const groupBlock = (
               }),
               isOpen
                 ? css({
-                    color: 'var(--foreground)',
+                    color: 'foreground',
                   })
                 : css({
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
             ),
           ),
@@ -216,8 +216,8 @@ const groupBlock = (
               h.AriaHidden(true),
               h.Class(
                 css({
-                  width: '0.375rem',
-                  height: '0.375rem',
+                  width: '1.5',
+                  height: '1.5',
                   flexShrink: '0',
                   borderRadius: '9999px',
                 }),
@@ -249,7 +249,7 @@ const groupBlock = (
                   FIGURE,
                   css({
                     fontSize: '11px',
-                    color: 'var(--muted-foreground)',
+                    color: 'mutedForeground',
                   }),
                 ),
               ),
@@ -260,8 +260,8 @@ const groupBlock = (
             h,
             isOpen ? ChevronDown : ChevronRight,
             css({
-              width: '0.875rem',
-              height: '0.875rem',
+              width: '3.5',
+              height: '3.5',
             }),
           ),
         ],
@@ -271,15 +271,15 @@ const groupBlock = (
             [
               h.Class(
                 css({
-                  marginTop: '0.125rem',
-                  marginBottom: '0.25rem',
-                  marginLeft: '0.375rem',
+                  marginTop: '0.5',
+                  marginBottom: '1',
+                  marginLeft: '1.5',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.125rem',
+                  gap: '0.5',
                   borderLeftWidth: '1px',
                   borderLeftStyle: 'solid',
-                  borderColor: 'var(--border)',
+                  borderColor: 'border',
                 }),
               ),
             ],
@@ -336,27 +336,27 @@ const hubLink = (
                 cx(
                   css({
                     position: 'absolute',
-                    right: '0.25rem',
+                    right: '1',
                     display: 'flex',
-                    height: '1.5rem',
+                    height: '6',
                     cursor: 'pointer',
                     alignItems: 'center',
-                    gap: '0.25rem',
+                    gap: '1',
                     borderRadius: '0.25rem',
-                    paddingInline: '0.375rem',
-                    color: 'var(--muted-foreground)',
+                    paddingInline: '1.5',
+                    color: 'mutedForeground',
                     transitionProperty:
                       'color, background-color, border-color, outline-color, text-decoration-color, fill, stroke',
                     transitionDuration: '150ms',
                     transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
                     _hover: {
                       backgroundColor: 'color-mix(in oklab, var(--foreground) 10%, transparent)',
-                      color: 'var(--foreground)',
+                      color: 'foreground',
                     },
                   }),
                   isOpen &&
                     css({
-                      color: 'var(--foreground)',
+                      color: 'foreground',
                     }),
                 ),
               ),
@@ -379,8 +379,8 @@ const hubLink = (
                 h,
                 isOpen ? ChevronDown : ChevronRight,
                 css({
-                  width: '0.875rem',
-                  height: '0.875rem',
+                  width: '3.5',
+                  height: '3.5',
                 }),
               ),
             ],
@@ -417,7 +417,7 @@ export const sidebar = (model: Model, h: H): Html => {
           SCROLL,
           // A phone opens the menu over the page; a desktop keeps it as a sticky rail.
           css({
-            borderColor: 'var(--border)',
+            borderColor: 'border',
             lg: {
               position: 'sticky',
               top: 'var(--header-height)',
@@ -427,7 +427,7 @@ export const sidebar = (model: Model, h: H): Html => {
               alignSelf: 'flex-start',
               borderRightWidth: '1px',
               borderRightStyle: 'solid',
-              paddingRight: '1rem',
+              paddingRight: '4',
             },
           }),
           model.menu
@@ -439,8 +439,8 @@ export const sidebar = (model: Model, h: H): Html => {
                 zIndex: '30',
                 display: 'flex',
                 flexDirection: 'column',
-                backgroundColor: 'var(--background)',
-                paddingInline: '1rem',
+                backgroundColor: 'background',
+                paddingInline: '4',
                 lg: {
                   position: 'static',
                   backgroundColor: 'transparent',
@@ -458,9 +458,9 @@ export const sidebar = (model: Model, h: H): Html => {
         [
           h.Class(
             css({
-              paddingTop: '1rem',
+              paddingTop: '4',
               lg: {
-                paddingTop: '1.5rem',
+                paddingTop: '6',
               },
             }),
           ),
@@ -470,11 +470,11 @@ export const sidebar = (model: Model, h: H): Html => {
             [
               h.Class(
                 css({
-                  marginBottom: '0.75rem',
+                  marginBottom: '3',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.5rem',
-                  paddingInline: '0.625rem',
+                  gap: '2',
+                  paddingInline: '2.5',
                 }),
               ),
             ],
@@ -482,8 +482,8 @@ export const sidebar = (model: Model, h: H): Html => {
               quadrantBadge(
                 section,
                 css({
-                  width: '1.25rem',
-                  height: '1.25rem',
+                  width: '5',
+                  height: '5',
                 }),
                 h,
               ),
@@ -493,7 +493,7 @@ export const sidebar = (model: Model, h: H): Html => {
                     css({
                       fontSize: '13px',
                       fontWeight: '600',
-                      color: 'var(--foreground)',
+                      color: 'foreground',
                     }),
                   ),
                 ],
@@ -507,7 +507,7 @@ export const sidebar = (model: Model, h: H): Html => {
                 css({
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.125rem',
+                  gap: '0.5',
                 }),
               ),
             ],
@@ -535,16 +535,16 @@ export const sidebar = (model: Model, h: H): Html => {
                               h.Key(`${hub.path}-children`),
                               h.Class(
                                 css({
-                                  marginTop: '0.125rem',
-                                  marginBottom: '0.375rem',
-                                  marginLeft: '0.75rem',
+                                  marginTop: '0.5',
+                                  marginBottom: '1.5',
+                                  marginLeft: '3',
                                   display: 'flex',
                                   flexDirection: 'column',
-                                  gap: '0.125rem',
+                                  gap: '0.5',
                                   borderLeftWidth: '1px',
                                   borderLeftStyle: 'solid',
-                                  borderColor: 'var(--border)',
-                                  paddingLeft: '0.25rem',
+                                  borderColor: 'border',
+                                  paddingLeft: '1',
                                 }),
                               ),
                             ],
@@ -567,11 +567,11 @@ export const sidebar = (model: Model, h: H): Html => {
               position: 'sticky',
               bottom: '0',
               marginTop: 'auto',
-              backgroundColor: 'var(--background)',
-              paddingTop: '1rem',
-              paddingBottom: '1rem',
+              backgroundColor: 'background',
+              paddingTop: '4',
+              paddingBottom: '4',
               lg: {
-                paddingBottom: '1.5rem',
+                paddingBottom: '6',
               },
             }),
           ),

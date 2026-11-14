@@ -53,13 +53,13 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
       h.Class(
         cx(
           css({
-            marginBlock: '2rem',
+            marginBlock: '8',
             borderTopWidth: '1px',
             borderTopStyle: 'solid',
             borderBottomWidth: '1px',
             borderBottomStyle: 'solid',
-            borderColor: 'var(--border)',
-            paddingBlock: '1.25rem',
+            borderColor: 'border',
+            paddingBlock: '5',
           }),
           'not-prose',
         ),
@@ -72,7 +72,7 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
             css({
               fontSize: '12px',
               fontWeight: '500',
-              color: 'var(--muted-foreground)',
+              color: 'mutedForeground',
             }),
           ),
         ],
@@ -83,7 +83,7 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
           h.Id(id),
           h.Class(
             css({
-              marginTop: '0.25rem',
+              marginTop: '1',
               fontSize: '16px',
               lineHeight: '1.375',
               fontWeight: '500',
@@ -99,10 +99,10 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
           h.AriaLabelledBy(id),
           h.Class(
             css({
-              marginTop: '0.75rem',
+              marginTop: '3',
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.375rem',
+              gap: '1.5',
             }),
           ),
         ],
@@ -124,12 +124,12 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                     display: 'flex',
                     width: '100%',
                     alignItems: 'center',
-                    gap: '0.75rem',
+                    gap: '3',
                     borderRadius: 'md',
                     borderWidth: '1px',
                     borderStyle: 'solid',
-                    paddingInline: '0.75rem',
-                    paddingBlock: '0.5rem',
+                    paddingInline: '3',
+                    paddingBlock: '2',
                     textAlign: 'left',
                     fontSize: '14px',
                     transitionProperty:
@@ -139,10 +139,10 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                   }),
                   state === 'open' &&
                     css({
-                      borderColor: 'var(--border)',
+                      borderColor: 'border',
                       _hover: {
                         borderColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
-                        backgroundColor: 'var(--muted)',
+                        backgroundColor: 'muted',
                       },
                     }),
                   state === 'right' &&
@@ -158,8 +158,8 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                     }),
                   state === 'other' &&
                     css({
-                      borderColor: 'var(--border)',
-                      color: 'var(--muted-foreground)',
+                      borderColor: 'border',
+                      color: 'mutedForeground',
                     }),
                 ),
               ),
@@ -171,8 +171,8 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                     cx(
                       css({
                         display: 'grid',
-                        width: '1.25rem',
-                        height: '1.25rem',
+                        width: '5',
+                        height: '5',
                         flexShrink: '0',
                         placeItems: 'center',
                         borderRadius: '9999px',
@@ -181,18 +181,18 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                       }),
                       state === 'right'
                         ? css({
-                            backgroundColor: 'var(--ok)',
+                            backgroundColor: 'ok',
                             color: 'white',
                           })
                         : state === 'wrong'
                           ? css({
-                              backgroundColor: 'var(--danger)',
+                              backgroundColor: 'danger',
                               color: 'white',
                             })
                           : css({
                               borderWidth: '1px',
                               borderStyle: 'solid',
-                              borderColor: 'var(--border)',
+                              borderColor: 'border',
                             }),
                     ),
                   ),
@@ -203,8 +203,8 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                         h,
                         Check,
                         css({
-                          width: '0.75rem',
-                          height: '0.75rem',
+                          width: '3',
+                          height: '3',
                         }),
                       )
                     : state === 'wrong'
@@ -212,8 +212,8 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                           h,
                           X,
                           css({
-                            width: '0.75rem',
-                            height: '0.75rem',
+                            width: '3',
+                            height: '3',
                           }),
                         )
                       : String.fromCharCode(64 + choice),
@@ -231,10 +231,10 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
               h.AriaLive('polite'),
               h.Class(
                 css({
-                  marginTop: '0.75rem',
+                  marginTop: '3',
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: '0.75rem',
+                  gap: '3',
                 }),
               ),
             ],
@@ -255,10 +255,10 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                       h.Class(
                         correct
                           ? css({
-                              color: 'var(--ok)',
+                              color: 'ok',
                             })
                           : css({
-                              color: 'var(--danger)',
+                              color: 'danger',
                             }),
                       ),
                     ],
@@ -276,19 +276,19 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                       h.Class(
                         css({
                           display: 'inline-flex',
-                          height: '2rem',
+                          height: '8',
                           flexShrink: '0',
                           alignItems: 'center',
-                          gap: '0.375rem',
+                          gap: '1.5',
                           borderRadius: 'md',
                           borderWidth: '1px',
                           borderStyle: 'solid',
-                          borderColor: 'var(--border)',
-                          paddingInline: '0.625rem',
+                          borderColor: 'border',
+                          paddingInline: '2.5',
                           fontSize: '12px',
                           fontWeight: '500',
                           _hover: {
-                            backgroundColor: 'var(--muted)',
+                            backgroundColor: 'muted',
                           },
                         }),
                       ),
@@ -298,8 +298,8 @@ export const view = defineView<Model, Message, Question>((model, quiz, h) => {
                         h,
                         RotateCcw,
                         css({
-                          width: '0.875rem',
-                          height: '0.875rem',
+                          width: '3.5',
+                          height: '3.5',
                         }),
                       ),
                       t.retry,

@@ -25,16 +25,16 @@ export const sandboxView = (
       h.Class(
         cx(
           css({
-            marginBlock: '1.5rem',
+            marginBlock: '6',
             display: 'flex',
             alignItems: 'center',
-            gap: '1rem',
+            gap: '4',
             borderRadius: 'lg',
             borderWidth: '1px',
             borderStyle: 'solid',
-            borderColor: 'var(--border)',
-            paddingInline: '1rem',
-            paddingBlock: '0.75rem',
+            borderColor: 'border',
+            paddingInline: '4',
+            paddingBlock: '3',
             _hover: {
               backgroundColor: 'color-mix(in oklab, var(--muted) 60%, transparent)',
             },
@@ -60,7 +60,7 @@ export const sandboxView = (
               h.Class(
                 css({
                   fontSize: '12px',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -70,7 +70,7 @@ export const sandboxView = (
             [
               h.Class(
                 css({
-                  marginTop: '0.25rem',
+                  marginTop: '1',
                   display: 'block',
                   fontSize: '16px',
                   fontWeight: '600',
@@ -86,7 +86,7 @@ export const sandboxView = (
                 css({
                   display: 'block',
                   fontSize: '13px',
-                  color: 'var(--muted-foreground)',
+                  color: 'mutedForeground',
                 }),
               ),
             ],
@@ -98,9 +98,9 @@ export const sandboxView = (
         h,
         ArrowRight,
         css({
-          width: '1rem',
-          height: '1rem',
-          color: 'var(--muted-foreground)',
+          width: '4',
+          height: '4',
+          color: 'mutedForeground',
         }),
       ),
     ],

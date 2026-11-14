@@ -35,7 +35,7 @@ export type ItemMediaVariant = (typeof itemMediaVariantKeys)[number]
 
 export const itemMediaVariants: Record<ItemMediaVariant, string> = {
   default: 'bg-transparent',
-  icon: "[&_svg:not([class*='size-'])]:size-4",
+  icon: '[&_svg:not([data-svg-icon])]:size-4',
   image:
     'size-10 overflow-hidden rounded-sm group-data-[size=sm]/item:size-8 group-data-[size=xs]/item:size-6 [&_img]:size-full [&_img]:object-cover',
 }

@@ -17,7 +17,7 @@ export const inputGroupClass =
 
 /** Upstream InputGroupAddon base string; alignment via the align tokens. */
 export const inputGroupAddonClass =
-  "text-muted-foreground h-auto gap-2 py-1.5 text-sm font-medium group-data-[disabled]/input-group:opacity-50 [&>kbd]:rounded-[calc(var(--radius)-5px)] [&>svg:not([class*='size-'])]:size-4 flex cursor-text items-center justify-center select-none"
+  'text-muted-foreground h-auto gap-2 py-1.5 text-sm font-medium group-data-[disabled]/input-group:opacity-50 [&>kbd]:rounded-[calc(var(--radius)-5px)] [&>svg:not([data-svg-icon])]:size-4 flex cursor-text items-center justify-center select-none'
 
 export const inputGroupAddonAlignClasses = {
   'inline-start': 'pl-2 has-[>button]:ml-[-0.3rem] has-[>kbd]:ml-[-0.15rem] order-first',
@@ -38,7 +38,7 @@ export const inputGroupButtonClass = 'gap-2 text-sm flex items-center shadow-non
 
 /** Upstream InputGroupButton size tokens; keyed like upstream's cva variants. */
 export const inputGroupButtonSizeClasses = {
-  xs: "h-6 gap-1 rounded-[calc(var(--radius)-3px)] px-1.5 [&>svg:not([class*='size-'])]:size-3.5",
+  xs: 'h-6 gap-1 rounded-[calc(var(--radius)-3px)] px-1.5 [&>svg:not([data-svg-icon])]:size-3.5',
   sm: 'gap-1',
   'icon-xs': 'size-6 rounded-[calc(var(--radius)-3px)] p-0 has-[>svg]:p-0',
   'icon-sm': 'size-8 p-0 has-[>svg]:p-0',
@@ -61,7 +61,7 @@ export const inputGroupTextareaClass =
   'rounded-none border-0 bg-transparent py-2 shadow-none ring-0 focus-visible:ring-0 disabled:bg-transparent aria-invalid:ring-0 dark:bg-transparent dark:disabled:bg-transparent flex-1 resize-none'
 
 export const inputGroupTextClass =
-  "text-muted-foreground gap-2 text-sm [&_svg:not([class*='size-'])]:size-4 flex items-center [&_svg]:pointer-events-none"
+  'text-muted-foreground gap-2 text-sm [&_svg:not([data-svg-icon])]:size-4 flex items-center [&_svg]:pointer-events-none'
 
 export const inputGroupInputClass =
   'rounded-none border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0 disabled:bg-transparent aria-invalid:ring-0 dark:bg-transparent dark:disabled:bg-transparent flex-1'

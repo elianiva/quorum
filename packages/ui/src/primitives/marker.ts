@@ -15,9 +15,9 @@ export const markerVariants: Record<MarkerVariant, string> = {
 }
 
 export const markerClass =
-  "gap-2 text-sm text-muted-foreground [a]:hover:text-foreground [a]:underline-offset-3 [a]:underline [&_svg:not([class*='size-'])]:size-4 min-h-4 text-left group/marker relative flex w-full items-center"
+  'gap-2 text-sm text-muted-foreground [a]:hover:text-foreground [a]:underline-offset-3 [a]:underline [&_svg:not([data-svg-icon])]:size-4 min-h-4 text-left group/marker relative flex w-full items-center'
 
-export const markerIconClass = "size-4 [&_svg:not([class*='size-'])]:size-4 shrink-0"
+export const markerIconClass = 'size-4 [&_svg:not([data-svg-icon])]:size-4 shrink-0'
 
 export const markerContentClass =
   'group-data-[variant=separator]/marker:flex-none group-data-[variant=separator]/marker:text-center *:[a]:hover:text-foreground *:[a]:underline *:[a]:underline-offset-3 min-w-0 wrap-break-word'

@@ -45,7 +45,7 @@ const buttonBaseStyle: SystemStyleObject = {
   outlineStyle: 'none',
   userSelect: 'none',
   '& svg': { pointerEvents: 'none', flexShrink: 0 },
-  '& svg:not([class*="size-"])': { width: '1rem', height: '1rem' },
+  '& svg:not([data-svg-icon])': { width: '1rem', height: '1rem' },
   _focusVisible: { borderColor: 'ring' },
   '[data-text="150"] &': { lineHeight: '1.45' },
   '&[aria-disabled="true"]': { pointerEvents: 'none', opacity: 0.5 },
@@ -163,7 +163,7 @@ export const buttonSizeKeys = [
 ] as const
 
 const iconSize = (size: string): SystemStyleObject => ({
-  '& svg:not([class*="size-"])': { width: size, height: size },
+  '& svg:not([data-svg-icon])': { width: size, height: size },
 })
 
 const buttonSizeStyles: Record<ButtonSize, SystemStyleObject> = {

@@ -1,5 +1,6 @@
 import type { Attribute, ChildAttribute, Html, HtmlBuilder } from 'foldkit/html'
 import type { IconNode, SVGProps } from 'lucide'
+import { css } from '@quorum/styled-system/css'
 
 /**
  * Render a lucide icon as Foldkit virtual DOM.
@@ -12,11 +13,11 @@ import type { IconNode, SVGProps } from 'lucide'
  * import { icon } from '@foldcn/registry/styles/default/lib/icons'
  * import { ChevronDown } from 'lucide'
  *
- * // Default size (size-4 shrink-0)
+ * // Default size (1rem, no shrink)
  * icon(h, ChevronDown)
  *
  * // Custom size
- * icon(h, ChevronDown, 'size-3')
+ * icon(h, ChevronDown, css({ width: '0.75rem', height: '0.75rem' }))
  * ```
  */
 
@@ -48,6 +49,7 @@ const svgAttributes = <M>(
   h: HtmlBuilder<M>,
 ): ReadonlyArray<Attribute<M> | ChildAttribute> => [
   h.AriaHidden(true),
+  h.DataAttribute('svg-icon', ''),
   h.Class(className),
   h.Xmlns('http://www.w3.org/2000/svg'),
   h.Fill('none'),
@@ -64,7 +66,7 @@ const nodeToAttributes = <M>(
 ): ReadonlyArray<Attribute<M> | ChildAttribute> =>
   Object.entries(attrs).map(([name, value]) => h.Attribute(name, String(value)))
 
-const defaultIconClass = 'size-4 shrink-0'
+const defaultIconClass = css({ width: '1rem', height: '1rem', flexShrink: '0' })
 
 export type IconPosition = 'inline-start' | 'inline-end'
 

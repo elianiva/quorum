@@ -90,7 +90,7 @@ export const inputOtpCaretClass =
 
 export const inputOtpCaretLineClass = 'animate-caret-blink bg-foreground h-4 w-px duration-1000'
 
-export const inputOtpSeparatorClass = "[&_svg:not([class*='size-'])]:size-4 flex items-center"
+export const inputOtpSeparatorClass = '[&_svg:not([data-svg-icon])]:size-4 flex items-center'
 
 export type InputOtpConfig<M> = Readonly<{
   length: number

@@ -23,7 +23,7 @@ export const buttonGroupOrientationClasses = {
 export type ButtonGroupOrientation = keyof typeof buttonGroupOrientationClasses
 
 export const buttonGroupTextClass =
-  "bg-well shadow-well gap-2 rounded-lg px-2.5 text-sm font-medium [&_svg:not([class*='size-'])]:size-4 flex items-center [&_svg]:pointer-events-none"
+  'bg-well shadow-well gap-2 rounded-lg px-2.5 text-sm font-medium [&_svg:not([data-svg-icon])]:size-4 flex items-center [&_svg]:pointer-events-none'
 
 export const buttonGroupSeparatorClass =
   'bg-hairline relative self-stretch data-horizontal:mx-px data-horizontal:w-auto data-vertical:my-px data-vertical:h-auto'

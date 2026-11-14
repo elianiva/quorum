@@ -85,7 +85,8 @@ const searchIndexDev = (): Plugin => ({
       if (locale === undefined) return next()
       void (async () => {
         // A translated language registers its copy and prose when its bundle loads.
-        await server.ssrLoadModule(`/src/locales/${locale}.ts`)
+        // English ships in the main chunk.
+        if (locale !== 'en') await server.ssrLoadModule(`/src/locales/${locale}.ts`)
         const { pagesFor } = (await server.ssrLoadModule('/src/pages.ts')) as {
           pagesFor: (locale: Locale) => ReadonlyArray<Page>
         }

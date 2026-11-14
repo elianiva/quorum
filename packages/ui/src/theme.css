@@ -156,6 +156,7 @@
   --primary-fill-bottom: oklch(0.25 0.004 260);
   --primary-edge: oklch(0.18 0 0);
   --on-primary-fill: oklch(0.99 0 0);
+  --on-group: oklch(0.99 0 0);
 
   --elev-well: inset 0 1px 2px oklch(0.26 0.01 260 / 0.09), inset 0 0 0 1px var(--hairline-soft);
   --elev-raised:
@@ -228,6 +229,7 @@
   --primary-fill-bottom: oklch(0.88 0.003 260);
   --primary-edge: oklch(0 0 0 / 0.2);
   --on-primary-fill: oklch(0.2 0.004 260);
+  --on-group: oklch(0.2 0.004 260);
 
   --elev-well:
     inset 0 1px 3px oklch(0 0 0 / 0.45), inset 0 0 0 1px oklch(0 0 0 / 0.25),

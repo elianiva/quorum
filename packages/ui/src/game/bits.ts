@@ -198,6 +198,9 @@ export const groupBadge = <M>(
   const shape = GROUP_SHAPES[group]
   const scale = GLYPH_SCALE[shape]
   const offset = 12 - 12 * scale
+  // A custom brand fill stays white. The theme's group fills turn pale in dark mode,
+  // so their glyph flips to the theme's paired ink instead.
+  const glyph = color && !muted ? 'white' : 'onGroup'
   return h.svg(
     [
       h.AriaHidden(true),
@@ -226,9 +229,14 @@ export const groupBadge = <M>(
       ...shapeOf(shape, h),
       h.g(
         [h.Transform(`translate(${offset} ${offset}) scale(${scale})`)],
-        // A nested 24-unit svg; its currentColor is white.
+        // A nested 24-unit svg; it takes the badge's paired glyph ink.
         'path' in content
-          ? [h.path([h.D(content.path), h.Fill('white')], [])]
+          ? [
+              h.g(
+                [h.Class(css({ color: glyph }))],
+                [h.path([h.D(content.path), h.Fill('currentColor')], [])],
+              ),
+            ]
           : [
               icon(
                 h,
@@ -236,7 +244,7 @@ export const groupBadge = <M>(
                 css({
                   width: '6',
                   height: '6',
-                  color: 'white',
+                  color: glyph,
                 }),
               ),
             ],

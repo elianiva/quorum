@@ -166,6 +166,7 @@ export const quorumPreset = definePreset({
           hairlineSoft: themeScoped('var(--hairline-soft)'),
           highlight: themeScoped('var(--highlight)'),
           onPrimaryFill: themeScoped('var(--on-primary-fill)'),
+          onGroup: themeScoped('var(--on-group)'),
           page: themeScoped('var(--page)'),
           node: themeScoped('var(--node)'),
           edge: themeScoped('var(--edge)'),

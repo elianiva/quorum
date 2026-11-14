@@ -1013,7 +1013,7 @@ export class BoardController {
     name.position.set(TITLE_X, HEAD / 2)
     const size = badgeGlyph(group, BADGE_R)
     const mark = glyph(size)
-    paint(mark, COMPONENT_ICONS[type], 0xffffff)
+    paint(mark, COMPONENT_ICONS[type], colors.card)
     mark.position.set(BADGE_X - size / 2, BADGE_Y - size / 2)
     this.ghost.addChild(frame, name, mark)
   }

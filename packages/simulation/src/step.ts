@@ -367,15 +367,30 @@ const warmupOf = (game: Game, node: GameNode): number =>
               ? Math.max(WARMUP_SECONDS, game.data * LOG_REPLICATE_MINUTES_PER_GB)
               : WARMUP_SECONDS
 
+/**
+ * Each Node's live Autoscaler, by Node id, one map per Game. A Step scales every App Server and
+ * Worker against the same Game, and each lookup walked the Link list and then the Node list for
+ * every match. The map is built once and read once per Node, and keeps the first live Autoscaler
+ * a Node links into, which is the one the walk found first.
+ */
+const autoscalers = new WeakMap<Game, ReadonlyMap<string, GameNode>>()
+
 /** The live Autoscaler a Node links into, if any. */
 const autoscalerOf = (game: Game, node: GameNode): GameNode | undefined => {
   if (node.type !== 'server' && node.type !== 'worker') return undefined
-  for (const link of game.links) {
-    if (link.from !== node.id) continue
-    const target = game.nodes.find((entry) => entry.id === link.to)
-    if (target?.type === 'autoscaler' && !isDown(target)) return target
+  let scaled = autoscalers.get(game)
+  if (scaled === undefined) {
+    const byId = new Map(game.nodes.map((entry) => [entry.id, entry]))
+    const found = new Map<string, GameNode>()
+    for (const link of game.links) {
+      const target = byId.get(link.to)
+      if (target?.type === 'autoscaler' && !isDown(target) && !found.has(link.from))
+        found.set(link.from, target)
+    }
+    scaled = found
+    autoscalers.set(game, scaled)
   }
-  return undefined
+  return scaled.get(node.id)
 }
 
 /**

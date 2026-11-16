@@ -73,7 +73,28 @@ const authToken = process.env.SENTRY_AUTH_TOKEN
 const release = process.env.VITE_SENTRY_RELEASE
 
 export default defineConfig({
-  build: { sourcemap: authToken ? 'hidden' : false },
+  build: {
+    sourcemap: authToken ? 'hidden' : false,
+    rolldownOptions: {
+      output: {
+        // The app was one 2.8 MB chunk, so every deploy made a returning player fetch all of it
+        // again. The libraries, the catalog, and the English copy change far less often than
+        // the game's code: each gets its own chunk, which keeps its hashed name, and its place
+        // in the browser's cache, until its own content changes.
+        codeSplitting: {
+          groups: [
+            // Pixi stays out: it loads its renderers on demand, and a group would load them all.
+            { name: 'vendor', test: /\/node_modules\/(?!\.pnpm\/pixi\.js@|pixi\.js\/)/ },
+            {
+              name: 'catalog',
+              test: /\/packages\/(?:simulation\/src\/catalog\/|ui\/src\/i18n\/catalog\/en\.ts)/,
+            },
+            { name: 'copy', test: /\/apps\/web\/src\/(?:game\/copy|i18n\/en)\// },
+          ],
+        },
+      },
+    },
+  },
   plugins: [
     layoutHarness(),
     pandacss({ codegen: false }),

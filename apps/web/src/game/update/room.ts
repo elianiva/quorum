@@ -99,7 +99,7 @@ const painted = (
       ...model.board,
       game: { ...frame.game, history: [...samples] },
       clock: { ...model.board.clock, speed: frame.speed, mode: { _tag: 'Running' } },
-      bottleneckAt: -1,
+      whatIfsAt: -1,
       dashboard: { ...model.board.dashboard, history },
     },
     room: {

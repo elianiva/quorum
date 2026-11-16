@@ -377,10 +377,8 @@ export const Board = Schema.Struct({
   undo: Schema.Array(Undo),
   /** Undone actions to redo, newest last. A new action clears it. */
   redo: Schema.Array(Undo),
-  /** The Bottleneck, searched once per sim second, not on every tick. */
-  bottleneck: Schema.NullOr(Schema.String),
-  /** The sim second of the last search; minus one searches again on the next tick. */
-  bottleneckAt: Schema.Finite,
+  /** The sim second the what-if rows last ran for; minus one runs them again on the next tick. */
+  whatIfsAt: Schema.Finite,
   /** The Board outside the game's chrome: the player is framing a screenshot. */
   screenshot: Schema.Boolean,
   /** The Inspector's what-if rows for the Node `nodeId`, from the sim second `at`. */
@@ -553,10 +551,10 @@ export const Model = Schema.Struct({
 })
 export type Model = typeof Model.Type
 
-/** The Ledger the views show: the flow solve, with the Bottleneck the clock last searched. */
+/** The Ledger the views show: the flow solve. The browser does not search the Bottleneck. */
 export const ledgerOf = (model: Model): Ledger => ({
   ...solveFlow(model.board.game),
-  bottleneck: model.board.bottleneck,
+  bottleneck: null,
 })
 
 /** The Company file the phase names, or null when no Company is named. */

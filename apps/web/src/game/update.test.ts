@@ -344,12 +344,12 @@ describe('the clock', () => {
 
   test('the Bottleneck search runs once per sim second, and again after an action', () => {
     const first = tick(inLab())
-    expect(first.board.bottleneckAt).toBe(Math.floor(first.board.game.time))
+    expect(first.board.whatIfsAt).toBe(Math.floor(first.board.game.time))
     const second = tick(first)
-    expect(second.board.bottleneckAt).toBe(first.board.bottleneckAt)
+    expect(second.board.whatIfsAt).toBe(first.board.whatIfsAt)
     const acted = update(second, Message.ResizeChosen({ nodeId: 'server', direction: 1 })).model
-    expect(acted.board.bottleneckAt).toBe(-1)
-    expect(tick(acted).board.bottleneckAt).toBe(Math.floor(tick(acted).board.game.time))
+    expect(acted.board.whatIfsAt).toBe(-1)
+    expect(tick(acted).board.whatIfsAt).toBe(Math.floor(tick(acted).board.game.time))
   })
 
   test('component history captures traffic at its timestamp and stays pinned while live traffic changes', () => {
@@ -1726,8 +1726,6 @@ test('pointer-rate Messages stay out of the playtest log, and gestures go in', (
     Message.DashboardChanged({ message: DashboardMessage.Hovered({ index: 3 }) }),
   )
   expect(names(hovered)).not.toContain('AppendLog')
-  const found = update(inLab(), Message.BottleneckFound({ bottleneck: null, at: 0 }))
-  expect(names(found)).not.toContain('AppendLog')
   const opened = update(inLab(), Message.PanelOpened({ panel: 'menu' }))
   expect(names(opened)).toContain('AppendLog')
 })

@@ -86,7 +86,6 @@ export const applyOption = (model: Model, card: OpenTradeoff, route: Dispatch): 
 type TradeoffTag =
   | 'OptionPreviewed'
   | 'PreviewComputed'
-  | 'BottleneckFound'
   | 'WhatIfsFound'
   | 'OptionLeft'
   | 'OptionChosen'
@@ -118,9 +117,6 @@ export const tradeoffHandlers = (
       ? { model }
       : { model: { ...model, board: { ...model.board, tradeoff: next } } }
   },
-
-  // The revenue-bottleneck marker is no longer shown; keep the message harmless.
-  BottleneckFound: () => ({ model }),
 
   WhatIfsFound: ({ nodeId, at, rows }) => ({
     model: { ...model, board: { ...model.board, whatIfs: { nodeId, at, rows } } },

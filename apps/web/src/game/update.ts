@@ -165,7 +165,6 @@ export const QUIET = new Set([
   'RuntimePickerChanged',
   'FrameworkPickerChanged',
   // Sent by the compute worker several times a second.
-  'BottleneckFound',
   'PreviewComputed',
   // The answers are the player's words; only sending them is a gesture.
   'SurveyChanged',
@@ -270,7 +269,6 @@ export const boardChanged = (before: Model, after: Model): boolean =>
   before.board.game !== after.board.game ||
   before.prefs.locale !== after.prefs.locale ||
   before.board.region !== after.board.region ||
-  before.board.bottleneck !== after.board.bottleneck ||
   before.board.selected !== after.board.selected ||
   before.board.selection !== after.board.selection ||
   before.board.flow !== after.board.flow ||

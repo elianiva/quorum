@@ -425,7 +425,7 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
   }
   // Hints come from the ledger's actual limits and path diagnostics, not a revenue-bottleneck answer.
   const second = Math.floor(game.time)
-  const search = model.board.bottleneckAt < 0 || second !== model.board.bottleneckAt
+  const search = model.board.whatIfsAt < 0 || second !== model.board.whatIfsAt
   const flow = solveFlow(game)
   const ledger: Ledger = { ...flow, bottleneck: null }
   // An incident drops the clock to 1×, so the player has time to respond.
@@ -444,8 +444,7 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
       session: run
         ? sessionStep(model.board.session, { _tag: 'SandboxUpdated', run })
         : model.board.session,
-      bottleneck: null,
-      bottleneckAt: search ? second : model.board.bottleneckAt,
+      whatIfsAt: search ? second : model.board.whatIfsAt,
       // An acknowledgement lasts while its rule holds. A rule that clears starts loud again.
       alertQuiet: model.board.alertQuiet.filter(
         (rule) => !ignored(game, rule) && game.alarms[rule] >= ALERT_RULES[rule].seconds,

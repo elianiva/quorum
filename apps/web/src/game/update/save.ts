@@ -267,7 +267,7 @@ export const saveHandlers = (
     const next: Model = {
       ...model,
       panel: 'none',
-      board: { ...model.board, game, bottleneckAt: -1 },
+      board: { ...model.board, game, whatIfsAt: -1 },
     }
     return { model: next }
   },

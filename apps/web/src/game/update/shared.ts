@@ -91,8 +91,7 @@ export const freshBoard = (game: Game): Board => ({
   disclosure: { _tag: 'Idle', revealed: [] },
   undo: [],
   redo: [],
-  bottleneck: null,
-  bottleneckAt: -1,
+  whatIfsAt: -1,
   screenshot: false,
   whatIfs: null,
   nodeHistory: {},
@@ -189,7 +188,6 @@ export const sync = (model: Model, fit: boolean, focus: string | null = null): A
     focus,
     game: model.board.game,
     locale: model.prefs.locale,
-    bottleneck: model.board.bottleneck,
     selected: model.board.selected,
     selection: model.board.selection,
     placing: placingOf(model),
@@ -339,8 +337,8 @@ export const act = (
           ...measured,
           ...options.patch?.(model, game),
           game,
-          // The Design changed: search for the Bottleneck again on the next tick.
-          bottleneckAt: -1,
+          // The Design changed: run the what-if rows again on the next tick.
+          whatIfsAt: -1,
           ...(options.undoable
             ? pushUndo(
                 model.board,
@@ -392,7 +390,7 @@ export const reverse = (
       game: reversal.game,
       undo: reversal.undo,
       redo: reversal.redo,
-      bottleneckAt: -1,
+      whatIfsAt: -1,
     },
   }
   const t = say(model).toasts

@@ -159,8 +159,7 @@ export const replaceFree = (model: Model, game: Game, text: string): UpdateResul
       undo: [],
       redo: [],
       change: { _tag: 'Idle' },
-      bottleneck: null,
-      bottleneckAt: -1,
+      whatIfsAt: -1,
       nodeHistory: {},
       nodeSample: null,
       dashboard: { ...model.board.dashboard, history: EMPTY_HISTORY },
@@ -173,7 +172,7 @@ export const replaceFree = (model: Model, game: Game, text: string): UpdateResul
 /** Changes the free Sandbox's demand or mix in place. */
 export const tuneFree = (model: Model, game: Game): UpdateResult => {
   if (boardSandbox(model.board)?.id !== null) return { model }
-  const next: Model = { ...model, board: { ...model.board, game, bottleneckAt: -1 } }
+  const next: Model = { ...model, board: { ...model.board, game, whatIfsAt: -1 } }
   return { model: next }
 }
 
@@ -259,7 +258,7 @@ export const startRun = (model: Model, run: ChallengeRun): UpdateResult => {
           }),
           flow: { _tag: 'Idle' },
           selected: null,
-          bottleneckAt: -1,
+          whatIfsAt: -1,
           clock: {
             ...model.board.clock,
             carry: 0,
@@ -387,7 +386,7 @@ export const logResponse = (model: Model, response: Response): UpdateResult | nu
 /** Leaves a Challenge for the Challenges menu; the Company comes back as it was. */
 /** The Company's board as the player left it for a Sandbox or Challenge. Its Bottleneck is searched again. */
 export const companyBoard = (model: Model): Board =>
-  model.company ? { ...model.company, bottleneckAt: -1 } : freshBoard(newGame())
+  model.company ? { ...model.company, whatIfsAt: -1 } : freshBoard(newGame())
 
 export const leaveChallenge = (model: Model): UpdateResult => ({
   model: {
@@ -502,7 +501,7 @@ export const sessionHandlers = (model: Model): MessageCases<UpdateResult, Sessio
       board: {
         ...model.board,
         game: run.board,
-        bottleneckAt: -1,
+        whatIfsAt: -1,
         session: sessionStep(model.board.session, {
           _tag: 'ChallengeUpdated',
           run: challengeStep(run, { _tag: 'Rebuilt' }),

@@ -69,7 +69,6 @@ export const SyncBoard = Command.define('SyncBoard', {
   args: {
     game: Game,
     locale: Locale,
-    bottleneck: Schema.NullOr(Schema.String),
     selected: Schema.NullOr(Schema.String),
     selection: Schema.Array(Schema.String),
     placing: Schema.NullOr(ComponentId),
@@ -90,7 +89,6 @@ export const SyncBoard = Command.define('SyncBoard', {
   execute: ({
     game,
     locale,
-    bottleneck: _bottleneck,
     selected,
     selection,
     placing,
@@ -144,20 +142,6 @@ export const ComputePreview = Command.define('ComputePreview', {
               preview: { ...preview, burn: [...preview.burn] },
             })
           : Message.Synced(),
-      ),
-    ),
-})
-
-/** Searches the Bottleneck on the compute worker. A superseded search sends nothing back. */
-export const ComputeBottleneck = Command.define('ComputeBottleneck', {
-  args: { game: Game, at: Schema.Finite },
-  messages: [Message.BottleneckFound, Message.Synced],
-  execute: ({ game, at }) =>
-    Effect.promise(() =>
-      traced('compute.bottleneck', {}, () => compute('bottleneck', { game })),
-    ).pipe(
-      Effect.map((bottleneck) =>
-        bottleneck === undefined ? Message.Synced() : Message.BottleneckFound({ bottleneck, at }),
       ),
     ),
 })

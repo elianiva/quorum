@@ -169,7 +169,7 @@ export const applyCompany = (
     game: played,
     inbox,
     clock: { ...held.clock, savedAt: played.time, sampledAt: played.time },
-    bottleneckAt: -1,
+    whatIfsAt: -1,
   }
   const next: Model = {
     ...model,

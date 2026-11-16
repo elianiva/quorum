@@ -36,7 +36,7 @@ Worker and bound through Alchemy as one namespace. It owns the Game, its Dashboa
 Seats, the open vote, and the revision. The website Worker forwards `/api/room/socket` through the
 same service binding, and the API Worker hands the upgrade to the Room's object.
 
-The browser never steps a Company in a live Room. `tick` still solves the Ledger and the Bottleneck
+The browser never steps a Company in a live Room. `tick` still solves the Ledger
 so the Board draws, but time advances only on the Room's alarm. Intents and Room messages are
 declared in `packages/simulation/src/room.ts`, beside the Simulation, because their payloads are the
 Game and its Intents; `packages/rpc` keeps the paths and the two plain RPCs. The owner takes the

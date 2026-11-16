@@ -23,7 +23,7 @@ const RELEASE = import.meta.env.VITE_SENTRY_RELEASE
  */
 const TRACES_SAMPLE_RATE = 0.1
 const PROFILE_SESSION_SAMPLE_RATE = 0.05
-/** A tick runs eight times a second; one in this many is timed. */
+/** A tick runs four times a second; one in this many is timed. */
 const TICK_SAMPLE_EVERY = 16
 
 /**

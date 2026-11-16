@@ -23,6 +23,12 @@ export const ROOM_SPEEDS = [0.5, 1, 3, 10] as const
 /** The Dashboard samples a Room keeps, the same window a Company's Game keeps. */
 export const ROOM_SAMPLES = 600
 
+/** The Intents one frame may carry. A bulk move sends a batch; nothing a board does needs more. */
+export const ROOM_INTENTS = 256
+
+/** The characters a Seat id, a name, or an owner token may have on the wire. */
+export const ROOM_TEXT = 128
+
 /** One player in a Room. The owner is the Seat that took the Company online. */
 export const Seat = Schema.Struct({
   id: Schema.String,
@@ -267,7 +273,7 @@ const valid = Schema.is(Game)
  * an Intent means the same thing on each side. A result that the Game schema
  * cannot read is refused rather than broadcast.
  */
-export const applyIntent = (game: Game, entry: Intent): Result.Result<Game, Refusal> => {
+const runIntent = (game: Game, entry: Intent): Result.Result<Game, Refusal> => {
   const table = tables[entry.ns]
   if (!Object.hasOwn(table, entry.name))
     return Result.fail(Refusal.NotAllowed({ reason: 'That is not a move you can make here.' }))
@@ -278,31 +284,32 @@ export const applyIntent = (game: Game, entry: Intent): Result.Result<Game, Refu
   } catch {
     return Result.fail(Refusal.NotAllowed({ reason: 'That move did not apply.' }))
   }
-  const result = Result.isResult(outcome)
-    ? (outcome as Actions.Action)
-    : Result.succeed(outcome as Game)
-  return Result.match(result, {
-    onFailure: (refusal) => Result.fail(refusal),
-    onSuccess: (next) =>
-      valid(next)
-        ? Result.succeed(next)
-        : Result.fail(Refusal.NotAllowed({ reason: 'That move did not apply.' })),
-  })
+  return Result.isResult(outcome) ? (outcome as Actions.Action) : Result.succeed(outcome as Game)
 }
 
-/** Applies a batch in order, stopping at the first refusal. */
+/**
+ * Applies a batch in order, stopping at the first refusal. The Game schema reads
+ * the result once, after the last Intent: reading it after each one costs a whole
+ * Game per Intent, and a batch is accepted or refused as one.
+ */
 export const applyIntents = (
   game: Game,
   intents: ReadonlyArray<Intent>,
 ): Result.Result<Game, Refusal> => {
   let current = game
   for (const entry of intents) {
-    const applied = applyIntent(current, entry)
+    const applied = runIntent(current, entry)
     if (Result.isFailure(applied)) return applied
     current = applied.success
   }
-  return Result.succeed(current)
+  return current === game || valid(current)
+    ? Result.succeed(current)
+    : Result.fail(Refusal.NotAllowed({ reason: 'That move did not apply.' }))
 }
+
+/** Applies one Intent. */
+export const applyIntent = (game: Game, entry: Intent): Result.Result<Game, Refusal> =>
+  applyIntents(game, [entry])
 
 /* ---------- Wire ---------- */
 
@@ -337,12 +344,15 @@ export type RoomSnapshot = typeof RoomSnapshot.Type
 export const ClientMessage = Schema.TaggedUnion({
   /** Claims a Seat. A token that matches the Room's owner claims the owner Seat. */
   Hello: {
-    seat: Schema.String,
-    name: Schema.String,
-    token: Schema.optionalKey(Schema.String),
+    seat: Schema.String.check(Schema.isMaxLength(ROOM_TEXT)),
+    name: Schema.String.check(Schema.isMaxLength(ROOM_TEXT)),
+    token: Schema.optionalKey(Schema.String.check(Schema.isMaxLength(ROOM_TEXT))),
   },
   /** One or more Intents, applied in order and answered with one snapshot. */
-  Intents: { id: Schema.Finite, intents: Schema.Array(Intent) },
+  Intents: {
+    id: Schema.Finite,
+    intents: Schema.Array(Intent).check(Schema.isMaxLength(ROOM_INTENTS)),
+  },
   Ballot: { vote: Schema.Finite, yes: Schema.Boolean },
   StartVote: { kind: VoteKind },
   /**
@@ -363,7 +373,7 @@ export const ClientMessage = Schema.TaggedUnion({
   /** The owner sets the Room's speed. */
   Speed: { value: Schema.Literals(ROOM_SPEEDS) },
   /** The owner removes a Seat. */
-  Kick: { seat: Schema.String },
+  Kick: { seat: Schema.String.check(Schema.isMaxLength(ROOM_TEXT)) },
   Resync: {},
   Ping: { at: Schema.Finite },
 })

@@ -1,14 +1,16 @@
-import { Result, Schema } from 'effect'
+import { Option, Result, Schema } from 'effect'
 import { describe, expect, test } from 'vitest'
 import * as Actions from '../src/actions.ts'
 import { newGame, preseedGame } from '../src/company.ts'
 import {
   applyIntent,
   applyIntents,
+  ClientMessage,
   intent,
   mirrorIntent,
   planOf,
   RefusalWire,
+  ROOM_INTENTS,
   RoomSnapshot,
   ServerMessage,
   votePasses,
@@ -111,6 +113,17 @@ describe('intents', () => {
     expect(Result.isSuccess(applied)).toBe(true)
     if (Result.isSuccess(applied))
       expect(applied.success.nodes.find((entry) => entry.id === lb.id)?.policy).toBe('round-robin')
+  })
+
+  test('a frame carries a bounded batch of Intents', () => {
+    const decode = Schema.decodeUnknownOption(ClientMessage)
+    const batch = (count: number) => ({
+      _tag: 'Intents',
+      id: 1,
+      intents: Array.from({ length: count }, () => intent('move', node.id, 1, 1)),
+    })
+    expect(Option.isSome(decode(batch(ROOM_INTENTS)))).toBe(true)
+    expect(Option.isNone(decode(batch(ROOM_INTENTS + 1)))).toBe(true)
   })
 
   test('a batch stops at the first refusal', () => {

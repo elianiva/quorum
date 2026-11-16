@@ -3,6 +3,7 @@ import { DurableObject } from 'cloudflare:workers'
 import { Option, Result, Schema } from 'effect'
 import {
   ClientMessage,
+  ROOM_SEATS,
   ROOM_SPEEDS,
   ServerMessage,
   type SeatActivity,
@@ -40,6 +41,27 @@ type Attachment = Readonly<{ seat: string; sampleAt: number }>
 
 const NO_SEAT: Attachment = { seat: '', sampleAt: 0 }
 
+/**
+ * The connections a Room accepts. A reload opens its new socket before the old one
+ * closes, so each Seat gets room for two, and a few more wait for a Seat.
+ */
+const MAX_SOCKETS = ROOM_SEATS * 3
+
+/** The largest frame the Room reads. A full batch of Intents is far smaller. */
+const MAX_FRAME = 256 * 1024
+
+/**
+ * What a connection may ask of the Room. A frame that changes or reads the Company
+ * costs a whole Game: the Room checks it, saves it, and sends it to every Seat.
+ * So each connection has a budget that refills over time. A pointer frame costs
+ * one, and a board sends 25 a second at most; a frame that costs a Game costs ten.
+ */
+const BUDGET = 240
+const REFILL_PER_SECOND = 120
+const HEAVY = 10
+
+type Budget = { left: number; at: number }
+
 const encode = Schema.encodeSync(ServerMessage)
 const decode = Schema.decodeUnknownOption(ClientMessage)
 
@@ -68,6 +90,8 @@ const textOf = (raw: string | ArrayBuffer): string | null => {
 class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
   private state: RoomState | null = null
   private savedAt = 0
+  /** In memory only: a Room that hibernated had no frames to count. */
+  private readonly budgets = new WeakMap<WebSocket, Budget>()
 
   constructor(ctx: DurableObjectState, env: RoomEnv) {
     super(ctx, env)
@@ -110,6 +134,8 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     if (request.headers.get('Upgrade') !== 'websocket')
       return new Response('Expected a WebSocket', { status: 426 })
     if (this.state === null) return new Response('No such Room', { status: 404 })
+    if (this.ctx.getWebSockets().length >= MAX_SOCKETS)
+      return new Response('The Room is busy', { status: 429 })
 
     const pair = new WebSocketPair()
     const [client, server] = Object.values(pair) as [WebSocket, WebSocket]
@@ -120,6 +146,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
   }
 
   async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer): Promise<void> {
+    if ((typeof raw === 'string' ? raw.length : raw.byteLength) > MAX_FRAME) return
     const text = textOf(raw)
     if (text === null) return
     let body: unknown
@@ -131,6 +158,18 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     const decoded = decode(body)
     if (Option.isNone(decoded)) return
     const message = decoded.value
+    const light =
+      message._tag === 'Cursor' || message._tag === 'HideCursor' || message._tag === 'Ping'
+    if (!this.spend(ws, light ? 1 : HEAVY)) {
+      // A Seat waits for an answer to its Intents, so a dropped batch is refused aloud.
+      if (message._tag === 'Intents')
+        this.send(ws, {
+          _tag: 'Refused',
+          id: message.id,
+          refusal: { _tag: 'NotAllowed', reason: 'Too many moves at once. Try again.' },
+        })
+      return
+    }
 
     await ClientMessage.match(message, {
       Hello: (frame) => this.hello(ws, frame.seat, frame.name, frame.token),
@@ -452,6 +491,16 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
         // Already closing.
       }
     }
+  }
+
+  /** Takes `cost` from the connection's budget, or answers false when it has too little. */
+  private spend(ws: WebSocket, cost: number): boolean {
+    const now = Date.now()
+    const budget = this.budgets.get(ws) ?? { left: BUDGET, at: now }
+    const left = Math.min(BUDGET, budget.left + ((now - budget.at) / 1_000) * REFILL_PER_SECOND)
+    const allowed = left >= cost
+    this.budgets.set(ws, { left: allowed ? left - cost : left, at: now })
+    return allowed
   }
 
   private seatOf(ws: WebSocket): string {

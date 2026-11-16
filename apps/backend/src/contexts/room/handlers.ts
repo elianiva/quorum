@@ -9,6 +9,9 @@ import { RoomDirectory, RoomError } from './directory.ts'
 
 const MAX_SAMPLES = 600
 const MAX_NAME = 40
+/** Every Step and every snapshot grows with the Design, so a Room takes a bounded one. */
+const MAX_NODES = 2_000
+const MAX_LINKS = 8_000
 
 const fail = (message: string) => Effect.fail(new ApiError({ message }))
 
@@ -31,6 +34,8 @@ export const RoomHandlers = RoomRpc.toLayer(
         yield* gate.require('multiplayer', payload.key)
         const game = decodeGame(payload.game)
         if (Option.isNone(game)) return yield* fail('The Company could not be read.')
+        if (game.value.nodes.length > MAX_NODES || game.value.links.length > MAX_LINKS)
+          return yield* fail('The Company is too large to take online.')
         if (payload.samples.length > MAX_SAMPLES)
           return yield* fail('The Company has too much history.')
         const samples = payload.samples.flatMap((entry) => {

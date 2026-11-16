@@ -20,7 +20,7 @@ Los Sandboxes [Checkout obsoleto](/sandboxes/stale-checkout) y [Escritura perdid
 
 ## Cómo funciona
 
-Enlaza la Base de datos con la réplica: ese enlace envía el log de escrituras, y es la única forma en que una réplica copia algo. No lleva consultas. Una réplica sin ninguna Base de datos enlazada no recibe lecturas, y su tarjeta dice "Nada: enlaza una Base de datos con ella". Una réplica copia una Base de datos, así que sigue el motor de esa Base de datos. Los Servidores de aplicaciones, o un Balanceador de carga L4, se enlazan con la réplica para enviarle lecturas.
+Enlaza la Base de datos con la réplica: ese enlace envía el log de escrituras, y es la única forma en que una réplica copia algo. No lleva consultas. Una réplica sin ninguna Base de datos enlazada no recibe lecturas, y su fila Copies está en rojo hasta que enlaces una. Una réplica copia una Base de datos, así que sigue el motor de esa Base de datos. Los Servidores de aplicaciones, o un Balanceador de carga L4, se enlazan con la réplica para enviarle lecturas.
 
 Usa el mismo modelo de capacidad que la [Base de datos](/components/database), con un tipo de instancia y un tamaño, y tiene su propio límite de conexiones. Solo le llegan consultas de lectura y escaneos de informes, y ningún Componente queda aguas abajo de ella. Ejecuta el motor de su primario, así que el límite de conexiones sigue al del primario. Las escrituras siguen yendo al primario. La Base de datos enlazada con ella también decide su Grupo de datos: la réplica pertenece al grupo de esa Base de datos dondequiera que se dibuje, así que las filas y la capacidad del grupo se leen contra ella.
 

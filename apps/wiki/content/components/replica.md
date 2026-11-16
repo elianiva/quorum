@@ -20,7 +20,7 @@ The [Stale Checkout](/sandboxes/stale-checkout) and [Missed Write](/sandboxes/mi
 
 ## How it works
 
-Link the Database into the replica: that link ships the write log, and it is the only way a replica copies anything. It carries no queries. A replica with no Database linked to it takes no reads, and its card reads "Nothing: link a Database to it". A replica copies one Database, so it follows that Database's engine. The App Servers, or an L4 Load Balancer, link to the replica to send it reads.
+Link the Database into the replica: that link ships the write log, and it is the only way a replica copies anything. It carries no queries. A replica with no Database linked to it takes no reads, and its Copies row is red until you link one. A replica copies one Database, so it follows that Database's engine. The App Servers, or an L4 Load Balancer, link to the replica to send it reads.
 
 It uses the same capacity model as the [Database](/components/database), with an instance type and size, and it has its own connection limit. Only read queries and report scans reach it, and no Component sits downstream of it. It runs its primary's engine, so the connection limit follows the primary. Writes still go to the primary. The Database linked into it also decides its Data Group: the replica belongs to that Database's group wherever it is drawn, so the group's rows and capacity read against it.
 

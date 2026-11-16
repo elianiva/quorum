@@ -590,7 +590,12 @@ const readReplica = design({
       ),
     ]),
   ],
-  links: [wire('users', 'server'), wire('server', 'database'), wire('server', 'replica')],
+  links: [
+    wire('users', 'server'),
+    wire('server', 'database'),
+    wire('database', 'replica'),
+    wire('server', 'replica'),
+  ],
 })
 
 export const patternsScale = {

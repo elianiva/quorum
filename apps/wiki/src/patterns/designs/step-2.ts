@@ -48,7 +48,12 @@ export const step2 = {
           ),
         ]),
       ],
-      links: [wire('users', 'server'), wire('server', 'database'), wire('server', 'replica')],
+      links: [
+        wire('users', 'server'),
+        wire('server', 'database'),
+        wire('database', 'replica'),
+        wire('server', 'replica'),
+      ],
     },
     { page: 0.3, read: 0.45, write: 0.2, login: 0.05 },
   ),

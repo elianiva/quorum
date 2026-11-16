@@ -136,6 +136,7 @@ export const toasts: Messages['toasts'] = {
   nodesShut: (count: Value) => `Sin caja: ${count} nodos se apagaron para frenar el gasto.`,
   unreadableList: 'No se pudo leer tu lista de empresas. Se conservó una copia.',
   companyMissing: 'Falta ese archivo de empresa.',
+  companyUnread: 'Tu navegador no pudo leer esa empresa. Sigue ahí. Inténtalo de nuevo.',
   unreadableCompany: 'No se pudo leer esa empresa. Se conservó una copia.',
   noCompanyToCopy: 'No hay ninguna empresa que copiar.',
   sandboxReset: 'El Sandbox gratuito se ha reiniciado.',

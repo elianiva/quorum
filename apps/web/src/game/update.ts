@@ -160,6 +160,7 @@ export const QUIET = new Set([
   'Saved',
   'SavesLoaded',
   'CompanyLoaded',
+  'CompanyUnread',
   'CompanyDeleted',
   // The Inspector's Stack pickers are UI state; the option they choose is logged.
   'RuntimePickerChanged',

@@ -233,8 +233,11 @@ export const savePayloadOf = (model: Model, board: Board = model.board) => ({
   inbox: savedInbox(board.inbox),
 })
 
-/** The open Company's file, with what the board has shown so far. Null when no Company is open. */
-export const saveOf = (model: Model): AnyCommand | null => {
+/**
+ * The open Company's file, with what the board has shown so far. Null when no Company is open.
+ * `closing` marks the save of a tab that may not come back.
+ */
+export const saveOf = (model: Model, closing = false): AnyCommand | null => {
   const id = playingId(model)
   if (id === null || !fileOf(model.saves, id)) return null
   // A Sandbox or Challenge on the board keeps the Company aside: that board is the one to save.
@@ -244,11 +247,12 @@ export const saveOf = (model: Model): AnyCommand | null => {
     id,
     index: refreshedIndex(model.saves, board.game),
     ...savePayloadOf(model, board),
+    ...(closing ? { closing } : {}),
   })
 }
 
-export const saveCommands = (model: Model): ReadonlyArray<AnyCommand> => {
-  const command = saveOf(model)
+export const saveCommands = (model: Model, closing = false): ReadonlyArray<AnyCommand> => {
+  const command = saveOf(model, closing)
   return command === null ? [] : [command]
 }
 

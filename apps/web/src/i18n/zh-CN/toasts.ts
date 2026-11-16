@@ -123,6 +123,7 @@ export const toasts: Messages['toasts'] = {
   nodesShut: (count) => `现金耗尽：${count} 个节点已关闭，以止住支出。`,
   unreadableList: '无法读取你的公司列表，已保留一份副本。',
   companyMissing: '找不到该公司文件。',
+  companyUnread: '浏览器无法读取该公司，数据仍然保留。请重试。',
   unreadableCompany: '无法读取该公司，已保留一份副本。',
   noCompanyToCopy: '没有可复制的公司。',
   sandboxReset: '自由沙盒已重置。',

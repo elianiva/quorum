@@ -136,6 +136,8 @@ export const toasts: Messages['toasts'] = {
     `Trésorerie épuisée : ${count} nœuds s’éteignent pour stopper les dépenses.`,
   unreadableList: 'Votre liste d’entreprises n’a pas pu être lue. Une copie a été conservée.',
   companyMissing: 'Ce fichier d’entreprise est introuvable.',
+  companyUnread:
+    'Votre navigateur n’a pas pu lire cette entreprise. Elle est toujours là. Réessayez.',
   unreadableCompany: 'Cette entreprise n’a pas pu être lue. Une copie a été conservée.',
   noCompanyToCopy: 'Il n’y a aucune entreprise à copier.',
   sandboxReset: 'Le bac à sable libre est réinitialisé.',

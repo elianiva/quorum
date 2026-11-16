@@ -245,6 +245,7 @@ export const listed = (model: Model, game: Game): Readonly<{ game: Game; founder
 type CompaniesTag =
   | 'SavesLoaded'
   | 'CompanyLoaded'
+  | 'CompanyUnread'
   | 'CompanyNameChanged'
   | 'LogoChosen'
   | 'CompanyChosen'
@@ -309,6 +310,17 @@ export const companiesHandlers = (model: Model): MessageCases<UpdateResult, Comp
     // A save this version cannot read is set aside, not overwritten by the next autosave.
     if (Result.isFailure(read)) return dropped(model, id, { json, reason: read.failure }, true)
     return applyCompany(model, id, read.success.game, read.success.file, open)
+  },
+  // A file the browser would not read may still be there, so the Company keeps its row and its
+  // file: the next open reads it again.
+  CompanyUnread: ({ id, open }) => {
+    const back = titleIfBoard({
+      ...model,
+      companyPhase: step(model.companyPhase, { _tag: 'Failed', id }),
+    })
+    return open
+      ? withToast(back.model, say(model).toasts.companyUnread, 'warn', back.commands ?? [])
+      : back
   },
 
   CompanyNameChanged: ({ name }) => ({

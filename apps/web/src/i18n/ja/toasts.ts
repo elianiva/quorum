@@ -130,6 +130,8 @@ export const toasts: Messages['toasts'] = {
   nodesShut: (count) => `資金切れ: 支出を止めるため${count}台のノードを停止しました。`,
   unreadableList: '会社一覧を読み込めませんでした。コピーは残してあります。',
   companyMissing: 'その会社データが見つかりません。',
+  companyUnread:
+    'ブラウザがその会社を読み込めませんでした。データは残っています。もう一度お試しください。',
   unreadableCompany: 'その会社を読み込めませんでした。コピーは残してあります。',
   noCompanyToCopy: 'コピーする会社がありません。',
   sandboxReset: '無料のサンドボックスをリセットしました。',

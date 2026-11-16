@@ -13,6 +13,8 @@ export const companiesCases = {
     open: Schema.Boolean,
     json: Schema.NullOr(Schema.String),
   },
+  /** The browser would not read a Company's file. The file may still be there. */
+  CompanyUnread: { id: Schema.String, open: Schema.Boolean },
   CompanyNameChanged: { name: Schema.String },
   LogoChosen: { logo: LogoId },
   /** The Companies page opens one Company's file. */

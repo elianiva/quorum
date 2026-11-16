@@ -88,6 +88,21 @@ const withStorage = <A>(storage: Storage, run: () => A): A => {
 const runCommand = <A>(command: { effect: Effect.Effect<A, never, never> }): A =>
   Effect.runSync(command.effect)
 
+/** The same for a Command that waits on the Company files, with the fake storage held until it ends. */
+const runStored = async (
+  storage: Storage,
+  ...commands: ReadonlyArray<{ effect: Effect.Effect<unknown, never, never> }>
+): Promise<void> => {
+  const scope = globalThis as unknown as { window: { localStorage: Storage } | undefined }
+  const prior = scope.window
+  scope.window = { localStorage: storage }
+  try {
+    for (const command of commands) await Effect.runPromise(command.effect)
+  } finally {
+    scope.window = prior
+  }
+}
+
 /** A Company file as `SavesLoaded` reads it from storage. */
 const indexOf = (files: ReadonlyArray<CompanyFile>, current: string | null): SaveIndex => ({
   current,
@@ -365,34 +380,35 @@ describe('autosave and migration', () => {
     expect(commandsOf(played, Message.TitleOpened())).toContain('WriteCompany')
   })
 
-  test('the autosave writes the save format beside the Game', () => {
+  // The test run has no IndexedDB, so the Commands below take the path of a browser without one.
+  test('the autosave writes the save format beside the Game', async () => {
     const storage = fakeStorage({})
-    withStorage(storage, () => {
-      const founded = send(initialModel(), Message.CompanyFounded())
-      const id = founded.saves.current
-      expect(id).not.toBeNull()
-      const board = founded.board
-      runCommand(
-        WriteCompany({
-          id: id!,
-          index: refreshedIndex(founded.saves, board.game),
-          game: board.game,
-          revealed: board.disclosure.revealed,
-          pending:
-            board.disclosure._tag === 'Queued' || board.disclosure._tag === 'Cueing'
-              ? board.disclosure.pending
-              : [],
-          dashboard: board.dashboard.history,
-          inbox: savedInbox(board.inbox),
-        }),
-      )
-      const saved = JSON.parse(storage.getItem(`${SAVE_PREFIX}${id}`) ?? '{}') as Record<
-        string,
-        unknown
-      >
-      expect(saved['format']).toBe(SAVE_FORMAT)
-      expect(saved['seed']).toBe(board.game.seed)
-    })
+    const founded = send(initialModel(), Message.CompanyFounded())
+    const id = founded.saves.current
+    expect(id).not.toBeNull()
+    const board = founded.board
+    await runStored(
+      storage,
+      WriteCompany({
+        id: id!,
+        index: refreshedIndex(founded.saves, board.game),
+        game: board.game,
+        revealed: board.disclosure.revealed,
+        pending:
+          board.disclosure._tag === 'Queued' || board.disclosure._tag === 'Cueing'
+            ? board.disclosure.pending
+            : [],
+        dashboard: board.dashboard.history,
+        inbox: savedInbox(board.inbox),
+      }),
+    )
+    const saved = JSON.parse(storage.getItem(`${SAVE_PREFIX}${id}`) ?? '{}') as Record<
+      string,
+      unknown
+    >
+    expect(saved['format']).toBe(SAVE_FORMAT)
+    expect(saved['seed']).toBe(board.game.seed)
+    expect(JSON.parse(storage.getItem('quorum.saves.v1') ?? '{}')).toMatchObject({ current: id })
   })
 
   test('a Company file without this format keeps a copy and leaves the list', () => {
@@ -412,13 +428,14 @@ describe('autosave and migration', () => {
     )
   })
 
-  test('the kept copy is written and the Company file it came from is removed', () => {
+  test('the kept copy is written and the Company file it came from is removed', async () => {
     const json = '{"nodes":[]}'
     const storage = fakeStorage({ [`${SAVE_PREFIX}c-one`]: json })
-    withStorage(storage, () => {
-      runCommand(KeepBrokenSave({ json, reason: 'The save is not JSON.' }))
-      runCommand(DeleteCompany({ id: 'c-one', index: EMPTY_SAVE_INDEX }))
-    })
+    await runStored(
+      storage,
+      KeepBrokenSave({ json, reason: 'The save is not JSON.' }),
+      DeleteCompany({ id: 'c-one', index: EMPTY_SAVE_INDEX }),
+    )
     expect(storage.getItem(BROKEN_SAVE_KEY)).toBe(json)
     expect(storage.getItem(`${SAVE_PREFIX}c-one`)).toBeNull()
     expect(JSON.parse(storage.getItem('quorum.saves.v1') ?? '{}')).toEqual(EMPTY_SAVE_INDEX)
@@ -480,7 +497,7 @@ describe('browser storage', () => {
     expect(storage.getItem('quorum.saves.v1')).not.toBeNull()
   })
 
-  test('pruning also drops Agent Room records for Companies the list does not name', () => {
+  test('pruning also drops Agent Room records for Companies the list does not name', async () => {
     const { index } = stored()
     const kept = { writeKey: 'w', roomId: 'r', epoch: 'e' }
     const storage = fakeStorage({
@@ -489,7 +506,7 @@ describe('browser storage', () => {
         orphan: { writeKey: 'w2', roomId: 'r2', epoch: 'e2' },
       }),
     })
-    withStorage(storage, () => runCommand(PruneSaves({ index })))
+    await runStored(storage, PruneSaves({ index }))
     expect(JSON.parse(storage.getItem('quorum.agent.rooms') ?? '{}')).toEqual({ 'c-one': kept })
   })
 

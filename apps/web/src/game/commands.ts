@@ -33,12 +33,17 @@ import {
   PREFS_KEY,
   SANDBOX_KEY,
   SAVE_INDEX_KEY,
-  pruneCompanyFiles,
   readStored,
   removeStored,
-  saveKeyOf,
   writeStored,
 } from './storage.ts'
+import {
+  companyDb,
+  deleteCompany,
+  pruneCompanies,
+  readCompany,
+  writeCompany,
+} from './company-files.ts'
 import { History } from './history.ts'
 import { SavedInbox } from './inbox.ts'
 import { saveJson } from './save-file.ts'
@@ -295,18 +300,27 @@ export const PruneSaves = Command.define('PruneSaves', {
   args: { index: SaveIndex },
   messages: [Message.Synced],
   execute: ({ index }) =>
-    Effect.sync(() => {
-      pruneCompanyFiles(index)
+    Effect.promise(async () => {
       pruneAgentRooms(new Set(index.companies.map((file) => file.id)))
-    }).pipe(Effect.as(Message.Synced())),
+      await pruneCompanies(companyDb(), index)
+      return Message.Synced()
+    }),
 })
 
-/** Reads one Company's Game, to continue it or to open it from the Companies page. */
+/**
+ * Reads one Company's Game, to continue it or to open it from the Companies page. A database that
+ * refuses is not a missing file, so it sends its own Message and the Company stays on the list.
+ */
 export const LoadCompany = Command.define('LoadCompany', {
   args: { id: Schema.String, open: Schema.Boolean },
-  messages: [Message.CompanyLoaded],
+  messages: [Message.CompanyLoaded, Message.CompanyUnread],
   execute: ({ id, open }) =>
-    Effect.sync(() => Message.CompanyLoaded({ id, open, json: readStored(saveKeyOf(id)) })),
+    Effect.promise(async () => {
+      const read = await readCompany(companyDb(), id)
+      return read.unread
+        ? Message.CompanyUnread({ id, open })
+        : Message.CompanyLoaded({ id, open, json: read.json })
+    }),
 })
 
 export const WriteCompany = Command.define('WriteCompany', {
@@ -319,17 +333,19 @@ export const WriteCompany = Command.define('WriteCompany', {
     dashboard: History,
     /** The Inbox the Company keeps (18 "Open questions"): its Mail and its mutes. */
     inbox: SavedInbox,
+    /** The tab may not come back, so the file also goes where a write lands at once. */
+    closing: Schema.optionalKey(Schema.Boolean),
   },
   messages: [Message.Saved, Message.SaveFailed],
-  execute: ({ id, index, game, revealed, pending, dashboard, inbox }) =>
-    Effect.sync(() => {
+  execute: ({ id, index, game, revealed, pending, dashboard, inbox, closing }) =>
+    Effect.promise(async () => {
       const file = index.companies.find((entry) => entry.id === id)
       if (!file) return Message.SaveFailed()
       const stamped = refreshed(file, game, Date.now())
       const json = JSON.stringify(saveJson({ game, revealed, pending, dashboard, inbox }))
-      const wrote = traced('save.write', {}, () => {
+      const wrote = await traced('save.write', {}, () => {
         annotateSpan({ 'save.bytes': json.length })
-        return writeStored(saveKeyOf(id), json)
+        return writeCompany(companyDb(), id, json, closing)
       })
       // A full or blocked storage loses the save, not the game. The player hears about it.
       return wrote &&
@@ -350,8 +366,8 @@ export const DeleteCompany = Command.define('DeleteCompany', {
   args: { id: Schema.String, index: SaveIndex },
   messages: [Message.CompanyDeleted],
   execute: ({ id, index }) =>
-    Effect.sync(() => {
-      removeStored(saveKeyOf(id))
+    Effect.promise(async () => {
+      await deleteCompany(companyDb(), id)
       writeStored(SAVE_INDEX_KEY, JSON.stringify(index))
       return Message.CompanyDeleted({ id })
     }),

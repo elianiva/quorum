@@ -139,6 +139,7 @@ export const toasts = {
   nodesShut: (count: Value) => `Out of Cash: ${count} Nodes shut down to stop the Burn.`,
   unreadableList: 'Your company list could not be read. A copy was kept.',
   companyMissing: 'That company file is missing.',
+  companyUnread: 'Your browser would not read that company. It is still there. Try again.',
   unreadableCompany: 'That company could not be read. A copy was kept.',
   noCompanyToCopy: 'There is no Company to copy.',
   sandboxReset: 'The free Sandbox is reset.',

@@ -320,7 +320,7 @@ export const panelsHandlers = (
           },
         }
       : model
-    const commands = unsaved ? saveCommands(saved) : []
+    const commands = unsaved ? saveCommands(saved, true) : []
     // A live Room runs on its own clock: a hidden tab must not freeze it for the others.
     if (!model.prefs.blurPause || halted(model) || roomLive(model) || !onBoard(model.route))
       return { model: saved, commands }

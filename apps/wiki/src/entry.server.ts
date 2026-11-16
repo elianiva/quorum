@@ -13,6 +13,7 @@ import {
   type Locale,
 } from './i18n/locale.ts'
 import { init, normalize } from './main.ts'
+import { CATALOG_PATH } from './submodels/catalog.ts'
 import { ogFile, type OgCard } from './og-card.ts'
 import { markdownPath } from './markdown.ts'
 import type { Page } from './page.ts'
@@ -233,9 +234,11 @@ export const searchIndexes = async (): Promise<Readonly<Record<string, string>>>
 }
 
 /** Every page in every language: English at its path, each translation under its prefix. */
-export const prerenderPaths: ReadonlyArray<string> = LOCALES.flatMap((locale) =>
-  PAGES.map((page) => withLocale(locale, page.path)),
-)
+export const prerenderPaths: ReadonlyArray<string> = [
+  ...LOCALES.flatMap((locale) => PAGES.map((page) => withLocale(locale, page.path))),
+  // The component catalog: one English page, outside `PAGES` so search and the sitemap skip it.
+  CATALOG_PATH,
+]
 
 /** The sitemap the build writes (vite.config.ts), each page in every language with its
     alternates. `lastmod` gives the date a source file last changed; a page without a source
@@ -269,7 +272,7 @@ export const renderPage = async (request: Request): Promise<Server.EntryResult> 
   return Effect.runPromise(
     Server.renderToString({ routing: {}, init, view }, { url: request.url }).pipe(
       Effect.map((application) =>
-        Server.Rendered(application, pageAt(path) ? {} : { status: 404 }),
+        Server.Rendered(application, pageAt(path) || path === CATALOG_PATH ? {} : { status: 404 }),
       ),
     ),
   )

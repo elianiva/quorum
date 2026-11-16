@@ -10,6 +10,7 @@ import * as Progress from './submodels/progress.ts'
 import * as Project from './submodels/project.ts'
 import * as Quiz from './submodels/quiz.ts'
 import * as Search from './submodels/search.ts'
+import * as Catalog from './submodels/catalog.ts'
 import * as Spoilers from './submodels/spoilers.ts'
 
 export const Model = Schema.Struct({
@@ -29,6 +30,8 @@ export const Model = Schema.Struct({
   quiz: Quiz.Model,
   /** The repository's public numbers, for the card on the home page. */
   project: Project.Model,
+  /** The component catalog's state; only /catalog reads it. */
+  catalog: Catalog.Model,
 })
 export type Model = typeof Model.Type
 
@@ -46,6 +49,7 @@ export const Message = defineMessageUnion({
   ProgressChanged: { message: Progress.Message },
   QuizChanged: { message: Quiz.Message },
   ProjectChanged: { message: Project.Message },
+  CatalogChanged: { message: Catalog.Message },
 })
 export type Message = typeof Message.Type
 
@@ -171,6 +175,16 @@ const foldProject = Update.foldChild({
   toParentMessage: (message) => Message.ProjectChanged({ message }),
 })
 
+const foldCatalog = Update.foldChild({
+  update: Catalog.update,
+  read: (model: Model) => Option.some(model.catalog),
+  write: (model, catalog) => ({ ...model, catalog }),
+  toParentMessage: (message) => Message.CatalogChanged({ message }),
+})
+
+const paintCatalog = (catalog: Catalog.Model) =>
+  Command.mapMessages([Catalog.paint(catalog)], (message) => Message.CatalogChanged({ message }))
+
 const loadProject = () =>
   Command.mapMessages([Project.Load()], (message) => Message.ProjectChanged({ message }))
 
@@ -189,8 +203,11 @@ export const init: Runtime.RoutingApplicationInit<Model, Message> = (url) => {
       quiz: Quiz.init,
       // The home page is the only page with the project card, so it starts the one read.
       project: path === '/' ? { status: 'loading', stats: null } : Project.init,
+      catalog: Catalog.init(path === Catalog.CATALOG_PATH ? url.search : Option.none()),
     },
     commands: [
+      // The catalog draws its stage from the URL's state, so a shared link opens as it was left.
+      ...(path === Catalog.CATALOG_PATH ? paintCatalog(Catalog.init(url.search)) : []),
       RevealCurrent(),
       ...Command.mapMessages([Spoilers.Load()], (message) => Message.SpoilersChanged({ message })),
       ...Command.mapMessages([Progress.Load({ path })], (message) =>
@@ -227,6 +244,7 @@ const visit = (model: Model, path: string, hash: string): Return => {
       RevealCurrent(),
       ...(visited.commands ?? []),
       ...(wantProject ? loadProject() : []),
+      ...(path === Catalog.CATALOG_PATH ? paintCatalog(model.catalog) : []),
     ],
   }
 }
@@ -279,4 +297,5 @@ export const update = (model: Model, message: Message): Return =>
     ProgressChanged: ({ message }) => foldProgress(model, message),
     QuizChanged: ({ message }) => foldQuiz(model, message),
     ProjectChanged: ({ message }) => foldProject(model, message),
+    CatalogChanged: ({ message }) => foldCatalog(model, message),
   })

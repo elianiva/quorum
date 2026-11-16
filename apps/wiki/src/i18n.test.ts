@@ -371,8 +371,11 @@ test('every page is prerendered in every language, and the sitemap lists each wi
   expect(prerenderPaths).toContain('/ja')
   expect(prerenderPaths).toContain('/ja/glossary/cache-stampede')
   expect(prerenderPaths).toContain('/glossary/cache-stampede')
-  expect(prerenderPaths).toHaveLength(PAGES.length * LOCALES.length)
+  // The component catalog is the one path beyond the pages: English only, and out of the sitemap.
+  expect(prerenderPaths).toContain('/catalog')
+  expect(prerenderPaths).toHaveLength(PAGES.length * LOCALES.length + 1)
   const map = sitemap(() => null)
+  expect(map).not.toContain('/catalog')
   expect(map).toContain('<loc>https://wiki.playquorum.dev/glossary/cache-stampede</loc>')
   expect(map).toContain('<loc>https://wiki.playquorum.dev/es/glossary/cache-stampede</loc>')
   expect(map).toContain('<loc>https://wiki.playquorum.dev/ja/glossary/cache-stampede</loc>')

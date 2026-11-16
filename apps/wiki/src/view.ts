@@ -7,7 +7,8 @@ import { toc } from './components/toc.ts'
 import { builderFor } from './i18n/builder.ts'
 import { langOf } from './i18n/lang.ts'
 import { LOCALE_TAGS, withLocale } from './i18n/locale.ts'
-import type { Message, Model } from './main.ts'
+import { Message, type Model } from './main.ts'
+import * as Catalog from './submodels/catalog.ts'
 import { pageIn } from './pages.ts'
 import { WIKI_ORIGIN } from './site.ts'
 import { css, cx } from '@quorum/styled-system/css'
@@ -42,6 +43,26 @@ export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
   // Reading pages start the app on demand: the header on intent, and a quiz, practice board, or
   // live figure when it nears the viewport. A page whose board is already in view starts at once.
   const hydration = 'visible'
+  // The component catalog is no page: English only, left out of search and the sitemap, and its
+  // stage needs the client at once.
+  if (model.path === Catalog.CATALOG_PATH && model.locale === 'en')
+    return {
+      title: 'Catalog · Quorum Wiki',
+      lang: LOCALE_TAGS[model.locale].lang,
+      body: h.div(
+        [h.Class(css({ minHeight: '100dvh' })), h.DataAttribute('hydration', 'now')],
+        [
+          header(model, h),
+          h.submodel({
+            slotId: 'catalog',
+            model: model.catalog,
+            view: Catalog.view,
+            toParentMessage: (message) => Message.CatalogChanged({ message }),
+            viewInputs: {},
+          }),
+        ],
+      ),
+    }
   return {
     title: page ? (isHome ? t.homeTitle : t.title(page.seoTitle ?? page.title)) : t.notFoundTitle,
     lang: LOCALE_TAGS[model.locale].lang,

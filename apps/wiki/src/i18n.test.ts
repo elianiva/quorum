@@ -32,9 +32,11 @@ import './locales/ja.ts'
 const TRANSLATIONS = ['es', 'ja'] as const
 type Translation = (typeof TRANSLATIONS)[number]
 
+// Loading every language's prose takes a few seconds alone and longer beside the other
+// packages' tests, which is past the 10 seconds a hook gets by default.
 beforeAll(async () => {
   await loadAllProse()
-})
+}, 60_000)
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 

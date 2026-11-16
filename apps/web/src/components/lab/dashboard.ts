@@ -6,7 +6,7 @@ import { changeIn } from '@/i18n/refusal.ts'
 import { copyIn, localized, nodeTitle, type Messages } from '@/i18n/messages.ts'
 import { copy, eraWords } from '@/i18n/messages.ts'
 import { DashboardMessage } from '@/game/dashboard.ts'
-import { createKeyedLazy, type Html, type HtmlBuilder } from 'foldkit/html'
+import { createKeyedLazy, createLazy, type Html, type HtmlBuilder } from 'foldkit/html'
 import { ChevronDown, Clock3, LayoutGrid, RefreshCw, Star, X } from 'lucide'
 import { clockOf } from '@quorum/simulation/calendar'
 import type { Limit } from '@quorum/simulation/capacity'
@@ -313,17 +313,41 @@ const namesOf = (t: Messages, game: Game): ReadonlyMap<string, string> => {
 
 type NodeTrack = Readonly<{ id: string; name: string; values: ReadonlyArray<number> }>
 
-/** Utilization per Node from the Model's 10-second history, with the same labels as the Board. */
+/**
+ * Utilization per Node from the Model's 10-second history, with the same labels as the Board.
+ *
+ * The history gains a point every ten sim seconds, and the panels that read the tracks are
+ * memoized on them. So while the history and the Nodes' names hold, this returns the same array.
+ */
 const tracksOf = (model: Model): ReadonlyArray<NodeTrack> => {
   const t = copyIn(model.prefs.locale)
-  return model.board.game.nodes
+  const history = model.board.nodeHistory
+  const named = model.board.game.nodes
     .filter((node) => node.type !== 'users')
-    .map((node) => ({
-      id: node.id,
-      name: nodeTitle(t, model.board.game, node),
-      values: (model.board.nodeHistory[node.id] ?? []).map((sample) => sample.utilization),
-    }))
+    .map((node) => ({ id: node.id, name: nodeTitle(t, model.board.game, node) }))
+  const known = lastTracks
+  if (
+    known !== null &&
+    known.history === history &&
+    known.tracks.length === named.length &&
+    named.every(
+      (node, index) =>
+        known.tracks[index]?.id === node.id && known.tracks[index]?.name === node.name,
+    )
+  )
+    return known.tracks
+  const tracks = named.map((node) => ({
+    ...node,
+    values: (history[node.id] ?? []).map((sample) => sample.utilization),
+  }))
+  lastTracks = { history, tracks }
+  return tracks
 }
+
+let lastTracks: Readonly<{
+  history: Model['board']['nodeHistory']
+  tracks: ReadonlyArray<NodeTrack>
+}> | null = null
 
 const runwayText = (t: Messages, seconds: number | null): string =>
   seconds === null ? '∞' : t.dashboard.runwayMonths((seconds / RUNWAY_MONTH).toFixed(1))
@@ -2208,11 +2232,26 @@ const stateTimeline = (
   tracks: ReadonlyArray<NodeTrack>,
   span: string,
   h: HtmlBuilder<Message>,
+): Html =>
+  lazyStateTimeline(stateTimelineView, [
+    tracks,
+    Math.floor(model.board.game.time / NODE_EVERY) * NODE_EVERY,
+    span,
+    h,
+  ])
+
+const lazyStateTimeline = createLazy()
+
+/** A lane per Node, a block per run of one state: it changes when the history gains a point. */
+const stateTimelineView = (
+  tracks: ReadonlyArray<NodeTrack>,
+  last: number,
+  span: string,
+  h: HtmlBuilder<Message>,
 ): Html => {
   const t = copy(h)
 
   const length = Math.max(1, ...tracks.map((track) => track.values.length))
-  const last = Math.floor(model.board.game.time / NODE_EVERY) * NODE_EVERY
   const first = last - (length - 1) * NODE_EVERY
   const lanes = tracks.map((track) => ({
     key: track.id,
@@ -2542,6 +2581,191 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
 }
 
 /** Every Node in one table, with Grafana's coloured cells for load and status. */
+/**
+ * One row of the Node table. A row reads one Node's figures, and the Ledger keeps a Node's
+ * figures as one object until the next solve, so a row is memoized under the Node's id and
+ * built again only when that Node was solved again or renamed.
+ */
+const nodeRow = (
+  id: string,
+  name: string,
+  own: NodeLedger | undefined,
+  h: HtmlBuilder<Message>,
+): Html => {
+  const t = copy(h)
+  const share = own?.utilization ?? 0
+  const level = own?.status === 'down' ? 'danger' : levelOf(share, UTILIZATION)
+  const cell = css({
+    borderBottomWidth: '1px',
+    borderBottomStyle: 'solid',
+    borderColor: 'hairline',
+    paddingInline: '2',
+    paddingBlock: '1',
+  })
+  return h.tr(
+    [
+      h.Key(id),
+      h.Class(
+        css({
+          _hover: {
+            backgroundColor: 'color-mix(in oklab, var(--foreground) 3%, transparent)',
+          },
+        }),
+      ),
+    ],
+    [
+      h.td(
+        [
+          h.Class(
+            cx(
+              cell,
+              css({
+                fontWeight: 'medium',
+              }),
+            ),
+          ),
+        ],
+        [name],
+      ),
+      h.td(
+        [
+          h.Class(
+            cx(
+              cell,
+              FIGURE,
+              css({
+                textAlign: 'right',
+              }),
+            ),
+          ),
+        ],
+        [t.dashboard.s(compact(own?.inbound ?? 0))],
+      ),
+      h.td(
+        [
+          h.Class(
+            cx(
+              cell,
+              FIGURE,
+              css({
+                textAlign: 'right',
+                color: 'mutedForeground',
+              }),
+            ),
+          ),
+        ],
+        [t.dashboard.s(compact(own?.capacity ?? 0))],
+      ),
+      h.td(
+        [h.Class(cell)],
+        [
+          h.div(
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  height: '3.5',
+                  alignItems: 'center',
+                  gap: '2',
+                }),
+              ),
+            ],
+            [
+              lcd(`nodes:${id}`, share, h, 24),
+              h.span(
+                [
+                  h.Class(
+                    cx(
+                      FIGURE,
+                      css({
+                        width: '11',
+                        textAlign: 'right',
+                      }),
+                    ),
+                  ),
+                  h.Style({ color: LEVEL_COLOR[levelOf(share, UTILIZATION)] }),
+                ],
+                [percent(Math.min(share, 9.99))],
+              ),
+            ],
+          ),
+        ],
+      ),
+      h.td(
+        [
+          h.Class(
+            cx(
+              cell,
+              FIGURE,
+              css({
+                textAlign: 'right',
+              }),
+            ),
+          ),
+        ],
+        [formats(t).ms(own?.latency ?? 0)],
+      ),
+      h.td(
+        [
+          h.Class(
+            cx(
+              cell,
+              FIGURE,
+              css({
+                textAlign: 'right',
+              }),
+            ),
+          ),
+        ],
+        [formats(t).ms(own?.p99 ?? 0)],
+      ),
+      h.td(
+        [
+          h.Class(
+            cx(
+              cell,
+              FIGURE,
+              css({
+                textAlign: 'right',
+              }),
+              (own?.dropped ?? 0) > 0.05
+                ? css({
+                    color: 'danger',
+                  })
+                : css({
+                    color: 'mutedForeground',
+                  }),
+            ),
+          ),
+        ],
+        [t.dashboard.s(compact(own?.dropped ?? 0))],
+      ),
+      h.td(
+        [
+          h.Class(
+            cx(
+              cell,
+              FIGURE,
+              css({
+                textAlign: 'right',
+                fontSize: 'type.11',
+                fontWeight: 'medium',
+                color: 'color-mix(in oklab, black 75%, transparent)',
+              }),
+            ),
+          ),
+          h.Style({
+            background: `color-mix(in oklab, ${LEVEL_COLOR[level]} 85%, transparent)`,
+          }),
+        ],
+        [own?.status === 'down' ? t.dashboard.down : stateLabelOf(t)[level]],
+      ),
+    ],
+  )
+}
+
+const lazyNodeRow = createKeyedLazy()
+
 const nodeTable = (
   ledger: Ledger,
   tracks: ReadonlyArray<NodeTrack>,
@@ -2643,179 +2867,9 @@ const nodeTable = (
               ),
               h.tbody(
                 [],
-                sorted.map((track) => {
-                  const own = ledger.nodes[track.id]
-                  const share = own?.utilization ?? 0
-                  const level = own?.status === 'down' ? 'danger' : levelOf(share, UTILIZATION)
-                  const cell = css({
-                    borderBottomWidth: '1px',
-                    borderBottomStyle: 'solid',
-                    borderColor: 'hairline',
-                    paddingInline: '2',
-                    paddingBlock: '1',
-                  })
-                  return h.tr(
-                    [
-                      h.Key(track.id),
-                      h.Class(
-                        css({
-                          _hover: {
-                            backgroundColor:
-                              'color-mix(in oklab, var(--foreground) 3%, transparent)',
-                          },
-                        }),
-                      ),
-                    ],
-                    [
-                      h.td(
-                        [
-                          h.Class(
-                            cx(
-                              cell,
-                              css({
-                                fontWeight: 'medium',
-                              }),
-                            ),
-                          ),
-                        ],
-                        [track.name],
-                      ),
-                      h.td(
-                        [
-                          h.Class(
-                            cx(
-                              cell,
-                              FIGURE,
-                              css({
-                                textAlign: 'right',
-                              }),
-                            ),
-                          ),
-                        ],
-                        [t.dashboard.s(compact(own?.inbound ?? 0))],
-                      ),
-                      h.td(
-                        [
-                          h.Class(
-                            cx(
-                              cell,
-                              FIGURE,
-                              css({
-                                textAlign: 'right',
-                                color: 'mutedForeground',
-                              }),
-                            ),
-                          ),
-                        ],
-                        [t.dashboard.s(compact(own?.capacity ?? 0))],
-                      ),
-                      h.td(
-                        [h.Class(cell)],
-                        [
-                          h.div(
-                            [
-                              h.Class(
-                                css({
-                                  display: 'flex',
-                                  height: '3.5',
-                                  alignItems: 'center',
-                                  gap: '2',
-                                }),
-                              ),
-                            ],
-                            [
-                              lcd(`nodes:${track.id}`, share, h, 24),
-                              h.span(
-                                [
-                                  h.Class(
-                                    cx(
-                                      FIGURE,
-                                      css({
-                                        width: '11',
-                                        textAlign: 'right',
-                                      }),
-                                    ),
-                                  ),
-                                  h.Style({ color: LEVEL_COLOR[levelOf(share, UTILIZATION)] }),
-                                ],
-                                [percent(Math.min(share, 9.99))],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      h.td(
-                        [
-                          h.Class(
-                            cx(
-                              cell,
-                              FIGURE,
-                              css({
-                                textAlign: 'right',
-                              }),
-                            ),
-                          ),
-                        ],
-                        [formats(t).ms(own?.latency ?? 0)],
-                      ),
-                      h.td(
-                        [
-                          h.Class(
-                            cx(
-                              cell,
-                              FIGURE,
-                              css({
-                                textAlign: 'right',
-                              }),
-                            ),
-                          ),
-                        ],
-                        [formats(t).ms(own?.p99 ?? 0)],
-                      ),
-                      h.td(
-                        [
-                          h.Class(
-                            cx(
-                              cell,
-                              FIGURE,
-                              css({
-                                textAlign: 'right',
-                              }),
-                              (own?.dropped ?? 0) > 0.05
-                                ? css({
-                                    color: 'danger',
-                                  })
-                                : css({
-                                    color: 'mutedForeground',
-                                  }),
-                            ),
-                          ),
-                        ],
-                        [t.dashboard.s(compact(own?.dropped ?? 0))],
-                      ),
-                      h.td(
-                        [
-                          h.Class(
-                            cx(
-                              cell,
-                              FIGURE,
-                              css({
-                                textAlign: 'right',
-                                fontSize: 'type.11',
-                                fontWeight: 'medium',
-                                color: 'color-mix(in oklab, black 75%, transparent)',
-                              }),
-                            ),
-                          ),
-                          h.Style({
-                            background: `color-mix(in oklab, ${LEVEL_COLOR[level]} 85%, transparent)`,
-                          }),
-                        ],
-                        [own?.status === 'down' ? t.dashboard.down : stateLabelOf(t)[level]],
-                      ),
-                    ],
-                  )
-                }),
+                sorted.map((track) =>
+                  lazyNodeRow(track.id, nodeRow, [track.id, track.name, ledger.nodes[track.id], h]),
+                ),
               ),
             ],
           ),
@@ -4323,12 +4377,25 @@ const resourceTimeline = (
   model: Model,
   tracks: ReadonlyArray<NodeTrack>,
   h: HtmlBuilder<Message>,
+): Html =>
+  lazyResourceTimeline(resourceTimelineView, [
+    model.board.nodeHistory,
+    tracks,
+    Math.floor(model.board.game.time / NODE_EVERY) * NODE_EVERY,
+    h,
+  ])
+
+const lazyResourceTimeline = createLazy()
+
+const resourceTimelineView = (
+  history: Model['board']['nodeHistory'],
+  tracks: ReadonlyArray<NodeTrack>,
+  last: number,
+  h: HtmlBuilder<Message>,
 ): Html => {
   const t = copy(h)
 
-  const history = model.board.nodeHistory
   const length = Math.max(1, ...tracks.map((track) => (history[track.id] ?? []).length))
-  const last = Math.floor(model.board.game.time / NODE_EVERY) * NODE_EVERY
   const first = last - (length - 1) * NODE_EVERY
   const lanes = tracks.map((track) => {
     const limits = (history[track.id] ?? []).map((sample) => sample.limit)

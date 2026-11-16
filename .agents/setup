@@ -33,3 +33,20 @@ step 'Install Playwright browsers for pnpm test:engines'
 if sudo -n true 2>/dev/null; then
   (cd packages/simulation && sudo -n env "PATH=$PATH" pnpm exec playwright install-deps webkit)
 fi
+
+step 'Install mise, Java and TLC for the formal verification skills'
+export PATH="$HOME/.local/bin:$PATH"
+if ! command -v mise >/dev/null; then
+  curl -fsSL https://mise.run | sh
+fi
+tla_tool="$(sed -n '/^  "http:tla2tools/{s/^  "//;s/";$//;p}' .agents/skills/statechart/scripts/run.ts)"
+(cd "$(mktemp -d)" && MISE_CEILING_PATHS="$PWD" mise install java@temurin-25 "$tla_tool")
+if ! grep -Fq '.local/bin' "$HOME/.bashrc" 2>/dev/null; then
+  echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+fi
+
+step 'Install Pele to render statecharts'
+if [[ ! -d "$HOME/.cache/pele/node_modules/pele" ]]; then
+  mkdir -p "$HOME/.cache/pele"
+  (cd "$HOME/.cache/pele" && npm install --no-save --no-audit --no-fund pele@1.9.0)
+fi

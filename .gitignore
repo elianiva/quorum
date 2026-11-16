@@ -20,3 +20,6 @@ packages/styled-system/helpers.js
 packages/styled-system/helpers.d.ts
 apps/*/styled-system/
 .DS_Store
+
+# Upstream tests of the vendored statechart skill.
+.agents/skills/statechart/scripts/test/

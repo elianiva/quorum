@@ -514,8 +514,12 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
   }
 
   private send(ws: WebSocket, message: ServerMessage): void {
+    this.sendText(ws, JSON.stringify(encode(message)))
+  }
+
+  private sendText(ws: WebSocket, text: string): void {
     try {
-      ws.send(JSON.stringify(encode(message)))
+      ws.send(text)
     } catch {
       // The runtime closes a socket it can no longer write to. Closing it here would
       // re-enter `webSocketClose`, which leaves the Seat and broadcasts, from inside
@@ -551,15 +555,23 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     })
   }
 
-  /** One snapshot per Seat, carrying the samples that Seat has not seen. */
+  /**
+   * One snapshot per Seat, carrying the samples that Seat has not seen. Encoding a
+   * snapshot costs more than the Steps it reports, and Seats that have seen the
+   * same samples get the same text, so the Room encodes it once for all of them.
+   */
   private broadcast(): void {
     const current = this.state
     if (current === null) return
+    const texts = new Map<number, string>()
     for (const ws of this.ctx.getWebSockets()) {
       const attachment = (ws.deserializeAttachment() as Attachment | null) ?? NO_SEAT
       if (attachment.seat === '') continue
-      const snapshot = snapshotOf(current, attachment.sampleAt)
-      this.send(ws, { _tag: 'Snapshot', ...snapshot })
+      const text =
+        texts.get(attachment.sampleAt) ??
+        JSON.stringify(encode({ _tag: 'Snapshot', ...snapshotOf(current, attachment.sampleAt) }))
+      texts.set(attachment.sampleAt, text)
+      this.sendText(ws, text)
       ws.serializeAttachment({
         seat: attachment.seat,
         sampleAt: current.samples.length,

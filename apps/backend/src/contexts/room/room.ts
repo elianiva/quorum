@@ -131,6 +131,56 @@ export const restoreRoom = (state: RoomState, version: string): RoomState | null
   return Option.isSome(game) ? { ...state, game: game.value } : null
 }
 
+/* ---------- Storage layout ---------- */
+
+/**
+ * A Room is stored in three values. The Game is hundreds of kilobytes and the
+ * samples are a hundred more, and a vote or a Seat changes neither, so each has
+ * its own key and the small fields share one.
+ */
+export const GAME_KEY = 'game'
+export const SAMPLES_KEY = 'samples'
+export const REST_KEY = 'rest'
+/** The whole Room as one value: the layout of a Room stored by an earlier build. */
+export const WHOLE_KEY = 'room'
+export const ROOM_KEYS = [REST_KEY, GAME_KEY, SAMPLES_KEY, WHOLE_KEY] as const
+
+/**
+ * The values to write so that storage holds `next` when it holds `previous`. The
+ * Game and the samples are written only when they are another object than the one
+ * stored: the rules replace them when they change and pass them along when they do not.
+ */
+export const writesOf = (
+  next: RoomState,
+  previous: RoomState | null,
+): Readonly<Record<string, unknown>> => {
+  if (next === previous) return {}
+  const { game, samples, ...rest } = next
+  return {
+    [REST_KEY]: rest,
+    ...(game === previous?.game ? {} : { [GAME_KEY]: game }),
+    ...(samples === previous?.samples ? {} : { [SAMPLES_KEY]: samples }),
+  }
+}
+
+/**
+ * The Room in the values storage holds under `ROOM_KEYS`, or null when it holds
+ * none. `whole` says the Room came from `WHOLE_KEY`, so the caller writes it out
+ * in three values and deletes that key.
+ */
+export const storedRoom = (
+  read: ReadonlyMap<string, unknown>,
+): Readonly<{ state: RoomState; whole: boolean }> | null => {
+  const rest = read.get(REST_KEY) as Omit<RoomState, 'game' | 'samples'> | undefined
+  const game = read.get(GAME_KEY) as Game | undefined
+  if (rest !== undefined && game !== undefined) {
+    const samples = (read.get(SAMPLES_KEY) as ReadonlyArray<Sample> | undefined) ?? []
+    return { state: { ...rest, game, samples }, whole: false }
+  }
+  const whole = read.get(WHOLE_KEY) as RoomState | undefined
+  return whole === undefined ? null : { state: whole, whole: true }
+}
+
 /** Whether an empty Room has outlived the Company it holds. */
 export const expired = (state: RoomState, now: number): boolean =>
   state.idleAt !== null && now - state.idleAt > ROOM_IDLE_MS

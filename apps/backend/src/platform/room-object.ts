@@ -25,8 +25,12 @@ import {
   setSpeed,
   snapshotOf,
   startVote,
+  storedRoom,
+  writesOf,
   ALARM_MS,
   ROOM_IDLE_MS,
+  ROOM_KEYS,
+  WHOLE_KEY,
   type RoomState,
 } from '../contexts/room/room.ts'
 import { SIM_VERSION } from '@quorum/simulation/version'
@@ -90,6 +94,8 @@ const textOf = (raw: string | ArrayBuffer): string | null => {
 
 class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
   private state: RoomState | null = null
+  /** The Room storage holds, so a save writes only the parts that are another object since. */
+  private saved: RoomState | null = null
   private savedAt = 0
   /** In memory only: a Room that hibernated had no frames to count. */
   private readonly budgets = new WeakMap<WebSocket, Budget>()
@@ -98,14 +104,21 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     super(ctx, env)
     // Storage is async and the constructor is not, so the runtime waits here.
     ctx.blockConcurrencyWhile(async () => {
-      const stored = await ctx.storage.get<RoomState>('room')
-      if (stored === null || stored === undefined) return
-      const restored = restoreRoom(stored, SIM_VERSION)
+      const stored = storedRoom(await ctx.storage.get<unknown>([...ROOM_KEYS]))
+      if (stored === null) return
+      const restored = restoreRoom(stored.state, SIM_VERSION)
       if (restored === null) {
         await ctx.storage.deleteAll()
         return
       }
       this.state = restored
+      if (!stored.whole) {
+        this.saved = restored
+        return
+      }
+      // A Room an earlier build stored as one value: write its parts, then drop the one value.
+      await this.save()
+      await ctx.storage.delete(WHOLE_KEY)
     })
   }
 
@@ -594,9 +607,13 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     await this.ctx.storage.deleteAlarm()
   }
 
+  /** One write of the parts that changed. A vote or a Seat does not rewrite the Game. */
   private async save(): Promise<void> {
-    if (this.state === null) return
-    await this.ctx.storage.put('room', this.state)
+    const state = this.state
+    if (state === null) return
+    const writes = writesOf(state, this.saved)
+    if (Object.keys(writes).length > 0) await this.ctx.storage.put(writes)
+    this.saved = state
     this.savedAt = Date.now()
   }
 
@@ -604,6 +621,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     await this.ctx.storage.deleteAlarm()
     await this.ctx.storage.deleteAll()
     this.state = null
+    this.saved = null
   }
 }
 

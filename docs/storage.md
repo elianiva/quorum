@@ -55,10 +55,15 @@ module learns about an old shape ([ADR 0023](adr/0023-a-company-save-has-a-forma
 
 ## Server storage
 
-- **RoomObject.** One Durable Object per Room. It stores the Room state under `room` and deletes all
-  of it when the Room ends. An empty Room keeps one alarm, set for 24 hours after the last Seat
-  left, and deletes itself when that alarm fires. A Room whose `simVersion` is not this build's is
-  dropped on load, so a deploy cannot feed an old Game to the new Simulation.
+- **RoomObject.** One SQLite-backed Durable Object per Room, so one value may hold 2 MB. It stores
+  the Room in three values: the Game under `game`, the Dashboard samples under `samples`, and the
+  small fields (Seats, vote, speed, clock) under `rest`. A save is one `put` of the values that
+  changed, so a vote or a Seat joining writes `rest` alone and leaves the Game where it is. A Room
+  stored as one value under `room` is still read: the object writes it out as three values on load
+  and deletes `room`. The object deletes everything when the Room ends. An empty Room keeps one
+  alarm, set for 24 hours after the last Seat left, and deletes itself when that alarm fires. A Room
+  whose `simVersion` is not this build's is dropped on load, so a deploy cannot feed an old Game to
+  the new Simulation.
 - **AgentRoom.** One Durable Object per exposed Company. It stores `meta`, `head`, `inbox`, sample
   chunks, and per-node samples, deletes all of it when the write key is cleared, and expires after
   24 hours without a write.

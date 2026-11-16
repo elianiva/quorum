@@ -19,6 +19,13 @@ import {
   openRoom,
   restoreRoom,
   startVote,
+  storedRoom,
+  writesOf,
+  GAME_KEY,
+  REST_KEY,
+  ROOM_KEYS,
+  SAMPLES_KEY,
+  WHOLE_KEY,
   type RoomState,
 } from './room.ts'
 import type { Game } from '@quorum/simulation/state'
@@ -56,6 +63,90 @@ describe('restore', () => {
     delete old['training']
     const restored = restoreRoom({ ...room, game: old as unknown as Game }, 'test')
     expect(restored?.game.training).toEqual([])
+  })
+})
+
+describe('storage', () => {
+  /** Storage as the Room uses it: one put of several values, and one read of the Room's keys. */
+  const storage = () => {
+    const held = new Map<string, unknown>()
+    const puts: Array<ReadonlyArray<string>> = []
+    return {
+      held,
+      puts,
+      save: (next: RoomState, previous: RoomState | null) => {
+        const writes = writesOf(next, previous)
+        puts.push(Object.keys(writes))
+        // A stored value is a copy, as it is in a Durable Object.
+        for (const [key, value] of Object.entries(writes)) held.set(key, structuredClone(value))
+      },
+      load: () =>
+        storedRoom(
+          new Map(ROOM_KEYS.flatMap((key) => (held.has(key) ? [[key, held.get(key)]] : []))),
+        ),
+    }
+  }
+
+  test('a saved Room loads as it was', () => {
+    const store = storage()
+    const { state } = withSeats()
+    store.save(state, null)
+    expect(store.puts).toEqual([[REST_KEY, GAME_KEY, SAMPLES_KEY]])
+    expect(store.load()).toEqual({ state, whole: false })
+    expect(restoreRoom(store.load()!.state, 'test')).toEqual(state)
+  })
+
+  test('empty storage holds no Room', () => {
+    expect(storage().load()).toBeNull()
+  })
+
+  test('a vote and a Seat do not rewrite the Game or the samples', () => {
+    const store = storage()
+    const { state, guest } = withSeats()
+    store.save(state, null)
+    const voting = startVote(state, guest, 'exit')
+    if (Result.isFailure(voting)) throw new Error('the vote did not start')
+    store.save(voting.success, state)
+    const left = leave(voting.success, guest, 10)
+    store.save(left, voting.success)
+    store.save(left, left)
+    expect(store.puts.slice(1)).toEqual([[REST_KEY], [REST_KEY], []])
+    expect(store.load()?.state).toEqual(left)
+  })
+
+  test('an accepted Intent rewrites the Game, and a Step the samples it added', () => {
+    const store = storage()
+    const room = open()
+    store.save(room, null)
+    const moved = apply(room, [intent('move', node.id, 4, 5)])
+    if (Result.isFailure(moved)) throw new Error('the move did not apply')
+    store.save(moved.success, room)
+    expect(store.puts[1]).toEqual([REST_KEY, GAME_KEY])
+    const stepped = advance(moved.success, 60_000).state
+    store.save(stepped, moved.success)
+    expect(store.puts[2]).toContain(GAME_KEY)
+    expect(store.puts[2]!.includes(SAMPLES_KEY)).toBe(stepped.samples !== moved.success.samples)
+    expect(store.load()?.state).toEqual(stepped)
+  })
+
+  test('a Room stored as one value is read, and its first save writes every part', () => {
+    const store = storage()
+    const { state } = withSeats()
+    store.held.set(WHOLE_KEY, structuredClone(state))
+    const loaded = store.load()
+    expect(loaded).toEqual({ state, whole: true })
+    store.save(loaded!.state, null)
+    store.held.delete(WHOLE_KEY)
+    expect(store.puts).toEqual([[REST_KEY, GAME_KEY, SAMPLES_KEY]])
+    expect(store.load()).toEqual({ state, whole: false })
+  })
+
+  test('the three values win over a one-value Room left beside them', () => {
+    const store = storage()
+    const { state } = withSeats()
+    store.held.set(WHOLE_KEY, structuredClone(open()))
+    store.save(state, null)
+    expect(store.load()).toEqual({ state, whole: false })
   })
 })
 

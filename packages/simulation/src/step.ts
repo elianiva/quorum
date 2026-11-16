@@ -895,15 +895,17 @@ export const step = (game: Game, seconds: number, tuning: Tuning = LIVE_TUNING):
 
 /**
  * The flow solve runs on the sim-time grid: at each whole second, and whenever something it reads
- * changes in kind, or while an incident runs or a Node warms or scales. The Steps between share one Ledger, so ten 100 ms Steps cost one solve, and a
- * Company plays out the same at every game speed.
+ * changes in kind, or while a Node warms or scales. The Steps between share one Ledger, so ten
+ * 100 ms Steps cost one solve, and a Company plays out the same at every game speed.
+ *
+ * An open incident holds too, while it stays the incident the solve read. An incident that
+ * starts, ends, moves, or is throttled is solved for at that Step.
  */
 const solveHolds = (before: Game, after: Game, events: ReadonlyArray<StepEvent>): boolean =>
   events.length === 0 &&
   Math.floor(after.time) === Math.floor(before.time) &&
   after.stage === before.stage &&
-  before.incident === null &&
-  after.incident === null &&
+  sameIncident(before.incident, after.incident) &&
   after.nodes.length === before.nodes.length &&
   after.links.length === before.links.length &&
   after.nodes.every((node, index) => {
@@ -917,3 +919,22 @@ const solveHolds = (before: Game, after: Game, events: ReadonlyArray<StepEvent>)
       node.replicas === was.replicas
     )
   })
+
+/** What an incident counts as it runs. The solve reads none of it. */
+const INCIDENT_TALLIES: ReadonlySet<string> = new Set([
+  'remaining',
+  'impaired',
+  'lostRevenue',
+  'failed',
+])
+
+/** The same incident to the solve: every field but its tallies is the same value. */
+const sameIncident = (before: Game['incident'], after: Game['incident']): boolean => {
+  if (before === after) return true
+  if (before === null || after === null) return false
+  const was: Readonly<Record<string, unknown>> = before
+  const now: Readonly<Record<string, unknown>> = after
+  const keys = new Set([...Object.keys(was), ...Object.keys(now)])
+  for (const key of keys) if (!INCIDENT_TALLIES.has(key) && was[key] !== now[key]) return false
+  return true
+}

@@ -20,7 +20,10 @@ import { solveFlow } from '../src/solve.ts'
 import { freeSandbox } from '../src/sandbox.ts'
 import { step } from '../src/step.ts'
 import { newGame } from '../src/company.ts'
-import { NEW_ENGINEER, type WorkItem } from '../src/state.ts'
+import { NEW_ENGINEER, type Game, type WorkItem } from '../src/state.ts'
+import type { IncidentId } from '../src/catalog.ts'
+import { startIncident } from '../src/director.ts'
+import type { Ledger } from '../src/ledger.ts'
 import {
   assignments,
   blockReason,
@@ -392,5 +395,32 @@ describe('Renaming teams and Services', () => {
     }
     expect(Result.isFailure(renameService(game, service.id, 'Checkout'))).toBe(true)
     expect(Result.isFailure(renameService(game, service.id, '  '))).toBe(true)
+  })
+})
+
+describe('the solve on the sim-time grid', () => {
+  /** The Ledgers that 5 sim seconds of 100 ms Steps read, with `kind` open from the first. */
+  const ledgersDuring = (kind: IncidentId): number => {
+    const base: Game = { ...preseedGame(), users: 5_000 }
+    const started = startIncident(base, solveFlow(base), kind, 0)
+    if (!started) throw new Error(`no target for ${kind}`)
+    let game = started.game
+    const ledgers = new Set<Ledger>()
+    for (let index = 0; index < 50; index += 1) {
+      const result = step(game, 0.1)
+      ledgers.add(result.ledger)
+      game = result.game
+    }
+    expect(game.incident?.kind).toBe(kind)
+    return ledgers.size
+  }
+
+  test('an open incident that does not change is solved once a second', () => {
+    // The Step the incident opens on, then one solve at each of the five seconds crossed.
+    expect(ledgersDuring('slow-query')).toBe(6)
+  })
+
+  test('an incident that stops a Node is solved at every Step', () => {
+    expect(ledgersDuring('instance')).toBe(50)
   })
 })

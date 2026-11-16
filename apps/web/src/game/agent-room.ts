@@ -124,8 +124,12 @@ const send = async (): Promise<void> => {
   }
 }
 
+/** The Company whose Room is known to exist. Clearing the Rooms forgets it. */
+let roomed: string | null = null
+
 const clearAll = async (): Promise<void> => {
   active = null
+  roomed = null
   sync = null
   const rooms = Object.values(readRooms())
   await Promise.allSettled(
@@ -145,7 +149,11 @@ export const syncAgent = (model: Model): void => {
   // Company. `send` makes the first one before its first upload.
   if (!model.prefs.agentAccess) return
   const companyId = playingId(model)
-  if (companyId !== null && agentRoomId(companyId) === null) void ensureRoom(companyId)
+  // This runs after every Message, and the Room id is a read and a decode of local storage:
+  // once a Company has its Room, it is not looked up again.
+  if (companyId === null || companyId === roomed) return
+  if (agentRoomId(companyId) === null) void ensureRoom(companyId)
+  else roomed = companyId
 }
 
 /** Turns the upload on or off. Called whenever settings apply. */

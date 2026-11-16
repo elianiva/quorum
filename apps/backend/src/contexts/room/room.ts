@@ -41,9 +41,14 @@ export const ROOM_IDLE_MS = 24 * 60 * 60 * 1000
  * Every Step and every snapshot grows with the Design, so a Room takes a bounded one.
  * The bound holds at publish and after every batch of Intents: placing is free on a
  * Sandbox board, so cash does not stop a Seat there.
+ *
+ * The Game is one storage value, and a Durable Object value holds 2 MiB. A Node stores as
+ * about 1.4 kB and a Link as about 110 bytes, so these bounds leave a quarter of that free.
  */
-export const MAX_NODES = 2_000
-export const MAX_LINKS = 8_000
+export const MAX_NODES = 800
+export const MAX_LINKS = 3_200
+/** The most one Durable Object storage value holds. */
+export const STORAGE_VALUE_BYTES = 2 * 1024 * 1024
 
 /** A vote lapses after a minute of sim time. */
 export const VOTE_SECONDS = 60

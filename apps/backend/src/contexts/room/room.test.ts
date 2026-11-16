@@ -1,4 +1,5 @@
 import { Result } from 'effect'
+import { serialize } from 'node:v8'
 import { describe, expect, test } from 'vitest'
 import { ERAS } from '@quorum/simulation/catalog'
 import { newGame } from '@quorum/simulation/company'
@@ -16,6 +17,7 @@ import {
   MAX_CATCH_UP,
   MAX_LINKS,
   MAX_NODES,
+  STORAGE_VALUE_BYTES,
   openRoom,
   restoreRoom,
   startVote,
@@ -67,6 +69,27 @@ describe('restore', () => {
 })
 
 describe('storage', () => {
+  test('a Game at the Room limits fits in one storage value', () => {
+    // The largest Node and Link of a new Company, repeated to the limits. Durable Object
+    // storage serializes a value as V8 does.
+    const size = (value: unknown): number => serialize(value).byteLength
+    const widest = <Item>(items: ReadonlyArray<Item>): Item =>
+      items.reduce((best, item) => (size(item) > size(best) ? item : best))
+    const full: Game = {
+      ...game,
+      nodes: Array.from({ length: MAX_NODES }, (_, index) => ({
+        ...widest(game.nodes),
+        id: `node-${index}`,
+      })),
+      links: Array.from({ length: MAX_LINKS }, (_, index) => ({
+        ...widest(game.links),
+        from: `node-${index % MAX_NODES}`,
+        to: `node-${(index + 1) % MAX_NODES}`,
+      })),
+    }
+    expect(size(full)).toBeLessThan(STORAGE_VALUE_BYTES * 0.8)
+  })
+
   /** Storage as the Room uses it: one put of several values, and one read of the Room's keys. */
   const storage = () => {
     const held = new Map<string, unknown>()

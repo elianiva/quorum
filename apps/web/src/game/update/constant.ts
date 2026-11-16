@@ -14,7 +14,11 @@ const MAX_TICK_STEPS = 100
 export const mostSteps = (speed: number): number =>
   Math.max(MAX_TICK_STEPS, Math.ceil((2 * TICK_MS * speed) / (1_000 * STEP_SECONDS)))
 
-export const SAVE_EVERY = 5
+/**
+ * Real milliseconds between autosaves. A save encodes the whole Company on the main
+ * thread, so it waits on real time: on sim time, a clock at 20× saved on every tick.
+ */
+export const SAVE_EVERY_MS = 5_000
 
 export const SAMPLE_EVERY = 10
 

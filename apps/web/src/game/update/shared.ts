@@ -83,6 +83,7 @@ export const freshBoard = (game: Game): Board => ({
     mode: { _tag: 'Running' },
     carry: 0,
     savedAt: game.time,
+    unsavedMs: 0,
     sampledAt: game.time,
   },
   change: { _tag: 'Idle' },

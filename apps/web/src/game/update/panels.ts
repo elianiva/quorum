@@ -1,7 +1,7 @@
 import { ApplySettings, FocusDashboard, WritePrefs } from '../commands.ts'
 import { EMPTY_RESEARCH, ResearchMessage } from '../research.ts'
 import { Message } from '../message.ts'
-import { Model, Prefs, clockAway, halted, roomLive } from '../model.ts'
+import { Model, Prefs, clockAway, halted, offCompany, roomLive } from '../model.ts'
 import { isExited } from '../company-machine.ts'
 import { clockStep } from '../clock-machine.ts'
 import { Option, Schema } from 'effect'
@@ -10,6 +10,7 @@ import { updateSurvey } from '../survey.ts'
 import { Update } from 'foldkit'
 import {
   closePanel,
+  saveCommands,
   withToast,
   type Dispatch,
   type MessageCases,
@@ -304,20 +305,36 @@ export const panelsHandlers = (
   SurveyChanged: ({ message }) => foldSurvey(model, message),
 
   WindowBlurred: () => {
+    // The tab may not come back: a hidden tab is the last moment a browser promises, so the
+    // Company is written now rather than on the autosave's next turn.
+    const unsaved =
+      model.board.game.time !== model.board.clock.savedAt &&
+      onBoard(model.route) &&
+      !offCompany(model)
+    const saved: Model = unsaved
+      ? {
+          ...model,
+          board: {
+            ...model.board,
+            clock: { ...model.board.clock, savedAt: model.board.game.time, unsavedMs: 0 },
+          },
+        }
+      : model
+    const commands = unsaved ? saveCommands(saved) : []
     // A live Room runs on its own clock: a hidden tab must not freeze it for the others.
     if (!model.prefs.blurPause || halted(model) || roomLive(model) || !onBoard(model.route))
-      return { model }
+      return { model: saved, commands }
     const next: Model = {
-      ...model,
+      ...saved,
       board: {
-        ...model.board,
+        ...saved.board,
         clock: {
-          ...model.board.clock,
-          mode: clockStep(model.board.clock.mode, { _tag: 'Blurred' }),
+          ...saved.board.clock,
+          mode: clockStep(saved.board.clock.mode, { _tag: 'Blurred' }),
         },
       },
     }
-    return { model: next }
+    return { model: next, commands }
   },
 
   WindowFocused: () => {

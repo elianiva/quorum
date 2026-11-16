@@ -313,6 +313,25 @@ describe('the Companies page', () => {
 })
 
 describe('autosave and migration', () => {
+  test('a fast clock saves on real time, not on every tick', () => {
+    const founded = send(initialModel(), Message.CompanyFounded())
+    const fast: Model = {
+      ...founded,
+      board: { ...founded.board, clock: { ...founded.board.clock, speed: 40 } },
+    }
+    // A tick at 40× is ten sim seconds, twice what an autosave waited for on sim time.
+    const result = update(fast, Message.Ticked({ elapsedMs: TICK_MS }))
+    expect((result.commands ?? []).some((command) => command.name === 'WriteCompany')).toBe(false)
+  })
+
+  test('a hidden tab writes the Company at once', () => {
+    const founded = send(initialModel(), Message.CompanyFounded())
+    const result = update(tick(founded, 3), Message.WindowBlurred())
+    expect((result.commands ?? []).some((command) => command.name === 'WriteCompany')).toBe(true)
+    const again = update(result.model, Message.WindowBlurred())
+    expect((again.commands ?? []).some((command) => command.name === 'WriteCompany')).toBe(false)
+  })
+
   test('the autosave writes the open Company file', () => {
     const founded = send(initialModel(), Message.CompanyFounded())
     const id = founded.saves.current

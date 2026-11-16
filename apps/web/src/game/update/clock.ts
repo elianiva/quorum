@@ -38,7 +38,7 @@ import {
 } from '../model.ts'
 import { clockStep } from '../clock-machine.ts'
 import { advanceChange } from '../feedback.ts'
-import { SAVE_EVERY, SAMPLE_EVERY, mostSteps, speedsOf } from './constant.ts'
+import { SAVE_EVERY_MS, SAMPLE_EVERY, mostSteps, speedsOf } from './constant.ts'
 import { StepEvent } from '@quorum/simulation/events'
 import {
   WriteFounder,
@@ -734,8 +734,14 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
       board: { ...next.board, clock: { ...next.board.clock, sampledAt: game.time } },
     }
   }
-  if (game.time - model.board.clock.savedAt >= SAVE_EVERY) {
-    next = { ...next, board: { ...next.board, clock: { ...next.board.clock, savedAt: game.time } } }
+  const unsavedMs = model.board.clock.unsavedMs + elapsedMs
+  if (unsavedMs < SAVE_EVERY_MS || game.time === model.board.clock.savedAt)
+    next = { ...next, board: { ...next.board, clock: { ...next.board.clock, unsavedMs } } }
+  else {
+    next = {
+      ...next,
+      board: { ...next.board, clock: { ...next.board.clock, savedAt: game.time, unsavedMs: 0 } },
+    }
     if (!offCompany(next)) commands.push(...saveCommands(next))
     else if (boardSandbox(next.board)?.id === null) {
       next = { ...next, freeBoard: game }

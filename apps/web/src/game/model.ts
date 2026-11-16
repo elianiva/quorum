@@ -328,8 +328,10 @@ export const Clock = Schema.Struct({
   mode: ClockMode,
   /** Steps owed but not run yet: a tick at 1× is 2.5 Steps. */
   carry: Schema.Finite,
-  /** Game time of the last save, so the clock saves every few seconds. */
+  /** Game time of the last save, so a save is skipped when nothing moved since. */
   savedAt: Schema.Finite,
+  /** Real milliseconds the clock ran since the last save. The autosave waits on these. */
+  unsavedMs: Schema.Finite,
   /** Game time of the last log sample. */
   sampledAt: Schema.Finite,
 })

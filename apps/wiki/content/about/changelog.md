@@ -9,6 +9,17 @@ toc: top
 
 Quorum has no versions. It changes all the time, and this page lists the latest days, newest first, so you can see what moved since you last played. A page on this wiki can lag behind the game by a few days. Older days are in the [full changelog](/about/changelog/all).
 
+## Sunday, 15 November 2026
+
+### Changed
+
+- Explain that the game's name comes from the quorum term ([7805061](https://github.com/elianiva/quorum/commit/78050610ef0144f9f196ddffe6c4c407118a84fd))
+- Add system design interview guides, concept hubs, and query-shaped titles ([2461054](https://github.com/elianiva/quorum/commit/2461054aa645a17109f1f8e6a8c408afc86d18e3))
+- Add seoTitle, FAQ and learning-resource data, and links to the new hubs ([ce2caaf](https://github.com/elianiva/quorum/commit/ce2caaf5f0102070bd54bb1fff5de235503019d6))
+- Note that the Cache graph is a simplification of cache-aside ([e8da189](https://github.com/elianiva/quorum/commit/e8da189d994fb455b802d33b6f21a6fd3ac27b16))
+- Answer unknown game paths with a real 404 ([94fbc2e](https://github.com/elianiva/quorum/commit/94fbc2e06077f656f693fb50bc8b4d85e27620a9))
+- Improve search metadata for the game and the wiki ([6d62265](https://github.com/elianiva/quorum/commit/6d62265002abd4de10dfa4e395a5b6d81a02e925))
+
 ## Friday, 13 November 2026
 
 ### Changed
@@ -119,19 +130,3 @@ Quorum has no versions. It changes all the time, and this page lists the latest 
 - Dragging a row in the Research queue makes the row slide smoothly to a highlighted drop slot, showing exactly where it will land. ([553d3b2](https://github.com/elianiva/quorum/commit/553d3b296fca3478ba1361dc441fedbe28719856))
 - Research-tree node boxes expand, and long names wrap above the cost instead of being cut off, letting you read full names without ellipsis at any zoom level. ([d2fc5e8](https://github.com/elianiva/quorum/commit/d2fc5e826f5e9d4c5818bd8c51abecd9f75ef192))
 - Inbox label chips increase in height, gain wider padding and a visible outline, and the label row scrolls sideways instead of wrapping, keeping each label clear and preventing overlap. ([2675f9f](https://github.com/elianiva/quorum/commit/2675f9fc8082be8682da7780d81dc9b981f87576))
-
-## Friday, 6 November 2026
-
-### Added
-
-- The Study queue lets you drag studies to a new position; a rounded drop ring shows where you can place them, and each study retains its progress after moving. ([1884543](https://github.com/elianiva/quorum/commit/1884543cf55662766ee726cf0a8c1d7642183e39))
-- Add `?amp` to any URL to open the Amp feedback overlay, where you type comments and send quick feedback. ([36d2a57](https://github.com/elianiva/quorum/commit/36d2a5792dbf7ffcf162ba3b85abe649a3bd18cb))
-
-### Changed
-
-- The Company HUD expands, showing the full net cash and runway numbers without clipping. ([1884543](https://github.com/elianiva/quorum/commit/1884543cf55662766ee726cf0a8c1d7642183e39))
-- Select a language and every label, tooltip and description switches to it instantly. ([a939bac](https://github.com/elianiva/quorum/commit/a939bacabe4f2727d2c744dbbb207770eed258bc))
-
-### Fixed
-
-- The game starts reliably in any browser, and a stray key press or automatic page translation no longer crashes it. ([7e6b2fc](https://github.com/elianiva/quorum/commit/7e6b2fc72dc971b5d028b7df5b990aaf159f6f35))

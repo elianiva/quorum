@@ -1997,6 +1997,9 @@ const lazyLcd = createKeyedLazy()
  */
 const lazyPanel = createKeyedLazy()
 
+/** The Node table draws one row per Node and sorts them, so it is built again per solve. */
+const lazyNodeTable = createKeyedLazy()
+
 const lcdView = (lit: number, cells: number, h: HtmlBuilder<Message>): Html =>
   h.div(
     [
@@ -5777,7 +5780,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             : has(game, 'tracing')
               ? [locked('resources', SPAN.third, t.dashboard.resourcesUse, 'profiling', h)]
               : []),
-          nodeTable(ledger, tracks, h),
+          lazyNodeTable('nodes', nodeTable, [ledger, tracks, h]),
 
           rowHeader(t.dashboard.money, 1, h),
           series({

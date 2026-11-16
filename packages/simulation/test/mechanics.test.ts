@@ -415,6 +415,22 @@ describe('the solve on the sim-time grid', () => {
     return ledgers.size
   }
 
+  test("a Step that changes no Node keeps the Game's list of Nodes", () => {
+    let game: Game = { ...preseedGame(), users: 5_000 }
+    let kept = 0
+    for (let index = 0; index < 50; index += 1) {
+      const next = step(game, 0.1).game
+      const unchanged = next.nodes.every((node, at) => node === game.nodes[at])
+      if (unchanged) {
+        expect(next.nodes).toBe(game.nodes)
+        kept += 1
+      }
+      game = next
+    }
+    // Most Steps of a quiet Company change no Node: the check above is not empty.
+    expect(kept).toBeGreaterThan(25)
+  })
+
   test('an open incident that does not change is solved once a second', () => {
     // The Step the incident opens on, then one solve at each of the five seconds crossed.
     expect(ledgersDuring('slow-query')).toBe(6)

@@ -889,8 +889,21 @@ export const step = (game: Game, seconds: number, tuning: Tuning = LIVE_TUNING):
   // Money out: Burn keeps billing, and a shortfall brings the bridge or the shutdown.
   next = advanceRunway(next, ledger)
 
+  // The rules above map over the Nodes, so a Step that changed none still built a new list.
+  // Keeping the old one lets a reader tell an unchanged Design by one comparison.
+  if (sameItems(game.nodes, next.nodes)) next = { ...next, nodes: game.nodes }
+
   if (solveHolds(game, next, events)) carryLedger(game, next)
   return { game: next, ledger, events }
+}
+
+/** Two lists hold the same objects in the same order. */
+const sameItems = <Item>(before: ReadonlyArray<Item>, after: ReadonlyArray<Item>): boolean => {
+  if (before === after) return true
+  if (before.length !== after.length) return false
+  for (let index = 0; index < before.length; index += 1)
+    if (before[index] !== after[index]) return false
+  return true
 }
 
 /**

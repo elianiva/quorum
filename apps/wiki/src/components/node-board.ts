@@ -1,8 +1,7 @@
 import { HOME_REGION, type ComponentId } from '@quorum/simulation/catalog'
-import { blankNode } from '@quorum/simulation/actions'
 import { nodeOrdinals } from '@quorum/simulation/labels'
-import { freeSandbox } from '@quorum/simulation/sandbox'
 import { solveFlow } from '@quorum/simulation/solve'
+import { wired } from './node-sample.ts'
 import {
   attachBoard,
   fitBoard,
@@ -15,10 +14,7 @@ const NOOP = () => {}
 watchBoardTheme()
 
 export const drawNodeCard = (key: string, type: ComponentId, host: HTMLElement): (() => void) => {
-  const base = freeSandbox()
-  const existing = base.nodes.find((node) => node.type === type)
-  const node = existing ?? blankNode(base, `sample-${type}`, type, 1080, 280)
-  const full = existing ? base : { ...base, nodes: [...base.nodes, node] }
+  const { game: full, node } = wired(type)
   const ledger = solveFlow(full)
   const state: BoardState = {
     locale: 'en',

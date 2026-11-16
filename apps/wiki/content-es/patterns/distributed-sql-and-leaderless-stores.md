@@ -19,7 +19,7 @@ Deja que el almacén se encargue de la replicación y la división: un almacén 
 
 ::Design{id="quorum-store"}
 
-El Almacén de columnas anchas sin líder replica cada clave en N nodos. Una lectura pregunta a R de ellos y una escritura espera a W. Una Base de datos se queda a su lado para los tipos que el almacén no admite.
+El Almacén de columnas anchas sin líder replica cada clave en N nodos. Una lectura pregunta a R de ellos y una escritura espera a W. Una API Gateway envía los tipos que el almacén no admite a un segundo servidor de aplicaciones y a una Base de datos, porque un llamador lee un solo grupo de datos.
 
 ::Design{id="distributed-sql"}
 

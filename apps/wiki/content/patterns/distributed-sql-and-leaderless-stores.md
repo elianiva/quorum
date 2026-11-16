@@ -19,7 +19,7 @@ Let the store handle replication and splitting: a leaderless store for speed, or
 
 ::Design{id="quorum-store"}
 
-The leaderless Wide-column Store replicates each key to N nodes. A read asks R of them and a write waits for W. A Database stays beside it for the kinds the store does not take.
+The leaderless Wide-column Store replicates each key to N nodes. A read asks R of them and a write waits for W. An API Gateway sends the kinds the store does not take to a second App Server and a Database, because one caller reads one Data Group.
 
 ::Design{id="distributed-sql"}
 

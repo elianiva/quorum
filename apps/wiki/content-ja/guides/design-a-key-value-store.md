@@ -77,7 +77,7 @@ aliases: system design primer, key value store, distributed key value store, dyn
 
 ::Design{id="wide-column-quorum"}
 
-2 つ目のボードは、本物のデータ層の残りを足します。同じクォーラムストアが読み取り、書き込み、トランザクションを受け、[データベース](/components/database)が、キーバリューストアには答えられない検索とアップロードを持ちます。どのリクエストがどのストアへ行くかを見てください。キーバリューストアはキーによる参照しかせず、それ以外はデータベースが担うという面接のポイントがわかります。[分散SQLとリーダーレスストア](/patterns/distributed-sql-and-leaderless-stores)が、2 種類を並べて示します。
+2 つ目のボードは、本物のデータ層の残りを足します。[APIゲートウェイ](/components/gw)が、キーによる参照をクォーラムストアと話すアプリサーバーへ、キーバリューストアには答えられない検索とアップロードを、2 台目のアプリサーバーと[データベース](/components/database)へ振り分けます。1 つの呼び出し元が読めるデータグループは 1 つなので、ストアごとにアプリサーバーを持ちます。どのリクエストがどのストアへ行くかを見てください。キーバリューストアはキーによる参照しかせず、それ以外はデータベースが担うという面接のポイントがわかります。[分散SQLとリーダーレスストア](/patterns/distributed-sql-and-leaderless-stores)が、2 種類を並べて示します。
 
 ::Design{id="quorum-store"}
 

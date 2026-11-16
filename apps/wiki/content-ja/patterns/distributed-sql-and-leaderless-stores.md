@@ -19,7 +19,7 @@ aliases: cassandra, cockroachdb, raft, quorum, leaderless replication, wide colu
 
 ::Design{id="quorum-store"}
 
-リーダーレスのワイドカラムストアは各キーを N 個のノードへ複製します。読み取りはそのうち R 個に問い合わせ、書き込みは W 個を待ちます。ストアが扱わない種別のためにデータベースがそばに残ります。
+リーダーレスのワイドカラムストアは各キーを N 個のノードへ複製します。読み取りはそのうち R 個に問い合わせ、書き込みは W 個を待ちます。ストアが扱わない種別は、APIゲートウェイが 2 台目のアプリサーバーとデータベースへ送ります。1 つの呼び出し元が読めるデータグループは 1 つだからです。
 
 ::Design{id="distributed-sql"}
 

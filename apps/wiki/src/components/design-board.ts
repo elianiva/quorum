@@ -30,15 +30,15 @@ export const drawDesign = (id: string, host: HTMLElement): (() => void) => {
     history: {},
     ordinals: nodeOrdinals(game),
     region: HOME_REGION,
-    paused: true,
+    paused: false,
     speed: 1,
     suspended: false,
     cue: null,
     readOnly: true,
-    animate: false,
+    animate: true,
     inset: { top: 16, bottom: 16, left: 0 },
     pad: 16,
-    minScale: 0.6,
+    minScale: 0.4,
   }
   setBoard(key, state)
   const detach = attachBoard(key, host, {
@@ -53,8 +53,8 @@ export const drawDesign = (id: string, host: HTMLElement): (() => void) => {
     onBox: NOOP,
   })
   // The board starts asynchronously and draws the state it was mounted with; fit it once the host
-  // has its size, and again after the cards' layout settles. The board itself freezes after its
-  // first frames, so a card is a picture, not a running game.
+  // has its size, and again after the cards' layout settles. The Design is solved once, so its
+  // cards hold steady figures while the belts carry that traffic and run only on screen.
   const frame = requestAnimationFrame(() => fitBoard(key))
   const fitTimer = setTimeout(() => fitBoard(key), 400)
   return () => {

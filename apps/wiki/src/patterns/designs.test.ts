@@ -1,7 +1,10 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from 'vitest'
-import { primaryOf } from '@quorum/simulation/lookups'
+import { Result } from 'effect'
+import { connect } from '@quorum/simulation/actions'
+import { COMPONENTS } from '@quorum/simulation/catalog'
+import { isDown, primaryOf } from '@quorum/simulation/lookups'
 import { solveFlow } from '@quorum/simulation/solve'
 import { boxOf, crowds } from '@quorum/ui/board/geometry'
 import { DESIGN_IDS } from './designs/ids.ts'
@@ -54,4 +57,31 @@ test('every Design is placed on a Patterns page', () => {
   expect(entries.map(([id]) => id).filter((id) => !text.includes(`::Design{id="${id}"}`))).toEqual(
     [],
   )
+})
+
+test('every Design link is one the game accepts, so a player could build the board', () => {
+  const refused: Array<string> = []
+  for (const [id, design] of entries) {
+    let game = { ...design.game, links: [] as typeof design.game.links }
+    for (const link of design.game.links) {
+      const result = connect(game, link.from, link.to)
+      if (Result.isSuccess(result)) game = { ...result.success, links: [...game.links, link] }
+      else refused.push(`${id}: ${link.from} → ${link.to}`)
+    }
+  }
+  expect(refused).toEqual([])
+})
+
+test('every running Node that takes requests carries some in its Design, so no card sits at 0 a second', () => {
+  const idle: Array<string> = []
+  for (const [id, design] of entries) {
+    const ledger = solveFlow(design.game)
+    for (const node of design.game.nodes) {
+      const def = COMPONENTS[node.type]
+      // A host the Design takes down (a dead server) is idle on purpose.
+      if (node.type === 'users' || def.control || def.accepts.length === 0 || isDown(node)) continue
+      if ((ledger.nodes[node.id]?.inbound ?? 0) === 0) idle.push(`${id}: ${node.id}`)
+    }
+  }
+  expect(idle).toEqual([])
 })

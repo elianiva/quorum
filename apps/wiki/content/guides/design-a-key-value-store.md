@@ -77,7 +77,7 @@ The first board is the quorum answer. One App Server talks to a Wide-column Stor
 
 ::Design{id="wide-column-quorum"}
 
-The second board adds the rest of a real data tier. The same quorum store takes reads, writes and transactions, and a [Database](/components/database) keeps searches and uploads, which a key-value store cannot answer. Look at which requests go to which store. It shows the interview point that a key-value store only does lookups by key, and the Database covers everything else. [Distributed SQL and leaderless stores](/patterns/distributed-sql-and-leaderless-stores) puts the two kinds side by side.
+The second board adds the rest of a real data tier. An [API Gateway](/components/gw) sends lookups to the App Server that talks to the quorum store, and sends searches and uploads, which a key-value store cannot answer, to a second App Server and a [Database](/components/database). One caller reads one Data Group, so each store gets its own App Server. Look at which requests go to which store. It shows the interview point that a key-value store only does lookups by key, and the Database covers everything else. [Distributed SQL and leaderless stores](/patterns/distributed-sql-and-leaderless-stores) puts the two kinds side by side.
 
 ::Design{id="quorum-store"}
 

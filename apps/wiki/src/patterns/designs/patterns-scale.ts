@@ -24,10 +24,6 @@ const bigApp = set(
   'Medium gives the app four vCPUs, so the app tier is not the limit and the Database is what the guards change.',
 )
 
-/** Managed Components that answer the kinds a later Era adds, so those requests have somewhere to go. */
-const extras = (column: number, ...types: ReadonlyArray<'psp' | 'llm' | 'msgp'>) =>
-  types.map((type, index) => at(type, type, column + index, 2))
-
 /** The three Nodes every cache page shares: App Server, Cache, Database in a row. */
 const cacheRow = (
   cacheSettings: ReturnType<typeof set>[],
@@ -187,14 +183,12 @@ const warmedAndTiered = design({
       cacheSize,
     ]),
     at('database', 'database', 4, 0, [dbSize]),
-    ...extras(2, 'psp'),
   ],
   links: [
     wire('users', 'cdn'),
     wire('cdn', 'server'),
     wire('server', 'cache'),
     wire('cache', 'database'),
-    wire('server', 'psp'),
   ],
 })
 
@@ -445,16 +439,7 @@ const layer4 = design({
   ],
 })
 
-const feedExtras = extras(1, 'psp', 'llm', 'msgp')
-
-const feedLinks = [
-  wire('users', 'server'),
-  wire('server', 'cache'),
-  wire('cache', 'database'),
-  wire('server', 'psp'),
-  wire('server', 'llm'),
-  wire('server', 'msgp'),
-]
+const feedLinks = [wire('users', 'server'), wire('server', 'cache'), wire('cache', 'database')]
 
 const fanoutPull = design({
   users: 400,
@@ -473,7 +458,6 @@ const fanoutPull = design({
     ]),
     at('cache', 'cache', 2, 0, [cacheSize]),
     at('database', 'database', 3, 0, [dbSize]),
-    ...feedExtras,
   ],
   links: feedLinks,
 })
@@ -503,7 +487,6 @@ const fanoutPush = design({
       cacheSize,
     ]),
     at('database', 'database', 3, 0, [dbSize]),
-    ...feedExtras,
   ],
   links: feedLinks,
 })
@@ -524,14 +507,8 @@ const materialized = design({
       ),
       set('size', 2, 'Instance size', 'Small gives the Database two vCPUs.'),
     ]),
-    ...extras(1, 'psp', 'llm'),
   ],
-  links: [
-    wire('users', 'server'),
-    wire('server', 'database'),
-    wire('server', 'psp'),
-    wire('server', 'llm'),
-  ],
+  links: [wire('users', 'server'), wire('server', 'database')],
 })
 
 const precomputed = design({

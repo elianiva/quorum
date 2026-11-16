@@ -4,7 +4,7 @@ import { Mount } from 'foldkit'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { SIZES } from '@quorum/simulation/catalog'
 import { solveFlow } from '@quorum/simulation/solve'
-import { heightOf } from '@quorum/ui/board/size'
+import { CARD_W, heightOf } from '@quorum/ui/board/size'
 import { compact, money, ms } from '@quorum/ui/game/format'
 import { localeOf } from '../i18n/builder.ts'
 import { langOf, type Lang } from '../i18n/lang.ts'
@@ -44,13 +44,31 @@ const valueOf = (l: Lang, setting: Setting): string => {
   return String(value)
 }
 
-/** The board's height: the packed Design's extent at a readable scale, never more than most of a screen. */
-const heightFor = (id: string): string => {
+/** The packed Design's extent with the board's fit margin around it, and the zoom the board may fall to on a phone. */
+const MARGIN = 16
+const INSET = 16
+const PHONE_SCALE = 0.42
+const TOP_SCALE = 1.1
+
+/**
+ * The board keeps the Design's own proportions, so the whole Design is in frame at any width. The
+ * fit never zooms past `TOP_SCALE`, which caps a small Design's height, and a phone, which pans
+ * instead of shrinking the cards, keeps room for the cards at their smallest zoom.
+ */
+const frameFor = (id: string): { aspectRatio: string; maxHeight: string; minHeight: string } => {
   const design = DESIGNS[id]
-  if (!design) return '320px'
+  if (!design) return { aspectRatio: '2 / 1', maxHeight: 'none', minHeight: '0' }
+  const left = Math.min(...design.game.nodes.map((node) => node.x))
+  const right = Math.max(...design.game.nodes.map((node) => node.x + CARD_W))
   const top = Math.min(...design.game.nodes.map((node) => node.y))
   const bottom = Math.max(...design.game.nodes.map((node) => node.y + heightOf(node.type)))
-  return `min(${Math.round(Math.max(260, (bottom - top) * 0.8 + 56))}px, 70vh)`
+  const width = right - left + 2 * MARGIN
+  const height = bottom - top + 2 * MARGIN
+  return {
+    aspectRatio: `${width} / ${height + 2 * INSET}`,
+    maxHeight: `${Math.round(height * TOP_SCALE + 2 * INSET)}px`,
+    minHeight: `${Math.round(height * PHONE_SCALE + 2 * INSET)}px`,
+  }
 }
 
 export const designView = (id: DesignId, h: HtmlBuilder<Message>): Html => {
@@ -136,7 +154,7 @@ export const designView = (id: DesignId, h: HtmlBuilder<Message>): Html => {
               borderColor: 'border',
             }),
           ),
-          h.Style({ height: heightFor(id) }),
+          h.Style(frameFor(id)),
           h.OnMount((designMounted ??= defineDesignMounted())({ id })),
         ],
         [],

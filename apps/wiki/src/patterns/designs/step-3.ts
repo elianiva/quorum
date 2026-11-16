@@ -177,10 +177,10 @@ export const step3 = {
     stage: 2,
     researched: ['replication', 'sharding', 'leaderless'],
     nodes: [
-      at('server', 'server', 1, 0, [
+      at('server', 'server', 2, 0, [
         set('size', 3, 'Instance size', 'Medium, so the store is the tier under test.'),
       ]),
-      at('store', 'wide', 2, 0, [
+      at('store', 'wide', 3, 0, [
         set('n', 3, 'Replicas per key (N)', 'Three copies of each key survive the loss of one.'),
         set(
           'r',
@@ -195,7 +195,11 @@ export const step3 = {
           'R plus W is above N, so every read sees the latest write.',
         ),
       ]),
-      at('database', 'database', 2, 2, [
+      at('gateway', 'gw', 1, 0),
+      at('files', 'server', 2, 2, [
+        set('size', 3, 'Instance size', 'Medium, so the Database tier is not the limit.'),
+      ]),
+      at('database', 'database', 3, 2, [
         set(
           'size',
           3,
@@ -204,17 +208,37 @@ export const step3 = {
         ),
       ]),
     ],
-    links: [wire('users', 'server'), wire('server', 'store'), wire('server', 'database')],
+    links: [
+      wire('users', 'gateway'),
+      wire('gateway', 'server', [
+        setLink(
+          'kinds',
+          ['page', 'read', 'write', 'login', 'buy', 'rt', 'bot', 'media'],
+          'Request kinds',
+          'Lookups by key go to the App Server that talks to the store.',
+        ),
+      ]),
+      wire('gateway', 'files', [
+        setLink(
+          'kinds',
+          ['search', 'upload', 'job', 'report', 'ai'],
+          'Request kinds',
+          'A key-value store cannot answer these, so a second App Server sends them to the Database.',
+        ),
+      ]),
+      wire('server', 'store'),
+      wire('files', 'database'),
+    ],
   }),
   'distributed-sql': design({
     users: 3000,
     stage: 2,
     researched: ['replication', 'sync-replication', 'consensus'],
     nodes: [
-      at('server', 'server', 1, 0, [
+      at('server', 'server', 2, 0, [
         set('size', 3, 'Instance size', 'Medium, so the store is the tier under test.'),
       ]),
-      at('store', 'dsql', 2, 0, [
+      at('store', 'dsql', 3, 0, [
         set(
           'size',
           2,
@@ -222,7 +246,11 @@ export const step3 = {
           'Each size step doubles the nodes behind it, and every one is billed. Small is enough to show the write cost.',
         ),
       ]),
-      at('database', 'database', 2, 2, [
+      at('gateway', 'gw', 1, 0),
+      at('files', 'server', 2, 2, [
+        set('size', 3, 'Instance size', 'Medium, so the Database tier is not the limit.'),
+      ]),
+      at('database', 'database', 3, 2, [
         set(
           'size',
           3,
@@ -231,7 +259,27 @@ export const step3 = {
         ),
       ]),
     ],
-    links: [wire('users', 'server'), wire('server', 'store'), wire('server', 'database')],
+    links: [
+      wire('users', 'gateway'),
+      wire('gateway', 'server', [
+        setLink(
+          'kinds',
+          ['page', 'read', 'write', 'login', 'buy', 'rt', 'bot', 'media'],
+          'Request kinds',
+          'Lookups by key go to the App Server that talks to the store.',
+        ),
+      ]),
+      wire('gateway', 'files', [
+        setLink(
+          'kinds',
+          ['search', 'upload', 'job', 'report', 'ai'],
+          'Request kinds',
+          'A key-value store cannot answer these, so a second App Server sends them to the Database.',
+        ),
+      ]),
+      wire('server', 'store'),
+      wire('files', 'database'),
+    ],
   }),
   'logs-metrics-traces': design({
     users: 2000,
@@ -489,7 +537,6 @@ export const step3 = {
     links: [
       wire('users', 'server'),
       wire('server', 'wide'),
-      wire('users', 'server-eu'),
       wire('users-eu', 'server-eu'),
       wire('server-eu', 'wide'),
     ],

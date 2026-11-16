@@ -77,7 +77,7 @@ El primer Tablero es la respuesta con quórum. Un Servidor de aplicaciones habla
 
 ::Design{id="wide-column-quorum"}
 
-El segundo Tablero añade el resto de una capa de datos real. El mismo almacén de quórum recibe lecturas, escrituras y transacciones, y una [Base de datos](/components/database) guarda las búsquedas y las subidas, que un almacén clave-valor no puede responder. Mira qué peticiones van a qué almacén. Muestra el punto de entrevista de que un almacén clave-valor solo busca por clave, y la Base de datos cubre todo lo demás. [SQL distribuido y almacenes sin líder](/patterns/distributed-sql-and-leaderless-stores) pone los dos tipos lado a lado.
+El segundo Tablero añade el resto de una capa de datos real. Una [API Gateway](/components/gw) envía las consultas por clave al servidor de aplicaciones que habla con el almacén de quórum, y envía las búsquedas y las subidas, que un almacén clave-valor no puede responder, a un segundo servidor de aplicaciones y a una [Base de datos](/components/database). Un llamador lee un solo grupo de datos, así que cada almacén tiene su propio servidor de aplicaciones. Mira qué peticiones van a qué almacén. Muestra el punto de entrevista de que un almacén clave-valor solo busca por clave, y la Base de datos cubre todo lo demás. [SQL distribuido y almacenes sin líder](/patterns/distributed-sql-and-leaderless-stores) pone los dos tipos lado a lado.
 
 ::Design{id="quorum-store"}
 

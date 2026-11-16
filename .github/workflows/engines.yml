@@ -1,0 +1,39 @@
+name: Engines
+
+# The determinism guardrail: one fixed Company and every reference replay end on the same hash in
+# Chromium, Firefox, WebKit, and workerd as in Node. It needs browser binaries, so it runs only
+# when the Simulation changes, not on every push.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/simulation/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/engines.yml'
+  pull_request:
+    paths:
+      - 'packages/simulation/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/engines.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  engines:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @quorum/simulation exec playwright install --with-deps chromium firefox webkit
+      - run: pnpm test:engines

@@ -182,6 +182,27 @@ export const closePanel = (model: Model): Model => ({
   panel: model.panel === 'settings' && onBoard(model.route) ? 'menu' : 'none',
 })
 
+/** Each Node's load over time, as the board's sparklines read it. The history gains a point
+ *  every few sim seconds and the board syncs four times a second, so one history maps once. */
+const loadHistories = new WeakMap<
+  Model['board']['nodeHistory'],
+  Record<string, ReadonlyArray<number>>
+>()
+const loadHistoryOf = (
+  history: Model['board']['nodeHistory'],
+): Record<string, ReadonlyArray<number>> => {
+  const known = loadHistories.get(history)
+  if (known) return known
+  const loads = Object.fromEntries(
+    Object.entries(history).map(([id, samples]) => [
+      id,
+      samples.map((sample) => sample.utilization),
+    ]),
+  )
+  loadHistories.set(history, loads)
+  return loads
+}
+
 export const sync = (model: Model, fit: boolean, focus: string | null = null): AnyCommand =>
   SyncBoard({
     fit,
@@ -192,12 +213,7 @@ export const sync = (model: Model, fit: boolean, focus: string | null = null): A
     selection: model.board.selection,
     placing: placingOf(model),
     stamp: stampOf(model),
-    history: Object.fromEntries(
-      Object.entries(model.board.nodeHistory).map(([id, samples]) => [
-        id,
-        samples.map((sample) => sample.utilization),
-      ]),
-    ),
+    history: loadHistoryOf(model.board.nodeHistory),
     region: model.board.region,
     paused: halted(model),
     speed: model.board.clock.speed,

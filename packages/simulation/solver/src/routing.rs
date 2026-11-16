@@ -737,6 +737,22 @@ pub extern "C" fn design_set(health_checked: f64, time: f64) -> i32 {
     }
 }
 
+/// Moves the compiled Design to another sim second, when the host knows its Nodes and Links
+/// are the ones `design_set` compiled. A split can read the time and the health checks, so the
+/// Design takes a new generation and every kept split is worked out again.
+#[no_mangle]
+pub extern "C" fn design_touch(health_checked: f64, time: f64) -> i32 {
+    CACHED.with(|cell| match cell.borrow_mut().as_mut() {
+        Some((design, _)) => {
+            design.health_checked = health_checked != 0.0;
+            design.time = time;
+            design.generation = GENERATIONS.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
+            crate::abi::OK
+        }
+        None => crate::abi::NO_DESIGN,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -78,6 +78,7 @@ type Exports = Readonly<{
   ptr: (block: number) => number
   len: (block: number) => number
   design_set: (healthChecked: number, time: number) => number
+  design_touch: (healthChecked: number, time: number) => number
   solve_run: (boost: number, passes: number, revenueOnly: number) => number
   bottleneck_run: (passes: number) => number
   forget_solve: () => number
@@ -92,6 +93,7 @@ const FUNCTIONS = [
   'ptr',
   'len',
   'design_set',
+  'design_touch',
   'solve_run',
   'bottleneck_run',
   'forget_solve',
@@ -110,6 +112,7 @@ export const installSolver = (create: () => Readonly<Record<string, unknown>>): 
   solver = checked(create())
   instantiate = create
   converged = new WeakSet()
+  compiled = null
 }
 
 /** The exports, once they have the memory, every function, and the block layout the host writes. */
@@ -152,6 +155,7 @@ const guarded = <T>(body: (exports: Exports) => T): T => {
     if (error instanceof Error && error.name === 'RuntimeError' && instantiate !== null) {
       solver = checked(instantiate())
       converged = new WeakSet()
+      compiled = null
     }
     throw error
   }
@@ -755,12 +759,30 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
   )
 }
 
-/** Writes a Game into the solver and compiles its Design. */
+/**
+ * The Edges of the Design the solver last compiled, or null when it holds none. `graphOf` builds
+ * one Edge list per Design and reuses it while no Node, Link, research, or feature changed, so
+ * the same list means the same Nodes and Links.
+ */
+let compiled: Graph['edges'] | null = null
+
+/**
+ * Writes a Game into the solver and compiles its Design. A Design the solver already holds is
+ * not written or compiled again: only its time and its health checks move.
+ */
 const write = (exports: Exports, game: Game): void => {
   const design = graphOf(game)
+  if (compiled === design.edges) {
+    writeGame(exports, game, design)
+    check(exports.design_touch(design.healthChecked ? 1 : 0, design.time), 'design_touch')
+    return
+  }
+  // Forget the Design first: a write that throws part-way leaves its blocks half written.
+  compiled = null
   writeDesign(exports, game, design)
   writeGame(exports, game, design)
   check(exports.design_set(design.healthChecked ? 1 : 0, design.time), 'design_set')
+  compiled = design.edges
 }
 
 const check = (status: number, call: string): void => {

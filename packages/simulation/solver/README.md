@@ -62,6 +62,7 @@ reads a figure that only looks right.
 | Export                                        | What it does                                                    |
 | --------------------------------------------- | --------------------------------------------------------------- |
 | `design_set`                                  | Compiles the Design's routing tables once, and caches them      |
+| `design_touch`                                | Moves the compiled Design to a new time, with no new compile    |
 | `solve_run`                                   | Runs the pass loop and writes the Ledger and the summary blocks |
 | `bottleneck_run`                              | Runs the Bottleneck search on the last solve's Ledger           |
 | `forget_solve`                                | Drops the cached solve, so the next search solves again         |

@@ -5438,7 +5438,8 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               )
             : locked(t.dashboard.errors2, SPAN.stat, t.dashboard.errorRate, 'logs', h),
           stat(
-            'latency',
+            // Not 'latency': the latency Chart below holds that key, and two siblings cannot share one.
+            'latency-now',
             percentiles ? t.dashboard.p99Latency : t.dashboard.meanLatency,
             formats(t).ms(percentiles ? latest.p99 : latest.latency),
             'plain',

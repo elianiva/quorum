@@ -1,4 +1,5 @@
 import { css, cx } from '@quorum/styled-system/css'
+import { hitGroups } from './hit-groups.ts'
 import {
   curveBasis,
   curveCardinal,
@@ -1114,24 +1115,27 @@ export const LineChart = <M>(props: LineChartProps<M>, h: HtmlBuilder<M>): Html 
   }
   if (onActiveIndexChange !== undefined) {
     children.push(
-      ...categories.map((_, index) => {
+      ...hitGroups(categories.length).map(({ from, to, index }) => {
         const span = (vertical ? bottom - top : right - left) / Math.max(1, categories.length)
-        const center = categoryPosition(index)
+        const first = categoryPosition(from)
+        const last = categoryPosition(to)
+        const start = Math.min(first, last) - span / 2
+        const size = Math.abs(last - first) + span
         return h.rect([
           ...svgAttrs(
             h,
             vertical
               ? {
                   x: String(left),
-                  y: String(center - span / 2),
+                  y: String(start),
                   width: String(right - left),
-                  height: String(span),
+                  height: String(size),
                   fill: 'transparent',
                 }
               : {
-                  x: String(center - span / 2),
+                  x: String(start),
                   y: String(top),
-                  width: String(span),
+                  width: String(size),
                   height: String(bottom - top),
                   fill: 'transparent',
                 },

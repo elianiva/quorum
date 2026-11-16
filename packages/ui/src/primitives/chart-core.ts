@@ -1,4 +1,5 @@
 import { css, cx } from '@quorum/styled-system/css'
+import { hitGroups } from './hit-groups.ts'
 import {
   arc,
   area,
@@ -1888,29 +1889,33 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
   const onActiveIndexChange = props.onActiveIndexChange
   if (onActiveIndexChange !== undefined)
     elements.push(
-      ...categories.map((_, i) =>
-        h.rect([
+      ...hitGroups(categories.length).map((group) => {
+        const first = category(group.from)
+        const last = category(group.to)
+        const start = Math.min(first, last) - band / 2
+        const size = Math.abs(last - first) + band
+        return h.rect([
           ...attrs(
             h,
             vertical
               ? {
                   x: String(left),
-                  y: String(category(i) - band / 2),
+                  y: String(start),
                   width: String(right - left),
-                  height: String(band),
+                  height: String(size),
                   fill: 'transparent',
                 }
               : {
-                  x: String(category(i) - band / 2),
+                  x: String(start),
                   y: String(top),
-                  width: String(band),
+                  width: String(size),
                   height: String(bottom - top),
                   fill: 'transparent',
                 },
           ),
-          h.OnMouseEnter(onActiveIndexChange(i)),
-        ]),
-      ),
+          h.OnMouseEnter(onActiveIndexChange(group.index)),
+        ])
+      }),
     )
   const activeRow =
     activeIndex === undefined || activeIndex === null ? undefined : data[activeIndex]

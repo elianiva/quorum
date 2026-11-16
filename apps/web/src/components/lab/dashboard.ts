@@ -133,6 +133,37 @@ const labelOf = (t: Messages, time: number, range: number): string =>
  * which draws the worst minute: a block's mean p99 would hide the spike the tail is about.
  */
 const rowsOf = (model: Model, slo: number): ReadonlyArray<Row> => {
+  const range = model.board.dashboard.range
+  const tier = tierOf(range)
+  // The rows change when their source does: a Sample a sim second, a block a few times a
+  // minute. A crosshair move or a tick inside the second reads the rows it read before.
+  const source = tier === null ? model.board.game.history : model.board.dashboard.history[tier]
+  const second = tier === null ? Math.floor(model.board.game.time) : 0
+  const last = lastRows
+  if (
+    last !== null &&
+    last.source === source &&
+    last.second === second &&
+    last.range === range &&
+    last.locale === model.prefs.locale &&
+    last.slo === slo
+  )
+    return last.rows
+  const rows = buildRows(model, slo)
+  lastRows = { source, second, range, locale: model.prefs.locale, slo, rows }
+  return rows
+}
+
+let lastRows: Readonly<{
+  source: ReadonlyArray<unknown>
+  second: number
+  range: number
+  locale: Model['prefs']['locale']
+  slo: number
+  rows: ReadonlyArray<Row>
+}> | null = null
+
+const buildRows = (model: Model, slo: number): ReadonlyArray<Row> => {
   const t = copyIn(model.prefs.locale)
   const range = model.board.dashboard.range
   const tier = tierOf(range)
@@ -230,6 +261,41 @@ const yesterdayOf = (
     }),
   )
   return rows.map((row) => means.get(blockIndexAt(Number(row.at) - DAY_SECONDS, tier)) ?? null)
+}
+
+/**
+ * The rows with yesterday's figure beside each, for one Chart. The rows and yesterday's
+ * blocks hold still between Samples, so a crosshair move reuses the copy it made before.
+ */
+type Compared = Readonly<{
+  blocks: ReadonlyArray<unknown>
+  /** The rows, each with `cmp`: yesterday's figure, or null where yesterday has none. */
+  data: ReadonlyArray<Row>
+  /** Whether yesterday has any figure in range. Without one the Chart draws no second line. */
+  any: boolean
+}>
+
+const compared = new WeakMap<ReadonlyArray<Row>, Map<string, Compared>>()
+
+const comparedRows = (
+  model: Model,
+  rows: ReadonlyArray<Row>,
+  key: string,
+  field: Field,
+): Compared => {
+  const blocks = model.board.dashboard.history[compareTier(model.board.dashboard.range)]
+  const charts = compared.get(rows) ?? new Map<string, Compared>()
+  compared.set(rows, charts)
+  const kept = charts.get(key)
+  if (kept !== undefined && kept.blocks === blocks) return kept
+  const values = yesterdayOf(model, rows, field)
+  const next: Compared = {
+    blocks,
+    data: rows.map((row, index) => ({ ...row, cmp: values[index] ?? null })),
+    any: values.some((value) => value !== null),
+  }
+  charts.set(key, next)
+  return next
 }
 
 /** Each Node's name, numbered when the Board holds more than one of its type. */
@@ -990,10 +1056,10 @@ const labelPlacesOf = (
 /** The annotations, as vertical markers on every time series, labelled where the labels fit. */
 const markersOf = (
   model: Model,
+  marks: ReadonlyArray<Annotation>,
   rows: ReadonlyArray<Row>,
   width: number,
 ): ReadonlyArray<CartesianChild> => {
-  const marks = annotationsOf(model)
   const scale = typeScaleOf(model)
   const hover = model.board.dashboard.hover
   const places = labelPlacesOf(
@@ -1371,18 +1437,15 @@ const timeSeries = (
   const yesterday =
     spec.compare === undefined || !model.board.dashboard.compare
       ? null
-      : yesterdayOf(model, rows, spec.compare)
-  const compare =
-    model.board.dashboard.compare && yesterday !== null && yesterday.some((value) => value !== null)
+      : comparedRows(model, rows, spec.key, spec.compare)
+  const compare = yesterday !== null && yesterday.any
   const series: ReadonlyArray<Series> = compare
     ? [
         ...spec.series,
         { key: 'cmp', name: t.dashboard.yesterday, color: COMPARE_COLOR, faint: true },
       ]
     : spec.series
-  const data: ReadonlyArray<Row> = compare
-    ? rows.map((row, index) => ({ ...row, cmp: yesterday?.[index] ?? null }))
-    : rows
+  const data: ReadonlyArray<Row> = compare && yesterday !== null ? yesterday.data : rows
   const line = (entry: Series): CartesianChild =>
     Line({
       dataKey: entry.key,
@@ -5282,9 +5345,11 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const userPanels: ReadonlyArray<Html> = has(game, 'multi-region')
     ? [usersTable(game, ledger, region, h), ...(has(game, 'rum') ? [deviceTable(ledger, h)] : [])]
     : []
+  // Every Chart draws the same annotations, so they are read from the Model once.
+  const marks = annotationsOf(model)
   const series = (spec: SeriesSpec) => {
     // A Chart lays its labels out for its own width, which the errors Chart narrows by columns.
-    const markers = markersOf(model, rows, panelWidthOf(spec.columns))
+    const markers = markersOf(model, marks, rows, panelWidthOf(spec.columns))
     return timeSeries(
       model,
       rows,

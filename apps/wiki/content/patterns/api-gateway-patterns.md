@@ -17,7 +17,12 @@ An API gateway is the single entry point for client calls, and it takes the cros
 
 ## How it works
 
-The gateway routes by host and path, and applies policy before the call reaches a service. The common jobs are **rate limiting**, **authentication offload** (verify a token once, pass the identity on), **TLS termination**, and **request coalescing**, where identical reads in flight at once become one backend call. A **token bucket** limiter refills at the allowed rate and lets a short burst spend the saved tokens.
+The gateway routes by host and path, and applies policy before the call reaches a service. Its common jobs are:
+
+- **Rate limiting**: a **token bucket** refills at the allowed rate and lets a short burst spend the saved tokens.
+- **Authentication offload**: verify a token once, then pass the identity on.
+- **TLS termination**: end HTTPS at the gateway, so the services behind it can speak plain HTTP.
+- **Request coalescing**: identical reads in flight at once become one backend call.
 
 Example: a limit of 50 requests per second with a bucket of 30 lets a client burst 30 extra requests, then holds the average at 50. A flat cap would have rejected the burst.
 

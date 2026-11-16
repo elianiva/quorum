@@ -3,7 +3,18 @@
   "compilerOptions": {
     "lib": ["ESNext"],
     "types": ["node"],
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "overrides": [
+          {
+            "include": ["test/system.test.ts"],
+            "options": { "allowedUnstableApis": ["effect/Arbitrary"] }
+          }
+        ]
+      }
+    ]
   },
   "include": ["src/**/*.ts", "test/**/*.ts"]
 }

@@ -92,7 +92,7 @@ There are seven possible groups: **Edge**, **Compute**, **Data**, **Messaging**,
 The Board is the surface behind everything. Your Nodes are cards on it, and Links join them.
 
 - Drag empty space to pan.
-- Use the mouse wheel to zoom, from a quarter size to one and a half. Pinch on a touch screen.
+- Use the mouse wheel to zoom, from a quarter size to one and a half. On a trackpad, swipe two fingers sideways to pan, or up and down to zoom. Pinch on a touch screen.
 - Click empty space to deselect.
 
 Far out, a card loses its rows and then shrinks to a small chip. Use **Fit the board** to see the whole Design, and zoom in when you need to read a card. [Read a Node card](/play/read-a-node-card) explains every row on one.

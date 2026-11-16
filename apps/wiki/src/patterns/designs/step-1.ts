@@ -613,6 +613,11 @@ export const step1 = {
         ),
       ]),
     ],
-    links: [wire('users', 'server'), wire('server', 'database'), wire('server', 'replica')],
+    links: [
+      wire('users', 'server'),
+      wire('server', 'database'),
+      wire('database', 'replica'),
+      wire('server', 'replica'),
+    ],
   }),
 }

@@ -18,7 +18,11 @@ An SLO states how reliable a service must be, and the error budget is the unreli
 
 ## How it works
 
-An **SLI** is a measured ratio, such as the share of requests answered in under 300 ms without an error. The **SLO** is the target for it over a window, say 99.9% over 28 days. The **SLA** is the contract with penalties, and it should be looser than the SLO.
+Three terms stack from measurement to contract:
+
+- **An SLI** is a measured ratio, such as the share of requests answered in under 300 ms without an error.
+- **An SLO** is the target for that ratio over a window, say 99.9% over 28 days.
+- **An SLA** is the contract with penalties, and it should be looser than the SLO.
 
 A 99.9% target over 30 days allows 43 minutes of full outage, or the same share of failed requests spread thin. That allowance is the budget. While plenty is left, ship faster. Once it is spent, freeze risky changes until the service recovers.
 

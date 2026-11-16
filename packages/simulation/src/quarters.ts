@@ -31,8 +31,14 @@ export const firstQuarter = (game: Game, revenue: number): Quarter => ({
   phase: QuarterPhase.cases.AwaitingGuidance.make({}),
 })
 
-export const guidanceOpen = (game: Game): boolean =>
-  QuarterPhase.guards.AwaitingGuidance(game.quarter?.phase)
+export const guidanceOpen = (game: Game): boolean => {
+  const quarter = game.quarter
+  return (
+    !!quarter &&
+    QuarterPhase.guards.AwaitingGuidance(quarter.phase) &&
+    game.time - quarter.startedAt < GUIDANCE_WINDOW
+  )
+}
 
 /** Revenue growth since the quarter began, in percent. The quarter ends at the same hour of the week. */
 export const quarterGrowth = (quarter: Quarter, ledger: Ledger): number =>

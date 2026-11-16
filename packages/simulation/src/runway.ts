@@ -48,8 +48,9 @@ export const advanceRunway = (game: Game, ledger: Ledger): Game => {
       }),
     }
   }
-  // Left unanswered, at −3 calendar days of Burn the Nodes shut down to stop the bleeding.
-  if (next.bridge._tag === 'Offered' && next.cash <= -burn * CALENDAR_DAY * SHUTDOWN_AT_DAYS)
+  // Left unanswered, at −3 calendar days of Burn the Nodes shut down to stop the bleeding. An offer
+  // made this Step waits for the next one, so the player always has a Step to answer it.
+  if (game.bridge._tag === 'Offered' && next.cash <= -burn * CALENDAR_DAY * SHUTDOWN_AT_DAYS)
     return { ...shutdown(next), bridge: bridgeStep(next.bridge, { _tag: 'Expired' }) }
   return next
 }

@@ -1,6 +1,7 @@
 import { RUNNING, warming, withWarm } from './life.ts'
 import { PROMOTE_DATA_LOSS } from './components/replica.ts'
 import { step as incidentStep } from './incident-machine.ts'
+import { step as roundStep } from './era-round-machine.ts'
 import {
   type Action,
   Refusal,
@@ -633,8 +634,7 @@ export const resize = (game: Game, id: string, direction: 1 | -1): Action =>
   withNode(game, id, (node) => {
     const def = COMPONENTS[node.type]
     const lowest = def.sized ? 0 : 1
-    const rebalances =
-      !game.sandbox && REBALANCE_TYPES.includes(node.type) && node.life._tag !== 'Stopped'
+    const rebalances = !game.sandbox && REBALANCE_TYPES.includes(node.type) && !isDown(node)
     if (direction === -1) {
       if (node.size <= lowest) return notAllowed(`${def.name} is at its smallest size.`)
       return ok(
@@ -1560,6 +1560,7 @@ const advanceEra = (game: Game, raised: boolean, firstIncidentAfter: number): Ac
         : `Reach ${era.raiseAt.toLocaleString('en-US')} users first.`,
     )
   }
+  if (game.round._tag !== 'Offered') return notAllowed('No round is on the table.')
   const era = eraOf(game)
   const stage = game.stage + 1
   const bootstrapped = ventureOf(game).bootstrapped
@@ -1576,7 +1577,7 @@ const advanceEra = (game: Game, raised: boolean, firstIncidentAfter: number): Ac
       stageAt: game.time,
       cash: game.cash + ledger.burn * IPO_BURN_SECONDS,
       equity: game.equity * (1 - dilution),
-      round: { _tag: 'Raised' },
+      round: roundStep(game.round, { _tag: 'Raised' }),
       quarter: firstQuarter(game, ledger.revenue),
     })
   }
@@ -1590,7 +1591,7 @@ const advanceEra = (game: Game, raised: boolean, firstIncidentAfter: number): Ac
     cash: game.cash + (raised ? grantOf(game, era.grant) : 0),
     equity: raised ? game.equity * (1 - dilution) : game.equity,
     // A bootstrapped Company declines every round, and grows at the full rate.
-    round: raised ? { _tag: 'Raised' } : { _tag: 'Declined' },
+    round: roundStep(game.round, { _tag: raised ? 'Raised' : 'Declined' }),
     nextIncidentAt: stage === 1 ? game.time + firstIncidentAfter : game.nextIncidentAt,
     engineers: alumni.length > 0 ? [...game.engineers, ...alumni] : game.engineers,
     workSeq: game.workSeq + alumni.length,

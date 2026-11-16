@@ -24,7 +24,7 @@ export const replica: ComponentView = {
       {
         glyph: 'stack',
         name: 'Copies',
-        value: primary ? nodeLabel(game, primary) : 'Nothing: link a Database to it',
+        value: primary ? nodeLabel(game, primary) : 'Link a Database',
         tone: primary ? 'muted' : 'danger',
       },
       {

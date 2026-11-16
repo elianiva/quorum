@@ -17,7 +17,12 @@ Los proveedores de nube cobran por los datos que salen de su red, así que enví
 
 ## Cómo funciona
 
-Cuatro palancas, en el orden en que se amortizan. **Comprime** las respuestas de texto con gzip o Brotli, que a menudo reducen el HTML y el JSON en dos tercios o más. **Cachea en una CDN**, que sirve las peticiones repetidas desde el edge, a menudo a una tarifa menor, y alivia al origen. **Elige almacenamiento con egress gratuito**, como Cloudflare R2, para los archivos que sirves públicamente. **Mantén el tráfico local**, ya que una llamada entre zonas de disponibilidad factura en ambos sentidos.
+Cuatro palancas recortan la factura, en el orden en que se amortizan:
+
+- **Comprime** las respuestas de texto con gzip o Brotli, que a menudo reducen el HTML y el JSON en dos tercios o más.
+- **Cachea en una CDN**, que sirve las peticiones repetidas desde el edge, a menudo a una tarifa menor, y alivia al origen.
+- **Elige almacenamiento con egress gratuito**, como Cloudflare R2, para los archivos que sirves públicamente.
+- **Mantén el tráfico local**, ya que una llamada entre zonas de disponibilidad factura en ambos sentidos.
 
 Los precios reales lo concretan. AWS cobra alrededor de $0.09 por GB hacia internet en el primer tramo, unos $0.01 por GB en cada sentido entre zonas, y R2 no cobra nada por egress. Con 50 TB al mes, los tramos de AWS (los primeros 10 TB a $0.09, los siguientes 40 TB a $0.085) suman unos $4,400 antes de cualquier franquicia gratuita.
 

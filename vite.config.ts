@@ -11,6 +11,8 @@ const ignored = [
   'coverage/**',
   // Vendored from github.com/wheresryan22/anatomy; kept identical to upstream.
   'apps/web/art/kit/**',
+  // Vendored from github.com/cursor/plugins (pstack); kept identical to upstream.
+  '.agents/skills/statechart/**',
   // The Rust solver's cargo output.
   'packages/simulation/solver/target/**',
 ]

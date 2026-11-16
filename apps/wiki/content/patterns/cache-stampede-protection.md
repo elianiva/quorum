@@ -18,7 +18,11 @@ A stampede happens when a hot key expires and every waiting reader asks the data
 
 ## How it works
 
-There are three fixes, and they combine. Coalescing (also called single flight) lets the first reader fetch while the others wait for its answer, so a thousand misses become one query. Early expiration has readers refresh a key slightly before it expires, picked at random, so keys do not all leave together. Stale-while-revalidate serves the old value while one request refreshes it, so nobody waits at all.
+There are three fixes, and they combine:
+
+- **Coalescing** (also called single flight) lets the first reader fetch while the others wait for its answer, so a thousand misses become one query.
+- **Early expiration** has readers refresh a key slightly before it expires, picked at random, so keys do not all leave together.
+- **Stale-while-revalidate** serves the old value while one request refreshes it, so nobody waits at all.
 
 If a key takes 2,000 reads a second and the query takes 200 ms, an unguarded expiry sends about 400 queries before the first answer lands. Coalescing sends one.
 

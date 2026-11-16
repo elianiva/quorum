@@ -2,7 +2,8 @@
 
 /** The next value in [0, 1) and the seed after it. */
 export const nextRandom = (seed: number): readonly [number, number] => {
-  const next = (seed * 1_103_515_245 + 12_345) % 2_147_483_648
+  // Math.imul keeps the low 32 bits exact; a double product loses them above 2^53.
+  const next = (Math.imul(seed, 1_103_515_245) + 12_345) & 0x7f_ff_ff_ff
   return [next / 2_147_483_648, next]
 }
 

@@ -491,6 +491,7 @@ export const patternsProduction = {
       wire('core-pool', 'core-db'),
       wire('feature', 'feature-pool'),
       wire('feature-pool', 'feature-db'),
+      wire('core-db', 'read-copy'),
       wire('core', 'read-copy'),
     ],
     note: note(

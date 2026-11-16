@@ -975,6 +975,8 @@ export const rushItem = (game: Game, id: number): Action =>
     const item = game.backlog[index]
     if (!item) return no(Refusal.Missing())
     if (item.kind === 'spike') return notAllowed('A Spike ends when its Study completes.')
+    // A blocked item waits on the player's answer; paid in full, it would finish without one.
+    if (item.block._tag === 'Blocked') return notAllowed('It waits on you first.')
     if (game.devHours < 0.01) return notAllowed('The Dev Hours pool is empty.')
     const paid = Math.min(game.devHours, item.cost - item.spent)
     const backlog = game.backlog.map((entry, at) =>

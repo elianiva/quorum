@@ -17,7 +17,12 @@ Un API gateway es el punto de entrada único para las llamadas de los clientes, 
 
 ## Cómo funciona
 
-El gateway enruta por host y ruta, y aplica la política antes de que la llamada llegue a un servicio. Las tareas habituales son la **limitación de tasa**, la **descarga de autenticación** (verificar un token una vez y pasar la identidad), la **terminación de TLS** y la **fusión de peticiones** (request coalescing), donde lecturas idénticas en vuelo a la vez se convierten en una sola llamada al backend. Un limitador de tipo **token bucket** se rellena al ritmo permitido y deja que una ráfaga corta gaste los tokens ahorrados.
+El gateway enruta por host y ruta, y aplica la política antes de que la llamada llegue a un servicio. Sus tareas habituales son:
+
+- **Limitación de tasa**: un limitador de tipo **token bucket** se rellena al ritmo permitido y deja que una ráfaga corta gaste los tokens ahorrados.
+- **Descarga de autenticación**: verifica un token una vez y pasa la identidad.
+- **Terminación de TLS**: termina HTTPS en el gateway, así que los servicios de detrás pueden hablar HTTP simple.
+- **Fusión de peticiones** (request coalescing): lecturas idénticas en vuelo a la vez se convierten en una sola llamada al backend.
 
 Ejemplo: un límite de 50 peticiones por segundo con un bucket de 30 deja que un cliente lance 30 peticiones extra de golpe y luego mantiene el promedio en 50. Un tope plano habría rechazado la ráfaga.
 

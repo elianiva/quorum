@@ -17,7 +17,11 @@ El precómputo traslada el trabajo del momento de la petición a un momento que 
 
 ## Cómo funciona
 
-Un generador de sitios estáticos renderiza cada página en la compilación y sube archivos, así que una petición cuesta la lectura de un archivo. La regeneración estática incremental, como la hace Next.js, renderiza una página en la primera petición, guarda el resultado y lo reconstruye en segundo plano pasado un tiempo fijado. Los índices de búsqueda, las listas de recomendaciones y los informes diarios siguen el mismo plan: un trabajo los calcula y las peticiones leen el resultado.
+Cada enfoque calcula la respuesta antes de que una petición la pida:
+
+- **Un generador de sitios estáticos** renderiza cada página en la compilación y sube archivos, así que una petición cuesta la lectura de un archivo.
+- **La regeneración estática incremental**, como la hace Next.js, renderiza una página en la primera petición, guarda el resultado y lo reconstruye en segundo plano pasado un tiempo fijado.
+- **Los índices de búsqueda, las listas de recomendaciones y los informes diarios** siguen el mismo plan: un trabajo los calcula y las peticiones leen el resultado.
 
 Una página renderizada una vez y leída 100,000 veces gasta su coste una sola vez. Poner una CDN delante de los archivos hace que las lecturas repetidas sean casi gratis.
 

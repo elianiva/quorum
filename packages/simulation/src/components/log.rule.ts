@@ -2,6 +2,7 @@ import { type Action, notAllowed, ok, patch, withNode } from '../action-kit.ts'
 import type { Game, GameNode } from '../state.ts'
 import { LOG_ACKS, LOG_PARTITIONS, LOG_REPLICAS, LOG_RETENTION } from '../catalog.ts'
 import { warming } from '../life.ts'
+import { isDown } from '../lookups.ts'
 
 /**
  * An Event Stream's partitions, acknowledgements, retention and partition key (07 "Event Stream").
@@ -42,7 +43,7 @@ export const setLogOptions = (
       return notAllowed(`Replication factors are ${LOG_REPLICAS.join(', ')}.`)
     const { replicas, ...rest } = change
     const nextN = replicas === undefined ? node.n : replicas
-    const rebalances = !game.sandbox && nextN !== node.n && node.life._tag !== 'Stopped'
+    const rebalances = !game.sandbox && nextN !== node.n && !isDown(node)
     return ok(
       patch(game, id, {
         ...(replicas === undefined ? rest : { ...rest, n: replicas }),

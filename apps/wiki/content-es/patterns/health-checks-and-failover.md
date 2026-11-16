@@ -18,7 +18,12 @@ Una comprobación de estado encuentra un servidor caído antes que los usuarios,
 
 ## Cómo funciona
 
-El balanceador de carga llama a un endpoint de cada servidor a un intervalo fijo. Un servidor que falla se queda fuera de la rotación hasta que vuelve a pasar la comprobación. Una comprobación superficial solo pregunta si el proceso está activo. Una comprobación profunda también pregunta si su base de datos responde, lo que detecta un servidor que está vivo pero es inútil. El intervalo fija el coste de un fallo: un intervalo de 30 segundos deja a un servidor caído en rotación hasta 30 segundos. El failover de datos funciona igual, con un standby que toma el relevo cuando el primario deja de responder.
+El balanceador de carga llama a un endpoint de cada servidor a un intervalo fijo. Un servidor que falla se queda fuera de la rotación hasta que vuelve a pasar la comprobación.
+
+- **Una comprobación superficial** solo pregunta si el proceso está activo.
+- **Una comprobación profunda** también pregunta si su base de datos responde, lo que detecta un servidor que está vivo pero es inútil.
+
+El intervalo fija el coste de un fallo: un intervalo de 30 segundos deja a un servidor caído en rotación hasta 30 segundos. El failover de datos funciona igual, con un standby que toma el relevo cuando el primario deja de responder.
 
 ## Qué cuesta
 

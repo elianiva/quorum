@@ -13,6 +13,8 @@ export const bindPointer = (c: BoardController): void => {
     'pointerdown',
     (event) => {
       c.coarse = event.pointerType !== 'mouse'
+      // A hand on the Board takes over from a glide still running.
+      c.panSpeed = 0
       if (c.coarse) {
         c.touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
         canvas.setPointerCapture(event.pointerId)
@@ -371,6 +373,14 @@ export const bindPointer = (c: BoardController): void => {
       // A board on a page lets the page scroll; Ctrl or Cmd zooms it.
       if (c.state?.readOnly && !event.ctrlKey && !event.metaKey) return
       event.preventDefault()
+      // A trackpad's two-finger swipe slides the Board sideways with it; a swipe up or down, a mouse
+      // wheel, and a pinch zoom about the pointer.
+      if (!event.ctrlKey && !event.metaKey && Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+        c.panBy(event.deltaX)
+        return
+      }
+      // A zoom takes over from a glide.
+      c.panSpeed = 0
       const rect = c.host.getBoundingClientRect()
       const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top }
       const before = c.toWorld(event)

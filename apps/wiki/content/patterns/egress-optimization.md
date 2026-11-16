@@ -17,7 +17,12 @@ Cloud providers charge for data leaving their network, so send fewer bytes, from
 
 ## How it works
 
-Four levers, in the order they pay back. **Compress** text responses with gzip or Brotli, which often cut HTML and JSON by two thirds or more. **Cache at a CDN**, which serves repeat requests from the edge, often at a lower rate, and spares the origin. **Choose storage with free egress**, such as Cloudflare R2, for files you serve publicly. **Keep traffic local**, since a call between availability zones bills both ways.
+Four levers cut the bill, in the order they pay back:
+
+- **Compress** text responses with gzip or Brotli, which often cut HTML and JSON by two thirds or more.
+- **Cache at a CDN**, which serves repeat requests from the edge, often at a lower rate, and spares the origin.
+- **Choose storage with free egress**, such as Cloudflare R2, for files you serve publicly.
+- **Keep traffic local**, since a call between availability zones bills both ways.
 
 Real prices make it concrete. AWS charges around $0.09 per GB to the internet for the first tier, about $0.01 per GB each way between zones, and R2 charges nothing for egress. At 50 TB a month, AWS's tiers (the first 10 TB at $0.09, the next 40 TB at $0.085) come to roughly $4,400 before any free allowance.
 

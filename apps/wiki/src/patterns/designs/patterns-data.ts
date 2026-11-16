@@ -236,7 +236,12 @@ export const patternsData = {
         ),
       ]),
     ],
-    links: [wire('users', 'server'), wire('server', 'database'), wire('server', 'replica')],
+    links: [
+      wire('users', 'server'),
+      wire('server', 'database'),
+      wire('database', 'replica'),
+      wire('server', 'replica'),
+    ],
   }),
   'quorum-strong': design({
     users: 3000,
@@ -336,7 +341,12 @@ export const patternsData = {
         set('size', 3, 'Instance size', 'Medium. It serves the reads that can be a moment old.'),
       ]),
     ],
-    links: [wire('users', 'server'), wire('server', 'database'), wire('server', 'replica')],
+    links: [
+      wire('users', 'server'),
+      wire('server', 'database'),
+      wire('database', 'replica'),
+      wire('server', 'replica'),
+    ],
   }),
   'search-index-tuned': design({
     users: 3000,

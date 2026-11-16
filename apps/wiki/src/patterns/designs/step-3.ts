@@ -385,6 +385,7 @@ export const step3 = {
       wire('users', 'server'),
       wire('server', 'database'),
       wire('users-eu', 'server-eu'),
+      wire('database', 'replica-eu'),
       wire('server-eu', 'replica-eu'),
       wire('server-eu', 'database'),
     ],

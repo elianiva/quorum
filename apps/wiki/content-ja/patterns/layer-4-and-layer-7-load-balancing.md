@@ -18,7 +18,10 @@ aliases: l4, l7, tcp load balancer, http load balancer, nlb, alb, content routin
 
 ## 仕組み
 
-L4 バランサーは IP アドレスとポートで動きます。バックエンドを 1 つ選んでバイトを流すので、リクエストあたりの仕事が少なく、非常に大きな量を扱えます。L7 バランサーは接続を終端し、HTTP を解析し、`/api` を 1 つのプールへ、`/images` を別のプールへ送れ、ヘッダーを足し、再試行できます。実例は AWS の Network Load Balancer が L4、Application Load Balancer が L7 です。
+2 つの層は違うものを分散します。
+
+- **L4** は IP アドレスとポートで動きます。バックエンドを 1 つ選んでバイトを流すので、リクエストあたりの仕事が少なく、非常に大きな量を扱えます。AWS の Network Load Balancer が例です。
+- **L7** は接続を終端し、HTTP を解析し、`/api` を 1 つのプールへ、`/images` を別のプールへ送れ、ヘッダーを足し、再試行できます。AWS の Application Load Balancer が例です。
 
 プールを種類別に分けると、互いを隔離できます。ページビューの洪水が API サーバーを飢えさせられません。Quorum はその分割を [APIゲートウェイ](/components/gw) に任せ、バランサーは届いたものを散らすだけにします。
 

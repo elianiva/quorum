@@ -18,7 +18,12 @@ A health check finds a dead server before users do, and failover moves its work 
 
 ## How it works
 
-The load balancer calls an endpoint on every server at a fixed interval. A server that fails stays out of rotation until it passes again. A shallow check asks only whether the process is up. A deep check also asks whether its database answers, which catches a server that is alive but useless. The interval sets the cost of a failure: a 30-second interval leaves a dead server in rotation for up to 30 seconds. Failover for data works the same way, with a standby that takes over when the primary stops responding.
+The load balancer calls an endpoint on every server at a fixed interval. A server that fails stays out of rotation until it passes again.
+
+- **A shallow check** asks only whether the process is up.
+- **A deep check** also asks whether its database answers, which catches a server that is alive but useless.
+
+The interval sets the cost of a failure: a 30-second interval leaves a dead server in rotation for up to 30 seconds. Failover for data works the same way, with a standby that takes over when the primary stops responding.
 
 ## What it costs
 

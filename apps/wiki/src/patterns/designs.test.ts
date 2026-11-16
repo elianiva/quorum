@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from 'vitest'
+import { primaryOf } from '@quorum/simulation/lookups'
 import { solveFlow } from '@quorum/simulation/solve'
 import { boxOf, crowds } from '@quorum/ui/board/geometry'
 import { DESIGN_IDS } from './designs/ids.ts'
@@ -27,6 +28,11 @@ test('every Design solves, links existing Nodes, and keeps its cards apart', () 
       for (const other of nodes)
         if (node.id < other.id && crowds(boxOf(node), boxOf(other)))
           bad.push(`${id}: ${node.id} overlaps ${other.id}`)
+    // A Read Replica copies the Database linked into it: without one it serves nothing and its card
+    // tells the reader to link a Database, so the Design would not show what its page describes.
+    for (const node of nodes)
+      if (node.type === 'replica' && primaryOf(design.game, node) === undefined)
+        bad.push(`${id}: ${node.id} copies no Database`)
     for (const node of design.nodes)
       for (const setting of node.settings)
         if (!(setting.field in (nodes.find((n) => n.id === node.id) ?? {})))

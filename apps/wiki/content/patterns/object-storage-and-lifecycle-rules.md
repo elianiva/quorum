@@ -17,7 +17,13 @@ Object storage holds files cheaply without limit, and lifecycle rules shift obje
 
 ## How it works
 
-The app stores each file under a key and reads it back over HTTP. Classes trade price against access: Standard is the dearest and reads at once, Infrequent access costs about half to store but charges a fee per read, and Archive costs a small fraction and needs a restore that takes hours. A lifecycle rule says that an object older than 30 days moves one class down, and after 90 days it moves again.
+The app stores each file under a key and reads it back over HTTP. Classes trade price against access:
+
+- **Standard** is the dearest and reads at once.
+- **Infrequent access** costs about half to store but charges a fee per read.
+- **Archive** costs a small fraction and needs a restore that takes hours.
+
+A lifecycle rule says that an object older than 30 days moves one class down, and after 90 days it moves again.
 
 A photo app with 100 TB, most of it older than a year, can cut its storage bill sharply this way. The cost is that a request for an archived object cannot be answered at once.
 

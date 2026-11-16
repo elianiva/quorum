@@ -610,11 +610,24 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
 /** The instance type a namespace stub carries. */
 export type RoomInstance = RoomObjectBase
 
-/** Errors and traces for the Room, with the same DSN the Workers use. */
+/**
+ * The handlers Sentry starts a trace of their own for, by the span name it gives
+ * them. A running Room fires its alarm twice a second and a Seat sends up to 25
+ * pointer frames a second, so a sampled tenth of them is thousands of traces a day
+ * per Room, each one saying the same thing.
+ */
+const UNTRACED = new Set(['alarm', 'webSocketMessage'])
+
+/**
+ * Errors and traces for the Room, with the same DSN the Workers use. An error in
+ * an untraced handler is still reported: sampling decides traces only.
+ */
 export const RoomObject = Sentry.instrumentDurableObjectWithSentry(
   (env: RoomEnv) => ({
     dsn: env.SENTRY_DSN,
-    tracesSampleRate: 0.1,
+    // A call from the API Worker follows that Worker's choice, as it did under a plain rate.
+    tracesSampler: ({ name, inheritOrSampleWith }) =>
+      UNTRACED.has(name) ? 0 : inheritOrSampleWith(0.1),
     initialScope: { tags: { service: 'room-object' } },
   }),
   RoomObjectBase,

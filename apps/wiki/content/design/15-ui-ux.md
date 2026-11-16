@@ -102,7 +102,8 @@ time the game state makes it useful.
 
 - Flow goes left to right: Users on the left, the data tier on the right, Payments and Analytics at the
   bottom. The board does not enforce this, but new Nodes snap to the matching column.
-- Pan with drag, zoom with the wheel. Zoomed out, a card first drops its rows, then becomes a chip:
+- Pan with drag, or two fingers sideways on a trackpad, and zoom with the wheel or two fingers up and
+  down. Zoomed out, a card first drops its rows, then becomes a chip:
   its block, its name and a ring of the load it carries, so a large Design still reads as named
   blocks. Up close it is a whole card again.
 - Cards never overlap. Each card keeps 24 px clear around it. A card dropped on others moves to the

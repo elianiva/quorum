@@ -92,7 +92,7 @@ Hay siete grupos posibles: **Edge**, **Cómputo**, **Datos**, **Mensajería**, *
 El Tablero es la superficie que hay detrás de todo. Tus Nodos son tarjetas sobre él, y los Enlaces los unen.
 
 - Arrastra un espacio vacío para desplazar la vista.
-- Usa la rueda del ratón para hacer zoom, desde un cuarto del tamaño hasta una vez y media. Pellizca en una pantalla táctil.
+- Usa la rueda del ratón para hacer zoom, desde un cuarto del tamaño hasta una vez y media. En un trackpad, desliza dos dedos en horizontal para desplazar la vista y en vertical para hacer zoom. Pellizca en una pantalla táctil.
 - Haz clic en un espacio vacío para deseleccionar.
 
 Muy lejos, una tarjeta pierde sus filas y luego se reduce a una pequeña ficha. Usa **Ajustar el tablero** para ver todo el Diseño y acércate cuando necesites leer una tarjeta. [Lee la tarjeta de un Nodo](/play/read-a-node-card) explica cada fila de una.

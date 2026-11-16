@@ -44,6 +44,17 @@ type Mutable<T> = { -readonly [K in keyof T]: T[K] }
 /** The phone: narrow in portrait, short in landscape (the `compact` variant in theme.css). */
 const isPhone = (): boolean => matchMedia('(max-width: 639px), (max-height: 499px)').matches
 
+/** A two-finger pan keeps the Board moving after the fingers leave, easing out over this long. */
+const GLIDE_S = 0.28
+/** The fastest a flick can start the glide, in pixels a second. */
+const GLIDE_MAX = 2400
+/** A gap this long between wheels means a new gesture, not a faster flick, in ms. */
+const GLIDE_GAP_MS = 120
+/** The glide waits this long after the last wheel, so a wheel still arriving keeps the pace, in ms. */
+const GLIDE_IDLE_MS = 32
+/** Below this speed, in pixels a second, the glide has stopped. */
+const GLIDE_MIN = 20
+
 /** Buying a size is held, not clicked: the fill crosses the button, and the buy lands at the end. */
 
 type Gesture =
@@ -155,6 +166,9 @@ export class BoardController {
   /** Fingers and pens on the board, in client coordinates. Two of them pinch. */
   readonly touches = new Map<number, Pt>()
   pinch: Readonly<{ distance: number; center: Pt }> | null = null
+  /** The speed a two-finger pan was moving at, in pixels a second, and when it last moved. */
+  panSpeed = 0
+  panAt = 0
   /** The last pointer to move was a finger or a pen, which has no hover and a wide tip. */
   coarse = false
   /** Local positions while a node is dragged, ahead of the Model. */
@@ -489,6 +503,35 @@ export class BoardController {
     this.world.scale.set(scale)
     this.world.position.set(center.x - before.x * scale, center.y - before.y * scale)
     this.paint()
+  }
+
+  /**
+   * Slides the view sideways with a trackpad, and remembers how fast the fingers moved, so a flick
+   * glides on after they leave the glass (see `glide`).
+   */
+  panBy(deltaX: number): void {
+    const now = performance.now()
+    const gap = now - this.panAt
+    this.panAt = now
+    // A slow drag ends when the fingers stop; only a quick wheel earns a glide.
+    this.panSpeed =
+      gap > 0 && gap < GLIDE_GAP_MS
+        ? Math.max(-GLIDE_MAX, Math.min(GLIDE_MAX, (-deltaX / Math.max(8, gap)) * 1000))
+        : 0
+    this.world.position.x -= deltaX
+  }
+
+  /**
+   * Carries a pan on after the fingers leave, easing to a stop. While wheels still arrive, the
+   * fingers or the system's own momentum are moving the view, and this waits for them.
+   */
+  glide(seconds: number): void {
+    if (this.panSpeed === 0) return
+    if (performance.now() - this.panAt < GLIDE_IDLE_MS) return
+    const frame = Math.min(seconds, 0.05)
+    this.world.position.x += this.panSpeed * frame
+    this.panSpeed *= Math.exp(-frame / GLIDE_S)
+    if (Math.abs(this.panSpeed) < GLIDE_MIN) this.panSpeed = 0
   }
 
   /** Centers a Node in the room the HUD, dock, and Inspector leave free. */
@@ -1158,6 +1201,7 @@ export class BoardController {
   }
 
   animate(seconds: number): void {
+    this.glide(seconds)
     animate(this, seconds)
   }
 

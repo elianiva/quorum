@@ -42,7 +42,14 @@ import { budgetOf, burnRateOf, slaCreditsOf } from '@quorum/simulation/slo'
 import type { Game, Postmortem, Sample } from '@quorum/simulation/state'
 import { ignored } from '@quorum/simulation/step'
 import { teamOutputs } from '@quorum/simulation/team'
-import { type Field, TIERS, type Tier, blockIndexAt, startOf } from '@/game/history.ts'
+import {
+  type Field,
+  type History,
+  TIERS,
+  type Tier,
+  blockIndexAt,
+  startOf,
+} from '@/game/history.ts'
 import { isPhone } from '@/game/viewport.ts'
 import { compact, money, rate as rateText } from '@quorum/ui/game/format'
 import { Message } from '@/game/message.ts'
@@ -249,13 +256,13 @@ const compareTier = (range: number): Tier => tierOf(range) ?? 'quarter'
  * the history does not reach is null, and the line breaks there rather than guessing.
  */
 const yesterdayOf = (
-  model: Model,
+  blocks: History[Tier],
+  tier: Tier,
   rows: ReadonlyArray<Row>,
   field: Field,
 ): ReadonlyArray<number | null> => {
-  const tier = compareTier(model.board.dashboard.range)
   const means = new Map(
-    model.board.dashboard.history[tier].map((block) => {
+    blocks.map((block) => {
       const sum = block.sum[field]
       return [block.index, sum === undefined ? null : sum / Math.max(1, block.count)] as const
     }),
@@ -278,17 +285,17 @@ type Compared = Readonly<{
 const compared = new WeakMap<ReadonlyArray<Row>, Map<string, Compared>>()
 
 const comparedRows = (
-  model: Model,
+  blocks: History[Tier],
+  tier: Tier,
   rows: ReadonlyArray<Row>,
   key: string,
   field: Field,
 ): Compared => {
-  const blocks = model.board.dashboard.history[compareTier(model.board.dashboard.range)]
   const charts = compared.get(rows) ?? new Map<string, Compared>()
   compared.set(rows, charts)
   const kept = charts.get(key)
   if (kept !== undefined && kept.blocks === blocks) return kept
-  const values = yesterdayOf(model, rows, field)
+  const values = yesterdayOf(blocks, tier, rows, field)
   const next: Compared = {
     blocks,
     data: rows.map((row, index) => ({ ...row, cmp: values[index] ?? null })),
@@ -838,7 +845,7 @@ const markOfMail = (
  * the Inbox's `event:finished` Thread, at the second that entry was written. The Thread does not
  * say which kind of item finished, so the mark is the entry that names a Research.
  */
-const annotationsOf = (model: Model): ReadonlyArray<Annotation> => {
+const buildAnnotations = (model: Model): ReadonlyArray<Annotation> => {
   const t = copyIn(model.prefs.locale)
 
   const shown = model.board.dashboard.groups
@@ -894,6 +901,36 @@ const annotationsOf = (model: Model): ReadonlyArray<Annotation> => {
 }
 
 /**
+ * The annotations, as one list while what they are read from holds: the Charts are memoized on
+ * it. An incident counts its losses on every Step, so it is compared by what its mark shows.
+ */
+const annotationsOf = (model: Model): ReadonlyArray<Annotation> => {
+  const { game, undo, inbox, dashboard } = model.board
+  const from: AnnotationSource = [
+    model.prefs.locale,
+    dashboard.groups,
+    undo,
+    inbox.mail,
+    game.stage,
+    game.stageAt,
+    game.incident?.startedAt ?? null,
+    game.incident?.severity ?? null,
+    game.incident?.kind ?? null,
+  ]
+  const last = lastAnnotations
+  if (last !== null && last.from.every((value, index) => value === from[index])) return last.marks
+  const marks = buildAnnotations(model)
+  lastAnnotations = { from, marks }
+  return marks
+}
+
+type AnnotationSource = ReadonlyArray<unknown>
+let lastAnnotations: Readonly<{
+  from: AnnotationSource
+  marks: ReadonlyArray<Annotation>
+}> | null = null
+
+/**
  * Exemplars (12 \"Practices\"): the three slowest seconds of the range, each pointing at one trace.
  * A one-minute Sample knows the Request kind that was slowest in it; the hour and quarter-hour
  * blocks keep no kind, so a longer range carries none.
@@ -901,7 +938,9 @@ const annotationsOf = (model: Model): ReadonlyArray<Annotation> => {
 type Exemplar = Readonly<{ t: string; p99: number; kind: RequestKind }>
 
 const exemplarsOf = (model: Model, rows: ReadonlyArray<Row>): ReadonlyArray<Exemplar> => {
-  if (tierOf(model.board.dashboard.range) !== null) return []
+  if (tierOf(model.board.dashboard.range) !== null) return NO_EXEMPLARS
+  const known = exemplarsFor.get(rows)
+  if (known !== undefined) return known
   const history = model.board.game.history
   const kept = history.slice(Math.max(0, history.length - rows.length))
   const found: Array<Exemplar> = []
@@ -910,8 +949,14 @@ const exemplarsOf = (model: Model, rows: ReadonlyArray<Row>): ReadonlyArray<Exem
     if (sample.slow !== null && sample.p99 > 0 && row !== undefined)
       found.push({ t: String(row.t), p99: sample.p99, kind: sample.slow })
   })
-  return found.toSorted((a, b) => b.p99 - a.p99).slice(0, 3)
+  const slowest = found.toSorted((a, b) => b.p99 - a.p99).slice(0, 3)
+  exemplarsFor.set(rows, slowest)
+  return slowest
 }
+
+const NO_EXEMPLARS: ReadonlyArray<Exemplar> = []
+/** The live rows are built again when a Sample arrives, so one list of rows has one list of exemplars. */
+const exemplarsFor = new WeakMap<ReadonlyArray<Row>, ReadonlyArray<Exemplar>>()
 
 const exemplarMarks = (
   exemplars: ReadonlyArray<Exemplar>,
@@ -1080,13 +1125,12 @@ const labelPlacesOf = (
 
 /** The annotations, as vertical markers on every time series, labelled where the labels fit. */
 const markersOf = (
-  model: Model,
+  scale: number,
+  hover: number | null,
   marks: ReadonlyArray<Annotation>,
   rows: ReadonlyArray<Row>,
   width: number,
 ): ReadonlyArray<CartesianChild> => {
-  const scale = typeScaleOf(model)
-  const hover = model.board.dashboard.hover
   const places = labelPlacesOf(
     marks,
     rows,
@@ -1446,23 +1490,86 @@ const seriesTable = (
   )
 }
 
+/** What a Chart is drawn from. A Chart is memoized on these, so each is a value or a kept object. */
+type ChartInput = [
+  rows: ReadonlyArray<Row>,
+  marks: ReadonlyArray<Annotation>,
+  exemplars: ReadonlyArray<Exemplar>,
+  spec: SeriesSpec,
+  width: number,
+  hover: number | null,
+  compared: boolean,
+  table: boolean,
+  blocks: History[Tier],
+  tier: Tier,
+  scale: number,
+  h: HtmlBuilder<Message>,
+]
+
+/**
+ * One time series panel. Its rows change once a sim second and the Dashboard renders four times
+ * in that second, so the panel is memoized under its key on what it is drawn from.
+ */
 const timeSeries = (
   model: Model,
   rows: ReadonlyArray<Row>,
-  markers: ReadonlyArray<CartesianChild>,
+  marks: ReadonlyArray<Annotation>,
+  exemplars: ReadonlyArray<Exemplar>,
   spec: SeriesSpec,
   h: HtmlBuilder<Message>,
 ): Html => {
-  const t = copy(h)
-  const width = panelWidthOf(spec.columns)
+  const { hover, compare, table, history, range } = model.board.dashboard
+  const tier = compareTier(range)
+  const input: ChartInput = [
+    rows,
+    marks,
+    exemplars,
+    keptSpec(spec, h),
+    panelWidthOf(spec.columns),
+    hover,
+    compare,
+    table,
+    history[tier],
+    tier,
+    typeScaleOf(model),
+    h,
+  ]
+  return lazyChart(spec.key, timeSeriesView, input)
+}
 
-  const hovered =
-    model.board.dashboard.hover !== null ? rows[model.board.dashboard.hover] : undefined
+const lazyChart = createKeyedLazy()
+
+/**
+ * A caller writes its spec out on every render, so the spec is a new object each time. This
+ * returns the one kept for the Chart while the new one says the same: same texts, colours, and
+ * rules. The spec's `format` is a function of the language, which the builder stands for.
+ */
+const keptSpec = (spec: SeriesSpec, h: HtmlBuilder<Message>): SeriesSpec => {
+  const said = JSON.stringify(spec)
+  const last = specs.get(spec.key)
+  if (last !== undefined && last.said === said && last.h === h) return last.spec
+  specs.set(spec.key, { said, h, spec })
+  return spec
+}
+const specs = new Map<
+  string,
+  Readonly<{ said: string; h: HtmlBuilder<Message>; spec: SeriesSpec }>
+>()
+
+const timeSeriesView = (...input: ChartInput): Html => {
+  const [rows, marks, exemplars, spec, width, hover, compared, table, blocks, tier, scale, h] =
+    input
+  const t = copy(h)
+  const markers: ReadonlyArray<CartesianChild> = [
+    ...markersOf(scale, hover, marks, rows, width),
+    ...exemplarMarks(exemplars, scale),
+  ]
+  const hovered = hover !== null ? rows[hover] : undefined
   const id = (series: Series) => `fill-${spec.key}-${series.key}`
   const yesterday =
-    spec.compare === undefined || !model.board.dashboard.compare
+    spec.compare === undefined || !compared
       ? null
-      : comparedRows(model, rows, spec.key, spec.compare)
+      : comparedRows(blocks, tier, rows, spec.key, spec.compare)
   const compare = yesterday !== null && yesterday.any
   const series: ReadonlyArray<Series> = compare
     ? [
@@ -1489,7 +1596,7 @@ const timeSeries = (
     spec.title,
     spec.unit,
     [
-      ...(model.board.dashboard.table
+      ...(table
         ? [seriesTable(data, series, spec, h)]
         : [
             h.div(
@@ -1517,7 +1624,7 @@ const timeSeries = (
                     title: spec.title,
                     className: PLOT,
                     accessibilityLayer: true,
-                    activeIndex: model.board.dashboard.hover,
+                    activeIndex: hover,
                     onActiveIndexChange: (index) =>
                       Message.DashboardChanged({ message: DashboardMessage.Hovered({ index }) }),
                     defs: series
@@ -1623,6 +1730,24 @@ const stat = (
   h: HtmlBuilder<Message>,
   background = false,
   signed = false,
+): Html =>
+  // A tile draws a sparkline of every row, and reads only these values: it is built again when
+  // its figure or the rows change, not on every tick.
+  lazyStat(key, statView, [key, title, value, level, rows, dataKey, color, h, background, signed])
+
+const lazyStat = createKeyedLazy()
+
+const statView = (
+  key: string,
+  title: string,
+  value: string,
+  level: Level | 'plain',
+  rows: ReadonlyArray<Row>,
+  dataKey: string,
+  color: string,
+  h: HtmlBuilder<Message>,
+  background: boolean,
+  signed: boolean,
 ): Html =>
   panel(
     key,
@@ -5449,19 +5574,15 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     : []
   // Every Chart draws the same annotations, so they are read from the Model once.
   const marks = annotationsOf(model)
-  const series = (spec: SeriesSpec) => {
-    // A Chart lays its labels out for its own width, which the errors Chart narrows by columns.
-    const markers = markersOf(model, marks, rows, panelWidthOf(spec.columns))
-    return timeSeries(
+  const series = (spec: SeriesSpec) =>
+    timeSeries(
       model,
       rows,
-      spec.key === 'latency' && has(game, 'tracing')
-        ? [...markers, ...exemplarMarks(exemplars, typeScaleOf(model))]
-        : markers,
+      marks,
+      spec.key === 'latency' && has(game, 'tracing') ? exemplars : NO_EXEMPLARS,
       spec,
       h,
     )
-  }
 
   const panels: ReadonlyArray<Html> =
     rows.length < 2 || !latest

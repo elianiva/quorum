@@ -1,7 +1,10 @@
 name: CI
 
+# A push to a branch with an open pull request would run every job twice, once per event.
+# So `push` covers main, where the deploy runs, and `pull_request` covers every other branch.
 on:
   push:
+    branches: [main]
   pull_request:
 
 concurrency:

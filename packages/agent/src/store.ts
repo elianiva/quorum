@@ -118,6 +118,54 @@ export const applyUpload = (
   return { store: next, ack: ackOf(next) }
 }
 
+/* ---------- Storage ---------- */
+
+/** Samples per stored chunk, so one upload rewrites the newest chunk and not the whole series. */
+export const SAMPLE_CHUNK = 200
+
+export const NODE_PREFIX = 'node:'
+export const CHUNK_PREFIX = 'samples:'
+
+export type StoredChanges = Readonly<{
+  puts: Readonly<Record<string, unknown>>
+  deletes: ReadonlyArray<string>
+}>
+
+/**
+ * The keys an upload changed, so the Room writes those and no others. An upload
+ * arrives every few seconds and most of a store is the same as before it: a Node
+ * with no new sample keeps its array, and a sample keeps its object, so identity
+ * tells what moved.
+ */
+export const changesOf = (next: AgentStore, previous: AgentStore): StoredChanges => {
+  const puts: Record<string, unknown> = {}
+  const deletes: Array<string> = []
+  if (next.meta !== previous.meta) puts.meta = next.meta
+  if (next.head !== previous.head) puts.head = next.head
+  if (next.inbox !== previous.inbox) puts.inbox = next.inbox
+
+  const count = Math.ceil(next.samples.length / SAMPLE_CHUNK)
+  for (let index = 0; index < count; index += 1) {
+    const from = index * SAMPLE_CHUNK
+    const to = Math.min(next.samples.length, from + SAMPLE_CHUNK)
+    const before = Math.min(previous.samples.length, from + SAMPLE_CHUNK)
+    const same =
+      before === to &&
+      previous.samples[from] === next.samples[from] &&
+      previous.samples[to - 1] === next.samples[to - 1]
+    if (!same) puts[`${CHUNK_PREFIX}${index}`] = next.samples.slice(from, to)
+  }
+  const previousCount = Math.ceil(previous.samples.length / SAMPLE_CHUNK)
+  for (let index = count; index < previousCount; index += 1) deletes.push(`${CHUNK_PREFIX}${index}`)
+
+  for (const [id, samples] of Object.entries(next.nodes))
+    if (previous.nodes[id] !== samples) puts[`${NODE_PREFIX}${id}`] = samples
+  for (const id of Object.keys(previous.nodes))
+    if (next.nodes[id] === undefined) deletes.push(`${NODE_PREFIX}${id}`)
+
+  return { puts, deletes }
+}
+
 export const snapshotOfStore = (store: AgentStore): AgentSnapshot | null => {
   const head = store.head
   if (head === null) return null

@@ -4,6 +4,9 @@ import type { AgentMail, AgentHead, Ack, Status, Upload } from '@quorum/agent/sn
 import { roomIdOf } from '@quorum/agent/room-id'
 import {
   applyUpload,
+  changesOf,
+  CHUNK_PREFIX,
+  NODE_PREFIX,
   EMPTY_META,
   emptyStore,
   snapshotOfStore,
@@ -22,12 +25,10 @@ import type { AgentRoomStub } from '../contexts/agent/room.ts'
    ========================================================================== */
 
 const TTL_MS = 24 * 60 * 60 * 1000
-const SAMPLE_CHUNK = 200
+/** The keys one storage call takes. */
+const STORAGE_BATCH = 128
 
 export type AgentRoomEnv = Readonly<Record<string, never>>
-
-const nodeKey = (id: string): string => `node:${id}`
-const chunkKey = (index: number): string => `samples:${index}`
 
 export class AgentRoom extends DurableObject<AgentRoomEnv> implements AgentRoomStub {
   private store: AgentStore | null = null
@@ -40,14 +41,14 @@ export class AgentRoom extends DurableObject<AgentRoomEnv> implements AgentRoomS
       this.ctx.storage.get<AgentMeta>('meta'),
       this.ctx.storage.get<AgentHead | null>('head'),
       this.ctx.storage.get<ReadonlyArray<AgentMail>>('inbox'),
-      this.ctx.storage.list<ReadonlyArray<Sample>>({ prefix: 'samples:' }),
-      this.ctx.storage.list<ReadonlyArray<NodeSample>>({ prefix: 'node:' }),
+      this.ctx.storage.list<ReadonlyArray<Sample>>({ prefix: CHUNK_PREFIX }),
+      this.ctx.storage.list<ReadonlyArray<NodeSample>>({ prefix: NODE_PREFIX }),
     ])
 
     const samples = [...chunks.entries()]
       .sort(
         ([left], [right]) =>
-          Number(left.slice('samples:'.length)) - Number(right.slice('samples:'.length)),
+          Number(left.slice(CHUNK_PREFIX.length)) - Number(right.slice(CHUNK_PREFIX.length)),
       )
       .flatMap(([, items]) => items)
 
@@ -56,7 +57,7 @@ export class AgentRoom extends DurableObject<AgentRoomEnv> implements AgentRoomS
       head: head ?? null,
       samples,
       nodes: Object.fromEntries(
-        [...nodes.entries()].map(([key, items]) => [key.slice('node:'.length), items]),
+        [...nodes.entries()].map(([key, items]) => [key.slice(NODE_PREFIX.length), items]),
       ),
       inbox: inbox ?? [],
     }
@@ -65,25 +66,12 @@ export class AgentRoom extends DurableObject<AgentRoomEnv> implements AgentRoomS
   }
 
   private async save(next: AgentStore, previous: AgentStore): Promise<void> {
-    await this.ctx.storage.put('meta', next.meta)
-    await this.ctx.storage.put('head', next.head)
-    await this.ctx.storage.put('inbox', next.inbox)
-
-    const count = Math.ceil(next.samples.length / SAMPLE_CHUNK)
-    for (let index = 0; index < count; index += 1)
-      await this.ctx.storage.put(
-        chunkKey(index),
-        next.samples.slice(index * SAMPLE_CHUNK, (index + 1) * SAMPLE_CHUNK),
-      )
-    const previousCount = Math.ceil(previous.samples.length / SAMPLE_CHUNK)
-    for (let index = count; index < previousCount; index += 1)
-      await this.ctx.storage.delete(chunkKey(index))
-
-    for (const [id, samples] of Object.entries(next.nodes))
-      await this.ctx.storage.put(nodeKey(id), samples)
-    for (const id of Object.keys(previous.nodes)) {
-      if (next.nodes[id] === undefined) await this.ctx.storage.delete(nodeKey(id))
-    }
+    const { puts, deletes } = changesOf(next, previous)
+    const entries = Object.entries(puts)
+    for (let index = 0; index < entries.length; index += STORAGE_BATCH)
+      await this.ctx.storage.put(Object.fromEntries(entries.slice(index, index + STORAGE_BATCH)))
+    for (let index = 0; index < deletes.length; index += STORAGE_BATCH)
+      await this.ctx.storage.delete(deletes.slice(index, index + STORAGE_BATCH))
   }
 
   private async verify(key: string): Promise<void> {

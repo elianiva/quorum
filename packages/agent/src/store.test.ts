@@ -7,6 +7,7 @@ import {
   NODE_SAMPLES_KEPT,
   SAMPLES_KEPT,
   applyUpload,
+  changesOf,
   emptyStore,
   snapshotOfStore,
   statusOfStore,
@@ -104,6 +105,54 @@ describe('the agent Room store', () => {
     expect(store.samples.map((entry) => entry.users)).toEqual([1, 2, 3])
     expect(store.nodes['database']?.map((entry) => entry.time)).toEqual([1, 2])
     expect(store.meta.at).toBe(200)
+  })
+
+  test('an upload writes only the keys it changed', () => {
+    const first = applyUpload(
+      emptyStore(),
+      upload({
+        samples: { from: 0, to: 250, items: Array.from({ length: 250 }, (_, i) => sample(i)) },
+        nodes: { from: 0, items: { database: [nodeSample(1)], cache: [nodeSample(1)] } },
+      }),
+      100,
+    ).store
+    const { store } = applyUpload(
+      first,
+      upload({
+        rev: 2,
+        reset: false,
+        samples: { from: 250, to: 251, items: [sample(250)] },
+        nodes: { from: 1, items: { database: [nodeSample(2)] } },
+        inbox: null,
+      }),
+      200,
+    )
+    const { puts, deletes } = changesOf(store, first)
+    // The first chunk of 200 samples, the Cache's samples, and the inbox did not move.
+    expect(Object.keys(puts).sort()).toEqual(['head', 'meta', 'node:database', 'samples:1'])
+    expect(puts['samples:1']).toEqual(store.samples.slice(200))
+    expect(deletes).toEqual([])
+  })
+
+  test('a reset deletes the keys the new store no longer has', () => {
+    const first = applyUpload(
+      emptyStore(),
+      upload({
+        samples: { from: 0, to: 250, items: Array.from({ length: 250 }, (_, i) => sample(i)) },
+        nodes: { from: 0, items: { database: [nodeSample(1)], cache: [nodeSample(1)] } },
+      }),
+      100,
+    ).store
+    const { store } = applyUpload(first, upload({ epoch: 'e2' }), 200)
+    const { puts, deletes } = changesOf(store, first)
+    expect(Object.keys(puts).sort()).toEqual([
+      'head',
+      'inbox',
+      'meta',
+      'node:database',
+      'samples:0',
+    ])
+    expect([...deletes].sort()).toEqual(['node:cache', 'samples:1'])
   })
 
   test('a revision the server already has is ignored', () => {

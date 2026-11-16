@@ -299,10 +299,10 @@ const comparedRows = (
 }
 
 /** Each Node's name, numbered when the Board holds more than one of its type. */
-const namesOf = (t: Messages, game: Game): ReadonlyMap<string, string> => {
+const namesOf = (t: Messages, nodes: Game['nodes']): ReadonlyMap<string, string> => {
   const counts = new Map<string, number>()
   const names = new Map<string, string>()
-  for (const node of game.nodes) {
+  for (const node of nodes) {
     const base = t.catalog.components[node.type].name
     const count = (counts.get(base) ?? 0) + 1
     counts.set(base, count)
@@ -443,7 +443,8 @@ const incidentTarget = (
   game: Game,
   incident: NonNullable<Game['incident']>,
 ): string => {
-  if (incident.nodeId !== null) return namesOf(t, game).get(incident.nodeId) ?? incident.nodeId
+  if (incident.nodeId !== null)
+    return namesOf(t, game.nodes).get(incident.nodeId) ?? incident.nodeId
   if (incident.zone !== null) return t.dashboard.zone(incident.zone.toUpperCase())
   if (incident.region !== null) return t.catalog.regionInfo[incident.region].name
   return t.dashboard.everyRegion
@@ -1863,6 +1864,13 @@ const lcd = (key: string, share: number, h: HtmlBuilder<Message>, cells = CELLS)
 }
 
 const lazyLcd = createKeyedLazy()
+
+/**
+ * A panel that reads the Nodes and the Ledger, under the panel's own key. A Step that changes no
+ * Node keeps the list of Nodes, and the Steps of a quiet second share one Ledger, so such a panel
+ * is built again about once a sim second rather than on every tick.
+ */
+const lazyPanel = createKeyedLazy()
 
 const lcdView = (lit: number, cells: number, h: HtmlBuilder<Message>): Html =>
   h.div(
@@ -4284,7 +4292,7 @@ const waterfallTable = (
 ): Html => {
   const t = copy(h)
 
-  const names = namesOf(t, game)
+  const names = namesOf(t, game.nodes)
   const byId = new Map(game.nodes.map((node) => [node.id, node] as const))
   const pressured = ledger.bottleneckByKind[kind] ?? null
   const limitName = (limit: Limit): string =>
@@ -4505,11 +4513,11 @@ const deviceTable = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
 }
 
 /** The Load Balancer's traffic per backend, which shows an uneven split. */
-const loadBalancer = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
+const loadBalancer = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
-  const names = namesOf(t, game)
-  const balancers = game.nodes.filter((node) => node.type === 'lb')
+  const names = namesOf(t, nodes)
+  const balancers = nodes.filter((node) => node.type === 'lb')
   const entries = balancers.flatMap((balancer) =>
     ledger.links
       .filter((link) => link.from === balancer.id)
@@ -4536,17 +4544,17 @@ const loadBalancer = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html
 }
 
 /** Each App Server's copies, and the workers busy against the pool they share. */
-const appServers = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
+const appServers = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
-  const names = namesOf(t, game)
+  const names = namesOf(t, nodes)
   return tablePanel(
     'app-server',
     SPAN.half,
     t.dashboard.appServer,
     t.dashboard.copiesBusyWorkers,
     [t.dashboard.node, t.dashboard.copies, t.dashboard.busyWorkers],
-    game.nodes
+    nodes
       .filter((node) => node.type === 'server')
       .map((node) => {
         const own = ledger.nodes[node.id]
@@ -4577,10 +4585,10 @@ const appServers = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html =
 }
 
 /** Connections used against the limit, refused queries, and how far a replica lags. */
-const databases = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
+const databases = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
-  const names = namesOf(t, game)
+  const names = namesOf(t, nodes)
   return tablePanel(
     'database',
     SPAN.half,
@@ -4593,7 +4601,7 @@ const databases = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html =>
       t.dashboard.refused,
       t.dashboard.lag,
     ],
-    game.nodes
+    nodes
       .filter((node) => node.type === 'database' || node.type === 'replica')
       .map((node) => {
         const own = ledger.nodes[node.id]
@@ -4628,7 +4636,7 @@ const databases = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html =>
 const evictions = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
-  const names = namesOf(t, game)
+  const names = namesOf(t, game.nodes)
   return barList(
     'evictions',
     SPAN.half,
@@ -4657,19 +4665,19 @@ const hits = (
   title: string,
   unit: string,
   type: 'cache' | 'cdn',
-  game: Game,
+  nodes: Game['nodes'],
   ledger: Ledger,
   h: HtmlBuilder<Message>,
 ): Html => {
   const t = copy(h)
 
-  const names = namesOf(t, game)
+  const names = namesOf(t, nodes)
   return barList(
     key,
     SPAN.half,
     title,
     unit,
-    game.nodes
+    nodes
       .filter((node) => node.type === type)
       .map((node) => {
         const hit = ledger.nodes[node.id]?.hitRatio ?? null
@@ -4686,10 +4694,10 @@ const hits = (
 }
 
 /** A Queue's depth and the age of the oldest task in it. */
-const queues = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
+const queues = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
-  const names = namesOf(t, game)
+  const names = namesOf(t, nodes)
   return tablePanel(
     'queue',
     SPAN.half,
@@ -4702,7 +4710,7 @@ const queues = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
       t.dashboard.drained,
       t.dashboard.state,
     ],
-    game.nodes
+    nodes
       .filter((node) => node.type === 'queue')
       .map((node) => {
         const own = ledger.nodes[node.id]
@@ -4737,10 +4745,10 @@ const queues = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
 const MANAGED: ReadonlyArray<ComponentId> = ['psp', 'llm', 'msgp', 'auth']
 
 /** Calls into and out of each Managed Component, and whether it is up. */
-const managed = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
+const managed = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
-  const names = namesOf(t, game)
+  const names = namesOf(t, nodes)
   return tablePanel(
     'managed',
     SPAN.half,
@@ -4753,7 +4761,7 @@ const managed = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
       t.dashboard.latency,
       t.dashboard.state,
     ],
-    game.nodes
+    nodes
       .filter((node) => MANAGED.includes(node.type))
       .map((node) => {
         const own = ledger.nodes[node.id]
@@ -5399,30 +5407,42 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const exemplars = exemplarsOf(model, rows)
   // The per-Node panels pack two to a row, under one Nodes row.
   const nodePanels: ReadonlyArray<Html> = [
-    ...(hasNode('lb') ? [loadBalancer(game, ledger, h)] : []),
-    ...(hasNode('server') ? [appServers(game, ledger, h)] : []),
-    ...(hasNode('database') || hasNode('replica') ? [databases(game, ledger, h)] : []),
-    ...(hasNode('queue') ? [queues(game, ledger, h)] : []),
+    ...(hasNode('lb') ? [lazyPanel('load-balancer', loadBalancer, [game.nodes, ledger, h])] : []),
+    ...(hasNode('server') ? [lazyPanel('app-server', appServers, [game.nodes, ledger, h])] : []),
+    ...(hasNode('database') || hasNode('replica')
+      ? [lazyPanel('databases', databases, [game.nodes, ledger, h])]
+      : []),
+    ...(hasNode('queue') ? [lazyPanel('queues', queues, [game.nodes, ledger, h])] : []),
     ...(hasNode('cache')
       ? [
-          hits('cache', t.dashboard.cache, t.dashboard.hitRatioNow, 'cache', game, ledger, h),
+          lazyPanel('cache', hits, [
+            'cache',
+            t.dashboard.cache,
+            t.dashboard.hitRatioNow,
+            'cache',
+            game.nodes,
+            ledger,
+            h,
+          ]),
           evictions(game, ledger, h),
         ]
       : []),
     ...(hasNode('cdn')
       ? [
-          hits(
+          lazyPanel('cdn', hits, [
             'cdn',
             'CDN',
             t.dashboard.hitRatioEgress(t.units.perSecond(money(ledger.egress))),
             'cdn',
-            game,
+            game.nodes,
             ledger,
             h,
-          ),
+          ]),
         ]
       : []),
-    ...(game.nodes.some((node) => MANAGED.includes(node.type)) ? [managed(game, ledger, h)] : []),
+    ...(game.nodes.some((node) => MANAGED.includes(node.type))
+      ? [lazyPanel('managed', managed, [game.nodes, ledger, h])]
+      : []),
   ]
   const userPanels: ReadonlyArray<Html> = has(game, 'multi-region')
     ? [usersTable(game, ledger, region, h), ...(has(game, 'rum') ? [deviceTable(ledger, h)] : [])]
@@ -5629,7 +5649,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             : []),
 
           rowHeader(t.dashboard.saturation, resourcesShown ? 4 : 3, h),
-          barGauge(ledger, tracks, h),
+          lazyPanel('bar-gauge', barGauge, [ledger, tracks, h]),
           stateTimeline(model, tracks, resourcesShown ? SPAN.third : SPAN.twoThirds, h),
           ...(has(game, 'profiling')
             ? [resourceTimeline(model, tracks, h)]

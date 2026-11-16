@@ -1,4 +1,5 @@
 import { css, cx } from '@quorum/styled-system/css'
+import { perSecond } from '@/game/per-second.ts'
 import { serviceName, teamName } from './team.ts'
 import { formats } from '@/i18n/format.ts'
 import { changeIn } from '@/i18n/refusal.ts'
@@ -4279,8 +4280,8 @@ const resourceTimeline = (
   )
 }
 
-/** The churn breakdown runs a day's forecast, so each Game computes it once, not every frame. */
-const churnCache = new WeakMap<Game, ReadonlyArray<RegionChurn>>()
+/** The churn breakdown runs a day's forecast, so it is computed once a sim second, not every frame. */
+const churnCached = perSecond<ReadonlyArray<RegionChurn>>()
 
 /** Users by region against the market, with the rate at which each region loses them. */
 const usersTable = (
@@ -4291,8 +4292,7 @@ const usersTable = (
 ): Html => {
   const t = copy(h)
 
-  const all = churnCache.get(game) ?? churnOf(game, ledger)
-  churnCache.set(game, all)
+  const all = churnCached(game, '', () => churnOf(game, ledger))
   const regions = only === null ? all : all.filter((region) => region.region === only)
   const split = regional(game)
   return tablePanel(

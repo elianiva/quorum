@@ -1,4 +1,5 @@
 import { css, cx } from '@quorum/styled-system/css'
+import { perSecond } from '@/game/per-second.ts'
 import { formats } from '@/i18n/format.ts'
 import { copy, nodeTitle, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
@@ -385,15 +386,14 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
   )
 }
 
-/** The breakdown runs a day's forecast, so each Game computes it once, not every frame. */
-const cache = new WeakMap<Game, ReadonlyArray<RegionChurn>>()
+/** The breakdown runs a day's forecast, so it is computed once a sim second, not every frame. */
+const cached = perSecond<ReadonlyArray<RegionChurn>>()
 
 export const churnPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
   const game = model.board.game
-  const regions = cache.get(game) ?? churnOf(game, ledgerOf(model))
-  cache.set(game, regions)
+  const regions = cached(game, '', () => churnOf(game, ledgerOf(model)))
   return shell(
     t.churn.whyUsersLeave,
     [],

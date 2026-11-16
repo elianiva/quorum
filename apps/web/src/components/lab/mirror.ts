@@ -1,4 +1,5 @@
 import { css, cx } from '@quorum/styled-system/css'
+import { perSecond } from '@/game/per-second.ts'
 import { copy, nodeTitle, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
@@ -662,15 +663,17 @@ const overrides = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Html =>
   )
 }
 
-/** Burn per second the plan adds once it lands. Each Game computes it once, not every frame. */
-const burnCache = new WeakMap<Game, number>()
-const burnAdded = (game: Game, mirror: Mirror): number => {
-  const cached = burnCache.get(game)
-  if (cached !== undefined) return cached
-  const added = solveFlow(previewApply(game, mirror.region)).burn - solveFlow(game).burn
-  burnCache.set(game, added)
-  return added
-}
+/**
+ * Burn per second the plan adds once it lands. It solves a second Game, so each
+ * Mirror computes it once a sim second, not every frame.
+ */
+const burnCached = perSecond<number>()
+const burnAdded = (game: Game, mirror: Mirror): number =>
+  burnCached(
+    game,
+    mirror.region,
+    () => solveFlow(previewApply(game, mirror.region)).burn - solveFlow(game).burn,
+  )
 
 const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)

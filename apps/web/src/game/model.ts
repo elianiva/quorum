@@ -552,10 +552,20 @@ export const Model = Schema.Struct({
 export type Model = typeof Model.Type
 
 /** The Ledger the views show: the flow solve. The browser does not search the Bottleneck. */
-export const ledgerOf = (model: Model): Ledger => ({
-  ...solveFlow(model.board.game),
-  bottleneck: null,
-})
+export const ledgerOf = (model: Model): Ledger => {
+  const flow = solveFlow(model.board.game)
+  const known = ledgers.get(flow)
+  if (known) return known
+  const ledger = { ...flow, bottleneck: null }
+  ledgers.set(flow, ledger)
+  return ledger
+}
+
+/**
+ * One Ledger per solve. The Steps of a quiet second share a solve, so a view that is memoized
+ * on the Ledger is built again only when the flow was solved again.
+ */
+const ledgers = new WeakMap<Ledger, Ledger>()
 
 /** The Company file the phase names, or null when no Company is named. */
 export const currentFile = (model: Model) => fileOf(model.saves, companyIdOf(model.companyPhase))

@@ -37,6 +37,14 @@ export const MAX_OWE_MS = MAX_CATCH_UP * STEP_SECONDS * 1_000
 /** How long an empty Room keeps the Company before the owner has to reclaim it. */
 export const ROOM_IDLE_MS = 24 * 60 * 60 * 1000
 
+/**
+ * Every Step and every snapshot grows with the Design, so a Room takes a bounded one.
+ * The bound holds at publish and after every batch of Intents: placing is free on a
+ * Sandbox board, so cash does not stop a Seat there.
+ */
+export const MAX_NODES = 2_000
+export const MAX_LINKS = 8_000
+
 /** A vote lapses after a minute of sim time. */
 export const VOTE_SECONDS = 60
 
@@ -273,7 +281,7 @@ export const advance = (
   return { state: { ...base, game, samples, vote: lapsed }, steps }
 }
 
-/** Applies a Seat's Intents in order. A refusal changes nothing. */
+/** Applies a Seat's Intents in order. A refusal changes nothing, and a batch that outgrows the Room is refused. */
 export const apply = (
   state: RoomState,
   intents: ReadonlyArray<Intent>,
@@ -283,7 +291,15 @@ export const apply = (
   return Result.match(applyIntents(state.game, intents), {
     onFailure: (refusal) => Result.fail(refusal),
     onSuccess: (game) =>
-      Result.succeed({ ...state, game: { ...game, history: [] }, revision: state.revision + 1 }),
+      // Only growth is refused, so a Seat can always sell or unlink.
+      (game.nodes.length > MAX_NODES && game.nodes.length > state.game.nodes.length) ||
+      (game.links.length > MAX_LINKS && game.links.length > state.game.links.length)
+        ? Result.fail(Refusal.NotAllowed({ reason: 'An online Company cannot grow any larger.' }))
+        : Result.succeed({
+            ...state,
+            game: { ...game, history: [] },
+            revision: state.revision + 1,
+          }),
   })
 }
 

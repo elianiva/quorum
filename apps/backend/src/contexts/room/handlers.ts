@@ -4,14 +4,12 @@ import { FeatureGate } from '../access/gate.ts'
 import { SIM_VERSION } from '@quorum/simulation/version'
 import { Game, Sample } from '@quorum/simulation/state'
 import { RoomDirectory, RoomError } from './directory.ts'
+import { MAX_LINKS, MAX_NODES } from './room.ts'
 
 /* A Company goes online, and a join screen asks whether a code is real. */
 
 const MAX_SAMPLES = 600
 const MAX_NAME = 40
-/** Every Step and every snapshot grows with the Design, so a Room takes a bounded one. */
-const MAX_NODES = 2_000
-const MAX_LINKS = 8_000
 
 const fail = (message: string) => Effect.fail(new ApiError({ message }))
 

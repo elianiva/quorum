@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest'
 import { ERAS } from '@quorum/simulation/catalog'
 import { newGame } from '@quorum/simulation/company'
 import { intent } from '@quorum/simulation/room'
+import { sandboxOf } from '@quorum/simulation/sandbox'
 import {
   advance,
   ALARM_MS,
@@ -13,6 +14,8 @@ import {
   join,
   leave,
   MAX_CATCH_UP,
+  MAX_LINKS,
+  MAX_NODES,
   openRoom,
   restoreRoom,
   startVote,
@@ -198,6 +201,52 @@ describe('intents', () => {
     const room = open()
     const applied = apply(room, [intent('sell', 'nope')])
     expect(applied._tag).toBe('Failure')
+  })
+
+  test("a Sandbox places for free, but not past the Room's Node limit", () => {
+    const free = sandboxOf(game)
+    const filled = (count: number): RoomState => ({
+      ...open(),
+      game: {
+        ...free,
+        nodes: Array.from({ length: count }, (_, index) => ({ ...node, id: `f${index}` })),
+        links: [],
+      },
+    })
+    const below = apply(filled(MAX_NODES - 1), [intent('place', 'server', 1, 1)])
+    expect(below._tag).toBe('Success')
+    if (below._tag === 'Success') expect(below.success.game.cash).toBe(free.cash)
+    const full = filled(MAX_NODES)
+    const over = apply(full, [intent('place', 'server', 1, 1)])
+    expect(over._tag).toBe('Failure')
+    // A move that adds nothing still applies on a full board.
+    expect(apply(full, [intent('move', 'f0', 4, 5)])._tag).toBe('Success')
+  })
+
+  test("a Link past the Room's Link limit is refused", () => {
+    const free = sandboxOf(game)
+    const link = free.links[0]!
+    const filled = (count: number): RoomState => ({
+      ...open(),
+      game: {
+        ...free,
+        links: [
+          ...free.links,
+          ...Array.from({ length: count - free.links.length }, (_, index) => ({
+            ...link,
+            from: `a${index}`,
+            to: `b${index}`,
+          })),
+        ],
+      },
+    })
+    // A new Database, linked from the App Server.
+    const batch = [
+      intent('place', 'database', 1, 1),
+      intent('connect', 'server', `n${free.nextId}`),
+    ]
+    expect(apply(filled(MAX_LINKS - 1), batch)._tag).toBe('Success')
+    expect(apply(filled(MAX_LINKS), batch)._tag).toBe('Failure')
   })
 })
 

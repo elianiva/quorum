@@ -19,7 +19,7 @@ Random plays of the real code run in `packages/simulation/test/invariants.test.t
 
 ## Coverage and sync
 
-Last confirmed against commit `9fe79ad6`. Move this commit forward only after you confirm each model still describes the code at the new commit. Move this commit forward only after you confirm each model still describes the code at the new commit.
+Last confirmed against commit `9fe79ad6`. Move this commit forward only after you confirm each model still describes the code at the new commit.
 
 | Model                    | Rules                                                                                                                                          | Code it describes                                                                                                                                   |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |

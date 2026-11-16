@@ -14,7 +14,7 @@ import * as Queue from 'effect/Queue'
 import * as Stream from 'effect/Stream'
 import { Mount } from 'foldkit'
 import { DragAndDrop } from '@foldkit/ui'
-import type { Html, HtmlBuilder } from 'foldkit/html'
+import { createKeyedLazy, type Html, type HtmlBuilder } from 'foldkit/html'
 import {
   ArrowDown,
   ArrowUp,
@@ -827,7 +827,7 @@ const linkSection = (
 
 /** A card's icon, name and price or status; `grey` draws it uncoloured. */
 const face = (
-  game: Game,
+  open: boolean,
   entry: ResearchDef,
   state: State,
   grey: boolean,
@@ -837,7 +837,6 @@ const face = (
 ): ReadonlyArray<Html> => {
   const t = copy(h)
 
-  const open = state !== 'owned' && game.openActions.includes(entry.id)
   return [
     researchMark(entry, 'sm', grey, h),
     h.span(
@@ -934,18 +933,18 @@ const face = (
 
 /** A card node. Saving up: the card is the progress bar, a coloured copy wiping in from the left. */
 const card = (
-  game: Game,
+  open: boolean,
+  share: number,
   entry: ResearchDef,
   state: State,
   large: boolean,
   far: boolean,
   h: HtmlBuilder<Message>,
 ) => {
-  const share = Math.min(1, studyProgressOf(game.studies.find((item) => item.id === entry.id)))
   const color = colorOf(LOOKS[entry.id])
   return state === 'saving'
     ? [
-        ...face(game, entry, state, true, large, far, h),
+        ...face(open, entry, state, true, large, far, h),
         h.span(
           [
             h.Key('fill'),
@@ -969,7 +968,7 @@ const card = (
               'clip-path': `inset(0 ${(1 - share) * 100}% 0 0)`,
             }),
           ],
-          face(game, entry, state, false, large, far, h),
+          face(open, entry, state, false, large, far, h),
         ),
         h.span(
           [
@@ -990,24 +989,58 @@ const card = (
           [],
         ),
       ]
-    : face(game, entry, state, state === 'locked', large, far, h)
+    : face(open, entry, state, state === 'locked', large, far, h)
 }
 
 /** The interface's type scale: the tree's boxes and spacing grow with it (15 "Accessibility"). */
 const scaleOf = (model: Model): number => (model.prefs.text === 'large' ? 1.5 : 1)
+
+/**
+ * One item of the tree. The tree draws every item on every render, and an item changes only when
+ * the player buys, queues, or focuses it, or while its Study runs. So each item is memoized under
+ * its id, and takes the few values it draws instead of the Game, which is new on every Step.
+ */
+const lazyNode = createKeyedLazy()
 
 const node = (model: Model, place: Placed, focused: boolean, h: HtmlBuilder<Message>): Html => {
   const game = model.board.game
   const { entry } = place
   const state = stateOf(game, entry)
   const large = model.prefs.text === 'large'
-  const size = nodeSize(scaleOf(model))
-  // Beyond the next Era the item is a silhouette: a name and what it is for, no price,
-  // and no click. The player can still want it before research makes it a choice.
-  const far = entry.era > game.stage + 1 && state === 'locked'
+  return lazyNode(entry.id, nodeView, [
+    entry,
+    place.x,
+    place.y,
+    state,
+    large,
+    // Beyond the next Era the item is a silhouette: a name and what it is for, no price,
+    // and no click. The player can still want it before research makes it a choice.
+    entry.era > game.stage + 1 && state === 'locked',
+    focused,
+    state !== 'owned' && game.openActions.includes(entry.id),
+    state === 'saving'
+      ? Math.min(1, studyProgressOf(game.studies.find((item) => item.id === entry.id)))
+      : 0,
+    h,
+  ])
+}
+
+const nodeView = (
+  entry: ResearchDef,
+  x: number,
+  y: number,
+  state: State,
+  large: boolean,
+  far: boolean,
+  focused: boolean,
+  open: boolean,
+  share: number,
+  h: HtmlBuilder<Message>,
+): Html => {
+  const size = nodeSize(large ? 1.5 : 1)
   const style = h.Style({
-    left: `${place.x}px`,
-    top: `${place.y}px`,
+    left: `${x}px`,
+    top: `${y}px`,
     width: `${size.w}px`,
     height: `${size.h}px`,
   })
@@ -1048,7 +1081,7 @@ const node = (model: Model, place: Placed, focused: boolean, h: HtmlBuilder<Mess
         : '',
     ),
   )
-  const body = card(game, entry, state, large, far, h)
+  const body = card(open, share, entry, state, large, far, h)
   return far
     ? h.div(
         [

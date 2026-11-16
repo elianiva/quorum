@@ -9,6 +9,16 @@ toc: top
 
 Quorum has no versions. It changes all the time, and this page lists the latest days, newest first, so you can see what moved since you last played. A page on this wiki can lag behind the game by a few days. Older days are in the [full changelog](/about/changelog/all).
 
+## Sunday, 15 November 2026
+
+### Changed
+
+- Explain that the game's name comes from the quorum term ([7805061](https://github.com/elianiva/quorum/commit/78050610ef0144f9f196ddffe6c4c407118a84fd))
+- Add system design interview guides, concept hubs, and query-shaped titles ([2461054](https://github.com/elianiva/quorum/commit/2461054aa645a17109f1f8e6a8c408afc86d18e3))
+- Add seoTitle, FAQ and learning-resource data, and links to the new hubs ([ce2caaf](https://github.com/elianiva/quorum/commit/ce2caaf5f0102070bd54bb1fff5de235503019d6))
+- Note that the Cache graph is a simplification of cache-aside ([e8da189](https://github.com/elianiva/quorum/commit/e8da189d994fb455b802d33b6f21a6fd3ac27b16))
+- Answer unknown game paths with a real 404 ([94fbc2e](https://github.com/elianiva/quorum/commit/94fbc2e06077f656f693fb50bc8b4d85e27620a9))
+- Improve search metadata for the game and the wiki ([6d62265](https://github.com/elianiva/quorum/commit/6d62265002abd4de10dfa4e395a5b6d81a02e925))
 ## Saturday, 14 November 2026
 
 ### Changed

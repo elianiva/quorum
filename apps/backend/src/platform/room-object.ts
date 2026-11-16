@@ -26,6 +26,7 @@ import {
   snapshotOf,
   startVote,
   ALARM_MS,
+  ROOM_IDLE_MS,
   type RoomState,
 } from '../contexts/room/room.ts'
 import { SIM_VERSION } from '@quorum/simulation/version'
@@ -202,6 +203,8 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     if (state === null) return
     // Nobody is in the Room: no Step runs and no alarm stays set, so an empty Room
     // costs nothing until a connection comes back.
+    // The alarm an empty Room keeps is its end: nobody came back for the Company.
+    if (this.nobody() && expired(state, Date.now())) return this.clear()
     if (!state.open || state.ended !== null || this.nobody()) return this.stop()
     this.advanceNow()
     this.broadcast()
@@ -467,18 +470,20 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
   }
 
   /**
-   * The Room holds nobody: stop the clock, delete the alarm, and date the Room so
-   * the twenty-four hours it keeps the Company start now. With no connection and no
-   * alarm the runtime evicts the object, and the Company waits in storage for the
-   * next Seat. `ctx.abort` would stop it at once, but it discards the write this
+   * The Room holds nobody: stop the clock and date the Room so the twenty-four
+   * hours it keeps the Company start now. The one alarm left is set for the end of
+   * those hours, when the Room deletes itself; without it a Room nobody asks for
+   * again keeps its Company in storage for good. With no connection the runtime
+   * evicts the object, and the Company waits in storage for the next Seat. `ctx.abort` would stop it at once, but it discards the write this
    * departure made, which leaves the Room holding a Seat nobody sits in.
    */
   private async stop(): Promise<void> {
     const state = this.state
     if (state === null) return
-    if (state.idleAt === null) this.state = { ...state, idleAt: Date.now() }
+    const idleAt = state.idleAt ?? Date.now()
+    if (state.idleAt === null) this.state = { ...state, idleAt }
     await this.save()
-    await this.ctx.storage.deleteAlarm()
+    await this.ctx.storage.setAlarm(idleAt + ROOM_IDLE_MS + 1_000)
   }
 
   /** The Room holds no Seat: close the connections that never took one. */
@@ -585,6 +590,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
       await this.ctx.storage.setAlarm(Date.now() + ALARM_MS)
       return
     }
+    if (this.nobody()) return this.stop()
     await this.ctx.storage.deleteAlarm()
   }
 

@@ -18,9 +18,15 @@ A load balancer needs a rule for choosing a server, and the simplest rule fails 
 
 ## How it works
 
-Round robin deals requests out in turn, so a small server gets as many as a large one. Weighted round robin gives each server a share by size. Least connections sends the next request to the server with the fewest open ones, which adapts to slow requests. Power of two choices picks two servers at random and takes the less busy, and it needs no shared state, so it scales across many balancers. Consistent hashing sends the same key to the same server, which helps caches.
+A load balancer picks a target with one policy, and each one trades simplicity for awareness of size, load or keys:
 
-Slow start ramps traffic to a new server over its first seconds. Sticky sessions pin a user to one server, which keeps local state working but unbalances the load.
+- **Round robin** deals requests out in turn, so a small server gets as many as a large one.
+- **Weighted round robin** gives each server a share by size.
+- **Least connections** sends the next request to the server with the fewest open ones, which adapts to slow requests.
+- **Power of two choices** picks two servers at random and takes the less busy one. It needs no shared state, so it scales across many balancers.
+- **Consistent hashing** sends the same key to the same server, which helps caches.
+- **Slow start** ramps traffic to a new server over its first seconds.
+- **Sticky sessions** pin a user to one server, which keeps local state working but unbalances the load.
 
 ## What it costs
 

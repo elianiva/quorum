@@ -18,7 +18,11 @@ Un SLO indica lo fiable que debe ser un servicio, y el presupuesto de error es l
 
 ## Cómo funciona
 
-Un **SLI** es una proporción medida, como la parte de peticiones respondidas en menos de 300 ms sin error. El **SLO** es el objetivo para él en una ventana, digamos 99.9% en 28 días. El **SLA** es el contrato con penalizaciones, y debería ser más laxo que el SLO.
+Tres términos se apilan desde la medición hasta el contrato:
+
+- **Un SLI** es una proporción medida, como la parte de peticiones respondidas en menos de 300 ms sin error.
+- **Un SLO** es el objetivo para esa proporción en una ventana, digamos 99.9% en 28 días.
+- **Un SLA** es el contrato con penalizaciones, y debería ser más laxo que el SLO.
 
 Un objetivo del 99.9% en 30 días permite 43 minutos de caída total, o la misma proporción de peticiones fallidas repartidas. Esa holgura es el presupuesto. Mientras quede mucho, publica más rápido. Cuando se agota, congela los cambios arriesgados hasta que el servicio se recupere.
 

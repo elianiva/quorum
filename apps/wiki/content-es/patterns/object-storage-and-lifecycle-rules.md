@@ -17,7 +17,13 @@ El almacenamiento de objetos guarda archivos de forma barata y sin límite, y la
 
 ## Cómo funciona
 
-La aplicación guarda cada archivo bajo una clave y lo lee de vuelta por HTTP. Las clases cambian precio por acceso: Standard es la más cara y lee al instante, Acceso infrecuente cuesta cerca de la mitad por almacenar pero cobra una tarifa por lectura, y Archivo cuesta una pequeña fracción y necesita una restauración que tarda horas. Una regla de ciclo de vida dice que un objeto de más de 30 días baja una clase, y a los 90 días baja otra vez.
+La aplicación guarda cada archivo bajo una clave y lo lee de vuelta por HTTP. Las clases cambian precio por acceso:
+
+- **Standard** es la más cara y lee al instante.
+- **Acceso infrecuente** cuesta cerca de la mitad por almacenar pero cobra una tarifa por lectura.
+- **Archivo** cuesta una pequeña fracción y necesita una restauración que tarda horas.
+
+Una regla de ciclo de vida dice que un objeto de más de 30 días baja una clase, y a los 90 días baja otra vez.
 
 Una aplicación de fotos con 100 TB, la mayoría de más de un año, puede recortar su factura de almacenamiento de forma notable así. El coste es que una petición de un objeto archivado no se puede responder al instante.
 

@@ -17,7 +17,11 @@ Precomputation moves work from request time to a moment you choose, such as a bu
 
 ## How it works
 
-A static site generator renders every page at build time and uploads files, so a request costs a file read. Incremental static regeneration, as Next.js does it, renders a page on first request, keeps the result, and rebuilds it in the background after a set time. Search indexes, recommendation lists, and daily reports follow the same plan: a job computes them, and requests read the output.
+Each approach computes the answer before a request asks for it:
+
+- **A static site generator** renders every page at build time and uploads files, so a request costs a file read.
+- **Incremental static regeneration**, as Next.js does it, renders a page on first request, keeps the result, and rebuilds it in the background after a set time.
+- **Search indexes, recommendation lists and daily reports** follow the same plan: a job computes them, and requests read the output.
 
 A page rendered once and read 100,000 times spends its cost once. Putting a CDN in front of the files makes the repeat reads nearly free.
 

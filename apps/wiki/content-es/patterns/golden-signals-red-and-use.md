@@ -17,7 +17,11 @@ Elige un conjunto pequeño y fijo de señales para cada servicio y cada recurso,
 
 ## Cómo funciona
 
-El libro de SRE de Google nombra cuatro señales doradas: **latencia**, **tráfico**, **errores** y **saturación**. El **método RED** de Tom Wilkie conserva las tres primeras para cada servicio basado en peticiones: tasa, errores y duración (rate, errors, duration). El **método USE** de Brendan Gregg cubre cada recurso, como una CPU, un disco o un pool de conexiones: utilización, saturación y errores.
+Tres conjuntos de métricas cubren un servicio desde lados distintos:
+
+- **Las cuatro señales doradas**, del libro de SRE de Google: **latencia**, **tráfico**, **errores** y **saturación**.
+- **RED**, el método de Tom Wilkie, conserva tres de ellas para cada servicio basado en peticiones: tasa, errores y duración (rate, errors, duration).
+- **USE**, el método de Brendan Gregg, cubre cada recurso, como una CPU, un disco o un pool de conexiones: utilización, saturación y errores.
 
 Usa RED para lo que llaman los usuarios y USE para aquello sobre lo que corre esa llamada. Un servicio de pagos con un 2% de errores y un p99 en aumento (RED) con su pool de base de datos a plena utilización y una lista de espera creciente (USE) apunta directamente al pool.
 

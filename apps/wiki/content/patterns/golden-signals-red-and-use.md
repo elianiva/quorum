@@ -17,7 +17,11 @@ Pick a small, fixed set of signals for every service and every resource, so an o
 
 ## How it works
 
-Google's SRE book names four golden signals: **latency**, **traffic**, **errors** and **saturation**. Tom Wilkie's **RED method** keeps the first three for each request-driven service: rate, errors, duration. Brendan Gregg's **USE method** covers each resource, such as a CPU, a disk or a connection pool: utilization, saturation and errors.
+Three sets of metrics cover a service from different sides:
+
+- **The four golden signals**, from Google's SRE book: **latency**, **traffic**, **errors** and **saturation**.
+- **RED**, Tom Wilkie's method, keeps three of them for each request-driven service: rate, errors and duration.
+- **USE**, Brendan Gregg's method, covers each resource, such as a CPU, a disk or a connection pool: utilization, saturation and errors.
 
 Use RED for the thing users call and USE for the thing that call runs on. A checkout service at 2% errors and rising p99 (RED) with its database pool at full utilization and a growing wait list (USE) points straight at the pool.
 

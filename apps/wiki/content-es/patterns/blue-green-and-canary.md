@@ -18,7 +18,10 @@ Los despliegues blue-green y canario limitan cuántos usuarios puede dañar un m
 
 ## Cómo funciona
 
-Blue-green ejecuta dos flotas completas. Blue atiende a los usuarios mientras green arranca con la versión nueva y se comprueba. Entonces el enrutador pasa a green, y volver atrás es la reversión. Un canario envía primero una pequeña parte del tráfico real, digamos el 2%, a la versión nueva. Si los errores y la latencia aguantan durante un tiempo fijado, la parte crece en pasos hasta llegar al 100%. Blue-green es simple y revierte al instante. Un canario tiene el alcance más pequeño y el despliegue más lento.
+Las dos estrategias llevan el tráfico a una versión nueva por pasos, y difieren en cuánto tráfico ve la versión nueva antes de confiar en ella:
+
+- **Blue-green** ejecuta dos flotas completas. Blue atiende a los usuarios mientras green arranca con la versión nueva y se comprueba. Entonces el enrutador pasa a green, y volver atrás es la reversión. Es simple y revierte al instante.
+- **Un canario** envía primero una pequeña parte del tráfico real, digamos el 2%, a la versión nueva. Si los errores y la latencia aguantan durante un tiempo fijado, la parte crece en pasos hasta llegar al 100%. Tiene el alcance más pequeño y el despliegue más lento.
 
 ## Qué cuesta
 

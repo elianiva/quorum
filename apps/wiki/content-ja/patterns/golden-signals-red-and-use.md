@@ -17,7 +17,11 @@ aliases: golden signals, four golden signals, red method, use method, monitoring
 
 ## 仕組み
 
-Google の SRE 本は 4 つのゴールデンシグナルを挙げます。**レイテンシ**、**トラフィック**、**エラー**、**飽和** です。Tom Wilkie の **RED メソッド**はリクエスト駆動の各サービスに最初の 3 つを当てはめます。rate、errors、duration です。Brendan Gregg の **USE メソッド**は CPU、ディスク、コネクションプールといった各リソースを扱います。utilization、saturation、errors です。
+3 つの指標の組が、違う側からサービスを覆います。
+
+- **4 つのゴールデンシグナル**（Google の SRE 本）: **レイテンシ**、**トラフィック**、**エラー**、**飽和**。
+- **RED**（Tom Wilkie のメソッド）はリクエスト駆動の各サービスに 3 つを当てはめます。rate、errors、duration です。
+- **USE**（Brendan Gregg のメソッド）は CPU、ディスク、コネクションプールといった各リソースを扱います。utilization、saturation、errors です。
 
 ユーザーが呼ぶものには RED を、その呼び出しが動くものには USE を使います。エラー率 2% で p99 が上がっているチェックアウトサービス（RED）と、利用率が満杯で待ち行列が伸びるデータベースプール（USE）があれば、原因はプールをまっすぐ指します。
 

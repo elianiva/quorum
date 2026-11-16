@@ -18,7 +18,10 @@ A layer 4 balancer forwards connections without looking inside, and a layer 7 ba
 
 ## How it works
 
-An L4 balancer works on IP addresses and ports. It picks a backend and passes the bytes along, so it does little work per request and handles very large volumes. An L7 balancer terminates the connection, parses HTTP, and can send `/api` to one pool and `/images` to another, add headers, and retry. Real examples are AWS's Network Load Balancer for L4 and its Application Load Balancer for L7.
+The two layers balance different things:
+
+- **L4** works on IP addresses and ports. It picks a backend and passes the bytes along, so it does little work per request and handles very large volumes. AWS's Network Load Balancer is one.
+- **L7** terminates the connection, parses HTTP, and can send `/api` to one pool and `/images` to another, add headers, and retry. AWS's Application Load Balancer is one.
 
 Splitting pools by kind also isolates them: a flood of page views cannot starve the API servers. Quorum gives that split to the [API Gateway](/components/gw) and leaves the balancer to spread what reaches it.
 

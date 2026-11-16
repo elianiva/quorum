@@ -18,7 +18,10 @@ A write-through cache writes to the database before it answers, and a write-behi
 
 ## How it works
 
-With write-through, the app writes to the cache, the cache writes to the database, and only then does the call return. The cache never disagrees with the database, so reads need no invalidation. With write-behind, the cache acknowledges at once and flushes batches to the database on a timer. A counter bumped 100 times in a second can reach the database as one update.
+The two strategies differ in when the call returns:
+
+- **Write-through**: the app writes to the cache, the cache writes to the database, and only then does the call return. The cache never disagrees with the database, so reads need no invalidation.
+- **Write-behind**: the cache acknowledges at once and flushes batches to the database on a timer. A counter bumped 100 times in a second can reach the database as one update.
 
 ```mermaid
 flowchart LR

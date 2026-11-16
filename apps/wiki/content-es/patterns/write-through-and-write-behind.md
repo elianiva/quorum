@@ -18,7 +18,10 @@ Una caché write-through escribe en la base de datos antes de responder, y una c
 
 ## Cómo funciona
 
-Con write-through, la aplicación escribe en la caché, la caché escribe en la base de datos, y solo entonces vuelve la llamada. La caché nunca discrepa de la base de datos, así que las lecturas no necesitan invalidación. Con write-behind, la caché confirma al instante y vuelca lotes a la base de datos con un temporizador. Un contador incrementado 100 veces en un segundo puede llegar a la base de datos como una sola actualización.
+Las dos estrategias difieren en cuándo vuelve la llamada:
+
+- **Write-through**: la aplicación escribe en la caché, la caché escribe en la base de datos, y solo entonces vuelve la llamada. La caché nunca discrepa de la base de datos, así que las lecturas no necesitan invalidación.
+- **Write-behind**: la caché confirma al instante y vuelca lotes a la base de datos con un temporizador. Un contador incrementado 100 veces en un segundo puede llegar a la base de datos como una sola actualización.
 
 ```mermaid
 flowchart LR

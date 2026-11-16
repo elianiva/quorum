@@ -18,7 +18,11 @@ Una estampida ocurre cuando una clave caliente caduca y todos los lectores en es
 
 ## Cómo funciona
 
-Hay tres soluciones, y se combinan. La fusión de peticiones (coalescing, también llamada single flight) deja que el primer lector obtenga el dato mientras los demás esperan su respuesta, así que mil fallos se convierten en una consulta. La caducidad anticipada hace que los lectores refresquen una clave poco antes de que caduque, elegida al azar, para que las claves no se vayan todas juntas. Stale-while-revalidate sirve el valor viejo mientras una petición lo refresca, así que nadie espera.
+Hay tres soluciones, y se combinan:
+
+- **Fusión de peticiones** (coalescing, también llamada single flight) deja que el primer lector obtenga el dato mientras los demás esperan su respuesta, así que mil fallos se convierten en una consulta.
+- **Caducidad anticipada** hace que los lectores refresquen una clave poco antes de que caduque, elegida al azar, para que las claves no se vayan todas juntas.
+- **Stale-while-revalidate** sirve el valor viejo mientras una petición lo refresca, así que nadie espera.
 
 Si una clave recibe 2,000 lecturas por segundo y la consulta tarda 200 ms, una caducidad sin protección envía unas 400 consultas antes de que llegue la primera respuesta. La fusión envía una.
 

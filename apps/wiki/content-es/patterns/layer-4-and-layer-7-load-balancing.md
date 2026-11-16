@@ -18,7 +18,10 @@ Un balanceador de capa 4 reenvía conexiones sin mirar dentro, y uno de capa 7 l
 
 ## Cómo funciona
 
-Un balanceador L4 trabaja con direcciones IP y puertos. Elige un backend y pasa los bytes, así que hace poco trabajo por petición y maneja volúmenes muy grandes. Un balanceador L7 termina la conexión, analiza HTTP, y puede enviar `/api` a un pool y `/images` a otro, añadir cabeceras y reintentar. Ejemplos reales son el Network Load Balancer de AWS para L4 y su Application Load Balancer para L7.
+Las dos capas balancean cosas distintas:
+
+- **L4** trabaja con direcciones IP y puertos. Elige un backend y pasa los bytes, así que hace poco trabajo por petición y maneja volúmenes muy grandes. El Network Load Balancer de AWS es uno.
+- **L7** termina la conexión, analiza HTTP, y puede enviar `/api` a un pool y `/images` a otro, añadir cabeceras y reintentar. El Application Load Balancer de AWS es uno.
 
 Dividir los pools por tipo también los aísla: una avalancha de vistas de página no puede dejar sin recursos a los servidores de API. Quorum da esa división al [API Gateway](/components/gw) y deja que el balanceador reparta lo que le llega.
 

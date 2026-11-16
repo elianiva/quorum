@@ -18,9 +18,15 @@ Un balanceador de carga necesita una regla para elegir un servidor, y la regla m
 
 ## Cómo funciona
 
-Round robin reparte las peticiones por turnos, así que un servidor pequeño recibe tantas como uno grande. Round robin ponderado da a cada servidor una parte según su tamaño. Least connections envía la siguiente petición al servidor con menos conexiones abiertas, lo que se adapta a las peticiones lentas. Power of two choices elige dos servidores al azar y toma el menos ocupado, y no necesita estado compartido, así que escala entre muchos balanceadores. El hashing consistente envía la misma clave al mismo servidor, lo que ayuda a las cachés.
+Un balanceador elige un destino con una política, y cada una cambia simplicidad por conocimiento del tamaño, la carga o las claves:
 
-Slow start sube el tráfico a un servidor nuevo durante sus primeros segundos. Las sesiones persistentes (sticky) fijan a un usuario a un servidor, lo que mantiene funcionando el estado local pero desequilibra la carga.
+- **Round robin** reparte las peticiones por turnos, así que un servidor pequeño recibe tantas como uno grande.
+- **Round robin ponderado** da a cada servidor una parte según su tamaño.
+- **Least connections** envía la siguiente petición al servidor con menos conexiones abiertas, lo que se adapta a las peticiones lentas.
+- **Power of two choices** elige dos servidores al azar y toma el menos ocupado. No necesita estado compartido, así que escala entre muchos balanceadores.
+- **Hashing consistente** envía la misma clave al mismo servidor, lo que ayuda a las cachés.
+- **Slow start** sube el tráfico a un servidor nuevo durante sus primeros segundos.
+- **Sesiones persistentes** (sticky) fijan a un usuario a un servidor, lo que mantiene funcionando el estado local pero desequilibra la carga.
 
 ## Qué cuesta
 

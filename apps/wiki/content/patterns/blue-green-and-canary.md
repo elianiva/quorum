@@ -18,7 +18,10 @@ Blue-green and canary deploys both limit how many users a bad release can hurt.
 
 ## How it works
 
-Blue-green runs two full fleets. Blue serves users while green comes up with the new version and is checked. Then the router flips to green, and flipping back is the rollback. A canary sends a small share of real traffic, say 2%, to the new version first. If errors and latency hold for a set time, the share grows in steps until it reaches 100%. Blue-green is simple and rolls back at once. A canary has the smallest reach and the slowest rollout.
+Both strategies move traffic to a new version in steps, and they differ in how much traffic the new version sees before it is trusted:
+
+- **Blue-green** runs two full fleets. Blue serves users while green comes up with the new version and is checked. Then the router flips to green, and flipping back is the rollback. It is simple and rolls back at once.
+- **A canary** sends a small share of real traffic, say 2%, to the new version first. If errors and latency hold for a set time, the share grows in steps until it reaches 100%. It has the smallest reach and the slowest rollout.
 
 ## What it costs
 

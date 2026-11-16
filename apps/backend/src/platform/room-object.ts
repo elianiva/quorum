@@ -14,9 +14,9 @@ import {
   advance,
   apply,
   ballot,
+  enter,
   expired,
   finalOf,
-  join,
   kick,
   leave,
   openRoom,
@@ -42,6 +42,19 @@ const NO_SEAT: Attachment = { seat: '', sampleAt: 0 }
 
 const encode = Schema.encodeSync(ServerMessage)
 const decode = Schema.decodeUnknownOption(ClientMessage)
+
+/**
+ * The Seat id the Room shows for the id a browser sent. Every Seat sees every Seat
+ * id, and a browser takes its Seat back by sending its own id again. So the id a
+ * browser sends stays between it and the Room, and the Seats see only its hash:
+ * knowing a Seat's public id is not enough to claim it.
+ */
+const seatIdOf = async (secret: string): Promise<string> => {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret))
+  return Array.from(new Uint8Array(digest).subarray(0, 16), (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  ).join('')
+}
 
 const textOf = (raw: string | ArrayBuffer): string | null => {
   if (typeof raw === 'string') return raw
@@ -165,10 +178,13 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     name: string,
     token: string | undefined,
   ): Promise<void> {
+    const seatId = await seatIdOf(id)
+    // The hash awaited, so another frame may have moved the Room meanwhile.
     const current = this.state
     if (current === null) return this.end(ws, 'removed')
-    const entering = token === undefined ? { id, name } : { id, name, token }
-    const joined = join(current, entering, Date.now())
+    const entering = token === undefined ? { id: seatId, name } : { id: seatId, name, token }
+    const held = this.seatOf(ws)
+    const joined = enter(current, held, entering, Date.now())
     if (Result.isFailure(joined)) {
       this.end(ws, joined.failure === 'stale' ? 'stale' : 'removed')
       return
@@ -176,6 +192,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     const next = joined.success
     this.state = next.state
     const seat = next.seat
+    if (held !== '' && held !== seat.id) this.everyone({ _tag: 'CursorGone', seat: held }, ws)
     // A reload takes its own Seat back from the socket that held it.
     for (const other of this.ctx.getWebSockets()) {
       if (other === ws) continue
@@ -365,6 +382,8 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
   private resync(ws: WebSocket): void {
     const current = this.state
     if (current === null) return
+    // Only a Seat reads the Company: a connection that never took one, or lost it, gets nothing.
+    if (!current.seats.some((seat) => seat.id === this.seatOf(ws))) return
     this.send(ws, {
       _tag: 'Snapshot',
       revision: current.revision,

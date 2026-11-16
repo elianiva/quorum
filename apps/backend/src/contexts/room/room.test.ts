@@ -8,6 +8,7 @@ import {
   ALARM_MS,
   apply,
   ballot,
+  enter,
   finalOf,
   join,
   leave,
@@ -108,6 +109,20 @@ describe('seats', () => {
         'Ada Lovelace',
       )
     }
+  })
+
+  test('a connection that claims a second Seat leaves its first', () => {
+    const { state, owner, guest } = withSeats()
+    const again = enter(state, guest, { id: 'tab-3', name: 'Ada' }, 0)
+    if (Result.isFailure(again)) throw new Error('the second claim failed')
+    expect(again.success.state.seats.map((seat) => seat.id)).toEqual([owner, 'tab-3'])
+  })
+
+  test('a connection that claims its own Seat again keeps it', () => {
+    const { state, owner, guest } = withSeats()
+    const again = enter(state, guest, { id: 'tab-2', name: 'Ada' }, 0)
+    if (Result.isFailure(again)) throw new Error('the second claim failed')
+    expect(again.success.state.seats.map((seat) => seat.id)).toEqual([owner, guest])
   })
 
   test('leaving empties the Room and dates it', () => {

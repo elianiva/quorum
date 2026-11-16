@@ -201,6 +201,23 @@ export const join = (
   })
 }
 
+/**
+ * Puts a connection in the Room. `held` is the Seat this connection already has,
+ * or '' for none. A connection holds one Seat: when it claims a different one, it
+ * leaves the first, so one player cannot hold several Seats and outvote the rest.
+ */
+export const enter = (
+  state: RoomState,
+  held: string,
+  entering: Joining,
+  now: number,
+): ReturnType<typeof join> =>
+  Result.map(join(state, entering, now), (joined) =>
+    held === '' || held === joined.seat.id
+      ? joined
+      : { ...joined, state: leave(joined.state, held, now) },
+  )
+
 /** Takes a Seat out. A Seat that leaves drops its ballot. */
 export const leave = (state: RoomState, id: string, now: number): RoomState => {
   const seats = state.seats.filter((seat) => !sameSeat(seat, id))

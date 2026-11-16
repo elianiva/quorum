@@ -1,20 +1,11 @@
 import type { AgentMail, AgentSnapshot } from '@quorum/agent/snapshot'
-import {
-  refusal as refusalOf,
-  readTool as readSnapshot,
-  stateJson as snapshotJson,
-} from '@quorum/agent/view'
+import { refusal as refusalOf, stateJson as snapshotJson } from '@quorum/agent/view'
 import { boardChallenge, boardSandbox, clockPaused, type Model } from './model.ts'
 
 /* ==========================================================================
    The web side of the agent tools: turn the Model into the plain snapshot the
-   shared view reads. The update loop publishes the newest one after every
-   Message, and the sync module uploads it to the Room.
+   shared view reads. The sync module uploads it to the Room.
    ========================================================================== */
-
-type Input = Record<string, unknown>
-
-let latest: AgentSnapshot | null = null
 
 const agentMail = (mail: Model['board']['inbox']['mail'][number]): AgentMail => ({
   id: mail.id,
@@ -56,17 +47,8 @@ export const snapshotOfModel = (model: Model): AgentSnapshot => {
   }
 }
 
-/** Remembers the newest snapshot. The update loop calls it after every Message. */
-export const publish = (model: Model): void => {
-  latest = snapshotOfModel(model)
-}
-
 /** Why an agent gets nothing, or null when it may read the board. */
 export const refusal = (model: Model): string | null => refusalOf(snapshotOfModel(model))
-
-/** Runs one tool over the newest snapshot, and returns its JSON text. */
-export const readTool = (name: string, input: Input = {}): string =>
-  readSnapshot(latest, name, input)
 
 /** What the "Copy state as JSON" button copies: the same views the tools return. */
 export const stateJson = (model: Model): string => snapshotJson(snapshotOfModel(model))

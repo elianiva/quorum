@@ -5,13 +5,18 @@ import { Message } from './message.ts'
 import { boardChallenge, type Model } from './model.ts'
 import { AppRoute } from './route.ts'
 import { initialModel, update } from './update.ts'
-import { publish, readTool, stateJson } from './agent-tools.ts'
+import { readTool as readSnapshot } from '@quorum/agent/view'
+import { snapshotOfModel, stateJson } from './agent-tools.ts'
 
 const company: Model = {
   ...initialModel(),
   route: AppRoute.Company(),
   board: { ...initialModel().board, game: preseedGame() },
 }
+
+/** Runs one tool over the snapshot the browser uploads for this Model. */
+const readTool = (model: Model, name: string, input: Record<string, unknown> = {}): string =>
+  readSnapshot(snapshotOfModel(model), name, input)
 
 const withChallenge = (): Model =>
   update(
@@ -21,16 +26,14 @@ const withChallenge = (): Model =>
 
 describe('what an agent may read', () => {
   test('a Company answers, and an unknown tool does not', () => {
-    publish(company)
-    expect(JSON.parse(readTool('get_company'))).toMatchObject({ mode: 'company' })
-    expect(() => readTool('place_node')).toThrow('Unknown tool')
+    expect(JSON.parse(readTool(company, 'get_company'))).toMatchObject({ mode: 'company' })
+    expect(() => readTool(company, 'place_node')).toThrow('Unknown tool')
   })
 
   test('an open Challenge answers nothing, through the tools or the JSON button', () => {
     const challenge = withChallenge()
     expect(boardChallenge(challenge.board)).not.toBeNull()
-    publish(challenge)
-    expect(() => readTool('get_design')).toThrow('Challenges are scored')
+    expect(() => readTool(challenge, 'get_design')).toThrow('Challenges are scored')
 
     const copied = update(challenge, Message.StateCopied())
     expect((copied.commands ?? []).map((command) => command.name)).not.toContain('CopyText')
@@ -50,17 +53,17 @@ describe('explain_node', () => {
   })
 
   test('shows only what the research shows, and get_design keeps the diagnosis out', () => {
-    publish(at(preseedGame().researched.filter((id) => id !== 'profiling')))
-    const blind = JSON.parse(readTool('explain_node', { nodeId: 'database' }))
+    const dark = at(preseedGame().researched.filter((id) => id !== 'profiling'))
+    const blind = JSON.parse(readTool(dark, 'explain_node', { nodeId: 'database' }))
     expect(blind).toMatchObject({ limit: null, workShare: null, costReceipts: null })
     expect(blind.hidden).toContain('profiling')
-    const design = JSON.parse(readTool('get_design'))
+    const design = JSON.parse(readTool(dark, 'get_design'))
     const database = design.nodes.find((node: { id: string }) => node.id === 'database')
     expect(database.ledger).not.toHaveProperty('receipts')
     expect(database.ledger).not.toHaveProperty('workShare')
 
-    publish(at([...preseedGame().researched, 'tracing', 'profiling']))
-    const seen = JSON.parse(readTool('explain_node', { nodeId: 'database' }))
+    const lit = at([...preseedGame().researched, 'tracing', 'profiling'])
+    const seen = JSON.parse(readTool(lit, 'explain_node', { nodeId: 'database' }))
     expect(seen.costReceipts['q-read'].base).toBeGreaterThan(0)
     expect(seen.amplification.byUsersKind.length).toBeGreaterThan(0)
     expect(seen.hidden).not.toContain('profiling')

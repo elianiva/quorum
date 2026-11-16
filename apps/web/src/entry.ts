@@ -18,7 +18,6 @@ import { loadLocale, preloadLocales } from './i18n/messages.ts'
 import { supportedLocales, type Locale } from './i18n/index.ts'
 import { PREFS_KEY, readStored, sweepLegacyStorage } from './game/storage.ts'
 import { activityChange } from './game/presence.ts'
-import { publish } from './game/agent-tools.ts'
 import { syncAgent } from './game/agent-room.ts'
 import { observe } from './platform/analytics.ts'
 import { ApiRpc } from './platform/rpc.ts'
@@ -42,7 +41,6 @@ const application = Runtime.makeApplication({
     // A panel keeps this Seat's pointer on the Board, saying what it is doing.
     const activity = activityChange(model, result.model)
     if (activity !== undefined) setSeatActivity('board', activity)
-    publish(result.model)
     syncAgent(result.model)
     observe(result.model)
     // The installed icon carries the unread Inbox count; reading the Inbox clears it.
@@ -57,7 +55,7 @@ const application = Runtime.makeApplication({
   },
   resources: Layer.mergeAll(ApiRpc.layer, tracerLayer),
   container: document.getElementById('root'),
-  // The clock and its board sync fire 8 times a second and would push every gesture out of history.
+  // The clock and its board sync fire four times a second and would push every gesture out of history.
   crash: { report: reportCrash },
   // Over a phase's budget, Foldkit tells Sentry which Message was slow. Under it, nothing is sent.
   slow: { show: 'Always', onSlow: reportSlow },

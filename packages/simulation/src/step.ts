@@ -62,6 +62,7 @@ import {
   startIncident,
 } from './director.ts'
 import { advanceMirrors } from './mirror.ts'
+import { step as roundStep } from './era-round-machine.ts'
 import { StepEvent, type AlertRule } from './events.ts'
 import {
   advanceFeatures,
@@ -848,7 +849,7 @@ export const step = (game: Game, seconds: number, tuning: Tuning = LIVE_TUNING):
   next = advanceMirrors(next)
   // The Era's Milestone puts its round on the table once.
   if (canRaise(next) && next.round._tag !== 'Offered')
-    next = { ...next, round: { _tag: 'Offered' } }
+    next = { ...next, round: roundStep(next.round, { _tag: 'Offered' }) }
   const team = advanceTeam(next, ledger, seconds, tuning)
   next = team.game
   events.push(...team.events)

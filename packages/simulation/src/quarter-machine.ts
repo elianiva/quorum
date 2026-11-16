@@ -23,10 +23,14 @@ export const quarterMachine = Machine.make({ root: States, events: Events }).han
     AwaitingGuidance: {
       on: {
         GuidanceSet: { target: 'Running' },
-        Started: { target: 'Running' },
+        Started: { target: 'AwaitingGuidance' },
       },
     },
-    Running: {},
+    Running: {
+      on: {
+        Started: { target: 'AwaitingGuidance' },
+      },
+    },
   },
 })
 

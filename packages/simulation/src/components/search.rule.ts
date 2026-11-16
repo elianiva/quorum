@@ -9,6 +9,7 @@ import {
 } from '../catalog.ts'
 
 import { warming } from '../life.ts'
+import { isDown } from '../lookups.ts'
 
 /**
  * A Search Engine's product, shards, replicas, and heap (07 "Search Engine"). Meilisearch runs one
@@ -52,7 +53,7 @@ export const setSearchOptions = (
       (jvm &&
         ((change.searchShards !== undefined && change.searchShards !== node.searchShards) ||
           (change.searchReplicas !== undefined && change.searchReplicas !== node.searchReplicas)))
-    const copy = !game.sandbox && indexChange && node.life._tag !== 'Stopped'
+    const copy = !game.sandbox && indexChange && !isDown(node)
     return ok(patch(game, id, { ...change, ...(copy ? { life: warming(0) } : {}) }))
   })
 

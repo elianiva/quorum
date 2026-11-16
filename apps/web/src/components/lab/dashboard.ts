@@ -6,7 +6,7 @@ import { changeIn } from '@/i18n/refusal.ts'
 import { copyIn, localized, nodeTitle, type Messages } from '@/i18n/messages.ts'
 import { copy, eraWords } from '@/i18n/messages.ts'
 import { DashboardMessage } from '@/game/dashboard.ts'
-import type { Html, HtmlBuilder } from 'foldkit/html'
+import { createKeyedLazy, type Html, type HtmlBuilder } from 'foldkit/html'
 import { ChevronDown, Clock3, LayoutGrid, RefreshCw, Star, X } from 'lucide'
 import { clockOf } from '@quorum/simulation/calendar'
 import type { Limit } from '@quorum/simulation/capacity'
@@ -1824,8 +1824,23 @@ const gauge = (
 const UTILIZATION: Thresholds = { warn: 0.7, danger: 0.9 }
 const CELLS = 32
 
-/** Grafana's retro LCD bar gauge: lit cells take the colour of the threshold they sit in. */
-const lcd = (share: number, h: HtmlBuilder<Message>, cells = CELLS): Html =>
+/**
+ * Grafana's retro LCD bar gauge: lit cells take the colour of the threshold they sit in.
+ *
+ * A gauge is 24 or 32 elements, and a Company with 200 Nodes draws 400 of them, which was half
+ * of the Dashboard's render. A gauge looks the same until another cell lights, so each one is
+ * memoized under `key`, the place it is drawn at, on the count of lit cells.
+ */
+const lcd = (key: string, share: number, h: HtmlBuilder<Message>, cells = CELLS): Html => {
+  const level = Math.min(share, 1)
+  let lit = 0
+  while (lit < cells && (lit + 0.5) / cells <= level) lit += 1
+  return lazyLcd(key, lcdView, [lit, cells, h])
+}
+
+const lazyLcd = createKeyedLazy()
+
+const lcdView = (lit: number, cells: number, h: HtmlBuilder<Message>): Html =>
   h.div(
     [
       h.Class(
@@ -1844,7 +1859,6 @@ const lcd = (share: number, h: HtmlBuilder<Message>, cells = CELLS): Html =>
     ],
     Array.from({ length: cells }, (_, index) => {
       const position = (index + 0.5) / cells
-      const lit = position <= Math.min(share, 1)
       return h.span(
         [
           h.Key(String(index)),
@@ -1856,9 +1870,10 @@ const lcd = (share: number, h: HtmlBuilder<Message>, cells = CELLS): Html =>
             }),
           ),
           h.Style({
-            background: lit
-              ? LEVEL_COLOR[levelOf(position, UTILIZATION)]
-              : `color-mix(in oklab, ${LEVEL_COLOR[levelOf(position, UTILIZATION)]} 10%, transparent)`,
+            background:
+              index < lit
+                ? LEVEL_COLOR[levelOf(position, UTILIZATION)]
+                : `color-mix(in oklab, ${LEVEL_COLOR[levelOf(position, UTILIZATION)]} 10%, transparent)`,
           }),
         ],
         [],
@@ -1955,7 +1970,7 @@ const barGauge = (
                     }),
                   ),
                 ],
-                [lcd(share, h)],
+                [lcd(`now:${track.id}`, share, h)],
               ),
             ],
           )
@@ -2709,7 +2724,7 @@ const nodeTable = (
                               ),
                             ],
                             [
-                              lcd(share, h, 24),
+                              lcd(`nodes:${track.id}`, share, h, 24),
                               h.span(
                                 [
                                   h.Class(
@@ -3032,7 +3047,7 @@ const tablePanel = (
                                         ),
                                       ],
                                       [
-                                        lcd(cell.bar.share, h, 24),
+                                        lcd(`${key}:${row.key}:${index}`, cell.bar.share, h, 24),
                                         h.span(
                                           [
                                             h.Class(

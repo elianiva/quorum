@@ -135,6 +135,27 @@ export class BoardController {
   readonly boxNames = new Container()
   boxesKey = ''
   replicationKey = ''
+  /** What the last frame's boxes, replication lines, and focus path were computed from. The
+   *  frame runs 60 times a second and the Game changes a few times a second, so a frame that
+   *  reads the same inputs reuses the answer instead of scanning the Design again. */
+  private boxesFrom: Readonly<{
+    boxes: Game['boxes']
+    nodes: Game['nodes']
+    colors: Palette
+    locale: string
+  }> | null = null
+  private replicationFrom: Readonly<{
+    game: Game
+    region: BoardState['region']
+    pairs: ReturnType<typeof replicationPairsOf>
+  }> | null = null
+  private replicationWires: ReadonlyArray<Wire> = []
+  private pathFrom: Readonly<{
+    focus: string
+    nodes: Game['nodes']
+    links: Game['links']
+    path: ReadonlySet<string> | null
+  }> | null = null
   readonly overlay = new Graphics()
   readonly ghost = new Container()
   readonly views = new Map<string, NodeView>()
@@ -1040,7 +1061,22 @@ export class BoardController {
    *  null when none is in focus, so nothing is dimmed. */
   pathOf(state: BoardState): ReadonlySet<string> | null {
     const focus = this.hoverNode ?? state.selected
-    if (!focus || !state.game.nodes.some((node) => node.id === focus)) return null
+    if (!focus) return null
+    const from = this.pathFrom
+    if (
+      from !== null &&
+      from.focus === focus &&
+      from.nodes === state.game.nodes &&
+      from.links === state.game.links
+    )
+      return from.path
+    const path = this.reachOf(state, focus)
+    this.pathFrom = { focus, nodes: state.game.nodes, links: state.game.links, path }
+    return path
+  }
+
+  private reachOf(state: BoardState, focus: string): ReadonlySet<string> | null {
+    if (!state.game.nodes.some((node) => node.id === focus)) return null
     const reach = (next: (link: { from: string; to: string }) => readonly [string, string]) => {
       const seen = new Set([focus])
       const queue = [focus]
@@ -1118,6 +1154,17 @@ export class BoardController {
 
   /** Draws a dashed box and a name around each group of Nodes, when one moved, came or went. */
   drawBoxes(game: Game, colors: Palette): void {
+    const locale = this.state?.locale ?? 'en'
+    const from = this.boxesFrom
+    if (
+      from !== null &&
+      from.boxes === game.boxes &&
+      from.nodes === game.nodes &&
+      from.colors === colors &&
+      from.locale === locale
+    )
+      return
+    this.boxesFrom = { boxes: game.boxes, nodes: game.nodes, colors, locale }
     const pad = 18
     const found: Array<
       Readonly<{ name: string; x: number; y: number; w: number; h: number; hue: number }>
@@ -1172,10 +1219,16 @@ export class BoardController {
 
   /** Dashed lines from each Data Group's primary to its Read Replicas, on the same lanes as the Links. */
   drawReplication(state: BoardState, colors: Palette): void {
-    const pairs = replicationPairsOf(state.game).filter(
-      (pair) => pair.from.region === state.region && pair.to.region === state.region,
-    )
+    const from = this.replicationFrom
+    const pairs =
+      from !== null && from.game === state.game && from.region === state.region
+        ? from.pairs
+        : replicationPairsOf(state.game).filter(
+            (pair) => pair.from.region === state.region && pair.to.region === state.region,
+          )
+    this.replicationFrom = { game: state.game, region: state.region, pairs }
     if (pairs.length === 0) {
+      this.replicationWires = []
       if (this.replicationKey !== '') {
         this.replicationKey = ''
         this.replication.clear()
@@ -1186,6 +1239,12 @@ export class BoardController {
       replica: pair.to,
       wire: this.wireOf(pair.from, pair.to),
     }))
+    // A wire stays one object while its ends and the routes hold still, so the same wires in
+    // the same order are the same lines: no need to print every point to compare them.
+    const drawn = this.replicationWires
+    if (drawn.length === wires.length && wires.every(({ wire }, index) => drawn[index] === wire))
+      return
+    this.replicationWires = wires.map(({ wire }) => wire)
     const key = wires
       .map(
         ({ replica, wire }) =>

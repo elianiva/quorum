@@ -939,8 +939,10 @@ const WIDE_GLYPH =
   /[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE6F\uFF00-\uFF60\uFFE0-\uFFE6]/u
 
 const labelSpan = (label: string, scale: number): number =>
-  [...label].reduce((width, glyph) => width + (WIDE_GLYPH.test(glyph) ? 12.4 : 6.2), LABEL_PAD) *
-  scale
+  Array.from(label).reduce(
+    (width, glyph) => width + (WIDE_GLYPH.test(glyph) ? 12.4 : 6.2),
+    LABEL_PAD,
+  ) * scale
 
 const labelPlacesOf = (
   marks: ReadonlyArray<Annotation>,
@@ -3577,7 +3579,7 @@ const incidentTimeline = (
         ? [swatch(t.dashboard.awaitingAck, AWAITING, h)]
         : []),
       ...[...severities]
-        .sort()
+        .sort((a, b) => a - b)
         .map((severity) => swatch(`SEV${severity}`, SEVERITY_COLOR[severity] ?? MUTED, h)),
     ],
   )

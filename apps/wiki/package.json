@@ -17,16 +17,16 @@
     "@quorum/simulation": "workspace:*",
     "@quorum/styled-system": "workspace:*",
     "@quorum/ui": "workspace:*",
-    "effect": "4.1.2",
+    "effect": "4.1.4",
     "foldkit": "0.170.0",
     "js.foresight": "^4.2.1",
     "katex": "0.19.1",
-    "lucide": "1.70.0",
+    "lucide": "1.73.0",
     "minisearch": "7.2.0",
     "pele": "1.13.0",
-    "posthog-js": "1.447.1",
+    "posthog-js": "1.450.0",
     "takumi-js": "^2.20.0",
-    "vite": "8.3.6"
+    "vite": "8.3.8"
   },
   "devDependencies": {
     "@pandacss/dev": "catalog:",

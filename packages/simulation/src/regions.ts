@@ -164,11 +164,7 @@ export const survivesRegion = (game: Game, node: GameNode): boolean =>
   (node.type === 'wide' && node.spread && openRegions(game).length >= 2) ||
   (node.type === 'dsql' && node.spread && openRegions(game).length >= 3)
 
-export const spreadRegions = (
-  game: Game,
-  node: GameNode,
-  limit: number,
-): ReadonlyArray<RegionId> =>
+export const spreadRegions = (game: Game, node: GameNode, limit: number): ReadonlyArray<RegionId> =>
   node.spread
     ? openRegions(game)
         .toSorted((a, b) => rttOf(node.region, a) - rttOf(node.region, b))

@@ -165,26 +165,28 @@ const entity = (l: Lang, def: EraDef, index: number): Page => {
                     }),
                   ),
                 ],
-                [
+                (
                   [
-                    t.arrives.components,
-                    components.map((id) => link(componentPath(id), l.cat.COMPONENTS[id].name, h)),
-                  ],
-                  [t.arrives.research, research.map((entry) => researchLink(l, entry.id, h))],
-                  [
-                    t.arrives.incidents,
-                    incidents.map((id) => link(incidentPath(id), l.cat.INCIDENTS[id].name, h)),
-                  ],
-                  [
-                    t.arrives.features,
-                    features.map((id) => link('/team#features', l.cat.FEATURES[id].name, h)),
-                  ],
-                  [
-                    t.arrives.exits,
-                    exits.map((id) => link('/prestige#exits', l.cat.EXITS[id].name, h)),
-                  ],
-                ].flatMap(([label, items]) =>
-                  (items as ReadonlyArray<Html>).length
+                    [
+                      t.arrives.components,
+                      components.map((id) => link(componentPath(id), l.cat.COMPONENTS[id].name, h)),
+                    ],
+                    [t.arrives.research, research.map((entry) => researchLink(l, entry.id, h))],
+                    [
+                      t.arrives.incidents,
+                      incidents.map((id) => link(incidentPath(id), l.cat.INCIDENTS[id].name, h)),
+                    ],
+                    [
+                      t.arrives.features,
+                      features.map((id) => link('/team#features', l.cat.FEATURES[id].name, h)),
+                    ],
+                    [
+                      t.arrives.exits,
+                      exits.map((id) => link('/prestige#exits', l.cat.EXITS[id].name, h)),
+                    ],
+                  ] satisfies ReadonlyArray<readonly [string, ReadonlyArray<Html>]>
+                ).flatMap(([label, items]) =>
+                  items.length
                     ? [
                         h.dt(
                           [
@@ -198,7 +200,7 @@ const entity = (l: Lang, def: EraDef, index: number): Page => {
                               ),
                             ),
                           ],
-                          [label as string],
+                          [label],
                         ),
                         h.dd(
                           [
@@ -209,7 +211,7 @@ const entity = (l: Lang, def: EraDef, index: number): Page => {
                               }),
                             ),
                           ],
-                          [linkList(items as ReadonlyArray<Html>, h)],
+                          [linkList(items, h)],
                         ),
                       ]
                     : [],

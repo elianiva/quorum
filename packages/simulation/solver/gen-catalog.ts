@@ -82,7 +82,7 @@ for (const [name, value] of Object.entries(catalog)) {
     push(`pub const ${name.toUpperCase()}: f64 = ${formatNumber(value)};`)
     scalarNames.push(name)
   } else if (typeof value === 'boolean') {
-    push(`pub const ${name.toUpperCase()}: bool = ${value};`)
+    push(`pub const ${name.toUpperCase()}: bool = ${String(value)};`)
     scalarNames.push(name)
   } else if (typeof value === 'string') {
     push(`pub const ${name.toUpperCase()}: &str = "${value}";`)

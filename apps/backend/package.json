@@ -10,8 +10,8 @@
     "@quorum/agent": "workspace:*",
     "@quorum/rpc": "workspace:*",
     "@quorum/simulation": "workspace:*",
-    "@sentry/cloudflare": "11.11.0",
-    "@sentry/effect": "11.11.0",
-    "effect": "4.1.2"
+    "@sentry/cloudflare": "11.13.0",
+    "@sentry/effect": "11.13.0",
+    "effect": "4.1.4"
   }
 }

@@ -78,7 +78,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
 
   constructor(ctx: DurableObjectState, env: RoomEnv) {
     super(ctx, env)
-    ctx.blockConcurrencyWhile(async () => {
+    void ctx.blockConcurrencyWhile(async () => {
       const stored = storedRoom(await ctx.storage.get<unknown>([...ROOM_KEYS]))
       if (stored === null) return
       const restored = restoreRoom(stored.state, SIM_VERSION)
@@ -275,7 +275,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     this.broadcast()
     if (outcome.passed === 'exit') {
       await this.ctx.storage.deleteAlarm()
-      this.handOver()
+      await this.handOver()
     }
   }
 

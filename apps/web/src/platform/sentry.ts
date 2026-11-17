@@ -108,7 +108,6 @@ const plain = (value: unknown): boolean =>
 
 export const tracerLayer: Layer.Layer<never> = DSN
   ? Layer.succeed(Tracer.Tracer, {
-      ...SentryEffectTracer,
       span: (options) => {
         if (isCommand(options.name) && !TRACED_COMMANDS.has(options.name)) {
           return Tracer.nativeTracer.span(options)
@@ -120,6 +119,7 @@ export const tracerLayer: Layer.Layer<never> = DSN
         }
         return span
       },
+      ...(SentryEffectTracer.context === undefined ? {} : { context: SentryEffectTracer.context }),
     })
   : Layer.empty
 

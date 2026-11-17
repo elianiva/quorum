@@ -1760,7 +1760,8 @@ test('a save travels as one line of text, and only a save of this format opens i
       args: Record<string, unknown>
     }>
   ).find((command) => command.name === 'CopyText')
-  const text = String(copied?.args['text'] ?? '')
+  const text = copied?.args['text']
+  if (typeof text !== 'string') throw new Error('CopyText carried no text')
   expect(text.startsWith('QSV1:')).toBe(true)
 
   const downloaded = update(playable, Message.SaveDownloaded())

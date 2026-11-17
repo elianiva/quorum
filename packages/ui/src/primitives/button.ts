@@ -257,7 +257,7 @@ const buttonRecipe = cva({
 export const buttonClass = (
   variant: ButtonVariant = 'default',
   size: ButtonSize = 'default',
-  className?: string | undefined,
+  className?: string,
 ): string => cx(buttonRecipe({ variant, size }), 'press', className)
 
 export type ButtonConfig<M> = Readonly<{

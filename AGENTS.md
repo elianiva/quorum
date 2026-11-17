@@ -5,8 +5,7 @@
 - Verify with `pnpm check`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
 - Write commit subjects as plain sentences, with no `feat:` or `chore:` prefix.
 - Never run `pnpm deploy` without explicit approval.
-- Use only `tsrs` and `effect-tsrs` for diagnostics. Never run `tsc`, `tsgo`, or `vp lint --type-check`; do not add `typescript` or turn on `typeCheck` in `vite.config.ts`.
-- If `vp lint` fails after an install that skipped scripts, run `pnpm exec effect-tsrs patch --oxlint`.
+- Use only `tsrs` and `effect-tsrs` for diagnostics. `vp lint` runs its type-aware rules through the `tsrs` that Vite+ bundles. Never run `tsc`, `tsgo`, or `vp lint --type-check`; do not add `typescript` or turn on `typeCheck` in `vite.config.ts`.
 - Alchemy and infrastructure live only in the root `alchemy.run.ts`; `src/worker.ts` files never import Alchemy.
 - Game rules, catalog, and Game schema live in `packages/simulation`; rendering, input, and storage live in `apps/web`.
 - Never type a catalog number into `apps/wiki/content`; wiki facts come from the catalog. The exception is `apps/wiki/content/design`, the game design document (ADR 0014), which may state numbers by hand.

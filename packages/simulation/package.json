@@ -19,14 +19,14 @@
   },
   "dependencies": {
     "@typeonce/effect-machine": "0.46.0",
-    "effect": "4.1.2"
+    "effect": "4.1.4"
   },
   "devDependencies": {
     "@vitest/browser-playwright": "5.1.0",
     "esbuild": "0.28.2",
-    "fast-check": "4.5.3",
-    "playwright": "1.65.0",
+    "fast-check": "4.10.2",
+    "playwright": "1.65.1",
     "vitest": "5.1.0",
-    "workerd": "1.20261106.1"
+    "workerd": "1.20261116.1"
   }
 }

@@ -45,10 +45,7 @@ import type { Messages } from './messages.ts'
 
 type Copy = Readonly<Record<string, object | undefined>>
 
-const overlay = <T extends Readonly<Record<string, object>>>(
-  table: T,
-  copy: Copy | undefined,
-): T =>
+const overlay = <T extends Readonly<Record<string, object>>>(table: T, copy: Copy | undefined): T =>
   copy === undefined
     ? table
     : (Object.fromEntries(

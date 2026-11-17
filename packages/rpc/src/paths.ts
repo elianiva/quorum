@@ -11,6 +11,9 @@ export const RPC_PATH = `${API_PREFIX}/rpc`
 export const ROOM_PATH = `${API_PREFIX}/room`
 export const ROOM_SOCKET_PATH = `${ROOM_PATH}/socket`
 
+/** The close code of a socket refused because every Room the deployment runs is in use. */
+export const ROOMS_FULL_CLOSE = 4503
+
 /**
  * The same-origin path the website Worker proxies to PostHog. It is not part
  * of the API: the browser sends analytics here so blockers do not match

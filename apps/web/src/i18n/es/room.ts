@@ -6,7 +6,6 @@ export const room: Messages['room'] = {
   onlineHint:
     'Deja que otras personas construyan esta empresa contigo. Puedes recuperarla cuando quieras.',
   joinHint: 'Cualquiera con el enlace puede entrar. No necesita cuenta.',
-  needsKey: 'Las salas en línea necesitan una clave de función.',
   code: 'Código de la sala',
   connecting: 'Conectando…',
   joining: 'Entrando en la empresa…',
@@ -39,6 +38,7 @@ export const room: Messages['room'] = {
   endExpired: 'La sala ha caducado.',
   endStale: 'La sala usaba una versión anterior.',
   endRemoved: 'Te han expulsado de la sala.',
+  full: 'Todas las salas en línea están ocupadas. Inténtalo más tarde.',
   missing: 'Esa sala ya no está abierta.',
   onlineMark: 'En línea',
   connectFailed: 'No se pudo conectar con la sala.',

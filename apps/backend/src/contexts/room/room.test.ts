@@ -204,15 +204,15 @@ describe('seats', () => {
     if (again._tag === 'Success') expect(again.success.newSeat).toBe(false)
   })
 
-  test('a fifth seat is refused', () => {
-    const { state } = withSeats()
-    let room = state
-    for (const id of ['g2', 'g3', 'g4']) {
-      const joined = join(room, { id, name: id }, 0)
+  test('a Room holds 20 seats and refuses the 21st', () => {
+    let room = withSeats().state
+    for (let index = room.seats.length; index < 20; index += 1) {
+      const joined = join(room, { id: `g${index}`, name: `g${index}` }, 0)
+      expect(Result.isSuccess(joined)).toBe(true)
       if (Result.isSuccess(joined)) room = joined.success.state
-      else expect(id).toBe('g4')
     }
-    expect(Result.isFailure(join(room, { id: 'g5', name: 'Late' }, 0))).toBe(true)
+    expect(room.seats).toHaveLength(20)
+    expect(Result.isFailure(join(room, { id: 'late', name: 'Late' }, 0))).toBe(true)
   })
 
   test('a reload takes its seat back', () => {

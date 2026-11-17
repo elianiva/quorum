@@ -4,7 +4,6 @@ export const room = {
   onlineHint:
     'Laissez d’autres personnes construire cette entreprise avec vous. Vous pouvez la reprendre à tout moment.',
   joinHint: 'Toute personne avec le lien peut entrer. Aucun compte n’est nécessaire.',
-  needsKey: 'Les salons en ligne demandent une clé de fonctionnalité.',
   code: 'Code du salon',
   connecting: 'Connexion…',
   joining: 'Entrée dans l’entreprise…',
@@ -37,6 +36,7 @@ export const room = {
   endExpired: 'Le salon a expiré.',
   endStale: 'Le salon tournait sur une version plus ancienne.',
   endRemoved: 'Vous avez été retiré du salon.',
+  full: 'Tous les salons en ligne sont occupés. Réessayez plus tard.',
   missing: "Cette session n'est plus ouverte.",
   onlineMark: 'En ligne',
   connectFailed: 'Le salon est injoignable.',

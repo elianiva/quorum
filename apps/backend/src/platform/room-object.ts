@@ -133,13 +133,13 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     await this.save()
   }
 
-  async info(): Promise<Readonly<{ exists: boolean; seats: number }>> {
-    if (this.state === null) return { exists: false, seats: 0 }
+  async info(): Promise<Readonly<{ exists: boolean; seats: number; idle: boolean }>> {
+    if (this.state === null) return { exists: false, seats: 0, idle: false }
     if (expired(this.state, Date.now())) {
       await this.clear()
-      return { exists: false, seats: 0 }
+      return { exists: false, seats: 0, idle: false }
     }
-    return { exists: true, seats: this.state.seats.length }
+    return { exists: true, seats: this.state.seats.length, idle: this.state.idleAt !== null }
   }
 
   /* ---------- Sockets ---------- */

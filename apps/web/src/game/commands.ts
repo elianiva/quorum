@@ -15,7 +15,6 @@ import { ComponentId, Game, Region } from '@quorum/simulation/state'
 import { Message } from './message.ts'
 import { Founder } from '@quorum/simulation/founder'
 import {
-  Access,
   Motion,
   Prefs,
   Reveal,
@@ -27,7 +26,6 @@ import {
 } from './model.ts'
 import { refreshed, SaveIndex } from './saves.ts'
 import {
-  ACCESS_KEY,
   BROKEN_SAVE_KEY,
   FOUNDER_KEY,
   PREFS_KEY,
@@ -51,7 +49,7 @@ import { play, setMuted, setVolume, SOUND_NAMES } from './sound.ts'
 import { pruneAgentRooms, setAgentAccess } from './agent-room.ts'
 import { appendLog, clearLog, downloadLog, LogEntry } from './playlog.ts'
 import { forward, setAnalyticsEnabled } from '../platform/analytics.ts'
-import { ApiError, SurveySubmission } from '@quorum/rpc'
+import { SurveySubmission } from '@quorum/rpc'
 import { ClientMessage } from '@quorum/simulation/room'
 import { Sample } from '@quorum/simulation/state'
 import { ApiRpc } from '@/platform/rpc.ts'
@@ -209,56 +207,16 @@ export const PublishRoom = Command.define('PublishRoom', {
     game: Game,
     samples: Schema.Array(Sample),
     wall: Schema.Finite,
-    key: Schema.NullOr(Schema.String),
   },
   messages: [Message.RoomPublished, Message.RoomPublishFailed],
-  execute: ({ name, game, samples, wall, key }) =>
+  execute: ({ name, game, samples, wall }) =>
     Effect.gen(function* () {
       const rpc = yield* ApiRpc
-      return yield* rpc.roomPublish({ name, game, samples, wall, key })
+      return yield* rpc.roomPublish({ name, game, samples, wall })
     }).pipe(
       Effect.match({
         onSuccess: ({ code, token }) => Message.RoomPublished({ code, token }),
         onFailure: (error) => Message.RoomPublishFailed({ message: error.message }),
-      }),
-    ),
-})
-
-/** Reads the feature key this browser holds. A key is settings, so it loads with them. */
-export const LoadAccess = Command.define('LoadAccess', {
-  args: {},
-  messages: [Message.AccessLoaded],
-  execute: () => Effect.sync(() => Message.AccessLoaded({ json: readStored(ACCESS_KEY) })),
-})
-
-export const WriteAccess = Command.define('WriteAccess', {
-  args: { access: Access },
-  messages: [Message.Synced],
-  execute: ({ access }) =>
-    Effect.sync(() => {
-      // Blocked storage only means the key is asked for again next load.
-      writeStored(ACCESS_KEY, JSON.stringify(access))
-      return Message.Synced()
-    }),
-})
-
-/**
- * Asks the API Worker what a key unlocks. It answers with the key normalized, or refuses
- * it. A request that never arrives is not a refused key, so it says it could not be checked.
- */
-export const CheckFeatureKey = Command.define('CheckFeatureKey', {
-  args: { key: Schema.String, unreachable: Schema.String },
-  messages: [Message.KeyAccepted, Message.KeyRefused],
-  execute: ({ key, unreachable }) =>
-    Effect.gen(function* () {
-      const rpc = yield* ApiRpc
-      return yield* rpc.featureKeyCheck({ key })
-    }).pipe(
-      Effect.match({
-        onSuccess: ({ key: stored, features, expiresAt }) =>
-          Message.KeyAccepted({ key: stored, features, expiresAt }),
-        onFailure: (error) =>
-          Message.KeyRefused({ note: Schema.is(ApiError)(error) ? error.message : unreachable }),
       }),
     ),
 })

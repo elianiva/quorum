@@ -10,8 +10,6 @@ import {
   DoorOpen,
   Download,
   House,
-  KeyRound,
-  Lock,
   LogOut,
   Play,
   RefreshCw,
@@ -37,7 +35,6 @@ import {
   roomLive,
   type Model,
   type SettingsSection,
-  type Tone,
 } from '@/game/model.ts'
 import { seatColour } from '@/game/seat-colour.ts'
 import type { Vote } from '@quorum/simulation/room'
@@ -56,8 +53,6 @@ import { Kbd } from '@quorum/ui/primitives/kbd'
 import { switch_ } from '@quorum/ui/primitives/switch'
 import * as VolumeSlider from '@quorum/ui/primitives/slider'
 import { settingsSections, type Setting } from '@/game/settings.ts'
-import { KEY_FIELD_MAX, canPlayOnline, keyNote } from '@/game/access.ts'
-import { KeyPhase } from '@/game/key-machine.ts'
 import { languagePicker } from '@/i18n/picker.ts'
 import { EYEBROW, FIGURE, FLOAT, NESTED, SCROLL, WELL, FIGURE_STYLE } from '@quorum/ui/game/bits'
 
@@ -1540,8 +1535,6 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const body: Array<Html> = []
 
   if (RoomPhase.isAnyOf(['Idle', 'Closed'])(phase)) {
-    // A key that was turned off stops a Room here as well as at the API Worker.
-    const allowed = canPlayOnline(model)
     body.push(
       h.p(
         [
@@ -1581,67 +1574,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           ],
         ),
       )
-    if (file !== null && !allowed)
-      body.push(
-        h.div(
-          [
-            h.Class(
-              css({
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '2',
-                paddingInline: '5',
-                paddingTop: '4',
-              }),
-            ),
-          ],
-          [
-            h.p(
-              [
-                h.Class(
-                  css({
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '2',
-                    fontSize: 'type.14',
-                    lineHeight: 'fine',
-                    color: 'mutedForeground',
-                  }),
-                ),
-              ],
-              [
-                icon(h, Lock, css({ marginTop: '0.5', width: '4', height: '4', flexShrink: '0' })),
-                t.room.needsKey,
-              ],
-            ),
-            button(
-              {
-                onClick: Message.FeatureKeyAsked(),
-                variant: 'outline',
-                size: 'lg',
-                className: css({
-                  width: '100%',
-                  justifyContent: 'flex-start',
-                  gap: '2.5',
-                }),
-              },
-              [
-                icon(
-                  h,
-                  KeyRound,
-                  css({
-                    width: '4',
-                    height: '4',
-                  }),
-                ),
-                t.panels.featureKey,
-              ],
-              h,
-            ),
-          ],
-        ),
-      )
-    if (file !== null && allowed)
+    if (file !== null)
       body.push(
         h.div(
           [
@@ -1952,172 +1885,11 @@ const settingAction = (
     h,
   )
 
-/** A status line reads its tone from what it says: a refusal warns, an active key confirms. */
-const toneClass = (tone: Tone): string =>
-  tone === 'ok'
-    ? css({ color: 'ok' })
-    : tone === 'warn'
-      ? css({ color: 'warn' })
-      : tone === 'danger'
-        ? css({ color: 'danger' })
-        : css({ color: 'mutedForeground' })
-
-/**
- * The feature key: the field, the check, and what the key unlocks. The player keeps
- * the key, so removing it here only clears this browser.
- */
-const featureKeyRow = (label: string, model: Model, h: HtmlBuilder<Message>): Html => {
-  const t = copy(h)
-  const note = model.pwa.online
-    ? keyNote(model, t)
-    : { text: t.pwa.offlineNote, tone: 'warn' as Tone }
-  const checking = KeyPhase.guards.Checking(model.keyPhase)
-  const canSubmit = model.pwa.online && !checking && model.keyDraft.trim() !== ''
-  return h.div(
-    [
-      h.Class(
-        css({
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '2',
-          paddingInline: '4',
-          paddingBlock: '3',
-        }),
-      ),
-    ],
-    [
-      h.label([h.For('feature-key'), h.Class(settingLabelClass)], [label]),
-      h.div(
-        [
-          h.Class(
-            css({
-              display: 'flex',
-              alignItems: 'center',
-              gap: '2',
-            }),
-          ),
-        ],
-        [
-          h.label(
-            [
-              h.Class(
-                cx(
-                  WELL,
-                  css({
-                    display: 'flex',
-                    height: '9',
-                    minWidth: '0',
-                    flex: '1 1 0%',
-                    alignItems: 'center',
-                    paddingInline: '2.5',
-                  }),
-                ),
-              ),
-            ],
-            [
-              h.input([
-                h.Id('feature-key'),
-                h.Type('text'),
-                h.Value(model.keyDraft),
-                h.Maxlength(KEY_FIELD_MAX),
-                h.Placeholder('XXXX-XXXX-XXXX-XXXX'),
-                h.Autocomplete('off'),
-                h.Autocapitalize('characters'),
-                h.Spellcheck(false),
-                h.AriaLabel(label),
-                h.OnInput((value) => Message.KeyTyped({ value })),
-                h.OnKeyDownPreventDefault((key) =>
-                  key === 'Enter' && canSubmit
-                    ? Option.some(Message.KeySubmitted())
-                    : Option.none(),
-                ),
-                h.Class(
-                  css({
-                    width: '100%',
-                    minWidth: '0',
-                    backgroundColor: 'transparent',
-                    fontFamily: 'mono',
-                    fontSize: 'type.14',
-                    lineHeight: 'fine',
-                    textTransform: 'uppercase',
-                    outlineStyle: 'none',
-                    '&::placeholder': {
-                      color: 'color-mix(in oklab, var(--muted-foreground) 60%, transparent)',
-                      textTransform: 'none',
-                    },
-                  }),
-                ),
-              ]),
-            ],
-          ),
-          button(
-            {
-              onClick: Message.KeySubmitted(),
-              size: 'lg',
-              isDisabled: !canSubmit,
-              className: css({
-                flexShrink: '0',
-              }),
-            },
-            checking ? t.panels.featureKeyChecking : t.panels.activateFeatureKey,
-            h,
-          ),
-        ],
-      ),
-      h.div(
-        [
-          h.Class(
-            css({
-              display: 'flex',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '2',
-            }),
-          ),
-        ],
-        [
-          h.p(
-            [
-              h.Class(
-                cx(
-                  css({
-                    fontSize: 'type.12',
-                    lineHeight: 'snug',
-                  }),
-                  toneClass(note.tone),
-                ),
-              ),
-            ],
-            [note.text],
-          ),
-          model.access.key === null
-            ? h.empty
-            : button(
-                {
-                  onClick: Message.KeyCleared(),
-                  variant: 'ghost',
-                  size: 'xs',
-                  className: css({
-                    color: 'mutedForeground',
-                  }),
-                },
-                t.panels.removeFeatureKey,
-                h,
-              ),
-        ],
-      ),
-    ],
-  )
-}
-
 /** One setting with the control this panel has for it: a switch, a slider, a picker, or a button. */
 const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Html => {
   switch (setting.kind) {
     case 'volume':
       return volumeRow(model, h)
-    case 'key':
-      return featureKeyRow(setting.label, model, h)
     case 'toggle':
       return settingSwitch(
         {
@@ -2301,7 +2073,7 @@ export const settingsPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                     }),
                   ),
                 ],
-                [section('access'), section('privacy'), section('save')],
+                [section('privacy'), section('save')],
               ),
             ],
           ),

@@ -6,7 +6,6 @@ import * as VolumeSlider from '@quorum/ui/primitives/slider'
 import { initStackPicker } from './stack-picker.ts'
 import {
   CheckRoom,
-  LoadAccess,
   LoadFounder,
   LoadSaves,
   AppendLog,
@@ -27,15 +26,7 @@ import { freshBoard, milestones, sync, type UpdateResult } from './update/shared
 import { isExited } from './company-machine.ts'
 import { isSending, isSent } from './survey-machine.ts'
 import { has } from '@quorum/simulation/lookups'
-import {
-  ledgerOf,
-  Model,
-  halted,
-  EMPTY_ACCESS,
-  EMPTY_PALETTE,
-  EMPTY_ROOM,
-  EMPTY_SURVEY,
-} from './model.ts'
+import { ledgerOf, Model, halted, EMPTY_PALETTE, EMPTY_ROOM, EMPTY_SURVEY } from './model.ts'
 import { nameOf } from '../platform/room-socket.ts'
 import { newGame } from '@quorum/simulation/company'
 import { type ApiRpc } from '@/platform/rpc.ts'
@@ -58,7 +49,6 @@ import { paletteHandlers } from './update/palette.ts'
 import { panelsHandlers } from './update/panels.ts'
 import { saveHandlers } from './update/save.ts'
 import { roomHandlers } from './update/room.ts'
-import { accessHandlers } from './update/access.ts'
 import { pwaHandlers } from './update/pwa.ts'
 import { pwaSnapshot } from '../platform/pwa.ts'
 
@@ -105,9 +95,6 @@ export const initialModel = (): Model => {
       pwaPromptSeen: false,
     },
     pwa: pwaSnapshot(),
-    access: EMPTY_ACCESS,
-    keyDraft: '',
-    keyPhase: { _tag: 'Idle' },
     settingsSection: 'sound',
     languagePicker: Listbox.init({ id: 'interface-language' }),
     volumeSlider: VolumeSlider.init({ id: 'volume', min: 0, max: 100, step: 5 }),
@@ -142,7 +129,6 @@ export const init: Runtime.RoutingApplicationInit<Model, Message, void, ApiRpc> 
       LoadSaves({}),
       LoadSandboxStore({}),
       LoadPrefs({}),
-      LoadAccess({}),
       LoadFounder({}),
       ...(AppRoute.guards.Room(route) ? [CheckRoom({ code: route.room })] : []),
       ...(url.pathname === urlOf(route) ? [] : [ReplaceUrl({ url: urlOf(route) })]),
@@ -169,9 +155,6 @@ export const QUIET = new Set([
   'PreviewComputed',
   // The answers are the player's words; only sending them is a gesture.
   'SurveyChanged',
-  // The key field changes on every keystroke; only submitting it is a gesture.
-  'KeyTyped',
-  'AccessLoaded',
   // The browser's install offer and network state change without a gesture.
   'PwaChanged',
   // The palette's query and highlight are UI state; the row the player runs is logged.
@@ -323,7 +306,6 @@ function handle(model: Model, message: Message): UpdateResult {
     ...paletteHandlers(model, route),
     ...saveHandlers(model, route),
     ...roomHandlers(model),
-    ...accessHandlers(model),
     ...pwaHandlers(model),
   })
 }

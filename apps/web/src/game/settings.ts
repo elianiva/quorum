@@ -8,14 +8,12 @@ import { PrefsMessage } from './prefs.ts'
 
 /**
  * One Settings row. The title screen's page and the board's panel render the same
- * list. A `key` row reads the key field from the Model, so the two surfaces cannot
- * show a different key.
+ * list.
  */
 export type Setting =
   | Readonly<{ kind: 'volume'; label: string; value: number }>
   | Readonly<{ kind: 'toggle'; id: string; label: string; isOn: boolean; message: Message }>
   | Readonly<{ kind: 'language'; label: string }>
-  | Readonly<{ kind: 'key'; id: string; label: string }>
   | Readonly<{ kind: 'action'; id: string; label: string; glyph: IconNode; message: Message }>
 
 export type SettingSection = Readonly<{
@@ -85,13 +83,6 @@ export const settingsSections = (model: Model, t: Messages): ReadonlyArray<Setti
         toggle('theme', t.panels.darkMode, prefs.theme === 'dark', PrefsMessage.ThemeToggled()),
         { kind: 'language', label: t.panels.language },
       ],
-    },
-    {
-      // A feature key unlocks what runs on the server, so it sits apart from the switches
-      // that only change this browser.
-      id: 'access',
-      label: t.panels.featureKeys,
-      rows: [{ kind: 'key', id: 'feature-key', label: t.panels.featureKey }],
     },
     {
       id: 'privacy',

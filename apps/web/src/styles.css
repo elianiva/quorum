@@ -444,13 +444,6 @@
     inset 0 0 0 1px var(--signal),
     0 -1px 0 oklch(0 0 0 / 0.4);
 }
-.booth-note {
-  margin: calc(var(--s) * 0.4) 0 calc(var(--s) * 0.6);
-  padding: 0 calc(var(--s) * 1.4);
-  color: var(--muted-foreground);
-  font-size: max(var(--type-10), calc(var(--s) * 1.3 * var(--type-scale)));
-  line-height: var(--quorum-line-heights-body-tight);
-}
 .booth-logo-mini {
   flex: none;
   width: max(16px, calc(var(--s) * 2.2));
@@ -678,16 +671,6 @@
   color: var(--muted-foreground);
   letter-spacing: var(--quorum-letter-spacings-badge);
   opacity: 0.5;
-}
-/* A note under a setting: the state, or why a check failed. `.booth-note` styles the rest. */
-.booth-note.is-ok {
-  color: var(--ok);
-}
-.booth-note.is-warn {
-  color: var(--warn);
-}
-.booth-note.is-danger {
-  color: var(--danger);
 }
 .booth-hint {
   flex: none;

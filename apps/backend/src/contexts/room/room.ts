@@ -50,6 +50,9 @@ export const MAX_LINKS = 3_200
 /** The most one Durable Object storage value holds. */
 export const STORAGE_VALUE_BYTES = 2 * 1024 * 1024
 
+/** The Rooms a deployment runs at once. A Room costs a Durable Object and its sockets. */
+export const MAX_ROOMS = 20
+
 /** A vote lapses after a minute of sim time. */
 export const VOTE_SECONDS = 60
 

@@ -1,7 +1,6 @@
 import { Schema } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
 
-import { accessCases } from './message/access.ts'
 import { canvasCases } from './message/canvas.ts'
 import { clockCases } from './message/clock.ts'
 import { companiesCases } from './message/companies.ts'
@@ -39,7 +38,6 @@ const pwaCases = {
 } as const
 
 export const Message = defineMessageUnion({
-  ...accessCases,
   ...canvasCases,
   ...clockCases,
   ...companiesCases,

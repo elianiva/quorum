@@ -1,5 +1,8 @@
 # Feature keys unlock server features
 
+Superseded: Online Rooms are open to everyone, and a Room holds 20 Seats. The key, `FeatureGate`, and the
+`feature_keys` table are gone. The cost of an open Room is bounded by the Seat limit and the rate limits.
+
 Online Rooms are the first feature a player can only use with a key. The game has no accounts, so a
 key is the only thing that says who may use a feature that costs the deployment money.
 

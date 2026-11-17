@@ -1,5 +1,5 @@
 import { Option, Schema } from 'effect'
-import { ROOM_SOCKET_PATH } from '@quorum/rpc'
+import { ROOMS_FULL_CLOSE, ROOM_SOCKET_PATH } from '@quorum/rpc'
 import { ROOM_NAME_LENGTH, randomName } from '../game/names.ts'
 import { ROOM_NAME_KEY, readStored, writeStored } from '../game/storage.ts'
 import {
@@ -23,7 +23,7 @@ export type RoomConfig = Readonly<{
   token?: string
 }>
 
-export type RoomStatus = 'open' | 'closed' | 'error'
+export type RoomStatus = 'open' | 'closed' | 'error' | 'full'
 
 const encode = Schema.encodeSync(ClientMessage)
 const decode = Schema.decodeUnknownOption(ServerMessage)
@@ -84,11 +84,16 @@ const open = (): void => {
     if (Option.isNone(decoded)) return
     for (const listener of messages) listener(decoded.value)
   })
-  next.addEventListener('close', () => {
+  next.addEventListener('close', (event) => {
     // A socket we replaced: its Seat is the new socket's now, and retrying here
     // would open a second one that the Room closes again.
     if (mine !== generation) return
     if (socket === next) socket = null
+    // Every Room is in use: retrying would only be refused again.
+    if (event.code === ROOMS_FULL_CLOSE) {
+      stopped = true
+      return announce('full')
+    }
     announce('closed')
     if (stopped || config === null) return
     attempt += 1

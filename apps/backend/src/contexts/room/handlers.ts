@@ -1,6 +1,5 @@
 import { Effect, Option, Schema } from 'effect'
 import { ApiError, RoomRpc } from '@quorum/rpc'
-import { FeatureGate } from '../access/gate.ts'
 import { SIM_VERSION } from '@quorum/simulation/version'
 import { Game, Sample } from '@quorum/simulation/state'
 import { RoomDirectory, RoomError } from './directory.ts'
@@ -25,11 +24,8 @@ const unavailable = (error: RoomError) =>
 export const RoomHandlers = RoomRpc.toLayer(
   Effect.gen(function* () {
     const directory = yield* RoomDirectory
-    const gate = yield* FeatureGate
     return RoomRpc.of({
       roomPublish: Effect.fn('room.publish')(function* (payload) {
-        // A Room costs a Durable Object and a socket, so it is behind a feature key.
-        yield* gate.require('multiplayer', payload.key)
         const game = decodeGame(payload.game)
         if (Option.isNone(game)) return yield* fail('The Company could not be read.')
         if (game.value.nodes.length > MAX_NODES || game.value.links.length > MAX_LINKS)
@@ -47,7 +43,12 @@ export const RoomHandlers = RoomRpc.toLayer(
         if (!Number.isFinite(payload.wall)) return yield* fail('The clock is not valid.')
         const published = yield* directory
           .publish({ name, game: game.value, samples, wall: payload.wall, simVersion: SIM_VERSION })
-          .pipe(Effect.catchTag('RoomError', unavailable))
+          .pipe(
+            Effect.catchTags({
+              RoomError: unavailable,
+              RoomFull: (full) => fail(`All ${full.max} online Rooms are in use. Try again later.`),
+            }),
+          )
         yield* Effect.annotateCurrentSpan({
           'room.code': published.code,
           'room.samples': samples.length,

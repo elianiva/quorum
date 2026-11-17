@@ -5,7 +5,7 @@ import { ServerMessage, VoteKind } from '@quorum/simulation/room'
 export const roomCases = {
   /** One frame from the socket, decoded. */
   RoomReceived: { message: ServerMessage },
-  RoomStatusChanged: { status: Schema.Literals(['open', 'closed', 'error']) },
+  RoomStatusChanged: { status: Schema.Literals(['open', 'closed', 'error', 'full']) },
   /** The player asks to take the current Company online. */
   RoomPublishAsked: {},
   RoomPublished: { code: Schema.String, token: Schema.String },

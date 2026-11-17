@@ -16,7 +16,6 @@ import { afterRound } from './session.ts'
 import { withFile } from '../saves.ts'
 import { CopyText, WriteCompany, PublishRoom, SendRoom } from '../commands.ts'
 import { ROOM_NAME_LENGTH } from '../names.ts'
-import { canPlayOnline } from '../access.ts'
 import { setRoomName } from '../../platform/room-socket.ts'
 import { refusalIn } from '../../i18n/refusal.ts'
 import { ROOM_SAMPLES, ServerMessage } from '@quorum/simulation/room'
@@ -266,6 +265,15 @@ export const roomHandlers = (model: Model): MessageCases<UpdateResult, RoomTag> 
   RoomReceived: ({ message }) => received(model, message),
   RoomStatusChanged: ({ status }) => {
     if (status === 'open') return { model }
+    if (status === 'full') {
+      const next: Model = {
+        ...model,
+        room: { ...model.room, phase: roomStep(model.room.phase, { _tag: 'Left' }), seats: [] },
+        route: hasCompany(model) ? AppRoute.Company() : AppRoute.Title(),
+        panel: 'none',
+      }
+      return withToast(next, say(model).room.full, 'warn')
+    }
     if (!RoomPhase.guards.Online(model.room.phase)) return { model }
     return {
       model: {
@@ -319,7 +327,6 @@ export const roomHandlers = (model: Model): MessageCases<UpdateResult, RoomTag> 
     const file = currentFile(model)
     if (file === null) return withToast(model, say(model).room.notAvailable, 'warn')
     // Online Rooms are behind a feature key. The API Worker checks it again on the publish.
-    if (!canPlayOnline(model)) return withToast(model, say(model).room.needsKey, 'warn')
     if (file.online !== null)
       return {
         model: {
@@ -340,7 +347,6 @@ export const roomHandlers = (model: Model): MessageCases<UpdateResult, RoomTag> 
           game: { ...model.board.game, history: [] },
           samples: model.board.game.history,
           wall: Date.now(),
-          key: model.access.key,
         }),
       ],
     }

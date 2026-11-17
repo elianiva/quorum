@@ -15,7 +15,7 @@ import * as Work from './work.ts'
    ========================================================================== */
 
 /** Seats a Room holds, the owner included. */
-export const ROOM_SEATS = 4
+export const ROOM_SEATS = 20
 
 /** The speeds a Room runs at. Time dilation is a Perk, and a Room has no Founder. */
 export const ROOM_SPEEDS = [0.5, 1, 3, 10] as const

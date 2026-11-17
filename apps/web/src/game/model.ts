@@ -22,8 +22,6 @@ export { TradeoffState } from './tradeoff-machine.ts'
 import { ClockMode, away as clockAwayOf, paused as clockPausedOf } from './clock-machine.ts'
 import { RoomPhase, inRoom } from './room-machine.ts'
 import { Seat, Vote } from '@quorum/simulation/room'
-import { KeyedFeature } from '@quorum/rpc'
-import { KeyPhase } from './key-machine.ts'
 import { ChangeState } from './change-machine.ts'
 import { ConfirmDelete } from './confirm-delete-machine.ts'
 import { DisclosureFlow } from './disclosure-machine.ts'
@@ -454,31 +452,8 @@ export const roomCode = (model: Model): string | null =>
 export const roomOwner = (model: Model): boolean =>
   RoomPhase.guards.Online(model.room.phase) && model.room.phase.owner
 
-/**
- * The feature key this browser holds, and what the API Worker said it unlocks.
- * There are no accounts, so a key is the only thing that ties a player to the
- * features they paid for or were invited to. `key-machine.ts` holds the check.
- */
-export const Access = Schema.Struct({
-  /** The key in the form the API Worker reads it, or null before one is activated. */
-  key: Schema.NullOr(Schema.String),
-  features: Schema.Array(KeyedFeature),
-  /** When the key stops working, in epoch milliseconds, or null for no end. */
-  expiresAt: Schema.NullOr(Schema.Finite),
-})
-export type Access = typeof Access.Type
-
-export const EMPTY_ACCESS: Access = { key: null, features: [], expiresAt: null }
-
 /** A section of Settings. `settings.ts` holds their labels, order, and rows. */
-export const SettingsSection = Schema.Literals([
-  'sound',
-  'play',
-  'display',
-  'privacy',
-  'access',
-  'save',
-])
+export const SettingsSection = Schema.Literals(['sound', 'play', 'display', 'privacy', 'save'])
 export type SettingsSection = typeof SettingsSection.Type
 
 /**
@@ -533,12 +508,6 @@ export const Model = Schema.Struct({
   prefs: Prefs,
   /** Install, update, and connection state from the browser. */
   pwa: Pwa,
-  /** The feature key this browser holds, kept with the settings. */
-  access: Access,
-  /** The key field, while the player types or pastes one. */
-  keyDraft: Schema.String,
-  /** Where the key check stands, so the field can say it is working or why it failed. */
-  keyPhase: KeyPhase,
   /** The Settings section the title's page shows. The board's panel shows them all. */
   settingsSection: SettingsSection,
   languagePicker: Listbox.Model,

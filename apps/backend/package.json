@@ -4,8 +4,7 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsrs --noEmit -p tsconfig.json && effect-tsrs diagnostics --strict --project tsconfig.json",
-    "test": "vitest run",
-    "feature-key": "node scripts/feature-key.ts"
+    "test": "vitest run"
   },
   "dependencies": {
     "@quorum/agent": "workspace:*",

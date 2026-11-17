@@ -1,11 +1,6 @@
-/** The four Seat colours, in the order a Room hands them out. */
-export const SEAT_COLOURS = [
-  'oklch(0.62 0.16 30)',
-  'oklch(0.58 0.15 255)',
-  'oklch(0.6 0.13 155)',
-  'oklch(0.6 0.17 320)',
-] as const
+/** One hue step shy of the golden angle, so neighbouring Seats land far apart on the wheel. */
+const HUE_STEP = 137.5
 
-/** The colour of one Seat: its index, wrapped to the palette. */
+/** The colour of one Seat, by its index: a Room holds 20, so each gets its own hue. */
 export const seatColour = (index: number): string =>
-  SEAT_COLOURS[index % SEAT_COLOURS.length] ?? SEAT_COLOURS[0]
+  `oklch(0.6 0.15 ${Math.round((30 + index * HUE_STEP) % 360)})`

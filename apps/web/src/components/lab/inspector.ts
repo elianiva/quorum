@@ -2073,17 +2073,19 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
             width: '348px',
             flexDirection: 'column',
             overflow: 'hidden',
+            // A bottom sheet, not a screen: the Board above it stays in sight and the card stays
+            // movable. Its height is PHONE_SHEET in the board controller.
             _compact: {
-              inset: '0',
+              inset: 'auto 0 0 0',
+              height: '52dvh',
               maxHeight: 'none',
               width: 'auto',
-              borderRadius: '0',
-              paddingTop: 'env(safe-area-inset-top)',
+              borderBottomRadius: '0',
               paddingBottom: 'env(safe-area-inset-bottom)',
-              boxShadow: 'none',
             },
             _short: {
               left: 'auto',
+              height: 'auto',
               top: '132px',
               right: 'max(8px, env(safe-area-inset-right))',
               width: '320px',
@@ -2102,7 +2104,6 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
           onClick: Message.EmptyTapped(),
           className: css({
             _compact: {
-              top: 'max(6px,env(safe-area-inset-top))',
               width: '11',
               height: '11',
             },

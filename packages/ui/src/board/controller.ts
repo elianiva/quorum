@@ -44,6 +44,11 @@ type Mutable<T> = { -readonly [K in keyof T]: T[K] }
 /** The phone: narrow in portrait, short in landscape (the `compact` variant in theme.css). */
 const isPhone = (): boolean => matchMedia('(max-width: 639px), (max-height: 499px)').matches
 
+/** The share of a phone's height the Inspector's bottom sheet takes; keep it in step with its height in inspector.ts. */
+const PHONE_SHEET = 0.52
+/** The portrait phone, the only layout where the Inspector is a sheet; a short landscape window keeps its side panel. */
+const sheetShown = (): boolean => matchMedia('(max-width: 639px) and (min-height: 500px)').matches
+
 /** A two-finger pan keeps the Board moving after the fingers leave, easing out over this long. */
 const GLIDE_S = 0.28
 /** The fastest a flick can start the glide, in pixels a second. */
@@ -392,6 +397,7 @@ export class BoardController {
 
   draw(state: BoardState): void {
     if (this.started && this.seeded) this.diffLinks(state)
+    const opened = state.selected !== null && state.selected !== this.state?.selected
     this.state = state
     this.activityOf = state.translateActivity ?? ((activity) => activity)
     const dragged = this.dragged
@@ -407,9 +413,32 @@ export class BoardController {
       return
     }
     if (!this.fitted) this.fit()
+    if (opened && state.selected) this.reveal(state.selected)
     this.syncCards()
     this.syncGhost()
     this.run()
+  }
+
+  /**
+   * On a phone the Inspector is a sheet over the lower part of the Board. A card it would cover
+   * slides up into the room above it, so the Board stays in sight and the card can still be moved.
+   * A card already clear of the sheet stays where it is.
+   */
+  reveal(nodeId: string): void {
+    if (!sheetShown()) return
+    const node = this.state?.game.nodes.find((entry) => entry.id === nodeId)
+    const h = this.host.clientHeight
+    if (!node || h === 0) return
+    const scale = this.world.scale.x
+    const top = this.world.position.y + node.y * scale
+    const bottom = top + heightOf(node.type) * scale
+    const roomTop = 150
+    const roomBottom = h * (1 - PHONE_SHEET) - 12
+    if (top >= roomTop && bottom <= roomBottom) return
+    const middle = (roomTop + roomBottom) / 2
+    const centered = middle - (heightOf(node.type) * scale) / 2
+    this.world.position.y += Math.max(roomTop, centered) - top
+    this.paint()
   }
 
   /** New links draw in from their port; removed ones fade where they were. */
@@ -563,7 +592,7 @@ export class BoardController {
     if (w === 0 || h === 0) return
     const phone = isPhone()
     const top = phone ? 160 : 120
-    const bottom = phone ? 90 : 210
+    const bottom = sheetShown() ? h * PHONE_SHEET : phone ? 90 : 210
     const left = phone ? 0 : 380
     const right = phone ? 0 : 380
     const roomW = Math.max(1, w - left - right)

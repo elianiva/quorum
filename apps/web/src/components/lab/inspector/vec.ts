@@ -10,7 +10,6 @@ import { Message } from '@/game/message.ts'
 import { row } from '@quorum/ui/game/bits'
 import { type Panel, caption, outbound, percent, picker, section } from './shared.ts'
 
-/** A Vector Index's type: its recall, its lookups, and the memory it bills (07). */
 const vector = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
 

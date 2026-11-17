@@ -7,7 +7,6 @@ const focusRing = '0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)'
 const invalidRing = '0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent)'
 const darkInvalidRing = '0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent)'
 
-/** Badge variant keys — keep in sync with `badgeVariants`. */
 export const badgeVariantKeys = [
   'default',
   'secondary',
@@ -178,9 +177,6 @@ export const badgeClass = css({
 
 type StyleConfig = Readonly<{ className?: string; variant?: BadgeVariant }>
 
-/** Styled badge built as a themed `<span>` (mirrors the shadcn v4 `badge.tsx`
- *  default element). For a link badge, render an `<a>` child and apply
- *  `badgeClass` via `cn` — foldcn has no Radix `Slot`. */
 export const badge = <M>(
   config: StyleConfig,
   children: ReadonlyArray<Child>,

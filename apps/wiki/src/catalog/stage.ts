@@ -7,15 +7,11 @@ import {
   type BoardState,
 } from '@quorum/ui/board/board'
 
-/* The catalog's Pixi stage. Imported on demand, so no other wiki page loads the board for it. The
-   stage never edits: the host mounts the board once, and every change of args goes to `draw`. */
-
 const NOOP = () => {}
 watchBoardTheme()
 
 export const BOARD_KEY = 'catalog-stage'
 
-/** The stage shows the state last drawn, even one drawn before the host element exists. */
 export const draw = (state: BoardState): void => {
   setBoard(BOARD_KEY, state)
   requestAnimationFrame(() => fitBoard(BOARD_KEY))
@@ -44,7 +40,6 @@ export const attach = (host: HTMLElement): (() => void) => {
   }
 }
 
-/** Frames per second the page paints, written into `element` once a second. */
 export const meter = (element: HTMLElement): (() => void) => {
   let frames = 0
   let since = performance.now()

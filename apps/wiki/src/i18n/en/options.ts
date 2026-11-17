@@ -1,7 +1,3 @@
-/* The words of the `::Options` table: each Component's Inspector controls, the values they offer
-   and when the Inspector shows them. Values that the catalog names, such as a policy or a
-   strategy, come from the catalog. */
-
 export const options = {
   always: 'Always',
   after: (research: string) => `After ${research}`,
@@ -10,7 +6,6 @@ export const options = {
   noMax: 'No max',
   off: 'Off',
   none: 'None',
-  // Control names.
   runtime: 'Runtime',
   framework: 'Framework',
   poolSize: 'Pool size',
@@ -90,7 +85,6 @@ export const options = {
   presence: 'Presence',
   reconnectBackoff: 'Reconnect backoff',
   clustering: 'Clustering',
-  // Where the Inspector shows a control.
   pooledRuntimes: 'Pooled runtimes',
   phpFpm: 'PHP-FPM',
   persistentRuntimes: 'Persistent runtimes',
@@ -100,7 +94,6 @@ export const options = {
   twoShardsShown: 'Two or more shards',
   withDlq: 'With a dead-letter queue',
   searchEngines: 'Elasticsearch and OpenSearch',
-  // Values.
   workerAndUp: '1 worker and up',
   offEveryFewHours: 'Off / Every few hours',
   offGzip: 'Off / Gzip',

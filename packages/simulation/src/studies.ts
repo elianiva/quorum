@@ -30,14 +30,12 @@ import { assignments } from './work.ts'
 import { FeatureId as FeatureIdSchema } from './state.ts'
 import type { Game, InsightPools, Study } from './state.ts'
 
-/** Seconds of traces the Company keeps: its longest Analytics retention. */
 export const retentionOf = (game: Game): number =>
   game.nodes.reduce(
     (longest, node) => (node.type === 'analytics' ? Math.max(longest, node.retention) : longest),
     0,
   ) || RETENTION_WINDOWS[0]
 
-/** Per Era and pool, the largest share of any item open by then: a pool always holds one Study. */
 const FLOORS: ReadonlyArray<Readonly<Record<InsightPool, number>>> = STUDY_SECONDS.map(
   (_, stage) =>
     Object.fromEntries(
@@ -52,18 +50,12 @@ const FLOORS: ReadonlyArray<Readonly<Record<InsightPool, number>>> = STUDY_SECON
     ) as Record<InsightPool, number>,
 )
 
-/**
- * The most a pool holds (12 "Retention"): the retention window of its live
- * rate, and never less than the costliest open Study's share, so a burst of
- * failures in an incident can pay for a Study later.
- */
 export const capOf = (game: Game, ledger: Ledger, pool: InsightPool): number =>
   Math.max(
     FLOORS[Math.min(game.stage, FLOORS.length - 1)]?.[pool] ?? POOL_FLOOR,
     retentionOf(game) * ledger.insight[pool],
   )
 
-/** Splits an old save's single balance into pools by the request mix users send. */
 const migrated = (game: Game, ledger: Ledger): InsightPools => {
   if (game.insight <= 0) return game.pools
   const pools = { ...game.pools }
@@ -75,7 +67,6 @@ const migrated = (game: Game, ledger: Ledger): InsightPools => {
   return pools
 }
 
-/** Adds a Step's Insight up to each pool's cap. Grants ignore the cap. */
 export const accrue = (
   game: Game,
   ledger: Ledger,
@@ -94,7 +85,6 @@ export const accrue = (
   return next
 }
 
-/** What an item costs this Company: a vendor's demo takes a fifth off its Insight. */
 export const recipeOf = (
   game: Game,
   id: ResearchId,
@@ -109,13 +99,11 @@ export const recipeOf = (
   )
 }
 
-/** The request kinds of a recipe, without Failure. */
 const recipeKinds = (id: ResearchId): ReadonlyArray<RequestKind> =>
   (Object.keys(RECIPE[id]) as Array<InsightPool>).filter(
     (pool): pool is RequestKind => pool !== 'failure',
   )
 
-/** The gap in an item's breadth: the recipe kind sampled at the fewest places. */
 export const breadthGap = (
   id: ResearchId,
   ledger: Ledger,
@@ -139,11 +127,9 @@ export const breadthGap = (
   return null
 }
 
-/** Whether the Design samples an item's recipe kinds at enough Component types. */
 export const broadEnough = (id: ResearchId, ledger: Ledger): boolean =>
   breadthGap(id, ledger) === null
 
-/** Whether a Team spikes the running Study: a Team builds its Spike now. */
 export const spiked = (game: Game): boolean => {
   const running = game.studies[0]
   if (!running) return false
@@ -152,7 +138,6 @@ export const spiked = (game: Game): boolean => {
   )
 }
 
-/** How fast the running Study goes: a Spike doubles it, study-speed research adds to it. */
 export const studySpeed = (game: Game): number =>
   (spiked(game) ? SPIKE_SPEED : 1) *
   (1 + STUDY_SPEEDUP * STUDY_SPEED_RESEARCH.filter((id) => has(game, id)).length)
@@ -160,7 +145,6 @@ export const studySpeed = (game: Game): number =>
 export const studySeconds = (id: ResearchId): number =>
   STUDY_SECONDS[RESEARCH[id].era] ?? STUDY_SECONDS[STUDY_SECONDS.length - 1] ?? 3_600
 
-/** The pool that limits the running Study now, if any: the one with the least for its draw. */
 export const limitingPool = (game: Game): InsightPool | null => {
   const running = game.studies[0]
   if (!running) return null
@@ -180,7 +164,6 @@ export const limitingPool = (game: Game): InsightPool | null => {
 
 const InsightPoolSchema = Schema.Literals(INSIGHT_POOLS)
 
-/** The value a shape is measured against: a count, a share, a ratio, a wait in seconds, or one replica. */
 export const shapeValueOf = (id: ResearchId): number => {
   const shape = SHAPE[id]
   if (!shape) return 0
@@ -200,11 +183,6 @@ export const shapeValueOf = (id: ResearchId): number => {
   }
 }
 
-/**
- * The closest the Design comes to a shape (10 "Research shapes"): the App Servers with the most
- * database connections, the Database that spends the most of its work on reads, the Cache with
- * the best hit ratio, the Queue with the oldest task.
- */
 export const shapeCurrent = (game: Game, ledger: Ledger, id: ResearchId): number => {
   const shape = SHAPE[id]
   if (!shape) return 0
@@ -239,11 +217,6 @@ export const shapeCurrent = (game: Game, ledger: Ledger, id: ResearchId): number
   return best
 }
 
-/**
- * Whether the Design shows the behaviour an item's Study needs (10 "Research shapes"). A cache
- * that works, more App connections than a Pooler keeps, a Queue with a backlog, a replica serving
- * reads: research asks the system to do the thing before the player can learn the next thing.
- */
 export const shapeHolds = (game: Game, ledger: Ledger, id: ResearchId): boolean => {
   const shape = SHAPE[id]
   if (!shape) return true
@@ -251,7 +224,6 @@ export const shapeHolds = (game: Game, ledger: Ledger, id: ResearchId): boolean 
   return shape.kind === 'connections' ? current > shape.moreThan : current >= shapeValueOf(id)
 }
 
-/** Why a Study cannot finish on the Design as it is, and how far the Design has got. */
 export const StudyStall = Schema.TaggedUnion({
   Breadth: {
     unit: Schema.Literals(['components', 'regions']),
@@ -267,14 +239,6 @@ export const StudyStall = Schema.TaggedUnion({
 })
 export type StudyStall = typeof StudyStall.Type
 
-/**
- * Whether a Study stalls, or null when it can finish: before it starts, the Design samples its
- * kinds at too few Component types or does not show the behaviour the item teaches; in any phase,
- * a recipe pool earns nothing and holds less than the Study still draws. Once a Study has started,
- * the shape and breadth stop stalling it, so a shape that follows the load can lapse as the
- * calendar moves. A stalled first Study holds the whole queue.
- * `feature` names the unshipped Feature that brings the pool's kind, when one does.
- */
 export const studyStall = (game: Game, ledger: Ledger, id: ResearchId): StudyStall | null => {
   const running = StudyPhase.guards.Running(game.studies.find((item) => item.id === id)?.phase)
   if (!running) {
@@ -306,13 +270,11 @@ export const studyStall = (game: Game, ledger: Ledger, id: ResearchId): StudySta
   return null
 }
 
-/** The share of a Study's base duration done, or 0 when it is not queued or running. */
 export const progressOf = (study: Study | undefined): number =>
   StudyPhase.guards.Queued(study?.phase) || StudyPhase.guards.Running(study?.phase)
     ? study.phase.progress
     : 0
 
-/** Advances the running Study by some seconds, and completes it when done. */
 export const advanceStudies = (
   game: Game,
   ledger: Ledger,
@@ -323,19 +285,15 @@ export const advanceStudies = (
   const head = studies[0]
   if (!head || !researchReady(game, head.id))
     return studies.length === game.studies.length ? game : { ...game, studies }
-  // The shape and breadth gate the start, not the whole run: a Study that has started keeps going
-  // while the load it proved moves with the calendar.
   const starting = StudyPhase.guards.Queued(head.phase)
   if (starting && (!broadEnough(head.id, ledger) || !shapeHolds(game, ledger, head.id)))
     return studies.length === game.studies.length ? game : { ...game, studies }
-  // The first Study starts when it reaches the front of the queue.
   const started = starting ? studyStep(head.phase, { _tag: 'Started' }) : head.phase
   const running = { ...head, phase: started }
   const progress = started._tag === 'Queued' || started._tag === 'Running' ? started.progress : 0
   const speed = studySpeed(game)
   const share = (speed * seconds) / studySeconds(running.id)
   const recipe = Object.entries(recipeOf(game, running.id)) as Array<[InsightPool, number]>
-  // The scarcest pool sets the pace: each pool pays the same share of its draw.
   let paid = 1
   for (const [pool, cost] of recipe) {
     const draw = cost * share
@@ -364,5 +322,4 @@ export const advanceStudies = (
   }
 }
 
-/** The pools a new Era's default recipe asks for, for hints. */
 export const eraPools = (stage: number): ReadonlyArray<InsightPool> => ERA_RECIPES[stage] ?? []

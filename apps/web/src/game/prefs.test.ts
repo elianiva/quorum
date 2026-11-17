@@ -13,14 +13,12 @@ import { PanelFocus, settingsPanel } from '../components/lab/panels.ts'
 
 type Named = Readonly<{ name: string; args: Record<string, unknown> }>
 
-/** The panel opens with focus inside it, which a scene resolves by hand. */
 const focused = () => Scene.Mount.resolve(PanelFocus, Message.Synced())
 
 const named = (model: Model, message: Message): ReadonlyArray<Named> =>
   ((update(model, message) as { commands?: ReadonlyArray<unknown> }).commands ??
     []) as ReadonlyArray<Named>
 
-/** A stand-in for the document's root: applySettings only touches `dataset`, `lang`, and `classList`. */
 const rootOf = (): HTMLElement => {
   const classes = new Set<string>()
   return {
@@ -58,7 +56,6 @@ describe('text at 150%', () => {
       (command) => command.name === 'ApplySettings',
     )
     expect(apply?.args).toMatchObject({ text: 'large' })
-    // Turning it off leaves the pref at its own size again.
     expect(
       update(large.model, Message.PrefsChanged({ message: PrefsMessage.TextToggled() })).model.prefs
         .text,
@@ -72,7 +69,6 @@ describe('text at 150%', () => {
     expect(root.dataset['text']).toBe('150')
     applySettings(root, { ...settings, text: 'normal' })
     expect(root.dataset['text']).toBeUndefined()
-    // Motion and language still apply from the same call.
     applySettings(root, { ...settings, motion: 'reduce', locale: 'fr', text: 'large' })
     expect(root.dataset['motion']).toBe('reduce')
     expect(root.lang).toBe('fr')

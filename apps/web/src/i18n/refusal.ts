@@ -3,7 +3,6 @@ import { copyIn, type Messages } from './messages.ts'
 
 type Name = (t: Messages) => string
 
-/** Every catalog name and label, and the phrases of a refusal, from English text to the same entry in another language. */
 const names = (() => {
   const index = new Map<string, Name>()
   const english = copyIn('en')
@@ -29,7 +28,6 @@ const names = (() => {
   return index
 })()
 
-/** The reasons with typed copy, from their English text to their id. */
 const reasonIds = new Map(
   Object.entries(copyIn('en').toasts.reasons).map(([id, text]) => [text, id] as const),
 )
@@ -88,7 +86,6 @@ const patterns: ReadonlyArray<
   [/^A (.+) lever step is on the backlog\.$/, (t, [a]) => t.levers.onBacklogRemove(nameIn(t, a!))],
 ]
 
-/** A sentence the Simulation or the game wrote in English, in the language of `t`; unknown text stays. */
 export const reasonIn = (t: Messages, text: string): string => {
   const id = reasonIds.get(text)
   if (id !== undefined) return (t.toasts.reasons as Readonly<Record<string, string>>)[id] ?? text
@@ -109,7 +106,6 @@ export const refusalIn = (t: Messages, refusal: Refusal): string =>
     Missing: () => t.toasts.missing,
   })
 
-/** The English labels `game/update` stores for Design changes, from their text to their key. */
 const toggleIds = new Map(
   Object.entries(copyIn('en').changes.toggles).map(([id, text]) => [text, id] as const),
 )
@@ -124,11 +120,6 @@ const topologyIds = new Map<string, Topology>(
   ),
 )
 
-/**
- * The label of a Design change in the language of `t`. The Model keeps these in English, written
- * from `en.changes`, so the Dashboard translates them on display and an older change follows a
- * language switch; unknown text stays.
- */
 export const changeIn = (t: Messages, text: string): string => {
   const toggle = toggleIds.get(text)
   if (toggle !== undefined)

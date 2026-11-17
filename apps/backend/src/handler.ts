@@ -17,10 +17,6 @@ import type { AgentRoomInstance } from './platform/agent-room.ts'
 import type { RoomInstance } from './platform/room-object.ts'
 import type { SqlRunner } from './platform/sql.ts'
 
-/**
- * The bindings the stack gives the API Worker. A `D1Database` is a `SqlRunner`.
- * `FEEDBACK` holds the Exit survey, and `ROOMS` hosts an online Company.
- */
 export type Env = Readonly<{
   FEEDBACK: SqlRunner
   ROOMS: DurableObjectNamespace<RoomInstance>
@@ -29,11 +25,6 @@ export type Env = Readonly<{
   SENTRY_RELEASE?: string
 }>
 
-/**
- * Sentry gets every failure Effect reports except `ApiError`: it is the declared answer to a bad
- * request, not a fault, so it stays out of the issue list. The reporter hands a pretty-printed
- * copy to its callback, so the decision reads the original cause instead.
- */
 const declaredAnswer = (cause: Cause.Cause<unknown>): boolean =>
   cause.reasons.every(
     (reason) =>
@@ -51,14 +42,12 @@ const SentryErrors = ErrorReporter.layer(
   { mergeWithExisting: true },
 )
 
-/** Effect spans become Sentry spans, and Effect logs reach Sentry next to the console. */
 const SentryLive = Layer.mergeAll(
   SentryErrors,
   Layer.succeed(Tracer.Tracer, SentryEffectTracer),
   Logger.layer([SentryEffectLogger], { mergeWithExisting: true }),
 )
 
-/** What the RPC path needs, so a test can drive it without the Worker runtime. */
 export type HandlerInput = Readonly<{
   feedback: SqlRunner
   directory: RoomDirectory['Service']

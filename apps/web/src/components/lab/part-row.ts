@@ -6,13 +6,6 @@ import { icon } from '@quorum/ui/primitives/icon'
 import type { Message } from '@/game/message.ts'
 import type { Part } from '@/game/parts.ts'
 
-/* ==========================================================================
-   A part as a list row shows it. The dock and the command palette draw the
-   same cells, so the menu a player knows and the palette they search cannot
-   drift apart.
-   ========================================================================== */
-
-/** A part's price, or the Research that still locks it. */
 const detail = (part: Part, h: HtmlBuilder<Message>): Html => {
   if (part.locked !== null)
     return h.span(
@@ -74,7 +67,6 @@ const detail = (part: Part, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** The shaped badge, the name over its blurb, and the price or the lock. */
 export const partCells = (part: Part, h: HtmlBuilder<Message>): ReadonlyArray<Html> => [
   groupBadge(
     part.group,

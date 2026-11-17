@@ -9,10 +9,6 @@ import type { BoardState } from '@quorum/ui/board/board'
 import { heightOf } from '@quorum/ui/board/size'
 import { RESEARCH, type Args, type Story } from './stories.ts'
 
-/* The board state a story draws, built from the Simulation's own ledger, so a card here is the card
-   in the game. Kept apart from stories.ts: it solves, and so pulls the Simulation in, while the
-   story list is data every page may read. */
-
 const num = (args: Args, key: string): number => Number(args[key])
 const str = (args: Args, key: string): string => String(args[key])
 const on = (args: Args, key: string): boolean => args[key] === true
@@ -26,14 +22,12 @@ const lifeOf = (name: string) =>
         ? ({ _tag: 'Restarting', left: 8, cause: 'failure', warm: 1 } as const)
         : RUNNING
 
-/** The Game a story draws: the free Sandbox with the researched list cut to what the args keep. */
 const gameOf = (args: Args): Game => {
   const base = freeSandbox()
   const off = new Set(RESEARCH.filter(([key]) => !on(args, key)).map(([, id]) => id as string))
   return { ...base, researched: base.researched.filter((id) => !off.has(id)) }
 }
 
-/** One Node and the ledger entry its args describe. */
 const nodeWith = (game: Game, id: string, type: ComponentId, x: number, y: number, args: Args) => ({
   ...blankNode(game, id, type, x, y),
   ...(args['size'] === undefined ? {} : { size: num(args, 'size') }),
@@ -88,7 +82,6 @@ const boardOf = (
   ...extra,
 })
 
-/** The card a story draws with these args, alone on its board. */
 export const singleBoard = (story: Story, args: Args, animate: boolean): BoardState => {
   const game = gameOf(args)
   const node = nodeWith(game, `catalog-${story.id}`, story.id, 1080, 280, args)
@@ -110,7 +103,6 @@ const GAP_Y = 48
 const CARD_W = 216
 export const GRID_COLUMNS = 4
 
-/** Every state of a story side by side, on one board so the page keeps one Pixi context. */
 export const gridBoard = (story: Story, args: Args): BoardState => {
   const game = gameOf(args)
   const height = heightOf(story.id)
@@ -143,7 +135,6 @@ export const gridBoard = (story: Story, args: Args): BoardState => {
     null,
     {
       animate: false,
-      // Each card is numbered after its state's place in the legend above the stage.
       ordinals: Object.fromEntries(placed.map((entry, index) => [entry.node.id, index + 1])),
       inset: { top: 16, bottom: 16, left: 0 },
       pad: 24,
@@ -151,7 +142,6 @@ export const gridBoard = (story: Story, args: Args): BoardState => {
   )
 }
 
-/** The board a model draws: one card, or the states grid. */
 export const boardFor = (
   story: Story,
   args: Args,

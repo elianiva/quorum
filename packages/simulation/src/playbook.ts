@@ -17,7 +17,6 @@ import { placeRefusal, retryRefusal } from './founding.ts'
 import { isUnlocked } from './lookups.ts'
 import { ComponentId, GameLink, GameNode, type Game, type Region, type Retries } from './state.ts'
 
-/** A Link end: a Node of the Playbook by key, or a fixed Node by `@type`. */
 export const PlaybookNode = Schema.Struct({
   key: Schema.String,
   type: ComponentId,
@@ -27,7 +26,6 @@ export const PlaybookNode = Schema.Struct({
 })
 export type PlaybookNode = typeof PlaybookNode.Type
 
-/** A box a Playbook keeps: its name, and the keys of the Nodes it holds (07 "Data Groups"). */
 export const PlaybookBox = Schema.Struct({
   name: Schema.String,
   keys: Schema.Array(Schema.String),
@@ -50,7 +48,6 @@ export const Playbook = Schema.Struct({
 })
 export type Playbook = typeof Playbook.Type
 
-/** Node options a Playbook keeps. Size, family, runtime and framework go through their actions. */
 export const NODE_SETTINGS = [
   'workers',
   'sampleRate',
@@ -128,12 +125,10 @@ export const pick = (from: object, keys: ReadonlyArray<string>): Record<string, 
     keys.filter((key) => key in from).map((key) => [key, (from as Record<string, unknown>)[key]]),
   )
 
-/** Nodes every Company has one of: a Playbook links to them by type and never copies them. */
 export const SHARED: ReadonlyArray<GameNode['type']> = ['users', 'payments', 'analytics']
 
 const fixedKey = (node: GameNode): string => `@${node.type}`
 
-/** Captures the selected Nodes. Fixed Nodes stay behind; Links to them are kept by type. */
 export const capture = (game: Game, ids: ReadonlyArray<string>, name: string): Playbook | null => {
   const chosen = game.nodes.filter(
     (node) => ids.includes(node.id) && !COMPONENTS[node.type].fixed && !SHARED.includes(node.type),
@@ -157,21 +152,18 @@ export const capture = (game: Game, ids: ReadonlyArray<string>, name: string): P
       dy: node.y - top,
       settings: pick(node, [...STACK_SETTINGS, ...NODE_SETTINGS]),
     })),
-    // A box comes back with the Nodes it holds, under the same name.
     boxes: game.boxes
       .filter((box) => box.nodes.every((id) => contained.has(id)))
       .map((box) => ({ name: box.name, keys: [...box.nodes] })),
     links: game.links.flatMap((link) => {
       const from = endOf(link.from)
       const to = endOf(link.to)
-      // A Link counts when at least one end is in the Playbook.
       if (!from || !to || (!keys.has(link.from) && !keys.has(link.to))) return []
       return [{ from, to, settings: pick(link, LINK_SETTINGS) }]
     }),
   }
 }
 
-/** Why a Playbook Node cannot be built in this Company: its research, or a Mutator. */
 export const ghostReason = (game: Game, node: PlaybookNode, region: Region): string | null => {
   const def = COMPONENTS[node.type]
   if (def.fixed) return `${def.name} is already on the Board.`
@@ -179,7 +171,6 @@ export const ghostReason = (game: Game, node: PlaybookNode, region: Region): str
   return placeRefusal(game, node.type, region)
 }
 
-/** A placed Playbook. `ids` maps each placed Playbook Node's key to its new Node's id. */
 export type Placed = Readonly<{
   game: Game
   placed: number
@@ -190,7 +181,6 @@ export type Placed = Readonly<{
 const decodeNode = Schema.decodeUnknownOption(GameNode)
 const decodeLink = Schema.decodeUnknownOption(GameLink)
 
-/** Applies a Playbook Node's Stack and settings to a placed Node. A setting that is refused stays default. */
 const configure = (game: Game, id: string, settings: Record<string, unknown>): Game => {
   let next = game
   const tryAction = (action: Action) => {
@@ -214,18 +204,15 @@ const configure = (game: Game, id: string, settings: Record<string, unknown>): G
   const merged = decodeNode({ ...current, ...pick(settings, NODE_SETTINGS) })
   if (Option.isSome(merged))
     next = { ...next, nodes: next.nodes.map((entry) => (entry.id === id ? merged.value : entry)) }
-  // A placed backup is as untested as one taken by hand: placing a Playbook rolls its restore.
   if (typeof settings.backup === 'string' && settings.backup !== 'none')
     next = rollRestore(next, id)
   return next
 }
 
-/** Links two Nodes with a Link's settings. A Link the rules refuse is left out. */
 const linkWith = (game: Game, from: string, to: string, settings: object): Game => {
   const linked = connect(game, from, to)
   if (Result.isFailure(linked)) return game
   const made = linked.success.links.find((entry) => entry.from === from && entry.to === to)
-  // A Venture that refuses a retry policy keeps the Link's own, so a shared Playbook never breaks its rule.
   const shared: Record<string, unknown> = { ...pick(settings, LINK_SETTINGS) }
   if (typeof shared.retries === 'string' && retryRefusal(linked.success, shared.retries as Retries))
     delete shared.retries
@@ -238,11 +225,6 @@ const linkWith = (game: Game, from: string, to: string, settings: object): Game 
     : linked.success
 }
 
-/**
- * Places a Playbook with its top-left corner at (x, y). Every buildable Node is
- * placed, configured and linked; locked ones come back as ghosts. Refused when
- * nothing can be placed or the Cash runs out part way.
- */
 export const placePlaybook = (
   game: Game,
   playbook: Playbook,
@@ -296,12 +278,6 @@ export const placePlaybook = (
   return Result.succeed({ game: next, placed: ids.size, ghosts, ids })
 }
 
-/**
- * Duplicates Nodes on their own Board (15 "Bulk actions"): a Playbook captured from this Game,
- * placed at (x, y), whose copies also keep the selection's Links to Nodes outside it. A copied
- * App Server sits behind the same Load Balancer and calls the same Database. A Link the rules
- * refuse, such as a second Link out of Users, is left out.
- */
 export const duplicate = (
   game: Game,
   playbook: Playbook,
@@ -310,11 +286,9 @@ export const duplicate = (
   region: Region = HOME_REGION,
 ): Result.Result<Placed, Refusal> =>
   Result.map(placePlaybook(game, playbook, x, y, region), (placed) => {
-    // `capture` keys a Playbook Node by its Node's id; Links to SHARED Nodes are in the Playbook.
     const outside = (id: string) =>
       !placed.ids.has(id) &&
       game.nodes.some((node) => node.id === id && !SHARED.includes(node.type))
-    // A copy stays with its source's Service.
     const owners = new Map(
       [...placed.ids].flatMap(([key, id]) => {
         const serviceId = game.nodes.find((node) => node.id === key)?.serviceId

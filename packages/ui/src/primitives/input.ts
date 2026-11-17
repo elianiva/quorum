@@ -63,11 +63,6 @@ export const inputClass = css({
   md: { fontSize: 'type.14', lineHeight: 'fine' },
 })
 
-/** Same string as the `label` item's component classes (upstream label.tsx). */
-/** Upstream string re-keyed for foldkit: the label precedes the control, so
- *  upstream's native peer-disabled sibling variant can never match; disabled
- *  state flows from the wrapper (group-field + data-disabled, mirroring
- *  switch.ts). */
 export const inputLabelClass = css({
   gap: '2',
   fontSize: 'type.14',
@@ -115,8 +110,6 @@ export type InputConfig<M> = Readonly<{
   wrapperClass?: string
 }>
 
-/** Styled text input with label and optional description, built on the
- *  @foldkit/ui Input helper. */
 export const input = <M>(config: InputConfig<M>, h: HtmlBuilder<M>): Html =>
   FoldkitInput.view<M>(
     {

@@ -8,8 +8,6 @@ const chunk = (fileName: string, extra: Partial<OutputEntry> = {}): OutputEntry 
   ...extra,
 })
 
-/* The install list is the difference between an offline game and a blank page. */
-
 describe('the service worker install list', () => {
   const outputs: ReadonlyArray<OutputEntry> = [
     chunk('assets/index-abc.js', {
@@ -105,7 +103,6 @@ test('the worker carries its build ID and install list', () => {
   )
   expect(source).toContain("url.pathname === '/sw.js'")
   expect(source).toContain("url.pathname === '/harness.html'")
-  // A static response can carry Vary: Origin, while the precache was fetched without one.
   expect(source).toContain('{ ignoreVary: true }')
 })
 

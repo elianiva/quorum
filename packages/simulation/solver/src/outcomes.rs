@@ -1,18 +1,26 @@
-//! The Outcome tree: what one request of a kind gets back from each Node.
-//!
-//! Ported from `solve-outcomes.ts`. Every result is a `Copy` `Outcome`, and each
-//! memo is a flat `Vec` indexed by Node slot and kind, so a tree walk allocates
-//! nothing after the first pass fills it. The whole walk lives on one `Tree`
-//! struct: the Design, the Game, the pass, and the memo tables, so no rule takes
-//! ten arguments.
-
 use crate::catalog::*;
 use crate::dist::*;
 use crate::model::{GameCtx, Incident, Model, Node};
 use crate::pass::{Board, Pass};
 use crate::routing::{amplification, Splits, Weights};
 
-/// One memo table: an `Outcome` per key, valid while its stamp is the epoch.
+const EMPTY_STAMP: u32 = 0;
+const FIRST_EPOCH: u32 = 1;
+const DOWNSTREAM_BUCKETS: usize = 2;
+const NO_CLUSTER: usize = usize::MAX;
+const REGION_BIT_CAP: usize = 31;
+const LAST_SHARD_KEY: usize = 3;
+const POOLER_TRANSACTION_MODE: usize = 2;
+const ALWAYS_CALLED_BACKENDS: usize = 3;
+const SERIES_B_STAGE: f64 = 4.0;
+const WRITE_THROUGH: &str = "through";
+const WRITE_BEHIND: &str = "ahead";
+const RETRY_NONE: u8 = 0;
+const RETRY_ONCE: u8 = 1;
+const WEAK_QUORUM_MISSED_WRITE_STALE: f64 = 0.05;
+const QUORUM_STALE_CAP: f64 = 0.5;
+const MULTI_CONFLICT_CAP: f64 = 0.5;
+
 #[derive(Default)]
 struct Table {
     values: Vec<Outcome>,
@@ -23,7 +31,7 @@ impl Table {
     fn grow(&mut self, len: usize) {
         if self.values.len() < len {
             self.values.resize(len, Outcome::default());
-            self.stamps.resize(len, 0);
+            self.stamps.resize(len, EMPTY_STAMP);
         }
     }
 
@@ -45,11 +53,6 @@ impl Table {
     }
 }
 
-/// The memo tables, kept for the life of the module and reused by every tree.
-///
-/// A solve walks one tree per pass and more per Bottleneck candidate. Starting
-/// a tree only moves the epoch, so no table is zeroed between walks: an entry
-/// whose stamp is an older epoch reads as empty.
 #[derive(Default)]
 pub struct Memo {
     epoch: u32,
@@ -59,23 +62,20 @@ pub struct Memo {
 }
 
 impl Memo {
-    /// Empties every table, sized for `nodes` Nodes and `edges` Links.
     fn reset(&mut self, nodes: usize, edges: usize) {
         self.outcome.grow(nodes * NK);
-        self.downstream.grow(nodes * NK * 2);
+        self.downstream.grow(nodes * NK * DOWNSTREAM_BUCKETS);
         self.attempts.grow(edges * NK);
         self.epoch = self.epoch.wrapping_add(1);
-        if self.epoch == 0 {
-            // Four billion trees later the stamps wrap: clear them once.
+        if self.epoch == EMPTY_STAMP {
             for table in [&mut self.outcome, &mut self.attempts, &mut self.downstream] {
-                table.stamps.fill(0);
+                table.stamps.fill(EMPTY_STAMP);
             }
-            self.epoch = 1;
+            self.epoch = FIRST_EPOCH;
         }
     }
 }
 
-/// One walk of the tree: the Board, the pass it reads, and the memo tables.
 pub struct Tree<'a> {
     board: Board<'a>,
     pass: &'a Pass,
@@ -96,7 +96,6 @@ impl Tree<'_> {
     }
 }
 
-/// Starts a walk over one pass. `splits` must answer for the same `weights`.
 pub fn tree<'a>(
     board: Board<'a>,
     pass: &'a Pass,
@@ -105,34 +104,48 @@ pub fn tree<'a>(
     memo: &'a mut Memo,
 ) -> Tree<'a> {
     memo.reset(board.design.nodes.len(), board.design.edges.len());
-    Tree { board, pass, weights, splits, memo }
+    Tree {
+        board,
+        pass,
+        weights,
+        splits,
+        memo,
+    }
 }
 
 impl<'a> Tree<'a> {
-    /// The Game this walk reads, for a caller that has only the tree.
     #[inline]
     pub fn game(&self) -> &'a GameCtx {
         self.board.game
     }
 
-    /// `ownHop`: this Node's own service time for a kind, with the revenue multiplier.
     #[inline]
     pub fn own_hop(&self, node: usize, kind: usize, value: f64) -> Hop {
         let model: &Model = match self.pass.models.get(node) {
             Some(model) => model,
-            None => return Hop { value, ..Hop::default() },
+            None => {
+                return Hop {
+                    value,
+                    ..Hop::default()
+                }
+            }
         };
-        let (type_code, sampling) =
-            self.board.nodes.get(node).map(|node| (node.type_code, node.sampling_ms)).unwrap_or((0, 0.0));
-        // A kind the model has no service record for falls back to the Component's latency.
-        let (fixed, variable) = if kind < NK && (model.service_mask >> kind) & 1 == 1 {
+        let (type_code, sampling_ms) = self
+            .board
+            .nodes
+            .get(node)
+            .map(|node| (node.type_code, node.sampling_ms))
+            .unwrap_or((0, 0.0));
+
+        let has_service_record = kind < NK && (model.service_mask >> kind) & 1 == 1;
+        let (fixed, variable) = if has_service_record {
             (model.service_fixed[kind], model.service_variable[kind])
         } else {
             (COMPONENT_LATENCY[type_code], 0.0)
         };
         Hop {
             share: model.share_of(kind),
-            fixed_ms: fixed + sampling,
+            fixed_ms: fixed + sampling_ms,
             variable_ms: variable,
             tail_p: model.tail_p,
             tail_ms: model.tail_ms,
@@ -141,7 +154,6 @@ impl<'a> Tree<'a> {
         }
     }
 
-    /// `attempt`: the callee's outcome cut at the Link's timeout or bulkhead.
     fn attempt(&mut self, edge: usize, kind: usize) -> Outcome {
         let slot = self.edge_slot(edge, kind);
         if let Some(memo) = self.memo.attempts.get(slot, self.memo.epoch) {
@@ -150,13 +162,16 @@ impl<'a> Tree<'a> {
         let Some(policy) = self.board.design.edges.get(edge).copied() else {
             return failed(STRANDED);
         };
-        let wait = if policy.bulkhead { policy.timeout.min(BULKHEAD_MS) } else { policy.timeout };
-        let answer = timed_out(self.outcome(policy.to as usize, kind), wait);
+        let wait_ms = if policy.bulkhead {
+            policy.timeout.min(BULKHEAD_MS)
+        } else {
+            policy.timeout
+        };
+        let answer = timed_out(self.outcome(policy.to as usize, kind), wait_ms);
         let result = if policy.hedge { hedged(answer) } else { answer };
         self.memo.attempts.put(slot, self.memo.epoch, result)
     }
 
-    /// `call`: one attempt, plus the Link's retries.
     fn call(&mut self, edge: usize, kind: usize) -> Outcome {
         let policy = match self.board.design.edges.get(edge) {
             Some(policy) => *policy,
@@ -167,42 +182,44 @@ impl<'a> Tree<'a> {
         }
         let once = self.attempt(edge, kind);
         let again = match policy.retry {
-            0 => return once,
-            1 => retried(once, policy.timeout),
+            RETRY_NONE => return once,
+            RETRY_ONCE => retried(once, policy.timeout),
             _ => backed_off(once, policy.timeout, RETRY_BUDGET),
         };
-        // A charge that succeeded on a retry after a timeout charged twice: the
-        // first one went through.
-        let timed_out_share = if once.success < 1.0 { once.fail[TIMEOUT] / (1.0 - once.success) } else { 0.0 };
-        let duplicates = if again.success > 0.0 {
+
+        let timed_out_share = if once.success < 1.0 {
+            once.fail[TIMEOUT] / (1.0 - once.success)
+        } else {
+            0.0
+        };
+        let duplicate_charge_share = if again.success > 0.0 {
             ((again.success - once.success).max(0.0) / again.success) * timed_out_share
         } else {
             0.0
         };
-        if kind == kind::CHARGE
-            && !(self.board.game.has(research::IDEMPOTENCY_KEYS) && self.board.game.fixed(fix::IDEMPOTENCY_KEYS))
-            && duplicates > 0.0
-        {
-            return fail_some(again, duplicates, DUPLICATE);
+        let charge_without_idempotency = kind == kind::CHARGE
+            && !(self.board.game.has(research::IDEMPOTENCY_KEYS)
+                && self.board.game.fixed(fix::IDEMPOTENCY_KEYS));
+        if charge_without_idempotency && duplicate_charge_share > 0.0 {
+            return fail_some(again, duplicate_charge_share, DUPLICATE);
         }
         again
     }
 
-    /// `failureOn`: the share of attempts that fail on a Link.
     pub fn failure_on(&mut self, edge: usize, kind: usize) -> f64 {
         1.0 - self.attempt(edge, kind).success
     }
 
-    /// `placed`: a call that leaves its zone or region pays the hop on top.
     fn placed(&mut self, edge: usize, kind: usize) -> Outcome {
         let (from, to) = match self.board.design.edges.get(edge) {
             Some(policy) => (policy.from as usize, policy.to as usize),
             None => return failed(STRANDED),
         };
-        // A partition cuts calls between regions until it heals.
+
         if self.board.game.incident == Some(Incident::Partition) {
             let (source, target) = (&self.board.nodes[from], &self.board.nodes[to]);
-            if source.region != target.region
+            let crosses_regions = source.region != target.region;
+            if crosses_regions
                 && source.type_code != component::USERS
                 && !COMPONENT_GLOBAL[source.type_code]
                 && !COMPONENT_GLOBAL[target.type_code]
@@ -210,16 +227,15 @@ impl<'a> Tree<'a> {
                 return failed(TIMEOUT);
             }
         }
-        let extra = self.place_ms(from, to) + self.mesh_ms(from);
+        let extra_ms = self.place_ms(from, to) + self.mesh_ms(from);
         let answer = self.call(edge, kind);
-        if extra > 0.0 {
-            through_one(hop(extra, 0.0), answer, false)
+        if extra_ms > 0.0 {
+            through_one(hop(extra_ms, 0.0), answer, false)
         } else {
             answer
         }
     }
 
-    /// `placeMs`: the hop a call pays for leaving its zone or region.
     pub fn place_ms(&self, from: usize, to: usize) -> f64 {
         let source = match self.board.nodes.get(from) {
             Some(node) => node,
@@ -232,46 +248,56 @@ impl<'a> Tree<'a> {
         if COMPONENT_GLOBAL[source.type_code] || COMPONENT_GLOBAL[target.type_code] {
             return 0.0;
         }
-        // A leaderless store spread across regions answers from a local quorum.
-        if target.type_code == component::WIDE && target.local_regions >> source.region.min(31) & 1 == 1 {
+
+        let target_is_local_quorum = target.type_code == component::WIDE
+            && target.local_region_bits >> source.region.min(REGION_BIT_CAP) & 1 == 1;
+        if target_is_local_quorum {
             return 0.0;
         }
         if source.region != target.region {
             return if source.type_code == component::USERS {
                 user_rtt_ms(self.board.game, source.region, target.region)
             } else {
-                REGION_RTT[source.region.min(REGIONS.len() - 1)][target.region.min(REGIONS.len() - 1)]
+                REGION_RTT[source.region.min(REGIONS.len() - 1)]
+                    [target.region.min(REGIONS.len() - 1)]
             };
         }
         zone_ms(source, target)
     }
 
-    /// `meshOf`: a sidecar adds a millisecond to every call out of its Node.
     #[inline]
     fn mesh_ms(&self, node: usize) -> f64 {
-        if self.board.nodes.get(node).map(|node| node.mesh).unwrap_or(false) {
+        if self
+            .board
+            .nodes
+            .get(node)
+            .map(|node| node.mesh)
+            .unwrap_or(false)
+        {
             MESH_HOP_MS
         } else {
             0.0
         }
     }
 
-    /// `downstream`: what one request of `kind` sent from `node` gets back.
-    pub fn downstream(&mut self, node: usize, kind: usize, extra_hop: f64) -> Outcome {
+    pub fn downstream(&mut self, node: usize, kind: usize, extra_hop_ms: f64) -> Outcome {
         if kind == kind::CALLOUT {
             return callout_outcome();
         }
-        let bucket = if extra_hop == 0.0 { 0 } else { 1 };
-        let slot = self.slot(node, kind) * 2 + bucket;
+        let pays_extra_hop = extra_hop_ms != 0.0;
+        let bucket = if pays_extra_hop { 1 } else { 0 };
+        let slot = self.slot(node, kind) * DOWNSTREAM_BUCKETS + bucket;
         if let Some(memo) = self.memo.downstream.get(slot, self.memo.epoch) {
             return memo;
         }
-        let split = self.splits.range(self.board.design, node, kind, &self.weights);
+        let split = self
+            .splits
+            .range(self.board.design, node, kind, &self.weights);
         let total: f64 = split.clone().map(|index| self.splits.pair(index).1).sum();
-        // A split with no targets strands the work, and the hop is not paid.
-        let mixed = match Blend::new(total).filter(|_| !split.is_empty()) {
+
+        let has_targets = !split.is_empty();
+        let mixed = match Blend::new(total).filter(|_| has_targets) {
             Some(mut mix) => {
-                // The recursion may add splits, but never moves one already kept.
                 for index in split {
                     let (edge, weight) = self.splits.pair(index);
                     let answer = self.placed(edge as usize, kind);
@@ -279,19 +305,25 @@ impl<'a> Tree<'a> {
                 }
                 mix.finish()
             }
-            None => return self.memo.downstream.put(slot, self.memo.epoch, failed(STRANDED)),
+            None => {
+                return self
+                    .memo
+                    .downstream
+                    .put(slot, self.memo.epoch, failed(STRANDED))
+            }
         };
-        let result = if extra_hop > 0.0 {
-            through_one(hop(extra_hop, 0.0), mixed, false)
+        let result = if extra_hop_ms > 0.0 {
+            through_one(hop(extra_hop_ms, 0.0), mixed, false)
         } else {
             mixed
         };
         self.memo.downstream.put(slot, self.memo.epoch, result)
     }
 
-    /// `held`: milliseconds a caller holds its slot for one call of `kind`.
-    pub fn held(&mut self, node: usize, kind: usize, extra_hop: f64) -> f64 {
-        let split = self.splits.range(self.board.design, node, kind, &self.weights);
+    pub fn held(&mut self, node: usize, kind: usize, extra_hop_ms: f64) -> f64 {
+        let split = self
+            .splits
+            .range(self.board.design, node, kind, &self.weights);
         let mut total = 0.0;
         for index in split {
             let (edge, weight) = self.splits.pair(index);
@@ -303,20 +335,27 @@ impl<'a> Tree<'a> {
             if policy.open {
                 continue;
             }
-            let attempts = if policy.retry == 0 { 1.0 } else { amplification(&policy, self.failure_on(edge, kind)) };
-            let wait = if policy.bulkhead { policy.timeout.min(BULKHEAD_MS) } else { policy.timeout };
-            let both = if policy.hedge { 1.0 + HEDGE_LOAD } else { 1.0 };
+            let attempts_per_call = if policy.retry == RETRY_NONE {
+                1.0
+            } else {
+                amplification(&policy, self.failure_on(edge, kind))
+            };
+            let wait_ms = if policy.bulkhead {
+                policy.timeout.min(BULKHEAD_MS)
+            } else {
+                policy.timeout
+            };
+            let hedge_load_factor = if policy.hedge { 1.0 + HEDGE_LOAD } else { 1.0 };
             let answer = self.outcome(policy.to as usize, kind);
-            let each = held_for(&answer, wait)
-                + extra_hop
+            let each_ms = held_for(&answer, wait_ms)
+                + extra_hop_ms
                 + self.place_ms(node, policy.to as usize)
                 + self.mesh_ms(node);
-            total += weight * attempts * both * wait.min(each);
+            total += weight * attempts_per_call * hedge_load_factor * wait_ms.min(each_ms);
         }
         total
     }
 
-    /// `outcome`: what one request of `kind` gets back from `node`.
     pub fn outcome(&mut self, node: usize, kind: usize) -> Outcome {
         let slot = self.slot(node, kind);
         if let Some(memo) = self.memo.outcome.get(slot, self.memo.epoch) {
@@ -326,47 +365,68 @@ impl<'a> Tree<'a> {
             Some(game_node) => game_node,
             None => return failed(STRANDED),
         };
-        // A Node the solver killed for memory fails as `oom` until it is back.
+
+        let certificate_expired = game_node
+            .cert_expires_at_seconds
+            .map(|until| self.board.game.time >= until)
+            .unwrap_or(false);
         let result = if game_node.down {
-            failed(if game_node.down_oom { OOM } else { DOWN })
-        } else if game_node.cert_until.map(|until| self.board.game.time >= until).unwrap_or(false) {
-            // A Node whose TLS certificate ran out is refused by every browser.
+            let down_cause = if game_node.down_oom { OOM } else { DOWN };
+            failed(down_cause)
+        } else if certificate_expired {
             failed(DOWN)
         } else {
             let answer = self.rule(node, kind);
             let game = self.board.game;
-            // A leap second repeats one, so every Node in the region fires its timers twice.
-            let answer = if game.incident == Some(Incident::LeapSecond)
-                && game.incident_region.is_some_and(|region| region == game_node.region)
-            {
-                fail_some(through_one(hop(CLOCK_SKEW_MS, 0.0), answer, false), CLOCK_SKEW_LOSS, TIMEOUT)
+
+            let leap_second_here = game.incident == Some(Incident::LeapSecond)
+                && game
+                    .incident_region
+                    .is_some_and(|region| region == game_node.region);
+            let answer = if leap_second_here {
+                fail_some(
+                    through_one(hop(CLOCK_SKEW_MS, 0.0), answer, false),
+                    CLOCK_SKEW_LOSS,
+                    TIMEOUT,
+                )
             } else {
                 answer
             };
-            // A chaos experiment fails a share of what its target answers.
-            if game.chaos_target == Some(node) { fail_some(answer, CHAOS_FAILURE, REFUSED) } else { answer }
+
+            let chaos_target_here = game.chaos_target == Some(node);
+            if chaos_target_here {
+                fail_some(answer, CHAOS_FAILURE, REFUSED)
+            } else {
+                answer
+            }
         };
         self.memo.outcome.put(slot, self.memo.epoch, result)
     }
 
-    /// The `outcome` half of each component rule.
+    fn site_unreachable(&self) -> bool {
+        let game = self.board.game;
+        matches!(game.incident, Some(Incident::Bgp))
+            || (game.incident == Some(Incident::Certificate) && !game.any_certificate_issued)
+    }
+
+    fn first_provider_outage_unbacked(&self, node: usize) -> bool {
+        self.board.game.incident == Some(Incident::PspOutage)
+            && !self.board.nodes[node].second_provider
+    }
+
     fn rule(&mut self, node: usize, kind: usize) -> Outcome {
         let type_code = match self.board.nodes.get(node) {
             Some(game_node) => game_node.type_code,
             None => return failed(STRANDED),
         };
         match type_code {
-            // An expired certificate with none left, or a BGP leak: every browser fails to reach the site.
-            component::USERS
-                if matches!(self.board.game.incident, Some(Incident::Bgp))
-                    || (self.board.game.incident == Some(Incident::Certificate) && !self.board.game.cert_nodes) =>
-            {
-                failed(DOWN)
+            component::USERS if self.site_unreachable() => failed(DOWN),
+            component::USERS | component::LB | component::DNS | component::CDC => {
+                self.relay(node, kind)
             }
-            component::USERS | component::LB | component::DNS | component::CDC => self.relay(node, kind),
             component::POOLER => {
-                let mode = self.board.nodes[node].mode;
-                if mode == 2 && kind == kind::Q_TX {
+                let mode = self.board.nodes[node].pooler_mode;
+                if mode == POOLER_TRANSACTION_MODE && kind == kind::Q_TX {
                     return failed(REFUSED);
                 }
                 let relayed = self.relay(node, kind);
@@ -379,29 +439,32 @@ impl<'a> Tree<'a> {
             }
             component::DATABASE | component::REPLICA => self.database(node, kind),
             component::SERVER => self.answer_calls(node, kind),
-            // An export runs as long as the rows it reads take; past 15 minutes the function is killed.
+
             component::FN if kind == kind::JOB => {
-                let ms = self.board.game.data * EXPORT_MS_PER_GB;
-                if ms > FUNCTION_LIMIT_MS {
+                let export_ms = self.board.game.data_gb * EXPORT_MS_PER_GB;
+                if export_ms > FUNCTION_LIMIT_MS {
                     return failed(TIMEOUT);
                 }
                 let own = self.answer_calls(node, kind);
-                through(hop(ms, 0.0), &[(own, 1.0)], false)
+                through(hop(export_ms, 0.0), &[(own, 1.0)], false)
             }
             component::FN => self.answer_calls(node, kind),
-            // An outage at the first provider fails every charge sent to it.
-            component::PSP
-                if self.board.game.incident == Some(Incident::PspOutage) && !self.board.nodes[node].second_provider =>
-            {
-                failed(UPSTREAM)
-            }
-            component::AUTH | component::MSGP | component::WAREHOUSE | component::PSP | component::DSQL => {
-                through(self.own_hop(node, kind, 1.0), &[], false)
-            }
-            // Past its rate limit, a model API fails a prompt as `throttled` at once.
-            component::LLM => {
-                through(Hop { cause: THROTTLED, ..self.own_hop(node, kind, 1.0) }, &[], false)
-            }
+
+            component::PSP if self.first_provider_outage_unbacked(node) => failed(UPSTREAM),
+            component::AUTH
+            | component::MSGP
+            | component::WAREHOUSE
+            | component::PSP
+            | component::DSQL => through(self.own_hop(node, kind, 1.0), &[], false),
+
+            component::LLM => through(
+                Hop {
+                    cause: THROTTLED,
+                    ..self.own_hop(node, kind, 1.0)
+                },
+                &[],
+                false,
+            ),
             component::STORAGE => self.storage(node, kind),
             component::GPU => self.gpu(node, kind),
             component::SEARCH => self.search(node, kind),
@@ -409,7 +472,7 @@ impl<'a> Tree<'a> {
             component::QUEUE => self.queue(node, kind),
             component::LOG => self.stream(node, kind),
             component::CACHE => self.cache(node, kind),
-            // Bots stop here at the block rate; real users at the false positive rate.
+
             component::WAF => {
                 let Some(game_node) = self.board.nodes.get(node).copied() else {
                     return failed(STRANDED);
@@ -419,9 +482,13 @@ impl<'a> Tree<'a> {
             }
             component::WORKER => self.worker(node, kind),
             component::CDN => self.cdn(node, kind),
-            // Past the shared rate limit a Gateway answers throttled.
+
             component::GW => {
-                let kept = crate::pass::gateway_kept(self.board.nodes, &self.pass.arriving, &self.pass.order);
+                let kept = crate::pass::gateway_kept_share(
+                    self.board.nodes,
+                    &self.pass.arriving,
+                    &self.pass.order,
+                );
                 fail_some(self.relay(node, kind), 1.0 - kept, THROTTLED)
             }
             component::WS => self.hub(node, kind),
@@ -434,62 +501,103 @@ impl<'a> Tree<'a> {
                     self.answer_calls(node, kind)
                 }
             }
-            // Without multi-document transactions a checkout can land half-applied, and the retry charges again.
+
             component::DOC => {
                 let reply = through(self.own_hop(node, kind, 1.0), &[], false);
-                if kind == kind::Q_TX && !self.board.nodes[node].transactions { fail_some(reply, DOC_PARTIAL, DUPLICATE) } else { reply }
+                if kind == kind::Q_TX && !self.board.nodes[node].transactions {
+                    fail_some(reply, DOC_PARTIAL, DUPLICATE)
+                } else {
+                    reply
+                }
             }
-            // An approximate index misses a true neighbour on its recall's shortfall: a stale result.
+
             component::VEC => {
                 let miss = 1.0 - VEC_INDEXES_RECALL[self.board.nodes[node].index_type];
-                Outcome { stale: if kind == kind::Q_VECTOR { miss } else { 0.0 }, ..through(self.own_hop(node, kind, 1.0), &[], false) }
+                Outcome {
+                    stale: if kind == kind::Q_VECTOR { miss } else { 0.0 },
+                    ..through(self.own_hop(node, kind, 1.0), &[], false)
+                }
             }
-            // A Node with no path for a request strands it.
+
             _ => failed(STRANDED),
         }
     }
 
-    /// `wsRule.outcome`: a Hub that just came back takes the fleet's reconnect wave
-    /// at once, and a split cluster loses the messages that cross the cut.
     fn hub(&mut self, node: usize, kind: usize) -> Outcome {
         let game_node = self.board.nodes[node];
         let game = self.board.game;
-        // A runtime that holds a worker per open connection cannot hold any.
+
         if RUNTIME_CONNECTION_KB[game_node.runtime] < 0.0 {
             return failed(REFUSED);
         }
-        let here = game.incident_node == node;
-        // Jittered backoff, or a throttled storm, spreads the wave over the hold time.
-        let throttled = here && game.incident == Some(Incident::Reconnect) && game.incident_throttled;
-        let herd = game_node.warming && !game_node.backoff && !throttled;
-        let split = if here && game.incident == Some(Incident::SplitBrain) { game.runtime_failure } else { 0.0 };
-        let own = self.own_hop(node, kind, if game_node.presence { PRESENCE_VALUE } else { 1.0 });
-        // A sticky Load Balancer sends each client back to its Hub: a restarted one takes its own half.
-        let refused = if herd { HERD_REFUSED * if game_node.pinned { STICKY_HERD } else { 1.0 } } else { 0.0 };
-        fail_some(fail_some(through(own, &[], false), split, STALE), refused, REFUSED)
+        let incident_here = game.incident_node == node;
+
+        let throttled =
+            incident_here && game.incident == Some(Incident::Reconnect) && game.incident_throttled;
+        let reconnect_herd = game_node.warming && !game_node.backoff && !throttled;
+        let split_loss = if incident_here && game.incident == Some(Incident::SplitBrain) {
+            game.runtime_failure
+        } else {
+            0.0
+        };
+        let own = self.own_hop(
+            node,
+            kind,
+            if game_node.presence {
+                PRESENCE_VALUE
+            } else {
+                1.0
+            },
+        );
+
+        let refused = if reconnect_herd {
+            HERD_REFUSED * if game_node.pinned { STICKY_HERD } else { 1.0 }
+        } else {
+            0.0
+        };
+        fail_some(
+            fail_some(through(own, &[], false), split_loss, STALE),
+            refused,
+            REFUSED,
+        )
     }
 
-    /// `logRule.outcome`: the producer waits for its append only. A consumer further
-    /// behind than the retention window loses the oldest events, and one that reads
-    /// unkeyed events sees them out of order.
     fn stream(&mut self, node: usize, kind: usize) -> Outcome {
         let game_node = self.board.nodes[node];
         let own = self.own_hop(node, kind, 1.0);
-        // With no consumer linked, nothing reads the stream.
+
         if self.downstream(node, kind, 0.0).fail[STRANDED] >= 1.0 {
             return failed(STRANDED);
         }
-        let appended = through(Hop { fixed_ms: own.fixed_ms + BACKLOG_MS * game_node.depth, ..own }, &[], false);
+        let appended = through(
+            Hop {
+                fixed_ms: own.fixed_ms + BACKLOG_MS * game_node.depth,
+                ..own
+            },
+            &[],
+            false,
+        );
         let rates = self.pass.rates(node);
         let inflow = rates[NR + backend::TASK] + rates[kind::CHANGE];
-        // How far behind the producer its consumers are, in seconds of arriving work.
-        let lag = if inflow > 0.0 { game_node.depth / inflow } else { 0.0 };
-        let expired = if lag > game_node.retain && lag > 0.0 { 1.0 - game_node.retain / lag } else { 0.0 };
-        let unordered = if game_node.keyed { 0.0 } else { 1.0 - 1.0 / game_node.partitions.floor().max(1.0) };
+
+        let lag_seconds = if inflow > 0.0 {
+            game_node.depth / inflow
+        } else {
+            0.0
+        };
+        let expired = if lag_seconds > game_node.retain && lag_seconds > 0.0 {
+            1.0 - game_node.retain / lag_seconds
+        } else {
+            0.0
+        };
+        let unordered = if game_node.keyed {
+            0.0
+        } else {
+            1.0 - 1.0 / game_node.partitions.floor().max(1.0)
+        };
         fail_some(fail_some(appended, expired, DROPPED), unordered, STALE)
     }
 
-    /// `cdnRule.outcome`: a hit is answered at the edge; a miss goes on to the origin.
     fn cdn(&mut self, node: usize, kind: usize) -> Outcome {
         let game_node = self.board.nodes[node];
         let game = self.board.game;
@@ -497,10 +605,23 @@ impl<'a> Tree<'a> {
         if hit <= 0.0 {
             return self.relay(node, kind);
         }
-        // Without a purge, pages cached before the deploy are served until their TTL passes.
-        let old = if kind == kind::PAGE && game.time < game_node.stale_until { STALE_AFTER_DEPLOY } else { 0.0 };
+
+        let stale_after_deploy = if kind == kind::PAGE && game.time < game_node.stale_until {
+            STALE_AFTER_DEPLOY
+        } else {
+            0.0
+        };
         let down = self.downstream(node, kind, 0.0);
-        let mixed = blend(&[(Outcome { stale: old, ..answered(0.0, 0.0) }, hit), (down, 1.0 - hit)]);
+        let mixed = blend(&[
+            (
+                Outcome {
+                    stale: stale_after_deploy,
+                    ..answered(0.0, 0.0)
+                },
+                hit,
+            ),
+            (down, 1.0 - hit),
+        ]);
         let own = self.own_hop(node, kind, 1.0);
         match mixed {
             Some(mixed) => through(own, &[(mixed, 1.0)], false),
@@ -508,8 +629,6 @@ impl<'a> Tree<'a> {
         }
     }
 
-    /// `cacheRule.outcome`: a hit answers here, a miss pays the hop to the store,
-    /// and the strategy decides who answers a write.
     fn cache(&mut self, node: usize, kind: usize) -> Outcome {
         let Some(game_node) = self.board.nodes.get(node).copied() else {
             return failed(STRANDED);
@@ -520,13 +639,20 @@ impl<'a> Tree<'a> {
         }
         let strategy = crate::model::cache::strategy(self.board.game, &game_node);
         let write = CACHE_STRATEGIES_WRITE[strategy];
-        let hop = hop_ms(self.board.game);
-        // Write-through pays one more cache write; write-behind answers before the Database sees it.
-        if kind == kind::Q_WRITE && write == "through" {
-            let stored = self.downstream(node, kind, hop);
-            return through(Hop { fixed_ms: own.fixed_ms + CACHE_STRATEGIES_WRITE_MS[strategy], ..own }, &[(stored, 1.0)], false);
+        let call_hop_ms = hop_ms(self.board.game);
+
+        if kind == kind::Q_WRITE && write == WRITE_THROUGH {
+            let stored = self.downstream(node, kind, call_hop_ms);
+            return through(
+                Hop {
+                    fixed_ms: own.fixed_ms + CACHE_STRATEGIES_WRITE_MS[strategy],
+                    ..own
+                },
+                &[(stored, 1.0)],
+                false,
+            );
         }
-        if kind == kind::Q_WRITE && write == "ahead" {
+        if kind == kind::Q_WRITE && write == WRITE_BEHIND {
             return through(own, &[], false);
         }
         if kind != kind::Q_READ {
@@ -534,26 +660,40 @@ impl<'a> Tree<'a> {
         }
         let hit = self.pass.hits.get(node).copied().unwrap_or(0.0);
         let stale = self.pass.stale_hits.get(node).copied().unwrap_or(0.0);
-        let missed = self.downstream(node, kind, hop + CACHE_STRATEGIES_LOAD_MS[strategy]);
-        match blend(&[(Outcome { stale, ..answered(0.0, 0.0) }, hit), (missed, 1.0 - hit)]) {
+        let missed = self.downstream(node, kind, call_hop_ms + CACHE_STRATEGIES_LOAD_MS[strategy]);
+        match blend(&[
+            (
+                Outcome {
+                    stale,
+                    ..answered(0.0, 0.0)
+                },
+                hit,
+            ),
+            (missed, 1.0 - hit),
+        ]) {
             Some(mixed) => through(own, &[(mixed, 1.0)], false),
             None => through(own, &[], false),
         }
     }
 
-    /// `queueRule.outcome`: the caller waits for the enqueue only, and a long
-    /// backlog slows the broker.
     fn queue(&mut self, node: usize, kind: usize) -> Outcome {
         let Some(game_node) = self.board.nodes.get(node).copied() else {
             return failed(STRANDED);
         };
         let own = self.own_hop(node, kind, 1.0);
-        // With no Worker linked, the task has nowhere to go.
+
         if self.downstream(node, kind, 0.0).fail[STRANDED] >= 1.0 {
             return failed(STRANDED);
         }
-        let enqueued = through(Hop { fixed_ms: own.fixed_ms + BACKLOG_MS * game_node.depth, ..own }, &[], false);
-        // A full Queue refuses what its Workers cannot take (RabbitMQ `reject-publish`).
+        let enqueued = through(
+            Hop {
+                fixed_ms: own.fixed_ms + BACKLOG_MS * game_node.depth,
+                ..own
+            },
+            &[],
+            false,
+        );
+
         if game_node.max_length <= 0.0 || game_node.depth < game_node.max_length {
             return enqueued;
         }
@@ -566,8 +706,6 @@ impl<'a> Tree<'a> {
         }
     }
 
-    /// `workerRule.outcome`: one attempt, its calls, and the code's own failures.
-    /// Users never wait for it.
     fn worker(&mut self, node: usize, kind: usize) -> Outcome {
         let Some(game_node) = self.board.nodes.get(node).copied() else {
             return failed(STRANDED);
@@ -584,34 +722,39 @@ impl<'a> Tree<'a> {
             }
         }
         let own = self.own_hop(node, kind, 1.0);
-        let hop = hop_ms(self.board.game);
+        let call_hop_ms = hop_ms(self.board.game);
         let mut entries = [(Outcome::default(), 0.0); NB];
         let mut made = 0;
         for (backend, &count) in calls.iter().enumerate() {
             if count > 0.0 {
-                entries[made] = (self.downstream(node, NR + backend, hop), count);
+                entries[made] = (self.downstream(node, NR + backend, call_hop_ms), count);
                 made += 1;
             }
         }
-        // A Worker's task breaks when one of the kinds that made it breaks.
-        let origins = mix[..NR].iter().enumerate().filter(|(_, share)| **share > 0.0).fold(0u64, |bits, (origin, _)| bits | 1 << origin);
-        let crashes = self.code_crashes(&game_node, origins);
+
+        let origin_bits = mix[..NR]
+            .iter()
+            .enumerate()
+            .filter(|(_, share)| **share > 0.0)
+            .fold(0u64, |bits, (origin, _)| bits | 1 << origin);
+        let crashes = self.code_crashes(&game_node, origin_bits);
         fail_some(through(own, &entries[..made], false), crashes, CRASH)
     }
 
-    /// `storageRule.outcome`: a read of an archived object waits hours for its
-    /// restore, so the archived share of reads fails as a timeout.
     fn storage(&mut self, node: usize, kind: usize) -> Outcome {
         let own = through(self.own_hop(node, kind, 1.0), &[], false);
         if kind != kind::BLOB_GET {
             return own;
         }
-        let archived = self.board.nodes.get(node).map(|node| node.archived).unwrap_or(0.0);
+        let archived = self
+            .board
+            .nodes
+            .get(node)
+            .map(|node| node.archived_share)
+            .unwrap_or(0.0);
         fail_some(own, archived, TIMEOUT)
     }
 
-    /// `gpuRule.outcome`: a quantized answer is worth less, and a model that does
-    /// not fit in the GPUs' memory is killed as it loads.
     fn gpu(&mut self, node: usize, kind: usize) -> Outcome {
         let Some(game_node) = self.board.nodes.get(node).copied() else {
             return failed(STRANDED);
@@ -622,12 +765,11 @@ impl<'a> Tree<'a> {
         if need > held {
             return failed(OOM);
         }
-        let value = GPU_PRECISIONS_VALUE[game_node.precision] * GPU_MODELS_VALUE[game_node.gpu_model];
+        let value =
+            GPU_PRECISIONS_VALUE[game_node.precision] * GPU_MODELS_VALUE[game_node.gpu_model];
         through(self.own_hop(node, kind, value), &[], false)
     }
 
-    /// `searchRule.outcome`: a search answers as stale as its refresh, its copy of
-    /// the data, or its relevance, whichever is worst.
     fn search(&mut self, node: usize, kind: usize) -> Outcome {
         let own = through(self.own_hop(node, kind, 1.0), &[], false);
         if kind != kind::Q_SEARCH {
@@ -637,18 +779,23 @@ impl<'a> Tree<'a> {
             return failed(STRANDED);
         };
         let game = self.board.game;
-        // The copies can only diverge once the app writes to several of them: Series B.
+
         let mut diverged = 0.0;
-        if game.stage >= 4.0 {
-            // A CDC Connector only helps a Search Engine it reaches: the engine must take a change.
-            let fed = self.pass.rates(node)[kind::CHANGE] > 0.0;
+        if game.stage >= SERIES_B_STAGE {
+            let fed_by_changes = self.pass.rates(node)[kind::CHANGE] > 0.0;
             let mut cdcs = 0;
             let mut share = 1.0f64;
-            if fed {
+            if fed_by_changes {
                 for (slot, cdc) in self.board.nodes.iter().enumerate() {
                     if cdc.type_code == component::CDC && !cdc.down {
                         cdcs += 1;
-                        share = share.min(self.pass.models.get(slot).map(|model| model.share).unwrap_or(0.0));
+                        share = share.min(
+                            self.pass
+                                .models
+                                .get(slot)
+                                .map(|model| model.share)
+                                .unwrap_or(0.0),
+                        );
                     }
                 }
             }
@@ -660,131 +807,172 @@ impl<'a> Tree<'a> {
                 DUAL_WRITE_STALE
             };
         }
-        // Meilisearch's relevance falls as the index grows.
+
         let variant = game_node.search_variant;
-        let relevance = SEARCH_VARIANTS_CAP[variant].min(game.users * SEARCH_VARIANTS_RELEVANCE[variant]);
-        let stale = SEARCH_REFRESH_STALE[crate::model::refresh_row(&game_node)].max(diverged).max(relevance);
+        let relevance =
+            SEARCH_VARIANTS_CAP[variant].min(game.users * SEARCH_VARIANTS_RELEVANCE[variant]);
+        let stale = SEARCH_REFRESH_STALE[crate::model::refresh_row(&game_node)]
+            .max(diverged)
+            .max(relevance);
         Outcome { stale, ..own }
     }
 
-    /// `wideRule.outcome`: a quorum that needs more replicas than are left cannot
-    /// form, and a weak one reads a missed write now and then.
     fn wide(&mut self, node: usize, kind: usize) -> Outcome {
         use crate::model::{quorum_n, quorum_r, quorum_w, split_work};
         let Some(game_node) = self.board.nodes.get(node).copied() else {
             return failed(STRANDED);
         };
         let n = quorum_n(&game_node);
-        let short = if game_node.lost > 0.0 { 1.0 } else { 0.0 };
-        let needed = if kind == kind::Q_READ { quorum_r(&game_node) } else { quorum_w(&game_node) };
-        if needed > n - short {
+        let lost_replicas = if game_node.lost_replicas > 0.0 {
+            1.0
+        } else {
+            0.0
+        };
+        let replicas_needed = if kind == kind::Q_READ {
+            quorum_r(&game_node)
+        } else {
+            quorum_w(&game_node)
+        };
+        if replicas_needed > n - lost_replicas {
             return failed(REFUSED);
         }
         let reply = through(self.own_hop(node, kind, 1.0), &[], false);
-        // Overlap is not linearizability: a checkout on a quorum store still goes wrong.
+
         if kind == kind::Q_TX {
-            return fail_some(Outcome { stale: WIDE_TX_STALE, ..reply }, WIDE_TX_DUPLICATE, DUPLICATE);
+            return fail_some(
+                Outcome {
+                    stale: WIDE_TX_STALE,
+                    ..reply
+                },
+                WIDE_TX_DUPLICATE,
+                DUPLICATE,
+            );
         }
         if kind != kind::Q_READ {
             return reply;
         }
         let (reads, writes) = split_work(self.pass.rates(node));
-        let write_share = if reads + writes > 0.0 { writes / (reads + writes) } else { 0.0 };
+        let write_share = if reads + writes > 0.0 {
+            writes / (reads + writes)
+        } else {
+            0.0
+        };
         let (r, w) = (quorum_r(&game_node), quorum_w(&game_node));
-        // `wideStale`: R + W > N reads the latest write every time.
-        let quorum_stale = if r + w > n {
+
+        let quorums_overlap = r + w > n;
+        let quorum_stale = if quorums_overlap {
             0.0
         } else {
             let missed = (n - w) / n;
-            (WIDE_STALE * write_share * missed * (2.0 / (r + 1.0)) + 0.05 * missed).min(0.5)
+            (WIDE_STALE * write_share * missed * (2.0 / (r + 1.0))
+                + WEAK_QUORUM_MISSED_WRITE_STALE * missed)
+                .min(QUORUM_STALE_CAP)
         };
-        // LOCAL_QUORUM keeps latency local, but cross-region replication lags.
-        let regions = self.board.game.spread_regions;
+
+        let regions = self.board.game.spread_region_bits;
         let spread_stale = if game_node.spread && regions > 1.0 {
             WIDE_SPREAD_LAG_STALE * (1.0 - 1.0 / regions) * write_share
         } else {
             0.0
         };
-        Outcome { stale: (quorum_stale + spread_stale).min(1.0), ..reply }
+        Outcome {
+            stale: (quorum_stale + spread_stale).min(1.0),
+            ..reply
+        }
     }
 
-    /// Its own hop, then what it sends on.
     fn relay(&mut self, node: usize, kind: usize) -> Outcome {
         let own = self.own_hop(node, kind, 1.0);
         let down = self.downstream(node, kind, 0.0);
         through_one(own, down, false)
     }
 
-    /// The `databaseRule.outcome` half, which a Read Replica shares.
     fn database(&mut self, node: usize, kind: usize) -> Outcome {
         let game_node = match self.board.nodes.get(node) {
             Some(game_node) => *game_node,
             None => return failed(STRANDED),
         };
-        let incident = if self.board.game.incident_node == node { self.board.game.incident } else { None };
+        let incident = if self.board.game.incident_node == node {
+            self.board.game.incident
+        } else {
+            None
+        };
         let writes = kind == kind::Q_WRITE || kind == kind::Q_TX;
         match incident {
-            // A full disk: Postgres cannot extend a file, so every write fails.
             Some(Incident::DiskFull) if writes || kind == kind::BLOB_PUT => return failed(REFUSED),
-            // A migration holds the table's lock while it copies it: writes queue and time out.
+
             Some(Incident::MigrationLock) if writes => return failed(TIMEOUT),
-            // A deleted table: every read and write that needs it fails until a restore.
-            Some(Incident::AccidentalDelete) if writes || kind == kind::Q_READ => return failed(REFUSED),
+
+            Some(Incident::AccidentalDelete) if writes || kind == kind::Q_READ => {
+                return failed(REFUSED)
+            }
             _ => {}
         }
-        // A synchronous replica that is down stalls every write the primary takes.
-        if game_node.type_code == component::DATABASE
-            && (kind == kind::Q_WRITE || kind == kind::Q_TX)
-            && game_node.sync_stalled
-        {
+
+        let is_database = game_node.type_code == component::DATABASE;
+        if is_database && writes && game_node.sync_stalled {
             return failed(TIMEOUT);
         }
         let refused = match self.pass.connections.get(node).copied().flatten() {
             Some((used, max)) if used > max && used > 0.0 => 1.0 - max / used,
             _ => 0.0,
         };
-        // A report read from a materialized view is as fresh as its last refresh.
-        let stale_scan = if kind == kind::Q_SCAN
+
+        let reads_materialized_view = kind == kind::Q_SCAN
             && game_node.materialized
-            && self.board.game.has(research::PRECOMPUTE)
-        {
+            && self.board.game.has(research::PRECOMPUTE);
+        let stale_scan = if reads_materialized_view {
             MATERIALIZED_STALE
         } else {
             0.0
         };
-        let replica_stale = if game_node.type_code == component::REPLICA
+        let async_replica_read = game_node.type_code == component::REPLICA
             && kind == kind::Q_READ
-            && !game_node.sync
-        {
+            && !game_node.synchronous_replica;
+        let replica_stale = if async_replica_read {
             self.pass.stale_share
         } else {
             0.0
         };
-        let mut reply = Outcome { success: 1.0 - refused, value: 1.0, stale: replica_stale.max(stale_scan), ..Outcome::default() };
+        let mut reply = Outcome {
+            success: 1.0 - refused,
+            value: 1.0,
+            stale: replica_stale.max(stale_scan),
+            ..Outcome::default()
+        };
         reply.fail[REFUSED] = refused;
         let own = through(self.own_hop(node, kind, 1.0), &[(reply, 1.0)], false);
-        // A multi-leader certifies every write against its peers.
-        if game_node.type_code == component::DATABASE
-            && (kind == kind::Q_WRITE || kind == kind::Q_TX || kind == kind::BLOB_PUT)
+
+        let multi_leader_write = is_database
+            && (writes || kind == kind::BLOB_PUT)
             && game_node.topology == crate::model::topology::MULTI
-            && game_node.databases_in_group > 1.0
-        {
-            let conflict = (MULTI_CONFLICT * (game_node.databases_in_group - 1.0)).min(0.5);
+            && game_node.databases_in_group > 1.0;
+        if multi_leader_write {
+            let conflict =
+                (MULTI_CONFLICT * (game_node.databases_in_group - 1.0)).min(MULTI_CONFLICT_CAP);
             return fail_some(own, conflict, REFUSED);
         }
-        // A transaction across shards commits on each of them, and any one can fail.
+
         if kind == kind::Q_TX {
-            let sharded = game_node.type_code == component::DATABASE && game_node.topology == crate::model::topology::SHARDED;
+            let sharded = is_database && game_node.topology == crate::model::topology::SHARDED;
             let logical = crate::model::sharding_of(&game_node);
-            let shards = logical.shards * if sharded { game_node.databases_in_group.max(1.0) } else { 1.0 };
-            let cross = if shards > 1.0 { SHARD_CROSS[game_node.shard_key.min(3)] * (1.0 - 1.0 / shards) } else { 0.0 };
+            let shards = logical.shards
+                * if sharded {
+                    game_node.databases_in_group.max(1.0)
+                } else {
+                    1.0
+                };
+            let cross = if shards > 1.0 {
+                SHARD_CROSS[game_node.shard_key.min(LAST_SHARD_KEY)] * (1.0 - 1.0 / shards)
+            } else {
+                0.0
+            };
             let failure = cross * DISTRIBUTED_TX_FAILURE * shards;
             return fail_some(own, failure, TIMEOUT);
         }
         own
     }
 
-    /// `answerCalls`: an App Server's own hop, the calls it makes, and the bytes back.
     fn answer_calls(&mut self, node: usize, kind: usize) -> Outcome {
         let game_node = match self.board.nodes.get(node) {
             Some(game_node) => *game_node,
@@ -793,16 +981,26 @@ impl<'a> Tree<'a> {
         if kind >= NR {
             return failed(STRANDED);
         }
-        // The Stack that answered sets the revenue.
-        let served = self.own_hop(node, kind, FRAMEWORK_VALUE[game_node.framework][kind] * ai_value(&game_node, kind));
-        // The response crosses the user's downlink: bytes over bandwidth.
-        let offloaded = self.board.flags.get(node).map(|flags| flags.offloaded).unwrap_or(false);
+
+        let served = self.own_hop(
+            node,
+            kind,
+            FRAMEWORK_VALUE[game_node.framework][kind] * ai_value(&game_node, kind),
+        );
+
+        let offloaded = self
+            .board
+            .flags
+            .get(node)
+            .map(|flags| flags.offloaded)
+            .unwrap_or(false);
         let own = Hop {
             fixed_ms: served.fixed_ms
-                + crate::model::transfer_ms(&game_node, kind, offloaded) * self.board.game.payload[kind],
+                + crate::model::transfer_ms(&game_node, kind, offloaded)
+                    * self.board.game.payload[kind],
             ..served
         };
-        // A runtime that holds a worker per open connection cannot keep realtime connections.
+
         if kind == kind::RT && RUNTIME_CONNECTION_KB[game_node.runtime] < 0.0 {
             return failed(REFUSED);
         }
@@ -811,25 +1009,30 @@ impl<'a> Tree<'a> {
             return fail_some(through(own, &[], false), crashes, CRASH);
         }
         let calls = self.board.code.node(node).calls[kind];
-        let hop = hop_ms(self.board.game);
-        // Read-your-writes routing sends a checkout's read, and most reads after a write, to the primary.
+        let call_hop_ms = hop_ms(self.board.game);
+
         let ryw = game_node.ryw && self.board.game.has(research::RYW_ROUTING);
         let mut entries = [(Outcome::default(), 0.0); NB];
         let mut made = 0;
         for (backend, &count) in calls.iter().enumerate() {
-            if backend < 3 || count > 0.0 {
-                let mut outcome = self.downstream(node, NR + backend, hop);
-                if ryw && backend == backend::Q_READ && outcome.stale > 0.0 {
-                    outcome.stale = if kind == kind::BUY { 0.0 } else { outcome.stale * crate::extra::RYW_STALE };
+            if backend < ALWAYS_CALLED_BACKENDS || count > 0.0 {
+                let mut outcome = self.downstream(node, NR + backend, call_hop_ms);
+                let reads_primary = ryw && backend == backend::Q_READ;
+                if reads_primary && outcome.stale > 0.0 {
+                    outcome.stale = if kind == kind::BUY {
+                        0.0
+                    } else {
+                        outcome.stale * crate::extra::READ_YOUR_WRITES_STALE_SHARE
+                    };
                 }
                 entries[made] = (outcome, count);
                 made += 1;
             }
         }
-        // A stale read fails an API read, a checkout that reads its own write, and a search.
+
         let stale_counts = kind == kind::READ || kind == kind::BUY || kind == kind::SEARCH;
         let relayed = fail_some(through(own, &entries[..made], stale_counts), crashes, CRASH);
-        // A path with a smaller MTU drops an upload larger than it: the request times out.
+
         if self.board.game.incident == Some(Incident::Mtu) && kind == kind::UPLOAD {
             fail_some(relayed, MTU_LOSS, TIMEOUT)
         } else {
@@ -837,30 +1040,33 @@ impl<'a> Tree<'a> {
         }
     }
 
-    /// `codeCrashes`: the share of requests the code itself fails. `kinds` is the
-    /// request kinds a Worker's task came from, or the request kind itself.
     fn code_crashes(&self, node: &Node, kinds: u64) -> f64 {
         let game = self.board.game;
-        // A bad deploy fails only the traffic of the Service that shipped it, and a
-        // rolling deploy stops after its first batch of pods.
-        let clustered = node.cluster != usize::MAX;
+
+        let clustered = node.cluster != NO_CLUSTER;
         let deploy = if game.deploy_kinds & kinds != 0 {
             game.deploy_share * if clustered { ROLLOUT_SHARE } else { 1.0 }
         } else {
             0.0
         };
-        let upgrade = if game.incident == Some(Incident::ClusterUpgrade) && clustered && node.cluster == game.incident_node {
+        let upgrade = if game.incident == Some(Incident::ClusterUpgrade)
+            && clustered
+            && node.cluster == game.incident_node
+        {
             UPGRADE_CRASHES
         } else {
             0.0
         };
-        let runtime = if game.incident_node == node.id { game.runtime_failure } else { 0.0 };
+        let runtime = if game.incident_node == node.id {
+            game.runtime_failure
+        } else {
+            0.0
+        };
         let bugs = if node.buggy { MIGRATION_BUGS } else { 0.0 };
         ((deploy + upgrade + runtime + bugs) * node.blast).min(1.0)
     }
 }
 
-/// A customer's webhook endpoint: slow, and it fails now and then.
 fn callout_outcome() -> Outcome {
     fail_some(
         through(hop(CALLOUT_MS / 2.0, CALLOUT_MS / 2.0), &[], false),
@@ -869,15 +1075,15 @@ fn callout_outcome() -> Outcome {
     )
 }
 
-/// `zoneMs`: extra milliseconds a call pays for leaving its zone.
 #[inline]
 fn zone_ms(from: &Node, to: &Node) -> f64 {
     let zoned = |node: &Node| {
+        let spread_across_regions =
+            node.spread && matches!(node.type_code, component::WIDE | component::DSQL);
         COMPONENT_LIMITING[node.type_code]
             && !COMPONENT_FIXED[node.type_code]
             && !COMPONENT_SPANS_ZONES[node.type_code]
-            // A store spread across regions keeps replicas in every zone too.
-            && !(node.spread && matches!(node.type_code, component::WIDE | component::DSQL))
+            && !spread_across_regions
     };
     if zoned(from) && zoned(to) && from.zone != to.zone {
         CROSS_ZONE_MS
@@ -886,36 +1092,41 @@ fn zone_ms(from: &Node, to: &Node) -> f64 {
     }
 }
 
-/// `hopMs`: one internal call's wire time, plus a handshake without keep-alive.
 #[inline]
 pub fn hop_ms(game: &GameCtx) -> f64 {
-    HOP_MS + if game.has(research::KEEPALIVE) { 0.0 } else { HANDSHAKE_MS }
+    HOP_MS
+        + if game.has(research::KEEPALIVE) {
+            0.0
+        } else {
+            HANDSHAKE_MS
+        }
 }
 
-/// `userRttMs`: milliseconds a user's hop pays between two regions.
 pub fn user_rtt_ms(game: &GameCtx, from: usize, to: usize) -> f64 {
     let a = from.min(REGIONS.len() - 1);
     let b = to.min(REGIONS.len() - 1);
-    let rtt = REGION_RTT[a][b] * USER_ROUND_TRIPS;
-    if rtt <= 0.0 {
-        return rtt;
+    let rtt_ms = REGION_RTT[a][b] * USER_ROUND_TRIPS;
+    if rtt_ms <= 0.0 {
+        return rtt_ms;
     }
-    let cut = if game.has(research::HTTP3) { rtt * (1.0 - HTTP3_CUT) } else { rtt };
-    if game.has(research::ANYCAST) {
-        (cut - ANYCAST_MS).max(0.0)
+    let cut_ms = if game.has(research::HTTP3) {
+        rtt_ms * (1.0 - HTTP3_CUT)
     } else {
-        cut
+        rtt_ms
+    };
+    if game.has(research::ANYCAST) {
+        (cut_ms - ANYCAST_MS).max(0.0)
+    } else {
+        cut_ms
     }
 }
 
-/// Whether a component's `outcome` rule is ported. A run refuses a Design with a
-/// Component whose rule is not, rather than print a figure that only looks right.
-/// `aiValueOf`: a prompt with the company's own documents behind it earns the
-/// Vector Index's lift, at its recall's share, and the ML bonus on Python.
 fn ai_value(node: &Node, kind: usize) -> f64 {
     let Some(recall) = node.vec_recall.filter(|_| kind == kind::AI) else {
         return 1.0;
     };
-    let ml = if RUNTIME_LANGUAGE[node.runtime] == language::PYTHON && node.runtime != runtime::PYPY { ML_AI_BONUS } else { 1.0 };
-    (1.0 + (VEC_AI_LIFT - 1.0) * recall) * ml
+    let python_ml =
+        RUNTIME_LANGUAGE[node.runtime] == language::PYTHON && node.runtime != runtime::PYPY;
+    let ml_bonus = if python_ml { ML_AI_BONUS } else { 1.0 };
+    (1.0 + (VEC_AI_LIFT - 1.0) * recall) * ml_bonus
 }

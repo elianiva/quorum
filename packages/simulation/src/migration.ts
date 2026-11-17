@@ -19,7 +19,6 @@ import { enqueue, serviceOf, stackOf, withService } from './team.ts'
 
 export type StackTarget = Readonly<{ runtime: RuntimeId; framework: FrameworkId }>
 
-/** Steps shifted so far: every App Server moved once it reaches the step count. */
 export const stepOf = (migration: Migration): number =>
   Migration.match(migration, {
     Building: ({ step }) => step,
@@ -29,7 +28,6 @@ export const stepOf = (migration: Migration): number =>
 
 export const isReady = Migration.guards.Ready
 
-/** The next tranche's Dev Hours are built: Building becomes Ready. */
 export const trancheBuilt = (migration: Migration): Migration => {
   if (!Migration.guards.Building(migration)) return migration
   const { runtime, framework, fromRuntime, fromFramework, total, step, bugs } = migration
@@ -44,10 +42,6 @@ export const trancheBuilt = (migration: Migration): Migration => {
   })
 }
 
-/**
- * Shifts traffic one step. A migration that moved its last App Server and has
- * no bugs left ends; one that moved it with bugs stays to be fixed.
- */
 export const shifted = (migration: Migration, moved: boolean): Migration | null => {
   if (!Migration.guards.Ready(migration)) return migration
   const { runtime, framework, fromRuntime, fromFramework, total } = migration
@@ -75,11 +69,9 @@ export const shifted = (migration: Migration, moved: boolean): Migration | null 
   })
 }
 
-/** Fix bugs shipped: a finished migration ends, and a running one stops failing requests. */
 export const fixed = (migration: Migration): Migration | null =>
   Migration.guards.Finishing(migration) ? null : { ...migration, bugs: false }
 
-/** The migration factor: a variant 0.1, a framework 0.5, a language 1 over the new language's velocity. */
 export const migrationFactor = (from: StackTarget, to: StackTarget): number => {
   const language = RUNTIMES[to.runtime].language
   if (RUNTIMES[from.runtime].language !== language)
@@ -88,7 +80,6 @@ export const migrationFactor = (from: StackTarget, to: StackTarget): number => {
   return MIGRATION_FACTORS.variant
 }
 
-/** Dev Hours to move the whole codebase, to a tenth. */
 export const migrationCost = (game: Game, to: StackTarget): number =>
   Math.max(
     0.5,
@@ -100,11 +91,9 @@ export const migrationCost = (game: Game, to: StackTarget): number =>
     ) / 10,
   )
 
-/** Dev Hours of one step: its tranche of the total. */
 export const trancheOf = (migration: Migration, step: number): number =>
   Math.round(migration.total * (MIGRATION_TRANCHES[step - 1] ?? 0) * 10) / 10
 
-/** The target Stack of a runtime or framework choice on an App Server. */
 export const targetOf = (
   node: GameNode,
   choice: Readonly<{ runtime?: RuntimeId; framework?: FrameworkId }>,
@@ -121,13 +110,11 @@ const servers = (game: Game) => game.nodes.filter((node) => node.type === 'serve
 const onStack = (node: GameNode, stack: StackTarget): boolean =>
   node.runtime === stack.runtime && node.framework === stack.framework
 
-/** Swaps one App Server's Stack now: it restarts cold. */
 const swap = (game: Game, id: string, stack: StackTarget): Action =>
   Result.flatMap(setRuntime(game, id, stack.runtime), (next) =>
     setFramework(next, id, stack.framework),
   )
 
-/** Moves App Servers to the Stack until `count` run it. */
 const convert = (game: Game, stack: StackTarget, count: number): Game => {
   let next = game
   for (const node of servers(game)) {
@@ -137,7 +124,6 @@ const convert = (game: Game, stack: StackTarget, count: number): Game => {
   return next
 }
 
-/** App Servers the step moves over: a floor share of them, and all of them at 100%. */
 export const serversAt = (game: Game, step: number): number => {
   const total = servers(game).length
   return step >= MIGRATION_STEPS.length
@@ -145,7 +131,6 @@ export const serversAt = (game: Game, step: number): number => {
     : Math.floor(total * (MIGRATION_STEPS[step - 1] ?? 0))
 }
 
-/** Starts a migration of the Service to a Stack: its first step goes on the backlog. */
 export const startMigration = (game: Game, to: StackTarget): Action => {
   const running = serviceOf(game).migration
   if (running)
@@ -160,7 +145,6 @@ export const startMigration = (game: Game, to: StackTarget): Action => {
   const first = servers(game)[0]
   if (!first) return Result.fail(Refusal.NotAllowed({ reason: 'There is no App Server.' }))
   if (from.runtime === to.runtime && from.framework === to.framework) return Result.succeed(game)
-  // The research gates of the Stack itself.
   const checked = swap(game, first.id, to)
   if (Result.isFailure(checked)) return checked
   const migration = Migration.cases.Building.make({
@@ -177,7 +161,6 @@ export const startMigration = (game: Game, to: StackTarget): Action => {
   )
 }
 
-/** Shifts traffic to the next step once its Dev Hours are built. */
 export const shiftMigration = (game: Game): Action => {
   const migration = serviceOf(game).migration
   if (!migration) return Result.fail(Refusal.NotAllowed({ reason: 'No migration is running.' }))
@@ -201,14 +184,12 @@ export const shiftMigration = (game: Game): Action => {
   return Result.succeed(withService(next, { migration: shifted(migration, moved) }))
 }
 
-/** Fix bugs shipped: the new Stack stops failing, and a finished migration ends. */
 export const bugsFixed = (game: Game): Game => {
   const migration = serviceOf(game).migration
   if (!migration) return game
   return withService(game, { migration: fixed(migration) })
 }
 
-/** Stops a migration: the App Servers already moved go back, and the Dev Hours spent are lost. */
 export const cancelMigration = (game: Game): Action => {
   const migration = serviceOf(game).migration
   if (!migration) return Result.fail(Refusal.NotAllowed({ reason: 'No migration is running.' }))

@@ -16,15 +16,12 @@ import { legacyOf } from '@quorum/simulation/exit'
 import { legacyMultiplier } from '@quorum/simulation/founding'
 import { SurveyStore, SurveyStoreError } from './store.ts'
 
-/* The Exit survey (13 "Exit"): two answers, checked against the Exit they claim before they are kept. */
-
 const DEVICE_ID = /^[A-Za-z0-9-]{8,64}$/
 const MAX_ANSWER_CHARS = 2_000
 const MAX_LOCALE_CHARS = 16
 
 const unavailable = () => new ApiError({ message: 'Feedback is unavailable. Try again later.' })
 
-/** A store failure reaches the client as "unavailable"; its cause goes to the Worker log and the error reporters. */
 const storeUnavailable = <A, E, R>(effect: Effect.Effect<A, E | SurveyStoreError, R>) =>
   effect.pipe(
     Effect.tapError((error) =>
@@ -47,7 +44,6 @@ const isMutator = (id: string): id is MutatorId => Object.hasOwn(MUTATORS, id)
 
 const isPerk = (id: string): boolean => Object.hasOwn(PERKS, id)
 
-/** The key one Exit writes: a retry of the same survey keeps the same row. */
 const exitKeyOf = (exit: SurveyExit): string =>
   [exit.exit, exit.stage, exit.time, exit.peak, exit.payout, exit.legacy].join(':')
 
@@ -65,7 +61,6 @@ export const SurveyHandlers = SurveyRpc.toLayer(
           const exit = submission.exit
           const id = exit.exit
           if (!isExitId(id)) return yield* fail('There is no such Exit.')
-          // The IPO lists a Company that keeps playing, so it has no Exit to report on.
           if (EXITS[id].continues) return yield* fail('That Exit does not end a Company.')
           const lastEra = ERAS.length - 1
           if (!Number.isInteger(exit.stage) || exit.stage < EXITS[id].stage || exit.stage > lastEra)
@@ -91,7 +86,6 @@ export const SurveyHandlers = SurveyRpc.toLayer(
           if (Object.keys(perks).length > PERK_IDS.length)
             return yield* fail('The Founding is not valid.')
 
-          // Legacy is the payout's square root, so a row that claims more than that is not an Exit.
           const most = legacyOf(exit.payout, legacyMultiplier({ venture, mutators, perks }))
           if (exit.legacy > most) return yield* fail('The Exit Legacy does not match its payout.')
 

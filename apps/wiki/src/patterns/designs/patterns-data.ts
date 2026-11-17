@@ -1,8 +1,6 @@
 import { at, design, set, setLink, wire } from '../design.ts'
 import type { Design } from '../design.ts'
 
-/* Patterns: "Scaling data" and "Messaging and async". */
-
 export const patternsData = {
   'sharded-hash-key': design({
     users: 3_800,

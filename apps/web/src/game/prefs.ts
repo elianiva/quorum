@@ -4,8 +4,6 @@ import { Schema } from 'effect'
 import { Locale } from '../i18n/index.ts'
 import type { Prefs } from './model.ts'
 
-/* The Settings panel's toggles, folded into the parent with foldChild. The parent saves and applies the result. */
-
 export const PrefsMessage = defineMessageUnion({
   LocaleChosen: { locale: Locale },
   MuteToggled: {},
@@ -21,7 +19,6 @@ export const PrefsMessage = defineMessageUnion({
 })
 export type PrefsMessage = typeof PrefsMessage.Type
 
-/** The sound level, kept between silent and the mastered mix. */
 export const volumeIn = (volume: number): number => Math.min(100, Math.max(0, volume))
 
 export const updatePrefs = (

@@ -17,16 +17,6 @@ import {
 
 type IconNode = Parameters<typeof icon>[1]
 
-// ToggleGroup is a set of toggles that share a single (or multiple) selection.
-// It owns the selection as a Submodel: embed it with `h.submodel` and listen
-// for `ChangedValue` to lift selection changes into your own model. Conform an
-// externally-driven selection with `reflect`.
-//
-// Upstream renders a loose flex row joined only when spacing is 0; foldcn
-// keeps the same model via the `spacing` config (default 2, matching
-// upstream). Item defaults follow upstream: variant "default", size
-// "default".
-
 export const toggleGroupClass = cx(
   css({
     borderRadius: 'lg',
@@ -41,7 +31,6 @@ export const toggleGroupClass = cx(
   'group-toggle-group',
 )
 
-/** Upstream item string (joined-strip rules apply only at spacing 0). */
 export const toggleGroupItemClass = css({
   '&[data-spacing="0"]': {
     borderRadius: '0',
@@ -90,8 +79,6 @@ export type ToggleGroupItem = Readonly<{
   ariaLabel?: string
 }>
 
-// MODEL
-
 export const Model = S.Struct({
   id: S.String,
   type: Type,
@@ -99,10 +86,6 @@ export const Model = S.Struct({
 })
 export type Model = typeof Model.Type
 
-// MESSAGES
-
-/** The user clicked one of the toggles. Flips that item's membership in the
- *  selection — replacing it entirely when `type` is `single`. */
 export const Message = defineMessageUnion({
   ToggledItem: { value: S.String },
 })
@@ -123,8 +106,6 @@ const nextValue = (
   return isSelected ? current.filter((v) => v !== value) : [...current, value]
 }
 
-// INIT / UPDATE
-
 export type InitConfig = Readonly<{
   id: string
   type?: ToggleGroupType
@@ -137,8 +118,6 @@ export const init = (config: InitConfig): Model => ({
   value: config.value === undefined ? [] : [...config.value],
 })
 
-/** Conforms an externally-driven selection onto the model without emitting an
- *  OutMessage (the world is the source of truth). */
 export const reflect: Reflect<Model, ReadonlyArray<string>> = Function.dual(
   2,
   (model: Model, value: ReadonlyArray<string>): Model =>
@@ -147,8 +126,6 @@ export const reflect: Reflect<Model, ReadonlyArray<string>> = Function.dual(
 
 type UpdateReturn = Update.ReturnWithOutMessage<Model, Message, OutMessage>
 
-/** Processes a toggle group message and returns the next model, commands, and
- *  an optional out-message for the parent. */
 export const update = (model: Model, message: Message): UpdateReturn => {
   return Match.value(message).pipe(
     Match.tagsExhaustive({
@@ -163,23 +140,17 @@ export const update = (model: Model, message: Message): UpdateReturn => {
   )
 }
 
-// VIEW
-
 export type ViewInputs = Readonly<{
   items: ReadonlyArray<ToggleGroupItem>
   variant?: ToggleVariant
   size?: ToggleSize
   isDisabled?: boolean
-  /** Gap between items in spacing units. `0` joins items into a strip.
-   *  Defaults to 2 like upstream. */
   spacing?: number
   orientation?: ToggleGroupOrientation
   ariaLabel?: string
   className?: string
 }>
 
-/** Renders the group of toggles sharing the submodel's selection. Embedded
- *  via `h.submodel`. */
 export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h) => {
   const spacing = viewInputs.spacing ?? 2
   const orientation = viewInputs.orientation ?? 'horizontal'

@@ -7,7 +7,6 @@ import type { GameNode, CacheKey } from '@quorum/simulation/state'
 import { Message } from '@/game/message.ts'
 import { type Panel, caption, picker, section } from './shared.ts'
 
-/** A CDN's purge on deploy and cache key (05 "CDN"). */
 const cdnOptions = (node: GameNode, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return section(

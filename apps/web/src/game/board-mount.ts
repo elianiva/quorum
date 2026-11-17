@@ -51,7 +51,6 @@ const BoardMounted = Mount.defineStream('BoardMounted', {
               onEmptyTap: () => offer(Message.EmptyTapped()),
               onNodeToggle: (nodeId) => offer(Message.NodeToggled({ nodeId })),
               onBox: (ids, mode) => offer(Message.SelectionBoxed({ ids: [...ids], mode })),
-              // Presence, not a Message: 25 frames a second never repaints the Board.
               onCursor: sendCursor,
               onCursorGone: hideCursor,
               onSound: play,

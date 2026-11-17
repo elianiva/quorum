@@ -28,10 +28,6 @@ const prefixed = (prefix: string, family: Family): Record<string, ReadonlyArray<
     ]),
   )
 
-/**
- * Every letter the game can write, by the id a Mail records (`advice.workers`, `event.drawer`, ...). English
- * is the game's own copy; each language writes the same letters, one version for one.
- */
 const letters: Readonly<Record<string, ReadonlyArray<Letter>>> = {
   ...prefixed('advice.', ADVICE),
   ...prefixed('event.', EVENTS),
@@ -59,7 +55,6 @@ const letters: Readonly<Record<string, ReadonlyArray<Letter>>> = {
 
 export const mail = {
   letters,
-  /** A paragraph the game adds to a letter. */
   snippets: {
     patchTicket: (vars: LetterVars) =>
       `Ticket filed: ${vars['item']}, ${vars['cost']} DH, due in ${vars['due']}. Overdue, it turns red on the Team backlog; a minute later it is exploited.`,

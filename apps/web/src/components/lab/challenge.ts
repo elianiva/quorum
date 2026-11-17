@@ -123,7 +123,6 @@ const figureRow = (
     ],
   )
 
-/** The live figures: what the Design costs and serves now, and its complexity. */
 const figures = (
   model: Model,
   challenge: Challenge,
@@ -206,13 +205,11 @@ const figures = (
   )
 }
 
-/** A share as a percent with two significant figures: 1%, 0.5%, 0.001%. */
 const percent = (share: number): string => `${Number((share * 100).toPrecision(2))}%`
 
 const kindName = (t: Messages, kind: string): string =>
   t.catalog.kinds[kind as RequestKind].label.toLowerCase()
 
-/** A missed target, as the Simulation words it in English, in the player's language. */
 const missedText = (t: Messages, missed: string): string => {
   const fixed: Readonly<Record<string, string>> = {
     'Nothing was served.': t.challenge.missedNothing,
@@ -255,7 +252,6 @@ const targetText = (t: Messages, challenge: Challenge): string => {
     .join(' · ')
 }
 
-/** The code fixes a Design may pay Dev Hours for, while it is built. */
 const fixes = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -587,7 +583,6 @@ export const challengeHud = (model: Model, ledger: Ledger, h: HtmlBuilder<Messag
   )
 }
 
-/** The brief and targets in the goal slot; while running, how far the run is. */
 export const challengeBar = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const run = boardChallenge(model.board)

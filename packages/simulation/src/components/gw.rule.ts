@@ -4,7 +4,6 @@ import { GATEWAY_BURST, GATEWAY_LIMITS, RESEARCH } from '../catalog.ts'
 
 import { has } from '../lookups.ts'
 
-/** Sets the shared API Gateway rate limit in requests per second; 0 turns it off (05). */
 export const setRateLimit = (game: Game, id: string, rateLimit: number): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'gw') return notAllowed('Only an API Gateway rate-limits.')
@@ -22,10 +21,6 @@ export const setRateLimit = (game: Game, id: string, rateLimit: number): Action 
     )
   })
 
-/**
- * Turns the shared Gateway token bucket on or off (Rate limiting): a burst up to `GATEWAY_BURST`
- * requests passes whole, and the long-run average holds at the limit.
- */
 export const setGatewayBucket = (game: Game, id: string, bucket: boolean): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'gw') return notAllowed('Only an API Gateway holds a token bucket.')
@@ -44,7 +39,6 @@ export const setGatewayBucket = (game: Game, id: string, bucket: boolean): Actio
     )
   })
 
-/** Sets an API Gateway's Auth at the edge, or its Request coalescing (05 "API Gateway"). */
 export const setGatewayOptions = (
   game: Game,
   id: string,

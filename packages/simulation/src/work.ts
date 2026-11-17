@@ -48,7 +48,7 @@ import {
   RESEARCH,
   type ResearchId,
   TASKS,
-  TASK_LINK_TIMEOUT,
+  TASK_LINK_TIMEOUT_SECONDS,
   LOAD_TEST_DAYS,
   AUTH_MOVE_DH,
   ENGINE_FACTOR,
@@ -170,21 +170,17 @@ const no = (refusal: Refusal): Action => Result.fail(refusal)
 const notAllowed = (reason: string): Action => no(Refusal.NotAllowed({ reason }))
 const refuse = (reason: string): Refusal => Refusal.NotAllowed({ reason })
 
+const SPIKE_HOURS_UNSIZED = Number.MAX_SAFE_INTEGER
 const SANDBOX = 'A Sandbox has no Team.'
-/** Teams the player can run in the slice. */
 export const MAX_TEAMS = 4
-/** Characters a renamed team or Service keeps. */
-export const MAX_NAME = 32
-/** A Platform team opens at Series A (08 "Teams"). */
+export const MAX_NAME_CHARS = 32
 export const PLATFORM_STAGE = 3
-/** The autopilot refactors once debt reaches this. */
 const AUTO_REFACTOR = 0.3
 
 export const itemName = (item: WorkItem): string => {
   if (item.kind === 'feature') return FEATURES[item.ref as FeatureId]?.name ?? item.ref
   if (item.kind === 'task') {
     const name = TASKS[item.ref as TaskId]?.name ?? item.ref
-    // A runbook names the incident kind it covers, so two on the backlog are told apart.
     return item.ref === 'runbook' && item.target
       ? `${name}: ${INCIDENTS[item.target as IncidentId]?.name ?? item.target}`
       : name
@@ -209,14 +205,11 @@ export const itemName = (item: WorkItem): string => {
 
 const queued = (game: Game, ref: string): boolean => game.backlog.some((item) => item.ref === ref)
 
-/** Features the Company has, has built, or has queued. */
 const planned = (game: Game, id: FeatureId): boolean => isBuilt(game, id) || queued(game, id)
 
-/** Dev Hours of a Database engine change: 0.8 of the codebase, to a tenth. */
 export const engineCost = (game: Game): number =>
   Math.max(0.5, Math.round(serviceOf(game).codebase * ENGINE_FACTOR * 10) / 10)
 
-/** Queues the move off an Auth Provider: a fixed 120 Dev Hours, whatever the codebase. */
 export const queueAuthMove = (game: Game): Action => {
   if (game.sandbox) return notAllowed(SANDBOX)
   if (!game.nodes.some((node) => node.type === 'auth'))
@@ -225,7 +218,6 @@ export const queueAuthMove = (game: Game): Action => {
   return ok(enqueue(game, 'move', 'auth', AUTH_MOVE_DH))
 }
 
-/** Queues a Database engine change: 0.8 of the codebase in Dev Hours, then a data copy. Every Database changes together: replication needs one engine (07 "Variants"). */
 export const queueEngineChange = (game: Game, nodeId: string, to: DbEngine): Action => {
   if (game.sandbox) return notAllowed(SANDBOX)
   const node = game.nodes.find((entry) => entry.id === nodeId)
@@ -239,21 +231,17 @@ export const queueEngineChange = (game: Game, nodeId: string, to: DbEngine): Act
   })
 }
 
-/** Queues a Database's topology switch: the same Dev Hours and data copy as a resharding (07 "Topologies"). A Data Group changes together. */
 export const queueTopology = (game: Game, nodeId: string, topology: DbTopology): Action => {
   if (game.sandbox) return notAllowed(SANDBOX)
   const node = game.nodes.find((entry) => entry.id === nodeId)
   if (!node || node.type !== 'database') return notAllowed('Only a Database changes topology.')
   const group = dataGroupOf(game, node)
   if (topologyOfGroup(game, group) === topology) return ok(game)
-  // Single primary is one Database: a second one is not a follower, so it cannot join that choice.
   if (topology === 'single' && databasesOfGroup(game, group).length > 1)
     return notAllowed(
       'Single primary holds one Database. Split the Data Group, or pick Sharded or Multi-leader.',
     )
   if (game.reshard || queued(game, 'reshard')) return notAllowed('A resharding is already running.')
-  // One Database already holds every row, so a topology pick moves nothing and lands at once. The
-  // copy starts once a second Database exists and the rows have somewhere to go (07 "Topologies").
   if (databasesOfGroup(game, group).length <= 1) return setTopology(game, nodeId, topology)
   return ok({
     ...enqueue(game, 'move', 'reshard', RESHARD_DH, false, { target: nodeId }),
@@ -268,7 +256,6 @@ export const queueTopology = (game: Game, nodeId: string, topology: DbTopology):
   })
 }
 
-/** Queues a Database's resharding: Dev Hours first, then a data copy that halves its IOPS (07 "Partitioning"). */
 export const queueReshard = (
   game: Game,
   nodeId: string,
@@ -298,7 +285,6 @@ export const queueReshard = (
   })
 }
 
-/** What a finished move does: auth leaves the Design, a resharding's or an engine's data copy starts, and ownership/datastore handoffs land. */
 const moved = (game: Game, item: WorkItem, tuning: Tuning): Game => {
   if (item.ref === 'auth') {
     const gone = new Set(game.nodes.filter((node) => node.type === 'auth').map((node) => node.id))
@@ -331,7 +317,6 @@ const moved = (game: Game, item: WorkItem, tuning: Tuning): Game => {
   if (item.ref === 'reshard') {
     const reshard = game.reshard
     if (!reshard) return game
-    // The copy takes a calendar day at least, and a minute a GB of rows after that.
     const rows = groupDataOf(game, reshardGroupOf(game, reshard))
     const copy = Math.max(1, (rows * RESHARD_MINUTES_PER_GB * 60) / CALENDAR_DAY)
     return {
@@ -354,14 +339,12 @@ const moved = (game: Game, item: WorkItem, tuning: Tuning): Game => {
   }
 }
 
-/** The Data Group a resharding lands on: the one it recorded, or the Node's own for an old save. */
 const reshardGroupOf = (game: Game, reshard: NonNullable<Game['reshard']>): string => {
   if (reshard.group) return reshard.group
   const node = game.nodes.find((entry) => entry.id === reshard.node)
   return node ? dataGroupOf(game, node) : ''
 }
 
-/** Ends a finished resharding copy: the Data Group runs the new topology, and the Database runs the new shards and key from now on. */
 const finishReshard = (game: Game): Game => {
   const reshard = game.reshard
   if (!reshard || reshard.phase._tag !== 'Copying' || game.time < reshard.phase.until) return game
@@ -373,8 +356,6 @@ const finishReshard = (game: Game): Game => {
       node.type === 'database'
         ? {
             ...node,
-            // A topology switch lands on the whole Data Group; a plain resharding keeps each
-            // Database's own shards and key unless it is the one being resharded.
             ...(dataGroupOf(game, node) === group ? { topology: reshard.topology } : {}),
             ...(node.id === reshard.node ? { shards: reshard.shards, shardKey: reshard.key } : {}),
           }
@@ -383,7 +364,6 @@ const finishReshard = (game: Game): Game => {
   }
 }
 
-/** Ends a finished data copy: every Database runs the new engine from now on (07 "Variants"). */
 const finishEngineChange = (game: Game): Game => {
   const change = game.engineChange
   if (!change || change.phase._tag !== 'Copying' || game.time < change.phase.until) return game
@@ -412,30 +392,24 @@ export const featureRefusal = (game: Game, id: FeatureId): Refusal | null => {
     return Refusal.NotAllowed({
       reason: `${def.name} needs ${missing.map((needed) => FEATURES[needed].name).join(' and ')}.`,
     })
-  // Data residency needs an open EU region, not a Feature (08 "Features"): nowhere else is EU
-  // data allowed to leave the region it names.
   if (id === 'data-residency' && !openRegions(game).includes('eu'))
     return Refusal.NotAllowed({ reason: `${def.name} needs an open EU region.` })
-  // Email digests send in a burst of jobs that a Queue absorbs (08 "Features").
   if (id === 'email-digests' && !game.nodes.some((node) => node.type === 'queue'))
     return Refusal.NotAllowed({ reason: `${def.name} need a Queue to send through.` })
   return null
 }
 
-/** An App Server whose runtime is Node.js or Python on an event loop (08 "Engineering tasks"). */
 const onLoop = (node: Game['nodes'][number]): boolean =>
   RUNTIMES[node.runtime].language === 'node' ||
   (RUNTIMES[node.runtime].language === 'python' && RUNTIMES[node.runtime].model === 'loop')
 
-/** Whether a Link starts at an App Server or a Worker, the code the task changes. */
 const callerOf = (game: Game, link: Game['links'][number]): boolean =>
   game.nodes.some(
     (node) => node.id === link.from && (node.type === 'server' || node.type === 'worker'),
   )
 
-/** Whether a Link already holds the policy Add timeouts and retries writes. */
 const policed = (link: Game['links'][number]): boolean =>
-  link.timeout <= TASK_LINK_TIMEOUT && link.retries === 'backoff'
+  link.timeout <= TASK_LINK_TIMEOUT_SECONDS && link.retries === 'backoff'
 
 export const taskRefusal = (game: Game, id: TaskId): Refusal | null => {
   const def = TASKS[id]
@@ -452,7 +426,6 @@ export const taskRefusal = (game: Game, id: TaskId): Refusal | null => {
     return Refusal.NotAllowed({ reason: 'There is no tech debt.' })
   if (id === 'upgrade-cluster' && !game.nodes.some((node) => node.type === 'cluster'))
     return Refusal.NotAllowed({ reason: 'There is no Kubernetes Cluster to upgrade.' })
-  // A runbook names one incident kind, which the Add work menu picks (11 "Runbooks").
   if (id === 'runbook')
     return Refusal.NotAllowed({ reason: 'Choose the incident a runbook covers.' })
   if (id === 'off-loop' && !game.nodes.some((node) => node.type === 'server' && onLoop(node)))
@@ -467,17 +440,8 @@ export const taskRefusal = (game: Game, id: TaskId): Refusal | null => {
   return null
 }
 
-/**
- * Incidents no runbook covers: a drill tests the team rather than the design, and a breach and a
- * credential leak run their course by design, with no mitigation to automate (11 "Catalog").
- */
 const NO_RUNBOOK: ReadonlyArray<IncidentId> = ['dr-drill', 'breach', 'credential-leak']
 
-/**
- * Why a runbook cannot be written for this incident kind, or null. The team must have handled it
- * by hand once, so automation is a reward for a lesson already learned (11 "Runbooks"), and an SRE
- * team must be staffed to keep the runbook current.
- */
 export const runbookRefusal = (game: Game, kind: IncidentId): Refusal | null => {
   const name = INCIDENTS[kind].name
   if (game.sandbox) return Refusal.NotAllowed({ reason: SANDBOX })
@@ -500,7 +464,6 @@ export const runbookRefusal = (game: Game, kind: IncidentId): Refusal | null => 
   return null
 }
 
-/** The incident kinds a runbook may be written for now: handled by hand, without one yet. */
 export const runbookKinds = (game: Game): ReadonlyArray<IncidentId> =>
   INCIDENT_IDS.filter(
     (kind) =>
@@ -510,21 +473,12 @@ export const runbookKinds = (game: Game): ReadonlyArray<IncidentId> =>
 const refused = (refusal: Refusal | null, apply: () => Game): Action =>
   refusal ? no(refusal) : ok(apply())
 
-/**
- * Dev Hours a Feature costs on this Design (07 "Document Store"). A Document Store has no schema
- * to migrate, so a Feature that changes the data shape costs a quarter less and skips the
- * migration. Every other Feature pays a little more, because with no joins each access pattern it
- * adds is its own collection and index to write.
- */
 export const featureHoursOf = (game: Game, id: FeatureId): number => {
   const def = FEATURES[id]
-  // A Data team makes the analytics and AI Features cheaper (08 "Teams").
   const data =
     dataStaffed(game) && def.unlocks && DATA_KINDS.includes(def.unlocks.kind as RequestKind)
       ? DATA_TEAM_HOURS
       : 1
-  // The framework's own tools: Django's admin site for internal tools, Laravel's queues and
-  // scheduler for background work (06 "Frameworks").
   const framework = FRAMEWORKS[stackOf(game).framework]
   const tooling =
     (INTERNAL_TOOL_FEATURES.includes(id) ? (framework.internalTools ?? 1) : 1) *
@@ -532,7 +486,6 @@ export const featureHoursOf = (game: Game, id: FeatureId): number => {
   const documents = game.nodes.some(
     (node) => node.type === 'doc' && !isDown(node) && node.service._tag !== 'Shut',
   )
-  // A schema-change tool costs Dev Hours on every Feature that changes a relational schema.
   if (!documents)
     return (
       def.dh *
@@ -549,7 +502,6 @@ export const featureHoursOf = (game: Game, id: FeatureId): number => {
   return def.dh * data * tooling * (def.shapes > 0 ? DOC_SHAPE_DH : DOC_PATTERN_FACTOR)
 }
 
-/** The request kinds a Data team makes cheaper to build: `report` and `ai` (08 "Teams"). */
 const DATA_KINDS: ReadonlyArray<RequestKind> = ['report', 'ai']
 
 export const queueFeature = (game: Game, id: FeatureId): Action =>
@@ -562,17 +514,11 @@ export const queueFeature = (game: Game, id: FeatureId): Action =>
 export const queueTask = (game: Game, id: TaskId): Action =>
   refused(taskRefusal(game, id), () => enqueue(game, 'task', id, TASKS[id].dh))
 
-/** A Venture's cap on a lever, or null when it has none for this kind (13 "Ventures"). */
 const leverCapOf = (game: Game, kind: LeverKind): number | null => {
   const cap = LEVER_CAPS[ventureOf(game).id]
   return cap !== undefined && cap.kind === kind ? cap.step : null
 }
 
-/**
- * Why the next step of a kind's Product lever cannot be built, or null (10
- * "Product levers"). A Challenge and a guided Sandbox pin their mix, so they
- * carry no lever; a free Sandbox unlocks every step.
- */
 export const leverRefusal = (game: Game, kind: string): Refusal | null => {
   if (!isLeverKind(kind))
     return refuse(`${KINDS[kind as RequestKind]?.label ?? kind} has no Product lever.`)
@@ -596,7 +542,6 @@ export const leverRefusal = (game: Game, kind: string): Refusal | null => {
   return null
 }
 
-/** Why a built lever step cannot be removed, or null. */
 export const leverRemoveRefusal = (game: Game, kind: string): Refusal | null => {
   if (!isLeverKind(kind))
     return refuse(`${KINDS[kind as RequestKind]?.label ?? kind} has no Product lever.`)
@@ -609,10 +554,6 @@ export const leverRemoveRefusal = (game: Game, kind: string): Refusal | null => 
   return null
 }
 
-/**
- * Builds the next step of a kind's Product lever. A Company pays Dev Hours and
- * waits for the deploy; a free Sandbox sets it at once, because it has no Team.
- */
 export const queueLever = (game: Game, kind: LeverKind): Action => {
   const refusal = leverRefusal(game, kind)
   if (refusal) return no(refusal)
@@ -622,10 +563,6 @@ export const queueLever = (game: Game, kind: LeverKind): Action => {
   return ok(enqueue(game, 'lever', kind, leverDh(step), false, { service: service.id, step }))
 }
 
-/**
- * Removes the last step of a lever: the share comes back, the growth cost ends,
- * and a Company gets half the step's Dev Hours back.
- */
 export const removeLever = (game: Game, kind: LeverKind): Action => {
   const refusal = leverRemoveRefusal(game, kind)
   if (refusal) return no(refusal)
@@ -638,11 +575,6 @@ export const removeLever = (game: Game, kind: LeverKind): Action => {
   )
 }
 
-/**
- * Why a live Feature cannot be removed, or null. A turned-off Feature still pays its upkeep
- * (08 "Rollout"); removing it is the only thing that ends it. A Feature another live or planned
- * Feature requires stays, so the dependency graph the backlog checks never breaks underfoot.
- */
 export const removeRefusal = (game: Game, id: FeatureId): Refusal | null => {
   const def = FEATURES[id]
   if (game.sandbox) return Refusal.NotAllowed({ reason: SANDBOX })
@@ -657,11 +589,6 @@ export const removeRefusal = (game: Game, id: FeatureId): Refusal | null => {
   return null
 }
 
-/**
- * Removes a live Feature for good (08 "Rollout"): its code is gone, so it stops costing upkeep,
- * and every effect it had (market, growth, churn, value, load, the kind it unlocked) stops too.
- * Unlike a flag turned off, there is no bringing it back: building it again queues it from zero.
- */
 export const removeFeature = (game: Game, id: FeatureId): Action => {
   const refusal = removeRefusal(game, id)
   if (refusal) return no(refusal)
@@ -682,25 +609,18 @@ export const removeFeature = (game: Game, id: FeatureId): Action => {
   )
 }
 
-/** Queues "Write a runbook" for one incident kind (11 "Runbooks"). */
 export const queueRunbook = (game: Game, kind: IncidentId): Action =>
   refused(runbookRefusal(game, kind), () =>
     enqueue(game, 'task', 'runbook', TASKS.runbook.dh, false, { target: kind }),
   )
 
-/** What a split asks for: the new Service's name, its owner, and the Features it takes with it. */
 export type SplitRequest = Readonly<{
   name: string
   owner: string
   features: ReadonlyArray<FeatureId>
-  /** The Database Node the new Service reads and writes; null keeps the Design's first one. */
   datastore?: string | null
 }>
 
-/**
- * Dev Hours a split costs: the migration factor for a split, 0.3, of the moved part of the
- * codebase (08 "Migrations"). A codebase is 0.5 KLOC per Dev Hour of the Features shipped on it.
- */
 export const splitCost = (features: ReadonlyArray<FeatureId>): number =>
   Math.max(
     0.5,
@@ -711,7 +631,6 @@ export const splitCost = (features: ReadonlyArray<FeatureId>): number =>
     ) / 10,
   )
 
-/** Why a split cannot be made, or null. */
 export const splitRefusal = (game: Game, request: SplitRequest): Refusal | null => {
   if (game.sandbox) return Refusal.NotAllowed({ reason: SANDBOX })
   if (!has(game, 'service-boundaries'))
@@ -746,18 +665,12 @@ export const splitRefusal = (game: Game, request: SplitRequest): Refusal | null 
   return null
 }
 
-/**
- * Splits a Service: the new codebase, owned by a team, carrying the Features it was split for.
- * Its Dev Hours go on the backlog as one split item, sized by the moved code. The moved Features
- * leave the codebase they came from.
- */
 export const splitService = (game: Game, request: SplitRequest): Action => {
   const refusal = splitRefusal(game, request)
   if (refusal) return no(refusal)
   const features = [...new Set(request.features)]
   const name = request.name.trim() || `Service ${game.services.length}`
   const moved = features.reduce((sum, id) => sum + FEATURES[id].dh * KLOC_PER_DH, 0)
-  // The code leaves the Services that carried it.
   const leaving = new Map<string, number>()
   for (const id of features) {
     const carrier = serviceOfFeature(game, id)
@@ -794,11 +707,6 @@ export const splitService = (game: Game, request: SplitRequest): Action => {
   return ok(enqueue(next, 'split', service.id, splitCost(features), false, { service: service.id }))
 }
 
-/**
- * Hands a Service to another team (08 "Ownership"): the new owner's engineers take its backlog
- * first, and the next bad deploy on it pages them. Knowledge transfer takes Dev Hours, so the
- * handoff is queued and lands when the work finishes.
- */
 export const moveService = (game: Game, serviceId: string, teamId: string): Action => {
   if (game.sandbox) return notAllowed(SANDBOX)
   const service = game.services.find((entry) => entry.id === serviceId)
@@ -819,11 +727,6 @@ export const moveService = (game: Game, serviceId: string, teamId: string): Acti
   )
 }
 
-/**
- * Names the Database a Service reads and writes (08 "Shared database penalty"): null keeps the
- * Design's first Database, which is why split Services share it until they name their own. The
- * code and connection changes take Dev Hours and land when the work finishes.
- */
 export const setDatastore = (game: Game, serviceId: string, datastore: string | null): Action => {
   if (game.sandbox) return notAllowed(SANDBOX)
   const service = game.services.find((entry) => entry.id === serviceId)
@@ -848,11 +751,9 @@ export const setDatastore = (game: Game, serviceId: string, datastore: string | 
   )
 }
 
-/** The Service an App Server or Worker belongs to: its own, or the starting Service when none is set. */
 export const serviceOfNode = (game: Game, node: GameNode): Service =>
   game.services.find((entry) => entry.id === node.serviceId) ?? serviceOf(game)
 
-/** Moves an App Server or Worker to another Service (08 "Ownership"). The node reconfigures and redeploys, so it recovers capacity before it serves again. */
 export const assignService = (game: Game, nodeId: string, serviceId: string): Action => {
   if (game.sandbox) return notAllowed(SANDBOX)
   const node = game.nodes.find((entry) => entry.id === nodeId)
@@ -870,7 +771,6 @@ export const assignService = (game: Game, nodeId: string, serviceId: string): Ac
   })
 }
 
-/** The App Servers and Workers of a Service. */
 export const nodesOfService = (game: Game, serviceId: string): ReadonlyArray<GameNode> =>
   game.nodes.filter(
     (node) =>
@@ -878,23 +778,17 @@ export const nodesOfService = (game: Game, serviceId: string): ReadonlyArray<Gam
       serviceOfNode(game, node).id === serviceId,
   )
 
-/** The Load Balancers that send traffic to a Service's App Servers. */
 export const loadBalancersOf = (game: Game, serviceId: string): ReadonlyArray<GameNode> => {
   const members = new Set(nodesOfService(game, serviceId).map((node) => node.id))
   const ids = new Set(game.links.filter((link) => members.has(link.to)).map((link) => link.from))
   return game.nodes.filter((node) => node.type === 'lb' && ids.has(node.id))
 }
 
-/** The item's Service: a Feature's own codebase, or the Service the item names. */
 export const serviceOfItem = (game: Game, item: WorkItem): Service =>
   item.kind === 'feature'
     ? serviceOfFeature(game, item.ref as FeatureId)
     : serviceOfId(game, item.service)
 
-/**
- * Whether a team takes an item (08 "Ownership"): a Service is fixed by its owner. A team that owns
- * no Service helps on the starting one, which keeps a Company with one Service playing as it did.
- */
 export const worksOn = (game: Game, team: Team, item: WorkItem): boolean => {
   if (game.services.length <= 1) return true
   const service = serviceOfItem(game, item)
@@ -904,10 +798,6 @@ export const worksOn = (game: Game, team: Team, item: WorkItem): boolean => {
   )
 }
 
-/**
- * Puts a fix in the code, or takes it out, on a Challenge whose fixes cost Dev Hours
- * (14 "The N+1"). The Challenge counts the Dev Hours; the fix itself is instant.
- */
 export const setFix = (game: Game, id: FixId, on: boolean): Action => {
   if (!game.scenario?.tasks) return notAllowed(SANDBOX)
   const research = TASKS[id].research
@@ -920,15 +810,13 @@ export const setFix = (game: Game, id: FixId, on: boolean): Action => {
   )
 }
 
-/** Puts a Team on the running Study (08 "Spikes"): it runs 2× while the Team works on it. */
 export const queueSpike = (game: Game): Action => {
   const running = game.studies[0]
   if (game.sandbox) return notAllowed(SANDBOX)
   if (!running) return notAllowed('No Study is running.')
   if (queued(game, running.id))
     return notAllowed(`A Team already spikes ${RESEARCH[running.id].name}.`)
-  // A Spike has no size: it holds its Team until its Study completes.
-  return ok(enqueue(game, 'spike', running.id, Number.MAX_SAFE_INTEGER, true))
+  return ok(enqueue(game, 'spike', running.id, SPIKE_HOURS_UNSIZED, true))
 }
 
 const withItem = (game: Game, id: number, apply: (index: number) => Action): Action => {
@@ -936,7 +824,6 @@ const withItem = (game: Game, id: number, apply: (index: number) => Action): Act
   return index === -1 ? no(Refusal.Missing()) : apply(index)
 }
 
-/** Moves an item up or down the backlog. */
 export const moveItem = (game: Game, id: number, direction: 1 | -1): Action =>
   withItem(game, id, (index) => {
     const to = index + direction
@@ -947,7 +834,6 @@ export const moveItem = (game: Game, id: number, direction: 1 | -1): Action =>
     return ok({ ...game, backlog })
   })
 
-/** Moves an item to the top of the backlog, so the next free team builds it. */
 export const prioritizeItem = (game: Game, id: number): Action =>
   withItem(game, id, (index) => {
     const item = game.backlog[index]
@@ -955,7 +841,6 @@ export const prioritizeItem = (game: Game, id: number): Action =>
     return ok({ ...game, backlog: [item, ...game.backlog.filter((entry) => entry.id !== id)] })
   })
 
-/** Takes an item off the backlog. Dev Hours spent on it are lost. */
 export const cancelItem = (game: Game, id: number): Action =>
   withItem(game, id, (index) => {
     const item = game.backlog[index]
@@ -963,19 +848,16 @@ export const cancelItem = (game: Game, id: number): Action =>
     if (item?.ref === 'fix-bugs') return notAllowed('The migration needs its bugs fixed.')
     if (item?.kind === 'patch') return notAllowed('A patch stays until it is built or it expires.')
     const gone = { ...game, backlog: game.backlog.filter((entry) => entry.id !== id) }
-    // A move cancelled before its data copy starts leaves nothing running.
     if (item?.ref === 'reshard') return ok({ ...gone, reshard: null })
     if (item?.ref === 'engine') return ok({ ...gone, engineChange: null })
     return ok(gone)
   })
 
-/** Pays what an item still needs from the Dev Hours pool, as far as it reaches. */
 export const rushItem = (game: Game, id: number): Action =>
   withItem(game, id, (index) => {
     const item = game.backlog[index]
     if (!item) return no(Refusal.Missing())
     if (item.kind === 'spike') return notAllowed('A Spike ends when its Study completes.')
-    // A blocked item waits on the player's answer; paid in full, it would finish without one.
     if (item.block._tag === 'Blocked') return notAllowed('It waits on you first.')
     if (game.devHours < 0.01) return notAllowed('The Dev Hours pool is empty.')
     const paid = Math.min(game.devHours, item.cost - item.spent)
@@ -987,40 +869,24 @@ export const rushItem = (game: Game, id: number): Action =>
     return ok({ ...game, devHours: game.devHours - paid, backlog })
   })
 
-/**
- * The share of an item's cost a Rush pays, counting what earlier Rushes paid: 1 is a full rush.
- * It reads the item's own rushed Dev Hours, so a second click shows the total, not just its own.
- */
 const rushedShareOf = (item: WorkItem, pool: number): number => {
   if (item.cost <= 0) return 0
   const paid = Math.max(0, Math.min(pool, item.cost - item.spent))
   return Math.min(1, ((item.rushed ?? 0) + paid) / item.cost)
 }
 
-/** The tech debt a rush adds once the item finishes: a full item's cost pays 2 points. */
 export const rushDebtOf = (item: WorkItem, pool: number): number =>
   RUSH_DEBT * rushedShareOf(item, pool)
 
-/** The bad-deploy chance a rushed Feature carries into its deploy: 10% for a full item's cost. */
 export const rushBugOf = (game: Game, item: WorkItem, pool: number): number =>
   game.stage >= 1 && item.kind === 'feature' ? RUSH_BUG_CHANCE * rushedShareOf(item, pool) : 0
 
 export const setAutopilot = (game: Game, autopilot: boolean): Game => ({ ...game, autopilot })
 
-/** Sim seconds after which a block the player put off writes again. */
 export const blockRemind = (tuning: Tuning = LIVE_TUNING): number =>
   (BLOCK_REMIND_DAYS * CALENDAR_DAY) / tuning.calendarPace
 
-/**
- * Why an item stops (18 "Teammates"): the first of the four waits that holds. It waits on an index
- * while its Service has a query shape with none; on a copy while the Service shares its Database
- * with another; on a Team too big to coordinate; and on a decision while the
- * Design is failing its Apdex target, when what to build first is the player's call.
- */
 export const blockReason = (game: Game, item: WorkItem): BlockKind | null => {
-  // A patch ticket waits on nothing but its deadline (18 "CVEs and patches"): a CVE does not care
-  // that the team outgrew itself or that the Design misses its Apdex target, and "Patch now" has
-  // to mean now, or the ticket blocks until it is exploited.
   if (item.kind === 'patch') return null
   const service = serviceOfItem(game, item)
   if (service.shapes > 0) return 'index'
@@ -1030,7 +896,6 @@ export const blockReason = (game: Game, item: WorkItem): BlockKind | null => {
   return null
 }
 
-/** Approves the thing a blocked item waits for: the work moves again. */
 export const approveBlock = (game: Game, id: number): Action =>
   withItem(game, id, (index) => {
     const item = game.backlog[index]
@@ -1046,7 +911,6 @@ export const approveBlock = (game: Game, id: number): Action =>
     })
   })
 
-/** Later: the block stays, and the owner writes again after a calendar day. */
 export const laterBlock = (game: Game, id: number, tuning: Tuning = LIVE_TUNING): Action =>
   withItem(game, id, (index) => {
     const item = game.backlog[index]
@@ -1084,16 +948,10 @@ const answerPatch = (game: Game, id: number, answer: 'now' | 'queued'): Action =
     })
   })
 
-/** Patch now: the owner's ticket goes to the top of the backlog, ahead of the product. */
 export const patchNow = (game: Game, id: number): Action => answerPatch(game, id, 'now')
 
-/** Queue the patch: the ticket stays where it is, behind the product work. */
 export const queuePatch = (game: Game, id: number): Action => answerPatch(game, id, 'queued')
 
-/**
- * Adds the missing index. Needs Query analysis to find it. A Sandbox adds it at
- * once; a Company puts the task at the top of the backlog and rushes it from the pool.
- */
 export const addIndex = (game: Game, nodeId: string): Action => {
   const node = game.nodes.find((entry) => entry.id === nodeId)
   if (!node) return no(Refusal.Missing())
@@ -1117,11 +975,9 @@ export const addIndex = (game: Game, nodeId: string): Action => {
   })
 }
 
-/** Signs an engineer for the Service's language: they join after the time to hire. */
 export const hire = (game: Game, tuning: Tuning = LIVE_TUNING): Action => {
   if (game.sandbox) return notAllowed(SANDBOX)
   if (game.stage < 1) return no(Refusal.TooEarly({ what: 'Hiring', era: ERAS[1]?.name ?? '' }))
-  // Cash is short, so no hire (09 "Runway and running out of Cash").
   if (shortOfCash(game))
     return notAllowed('Out of Cash: no placement, upgrade, or hire until Cash is above zero.')
   const language = languageOfService(game)
@@ -1148,7 +1004,6 @@ export const hire = (game: Game, tuning: Tuning = LIVE_TUNING): Action => {
   })
 }
 
-/** Lets an engineer go: no refund, no more salary, and the rest of the team loses heart for a week. */
 export const layoff = (game: Game, engineerId: string, tuning: Tuning = LIVE_TUNING): Action => {
   if (!game.engineers.some((engineer) => engineer.id === engineerId)) return no(Refusal.Missing())
   return ok({
@@ -1158,11 +1013,6 @@ export const layoff = (game: Game, engineerId: string, tuning: Tuning = LIVE_TUN
   })
 }
 
-/**
- * Sends an engineer to learn another language, for the Stack the Service is moving to (08 "Learning a
- * Stack"). It costs Cash up front and the engineer's output while they learn, and it spares the
- * layoff and the rehire. They take the language, and its pay, when the time is up.
- */
 export const train = (
   game: Game,
   engineerId: string,
@@ -1190,7 +1040,6 @@ export const train = (
   })
 }
 
-/** Gives an engineer time off: they produce nothing for three calendar days, and come back content. */
 export const giveTimeOff = (
   game: Game,
   engineerId: string,
@@ -1208,7 +1057,6 @@ export const giveTimeOff = (
   })
 }
 
-/** Raises an engineer to the Era's going rate: they stay, and the payroll grows with them. */
 export const raiseSalary = (game: Game, engineerId: string): Action => {
   const engineer = game.engineers.find((entry) => entry.id === engineerId)
   if (!engineer) return no(Refusal.Missing())
@@ -1224,7 +1072,6 @@ export const raiseSalary = (game: Game, engineerId: string): Action => {
   })
 }
 
-/** Accepts a resignation: the engineer leaves, and the payroll ends without a layoff's morale hit. */
 export const acceptResignation = (game: Game, engineerId: string): Action => {
   if (!game.engineers.some((engineer) => engineer.id === engineerId)) return no(Refusal.Missing())
   return ok({
@@ -1256,7 +1103,6 @@ export const createTeam = (game: Game): Action => {
   })
 }
 
-/** Removes a team: its engineers move to the first team. The founder's team stays. */
 export const removeTeam = (game: Game, teamId: string): Action => {
   const first = game.teams[0]
   if (!first || first.id === teamId) return notAllowed('The founder’s team stays.')
@@ -1284,13 +1130,9 @@ export const assign = (game: Game, engineerId: string, teamId: string): Action =
   })
 }
 
-/** A typed name: trimmed, with runs of spaces collapsed, and cut to the field's length. */
-const cleanedName = (name: string): string => name.trim().replace(/\s+/g, ' ').slice(0, MAX_NAME)
+const cleanedName = (name: string): string =>
+  name.trim().replace(/\s+/g, ' ').slice(0, MAX_NAME_CHARS)
 
-/**
- * Renames a team (08 "Teams"). A name is the player's own label: it changes no rule, so it costs
- * nothing and needs no research. Two teams cannot share a name.
- */
 export const renameTeam = (game: Game, teamId: string, name: string): Action => {
   const team = game.teams.find((entry) => entry.id === teamId)
   if (!team) return no(Refusal.Missing())
@@ -1309,10 +1151,6 @@ export const renameTeam = (game: Game, teamId: string, name: string): Action => 
   })
 }
 
-/**
- * Renames a Service (08 "Services"). Like a team name, it is a label: no Dev Hours, no research.
- * Two Services cannot share a name.
- */
 export const renameService = (game: Game, serviceId: string, name: string): Action => {
   const service = game.services.find((entry) => entry.id === serviceId)
   if (!service) return no(Refusal.Missing())
@@ -1333,11 +1171,6 @@ export const renameService = (game: Game, serviceId: string, name: string): Acti
   })
 }
 
-/**
- * Makes a team a product team or a Platform team (08 "Teams"). A Platform team
- * builds no backlog: it runs the Clusters and halves deploy time. From Series A;
- * the founder's team stays a product team.
- */
 export const setTeamKind = (game: Game, teamId: string, kind: TeamKind): Action => {
   const team = game.teams.find((entry) => entry.id === teamId)
   if (!team) return no(Refusal.Missing())
@@ -1376,7 +1209,6 @@ export const setTeamKind = (game: Game, teamId: string, kind: TeamKind): Action 
   })
 }
 
-/** Changes a team's policy. The old one holds for a calendar day while the team adjusts. */
 export const setTeamPolicy = (
   game: Game,
   teamId: string,
@@ -1395,10 +1227,6 @@ export const setTeamPolicy = (
   })
 }
 
-/**
- * A runtime or framework choice on an App Server. A Sandbox swaps it at once.
- * A Company starts a migration of its Service: Dev Hours, then the strangler.
- */
 export const changeStack = (
   game: Game,
   nodeId: string,
@@ -1412,7 +1240,6 @@ export const changeStack = (
       : setFramework(game, nodeId, choice.framework ?? node.framework)
   const target = targetOf(node, choice)
   const migration = serviceOf(game).migration
-  // Choosing the Stack a migration already moves to, or the one it left, changes nothing.
   if (
     migration &&
     ((target.runtime === migration.runtime && target.framework === migration.framework) ||
@@ -1424,10 +1251,6 @@ export const changeStack = (
 
 export { cancelMigration, shiftMigration }
 
-/**
- * Ships a batch: each Feature becomes live for every user with no adoption yet, at the end of the
- * live order, so the last deploy reads last.
- */
 const deployed = (
   features: Game['features'],
   batch: ReadonlyArray<FeatureId>,
@@ -1440,7 +1263,6 @@ const deployed = (
   return Object.fromEntries([...rest, ...live])
 }
 
-/** Rolls back a bad deploy: returns the Service to its previous version in deploy time (11). */
 export const rollback = (game: Game): Action => {
   if (game.incident?.kind !== 'bad-deploy') return notAllowed('No deploy needs rolling back.')
   if (game.incident.rollingBack) return notAllowed('That deploy is already rolling back.')
@@ -1454,11 +1276,9 @@ export const rollback = (game: Game): Action => {
 
 type Advance = Readonly<{ game: Game; events: ReadonlyArray<StepEvent> }>
 
-/** The next Feature the autopilot builds: the first in catalog order the Company can start. */
 export const nextFeature = (game: Game): FeatureId | undefined =>
   FEATURE_IDS.find((id) => featureRefusal(game, id) === null)
 
-/** Idle teams pick work, and a built migration step shifts. */
 const autopilot = (game: Game, events: Array<StepEvent>): Game => {
   let next = game
   const migration = serviceOf(next).migration
@@ -1488,12 +1308,6 @@ const autopilot = (game: Game, events: Array<StepEvent>): Game => {
 
 const clampMood = (mood: number): number => Math.max(0, Math.min(MOOD_START, mood))
 
-/**
- * What a Step does to the Team's people: a new incident pages the Team that owns the Service it
- * hit, a spent error budget is a long freeze, and an engineer paid below the Era's rate carries a
- * pay gap. Each wears mood down; time off and a raise restore it. An engineer whose mood falls to
- * the threshold writes once, and a later recovery lets them write again.
- */
 export const advanceMorale = (
   game: Game,
   before: Game,
@@ -1524,13 +1338,11 @@ export const advanceMorale = (
   return { ...game, engineers }
 }
 
-/** What a finished item does, including the tech debt its Rushes added (08 "Tech debt"). */
 const complete = (game: Game, item: WorkItem, tuning: Tuning): Game => {
   const done = completed(game, item, tuning)
   if (item.cost <= 0) return done
   const rushed = Math.min(1, (item.rushed ?? 0) / item.cost)
   if (rushed <= 0) return done
-  // A rushed Feature carries its share into the deploy that ships it, and keeps it through a rollback.
   const withRush: Game =
     item.kind === 'feature'
       ? { ...done, rushedFeatures: { ...done.rushedFeatures, [item.ref]: rushed } }
@@ -1542,8 +1354,6 @@ const complete = (game: Game, item: WorkItem, tuning: Tuning): Game => {
 }
 
 const completed = (game: Game, item: WorkItem, tuning: Tuning): Game => {
-  // A patch, a split, a spike, and a lever have no service code of their own: finishing them is
-  // the effect.
   if (item.kind === 'spike' || item.kind === 'patch' || item.kind === 'split') return game
   if (item.kind === 'lever') {
     const step = item.step ?? (game.levers[item.ref] ?? 0) + 1
@@ -1576,7 +1386,6 @@ const completed = (game: Game, item: WorkItem, tuning: Tuning): Game => {
     )
   }
   const id = item.ref as TaskId
-  // A task shipped during an incident is a hotfix: it adds debt.
   const hotfix = game.incident !== null && id !== 'refactor' ? HOTFIX_DEBT : 0
   const after = withService(game, { debt: Math.min(1, service.debt + hotfix) })
   switch (id) {
@@ -1585,7 +1394,6 @@ const completed = (game: Game, item: WorkItem, tuning: Tuning): Game => {
         after.incident?.kind === 'slow-query'
           ? { ...after, incident: { ...after.incident, remaining: 0 } }
           : after,
-        // The index covers a query shape, and every write pays to keep it (07 "Indexes").
         { shapes: Math.max(0, service.shapes - 1), indexes: service.indexes + 1 },
       )
     case 'fix-leak': {
@@ -1609,12 +1417,15 @@ const completed = (game: Game, item: WorkItem, tuning: Tuning): Game => {
     case 'health-check':
       return withService(after, { fixes: [...service.fixes, id] })
     case 'timeouts-retries':
-      // Every Link out of an App Server or Worker gets a short timeout and backoff retries.
       return {
         ...after,
         links: after.links.map((link) =>
           callerOf(after, link)
-            ? { ...link, timeout: Math.min(link.timeout, TASK_LINK_TIMEOUT), retries: 'backoff' }
+            ? {
+                ...link,
+                timeout: Math.min(link.timeout, TASK_LINK_TIMEOUT_SECONDS),
+                retries: 'backoff',
+              }
             : link,
         ),
       }
@@ -1635,7 +1446,6 @@ const completed = (game: Game, item: WorkItem, tuning: Tuning): Game => {
       return { ...after, nodes, incident }
     }
     case 'runbook': {
-      // The incident kind the item was written for now resolves by itself (11 "Runbooks").
       const kind = item.target as IncidentId | undefined
       return kind && INCIDENT_IDS.includes(kind) && !after.runbooks.includes(kind)
         ? { ...after, runbooks: [...after.runbooks, kind] }
@@ -1644,12 +1454,6 @@ const completed = (game: Game, item: WorkItem, tuning: Tuning): Game => {
   }
 }
 
-/**
- * Ships what one Service's own deploy slot has waiting. Each Service deploys on its own timer and
- * rolls its own bad deploy, from its own owner's policy and its own tech debt (08 "Services": "every
- * Service still shares the one deploy pipeline", built now as one shared cadence and strategy, not
- * one shared slot). Nothing ships on top of a bad deploy already running.
- */
 const deployService = (
   game: Game,
   ledger: Ledger,
@@ -1668,7 +1472,6 @@ const deployService = (
   if (game.incident?.kind === 'bad-deploy') return after
   const batch = awaitingFeatures(game).filter((id) => serviceOfFeature(game, id).id === service.id)
   if (batch.length === 0) return after
-  // The chance counts the bad-deploy risk of every rushed Feature in this batch (08 "Rush").
   const chance = nextBadDeployChance(after, tuning, service)
   let next: Game = {
     ...after,
@@ -1678,11 +1481,8 @@ const deployService = (
   next = withServiceId(next, service.id, {
     lastDeploy: batch,
     shapes: service.shapes + batch.reduce((sum, id) => sum + FEATURES[id].shapes, 0),
-    // A new Feature can leak again.
     fixes: service.fixes.filter((fix) => fix !== 'fix-leak'),
   })
-  // A release swaps the code. PHP and Elixir reload it in place; every other runtime restarts its
-  // App Servers cold (06 "Runtime behaviors", "Hot code reload").
   next = {
     ...next,
     nodes: next.nodes.map((node) =>
@@ -1690,14 +1490,11 @@ const deployService = (
       node.service._tag !== 'Shut' &&
       RUNTIMES[node.runtime].hotReload !== true &&
       node.life._tag !== 'Restarting'
-        ? // Graceful shutdown finishes in-flight requests: the new copies start cold, never down.
-          fixed(next, 'graceful-shutdown')
+        ? fixed(next, 'graceful-shutdown')
           ? { ...node, life: warming(0) }
           : { ...node, ...restarted(node) }
         : node.type === 'cdn' && node.service._tag !== 'Shut'
-          ? // A CDN with Purge on deploy clears its cache and refills it from the origin; without it
-            // the edge keeps serving the last deploy's pages until their TTL passes (05 "CDN").
-            node.purge
+          ? node.purge
             ? { ...node, life: warming(0) }
             : { ...node, staleUntil: next.time + node.ttl }
           : node,
@@ -1719,10 +1516,7 @@ const deployService = (
   return next
 }
 
-/** Ships what every Service's own deploy slot has waiting, in Service order. */
 const deploy = (game: Game, ledger: Ledger, tuning: Tuning, events: Array<StepEvent>): Game => {
-  // A hot upgrade costs Elixir Dev Hours per release (06 "Runtime behaviors"): the next slot is
-  // that many Dev Hours later.
   const hotUpgrade = game.nodes.some(
     (node) =>
       node.type === 'server' &&
@@ -1744,15 +1538,10 @@ const deploy = (game: Game, ledger: Ledger, tuning: Tuning, events: Array<StepEv
   )
 }
 
-/**
- * Whether a Team can work on an item: a Spike waits for its Study, and a blocked item for the
- * player. A patch never waits, even when a save from before that rule carries its block.
- */
 export const takeable = (game: Game, item: WorkItem): boolean =>
   (item.kind !== 'spike' || game.studies[0]?.id === item.ref) &&
   (item.kind === 'patch' || item.block._tag !== 'Blocked')
 
-/** A Product team with someone on it builds the backlog; the first team has the founder. */
 const builds = (game: Game, team: Team, index: number): boolean =>
   team.kind === 'product' && (index === 0 || membersOf(game, team).length > 0)
 
@@ -1766,7 +1555,6 @@ const nextItem = <Item extends WorkItem>(
     (entry) => !taken.has(entry.id) && takeable(game, entry) && worksOn(game, team, entry),
   )
 
-/** The item each team builds now, by team id: the same pick `advanceTeam` makes. */
 export const assignments = (game: Game): ReadonlyMap<string, WorkItem> => {
   const taken = new Set<number>()
   const assigned = new Map<string, WorkItem>()
@@ -1780,10 +1568,6 @@ export const assignments = (game: Game): ReadonlyMap<string, WorkItem> => {
   return assigned
 }
 
-/**
- * Advances the Team by some seconds: hires join, idle teams pick work, Dev
- * Hours build the backlog, finished items take effect, and deploys ship.
- */
 export const advanceTeam = (
   game: Game,
   ledger: Ledger,
@@ -1814,7 +1598,6 @@ export const advanceTeam = (
           language: entry.hire.language,
           hiredAt: entry.hire.phase._tag === 'Pending' ? entry.hire.phase.readyAt : next.time,
           ...NEW_ENGINEER,
-          // They sign at the Era's going rate; later Eras leave them behind until a raise (18).
           salary: eraOf(next).salaryIndex,
         })),
       ],
@@ -1826,13 +1609,11 @@ export const advanceTeam = (
 
   if (next.autopilot) next = autopilot(next, events)
 
-  // Each team builds the first item no team ahead of it has, on a Service it owns.
   const migrating = serviceOf(next).migration !== null
   const backlog = next.backlog.map((item) => ({ ...item }))
   const taken = new Set<number>()
   let pool = next.devHours
   let paydown = 0
-  // A block the player put off writes again (18 "Blocked"): Later is not a no.
   for (const item of backlog) {
     const block = item.block
     if (block._tag !== 'Blocked' || block.remindAt > next.time) continue
@@ -1846,8 +1627,6 @@ export const advanceTeam = (
     )
   }
   for (const [index, output] of teamOutputs(next, ledger, tuning).entries()) {
-    // A Platform, SRE or Data team runs the system: its Dev Hours build no backlog. An empty
-    // team builds nothing, so it holds no item another team could take.
     if (!builds(next, output.team, index)) continue
     const made = output.devHoursPerSecond * seconds
     const kept = made * policyNow(next, output.team, tuning).paydown
@@ -1857,9 +1636,6 @@ export const advanceTeam = (
       pool += made - kept
       continue
     }
-    // An item that has not started can stop on a decision, an index, a copy or a Team too big to
-    // coordinate (18). The roll happens once: a block marks the item, and work that starts leaves
-    // `spent` above zero.
     if (item.block._tag === 'Free' && item.spent <= 0 && item.kind !== 'spike') {
       const reason = blockReason(next, item)
       const owner = memberOf(next, ownerOf(next, serviceOfItem(next, item)).id, item.id)
@@ -1897,7 +1673,6 @@ export const advanceTeam = (
     events.push(StepEvent.WorkFinished({ item }))
   }
 
-  // A Platform team keeps every Cluster on a supported version.
   if (platformStaffed(next) && next.nodes.some((node) => node.type === 'cluster'))
     next = {
       ...next,

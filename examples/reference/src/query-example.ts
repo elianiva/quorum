@@ -13,13 +13,13 @@ export const statusQuery = Query.define({
   error: ApiError,
   execute: Effect.gen(function* () {
     const rpc = yield* ApiRpc
-    return yield* rpc.systemStatusGet().pipe(
-      // A transport failure is not a declared API failure, so give it the same
-      // shape and let the view render one error type.
-      Effect.mapError((error) =>
-        error._tag === 'RpcClientError' ? new ApiError({ message: error.message }) : error,
-      ),
-    )
+    return yield* rpc
+      .systemStatusGet()
+      .pipe(
+        Effect.mapError((error) =>
+          error._tag === 'RpcClientError' ? new ApiError({ message: error.message }) : error,
+        ),
+      )
   }),
 })
 

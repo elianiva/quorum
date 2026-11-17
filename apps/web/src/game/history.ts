@@ -18,7 +18,6 @@ export type Field = (typeof FIELDS)[number]
 
 const Figures = Schema.Record(Schema.String, Schema.Finite)
 
-/** One block: its calendar index at its resolution, and min, max, and sum per field. */
 export const Block = Schema.Struct({
   index: Schema.Finite,
   count: Schema.Finite,
@@ -36,22 +35,18 @@ export type History = typeof History.Type
 
 export const EMPTY_HISTORY: History = { quarter: [], hour: [] }
 
-/** Block length in calendar minutes, and how many blocks each resolution keeps. */
 export const TIERS = {
   quarter: { minutes: 15, keep: 672 },
   hour: { minutes: 60, keep: 720 },
 } as const
 export type Tier = keyof typeof TIERS
 
-/** The calendar block a sim second falls in; blocks line up with the clock, at :00 and :15. */
 const indexOf = (time: number, minutes: number): number =>
   Math.floor((CALENDAR_START + time) / minutes)
 
-/** The sim time a block starts at, for its label. */
 export const startOf = (index: number, tier: Tier): number =>
   index * TIERS[tier].minutes - CALENDAR_START
 
-/** The block a sim second falls in, so a Chart can read another day at the same moment. */
 export const blockIndexAt = (time: number, tier: Tier): number => indexOf(time, TIERS[tier].minutes)
 
 const add = (blocks: ReadonlyArray<Block>, index: number, sample: Sample): ReadonlyArray<Block> => {
@@ -72,11 +67,6 @@ const add = (blocks: ReadonlyArray<Block>, index: number, sample: Sample): Reado
   return [...blocks, { index, count: 1, min: figures, max: figures, sum: figures }]
 }
 
-/**
- * Folds the Samples a tick added into the blocks. `samples` end at sim second
- * `last`, one per second. Blocks after `last` belong to another Game, such as a
- * reset Sandbox, so they go first.
- */
 export const record = (history: History, samples: ReadonlyArray<Sample>, last: number): History => {
   if (samples.length === 0) return history
   const fold = (tier: Tier): ReadonlyArray<Block> => {
@@ -91,7 +81,6 @@ export const record = (history: History, samples: ReadonlyArray<Sample>, last: n
   return { quarter: fold('quarter'), hour: fold('hour') }
 }
 
-/** The Samples a tick added: one per sim second crossed, as many as the Game still holds. */
 export const newSamples = (
   history: ReadonlyArray<Sample>,
   before: number,
@@ -103,7 +92,6 @@ export const newSamples = (
 
 const decodeHistory = Schema.decodeUnknownOption(History)
 
-/** What a save says about the long history. A save without it starts with empty Charts. */
 export const historyOfSave = (saved: unknown): History =>
   typeof saved === 'object' && saved !== null && 'dashboard' in saved
     ? Option.getOrElse(decodeHistory(saved.dashboard), () => EMPTY_HISTORY)

@@ -7,7 +7,6 @@ import { type ComponentView } from './shared.ts'
 export const mesh: ComponentView = {
   icon: Waypoints,
   layout: { rows: 3, inRow: 0, outRow: null, footer: false },
-  // It carries nothing: it puts a sidecar beside every member and watches its Links.
   rows: ({ game, node }) => {
     const members = meshMembers(game, node)
     return [

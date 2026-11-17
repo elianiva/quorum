@@ -472,7 +472,6 @@ const warnings = (
         h,
       ),
     )
-  // A spot reclaim warns before it takes the Node (09 "Pricing models").
   if (game.incident?.kind === 'spot-reclaim' && game.incident.nodeId === node.id) {
     const left = Math.max(0, Math.ceil(SPOT_WARNING - (game.time - game.incident.startedAt)))
     list.push(
@@ -606,7 +605,6 @@ const stats = (
       h,
     ),
     row(t.inspector.latency, formats(t).ms(own.latency), 'plain', h),
-    // What a Worker cannot take waits in its Queue: it is not lost.
     node.type === 'worker'
       ? row(
           t.inspector.requeued,
@@ -662,22 +660,14 @@ const limitNameOf = (t: Messages): Record<Limit, string> => ({
   none: t.inspector.nothing,
 })
 
-/** One resource gauge's figures, as the Inspector draws them. */
 type GaugeSpec = Readonly<{
   label: string
   used: number
   total: number
   text: string
-  /** The bar reads the room left, as CPU credits do. */
   invert?: boolean
 }>
 
-/**
- * The gauges the Ledger can support for one Node (16 "Open gaps"): CPU, RAM,
- * worker slots, connections, CPU credits, and the network card. A limit with no
- * figure in the Ledger, such as disk IOPS or a flat Component's throughput, has
- * no entry here.
- */
 const gaugesOf = (t: Messages, node: GameNode, own: NodeLedger) => {
   const { cpuCores, ramGb, slots, creditsCoreSeconds, networkKbps } = own.resources
   const gauges: Partial<Record<Limit, GaugeSpec>> = {}
@@ -743,14 +733,12 @@ const resources = (
   if (!own) return []
   const gauges = gaugesOf(t, node, own)
   const list: Array<Html> = []
-  // The goal bar names the tightest limit, and the gauge behind it when the Ledger has one.
   const tight = gauges[own.limit]
   if (own.limit === 'none') list.push(row(t.inspector.limit, t.inspector.nothingTight, 'ok', h))
   else if (tight)
     list.push(
       gauge(t.inspector.limitOf(tight.label), tight.used, tight.total, tight.text, h, tight.invert),
     )
-  // The Inspector says so rather than leaving a limit unexplained.
   else list.push(row(t.inspector.limit, t.inspector.noGauge(limitNameOf(t)[own.limit]), 'warn', h))
   for (const limit of ['cpu', 'memory', 'workers', 'connections', 'credits', 'network'] as const) {
     const spec = gauges[limit]
@@ -766,7 +754,6 @@ const sparkline = (
     selected?: number
     onPick?: (index: number) => Message
     label?: string
-    /** Points to mark with a tick at the top, such as a change in cost per request. */
     marks?: ReadonlyArray<number>
   }> = {},
 ): Html => {
@@ -869,7 +856,6 @@ const sparkline = (
   )
 }
 
-/** A compute Node's pricing model, from Series A on (09 "Pricing models"). */
 const pricing = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -935,11 +921,6 @@ const pricing = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/**
- * One size on every Node of this Node's kind in its region (15 "Bulk actions").
- * It shows once there is more than one to upgrade, and stays off while nothing
- * can grow or nothing can be paid for.
- */
 const upgradeAll = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -1138,7 +1119,6 @@ const instance = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => 
   )
 }
 
-/** The Links that route traffic into a Node. Taps and control Links are separate. */
 const inboundLinks = (game: Game, node: GameNode): ReadonlyArray<readonly [GameLink, GameNode]> =>
   game.links.flatMap((link) => {
     const source = game.nodes.find((entry) => entry.id === link.from)
@@ -1153,7 +1133,6 @@ const inboundLinks = (game: Game, node: GameNode): ReadonlyArray<readonly [GameL
 const liveLinkOf = (ledger: Ledger, from: string, to: string): LinkLedger | undefined =>
   ledger.links.find((link) => link.from === from && link.to === to)
 
-/** The Links out of a Node that carry traffic. Taps and control Links are separate. */
 const outboundRoutes = (game: Game, node: GameNode): ReadonlyArray<readonly [GameLink, GameNode]> =>
   game.links.flatMap((link) => {
     const target = game.nodes.find((entry) => entry.id === link.to)
@@ -1165,7 +1144,6 @@ const outboundRoutes = (game: Game, node: GameNode): ReadonlyArray<readonly [Gam
       : []
   })
 
-/** One Link as a compact entry: its Node's badge and name, and its live rate. */
 const connectionGrid = (
   game: Game,
   node: GameNode,
@@ -1282,7 +1260,6 @@ const connectionGrid = (
   )
 }
 
-/** One direction's traffic against a shared scale, as a progress bar. */
 const capacityMeter = (
   label: string,
   value: number,
@@ -1380,7 +1357,6 @@ const capacityMeter = (
   )
 }
 
-/** The always-visible answer to "how much traffic moves each way, and through what?" */
 const trafficMeters = (
   game: Game,
   node: GameNode,
@@ -1399,7 +1375,6 @@ const trafficMeters = (
     0,
   )
   const capacity = own?.capacity ?? 0
-  // A fixed Component has no finite capacity. Its bars compare the two directions instead.
   const bounded = Number.isFinite(capacity) && capacity > 0
   const scale = bounded ? capacity : Math.max(inboundRate, outboundRate)
   return [
@@ -1447,7 +1422,6 @@ const trafficMeters = (
   ]
 }
 
-/** Which zone the Node runs in, and a standby in another for data Nodes. */
 const placement = (node: GameNode, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return section(
@@ -1485,7 +1459,6 @@ const placement = (node: GameNode, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** The region a Node runs in, once a second region is open. */
 const regionSection = (
   game: Game,
   node: GameNode,
@@ -1512,7 +1485,6 @@ const regionSection = (
   ]
 }
 
-/** Timeout and retries on each call a Node makes. */
 const calls = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
 
@@ -1619,7 +1591,6 @@ const when = (t: Messages, time: number): string => {
 const difference = (t: Messages, value: number): string =>
   `${value > 0 ? '+' : value < 0 ? '−' : ''}${t.units.perSecond(rate(Math.abs(value)))}`
 
-/** A share of incoming traffic, with its change since the previous sample. */
 const breakdown = (
   label: string | ReadonlyArray<string>,
   value: number,
@@ -1699,11 +1670,9 @@ const breakdown = (
   )
 }
 
-/** The resource Work share counts, or null on a Node where every request costs the same. */
 const workResourceOf = (t: Messages, unit: NodeSample['workUnit']): string | null =>
   unit === null ? null : t.inspector.workResources[unit]
 
-/** The live sample or a recorded one, broken down by operation and source. */
 const trafficBreakdown = (
   model: Model,
   node: GameNode,
@@ -1726,13 +1695,11 @@ const trafficBreakdown = (
     (kind) => (sample.traffic[kind] ?? 0) > 0 || (previous?.traffic[kind] ?? 0) > 0,
   ).sort((a, b) => (sample.traffic[b] ?? 0) - (sample.traffic[a] ?? 0))
   const sources = [...sample.sources].sort((a, b) => b.rate - a.rate)
-  // A recorded sample names its sources in English: the Node's Component says it in the player's words.
   const sourceNames = new Map(
     game.nodes.map((entry) => [entry.id, t.catalog.components[entry.type].name] as const),
   )
   const load = sample.utilization >= 0.9 ? 'danger' : sample.utilization >= 0.7 ? 'warn' : 'plain'
   const earlier = index === -1 ? history.at(-1) : history[index - 1]
-  // Work share (12 "Load diagnosis") shows on Nodes whose requests cost different amounts.
   const workResource = has(game, 'profiling') ? workResourceOf(t, sample.workUnit) : null
   const change = loadChange(model, history, sample, index, h)
   const amplified = amplification(model, node, sample, h)
@@ -2055,8 +2022,6 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
 
   return h.aside(
     [
-      // Key the panel by the Node it inspects: a control's click handler closes over that Node's
-      // id, so reusing the previous Node's DOM would send the previous Node's id.
       h.Key(`inspector-${node.id}`),
       h.DataAttribute('exit', 'gesture'),
       h.DataAttribute('inspector', ''),
@@ -2073,8 +2038,6 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
             width: '348px',
             flexDirection: 'column',
             overflow: 'hidden',
-            // A bottom sheet, not a screen: the Board above it stays in sight and the card stays
-            // movable. Its height is PHONE_SHEET in the board controller.
             _compact: {
               inset: 'auto 0 0 0',
               height: '52dvh',

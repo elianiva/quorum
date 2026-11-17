@@ -1,5 +1,3 @@
-/* Research: what Insight buys, by track and Era, and the Studies that run it. */
-
 import { POOLER_CONNECTIONS } from './instances.ts'
 import type { InsightPool } from './kinds.ts'
 import { FRAMEWORKS, RUNTIMES, type FrameworkId } from './runtimes.ts'
@@ -121,7 +119,6 @@ export const RESEARCH_IDS = [
   'guidance-modeling',
   'reserved-instances',
   'spot-instances',
-  // Runtime variants and frameworks the design names (06 "Variants by language", "Frameworks").
   'php-jit',
   'worker-threads',
   'yjit',
@@ -156,40 +153,31 @@ export const RESEARCH_IDS = [
   'fw-codeigniter',
   'fw-sanic',
   'fw-rocket',
-  // Zig and Haskell frameworks (06 "Zig and Haskell profiles").
   'fw-jetzig',
   'fw-tokamak',
   'fw-servant',
   'fw-ihp',
-  // Global developer tools (10 "Track: Product and business").
   'build-cache',
   'dev-environment',
   'static-analysis',
   'formal-verification',
-  // Splitting a Service (08 "Services", 10 "Research").
   'service-boundaries',
-  // The last four Components (05 "Catalog overview", 10 "Research").
   'cdc',
   'service-mesh',
   'feature-flags',
   'secrets-management',
   'spam-filter',
-  // The incident loop and the SLA (11 "The incident loop", "Runbooks", "SLA credits").
   'on-call',
   'runbooks',
   'sre-team',
   'enterprise-sales',
-  // Two preventions the incident catalog names (11 "Catalog", 10 "Track: Data", "Track: Reliability").
   'online-migrations',
   'leap-smearing',
-  // The Team's remaining research (08 "Adoption", "Measured lift", "Hiring", "Deploy frequency", "Teams").
   'ab-testing',
   'hiring-pipeline',
   'trunk-based',
   'platform-team',
   'data-team',
-  // The options the built Components were still missing, and the reliability, performance and
-  // data mechanics 10's tracks name (05, 07, 10 "Track: Infrastructure" and the rest).
   'l4-lb',
   'rate-limiting',
   'esi',
@@ -207,8 +195,6 @@ export const RESEARCH_IDS = [
   'binary-rpc',
   'outbox',
   'expand-contract',
-  // The last eleven research items (10 "Not built yet", 16 "Open gaps"): Observability's
-  // waterfall and visibility steps, Security's bot and audit defences, and Cost's reports.
   'profiling',
   'tail-sampling',
   'rum',
@@ -253,7 +239,6 @@ export type ResearchDef = Readonly<{
   name: string
   track: ResearchTrack
   cost: number
-  /** The first Era it is offered in. */
   era: number
   requires: ReadonlyArray<ResearchId>
   blurb: string
@@ -1311,7 +1296,6 @@ const RESEARCH_LIST: ReadonlyArray<ResearchDef> = [
     requires: [],
     blurb: 'Shows the chance of beating each guidance level.',
   }),
-  // Runtime variants (06 "Variants by language"). Costs, Eras and prerequisites are 10 "Track: Runtimes".
   research({
     id: 'php-jit',
     name: 'PHP JIT',
@@ -1506,7 +1490,6 @@ const RESEARCH_LIST: ReadonlyArray<ResearchDef> = [
     requires: ['lang-python'],
     blurb: RUNTIMES.python_ft.blurb,
   }),
-  // Frameworks (06 "Frameworks"). Costs and Eras are 10 "Track: Frameworks".
   research({
     id: 'fw-fastapi',
     name: 'FastAPI',
@@ -1624,7 +1607,6 @@ const RESEARCH_LIST: ReadonlyArray<ResearchDef> = [
     requires: ['lang-rust'],
     blurb: FRAMEWORKS.rocket.blurb,
   }),
-  // The last four Components (05 "Catalog overview", 10 "Research").
   research({
     id: 'cdc',
     name: 'Change data capture',
@@ -1680,7 +1662,6 @@ const RESEARCH_LIST: ReadonlyArray<ResearchDef> = [
     blurb:
       'Adds a Postbox filter that sorts spam into its own folder, and now and then a real letter too.',
   }),
-  // The incident loop and the SLA (11 "The incident loop", "Runbooks", "SLA credits").
   research({
     id: 'on-call',
     name: 'On-call rotation',
@@ -1717,7 +1698,6 @@ const RESEARCH_LIST: ReadonlyArray<ResearchDef> = [
     requires: [],
     blurb: 'Signs the SLA: a missed week of availability pays credits back to customers.',
   }),
-  // 10 "Track: Data": an ALTER TABLE on a big table holds its lock; this one does not.
   research({
     id: 'online-migrations',
     name: 'Online schema migrations',
@@ -1728,7 +1708,6 @@ const RESEARCH_LIST: ReadonlyArray<ResearchDef> = [
     blurb:
       'Changes a big table without holding its lock, so writes keep flowing through a migration.',
   }),
-  // 10 "Track: Reliability": a leap second repeats one, and every timer fires twice without this.
   research({
     id: 'leap-smearing',
     name: 'Leap smearing',
@@ -1739,7 +1718,6 @@ const RESEARCH_LIST: ReadonlyArray<ResearchDef> = [
     blurb:
       'Spreads a leap second over the whole day, so no clock jumps and no lease expires early.',
   }),
-  // 10 "Track: Product and business": the Team's four remaining research items and the two team types.
   research({
     id: 'ab-testing',
     name: 'A/B testing',
@@ -1788,8 +1766,6 @@ const RESEARCH_LIST: ReadonlyArray<ResearchDef> = [
     blurb:
       'Unlocks the Data team: report and AI Features cost 30% less, and a pipeline lags half as much.',
   }),
-  // The options 05 lists as not built yet (10 "Track: Infrastructure", 05 "Load Balancer", "CDN",
-  // "WAF", "Autoscaler", "App Server", "GPU Node").
   research({
     id: 'l4-lb',
     name: 'L4 load balancing',
@@ -1869,7 +1845,6 @@ const RESEARCH_LIST: ReadonlyArray<ResearchDef> = [
     blurb:
       'A GPU Node batches prompts as they arrive, so a larger batch raises throughput without raising the time to the first token.',
   }),
-  // The Reliability track's four (10 "Track: Reliability", 05 "Links", 07 "Keeping copies in sync").
   research({
     id: 'bulkheads',
     name: 'Bulkheads',
@@ -1910,7 +1885,6 @@ const RESEARCH_LIST: ReadonlyArray<ResearchDef> = [
     blurb:
       'A scheduled experiment fails your weakest Node for a few seconds and names it: it earns Failure Insight and proves the Design survives.',
   }),
-  // The Performance track's three (10 "Track: Performance", 07 "Keeping copies in sync").
   research({
     id: 'denormalization',
     name: 'Denormalization',
@@ -1941,7 +1915,6 @@ const RESEARCH_LIST: ReadonlyArray<ResearchDef> = [
     blurb:
       'Services serialise calls as binary instead of text: half the serialization CPU on every backend call.',
   }),
-  // The Data track's two (10 "Track: Data", 07 "Schema migrations", "Keeping copies in sync").
   research({
     id: 'outbox',
     name: 'Transactional outbox',
@@ -1962,8 +1935,6 @@ const RESEARCH_LIST: ReadonlyArray<ResearchDef> = [
     blurb:
       'A schema change adds the new shape, backfills, then drops the old one: no table lock, so a migration can never stall writes.',
   }),
-  // The last eleven items (10 "Not built yet", 16 "Open gaps"): Observability's waterfall and
-  // visibility steps, Security's bot and audit defences, and Cost's reports.
   research({
     id: 'profiling',
     name: 'Continuous profiling',
@@ -2179,12 +2150,6 @@ export const FRAMEWORK_RESEARCH: Record<FrameworkId, ResearchId | null> = {
   rocket: 'fw-rocket',
 }
 
-/**
- * Each Era's default recipe. Until Seed, the request kinds the Era brings. From
- * Series A, the kinds of the Era before: a new Era's kinds arrive only with its
- * Features, and some of those Features need research. Pre-IPO and Public take
- * every kind but `bot`.
- */
 const EVERY_KIND: ReadonlyArray<InsightPool> = [
   'page',
   'read',
@@ -2213,7 +2178,6 @@ export const ERA_RECIPES: ReadonlyArray<ReadonlyArray<InsightPool>> = [
   EVERY_KIND,
 ]
 
-/** Items whose traces are not their Era's default. */
 const RECIPES: Partial<Record<ResearchId, ReadonlyArray<InsightPool>>> = {
   logs: ['page'],
   metrics: ['read'],
@@ -2227,7 +2191,6 @@ const RECIPES: Partial<Record<ResearchId, ReadonlyArray<InsightPool>>> = {
   'cache-strategies': ['read', 'write'],
   pooling: ['write'],
   pitr: ['write'],
-  // 10's recipe for `online-migrations`: data loss shows under writes.
   'online-migrations': ['write'],
   replication: ['read', 'write'],
   'ryw-routing': ['read', 'write'],
@@ -2247,16 +2210,13 @@ const RECIPES: Partial<Record<ResearchId, ReadonlyArray<InsightPool>>> = {
   'sync-replication': ['write', 'buy'],
   consensus: ['write', 'buy'],
   'data-warehouse': ['report'],
-  // 10's recipe: a change stream is born of writes, and a report is the copy it feeds.
   cdc: ['report', 'write'],
-  // 10's recipe: embeddings are what an `ai` answer retrieves, and what a `search` finds.
   embeddings: ['ai', 'search'],
   'hosted-models': ['ai'],
   'model-serving': ['ai'],
   notifications: ['push'],
   'hybrid-fanout': ['feed'],
   leaderless: ['feed'],
-  // 10's recipe list: the options and mechanics the build was still missing.
   esi: ['page', 'media'],
   'bot-management': ['bot'],
   quantization: ['ai'],
@@ -2264,23 +2224,15 @@ const RECIPES: Partial<Record<ResearchId, ReadonlyArray<InsightPool>>> = {
   denormalization: ['read', 'write'],
   precompute: ['report'],
   outbox: ['buy', 'job'],
-  // 10's recipe table for the last eleven items: a kind's own traffic teaches the research that
-  // watches it, and Failure teaches the ones that watch failures.
   'credential-protection': ['login', 'bot'],
   rum: ['page', 'feed'],
   'tail-sampling': ['failure'],
   'anomaly-detection': ['failure', 'feed', 'hook', 'push'],
 }
 
-/** Component types an item's recipe kinds must be sampled at: a trace needs more than one hop. */
 export const BREADTH: Partial<Record<ResearchId, number>> = { tracing: 3, profiling: 4 }
-/** Regions an item's recipe kinds must be sampled in: Real user monitoring needs two. */
 export const REGION_BREADTH: Partial<Record<ResearchId, number>> = { rum: 2 }
 
-/**
- * A behaviour the Design must show before its Study runs (10 "Research shapes"). Research that
- * teaches a system asks the system to do something first, so a Study is not only a price.
- */
 export type StudyShape =
   | Readonly<{ readonly kind: 'connections'; readonly moreThan: number }>
   | Readonly<{ readonly kind: 'read-share'; readonly share: number }>
@@ -2290,7 +2242,6 @@ export type StudyShape =
   | Readonly<{ readonly kind: 'saturation'; readonly ratio: number }>
   | Readonly<{ readonly kind: 'replica' }>
 
-/** The shape tags, for the stall reason the interface shows. */
 export const STUDY_SHAPE_KINDS = [
   'connections',
   'read-share',
@@ -2302,30 +2253,17 @@ export const STUDY_SHAPE_KINDS = [
 ] as const
 export type StudyShapeKind = (typeof STUDY_SHAPE_KINDS)[number]
 
-/**
- * The shapes each Era's research asks for. Each one is a behaviour a working system shows before
- * the player can learn the next thing about it.
- */
 export const SHAPE: Partial<Record<ResearchId, StudyShape>> = {
-  // More client connections than the Pooler keeps: below that, sharing them saves nothing.
   pooling: { kind: 'connections', moreThan: POOLER_CONNECTIONS },
-  // Reads dominate the Database's work, so a replica has something to take.
   replication: { kind: 'read-share', share: 0.6 },
-  // A cache that works, so the next question is what happens when it misses.
   'cache-strategies': { kind: 'cache-hit', ratio: 0.6 },
-  // A queue with a real backlog, so the Event Stream has a log worth keeping.
   'event-streaming': { kind: 'backlog', seconds: 1 },
-  // A Database carrying report scans, which is why a warehouse exists.
   'data-warehouse': { kind: 'report-share', share: 0.1 },
-  // A Node near its ceiling, so there is something to scale.
   autoscaling: { kind: 'saturation', ratio: 0.8 },
-  // A replica that serves reads, so a quorum has a second copy to talk to.
   consensus: { kind: 'replica' },
 }
 
-/** Each Era's base Study duration, in seconds. */
 export const STUDY_SECONDS = [20, 60, 120, 240, 480, 900, 1_800, 3_600] as const
-/** Studies the queue holds, the running one included. */
 export const MAX_STUDIES = 8
 export const SPIKE_SPEED = 2
 export const STUDY_SPEEDUP = 0.25
@@ -2333,12 +2271,8 @@ export const STUDY_SPEED_RESEARCH: ReadonlyArray<ResearchId> = ['trace-search', 
 
 const recipeFor = (entry: ResearchDef): Readonly<Partial<Record<InsightPool, number>>> => {
   const kinds = RECIPES[entry.id] ?? ERA_RECIPES[entry.era] ?? EVERY_KIND
-  // The list price is the price, whatever the Era: prices already grow tenfold an Era, and a pack's
-  // Insight grows with the square root of its traffic, so a scale above one would make an Era's
-  // research unpayable. A median Study would take several base durations at the Era's top traffic.
   const price = entry.cost
   const cost: Partial<Record<InsightPool, number>> = {}
-  // Half of every Reliability item's cost is Failure Insight.
   const failure = entry.track === 'reliability' && !kinds.includes('failure') ? price / 2 : 0
   if (failure > 0) cost.failure = failure
   for (const kind of kinds) cost[kind] = (cost[kind] ?? 0) + (price - failure) / kinds.length

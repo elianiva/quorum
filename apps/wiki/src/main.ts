@@ -14,23 +14,16 @@ import * as Catalog from './submodels/catalog.ts'
 import * as Spoilers from './submodels/spoilers.ts'
 
 export const Model = Schema.Struct({
-  /** The language of the page, from the prefix of its URL. */
   locale: Locale,
-  /** The page's logical path, without its language prefix or a trailing slash. */
   path: Schema.String,
-  /** The navigation drawer is open on a phone. */
   menu: Schema.Boolean,
-  /** The language menu in the header is open. */
   languageMenu: Schema.Boolean,
-  /** Hubs the reader opened or closed by hand, against whether the current page opens them. */
   navToggled: Schema.Array(Schema.String),
   search: Search.Model,
   spoilers: Spoilers.Model,
   progress: Progress.Model,
   quiz: Quiz.Model,
-  /** The repository's public numbers, for the card on the home page. */
   project: Project.Model,
-  /** The component catalog's state; only /catalog reads it. */
   catalog: Catalog.Model,
 })
 export type Model = typeof Model.Type
@@ -58,7 +51,6 @@ export const normalize = (pathname: string): string => {
   return trimmed === '' ? '/' : trimmed
 }
 
-/** The language and the logical path a URL path names: `/ja/glossary/latency` is Japanese at `/glossary/latency`. */
 export const routeOf = (pathname: string): Readonly<{ locale: Locale; path: string }> => {
   const trimmed = normalize(pathname)
   return { locale: localeOfPath(trimmed), path: normalize(stripLocale(trimmed)) }
@@ -69,7 +61,6 @@ const Navigate = Command.define('Navigate', {
   messages: [Message.Navigated],
   execute: ({ url }) =>
     Effect.gen(function* () {
-      // The page renders as soon as the URL changes, so its prose must be here first.
       const { locale, path } = routeOf(new URL(url, WIKI_ORIGIN).pathname)
       if (needsProse(locale, path)) yield* Effect.promise(() => loadProse(locale, path))
       yield* pushUrl(url)
@@ -77,8 +68,6 @@ const Navigate = Command.define('Navigate', {
     }),
 })
 
-/** A page the browser reached without a click, such as Back or Forward. Loads its prose, then
-    visits it; the URL has already changed, so the old page stays until the new one is ready. */
 const LoadPage = Command.define('LoadPage', {
   args: { locale: Locale, path: Schema.String, hash: Schema.String },
   messages: [Message.PageLoaded],
@@ -95,7 +84,6 @@ const LoadExternal = Command.define('LoadExternal', {
   execute: ({ href }) => load(href).pipe(Effect.as(Message.Navigated())),
 })
 
-/** A new page starts at its top, or at the heading its hash names. */
 const ScrollTo = Command.define('ScrollTo', {
   args: { hash: Schema.String },
   messages: [Message.Navigated],
@@ -110,7 +98,6 @@ const ScrollTo = Command.define('ScrollTo', {
     }),
 })
 
-/** The nearest ancestor that scrolls on its own. Without one, `scrollIntoView` moves the page. */
 const scroller = (element: Element): Element | null => {
   for (let node = element.parentElement; node; node = node.parentElement) {
     const style = getComputedStyle(node)
@@ -121,11 +108,9 @@ const scroller = (element: Element): Element | null => {
   return null
 }
 
-/** The current tab and the current sidebar row come into view once the page has drawn. */
 const RevealCurrent = Command.define('RevealCurrent', {
   messages: [Message.Navigated],
   execute: Effect.promise(async () => {
-    // A tab is as wide as its label, so its place settles only after the web font loads.
     await document.fonts.ready
     await new Promise((resolve) => requestAnimationFrame(resolve))
     const current = document.querySelectorAll('nav [aria-current]')
@@ -201,12 +186,10 @@ export const init: Runtime.RoutingApplicationInit<Model, Message> = (url) => {
       spoilers: Spoilers.init,
       progress: Progress.init,
       quiz: Quiz.init,
-      // The home page is the only page with the project card, so it starts the one read.
       project: path === '/' ? { status: 'loading', stats: null } : Project.init,
       catalog: Catalog.init(path === Catalog.CATALOG_PATH ? url.search : Option.none()),
     },
     commands: [
-      // The catalog draws its stage from the URL's state, so a shared link opens as it was left.
       ...(path === Catalog.CATALOG_PATH ? paintCatalog(Catalog.init(url.search)) : []),
       RevealCurrent(),
       ...Command.mapMessages([Spoilers.Load()], (message) => Message.SpoilersChanged({ message })),
@@ -220,8 +203,6 @@ export const init: Runtime.RoutingApplicationInit<Model, Message> = (url) => {
 
 type Return = Update.Return<Model, Message>
 
-/** Opens a path in the current language: resets what belongs to the page, records the visit, and
-    scrolls to the heading the URL names. */
 const visit = (model: Model, path: string, hash: string): Return => {
   const visited = foldProgress(
     {
@@ -253,7 +234,6 @@ export const update = (model: Model, message: Message): Return =>
   Message.match<Return>(message, {
     ClickedLink: ({ request }) =>
       UrlRequest.match<Return>(request, {
-        // A page in the other language is a whole page: its copy and prose load with it.
         Internal: ({ url }) =>
           localeOfPath(url.pathname) === model.locale
             ? { model, commands: [Navigate({ url: urlToString(url) })] }
@@ -268,11 +248,7 @@ export const update = (model: Model, message: Message): Return =>
         onNone: () => '',
         onSome: (value) => value.replace(/^#/, ''),
       })
-      // A hash on the page you are reading moves to that heading and changes nothing else: the
-      // search, the drawer and the open hubs belong to the page, not to the scroll position.
       if (path === model.path) return hash ? { model, commands: [ScrollTo({ hash })] } : { model }
-      // Back and Forward change the URL before the page's prose is here; keep the old page until
-      // the chunk arrives rather than drawing an empty one.
       if (needsProse(model.locale, path) && !isProseLoaded(model.locale, path))
         return { model, commands: [LoadPage({ locale: model.locale, path, hash })] }
       return visit(model, path, hash)

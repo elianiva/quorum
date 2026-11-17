@@ -17,21 +17,8 @@ import { ServerMessage } from '@quorum/simulation/room'
 import { onBoard } from './route.ts'
 import { TICK_MS } from './update.ts'
 
-/* ==========================================================================
-   Time and keys. The Company runs while the lab is open and not paused, even
-   with a panel up. Unless the player turns it off, it pauses when the window
-   loses focus and resumes when it gets focus back. Closing the page stops it:
-   no time passes while the player is gone. Keys only matter in the lab.
-   ========================================================================== */
-
 type KeyMessage = ReturnType<typeof Message.KeyPressed>
 
-/**
- * The name a keydown becomes in the Model (15 "Accessibility"). Single keys
- * arrive lower case, arrows keep their name, and Shift is part of the name so
- * `Shift+T` can tidy while `T` opens the Team. Shift+Z stays `Z`, which redo
- * has always used.
- */
 export const keyNameOf = (key: string, shift: boolean): string =>
   key.length !== 1
     ? shift && key.startsWith('Arrow')
@@ -55,7 +42,6 @@ const keys = Stream.callback<KeyMessage>((queue) =>
               document.querySelector('[data-research-drag-active]'))
           )
             return
-          // A keydown dispatched on the window itself has the window as its target.
           const target = event.target instanceof Element ? event.target : null
           if (target?.closest('[data-language-picker], [role="listbox"]')) return
           if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
@@ -63,10 +49,8 @@ const keys = Stream.callback<KeyMessage>((queue) =>
           const mod = event.metaKey || event.ctrlKey
           const lower = event.key.toLowerCase()
           if (mod) {
-            // Ctrl or Cmd: edit the Nodes, or leave copy alone while text is selected.
             const edit = ['a', 'c', 'x', 'v', 'd'].includes(lower)
             const history = lower === 'z' || lower === 'y'
-            // Cmd+K or Ctrl+K opens the command palette.
             const command = lower === 'k'
             if (!edit && !history && !command) return
             if (lower !== 'v' && !command && window.getSelection()?.toString()) return
@@ -85,7 +69,6 @@ const keys = Stream.callback<KeyMessage>((queue) =>
             )
             return
           }
-          // Arrows and Enter move over the board only when no control has focus.
           const onBoard = !target || target === document.body || target.tagName === 'CANVAS'
           if ((event.key.startsWith('Arrow') || event.key === 'Enter') && !onBoard) return
           if (event.key === ' ' || event.key.startsWith('Arrow')) event.preventDefault()
@@ -105,7 +88,6 @@ const keys = Stream.callback<KeyMessage>((queue) =>
   }),
 )
 
-/** The window loses or gets back focus, or the tab is hidden or shown. */
 const blurs = Stream.callback<Message>((queue) =>
   Effect.gen(function* () {
     yield* Effect.acquireRelease(
@@ -144,7 +126,6 @@ const researchDrag = Subscription.lift(DragAndDrop.subscriptions)<Model, Message
     Message.ResearchChanged({ message: ResearchMessage.DragChanged({ message }) }),
 })
 
-/** The Settings panel's sound slider drags while it is open. */
 const volumeDrag = Subscription.lift(VolumeSlider.subscriptions)<Model, Message>({
   read: (model) => (model.panel === 'settings' ? Option.some(model.volumeSlider) : Option.none()),
   toParentMessage: (message) => Message.VolumeSliderChanged({ message }),
@@ -232,11 +213,6 @@ const teamDragScroll = Stream.callback<Message>((queue) =>
   }),
 )
 
-/**
- * The clock's ticks, each carrying the wall time that really passed since the previous one, so the
- * Simulation keeps the speed the player chose even when a tick takes longer than its interval. The
- * first tick of a run owes one interval: a pause or a hidden tab rests the clock, never catches up.
- */
 const ticks = (): Stream.Stream<Message> =>
   Stream.tick(TICK_MS).pipe(
     Stream.mapAccum(
@@ -293,11 +269,6 @@ export const subscriptions = {
       },
     ),
 
-    /**
-     * The Room socket. It opens while this tab is in a Room, sends Hello with
-     * the Seat's name and the owner token, and feeds every frame back as a
-     * Message. A dropped socket reconnects and the Room answers with a snapshot.
-     */
     room: entry(
       {
         code: Schema.NullOr(Schema.String),
@@ -314,8 +285,6 @@ export const subscriptions = {
             seat: seatOf(),
             name: model.room.name,
             token: code === null ? null : (onlineFileOf(model, code)?.online?.token ?? null),
-            // Wait for the save list: the first Hello must carry the owner token,
-            // or the tab joins as a guest and the Room sees two Seats for one tab.
             live: inRoom(model.room.phase) && model.savesReady,
           }
         },
@@ -337,11 +306,7 @@ export const subscriptions = {
                 Effect.acquireRelease(
                   Effect.sync(() => {
                     const offMessage = onMessage((message) => {
-                      // A Welcome starts the Seat list over, so a pointer from a socket
-                      // that dropped does not outlive it.
                       if (ServerMessage.guards.Welcome(message)) clearSeatCursors('board')
-                      // A cursor is Presence. It moves the Board's overlay and never the
-                      // Model, so a whole Room of pointers does not repaint the Company.
                       if (ServerMessage.guards.Cursor(message)) {
                         moveSeatCursor('board', {
                           seat: message.seat,

@@ -6,9 +6,6 @@ import { freeSandbox } from '../src/sandbox.ts'
 import { solveFlow } from '../src/solve.ts'
 import type { Game } from '../src/state.ts'
 
-/* Load diagnosis (12): the Ledger explains why a Node is busy, with the numbers the model used. */
-
-/** Applies a receipt's lines to its base, in order, as a reader of the receipt would. */
 const replay = (receipt: Receipt): number =>
   receipt.lines.reduce(
     (cost, line) => (line.op === 'times' ? cost * line.value : cost + line.value),
@@ -40,7 +37,6 @@ describe('Cost receipt', () => {
       'bloat',
     )
     expect(read.total / calm.nodes.database!.receipts['q-read']!.total).toBeCloseTo(BLOAT_CPU, 6)
-    // The same requests cost twice as much, so the mean cost per request doubles too.
     expect(ledger.nodes.database!.cost / calm.nodes.database!.cost).toBeCloseTo(BLOAT_CPU, 6)
   })
 })
@@ -53,8 +49,6 @@ describe('Work share', () => {
     const database = solveFlow(game).nodes.database!
     const reads = database.traffic['q-read']!
     const writes = database.traffic['q-write']!
-    // The sandbox researched Denormalization: reads cost 0.7 of their base, writes 1.2. The
-    // Database's engine then scales each: Postgres reads cheaper and writes dearer.
     const readWork = reads * QUERY_CPU['q-read'] * 0.7 * engine.read
     const writeWork = writes * QUERY_CPU['q-write'] * 1.2 * engine.write
     expect(database.workShare['q-write']).toBeCloseTo(writeWork / (readWork + writeWork), 6)
@@ -68,12 +62,10 @@ describe('Amplification', () => {
     const database = ledger.nodes.database!
     const traced = Object.values(database.origins).reduce((sum, rate) => sum + (rate ?? 0), 0)
     expect(traced).toBeCloseTo(database.inbound, 6)
-    // A `write` request reaches the Database: some of its queries count as `write`.
     expect(database.origins.write).toBeGreaterThan(0)
   })
 
   test('retries on a failing Link count as repeated calls at the callee', () => {
-    // A fast App Server and enough users to overload the Database, so most of its calls fail.
     const sandbox = freeSandbox()
     const base: Game = {
       ...sandbox,
@@ -93,7 +85,6 @@ describe('Amplification', () => {
     const database = ledger.nodes.database!
     const failure = ledger.links.find((link) => link.to === 'database')!.failure
     expect(failure).toBeGreaterThan(0.5)
-    // Up to three retries: 1 + f + f² + f³ attempts per call, all but the first repeated.
     const attempts = 1 + failure + failure ** 2 + failure ** 3
     expect(database.repeated / database.inbound).toBeCloseTo(1 - 1 / attempts, 1)
   })

@@ -50,13 +50,9 @@ import { boxOf, crowds } from '@quorum/ui/board/geometry'
 import { act } from './update/shared.ts'
 import { Actions } from './board-actions.ts'
 
-/* The clock: 100 ms Steps under a 250 ms UI tick, and the Bottleneck search once per sim second. */
-
-/** A stored Company file, as this build writes it. */
 const saveOf = (game: object, extra: Record<string, unknown> = {}): string =>
   JSON.stringify({ format: SAVE_FORMAT, ...game, ...extra })
 
-/** An index with one Company, and the save that Company's file holds. */
 const storedWith = (
   game: ReturnType<typeof preseedGame>,
 ): Readonly<{ index: string; id: string }> => {
@@ -334,11 +330,8 @@ describe('the clock', () => {
     expect(advanced(1, 1_000)).toBeCloseTo(1, 6)
     expect(advanced(3, 1_000)).toBeCloseTo(3, 6)
     expect(advanced(10, 1_000)).toBeCloseTo(10, 6)
-    // A tick that overran its interval owes the whole time it took, so the clock never falls behind.
     expect(advanced(10, 2 * TICK_MS)).toBeCloseTo(5, 6)
-    // A stall stops at ten sim seconds a tick instead of spiralling.
     expect(advanced(10, 60_000)).toBeLessThanOrEqual(10)
-    // A fast clock may catch up two ticks' worth, so Time dilation's 40× keeps its pace.
     expect(advanced(40, 60_000)).toBeLessThanOrEqual(20)
   })
 
@@ -521,9 +514,7 @@ describe('Tradeoff cards', () => {
     const pinned = send(ready(), Message.OptionChosen({ nodeId: 'server', option }))
     expect(pinned.board.tradeoff._tag).toBe('Pinned')
     expect(pinned.board.game.nodes.find((node) => node.id === 'server')?.runtime).toBe('php_fpm')
-    // Leaving the option keeps a pinned card open.
     expect(send(pinned, Message.OptionLeft()).board.tradeoff._tag).toBe('Pinned')
-    // A pinned card confirms once its preview is in.
     const preview = JOBS.preview({ game: pinned.board.game, nodeId: 'server', option })
     if (!preview) throw new Error('The option was refused.')
     const shown = send(
@@ -534,7 +525,6 @@ describe('Tradeoff cards', () => {
         preview: { ...preview, burn: [...preview.burn] },
       }),
     )
-    // In a Company, Confirm starts a migration: Dev Hours first, then the strangler.
     const confirmed = send(shown, Message.OptionConfirmed())
     expect(confirmed.board.tradeoff).toEqual({ _tag: 'Closed' })
     expect(confirmed.prefs.seenTradeoffs).toEqual(['runtime'])
@@ -584,7 +574,6 @@ describe('Tradeoff cards', () => {
     const pinned = send(start, Message.OptionChosen({ nodeId: 'server', option }))
     const preview = JOBS.preview({ game: start.board.game, nodeId: 'server', option })
     if (!preview) throw new Error('The option was refused.')
-    // A card with no preview yet has nothing to confirm: the key does nothing.
     expect(send(pinned, Message.KeyPressed({ key: 'Enter' })).board.tradeoff._tag).toBe('Pinned')
     const shown = send(
       pinned,
@@ -741,7 +730,6 @@ describe('Exit', () => {
     )
     expect(hasCompany(loaded)).toBe(true)
     expect(loaded.saves.current).toBe(id)
-    // The clock held still while the page was closed.
     expect(loaded.board.game.time).toBeCloseTo(game.time)
     expect(loaded.board.game.users).toBe(game.users)
     expect(loaded.companyPhase).toMatchObject({ _tag: 'Open' })
@@ -790,7 +778,6 @@ describe('Exit', () => {
     })
     const sent = update(submitted.model, Message.SurveySent())
     expect(sent.model.survey.phase._tag).toBe('Sent')
-    // The analytics bridge reads this line: the Exit's figures and the answer lengths, never the text.
     const appended = (sent.commands ?? []).find((entry) => entry.name === 'AppendLog')
     const entries = appended?.args?.['entries'] as
       | ReadonlyArray<{ type: string; data: string }>
@@ -843,14 +830,12 @@ describe('Challenges', () => {
       Message.ChallengeFinished(),
     )
 
-  /** The scored run, or a failed expectation when there is none. */
   const scoredRun = (model: Model) => {
     const run = boardChallenge(model.board)
     if (run?._tag !== 'Result') throw new Error('Expected a scored run.')
     return run
   }
 
-  /** The run in progress, or a failed expectation when there is none. */
   const runningRun = (model: Model) => {
     const run = boardChallenge(model.board)
     if (run?._tag !== 'Running') throw new Error('Expected a run in progress.')
@@ -867,7 +852,6 @@ describe('Challenges', () => {
     expect(boardChallenge(done.board)?._tag).toBe('Result')
     expect(scoredRun(done).result.passed).toBe(true)
     expect(done.panel).toBe('challenge')
-    // Leaving brings the Company back untouched.
     const left = send(done, Message.TitleOpened())
     expect(boardChallenge(left.board)).toBeNull()
     expect(left.board.game).toBe(company.board.game)
@@ -1002,13 +986,11 @@ describe('M9: sound, achievements, keys', () => {
       count: 1,
     }
     const toast = { ...before, toast: raised }
-    // A world event moves the Game, so its warning still sounds.
     const worse: Model = {
       ...toast,
       board: { ...before.board, game: { ...before.board.game, cash: before.board.game.cash - 1 } },
     }
     expect(cueOf(before, Message.Ticked({ elapsedMs: TICK_MS }), worse)?.sound).toBe('warn')
-    // A refused gesture leaves the Game as it was, so it answers with a pulse.
     expect(cueOf(before, Message.NodeSold({ nodeId: 'no-such-node' }), toast)?.sound).toBe('refuse')
   })
 
@@ -1082,7 +1064,6 @@ describe('URL routing', () => {
     named(commands)
       .filter((command) => command.name === 'LoadCompany')
       .map((command) => command.args)
-  /** One stored Company, and the index that points at it. */
   const stored = () => {
     const game = { ...preseedGame() }
     const file = fileFor({
@@ -1234,7 +1215,6 @@ describe('URL routing', () => {
 describe('progressive disclosure', () => {
   const send = (model: Model, ...messages: ReadonlyArray<Message>): Model =>
     messages.reduce((current, message) => update(current, message).model, model)
-  /** Founding from the title plays the monitor's connect sequence; the board takes keys once it ends. */
   const founded = (): Model => {
     const connecting = send(initialModel(), Message.CompanyFounded())
     expect(connecting.boot._tag).toBe('Connecting')
@@ -1249,7 +1229,6 @@ describe('progressive disclosure', () => {
     expect(start.panel).toBe('none')
     expect(start.board.disclosure.revealed).not.toContain('research')
     expect(send(start, Message.KeyPressed({ key: 'r' })).panel).toBe('none')
-    // The cheapest Garage item costs 15 Insight: 14 is not enough, 15 is.
     const short = tick({
       ...start,
       board: { ...start.board, game: { ...start.board.game, insight: 14 } },
@@ -1328,11 +1307,9 @@ test('tidying the board groups nodes into role columns, left to right', () => {
     },
   }
   const [q, p, r, u] = update(model, Message.BoardTidied()).model.board.game.nodes
-  // Entry sits left of compute, and every server shares the compute column.
   expect(u!.x).toBeLessThan(p!.x)
   expect(p!.x).toBe(q!.x)
   expect(p!.x).toBe(r!.x)
-  // The player's order inside the column stays, so r sits above p and p above q.
   expect(r!.y).toBeLessThan(p!.y)
   expect(p!.y).toBeLessThan(q!.y)
 })
@@ -1352,7 +1329,6 @@ test('Enter places the part in hand in the next free spot', () => {
   expect(nodes.filter((node) => node.type === 'server')).toHaveLength(2)
   expect(placed.model.board.flow._tag).toBe('Idle')
   const added = nodes[nodes.length - 1]!
-  // The new card keeps its clearance, as a pointer drop does.
   for (const other of nodes.slice(0, -1)) expect(crowds(boxOf(added), boxOf(other))).toBe(false)
 })
 
@@ -1366,13 +1342,11 @@ test('L starts a link, an arrow picks the other end, and Enter links them', () =
   const began = update(model, Message.KeyPressed({ key: 'l' })).model
   expect(began.board.flow).toEqual({ _tag: 'Linking', from: 'users' })
   expect(began.board.game).toBe(game)
-  // The arrows still pick the other end while the link is in progress.
   const picked = update(began, Message.KeyPressed({ key: 'ArrowRight' })).model
   expect(picked.board.selected).not.toBe('users')
   const linked = update(picked, Message.KeyPressed({ key: 'Enter' })).model
   expect(linked.board.flow._tag).toBe('Idle')
   expect(linked.board.game.links).toEqual([expect.objectContaining({ from: 'users' })])
-  // Escape cancels a link that has not been made.
   expect(update(began, Message.KeyPressed({ key: 'Escape' })).model.board.flow._tag).toBe('Idle')
 })
 
@@ -1411,7 +1385,6 @@ test('opening the Dashboard moves keyboard focus onto its scroll area', () => {
   const opened = update(inLab(), Message.PanelOpened({ panel: 'dashboard' }))
   expect(opened.model.panel).toBe('dashboard')
   expect((opened.commands ?? []).map((command) => command.name)).toContain('FocusDashboard')
-  // Opening another panel leaves focus where it was.
   const research = update(opened.model, Message.PanelOpened({ panel: 'research' }))
   expect((research.commands ?? []).map((command) => command.name)).not.toContain('FocusDashboard')
 })
@@ -1478,7 +1451,6 @@ test('the Mentor offers Easy mode once to a Company with too many severe inciden
     update(model, Message.Ticked({ elapsedMs: TICK_MS })).model.board.inbox.mail.filter(
       (mail) => mail.key === 'mentor:easy-mode',
     )
-  // Two severe incidents and a SEV3 are not enough.
   expect(offers(atHourTurn([postmortem(1, 1), postmortem(2, 2), postmortem(3, 3)]))).toEqual([])
 
   const struggling = atHourTurn([postmortem(1, 1), postmortem(2, 2), postmortem(3, 1)])
@@ -1491,7 +1463,6 @@ test('the Mentor offers Easy mode once to a Company with too many severe inciden
   ).model
   expect(accepted.prefs.easyMode).toBe(true)
 
-  // Declined by deleting it: the next hour does not ask again.
   const trashed = update(
     ticked,
     Message.InboxChanged({ message: InboxMessage.Trashed({ id: offer!.id }) }),
@@ -1577,7 +1548,6 @@ test('dragging a Study row reorders the queue and keeps its progress', () => {
       screenY: 0,
     }),
   )
-  // The component counts the dragged row where it started, so index 2 is the end of the queue.
   const over = send(
     picked,
     DragAndDrop.Message.MovedPointer({
@@ -1594,8 +1564,6 @@ test('dragging a Study row reorders the queue and keeps its progress', () => {
     { id: first.id, phase: { _tag: 'Running', progress: 0.25 } },
   ])
 })
-
-/* Queueing a locked Study with its prerequisites. In the Garage, OPcache needs PHP-FPM. */
 
 const queuedStudy = (id: ResearchId, progress = 0) => ({
   id,
@@ -1615,7 +1583,6 @@ test('queueing a locked item queues its missing prerequisites first, within the 
   const queued = research(withStudies([]), ResearchMessage.Bought({ id: 'opcache' }))
   expect(queued.board.game.studies).toEqual([queuedStudy('php-fpm'), queuedStudy('opcache')])
   expect(queued.toast?.message).toMatch(/^Studies queued: PHP-FPM, OPcache\./)
-  // A queued prerequisite keeps its place: only the item joins, at the end.
   const behind = research(
     withStudies([queuedStudy('php-fpm', 0.4), queuedStudy('gzip')]),
     ResearchMessage.Bought({ id: 'opcache' }),
@@ -1625,7 +1592,6 @@ test('queueing a locked item queues its missing prerequisites first, within the 
     queuedStudy('gzip'),
     queuedStudy('opcache'),
   ])
-  // The limit counts the whole chain: one free slot is not room for two Studies.
   const others = researchList
     .filter((entry) => researchReady(newGame(), entry.id) && entry.id !== 'php-fpm')
     .slice(0, MAX_STUDIES - 1)
@@ -1681,18 +1647,14 @@ test('no move puts a Study above a queued prerequisite, by drag or by arrow', as
     return send(over, DragAndDrop.Message.ReleasedPointer())
   }
   const ids = (model: Model) => model.board.game.studies.map((item) => item.id)
-  // Two rows up, past Gzip and then PHP-FPM: refused, and the queue stays as it was.
   const above = drag(start, 'opcache', 2, 0)
   expect(ids(above)).toEqual(['php-fpm', 'gzip', 'opcache'])
   expect(above.toast?.message).toBe('OPcache needs PHP-FPM first.')
-  // The component counts the dragged row where it started, so index 3 is the end of the queue.
   expect(ids(drag(start, 'php-fpm', 0, 3))).toEqual(['php-fpm', 'gzip', 'opcache'])
-  // A row that needs neither moves freely.
   expect(ids(drag(start, 'gzip', 1, 0))).toEqual(['gzip', 'php-fpm', 'opcache'])
   const swapped = withStudies([queuedStudy('php-fpm'), queuedStudy('opcache')])
   const arrow = research(swapped, ResearchMessage.StudyMoved({ id: 'opcache', direction: -1 }))
   expect(ids(arrow)).toEqual(['php-fpm', 'opcache'])
-  // The refusal reads in the player's language.
   const french = { ...swapped, prefs: { ...swapped.prefs, locale: 'fr' as const } }
   expect(
     research(french, ResearchMessage.StudyMoved({ id: 'php-fpm', direction: 1 })).toast?.message,
@@ -1713,7 +1675,6 @@ test('cancelling a prerequisite cancels the queued Studies that need it, and its
   expect(cancelled.board.game.studies).toEqual([queuedStudy('gzip')])
   expect(cancelled.board.game.backlog.some((item) => item.kind === 'spike')).toBe(false)
   expect(cancelled.toast?.message).toBe('Study cancelled: PHP-FPM, with OPcache, which needed it.')
-  // Cancelling the dependant leaves its prerequisite queued.
   const alone = research(start, ResearchMessage.StudyCancelled({ id: 'opcache' }))
   expect(alone.board.game.studies).toEqual([queuedStudy('php-fpm'), queuedStudy('gzip')])
 })
@@ -1746,13 +1707,11 @@ test('a save this build cannot read is kept aside and leaves the list', () => {
     ...game,
     nodes: game.nodes.map((node) => ({ ...node, type: 'retired-component' })),
   })
-  // The last one is a pre-public save: it carries no format, so this build sets it aside.
   for (const json of [renamed, '{not json', JSON.stringify(game)]) {
     const broken = opened(json)
     expect(broken.model.companyPhase).toEqual({ _tag: 'None' })
     expect(broken.model.toast?.tone).toBe('warn')
     expect(hasCompany(broken.model)).toBe(false)
-    // The row would warn on every load and never open, so it leaves the list with its copy.
     expect(broken.model.saves).toEqual({ current: null, companies: [] })
     expect(broken.commands).toEqual(
       expect.arrayContaining([
@@ -1804,7 +1763,6 @@ test('a save travels as one line of text, and only a save of this format opens i
   const text = String(copied?.args['text'] ?? '')
   expect(text.startsWith('QSV1:')).toBe(true)
 
-  // The same save downloads as a file the player can keep.
   const downloaded = update(playable, Message.SaveDownloaded())
   expect(downloaded.commands).toEqual(
     expect.arrayContaining([
@@ -1812,26 +1770,21 @@ test('a save travels as one line of text, and only a save of this format opens i
     ]),
   )
 
-  // Pasting it back opens the same Company, on a fresh board to work on.
   const opened = update(playable, Message.SaveImported({ text }))
   expect(hasCompany(opened.model)).toBe(true)
   expect(opened.model.toast?.tone).toBe('ok')
   expect(opened.model.board.game.cash).toBe(playable.board.game.cash)
   expect(opened.model.board.game.nodes).toEqual(playable.board.game.nodes)
   expect(opened.model.board.undo).toEqual([])
-  // The import is the save now, so the copy kept for an unreadable file is dropped.
   expect((opened.commands ?? []).map((command) => command.name)).toContain('ClearBrokenSave')
 
-  // A stored Company file imports as it is, so a player can move one by hand.
   const stored = JSON.stringify({ format: SAVE_FORMAT, ...playable.board.game })
   expect(update(playable, Message.SaveImported({ text: stored })).model.toast?.tone).toBe('ok')
-  // A file without the format is refused, and the open Company stays.
   const preFormat = JSON.stringify(playable.board.game)
   const refusedFile = update(playable, Message.SaveImported({ text: preFormat }))
   expect(refusedFile.model.toast?.tone).toBe('warn')
   expect(refusedFile.model.board.game).toBe(playable.board.game)
 
-  // Anything that is not a save of this format is refused, and the open Company stays.
   const other = encodeText('QSV1:', {
     format: SAVE_FORMAT + 1,
     save: { format: SAVE_FORMAT, ...playable.board.game },
@@ -1846,7 +1799,6 @@ test('a save travels as one line of text, and only a save of this format opens i
     expect(refused.model.board.game).toBe(playable.board.game)
   }
 
-  // The file picker is one command, and the picker answers with nothing when it closes.
   expect(update(playable, Message.SaveFileAsked()).commands).toEqual(
     expect.arrayContaining([
       expect.objectContaining({ name: 'PickSaveFile', args: { as: 'save' } }),
@@ -1859,7 +1811,6 @@ test('a save travels as one line of text, and only a save of this format opens i
   )
   expect(update(playable, Message.SaveImported({ text: null })).model).toBe(playable)
 
-  // There is nothing to export before a Company exists.
   expect(update(initialModel(), Message.SaveExported()).model.toast?.tone).toBe('warn')
   expect(update(initialModel(), Message.SaveDownloaded()).model.toast?.tone).toBe('warn')
 })
@@ -1880,7 +1831,6 @@ test('a save imported with no Company open becomes a new Company', () => {
   expect(imported.model.saves.current).toBe(imported.model.saves.companies[0]?.id)
   expect(imported.model.board.game.cash).toBe(777)
   expect(imported.model.route).toEqual(AppRoute.Company())
-  // The new file reaches storage at once, so closing the tab keeps it.
   expect((imported.commands ?? []).map((command) => command.name)).toContain('WriteCompany')
 })
 
@@ -1929,10 +1879,8 @@ test('the same refusal twice in a row is one toast with a count, and a warning s
   expect(twice.model.toast?.count).toBe(2)
   const clear = (result: ReturnType<typeof update>) =>
     (result.commands ?? []).find((command) => command.name === 'ClearToast')
-  // A refusal names a Research and a price, so it holds longer than a confirmation.
   expect(clear(once)?.args).toMatchObject({ after: TOAST_MS.warn })
   expect(TOAST_MS.warn).toBeGreaterThan(TOAST_MS.ok)
-  // A different sentence starts the count again.
   const other = update(
     twice.model,
     Message.ToastRaised({ message: 'Nothing to undo.', tone: 'plain' }),
@@ -1986,17 +1934,14 @@ test('the Inbox opens on Needs action while something needs the player, and on F
       { ...start, board: { ...start.board, inbox: { ...start.board.inbox, mail } } },
       Message.PanelOpened({ panel: 'inbox' }),
     ).model.board.inbox
-  // The list is what a phone lands on: opening the Inbox reads nothing and opens no thread.
   expect(opened([letter])).toMatchObject({ folder: 'fyi', focus: null })
   expect(opened([letter]).mail[0]?.read).toBe(false)
-  // Read letters still beat an empty "Nothing needs you." pane.
   expect(opened([{ ...letter, read: true }])).toMatchObject({ folder: 'fyi', focus: null })
   expect(opened([]).folder).toBe('action')
   expect(opened([letter, offer])).toMatchObject({ folder: 'action', focus: null })
 })
 
 test('a stalled running Study raises a teammate alert that opens Research and closes when it moves', () => {
-  // Pre-seed earns no `login` Insight before Password login ships, so Managed identity stalls.
   const start: Model = {
     ...inLab(),
     board: {
@@ -2031,7 +1976,6 @@ test('a stalled running Study raises a teammate alert that opens Research and cl
   )
   const after = cancelled.board.inbox.mail.find((mail) => mail.key === alert!.key)
   expect(after?.phase._tag).toBe('Resolved')
-  // A player who read the alert and then cancelled gets no fresh unread Mail for it.
   const seen: Model = {
     ...stalled,
     board: {
@@ -2096,14 +2040,12 @@ test('upgrade all of a kind is one action with one undo entry and one toast that
   expect(once.toast?.message).toContain('App Server ×3 grew one size')
   expect(once.toast?.message).toContain('Undo (Z) refunds')
 
-  // One at its cap is skipped and named.
   const capped = update(base, Message.BulkResizeChosen({ nodeId: id, mode: 'max' })).model
   const partial = update(capped, Message.UpgradeAllChosen({ nodeId: id })).model
   expect(servers(partial).map((node) => node.size)).toEqual([SIZES.length - 1, 2, 2])
   expect(partial.toast?.message).toContain('App Server ×2 grew one size')
   expect(partial.toast?.message).toContain('1 at the largest size')
 
-  // Cash short of the whole run stops where it stands.
   const step =
     resizePrice(base.board.game, servers(base)[0] as (typeof base.board.game.nodes)[number]) ?? 0
   const poor: Model = {
@@ -2114,7 +2056,6 @@ test('upgrade all of a kind is one action with one undo entry and one toast that
   expect(servers(short).map((node) => node.size)).toEqual([2, 1, 1])
   expect(short.toast?.message).toContain('Cash ran out')
 
-  // Every server at its cap refuses, and writes no undo entry.
   let all = base
   for (const node of servers(base))
     all = update(all, Message.BulkResizeChosen({ nodeId: node.id, mode: 'max' })).model
@@ -2129,7 +2070,6 @@ describe('Mail actions (GDD 18)', () => {
   const send = (model: Model, ...messages: ReadonlyArray<Message>): Model =>
     messages.reduce((current, message) => update(current, message).model, model)
 
-  /** A board with one piece of Mail in its Inbox, open on the reader, its card still waiting. */
   const withMail = (fact: Fact, game: Model['board']['game']): Model => {
     const start = inLab()
     const sent = mailed(EMPTY_INBOX, fact, game.time, false)
@@ -2139,13 +2079,11 @@ describe('Mail actions (GDD 18)', () => {
       board: {
         ...start.board,
         game,
-        // Reading the panel clears the card, so put back what arrived with the Mail.
         inbox: { ...reading(sent), peek: sent.peek },
       },
     }
   }
 
-  /** A capacity/alert fact for `node`, for mail-action plumbing tests. */
   const about = (nodeId: string): readonly [Model['board']['game'], Fact] => {
     const game = preseedGame()
     const node = game.nodes.find((entry) => entry.id === nodeId)
@@ -2297,11 +2235,9 @@ describe('Mail actions (GDD 18)', () => {
         time,
         false,
       )
-    // Inside the hour the next letter lands read, with no card above the Inbox button.
     const quiet = later(game.time + 59)
     expect(quiet.mail.at(-1)?.read).toBe(true)
     expect(quiet.peek).toBeNull()
-    // An hour later the sender is heard again.
     const loud = later(game.time + 60)
     expect(loud.mail.at(-1)?.read).toBe(false)
     expect(loud.peek).toBe(loud.mail.at(-1)?.id)
@@ -2409,7 +2345,6 @@ describe('Mail actions (GDD 18)', () => {
   })
 
   test('the fourth button on an advisory is reachable with its own key', () => {
-    // Dependency scanning names the Node, so the advisory carries all four of its buttons.
     const game = {
       ...preseedGame(),
       researched: [...preseedGame().researched, 'dependency-scanning' as const],
@@ -2486,7 +2421,6 @@ describe('Feature Flags (GDD 05, 08)', () => {
       _tag: 'Settling',
       change: { label: expect.stringContaining('5%') },
     })
-    // The flag propagates over its short window: the effective rollout reaches the target.
     const settled = advancePropagation(rolled.board.game, 2)
     expect(settled.features['password-login']).toEqual({
       _tag: 'Live',
@@ -2530,7 +2464,6 @@ test('a Rush says the tech debt and bad-deploy risk it adds', () => {
   expect(pressed.toast?.tone).toBe('warn')
 })
 
-/* A Room owns the clock: the tab that joined it must not advance the Game. */
 test('a live Room does not step the Company on this tab', () => {
   const model: Model = {
     ...inLab(),
@@ -2544,7 +2477,6 @@ test('a live Room does not step the Company on this tab', () => {
   expect(ticked.board.clock.carry).toBe(0)
 })
 
-/* A Room's refusal to step is not the same as a pause: a hidden tab must not freeze it. */
 test('a live Room stays unpaused when the window loses focus', () => {
   const model: Model = {
     ...inLab(),
@@ -2557,7 +2489,6 @@ test('a live Room stays unpaused when the window loses focus', () => {
   expect(away.board.clock.mode).toEqual({ _tag: 'Running' })
 })
 
-/* A Seat's action travels as the Intent that names it, so a Room runs the same move. */
 test('a board action in a live Room goes out as the Intent it stands for', () => {
   const model: Model = {
     ...inLab(),
@@ -2576,7 +2507,6 @@ test('a board action in a live Room goes out as the Intent it stands for', () =>
   })
 })
 
-/* A Seat's name lives in this browser: the player types it, and the Room hears it. */
 test('a Seat keeps the name the player types', () => {
   const model: Model = {
     ...inLab(),
@@ -2604,7 +2534,6 @@ test('an empty name is not saved, and a name the Room already has changes nothin
   expect(same).toBe(named)
 })
 
-/* Raising a round is a vote, so the action itself never leaves a Seat's browser. */
 test('an action only a vote may take is refused in a live Room', () => {
   const model: Model = {
     ...inLab(),
@@ -2618,7 +2547,6 @@ test('an action only a vote may take is refused in a live Room', () => {
   expect(raised.model.toast?.message).toBe('That is not available in a Room yet.')
 })
 
-/* The offer's Raise button opens the vote the Room uses in place of the action. */
 test('a funding round in a live Room starts the fund vote', () => {
   const model: Model = {
     ...inLab(),
@@ -2634,7 +2562,6 @@ test('a funding round in a live Room starts the fund vote', () => {
   expect(asked.model.panel).toBe('offer')
 })
 
-/* Declining is a vote too: one Seat's Decline must not move the Room's Era on its own. */
 test('declining a funding round in a live Room starts the decline vote', () => {
   const model: Model = {
     ...inLab(),
@@ -2652,7 +2579,6 @@ test('declining a funding round in a live Room starts the decline vote', () => {
   expect(asked.model.panel).toBe('offer')
 })
 
-/* A Load Balancer policy was the report that started the allowlist fix. */
 test('a Load Balancer policy in a live Room goes out as its intent', () => {
   const game = Result.getOrThrow(Actions.place(preseedGame(), 'lb', 300, 100))
   const balancer = game.nodes.find((entry) => entry.type === 'lb')!
@@ -2679,7 +2605,6 @@ test('a Load Balancer policy in a live Room goes out as its intent', () => {
   )
 })
 
-/* A bulk control reaches the Room as the compound action it stands for. */
 test('a bulk upgrade in a live Room goes out as its intent', () => {
   const model: Model = {
     ...inLab(),
@@ -2699,7 +2624,6 @@ test('a bulk upgrade in a live Room goes out as its intent', () => {
   expect(upgraded.model.board.game).not.toBe(model.board.game)
 })
 
-/* Once the vote passes, the offer the Seat was looking at becomes the Era card. */
 test('a passed round closes the offer it came from', () => {
   const model: Model = {
     ...inLab(),
@@ -2729,7 +2653,6 @@ test('a passed round closes the offer it came from', () => {
   expect(painted.panel).toBe('era')
 })
 
-/* A Seat that arrives is announced by name to the others. */
 test('a Seat that joins is announced to the others', () => {
   const model: Model = {
     ...inLab(),

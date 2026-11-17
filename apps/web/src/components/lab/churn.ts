@@ -14,7 +14,6 @@ import { button } from '@quorum/ui/primitives/button'
 import { FIGURE, SCROLL, WELL, toneText } from '@quorum/ui/game/bits'
 import { shell } from './panels.ts'
 
-/** The button that applies a row's fix, or its advice as text. */
 const fixOf = (game: Game, entry: ChurnRow, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const apply = (kind: 'region' | 'research' | 'node', label: string, target: string): Html =>
@@ -65,7 +64,6 @@ const fixOf = (game: Game, entry: ChurnRow, h: HtmlBuilder<Message>): Html => {
   })
 }
 
-/** The slowest hop and the internet hop per device that a row names, as one line. */
 const detailOf = (t: Messages, game: Game, entry: ChurnRow): string => {
   const hop = entry.hop
   const shown = hop ? game.nodes.find((node) => node.id === hop.nodeId) : undefined
@@ -369,7 +367,6 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
           ),
         ],
       ),
-      // Each fix shows once, on the first row the region needs it for.
       ...region.rows.map((entry, index) =>
         row(
           game,
@@ -386,7 +383,6 @@ const section = (game: Game, region: RegionChurn, h: HtmlBuilder<Message>): Html
   )
 }
 
-/** The breakdown runs a day's forecast, so it is computed once a sim second, not every frame. */
 const cached = perSecond<ReadonlyArray<RegionChurn>>()
 
 export const churnPanel = (model: Model, h: HtmlBuilder<Message>): Html => {

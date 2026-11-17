@@ -2,7 +2,6 @@ import { type Action, answering, notAllowed, ok, patch, withNode } from '../acti
 import type { Game } from '../state.ts'
 import { MAX_ATTEMPTS, QUEUE_LENGTHS } from '../catalog.ts'
 
-/** Turns a Queue's dead-letter queue on or off. */
 export const setDlq = (game: Game, id: string, dlq: boolean): Action =>
   withNode(game, id, (node) =>
     node.type === 'queue'
@@ -10,7 +9,6 @@ export const setDlq = (game: Game, id: string, dlq: boolean): Action =>
       : notAllowed('Only a Queue has a dead-letter queue.'),
   )
 
-/** Sets the attempts a Queue's dead-letter queue allows a task. */
 export const setAttempts = (game: Game, id: string, attempts: number): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'queue') return notAllowed('Only a Queue retries tasks.')
@@ -19,7 +17,6 @@ export const setAttempts = (game: Game, id: string, attempts: number): Action =>
     return ok(node.attempts === attempts ? game : patch(game, id, { attempts }))
   })
 
-/** Sets the most tasks a Queue holds before it refuses new ones; 0 means no limit. */
 export const setMaxLength = (game: Game, id: string, maxLength: number): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'queue') return notAllowed('Only a Queue has a max length.')
@@ -35,7 +32,6 @@ export const setMaxLength = (game: Game, id: string, maxLength: number): Action 
     )
   })
 
-/** Deletes the poison message: the Workers get back to the queue. */
 export const deleteMessage = (game: Game): Action =>
   game.incident?.kind === 'poison'
     ? ok({ ...game, incident: { ...answering(game, game.incident), remaining: 0 } })

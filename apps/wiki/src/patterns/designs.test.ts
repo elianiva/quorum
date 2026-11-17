@@ -10,9 +10,6 @@ import { boxOf, crowds } from '@quorum/ui/board/geometry'
 import { DESIGN_IDS } from './designs/ids.ts'
 import { DESIGNS } from './designs/index.ts'
 
-/* The Patterns section's contract with the game: every Design is a Board the Simulation can solve, its
-   settings are fields the game has, and a page places each one. */
-
 const entries = Object.entries(DESIGNS)
 
 test('the island schema lists every Design', () => {
@@ -31,8 +28,6 @@ test('every Design solves, links existing Nodes, and keeps its cards apart', () 
       for (const other of nodes)
         if (node.id < other.id && crowds(boxOf(node), boxOf(other)))
           bad.push(`${id}: ${node.id} overlaps ${other.id}`)
-    // A Read Replica copies the Database linked into it: without one it serves nothing and its card
-    // tells the reader to link a Database, so the Design would not show what its page describes.
     for (const node of nodes)
       if (node.type === 'replica' && primaryOf(design.game, node) === undefined)
         bad.push(`${id}: ${node.id} copies no Database`)
@@ -78,7 +73,6 @@ test('every running Node that takes requests carries some in its Design, so no c
     const ledger = solveFlow(design.game)
     for (const node of design.game.nodes) {
       const def = COMPONENTS[node.type]
-      // A host the Design takes down (a dead server) is idle on purpose.
       if (node.type === 'users' || def.control || def.accepts.length === 0 || isDown(node)) continue
       if ((ledger.nodes[node.id]?.inbound ?? 0) === 0) idle.push(`${id}: ${node.id}`)
     }

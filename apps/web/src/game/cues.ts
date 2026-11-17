@@ -15,16 +15,13 @@ const TONE_SOUND: Record<Tone, Sound> = {
   danger: 'error',
 }
 
-/** Speeds step up a fifth at a time, so the faster clock sounds higher. */
 const SPEED_PITCH: Record<number, number> = { 1: 1, 2: 1.5, 4: 2.25 }
 
-/** A purchase at or above this much Cash is celebrated (sound, burst, and a line of praise). */
-export const BIG_PURCHASE = 1_000
+export const BIG_PURCHASE_CASH = 1_000
 
 const gesture = (sound: Sound, pitch = 1): Cue => ({ sound, pitch, spatial: true })
 const event = (sound: Sound): Cue => ({ sound, pitch: 1, spatial: false })
 
-/** The cue for a gesture that succeeded, from the Message and what it changed. */
 const gestureCue = (before: Model, message: Message, after: Model): Cue | null => {
   const game = before.board.game
   const next = after.board.game
@@ -59,8 +56,7 @@ const gestureCue = (before: Model, message: Message, after: Model): Cue | null =
       return gesture('remove')
     case 'ResizeChosen':
       if (message.direction < 0) return gesture('downgrade')
-      // A big purchase gets the celebration; a small one keeps the quick motor-and-beeps.
-      return game.cash - next.cash >= BIG_PURCHASE ? event('purchase') : gesture('upgrade')
+      return game.cash - next.cash >= BIG_PURCHASE_CASH ? event('purchase') : gesture('upgrade')
     case 'FamilyChosen':
     case 'PricingChosen':
     case 'RuntimeChosen':
@@ -71,7 +67,6 @@ const gestureCue = (before: Model, message: Message, after: Model): Cue | null =
     case 'FullscreenToggled':
       return gesture('toggle')
     case 'VolumeSliderChanged':
-      // A drag changes the level live and previews once when it ends; a key press previews itself.
       return message.message._tag === 'MovedDragPointer' ? null : gesture('tick')
     case 'DemandStepped':
       return gesture('tick', message.direction > 0 ? 1.25 : 0.8)
@@ -107,7 +102,6 @@ const gestureCue = (before: Model, message: Message, after: Model): Cue | null =
     case 'SpeedChosen':
       return gesture('tick', SPEED_PITCH[after.board.clock.speed] ?? 1)
     case 'KeyPressed':
-      // Other keys route to the Message they stand for, which plays its own cue.
       return message.key === 'Escape' &&
         (placingOf(after) !== placingOf(before) ||
           after.board.buildGroup !== before.board.buildGroup ||
@@ -125,13 +119,10 @@ const gestureCue = (before: Model, message: Message, after: Model): Cue | null =
   }
 }
 
-/** The cue for what the clock brought: a passed Sandbox, a round to raise, a settled change. */
 const tickCue = (before: Model, after: Model): Cue | null => {
   if (after.panel === 'passed' && before.panel !== 'passed') return event('fanfare')
   if (!boardSandbox(before.board) && canRaise(after.board.game) && !canRaise(before.board.game))
     return event('ready')
-  // Mail that wants attention: a provider, an alarm, or an advisory. It is new when this tick
-  // added it or a line to it; the clock cannot tell, because a reset winds it back under old Mail.
   const urgent = after.board.inbox.mail.some(
     (mail) =>
       mail.time > (before.board.inbox.mail.find((old) => old.id === mail.id)?.time ?? -Infinity) &&
@@ -152,14 +143,10 @@ const tickCue = (before: Model, after: Model): Cue | null => {
   return null
 }
 
-/** What the player hears after `message` took the Model from `before` to `after`. */
 export const cueOf = (before: Model, message: Message, after: Model): Cue | null => {
-  // The title screen plays its own menu sounds.
   if (!onBoard(before.route)) return null
   const raised = after.toast && after.toast.id !== before.toast?.id ? after.toast : null
   if (raised && (raised.tone === 'warn' || raised.tone === 'danger')) {
-    // The warning is for what the factory raises. A refused gesture leaves the Game as it was,
-    // so it answers with one quiet pulse instead of the alarm.
     const refused = raised.tone === 'warn' && after.board.game === before.board.game
     return {
       sound: refused ? 'refuse' : TONE_SOUND[raised.tone],

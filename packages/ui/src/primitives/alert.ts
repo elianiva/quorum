@@ -134,8 +134,6 @@ const alertDescription = <M>(
     children,
   )
 
-/** Alert action — an absolutely positioned slot in the top-right corner; the
- *  container token reserves room for it via has-data-[slot=alert-action]. */
 const alertAction = <M>(
   config: StyleConfig,
   children: ReadonlyArray<Child>,
@@ -146,10 +144,6 @@ const alertAction = <M>(
     children,
   )
 
-/**
- * Styled alert — `Alert.title`, `Alert.description` and `Alert.action`
- *  sub-builders.
- */
 export const Alert = Object.assign(alertContainer, {
   title: alertTitle,
   description: alertDescription,

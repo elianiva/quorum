@@ -25,23 +25,18 @@ import { budgetOf, budgeted } from './slo.ts'
 import type { Game, GameNode } from './state.ts'
 import { valuationOf } from './valuation.ts'
 
-/** Counts the Founder keeps across Companies for the counting achievements. */
 export type AchievementStats = Readonly<{
   postmortems: number
   terminations: number
-  /** The fallacies the Founder has met in an incident, one entry each. */
   fallacies: ReadonlyArray<FallacyId>
 }>
 
 export type Moment = Readonly<{
   before: Game
   after: Game
-  /** The Ledger after the moment, for the Design that resulted. */
   ledger: Ledger
-  /** The Ledger before the moment, when pressure/limits matter. */
   previousLedger: Ledger | null
   events: ReadonlyArray<StepEvent>
-  /** The Founder's counts, with this moment's events already added. */
   stats: AchievementStats
 }>
 
@@ -51,7 +46,6 @@ const SEED = ERAS.findIndex((era) => era.name === 'Seed')
 const PUBLIC = PRE_IPO_STAGE + 1
 const WEEK_HOURS = 7 * 24
 const POSTGRES: ReadonlySet<ComponentId> = new Set(['database', 'pooler', 'replica'])
-/** The database tier a Company fixes to take load off its App Servers. */
 const DATA_TIER: ReadonlySet<ComponentId> = new Set([
   'database',
   'pooler',
@@ -60,11 +54,8 @@ const DATA_TIER: ReadonlySet<ComponentId> = new Set([
   'wide',
   'dsql',
 ])
-/** A user hop longer than this crosses regions (05 "Zones and regions"). */
 const FAR_MS = 150
-/** A Node is busy above this share of its capacity. */
 const BUSY = 0.7
-/** Within this share of its 20:00 peak, a region counts as at its local peak: about 45 minutes. */
 const PEAK = 1 + DIURNAL_AMPLITUDE * 0.98
 const BILLION = 1e9
 const SIX_BILLION = 6e9
@@ -82,11 +73,9 @@ const languages = (game: Game): ReadonlySet<LanguageId> =>
 const servers = (game: Game): ReadonlyArray<GameNode> =>
   game.nodes.filter((node) => node.type === 'server')
 
-/** Equity before any round: the Pre-seed grant's dilution, or none when bootstrapped. */
 const foundedEquity = (game: Game): number =>
   VENTURES[game.founding.venture].bootstrapped ? 1 : 1 - (ERAS[0]?.dilution ?? 0)
 
-/** The terminations the chaos count takes: an instance failing on its own. */
 export const isTermination = (event: StepEvent): boolean =>
   event._tag === 'IncidentResolved' && event.postmortem.kind === 'instance'
 
@@ -105,7 +94,6 @@ export const countStats = (
   }
 }
 
-/** A Node that took more capacity this moment: it is new, or its size or copies grew. */
 const grew = (before: Game, node: GameNode): boolean => {
   const was = before.nodes.find((entry) => entry.id === node.id)
   return was === undefined || node.size > was.size || node.replicas > was.replicas
@@ -114,7 +102,6 @@ const grew = (before: Game, node: GameNode): boolean => {
 const anyGrew = (before: Game, after: Game, where: (node: GameNode) => boolean): boolean =>
   after.nodes.some((node) => where(node) && grew(before, node))
 
-/** A memory incident is running, killed a Node, or is still in the last postmortems. */
 const memoryIncident = (game: Game, events: ReadonlyArray<StepEvent>): boolean =>
   game.incident?.kind === 'leak' ||
   game.nodes.some((node) => node.leak > 0) ||
@@ -125,7 +112,6 @@ const memoryIncident = (game: Game, events: ReadonlyArray<StepEvent>): boolean =
       (event._tag === 'IncidentResolved' && event.postmortem.kind === 'leak'),
   )
 
-/** A region is inside its own 20:00 peak. */
 const atLocalPeak = (game: Game): boolean =>
   REGIONS.some((region) => regionDiurnal(game.time, region) >= PEAK)
 
@@ -152,7 +138,6 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
       !memoryIncident(moment.after, moment.events)
     )
   },
-  // The event-loop block is a Node.js App Server stalling one kind (the login hash) for everyone.
   blocked: ({ before, events }) =>
     before.incident?.kind === 'loop' &&
     before.nodes.some(
@@ -162,7 +147,6 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
         RUNTIMES[node.runtime].blocking === 'loop',
     ) &&
     events.some((event) => event._tag === 'IncidentResolved' && event.postmortem.kind === 'loop'),
-  // The users' hop to the Design: two round trips, so a region two hops away is over 150 ms.
   'off-by-one-region': ({ ledger }) =>
     Object.values(ledger.regionKinds).some((kinds) =>
       Object.values(kinds ?? {}).some(
@@ -170,8 +154,6 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
           entry !== undefined && entry.rate > 0 && entry.success > 0 && entry.hopMs > FAR_MS,
       ),
     ),
-  // An App Server's workers were saturated while the Design waited on the data tier; the data tier
-  // gained capacity, no App Server grew, and that App Server's worker pressure eased (Little's Law).
   'littles-law': ({ before, after, ledger, previousLedger }) => {
     const was = previousLedger
       ? before.nodes.find((node) => {
@@ -190,7 +172,6 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
     events.some(
       (event) => event._tag === 'IncidentResolved' && event.postmortem.kind === 'retry-storm',
     ),
-  // Every App Server moved off the old Stack, the migration is over, and the language changed.
   'big-rewrite': ({ before, after }) => {
     const moved = before.services.find(
       (service) =>
@@ -259,7 +240,6 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
   'rule-of-40': ({ after, ledger }) =>
     after.quarter !== null && valuationOf(after, ledger).ruleOf40 >= 80,
   'beat-and-raise': ({ after }) => after.quarter !== null && after.quarter.streak >= 8,
-  // Every key replicated to three regions, and a read and a write overlap at least one replica.
   quorum: ({ after, ledger }) =>
     openRegions(after).length >= SPREAD_REGIONS &&
     wideStores(after).some(
@@ -271,8 +251,6 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
     ),
   eventually: ({ after }) =>
     after.users >= BILLION && wideStores(after).some((node) => node.r === 1 && node.w === 1),
-  // A spike is running, an Autoscaler asked its JVM service for copies or they joined, and the
-  // p99 a second earlier holds.
   'warm-start': ({ before, after, ledger }) => {
     const prior = before.history.at(-1)?.p99
     if (before.incident?.kind !== 'spike' || prior === undefined || prior <= 0) return false
@@ -288,7 +266,6 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
     })
     return scaled && ledger.p99 <= prior
   },
-  // A celebrity's post: a hot key resolved with no request failed on it.
   celebrity: ({ before, events }) =>
     before.incident?.kind === 'hot-key' &&
     events.some(
@@ -297,7 +274,6 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
         event.postmortem.kind === 'hot-key' &&
         event.postmortem.failed <= 0,
     ),
-  // Four regions, each with its own users, all of them at home in the evening, and no Node busy.
   'follow-the-sun': ({ after, ledger }) => {
     if (openRegions(after).length < REGIONS.length) return false
     const users = regionUsers(after)
@@ -306,18 +282,15 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
       atLocalPeak(after) && Object.values(ledger.nodes).every((node) => node.utilization <= BUSY)
     )
   },
-  // The Cache's TTL serves stale reads, and an incident makes enough of them to fail requests.
   'two-hard-things': ({ events }) =>
     events.some(
       (event) => event._tag === 'IncidentResolved' && event.postmortem.kind === 'stale-read',
     ),
-  // Conway's law, both ways: more Services than Teams is the mismatch, and a team is the fix.
   'conways-law': ({ before, after }) =>
     before.services.length > before.teams.length &&
     after.services.length > 0 &&
     after.teams.length >= after.services.length,
   fallacies: ({ stats }) => new Set(stats.fallacies).size >= FALLACY_IDS.length,
-  // The Hub came back, every client reconnected, and nothing was refused.
   'thundering-herd': ({ events }) =>
     events.some(
       (event) =>
@@ -325,8 +298,6 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
         event.postmortem.kind === 'reconnect' &&
         event.postmortem.failed <= 0,
     ),
-  // The Design ended the incident by itself: a Cluster rescheduled a pod, a standby failed over,
-  // a Spot Node came back, or a retry storm drained behind backoff.
   runbook: ({ events }) =>
     events.some((event) => event._tag === 'IncidentResolved' && event.postmortem.auto === true),
   finops: ({ after }) => {
@@ -344,7 +315,6 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
         event.postmortem.kind === 'spot-reclaim' &&
         event.postmortem.failed <= 0,
     ),
-  // The supervisor restarts the process and the request is retried inside the VM: no request fails.
   'let-it-crash': ({ after, ledger }) =>
     ledger.errorShare === 0 &&
     after.nodes.some(
@@ -356,7 +326,6 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
     ),
 }
 
-/** Achievements this moment earns that `owned` does not hold yet. */
 export const detectAchievements = (
   moment: Moment,
   owned: ReadonlyArray<AchievementId>,
@@ -367,6 +336,5 @@ export const detectAchievements = (
     .map(([id]) => id as AchievementId)
 }
 
-/** Serial founder: an Exit with every Venture. */
 export const everyVenture = (ventures: ReadonlyArray<string>): boolean =>
   VENTURE_IDS.every((id) => ventures.includes(id))

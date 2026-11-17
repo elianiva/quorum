@@ -10,22 +10,14 @@ import { Locale, withLocale } from '../i18n/locale.ts'
 import { indexUrl, loadIndex, search, type Hit, type Index } from '../search.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* The search box in the header: the query, whether its results are open, and the index it loads
-   on first use. Each language has its own index, built from its own titles and text. The index is
-   not a schema value, so it lives beside the model rather than in it. */
-
 const indexes: Partial<Record<Locale, Index>> = {}
 
 export const Model = Schema.Struct({
-  /** The language of the page, which picks the index and the words around the results. */
   locale: Locale,
   query: Schema.String,
   open: Schema.Boolean,
-  /** A phone opens search as a full-width panel; a desktop keeps the field in the header. */
   panel: Schema.Boolean,
-  /** The result the arrow keys have reached; Enter opens it. */
   active: Schema.Finite,
-  /** The index arrives once per page load, on the reader's first search. */
   status: Schema.Literals(['idle', 'loading', 'ready', 'failed'] as const),
 })
 export type Model = typeof Model.Type
@@ -60,14 +52,12 @@ const GoTo = Command.define('GoTo', {
 const FocusSearch = Command.define('FocusSearch', {
   messages: [Message.Settled],
   execute: Effect.promise(async () => {
-    // The phone panel renders in the same update, so wait for its frame before focusing.
     await new Promise((resolve) => requestAnimationFrame(resolve))
     document.querySelector<HTMLInputElement>('#search')?.focus()
     return Message.Settled()
   }),
 })
 
-/** Return keyboard focus to the header button after the phone panel closes. */
 const FocusSearchTrigger = Command.define('FocusSearchTrigger', {
   messages: [Message.Settled],
   execute: Effect.promise(async () => {
@@ -77,8 +67,6 @@ const FocusSearchTrigger = Command.define('FocusSearchTrigger', {
   }),
 })
 
-/** One fetch of the whole index, kept for the rest of the session. A failure leaves search
-    unavailable rather than breaking the page. */
 const LoadIndex = Command.define('LoadIndex', {
   args: { locale: Locale },
   messages: [Message.IndexLoaded, Message.IndexFailed],
@@ -122,7 +110,6 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       model.open || model.panel
         ? {
             model: { ...model, open: false, panel: false },
-            // The phone's field disappears with the panel, so its focus goes back to the button.
             commands: model.panel ? [FocusSearchTrigger()] : [],
           }
         : { model },
@@ -202,7 +189,6 @@ export const view = defineView<Model, Message>((model, h) => {
     [
       h.Class(
         css({
-          // On a phone the field becomes a sheet under the header, so the header stays compact.
           position: model.panel ? 'fixed' : 'relative',
           top: model.panel ? '14' : 'auto',
           right: model.panel ? '0' : 'auto',

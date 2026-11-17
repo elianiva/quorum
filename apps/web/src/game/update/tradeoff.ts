@@ -15,13 +15,8 @@ import {
 } from './shared.ts'
 import { step as tradeoffStep, type TradeoffState } from '../tradeoff-machine.ts'
 
-/** A card that can be applied: a hovered or pinned option. */
 type OpenTradeoff = Extract<TradeoffState, Readonly<{ _tag: 'Hovering' | 'Pinned' }>>
 
-/**
- * A card for an option. A refusal shows at once; the ghost runs go to the compute
- * worker, and their preview arrives as PreviewComputed.
- */
 export const tradeoffOf = (
   model: Model,
   nodeId: string,
@@ -57,7 +52,6 @@ export const tradeoffOf = (
     },
   )
 
-/** Applies an option and logs what its card predicted, so playtests can compare it with the outcome. */
 export const applyOption = (model: Model, card: OpenTradeoff, route: Dispatch): UpdateResult => {
   const closed: Model = { ...model, board: { ...model.board, tradeoff: { _tag: 'Closed' } } }
   const applied = route(closed, optionMessage(card.nodeId, card.option))
@@ -130,7 +124,6 @@ export const tradeoffHandlers = (
   },
 
   OptionChosen: ({ nodeId, option }) => {
-    // Once an option set is confirmed, its options apply on click; the card stays one line.
     if (model.prefs.seenTradeoffs.includes(option.kind)) {
       const hovered = model.board.tradeoff
       const same =

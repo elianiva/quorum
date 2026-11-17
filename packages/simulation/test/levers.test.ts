@@ -16,16 +16,8 @@ import type { FeaturePhase } from '../src/feature-machine.ts'
 import type { Game } from '../src/state.ts'
 import { leverRefusal, queueLever, removeLever } from '../src/work.ts'
 
-/*
- * Product levers (10 "Product levers"): a step raises one kind's share from the
- * other kinds, keeps total demand, and earns what it displaced, so revenue per
- * user stays flat. A Company builds a step through its backlog; a free Sandbox
- * sets it at once.
- */
-
 const live: FeaturePhase = { _tag: 'Live', rollout: 1, adoption: 1, lift: null }
 
-/** Pre-seed with Password login live, so `login` carries its share of the Era. */
 const serving = (): Game => ({ ...preseedGame(), features: { 'password-login': live } })
 
 const withFeature = (game: Game, stage: number, id: FeatureId): Game => ({
@@ -34,7 +26,6 @@ const withFeature = (game: Game, stage: number, id: FeatureId): Game => ({
   features: { ...game.features, [id]: live },
 })
 
-/** The Company's revenue per user, with perfect service: each kind's share times its value. */
 const perUser = (game: Game): number => {
   const mix = mixOf(game)
   return Object.entries(mix).reduce(

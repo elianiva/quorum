@@ -34,8 +34,6 @@ import {
 } from './shared.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* One page per Era, and a hub that runs them left to right as a timeline. */
-
 const entity = (l: Lang, def: EraDef, index: number): Page => {
   const t = l.t.reference.eras
   const eras = l.cat.ERAS
@@ -239,7 +237,6 @@ const arrivals = (l: Lang, index: number): string => {
     .join(' · ')
 }
 
-/** The Eras top to bottom, on one line: each with its question, its numbers, and its traffic. */
 const timeline = (l: Lang, h: H): Html => {
   const t = l.t.reference.eras
   const eras = l.cat.ERAS

@@ -11,9 +11,6 @@ import { REPOSITORY } from '../site.ts'
 import type * as Project from '../submodels/project.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* The repository behind the game and the wiki, as a card: where the code is, and what other
-   people have made of it. */
-
 type H = HtmlBuilder<Message>
 
 const REPO_NAME = 'elianiva/quorum'

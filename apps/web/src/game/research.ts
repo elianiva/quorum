@@ -5,34 +5,24 @@ import { DragAndDrop } from '@foldkit/ui'
 import { LeverKindId, ResearchId } from '@quorum/simulation/state'
 import type { Research } from './model.ts'
 
-/* The Research panel's side-pane focus, folded into the parent with foldChild.
-   Buying and the Study queue change the Game, so the parent runs them. */
-
-/** The Study queue is the drag gesture's only container. */
 export const STUDY_QUEUE = 'study-queue'
 
 export const ResearchMessage = defineMessageUnion({
   Focused: { id: ResearchId },
   Bought: { id: ResearchId },
-  /** The Study queue: drag one, move one, run one now, or take one off. */
   DragChanged: { message: DragAndDrop.Message },
   StudyMoved: { id: ResearchId, direction: Schema.Literals([1, -1]) },
   StudyPrioritized: { id: ResearchId },
   StudyCancelled: { id: ResearchId },
-  /** The pool deck shows every pool, or only the ones in reach. */
   PoolsToggled: {},
-  /** The side pane's width, from dragging or stepping its edge. */
   SheetResized: { width: Schema.Finite },
-  /** One more step on a pool's lever. */
   LeverBuilt: { kind: LeverKindId },
-  /** Take a pool's lever back down one step. */
   LeverRemoved: { kind: LeverKindId },
 })
 export type ResearchMessage = typeof ResearchMessage.Type
 
 export const ResearchOutMessage = defineMessageUnion({
   Study: { id: ResearchId },
-  /** A drop puts a Study at this position in the queue. */
   MovedTo: { id: ResearchId, index: Schema.Finite },
   Move: { id: ResearchId, direction: Schema.Literals([1, -1]) },
   StudyNow: { id: ResearchId },
@@ -42,19 +32,15 @@ export const ResearchOutMessage = defineMessageUnion({
 })
 export type ResearchOutMessage = typeof ResearchOutMessage.Type
 
-/**
- * The side pane's width: never so narrow that a cost row wraps, never so wide
- * that the tree loses the screen. The view also keeps room for the tree.
- */
-export const SHEET_MIN = 280
-export const SHEET_MAX = 640
-export const SHEET_DEFAULT = 320
+export const SHEET_MIN_WIDTH_PX = 280
+export const SHEET_MAX_WIDTH_PX = 640
+export const SHEET_DEFAULT_WIDTH_PX = 320
 
 export const EMPTY_RESEARCH: Research = {
   focus: null,
   drag: DragAndDrop.init({ id: STUDY_QUEUE }),
   poolsOpen: false,
-  sheetWidth: SHEET_DEFAULT,
+  sheetWidth: SHEET_DEFAULT_WIDTH_PX,
 }
 
 type ResearchReturn = Update.ReturnWithOutMessage<Research, ResearchMessage, ResearchOutMessage>
@@ -64,15 +50,9 @@ const out = (research: Research, outMessage: ResearchOutMessage): ResearchReturn
   outMessage,
 })
 
-/**
- * Where a drop leaves the dragged row. The component counts the dragged row where
- * it started, so taking it out of the count first turns its index into a place in
- * the queue. The view reads this too, to preview the drop before it lands.
- */
 export const queueIndex = (fromIndex: number, dropIndex: number): number =>
   dropIndex > fromIndex ? dropIndex - 1 : dropIndex
 
-/** A drop moves a Study only when it lands at a new place in the queue. */
 const dragged = (research: Research, message: DragAndDrop.Message): ResearchReturn => {
   const next = DragAndDrop.update(research.drag, message)
   const drop = next.outMessage
@@ -88,7 +68,6 @@ const dragged = (research: Research, message: DragAndDrop.Message): ResearchRetu
     drop.toContainerId !== STUDY_QUEUE
   )
     return moved
-  // The component's index counts the dragged item where it started; take it out first.
   const index = queueIndex(drop.fromIndex, drop.toIndex)
   return index === drop.fromIndex
     ? moved
@@ -115,7 +94,7 @@ export const updateResearch = (research: Research, message: ResearchMessage): Re
     SheetResized: ({ width }) => ({
       model: {
         ...research,
-        sheetWidth: Math.round(Math.max(SHEET_MIN, Math.min(SHEET_MAX, width))),
+        sheetWidth: Math.round(Math.max(SHEET_MIN_WIDTH_PX, Math.min(SHEET_MAX_WIDTH_PX, width))),
       },
     }),
   })

@@ -59,8 +59,8 @@ import {
 import { DRILL_RPO } from '@quorum/simulation/catalog'
 import { PRE_IPO_STAGE, brokenRestore, checklistOf, residencyMet } from '@quorum/simulation/ipo'
 import {
-  GUIDANCE_GROWTH,
-  GUIDANCE_MARGIN,
+  GUIDANCE_GROWTH_PERCENT,
+  GUIDANCE_MARGIN_PERCENT,
   guidanceOpen,
   quarterGrowth,
 } from '@quorum/simulation/quarters'
@@ -105,7 +105,6 @@ import {
 } from '@quorum/ui/game/bits'
 import { shell } from './panels.ts'
 
-/** A phone shows Apdex before Errors and Latency, which scroll off the edge. */
 const CHIP_ORDER: Record<string, string> = {
   Errors: css({ _compact: { order: 2 } }),
   p99: css({ _compact: { order: 3 } }),
@@ -114,7 +113,6 @@ const CHIP_ORDER: Record<string, string> = {
   SLA: css({ _compact: { order: 2 } }),
 }
 
-/** One stat: a glyph and its name, then the value and a short note. */
 const stat = (
   name: string,
   glyph: IconNode,
@@ -187,7 +185,6 @@ const stat = (
         ],
         [name],
       ),
-      // With no note, the tone colours the value itself.
       h.span(
         [
           h.Class(
@@ -237,7 +234,6 @@ const stat = (
     ],
   )
 
-/** What Insight is, how it is earned and spent, and how much a pool keeps. */
 const insightHelpOf = (t: Messages): ReadonlyArray<readonly [string, string]> => [
   [t.hud.pools, t.hud.insightPaysForResearchEachRequest],
   [t.hud.earn, t.hud.analyticsSamplesTheNodesItLinks(FAILURE_YIELD)],
@@ -245,7 +241,6 @@ const insightHelpOf = (t: Messages): ReadonlyArray<readonly [string, string]> =>
   [t.hud.keep, t.hud.aPoolHoldsAtMostIts],
 ]
 
-/** What Insight is, in a dialog to the right of the card; below it on a phone. */
 const insightHelp = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
@@ -379,7 +374,6 @@ const insightHelp = (h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** One pool: its icon and name, then what it holds and what it earns. */
 const poolRow = (
   pool: InsightPool,
   held: number,
@@ -489,11 +483,6 @@ const poolRow = (
   )
 }
 
-/**
- * Insight, in its own card: the running Study and its progress, then a row for
- * every pool the Design holds or earns. The (?) opens what the pools are and
- * how they fill, in the card.
- */
 const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -737,7 +726,6 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
 
 const percent = (share: number): string => `${(Math.floor(share * 10_000) / 100).toFixed(2)}%`
 
-/** Availability over the week against the Era's SLO; the error budget left with SLO dashboards. */
 const slo = (game: Board['game'], h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -761,7 +749,6 @@ const slo = (game: Board['game'], h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** What the toolbar takes from the top row of a phone: the funding row leaves it free. */
 const TOOLBAR_ROOM = css({
   _compact: { minHeight: '9', paddingRight: 'var(--toolbar-w)' },
 })
@@ -912,7 +899,6 @@ const funding = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** What the Team builds now: the top of the backlog, and how fast. Opens the Team panel. */
 const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -920,7 +906,6 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
   const item = game.backlog[0]
   const rate = devHoursRate(game, ledger) * 60
   const ready = awaitingFeatures(game).length
-  // A patch ticket has a deadline: its clock replaces the pace, and turns red when it is overdue.
   const late = item ? overdueBy(game, item) : 0
   const due = item?.due === undefined ? null : item.due - game.time
   return h.button(
@@ -1060,7 +1045,6 @@ const building = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =
   )
 }
 
-/** One figure in the phone's status row: an icon and its value, tappable when it has more to show. */
 const phoneFigure = (
   label: string,
   glyph: IconNode,
@@ -1121,10 +1105,6 @@ const phoneFigure = (
     ],
   )
 
-/**
- * The phone's status card: the Era and its Milestone, then the three figures that decide the next
- * move. Everything else the desktop HUD shows waits in Vitals, one tap away.
- */
 const phoneHud = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -1286,7 +1266,6 @@ const phoneHud = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** One line of Vitals: a name, its figure and a note, with the whole row as the tap target. */
 const vitalRow = (
   name: string,
   glyph: IconNode,
@@ -1385,10 +1364,6 @@ const vitalRow = (
     ],
   )
 
-/**
- * Everything the desktop HUD keeps in view, on one scrolling phone page: the Era, every figure,
- * the Insight pools, and the Pre-IPO or quarter work. The board stays the first screen.
- */
 export const vitalsPanel = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -1627,7 +1602,6 @@ export const vitalsPanel = (model: Model, ledger: Ledger, h: HtmlBuilder<Message
   )
 }
 
-/** The raise offer, as the phone action bar's primary button, when one is on the table. */
 export const phoneOffer = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -1688,9 +1662,7 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
   const percentiles = has(game, 'percentiles')
   const runway = runwayOf(game, ledger)
   const short = game.cash <= 0
-  // The Bridge state is a union, so only an open offer is short of Cash and worth naming here.
   const bridging = game.bridge._tag === 'Offered'
-  // The SLA pays its credits on top of Burn: its own HUD row names them beside the runway (11).
   const credit = slaCreditsOf(game, ledger)
   const cashNote = bridging
     ? t.hud.bridgeOffered
@@ -1802,8 +1774,6 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
               )
             : h.empty,
           budgeted(game) ? slo(game, h) : h.empty,
-          // The SLA pays 10% of subscriptions back while the week misses: its own row names
-          // the money, so the player sees why Cash falls faster than the Burn beside it (11).
           credit > 0
             ? stat(
                 'SLA',
@@ -1830,7 +1800,6 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
       shown(model, 'team') ? building(model, ledger, h) : h.empty,
     ],
   )
-  // On a phone the wrapper dissolves, so both cards stack with the rest of the top.
   return h.div(
     [
       h.Class(
@@ -1849,7 +1818,6 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
         }),
       ),
       h.Style({
-        // French, Spanish and Japanese labels need more columns than English does.
         '--hud-label-width':
           model.prefs.locale === 'fr' || model.prefs.locale === 'ja' || model.prefs.locale === 'es'
             ? 'calc(64px*var(--type-scale))'
@@ -1877,7 +1845,6 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
   )
 }
 
-/** One line of the IPO checklist or the quarter: a mark, a name and its figure. */
 const line = (name: string, value: string, tone: Tone, h: HtmlBuilder<Message>, mark?: boolean) =>
   h.div(
     [
@@ -1958,7 +1925,6 @@ const checklistLabel = (t: Messages, id: ChecklistItem['id']): string =>
             ? t.hud.checkResidency
             : t.hud.checkRule40
 
-/** What an item's figure says: the Simulation's English words told again from the same state. */
 const checklistValue = (t: Messages, game: Board['game'], item: ChecklistItem): string => {
   const drill = game.drill
   if (item.id === 'soc2')
@@ -1979,7 +1945,6 @@ const checklistValue = (t: Messages, game: Board['game'], item: ChecklistItem): 
     : t.hud.checkRto(Math.round(drillRto(drill) ?? 0))
 }
 
-/** The IPO checklist (10 "Era 6"): every item at once opens the IPO. */
 const checklist = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -2058,7 +2023,6 @@ const checklist = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html 
 
 const levelsOf = (t: Messages) => [t.hud.low, t.hud.mid, t.hud.high] as const
 
-/** A guidance picker: three levels, open on a quarter's first day. */
 const guidance = (
   label: string,
   values: ReadonlyArray<number>,
@@ -2135,7 +2099,6 @@ const guidance = (
   )
 }
 
-/** The Public quarter (10 "Era 7"): days left, guidance, and the market's verdict. */
 const quarterly = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -2169,7 +2132,7 @@ const quarterly = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html 
       line(t.hud.quarter(quarter.index), t.hud.dayOf7(day), 'plain', h),
       guidance(
         t.hud.growth,
-        GUIDANCE_GROWTH,
+        GUIDANCE_GROWTH_PERCENT,
         quarter.growth,
         (level) => Message.GuidanceChosen({ growth: level, margin: quarter.margin }),
         open,
@@ -2177,7 +2140,7 @@ const quarterly = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html 
       ),
       guidance(
         t.hud.margin,
-        GUIDANCE_MARGIN,
+        GUIDANCE_MARGIN_PERCENT,
         quarter.margin,
         (level) => Message.GuidanceChosen({ growth: quarter.growth, margin: level }),
         open,
@@ -2186,8 +2149,8 @@ const quarterly = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html 
       line(
         t.hud.soFar,
         `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}% · ${marginOf(ledger).toFixed(0)}%`,
-        growth >= (GUIDANCE_GROWTH[quarter.growth] ?? 0) &&
-          marginOf(ledger) >= (GUIDANCE_MARGIN[quarter.margin] ?? 0)
+        growth >= (GUIDANCE_GROWTH_PERCENT[quarter.growth] ?? 0) &&
+          marginOf(ledger) >= (GUIDANCE_MARGIN_PERCENT[quarter.margin] ?? 0)
           ? 'ok'
           : 'warn',
         h,
@@ -2256,7 +2219,6 @@ const toolButton = (
     ],
   )
 
-/** Undo or redo: dimmed when its stack is empty. */
 const historyButton = (
   label: string,
   glyph: IconNode,
@@ -2305,7 +2267,6 @@ const historyButton = (
     ],
   )
 
-/** Controls a phone reaches through More instead. */
 const desktopOnly = (children: ReadonlyArray<Html>, h: HtmlBuilder<Message>): Html =>
   h.div(
     [
@@ -2339,7 +2300,6 @@ const divider = (h: HtmlBuilder<Message>): Html =>
     [],
   )
 
-/** The Exit button, shown while an Exit is on the table; its badge is the best Legacy. */
 const exitButton = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -2470,7 +2430,6 @@ const moreButton = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
   const legacy = exitLegacy(model)
-  // A dot when something inside asks for attention: Legacy on offer, or a cue on a hidden control.
   const calling = (legacy ?? 0) > 0 || glowing(model, 'undo')
   return h.submodel({
     slotId: 'more-menu',
@@ -2999,7 +2958,6 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** A quiet way out of screenshot mode: it sits in the corner and steps aside on hover. */
 export const screenshotExit = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.button(
@@ -3065,7 +3023,6 @@ const pill = css({
   _compact: { maxWidth: 'none' },
 })
 
-/** Settling while the Design settles, then what the change did, with Undo. */
 const undoButton = (danger: boolean, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return button(
@@ -3102,7 +3059,6 @@ const undoButton = (danger: boolean, h: HtmlBuilder<Message>): Html => {
 const signed = (value: number, digits: number): string =>
   `${value >= 0 ? '+' : '−'}${Math.abs(value).toFixed(digits)}`
 
-/** What a change did, in words: "+$1.40/s (+18%) · p99 −120 ms · errors −2.1%". */
 export const deltaText = (t: Messages, delta: Delta, percentiles: boolean): string => {
   const revenue = delta.after.revenue - delta.before.revenue
   const share = delta.before.revenue > 0 ? (revenue / delta.before.revenue) * 100 : 0
@@ -3119,8 +3075,6 @@ export const deltaText = (t: Messages, delta: Delta, percentiles: boolean): stri
     .join(' · ')
 }
 
-/** One pill from the first change to the delta: Settling morphs into the result,
- *  and the pill leaves when the delta expires. */
 export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: string): Html => {
   const t = copy(h)
 
@@ -3248,10 +3202,6 @@ export const changeBar = (model: Model, h: HtmlBuilder<Message>, className: stri
   )
 }
 
-/**
- * One tab per region from Series C (05 "Zones and regions"). Open regions are
- * tabs; with Multiple regions, each closed one offers to open, at its price.
- */
 export const regionTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 

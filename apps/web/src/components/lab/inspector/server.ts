@@ -27,7 +27,6 @@ const fanout = (node: GameNode, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** A Java App Server's collector, or a Go App Server's GOGC. */
 const collector = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
 
@@ -70,7 +69,6 @@ const collector = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readonl
   return []
 }
 
-/** Load shedding and read-your-writes routing on an App Server. */
 const routing = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
 

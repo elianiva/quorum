@@ -12,7 +12,6 @@ import {
 
 import { has } from '../lookups.ts'
 
-/** Sets a Load Balancer's variant. L4 needs its research (10 "Track: Infrastructure"). */
 export const setLbVariant = (game: Game, id: string, variant: LbVariant): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'lb') return notAllowed('Only a Load Balancer has a variant.')
@@ -21,8 +20,7 @@ export const setLbVariant = (game: Game, id: string, variant: LbVariant): Action
       return no(
         Refusal.Locked({ what: LB_VARIANTS[variant].name, research: RESEARCH[research].name }),
       )
-    // An L7 Load Balancer reads HTTP: it cannot keep the Database queries an L4 passes on.
-    const queries = game.links.some((link) => {
+    const linksDataKinds = game.links.some((link) => {
       const other = game.nodes.find(
         (entry) => entry.id === (link.from === id ? link.to : link.from),
       )
@@ -32,12 +30,11 @@ export const setLbVariant = (game: Game, id: string, variant: LbVariant): Action
         DATA_KINDS.some((kind) => COMPONENTS[other.type].accepts.includes(kind))
       )
     })
-    if (variant === 'l7' && queries)
+    if (variant === 'l7' && linksDataKinds)
       return notAllowed('Cut its links to the Database and Read Replicas first: an L7 reads HTTP.')
     return ok(node.variant === variant ? game : patch(game, id, { variant }))
   })
 
-/** Chooses how a Load Balancer splits traffic. Least connections and two choices need research. */
 export const setPolicy = (game: Game, id: string, policy: LbPolicy): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'lb') return notAllowed('Only a Load Balancer has a policy.')
@@ -49,10 +46,6 @@ export const setPolicy = (game: Game, id: string, policy: LbPolicy): Action =>
     return ok(patch(game, id, { policy }))
   })
 
-/**
- * Turns sticky sessions on or off on a Load Balancer (05 "Load Balancer"): a share of its users stay
- * on the target they first reached.
- */
 export const setSticky = (game: Game, id: string, sticky: boolean): Action =>
   withNode(game, id, (node) =>
     node.type === 'lb'
@@ -60,10 +53,6 @@ export const setSticky = (game: Game, id: string, sticky: boolean): Action =>
       : notAllowed('Only a Load Balancer keeps users on a target.'),
   )
 
-/**
- * Turns slow start on or off on a Load Balancer (11 "JVM warmup under load"): a new copy takes
- * traffic gradually, so a cold Java copy never answers at its cold speed.
- */
 export const setSlowStart = (game: Game, id: string, slowStart: boolean): Action =>
   withNode(game, id, (node) =>
     node.type === 'lb'
@@ -71,7 +60,6 @@ export const setSlowStart = (game: Game, id: string, slowStart: boolean): Action
       : notAllowed('Only a Load Balancer ramps a new copy up.'),
   )
 
-/** Sets a Load Balancer's health checks. Intervals other than 10 s and deep checks need Health checks. */
 export const setHealthCheck = (
   game: Game,
   id: string,

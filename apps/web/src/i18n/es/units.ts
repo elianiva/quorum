@@ -1,13 +1,11 @@
 import type { Messages } from '../messages.ts'
 
-/** Unidades y las frases que llevan un valor medido. Un valor es un número o un texto ya formateado. */
 export const units: Messages['units'] = {
   ms: (value) => `${value} ms`,
   s: (value) => `${value} s`,
   min: (value) => `${value} min`,
   h: (value) => `${value} h`,
   d: (value) => `${value} d`,
-  /** Las formas compactas de un intervalo: 30m, 6h, 7d. */
   minShort: (value) => `${value}m`,
   hShort: (value) => `${value}h`,
   dShort: (value) => `${value}d`,

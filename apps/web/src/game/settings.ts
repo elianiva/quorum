@@ -6,10 +6,6 @@ import { Message } from './message.ts'
 import type { Model, Prefs, SettingsSection } from './model.ts'
 import { PrefsMessage } from './prefs.ts'
 
-/**
- * One Settings row. The title screen's page and the board's panel render the same
- * list.
- */
 export type Setting =
   | Readonly<{ kind: 'volume'; label: string; value: number }>
   | Readonly<{ kind: 'toggle'; id: string; label: string; isOn: boolean; message: Message }>
@@ -22,11 +18,6 @@ export type SettingSection = Readonly<{
   rows: ReadonlyArray<Setting>
 }>
 
-/**
- * Settings grouped once, so the title screen and the board cannot drift apart. Each
- * surface renders the rows with its own control: a booth row on the title, a switch
- * in the panel.
- */
 export const settingsSections = (model: Model, t: Messages): ReadonlyArray<SettingSection> => {
   const prefs: Prefs = model.prefs
   const changed = (message: PrefsMessage): Message => Message.PrefsChanged({ message })

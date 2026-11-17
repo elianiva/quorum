@@ -8,9 +8,7 @@ export const ws: ComponentView = {
   icon: RadioTower,
   layout: { rows: 4, inRow: 0, outRow: null, footer: true },
   rows: ({ game, node, own, latency }) => {
-    // A Hub's capacity is connections, not requests: a message holds one for the hold time.
     const runtime = RUNTIMES[node.runtime]
-    // Distributed Erlang gives a BEAM Hub the cluster backbone itself (06 "Elixir").
     const builtIn = distributedErlang(game, node)
     const max = hubConnections(node, builtIn)
     const held = own.inbound * RT_HOLD_SECONDS

@@ -1,7 +1,5 @@
 import type { Messages } from '../messages.ts'
 
-/* The chrome of the live views behind each Markdown directive. */
-
 export const islands: Messages['islands'] = {
   note: { tip: 'ヒント', warn: '注意', real: 'どこまで本物か' },
   options: { control: '設定項目', settings: '設定値', when: '表示条件' },

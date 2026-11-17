@@ -1,5 +1,3 @@
-/* Request kinds and backend kinds: what users send and what Nodes send downstream. */
-
 export const REQUEST_KINDS = [
   'page',
   'read',
@@ -17,12 +15,10 @@ export const REQUEST_KINDS = [
   'feed',
   'hook',
   'push',
-  // Ad tech's bid request (13 "Ventures"): cheap, enormous, and gone in 100 ms.
   'bid',
 ] as const
 export type RequestKind = (typeof REQUEST_KINDS)[number]
 
-/** What a Node sends downstream to the data tier or a Managed Component. */
 export const BACKEND_KINDS = [
   'q-read',
   'q-write',
@@ -43,7 +39,6 @@ export const BACKEND_KINDS = [
 ] as const
 export type BackendKind = (typeof BACKEND_KINDS)[number]
 
-/** What a Database takes: the queries, files and key writes a pooler or a balancer passes on to it. */
 export const DATA_KINDS = [
   'q-read',
   'q-write',
@@ -64,7 +59,6 @@ export const isBackendKind = (kind: Kind): kind is BackendKind =>
 export type KindInfo = Readonly<{
   label: string
   value: number
-  /** Particle colour on the board, as a 0xRRGGBB number. */
   color: number
 }>
 
@@ -97,7 +91,6 @@ export const KINDS: Record<Kind, KindInfo> = {
   feed: { label: 'Feed', value: 0.3, color: 0xc9a227 },
   hook: { label: 'Webhook', value: 0.4, color: 0x6d8f3a },
   push: { label: 'Notify', value: 0.05, color: 0xd96b9a },
-  // The design's number for the bid kind is $0.001 (13 "Ventures"); the colour is proposed.
   bid: { label: 'Bid request', value: 0.001, color: 0x8e7cc3 },
   notify: { label: 'Push message', value: 0, color: 0xd96b9a },
   callout: { label: 'Customer call', value: 0, color: 0x6d8f3a },
@@ -105,14 +98,9 @@ export const KINDS: Record<Kind, KindInfo> = {
   change: { label: 'Change', value: 0, color: 0x8a6f4d },
 }
 
-/**
- * Insight pools (12 "Earning Insight"): one per request kind, and Failure. A
- * sampled request gives Insight of its own request kind.
- */
 export const INSIGHT_POOLS = [...REQUEST_KINDS, 'failure'] as const
 export type InsightPool = (typeof INSIGHT_POOLS)[number]
 
-/** Each pool's name and colour: a request kind's are its particle's; Failure's no kind uses. */
 export const POOLS: Record<InsightPool, Readonly<{ label: string; color: number }>> = {
   ...(Object.fromEntries(
     REQUEST_KINDS.map((kind) => [kind, { label: KINDS[kind].label, color: KINDS[kind].color }]),
@@ -121,39 +109,21 @@ export const POOLS: Record<InsightPool, Readonly<{ label: string; color: number 
 }
 
 export type RequestProfile = Readonly<{
-  /** App CPU in reference ms, on a runtime with speed 1.0 (Go). */
   cpu: number
-  /** Native code (bcrypt): the runtime speed does not divide it. */
   native: boolean
   apdex: number
-  /** Synchronous backend calls per request, by backend kind. */
   calls: Readonly<Partial<Record<Exclude<BackendKind, 'auth' | 'task'>, number>>>
-  /**
-   * Backend calls the async part makes: a Worker sends them once the kind goes
-   * through a Queue; without one, the App Server makes them inline.
-   */
   asyncCalls: Readonly<
     Partial<Record<'q-read' | 'q-write' | 'blob-put' | 'notify' | 'callout', number>>
   >
-  /** An ORM turns this kind's reads into N+1 queries. */
   orm: boolean
-  /** KB the response sends over the network. */
   payloadKB: number
-  /** KB the response sends when the work went to a Worker: an acknowledgement. */
   asyncKB: number
-  /** Streamed: the user waits only for the first segment, not the whole response. */
   stream: boolean
   compressible: boolean
-  /** KB the request sends up, over the user's uplink. */
   inKB: number
-  /** Share of the app CPU an App Server can hand to a Worker through a Queue. */
   offload: number
-  /**
-   * Apdex target T, in ms, for the async part to finish once it went through a
-   * Queue: the user waits for the result, not only the acknowledgement.
-   */
   completion?: number
-  /** Counts toward Apdex, errors, revenue and growth. Bots do not. */
   scored: boolean
 }>
 
@@ -233,7 +203,6 @@ export const PROFILES: Record<RequestKind, RequestProfile> = {
     offload: 0,
     scored: true,
   },
-  // Image resizing runs in a native library, so the runtime's speed does not divide it.
   upload: {
     cpu: 120,
     native: true,
@@ -265,7 +234,6 @@ export const PROFILES: Record<RequestKind, RequestProfile> = {
     offload: 0,
     scored: false,
   },
-  // Video streams: the player starts after the first segment, but every byte crosses the network.
   media: {
     cpu: 1,
     native: false,
@@ -281,7 +249,6 @@ export const PROFILES: Record<RequestKind, RequestProfile> = {
     offload: 0,
     scored: true,
   },
-  // One message on a connection that stays open (06 "Realtime connections").
   rt: {
     cpu: 0.3,
     native: false,
@@ -301,7 +268,6 @@ export const PROFILES: Record<RequestKind, RequestProfile> = {
     cpu: 5,
     native: false,
     apdex: 2_000,
-    // It reads the cart back before it charges: on a lagging replica, the cart can be stale.
     calls: { 'q-read': 1, 'q-tx': 1, charge: 1 },
     asyncCalls: {},
     orm: false,
@@ -313,8 +279,6 @@ export const PROFILES: Record<RequestKind, RequestProfile> = {
     offload: 0,
     scored: true,
   },
-  // A data export: seconds of CPU, 50 reads and a 10 MB file. Through a Queue the user gets an
-  // acknowledgement and a Worker does the rest; inline, the request holds a slot for all of it.
   job: {
     cpu: 400,
     native: false,
@@ -331,7 +295,6 @@ export const PROFILES: Record<RequestKind, RequestProfile> = {
     completion: 60_000,
     scored: true,
   },
-  // A dashboard: one scan of a whole table, on a Warehouse or, badly, on the primary.
   report: {
     cpu: 20,
     native: false,
@@ -347,7 +310,6 @@ export const PROFILES: Record<RequestKind, RequestProfile> = {
     offload: 0,
     scored: true,
   },
-  // A prompt: the GPU or the LLM API does the work; tokens stream back as they come.
   ai: {
     cpu: 5,
     native: false,
@@ -362,7 +324,7 @@ export const PROFILES: Record<RequestKind, RequestProfile> = {
     inKB: 0,
     offload: 0,
     scored: true,
-  }, // A timeline: pull reads 20 follows' posts, push reads one precomputed timeline (07 "Fan-out").
+  },
   feed: {
     cpu: 6,
     native: false,
@@ -378,7 +340,6 @@ export const PROFILES: Record<RequestKind, RequestProfile> = {
     offload: 0,
     scored: true,
   },
-  // A webhook to a customer's server: slow and unreliable. Through a Queue a Worker waits on it.
   hook: {
     cpu: 2,
     native: false,
@@ -394,7 +355,6 @@ export const PROFILES: Record<RequestKind, RequestProfile> = {
     offload: 0.9,
     scored: true,
   },
-  // A notification: one message to the Push and Email Provider, best sent from a Worker.
   push: {
     cpu: 0.5,
     native: false,
@@ -410,8 +370,6 @@ export const PROFILES: Record<RequestKind, RequestProfile> = {
     offload: 0.9,
     scored: true,
   },
-  // A bid request (13 "Ventures", Ad tech): the design gives its value, its 100 ms target and
-  // its volume; the rest is  It reads the campaign before it answers, and nothing else.
   bid: {
     cpu: 0.5,
     native: false,
@@ -429,7 +387,6 @@ export const PROFILES: Record<RequestKind, RequestProfile> = {
   },
 }
 
-/** CPU ms that one query costs a database. Stylized, so the database matters at Pre-seed volume. */
 export const QUERY_CPU: Readonly<{
   'q-read': number
   'q-write': number
@@ -441,46 +398,25 @@ export const QUERY_CPU: Readonly<{
 }> = {
   'q-read': 8,
   'q-write': 25,
-  // Postgres full-text search: fine at low volume, ten reads' worth of CPU each (10 "Seed").
   'q-search': 80,
-  // A 2 MB object stored as a row.
   'blob-put': 60,
-  // A checkout transaction: several statements under locks.
   'q-tx': 40,
-  // A file read back out of a row.
   'blob-get': 30,
-  // A report's scan of a whole table on the primary: a hundred ms, and it evicts the buffer
-  // cache, so every other read on that Database slows too (07 "Data Warehouse").
   'q-scan': 100,
 }
 
-/** KB of a streamed response the user waits for before it starts playing.  */
 export const STREAM_KB = 500
-/**
- * Seconds a realtime connection stays open for each message it carries, so open
- * connections are rt per second × this.
- */
 export const RT_HOLD_SECONDS = 300
 
-/** A user's downlink, for the time a response takes to arrive. Stylized. */
 export const USER_MBPS = 20
-/** A user's uplink, for the time an upload takes to send. Stylized: 20 Mbps, so 2 MB takes 0.8 s. */
 export const USER_UP_MBPS = 20
-/** Gzip leaves this share of a compressible response. */
 export const GZIP_RATIO = 0.3
-/** Gzip multiplies the app CPU of a compressible request. */
 export const GZIP_CPU = 1.1
 
-/** Login CPU, in reference ms, when an Auth Provider does the hashing. */
 export const LOGIN_DELEGATED_CPU = 2
 
-/** A customer's webhook endpoint: slow and unreliable (04 "Request kinds").  */
 export const CALLOUT_MS = 800
 export const CALLOUT_FAILURE = 0.02
-/**
- * Fan-out on write (07 "Fan-out"): a post becomes one timeline write per follower, and a
- * feed reads one timeline. Hybrid pulls the celebrities' posts. Followers are proposed.
- */
 export const FOLLOWERS = 20
 export const HYBRID_WRITES = 0.5
 export const HYBRID_READS = 2

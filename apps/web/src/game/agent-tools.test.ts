@@ -14,7 +14,6 @@ const company: Model = {
   board: { ...initialModel().board, game: preseedGame() },
 }
 
-/** Runs one tool over the snapshot the browser uploads for this Model. */
 const readTool = (model: Model, name: string, input: Record<string, unknown> = {}): string =>
   readSnapshot(snapshotOfModel(model), name, input)
 
@@ -38,7 +37,6 @@ describe('what an agent may read', () => {
     const copied = update(challenge, Message.StateCopied())
     expect((copied.commands ?? []).map((command) => command.name)).not.toContain('CopyText')
     expect(copied.model.toast?.message).toContain('Challenges are scored')
-    // The same press on a Company copies its state.
     expect(
       update(company, Message.StateCopied()).commands?.map((command) => command.name),
     ).toContain('CopyText')

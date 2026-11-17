@@ -9,8 +9,6 @@ import { langOf } from '../i18n/lang.ts'
 import type { Message, Model } from '../main.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* A guided Sandbox placed in a page. */
-
 export const sandboxView = (
   _model: Model,
   id: SandboxId,

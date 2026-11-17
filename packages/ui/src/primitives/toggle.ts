@@ -7,11 +7,6 @@ import type { Reflect } from 'foldkit/submodel'
 import { defineView } from 'foldkit/submodel'
 import { modifyFields } from 'foldkit/struct'
 
-// Toggle is a two-state button (pressed / not) marked with `aria-pressed` and
-// `data-state`. It owns its pressed state as a Submodel: embed it with
-// `h.submodel` and listen for `ChangedPressed` if your app needs to react.
-// Conform an externally-driven pressed state (URL, storage) with `reflect`.
-
 export const toggleVariantKeys = ['default', 'outline'] as const
 export type ToggleVariant = (typeof toggleVariantKeys)[number]
 
@@ -53,8 +48,6 @@ export const toggleSizes: Record<ToggleSize, string> = {
   }),
 }
 
-/** Upstream cva base string. The disabled: variants are inert under foldkit
- *  (this view emits native disabled; twins kept for parity). */
 export const toggleBase = css({
   _hover: {
     color: 'foreground',
@@ -98,17 +91,12 @@ export const toggleBase = css({
   '& svg': { pointerEvents: 'none', flexShrink: '0' },
 })
 
-// MODEL
-
 export const Model = S.Struct({
   id: S.String,
   isPressed: S.Boolean,
 })
 export type Model = typeof Model.Type
 
-// MESSAGES
-
-/** The user clicked the toggle. Flips the pressed state. */
 export const Message = defineMessageUnion({
   Toggled: {},
 })
@@ -118,8 +106,6 @@ export const OutMessage = defineMessageUnion({
   ChangedPressed: { isPressed: S.Boolean },
 })
 export type OutMessage = typeof OutMessage.Type
-
-// INIT / UPDATE
 
 export type InitConfig = Readonly<{
   id: string
@@ -131,8 +117,6 @@ export const init = (config: InitConfig): Model => ({
   isPressed: config.isPressed ?? false,
 })
 
-/** Conforms an externally-driven pressed state onto the model without
- *  emitting an OutMessage (the world is the source of truth). */
 export const reflect: Reflect<Model, boolean> = Function.dual(
   2,
   (model: Model, isPressed: boolean): Model => modifyFields(model, { isPressed: () => isPressed }),
@@ -140,8 +124,6 @@ export const reflect: Reflect<Model, boolean> = Function.dual(
 
 type UpdateReturn = Update.ReturnWithOutMessage<Model, Message, OutMessage>
 
-/** Processes a toggle message and returns the next model, commands, and an
- *  optional out-message for the parent. */
 export const update = (model: Model, message: Message): UpdateReturn => {
   return Match.value(message).pipe(
     Match.tagsExhaustive({
@@ -156,19 +138,15 @@ export const update = (model: Model, message: Message): UpdateReturn => {
   )
 }
 
-// VIEW
-
 export type ViewInputs = Readonly<{
   label: Html | string
   variant?: ToggleVariant
   size?: ToggleSize
-  /** Marks the toggle unavailable with a native disabled attribute. */
   isDisabled?: boolean
   ariaLabel?: string
   className?: string
 }>
 
-/** Renders the two-state toggle button. Embedded via `h.submodel`. */
 export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h) =>
   h.button(
     [

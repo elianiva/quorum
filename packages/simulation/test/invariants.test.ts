@@ -19,11 +19,6 @@ import { solveFlow } from '../src/solve.ts'
 import { step } from '../src/step.ts'
 import type { Game } from '../src/state.ts'
 
-/*
- * Random plays of the real Simulation, checked against the rules in verification/. A play is a
- * list of moves: let time pass, spend Cash, answer with a ReplayAction, or accept the bridge.
- */
-
 type Move =
   | { kind: 'wait'; seconds: number }
   | { kind: 'shortfall'; days: number }
@@ -41,7 +36,6 @@ const move: fc.Arbitrary<Move> = fc.oneof(
   fc.record({ kind: fc.constant('shortfall' as const), days: fc.constantFrom(0.5, 1.5, 2.5, 3.5) }),
   fc.record({
     kind: fc.constant('act' as const),
-    // Half the actions aim at the three stores a resize rebalances.
     target: fc.oneof(fc.constantFrom(5, 6, 7), fc.nat(20)),
     action: fc.constantFrom(
       'Restart',
@@ -59,7 +53,6 @@ const move: fc.Arbitrary<Move> = fc.oneof(
   fc.record({ kind: fc.constant('bridge' as const) }),
 )
 
-/** A Company with one Node of each kind that a resize rebalances, so every writer can reach them. */
 const start = (): Game => {
   const base = preseedGame()
   return {
@@ -115,13 +108,10 @@ describe('random plays', () => {
           for (const figure of [game.cash, game.users, game.equity, game.time])
             expect(Number.isFinite(figure)).toBe(true)
           expect(game.equity).toBeGreaterThan(0)
-          // Only a round or the bridge changes Equity, and each one dilutes it.
           expect(game.equity).toBeLessThanOrEqual(before.equity)
-          // The bridge only moves forward, so a Company gets one offer and one grant.
           expect(BRIDGE_ORDER[game.bridge._tag]).toBeGreaterThanOrEqual(
             BRIDGE_ORDER[before.bridge._tag],
           )
-          // A shut Node is stopped: it serves nothing and bills nothing.
           for (const entry of game.nodes)
             if (entry.service._tag === 'Shut') expect(entry.life._tag).toBe('Stopped')
         })
@@ -165,7 +155,6 @@ describe('rules found by the models in verification/', () => {
     if (Result.isFailure(set)) throw new Error('guidance refused')
     game = set.success
     expect(guidanceOpen(game)).toBe(false)
-    // Quarter 2 opens guidance again, also when quarter 1 was never set.
     const later = { ...game, time: game.time + QUARTER_SECONDS }
     const next = { ...later, quarter: advanceQuarter(later, solveFlow(later)) }
     expect(next.quarter?.index).toBe(2)

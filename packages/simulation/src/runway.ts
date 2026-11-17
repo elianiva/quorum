@@ -8,37 +8,29 @@ import { burnOf } from './lookups.ts'
 import { solveFlow } from './solve.ts'
 import type { Game, GameNode } from './state.ts'
 
-/** Calendar days of Burn at which the investors offer the bridge. */
-export const BRIDGE_AT_DAYS = 1
-/** Calendar days of Burn the bridge's grant covers. */
-export const BRIDGE_DAYS = 3
+export const BRIDGE_OFFER_AT_BURN_DAYS = 1
+export const BRIDGE_GRANT_BURN_DAYS = 3
 export const BRIDGE_DILUTION = 0.08
-/** Calendar days of Burn at which an unanswered bridge means Nodes shut down. */
-export const SHUTDOWN_AT_DAYS = 3
+export const SHUTDOWN_AT_BURN_DAYS = 3
 
-/** Calendar days in the month a runway figure reads in (09 and 15 say 30 days). */
 export const RUNWAY_MONTH = 30 * CALENDAR_DAY
 
-/** Runway in sim seconds: Cash divided by net Burn, or null while revenue covers the bill. */
 export const runwayOf = (game: Game, ledger: Ledger): number | null => {
   const net = ledger.burn - ledger.revenue
   return net > 0 ? Math.max(0, game.cash) / net : null
 }
 
-/** This Step's bridge offer's grant, in Cash. */
-const bridgeGrantOf = (burn: number): number => burn * CALENDAR_DAY * BRIDGE_DAYS
+const bridgeGrantOf = (burn: number): number => burn * CALENDAR_DAY * BRIDGE_GRANT_BURN_DAYS
 
-/**
- * One Step's worth of the runway rule. The thresholds read the gross Burn, which
- * 09 calls Burn, and the shutdown reads the net Burn, which 09 calls net Burn.
- */
 export const advanceRunway = (game: Game, ledger: Ledger): Game => {
   if (game.sandbox) return game
   const burn = ledger.burn
   if (burn <= 0) return game
   let next = game
-  // At −1 calendar day of Burn the investors offer a bridge, once per Company.
-  if (next.bridge._tag === 'None' && next.cash <= -burn * CALENDAR_DAY * BRIDGE_AT_DAYS) {
+  if (
+    next.bridge._tag === 'None' &&
+    next.cash <= -burn * CALENDAR_DAY * BRIDGE_OFFER_AT_BURN_DAYS
+  ) {
     next = {
       ...next,
       bridge: bridgeStep(next.bridge, {
@@ -48,14 +40,11 @@ export const advanceRunway = (game: Game, ledger: Ledger): Game => {
       }),
     }
   }
-  // Left unanswered, at −3 calendar days of Burn the Nodes shut down to stop the bleeding. An offer
-  // made this Step waits for the next one, so the player always has a Step to answer it.
-  if (game.bridge._tag === 'Offered' && next.cash <= -burn * CALENDAR_DAY * SHUTDOWN_AT_DAYS)
+  if (game.bridge._tag === 'Offered' && next.cash <= -burn * CALENDAR_DAY * SHUTDOWN_AT_BURN_DAYS)
     return { ...shutdown(next), bridge: bridgeStep(next.bridge, { _tag: 'Expired' }) }
   return next
 }
 
-/** Takes the bridge: the grant goes into Cash, and the dilution comes out of Equity. */
 export const acceptBridge = (game: Game): Action => {
   const bridge = game.bridge
   if (bridge._tag !== 'Offered')
@@ -68,7 +57,6 @@ export const acceptBridge = (game: Game): Action => {
   })
 }
 
-/** The Node that bills the most right now, among those that still bill. */
 const dearest = (game: Game): GameNode | null => {
   let worst: GameNode | null = null
   let cost = 0
@@ -97,7 +85,6 @@ const shutdownNode = (game: Game, node: GameNode): Game => ({
   ),
 })
 
-/** Shuts Nodes down, most expensive first, until net Burn is zero or nothing bills. */
 const shutdown = (game: Game): Game => {
   let current = game
   for (;;) {

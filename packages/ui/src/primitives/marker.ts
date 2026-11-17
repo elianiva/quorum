@@ -118,8 +118,6 @@ const markerContent = <M>(
     children,
   )
 
-/** Styled marker — `Marker.icon` and `Marker.content` sub-builders. Mirrors the
- *  shadcn v4 `marker.tsx`. */
 export const Marker = Object.assign(markerContainer, {
   icon: markerIcon,
   content: markerContent,

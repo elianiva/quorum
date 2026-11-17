@@ -1,5 +1,6 @@
 import {
   ALERT_FATIGUE,
+  CALENDAR_DAY,
   ALERT_RULES,
   BREAKER_OPEN,
   BREAKER_THRESHOLD,
@@ -20,7 +21,7 @@ import {
   REGION_INFO,
   REGIONS,
   REQUEST_KINDS,
-  POD_REACTION,
+  POD_REACTION_SECONDS,
   RUNTIMES,
   ROW_KB,
   DB_RETENTIONS,
@@ -30,14 +31,14 @@ import {
   WIDE_REBALANCE_MINUTES_PER_GB,
   DOC_REBALANCE_MINUTES_PER_GB,
   LOG_REPLICATE_MINUTES_PER_GB,
-  SCALE_COOLDOWN,
+  SCALE_COOLDOWN_SECONDS,
   SCALE_QUEUE_DEPTH,
   SCALE_RPS_PER_VCPU,
   SCALE_IN,
   STEADY_CHURN,
   UPLOAD_MB,
   WRITE_BEHIND_SECONDS,
-  VM_REACTION,
+  VM_REACTION_SECONDS,
   CERT_FROM_STAGE,
   CERT_RENEW,
   TLS_TERMINATORS,
@@ -115,7 +116,6 @@ export type StepResult = Readonly<{
 
 const HISTORY = 600
 
-/** The scored Request kind with the highest p99 this Step, or null when none was served. */
 const slowestKind = (ledger: Ledger): RequestKind | null => {
   let slowest: RequestKind | null = null
   let worst = 0
@@ -130,20 +130,10 @@ const slowestKind = (ledger: Ledger): RequestKind | null => {
   return slowest
 }
 
-/** Users per second one region gains, before the split into fickle and steady. */
 type Flow = Readonly<{ fickle: number; steady: number }>
 
-/** Each region's share of its users who are steady. */
 const steadyOf = (game: Game, region: RegionId): number => game.steady?.[region] ?? 1 - FICKLE_SHARE
 
-/**
- * Users grow along an S-curve while Apdex beats the Era's target, and leave fast
- * when it does not (04 "Users and growth"). `pace` multiplies `g`: the live game
- * plays faster than the design. Shipped Features raise growth and the market, and
- * lower churn. From Series C each region grows toward its share of the market on
- * its own users' Apdex, and word of mouth crosses borders at `BORDER_MIXING`. New
- * users are fickle at `FICKLE_SHARE`; steady users leave at `STEADY_CHURN` of the rate.
- */
 const flowsOf = (game: Game, ledger: Ledger, pace: number): Readonly<Record<RegionId, Flow>> => {
   const era = eraOf(game)
   const users = regionUsers(game)
@@ -168,10 +158,6 @@ const flowsOf = (game: Game, ledger: Ledger, pace: number): Readonly<Record<Regi
       flows[region] = { fickle: churn * (own - steady), steady: churn * STEADY_CHURN * steady }
       continue
     }
-    // Data residency is required for the EU market (08 "Features"): EU data must stay in an EU
-    // region, so without it the Company cannot grow there once this is a real choice to make, from
-    // the Pre-IPO Era (08 "Features": Data residency's own Era) on. Earlier Eras play as they did,
-    // so Series C's region split is not gated by a Feature two Eras away.
     const reachable =
       region === 'eu' &&
       split &&
@@ -187,19 +173,16 @@ const flowsOf = (game: Game, ledger: Ledger, pace: number): Readonly<Record<Regi
   return flows
 }
 
-/** Users per second each region gains, or loses below 0. */
 export const regionGrowth = (game: Game, ledger: Ledger, pace = LIVE_TUNING.pace): PerRegion => {
   const flows = flowsOf(game, ledger, pace)
   return perRegion((region) => flows[region].fickle + flows[region].steady)
 }
 
-/** Users per second the Company gains, or loses below 0, over every region. */
 export const growthOf = (game: Game, ledger: Ledger, pace = LIVE_TUNING.pace): number => {
   const growth = regionGrowth(game, ledger, pace)
   return REGIONS.reduce((total, region) => total + growth[region], 0)
 }
 
-/** Users after `seconds`, never under 20. */
 const grow = (
   game: Game,
   ledger: Ledger,
@@ -227,11 +210,6 @@ const grow = (
   return { users: Math.max(20, next.users), userShares: next.userShares, steady: shares }
 }
 
-/**
- * Each region's Users after `seconds` if every region's Apdex stays where it is:
- * the forecast the Churn breakdown shows (12 "The Churn breakdown"). Runs the
- * same growth rule as the Step, in 10-second steps.
- */
 export const forecastUsers = (
   game: Game,
   ledger: Ledger,
@@ -248,7 +226,6 @@ export const forecastUsers = (
 
 const FORECAST_STEP = 10
 
-/** Each region's hourly Apdex moves toward what its users get now; null before Series C. */
 const regionApdexAfter = (game: Game, ledger: Ledger, seconds: number): PerRegion | null => {
   if (!regional(game)) return null
   const weight = Math.min(1, seconds / APDEX_WINDOW)
@@ -258,12 +235,7 @@ const regionApdexAfter = (game: Game, ledger: Ledger, seconds: number): PerRegio
   })
 }
 
-/**
- * During a Cache stampede, refills time out while a database behind the Cache
- * is overloaded, so the Cache stays cold (11 "Cache stampede").
- */
-/** Database load at which a cold Cache's refill queries start to time out. */
-const REFILL_STALL = 0.9
+const REFILL_STALL_LOAD = 0.9
 
 const refillsStall = (game: Game, ledger: Ledger, node: GameNode): boolean =>
   node.type === 'cache' &&
@@ -273,14 +245,10 @@ const refillsStall = (game: Game, ledger: Ledger, node: GameNode): boolean =>
     const target = game.nodes.find((entry) => entry.id === link.to)
     return (
       (target?.type === 'database' || target?.type === 'pooler') &&
-      (ledger.nodes[link.to]?.utilization ?? 0) >= REFILL_STALL
+      (ledger.nodes[link.to]?.utilization ?? 0) >= REFILL_STALL_LOAD
     )
   })
 
-/**
- * A Queue's backlog: tasks it accepted minus tasks its Workers took. With no
- * Worker linked, nothing drains.
- */
 const depthAfter = (game: Game, ledger: Ledger, queue: GameNode, seconds: number): number => {
   const own = ledger.nodes[queue.id]
   if (!own) return queue.depth
@@ -293,15 +261,9 @@ const depthAfter = (game: Game, ledger: Ledger, queue: GameNode, seconds: number
     drained += link.rate * ((worker.inbound - worker.dropped) / worker.inbound)
   }
   const depth = Math.max(0, queue.depth + (accepted - drained) * seconds)
-  // A full Queue refuses new tasks: its outcome failed the excess already.
   return queue.maxLength > 0 ? Math.min(queue.maxLength, depth) : depth
 }
 
-/**
- * Tasks Workers held when they crashed: each process had `prefetch` taken from
- * the Queue and not finished. A planned restart hands them back first. A crash
- * counts once: in the Step whose start it falls in, or that follows it.
- */
 const lostOnCrash = (game: Game, from: number, seconds: number): number => {
   let lost = 0
   for (const node of game.nodes) {
@@ -313,11 +275,6 @@ const lostOnCrash = (game: Game, from: number, seconds: number): number => {
   return lost
 }
 
-/**
- * Events an Event Stream lost when its broker failed (07 "Event Stream"): the share its replicas
- * and `acks` leave exposed, of the events it held. A planned restart hands them over first. A
- * failure counts once, in the Step whose start it falls in.
- */
 const crashedLog = (node: GameNode, from: number, seconds: number): boolean =>
   node.type === 'log' &&
   isDown(node) &&
@@ -325,10 +282,6 @@ const crashedLog = (node: GameNode, from: number, seconds: number): boolean =>
   node.downAt >= from &&
   node.downAt < from + seconds
 
-/**
- * Writes a write-behind Cache lost when it failed (07 "Strategies"): the ones it had acknowledged
- * and not yet flushed to the Database. The Cache keeps that backlog in `depth`.
- */
 const crashedCache = (node: GameNode, from: number, seconds: number): boolean =>
   node.type === 'cache' &&
   isDown(node) &&
@@ -347,35 +300,23 @@ const lostOnBroker = (game: Game, from: number, seconds: number): number =>
     0,
   )
 
-/** Seconds a cold Node takes to warm: its runtime's JIT for App Servers and Workers. */
 const warmupOf = (game: Game, node: GameNode): number =>
   node.type === 'server' || node.type === 'worker'
     ? RUNTIMES[node.runtime].warmup
-    : // A new Read Replica copies the rows before it serves: a calendar half minute per GB (07 "Data volume").
-      node.type === 'replica'
+    : node.type === 'replica'
       ? Math.max(WARMUP_SECONDS, game.data * REPLICA_SYNC_MINUTES_PER_GB)
-      : // A Search Engine copies and rebalances its index: a calendar half minute per GB of index (07 "Search Engine").
-        node.type === 'search'
+      : node.type === 'search'
         ? Math.max(WARMUP_SECONDS, game.data * SEARCH_INDEX_SHARE * SEARCH_COPY_MINUTES_PER_GB)
-        : // A Wide-column or Document Store rebalances its data when it resizes or changes replication.
-          node.type === 'wide'
+        : node.type === 'wide'
           ? Math.max(WARMUP_SECONDS, game.data * WIDE_REBALANCE_MINUTES_PER_GB)
           : node.type === 'doc'
             ? Math.max(WARMUP_SECONDS, game.data * DOC_REBALANCE_MINUTES_PER_GB)
-            : // An Event Stream copies partitions when its replication factor changes.
-              node.type === 'log'
+            : node.type === 'log'
               ? Math.max(WARMUP_SECONDS, game.data * LOG_REPLICATE_MINUTES_PER_GB)
               : WARMUP_SECONDS
 
-/**
- * Each Node's live Autoscaler, by Node id, one map per Game. A Step scales every App Server and
- * Worker against the same Game, and each lookup walked the Link list and then the Node list for
- * every match. The map is built once and read once per Node, and keeps the first live Autoscaler
- * a Node links into, which is the one the walk found first.
- */
 const autoscalers = new WeakMap<Game, ReadonlyMap<string, GameNode>>()
 
-/** The live Autoscaler a Node links into, if any. */
 const autoscalerOf = (game: Game, node: GameNode): GameNode | undefined => {
   if (node.type !== 'server' && node.type !== 'worker') return undefined
   let scaled = autoscalers.get(game)
@@ -393,12 +334,6 @@ const autoscalerOf = (game: Game, node: GameNode): GameNode | undefined => {
   return scaled.get(node.id)
 }
 
-/**
- * What an Autoscaler reads off a Node (05 "Autoscaler"): CPU alone, the whole load (CPU, slots and
- * memory), the requests a second each copy takes against what a vCPU is rated for, or the tasks
- * waiting in the Queues that feed it against what a copy can hold. A Node no Queue feeds reads 0
- * on the queue-depth signal.
- */
 const scaleLoadOf = (
   game: Game,
   node: GameNode,
@@ -424,16 +359,11 @@ const scaleLoadOf = (
   return own.utilization
 }
 
-/**
- * Copies boot, then join cold. An Autoscaler asks for more when the Node runs
- * above its target, and gives one back when it idles, at most once per cooldown.
- */
 const scale = (game: Game, node: GameNode, ledger: Ledger, seconds: number): GameNode => {
   if (node.scaler._tag === 'Scaling') {
     const readyIn = node.scaler.readyIn - seconds
     if (readyIn > 0) return { ...node, scaler: { ...node.scaler, readyIn } }
     const replicas = node.replicas + node.scaler.pending
-    // The new copies start cold: a JIT runtime runs them slowly for its warmup.
     return {
       ...node,
       replicas,
@@ -442,15 +372,12 @@ const scale = (game: Game, node: GameNode, ledger: Ledger, seconds: number): Gam
     }
   }
   const scaler = autoscalerOf(game, node)
-  if (!scaler || isDown(node) || game.time - node.scaledAt < SCALE_COOLDOWN) return node
+  if (!scaler || isDown(node) || game.time - node.scaledAt < SCALE_COOLDOWN_SECONDS) return node
   const own = ledger.nodes[node.id]
   if (!own) return node
   const load = scaleLoadOf(game, node, own, scaler.signal)
-  // Scheduled scaling provisions for the peak that is coming, not the load of this minute: inside
-  // the lead window, the load it plans for is today's peak (10 "Track: Infrastructure").
   const planned = scaler.schedule && has(game, 'scheduled-scaling') ? peakLoadOf(game, load) : load
   const most = scaler.maxCopies > 0 ? scaler.maxCopies : Number.POSITIVE_INFINITY
-  // A runaway bill is an Autoscaler with no ceiling: it grows every copy it can, and Burn rises.
   const wanted =
     game.incident?.kind === 'runaway-bill'
       ? Math.max(node.replicas, most === Number.POSITIVE_INFINITY ? 16 : most)
@@ -467,11 +394,10 @@ const scale = (game: Game, node: GameNode, ledger: Ledger, seconds: number): Gam
       scaler: {
         _tag: 'Scaling',
         pending: wanted - node.replicas,
-        readyIn: inCluster(game, node) ? POD_REACTION : VM_REACTION,
+        readyIn: inCluster(game, node) ? POD_REACTION_SECONDS : VM_REACTION_SECONDS,
       },
       scaledAt: game.time,
     }
-  // Give one back only when the rest would still run under the target, so it does not flap.
   if (
     node.replicas > scaler.minCopies &&
     load < scaler.target * SCALE_IN &&
@@ -481,11 +407,6 @@ const scale = (game: Game, node: GameNode, ledger: Ledger, seconds: number): Gam
   return node
 }
 
-/**
- * The load a Node will see at the daily peak, from the load it sees now, when the peak is inside
- * the schedule's lead window. Otherwise the current load: outside the window an Autoscaler waits
- * (05 "Autoscaler": "Scheduled scaling ... Adds capacity before the known daily peak").
- */
 export const peakLoadOf = (game: Game, load: number): number => {
   const venture = ventureOf(game)
   const minute = calendarMinute(game.time) % 1440
@@ -519,9 +440,6 @@ const advanceNode = (
     next = { ...next, life: warming(Math.min(1, life.warm + seconds / warmupOf(game, node))) }
   }
   if (node.type === 'server' || node.type === 'worker') next = scale(game, next, ledger, seconds)
-  // BEAM supervisors restart a process now and then, and the request is retried inside the VM:
-  // the crash is absorbed, so it counts without failing anyone (06 "Fault isolation"). A NIF crash
-  // is not a process crash: it takes the whole VM, so it is not absorbed (06 "Elixir").
   if (
     next.type === 'server' &&
     RUNTIMES[next.runtime].language === 'elixir' &&
@@ -534,7 +452,6 @@ const advanceNode = (
   }
   if (node.type === 'queue' || node.type === 'log')
     next = { ...next, depth: depthAfter(game, ledger, node, seconds) }
-  // A write-behind Cache holds the writes it has acknowledged and not flushed.
   if (node.type === 'cache')
     next = {
       ...next,
@@ -543,15 +460,9 @@ const advanceNode = (
           ? (ledger.nodes[node.id]?.traffic['q-write'] ?? 0) * WRITE_BEHIND_SECONDS
           : 0,
     }
-  // A failed broker takes the events its replicas did not have with it.
   if (crashedLog(node, time, seconds)) next = { ...next, depth: next.depth * (1 - logLoss(node)) }
   if (node.lost > 0) next = { ...next, lost: Math.max(0, node.lost - seconds) }
-  // A drained Node takes no new traffic (the solver routes around it) and finishes what it holds:
-  // a Queue hands its backlog to its Workers at its own rate, and a lost replica comes back. Empty
-  // for DRAIN_SECONDS, it rejoins the rotation.
   if (isDraining(next.service)) {
-    // It finishes what it holds at whatever it can hand on: its own rate, or what the Nodes it
-    // feeds could take if that is more.
     const handoff = ledger.links
       .filter((link) => link.from === node.id)
       .reduce((sum, link) => sum + (ledger.nodes[link.to]?.capacity ?? 0), 0)
@@ -571,7 +482,6 @@ const advanceNode = (
       next = { ...next, depth: held, service: serviceStep(next.service, { _tag: 'DrainFinished' }) }
     else if (held !== next.depth) next = { ...next, depth: held }
   }
-  // A Database in a retry storm queues what it cannot take, and drains once it can.
   if (
     node.type === 'database' &&
     (node.depth > 0 || (game.incident?.kind === 'retry-storm' && game.incident.nodeId === node.id))
@@ -590,9 +500,6 @@ const advanceNode = (
       events.push(StepEvent.CreditsExhausted({ nodeId: node.id }))
     next = { ...next, credits: balance }
   }
-  // A pool the player sized too big for its RAM swaps, then the kernel kills it, and so does a
-  // leak. Runtimes that size themselves (mod_php, Puma, Node.js) only swap: the player has no
-  // pool size to fix, only the box.
   const ram = ledger.nodes[node.id]?.resources.ramGb
   const killable = RUNTIMES[node.runtime].pool || node.leak > 0
   if (
@@ -608,13 +515,6 @@ const advanceNode = (
   return next
 }
 
-/**
- * The certificate's clock (05 "Secrets and Certificates"). A live Secrets and Certificates Node
- * issues the certificate on the first Step it sees, then renews it two thirds of the way through
- * its life, which is where an ACME client renews with a third left. With none live nothing renews
- * it: once it runs out, every Node that terminates TLS fails until one is live again or the player
- * presses Renew, and the incident starts again if it does not.
- */
 const advanceCertificate = (
   game: Game,
   ledger: Ledger,
@@ -624,8 +524,6 @@ const advanceCertificate = (
   const life = certLifeOf(game, tuning)
   const managed = certManaged(game)
   let changed = false
-  // Each Node that terminates TLS holds its own certificate. A live manager issues it the first
-  // time and renews it before it can run out; with none live nothing renews it.
   const nodes = game.nodes.map((node) => {
     if (!TLS_TERMINATORS.includes(node.type) || !managed) return node
     if (node.certUntil !== null && game.time < node.certUntil - life * (1 - CERT_RENEW)) return node
@@ -641,11 +539,6 @@ const advanceCertificate = (
     : { game: next, events: [] }
 }
 
-/**
- * Links that retry carry their failure share into the next Step. A breaker opens
- * when half the calls fail, stays open, then closes to try again. A Service Mesh
- * runs its own breaker on each Link out of a Node with a sidecar (05).
- */
 const advanceLinks = (game: Game, ledger: Ledger, seconds: number): ReadonlyArray<GameLink> => {
   const links = game.links.map((link, index) => {
     if (isOpen(link.fuse)) {
@@ -671,7 +564,6 @@ const advanceLinks = (game: Game, ledger: Ledger, seconds: number): ReadonlyArra
   return links.every((link, index) => link === game.links[index]) ? game.links : links
 }
 
-/** Whether the player has stopped listening to a rule: too many false alarms today. */
 export const ignored = (game: Game, rule: AlertRule): boolean =>
   game.falseAlarms[rule] >= ALERT_FATIGUE
 
@@ -703,8 +595,7 @@ const advanceAlarms = (
     queue: oldest > rules.queue ? game.alarms.queue + seconds : 0,
     budget: burning ? game.alarms.budget + seconds : 0,
   }
-  // A new calendar day forgives false alarms, except on rules the player already ignores.
-  const day = Math.floor(calendarMinute(game.time) / 1440)
+  const day = Math.floor(calendarMinute(game.time) / CALENDAR_DAY)
   const fresh = day !== game.falseAlarms.day
   const counts: Record<AlertRule, number> = {
     errors: game.falseAlarms.errors,
@@ -721,7 +612,6 @@ const advanceAlarms = (
     if (game.alarms[rule] >= limit || next[rule] < limit) continue
     if (ignored(game, rule)) continue
     events.push(StepEvent.AlertFired({ rule }))
-    // An alert with no incident behind it is a false alarm.
     if (!game.incident) {
       counts[rule] += 1
       if (counts[rule] === ALERT_FATIGUE) events.push(StepEvent.AlertIgnored({ rule }))
@@ -730,18 +620,15 @@ const advanceAlarms = (
   return { alarms: next, falseAlarms: { day, ...counts } }
 }
 
-/** Advances the Company by `seconds`. The clock runs only while the player has the Company open. */
 export const step = (game: Game, seconds: number, tuning: Tuning = LIVE_TUNING): StepResult => {
   const ledger = solveFlow(game)
   const events: Array<StepEvent> = []
 
-  // Money: revenue waits in the drawer until Stripe Billing collects it.
   const earned = ledger.revenue * seconds
   let cash = game.cash
   let pending = game.pending
   let spilled = game.spilled
   if (game.sandbox) {
-    // A Sandbox has no money: placing is free, and revenue and Burn are only figures.
   } else if (has(game, 'stripe')) {
     cash += earned
   } else {
@@ -750,18 +637,14 @@ export const step = (game: Game, seconds: number, tuning: Tuning = LIVE_TUNING):
     pending += Math.min(room, earned)
     spilled += Math.max(0, earned - room)
   }
-  // An SLA pays its credits back to customers: 10% of subscription revenue while the week misses.
   if (!game.sandbox) cash -= (ledger.burn + slaCreditsOf(game, ledger) + ledger.fines) * seconds
 
   const nodes = game.nodes.map((node) => advanceNode(game, node, ledger, seconds, events))
-  // Object Storage keeps every file it is sent: data never shrinks by itself (07 "Data volume").
   const puts = game.nodes.reduce(
     (total, node) =>
       node.type === 'storage' ? total + (ledger.nodes[node.id]?.inbound ?? 0) : total,
     0,
   )
-  // Rows: every write to a Database and every realtime message it holds adds data, and data never
-  // shrinks by itself. A retention window caps it at what the Company writes in its window.
   const rows = game.nodes.reduce((sum, node) => {
     const own = ledger.nodes[node.id]?.traffic
     if (!own) return sum
@@ -775,17 +658,14 @@ export const step = (game: Game, seconds: number, tuning: Tuning = LIVE_TUNING):
     .map((node) => DB_RETENTIONS[node.keep].days)
   const keptDays =
     windows.length === 0 || windows.some((days) => days === 0) ? 0 : Math.max(...windows)
-  // Calendar days of writes the retention window keeps: one sim second is one calendar minute.
   const kept =
     keptDays > 0 ? ((rows * ROW_KB) / 1_000_000) * keptDays * 1_440 : Number.POSITIVE_INFINITY
   const data = Math.min(kept, game.data + added)
   const { users, userShares, steady } = grow(game, ledger, seconds, tuning.pace)
   const apdex = game.apdex + (ledger.apdex - game.apdex) * Math.min(1, seconds / APDEX_WINDOW)
-  // Sim time stays on a microsecond grid, so ten 0.1 s Steps make exactly one second.
   const time = Math.round((game.time + seconds) * 1e6) / 1e6
   const { alarms, falseAlarms } = advanceAlarms(game, ledger, seconds, events)
 
-  // The first time users get a new kind of request through, the team learns from it, once.
   const firsts = REQUEST_KINDS.filter(
     (kind) =>
       PROFILES[kind].scored &&
@@ -809,7 +689,6 @@ export const step = (game: Game, seconds: number, tuning: Tuning = LIVE_TUNING):
     slow: slowestKind(ledger),
   }
 
-  // A chaos experiment earns Failure Insight for as long as it runs (10 "Reliability").
   const chaotic = chaosRunning(game)
   const pools = accrue(game, ledger, seconds, firsts, FIRST_KIND_INSIGHT)
   let next: Game = {
@@ -836,7 +715,6 @@ export const step = (game: Game, seconds: number, tuning: Tuning = LIVE_TUNING):
         (game.time < game.loadTestUntil ? LOAD_TEST_INSIGHT * seconds : 0) +
         (game.drill?._tag === 'Running' ? DRILL_INSIGHT * seconds : 0),
     },
-    // The Node the next experiment hits: the most pressured limiting Node (10 "Chaos engineering").
     weakest: game.chaos
       ? (game.nodes
           .filter((node) => COMPONENTS[node.type].limiting && !isDown(node))
@@ -855,14 +733,12 @@ export const step = (game: Game, seconds: number, tuning: Tuning = LIVE_TUNING):
     history: crossedSecond ? [...game.history, sample].slice(-HISTORY) : game.history,
   }
 
-  // The first signal of the running Incident: the pager, or the board's failed requests.
   next = markSignal(next, ledger)
   const running = advanceIncident(next, ledger, seconds)
   next = running.game
   events.push(...running.events)
   next = advanceStudies(next, ledger, seconds, events)
   next = advanceMirrors(next)
-  // The Era's Milestone puts its round on the table once.
   if (canRaise(next) && next.round._tag !== 'Offered')
     next = { ...next, round: roundStep(next.round, { _tag: 'Offered' }) }
   const team = advanceTeam(next, ledger, seconds, tuning)
@@ -875,9 +751,6 @@ export const step = (game: Game, seconds: number, tuning: Tuning = LIVE_TUNING):
   const directed = directIncidents(next, ledger, tuning.incidentGap)
   next = directed.game
   events.push(...directed.events)
-  // Penetration testing reveals one weakness a calendar week: the first time a week's worth of
-  // calendar minutes rolls over, its prevention research joins the open action items, the same
-  // way a Postmortem's action item does (10 "Track: Security", `pen-testing`).
   const lastWeek = Math.floor(calendarMinute(game.time) / QUARTER_SECONDS)
   const thisWeek = Math.floor(calendarMinute(time) / QUARTER_SECONDS)
   if (has(next, 'pen-testing') && thisWeek > lastWeek) {
@@ -885,11 +758,8 @@ export const step = (game: Game, seconds: number, tuning: Tuning = LIVE_TUNING):
     if (revealed && !next.openActions.includes(revealed))
       next = { ...next, openActions: [...next.openActions, revealed] }
   }
-  // Users adopt a Feature over a calendar week, and Analytics counts the A/B samples (08).
   next = advanceFeatures(next, ledger.demand, seconds, tuning)
-  // The pager, a freeze and a pay gap wear the Team down (18 "Burnout and quitting").
   next = advanceMorale(next, game, seconds, tuning, events)
-  // A crashed Worker's prefetched tasks are lost: they spend the error budget like failed requests.
   const lost = lostOnCrash(next, game.time, seconds) + lostOnBroker(game, game.time, seconds)
   if (lost > 0)
     next = {
@@ -898,21 +768,16 @@ export const step = (game: Game, seconds: number, tuning: Tuning = LIVE_TUNING):
       incident: next.incident ? { ...next.incident, failed: next.incident.failed + lost } : null,
     }
 
-  // The Autopilot perk's policies act on the Design and the Team (13 "The Legacy shop").
   next = applyPolicies(next, ledger)
 
-  // Money out: Burn keeps billing, and a shortfall brings the bridge or the shutdown.
   next = advanceRunway(next, ledger)
 
-  // The rules above map over the Nodes, so a Step that changed none still built a new list.
-  // Keeping the old one lets a reader tell an unchanged Design by one comparison.
   if (sameItems(game.nodes, next.nodes)) next = { ...next, nodes: game.nodes }
 
   if (solveHolds(game, next, events)) carryLedger(game, next)
   return { game: next, ledger, events }
 }
 
-/** Two lists hold the same objects in the same order. */
 const sameItems = <Item>(before: ReadonlyArray<Item>, after: ReadonlyArray<Item>): boolean => {
   if (before === after) return true
   if (before.length !== after.length) return false
@@ -921,14 +786,6 @@ const sameItems = <Item>(before: ReadonlyArray<Item>, after: ReadonlyArray<Item>
   return true
 }
 
-/**
- * The flow solve runs on the sim-time grid: at each whole second, and whenever something it reads
- * changes in kind, or while a Node warms or scales. The Steps between share one Ledger, so ten
- * 100 ms Steps cost one solve, and a Company plays out the same at every game speed.
- *
- * An open incident holds too, while it stays the incident the solve read. An incident that
- * starts, ends, moves, or is throttled is solved for at that Step.
- */
 const solveHolds = (before: Game, after: Game, events: ReadonlyArray<StepEvent>): boolean =>
   events.length === 0 &&
   Math.floor(after.time) === Math.floor(before.time) &&
@@ -938,7 +795,6 @@ const solveHolds = (before: Game, after: Game, events: ReadonlyArray<StepEvent>)
   after.links.length === before.links.length &&
   after.nodes.every((node, index) => {
     const was = before.nodes[index]
-    // A Node still warming or scaling changes what it can take within a second: solve every Step.
     return (
       was !== undefined &&
       node.life._tag === 'Running' &&
@@ -948,7 +804,6 @@ const solveHolds = (before: Game, after: Game, events: ReadonlyArray<StepEvent>)
     )
   })
 
-/** What an incident counts as it runs. The solve reads none of it. */
 const INCIDENT_TALLIES: ReadonlySet<string> = new Set([
   'remaining',
   'impaired',
@@ -956,7 +811,6 @@ const INCIDENT_TALLIES: ReadonlySet<string> = new Set([
   'failed',
 ])
 
-/** The same incident to the solve: every field but its tallies is the same value. */
 const sameIncident = (before: Game['incident'], after: Game['incident']): boolean => {
   if (before === after) return true
   if (before === null || after === null) return false

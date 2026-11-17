@@ -56,7 +56,7 @@ import {
   PATCH_GRACE,
 } from '@quorum/simulation/catalog'
 import { POLICY_LEVEL } from '@quorum/simulation/catalog'
-import { MAX_NAME } from '@quorum/simulation/work'
+import { MAX_NAME_CHARS } from '@quorum/simulation/work'
 import { perkLevel } from '@quorum/simulation/founding'
 import { has, sreStaffed } from '@quorum/simulation/lookups'
 import { openRegions } from '@quorum/simulation/regions'
@@ -160,31 +160,26 @@ const amount = (value: number): string =>
   value < 10 ? value.toFixed(1) : String(Math.floor(value))
 const dh = (t: Messages, value: number): string => t.units.devHours(amount(value))
 
-/** Dev Hours per sim second, per minute. */
 const perMinute = (rate: number): string => {
   const value = rate * 60
   return value < 10 ? value.toFixed(1) : String(Math.round(value))
 }
 
-/** A wait in sim seconds: seconds under a minute and a half, minutes above. */
 const wait = (t: Messages, seconds: number): string =>
   seconds < 90 ? t.units.s(Math.max(0, Math.ceil(seconds))) : t.units.min(Math.ceil(seconds / 60))
 
-/** A team's name: the Simulation names the first "Core" and the rest "Team 2", so those are told in words. */
 export const teamName = (t: Messages, team: Team): string => {
   if (team.id === 'core' && team.name === 'Core') return t.team.coreTeam
   const numbered = /^Team (\d+)$/.exec(team.name)
   return numbered ? t.team.teamN(Number(numbered[1])) : team.name
 }
 
-/** A Service's name: the first is "Monolith" and a split without a name is "Service 2". */
 export const serviceName = (t: Messages, service: Service): string => {
   if (service.id === 'monolith' && service.name === 'Monolith') return t.team.monolith
   const numbered = /^Service (\d+)$/.exec(service.name)
   return numbered ? t.team.serviceN(Number(numbered[1])) : service.name
 }
 
-/** A work item's name in words: the Simulation's `itemName`, from the catalog tables. */
 export const workItemName = (t: Messages, item: WorkItem): string => {
   if (item.kind === 'feature') return t.catalog.features[item.ref as FeatureId]?.name ?? item.ref
   if (item.kind === 'task') {
@@ -214,14 +209,9 @@ export const workItemName = (t: Messages, item: WorkItem): string => {
   return t.team.migrationStep(item.ref.slice(5))
 }
 
-/** Features the Company has, has built, or has queued. */
 const planned = (game: Game, id: FeatureId): boolean =>
   isBuilt(game, id) || game.backlog.some((item) => item.ref === id)
 
-/**
- * Why a Feature cannot be queued, in words. The Simulation's reasons are English, so each is
- * told again from the same checks, in the same order.
- */
 const featureWhy = (t: Messages, game: Game, id: FeatureId, refusal: Refusal): string => {
   const reason = t.team.refusal
   const def = FEATURES[id]
@@ -243,7 +233,6 @@ const featureWhy = (t: Messages, game: Game, id: FeatureId, refusal: Refusal): s
   return refusalIn(t, refusal)
 }
 
-/** Why an engineering task cannot be queued, in words: each task has the one reason it names. */
 const taskWhy = (t: Messages, game: Game, id: TaskId, refusal: Refusal): string => {
   const reason = t.team.refusal
   const research = TASKS[id].research
@@ -265,7 +254,6 @@ const taskWhy = (t: Messages, game: Game, id: TaskId, refusal: Refusal): string 
               : refusalIn(t, refusal)
 }
 
-/** Why a runbook cannot be written for an incident kind, in words. */
 const runbookWhy = (t: Messages, game: Game, kind: IncidentId, refusal: Refusal): string => {
   const reason = t.team.refusal
   if (game.sandbox) return reason.sandbox
@@ -281,7 +269,6 @@ const runbookWhy = (t: Messages, game: Game, kind: IncidentId, refusal: Refusal)
   return refusalIn(t, refusal)
 }
 
-/** Why a Service cannot be split, in words. */
 const splitWhy = (
   t: Messages,
   game: Game,
@@ -318,7 +305,6 @@ const POLICY_ICONS: Record<PolicyId, Parameters<typeof icon>[1]> = {
   quality: Gem,
 }
 
-/** Work kinds keep the build-group colours, so a kind reads the same everywhere. */
 const kindOf = (t: Messages): Record<WorkKind, Readonly<{ label: string; fill: string }>> => ({
   feature: { label: t.team.feature, fill: css({ backgroundColor: 'groupEdge' }) },
   lever: { label: t.levers.label, fill: css({ backgroundColor: 'groupEdge' }) },
@@ -382,7 +368,6 @@ const iconButton = (
     h,
   )
 
-/** The one name field the Team panel opens, for a team or a Service. */
 const renameField = (
   draft: string,
   label: string,
@@ -407,7 +392,7 @@ const renameField = (
         h.Type('text'),
         h.Value(draft),
         h.Placeholder(placeholder),
-        h.Maxlength(MAX_NAME),
+        h.Maxlength(MAX_NAME_CHARS),
         h.Autocomplete('off'),
         h.Spellcheck(false),
         h.Autofocus(true),
@@ -450,7 +435,6 @@ const renameField = (
   )
 }
 
-/** A circle drawn around an avatar: ramp-up for a new hire, the wait for an offer. */
 const halo = (share: number, className: string, h: HtmlBuilder<Message>): Html => {
   const radius = 25
   const length = 2 * Math.PI * radius
@@ -1091,10 +1075,6 @@ const kindsOf = (t: Messages): ReadonlyArray<readonly [TeamKind, string, Researc
   ['security', t.team.security, 'security-team'],
 ]
 
-/**
- * Product teams build the backlog; Platform, SRE, Data and Security teams run the system
- * (08 "Teams"). A kind its Research has not unlocked shows dimmed and opens that Research.
- */
 const kindSwitch = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
@@ -1117,7 +1097,6 @@ const kindSwitch = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
       const selected = team.kind === kind
       const result = setTeamKind(game, team.id, kind)
       const refusal = Result.isFailure(result) ? refusalIn(t, result.failure) : null
-      // A kind its Research locks opens that Research instead.
       const needs = research !== null && !has(game, research) ? research : null
       return h.button(
         [
@@ -1466,7 +1445,6 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
               h,
             ),
           ),
-          // Hiring is not shown before its Era (15 "Progressive disclosure").
           index === 0 && !sandbox && game.stage >= 1 ? hireSeat(game, h) : h.empty,
         ],
       ),
@@ -1490,7 +1468,6 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
   )
 }
 
-/** What an SRE pod has on its desk: the pager, the runbooks, and the MTTR it holds down. */
 const sreWork = (game: Game, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
@@ -1540,7 +1517,6 @@ const sreWork = (game: Game, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** What a Data pod has on its desk: the warehouse, the copies, and the Features they make cheaper. */
 const dataWork = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
@@ -1586,7 +1562,6 @@ const dataWork = (h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** What the pod has on its desk: the backlog item its team builds. */
 const platformWork = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
@@ -1632,7 +1607,6 @@ const platformWork = (h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** What a Security pod has on its desk: WAF rules, dependency scanning, and compliance. */
 const securityWork = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
@@ -1774,7 +1748,6 @@ const working = (
   )
 }
 
-/** A Service's Nodes as buttons that reveal each on the Board. */
 const nodeRow = (
   label: string,
   nodes: ReadonlyArray<GameNode>,
@@ -1842,13 +1815,11 @@ const nodeRow = (
   )
 }
 
-/** The Services a Company runs (08 "Services"): its codebases, their owners, and the split. */
 const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
   const game = model.board.game
   const draft = model.board.team.service
-  // A split moves a live Feature that no other Service carries.
   const candidates = liveFeatures(game).filter(
     (id) => serviceOfFeature(game, id).id === serviceOf(game).id,
   )
@@ -2402,11 +2373,6 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/**
- * DORA metrics (08 "Deploy frequency"): deploy frequency, lead time for changes, change failure
- * rate, and failed deployment recovery time. Shown once a CI/CD Pipeline is placed, as the design
- * names; before that the one shared deploy pipeline has nothing to measure.
- */
 const doraCard = (game: Game, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -2971,7 +2937,6 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
 
 type Status = 'queued' | 'building' | 'shipping' | 'live'
 
-/** A Linear-style status mark: a dashed ring waits, a filling pie builds, a check is live. */
 const statusMark = (status: Status, share: number, h: HtmlBuilder<Message>): Html => {
   const pie = 2 * Math.PI * 2.5
   const tone =
@@ -3032,7 +2997,6 @@ const statusMark = (status: Status, share: number, h: HtmlBuilder<Message>): Htm
   )
 }
 
-/** A stable identifier per catalog entry, as an issue tracker would show it. */
 const codeOf = (kind: WorkKind, ref: string): string => {
   if (kind === 'feature') return `FEAT-${FEATURE_IDS.indexOf(ref as FeatureId) + 1}`
   if (kind === 'task') return `ENG-${TASK_IDS.indexOf(ref as TaskId) + 1}`
@@ -3083,7 +3047,6 @@ const label = (kind: WorkKind, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** The wait that holds an item, in the words the Toast and the Mail use (18 "Blocked"). */
 const waitOf = (t: Messages): Record<BlockKind, string> => ({
   decision: t.team.waitForDecision,
   index: t.team.waitForIndex,
@@ -3091,12 +3054,7 @@ const waitOf = (t: Messages): Record<BlockKind, string> => ({
   size: t.team.waitForSize,
 })
 
-/**
- * Why an item waits on the player, on its card. Without it a blocked item looks like a queued
- * one, and a full backlog over an idle team reads as a team that will not work.
- */
 const waitChip = (item: WorkItem, h: HtmlBuilder<Message>): Html | null => {
-  // A patch never waits, so an old save's block on one is not a wait to show.
   if (item.block._tag !== 'Blocked' || item.kind === 'patch') return null
   const t = copy(h)
   return h.span(
@@ -3130,14 +3088,9 @@ const waitChip = (item: WorkItem, h: HtmlBuilder<Message>): Html | null => {
   )
 }
 
-/** The blocked items a team may take: what an idle team is waiting on the player for. */
 const waitingFor = (game: Game, team: Team): number =>
   game.backlog.filter((item) => item.block._tag === 'Blocked' && worksOn(game, team, item)).length
 
-/**
- * What a live Feature's users have and what A/B testing reads from it (08 "Adoption", "Measured
- * lift"): the adoption share, and the lift with its interval once the research is done.
- */
 const featureReadout = (game: Game, id: FeatureId, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -3172,7 +3125,6 @@ const featureReadout = (game: Game, id: FeatureId, h: HtmlBuilder<Message>): Htm
   )
 }
 
-/** The share of the Team's Dev Hours that keeps the live Features running (08 "Upkeep"). */
 const upkeepPill = (game: Game, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -3213,7 +3165,6 @@ const upkeepPill = (game: Game, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** A patch's clock: the time left, then red and counting how long it is overdue until it is exploited. */
 const deadline = (game: Game, item: WorkItem, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -3277,7 +3228,6 @@ const estimate = (text: string, h: HtmlBuilder<Message>): Html =>
     [text],
   )
 
-/** A small avatar for a card's assignees. */
 const mini = (id: string | null, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.span(
@@ -4120,7 +4070,6 @@ const autopilot = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** The Autopilot perk's policies (13 "The Legacy shop"): a switch for each level the perk has. */
 const policyCopy = (t: Messages): Readonly<Record<'research' | 'hire' | 'upgrade', string>> => ({
   research: t.team.policyResearch,
   hire: t.team.policyHire,
@@ -4177,7 +4126,6 @@ const policies = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
     )
 }
 
-/** Chaos experiments (10 "Track: Reliability"): the Company's own failure injection, once researched. */
 const chaos = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -4436,7 +4384,6 @@ const tile = (
     ],
   )
 
-/** A tile's action: queue it, or, while Research locks it, open that Research. */
 const queueButton = (
   label: string,
   message: Message,
@@ -4515,7 +4462,6 @@ const queueButton = (
   )
 }
 
-/** A tile's place on the board, in the board's own column names. */
 const queuedBadge = (building: ReadonlySet<string>, ref: string, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return building.has(ref)
@@ -4616,7 +4562,6 @@ const featureTile = (
   )
 }
 
-/** A runbook names one incident kind: a chip per kind the team has handled, waiting for one. */
 const runbookPicker = (game: Game, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -4723,7 +4668,6 @@ const taskTile = (
 
   const done = serviceOf(game).fixes.includes(id as never)
   const queued = game.backlog.some((item) => item.ref === id)
-  // A runbook tile picks its incident kind in the tile, so its own refusal is only the research.
   const refusal = id === 'runbook' && has(game, 'runbooks') ? null : taskRefusal(game, id)
   const runbooks = game.runbooks.length
   return tile(

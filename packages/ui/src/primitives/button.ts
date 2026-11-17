@@ -6,9 +6,6 @@ import type { SystemStyleObject } from '@quorum/styled-system/types'
 
 import { icon } from './icon.ts'
 
-/** Button variant keys. Sync with `buttonVariants` is compiler-enforced:
- *  `buttonVariants` is `Record<ButtonVariant, string>` (missing key = error)
- *  and annotated object literals reject unknown keys. */
 export const buttonVariantKeys = [
   'default',
   'destructive',
@@ -29,9 +26,7 @@ const buttonBaseStyle: SystemStyleObject = {
   borderStyle: 'solid',
   borderColor: 'transparent',
   backgroundClip: 'padding-box',
-  // Grow with the 150% text setting while keeping a fixed line box at 100%.
   fontSize: 'type.14',
-  // A unitless factor, so a nested 10.5px Kbd recomputes its own line box.
   lineHeight: 'fine',
   fontWeight: 'medium',
   display: 'inline-flex',
@@ -147,7 +142,6 @@ const buttonVariantStyles: Record<ButtonVariant, SystemStyleObject> = {
   },
 }
 
-/** Button size keys. Sync with `buttonSizes` is compiler-enforced (see above). */
 export const buttonSizeKeys = [
   'default',
   'xs',
@@ -228,7 +222,6 @@ const buttonSizeStyles: Record<ButtonSize, SystemStyleObject> = {
 export type ButtonVariant = (typeof buttonVariantKeys)[number]
 export type ButtonSize = (typeof buttonSizeKeys)[number]
 
-/** The classes every button shares, for an anchor that must look like a button. */
 export const buttonBase = cx(css(buttonBaseStyle), 'press')
 
 export const buttonVariants: Record<ButtonVariant, string> = {
@@ -261,8 +254,6 @@ const buttonRecipe = cva({
   defaultVariants: { variant: 'default', size: 'default' },
 })
 
-/** A button's class list. `className` stays for a custom class or a
- *  call-site `css()` result; Panda extracts styles at the call site. */
 export const buttonClass = (
   variant: ButtonVariant = 'default',
   size: ButtonSize = 'default',
@@ -277,14 +268,11 @@ export type ButtonConfig<M> = Readonly<{
   variant?: ButtonVariant
   size?: ButtonSize
   className?: string
-  /** Extra attributes merged onto the button element (ids, handlers,
-   *  popoover anchors, …). */
   attributes?: ReadonlyArray<Attribute<M>>
 }>
 
 export type ButtonLabel = Html | string | ReadonlyArray<Html | string>
 
-/** Styled button built on the @foldkit/ui Button helper. */
 export const button = <M>(config: ButtonConfig<M>, label: ButtonLabel, h: HtmlBuilder<M>): Html =>
   FoldkitButton.view<M>(
     {
@@ -306,7 +294,6 @@ export const button = <M>(config: ButtonConfig<M>, label: ButtonLabel, h: HtmlBu
     h,
   )
 
-/** The close control every card pins to its top-right corner, so one place closes anything. */
 export const closeButton = <M>(
   config: Readonly<{ label: string; onClick: M; className?: string }>,
   h: HtmlBuilder<M>,

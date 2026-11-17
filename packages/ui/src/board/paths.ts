@@ -10,8 +10,6 @@ import {
   type Route,
 } from './geometry.ts'
 
-/** A path's lengths and headings, measured once: `along[i]` is the length up to point i,
- *  and `ux[i]`, `uy[i]` the unit heading of the segment that ends there. */
 type Arc = Readonly<{
   along: ReadonlyArray<number>
   ux: ReadonlyArray<number>
@@ -42,7 +40,6 @@ export const arcOf = (path: Route): Arc => {
 
 export const lengthOf = (path: Route): number => arcOf(path).total
 
-/** The point `t` of the way along a path, by length. */
 export const pointOn = (path: Route, t: number, length = lengthOf(path)): Pt => {
   const arc = arcOf(path)
   const left = length * t
@@ -81,17 +78,14 @@ export const distanceTo = (path: Route, point: Pt): number => {
   return best
 }
 
-/** The lane a backward link runs along, under both cards. */
 export const laneUnder = (from: Placed, toBottom: number): number =>
   Math.max(from.y + heightOf(from.type), toBottom) + 18
 
 export const routeOf = (from: Placed, to: Placed): Route =>
   route(outPort(from), inPort(to), laneUnder(from, to.y + heightOf(to.type)))
 
-/** How far a card may be from where its links were routed before they take the quick route. */
-export const SLACK = 32
+export const ROUTE_SLACK_PX = 32
 
-/** A path with its start moved by `a` and its end by `b`, each shift fading out along its length. */
 export const bent = (path: Route, a: Pt, b: Pt): Route => {
   const along = [0]
   for (let index = 1; index < path.length; index += 1)
@@ -103,8 +97,6 @@ export const bent = (path: Route, a: Pt, b: Pt): Route => {
   })
 }
 
-/** The first `t` of a path, by length. */
-/** The middle of a path, measured once per path. */
 const mids = new WeakMap<Route, Pt>()
 export const midOf = (path: Route): Pt => {
   let mid = mids.get(path)
@@ -150,7 +142,6 @@ export const traceOf = (graphics: Graphics, path: Route): Graphics => {
   return graphics
 }
 
-/** A dashed polyline: short segments with gaps, drawn into one Graphics path. */
 export const dashed = (graphics: Graphics, path: Route, dash = 9, space = 6): Graphics => {
   for (let index = 0; index < path.length - 1; index += 1) {
     const from = path[index]

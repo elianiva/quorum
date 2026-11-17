@@ -324,10 +324,6 @@ const itemFooter = <M>(
     children,
   )
 
-/** Styled item — a flexible list row with `Item.group`, `Item.separator`,
- *  `Item.media`, `Item.content`, `Item.title`, `Item.description`,
- *  `Item.actions`, `Item.header`, `Item.footer` sub-builders. Mirrors the
- *  shadcn v4 `item.tsx`. */
 export const Item = Object.assign(itemContainer, {
   group: itemGroup,
   separator: itemSeparator,

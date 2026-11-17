@@ -34,15 +34,8 @@ import { solveFlow } from '../src/solve.ts'
 import { Game } from '../src/state.ts'
 import { step } from '../src/step.ts'
 
-/*
- * Every Component, in every combination: random Designs of all Components, answered and stepped.
- * After each move the Game must still be a valid Game, every figure finite, and every machine
- * must have moved along an edge it declares (verification/README.md).
- */
-
 const valid = Schema.is(Game)
 
-/** The states a machine may move to from `from`, found by sending it a few hundred random events. */
 const edges = <S extends { _tag: string }, E>(
   states: Schema.Constraint,
   events: Schema.Constraint,
@@ -143,7 +136,6 @@ const move: fc.Arbitrary<Move> = fc.oneof(
   { weight: 1, arbitrary: fc.record({ kind: fc.constant('chaos' as const), on: fc.boolean() }) },
 )
 
-/** A Company with every Research done, every region open, Cash to spare and a few Users. */
 const start = (): Game => {
   let game: Game = { ...preseedGame(), users: 3_000, cash: 1e9, researched: [...RESEARCH_IDS] }
   for (const region of ['eu', 'apac', 'sa'] as const) {
@@ -213,7 +205,6 @@ const check = (before: Game, after: Game, m: Move) => {
     expect(Number.isFinite(figure), `finite figures ${at}`).toBe(true)
   expect(bridgeOk(before.bridge, after.bridge), `bridge edge ${at}`).toBe(true)
   expect(roundOk(before.round, after.round), `round edge ${at}`).toBe(true)
-  // A new drill starts from Running; only the same drill must follow an edge.
   if (before.drill && after.drill && before.drill.startedAt === after.drill.startedAt)
     expect(drillOk(before.drill, after.drill), `drill edge ${at}`).toBe(true)
   if (before.quarter && after.quarter)
@@ -228,7 +219,6 @@ const check = (before: Game, after: Game, m: Move) => {
       expect(serviceOk(old.service, node.service), `service edge of ${node.id} ${at}`).toBe(true)
       expect(scalerOk(old.scaler, node.scaler), `scaler edge of ${node.id} ${at}`).toBe(true)
     }
-    // A Shut Node is Stopped: it serves nothing and bills nothing.
     if (node.service._tag === 'Shut')
       expect(node.life._tag, `Shut is Stopped ${at}`).toBe('Stopped')
   }
@@ -265,8 +255,6 @@ describe('every Component in every combination', () => {
     )
   }, 120_000)
 })
-
-/* The Team, the Studies and the Mirrors: every move a Seat makes on them, with the figures they keep. */
 
 type TeamMove =
   | { kind: 'study'; id: number; first: boolean }
@@ -337,7 +325,6 @@ const teamMove: fc.Arbitrary<TeamMove> = fc.oneof(
   },
 )
 
-/** The Research and everything it requires, so the start itself obeys the rule. */
 const closure = (
   ids: ReadonlyArray<(typeof RESEARCH_IDS)[number]>,
 ): Array<(typeof RESEARCH_IDS)[number]> => {
@@ -351,7 +338,6 @@ const closure = (
   return [...done]
 }
 
-/** A late Company with no Research done, Insight to study with, Cash, and the Infra-as-code tools open. */
 const teamStart = (): Game => {
   const base = start()
   const pools = Object.fromEntries(INSIGHT_POOLS.map((pool) => [pool, 1e6])) as Game['pools']
@@ -422,7 +408,6 @@ const teamApply = (game: Game, m: TeamMove): Game => {
           return take(game, Mirrors.stopMirror(game, region))
       }
     }
-    // eslint-disable-next-line no-fallthrough
     case 'wait':
       return step(game, m.seconds).game
   }

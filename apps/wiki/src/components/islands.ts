@@ -18,8 +18,6 @@ import { sandboxView } from './sandbox-card.ts'
 import { designView } from './design-view.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* The live views behind each Markdown directive. src/islands.ts declares their attributes. */
-
 const NOTE = {
   tip: { glyph: Lightbulb, tone: css({ color: 'ok' }) },
   warn: { glyph: TriangleAlert, tone: css({ color: 'warn' }) },

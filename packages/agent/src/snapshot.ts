@@ -2,15 +2,9 @@ import { Schema } from 'effect'
 import { Game, Region, Sample } from '@quorum/simulation/state'
 import { NodeSample } from './node-metrics.ts'
 
-/* ==========================================================================
-   What a browser uploads, and what the MCP server reads. The snapshot is plain
-   data: no Model, no DOM, so the web app, the Worker, and the view all use it.
-   ========================================================================== */
-
 export const AgentMode = Schema.Literals(['company', 'sandbox', 'challenge'])
 export type AgentMode = typeof AgentMode.Type
 
-/** A Mail as an agent reads it: the choices are labels, never actions. */
 export const AgentMailPhase = Schema.Union([
   Schema.TaggedStruct('Active', {}),
   Schema.TaggedStruct('Answered', { answer: Schema.String }),
@@ -54,7 +48,6 @@ export const AgentWhatIf = Schema.Struct({
 })
 export type AgentWhatIf = typeof AgentWhatIf.Type
 
-/** The small part of a snapshot: everything except the sample streams. */
 export const AgentHead = Schema.Struct({
   game: Schema.NullOr(Game),
   mode: AgentMode,
@@ -63,12 +56,10 @@ export const AgentHead = Schema.Struct({
   speed: Schema.Finite,
   bottleneck: Schema.NullOr(Schema.String),
   whatIfs: Schema.NullOr(AgentWhatIf),
-  /** A change detector for the Inbox, not a security hash. */
   inboxHash: Schema.String,
 })
 export type AgentHead = typeof AgentHead.Type
 
-/** One incremental upload from the browser. */
 export const Upload = Schema.Struct({
   v: Schema.Literal(1),
   epoch: Schema.String,
@@ -76,9 +67,7 @@ export const Upload = Schema.Struct({
   reset: Schema.Boolean,
   head: AgentHead,
   samples: Schema.Struct({
-    /** The last sim second the server has, in absolute sample sequence. */
     from: Schema.Finite,
-    /** The sim second this upload reaches. */
     to: Schema.Finite,
     items: Schema.Array(Sample),
   }),
@@ -86,7 +75,6 @@ export const Upload = Schema.Struct({
     from: Schema.Finite,
     items: Schema.Record(Schema.String, Schema.Array(NodeSample)),
   }),
-  /** The whole Inbox, sent only when `head.inboxHash` changes. */
   inbox: Schema.NullOr(Schema.Array(AgentMail)),
 })
 export type Upload = typeof Upload.Type
@@ -114,7 +102,6 @@ export const Status = Schema.Struct({
 })
 export type Status = typeof Status.Type
 
-/** Everything one tool call needs, assembled from the stored Room. */
 export type AgentSnapshot = Readonly<{
   game: Game | null
   mode: AgentMode
@@ -126,6 +113,5 @@ export type AgentSnapshot = Readonly<{
   samples: ReadonlyArray<Sample>
   nodeSamples: Readonly<Record<string, ReadonlyArray<NodeSample>>>
   inbox: ReadonlyArray<AgentMail>
-  /** Wall time the server stored the snapshot. */
   updatedAt: number
 }>

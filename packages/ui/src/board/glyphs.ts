@@ -5,10 +5,6 @@ import { STACK_LOGOS, type StackLogoId } from '../game/icons.ts'
 const glyphs = new Map<IconNode, Texture>()
 const GLYPH_PX = 96
 
-/**
- * A lucide icon drawn once in white onto a canvas, then tinted per use.
- * Canvas `Path2D` reads every SVG path form lucide uses.
- */
 const glyphOf = (node: IconNode): Texture => {
   const cached = glyphs.get(node)
   if (cached) return cached
@@ -63,14 +59,12 @@ const glyphOf = (node: IconNode): Texture => {
   return made
 }
 
-/** A sprite for one glyph at `size` pixels; set its texture and tint per update. */
 export const glyph = (size: number): Sprite => {
   const view = new Sprite(Texture.EMPTY)
   view.setSize(size)
   return view
 }
 
-/** Points a glyph sprite at an icon and colour. */
 export const paint = (view: Sprite, node: IconNode, color: number): void => {
   const size = view.width
   view.texture = glyphOf(node)
@@ -80,7 +74,6 @@ export const paint = (view: Sprite, node: IconNode, color: number): void => {
 
 const logos = new Map<string, Texture>()
 
-/** A brand mark filled once in white, then tinted to its brand colour per use. */
 const logoOf = (path: string): Texture => {
   const cached = logos.get(path)
   if (cached) return cached
@@ -98,7 +91,6 @@ const logoOf = (path: string): Texture => {
   return made
 }
 
-/** Points a sprite at a language or framework mark; black marks take `ink`. */
 export const paintLogo = (view: Sprite, id: StackLogoId, ink: number): void => {
   const size = view.width
   const logo = STACK_LOGOS[id]

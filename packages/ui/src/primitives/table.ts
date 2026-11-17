@@ -3,10 +3,6 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
 
-// Table is a pure presentational primitive. `Table` is the container
-// (`table`); sub-builders are attached as properties: Table.header, Table.body,
-// Table.footer, Table.row, Table.head, Table.cell, Table.caption.
-
 export const tableContainerClass = css({
   position: 'relative',
   width: '100%',
@@ -174,9 +170,6 @@ const tableCaption = <M>(
     children,
   )
 
-/** Composable table — `Table` is the container, with sub-builders as
- *  properties: `Table.header`, `Table.body`, `Table.footer`, `Table.row`,
- *  `Table.head`, `Table.cell`, `Table.caption`. */
 export const Table = Object.assign(tableContainer, {
   header: tableHeader,
   body: tableBody,

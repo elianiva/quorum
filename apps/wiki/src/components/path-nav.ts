@@ -9,13 +9,8 @@ import { PATHS, placeOf, resumeOf, stepsOf, type Path } from '../paths.ts'
 import { quadrantColor } from './quadrant.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* The guided paths in the page: where a reader is in one, and the step after it. */
-
 type H = HtmlBuilder<Message>
 
-/** One segment per step: read steps fill, the current one takes its kind's colour. The bar is a
-    progress indicator, not a row of controls: a 34-step path makes 6px targets, so the sidebar and
-    the next card carry the navigation. */
 const segments = (steps: ReadonlyArray<Page>, current: string | null, model: Model, h: H): Html =>
   h.ol(
     [
@@ -75,7 +70,6 @@ const segments = (steps: ReadonlyArray<Page>, current: string | null, model: Mod
     ),
   )
 
-/** Under a page's title: the path it belongs to and the reader's place in it. */
 export const pathBar = (page: Page, model: Model, h: H): Html => {
   const l = langOf(page.locale)
   const place = placeOf(page.locale, page.path)
@@ -137,7 +131,6 @@ export const pathBar = (page: Page, model: Model, h: H): Html => {
   )
 }
 
-/** The next page, as docs sites end a page: a bordered link on the right. */
 const nextCard = (label: string, target: Page, h: H): Html =>
   h.div(
     [
@@ -228,7 +221,6 @@ const nextCard = (label: string, target: Page, h: H): Html =>
     ],
   )
 
-/** At a page's end: the next step of its path, or the next path when this one is done. */
 export const pathNext = (page: Page, h: H): Html => {
   const l = langOf(page.locale)
   const place = placeOf(page.locale, page.path)
@@ -243,7 +235,6 @@ export const pathNext = (page: Page, h: H): Html => {
     : h.empty
 }
 
-/** A path on the home page: its progress, the step to take next, and where it goes. */
 export const pathCard = (path: Path, model: Model, h: H): Html => {
   const l = langOf(model.locale)
   const copy = l.t.paths[path.id]

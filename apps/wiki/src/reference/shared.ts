@@ -16,7 +16,6 @@ export type H = HtmlBuilder<Message>
 export const eraName = (l: Lang, era: number): string =>
   l.cat.ERAS[era]?.name ?? l.t.reference.eraN(era)
 
-/** An Era's page path uses its English name in every language, so the slugs are the same. */
 export const eraPath = (era: number): string => `/eras/${slug(ERAS[era]?.name ?? `Era ${era}`)}`
 
 export const researchPath = (id: ResearchId): string => `/research/${id}`
@@ -26,7 +25,6 @@ export const termPath = (id: string): string => `/glossary/${id}`
 export const termName = (l: Lang, id: string): string =>
   l.cat.GLOSSARY.find((entry) => entry.id === id)?.term ?? id
 
-/** A heading whose anchor is the slug of its English text, whatever language its text is in. */
 export const titleOf = (english: string, text: string): Title => ({ id: slug(english), text })
 
 export const link = (path: string, text: string, h: H): Html =>
@@ -50,7 +48,6 @@ export const link = (path: string, text: string, h: H): Html =>
 export const researchLink = (l: Lang, id: ResearchId, h: H): Html =>
   link(researchPath(id), l.cat.RESEARCH[id].name, h)
 
-/** Links separated by commas, or a dash when there are none. */
 export const linkList = (items: ReadonlyArray<Html>, h: H): Html => {
   const separator = langOf(localeOf(h)).t.reference.listSeparator
   return items.length === 0
@@ -72,7 +69,6 @@ export const linkList = (items: ReadonlyArray<Html>, h: H): Html => {
 
 export type Fact = Readonly<{ name: string; value: Html | string }>
 
-/** The facts box beside a page: the name with its mark, then one fact per row. */
 export const factsBox = (
   l: Lang,
   title: string,
@@ -187,7 +183,6 @@ export const factsBox = (
     ],
   )
 
-/** A titled section of a catalog page, with an anchor the contents list links to. */
 export const section = (title: Title, content: ReadonlyArray<Html>, h: H): Html =>
   h.section(
     [h.Key(title.id)],
@@ -205,7 +200,6 @@ export const headingsFor = (titles: ReadonlyArray<Title | null>): ReadonlyArray<
 
 export const paragraph = (text: string, h: H): Html => h.p([], [text])
 
-/** Engineering terms a page teaches, as links into the glossary. */
 export const termsSection = (l: Lang, ids: ReadonlyArray<string> | undefined, h: H): Html =>
   ids && ids.length
     ? section(
@@ -220,7 +214,6 @@ export const termsSection = (l: Lang, ids: ReadonlyArray<string> | undefined, h:
       )
     : h.empty
 
-/** The hand-written prose for a catalog page, if any, and its source file for editing. */
 export const authored = (
   l: Lang,
   path: string,
@@ -243,7 +236,6 @@ export const authored = (
   }
 }
 
-/** A tile on a hub page: mark, title, a line of facts, and the summary. */
 export const hubCard = (page: Page, mark: Html, meta: string, h: H): Html =>
   h.a(
     [
@@ -338,7 +330,6 @@ export const hubCard = (page: Page, mark: Html, meta: string, h: H): Html =>
 
 export type Cell = Html | string
 
-/** A table in the same nested style as a Markdown table. Columns after the first that hold figures align right. */
 export const table = (
   headers: ReadonlyArray<string>,
   rows: ReadonlyArray<Readonly<{ key: string; cells: ReadonlyArray<Cell> }>>,
@@ -461,7 +452,6 @@ export const table = (
 
 export const percent = (share: number): string => `${Math.round(share * 1000) / 10}%`
 
-/** Tiles in a grid, separated by hairlines. */
 export const cardGrid = (cards: ReadonlyArray<Html>, h: H): Html =>
   h.div(
     [
@@ -491,7 +481,6 @@ export const cardGrid = (cards: ReadonlyArray<Html>, h: H): Html =>
     cards,
   )
 
-/** A page's defaults, so each generator states only what differs. */
 export const page = (
   l: Lang,
   fields: Partial<Page> & Pick<Page, 'path' | 'title' | 'summary' | 'body'>,

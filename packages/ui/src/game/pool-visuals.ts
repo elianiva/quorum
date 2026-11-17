@@ -28,8 +28,6 @@ import {
   type ResearchId,
 } from '@quorum/simulation/catalog'
 
-/* Insight pools as the player sees them, without the Study text that needs the Simulation. */
-
 export const POOL_ICONS: Record<InsightPool, IconNode> = {
   page: FileText,
   read: BookOpen,
@@ -54,13 +52,10 @@ export const POOL_ICONS: Record<InsightPool, IconNode> = {
 export const poolColor = (pool: InsightPool): string =>
   `#${POOLS[pool].color.toString(16).padStart(6, '0')}`
 
-/** The pool's accessible name, such as "Checkout Insight". */
 export const poolName = (pool: InsightPool): string => `${POOLS[pool].label} Insight`
 
-/** Pools in catalog order, for stable rows. */
 export const POOL_ORDER: ReadonlyArray<InsightPool> = INSIGHT_POOLS
 
-/** An item's cost, by pool, in pool order. */
 export const recipeOf = (
   id: ResearchId,
   discounts: ReadonlyArray<ResearchId> = [],

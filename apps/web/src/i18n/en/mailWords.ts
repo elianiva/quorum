@@ -3,11 +3,8 @@ import { CVES } from '../../game/copy/world.ts'
 import { TEAMMATES } from '../../game/copy/senders.ts'
 import { copyOfList } from '@quorum/ui/i18n/catalog-copy'
 
-/** The words a Mail's values and buttons are made of, which the letters quote. */
 export const mailWords = {
-  /** What each advisory is, in plain words. */
   cves: copyOfList(CVES, 'id', ['title', 'what'], []),
-  /** A cause as a customer would put it. */
   causes: {
     far: 'slow from far away',
     slow: 'slow',
@@ -69,7 +66,6 @@ export const mailWords = {
     domain: 'Renew now',
   },
   reviewMigration: (language: string) => `Review ${language} migration`,
-  /** What a Mail says once the player pressed a button. */
   answers: {
     raise: 'You raised the round.',
     declineRound: 'You declined the round.',
@@ -95,13 +91,11 @@ export const mailWords = {
     easy: 'You turned on Easy mode.',
     trap: 'You clicked it. It was a trap: the address was not the real sender.',
   },
-  /** A thread's last word, when the thing it was about is settled. */
   closings: {
     exploited: 'Exploited. The ticket expired, and so did the Users who trusted you.',
     patched: 'Patched before the deadline. Nothing happened, which is the point.',
     growing: (region: string) => `${region} is growing again.`,
     unstalled: (study: string) => `${study} no longer holds the queue.`,
   },
-  /** How each teammate signs, in the order of the game's teammates. */
   teammateSigns: TEAMMATES.map((mate) => mate.sign),
 }

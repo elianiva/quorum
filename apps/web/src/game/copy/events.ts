@@ -1,7 +1,6 @@
 import type { EventLetters } from './letter.ts'
 import { PEOPLE_EVENTS } from './people.ts'
 
-/** A teammate signs with their first name. */
 const first = (from: string): string => from.split(' ')[0] ?? from
 
 export const EVENTS: EventLetters = {
@@ -75,7 +74,6 @@ export const EVENTS: EventLetters = {
     }),
   ],
 
-  // Only the edge network writes these: Cloudscare sees the flood before anyone else does.
   'incident-ddos': [
     ({ from }) => ({
       subject: `HTTP DDoS attack alert: your edge`,

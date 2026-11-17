@@ -9,10 +9,8 @@ import { Message } from '@/game/message.ts'
 import { button } from '@quorum/ui/primitives/button'
 import { type Panel, caption, nodeLink, picker, replicaEngine, section } from './shared.ts'
 
-/** A Read Replica copies the single primary, whether every write waits for it, and promotion (07 "Read Replica", "Failover"). */
 const replica = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
-  // A Read Replica copies the Database linked into it (07 "Read Replica").
   const primary = primaryOf(game, node)
   const promotable = databasesOf(game).length === 1
   return [

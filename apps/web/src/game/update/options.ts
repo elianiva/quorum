@@ -1,6 +1,6 @@
 import { Actions } from '../board-actions.ts'
 import { Work } from '../board-actions.ts'
-import { BIG_PURCHASE } from '../cues.ts'
+import { BIG_PURCHASE_CASH } from '../cues.ts'
 import {
   CACHE_ENGINES,
   COMPONENTS,
@@ -48,18 +48,15 @@ import { type Note } from './clock.ts'
 const english = copyIn('en')
 const said = english.changes
 
-/** A Stack choice on this Node starts a migration rather than swapping at once. */
 export const migrates = (game: Game, nodeId: string): boolean =>
   !game.sandbox && game.nodes.some((node) => node.id === nodeId && node.type === 'server')
 
-/** What the player hears when a Stack choice started a migration. */
 export const migrationNote = (t: Messages, before: Game, after: Game): Note => {
   const migration = serviceOf(after).migration
   if (!migration || serviceOf(before).migration === migration) return null
   return [t.toasts.migrationQueued(Math.round(migration.total)), 'primary']
 }
 
-/** The Message that applies an option, as the inspector sent before Tradeoff cards. */
 export const optionMessage = (nodeId: string, option: TradeoffOption): Message => {
   switch (option.kind) {
     case 'runtime':
@@ -71,11 +68,9 @@ export const optionMessage = (nodeId: string, option: TradeoffOption): Message =
   }
 }
 
-/** The undo hint a one-click purchase adds to its Toast, or nothing when it cost nothing. */
 export const refundNote = (t: Messages, spent: number): ReadonlyArray<string> =>
   spent > 0 ? [t.toasts.undoRefunds(money(spent), t.units.s(UNDO_SECONDS))] : []
 
-/** An instance size in words, or its number when the size has no name. */
 export const sizeText = (t: Messages, size: number): string =>
   SIZES[size] ? t.nodeList.sizes[SIZES[size].name] : String(size)
 
@@ -252,9 +247,8 @@ export const optionsHandlers = (model: Model): MessageCases<UpdateResult, Option
           const name = t.catalog.components[node.type].name
           return [
             t.toasts.sentences([
-              ...(spent >= BIG_PURCHASE ? [t.toasts.upgradeComplete] : []),
+              ...(spent >= BIG_PURCHASE_CASH ? [t.toasts.upgradeComplete] : []),
               sized ? t.toasts.sizedNow(name, sizeText(t, size)) : t.toasts.sizeStepNow(name, size),
-              // A one-click purchase says how to take it back (16 D17).
               ...refundNote(t, spent),
             ]),
             'ok',
@@ -568,8 +562,6 @@ export const optionsHandlers = (model: Model): MessageCases<UpdateResult, Option
       { undoable: true },
     ),
 
-  // A Company moves a Database's data to change its key (07 "Partitioning"): Dev Hours, then a copy.
-
   ShardKeyChosen: ({ nodeId, shardKey }) =>
     model.board.game.sandbox
       ? act(
@@ -719,7 +711,6 @@ export const optionsHandlers = (model: Model): MessageCases<UpdateResult, Option
 
   DbEngineChosen: ({ nodeId, dbEngine }) => {
     const game = model.board.game
-    // A Company changes a Database's engine through a migration (08 "Migrations").
     const company =
       !game.sandbox && game.nodes.some((n) => n.id === nodeId && n.type === 'database')
     return company
@@ -743,8 +734,6 @@ export const optionsHandlers = (model: Model): MessageCases<UpdateResult, Option
       Actions.setStorageIops(model.board.game, nodeId, iops),
       { undoable: true },
     ),
-
-  // A Company moves a Database's data to change its shards (07 "Partitioning"): Dev Hours, then a copy.
 
   ShardsChosen: ({ nodeId, shards }) =>
     model.board.game.sandbox
@@ -886,8 +875,6 @@ export const optionsHandlers = (model: Model): MessageCases<UpdateResult, Option
       Actions.setVecIndex(model.board.game, nodeId, indexType),
       { undoable: true },
     ),
-
-  // A rollout belongs to the Service, not to a Node, and Undo puts Nodes back only.
 
   RolloutChosen: ({ nodeId, feature, share }) =>
     act(

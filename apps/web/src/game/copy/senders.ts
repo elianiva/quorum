@@ -1,4 +1,3 @@
-/** Every kind of party that writes, in the order the Inbox's filter chips list them. */
 export const SENDER_KINDS = [
   'cloud',
   'monitoring',
@@ -19,9 +18,7 @@ export interface SenderCopy {
   readonly name: string
   readonly address: string
   readonly sign: string
-  /** The badge colour: the real company's brand colour, so the parody reads at a glance. */
   readonly color: string
-  /** A phishing copy wears the badge of the kind it pretends to be. Only the address tells. */
   readonly looks?: SenderKind
 }
 
@@ -257,8 +254,6 @@ export const SENDERS: Record<string, SenderCopy> = {
   ),
 }
 
-/** Teammates take a pun name from their id and keep it for life. Each signs in their own way.
- *  New signs go at the end, in every language, so nobody already hired changes name. */
 export const TEAMMATES: ReadonlyArray<{ readonly name: string; readonly sign: string }> = [
   { name: 'Bobby Tables', sign: "'); DROP TABLE signatures;--" },
   { name: 'Rae Condition', sign: 'Sent twice, or not at all.' },

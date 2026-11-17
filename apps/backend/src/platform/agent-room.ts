@@ -18,14 +18,7 @@ import { readTool } from '@quorum/agent/view'
 import type { Sample } from '@quorum/simulation/state'
 import type { AgentRoomStub } from '../contexts/agent/room.ts'
 
-/* ==========================================================================
-   One exposed Company. It stores the snapshot the browser uploads and runs the
-   shared read tools on it. The MCP protocol stays in the Worker; this object
-   only knows the store and the view.
-   ========================================================================== */
-
 const TTL_MS = 24 * 60 * 60 * 1000
-/** The keys one storage call takes. */
 const STORAGE_BATCH = 128
 
 export type AgentRoomEnv = Readonly<Record<string, never>>
@@ -33,7 +26,6 @@ export type AgentRoomEnv = Readonly<Record<string, never>>
 export class AgentRoom extends DurableObject<AgentRoomEnv> implements AgentRoomStub {
   private store: AgentStore | null = null
 
-  /** Loads the store from storage, or returns the one this instance already has. */
   private async load(): Promise<AgentStore> {
     if (this.store !== null) return this.store
 
@@ -115,5 +107,4 @@ export class AgentRoom extends DurableObject<AgentRoomEnv> implements AgentRoomS
   }
 }
 
-/** The instance type the namespace stub carries. */
 export type AgentRoomInstance = AgentRoom

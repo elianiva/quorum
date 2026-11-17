@@ -56,7 +56,6 @@ import { ApiRpc } from '@/platform/rpc.ts'
 import { annotateSpan, reportSurveyFailure, setSentryConsent, traced } from '../platform/sentry.ts'
 import { send as sendRoom } from '../platform/room-socket.ts'
 
-/** A Playbook following the pointer on the board. */
 const StampArg = Schema.NullOr(
   Schema.Array(
     Schema.Struct({
@@ -81,11 +80,8 @@ export const SyncBoard = Command.define('SyncBoard', {
     paused: Schema.Boolean,
     speed: Schema.Finite,
     suspended: Schema.Boolean,
-    /** The Node whose footer button glows: a disclosure cue. */
     cue: Schema.NullOr(Schema.String),
-    /** Fit the view to the new Design once it is drawn. */
     fit: Schema.Boolean,
-    /** Bring this Node into view after the state is drawn, as a reveal does. */
     focus: Schema.NullOr(Schema.String),
   },
   messages: [Message.Synced],
@@ -129,7 +125,6 @@ export const SyncBoard = Command.define('SyncBoard', {
     }).pipe(Effect.as(Message.Synced())),
 })
 
-/** Runs a Tradeoff option's ghost runs on the compute worker. A superseded or refused run sends nothing back. */
 export const ComputePreview = Command.define('ComputePreview', {
   args: { game: Game, nodeId: Schema.String, option: TradeoffOption },
   messages: [Message.PreviewComputed, Message.Synced],
@@ -149,7 +144,6 @@ export const ComputePreview = Command.define('ComputePreview', {
     ),
 })
 
-/** Runs a Node's what-if rows on the compute worker. A superseded run sends nothing back. */
 export const ComputeWhatIfs = Command.define('ComputeWhatIfs', {
   args: { game: Game, nodeId: Schema.String, at: Schema.Finite },
   messages: [Message.WhatIfsFound, Message.Synced],
@@ -165,14 +159,12 @@ export const ComputeWhatIfs = Command.define('ComputeWhatIfs', {
     ),
 })
 
-/** Adds a history entry for the route a Message opened. */
 export const PushUrl = Command.define('PushUrl', {
   args: { url: Schema.String },
   messages: [Message.Navigated],
   execute: ({ url }) => pushUrl(url).pipe(Effect.as(Message.Navigated())),
 })
 
-/** Corrects the URL in place when it names a screen that cannot open. */
 export const ReplaceUrl = Command.define('ReplaceUrl', {
   args: { url: Schema.String },
   messages: [Message.Navigated],
@@ -191,7 +183,6 @@ export const FitBoard = Command.define('FitBoard', {
   execute: () => Effect.sync(() => fitBoard('board')).pipe(Effect.as(Message.Synced())),
 })
 
-/** Zooms about the middle of the room the HUD and dock leave free, so the view keeps its framing. */
 export const ZoomBoard = Command.define('ZoomBoard', {
   args: { direction: Schema.Literals([1, -1]) },
   messages: [Message.Synced],
@@ -199,8 +190,6 @@ export const ZoomBoard = Command.define('ZoomBoard', {
     Effect.sync(() => zoomBoard('board', direction)).pipe(Effect.as(Message.Synced())),
 })
 
-/** Reads the Company index, and the single save of the build before Company files. */
-/** Takes the open Company online: the Room steps it from here. The key is the API Worker's gate. */
 export const PublishRoom = Command.define('PublishRoom', {
   args: {
     name: Schema.String,
@@ -221,7 +210,6 @@ export const PublishRoom = Command.define('PublishRoom', {
     ),
 })
 
-/** Asks whether the Room a link named is still open, so a dead link says so. */
 export const CheckRoom = Command.define('CheckRoom', {
   args: { code: Schema.String },
   messages: [Message.RoomChecked],
@@ -232,13 +220,11 @@ export const CheckRoom = Command.define('CheckRoom', {
     }).pipe(
       Effect.match({
         onSuccess: (info) => Message.RoomChecked({ code, exists: info.exists }),
-        // A Room the network cannot reach is left to the socket to retry.
         onFailure: () => Message.RoomChecked({ code, exists: true }),
       }),
     ),
 })
 
-/** One frame out to the Room. A closed socket drops it; the next snapshot repairs the Board. */
 export const SendRoom = Command.define('SendRoom', {
   args: { message: ClientMessage },
   messages: [Message.RoomSent],
@@ -253,7 +239,6 @@ export const LoadSaves = Command.define('LoadSaves', {
     Effect.sync(() => Message.SavesLoaded({ index: readStored(SAVE_INDEX_KEY), now: Date.now() })),
 })
 
-/** Removes Company files the list does not name, after a failed index write or a crashed save. */
 export const PruneSaves = Command.define('PruneSaves', {
   args: { index: SaveIndex },
   messages: [Message.Synced],
@@ -265,10 +250,6 @@ export const PruneSaves = Command.define('PruneSaves', {
     }),
 })
 
-/**
- * Reads one Company's Game, to continue it or to open it from the Companies page. A database that
- * refuses is not a missing file, so it sends its own Message and the Company stays on the list.
- */
 export const LoadCompany = Command.define('LoadCompany', {
   args: { id: Schema.String, open: Schema.Boolean },
   messages: [Message.CompanyLoaded, Message.CompanyUnread],
@@ -289,9 +270,7 @@ export const WriteCompany = Command.define('WriteCompany', {
     revealed: Schema.Array(Reveal),
     pending: Schema.Array(Reveal),
     dashboard: History,
-    /** The Inbox the Company keeps (18 "Open questions"): its Mail and its mutes. */
     inbox: SavedInbox,
-    /** The tab may not come back, so the file also goes where a write lands at once. */
     closing: Schema.optionalKey(Schema.Boolean),
   },
   messages: [Message.Saved, Message.SaveFailed],
@@ -305,7 +284,6 @@ export const WriteCompany = Command.define('WriteCompany', {
         annotateSpan({ 'save.bytes': json.length })
         return writeCompany(companyDb(), id, json, closing)
       })
-      // A full or blocked storage loses the save, not the game. The player hears about it.
       return wrote &&
         writeStored(
           SAVE_INDEX_KEY,
@@ -319,7 +297,6 @@ export const WriteCompany = Command.define('WriteCompany', {
     }),
 })
 
-/** Removes one Company's file and writes the index without it. */
 export const DeleteCompany = Command.define('DeleteCompany', {
   args: { id: Schema.String, index: SaveIndex },
   messages: [Message.CompanyDeleted],
@@ -331,7 +308,6 @@ export const DeleteCompany = Command.define('DeleteCompany', {
     }),
 })
 
-/** Sets a save this version cannot read aside, so the next Company does not overwrite it. */
 export const KeepBrokenSave = Command.define('KeepBrokenSave', {
   args: { json: Schema.String, reason: Schema.String },
   messages: [Message.Synced],
@@ -343,7 +319,6 @@ export const KeepBrokenSave = Command.define('KeepBrokenSave', {
     }),
 })
 
-/** Drops the kept copy once an import has put a save of this build in the Company. */
 export const ClearBrokenSave = Command.define('ClearBrokenSave', {
   args: {},
   messages: [Message.Synced],
@@ -365,7 +340,6 @@ export const WriteSandboxStore = Command.define('WriteSandboxStore', {
   messages: [Message.Synced],
   execute: ({ store }) =>
     Effect.sync(() => {
-      // A full or blocked storage loses Sandbox progress, not the game.
       writeStored(SANDBOX_KEY, JSON.stringify(store))
       return Message.Synced()
     }),
@@ -382,13 +356,11 @@ export const WritePrefs = Command.define('WritePrefs', {
   messages: [Message.Synced],
   execute: ({ prefs }) =>
     Effect.sync(() => {
-      // Blocked storage only means the cards stay full size.
       writeStored(PREFS_KEY, JSON.stringify(prefs))
       return Message.Synced()
     }),
 })
 
-/** What Settings apply to the page: mute, volume, motion, language, agent access, text size, and theme. */
 export type Settings = Readonly<{
   muted: boolean
   volume: number
@@ -400,7 +372,6 @@ export type Settings = Readonly<{
   analytics: boolean
 }>
 
-/** Applies the settings to a root element. Pure DOM, so the Settings test reads it back. */
 export const applySettings = (root: HTMLElement, settings: Settings): void => {
   setMuted(settings.muted)
   setVolume(settings.volume)
@@ -410,14 +381,11 @@ export const applySettings = (root: HTMLElement, settings: Settings): void => {
   root.lang = settings.locale
   if (settings.motion === 'reduce') root.dataset['motion'] = 'reduce'
   else delete root.dataset['motion']
-  // 150% text is a scale on the type, not on the boxes: styles.css reads `data-text`.
   if (settings.text === 'large') root.dataset['text'] = '150'
   else delete root.dataset['text']
-  // theme.css restyles everything under `.dark`.
   root.classList.toggle('dark', settings.theme === 'dark')
 }
 
-/** Applies the settings: mute and volume for every sound, reduced motion as `data-motion`, text as `data-text`, and the theme as `.dark`. */
 export const ApplySettings = Command.define('ApplySettings', {
   args: {
     muted: Schema.Boolean,
@@ -435,13 +403,11 @@ export const ApplySettings = Command.define('ApplySettings', {
       const root = document.documentElement
       const wasDark = root.classList.contains('dark')
       applySettings(root, settings)
-      // The board resolves its colours from the theme once, so a new theme repaints it.
       if (wasDark !== (settings.theme === 'dark')) repaintBoards()
       return Message.Synced()
     }),
 })
 
-/** Moves keyboard focus into the Inspector, onto its first control. */
 export const FocusInspector = Command.define('FocusInspector', {
   args: {},
   messages: [Message.Synced],
@@ -456,14 +422,11 @@ export const FocusInspector = Command.define('FocusInspector', {
     }),
 })
 
-/** Moves keyboard focus onto the Dashboard's scroll area, so Tab, arrows, and Page Down scroll it,
- *  and scrolls one of its panels into view when the caller names one. */
 export const FocusDashboard = Command.define('FocusDashboard', {
   args: { focus: Schema.optionalKey(Schema.String) },
   messages: [Message.Synced],
   execute: ({ focus }) =>
     Effect.promise(async () => {
-      // The panel renders in the same update, so wait for its frame before focusing it.
       await new Promise((resolve) => requestAnimationFrame(resolve))
       document.querySelector<HTMLElement>('[data-scroll="dashboard"]')?.focus()
       if (focus !== undefined)
@@ -482,17 +445,11 @@ export const ToggleFullscreen = Command.define('ToggleFullscreen', {
       try {
         if (document.fullscreenElement) await document.exitFullscreen()
         else await document.documentElement.requestFullscreen()
-      } catch {
-        // The browser refused; the game still fills the window.
-      }
+      } catch {}
       return Message.Synced()
     }),
 })
 
-/**
- * How long a toast stays, by what it says. A refusal names a Research and its price, so it stays
- * longer than a confirmation. Nothing here carries an action: an action would wait for the player.
- */
 export const TOAST_MS: Record<Tone, number> = {
   plain: 2600,
   ok: 2600,
@@ -508,14 +465,12 @@ export const ClearToast = Command.define('ClearToast', {
     Effect.sleep(`${Math.round(after)} millis`).pipe(Effect.as(Message.ToastCleared({ id }))),
 })
 
-/** Waits out the clock-in, then shows the title. */
 export const RevealTitle = Command.define('RevealTitle', {
   args: {},
   messages: [Message.TitleRevealed],
   execute: () => Effect.sleep('1100 millis').pipe(Effect.as(Message.TitleRevealed())),
 })
 
-/** The title monitor's connect sequence plays, then the board shows. */
 export const ConnectBoard = Command.define('ConnectBoard', {
   args: {},
   messages: [Message.Connected],
@@ -556,8 +511,6 @@ export const LoadFounder = Command.define('LoadFounder', {
   messages: [Message.FounderLoaded],
   execute: () =>
     Effect.sync(() => {
-      // A device id for Challenge histograms, used only if the Founder has none yet.
-      // Not `crypto.randomUUID`: it exists only in secure contexts, and a page opened over HTTP is not one.
       const deviceId = Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
         byte.toString(16).padStart(2, '0'),
       ).join('')
@@ -571,13 +524,11 @@ export const WriteFounder = Command.define('WriteFounder', {
   messages: [Message.Synced],
   execute: ({ founder }) =>
     Effect.sync(() => {
-      // A full or blocked storage loses the record, not the Company.
       writeStored(FOUNDER_KEY, JSON.stringify(founder))
       return Message.Synced()
     }),
 })
 
-/** Copies text to the clipboard, and says whether it worked. */
 export const CopyText = Command.define('CopyText', {
   args: { text: Schema.String, done: Schema.String, blocked: Schema.String },
   messages: [Message.ToastRaised],
@@ -599,7 +550,6 @@ export const AskSaveImport = Command.define('AskSaveImport', {
     Effect.sync(() => Message.SaveImported({ text: window.prompt('Paste a save (QSV1:…)') })),
 })
 
-/** Downloads the save as a file the player can keep or move to another browser. */
 export const DownloadSave = Command.define('DownloadSave', {
   args: { text: Schema.String, name: Schema.String },
   messages: [Message.Synced],
@@ -617,7 +567,6 @@ export const DownloadSave = Command.define('DownloadSave', {
     }),
 })
 
-/** The text of the save file the player picks, or null when the picker closes with nothing. */
 const pickSaveText = (): Promise<string | null> =>
   new Promise((resolve) => {
     const input = document.createElement('input')
@@ -638,10 +587,6 @@ const pickSaveText = (): Promise<string | null> =>
     input.click()
   })
 
-/**
- * Opens the browser's file picker and hands back the save file it reads. `as` says what the file
- * becomes: the save of the open Company, or a Company of its own on the list.
- */
 export const PickSaveFile = Command.define('PickSaveFile', {
   args: { as: Schema.Literals(['save', 'company']) },
   messages: [Message.SaveImported, Message.CompanyImported],
@@ -661,7 +606,6 @@ export const AskPlaybook = Command.define('AskPlaybook', {
     ),
 })
 
-/** Sends the Exit survey. A mutation, not a Query: the answers never come back. */
 export const SubmitSurvey = Command.define('SubmitSurvey', {
   args: { submission: SurveySubmission },
   messages: [Message.SurveySent, Message.SurveyFailed],
@@ -670,14 +614,12 @@ export const SubmitSurvey = Command.define('SubmitSurvey', {
       const rpc = yield* ApiRpc
       return yield* rpc.surveySubmit(submission)
     }).pipe(
-      // A failure is swallowed into a Message, so it reaches Sentry here or nowhere.
       Effect.tapError((error) => Effect.sync(() => reportSurveyFailure(error, submission.exit))),
       Effect.match({
         onSuccess: () => Message.SurveySent(),
         onFailure: (error) =>
           Message.SurveyFailed({
             message: error.message,
-            // Anything but a declared ApiError is a transport failure, which has no useful message.
             offline: error._tag !== 'ApiError',
           }),
       }),

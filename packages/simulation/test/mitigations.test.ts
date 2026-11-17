@@ -8,11 +8,6 @@ import { solveFlow } from '../src/solve.ts'
 import { step } from '../src/step.ts'
 import type { Game, GameNode } from '../src/state.ts'
 
-/*
- * The mitigations 11 "Mitigation toolbox" promises, played end to end: start the incident on a
- * Design that suffers it, press the action, and read what the board then shows.
- */
-
 const ok = (action: Actions.Action): Game => {
   if (Result.isFailure(action)) throw new Error(describeRefusal(action.failure))
   return action.success
@@ -40,7 +35,6 @@ const strike = (game: Game, kind: Parameters<typeof forceIncident>[2]): Game => 
   return started
 }
 
-/** A Realtime Hub on Elixir, taking every realtime message the users send. */
 const hubGame = (): Readonly<{ game: Game; hub: string }> => {
   let game: Game = { ...freeSandbox(), stage: 4, seed: 3 }
   game = ok(Actions.place(game, 'ws', 600, 100))
@@ -62,7 +56,6 @@ describe('Restart', () => {
     expect(realtime(split)).toBeLessThan(0.75)
     const restarted = ok(Actions.restart(split, hub))
     expect(kept(restarted, hub).life._tag).toBe('Restarting')
-    // The Hub comes back cold and its clients reconnect, so give it time to warm.
     const after = run(restarted, 120, 5)
     expect(after.incident).toBeNull()
     expect(realtime(after)).toBeGreaterThan(0.99)
@@ -109,7 +102,6 @@ describe('Restart', () => {
 })
 
 describe('Fail over', () => {
-  /** App Servers in two zones behind a Load Balancer, and a Database with a standby in zone a. */
   const zoneGame = (seed: number): Game => {
     let game: Game = { ...freeSandbox(), stage: 3, seed }
     const server = of(game, 'server')
@@ -137,7 +129,6 @@ describe('Fail over', () => {
       if (started?.incident?.zone !== 'a') continue
       const database = of(started, 'database')
       expect(errors(started)).toBeGreaterThan(0.9)
-      // Left to itself the standby takes its 20 s.
       expect(errors(run(started, 5))).toBeGreaterThan(0.9)
       const promoted = run(ok(Actions.failOverZone(started)), 1)
       expect(errors(promoted)).toBeLessThanOrEqual(errors(calm) + 1e-6)
@@ -159,7 +150,6 @@ describe('Fail over', () => {
     expect(refusal(Actions.failOver(bare, of(bare, 'database').id))).toContain('needs')
   })
 
-  /** An App Server in the home region over a store that lives in two regions. */
   const regionGame = (): Game => {
     let game: Game = { ...freeSandbox(), stage: 6, seed: 3 }
     const server = of(game, 'server')
@@ -219,7 +209,6 @@ describe('Throttle connects', () => {
 })
 
 describe('Move login', () => {
-  /** Node and Go App Servers behind an API Gateway, which a heavy login hash blocks. */
   const loopGame = (go: boolean): Game => {
     let game: Game = { ...freeSandbox(), stage: 2, seed: 3 }
     const first = of(game, 'server')

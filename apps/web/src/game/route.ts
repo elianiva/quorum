@@ -17,7 +17,6 @@ export { MENU_PAGES }
 
 export const MenuPage = Schema.Literals(MENU_PAGES)
 
-/** A Sandbox in the URL: a guided one by id, or the free one. */
 export const SandboxPath = Schema.Literals([...SANDBOX_IDS, 'free'])
 
 export const AppRoute = defineRouteUnion({
@@ -60,7 +59,6 @@ export const urlOf = (route: AppRoute): string =>
     Room: (room) => roomRouter(room),
   })
 
-/** The board is open: a Company, a Sandbox, or a Challenge. */
 export const onBoard = (route: AppRoute): boolean =>
   AppRoute.match(route, {
     Title: () => false,
@@ -71,7 +69,6 @@ export const onBoard = (route: AppRoute): boolean =>
     Room: () => true,
   })
 
-/** The title menu page a route shows. */
 export const menuOf = (route: AppRoute): typeof MenuPage.Type | 'main' =>
   route._tag === 'Menu' ? route.menu : 'main'
 

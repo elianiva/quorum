@@ -9,7 +9,6 @@ export const users: ComponentView = {
   layout: { rows: 3, inRow: null, outRow: 2, footer: false },
   rows: ({ game, node, ledger }) => {
     const target = eraOf(game).apdexTarget
-    // From Series C each Users Node shows its own region's users (04 "Users and growth").
     const split = regional(game)
     const users = split ? regionUsers(game)[node.region] : game.users
     const apdex = split ? regionApdexOf(game, node.region) : game.apdex

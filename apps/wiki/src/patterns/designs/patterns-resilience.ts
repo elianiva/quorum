@@ -1,11 +1,6 @@
 import { at, design, set, setLink, wire } from '../design.ts'
 import type { Design } from '../design.ts'
 
-/* Resilience and deploys: Link policies (timeout, retries, breaker, bulkhead, hedge), an App
-   Server's overload choices, a Gateway's rate limit, a Load Balancer's health checks, and the
-   Pipeline's deploy strategy. */
-
-/** The stressed pair the retry and breaker Designs share: a big App Server over a small Database. */
 const stressed = (
   linkSettings: ReadonlyArray<ReturnType<typeof setLink>>,
   researched: Parameters<typeof design>[0]['researched'],

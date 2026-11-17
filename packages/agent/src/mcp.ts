@@ -2,12 +2,6 @@ import { isRoomId } from './room-id.ts'
 import { TOOLS } from './tools.ts'
 import { WIKI_INDEX_URI, wikiIndex, type WikiPage } from './wiki.ts'
 
-/* ==========================================================================
-   MCP over Streamable HTTP, by hand: the requests a read-only server answers.
-   The transport adapter in the API Worker turns one POST into one reply. No
-   session, no SSE, no server-initiated messages.
-   ========================================================================== */
-
 export const SUPPORTED = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'] as const
 
 type Request = Readonly<{ jsonrpc: '2.0'; id?: number | string; method: string; params?: unknown }>
@@ -36,7 +30,6 @@ const isKnown = (name: string): boolean => TOOLS.some((tool) => tool.name === na
 
 const MARKDOWN = 'text/markdown'
 
-/** The wiki index first, then each page. They are the same for every Room. */
 const resourcesOf = (pages: ReadonlyArray<WikiPage>) => [
   {
     uri: WIKI_INDEX_URI,
@@ -63,7 +56,6 @@ export const handleMcp = async (
   wiki: ReadonlyArray<WikiPage> = [],
 ): Promise<unknown> => {
   const { id, method } = request
-  // A notification has no id and gets no answer.
   if (id === undefined) return undefined
   const params = record(request.params)
 

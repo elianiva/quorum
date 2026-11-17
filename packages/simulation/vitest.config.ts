@@ -4,22 +4,16 @@ import { simVersion } from './sim-version.ts'
 
 const FULL_ONLY = ['breadth', 'pacing', 'challenges'].map((name) => `test/${name}.test.ts`)
 
-// `engines/` holds the cross-engine check, which `pnpm test:engines` runs in browsers.
 export default defineConfig({
   plugins: [simVersion()],
   test: {
-    // The solve runs in the Rust solver; every test run installs it first.
     setupFiles: ['./host/node.ts'],
-    // The whole-game runs in FULL_ONLY take over a minute; `pnpm test:full` and CI run them.
     exclude: [
       ...configDefaults.exclude,
       'engines/**',
       ...(process.env.FULL_TESTS ? [] : FULL_ONLY),
     ],
-    // A loaded CI runner takes longer than the 5 s default on a full Company. Tests that need
-    // much more set their own timeout; a real hang still stops at this cap.
     testTimeout: 20_000,
-    // The tests are CPU-bound and the main process idles, so use every core, not Vitest's default of one fewer.
     maxWorkers: availableParallelism(),
   },
 })

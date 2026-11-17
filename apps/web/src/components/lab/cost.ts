@@ -115,7 +115,6 @@ const row = (line: Line, value: number, total: number, h: HtmlBuilder<Message>):
   )
 }
 
-/** A simple two-column figure row, for unit economics and cost allocation. */
 const figureRow = (label: string, value: string, h: HtmlBuilder<Message>): Html =>
   h.div(
     [

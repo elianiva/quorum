@@ -19,7 +19,6 @@ export const analytics: ComponentView = {
         tone: own.inbound > own.capacity ? 'warn' : 'plain',
         bar: own.capacity > 0 ? Math.min(1, own.inbound / own.capacity) : 0,
       },
-      // The three pools it earns most, each with its own icon.
       ...POOL_ORDER.filter((pool) => ledger.insight[pool] > 0)
         .toSorted((a, b) => ledger.insight[b] - ledger.insight[a])
         .slice(0, 3)

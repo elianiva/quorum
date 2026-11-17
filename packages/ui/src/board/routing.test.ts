@@ -1,16 +1,12 @@
 import { describe, expect, test } from 'vitest'
-import { CARD_W, CLEARANCE, heightOf, layoutOf, type Pt, type Route } from './geometry.ts'
-import { SURFACE_MIN, routeLinks, type RoutedNode } from './routing.ts'
+import { CARD_W, CARD_CLEARANCE_PX, heightOf, layoutOf, type Pt, type Route } from './geometry.ts'
+import { SURFACE_MIN_PX, routeLinks, type RoutedNode } from './routing.ts'
 import { BIG_LINKS, STRESS_LINKS as LINKS, bigNodes, stressNodes as placed } from './stress.ts'
 
 type Segment = readonly [Pt, Pt]
 const segments = (path: Route): ReadonlyArray<Segment> =>
   path.slice(1).map((point, index) => [path[index] as Pt, point] as const)
 
-/**
- * The stretches of a path off its port rows. Every link of a port leaves from
- * one point, so the stroke along the port's row before the first bend is shared.
- */
 const lanes = (path: Route): ReadonlyArray<Segment> => {
   const first = path[0] as Pt
   const last = path[path.length - 1] as Pt
@@ -20,7 +16,6 @@ const lanes = (path: Route): ReadonlyArray<Segment> => {
   return all.slice(Math.max(0, head), tail + 1)
 }
 
-/** Length of every stroke that runs inside a card, sampled each pixel. */
 const underCards = (nodes: ReadonlyArray<RoutedNode>, path: Route): number => {
   let length = 0
   for (const [a, b] of segments(path)) {
@@ -43,7 +38,6 @@ const underCards = (nodes: ReadonlyArray<RoutedNode>, path: Route): number => {
   return length
 }
 
-/** Length that two links to different targets draw on top of each other. */
 const shared = (a: Route, b: Route): number => {
   let length = 0
   for (const [p, q] of lanes(a))
@@ -73,10 +67,10 @@ describe('the stress board', () => {
       for (const b of nodes) {
         if (a === b) continue
         const apart =
-          a.x >= b.x + CARD_W + CLEARANCE ||
-          b.x >= a.x + CARD_W + CLEARANCE ||
-          a.y >= b.y + heightOf(b.type) + CLEARANCE ||
-          b.y >= a.y + heightOf(a.type) + CLEARANCE
+          a.x >= b.x + CARD_W + CARD_CLEARANCE_PX ||
+          b.x >= a.x + CARD_W + CARD_CLEARANCE_PX ||
+          a.y >= b.y + heightOf(b.type) + CARD_CLEARANCE_PX ||
+          b.y >= a.y + heightOf(a.type) + CARD_CLEARANCE_PX
         expect(apart, `${a.id} and ${b.id}`).toBe(true)
       }
   })
@@ -122,9 +116,8 @@ describe('the stress board', () => {
       for (let index = 1; index < wire.tunnels.length; index += 1) {
         const [, end] = wire.tunnels[index - 1] as readonly [number, number]
         const [start] = wire.tunnels[index] as readonly [number, number]
-        expect(start - end, key).toBeGreaterThanOrEqual(SURFACE_MIN)
+        expect(start - end, key).toBeGreaterThanOrEqual(SURFACE_MIN_PX)
       }
-      // One crossing leaves a gap of 14 px; a longer tunnel passes under several.
       joined += wire.tunnels.filter(([start, end]) => end - start > 15).length
     }
     expect(joined).toBeGreaterThan(0)

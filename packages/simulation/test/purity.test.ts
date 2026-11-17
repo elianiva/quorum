@@ -3,14 +3,6 @@ import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from 'vitest'
 
-/*
- * The browser plays the Simulation and the API Worker replays it, so it must
- * run the same everywhere (docs/adr/0004-simulation-package.md, 04
- * "Determinism and randomness"). Its sources import only `effect`,
- * `@typeonce/effect-machine`, and their own files, touch no host globals, and
- * use only exact math.
- */
-
 const root = join(dirname(fileURLToPath(import.meta.url)), '../src')
 
 const listSources = async (directory: string): Promise<Array<string>> => {
@@ -29,7 +21,6 @@ const listSources = async (directory: string): Promise<Array<string>> => {
   return nested.flat()
 }
 
-/** The code without its comments and string literals, so prose cannot trip a rule. */
 const codeOf = (text: string): string =>
   text
     .replaceAll(/\/\*[\s\S]*?\*\//g, '')
@@ -48,14 +39,11 @@ const allowedImport = (specifier: string): boolean =>
   specifier.startsWith('@typeonce/effect-machine/') ||
   specifier.startsWith('.')
 
-/** ECMAScript leaves these to the engine, and engines differ by a few ulp. */
 const inexactMath =
   /\bMath\.(?:sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|asinh|acosh|atanh|exp|expm1|log|log2|log10|log1p|pow|cbrt|hypot|random)\b/
 
-/** The exponent operator is `Math.pow` by another name. */
 const exponent = /\*\*/
 
-/** Clocks and host objects differ between the browser, Node, and the Worker. */
 const hostGlobal =
   /\b(?:Date|performance|window|document|navigator|localStorage|sessionStorage|process|crypto|fetch|setTimeout|setInterval|requestAnimationFrame)\b/
 

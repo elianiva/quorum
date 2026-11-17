@@ -1,9 +1,5 @@
 import type { ComponentId, IncidentId } from './catalog.ts'
 
-/* What a guided Sandbox shows and names: its title, its Era, and the goal of each objective. The
-   simulation adds the board it starts from and the condition each objective holds (sandbox.ts).
-   The wiki and the catalog copy read this file, so they never load the engine. */
-
 export const SANDBOX_IDS = [
   'out-of-credits',
   'shared-box',
@@ -28,9 +24,7 @@ export type SandboxId = (typeof SANDBOX_IDS)[number]
 
 export type GuidedObjectiveSummary = Readonly<{
   goal: string
-  /** Users while this objective runs. Unset keeps the demand of the one before. */
   users?: number
-  /** The incident this objective fires, and the only Component kind it may hit. */
   incident?: Readonly<{ kind: IncidentId; only?: ComponentId }>
 }>
 

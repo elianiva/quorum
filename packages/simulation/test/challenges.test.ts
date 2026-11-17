@@ -121,7 +121,6 @@ describe('Challenges', () => {
 
   test('the run refuses what the board refuses', () => {
     const hello = byId('hello-world')
-    // A Cache is not in the Garage palette, so a Design with one cannot have been built.
     const cached = {
       ...replayOf(hello, hello.start()),
       design: {

@@ -20,7 +20,6 @@ import { partOf } from '@/game/parts.ts'
 import { partCells } from './part-row.ts'
 import { unreadCount, waitingMail } from './inbox.ts'
 
-/** The highlight's offset under the open tab, by the tab's place in the dock. */
 const TAB_OFFSET = [
   css({ translate: '0' }),
   css({ translate: '2.75rem' }),
@@ -97,7 +96,6 @@ const row = (model: Model, type: ComponentId, index: number, h: HtmlBuilder<Mess
   )
 }
 
-/** The part in hand: its mark and name, and a way to put it down. */
 const armed = (type: ComponentId, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
@@ -174,8 +172,6 @@ const armed = (type: ComponentId, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** The open group's parts, keyed by group, so switching groups swaps the list
- *  in place while the dock morphs to its new height. */
 const list = (model: Model, group: DockGroup, h: HtmlBuilder<Message>): Html =>
   h.div(
     [
@@ -205,7 +201,6 @@ const list = (model: Model, group: DockGroup, h: HtmlBuilder<Message>): Html =>
     dockItems(model.board.game, group).map((type, index) => row(model, type, index, h)),
   )
 
-/** The Inbox beside the build groups: one badge, one sheet, no separate action bar. */
 const inboxTab = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -303,18 +298,12 @@ const inboxTab = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** One surface. Its top slot holds the open group's parts or the part in hand,
- *  and the dock morphs between them instead of snapping (src/game/motion.ts).
- *  The dock is pinned at its bottom edge, so its content packs to the bottom:
- *  mid-morph, the tabs stay put and the top edge moves. */
 export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
   const open = model.board.buildGroup
   const placing = placingOf(model)
   const groups = DOCK_GROUPS.filter((group) => dockGroups(model.board.game).includes(group.key))
-  // A phone docks the tabs as a pill around their content. The pill only takes the full width when
-  // every group is unlocked, or while a group's list is open and its rows need the room.
   const allGroups = groups.length === DOCK_GROUPS.length
   const wide = open !== null || allGroups
   return h.div(
@@ -380,14 +369,10 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
               h.AriaLabel(t.dock.build),
             ],
             [
-              // One highlight slides between the tabs. It is a fresh element each time the
-              // list opens, so it fades in on the tab you clicked instead of sliding from another.
               open
                 ? h.span(
                     [
                       h.Key('tab-highlight'),
-                      // The offset is a class, not an inline style: a style set after the element
-                      // is inserted would transition from the left edge.
                       h.Class(
                         cx(
                           cx(
@@ -462,7 +447,6 @@ export const dock = (model: Model, h: HtmlBuilder<Message>): Html => {
                       css({ width: '6', height: '6' }),
                       h,
                     ),
-                    // The open tab carries its group colour as an underline.
                     h.span(
                       [
                         h.Class(

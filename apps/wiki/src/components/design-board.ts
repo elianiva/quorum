@@ -52,9 +52,6 @@ export const drawDesign = (id: string, host: HTMLElement): (() => void) => {
     onNodeToggle: NOOP,
     onBox: NOOP,
   })
-  // The board starts asynchronously and draws the state it was mounted with; fit it once the host
-  // has its size, and again after the cards' layout settles. The Design is solved once, so its
-  // cards hold steady figures while the belts carry that traffic and run only on screen.
   const frame = requestAnimationFrame(() => fitBoard(key))
   const fitTimer = setTimeout(() => fitBoard(key), 400)
   return () => {

@@ -1,20 +1,5 @@
-//! The flat ABI the host calls: named blocks in memory this crate owns.
-//!
-//! Every input and output is a `Vec` inside one of two arenas. The host asks for
-//! a block's pointer with `ptr`, fills it through a `Float64Array` view, then
-//! calls a run function that reads the block with checked indexing. Nothing here
-//! uses `unsafe`. An unknown block, a short block, or an Edge or Link that names
-//! a Node outside the Design makes a run function return a status code. A catalog
-//! index in a Node's row is not range-checked: the host writes it from the same
-//! catalog, and an index past a table traps. The host re-reads `ptr` after any
-//! call that may grow memory, because a grown memory detaches its views.
-//!
-//! Block ids are stable: they are the ABI.
-
 use crate::catalog::*;
 use crate::model::*;
-
-// ---- the scalar block: one row per Node, plus the Game's own slots ----
 
 pub const S_USERS: usize = 0;
 pub const S_SEED: usize = 1;
@@ -91,7 +76,7 @@ pub const S_POISONED: usize = 71;
 pub const S_TRANSACTIONS: usize = 72;
 pub const S_SAMPLING_MS: usize = 73;
 pub const S_DOWN_OOM: usize = 74;
-/// The fixes the Company's Service has shipped, as a bitset over `FIXES`. Row 0 only.
+
 pub const S_FIXES: usize = 75;
 pub const S_R2: usize = 76;
 pub const S_ARCHIVED: usize = 77;
@@ -145,44 +130,41 @@ pub const S_MERGE: usize = 124;
 pub const S_SHUT: usize = 125;
 pub const S_DATA: usize = 126;
 pub const S_SUBSCRIPTIONS: usize = 127;
-/// An Analytics tap's sample rate.
+
 pub const S_SAMPLE_RATE: usize = 128;
-/// `insightPerk`: what the founder's perks multiply Insight by.
+
 pub const S_INSIGHT_PERK: usize = 129;
-/// `burnOf`: what the Node's box bills, before traffic.
+
 pub const S_BURN: usize = 130;
-/// Object Storage's retrieval fee per GB, and its price per read and per write.
+
 pub const S_RETRIEVAL: usize = 131;
 pub const S_STORE_GET: usize = 132;
 pub const S_STORE_PUT: usize = 133;
-/// The Era's cost index, and the Venture's egress multiplier.
+
 pub const S_COST_INDEX: usize = 134;
 pub const S_EGRESS_FACTOR: usize = 135;
-/// `payrollOf`, and `burnSharesOf` by line: compute, data, storage, observability.
+
 pub const S_SALARIES: usize = 136;
 pub const S_SHARE_COMPUTE: usize = 137;
 pub const S_SHARE_DATA: usize = 138;
 pub const S_SHARE_STORAGE: usize = 139;
 pub const S_SHARE_OBSERVABILITY: usize = 140;
-/// How many Services the Company runs.
+
 pub const S_SERVICE_COUNT: usize = 141;
-/// `syncWaitMs`: what a write waits for synchronous replicas and a synchronous standby.
+
 pub const S_SYNC_WAIT: usize = 142;
-/// What a resharding copy leaves of the volume's IOPS: `RESHARD_IOPS` while it copies, else 1.
+
 pub const S_IOPS_FACTOR: usize = 143;
-/// `stealOf`: the share of the cores a noisy neighbour takes under Shared tenancy.
+
 pub const S_STEAL: usize = 144;
-/// Priority load shedding and graceful degradation, as the Node sets them.
+
 pub const S_SHED: usize = 145;
 pub const S_DEGRADE: usize = 146;
 pub const SCALARS: usize = 147;
 
-/// The node-fields block: one row per Node, read by the routing Design.
 pub const NODE_FIELDS: usize = 12;
-/// The edge-fields block: one row per Edge.
-pub const EDGE_FIELDS: usize = 10;
 
-// ---- block ids ----
+pub const EDGE_FIELDS: usize = 10;
 
 pub const BLOCK_SCALARS: i32 = 1;
 pub const BLOCK_NODE_FIELDS: i32 = 2;
@@ -191,24 +173,23 @@ pub const BLOCK_OUT_STARTS: i32 = 4;
 pub const BLOCK_OUT_EDGES: i32 = 5;
 pub const BLOCK_DEMAND: i32 = 9;
 pub const BLOCK_INTAKE: i32 = 10;
-/// `payloadFactor` per request kind: how big a response is with the shipped Features.
+
 pub const BLOCK_PAYLOAD: i32 = 12;
 pub const BLOCK_PROBE: i32 = 13;
 pub const BLOCK_ROUTES: i32 = 14;
-/// Each Link in Game order: from slot, to slot, Edge index or -1, and a breaker flag.
+
 pub const BLOCK_LINKS: i32 = 18;
 pub const LINK_FIELDS: usize = 4;
-/// `serviceOfKind`: each request kind's Service, as its index in the Game's Services.
+
 pub const BLOCK_KIND_SERVICE: i32 = 19;
-/// `valueFactor` per request kind: the Features, the levers, the Venture, and the Scenario.
+
 pub const BLOCK_VALUE: i32 = 15;
 pub const BLOCK_RESEARCH: i32 = 16;
-/// `queryFactor` per backend kind: what one query costs with the shipped Features.
+
 pub const BLOCK_QUERY: i32 = 17;
 pub const BLOCK_LEDGER: i32 = 23;
 pub const BLOCK_SUMMARY: i32 = 24;
 
-/// Status codes a run function returns.
 pub const OK: i32 = 0;
 pub const UNKNOWN_BLOCK: i32 = 1;
 pub const NO_DESIGN: i32 = 2;
@@ -217,7 +198,6 @@ pub const BAD_EDGE: i32 = 4;
 pub const TOO_LARGE: i32 = 5;
 pub const UNSUPPORTED: i32 = 6;
 
-/// The input blocks: everything the host writes before a run.
 #[derive(Default)]
 pub struct Inputs {
     pub scalars: Vec<f64>,
@@ -237,7 +217,6 @@ pub struct Inputs {
     pub query: Vec<f64>,
 }
 
-/// The output blocks: everything a run writes.
 #[derive(Default)]
 pub struct Outputs {
     pub ledger: Vec<f64>,
@@ -245,26 +224,30 @@ pub struct Outputs {
 }
 
 impl Inputs {
-    /// The Game's slots, one row at index 0 of the scalar block.
     #[inline]
     pub fn scalar(&self, slot: usize) -> f64 {
         self.scalars.get(slot).copied().unwrap_or(0.0)
     }
 
-    /// One slot of every Node's row, as a column.
     pub fn column(&self, slot: usize) -> Vec<f64> {
         let count = self.scalars.len() / SCALARS;
         (0..count)
-            .map(|node| self.scalars.get(node * SCALARS + slot).copied().unwrap_or(0.0))
+            .map(|node| {
+                self.scalars
+                    .get(node * SCALARS + slot)
+                    .copied()
+                    .unwrap_or(0.0)
+            })
             .collect()
     }
 
-    /// One slot of every Node's row, as flags.
     pub fn flags(&self, slot: usize) -> Vec<bool> {
-        self.column(slot).into_iter().map(|value| value != 0.0).collect()
+        self.column(slot)
+            .into_iter()
+            .map(|value| value != 0.0)
+            .collect()
     }
 
-    /// One Node's scalar row, or zeroes when the block is short.
     #[inline]
     pub fn row(&self, node: usize) -> &[f64] {
         let start = node.saturating_mul(SCALARS);
@@ -280,35 +263,29 @@ thread_local! {
     static OUTPUT: core::cell::RefCell<Outputs> = core::cell::RefCell::new(Outputs::default());
 }
 
-/// Reads the input arena. Never held across a call that borrows it again.
 pub fn with_inputs<R>(read: impl FnOnce(&Inputs) -> R) -> R {
     INPUT.with(|cell| read(&cell.borrow()))
 }
 
-/// Writes the output arena.
 pub fn with_outputs<R>(write: impl FnOnce(&mut Outputs) -> R) -> R {
     OUTPUT.with(|cell| write(&mut cell.borrow_mut()))
 }
 
-/// The number of `f64`s one scalar row holds, so the host builds a batch.
 #[no_mangle]
 pub extern "C" fn scalar_len() -> i32 {
     SCALARS as i32
 }
 
-/// The number of `f64`s one Node row holds.
 #[no_mangle]
 pub extern "C" fn node_field_len() -> i32 {
     NODE_FIELDS as i32
 }
 
-/// The catalog this solver was built from, so a check can tell a stale build.
 #[no_mangle]
 pub extern "C" fn catalog_hash() -> f64 {
     f64::from(crate::catalog::CATALOG_HASH)
 }
 
-/// Resizes a block so the host can fill it. Returns `OK` or `UNKNOWN_BLOCK`.
 #[no_mangle]
 pub extern "C" fn reserve(block: i32, len: i32) -> i32 {
     let want = len.max(0) as usize;
@@ -389,8 +366,6 @@ pub extern "C" fn reserve(block: i32, len: i32) -> i32 {
     }
 }
 
-/// A block's address in linear memory, or 0 for an unknown id. The host writes
-/// through a typed-array view of it, and must ask again after memory grows.
 #[no_mangle]
 pub extern "C" fn ptr(block: i32) -> usize {
     let address = INPUT.with(|cell| {
@@ -428,7 +403,6 @@ pub extern "C" fn ptr(block: i32) -> usize {
     })
 }
 
-/// A block's length in elements, or 0 for an unknown id.
 #[no_mangle]
 pub extern "C" fn len(block: i32) -> i32 {
     let count = INPUT.with(|cell| {
@@ -466,33 +440,35 @@ pub extern "C" fn len(block: i32) -> i32 {
     })
 }
 
-// ---- reading a Game out of the blocks ----
+const RESEARCH_WORDS: usize = 4;
+const BITS_PER_BYTE: usize = 8;
+const BITS_PER_WORD: usize = 64;
+const NO_NODE: usize = usize::MAX;
+const NO_SERVICE: usize = usize::MAX;
+const INCIDENT_CODE_OFFSET: usize = 1;
 
-/// The research bitset, built once for a batch of Nodes.
-pub type Research = [u64; 4];
+pub type Research = [u64; RESEARCH_WORDS];
 
 #[inline]
 fn bit(bytes: &[u8], index: usize) -> bool {
-    match bytes.get(index / 8) {
-        Some(byte) => (byte >> (index % 8)) & 1 == 1,
+    match bytes.get(index / BITS_PER_BYTE) {
+        Some(byte) => (byte >> (index % BITS_PER_BYTE)) & 1 == 1,
         None => false,
     }
 }
 
 pub fn research_of(bytes: &[u8]) -> Research {
-    let mut research = [0u64; 4];
+    let mut research = [0u64; RESEARCH_WORDS];
     for index in 0..RESEARCH_COUNT {
         if bit(bytes, index) {
-            research[index / 64] |= 1 << (index % 64);
+            research[index / BITS_PER_WORD] |= 1 << (index % BITS_PER_WORD);
         }
     }
     research
 }
 
-/// The incident the host writes, as its index into `INCIDENT_IDS` plus one, 0
-/// for none. Only the kinds a ported model reads have a variant.
 fn incident_of(code: usize) -> Option<Incident> {
-    let id = INCIDENT_IDS.get(code.checked_sub(1)?)?;
+    let id = INCIDENT_IDS.get(code.checked_sub(INCIDENT_CODE_OFFSET)?)?;
     Some(match *id {
         "gc-storm" => Incident::GcStorm,
         "loop" => Incident::Loop,
@@ -527,51 +503,56 @@ fn incident_of(code: usize) -> Option<Incident> {
         "bad-deploy" => Incident::BadDeploy,
         "cluster-upgrade" => Incident::ClusterUpgrade,
         "latency-regression" => Incident::LatencyRegression,
-        // Demand surges, outages the host writes as down Nodes or routes, and
-        // the runtime failures `runtime_failure` carries.
+
         _ => Incident::Elsewhere,
     })
 }
 
-/// A slot the host wrote as a Node index, or `usize::MAX` for none: `-1.0 as
-/// usize` saturates to 0, which would name the first Node.
-fn slot_of(value: f64) -> usize {
-    if value >= 0.0 { value as usize } else { usize::MAX }
+fn node_index_or_none(value: f64) -> usize {
+    if value >= 0.0 {
+        value as usize
+    } else {
+        NO_NODE
+    }
 }
 
-/// The Game context: row 0 of the scalar block, plus the two bitsets.
+fn index_if_written(value: f64) -> Option<usize> {
+    (value >= 0.0).then_some(value as usize)
+}
+
 pub fn game_with(scalars: &[f64], research: Research) -> GameCtx {
     let slot = |index: usize| scalars.get(index).copied().unwrap_or(0.0);
     let incident_code = slot(S_INCIDENT) as usize;
+    let fixes_shipped = slot(S_FIXES) as u64;
     GameCtx {
         users: slot(S_USERS),
-        researched: research,
+        researched_bits: research,
         incident: incident_of(incident_code),
-        incident_code,
-        incident_node: slot_of(slot(S_INCIDENT_NODE)),
+        incident_code_plus_one: incident_code,
+        incident_node: node_index_or_none(slot(S_INCIDENT_NODE)),
         incident_throttled: slot(S_INCIDENT_THROTTLED) != 0.0,
-        incident_region: (slot(S_INCIDENT_REGION) >= 0.0).then(|| slot(S_INCIDENT_REGION) as usize),
-        chaos_target: (slot(S_CHAOS_TARGET) >= 0.0).then(|| slot(S_CHAOS_TARGET) as usize),
-        cert_nodes: false,
+        incident_region: index_if_written(slot(S_INCIDENT_REGION)),
+        chaos_target: index_if_written(slot(S_CHAOS_TARGET)),
+        any_certificate_issued: false,
         sandbox: slot(S_SANDBOX) != 0.0,
         scenario_tasks: slot(S_SCENARIO_TASKS) != 0.0,
-        fixes: slot(S_FIXES) as u64,
+        fixes_shipped_bits: fixes_shipped,
         data_staffed: slot(S_DATA_STAFFED) != 0.0,
         cdn_on_board: false,
         edge_on_board: false,
         edge_auth: false,
-        data: slot(S_DATA),
+        data_gb: slot(S_DATA),
         static_pages: 0.0,
-        spread_regions: 1.0,
+        spread_region_bits: 1.0,
         value: [1.0; NR],
         payload: [1.0; NR],
         query: [1.0; NB],
-        subscriptions: slot(S_SUBSCRIPTIONS),
+        subscriptions_per_second: slot(S_SUBSCRIPTIONS),
         insight_perk: slot(S_INSIGHT_PERK),
         mix: [0.0; NR],
         seed: slot(S_SEED),
         time: slot(S_TIME),
-        incident_started: slot(S_INCIDENT_STARTED),
+        incident_started_at_seconds: slot(S_INCIDENT_STARTED),
         service_count: slot(S_SERVICE_COUNT) as usize,
         service_indexes: slot(S_SERVICE_INDEXES),
         stage: slot(S_STAGE),
@@ -584,16 +565,26 @@ pub fn game_with(scalars: &[f64], research: Research) -> GameCtx {
         cost_index: slot(S_COST_INDEX),
         egress_factor: slot(S_EGRESS_FACTOR),
         salaries: slot(S_SALARIES),
-        shares: [slot(S_SHARE_COMPUTE), slot(S_SHARE_DATA), slot(S_SHARE_STORAGE), slot(S_SHARE_OBSERVABILITY)],
-        kind_service: [usize::MAX; NR],
+        shares: [
+            slot(S_SHARE_COMPUTE),
+            slot(S_SHARE_DATA),
+            slot(S_SHARE_STORAGE),
+            slot(S_SHARE_OBSERVABILITY),
+        ],
+        kind_service: [NO_SERVICE; NR],
     }
 }
 
-/// One Node's row of the scalar block.
 pub fn node_of(row: &[f64]) -> Node {
     let slot = |index: usize| row.get(index).copied().unwrap_or(0.0);
     let flag = |index: usize| slot(index) != 0.0;
-    let cert = slot(S_CERT_UNTIL);
+    let blast_written = slot(S_BLAST);
+    let blast_or_whole_node = if blast_written > 0.0 {
+        blast_written
+    } else {
+        1.0
+    };
+    let cert_until_or_never = slot(S_CERT_UNTIL);
     Node {
         id: slot(S_ID) as usize,
         type_code: slot(S_TYPE_CODE) as usize,
@@ -612,7 +603,7 @@ pub fn node_of(row: &[f64]) -> Node {
         gogc: slot(S_GOGC) as usize,
         collector: slot(S_COLLECTOR) as usize,
         recycle: flag(S_RECYCLE),
-        warm: slot(S_WARM),
+        warm_share: slot(S_WARM),
         down: flag(S_DOWN),
         zone: slot(S_ZONE) as usize,
         region: slot(S_REGION) as usize,
@@ -631,19 +622,16 @@ pub fn node_of(row: &[f64]) -> Node {
         iops: slot(S_IOPS) as usize,
         keep: slot(S_KEEP) as usize,
         topology: slot(S_TOPOLOGY) as usize,
-        mode: slot(S_MODE) as usize,
-        sync: flag(S_SYNC),
-        cert_until: (cert >= 0.0).then_some(cert),
+        pooler_mode: slot(S_MODE) as usize,
+        synchronous_replica: flag(S_SYNC),
+        cert_expires_at_seconds: (cert_until_or_never >= 0.0).then_some(cert_until_or_never),
         rate_limit: slot(S_RATE_LIMIT),
         burst: slot(S_BURST),
         max_length: slot(S_MAX_LENGTH),
         dlq: flag(S_DLQ),
         attempts: slot(S_ATTEMPTS),
         transactions: flag(S_TRANSACTIONS),
-        blast: {
-            let blast = slot(S_BLAST);
-            if blast > 0.0 { blast } else { 1.0 }
-        },
+        blast: blast_or_whole_node,
         buggy: flag(S_BUGGY),
         databases_in_group: slot(S_DATABASES_IN_GROUP),
         sync_stalled: flag(S_SYNC_STALLED),
@@ -653,12 +641,12 @@ pub fn node_of(row: &[f64]) -> Node {
         sampling_ms: slot(S_SAMPLING_MS),
         users_in_group: slot(S_USERS_IN_GROUP),
         r2: flag(S_R2),
-        archived: slot(S_ARCHIVED),
+        archived_share: slot(S_ARCHIVED),
         search_variant: slot(S_SEARCH_VARIANT) as usize,
         search_shards: slot(S_SEARCH_SHARDS),
         heap: slot(S_HEAP) as usize,
         search_replicas: slot(S_SEARCH_REPLICAS),
-        refresh: slot(S_REFRESH),
+        refresh_seconds: slot(S_REFRESH),
         second_provider: flag(S_SECOND_PROVIDER),
         gpu: slot(S_GPU) as usize,
         gpu_model: slot(S_GPU_MODEL) as usize,
@@ -667,12 +655,12 @@ pub fn node_of(row: &[f64]) -> Node {
         quorum_n: slot(S_QUORUM_N),
         quorum_r: slot(S_QUORUM_R),
         quorum_w: slot(S_QUORUM_W),
-        lost: slot(S_LOST),
+        lost_replicas: slot(S_LOST),
         spread: flag(S_SPREAD),
-        local_regions: 0,
+        local_region_bits: 0,
         queue_attempts: 0.0,
         cache_engine: slot(S_CACHE_ENGINE) as usize,
-        ttl: slot(S_TTL),
+        ttl_seconds: slot(S_TTL),
         swr: flag(S_SWR),
         early_expiry: flag(S_EARLY_EXPIRY),
         coalesce: flag(S_COALESCE),
@@ -690,7 +678,7 @@ pub fn node_of(row: &[f64]) -> Node {
         iops_factor: slot(S_IOPS_FACTOR),
         steal: slot(S_STEAL),
         sample_rate: slot(S_SAMPLE_RATE),
-        cluster: slot_of(slot(S_CLUSTER)),
+        cluster: node_index_or_none(slot(S_CLUSTER)),
         index_type: slot(S_INDEX_TYPE) as usize,
         vec_recall: None,
         majority_ms: 0.0,

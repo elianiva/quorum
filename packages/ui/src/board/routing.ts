@@ -1,6 +1,6 @@
 import {
   CARD_W,
-  CLEARANCE,
+  CARD_CLEARANCE_PX,
   gap,
   heightOf,
   inPort,
@@ -12,59 +12,29 @@ import {
   type Route,
 } from './geometry.ts'
 
-/*
- * Link routing, after Wybrow, Marriott and Stuckey, "Orthogonal Connector
- * Routing" (GD 2009), with congestion costs from PathFinder (McMurchie and
- * Ebeling, 1995):
- *
- * 1. A sparse grid runs along every card's clearance edge and every port.
- * 2. Each link takes the cheapest path on it: length, plus a cost per bend,
- *    plus a cost for channels that are already full. Links into one Node join
- *    one trunk, so a channel holds one lane per target, not one per link.
- * 3. A few passes raise the cost of channels that stay over capacity, so some
- *    links take a longer way through an emptier gap.
- * 4. Nudging spreads the lanes that share a channel line, in an order that
- *    avoids crossings where it can.
- * 5. Where two lanes still cross, the vertical one goes underground. A lane
- *    under several crossings in a row stays underground through them all.
- */
-
 export type RoutedNode = Placed & Readonly<{ id: string }>
 export type RoutedLink = Readonly<{ from: string; to: string }>
-/**
- * A routed link: the whole path for packets and hit tests, the pieces to stroke,
- * and its tunnels under other links, as distances along the path.
- */
 export type Wire = Readonly<{
   path: Route
   pieces: ReadonlyArray<Route>
   tunnels: ReadonlyArray<readonly [number, number]>
 }>
 
-/** Obstacles grow by half the clearance, so grid lines run down the middle of a tight gap. */
-const MARGIN = CLEARANCE / 2
-/** Distance between lanes in a channel that has the room. */
+const MARGIN = CARD_CLEARANCE_PX / 2
 const LANE = 12
-/** Lanes keep this far from a card edge. */
 const PAD = 5
-/** Closest that lanes squeeze in a channel that is over capacity. */
 const MIN_LANE = 4
-/** A bend costs as much as this much length. */
 const BEND_COST = 40
-/** Cost per extra lane in a full channel, and history added per pass. */
 const PRESENT_COST = 4
 const HISTORY_COST = 2
 const PASSES = 4
-/** Half the length of the gap a vertical lane leaves where a horizontal one crosses it. */
 const HOP = 7
-/** A lane that would surface for less than this between two crossings stays underground. */
-export const SURFACE_MIN = 22
+export const SURFACE_MIN_PX = 22
 
 const keyOf = (link: RoutedLink): string => `${link.from}>${link.to}`
 
 type Rect = Readonly<{ x0: number; y0: number; x1: number; y1: number }>
 
-/** A binary min-heap of states keyed by cost. */
 class Heap {
   private keys: Array<number> = []
   private items: Array<number> = []
@@ -112,21 +82,15 @@ class Heap {
   }
 }
 
-/** Directions: 0 is +x, 1 is -x, 2 is +y, 3 is -y. The opposite of d is d ^ 1. */
 const DX = [1, -1, 0, 0] as const
 const DY = [0, 0, 1, -1] as const
 
-/** The links into one Node, as one tree toward its in-port. */
 type Tree = {
-  /** Each vertex's next vertex toward the port; the root, the in-port stub, has -1. */
   next: Map<number, number>
-  /** The direction of each vertex's step toward the port. The root steps +x into the port. */
   dir: Map<number, number>
   edges: Set<number>
-  /** `dir` + 1 per vertex, 0 off the tree, and 1 per edge in `edges`: the search reads these. */
   joins: Int8Array
   owns: Uint8Array
-  /** Out-port stubs of the links in this tree. */
   starts: Set<number>
   box: { x0: number; y0: number; x1: number; y1: number }
 }
@@ -134,7 +98,6 @@ type Tree = {
 type Run = {
   bundle: string
   vertical: boolean
-  /** Index of the line: an x index for a vertical run, a y index for a horizontal one. */
   line: number
   lo: number
   hi: number
@@ -142,7 +105,6 @@ type Run = {
   offset: number
 }
 
-/** Routes every link around the cards. A link with no way through is left out. */
 export const routeLinks = (
   nodes: ReadonlyArray<RoutedNode>,
   links: ReadonlyArray<RoutedLink>,
@@ -201,7 +163,6 @@ export const routeLinks = (
     return false
   }
 
-  // Edge ids: vertex * 2 is the edge to i + 1 (horizontal), vertex * 2 + 1 the edge to j + 1.
   const count = nx * ny
   const open = new Uint8Array(count * 2)
   const capacity = new Int32Array(count * 2)
@@ -212,7 +173,6 @@ export const routeLinks = (
     for (let j = 0; j < ny; j += 1)
       blocked[vid(i, j)] = inside(xs[i] as number, ys[j] as number) ? 1 : 0
 
-  /** The free interval across a channel: the nearest card edges on either side. */
   const across = (
     at: number,
     from: number,
@@ -265,7 +225,6 @@ export const routeLinks = (
     }
   }
 
-  /** The edge and vertex one step from `v` in direction `d`, or null at the grid's edge. */
   const step = (v: number, d: number): Readonly<{ edge: number; to: number }> | null => {
     const i = Math.floor(v / ny) + (DX[d] as number)
     const j = (v % ny) + (DY[d] as number)
@@ -280,7 +239,6 @@ export const routeLinks = (
   let trees = new Map<string, Tree>()
   let paths = new Map<string, Array<number>>()
   const g = new Float64Array(count * 4)
-  // Which search last set each entry of `g`: a new search needs no clearing.
   const seen = new Int32Array(count * 4)
   let search = 0
   const came = new Int32Array(count * 4)
@@ -333,14 +291,12 @@ export const routeLinks = (
             found = state
             break
           }
-          // Running into the trunk head-on: no join here, and no way through it.
           continue
         }
         const vi = Math.floor(v / ny)
         const vj = v - vi * ny
         for (let nd = 0; nd < 4; nd += 1) {
           if (nd === (d ^ 1)) continue
-          // The step to the next vertex, inlined from `step`: this loop is most of a route.
           const i = vi + (DX[nd] as number)
           const j = vj + (DY[nd] as number)
           if (i < 0 || i >= nx || j < 0 || j >= ny) continue
@@ -404,7 +360,6 @@ export const routeLinks = (
     if (!over) break
   }
 
-  // Runs: the stretches of one tree along one grid line.
   const runs: Array<Run> = []
   const runOf = new Map<string, Run>()
   for (const [bundle, tree] of trees) {
@@ -443,12 +398,10 @@ export const routeLinks = (
     }
   }
 
-  /** Which way a tree leaves a run's end: -1 toward lower coordinates, 1 higher, 0 neither or both. */
   const sideAt = (run: Run, at: number): number => {
     const tree = trees.get(run.bundle) as Tree
     const vertical = run.vertical
     const v = vertical ? vid(run.line, at) : vid(at, run.line)
-    // An edge in direction d from v; a tree's in-stub leaves toward +x, an out-stub came from -x.
     const has = (d: number): boolean => {
       if (vertical && d === 0 && tree.dir.get(v) === 0 && tree.next.get(v) === -1) return true
       if (vertical && d === 1 && tree.starts.has(v)) return true
@@ -484,7 +437,6 @@ export const routeLinks = (
       ? (xs[Number(key.slice(1))] as number)
       : (ys[Number(key.slice(1))] as number)
     list.sort((a, b) => a.lo - b.lo)
-    // Clusters: runs that share some stretch of the line, directly or through others.
     let cluster: Array<Run> = []
     let reach = Number.NEGATIVE_INFINITY
     const settle = (group: Array<Run>): void => {
@@ -529,7 +481,6 @@ export const routeLinks = (
     if (!vertices) continue
     const bundle = end.link.to
     const points: Array<Pt> = [end.out]
-    // The port stubs are horizontal and sit on no lane.
     let previous: Readonly<{ vertical: boolean; at: number }> = { vertical: false, at: end.out.y }
     let index = 0
     while (index < vertices.length - 1) {
@@ -546,7 +497,6 @@ export const routeLinks = (
         last += 1
       }
       if (vertical === previous.vertical) {
-        // Two horizontal stretches in a row: the port stub, then a lane off its centre.
         if (at !== previous.at) {
           points.push({ x: end.out.x + 3, y: previous.at })
           points.push({ x: xOf(v), y: at })
@@ -599,10 +549,8 @@ export const routeLinks = (
   return wires
 }
 
-/** Splits a path into the pieces between its tunnels, one tunnel per run of close hops. */
 const cut = (path: Route, hops: ReadonlyArray<Pt>): Pick<Wire, 'pieces' | 'tunnels'> => {
   if (hops.length === 0) return { pieces: [path], tunnels: [] }
-  // Where along the path each hop falls: hops sit only on vertical stretches.
   const spans: Array<[number, number]> = []
   let travelled = 0
   for (let index = 1; index < path.length; index += 1) {
@@ -624,7 +572,7 @@ const cut = (path: Route, hops: ReadonlyArray<Pt>): Pick<Wire, 'pieces' | 'tunne
   const tunnels: Array<[number, number]> = []
   for (const span of spans) {
     const last = tunnels.at(-1)
-    if (last && span[0] - last[1] < SURFACE_MIN) last[1] = Math.max(last[1], span[1])
+    if (last && span[0] - last[1] < SURFACE_MIN_PX) last[1] = Math.max(last[1], span[1])
     else tunnels.push([span[0], span[1]])
   }
   const ends = [0, ...tunnels.flat(), travelled]
@@ -634,7 +582,6 @@ const cut = (path: Route, hops: ReadonlyArray<Pt>): Pick<Wire, 'pieces' | 'tunne
   return { pieces, tunnels }
 }
 
-/** The stretch of a path from `start` to `end`, in distance along it. */
 const slice = (path: Route, start: number, end: number): Route => {
   const out: Array<Pt> = []
   let travelled = 0

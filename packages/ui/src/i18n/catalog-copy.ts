@@ -41,7 +41,6 @@ const entryCopy = (
   ),
 })
 
-/** The listed text fields of every entry in a table keyed by id. */
 export const copyOf = <
   T extends Table,
   Need extends string,
@@ -57,7 +56,6 @@ export const copyOf = <
     Object.entries(table).map(([id, entry]) => [id, entryCopy(entry, needed, maybe, lists ?? {})]),
   ) as never
 
-/** The same for a table kept as a list: entries are keyed by their `id` or `key`. */
 export const copyOfList = <
   T extends ReadonlyArray<object>,
   Field extends string,
@@ -78,7 +76,6 @@ export const copyOfList = <
     ]),
   ) as never
 
-/** The same for a table kept as a list with no ids: entries are keyed by their place. */
 export const copyOfIndexed = <
   T extends ReadonlyArray<object>,
   Need extends string,

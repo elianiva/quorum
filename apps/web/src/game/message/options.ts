@@ -34,13 +34,10 @@ import {
 import { FEATURE_IDS } from '@quorum/simulation/catalog'
 import { Effect, Schema } from 'effect'
 
-/** The options Messages, as cases for the root union. */
 export const optionsCases = {
   BulkResizeChosen: { nodeId: Schema.String, mode: Schema.Literals(['ten', 'max']) },
-  /** Buy every Node of a kind once, as one action that skips the ones at their cap. */
   UpgradeAllChosen: { nodeId: Schema.String },
   ResizeChosen: { nodeId: Schema.String, direction: Schema.Literals([1, -1]) },
-  /** Buy several sizes at once: `ten` stops after ten steps or the first refusal, `max` at the top size. */
   FamilyChosen: { nodeId: Schema.String, family: FamilyId },
   PricingChosen: { nodeId: Schema.String, pricing: Pricing },
   RuntimeChosen: { nodeId: Schema.String, runtime: RuntimeId },
@@ -146,7 +143,6 @@ export const optionsCases = {
   },
   DocOptionsChosen: { nodeId: Schema.String, transactions: Schema.optional(Schema.Boolean) },
   VecIndexChosen: { nodeId: Schema.String, indexType: VecIndexType },
-  /** A Feature's rollout, set from its flag (05 "Feature Flags"). */
   RolloutChosen: {
     nodeId: Schema.String,
     feature: Schema.Literals(FEATURE_IDS),

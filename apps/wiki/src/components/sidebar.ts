@@ -11,11 +11,8 @@ import * as Spoilers from '../submodels/spoilers.ts'
 import { quadrantBadge, quadrantColor } from './quadrant.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* The navigation rail: the current section's pages, and the open hub's pages beneath it. */
-
 type H = HtmlBuilder<Message>
 
-/** One row. The current page gets a filled row with its kind's colour as a bar. */
 const navLink = (
   page: Page,
   current: string,
@@ -147,12 +144,10 @@ const navLink = (
   )
 }
 
-/** A group's name in the page's language. A group the copy does not know keeps the name the frontmatter gives. */
 const groupLabel = (l: Lang, name: string): string =>
   (l.t.groups as Readonly<Record<string, Readonly<{ name: string }> | undefined>>)[name]?.name ??
   name
 
-/** A group of pages under one heading: a button with the page count and a chevron, and the pages beneath it when open. */
 const groupBlock = (
   l: Lang,
   name: string,
@@ -293,7 +288,6 @@ const groupBlock = (
   )
 }
 
-/** A hub: its row, how many pages sit under it, and a chevron that turns when it is open. */
 const hubLink = (
   l: Lang,
   hub: Page,
@@ -392,7 +386,6 @@ const hubLink = (
   )
 }
 
-/** Consecutive pages that share a group, in order; ungrouped pages are their own run. */
 const segmentsOf = (
   pages: ReadonlyArray<Page>,
 ): ReadonlyArray<Readonly<{ group: string | null; pages: ReadonlyArray<Page> }>> =>
@@ -407,7 +400,6 @@ export const sidebar = (model: Model, h: H): Html => {
   const l = langOf(model.locale)
   const page = pageIn(model.locale, model.path)
   const open = page?.parent ?? page?.path ?? null
-  // Home has no section of its own; it lists the play pages, where a new player starts.
   const section = model.path === '/' ? 'play' : (page?.section ?? 'play')
   const color = quadrantColor(section)
   const isOpen = (path: string): boolean => (path === open) !== model.navToggled.includes(path)
@@ -417,7 +409,6 @@ export const sidebar = (model: Model, h: H): Html => {
       h.Class(
         cx(
           SCROLL,
-          // A phone opens the menu over the page; a desktop keeps it as a sticky rail.
           css({
             borderColor: 'border',
             lg: {
@@ -561,7 +552,6 @@ export const sidebar = (model: Model, h: H): Html => {
           ),
         ],
       ),
-      // The spoiler filter stays in reach at the foot, however long the list.
       h.div(
         [
           h.Class(

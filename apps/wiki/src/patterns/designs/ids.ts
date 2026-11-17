@@ -1,7 +1,3 @@
-/* The id of every Pattern Design. Kept apart from DESIGNS so a page's island schema can list the
-   ids without loading the designs (and the Simulation they are built from). designs.test.ts keeps
-   this list equal to DESIGNS. */
-
 export const DESIGN_IDS = [
   'one-box',
   'split-storage',

@@ -12,12 +12,10 @@ import { sqliteRunner } from './platform/sqlite-runner.ts'
 import type { SqlRunner } from './platform/sql.ts'
 import { handlerFor } from './handler.ts'
 
-// Sentry is at the edge of the Worker, so the test spies on it instead of sending anything.
 vi.mock('@sentry/cloudflare', { spy: true })
 
 const url = `http://api.test${RPC_PATH}`
 
-/** How many Companies reached the Room layer, so a refused publish can prove it stopped there. */
 let publishes = 0
 
 const directory = (): RoomDirectory['Service'] => ({
@@ -28,7 +26,6 @@ const directory = (): RoomDirectory['Service'] => ({
   info: () => Effect.succeed({ exists: false, seats: 0, idle: false }),
 })
 
-// `FEEDBACK` is the one database, so the tests give it one runner.
 let db: SqlRunner = sqliteRunner()
 let handler = handlerFor({ feedback: db, directory: directory() })
 beforeEach(() => {
@@ -37,10 +34,6 @@ beforeEach(() => {
   handler = handlerFor({ feedback: db, directory: directory() })
 })
 
-/**
- * Sends the RPC client's HTTP requests straight to the Worker entry module, so
- * the test covers request encoding, routing, the handler, and error mapping.
- */
 const fetchThroughWorker: typeof globalThis.fetch = async (input, init) => {
   const request = new Request(input, init)
   return handler.handler(request)
@@ -195,8 +188,6 @@ test('a failing survey store reaches the client as unavailable and logs its caus
   expect(
     JSON.stringify(logged, (_, value) => (value instanceof Error ? value.message : value)),
   ).toContain('no such table')
-  // The store fault is a real one, so it still reaches Sentry; the ApiError that answers the
-  // client is declared, so it does not.
   expect(capture).toHaveBeenCalledTimes(1)
 })
 

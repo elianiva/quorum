@@ -2,11 +2,8 @@ import { reasons } from './toastReasons.ts'
 
 type Value = string | number
 
-/** What the Toast says: raised in the player's language, so the Model stores the words as shown. */
 export const toasts = {
-  /** Sentences the Simulation writes in English, found again by their English text. */
   reasons,
-  /** The "what" of a refusal that is a phrase and not a catalog name. */
   whats: {
     dataTeam: 'A Data team',
     platformTeam: 'A Platform team',
@@ -65,7 +62,6 @@ export const toasts = {
     switchProvider: 'Switch provider',
     laterEra: 'a later Era',
   },
-  /** Reasons the Simulation writes with a name or a number in them. */
   reason: {
     largestSize: (name: Value) => `${name} is at its largest size.`,
     everyLargestSize: (name: Value) => `Every ${name} is at its largest size.`,
@@ -87,7 +83,6 @@ export const toasts = {
       `The queue holds ${limit} Studies, and ${name} needs ${count} of them.`,
   },
   costs: (what: Value, price: Value) => `${what} costs ${price}.`,
-  /** One refusal needs no more than this when it is a name's own. */
   missing: 'That is gone.',
   sentences: (parts: ReadonlyArray<string>) => parts.join(' '),
   nodes: (count: Value, one: boolean) => (one ? `${count} Node` : `${count} Nodes`),
@@ -202,7 +197,6 @@ export const toasts = {
   logCleared: 'Log cleared.',
   clipboardBlocked: 'The clipboard is blocked.',
 
-  /** What happens in a Challenge's Design, as a Toast: a Challenge has no Inbox. */
   event: {
     breach: 'Data breach: an unpatched CVE was exploited. Users are leaving.',
     phishing: 'Credential leak: the phishing page took your keys. Users are leaving.',

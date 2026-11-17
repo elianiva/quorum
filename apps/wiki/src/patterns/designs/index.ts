@@ -8,7 +8,6 @@ import { patternsProduction } from './patterns-production.ts'
 import { patternsResilience } from './patterns-resilience.ts'
 import { patternsScale } from './patterns-scale.ts'
 
-/** Every Pattern Design by id. A page places one with `::Design{id="split-storage"}`. */
 export const DESIGNS: Readonly<Record<string, Design>> = {
   ...step1,
   ...step2,

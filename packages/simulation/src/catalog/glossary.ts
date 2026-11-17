@@ -1,5 +1,3 @@
-/* The engineering glossary: the one source for the Glossary panel and the wiki's /glossary pages. */
-
 export const GLOSSARY_CATEGORIES = [
   'performance',
   'reliability',
@@ -22,7 +20,6 @@ export type GlossaryEntry = Readonly<{
   definition: string
   inGame: string
   design?: ReadonlyArray<Readonly<{ label: string; url: string }>>
-  /** Other entries, by id, to read next. */
   related: ReadonlyArray<string>
   links: ReadonlyArray<Readonly<{ label: string; url: string }>>
 }>

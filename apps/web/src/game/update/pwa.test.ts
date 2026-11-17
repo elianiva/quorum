@@ -2,8 +2,6 @@ import { describe, expect, test } from 'vitest'
 import { Message } from '../message.ts'
 import { initialModel, update } from '../update.ts'
 
-/* The PWA slice: the browser's state, the one-time prompt, and the update the player takes. */
-
 const commandsOf = (message: Message): ReadonlyArray<string> =>
   (update(initialModel(), message).commands ?? []).map((command) => command.name)
 

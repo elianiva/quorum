@@ -1,11 +1,3 @@
-//! The run functions: one boundary crossing per pass, per outcome tree, per solve.
-//!
-//! Each one reads the ABI's blocks, checks them, and returns a status code. A
-//! short block, an Edge that names a Node outside the Design, a Component whose
-//! rule is not ported, or a Game outside the ported surface returns a code
-//! instead of a figure, so a host never reads a number that only looks right.
-//! A catalog index past its table is not checked and traps (see `abi.rs`).
-
 use crate::abi::{self, Inputs};
 use crate::catalog::*;
 use crate::ledger::Route;
@@ -15,28 +7,32 @@ use crate::pass::{Board, CodeTable};
 use crate::routing::{Design, Splits};
 use crate::solve::{self, Setup};
 
-/// The summary block: the figures a caller reads without the rows.
 pub const SUMMARY_REVENUE: usize = 0;
 pub const SUMMARY_BOTTLENECK: usize = 1;
 pub const SUMMARY_PASSES: usize = 2;
 pub const SUMMARY_NODES: usize = 3;
 pub const SUMMARY_LEN: usize = 4;
 
+const NO_NODE: usize = usize::MAX;
+const NO_SERVICE: usize = usize::MAX;
+const NO_BOTTLENECK: i32 = -1;
+const NO_BOOST: i32 = -1;
+const ROUTE_FIELDS: usize = 4;
+const REGION_BIT_CAP: usize = 31;
+
 #[no_mangle]
 pub extern "C" fn summary_len() -> i32 {
     SUMMARY_LEN as i32
 }
 
-/// The status a Game outside the ported surface returns.
 fn surface(game: &GameCtx) -> i32 {
-    // An incident code from a catalog newer than the solver's.
-    if game.incident_code != 0 && game.incident.is_none() {
+    let incident_from_newer_catalog = game.incident_code_plus_one != 0 && game.incident.is_none();
+    if incident_from_newer_catalog {
         return abi::UNSUPPORTED;
     }
     abi::OK
 }
 
-/// The blocks every run reads, decoded once per call into columns the solver owns.
 struct Prepared {
     nodes: Vec<Node>,
     game: GameCtx,
@@ -45,7 +41,12 @@ struct Prepared {
 }
 
 impl Prepared {
-    fn board<'a>(&'a self, design: &'a Design, inputs: &'a Inputs, code: &'a CodeTable) -> Board<'a> {
+    fn board<'a>(
+        &'a self,
+        design: &'a Design,
+        inputs: &'a Inputs,
+        code: &'a CodeTable,
+    ) -> Board<'a> {
         Board {
             design,
             game: &self.game,
@@ -58,7 +59,6 @@ impl Prepared {
     }
 }
 
-/// Decodes the blocks against the cached Design, or returns the status that stops the run.
 fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
     let count = design.nodes.len();
     if inputs.scalars.len() < count * abi::SCALARS {
@@ -67,56 +67,81 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
     if inputs.intake.len() < count || inputs.demand.len() < NK {
         return Err(abi::SHORT_BLOCK);
     }
-    let mut nodes: Vec<Node> = (0..count).map(|slot| abi::node_of(inputs.row(slot))).collect();
-    // `runsLocalDb`: Postgres still runs on an App Server until it links to a database.
+    let mut nodes: Vec<Node> = (0..count)
+        .map(|slot| abi::node_of(inputs.row(slot)))
+        .collect();
+
     for (slot, node) in nodes.iter_mut().enumerate() {
         node.local_db &= !design.out_edges_of(slot).iter().any(|&edge| {
             design.edges.get(edge as usize).is_some_and(|edge| {
                 let child = design.nodes[edge.to as usize].type_code as usize;
-                crate::routing::accepts(child, kind::Q_READ) || crate::routing::accepts(child, kind::Q_WRITE)
+                crate::routing::accepts(child, kind::Q_READ)
+                    || crate::routing::accepts(child, kind::Q_WRITE)
             })
         });
     }
     let mut game = abi::game_with(inputs.row(0), abi::research_of(&inputs.research));
-    let columns = [(&mut game.value[..], &inputs.value), (&mut game.payload[..], &inputs.payload), (&mut game.query[..], &inputs.query)];
+    let columns = [
+        (&mut game.value[..], &inputs.value),
+        (&mut game.payload[..], &inputs.payload),
+        (&mut game.query[..], &inputs.query),
+    ];
     for (cells, column) in columns {
         for (cell, value) in cells.iter_mut().zip(column) {
             *cell = *value;
         }
     }
     for (cell, service) in game.kind_service.iter_mut().zip(&inputs.kind_service) {
-        *cell = if *service >= 0.0 { *service as usize } else { usize::MAX };
+        *cell = if *service >= 0.0 {
+            *service as usize
+        } else {
+            NO_SERVICE
+        };
     }
     for (cell, share) in game.mix.iter_mut().zip(&inputs.probe) {
         *cell = *share;
     }
-    // `queueOf`: a Worker takes the attempts of the first Queue that feeds it.
+
     for edge in &design.edges {
         let (from, to) = (edge.from as usize, edge.to as usize);
         if nodes[from].type_code == component::QUEUE
             && nodes[to].type_code == component::WORKER
             && nodes[to].queue_attempts == 0.0
         {
-            nodes[to].queue_attempts = crate::ledger::attempts_allowed(nodes[from].dlq, nodes[from].attempts);
+            nodes[to].queue_attempts =
+                crate::ledger::attempts_allowed(nodes[from].dlq, nodes[from].attempts);
         }
     }
-    game.cert_nodes = nodes.iter().any(|node| {
-        node.cert_until.is_some()
-            && matches!(node.type_code, component::LB | component::CDN | component::WAF | component::GW | component::WS | component::EDGE)
+    game.any_certificate_issued = nodes.iter().any(|node| {
+        node.cert_expires_at_seconds.is_some()
+            && matches!(
+                node.type_code,
+                component::LB
+                    | component::CDN
+                    | component::WAF
+                    | component::GW
+                    | component::WS
+                    | component::EDGE
+            )
     });
     game.cdn_on_board = nodes.iter().any(|node| node.type_code == component::CDN);
-    game.edge_on_board = nodes.iter().any(|node| node.type_code == component::EDGE && !node.down);
-    game.edge_auth = nodes.iter().any(|node| node.type_code == component::GW && node.auth_edge && !node.down && !node.shut);
+    game.edge_on_board = nodes
+        .iter()
+        .any(|node| node.type_code == component::EDGE && !node.down);
+    game.edge_auth = nodes
+        .iter()
+        .any(|node| node.type_code == component::GW && node.auth_edge && !node.down && !node.shut);
     game.static_pages = nodes
         .iter()
         .filter(|node| node.type_code == component::SERVER && !node.down)
-        .fold(0.0, |best, node| best.max(FRAMEWORK_CACHEABLE[node.framework]));
-    // `pinnedOf`: a sticky Load Balancer links to the Node. `vecOf`: the first live
-    // Vector Index, in board order, that a Node links to.
+        .fold(0.0, |best, node| {
+            best.max(FRAMEWORK_CACHEABLE[node.framework])
+        });
+
     for (slot, node) in nodes.iter_mut().enumerate() {
         node.cdc_mirrored = !design.mirror_edges_of(slot).is_empty();
     }
-    let mut first_vec = vec![usize::MAX; nodes.len()];
+    let mut first_vec = vec![NO_NODE; nodes.len()];
     for edge in &design.edges {
         let (from, to) = (edge.from as usize, edge.to as usize);
         if nodes[from].type_code == component::LB && nodes[from].sticky {
@@ -126,26 +151,38 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
             first_vec[from] = first_vec[from].min(to);
         }
     }
-    let recalls: Vec<Option<f64>> =
-        first_vec.iter().map(|&vec| (vec != usize::MAX).then(|| VEC_INDEXES_RECALL[nodes[vec].index_type])).collect();
+    let recalls: Vec<Option<f64>> = first_vec
+        .iter()
+        .map(|&vec| (vec != NO_NODE).then(|| VEC_INDEXES_RECALL[nodes[vec].index_type]))
+        .collect();
     for (node, recall) in nodes.iter_mut().zip(recalls) {
         node.vec_recall = recall;
     }
-    // `spreadCount`: North America and every region with users, up to the cap.
-    let regions = nodes
+
+    let region_bits = nodes
         .iter()
         .filter(|node| node.type_code == component::USERS)
-        .fold(1u32, |seen, node| seen | 1 << node.region.min(31));
-    game.spread_regions = (regions.count_ones() as f64).min(SPREAD_REGIONS);
-    // `spreadRegions`: the open regions nearest a spread store's own, up to the cap.
-    for node in nodes.iter_mut().filter(|node| matches!(node.type_code, component::WIDE | component::DSQL) && node.spread) {
+        .fold(1u32, |seen, node| {
+            seen | 1 << node.region.min(REGION_BIT_CAP)
+        });
+    game.spread_region_bits = (region_bits.count_ones() as f64).min(SPREAD_REGIONS);
+
+    for node in nodes
+        .iter_mut()
+        .filter(|node| matches!(node.type_code, component::WIDE | component::DSQL) && node.spread)
+    {
         let home = node.region.min(REGIONS.len() - 1);
-        let mut open: Vec<usize> = (0..REGIONS.len()).filter(|region| regions >> region & 1 == 1).collect();
+        let mut open: Vec<usize> = (0..REGIONS.len())
+            .filter(|region| region_bits >> region & 1 == 1)
+            .collect();
         open.sort_by(|a, b| REGION_RTT[home][*a].total_cmp(&REGION_RTT[home][*b]));
         open.truncate(SPREAD_REGIONS as usize);
-        node.local_regions = open.iter().fold(0, |mask, region| mask | 1 << region);
-        // `majorityMs`: a consensus write waits for the round trip of its majority-th nearest region.
-        node.majority_ms = open.get(open.len() / 2).map_or(0.0, |region| REGION_RTT[home][*region]);
+        node.local_region_bits = open.iter().fold(0, |mask, region| mask | 1 << region);
+
+        let majority_index = open.len() / 2;
+        node.majority_ms = open
+            .get(majority_index)
+            .map_or(0.0, |region| REGION_RTT[home][*region]);
     }
     let status = surface(&game);
     if status != abi::OK {
@@ -160,33 +197,44 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
             let row = inputs.row(slot);
             let flag = |index: usize| row.get(index).is_some_and(|value| *value != 0.0);
             let sampling = row.get(abi::S_SAMPLING).copied().unwrap_or(0.0);
-            ServerFlags::of(&game, node, sampling, flag(abi::S_DELEGATED), flag(abi::S_OFFLOADED), flag(abi::S_POD))
+            ServerFlags::of(
+                &game,
+                node,
+                sampling,
+                flag(abi::S_DELEGATED),
+                flag(abi::S_OFFLOADED),
+                flag(abi::S_POD),
+            )
         })
         .collect();
-    Ok(Prepared { nodes, game, demand, flags })
+    Ok(Prepared {
+        nodes,
+        game,
+        demand,
+        flags,
+    })
 }
 
-/// The scratch a run works in: the split cache, the memo tables, and the code
-/// table. Kept for the life of the module, so a run reuses what the last one
-/// allocated, and what it worked out from inputs that have not changed since.
 #[derive(Default)]
 struct Workspace {
     splits: Splits,
     memo: Memo,
     code: CodeTable,
-    /// The Game, Nodes, and flags `code` was built from.
     code_for: Option<(GameCtx, Vec<Node>, Vec<ServerFlags>)>,
 }
 
 impl Workspace {
-    /// Rebuilds the code table when these inputs differ from the ones it was built from.
     fn refresh_code(&mut self, prepared: &Prepared) {
         let fresh = self.code_for.as_ref().is_some_and(|(game, nodes, flags)| {
             *game == prepared.game && *nodes == prepared.nodes && *flags == prepared.flags
         });
         if !fresh {
             self.code = CodeTable::new(&prepared.game, &prepared.nodes, &prepared.flags);
-            self.code_for = Some((prepared.game.clone(), prepared.nodes.clone(), prepared.flags.clone()));
+            self.code_for = Some((
+                prepared.game.clone(),
+                prepared.nodes.clone(),
+                prepared.flags.clone(),
+            ));
         }
     }
 }
@@ -195,30 +243,36 @@ thread_local! {
     static WORKSPACE: core::cell::RefCell<Workspace> = core::cell::RefCell::new(Workspace::default());
 }
 
-/// Runs `body` over the cached Design, the decoded blocks, and the workspace.
 fn with_prepared(body: impl FnOnce(&Design, &Inputs, &Prepared, &mut Workspace) -> i32) -> i32 {
     abi::with_inputs(|inputs| {
         crate::routing::with_design(|design| match prepare(design, inputs) {
-            Ok(prepared) => WORKSPACE.with(|cell| body(design, inputs, &prepared, &mut cell.borrow_mut())),
+            Ok(prepared) => {
+                WORKSPACE.with(|cell| body(design, inputs, &prepared, &mut cell.borrow_mut()))
+            }
             Err(status) => status,
         })
         .unwrap_or(abi::NO_DESIGN)
     })
 }
 
-/// The routes block: each region's users, as (region, source slot, share, hop ms).
 fn routes_of(inputs: &Inputs) -> Result<Vec<Route>, i32> {
-    if !inputs.routes.len().is_multiple_of(4) {
+    if !inputs.routes.len().is_multiple_of(ROUTE_FIELDS) {
         return Err(abi::BAD_EDGE);
     }
     Ok(inputs
         .routes
-        .as_chunks::<4>().0.iter()
+        .as_chunks::<ROUTE_FIELDS>()
+        .0
+        .iter()
         .map(|row| {
-            let source = row[1];
+            let source_slot = row[1];
             Route {
                 region: row[0] as usize,
-                source: if source >= 0.0 { Some(source as usize) } else { None },
+                source: if source_slot >= 0.0 {
+                    Some(source_slot as usize)
+                } else {
+                    None
+                },
                 share: row[2],
                 extra_ms: row[3],
             }
@@ -226,37 +280,36 @@ fn routes_of(inputs: &Inputs) -> Result<Vec<Route>, i32> {
         .collect())
 }
 
-/// The links block: each Link in Game order, as (from slot, to slot, Edge or -1, breaker).
-fn links_of(inputs: &Inputs, nodes: usize, edges: usize) -> Result<Vec<crate::ledger::LinkIn>, i32> {
+fn links_of(
+    inputs: &Inputs,
+    nodes: usize,
+    edges: usize,
+) -> Result<Vec<crate::ledger::LinkIn>, i32> {
     let (rows, rest) = inputs.links.as_chunks::<{ abi::LINK_FIELDS }>();
     if !rest.is_empty() {
         return Err(abi::BAD_EDGE);
     }
     rows.iter()
         .map(|row| {
-            let (from, to, edge) = (row[0] as usize, row[1] as usize, row[2]);
-            if from >= nodes || to >= nodes || edge >= edges as f64 {
+            let (from, to, edge_or_none) = (row[0] as usize, row[1] as usize, row[2]);
+            if from >= nodes || to >= nodes || edge_or_none >= edges as f64 {
                 return Err(abi::BAD_EDGE);
             }
             Ok(crate::ledger::LinkIn {
                 from,
                 to,
-                edge: (edge >= 0.0).then_some(edge as usize),
+                edge: (edge_or_none >= 0.0).then_some(edge_or_none as usize),
                 breaker: row[3] != 0.0,
             })
         })
         .collect()
 }
 
-/// `solve_run`: the pass loop, from the probe to the Ledger.
 #[no_mangle]
 pub extern "C" fn solve_run(boost_slot: i32, passes: i32, revenue_only: i32) -> i32 {
     solve_impl(boost_slot, passes, revenue_only, false)
 }
 
-/// What the last `solve_run` converged to: the Bottleneck search ranks its
-/// Ledger and re-solves each candidate from its state, as the TypeScript's
-/// `bottleneckOf(game, flow)` does with the flow solve and its cached state.
 struct Converged {
     nodes: usize,
     solved: solve::Solved,
@@ -266,14 +319,11 @@ thread_local! {
     static CONVERGED: core::cell::RefCell<Option<Converged>> = const { core::cell::RefCell::new(None) };
 }
 
-/// `bottleneck_run`: the Bottleneck search over the last solve's Ledger and state.
-/// With no solve before it, or one that kept no Ledger, this solves first.
 #[no_mangle]
 pub extern "C" fn bottleneck_run(passes: i32) -> i32 {
-    solve_impl(-1, passes, 0, true)
+    solve_impl(NO_BOOST, passes, 0, true)
 }
 
-/// Forgets the converged state, so the next search solves from the probe again.
 #[no_mangle]
 pub extern "C" fn forget_solve() -> i32 {
     CONVERGED.with(|cell| *cell.borrow_mut() = None);
@@ -296,24 +346,51 @@ fn solve_impl(boost_slot: i32, passes: i32, revenue_only: i32, search: bool) -> 
         let mut probe = [0.0f64; NK];
         probe[..NR].copy_from_slice(&inputs.probe[..NR]);
         work.refresh_code(prepared);
-        let Workspace { splits, memo, code, .. } = work;
-        let setup =
-            Setup { board: prepared.board(design, inputs, code), routes: &routes, links: &links, probe_mix: &probe };
-        let count = prepared.nodes.len();
-        let boost = if boost_slot >= 0 { Some(boost_slot as usize) } else { None };
-        let passes = if passes <= 0 { solve::PASSES } else { passes as usize };
-        let cached = if search {
-            CONVERGED.with(|cell| cell.borrow_mut().take_if(|converged| converged.nodes == count))
+        let Workspace {
+            splits, memo, code, ..
+        } = work;
+        let setup = Setup {
+            board: prepared.board(design, inputs, code),
+            routes: &routes,
+            links: &links,
+            probe_mix: &probe,
+        };
+        let node_count = prepared.nodes.len();
+        let boost = if boost_slot >= 0 {
+            Some(boost_slot as usize)
         } else {
             None
         };
-        let want = if revenue_only != 0 { solve::Want::Revenue } else { solve::Want::Ledger };
+        let passes = if passes <= 0 {
+            solve::PASSES
+        } else {
+            passes as usize
+        };
+        let cached = if search {
+            CONVERGED.with(|cell| {
+                cell.borrow_mut()
+                    .take_if(|converged| converged.nodes == node_count)
+            })
+        } else {
+            None
+        };
+        let revenue_only = revenue_only != 0;
+        let want = if revenue_only {
+            solve::Want::Revenue
+        } else {
+            solve::Want::Ledger
+        };
         let mut solved = match cached {
             Some(converged) if converged.solved.ledger.is_some() => converged.solved,
-            // A revenue-only solve kept no Ledger to rank: solve again from its state.
-            Some(converged) => {
-                solve::solve_with(&setup, splits, memo, boost, Some(&converged.solved.state), passes, want)
-            }
+            Some(converged) => solve::solve_with(
+                &setup,
+                splits,
+                memo,
+                boost,
+                Some(&converged.solved.state),
+                passes,
+                want,
+            ),
             None => solve::solve_with(&setup, splits, memo, boost, None, passes, want),
         };
         let mut bottleneck = boost_slot;
@@ -322,8 +399,9 @@ fn solve_impl(boost_slot: i32, passes: i32, revenue_only: i32, search: bool) -> 
                 Some(base) => base,
                 None => return abi::SHORT_BLOCK,
             };
-            let found = solve::bottleneck_of(&setup, base, solved.revenue, &solved.state, splits, memo);
-            bottleneck = found.map(|slot| slot as i32).unwrap_or(-1);
+            let found =
+                solve::bottleneck_of(&setup, base, solved.revenue, &solved.state, splits, memo);
+            bottleneck = found.map(|slot| slot as i32).unwrap_or(NO_BOTTLENECK);
             if let Some(base) = solved.ledger.as_mut() {
                 base.bottleneck = found;
             }
@@ -334,16 +412,20 @@ fn solve_impl(boost_slot: i32, passes: i32, revenue_only: i32, search: bool) -> 
             outputs.summary[SUMMARY_REVENUE] = solved.revenue;
             outputs.summary[SUMMARY_BOTTLENECK] = bottleneck as f64;
             outputs.summary[SUMMARY_PASSES] = solved.passes as f64;
-            outputs.summary[SUMMARY_NODES] = count as f64;
-            // A search reports only the summary; the host already decoded the flow solve's Ledger.
+            outputs.summary[SUMMARY_NODES] = node_count as f64;
             if let Some(ledger) = solved.ledger.as_ref().filter(|_| !search) {
                 outputs.ledger = crate::wire::Wire::ledger(ledger);
             }
             abi::OK
         });
-        // The flow solve, and a search that ran on it, leave it for the next search.
+
         if boost.is_none() {
-            CONVERGED.with(|cell| *cell.borrow_mut() = Some(Converged { nodes: count, solved }));
+            CONVERGED.with(|cell| {
+                *cell.borrow_mut() = Some(Converged {
+                    nodes: node_count,
+                    solved,
+                })
+            });
         }
         status
     })
@@ -354,7 +436,6 @@ mod tests {
     use super::*;
     use crate::routing::compile;
 
-    /// Two Nodes with no Edges, and every block a run reads at full length.
     fn inputs() -> Inputs {
         Inputs {
             node_fields: vec![0.0; 2 * abi::NODE_FIELDS],
@@ -372,15 +453,23 @@ mod tests {
         let design = compile(&full).expect("the full blocks compile");
         assert!(prepare(&design, &full).is_ok());
 
-        let short = Inputs { scalars: vec![0.0; abi::SCALARS], ..inputs() };
+        let short = Inputs {
+            scalars: vec![0.0; abi::SCALARS],
+            ..inputs()
+        };
         assert_eq!(prepare(&design, &short).err(), Some(abi::SHORT_BLOCK));
 
-        // An Edge to a Node past the Design.
         let mut edge = vec![0.0; abi::EDGE_FIELDS];
         edge[1] = 2.0;
-        assert_eq!(compile(&Inputs { edge_fields: edge, ..inputs() }).err(), Some(abi::BAD_EDGE));
+        assert_eq!(
+            compile(&Inputs {
+                edge_fields: edge,
+                ..inputs()
+            })
+            .err(),
+            Some(abi::BAD_EDGE)
+        );
 
-        // An incident from a catalog newer than the solver's.
         let mut newer = inputs();
         newer.scalars[abi::S_INCIDENT] = (INCIDENT_IDS.len() + 1) as f64;
         assert_eq!(prepare(&design, &newer).err(), Some(abi::UNSUPPORTED));

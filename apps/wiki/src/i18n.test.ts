@@ -21,19 +21,12 @@ import { PAGES, pageAt, pageIn, pagesFor } from './pages.ts'
 import { slug } from './page.ts'
 import { buildIndex, search } from './search.ts'
 import { THEME_KEY } from './theme.ts'
-// The translated bundles register their copy and prose when they load.
 import './locales/es.ts'
 import './locales/ja.ts'
-
-/* Every translated wiki's contract. The structure tests read whatever files `content-<language>/`
-   holds, so a translator who drifts from the English page, in its headings, links, islands or
-   frontmatter, fails here with the file and the difference. */
 
 const TRANSLATIONS = ['es', 'ja'] as const
 type Translation = (typeof TRANSLATIONS)[number]
 
-// Loading every language's prose takes a few seconds alone and longer beside the other
-// packages' tests, which is past the 10 seconds a hook gets by default.
 beforeAll(async () => {
   await loadAllProse()
 }, 60_000)
@@ -51,7 +44,6 @@ const filesIn = (dir: string): ReadonlyArray<string> =>
 
 const read = (file: string): string => readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
 
-/** The prose files a language has, by their path relative to its content directory. */
 const filesOf = (locale: Translation): ReadonlyArray<string> =>
   filesIn(join(root, `content-${locale}`)).map((file) =>
     relative(join(root, `content-${locale}`), file),
@@ -75,7 +67,6 @@ const parse = (text: string): Parsed => {
   return { frontmatter, body: match[2] ?? '' }
 }
 
-/** The lines of a body that are not inside a code fence. */
 const proseLines = (body: string): ReadonlyArray<string> => {
   let fenced = false
   return body.split('\n').filter((line) => {
@@ -98,7 +89,6 @@ const linksOf = (body: string): ReadonlyArray<string> =>
     .flatMap((line) => [...line.matchAll(/\]\(([^)\s]+)/g)].map((match) => match[1] ?? ''))
     .sort()
 
-/** An island line: `::Name{key="value" …}` or `:::Name{…}`. */
 const islandsOf = (
   body: string,
 ): ReadonlyArray<Readonly<{ name: string; attributes: Record<string, string> }>> =>
@@ -114,7 +104,6 @@ const islandsOf = (
     return [{ name: match[1] ?? '', attributes }]
   })
 
-/** The attributes of an island that a translator writes in their language. Every other one is code. */
 const TRANSLATED = new Set(['question', 'options', 'explain', 'label', 'title', 'caption', 'text'])
 
 const STRUCTURAL = ['section', 'group', 'order', 'era', 'gdd', 'toc'] as const
@@ -224,8 +213,6 @@ test.each(TRANSLATIONS)(
 )
 
 test('the chrome messages have every key in both languages', () => {
-  // A list of aliases may differ in length, since a translation adds its own words; every other
-  // list is a table's columns, so its length must match.
   const shape = (value: unknown, key = ''): unknown =>
     Array.isArray(value) && /aliases/i.test(key)
       ? 'aliases'
@@ -303,7 +290,6 @@ test('every internal link on a translated page points into its language', async 
       const { application } = await rendered(url)
       for (const [, href] of application.html.matchAll(/href="(\/[^"]*)"/g)) {
         const target = href ?? ''
-        // The switcher points at this same page in another language, and a file is not a page.
         if (localeOfPath(target) === locale) continue
         if (/\.[a-z0-9]+$/i.test(target.split('#')[0] ?? '')) continue
         if (stripLocale(target) === path) continue
@@ -314,7 +300,6 @@ test('every internal link on a translated page points into its language', async 
   expect(stray).toEqual([])
 })
 
-/** The logical path a content file serves: `about/contributing.md` is `/about/contributing`. */
 const pathOfFile = (name: string): string => {
   const bare = name.split('\\').join('/').replace(/\.md$/, '')
   return bare === 'index' ? '/' : `/${bare.replace(/\/index$/, '')}`
@@ -338,7 +323,6 @@ test.each(TRANSLATIONS)(
       expect(own?.source).toContain(`content-${locale}/`)
       expect(pageIn('en', path)?.title).not.toBe(own?.title)
     }
-    // The design record stays English (ADR 0014).
     const design = pageIn(locale, '/design')
     expect(design?.fallback).toBe(true)
     expect(design?.title).toBe(pageIn('en', '/design')?.title)
@@ -373,7 +357,6 @@ test('every page is prerendered in every language, and the sitemap lists each wi
   expect(prerenderPaths).toContain('/ja')
   expect(prerenderPaths).toContain('/ja/glossary/cache-stampede')
   expect(prerenderPaths).toContain('/glossary/cache-stampede')
-  // The component catalog is the one path beyond the pages: English only, and out of the sitemap.
   expect(prerenderPaths).toContain('/catalog')
   expect(prerenderPaths).toHaveLength(PAGES.length * LOCALES.length + 1)
   const map = sitemap(() => null)
@@ -406,7 +389,6 @@ test.each(TRANSLATIONS)(
     expect(page).toContain(
       'hreflang="x-default" href="https://wiki.playquorum.dev/glossary/cache-stampede"',
     )
-    // The Markdown twin is English.
     expect(page).not.toContain('type="text/markdown"')
     const missing = renderDocument(
       (await rendered(`${withLocale(locale, '/no/such/page')}`)).application,
@@ -445,14 +427,12 @@ test.each(TRANSLATIONS)('the %s search index finds a page by its own words', (lo
   const index = buildIndex(pagesFor(locale), locale)
   const term = termOf(locale)
   expect(search(index, term, locale).map((hit) => hit.path)).toContain('/glossary/cache-stampede')
-  // Spanish finds the term typed without accents, since the text is folded.
   if (locale === 'es') {
     const plain = term.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     expect(search(index, plain, locale).map((hit) => hit.path)).toContain(
       '/glossary/cache-stampede',
     )
   }
-  // Japanese is indexed two characters at a time, so the end of the term finds it too.
   if (locale === 'ja')
     expect(search(index, term.slice(-6), locale).map((hit) => hit.path)).toContain(
       '/glossary/cache-stampede',

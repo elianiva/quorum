@@ -3,14 +3,10 @@ import { Command, type Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
 import { REPOSITORY_API } from '../site.ts'
 
-/* The project behind the wiki: the public numbers of the repository, read once from GitHub when
-   the home page opens. A failed read leaves the card with its static facts and no numbers. */
-
 export const Stats = Schema.Struct({
   stars: Schema.Finite,
   forks: Schema.Finite,
   issues: Schema.Finite,
-  /** Zero when GitHub does not answer for the contributor list. */
   contributors: Schema.Finite,
   license: Schema.String,
   language: Schema.String,
@@ -31,7 +27,6 @@ export type Message = typeof Message.Type
 
 export const init: Model = { status: 'idle', stats: null }
 
-/** The fields the card reads, of everything the repository endpoint returns. */
 const RepoFields = Schema.Struct({
   stargazers_count: Schema.Finite,
   forks_count: Schema.Finite,
@@ -50,7 +45,6 @@ const get = async (url: string): Promise<Response> => {
   return response
 }
 
-/** Every contributor, counted by reading the last page number of a one-per-page list. */
 const contributors = async (): Promise<number> => {
   const response = await get(`${REPOSITORY_API}/contributors?per_page=1`)
   const last = response.headers.get('link')?.match(/[?&]page=(\d+)>; rel="last"/)

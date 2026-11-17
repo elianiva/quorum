@@ -2,11 +2,6 @@ import { css, cx } from '@quorum/styled-system/css'
 import { Tabs as FoldkitTabs } from '@foldkit/ui'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 
-// Re-export the @foldkit/ui Tabs surface. Create a bundle once per tab value
-// type:
-//
-//   export const DemoTabs = Tabs.create<"Foldkit" | "React">()
-
 export const create = FoldkitTabs.create
 export const init = FoldkitTabs.init
 export const Model = FoldkitTabs.Model
@@ -20,11 +15,6 @@ export type Bundle<Value extends string = string> = FoldkitTabs.Bundle<Value>
 export type InitConfig = FoldkitTabs.InitConfig
 export type ViewInputs<Value extends string = string> = FoldkitTabs.ViewInputs<Value>
 export type RenderInfo<Value extends string = string> = FoldkitTabs.RenderInfo<Value>
-
-// foldkit delta: foldkit emits data-selected (upstream Base UI emits
-// data-active) — the copied trigger string keeps the semantics with the
-// data-active prefix per docs/deriving-from-base.md. The group orientation
-// hooks use data-horizontal/data-vertical attrs emitted by the styled view.
 
 export type TabsListVariant = 'default' | 'line'
 
@@ -58,8 +48,6 @@ const tabsListVariantClasses: Record<TabsListVariant, string> = {
 export const tabsListClass = (variant: TabsListVariant = 'default') =>
   cx(tabsListBaseClass, tabsListVariantClasses[variant])
 
-/** Upstream TabsTrigger string with data-active → data-selected prefix swaps
- *  (foldkit attr name). */
 export const tabsTriggerClass = css({
   gap: '1.5',
   borderRadius: 'md',
@@ -149,11 +137,6 @@ export const tabsContentClass = css({
   outlineStyle: 'none',
 })
 
-// Use inside `styledViewInputs` panel callbacks:
-//
-//   panel: (tab, render, h) =>
-//     Tabs.content({}, [h.p([], [`${tab} content`])], h)
-
 type StyleConfig = Readonly<{ className?: string }>
 
 export const list = <M>(
@@ -190,9 +173,6 @@ export type StyledViewInputs<M, Value extends string = string> = Readonly<{
   tabs: ReadonlyArray<Value>
   selectedValue: Value
   ariaLabel: string
-  /** Renders each tab panel. Receives the tab value and the render-time
-   *  attributes (tablist, tabs, activeIndex) so content can react to the
-   *  active tab. */
   panel: (tab: Value, render: RenderInfo<Value>, h: HtmlBuilder<M>) => Html
   isTabDisabled?: (value: Value, index: number) => boolean
   orientation?: 'Horizontal' | 'Vertical'
@@ -202,8 +182,6 @@ export type StyledViewInputs<M, Value extends string = string> = Readonly<{
   contentClass?: string
 }>
 
-/** Build styled `Tabs.ViewInputs`. Pass your view's `h` so panel content can
- *  dispatch your app's own messages. */
 export const styledViewInputs = <M, Value extends string = string>(
   viewInputs: StyledViewInputs<M, Value>,
   h: HtmlBuilder<M>,

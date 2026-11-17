@@ -1,10 +1,8 @@
 import { Schema } from 'effect'
 import { LOG_KEY, readStored, writeStored } from './storage.ts'
 
-/** The log is a support aid. Keep the recent lines only: the storage quota belongs to saves. */
-const LIMIT = 2_000
+const LOG_LINE_LIMIT = 2_000
 
-/** One line of the log. `data` is the event's payload as JSON. */
 export const LogEntry = Schema.Struct({
   t: Schema.Finite,
   type: Schema.String,
@@ -44,7 +42,7 @@ const load = (): Array<Stored> => {
   const raw = readStored(LOG_KEY)
   try {
     const parsed: unknown = raw ? JSON.parse(raw) : []
-    cache = Array.isArray(parsed) ? parsed.filter(isStored).slice(-LIMIT) : []
+    cache = Array.isArray(parsed) ? parsed.filter(isStored).slice(-LOG_LINE_LIMIT) : []
   } catch {
     cache = []
   }
@@ -54,7 +52,6 @@ const load = (): Array<Stored> => {
 
 const persist = (entries: Array<Stored>): void => {
   if (writeStored(LOG_KEY, JSON.stringify(entries))) return
-  // Storage is full: keep the newest half and try once more.
   entries.splice(0, Math.floor(entries.length / 2))
   writeStored(LOG_KEY, JSON.stringify(entries))
 }
@@ -73,11 +70,10 @@ export const appendLog = (lines: ReadonlyArray<LogEntry>): void => {
     }
     entries.push({ session, seq, wall, t: Math.round(line.t * 100) / 100, type: line.type, data })
   }
-  if (entries.length > LIMIT) entries.splice(0, entries.length - LIMIT)
+  if (entries.length > LOG_LINE_LIMIT) entries.splice(0, entries.length - LOG_LINE_LIMIT)
   schedulePersist()
 }
 
-// Writing the whole log on every gesture blocks the page, so writes wait a moment and batch up.
 const PERSIST_AFTER_MS = 2_000
 let pending: ReturnType<typeof setTimeout> | null = null
 
@@ -93,7 +89,6 @@ const schedulePersist = (): void => {
 
 export const logSize = (): number => load().length
 
-/** Downloads the log as JSON Lines: one event per line. */
 export const downloadLog = (): void => {
   const body = load()
     .map((entry) => JSON.stringify(entry))
@@ -117,14 +112,12 @@ export const clearLog = (): void => {
 
 declare global {
   interface Window {
-    /** The game log, for the browser console. */
     quorumLog?: () => ReadonlyArray<unknown>
   }
 }
 
 if (typeof window !== 'undefined') {
   window.quorumLog = () => load()
-  // A closing or hidden tab writes what is still waiting.
   window.addEventListener('pagehide', flush)
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') flush()

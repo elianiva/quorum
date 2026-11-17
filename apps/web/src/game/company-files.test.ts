@@ -17,13 +17,11 @@ import { fileFor, type SaveIndex } from './saves.ts'
 import { SAVE_PREFIX } from './storage.ts'
 import { TICK_MS, initialModel, update } from './update.ts'
 
-/** A Company file's text, saved at one sim time. */
 const fileAt = (time: number, note = ''): string =>
   JSON.stringify({ format: SAVE_FORMAT, time, note })
 
 const keyOf = (id: string): string => `${SAVE_PREFIX}${id}`
 
-/** `window.localStorage` as a map. `full` makes every write throw, as a browser over quota does. */
 const local = { map: new Map<string, string>(), full: false }
 
 const scope = globalThis as unknown as { window: unknown }
@@ -53,11 +51,6 @@ afterEach(() => {
   scope.window = priorWindow
 })
 
-/**
- * The Company database in memory. A `put` commits when its promise resolves, as the real one
- * resolves on the transaction's `complete`. `refuse` makes a call reject; `hold` keeps every `put`
- * uncommitted until `commit` runs.
- */
 const memoryDb = (seed: Record<string, string> = {}) => {
   const records = new Map(Object.entries(seed))
   const refuse = { get: false, put: false, remove: false }
@@ -81,7 +74,6 @@ const memoryDb = (seed: Record<string, string> = {}) => {
     },
     keys: async () => [...records.keys()],
   }
-  /** Commits the oldest held `put` and lets its caller run on. */
   const commit = async (): Promise<void> => {
     held.shift()?.()
     await new Promise((resolve) => setTimeout(resolve, 0))
@@ -130,7 +122,6 @@ describe('the move from the old key', () => {
     expect(await writeCompany(db, 'c-d', fileAt(15))).toBe(true)
     expect(records.get('c-d')).toBe(fileAt(15))
     expect(local.map.has(keyOf('c-d'))).toBe(false)
-    // The old copy was still there when the write committed, and that write went to disk first.
     expect(puts).toEqual([{ id: 'c-d', durability: 'strict', oldKeyAtCommit: fileAt(10) }])
   })
 
@@ -152,7 +143,6 @@ describe('the move from the old key', () => {
     refuse.put = true
     expect(await writeCompany(db, 'c-f', fileAt(15))).toBe(true)
     expect(local.map.get(keyOf('c-f'))).toBe(fileAt(15))
-    // The record the failed write could not replace is older, so it must not answer a read.
     expect(records.has('c-f')).toBe(false)
     expect(await readCompany(db, 'c-f')).toEqual({ json: fileAt(15), unread: false })
   })
@@ -192,9 +182,7 @@ describe('the save of a tab that may not come back', () => {
     const { db, records, state, commit, puts } = memoryDb({ 'c-j': fileAt(10) })
     state.hold = true
     const writing = writeCompany(db, 'c-j', fileAt(15), true)
-    // Nothing was awaited: a page that closes here has the file.
     expect(local.map.get(keyOf('c-j'))).toBe(fileAt(15))
-    // The page closed before the commit: the next load opens the newer copy.
     expect((await readCompany(db, 'c-j')).json).toBe(fileAt(15))
     await commit()
     expect(await writing).toBe(true)

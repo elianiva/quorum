@@ -174,10 +174,8 @@ describe('the MCP handler', () => {
       const { result } = await ask('resources/read', { uri: 'quorum://wiki/explanation/requests' })
       const text = result.contents[0]!.text
       expect(result.contents[0]).toMatchObject({ mimeType: 'text/markdown' })
-      // A page the server has links to its resource; any other goes to the website.
       expect(text).toContain('[queues](quorum://wiki/explanation/queues)')
       expect(text).toContain('[the Eras](https://wiki.playquorum.dev/eras)')
-      // A live view is dropped, a note keeps its words, and no frontmatter or directive is left.
       expect(text).not.toContain('::')
       expect(text).not.toContain('title:')
       expect(text).toContain('**In real systems:**\nReal systems queue.')

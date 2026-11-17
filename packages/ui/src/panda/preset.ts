@@ -1,13 +1,7 @@
 import { definePreset } from '@pandacss/dev'
 
-/** Values that theme.css redefines under `.dark`, so the token must too. */
 const themeScoped = (value: string) => ({ value: { base: value, _dark: value } })
 
-/**
- * The Quorum design language for Panda. The tokens point at the raw CSS custom
- * properties in `packages/ui/src/theme.css`, so the dark theme and the Pixi
- * board keep reading the values they read today.
- */
 export const quorumPreset = definePreset({
   name: '@quorum/ui/panda-preset',
   conditions: {
@@ -50,7 +44,6 @@ export const quorumPreset = definePreset({
           '3xl': { value: 'var(--radius-3xl)' },
           '4xl': { value: 'var(--radius-4xl)' },
         },
-        /** Dense interface scale. Names are px at 100% text size; `-5` means half a pixel more. */
         fontSizes: {
           code: { value: '0.86em' },
           type: {

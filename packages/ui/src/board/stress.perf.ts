@@ -7,20 +7,6 @@ import { routeLinks, type RoutedLink } from './routing.ts'
 import { BIG_LINKS, STRESS_LINKS, bigBoard, bigNodes, stressBoard, stressNodes } from './stress.ts'
 import { tidy } from './tidy.ts'
 
-/*
- * The stress harness: what the stress boards cost outside of drawing. The big board
- * (61 Nodes, 279 Links) is a player's screenshot. Routing runs on every change to the
- * Design; a tick owes the time it took, so at 10× it steps ten sim seconds, and the
- * Bottleneck search runs once per sim second. After the timings it prints how Tidy lays
- * out each stress board: line hops where links cross, back links (a target not right of
- * its source), and the size of the result.
- *
- *   pnpm --filter @quorum/web stress
- *
- * Plain Node, not Vitest: Vitest's module runner puts a getter on every import, which
- * adds more to these hot loops than the code they measure. CI does not run it.
- */
-
 const time = (name: string, run: () => void, samples = 30): void => {
   for (let index = 0; index < 3; index += 1) run()
   const times: Array<number> = []
@@ -41,9 +27,7 @@ time('routeLinks, big board (61 Nodes)', () => routeLinks(nodes, BIG_LINKS), 10)
 
 let game = bigBoard()
 for (let index = 0; index < 50; index += 1) game = step(game, 0.1).game
-// Solved once first, so `bottleneckOf` below times the search alone.
 solveFlow(game)
-// A fresh Game object each time, so the per-Game cache does not answer.
 time('solveFlow, big board', () => solveFlow({ ...game }))
 time('step, big board', () => step({ ...game }, 0.1))
 time('bottleneckOf, big board', () => bottleneckOf(game), 10)

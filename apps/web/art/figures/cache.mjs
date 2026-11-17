@@ -1,8 +1,6 @@
 import { tools } from '../parts.mjs'
 import { HEIGHT, P as STAGE, WIDTH } from '../stage.mjs'
 
-// A cache: four memory sticks standing in a slotted board, next to the controller
-// chip under its heat sink. The stick being read is lit.
 export function draw(P, { feet = true, lit = true } = {}) {
   const t = tools(P)
   const { k, S, L, slab, cyl } = t
@@ -10,7 +8,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   const PLATE = { x: -46, y: -42, w: 92, d: 82, r: 6 }
   out.push(t.basePlate(PLATE, { feet }))
 
-  // The board on four standoffs.
   const BOARD = { x: -40, y: -36, w: 80, d: 66, r: 2 }
   const BZ = 3
   for (const [x, y] of t.byDepth(k.corners(BOARD, 4)))
@@ -28,12 +25,10 @@ export function draw(P, { feet = true, lit = true } = {}) {
   const ACTIVE = 3
   ROWS.forEach((y, index) => {
     const active = lit && index === ACTIVE
-    // Slot with a latch at each end.
     out.push(S(slab({ x: X0, y, w: LEN, d: SLOT_D, r: 0.6 }, TOP, 3, 2, 0.3), { tone: 'mid' }))
     out.push(
       S(slab({ x: X0 - 3, y: y + 0.5, w: 3, d: SLOT_D - 1, r: 0.6 }, TOP, 5.4, 2), { tone: 'mid' }),
     )
-    // The stick, standing in the slot, with chips on its front face.
     const sy = y + (SLOT_D - STICK_D) / 2
     const face = sy + STICK_D
     const stick = { x: X0 + 1, y: sy, w: LEN - 2, d: STICK_D, r: 0.2 }
@@ -56,7 +51,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
     )
   })
 
-  // Controller chip under a finned heat sink, at the front right.
   const HS = { x: 22, y: -30, w: 14, d: 26, r: 1 }
   out.push(S(slab(k.insetPlan(HS, -1.4), TOP, 1.2, 2), { tone: 'lo' }))
   out.push(S(slab(HS, TOP + 1.2, 2, 2, 0.3), { tone: 'mid' }))
@@ -67,7 +61,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
       }),
     )
   }
-  // Capacitors and a bus connector along the front of the board.
   for (const [i, x] of [-30, -24, -18].entries()) {
     out.push(S(cyl(x, 12, 2.2, TOP, 5 + (i % 2), 18, 0.3), { tone: 'mid' }))
     out.push(L(k.ring(x, 12, 1, TOP + 5 + (i % 2), P, 12), { tone: 'lo' }))

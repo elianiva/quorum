@@ -2,14 +2,11 @@ import { css, cx } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { BACKEND_KINDS, KINDS, REQUEST_KINDS, type Kind } from '@quorum/simulation/catalog'
 
-/** The four shapes, in the order the design names them. */
 export const PACKET_SHAPES = ['circle', 'square', 'triangle', 'diamond'] as const
 export type PacketShape = (typeof PACKET_SHAPES)[number]
 
-/** Kinds in catalog order, so the shapes are stable across builds and saves. */
 const KINDS_IN_ORDER: ReadonlyArray<Kind> = [...REQUEST_KINDS, ...BACKEND_KINDS]
 
-/** Shape by kind, by the colour's place in the catalog: the 17th colour starts the shapes again. */
 export const PACKET_SHAPE_OF: Readonly<Record<Kind, PacketShape>> = (() => {
   const colours = new Map<number, PacketShape>()
   const shapes: Record<string, PacketShape> = {}
@@ -23,16 +20,11 @@ export const PACKET_SHAPE_OF: Readonly<Record<Kind, PacketShape>> = (() => {
   return shapes as Record<Kind, PacketShape>
 })()
 
-/** The shape a kind's packets are drawn in. */
 export const packetShapeOf = (kind: Kind): PacketShape => PACKET_SHAPE_OF[kind]
 
 export const packetColor = (kind: Kind): string =>
   `#${KINDS[kind].color.toString(16).padStart(6, '0')}`
 
-/**
- * The kind's mark for a legend: its shape filled in its colour, beside the kind's name.
- * Decorative, because the name it stands next to already carries the kind.
- */
 export const packetMark = <M>(kind: Kind, size: number, h: HtmlBuilder<M>): Html => {
   const shape = packetShapeOf(kind)
   return h.span(

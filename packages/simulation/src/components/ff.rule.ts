@@ -3,10 +3,6 @@ import type { FeatureId, Game } from '../state.ts'
 import { ROLLOUT_STEPS } from '../catalog.ts'
 import { isLive, step } from '../feature-machine.ts'
 
-/**
- * Sets a Feature's rollout from its flag (05 "Feature Flags", 08 "Rollout"). One of the design's
- * steps and nothing between them: 5%, 25%, 50%, every user, or off.
- */
 export const setRollout = (
   game: Game,
   id: string,

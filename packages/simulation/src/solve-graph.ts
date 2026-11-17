@@ -5,65 +5,40 @@ import { accepts } from './rules.ts'
 import { type Game, type GameLink, type GameNode } from './state.ts'
 import { fixed } from './team.ts'
 
-/**
- * A routing Link as the solve sees it: numbered, so per-Link state in a pass lives in
- * arrays, with its key and policy worked out once per solve instead of on every call.
- * Two Links with the same ends share one Edge, as they share one key.
- */
 export type Edge = Readonly<{
   index: number
-  /** `from>to`, the key of the Ledger's Link figures. */
   key: string
   from: GameNode
   to: GameNode
-  /** The callee's place in the per-Node arrays. */
   toAt: number
-  /** The last Link with these ends: its kinds and policy are the ones that apply. */
   link: GameLink
   policy: Policy
 }>
 
 export type Graph = Readonly<{
   byId: ReadonlyMap<string, GameNode>
-  /** Each Node's place in the per-Node arrays of a solve: its index in the Design, by id. */
   at: ReadonlyMap<string, number>
-  /** The same place, by object identity: a rule asks for it many times per pass. */
   slots: WeakMap<GameNode, number>
-  /** Each routing Link, by caller, then callee. */
   edgeTo: ReadonlyMap<string, ReadonlyMap<string, Edge>>
-  /** Each Node's outgoing Edges, one per routing Link, in the Design's order. */
   out: ReadonlyMap<string, ReadonlyArray<Edge>>
-  /**
-   * The Edges that copy a Node's writes to a CDC Connector. They carry no share of the traffic:
-   * the source keeps all of it, and the connector reads the changes off its log.
-   */
   mirrors: ReadonlyMap<string, ReadonlyArray<Edge>>
   edges: ReadonlyArray<Edge>
   routes: ReadonlyMap<string, ReadonlyArray<GameNode>>
   parents: ReadonlyMap<string, ReadonlyArray<GameNode>>
   taps: ReadonlyMap<string, ReadonlyArray<string>>
   order: ReadonlyArray<GameNode>
-  /** DNS drops dead hosts after its TTL, and Load Balancers check deep, only with Health checks. */
   healthChecked: boolean
-  /** Sim seconds, so a Load Balancer or DNS notices a dead Node late. */
   time: number
 }>
 
-/** One Graph per Game: the Bottleneck search re-solves the same Game, and reuses it. */
 export const graphs = new WeakMap<Game, Graph>()
 
-/** Two Designs have the same Nodes, in order, and the same Links, research, and features. */
 const sameNodes = (a: ReadonlyArray<GameNode>, b: ReadonlyArray<GameNode>): boolean => {
   if (a.length !== b.length) return false
   for (let index = 0; index < a.length; index += 1) if (a[index] !== b[index]) return false
   return true
 }
 
-/**
- * The last Design built. A Step that edits no Node keeps every Node object, so
- * the Design is the same object graph and the Graph can be reused. A Link whose
- * breaker opened is a different Link in a different array, so that misses too.
- */
 let lastStructure: Readonly<{
   nodes: ReadonlyArray<GameNode>
   links: unknown
@@ -95,7 +70,6 @@ export const graphOf = (game: Game): Graph => {
       graph: base,
     }
   }
-  // These two change every Step, so they are read fresh rather than cached.
   const healthChecked = has(game, 'health-checks') && fixed(game, 'health-check')
   const graph =
     base.time === game.time && base.healthChecked === healthChecked
@@ -120,11 +94,8 @@ export const buildGraph = (game: Game): Graph => {
     const from = byId.get(link.from)
     const to = byId.get(link.to)
     if (!from || !to) continue
-    // A link into an Autoscaler or a Cluster puts the Node under its control: no traffic.
     if (COMPONENTS[to.type].control) continue
-    // A Database's link into its Read Replica ships the write log: no traffic.
     if (from.type === 'database' && to.type === 'replica') continue
-    // A link into a CDC Connector copies the changes the caller writes: no traffic either.
     if (COMPONENTS[to.type].mirror) {
       mirroring.push([from, to])
       last.set(`${from.id}>${to.id}`, link)
@@ -178,8 +149,6 @@ export const buildGraph = (game: Game): Graph => {
     if (fromMirrors) fromMirrors.push(edge)
     else mirrors.set(from.id, [edge])
   }
-  // Kahn's order over routing links. A Node caught in a cycle never runs. A CDC Connector also
-  // waits for every Node whose log it reads, so it sees this pass's writes.
   const mirrored = new Map<string, number>()
   for (const edges of mirrors.values())
     for (const edge of edges) mirrored.set(edge.to.id, (mirrored.get(edge.to.id) ?? 0) + 1)
@@ -223,13 +192,9 @@ export const buildGraph = (game: Game): Graph => {
 
 export type Policy = Readonly<{
   timeout: number
-  /** It retries failed calls: at once and up to three times, or with backoff inside a budget. */
   retry: 'none' | 'naive' | 'backoff'
-  /** Its circuit breaker is open: it sends nothing and fails fast. */
   open: boolean
-  /** A bulkhead caps how long one call may hold its caller's slot. */
   bulkhead: boolean
-  /** It sends a second copy of a slow call and keeps the faster answer. */
   hedge: boolean
 }>
 
@@ -241,18 +206,9 @@ export const NO_POLICY: Policy = {
   hedge: false,
 }
 
-/**
- * A Link's timeout in ms, its retries, and its breaker. Every Link waits 30 s and
- * never retries until Timeouts and retries; backoff and breakers need their research.
- *
- * A Service Mesh gives every Link out of a Node with a sidecar the retries and the breaker the
- * sidecar runs by itself (05 "Service Mesh"), even without their research. A Link whose player set
- * its own policy keeps it: the mesh is the default, not an override.
- */
 export const policyOf = (game: Game, link: GameLink | undefined, from?: GameNode): Policy => {
   if (!link) return NO_POLICY
   const meshed = from !== undefined && meshOf(game, from)
-  // An L4 Load Balancer forwards TCP: it cannot retry a call it cannot read (05 "Load Balancer").
   const blind = from !== undefined && from.type === 'lb' && from.variant === 'l4'
   if (blind || (!meshed && !has(game, 'timeouts'))) return NO_POLICY
   const retry =
@@ -274,19 +230,16 @@ export const policyOf = (game: Game, link: GameLink | undefined, from?: GameNode
   }
 }
 
-/** The Edge from one Node to another, if a routing Link joins them. */
 export const edgeOf = (graph: Graph, from: string, to: string): Edge | undefined =>
   graph.edgeTo.get(from)?.get(to)
 
 export const delegates = (graph: Graph, node: GameNode): boolean =>
   (graph.routes.get(node.id) ?? []).some((child) => accepts(child, 'auth'))
 
-/** An App Server with a Link to a Queue or an Event Stream hands its async work to Workers. */
 export const offloads = (graph: Graph, node: GameNode): boolean =>
   node.type === 'server' &&
   (graph.routes.get(node.id) ?? []).some((child) => child.type === 'queue' || child.type === 'log')
 
-/** CPU overhead from Analytics sampling a Node: the highest rate of any tap on it. */
 export const samplingOf = (game: Game, graph: Graph, node: GameNode): number => {
   let overhead = 0
   for (const [tapId, sources] of graph.taps) {
@@ -297,7 +250,6 @@ export const samplingOf = (game: Game, graph: Graph, node: GameNode): number => 
   return overhead
 }
 
-/** Milliseconds sampling adds to a Node's hop: the highest rate of any tap on it. */
 export const samplingMsOf = (graph: Graph, node: GameNode): number => {
   let ms = 0
   for (const [tapId, sources] of graph.taps) {

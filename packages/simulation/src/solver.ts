@@ -57,18 +57,6 @@ import {
   serviceOfKind,
 } from './team.ts'
 
-/* ==========================================================================
-   The solve runs in a WebAssembly solver built from `solver/` (Rust). This
-   file is its host side: it writes a Game into the solver's blocks and reads
-   the Ledger back. The Simulation names no host globals, so each host
-   instantiates the module itself and hands its exports to `installSolver`.
-
-   The block ids and scalar slots mirror `solver/src/abi.rs`, and the Ledger
-   stream mirrors `solver/src/wire.rs`. They change together; `installSolver`
-   checks the scalar count, so a slot added on one side cannot drift.
-   ========================================================================== */
-
-/** What the solve calls on the solver. */
 type Exports = Readonly<{
   memory: Readonly<{ buffer: ArrayBuffer }>
   scalar_len: () => number
@@ -101,13 +89,8 @@ const FUNCTIONS = [
 ] as const
 
 let solver: Exports | null = null
-/** Makes a fresh instance, so a trap does not leave the solve without a solver. */
 let instantiate: (() => Readonly<Record<string, unknown>>) | null = null
 
-/**
- * Hands the solve a function that instantiates the solver and returns its exports. Every host
- * calls it once at start, before the first solve: `() => new WebAssembly.Instance(module).exports`.
- */
 export const installSolver = (create: () => Readonly<Record<string, unknown>>): void => {
   solver = checked(create())
   instantiate = create
@@ -115,14 +98,12 @@ export const installSolver = (create: () => Readonly<Record<string, unknown>>): 
   compiled = null
 }
 
-/** The exports, once they have the memory, every function, and the block layout the host writes. */
 const checked = (exports: Readonly<Record<string, unknown>>): Exports => {
   const memory = exports['memory']
   if (typeof memory !== 'object' || memory === null || !('buffer' in memory))
     throw new Error('The solver exports no memory.')
   for (const name of FUNCTIONS)
     if (typeof exports[name] !== 'function') throw new Error(`The solver exports no ${name}.`)
-  // Checked above: the memory and every function the solve calls.
   const typed = exports as Exports
   if (typed.scalar_len() !== SCALARS)
     throw new Error(
@@ -135,7 +116,6 @@ const checked = (exports: Readonly<Record<string, unknown>>): Exports => {
   return typed
 }
 
-/** The `CATALOG_HASH` the installed solver was built with, so a check can tell a stale build. */
 export const solverCatalogHash = (): number => installed().catalog_hash()
 
 const installed = (): Exports => {
@@ -143,10 +123,6 @@ const installed = (): Exports => {
   return solver
 }
 
-/**
- * Runs `body` on the installed solver. A trap leaves the instance's state borrowed, so every
- * later call would trap too: the solver is replaced with a fresh instance and the trap rethrown.
- */
 const guarded = <T>(body: (exports: Exports) => T): T => {
   const exports = installed()
   try {
@@ -164,7 +140,6 @@ const guarded = <T>(body: (exports: Exports) => T): T => {
 const ALL: ReadonlyArray<Kind> = [...S.REQUEST_KINDS, ...S.BACKEND_KINDS]
 const NK = ALL.length
 
-/** Block ids, from `solver/src/abi.rs`. */
 const BLOCK = {
   scalars: 1,
   nodeFields: 2,
@@ -185,7 +160,6 @@ const BLOCK = {
   summary: 24,
 } as const
 
-/** Scalar slots, from `solver/src/abi.rs`. Slots the host leaves at 0 are listed too. */
 const SLOT = {
   users: 0,
   seed: 1,
@@ -339,7 +313,6 @@ const SCALARS = Object.keys(SLOT).length
 const NODE_FIELDS = 12
 const EDGE_FIELDS = 10
 
-/** `SUMMARY_*` in `solver/src/run.rs`. */
 const SUMMARY_BOTTLENECK = 1
 
 const MODES = ['session', 'transaction', 'statement']
@@ -352,10 +325,8 @@ const IOPS = ['general', 'provisioned']
 const RETENTION = ['keep', 'archive', 'delete']
 const TOPOLOGY = ['single', 'multi', 'sharded']
 
-/** Each catalog list's or record's keys, as a map from name to position, built once. */
 const positions = new WeakMap<object, ReadonlyMap<string, number>>()
 
-/** `list.indexOf(value)`, or `Object.keys(record).indexOf(value)`, without the scan. */
 const positionOf = (source: ReadonlyArray<string> | object, value: string): number => {
   let map = positions.get(source)
   if (!map) {
@@ -370,11 +341,9 @@ const positionOf = (source: ReadonlyArray<string> | object, value: string): numb
   return map.get(value) ?? -1
 }
 
-/** The position of `value` in `source`, or 0 when it is not there. */
 const indexIn = (source: ReadonlyArray<string> | object, value: string): number =>
   Math.max(0, positionOf(source, value))
 
-/** The bit for `index`, as a number: exact up to 2⁵³, past the 32 bits `<<` keeps. */
 const bit = (index: number): number => Number(1n << BigInt(index))
 
 const kindMask = (kinds: ReadonlyArray<Kind>): number => {
@@ -387,7 +356,6 @@ const kindMask = (kinds: ReadonlyArray<Kind>): number => {
 }
 const EVERY_KIND = Number((1n << BigInt(NK)) - 1n)
 
-/** A view into the solver's memory. Any call that grows memory detaches it, so take a fresh one. */
 const view = <T>(
   exports: Exports,
   Type: new (buffer: ArrayBuffer, offset: number, length: number) => T,
@@ -414,7 +382,6 @@ const fillBytes = (exports: Exports, block: number, values: ArrayLike<number>): 
   view(exports, Uint8Array, block, values.length).set(values)
 }
 
-/** Writes the Design's blocks: its Nodes, Edges, adjacency, and Links. */
 const writeDesign = (exports: Exports, game: Game, design: Graph): void => {
   const nodes = game.nodes.length
   const nodeFields = new Float64Array(nodes * NODE_FIELDS)
@@ -430,7 +397,6 @@ const writeDesign = (exports: Exports, game: Game, design: Graph): void => {
     nodeFields[base + 7] = node.type === 'replica' ? 1 : 0
     nodeFields[base + 8] = node.type === 'replica' && primaryOf(game, node) !== undefined ? 1 : 0
     nodeFields[base + 9] = node.service._tag === 'Draining' ? 1 : 0
-    // When it went down, and whether it was a planned restart, which drains first.
     nodeFields[base + 10] = node.downAt
     nodeFields[base + 11] = isDown(node) && causeOf(node.life) === 'restart' ? 1 : 0
   })
@@ -448,7 +414,6 @@ const writeDesign = (exports: Exports, game: Game, design: Graph): void => {
     edgeFields[base + 6] = edge.policy.bulkhead ? 1 : 0
     edgeFields[base + 7] = edge.policy.hedge ? 1 : 0
     edgeFields[base + 8] = edge.link.failure
-    // How the Edge's bytes leave their zone: 0 not at all, 1 to another zone, 2 to another region.
     const crossRegion =
       edge.from.region !== edge.to.region && !isGlobal(edge.from) && !isGlobal(edge.to)
     edgeFields[base + 9] = crossRegion ? 2 : zoneMs(edge.from, edge.to) > 0 ? 1 : 0
@@ -462,7 +427,6 @@ const writeDesign = (exports: Exports, game: Game, design: Graph): void => {
   })
   starts[nodes] = outEdges.length
 
-  // Each Link in Game order: its ends, the Edge that carries it or -1, and its breaker.
   const links = new Float64Array(game.links.length * 4)
   game.links.forEach((link, index) => {
     const edge = edgeOf(design, link.from, link.to)
@@ -483,7 +447,6 @@ const writeDesign = (exports: Exports, game: Game, design: Graph): void => {
   fillInt(exports, BLOCK.outEdges, outEdges)
 }
 
-/** Writes every Game-level block: the scalar rows, research, demand, intake, routes, and factors. */
 const writeGame = (exports: Exports, game: Game, design: Graph): void => {
   const nodes = game.nodes.length
   const serviceIndexes = game.services.reduce((sum, service) => sum + service.indexes, 0)
@@ -493,7 +456,6 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
     0,
   )
   const venture = indexIn(S.VENTURE_IDS, game.founding?.venture ?? 'b2b-saas')
-  // What the bill reads that the solve does not change.
   const costIndex = eraOf(game).costIndex
   const egressFactor = ventureOf(game).constraint.egress
   const salaries = payrollOf(game)
@@ -514,7 +476,6 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
       )
     : 0
   const runtimeFailure = incident ? (S.RUNTIME_INCIDENT_FAILURES[incident.kind] ?? 0) : 0
-  // `solver.poisoned`: the Nodes a poisoned Queue with no DLQ feeds.
   const poisonQueue =
     incident?.kind === 'poison'
       ? game.nodes.find((entry) => entry.id === incident.nodeId)
@@ -529,7 +490,6 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
     BLOCK.kindService,
     S.REQUEST_KINDS.map((kind) => game.services.indexOf(serviceOfKind(game, kind))),
   )
-  // The slots every Node's row repeats: the Game's, not the Node's.
   const template = new Float64Array(SCALARS)
   template[SLOT.users] = game.users
   template[SLOT.seed] = game.seed
@@ -563,7 +523,6 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
   template[SLOT.insightPerk] = perk
   template[SLOT.runtimeFailure] = runtimeFailure
   template[SLOT.dataStaffed] = staffed
-  // Rows go straight into the solver's block. Nothing below calls the solver, so the view holds.
   reserve(exports, BLOCK.scalars, nodes * SCALARS)
   const scalars = view(exports, Float64Array, BLOCK.scalars, nodes * SCALARS)
   game.nodes.forEach((node, index) => {
@@ -583,7 +542,6 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
     row[SLOT.credits] = node.credits
     row[SLOT.prefetch] = node.prefetch
     row[SLOT.pm] = indexIn(POOLING, node.pm)
-    // `gogcOf`: the Node's GOGC row, or the default row when none matches.
     const gogc = S.GOGC.findIndex((entry) => entry.gogc === node.gogc)
     row[SLOT.gogc] = gogc < 0 ? 1 : gogc
     row[SLOT.collector] = indexIn(COLLECTORS, node.collector)
@@ -677,7 +635,6 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
     row[SLOT.underAttack] = node.underAttack ? 1 : 0
     if (node.type === 'storage') {
       row[SLOT.r2] = node.storeVariant === 'r2' ? 1 : 0
-      // `storageRule.outcome`: the share of the store's GB in an archive class.
       const bands = storageBands(game, node)
       const all = bands.reduce((sum, band) => sum + band.gb, 0)
       const archived = bands.reduce((sum, band) => sum + (band.archived ? band.gb : 0), 0)
@@ -705,7 +662,6 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
     row[SLOT.spread] = node.spread ? 1 : 0
   })
 
-  // A solver call inside the loop would have detached the view and dropped every row after it.
   if (scalars.length !== nodes * SCALARS)
     throw new Error('The scalar view detached while it was written.')
 
@@ -741,7 +697,6 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
     BLOCK.probe,
     S.REQUEST_KINDS.map((kind) => mix[kind] ?? 0),
   )
-  // The Features at their exposure and the Product levers, as the per-kind factors the solve reads.
   fill(
     exports,
     BLOCK.value,
@@ -759,17 +714,8 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
   )
 }
 
-/**
- * The Edges of the Design the solver last compiled, or null when it holds none. `graphOf` builds
- * one Edge list per Design and reuses it while no Node, Link, research, or feature changed, so
- * the same list means the same Nodes and Links.
- */
 let compiled: Graph['edges'] | null = null
 
-/**
- * Writes a Game into the solver and compiles its Design. A Design the solver already holds is
- * not written or compiled again: only its time and its health checks move.
- */
 const write = (exports: Exports, game: Game): void => {
   const design = graphOf(game)
   if (compiled === design.edges) {
@@ -777,7 +723,6 @@ const write = (exports: Exports, game: Game): void => {
     check(exports.design_touch(design.healthChecked ? 1 : 0, design.time), 'design_touch')
     return
   }
-  // Forget the Design first: a write that throws part-way leaves its blocks half written.
   compiled = null
   writeDesign(exports, game, design)
   writeGame(exports, game, design)
@@ -789,20 +734,13 @@ const check = (status: number, call: string): void => {
   if (status !== 0) throw new Error(`The solver's ${call} returned status ${status}.`)
 }
 
-/** The chaos experiment's target, as `solve.ts` exports it; here so the encoder needs no cycle. */
 const chaosTarget = (game: Game): string | null =>
   game.chaos && game.time % S.CHAOS_EVERY < S.CHAOS_SECONDS ? game.weakest : null
 
-/**
- * The Games whose converged state the solver holds: the last one it solved, and every Game
- * `carrySolver` carried it to. The Bottleneck search starts from that state.
- */
 let converged = new WeakSet<Game>()
 
-/** The flow solve: the pass loop and its Ledger, without the Bottleneck search. */
 export const solverFlow = (game: Game): Ledger =>
   guarded((exports) => {
-    // Forget the last Game first: once the write starts, the blocks no longer hold it.
     converged = new WeakSet()
     write(exports, game)
     check(exports.solve_run(-1, 0, 0), 'solve_run')
@@ -810,12 +748,10 @@ export const solverFlow = (game: Game): Ledger =>
     return readLedger(exports, game)
   })
 
-/** `to` holds the state `from` solved to: the Step between them changed nothing the solve reads. */
 export const carrySolver = (from: Game, to: Game): void => {
   if (converged.has(from)) converged.add(to)
 }
 
-/** The Node whose doubled capacity would earn the most, searched from the flow solve's state. */
 export const solverBottleneck = (game: Game): string | null => {
   if (!converged.has(game)) solverFlow(game)
   return guarded((exports) => {
@@ -825,13 +761,6 @@ export const solverBottleneck = (game: Game): string | null => {
     return slot >= 0 ? (game.nodes[slot]?.id ?? null) : null
   })
 }
-
-/* ==========================================================================
-   The Ledger stream. `solver/src/wire.rs` writes every record in the key
-   order the Ledger type lists it, so each object literal below reads its
-   fields in source order: the result has the same keys, in the same order,
-   with the same nulls.
-   ========================================================================== */
 
 const LIMITS = [
   'none',
@@ -852,7 +781,6 @@ const STATUSES = [
   'danger',
   'down',
 ] as const satisfies ReadonlyArray<NodeStatus>
-/** `Cause` in `solver/src/model.rs`, in order. */
 const CAUSES = [
   'runtime',
   'collector',
@@ -890,7 +818,6 @@ const CAUSES = [
   'busiest-shard',
 ] as const satisfies ReadonlyArray<CostCause>
 
-/** A record keyed by the Ledger's ids, written once while it is decoded. */
 type Building<V> = Record<string, V>
 
 const readLedger = (exports: Exports, game: Game): Ledger => {
@@ -1088,7 +1015,6 @@ const readLedger = (exports: Exports, game: Game): Ledger => {
     p99,
     apdex,
     regions,
-    // Each device's mean: `latency` plus its own radio round trip.
     deviceLatency: Object.fromEntries(
       S.DEVICES.map((device) => [device, latency + S.DEVICE_INFO[device].rttMs]),
     ) as Ledger['deviceLatency'],

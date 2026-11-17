@@ -34,12 +34,9 @@ import {
 import { componentPath } from './components.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* One page per Research item, and the Research tree as the hub. Layout and marks are the game's. */
-
 const trackLabel = (l: Lang, track: ResearchDef['track']): string =>
   l.cat.RESEARCH_TRACKS.find((entry) => entry.key === track)?.label ?? track
 
-/** An Insight pool's name in the page's language, such as "Checkout Insight". */
 const poolLabel = (l: Lang, pool: (typeof INSIGHT_POOLS)[number]): string =>
   l.t.reference.research.insightName(l.cat.POOLS[pool].label)
 
@@ -213,13 +210,11 @@ const entity = (l: Lang, entry: ResearchDef): Page => {
   })
 }
 
-/** The game's Research tree, read-only: each item links to its page. */
 const tree = (l: Lang, h: H, full = false): Html => {
   const layout = researchLayout()
   const research = l.cat.RESEARCH
   return h.div(
     [
-      // column-reverse opens the box scrolled to the bottom, where the Garage Era and the roots are.
       h.Class(
         cx(
           SCROLL,
@@ -485,7 +480,6 @@ const tree = (l: Lang, h: H, full = false): Html => {
   )
 }
 
-/** Every track side by side, its items grouped under the Era they open in. */
 const byTrack = (l: Lang, h: H): Html =>
   h.div(
     [
@@ -691,12 +685,10 @@ const treeButton = (href: string, label: string, mark: IconNode, h: H): Html =>
     ],
   )
 
-/** Every Insight pool some item costs, in catalog order. */
 const usedPools = INSIGHT_POOLS.filter((pool) =>
   researchList.some((entry) => recipeOf(entry.id).some(([spent]) => spent === pool)),
 )
 
-/** How to read the cost on an item: what its icon names and what its number counts. */
 const costLegend = (l: Lang, h: H): Html => {
   const t = l.t.reference.research
   return h.div(
@@ -812,7 +804,6 @@ const costLegend = (l: Lang, h: H): Html => {
               ],
             ),
           ),
-          // Blank cells finish the last row at two and three columns, so the hairlines do not show through.
           ...Array.from({ length: (3 - (usedPools.length % 3)) % 3 }, (_, index) =>
             h.li(
               [
@@ -859,7 +850,6 @@ const costLegend = (l: Lang, h: H): Html => {
 export const researchPages = (l: Lang): ReadonlyArray<Page> => {
   const t = l.t.reference.research
   const entities = researchList.map((entry) => entity(l, l.cat.RESEARCH[entry.id] as ResearchDef))
-  /** The tree on a page of its own, as wide as the screen, like the game's Research panel. */
   const fullTree = page(l, {
     path: '/research/tree',
     title: t.fullTitle,

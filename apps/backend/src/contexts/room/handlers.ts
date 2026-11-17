@@ -5,8 +5,6 @@ import { Game, Sample } from '@quorum/simulation/state'
 import { RoomDirectory, RoomError } from './directory.ts'
 import { MAX_LINKS, MAX_NODES } from './room.ts'
 
-/* A Company goes online, and a join screen asks whether a code is real. */
-
 const MAX_SAMPLES = 600
 const MAX_NAME = 40
 
@@ -39,7 +37,6 @@ export const RoomHandlers = RoomRpc.toLayer(
         if (samples.length !== payload.samples.length)
           return yield* fail('The Company has bad history.')
         const name = payload.name.trim().slice(0, MAX_NAME) || 'Untitled company'
-        // The seeded Game is the only one this build can step.
         if (!Number.isFinite(payload.wall)) return yield* fail('The clock is not valid.')
         const published = yield* directory
           .publish({ name, game: game.value, samples, wall: payload.wall, simVersion: SIM_VERSION })

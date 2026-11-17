@@ -1,11 +1,9 @@
-// Generated from packages/simulation/src/catalog.ts. Do not edit by hand.
 pub const NK: usize = 33;
 pub const NR: usize = 17;
 pub const NB: usize = 16;
 
 pub static KINDS: [&str; NK] = ["page", "read", "write", "login", "search", "upload", "bot", "media", "rt", "buy", "job", "report", "ai", "feed", "hook", "push", "bid", "q-read", "q-write", "auth", "q-search", "q-vector", "blob-put", "task", "blob-get", "q-tx", "charge", "q-scan", "infer", "notify", "callout", "k-write", "change"];
 
-/// Kind indices: request kinds first, then backend kinds.
 pub mod kind {
     pub const PAGE: usize = 0;
     pub const READ: usize = 1;
@@ -41,7 +39,6 @@ pub mod kind {
     pub const K_WRITE: usize = 31;
     pub const CHANGE: usize = 32;
 }
-/// Backend kind indices, counted from `NR`: `NR + backend::Q_READ` is `kind::Q_READ`.
 pub mod backend {
     pub const Q_READ: usize = 0;
     pub const Q_WRITE: usize = 1;
@@ -61,12 +58,10 @@ pub mod backend {
     pub const CHANGE: usize = 15;
 }
 
-/// Whether a kind index is one a user asks for (a Request kind).
 pub fn is_request_kind(kind: usize) -> bool {
     kind < 17
 }
 
-// ---- scalar constants, generated ----
 pub const ABROAD_SEED: f64 = 0.05;
 pub const ACCIDENTAL_DELETE_SECONDS: f64 = 120.0;
 pub static ACHIEVEMENT_IDS: [&str; 42] = ["hello-world", "works-on-my-machine", "split-brain", "averages-lie", "shared-nothing", "blocked", "off-by-one-region", "littles-law", "metastable", "big-rewrite", "strangler", "quorum", "eventually", "polyglot", "zero-gc", "no-cache", "celebrity", "follow-the-sun", "postgres-for-everything", "hug-of-death", "egress-shock", "chaos-monkey", "blameless", "nines", "five-nines", "monoglot", "default-alive", "unicorn", "decacorn", "everyone-online", "warm-start", "rule-of-40", "beat-and-raise", "serial-founder", "two-hard-things", "conways-law", "fallacies", "thundering-herd", "runbook", "finops", "spot-the-difference", "let-it-crash"];
@@ -216,7 +211,7 @@ pub static FAMILY_IDS: [&str; 5] = ["burstable", "general", "compute", "memory",
 pub static FEATURE_IDS: [&str; 29] = ["landing-page", "signup-flow", "pagination", "password-login", "paid-plans", "email-digests", "search-filters", "profile-photos", "public-api", "infinite-scroll", "video", "chat", "checkout", "notifications-center", "mobile-app", "data-export", "dashboards", "ai-assistant", "recommendations", "audit-log", "activity-feed", "webhooks", "push-notifications", "localization", "offline-mode", "single-sign-on", "data-residency", "status-page", "usage-pricing"];
 pub const FETCH_MS: f64 = 20.0;
 pub const FICKLE_SHARE: f64 = 0.5;
-pub const FIRST_INCIDENT_AFTER: f64 = 90.0;
+pub const FIRST_INCIDENT_AFTER_SECONDS: f64 = 90.0;
 pub const FIRST_KIND_INSIGHT: f64 = 20.0;
 pub static FIXES: [&str; 7] = ["eager-loading", "fix-leak", "session-state", "idempotency-keys", "off-loop", "graceful-shutdown", "health-check"];
 pub const FIX_BUGS_SHARE: f64 = 0.25;
@@ -260,9 +255,9 @@ pub const HTTP3_CUT: f64 = 0.2;
 pub const HUB_RAM_KB: f64 = 8388608.0;
 pub const HYBRID_READS: f64 = 2.0;
 pub const HYBRID_WRITES: f64 = 0.5;
-pub const IAC_SWITCH: f64 = 1440.0;
+pub const IAC_SWITCH_MINUTES: f64 = 1440.0;
 pub static IAC_TOOLS: [&str; 3] = ["terraform", "pulumi", "alchemy"];
-pub const INCIDENT_GAP: f64 = 400.0;
+pub const INCIDENT_GAP_SECONDS: f64 = 400.0;
 pub static INCIDENT_IDS: [&str; 56] = ["spike", "instance", "connections", "loop", "leak", "slow-query", "bad-deploy", "bot-surge", "stuffing", "stampede", "poison", "ddos", "certificate", "psp-outage", "zone", "disk-full", "repl-lag", "latency-regression", "gc-storm", "retry-storm", "deadline-day", "double-charge", "report-db", "gpu-shortage", "regex", "region", "partition", "hot-key", "bgp", "audit", "dr-drill", "breach", "credential-leak", "cluster-upgrade", "config", "spot-reclaim", "stale-read", "reconnect", "runaway-bill", "mtu", "hot-shard", "premiere-spike", "launch-day", "flash-sale", "jvm-warmup", "migration-lock", "supply-chain", "accidental-delete", "operator-typo", "leap-second", "table-bloat", "page-leak", "stale-opcache", "bun-compat", "gevent-compat", "split-brain"];
 pub const INDEX_WRITE_COST: f64 = 0.05;
 pub static INSIGHT_POOLS: [&str; 18] = ["page", "read", "write", "login", "search", "upload", "bot", "media", "rt", "buy", "job", "report", "ai", "feed", "hook", "push", "bid", "failure"];
@@ -295,10 +290,10 @@ pub static LEVER_STEPS: [f64; 4] = [1.0, 2.0, 3.0, 4.0];
 pub const LIBUV_THREADS: f64 = 4.0;
 pub const LIBUV_THREAD_MB: f64 = 2.0;
 pub static LIFECYCLE_DAYS: [f64; 4] = [0.0, 30.0, 90.0, 365.0];
-pub const LIFT_CONFIDENCE: f64 = 1.96;
 pub const LIFT_MAX_ROLLOUT: f64 = 0.5;
 pub const LIFT_MIN_ROLLOUT: f64 = 0.05;
 pub const LIFT_SPREAD: f64 = 1.0;
+pub const LIFT_Z_SCORE: f64 = 1.96;
 pub const LINK_TIMEOUT: f64 = 30.0;
 pub const LLM_FIRST_TOKEN_MS: f64 = 600.0;
 pub const LLM_PRICE: f64 = 2.5;
@@ -336,7 +331,7 @@ pub const MIGRATION_LOCK_SECONDS: f64 = 150.0;
 pub static MIGRATION_STEPS: [f64; 4] = [0.05, 0.25, 0.5, 1.0];
 pub static MIGRATION_TRANCHES: [f64; 4] = [0.1, 0.2, 0.3, 0.4];
 pub const MIN_WEAKNESS: f64 = 0.2;
-pub const MIRROR_TIME: f64 = 30.0;
+pub const MIRROR_TIME_MINUTES: f64 = 30.0;
 pub const ML_AI_BONUS: f64 = 1.2;
 pub static MONEY_KINDS: [&str; 3] = ["read", "write", "buy"];
 pub const MONOLITH_DEBT: f64 = 0.4;
@@ -380,8 +375,8 @@ pub const PLATFORM_TAX: f64 = 0.5;
 pub static PLAYBOOK_SLOTS: [f64; 5] = [1.0, 2.0, 5.0, 10.0, 25.0];
 pub const PLAYTEST_PACE: f64 = 2.0;
 pub const POD_BURN: f64 = 0.85;
-pub const POD_REACTION: f64 = 30.0;
-pub const POD_RESCHEDULE: f64 = 30.0;
+pub const POD_REACTION_SECONDS: f64 = 30.0;
+pub const POD_RESCHEDULE_SECONDS: f64 = 30.0;
 pub const POISON_SHARE: f64 = 0.9;
 pub static POLICY_IDS: [&str; 3] = ["move-fast", "balanced", "quality"];
 pub const POLICY_SWITCH_DAYS: f64 = 1.0;
@@ -404,9 +399,9 @@ pub static QUORUM_N: [f64; 5] = [1.0, 2.0, 3.0, 4.0, 5.0];
 pub const R2_FIRST_BYTE_MS: f64 = 15.0;
 pub const RAMP_DAYS: f64 = 7.0;
 pub const RAMP_OUTPUT: f64 = 0.3;
-pub const RECYCLE_CYCLE: f64 = 1800.0;
+pub const RECYCLE_CYCLE_SECONDS: f64 = 1800.0;
 pub const REFACTOR_PER_DH: f64 = 0.02;
-pub const REFRESH_TIME: f64 = 0.5;
+pub const REFRESH_TIME_MINUTES: f64 = 0.5;
 pub const REGEX_CAPACITY: f64 = 0.1;
 pub static REGIONS: [&str; 4] = ["na", "eu", "apac", "sa"];
 pub const REGIONS_FROM_STAGE: f64 = 5.0;
@@ -436,13 +431,13 @@ pub const RT_HOLD_SECONDS: f64 = 300.0;
 pub const RUNTIME_COMPAT_SECONDS: f64 = 90.0;
 pub const RUSH_BUG_CHANCE: f64 = 0.1;
 pub const RUSH_DEBT: f64 = 0.02;
-pub const SALARY_BASE: f64 = 0.4;
+pub const SALARY_BASE_PER_SECOND: f64 = 0.4;
 pub static SAMPLE_LATENCY: [f64; 5] = [0.0, 0.5, 1.0, 3.0, 5.0];
 pub static SAMPLE_OVERHEAD: [f64; 5] = [0.002, 0.01, 0.02, 0.08, 0.15];
 pub static SAMPLE_RATES: [f64; 5] = [0.01, 0.05, 0.1, 0.5, 1.0];
 pub static SAMPLE_STORAGE: [f64; 5] = [0.1, 0.5, 1.0, 5.0, 10.0];
 pub const SAVINGS_PLAN_RATE: f64 = 0.8;
-pub const SCALE_COOLDOWN: f64 = 30.0;
+pub const SCALE_COOLDOWN_SECONDS: f64 = 30.0;
 pub const SCALE_IN: f64 = 0.6;
 pub static SCALE_MAXIMA: [f64; 4] = [4.0, 8.0, 16.0, 0.0];
 pub static SCALE_MINIMA: [f64; 4] = [1.0, 2.0, 4.0, 8.0];
@@ -491,7 +486,7 @@ pub const SPOT_WARNING: f64 = 10.0;
 pub const SPREAD_REGIONS: f64 = 3.0;
 pub const SPREAD_REPLICATION_KB: f64 = 1.0;
 pub const SRE_MTTR: f64 = 0.4;
-pub const STAGE_WAIT: f64 = 60.0;
+pub const STAGE_WAIT_MINUTES: f64 = 60.0;
 pub const STALE_AFTER_DEPLOY: f64 = 0.3;
 pub const STALE_OPCACHE_SECONDS: f64 = 90.0;
 pub const STALE_SURGE: f64 = 10.0;
@@ -524,10 +519,10 @@ pub const SUPPORTED_QUARTERS: f64 = 1.0;
 pub const SWITCH_PROVIDER_PRICE: f64 = 5000.0;
 pub static SYNC_MODES: [&str; 2] = ["all", "staged"];
 pub const SYNC_MS: f64 = 2.0;
-pub const SYNC_POLL: f64 = 3.0;
+pub const SYNC_POLL_MINUTES: f64 = 3.0;
 pub const TABLE_BLOAT_SECONDS: f64 = 120.0;
 pub static TASK_IDS: [&str; 14] = ["add-index", "eager-loading", "fix-leak", "session-state", "refactor", "fix-bugs", "upgrade-cluster", "runbook", "idempotency-keys", "off-loop", "timeouts-retries", "graceful-shutdown", "health-check", "load-test"];
-pub const TASK_LINK_TIMEOUT: f64 = 5.0;
+pub const TASK_LINK_TIMEOUT_SECONDS: f64 = 5.0;
 pub const TASK_RETRY_SECONDS: f64 = 30.0;
 pub const TESTS_FACTOR: f64 = 0.3;
 pub const TIERED_MEDIA_HIT: f64 = 0.92;
@@ -552,7 +547,7 @@ pub const VEC_QUERIES: f64 = 500.0;
 pub const VENDOR_DISCOUNT: f64 = 0.2;
 pub static VENTURE_IDS: [&str; 12] = ["b2b-saas", "consumer-social", "fintech", "streaming", "game-backend", "ai-startup", "e-commerce", "developer-platform", "healthcare", "ad-tech", "bootstrapped", "government"];
 pub const VERIFY_MINUTES: f64 = 15.0;
-pub const VM_REACTION: f64 = 180.0;
+pub const VM_REACTION_SECONDS: f64 = 180.0;
 pub const VM_RESTART_SECONDS: f64 = 1.0;
 pub const WARMED: f64 = 0.8;
 pub const WARMUP_SECONDS: f64 = 15.0;
@@ -573,9 +568,7 @@ pub static ZONES: [&str; 3] = ["a", "b", "c"];
 pub static ZONE_SPANNING_COMPONENTS: [&str; 5] = ["psp", "llm", "lb", "waf", "gw"];
 pub static SCALAR_COUNT: usize = 504;
 
-// ---- row tables, generated ----
 
-/// `SEARCH_VARIANTS` rows.
 pub mod search_variant {
     pub const ELASTICSEARCH: usize = 0;
     pub const OPENSEARCH: usize = 1;
@@ -588,7 +581,6 @@ pub static SEARCH_VARIANTS_BURN: [f64; 3] = [1.0, 1.0, 0.6];
 pub static SEARCH_VARIANTS_RELEVANCE: [f64; 3] = [0.0, 0.0, 5e-7];
 pub static SEARCH_VARIANTS_CAP: [f64; 3] = [0.0, 0.0, 0.25];
 
-/// `SEARCH_HEAPS` rows.
 pub mod search_heap {
     pub const SMALL: usize = 0;
     pub const HALF: usize = 1;
@@ -602,7 +594,6 @@ pub static SEARCH_REFRESH_SECONDS: [f64; 3] = [1.0, 5.0, 60.0];
 pub static SEARCH_REFRESH_CAPACITY: [f64; 3] = [1.0, 1.1, 1.3];
 pub static SEARCH_REFRESH_STALE: [f64; 3] = [0.0, 0.05, 0.25];
 
-/// `STORAGE_CLASSES` rows.
 pub mod storage_class {
     pub const STANDARD: usize = 0;
     pub const INFREQUENT: usize = 1;
@@ -612,7 +603,6 @@ pub static STORAGE_CLASSES_PRICE: [f64; 3] = [1.0, 0.5, 0.1];
 pub static STORAGE_CLASSES_RETRIEVAL: [f64; 3] = [0.0, 0.01, 0.0];
 pub static STORAGE_CLASSES_ARCHIVED: [bool; 3] = [false, false, true];
 
-/// `GPU_TYPES` rows.
 pub mod gpu_type {
     pub const T4: usize = 0;
     pub const A100: usize = 1;
@@ -622,7 +612,6 @@ pub static GPU_TYPES_BURN: [f64; 3] = [0.53, 1.8, 3.3];
 pub static GPU_TYPES_TOKENS: [f64; 3] = [200.0, 900.0, 2000.0];
 pub static GPU_TYPES_GB: [f64; 3] = [16.0, 80.0, 80.0];
 
-/// `GPU_MODELS` rows.
 pub mod gpu_model {
     pub const SMALL: usize = 0;
     pub const MEDIUM: usize = 1;
@@ -632,7 +621,6 @@ pub static GPU_MODELS_GB: [f64; 3] = [6.0, 14.0, 68.0];
 pub static GPU_MODELS_SPEED: [f64; 3] = [2.0, 1.0, 0.25];
 pub static GPU_MODELS_VALUE: [f64; 3] = [0.6, 1.0, 1.8];
 
-/// `GPU_PRECISIONS` rows.
 pub mod gpu_precision {
     pub const FP16: usize = 0;
     pub const INT8: usize = 1;
@@ -646,7 +634,6 @@ pub static GPU_BATCHES_BATCH: [f64; 3] = [1.0, 8.0, 32.0];
 pub static GPU_BATCHES_GAIN: [f64; 3] = [1.0, 1.6, 2.2];
 pub static GPU_BATCHES_TTFT: [f64; 3] = [0.0, 150.0, 500.0];
 
-/// `CACHE_ENGINES` rows.
 pub mod cache_engine {
     pub const REDIS: usize = 0;
     pub const MEMCACHED: usize = 1;
@@ -658,7 +645,6 @@ pub static CACHE_TTLS_TTL: [f64; 3] = [10.0, 60.0, 3600.0];
 pub static CACHE_TTLS_FACTOR: [f64; 3] = [0.6, 0.85, 0.97];
 pub static CACHE_TTLS_STALE: [f64; 3] = [0.005, 0.02, 0.1];
 
-/// `CACHE_STRATEGIES` rows.
 pub mod cache_strategy {
     pub const ASIDE: usize = 0;
     pub const READ_THROUGH: usize = 1;
@@ -681,7 +667,6 @@ pub static UNDER_ATTACK_FALSE_POSITIVE: [f64; 1] = [0.01];
 pub static UNDER_ATTACK_LATENCY: [f64; 1] = [40.0];
 pub static UNDER_ATTACK_CPU: [f64; 1] = [1.0];
 
-/// `VEC_INDEXES` rows.
 pub mod vec_index {
     pub const EXACT: usize = 0;
     pub const HNSW: usize = 1;
@@ -690,7 +675,6 @@ pub static VEC_INDEXES_RECALL: [f64; 2] = [1.0, 0.95];
 pub static VEC_INDEXES_QUERIES: [f64; 2] = [1.0, 2.0];
 pub static VEC_INDEXES_BURN: [f64; 2] = [1.0, 2.0];
 
-/// `CACHE_KEYS` rows.
 pub mod cache_key {
     pub const FULL: usize = 0;
     pub const QUERY: usize = 1;
@@ -701,7 +685,6 @@ pub static CACHE_KEYS_LEAK: [f64; 3] = [0.0, 1.0, 2.5];
 
 pub static LOG_ACKS_LATENCY: [f64; 3] = [0.4, 1.0, 1.5];
 
-// ---- Request kind profiles ----
 pub static PROFILE_CPU: [f64; NR] = [4.0, 1.5, 2.0, 80.0, 3.0, 120.0, 2.0, 1.0, 0.3, 5.0, 400.0, 20.0, 5.0, 6.0, 2.0, 0.5, 0.5];
 pub static PROFILE_NATIVE: [bool; NR] = [false, false, false, true, false, true, false, false, false, false, false, false, false, false, false, false, false];
 pub static PROFILE_APDEX: [f64; NR] = [400.0, 200.0, 300.0, 800.0, 300.0, 1500.0, 400.0, 1000.0, 100.0, 2000.0, 1000.0, 3000.0, 4000.0, 300.0, 1000.0, 1000.0, 100.0];
@@ -753,13 +736,10 @@ pub static PROFILE_ASYNC_CALLS: [[f64; NK]; NR] = [
     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
 ];
 
-// ---- Kind values ----
 pub static KIND_VALUE: [f64; NK] = [0.1, 0.2, 0.5, 0.25, 0.6, 0.75, 0.0, 1.0, 0.025, 25.0, 1.6, 2.0, 24.0, 0.3, 0.4, 0.05, 0.001, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 
-// ---- Runtimes ----
 pub const RUNTIME_COUNT: usize = 28;
 pub static RUNTIME_IDS: [&str; 28] = ["mod_php", "php_fpm", "php_worker", "swoole", "puma", "unicorn", "falcon", "node", "node_cluster", "bun", "deno", "gunicorn", "gevent", "uvicorn", "python_ft", "pypy", "go", "fasthttp", "tomcat", "java_virtual", "webflux", "graal", "kestrel", "native_aot", "beam", "tokio", "zig", "warp"];
-/// Runtime indices.
 pub mod runtime {
     pub const MOD_PHP: usize = 0;
     pub const PHP_FPM: usize = 1;
@@ -790,7 +770,6 @@ pub mod runtime {
     pub const ZIG: usize = 26;
     pub const WARP: usize = 27;
 }
-/// Each runtime's language, as an index into `LANGUAGE_IDS`.
 pub static RUNTIME_LANGUAGE: [usize; 28] = [0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8, 9, 10];
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Concurrency {
@@ -824,13 +803,11 @@ pub static RUNTIME_VELOCITY: [f64; 28] = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
 pub static RUNTIME_GC_PAUSE: [f64; 28] = [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 30.0, 30.0, 30.0, 30.0, 15.0, 15.0, -1.0, -1.0, -1.0, 12.0];
 pub static RUNTIME_GC_CPU: [f64; 28] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.15];
 
-// ---- Languages ----
 pub static PM_SPARES: [f64; 3] = [-1.0, 2.0, 0.0];
 pub static PM_SPAWN_SHARE: [f64; 3] = [0.0, 0.02, 0.1];
 pub static PM_SPAWN_MS: [f64; 3] = [0.0, 20.0, 50.0];
 pub const LANGUAGE_COUNT: usize = 11;
 pub static LANGUAGE_IDS: [&str; 11] = ["php", "ruby", "node", "python", "go", "java", "csharp", "elixir", "rust", "zig", "haskell"];
-/// Language indices.
 pub mod language {
     pub const PHP: usize = 0;
     pub const RUBY: usize = 1;
@@ -847,7 +824,6 @@ pub mod language {
 pub static LANGUAGE_VELOCITY: [f64; 11] = [1.2, 1.1, 1.15, 1.15, 0.95, 0.9, 1.0, 1.0, 0.6, 0.7, 1.15];
 pub static LANGUAGE_BLAST: [&str; 11] = ["request", "request", "whole", "request", "request", "request", "request", "request", "task", "whole", "request"];
 
-// ---- Frameworks ----
 pub const FRAMEWORK_COUNT: usize = 31;
 pub static FRAMEWORK_IDS: [&str; 31] = ["none", "jetzig", "tokamak", "servant", "ihp", "laravel", "rails", "express", "django", "symfony", "sinatra", "flask", "gin", "spring-boot", "aspnet", "phoenix", "axum", "actix", "fastapi", "fastify", "nextjs", "nestjs", "fiber", "quarkus", "hono", "elysia", "koa", "adonis", "codeigniter", "sanic", "rocket"];
 pub fn framework_index(name: &str) -> usize {
@@ -960,7 +936,6 @@ pub static FRAMEWORK_CPU: [[f64; NR]; 31] = [
     [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
 ];
 
-// ---- Database engines ----
 pub static DB_CONNECTIONS: [f64; 2] = [100.0, 500.0];
 pub static DB_CONNECTION_MB: [f64; 2] = [8.0, 1.0];
 pub static DB_READ: [f64; 2] = [0.95, 1.05];
@@ -970,10 +945,8 @@ pub static DB_SEARCH_COST: [f64; 2] = [1.0, 2.0];
 pub static DB_LAG: [f64; 2] = [1.0, 0.8];
 pub fn db_engine_index(name: &str) -> usize { if name == "mysql" { 1 } else { 0 } }
 
-// ---- Components ----
 pub const COMPONENT_COUNT: usize = 38;
 pub static COMPONENT_IDS: [&str; 38] = ["users", "payments", "analytics", "server", "database", "dns", "lb", "pooler", "cache", "replica", "auth", "search", "storage", "doc", "queue", "worker", "log", "fn", "cdn", "waf", "gw", "ws", "psp", "autoscaler", "ci", "cluster", "warehouse", "vec", "gpu", "edge", "llm", "msgp", "wide", "dsql", "cdc", "mesh", "ff", "pki"];
-/// Component type codes.
 pub mod component {
     pub const USERS: usize = 0;
     pub const PAYMENTS: usize = 1;
@@ -1015,124 +988,124 @@ pub mod component {
     pub const PKI: usize = 37;
 }
 pub static COMPONENT_ACCEPTS: [u64; 38] = [
-    0x0, // users
-    0x0, // payments
-    0x0, // analytics
-    0x1ffff, // server
-    0x8b560000, // database
-    0x1ffff, // dns
-    0x8b77ffff, // lb
-    0x2060000, // pooler
-    0x18b560000, // cache
-    0x8020000, // replica
-    0x80000, // auth
-    0x100100000, // search
-    0x1400000, // storage
-    0xa060000, // doc
-    0x800000, // queue
-    0x800000, // worker
-    0x100800000, // log
-    0x1feff, // fn
-    0x1ffff, // cdn
-    0x1ffff, // waf
-    0x1ffff, // gw
-    0x100, // ws
-    0x4000000, // psp
-    0x0, // autoscaler
-    0x0, // ci
-    0x0, // cluster
-    0x108000000, // warehouse
-    0x200000, // vec
-    0x10000000, // gpu
-    0x1feff, // edge
-    0x10000000, // llm
-    0x20000000, // msgp
-    0x82060000, // wide
-    0x2060000, // dsql
-    0x0, // cdc
-    0x0, // mesh
-    0x0, // ff
-    0x0, // pki
+    0x0,
+    0x0,
+    0x0,
+    0x1ffff,
+    0x8b560000,
+    0x1ffff,
+    0x8b77ffff,
+    0x2060000,
+    0x18b560000,
+    0x8020000,
+    0x80000,
+    0x100100000,
+    0x1400000,
+    0xa060000,
+    0x800000,
+    0x800000,
+    0x100800000,
+    0x1feff,
+    0x1ffff,
+    0x1ffff,
+    0x1ffff,
+    0x100,
+    0x4000000,
+    0x0,
+    0x0,
+    0x0,
+    0x108000000,
+    0x200000,
+    0x10000000,
+    0x1feff,
+    0x10000000,
+    0x20000000,
+    0x82060000,
+    0x2060000,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
 ];
 pub static COMPONENT_SENDS: [u64; 38] = [
-    0x1ffff, // users
-    0x0, // payments
-    0x0, // analytics
-    0xfffe0000, // server
-    0x0, // database
-    0x1ffff, // dns
-    0x8b77ffff, // lb
-    0x2060000, // pooler
-    0x8b560000, // cache
-    0x0, // replica
-    0x0, // auth
-    0x0, // search
-    0x0, // storage
-    0x0, // doc
-    0x800000, // queue
-    0x60460000, // worker
-    0x100800000, // log
-    0xff7e0000, // fn
-    0x1ffff, // cdn
-    0x1ffff, // waf
-    0x1ffff, // gw
-    0x0, // ws
-    0x0, // psp
-    0x0, // autoscaler
-    0x0, // ci
-    0x0, // cluster
-    0x0, // warehouse
-    0x0, // vec
-    0x0, // gpu
-    0xff7e0000, // edge
-    0x0, // llm
-    0x0, // msgp
-    0x0, // wide
-    0x0, // dsql
-    0x100000000, // cdc
-    0x0, // mesh
-    0x0, // ff
-    0x0, // pki
+    0x1ffff,
+    0x0,
+    0x0,
+    0xfffe0000,
+    0x0,
+    0x1ffff,
+    0x8b77ffff,
+    0x2060000,
+    0x8b560000,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x800000,
+    0x60460000,
+    0x100800000,
+    0xff7e0000,
+    0x1ffff,
+    0x1ffff,
+    0x1ffff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xff7e0000,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x100000000,
+    0x0,
+    0x0,
+    0x0,
 ];
 pub static COMPONENT_FALLBACK: [u64; 38] = [
-    0x0, // users
-    0x0, // payments
-    0x0, // analytics
-    0x0, // server
-    0x89500000, // database
-    0x0, // dns
-    0x0, // lb
-    0x0, // pooler
-    0x8b500000, // cache
-    0x0, // replica
-    0x0, // auth
-    0x0, // search
-    0x0, // storage
-    0x8000000, // doc
-    0x0, // queue
-    0x0, // worker
-    0x0, // log
-    0x0, // fn
-    0x0, // cdn
-    0x0, // waf
-    0x0, // gw
-    0x0, // ws
-    0x0, // psp
-    0x0, // autoscaler
-    0x0, // ci
-    0x0, // cluster
-    0x0, // warehouse
-    0x0, // vec
-    0x0, // gpu
-    0x0, // edge
-    0x0, // llm
-    0x0, // msgp
-    0x0, // wide
-    0x0, // dsql
-    0x0, // cdc
-    0x0, // mesh
-    0x0, // ff
-    0x0, // pki
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x89500000,
+    0x0,
+    0x0,
+    0x0,
+    0x8b500000,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x8000000,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
 ];
 pub static COMPONENT_STACK: [bool; 38] = [false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, true, false, true, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false];
 pub static COMPONENT_LIMITING: [bool; 38] = [false, false, false, true, true, false, true, true, true, true, false, true, false, true, true, true, true, true, false, true, true, true, true, false, false, false, false, true, true, false, true, true, true, true, true, false, false, false];
@@ -1141,7 +1114,6 @@ pub static COMPONENT_TAP: [bool; 38] = [false, false, true, false, false, false,
 pub static COMPONENT_LATENCY: [f64; 38] = [30.0, 0.0, 0.0, 2.0, 2.0, 0.0, 1.0, 0.3, 0.5, 2.0, 120.0, 15.0, 40.0, 3.0, 2.0, 0.0, 5.0, 1.0, 8.0, 2.0, 6.0, 1.0, 400.0, 0.0, 1.0, 0.0, 1500.0, 20.0, 300.0, 5.0, 600.0, 100.0, 3.0, 3.0, 2.0, 0.0, 0.0, 0.0];
 pub static COMPONENT_STEPS: [f64; 38] = [1.0, 6.0, 8.0, 1.0, 1.0, 1.0, 6.0, 4.0, 8.0, 1.0, 1.0, 8.0, 1.0, 8.0, 6.0, 1.0, 6.0, 1.0, 1.0, 6.0, 1.0, 8.0, 8.0, 1.0, 1.0, 1.0, 1.0, 6.0, 8.0, 1.0, 8.0, 1.0, 6.0, 6.0, 1.0, 1.0, 1.0, 1.0];
 
-// ---- Other tables ----
 pub static FLAT_CAPACITY: [f64; 38] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2000.0, 10000.0, 50000.0, 0.0, 0.0, 400.0, 0.0, 0.0, 20000.0, 0.0, 100000.0, 0.0, 0.0, 5000.0, 10000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, f64::INFINITY, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 pub static COMPONENT_GLOBAL: [bool; 38] = [false, true, true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false, true, false, false, false, false, false, false, false, true, true, false, false, false, false, false, false];
 pub static COMPONENT_SPANS_ZONES: [bool; 38] = [false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, true, true, false, true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false];
@@ -1171,10 +1143,8 @@ pub static COLD_START_MS: [f64; 11] = [200.0, 300.0, 200.0, 200.0, 50.0, 2000.0,
 pub static CDN_HIT: [f64; NK] = [0.7, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.75, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 pub static CDN_TTL_FACTOR: [f64; 3] = [0.8, 1.0, 1.2];
 
-// ---- Research ----
 pub const RESEARCH_COUNT: usize = 203;
 pub static RESEARCH_IDS: [&str; 203] = ["stripe", "dns-rr", "load-balancing", "health-checks", "auth-provider", "caching", "pooling", "replication", "eager-loading", "query-analysis", "logs", "metrics", "percentiles", "alerting", "funnels", "php-fpm", "opcache", "lang-ruby", "lang-node", "lang-python", "node-cluster", "libuv-pool", "fw-laravel", "fw-rails", "fw-express", "fw-django", "fw-symfony", "fw-sinatra", "fw-flask", "keepalive", "gzip", "timeouts", "lb-algorithms", "ci", "blue-green", "canary", "code-review", "testing-culture", "full-text-search", "object-storage", "cache-strategies", "lifecycle-rules", "cdn", "waf", "api-gateway", "websockets", "background-jobs", "queues", "stampede-protection", "cache-warming", "lang-go", "lang-java", "lang-csharp", "fw-gin", "fw-spring-boot", "fw-aspnet", "tracing", "trace-search", "notebooks", "cert-automation", "lang-elixir", "lang-rust", "lang-zig", "lang-haskell", "fw-phoenix", "checkout", "tiered-caching", "multi-az", "autoscaling", "containers", "serverless", "slo-dashboards", "error-budgets", "backoff-jitter", "circuit-breakers", "load-shedding", "idempotency-keys", "ryw-routing", "gogc-tuning", "fw-axum", "fw-actix", "zgc", "data-warehouse", "event-streaming", "embeddings", "hosted-models", "model-serving", "pitr", "tls-everywhere", "http2", "sync-replication", "restore-drills", "dependency-scanning", "sharding", "encryption-at-rest", "multi-region", "geo-dns", "infra-as-code", "gitops", "anycast", "document-db", "edge-compute", "http3", "notifications", "hybrid-fanout", "leaderless", "consensus", "dr-drills", "retention", "soc2", "gdpr-residency", "security-team", "investor-relations", "guidance-modeling", "reserved-instances", "spot-instances", "php-jit", "worker-threads", "yjit", "gevent", "asgi", "php-worker-mode", "swoole", "bun", "deno", "falcon", "pypy", "virtual-threads", "webflux", "fasthttp", "spawn-blocking", "graal-native", "native-aot", "distributed-erlang", "nifs", "jemalloc", "free-threading", "fw-fastapi", "fw-fastify", "fw-nextjs", "fw-nestjs", "fw-fiber", "fw-quarkus", "fw-hono", "fw-elysia", "fw-koa", "fw-adonis", "fw-codeigniter", "fw-sanic", "fw-rocket", "fw-jetzig", "fw-tokamak", "fw-servant", "fw-ihp", "build-cache", "dev-environment", "static-analysis", "formal-verification", "service-boundaries", "cdc", "service-mesh", "feature-flags", "secrets-management", "spam-filter", "on-call", "runbooks", "sre-team", "enterprise-sales", "online-migrations", "leap-smearing", "ab-testing", "hiring-pipeline", "trunk-based", "platform-team", "data-team", "l4-lb", "rate-limiting", "esi", "bot-management", "scheduled-scaling", "arm-instances", "quantization", "continuous-batching", "bulkheads", "graceful-degradation", "hedged-requests", "chaos-engineering", "denormalization", "precompute", "binary-rpc", "outbox", "expand-contract", "profiling", "tail-sampling", "rum", "anomaly-detection", "credential-protection", "pen-testing", "rightsizing", "egress-optimization", "unit-economics", "cost-allocation", "savings-plans"];
-/// Research bit indices.
 pub mod research {
     pub const STRIPE: usize = 0;
     pub const DNS_RR: usize = 1;
@@ -1380,7 +1350,6 @@ pub mod research {
     pub const COST_ALLOCATION: usize = 201;
     pub const SAVINGS_PLANS: usize = 202;
 }
-/// Fix bit indices: the code fixes a Service can ship.
 pub mod fix {
     pub const EAGER_LOADING: usize = 0;
     pub const FIX_LEAK: usize = 1;
@@ -1391,12 +1360,10 @@ pub mod fix {
     pub const HEALTH_CHECK: usize = 6;
 }
 
-// ---- derived masks ----
 pub static AUTHENTICATED_KINDS_MASK: [u8; NR] = [0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0];
 pub static CPU_HEAVY_MASK: [u8; NK] = [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 pub static MONEY_KINDS_MASK: u64 = 0x206;
 pub static DATA_KINDS_MASK: u64 = 0x8b760000;
 pub static QUERY_CPU_BY_BACKEND: [f64; NB] = [8.0, 25.0, -1.0, 80.0, -1.0, 60.0, -1.0, 30.0, 40.0, -1.0, 100.0, -1.0, -1.0, -1.0, -1.0, -1.0];
 
-/// The first 32 bits of the SHA-256 of every line above.
-pub const CATALOG_HASH: u32 = 0x16818635;
+pub const CATALOG_HASH: u32 = 0xe292028d;

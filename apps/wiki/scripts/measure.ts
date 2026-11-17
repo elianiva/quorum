@@ -1,24 +1,11 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-// Measuring plays the game, and every Step solves on the solver.
 import '@quorum/simulation/host/node'
 import { measure } from '../src/measurements/measure.ts'
 
-/*
- * Writes `src/measurements/snapshot.ts`: the figures the Measurements page shows, taken by playing
- * the Balanced bot against the Simulation in this checkout.
- *
- * Run it from the repository root after a change that moves pacing (`pnpm measurements`), and commit
- * the file it writes. `vite build` runs it with `--if-stale` first, so a build after a committed
- * Simulation change regenerates the numbers instead of shipping the old ones. The stamp is the
- * Simulation's committed tree hash, so run the script again after committing a change rather than
- * before.
- */
-
 const root = resolve(import.meta.dirname, '../../..')
 
-/** The Simulation's git tree hash, the same one `sim-version.ts` fills in at build time. */
 const version = (): string =>
   process.env['SIM_VERSION'] ||
   execFileSync('git', ['rev-parse', '--short=8', 'HEAD:packages/simulation/src'], {
@@ -28,7 +15,6 @@ const version = (): string =>
 
 const target = resolve(import.meta.dirname, '../src/measurements/snapshot.ts')
 
-/** Whether the snapshot already describes this Simulation. A build asks before it spends minutes. */
 const current = (value: string): boolean => {
   try {
     return readFileSync(target, 'utf8').includes(value)
@@ -61,7 +47,6 @@ export const SNAPSHOT: Measurements = `
 const body = `${JSON.stringify(measurements, null, 2)}\n`
 
 writeFileSync(target, `${header}${body}`)
-// The repository's formatter owns the layout: single quotes, no semicolons, its own wrapping.
 execFileSync('pnpm', ['exec', 'vp', 'fmt', target], { cwd: root, stdio: 'ignore' })
 console.log(`wrote ${target}`)
 console.log(

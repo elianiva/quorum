@@ -12,7 +12,6 @@ export const doc: ComponentView = {
         glyph: 'policy',
         name: 'Access',
         value: node.transactions ? 'Multi-document' : 'One document',
-        // No joins: a checkout that spreads over documents lands half-applied without them.
         tone: node.transactions ? 'plain' : 'warn',
       },
       latency,

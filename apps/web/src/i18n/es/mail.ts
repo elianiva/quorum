@@ -1,6 +1,5 @@
 import type { Messages } from '../messages.ts'
 
-/** A teammate signs with their first name. */
 const first = (name: string | number | null | undefined): string => String(name).split(' ')[0] ?? ''
 
 export const mail: Messages['mail'] = {

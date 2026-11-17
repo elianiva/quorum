@@ -1,23 +1,14 @@
-/**
- * The files a fresh install keeps in the service worker's cache. The list is
- * computed from the bundle and the public directory at build time, so a hashed
- * asset is always the one the HTML names.
- */
-
 export type OutputEntry = Readonly<{
   fileName: string
   kind: 'asset' | 'chunk'
   isEntry?: boolean
   moduleIds?: ReadonlyArray<string>
-  /** The chunks this chunk imports before it runs. */
   imports?: ReadonlyArray<string>
 }>
 
 const FONT = /\.(?:woff2?|ttf|otf)$/i
-/** The Solver's WebAssembly module: the game solves from its first frame, so boot waits for it. */
 const WASM = /\.wasm$/i
 
-/** The public files the shell needs. Everything else is fetched when the game asks for it. */
 const PUBLIC = new Set([
   'manifest.webmanifest',
   'favicon.svg',
@@ -30,7 +21,6 @@ const PUBLIC = new Set([
   'icon-monochrome.png',
 ])
 
-/** Files the deploy keeps out of the cache: they belong to a page the worker never serves. */
 export const excludedFromCache = (path: string): boolean => {
   const clean = path.replace(/^\/+/, '')
   return (
@@ -42,21 +32,10 @@ export const excludedFromCache = (path: string): boolean => {
   )
 }
 
-/**
- * The install list: the shell, every code chunk the app can ask for, the
- * Solver's module, the manifest and icons, and any font the build serves itself. The art, the
- * screenshots, and the iOS splash load on first use instead. Every chunk is
- * kept because the board selects its renderer at runtime and the app preloads
- * the four catalogs after boot, so a first offline Company must still draw and
- * a saved language must still load.
- */
 export const precacheOf = (
   outputs: ReadonlyArray<OutputEntry>,
   publicFiles: ReadonlyArray<string>,
 ): ReadonlyArray<string> => {
-  // The shell is `/`, not `/index.html`: the host redirects the file to `/`, and a redirected
-  // response cannot answer a navigation.
-  // Vite writes the HTML after the plugin's bundle hook, so it is never in the list it hands us.
   const files = new Set<string>(['/'])
   for (const entry of outputs) {
     if (excludedFromCache(entry.fileName)) continue

@@ -10,7 +10,6 @@ import { Message } from '@/game/message.ts'
 import { row } from '@quorum/ui/game/bits'
 import { type Panel, caption, percent, picker, section } from './shared.ts'
 
-/** A Document Store's transactions, and the access patterns its Dev Hours buy (07). */
 const documents = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
   return [
@@ -74,7 +73,6 @@ export const docPanel: Panel = {
   stats: ({ game, node, own, h }) => {
     const t = copy(h)
 
-    // One flat rate of ops: a read or a write is one, and a join is three of them (07).
     const ops = (own.traffic['q-tx'] ?? 0) + (own.traffic['q-scan'] ?? 0)
     return [
       row(t.inspectorDoc.inbound, t.inspectorDoc.s(rate(own.inbound)), 'plain', h),

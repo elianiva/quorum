@@ -33,31 +33,23 @@ import {
   pips,
 } from './card-parts.ts'
 import { MONO, SANS, fitText, label } from './text.ts'
-import { DIM } from './belt-view.ts'
+import { OFF_PATH_ALPHA } from './belt-view.ts'
 
-/** The smallest zoom Fit uses, so card text stays readable. */
 export const MIN_FIT_SCALE = 0.85
-/** A phone has pinch-zoom, so fit may go smaller to show the whole Design. At this zoom the
- *  cards give way to their chips, which is what makes the whole board reachable at once. */
 export const MIN_FIT_SCALE_PHONE = 0.42
 
 export class NodeView {
   readonly root = new Container()
-  /** A deeper shadow, shown while the card is lifted. */
   private readonly shadow = new Graphics()
-  /** The selection ring, outside the card's edge. */
   private readonly ring = new Graphics()
   private readonly frame = new Graphics()
-  /** The medallion and status mark, over the card's edge. */
   private readonly medal = new Graphics()
   private readonly bars = new Graphics()
   private readonly ports = new Graphics()
   private readonly mark = glyph(12)
-  /** Zoomed far out, the card gives way to this chip: its block, its name and the load it carries. */
   private readonly chip = new Graphics()
   private readonly chipTitle = label(15, SANS, '600')
   private chipKey = ''
-  /** What the chip draws, from the last update. */
   private chipName = ''
   private chipHue = 0
   private chipStatus: NodeStatus = 'idle'
@@ -70,54 +62,37 @@ export class NodeView {
   private readonly values: Array<Text> = []
   private readonly valueMarks: Array<Sprite> = []
   private readonly rows = new Container()
-  /**
-   * The parts a tick changes: the rows and their bars, then the chip. Pixi rebuilds a
-   * whole render group when a Graphics in it is redrawn or a Text gets new words, so
-   * these sit in groups of their own: a new figure rebuilds one card's rows, not every card.
-   */
   private readonly live = new Container()
   private readonly chipLayer = new Container()
   private readonly foot = label(12, SANS, '600')
   private readonly footMark = glyph(14)
-  /** Whether the card has a footer button, so the level of detail shows its icon only then. */
   private footed = false
-  /** A ring round the footer icon of a held button; it fills clockwise as the hold does. */
   private readonly markRing = new Graphics()
   private ringAt: Readonly<{ x: number; y: number; ink: number }> | null = null
   private ringKey = ''
   private holdShare = 0
-  /** The hold's fill across the footer button. */
   private readonly holdFill = new Graphics()
   private holdKey = -1
-  /** The celebration after a bought size: seconds in, or -1 when idle. */
   private cheer = -1
   private readonly burst = new Graphics()
   private digest = ''
-  /** What each layer was last drawn for. */
   private frameKey = ''
   private medalKey = ''
   private barsKey = ''
   private stranded: boolean | null = null
   private shadowDrawn = false
-  /** Seconds since the card arrived; Infinity when it was already on the board. */
   private age = Number.POSITIVE_INFINITY
-  /** Seconds into the exit, or -1 while the Node lives. */
   private leaving = -1
 
   private readonly group: BuildGroup
   readonly height: number
-  /** Where the card is drawn. It follows its Node, so a move, a drop on the grid
-   *  and an undo glide instead of jumping. */
   at: Pt | null = null
   private target: Pt = { x: 0, y: 0 }
-  /** Picked up by a drag: the card rises, grows a little and casts a deeper shadow. */
   lifted = false
   private lift = 0
-  /** Pressed: the card sinks a little under the pointer. */
   held = false
   private hold = 0
   private selected = false
-  /** Off the focused path: the card fades back. */
   dim = false
   private selection = 0
   private accent = 0
@@ -129,16 +104,13 @@ export class NodeView {
     const layout = layoutOf(type)
     this.group = COMPONENTS[type].group
     this.height = heightOf(type)
-    // Scale around the card's center, so it grows in place.
     this.root.pivot.set(CARD_W / 2, this.height / 2)
     if (enter) {
       this.age = 0
       this.root.alpha = 0
-      if (!reducedMotion()) this.root.scale.set(0.96)
+      if (!reducedMotion()) this.root.scale.set(ENTER_FROM_SCALE)
     }
     this.shadow.alpha = 0
-    // Unbatched, each larger shape would cost a draw call per card. The card layer
-    // rebuilds only when a card changes, on a tick, not on every frame.
     for (const part of [
       this.shadow,
       this.ring,
@@ -204,10 +176,8 @@ export class NodeView {
     this.foot.anchor.set(0, 0.5)
   }
 
-  /** Level of detail: zoomed far out the rows fade, then the whole card becomes a chip. */
   detail(rows: number, chip: number, colors: Palette): void {
     const full = 1 - chip
-    // A hidden render group is skipped, where an empty one still splits the cards' batch.
     this.live.visible = full > 0
     this.rows.visible = rows > 0
     this.rows.alpha = rows * full
@@ -216,7 +186,6 @@ export class NodeView {
       part.visible = full > 0
       part.alpha = full
     }
-    // Setting `visible` back and forth makes Pixi rebuild every card, so it is set once.
     this.footMark.visible = full > 0 && this.footed
     this.footMark.alpha = full
     this.chipLayer.visible = chip > 0
@@ -226,7 +195,6 @@ export class NodeView {
     if (chip > 0) this.drawChip(colors)
   }
 
-  /** The chip a card collapses to at low zoom: its name, and a ring of the load it carries. */
   private drawChip(colors: Palette): void {
     const load = Math.round(this.chipLoad * 20) / 20
     const key = `${this.chipName}:${this.chipHue}:${this.chipStatus}:${load}`
@@ -241,7 +209,6 @@ export class NodeView {
       width: 1.5,
       alignment: 1,
     })
-    // The load ring: the share of the limiting resource, as the card's load bar shows it.
     const ring = BADGE_R + 9
     this.chip.circle(BADGE_X, BADGE_Y, ring).stroke({ color: colors.well, width: 3 })
     if (load > 0)
@@ -271,7 +238,6 @@ export class NodeView {
 
   private drawMarkRing(): void {
     const at = this.ringAt
-    // A redrawn Graphics makes Pixi rebuild every card, so it is redrawn only when it changes.
     const key = at ? `${at.x}:${at.y}:${at.ink}:${this.holdShare}` : ''
     if (key === this.ringKey) return
     this.ringKey = key
@@ -285,7 +251,6 @@ export class NodeView {
         .stroke({ color: at.ink, width: 2.5 })
   }
 
-  /** Fills the footer button from the left as the player holds it; 0 clears it. */
   setHold(share: number): void {
     const key = Math.round(share * 200)
     if (key === this.holdKey) return
@@ -300,7 +265,6 @@ export class NodeView {
       .fill({ color: 0xffffff, alpha: 0.32 })
   }
 
-  /** A bought size: a gold ring blooms out of the card and the button flashes. */
   celebrate(): void {
     this.cheer = 0
   }
@@ -334,8 +298,6 @@ export class NodeView {
     this.burst.roundRect(x, y + 2, w, h, 8).fill({ color: 0xffe08a, alpha: 0.7 * fade * fade })
   }
 
-  /** Entrance 200ms and exit 150ms on --ease-out, from 0.96 scale; the follow,
-   *  lift, press and selection ring on top. False once the exit ends. */
   tick(seconds: number, still: boolean): boolean {
     let scale = 1
     if (this.leaving >= 0) {
@@ -347,11 +309,11 @@ export class NodeView {
       this.age += seconds
       const t = easeOut(Math.min(1, this.age / ENTER_S))
       this.root.alpha = t
-      scale = 0.96 + 0.04 * t
+      scale = ENTER_FROM_SCALE + (1 - ENTER_FROM_SCALE) * t
     }
     if (this.leaving < 0 && this.age >= ENTER_S)
-      this.root.alpha += ((this.dim ? DIM : 1) - this.root.alpha) * follow(seconds, 16, still)
-    // A held card stays under the pointer; a released one eases into its grid cell.
+      this.root.alpha +=
+        ((this.dim ? OFF_PATH_ALPHA : 1) - this.root.alpha) * follow(seconds, 16, still)
     const at = this.at ?? this.target
     const k = follow(seconds, this.lifted ? 38 : 16, still)
     const x = at.x + (this.target.x - at.x) * k
@@ -367,7 +329,6 @@ export class NodeView {
     this.shadow.alpha = this.lift
     if (!still) scale *= 1 + 0.03 * this.lift - 0.02 * this.hold
     this.root.scale.set(still ? 1 : scale)
-    // Selection: the ring closes in from a little way out and comes up to full strength.
     const selection =
       this.selection + ((this.selected ? 1 : 0) - this.selection) * follow(seconds, 24, still)
     if (Math.abs(selection - this.selection) > 0.001) {
@@ -413,7 +374,6 @@ export class NodeView {
     const layout = layoutOf(node.type)
     const rows = rowsOf(game, node, ledger, history)
     const footer = footerOf(game, node)
-    // What the chip says at low zoom, kept from the update so the zoom need not read the Game.
     this.chipName = t(def.name)
     this.chipHue = colors.groups[this.group]
     this.chipStatus = own.status
@@ -460,7 +420,6 @@ export class NodeView {
           : own.status === 'ok'
             ? colors.ok
             : colors.border
-    // Selection is the ring outside the card (drawRing), so the edge keeps its status.
     const edge = own.status === 'danger' || own.status === 'down' ? colors.danger : colors.border
 
     const group = this.group
@@ -468,12 +427,10 @@ export class NodeView {
     const badgeTone = node.life._tag === 'Stopped' ? colors.muted : hue
     const rect = footerRect(node.type)
     const sink = footer && pressed && footer.enabled && footer.tone !== 'muted' ? 2 : 0
-    // Each layer is redrawn only when what it shows changes; values change every tick.
     const frameKey = `${edge}:${isDown(node.life)}:${footer?.tone}:${sink}:${selected}`
     if (frameKey !== this.frameKey) {
       this.frameKey = frameKey
       this.frame.clear()
-      // Depth: a wide soft shadow and a tight contact shadow under the card.
       silhouette(this.frame, group, 1, 3, CARD_W - 2, height).fill({
         color: colors.shade,
         alpha: 0.035,
@@ -503,7 +460,6 @@ export class NodeView {
                 : colors.track
         const { x, y, w, h } = rect
         if (footer.tone === 'muted') {
-          // Disabled: sunk into the card instead of raised.
           this.frame.roundRect(x, y + 1, w, h, 8).fill(fill)
           this.frame
             .roundRect(x, y + 1, w, h, 8)
@@ -515,8 +471,6 @@ export class NodeView {
         } else {
           const top = footer.tone === 'accent' ? colors.fillTop : mix(fill, 0xffffff, 0.16)
           const bottom = footer.tone === 'accent' ? colors.fillBottom : mix(fill, 0x000000, 0.08)
-          // Raised: soft drop, a darker lip, a top-lit body and a glossy top edge.
-          // Pressed, the body sinks onto its lip and the drop shadow goes.
           const lifted = y + sink
           if (!sink)
             this.frame.roundRect(x, y + 3, w, h, 8).fill({ color: colors.shade, alpha: 0.12 })
@@ -537,7 +491,6 @@ export class NodeView {
         alignment: 1,
         alpha: 0.8,
       })
-      // The selection is the board's focus: a ring outside the card, as on a focused control.
       if (selected)
         silhouette(this.frame, group, 0, 0, CARD_W, height, 4).stroke({
           color: colors.accent,
@@ -551,8 +504,6 @@ export class NodeView {
       const ink =
         footer.tone === 'muted' ? colors.muted : footer.tone === 'accent' ? colors.onFill : 0xffffff
       this.foot.text = t(footer.text)
-      // Center the glyph and text together.
-      // A held button's icon sits in a ring that reaches 5px past it on each side.
       const ringed = footer.enabled && (footer.glyph === 'resize' || footer.glyph === 'more')
       const pad = ringed ? 5 : 0
       const start = x + pad + (w - (14 + 6 + this.foot.width + pad * 2)) / 2
@@ -568,7 +519,6 @@ export class NodeView {
       this.ringAt = null
       this.drawMarkRing()
     }
-    // The lifted shadow: drawn once, faded in by the lift.
     if (!this.shadowDrawn) {
       this.shadowDrawn = true
       silhouette(this.shadow, group, 6, 18, CARD_W - 12, height - 6, 10).fill({
@@ -580,8 +530,6 @@ export class NodeView {
         alpha: 0.08,
       })
     }
-    // Status is a shape as well as a colour: a dot, a triangle, a square, a cross. It sits
-    // on the medallion's corner, on a disc of the card's colour.
     const medalKey = `${badgeTone}:${own.status}`
     if (medalKey !== this.medalKey) {
       this.medalKey = medalKey
@@ -620,7 +568,6 @@ export class NodeView {
     const bars = barsKey !== this.barsKey
     this.barsKey = barsKey
     if (bars) this.bars.clear()
-    // Right to left: the size pips, then the zone and copies, then the title takes the rest.
     let right = CARD_W - 12
     if (size) {
       const width = pipsWidth(size.total)
@@ -643,7 +590,6 @@ export class NodeView {
     this.level.style.fill = colors.muted
     this.level.position.set(right, HEAD / 2)
     if (this.level.text) right -= this.level.width + 8
-    // A long title gives way to the level: it is cut with an ellipsis before the two touch.
     fitText(this.title, title, right - 4 - this.title.x)
 
     rows.forEach((row, index) => {
@@ -658,7 +604,6 @@ export class NodeView {
       name.style.fill = row.logo ? colors.ink : colors.muted
       value.text = t(row.value)
       value.style.fill = toneOf(row.tone)
-      // A long name gives way to the value: it is cut with an ellipsis before the two touch.
       fitText(name, t(row.name), value.x - value.width - (row.valueLogo ? 22 : 0) - 10 - name.x)
       valueMark.visible = row.valueLogo !== undefined
       if (row.valueLogo) {
@@ -667,7 +612,6 @@ export class NodeView {
       }
       if (!bars) return
       if (row.trend) {
-        // Load over the last day: a sparkline in place of the bar.
         const bottom = rowTop(index) + ROW - 1
         const width = CARD_W - 28
         const points = row.trend
@@ -713,3 +657,4 @@ export class NodeView {
 }
 
 const CHEER_S = 0.8
+const ENTER_FROM_SCALE = 0.96

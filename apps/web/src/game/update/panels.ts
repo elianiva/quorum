@@ -47,7 +47,6 @@ export const savePrefs = (model: Model): UpdateResult => ({
   ],
 })
 
-/** Without Easy mode the clock runs at 1×, and a pause only the player could end ends now. */
 const plainClock = (model: Model): UpdateResult =>
   model.prefs.easyMode
     ? { model }
@@ -67,7 +66,6 @@ const plainClock = (model: Model): UpdateResult =>
         },
       }
 
-/** A Settings gesture: the Prefs Submodel changes, then the new settings are saved and applied. */
 export const foldPrefs = (model: Model, message: PrefsMessage): UpdateResult =>
   Update.combine(model, [
     Update.foldChild({
@@ -80,7 +78,6 @@ export const foldPrefs = (model: Model, message: PrefsMessage): UpdateResult =>
     savePrefs,
   ])
 
-/** The Exit survey's two fields; the parent sends the answers. */
 export const foldSurvey = Update.foldChild({
   update: updateSurvey,
   read: (model: Model) => Option.some(model.survey),
@@ -95,14 +92,12 @@ export const foldDashboard = Update.foldChild({
   toParentMessage: (message) => Message.DashboardChanged({ message }),
 })
 
-// Stored JSON that does not parse or no longer fits its Schema reads as nothing.
 export const parsePrefs = (json: string) =>
   Option.map(Schema.decodeOption(Schema.fromJsonString(Prefs))(json), (prefs) => ({
     ...prefs,
     volume: volumeIn(prefs.volume),
   }))
 
-/** The Settings panel's sound level: its value lives in `prefs.volume`. */
 export const foldVolumeSlider = (route: Dispatch) =>
   Update.foldChild({
     update: VolumeSlider.update,
@@ -133,7 +128,6 @@ export const foldLanguagePicker = (route: Dispatch) =>
         ),
   })
 
-/** What each item in the phone toolbar's More menu does: the same as its desktop button. */
 export const MORE_ACTIONS: Record<MoreItem, Message> = {
   exit: Message.PanelOpened({ panel: 'exit' }),
   playbooks: Message.PanelOpened({ panel: 'playbooks' }),
@@ -197,7 +191,6 @@ export const panelsHandlers = (
         flow: { _tag: 'Idle' },
         research: EMPTY_RESEARCH,
         dashboard: { ...model.board.dashboard, hover: null },
-        // A panel covers the board, so the build list it was opened from is done.
         buildGroup: null,
       },
     }
@@ -207,7 +200,6 @@ export const panelsHandlers = (
             ...opened,
             board: {
               ...opened.board,
-              // A Mail the queue opened keeps its thread; opening from the dock starts on the list.
               inbox: listing(
                 {
                   ...opened.board.inbox,
@@ -221,7 +213,6 @@ export const panelsHandlers = (
         : opened
     return {
       model: next,
-      // The scroll area takes focus, so the keyboard reaches the last rows without a pointer.
       commands: panel === 'dashboard' && model.panel !== 'dashboard' ? [FocusDashboard({})] : [],
     }
   },
@@ -263,13 +254,11 @@ export const panelsHandlers = (
         ? Message.RegionPicked({ region })
         : Message.RegionOpened({ region }),
     )
-    // With Infrastructure as code, an empty region is built by mirroring one that works.
     const empty = !game.nodes.some((node) => node.region === region && node.type !== 'users')
     return has(game, 'infra-as-code') && empty && shown.model.board.region === region
       ? { ...shown, model: { ...shown.model, panel: 'mirror' } }
       : shown
   },
-  // An exited Company has nothing left to play: closing its panel goes to the next one.
 
   PanelClosed: () => {
     if (isExited(model.companyPhase)) return leaveExited(model, 'found')
@@ -305,8 +294,6 @@ export const panelsHandlers = (
   SurveyChanged: ({ message }) => foldSurvey(model, message),
 
   WindowBlurred: () => {
-    // The tab may not come back: a hidden tab is the last moment a browser promises, so the
-    // Company is written now rather than on the autosave's next turn.
     const unsaved =
       model.board.game.time !== model.board.clock.savedAt &&
       onBoard(model.route) &&
@@ -321,7 +308,6 @@ export const panelsHandlers = (
         }
       : model
     const commands = unsaved ? saveCommands(saved, true) : []
-    // A live Room runs on its own clock: a hidden tab must not freeze it for the others.
     if (!model.prefs.blurPause || halted(model) || roomLive(model) || !onBoard(model.route))
       return { model: saved, commands }
     const next: Model = {

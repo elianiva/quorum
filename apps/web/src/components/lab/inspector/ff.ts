@@ -19,7 +19,6 @@ import {
   serviceNameIn,
 } from './shared.ts'
 
-/** A Feature Flags Node's rollouts: each Feature's share, and what a bad deploy of it can break. */
 const flags = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
 
@@ -128,7 +127,6 @@ export const ffPanel: Panel = {
   stats: ({ game, node, h }) => {
     const t = copy(h)
 
-    // The last deploy shipped each Service its own code: the blast is the Service that broke.
     const service = blastService(game)
     const batch = service.lastDeploy
     const rolled = batch.filter((feature) => rolloutOf(game, feature) < 1)

@@ -106,7 +106,6 @@ export const parseFounder = Schema.decodeUnknownOption(Schema.fromJsonString(Fou
 
 export const parseIndex = Schema.decodeUnknownOption(Schema.fromJsonString(SaveIndex))
 
-/** A Company that cannot open puts the title back where its URL named the board. */
 const titleIfBoard = (model: Model): UpdateResult =>
   model.route._tag === 'Company'
     ? {
@@ -115,10 +114,6 @@ const titleIfBoard = (model: Model): UpdateResult =>
       }
     : { model }
 
-/**
- * A Company that cannot open leaves the list: a row that stays warns on every load and never
- * opens. An unreadable file keeps its copy aside first.
- */
 const dropped = (
   model: Model,
   id: string,
@@ -144,8 +139,6 @@ const dropped = (
   return withToast(back.model, said, 'warn', commands)
 }
 
-/** A decoded Company Game goes onto the board, where it resumes at its saved Step.
- *  Opening it also leaves the title. */
 export const applyCompany = (
   model: Model,
   id: string,
@@ -153,13 +146,10 @@ export const applyCompany = (
   file: unknown,
   open: boolean,
 ): UpdateResult => {
-  // A file that answers for another Company is stale: it does not land.
   const loaded = step(model.companyPhase, { _tag: 'Loaded', id })
   if (!isOpen(loaded) || loaded.id !== id) return { model }
   const played = normalizeOrdinals(game)
-  // The Inbox survives the reload (18 "Open questions").
   const inbox = inboxOfSave(file)
-  // A Sandbox or Challenge on the board keeps the Company aside until the player comes back.
   const aside = offCompany(model)
   const held = aside ? (model.company ?? model.board) : model.board
   const companyBoard: Board = {
@@ -185,7 +175,6 @@ export const applyCompany = (
   return { model: { ...next, saves: refreshedIndex(next.saves, played) } }
 }
 
-/** Applies a change to the Founder record, saves it, or says why not. */
 export const changeFounder = (
   model: Model,
   change: Result.Result<Founder, Refusal>,
@@ -200,7 +189,6 @@ export const changeFounder = (
     },
   })
 
-/** Founds the next Company with the Founder's Venture, Mutators, perks and kept research. */
 export const found = (model: Model): UpdateResult => {
   const founder = founded(model.founder)
   const founding = foundingOf(model.founder)
@@ -221,7 +209,6 @@ export const found = (model: Model): UpdateResult => {
   }
 }
 
-/** Leaves an exited Company for the title screen: nothing to continue, nothing to save. */
 export const leaveExited = (model: Model, menu: Menu): UpdateResult => ({
   model: {
     ...model,
@@ -236,7 +223,6 @@ export const leaveExited = (model: Model, menu: Menu): UpdateResult => ({
   },
 })
 
-/** The IPO lists the Company: Legacy for the listing, and the Company goes on as Public. */
 export const listed = (model: Model, game: Game): Readonly<{ game: Game; founder: Founder }> => {
   const ipo = ipoExit(game, solveFlow(game), currentFile(model)?.name ?? '')
   return { game: ipo.game, founder: recordExit(model.founder, ipo) }
@@ -261,7 +247,6 @@ type CompaniesTag =
   | 'CompanyFounded'
   | 'PreseedStarted'
 
-/** Reads the Company list into the Model: the files, the one Continue opens, and the token. */
 const loadedSaves = (model: Model, index: string | null): UpdateResult => {
   if (index === null) return titleIfBoard(model)
   const parsed = Option.getOrNull(parseIndex(index))
@@ -286,7 +271,6 @@ const loadedSaves = (model: Model, index: string | null): UpdateResult => {
   }
   return {
     model: loaded,
-    // A reload on the Company's board opens it; anywhere else it waits for Continue.
     commands: [
       PruneSaves({ index: parsed }),
       LoadCompany({ id: parsed.current, open: model.route._tag === 'Company' }),
@@ -295,7 +279,6 @@ const loadedSaves = (model: Model, index: string | null): UpdateResult => {
 }
 
 export const companiesHandlers = (model: Model): MessageCases<UpdateResult, CompaniesTag> => ({
-  // Whatever the list holds, the app now knows where the owner token is not.
   SavesLoaded: ({ index }) => {
     const result = loadedSaves(model, index)
     return result.model.savesReady
@@ -303,16 +286,11 @@ export const companiesHandlers = (model: Model): MessageCases<UpdateResult, Comp
       : { ...result, model: { ...result.model, savesReady: true } }
   },
   CompanyLoaded: ({ id, open, json }) => {
-    // A file that does not answer leaves nothing opening, and a row whose file is gone can never
-    // open: both leave the list.
     if (json === null) return dropped(model, id, null, open)
     const read = readSaveFile(json)
-    // A save this version cannot read is set aside, not overwritten by the next autosave.
     if (Result.isFailure(read)) return dropped(model, id, { json, reason: read.failure }, true)
     return applyCompany(model, id, read.success.game, read.success.file, open)
   },
-  // A file the browser would not read may still be there, so the Company keeps its row and its
-  // file: the next open reads it again.
   CompanyUnread: ({ id, open }) => {
     const back = titleIfBoard({
       ...model,
@@ -410,7 +388,6 @@ export const companiesHandlers = (model: Model): MessageCases<UpdateResult, Comp
     const founder = loaded.deviceId ? loaded : { ...loaded, deviceId }
     const next: Model = { ...model, founder, today }
     const commands: Array<AnyCommand> = loaded.deviceId ? [] : [WriteFounder({ founder })]
-    // A reload on a Challenge reopens it. Every Challenge is open.
     if (model.route._tag !== 'Challenge') return { model: next, commands }
     const entry = challengeById(model.route.challenge)
     if (entry) {

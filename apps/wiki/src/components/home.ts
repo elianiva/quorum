@@ -26,11 +26,8 @@ import { projectCard } from './project.ts'
 import { quadrantBadge } from './quadrant.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* The home page: what the wiki is, the guided paths, then the four kinds of page and the catalog. */
-
 type H = HtmlBuilder<Message>
 
-/** One kind of page: its badge, what it is for, and its first pages. */
 const kind = (l: Lang, section: Section, h: H): Html =>
   h.section(
     [
@@ -144,7 +141,6 @@ const counts = (l: Lang, h: H): Html => {
   return countList(entries, h)
 }
 
-/** The catalog as six lookups: a number and where it leads. */
 const countList = (
   entries: ReadonlyArray<Readonly<{ path: string; value: number; label: string }>>,
   h: H,
@@ -237,7 +233,6 @@ const countList = (
 
 const FIRST_TUTORIAL = '/tutorials/first-company'
 
-/** Guides a reader opens with a problem in hand, most common first. */
 const TROUBLE: ReadonlyArray<string> = [
   '/guides/find-the-bottleneck',
   '/guides/read-p99',
@@ -269,7 +264,6 @@ const grid = (columns: string, items: ReadonlyArray<Html>, h: H): Html =>
     items,
   )
 
-/** A heading with the sentence that says what the block is for, under it. */
 const block = (title: string, lead: string, content: Html, h: H): Html =>
   h.section(
     [
@@ -390,13 +384,11 @@ const troubleLink = (target: Page, h: H): Html =>
     ],
   )
 
-/** The board's dotted canvas, as the backdrop of the hero. */
 const CANVAS = {
   backgroundImage: 'radial-gradient(var(--canvas-grid) 1px, transparent 1px)',
   backgroundSize: '20px 20px',
 }
 
-/** A request's way through a small Design, drawn with the game's own badges. */
 const FLOW: ReadonlyArray<ComponentId> = ['users', 'lb', 'server', 'cache', 'database']
 
 const flow = (h: H): Html =>
@@ -651,7 +643,6 @@ export const homeView = (page: Page, model: Model, h: H): Html => {
                   h.a(
                     [
                       h.Href(REPOSITORY),
-                      // The third action is a link, not a button, so the row does not wrap.
                       h.Class(
                         css({
                           display: 'inline-flex',

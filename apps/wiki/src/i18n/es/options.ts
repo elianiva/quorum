@@ -1,7 +1,5 @@
 import type { Messages } from '../messages.ts'
 
-/* The words of the `::Options` table in Spanish. Product and protocol names stay as they are. */
-
 export const options: Messages['options'] = {
   always: 'Siempre',
   after: (research) => `Tras ${research}`,
@@ -10,7 +8,6 @@ export const options: Messages['options'] = {
   noMax: 'Sin máximo',
   off: 'Desactivado',
   none: 'Ninguno',
-  // Control names.
   runtime: 'Runtime',
   framework: 'Framework',
   poolSize: 'Tamaño del pool',
@@ -90,7 +87,6 @@ export const options: Messages['options'] = {
   presence: 'Presencia',
   reconnectBackoff: 'Espera de reconexión',
   clustering: 'Clustering',
-  // Where the Inspector shows a control.
   pooledRuntimes: 'Runtimes con pool',
   phpFpm: 'PHP-FPM',
   persistentRuntimes: 'Runtimes persistentes',
@@ -100,7 +96,6 @@ export const options: Messages['options'] = {
   twoShardsShown: 'Dos o más shards',
   withDlq: 'Con una cola de mensajes fallidos',
   searchEngines: 'Elasticsearch y OpenSearch',
-  // Values.
   workerAndUp: '1 worker o más',
   offEveryFewHours: 'Desactivado / Cada pocas horas',
   offGzip: 'Desactivado / Gzip',

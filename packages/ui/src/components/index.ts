@@ -39,7 +39,6 @@ import { ff } from './ff.ts'
 import { pki } from './pki.ts'
 import type { ComponentView } from './shared.ts'
 
-/** Every Component's board appearance, one module each. */
 export const COMPONENT_VIEWS: Record<ComponentId, ComponentView> = {
   users,
   payments,

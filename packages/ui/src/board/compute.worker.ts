@@ -1,12 +1,6 @@
 import { solverReady } from '@quorum/simulation/host/browser'
 import { JOBS, PRIORITY, type Channel } from './jobs.ts'
 
-/*
- * The compute worker. Each channel keeps only its newest request: a request
- * that a newer one replaces before it starts is answered as superseded, so a
- * burst of hovers or edits never queues stale work.
- */
-
 type Request = Readonly<{ id: number; channel: Channel; input: unknown }>
 
 const scope = globalThis as unknown as {
@@ -20,8 +14,6 @@ let scheduled = false
 const schedule = (): void => {
   if (scheduled) return
   scheduled = true
-  // A task of its own, so requests that arrived during a job are read before the next one. No job
-  // runs before the Solver is installed.
   void solverReady.then(() => setTimeout(serve, 0))
 }
 

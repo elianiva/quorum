@@ -3,11 +3,6 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
 
-// Card is a pure layout primitive (no @foldkit/ui backing — there is no
-// headless Card). `Card` itself is the container; sub-builders are attached
-// as properties: Card.header, Card.title, Card.description, Card.action,
-// Card.content, Card.footer.
-
 export const cardSizeKeys = ['default', 'sm'] as const
 export type CardSize = (typeof cardSizeKeys)[number]
 
@@ -115,7 +110,6 @@ const cardContainer = <M>(
     children,
   )
 
-/** Header wrapper — positions title, description and action via CSS grid. */
 const cardHeader = <M>(
   config: StyleConfig,
   children: ReadonlyArray<Child>,
@@ -149,7 +143,6 @@ const cardDescription = <M>(
     children,
   )
 
-/** Action area pinned to the top-right of the header. */
 const cardAction = <M>(
   config: StyleConfig,
   children: ReadonlyArray<Child>,
@@ -180,9 +173,6 @@ const cardFooter = <M>(
     children,
   )
 
-/** Composable card — `Card` is the container, with sub-builders as
- *  properties: `Card.header`, `Card.title`, `Card.description`,
- *  `Card.action`, `Card.content`, `Card.footer`. */
 export const Card = Object.assign(cardContainer, {
   header: cardHeader,
   title: cardTitle,

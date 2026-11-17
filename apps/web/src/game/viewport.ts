@@ -1,8 +1,3 @@
-/* ==========================================================================
-   The phone: narrow in portrait, short in landscape. These are the bounds of
-   the `compact` variant in styles.css; keep the two in step.
-   ========================================================================== */
-
 export const isPhone = (): boolean =>
   typeof globalThis.matchMedia === 'function' &&
   globalThis.matchMedia('(max-width: 639px), (max-height: 499px)').matches
@@ -11,11 +6,6 @@ export type Direction = 'up' | 'down' | 'left' | 'right'
 
 type Point = Readonly<{ id: string; x: number; y: number }>
 
-/**
- * The Node the arrow key moves the selection to: the closest one ahead in
- * that direction, with sideways distance counting double. Null when none is
- * ahead. With nothing selected, the top-left Node.
- */
 export const nearestNode = (
   nodes: ReadonlyArray<Point>,
   from: string | null,

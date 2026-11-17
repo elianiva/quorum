@@ -1,8 +1,6 @@
 import { tools } from '../parts.mjs'
 import { HEIGHT, P as STAGE, WIDTH } from '../stage.mjs'
 
-// A firewall: a tripod turnstile on a tread plate between two guide fences. One arm
-// bars the lane; the lamp on the cabinet, which lets one through at a time, is lit.
 export function draw(P, { feet = true, lit = true } = {}) {
   const t = tools(P)
   const { k, G, S, L, D, slab, cyl } = t
@@ -14,7 +12,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   out.push(S(slab(TREAD, 0, 0.8, 2, 0.3), { tone: 'lo' }))
   out.push(D(k.dotGrid(TREAD.x + 4, TREAD.y + 4, 18, 6, 4, 0.8, P), { size: 0.3, tone: 'lo' }))
 
-  // Back guide fence on both sides of the cabinet.
   const CAB = { x: -8, y: -32, w: 16, d: 16, r: 1.6 }
   const fence = (x0, x1, y, h) => {
     const post = (x) =>
@@ -29,7 +26,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   const back = fence(-34, -8, -22, 20)
   out.push(back.post(-34), back.rail(18), back.rail(9))
 
-  // The cabinet: door panel, vents, cap, reader and the lamp.
   const CH = 32
   const FACE = CAB.y + CAB.d
   out.push(
@@ -56,7 +52,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   out.push(S(cyl(5, CAB.y + 10, 2, CH + 1.6, 1, 20), { tone: 'mid' }))
   out.push(S(cyl(5, CAB.y + 10, 1.5, CH + 2.6, 2.6, 20), { tone: 'hi', lit }))
 
-  // The rotor: a boss on the cabinet face, a tilted hub and three arms.
   const HUB = [0, FACE + 5, 24]
   const A = G.unit3([0, 0.5, 0.866])
   const E1 = [1, 0, 0]
@@ -78,7 +73,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   out.push(S(G.disc(4.4, 5.6, 2.4, F, P), { tone: 'mid' }))
   out.push(arm(0))
 
-  // Right part of the back fence, then the near fence.
   const right = fence(8, 34, -22, 20)
   out.push(right.rail(18), right.rail(9), right.post(34))
   const near = fence(-34, 34, 16, 20)

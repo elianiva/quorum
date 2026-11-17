@@ -7,14 +7,6 @@ import * as Update from 'foldkit/update'
 
 type Child = Html | string
 
-/**
- * Known foldkit gap: upstream swaps image→fallback automatically via the
- * Base UI Avatar primitive; foldkit has no such primitive, so `Avatar.image`
- * always renders `<img>`. `Avatar.picture` (below) closes that gap itself —
- * a tiny submodel that swaps to the fallback on load error — so most
- * consumers never need to touch `Avatar.image`/`Avatar.fallback` directly.
- */
-
 export const avatarSizeKeys = ['default', 'sm', 'lg'] as const
 export type AvatarSize = (typeof avatarSizeKeys)[number]
 
@@ -166,8 +158,6 @@ const avatarImage = <M>(config: AvatarImageConfig, h: HtmlBuilder<M>): Html =>
     h.DataAttribute('slot', 'avatar-image'),
   ])
 
-/** `Avatar.picture`'s submodel — tracks whether the image has errored, so
- *  the fallback swap-in is owned by the component instead of the consumer. */
 export const Model = S.Struct({ hasError: S.Boolean })
 export type Model = typeof Model.Type
 
@@ -207,12 +197,6 @@ const pictureView = defineView<Model, Message, PictureConfig>((model, config, h)
       ]),
 )
 
-/** Image with an automatic fallback swap on load error — the piece upstream
- *  gets for free from the Base UI Avatar primitive. `model` is this
- *  instance's own `Model` (usually a field on the consumer's own state, one
- *  per avatar); `toParentMessage` maps this module's `Message` into the
- *  consumer's own message type, the same way `h.submodel`'s callers do
- *  elsewhere (see `Dialog`/`HoverCard`). */
 const avatarPicture = <M>(
   config: PictureConfig,
   model: Model,
@@ -273,9 +257,6 @@ const avatarGroupCount = <M>(
     children,
   )
 
-/** Styled avatar — image + fallback, with optional status badge and grouping.
- *  Mirrors the shadcn v4 `avatar.tsx` (no Radix primitive; the foldcn registry
- *  renders the same `data-slot` surface). */
 export const Avatar = Object.assign(avatarContainer, {
   image: avatarImage,
   fallback: avatarFallback,

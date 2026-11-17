@@ -3,8 +3,6 @@ import { Schema } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
 import type { Survey } from './model.ts'
 
-/* The Exit survey's two fields, folded into the parent with foldChild. The parent sends the answers. */
-
 export const SurveyMessage = defineMessageUnion({
   IssuesChanged: { value: Schema.String },
   LikesChanged: { value: Schema.String },

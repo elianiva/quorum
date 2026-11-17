@@ -12,11 +12,8 @@ import { GAME_ORIGIN, REPOSITORY } from '../site.ts'
 import * as Search from '../submodels/search.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* The header bar: the wordmark, the search, the language switcher, and Play. */
-
 type H = HtmlBuilder<Message>
 
-/** The Quorum q, as on the favicon. */
 export const mark = (h: H): Html =>
   h.svg(
     [
@@ -50,7 +47,6 @@ export const mark = (h: H): Html =>
     ],
   )
 
-/** The languages the wiki has, as a menu. A phone shows the current code, a desktop the full name. */
 const languageSummary = css({
   display: 'flex',
   height: '8',
@@ -191,7 +187,6 @@ export const languageSwitcher = (model: Model, l: Lang, h: H): Html =>
           ),
         ],
       ),
-      // A click anywhere else, or Escape, closes the menu.
       model.languageMenu
         ? h.div(
             [
@@ -240,7 +235,6 @@ export const languageSwitcher = (model: Model, l: Lang, h: H): Html =>
                 : h.a(
                     [
                       h.Key(locale),
-                      // The builder that points links into the page's language would point this one back.
                       rootBuilder(h).Href(withLocale(locale, model.path)),
                       h.Attribute('hreflang', tag),
                       h.Attribute('lang', tag),
@@ -257,7 +251,6 @@ export const languageSwitcher = (model: Model, l: Lang, h: H): Html =>
     ],
   )
 
-/** The theme switch. The icon follows `html.dark`, so it has one source of truth. */
 const themeToggle = (l: Lang, h: H): Html =>
   h.button(
     [
@@ -530,7 +523,6 @@ export const header = (model: Model, h: H): Html => {
   )
 }
 
-/** The section bar: each kind of page links to its first page. The sidebar lists only the current one. */
 const sections = (model: Model, l: Lang, h: H): Html => {
   const current = model.path === '/' ? null : (pageIn(model.locale, model.path)?.section ?? null)
   return h.nav(
@@ -548,7 +540,6 @@ const sections = (model: Model, l: Lang, h: H): Html => {
               gap: '6',
               overflowX: 'auto',
               paddingInline: '4',
-              // Room after the last tab, so the current one can sit at the start edge on a phone.
               paddingRight: '24',
               sm: {
                 paddingInline: '6',

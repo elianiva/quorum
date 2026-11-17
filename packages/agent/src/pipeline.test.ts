@@ -107,7 +107,6 @@ describe('an upload becomes a tool answer', () => {
       ['analytics', 'Analytics'],
     ])
     expect(node('database').outbound).toEqual([])
-    // The rate on the Database's one inbound Link is what the App Server sends it.
     expect(node('database').inbound[0]!.rate).toBeGreaterThan(0)
     expect(node('database').inbound[0]!.rate).toBe(
       node('server').outbound.find((link) => link.to === 'database')!.rate,

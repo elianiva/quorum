@@ -1,46 +1,23 @@
-/* Eras: market, growth, request mix and the funding round that ends each one. */
-
 import type { RequestKind } from './kinds.ts'
 
 export type EraDef = Readonly<{
   name: string
-  /** Most users the market holds, before the Stack's market multiplier. */
   market: number
-  /** Users needed to raise the next round. */
   raiseAt: number
   grant: number
-  /**
-   * Equity the next round costs. Seed through Series C follow Carta's medians: seed 19.4% and
-   * Series A 18.7% (Q2 2026), Series B 12.9% (2025), and 16% across seed to Series C.
-   */
   dilution: number
   growth: number
   apdexTarget: number
-  /**
-   * Multiplies placement, resize and Burn prices. The design keeps 1 until Seed;
-   * the slice raises Pre-seed so Cash still forces choices.
-   */
   costIndex: number
-  /**
-   * Multiplies engineer salaries and signing costs. The design keeps 1 until Seed;
-   * the slice follows the raised Pre-seed cost index so payroll is a real share of Burn.
-   */
   salaryIndex: number
-  /** Availability target per calendar week (10 "Eras"). The error budget counts from Series A. */
   slo: number
-  /** Mean sim seconds between incidents at the design pace (11 "The incident director"); 0 for none. */
   incidentInterval: number
-  /** The worst severity an incident may start at in this Era. */
   maxSeverity: 1 | 2 | 3
-  /** Share of each request kind in the traffic. Sums to 1. */
   mix: Partial<Record<RequestKind, number>>
-  /** What the Era asks, shown on its card. */
   question: string
-  /** New kinds and systems, shown on its card. */
   arrivals: string
 }>
 
-/** Series B's mix (10 "Request mix by Era"). */
 const SERIES_B_MIX: Partial<Record<RequestKind, number>> = {
   page: 0.15,
   read: 0.22,
@@ -58,7 +35,6 @@ const SERIES_B_MIX: Partial<Record<RequestKind, number>> = {
   bid: 0.01,
 }
 
-/** The mix from Series C on (10 "Request mix by Era": Series C+). */
 const SERIES_C_MIX: Partial<Record<RequestKind, number>> = {
   page: 0.11,
   read: 0.18,
@@ -209,7 +185,6 @@ export const ERAS: ReadonlyArray<EraDef> = [
     maxSeverity: 1,
     market: 70_000_000,
     raiseAt: 50_000_000,
-    // The IPO pays IPO_BURN_SECONDS of Burn instead of a fixed grant (ipo.ts).
     grant: 0,
     dilution: 0.15,
     growth: 0.0003,
@@ -239,37 +214,18 @@ export const ERAS: ReadonlyArray<EraDef> = [
   },
 ]
 
-/** Requests per second each user sends, before the daily cycle. */
 export const RPS_PER_USER = 0.02
-/** The daily cycle: demand peaks at 20:00 and bottoms out at 08:00. */
 export const DIURNAL_AMPLITUDE = 0.45
-/** Weekend demand relative to weekdays. Each Venture sets its own; the default Venture is not defined yet. */
 export const WEEKEND_FACTOR = 1
-/** Sim seconds in one Step of the Simulation. */
 export const STEP_SECONDS = 0.1
-/** The calendar starts at 14:00 on day 1, so the Garage ends near the evening peak. One sim second is one calendar minute. */
 export const CALENDAR_START = 14 * 60
-/** Fickle users leave at this rate per second at the worst Apdex. */
 export const CHURN = 0.004
-/**
- * Share of new users who are fickle; the rest are steady (04 "Users and growth").
- * Fader and Hardie (2007): retention rises with tenure because the least loyal
- * users leave first. Two segments are the simplest form of that sorting.
- */
 export const FICKLE_SHARE = 0.5
-/** Steady users leave at this share of the fickle users' rate.  */
 export const STEADY_CHURN = 0.2
 export const FUNNEL_GROWTH = 1.1
-/** Growth multiplier in an Era that began with a declined round. */
 export const DECLINED_GROWTH = 0.7
-/** The Apdex average covers one calendar hour. */
 export const APDEX_WINDOW = 60
 
-/**
- * The Pre-seed, Seed and Series A request mixes that puzzles were tuned on. A live Era rebalance
- * must not move a puzzle's demand, so a Sandbox or a Challenge whose targets depend on the shares
- * pins its mix as its scenario (14 "Challenges").
- */
 export const TUNED_PRE_SEED_MIX: Partial<Record<RequestKind, number>> = {
   page: 0.45,
   read: 0.35,

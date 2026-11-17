@@ -41,10 +41,6 @@ import {
 } from 'lucide'
 import type { ComponentId } from '@quorum/simulation/catalog'
 
-/* One glyph per Component, shared by the board, the dock, the inspector and the wiki. Kept apart
-   from the Component views so drawing an icon does not load every view and the Simulation behind
-   them; a test keeps this table equal to the views' own icons. */
-
 export const COMPONENT_ICONS: Record<ComponentId, IconNode> = {
   analytics: ChartLine,
   auth: KeyRound,

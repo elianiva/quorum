@@ -22,7 +22,6 @@ import { vecFields } from './vec.ts'
 import { logFields } from './log.ts'
 import { poolerFields } from './pooler.ts'
 
-/** Every Component's saved properties, merged. The wire order lives in state.ts. */
 export const COMPONENT_FIELDS = {
   ...analyticsFields,
   ...serverFields,

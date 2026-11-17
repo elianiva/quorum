@@ -4,10 +4,7 @@ import { type ComponentView } from './shared.ts'
 
 export const cdc: ComponentView = {
   icon: TowerControl,
-  // It reads a Database and publishes to a Stream: one port each way. It has one size, so it has
-  // no resize footer to click.
   layout: { rows: 4, inRow: 0, outRow: 3, footer: false },
-  // It copies a Database's writes to an Event Stream: its lag is the stream's backlog.
   rows: ({ inbound, game, node, ledger, capacity, out }) => {
     const stream = game.nodes.find(
       (entry) =>

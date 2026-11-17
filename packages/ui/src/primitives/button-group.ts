@@ -6,10 +6,6 @@ import { separatorClass } from './separator'
 
 type Child = Html | string
 
-// ButtonGroup connects a run of controls into a single segmented control.
-// Children keep their own outlines; the group's corner-cutting rules join
-// them (upstream model).
-
 export const buttonGroupClass = css({
   '&:has(> [data-slot="button-group"])': {
     gap: '2',
@@ -103,7 +99,6 @@ export const buttonGroupSeparatorClass = css({
 
 type StyleConfig = Readonly<{ className?: string; orientation?: ButtonGroupOrientation }>
 
-/** Segmented container — pass buttons/selects/inputs as children. */
 export const buttonGroup = <M>(
   config: StyleConfig,
   children: ReadonlyArray<Child>,
@@ -134,14 +129,6 @@ export const buttonGroupText = <M>(
     children,
   )
 
-// Upstream renders the shared <Separator> part; foldcn composes the same
-// attribute set and class merge (separator base wins conflicts first) by hand.
-
-/** Divider between grouped controls — a vertical `Separator` by default,
- *  matching upstream `ButtonGroupSeparator`. Upstream emits only
- *  `data-orientation` + `data-slot`; the `data-horizontal` / `data-vertical`
- *  selectors in the token are matched via the Separator's own
- *  `data-horizontal` / `data-vertical` attributes (see separator.ts). */
 export const buttonGroupSeparator = <M>(config: StyleConfig, h: HtmlBuilder<M>): Html => {
   const orientation = config.orientation ?? 'vertical'
   return h.div(
@@ -157,7 +144,6 @@ export const buttonGroupSeparator = <M>(config: StyleConfig, h: HtmlBuilder<M>):
   )
 }
 
-/** A `button` styled to sit inside a `buttonGroup`. */
 export const buttonGroupItem = <M>(
   config: ButtonConfig<M>,
   label: Html | string,

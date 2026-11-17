@@ -4,11 +4,6 @@ import type { SqlRunner, SqlStatement } from './sql.ts'
 
 const MIGRATIONS = new URL('../../migrations/', import.meta.url)
 
-/**
- * An in-memory SQLite database with the D1 migrations applied in order, behind
- * the same `SqlRunner` shape as D1, so tests run the schema and SQL the API
- * Worker runs.
- */
 export const sqliteRunner = (): SqlRunner => {
   const db = new DatabaseSync(':memory:')
   const files = readdirSync(MIGRATIONS)

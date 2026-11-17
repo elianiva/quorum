@@ -3,9 +3,6 @@ import type { Messages } from './i18n/messages.ts'
 import { navOf, pageIn } from './pages.ts'
 import type { Page } from './page.ts'
 
-/* The guided paths: an ordered list of logical page paths, the same in every language. A path's
-   title and summary are interface copy (`t.paths`). */
-
 export type PathId = keyof Messages['paths']
 
 export type Path = Readonly<{
@@ -77,7 +74,6 @@ export const stepsOf = (locale: Locale, path: Path): ReadonlyArray<Page> =>
     return page ? [page] : []
   })
 
-/** The first path that holds a page, and the page's index in it. */
 export const placeOf = (
   locale: Locale,
   pagePath: string,
@@ -89,7 +85,6 @@ export const placeOf = (
   return null
 }
 
-/** The step a reader resumes from: the first one they have not opened. */
 export const resumeOf = (
   locale: Locale,
   path: Path,

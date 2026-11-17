@@ -2,10 +2,6 @@ import { css } from '@quorum/styled-system/css'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { siGithub } from 'simple-icons'
 
-/**
- * The GitHub mark, as one filled 24×24 path from Simple Icons (CC0). Lucide has no brand marks, so
- * every surface that links to the repository draws this one.
- */
 export const githubMark = <M>(
   h: HtmlBuilder<M>,
   className = css({ width: '4', height: '4', flexShrink: '0' }),

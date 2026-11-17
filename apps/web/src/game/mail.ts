@@ -62,7 +62,6 @@ import {
 
 export type { SenderKind } from './copy/index.ts'
 
-/** Mail that waits for a decision: not answered, not resolved, and a button that does something. */
 export const needsAction = (mail: Mail): boolean =>
   mail.phase._tag === 'Active' && mail.actions.some((action) => !action.id.startsWith('show'))
 
@@ -70,12 +69,9 @@ export interface Sender {
   readonly name: string
   readonly address: string
   readonly kind: SenderKind
-  /** The badge colour: the real company's brand colour, or a teammate's own green. */
   readonly color: string
-  /** The kind whose badge it wears: a phishing copy wears the badge of what it fakes. */
   readonly looks: SenderKind
   readonly sign: string
-  /** Which teammate signs, when a teammate does: the place in `TEAMMATES`. */
   readonly signIndex?: number
 }
 
@@ -101,15 +97,9 @@ const hashOf = (...parts: ReadonlyArray<number | string>): number => {
   return hash
 }
 
-/** One of `items`, the same for the same parts. */
 const pick = <A>(items: ReadonlyArray<A>, ...parts: ReadonlyArray<number | string>): A =>
   items[hashOf(...parts) % items.length] as A
 
-/**
- * Who an engineer is, from their id alone: the Team panel and every Mail they write read this, so
- * the name on the roster is the name in the Inbox. Ids count up as people are hired, so each of
- * the first few engineers gets a different identity; a larger payroll wraps around the pool.
- */
 export const identityOf = (
   engineerId: string,
 ): Readonly<{ index: number; name: string; sign: string }> => {
@@ -128,7 +118,6 @@ export const senderOf = (id: string): Sender => {
     kind: 'teammate',
     name: mate.name,
     address: `${mate.name.toLowerCase().replace(/[^a-z]+/g, '.')}@quorum.team`,
-    // Teammates have no brand: each wears a green that drifts a little, so no two match.
     color: `oklch(0.52 0.12 ${150 + (hashOf(id) % 5) * 9 - 18})`,
     looks: 'teammate',
     sign: mate.sign,
@@ -136,8 +125,6 @@ export const senderOf = (id: string): Sender => {
   }
 }
 
-/** Several parties can write about the same thing. A Thread draws its Sender from the pool
- *  by the Company's seed and the Thread's key, so it is stable for one Thread and varied across them. */
 const POOLS: Record<SenderKind, ReadonlyArray<string>> = {
   cloud: ['cloud', 'cloud-gooble', 'cloud-azzure'],
   monitoring: ['monitoring', 'monitoring-grafauna', 'monitoring-centry'],
@@ -156,10 +143,6 @@ export const senderFor = (kind: SenderKind, game: Game, key: string): string => 
   return pool[hashOf(game.seed, key) % pool.length] ?? kind
 }
 
-/**
- * One letter from `letters`, signed by `sender`. The pick hashes the Company's seed, the
- * Thread, and the time, so every device writes the same Mail and a Thread rarely repeats itself.
- */
 const write = <V>(
   id: string,
   letters: Letters<V>,
@@ -182,37 +165,29 @@ const write = <V>(
   }
 }
 
-/** A letter written, with what it says as data. */
 interface Composed extends Written {
   readonly message: MailMessage
 }
 
-/** A paragraph put before a letter's own, in English and as data. */
 const lead = (composed: Composed, snippet: Snippet, english: string): Composed => ({
   subject: composed.subject,
   body: `${english}\n\n${composed.body}`,
   message: { ...composed.message, before: [snippet, ...composed.message.before] },
 })
 
-/** A paragraph put after a letter's own, in English and as data. */
 const tail = (composed: Composed, snippet: Snippet, english: string): Composed => ({
   subject: composed.subject,
   body: `${composed.body}\n\n${english}`,
   message: { ...composed.message, after: [...composed.message.after, snippet] },
 })
 
-/** What a Mail carries, before the Inbox stores it. */
 export interface Fact {
-  /** The thing it is about: a repeat with the same key joins its Thread. */
   readonly key: string
-  /** The Sender's id: a key of SENDERS, or `mate:<engineer id>`. */
   readonly sender: string
   readonly subject: string
-  /** The body. A blank line starts a paragraph. */
   readonly text: string
   readonly actions: ReadonlyArray<AdviceAction>
   readonly spam: boolean
-  /** What it says as data, so it can be shown in another language. */
   readonly message?: MailMessage
 }
 
@@ -234,7 +209,6 @@ const fact = (
 
 export const factOf = (advice: Advice, game: Game, salt: number | string = ''): Fact => {
   const sender = senderFor(advice.from, game, advice.key)
-  // The Simulation pairs each topic with its own vars; the record type cannot say so.
   const letters = ADVICE[advice.topic] as unknown as Letters<Advice['vars']>
   return fact(
     advice.key,
@@ -244,18 +218,13 @@ export const factOf = (advice: Advice, game: Game, salt: number | string = ''): 
   )
 }
 
-/** One event is drawn per this many sim seconds. */
-export const EVENT_EVERY = 45
+export const EVENT_EVERY_SECONDS = 45
 
 const severity = (score: number): CveVars['severity'] =>
   score >= 9 ? 'critical' : score >= 7 ? 'high' : score >= 4 ? 'medium' : 'low'
 
 const minutes = (seconds: number): string => `${Math.max(1, Math.round(seconds / 60))} min`
 
-/**
- * The Nodes that run `type`, named the way the Dashboard names them: the Component, then a number
- * for the second and later ones. An empty list when the Design runs none of them.
- */
 const nodesOf = (game: Game, type: string | undefined): ReadonlyArray<string> => {
   const seen = new Map<string, number>()
   const names: Array<string> = []
@@ -268,18 +237,13 @@ const nodesOf = (game: Game, type: string | undefined): ReadonlyArray<string> =>
   return names
 }
 
-/** The advisory for a patch ticket the Simulation filed, which quotes the ticket and its deadline. */
 export const disclosureFact = (item: WorkItem, game: Game, spam = false, at = 0): Fact => {
   const cve = CVES.find((entry) => entry.id === item.ref) ?? CVES[0]!
   const score = CVE_DEFS.find((def) => def.id === cve.id)?.score ?? 5
   const key = `security:${cve.id}`
   const sender = senderFor('security', game, cve.id)
-  // The filter now and then sorts a real advisory into Spam (18 "Spam and phishing").
   const misfiled =
     spam || (has(game, 'spam-filter') && hashOf(game.seed, 'misfile', cve.id, at) % 8 === 0)
-  // Exposure is a research gate (GDD 18 "CVEs and patches"): only Dependency scanning turns the
-  // advisory's Node list into names. Without it the Mail says to check whether the Design runs it,
-  // and it has no Node to show on the Board.
   const exposed = has(game, 'dependency-scanning') ? nodesOf(game, item.target) : []
   const node =
     exposed.length > 0 ? game.nodes.find((entry) => entry.type === item.target) : undefined
@@ -312,12 +276,10 @@ export const disclosureFact = (item: WorkItem, game: Game, spam = false, at = 0)
       ...(node ? [{ id: `show:${node.id}`, label: 'Show on Board' }] : []),
       { id: 'team', label: 'Open Team' },
     ],
-    // A real advisory can land in Spam, where the filter put it.
     misfiled,
   )
 }
 
-/** A made-up ticket for the Sandbox's bench. */
 const sampleTicket = (cve: Cve, game: Game, id: number): WorkItem => {
   const def = CVE_DEFS.find((entry) => entry.id === cve.id)
   return {
@@ -336,10 +298,6 @@ const sampleTicket = (cve: Cve, game: Game, id: number): WorkItem => {
 const mateOf = (game: Game, at: number): string =>
   `mate:${game.engineers[at % Math.max(1, game.engineers.length)]?.id ?? `e${at % 8}`}`
 
-/**
- * Who writes about the Company's own work. With no engineer on the payroll nobody on the team could
- * have written it, so the Mentor does; a made-up teammate would not be on the roster.
- */
 const writerOf = (game: Game, at: number, key: string): string =>
   game.engineers.length > 0 ? mateOf(game, at) : senderFor('mentor', game, key)
 
@@ -352,11 +310,6 @@ const hireFact = (game: Game, mate: string, salt: number): Fact => {
   ])
 }
 
-/**
- * A rewrite proposal (18 "Teammates"): only when a Service has high tech debt or slow pages, no
- * migration is under way, and the engineer's language is not what the App Servers run already.
- * An engineer whose last proposal still waits for an answer does not ask again.
- */
 const rewriteFact = (
   game: Game,
   mate: string,
@@ -371,7 +324,6 @@ const rewriteFact = (
   const current = LANGUAGES[languageOfService(game)].name
   const open = REWRITES.filter((entry) => entry.language !== current)
   if (open.length === 0) return null
-  // An engineer falls for one language and stays with it.
   const rewrite = pick(open, mate, 'rewrite')
   return fact(
     key,
@@ -390,7 +342,6 @@ const customerFact = (game: Game, n: number): Fact => {
   return fact(key, sender, write('ticket', TICKETS, {}, sender, game, key, n))
 }
 
-/** The Mentor offers Easy mode, once a Company: Pause and a speed control. */
 export const EASY_MODE_KEY = 'mentor:easy-mode'
 
 export const easyModeFact = (game: Game): Fact => {
@@ -400,10 +351,6 @@ export const easyModeFact = (game: Game): Fact => {
   ])
 }
 
-/**
- * The running Study stalled and holds the queue (10 "Studies"): a teammate says why, with a
- * button to Research. It waits in Needs action until the Study moves or leaves the queue.
- */
 export const stallFact = (game: Game, id: ResearchId, stall: StudyStall): Fact => {
   const vars = {
     research: RESEARCH[id].name,
@@ -430,12 +377,7 @@ export const stallFact = (game: Game, id: ResearchId, stall: StudyStall): Fact =
   }
 }
 
-/**
- * A big customer asks for a Feature the Design has not built (GDD 18 "Senders"). The ask carries
- * one button: it queues the Feature on the Team backlog, which the Simulation can carry out.
- */
 const requestFact = (game: Game, salt: number): Fact | null => {
-  // A Sandbox shows the same Mail: the bench is for trying the ask, and its Action refuses there.
   const open = (Object.keys(FEATURES) as ReadonlyArray<FeatureId>).filter(
     (id) => featureRefusal({ ...game, sandbox: false }, id) === null,
   )
@@ -451,14 +393,12 @@ const requestFact = (game: Game, salt: number): Fact | null => {
   )
 }
 
-/** A region's users fell for a calendar hour: the Customers sender says why (GDD 12). */
 export const churnFact = (game: Game, region: RegionChurn): Fact => {
   const key = `customers:churn:${region.region}`
   const sender = senderFor('customers', game, key)
   const causes = region.rows
     .slice(0, 2)
     .map((row) => `- ${KINDS[row.kind].label}: ${CAUSE_TEXT[row.cause]}`)
-    // One paragraph per cause, so each line translates on its own.
     .join('\n\n')
   return fact(
     key,
@@ -481,7 +421,6 @@ export const churnFact = (game: Game, region: RegionChurn): Fact => {
   )
 }
 
-/** A cause as a customer would put it. */
 const CAUSE_TEXT: Record<ChurnCause, string> = {
   far: 'slow from far away',
   slow: 'slow',
@@ -500,7 +439,6 @@ const CAUSE_TEXT: Record<ChurnCause, string> = {
   duplicate: 'charged twice',
 }
 
-/** The item a real vendor demo covers: one in four pitches, an unstudied observability item. */
 const vendorOffer = (game: Game, salt: number): ResearchId | null => {
   if (hashOf(game.seed, 'vendor', salt) % 4 !== 0) return null
   const open = (Object.keys(RESEARCH) as ReadonlyArray<ResearchId>).filter(
@@ -516,9 +454,6 @@ const vendorOffer = (game: Game, salt: number): ResearchId | null => {
 const spamFact = (pitch: Pitch, game: Game, salt: number): Fact => {
   const key = `spam:${pitch.sender}`
   const written = write(`spam.${pitch.sender}`, pitch.letters, {}, pitch.sender, game, key, salt)
-  // The recruiter's pitch is flavour, but a hint rides along once mood exists (18 "Spam and
-  // phishing": "Recruiter: a hint that a teammate is unhappy."). It names nobody: the pitch itself
-  // still only offers a job, so the player reads the Team panel to find out who.
   const hint =
     pitch.sender === 'spam-recruiter' && game.engineers.some(unhappy)
       ? tail(
@@ -527,8 +462,6 @@ const spamFact = (pitch: Pitch, game: Game, salt: number): Fact => {
           'P.S. One of your engineers looks ready to listen.',
         )
       : written
-  // A vendor's demo is real now and then (18 "Spam and phishing"): the pitch names an
-  // observability item the Company has not studied, and taking the demo takes a fifth off it.
   const offered = pitch.sender === 'spam-datadug' ? vendorOffer(game, salt) : null
   const body = offered
     ? tail(
@@ -541,12 +474,6 @@ const spamFact = (pitch: Pitch, game: Game, salt: number): Fact => {
   return fact(key, pitch.sender, body, actions, has(game, 'spam-filter'))
 }
 
-/**
- * What the world writes at one event tick: a teammate, a customer, or spam. A CVE
- * is not drawn here: the Simulation discloses it as a patch ticket. Drawn from the Company's seed, so it is the same on every device.
- * Mail changes nothing in the Simulation until the player presses a button. `inbox` is the Mail
- * already sent, so a question that still waits for an answer is not asked again.
- */
 export const eventMail = (
   game: Game,
   bucket: number,
@@ -557,14 +484,12 @@ export const eventMail = (
   const at = draw >>> 8
   const mate = game.engineers.length > 0 ? mateOf(game, at) : null
 
-  // A teammate writes only when what they write about is true; otherwise the draw sends nothing.
   if (roll < 15)
     return mate === null
       ? null
       : game.backlog.length >= 3 && game.hires.length === 0
         ? hireFact(game, mate, at)
         : rewriteFact(game, mate, at, inbox)
-  // A customer writes when a page is slow; with nothing slow, a big one asks for a Feature.
   if (roll < 25) return game.apdex < 0.9 ? customerFact(game, at) : requestFact(game, at)
   if (roll < 45) return spamFact(pick(SPAM, at), game, at)
   return null
@@ -574,7 +499,6 @@ export interface Sample {
   readonly id: string
   readonly group: string
   readonly label: string
-  /** `n` is unique per send, so each one starts its own Thread unless the sample repeats a key. */
   readonly make: (game: Game, n: number) => Fact
 }
 
@@ -585,7 +509,6 @@ const ROUND: ReadonlyArray<AdviceAction> = [
   { id: 'decline', label: 'Decline' },
 ]
 
-/** One case of every advice topic. A topic missing here fails typecheck. */
 const ADVICE_SAMPLES: {
   readonly [T in AdviceTopic]: {
     readonly label: string
@@ -635,7 +558,6 @@ const ADVICE_SAMPLES: {
   },
 }
 
-/** One case of every Step event topic, and the event that sends it. */
 const EVENT_SAMPLES: {
   readonly [T in EventTopic]: {
     readonly label: string
@@ -704,7 +626,6 @@ const EVENT_SAMPLES: {
 const entries = <K extends string, V>(record: { readonly [P in K]: V }): ReadonlyArray<[K, V]> =>
   Object.entries(record) as Array<[K, V]>
 
-/** A random sample for the bench's ×10 and ×50: the `n`th send of a burst. */
 export const randomSample = (game: Game, n: number): Sample => pick(SAMPLES, game.seed, 'bench', n)
 
 export const SAMPLES: ReadonlyArray<Sample> = [
@@ -762,7 +683,6 @@ export const SAMPLES: ReadonlyArray<Sample> = [
           {
             _tag: sample.tag,
             engineerId: mateOf(game, n).replace('mate:', ''),
-            // A bench sample of a teammate's Mail carries a ticket, so its buttons are on screen.
             ...(topic === 'blocked' || topic === 'patch-proposed'
               ? {
                   item: {
@@ -840,7 +760,6 @@ export const SAMPLES: ReadonlyArray<Sample> = [
   })),
 ]
 
-/** A teammate's follow-up once an Incident resolves: the postmortem is theirs to file (18 "Teammates"). */
 export const postmortemFact = (
   postmortem: Postmortem,
   game: Game,
@@ -878,20 +797,16 @@ const EVENT_FROM: Record<string, SenderKind> = {
   MigrationShifted: 'monitoring',
 }
 
-/** With a Security team, it writes about a compromise itself instead of the pager. */
 const SECURITY_PAGES: ReadonlyArray<EventMail['topic']> = ['incident-phishing', 'incident-breach']
 
-/** News only one party would send: the edge network sees a flood before anyone else. */
 const PINNED: Partial<Record<EventMail['topic'], string>> = { 'incident-ddos': 'cloud-cloudscare' }
 
-/** The Node a Step event names: the one an incident hit, or the one that ran out of something. */
 const eventNode = (event: { readonly [field: string]: unknown }): string | null => {
   if (typeof event.nodeId === 'string') return event.nodeId
   const incident = event.incident as { readonly nodeId?: unknown } | undefined
   return typeof incident?.nodeId === 'string' ? incident.nodeId : null
 }
 
-/** The Sender's buttons (GDD 18 "Senders"). A Cloud and an alarm Mail both name the Node they mean. */
 const eventActions = (
   game: Game,
   from: SenderKind | undefined,
@@ -905,10 +820,6 @@ const eventActions = (
       ? alertActions(nodeId)
       : []
 
-/**
- * A teammate's buttons (18 "Teammates"): Approve or Later a blocked item, the three answers to
- * burnout, and the two answers to a proposal to patch.
- */
 const workActions = (
   event: { readonly [field: string]: unknown },
   mail: EventMail,
@@ -934,15 +845,12 @@ const workActions = (
   return []
 }
 
-/** One Step event as Mail: the party that would know writes, and repeats join the Thread. */
 export const eventFact = (
   event: { readonly _tag: string; readonly [field: string]: unknown },
   mail: EventMail,
   game: Game,
   salt: number | string = '',
 ): Fact => {
-  // A blocked item and a patch proposal are about one backlog item each, so two of them from the
-  // same engineer start two Threads; the rest are about a Node, a rule, or the engineer.
   const work = event.item as { readonly id?: unknown } | undefined
   const itemKey =
     (mail.topic === 'blocked' || mail.topic === 'patch-proposed') && typeof work?.id === 'number'
@@ -950,9 +858,6 @@ export const eventFact = (
       : null
   const about =
     itemKey ?? [event.nodeId, event.rule, event.engineerId].find((v) => typeof v === 'string') ?? ''
-  // Each kind of news keeps its own Thread: a zone outage does not join a cache stampede. An
-  // exhausted credit balance is one fact however the Cloud learns it, so the event and the
-  // capacity advice about that Node share a Thread instead of writing the same Mail twice.
   const key = mail.topic === 'credits' ? `cloud:credits:${about}` : `event:${mail.topic}:${about}`
   const from = EVENT_FROM[event._tag]
   const sender =
@@ -964,7 +869,6 @@ export const eventFact = (
         : typeof event.engineerId === 'string'
           ? `mate:${event.engineerId}`
           : writerOf(game, 0, key))
-  // Each topic carries its own vars; the record type cannot say so.
   const letters = EVENTS[mail.topic] as unknown as Letters<EventMail['vars']>
   return fact(
     key,

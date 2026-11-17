@@ -2,7 +2,6 @@ import { Combine } from 'lucide'
 import type { GameNode } from '@quorum/simulation/state'
 import { type ComponentView } from './shared.ts'
 
-/** A Connection Pooler's mode, as its card names it. */
 export const POOLER_MODES: Readonly<Record<GameNode['mode'], string>> = {
   session: 'Session',
   transaction: 'Transaction',

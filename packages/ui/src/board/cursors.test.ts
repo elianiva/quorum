@@ -14,7 +14,6 @@ const cursor = (x: number, y = 0): SeatCursor => ({
 test('a cursor waits out the delay, then follows the samples', () => {
   const tracks = new CursorTracks()
   tracks.move(cursor(0), 1_000)
-  // The newest sample is not drawn yet: the delay is the room the next one needs.
   expect(tracks.play(1_000 + CURSOR_DELAY_MS)[0]?.x).toBe(0)
   tracks.move(cursor(100), 1_040)
   expect(tracks.play(1_040)[0]?.x).toBe(0)

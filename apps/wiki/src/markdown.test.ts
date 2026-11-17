@@ -4,8 +4,6 @@ import { loadAllProse } from './content.ts'
 import { blocksMarkdown, llmsTxt, markdownFiles, markdownPath, pageMarkdown } from './markdown.ts'
 import { pageAt, pagesFor } from './pages.ts'
 
-/* The agent-facing contract: /llms.txt indexes every page, and every page has a Markdown twin. */
-
 beforeAll(async () => {
   await loadAllProse()
 })

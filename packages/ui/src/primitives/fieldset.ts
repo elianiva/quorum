@@ -45,7 +45,6 @@ export const fieldGroupClass = cx(
   'group-field-group',
 )
 
-/** Upstream cva base + per-orientation variant strings. */
 export const fieldBaseClass = cx(
   css({
     '&[data-invalid="true"]': { color: 'destructive' },
@@ -104,10 +103,6 @@ export const fieldContentClass = css({
   lineHeight: 'snug',
 })
 
-/** Upstream keys label disabling on a native peer-disabled sibling variant
- *  (no foldkit `.peer` sibling exists) and `group-data-[disabled=true]`
- *  (foldkit emits `data-disabled=""`, never "true"). Re-keyed onto the
- *  fieldset wrapper's live group + data-disabled signal. */
 export const labelClass = css({
   gap: '2',
   fontSize: 'type.14',
@@ -230,7 +225,6 @@ export const fieldSet = <M>(
     children,
   )
 
-/** Legend naming the fieldset. `variant` toggles legend vs label sizing. */
 export const fieldLegend = <M>(
   config: StyleConfig & Readonly<{ variant?: 'legend' | 'label' }>,
   children: ReadonlyArray<Child>,
@@ -245,8 +239,6 @@ export const fieldLegend = <M>(
     children,
   )
 
-/** Groups a set of fields; provides the container context the responsive
- *  field orientation reacts to. */
 export const fieldGroup = <M>(
   config: StyleConfig,
   children: ReadonlyArray<Child>,
@@ -257,7 +249,6 @@ export const fieldGroup = <M>(
     children,
   )
 
-/** A single field row: label + content + description + error. */
 export const field = <M>(
   config: StyleConfig & Readonly<{ orientation?: FieldOrientation; isInvalid?: boolean }>,
   children: ReadonlyArray<Child>,
@@ -276,7 +267,6 @@ export const field = <M>(
   )
 }
 
-/** Content column of a field (the control plus its description/error). */
 export const fieldContent = <M>(
   config: StyleConfig,
   children: ReadonlyArray<Child>,
@@ -294,7 +284,6 @@ export const label = <M>(
 ): Html =>
   h.label([h.DataAttribute('slot', 'label'), h.Class(cx(labelClass, config.className))], children)
 
-/** Label for a field; optionally associates with its control via `for`. */
 export const fieldLabel = <M>(
   config: StyleConfig & Readonly<{ for?: string }>,
   children: ReadonlyArray<Child>,
@@ -332,7 +321,6 @@ export const fieldDescription = <M>(
     children,
   )
 
-/** Divider between fields, with optional centered content. */
 export const fieldSeparator = <M>(
   config: StyleConfig,
   children: ReadonlyArray<Child>,
@@ -366,8 +354,6 @@ export const fieldSeparator = <M>(
   )
 }
 
-/** Field error, alerting for explicit children or a list of unique error
- *  messages. Renders nothing when there is no content. */
 export const fieldError = <M>(
   config: StyleConfig &
     Readonly<{
@@ -434,9 +420,6 @@ export type FieldsetConfig = Readonly<{
   children: ReadonlyArray<Child>
 }>
 
-/** Styled fieldset with legend, optional description and grouped fields,
- *  built on the @foldkit/ui Fieldset helper for native fieldset/legend
- *  semantics plus id / aria-describedby / disabled wiring. */
 export const fieldset = <M>(config: FieldsetConfig, h: HtmlBuilder<M>): Html =>
   FoldkitFieldset.view<M>(
     {

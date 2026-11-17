@@ -23,7 +23,6 @@ import {
   segmented,
 } from './shared.ts'
 
-/** The request kinds each Link out of the Gateway carries, toggled one at a time. */
 const routeTable = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
   outbound(game, node).map(([link, target]) => {
     const t = copy(h)
@@ -82,7 +81,6 @@ const routeTable = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readon
     )
   })
 
-/** An API Gateway's route table, then its rate limit; Off lets every request through. */
 const gateway = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
   return [

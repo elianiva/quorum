@@ -13,22 +13,6 @@ import {
   labelClass,
 } from './fieldset'
 
-/**
- * Two rendering paths in `styledViewInputs`:
- *  - `optionLabel` (+ optional `optionDescription`) → upstream anatomy: a
- *    16px circle control carrying the foldkit attributes, an indicator dot
- *    mounted only while selected, and a wired label/description pair. Set
- *    `optionLayout` to compose the documented Field or Choice Card anatomy.
- *  - legacy `option` callback → consumer-owned row content inside a
- *    group-attributed wrapper (kept for backward compatibility).
- *
- */
-
-// Re-export the @foldkit/ui RadioGroup surface. Create a bundle once per
-// option type:
-//
-//   export const PlanRadioGroup = RadioGroup.create<"Startup" | "Business">()
-
 export const create = FoldkitRadioGroup.create
 export const init = FoldkitRadioGroup.init
 export const Model = FoldkitRadioGroup.Model
@@ -43,9 +27,6 @@ export type InitConfig = FoldkitRadioGroup.InitConfig
 export type ViewInputs<Value extends string = string> = FoldkitRadioGroup.ViewInputs<Value>
 export type RenderInfo<Value extends string = string> = FoldkitRadioGroup.RenderInfo<Value>
 
-/** Upstream group component string. Horizontal orientation appends a
- *  responsive row extension (foldcn API exposes orientation; upstream leaves
- *  layout to the consumer). */
 export const radioGroupClass = css({
   display: 'grid',
   gap: '2',
@@ -68,8 +49,6 @@ export const radioGroupHorizontalClass = css({
   },
 })
 
-/** Upstream item component string. The disabled: variants are inert under
- *  foldkit (aria-/data- twins are inlined at style resolution). */
 export const radioItemClass = cx(
   css({
     backgroundColor: 'well',
@@ -144,10 +123,6 @@ export const radioDotClass = css({
   borderRadius: 'full',
 })
 
-/** Label for the upstream-anatomy option row. The circle control (radioItemClass)
- *  carries `peer` and precedes the label, and foldkit emits aria-disabled/
- *  data-disabled on it when disabled — so the peer twins below are live
- *  (upstream's native peer-disabled variant can never match). */
 export const radioItemLabelClass = css({
   gap: '2',
   fontSize: 'type.14',
@@ -173,7 +148,6 @@ export const radioItemDescriptionClass = css({
   color: 'mutedForeground',
 })
 
-/** Legacy consumer-drawn row (used when `option` callback is supplied). */
 export const radioOptionClass = cx(
   css({
     position: 'relative',
@@ -213,10 +187,6 @@ export const radioOptionClass = cx(
   'peer-control',
 )
 
-/** Legacy path label: nested inside the option row (which itself is the
- *  `group-radio-group-item` carrying foldkit's data-disabled), so disabled
- *  state flows via the group variant — a `peer-*` form can never match a
- *  descendant of the peer element. */
 export const radioOptionLabelClass = css({
   fontSize: 'type.14',
   lineHeight: 'none',
@@ -237,21 +207,14 @@ export type StyledViewInputs<M, Value extends string = string> = Readonly<{
   options: ReadonlyArray<Value>
   selectedValue: Option<Value>
   ariaLabel: string
-  /** Legacy path: renders each option row's content yourself. Receives the
-   *  option value, its per-option render info (`isSelected`, attribute
-   *  bundles) and the full render. Mutually exclusive with `optionLabel`. */
   option?: (
     value: Value,
     info: FoldkitRadioGroup.OptionInfo<Value>,
     render: RenderInfo<Value>,
     h: HtmlBuilder<M>,
   ) => Html
-  /** Upstream-anatomy path: plain text label per option, rendered next to a
-   *  circle control with the indicator dot. */
   optionLabel?: (value: Value) => string
   optionDescription?: (value: Value) => string
-  /** `field` matches upstream's Description, Fieldset, Disabled, Invalid, and
-   * RTL examples. `choice-card` places the control at the end of a card row. */
   optionLayout?: 'default' | 'field' | 'choice-card'
   orientation?: 'Horizontal' | 'Vertical'
   isOptionDisabled?: (value: Value, index: number) => boolean
@@ -452,7 +415,6 @@ const defaultOptionRow = <M, Value extends string>(
   )
 }
 
-/** Build styled `RadioGroup.ViewInputs`. Pass your view's `h`. */
 export const styledViewInputs = <M, Value extends string = string>(
   viewInputs: StyledViewInputs<M, Value>,
   h: HtmlBuilder<M>,
@@ -487,7 +449,6 @@ export const styledViewInputs = <M, Value extends string = string>(
         [
           ...options.map((option) => {
             if (viewInputs.option !== undefined) {
-              // Legacy path: consumer-owned content inside the attributed row.
               return h.div(
                 [
                   ...option.option,

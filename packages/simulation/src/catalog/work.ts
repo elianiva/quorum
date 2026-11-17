@@ -1,5 +1,3 @@
-/* What Dev Hours build: Features for the product, and Engineering tasks for the system (08). */
-
 import type { BackendKind, RequestKind } from './kinds.ts'
 import type { ResearchId } from './research.ts'
 
@@ -39,37 +37,22 @@ export type FeatureId = (typeof FEATURE_IDS)[number]
 export type FeatureDef = Readonly<{
   id: FeatureId
   name: string
-  /** The first Era it can be built in. */
   era: number
   dh: number
   requires: ReadonlyArray<FeatureId>
-  /** Research the Company needs before it can build it. */
   research: ResearchId | null
   market: number
   growth: number
   churn: number
   load: Partial<Record<RequestKind, number>>
   value: Partial<Record<RequestKind, number>>
-  /** Multiplies the response size of a kind. */
   payload: Partial<Record<RequestKind, number>>
-  /** Multiplies what one query of a backend kind costs the Node that answers it. */
   queries: Partial<Record<BackendKind, number>>
-  /**
-   * A kind users send once this ships. Gated: no user sends it before, even
-   * where the Era's mix has it. Otherwise it arrives before its Era at `share`.
-   */
   unlocks: Readonly<{ kind: RequestKind; share: number; gated: boolean }> | null
-  /** Unindexed query shapes it ships: Slow query grows likelier until an index covers them. */
   shapes: number
-  /**
-   * It reads old rows: a Database that deletes history past its window gives it this share of its
-   * effect, and one that archives it a restore's wait (07 \"Data volume\"). 1 for a Feature that
-   * needs no history.
-   */
   history: number
   subscription: boolean
   effect: string
-  /** The hidden cost, which Code review shows before it ships. */
   hidden: string | null
 }>
 
@@ -148,8 +131,6 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     dh: 40,
     requires: ['signup-flow'],
     churn: 0.9,
-    // The weekly send is a burst of `job` requests that a Queue takes off the App Servers: it needs
-    // a Queue in the Design before it can be queued, checked in `featureRefusal` (08 "Features").
     unlocks: { kind: 'job', share: 0.01, gated: false },
     load: { job: 2 },
     effect:
@@ -262,7 +243,6 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     era: 4,
     dh: 480,
     market: 1.1,
-    // A dashboard charts old rows: delete them and it shows half as much.
     history: 0.5,
     unlocks: { kind: 'report', share: 0.03, gated: true },
     effect: 'Market +10%. Reports arrive: a table scan each',
@@ -281,7 +261,6 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     era: 4,
     dh: 480,
     requires: ['video', 'data-export'],
-    // The model trains on what users did: delete that history and the lift halves.
     history: 0.5,
     load: { media: 1.3, job: 1.3 },
     effect: 'Video +30%',
@@ -334,7 +313,6 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     name: 'Localization',
     era: 5,
     dh: 480,
-    // +40% outside North America, which holds 40% of users.
     market: 1.24,
     effect: 'Market +40% outside North America',
   }),
@@ -362,9 +340,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     id: 'data-residency',
     name: 'Data residency',
     era: 6,
-    // 3 engineers, 3 months: a week is 40 DH, so 3 × 12 weeks × 40 = 1,440 (08 "Sizes").
     dh: 1_440,
-    // An open EU region gates it instead, checked in `featureRefusal` (08 "Features").
     effect: 'Required for the EU market: EU data stays in an EU region',
   }),
   'status-page': feature({
@@ -386,7 +362,6 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
   }),
 }
 
-/** Features an engineering team builds for its own people: a Django admin site makes them cheaper (06). */
 export const INTERNAL_TOOL_FEATURES: ReadonlyArray<FeatureId> = [
   'dashboards',
   'audit-log',
@@ -394,7 +369,6 @@ export const INTERNAL_TOOL_FEATURES: ReadonlyArray<FeatureId> = [
   'data-export',
 ]
 
-/** Features that run as background work, queued or scheduled: Laravel's queues make them cheaper (06). */
 export const BACKGROUND_FEATURES: ReadonlyArray<FeatureId> = [
   'email-digests',
   'data-export',
@@ -424,12 +398,9 @@ export type TaskId = (typeof TASK_IDS)[number]
 export type TaskDef = Readonly<{
   id: TaskId
   name: string
-  /** Dev Hours. Fix bugs takes its size from the migration. */
   dh: number
-  /** Research the player needs to know the task exists. */
   research: ResearchId | null
   effect: string
-  /** Queued by the game, not offered in the Add work menu. */
   internal: boolean
 }>
 
@@ -548,10 +519,8 @@ export const TASKS: Record<TaskId, TaskDef> = {
   },
 }
 
-/** Calendar days in a calendar quarter, for how long a Kubernetes version stays supported. A Public quarter lasts one week (`QUARTER_SECONDS`). */
 export const QUARTER_DAYS = 90
 
-/** Fixes a task leaves on the service. Refactor and Fix bugs act once instead. */
 export const FIXES = [
   'eager-loading',
   'fix-leak',

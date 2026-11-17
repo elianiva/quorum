@@ -8,14 +8,8 @@ import {
   type ResearchTrack,
 } from '@quorum/simulation/catalog'
 
-/**
- * A Node box holds two lines of its name and a line of cost, so a long name fills
- * the box instead of ellipsizing. Every box is the same size, which keeps the
- * rows, the Era bands, and the wires straight.
- */
 export const NODE_SIZE = { w: 224, h: 64 }
 
-/** A Node box at `scale`, the interface's type scale: at 150% it is half again as wide and tall. */
 export const nodeSize = (scale: number): Readonly<{ w: number; h: number }> => ({
   w: NODE_SIZE.w * scale,
   h: NODE_SIZE.h * scale,
@@ -23,20 +17,16 @@ export const nodeSize = (scale: number): Readonly<{ w: number; h: number }> => (
 
 export type Placed = Readonly<{ entry: ResearchDef; x: number; y: number }>
 
-/** A line behind the nodes. `from` decides whether it is drawn as done. */
 export type Wire = Readonly<{
   key: string
   d: string
   from: ResearchId | null
-  /** Null for a trunk, which no one item owns. */
   to: ResearchId | null
-  /** A line from a track root, not a prerequisite. */
   root: boolean
 }>
 
 export type EraBand = Readonly<{ era: number; x: number; y: number; w: number; h: number }>
 
-/** A track's root, at the foot of its trunk. */
 export type TrackMark = Readonly<{ track: ResearchTrack; label: string; x: number; y: number }>
 
 export type Layout = Readonly<{
@@ -56,7 +46,6 @@ const TRACKS = RESEARCH_TRACKS.filter((track) =>
 const cellOf = (track: ResearchTrack, era: number) =>
   researchList.filter((entry) => entry.track === track && entry.era === era)
 
-/** Items with no prerequisite in their own track: the ones a track root holds up. */
 const isRoot = (entry: ResearchDef): boolean =>
   !entry.requires.some((id) => RESEARCH[id].track === entry.track)
 
@@ -79,13 +68,11 @@ const build = (scale: number): Layout => {
   const ROOT_H = 150 * scale
   const BAND_PAD = 28 * scale
   const LEFT = 120 * scale
-  // Rows per Era band: as many as its fullest track needs, at most two items a row.
   const rowsOf = (track: ResearchTrack, era: number): Array<Array<ResearchDef>> => {
     const cell = cellOf(track, era)
     const inCell = new Set(cell.map((entry) => entry.id))
     const rows: Array<Array<ResearchDef>> = []
     const rowOf = new Map<ResearchId, number>()
-    // Parents first, so an in-cell follow-up always sits a row above.
     const order = cell.toSorted(
       (a, b) =>
         a.requires.filter((id) => inCell.has(id)).length -
@@ -108,7 +95,6 @@ const build = (scale: number): Layout => {
   )
   const bandH = bandRows.map((rows) => BAND_PAD * 2 + rows * h + (rows - 1) * GAP_Y)
   const height = ROOT_H + bandH.reduce((sum, item) => sum + item, 0)
-  // Garage is the lowest band; each later Era sits above the one before.
   const bandTop = ERA_LIST.map(
     (_, index) => height - ROOT_H - bandH.slice(0, index + 1).reduce((sum, item) => sum + item, 0),
   )
@@ -121,7 +107,6 @@ const build = (scale: number): Layout => {
     ERA_LIST.forEach((era, index) => {
       const bottom = bandTop[index]! + bandH[index]! - BAND_PAD
       rowsOf(track.key, era).forEach((row, line) => {
-        // A lone item sits on the trunk's side nearest its parent.
         const ordered = row.toSorted((a, b) => parentX(a) - parentX(b))
         ordered.forEach((entry, slot) => {
           const lone = row.length === 1
@@ -135,7 +120,6 @@ const build = (scale: number): Layout => {
       })
     })
     tracks.push({ track: track.key, label: track.label, x: middle, y: height - ROOT_H / 2 })
-    // The trunk runs up the gap between the two slots; each root item branches off it.
     const roots = researchList.filter((entry) => entry.track === track.key && isRoot(entry))
     const forks = roots.flatMap((entry) => {
       const place = placed.get(entry.id)
@@ -152,7 +136,6 @@ const build = (scale: number): Layout => {
       to: null,
       root: true,
     })
-    // Each root item branches off the trunk at the gap below it.
     for (const { entry, bx, by, fork } of forks) {
       const side = Math.sign(bx - middle)
       const d = `M${middle} ${fork} L${bx - side * 6} ${fork} Q${bx} ${fork} ${bx} ${fork - 6} L${bx} ${by}`
@@ -194,7 +177,6 @@ const build = (scale: number): Layout => {
 }
 
 const cached = new Map<number, Layout>()
-/** The tree at `scale`, the interface's type scale (15 "Accessibility"); built once per scale. */
 export const researchLayout = (scale = 1): Layout => {
   const made = cached.get(scale)
   if (made) return made

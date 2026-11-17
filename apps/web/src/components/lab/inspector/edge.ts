@@ -11,7 +11,6 @@ import { Message } from '@/game/message.ts'
 import { row } from '@quorum/ui/game/bits'
 import { type Panel, caption, section } from './shared.ts'
 
-/** An Edge Function's ceilings, and the Stack it needs (05 "Edge Function"). */
 const edge = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
   return [

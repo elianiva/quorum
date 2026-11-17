@@ -2,11 +2,6 @@ import { ForesightManager } from 'js.foresight'
 import { loadProse, needsProse } from './content.ts'
 import { routeOf } from './main.ts'
 
-/* A click on a wiki link waits for the next page's prose and renderers (main.ts, Navigate). This
-   loads them when the reader is heading for the link: the cursor's trajectory, a Tab stop away, a
-   touch, or the link scrolling into view. Loading a page twice is free, so a late guess costs
-   nothing. Foresight skips readers on a data saver or a slow connection. */
-
 const LINKS = 'a[href^="/"]:not([target])'
 
 const registered = new Map<HTMLAnchorElement, () => void>()
@@ -36,7 +31,6 @@ const sync = (): void => {
     if (!registered.has(link)) register(link)
 }
 
-/** Watches the page, which Foldkit patches on every navigation, so each new link is registered. */
 export const startPrefetch = (): void => {
   let queued = false
   new MutationObserver(() => {

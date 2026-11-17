@@ -3,39 +3,22 @@ import { COMPONENT_IDS, ERAS, LEVER_KINDS, RESEARCH_TRACKS } from '@quorum/simul
 import { SANDBOX_IDS } from '@quorum/simulation/sandbox-summary'
 import { DESIGN_IDS } from './patterns/designs/ids.ts'
 
-/* The live views a Markdown page may place with a directive, and the attributes each takes.
-   vite.config.ts passes these to the Markdown plugin, so an unknown island or attribute fails
-   the build with its file and line. src/island-views.ts renders them. */
-
 export const islandAttributes = {
   Note: Schema.Struct({ tone: Schema.optionalKey(Schema.Literals(['tip', 'warn', 'real'])) }),
-  /** A card that links a guided Sandbox: `::Sandbox{id="out-of-credits"}`. */
   Sandbox: Schema.Struct({ id: Schema.Literals(SANDBOX_IDS) }),
-  /** A Pattern Design on the game's own board, with its settings: `::Design{id="split-storage"}`. */
   Design: Schema.Struct({ id: Schema.Literals(DESIGN_IDS) }),
-  /** A Component's card, as it stands on the board: `::Component{id="lb"}`. */
   Component: Schema.Struct({ id: Schema.Literals(COMPONENT_IDS) }),
-  /** The controls a Component adds to its Inspector: `::Options{id="lb"}`. */
   Options: Schema.Struct({ id: Schema.Literals(COMPONENT_IDS) }),
-  /** An Era's request mix as one bar: `::Mix{era="3"}`. */
   Mix: Schema.Struct({
     era: Schema.Literals(ERAS.map((_, index) => String(index)) as ReadonlyArray<string>),
   }),
-  /** One kind's Product lever and its three steps: `::Lever{kind="login"}`. */
   Lever: Schema.Struct({ kind: Schema.Literals(LEVER_KINDS) }),
-  /**
-   * A question with instant feedback, to check a reader followed:
-   * `::Quiz{question="Which Node is the bottleneck?" options="Users|Load Balancer|Database" answer="3" explain="…"}`.
-   * `options` is separated by `|`; `answer` counts from 1.
-   */
   Quiz: Schema.Struct({
     question: Schema.String,
     options: Schema.String,
     answer: Schema.Literals(['1', '2', '3', '4', '5']),
     explain: Schema.String,
   }),
-  /** A live board to practice on, drawn by the game's own board: `::Practice{id="place"}`. */
   Practice: Schema.Struct({ id: Schema.Literals(['place', 'wire', 'rearrange']) }),
-  /** One Research track, as the tree draws it: `::Track{track="data"}`. */
   Track: Schema.Struct({ track: Schema.Literals(RESEARCH_TRACKS.map((entry) => entry.key)) }),
 }

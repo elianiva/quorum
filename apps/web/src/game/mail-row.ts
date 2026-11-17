@@ -4,25 +4,21 @@ import { KIND_LABEL, needsAction, senderOf, type SenderKind } from './mail.ts'
 
 type MailAction = typeof MailActionSchema.Type
 
-/** A Mail's label is its Sender's kind: the same one its filter chip selects. */
 export const kindOf = (mail: Mail): SenderKind => senderOf(mail.sender).kind
 
 export const kindLabelOf = (mail: Mail): string => KIND_LABEL[kindOf(mail)]
 
-/** How much a Mail wants the player: a clock is running, a decision waits, or neither. */
 export type Priority = 'clock' | 'decision' | 'none'
 
 export const priorityOf = (mail: Mail): Priority =>
   mail.phase._tag !== 'Active' || mail.spam || mail.trashed
     ? 'none'
-    : // A CVE advisory carries a clock: the ticket expires and the CVE is exploited.
-      senderOf(mail.sender).kind === 'security'
+    : senderOf(mail.sender).kind === 'security'
       ? 'clock'
       : needsAction(mail)
         ? 'decision'
         : 'none'
 
-/** The coloured left bar's class, in the design's tones: danger for a clock, warn for a wait. */
 const BAR: Record<Priority, string | null> = {
   clock: css({ backgroundColor: 'danger' }),
   decision: css({ backgroundColor: 'warn' }),
@@ -37,7 +33,6 @@ export const PRIORITY_LABEL: Record<Priority, string> = {
   none: '',
 }
 
-/** Where a button really goes, in the game: the hover names the control it opens. */
 export const DESTINATIONS: Record<string, string> = {
   show: 'Selects it on the Board',
   resize: 'Opens the Node Inspector, to resize it',
@@ -67,7 +62,6 @@ export const DESTINATIONS: Record<string, string> = {
   mute: 'Mutes the sender for one calendar hour',
 }
 
-/** The site a trap's button leaves for. A real button never leaves the game. */
 export const TRAP_SITES: Record<string, string> = {
   phish: 'awol-cloud.support/session/verify',
   patcher: 'cve-fyi.top/patch/patcher.sh',
@@ -75,11 +69,6 @@ export const TRAP_SITES: Record<string, string> = {
   domain: 'domain-guard.wtf/renew/quorum.team',
 }
 
-/**
- * The hover's destination for a button (18 "A button is a commitment"). A real
- * button names the game control it opens; a trap's button names an off-site
- * address on a cheap TLD, which is a tell the player can see before clicking.
- */
 export const destinationOf = (action: MailAction): string => {
   const [kind = '', target = ''] = action.id.split(':')
   if (kind === 'trap') {

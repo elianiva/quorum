@@ -9,7 +9,6 @@ import { Message } from '@/game/message.ts'
 import { row } from '@quorum/ui/game/bits'
 import { type Panel, caption, percent, picker, section } from './shared.ts'
 
-/** A CI/CD Pipeline's deploy strategy (05 "CI/CD Pipeline"): its blast radius and price. */
 const pipeline = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 

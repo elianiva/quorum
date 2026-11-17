@@ -1,9 +1,6 @@
 import { tools } from '../parts.mjs'
 import { HEIGHT, P as STAGE, WIDTH } from '../stage.mjs'
 
-// A conveyor on legs: side rails, an end drum at each end, a belt with joints and
-// a drive motor under one end. `boxes` are x positions of boxes waiting on it;
-// `pick` is the index of the lit box (or -1).
 export function conveyor(
   t,
   {
@@ -32,7 +29,6 @@ export function conveyor(
       }),
     ].join('')
   const legXs = [x0 + 6, x1 - 6]
-  // Back legs and the back rail.
   if (legs) for (const x of legXs) out.push(legAt(x, y0 - RAIL / 2))
   if (legs)
     out.push(
@@ -43,7 +39,6 @@ export function conveyor(
       tone: 'mid',
     }),
   )
-  // End drums and the belt.
   for (const x of [x0 + 2.6, x1 - 2.6]) {
     out.push(
       S(G.disc(y0, y1, 2.6, G.frameOf([x, 0, z - 2.6], [0, 1, 0], [1, 0, 0], [0, 0, 1]), P), {
@@ -57,7 +52,6 @@ export function conveyor(
   for (let x = BELT.x + 6; x < BELT.x + BELT.w - 2; x += 6)
     joints.push(k.lineOnTop([x, y0], [x, y1], z, P))
   out.push(L(joints.join(''), { tone: 'faint' }))
-  // Boxes waiting in line.
   boxes.forEach((bx, index) =>
     out.push(
       parcel(
@@ -69,7 +63,6 @@ export function conveyor(
       ),
     ),
   )
-  // Front rail with its bolt row, front legs and the drive motor.
   out.push(
     S(slab({ x: x0, y: y1, w: x1 - x0, d: RAIL, r: 0.6 }, z - 4, 5.4, 2, 0.3), { tone: 'mid' }),
   )
@@ -96,7 +89,6 @@ export function conveyor(
   return out.join('')
 }
 
-// A cardboard box with a tape line over the lid and a label on its front.
 export function parcel(t, plan, z, h, lit = false) {
   const { k, S, L, P } = t
   return [
@@ -127,7 +119,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   out.push(t.basePlate(PLATE, { feet }))
   out.push(t.labelPlate({ x: -42, y: 14, w: 22, d: 9, r: 1 }))
   out.push(conveyor(t, { y: -6, boxes: [-30, -15, 0, 15, 30], pick: lit ? 4 : -1 }))
-  // A stop bar across the head of the line, on two posts.
   for (const y of [-15.5, 3.5])
     out.push(t.S(t.cyl(41.6, y, 1.2, 0, 17, 14), { tone: 'mid', crease: 'none' }))
   out.push(

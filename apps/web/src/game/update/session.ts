@@ -28,7 +28,7 @@ import {
 } from '@quorum/simulation/challenges'
 import { Option, Result, Schema } from 'effect'
 import { SIM_VERSION } from '@quorum/simulation/version'
-import { mostSteps } from './constant.ts'
+import { maxStepsPerTick } from './constant.ts'
 import { WriteFounder, AppendLog, FitBoard, ReplaceUrl, WriteSandboxStore } from '../commands.ts'
 import { bigBoard, stressBoard } from '@quorum/ui/board/stress'
 import { boxOf, freeSpot, type Box } from '@quorum/ui/board/geometry'
@@ -60,8 +60,6 @@ import { clockStep } from '../clock-machine.ts'
 import { roomStep } from '../room-machine.ts'
 import { type Url } from 'foldkit/url'
 
-/** Opens a route's screen. A board that cannot open (no Company to continue)
- *  leaves the Model as it is; a locked Challenge lands on the Challenge list. */
 export const open = (model: Model, route: AppRoute): UpdateResult =>
   AppRoute.match<UpdateResult>(route, {
     Title: () => ({ model: { ...model, route } }),
@@ -97,8 +95,6 @@ export const open = (model: Model, route: AppRoute): UpdateResult =>
     }),
   })
 
-/** Follows a URL from back, forward, or a link: closes the open board, opens
- *  the route's screen, and corrects the URL when that screen cannot open. */
 export const visit = (model: Model, url: Url): UpdateResult => {
   const route = urlToAppRoute(url)
   if (urlOf(route) === urlOf(model.route)) return { model }
@@ -117,11 +113,9 @@ export const visit = (model: Model, url: Url): UpdateResult => {
 
 export const parseStore = Schema.decodeUnknownOption(Schema.fromJsonString(SandboxStore))
 
-/** The Company's board that waits aside: one already loaded in the background, else the board played now. */
 const heldCompany = (model: Model): Board | null =>
   offCompany(model) ? model.company : (model.company ?? model.board)
 
-/** Opens a Sandbox on the board. The Company waits aside until the title screen. */
 export const enterSandbox = (model: Model, game: Game, run: SandboxRun): UpdateResult => {
   const board = freshBoard(game)
   const next: Model = {
@@ -144,7 +138,6 @@ export const enterSandbox = (model: Model, game: Game, run: SandboxRun): UpdateR
   }
 }
 
-/** Swaps the free Sandbox's Game, keeping the player's view. */
 export const replaceFree = (model: Model, game: Game, text: string): UpdateResult => {
   if (boardSandbox(model.board)?.id !== null) return { model }
   const normalized = normalizeOrdinals(game)
@@ -169,24 +162,16 @@ export const replaceFree = (model: Model, game: Game, text: string): UpdateResul
   return withToast(next, text, 'plain', [FitBoard({}), WriteSandboxStore({ store: storeOf(next) })])
 }
 
-/** Changes the free Sandbox's demand or mix in place. */
 export const tuneFree = (model: Model, game: Game): UpdateResult => {
   if (boardSandbox(model.board)?.id !== null) return { model }
   const next: Model = { ...model, board: { ...model.board, game, whatIfsAt: -1 } }
   return { model: next }
 }
 
-/** Demand steps on the free Sandbox, in users. */
 export const DEMAND_STEPS = [100, 250, 500, 1_000, 2_000, 4_000, 8_000, 16_000, 32_000]
 
-/** After a round: the Era card, or the end of the slice. */
 export const afterRound = (game: Game): Model['panel'] => (isFinalEra(game) ? 'end' : 'era')
 
-/**
- * A Challenge's start with its cards apart: each card in board order moves to the nearest
- * spot that keeps its clearance in its region. Fixed cards stay put, so the run's board,
- * which takes the Design's positions, shows the same layout.
- */
 export const spreadOut = (game: Game): Game => {
   const settled = new Map<string, Array<Box>>()
   const taken = (region: string) => settled.get(region) ?? []
@@ -204,7 +189,6 @@ export const spreadOut = (game: Game): Game => {
 export const boardOf = (challenge: Challenge): Game =>
   spreadOut({ ...challenge.start(), users: challenge.demand[0]?.users ?? 0 })
 
-/** Opens a Challenge's build board. The Company waits aside, as for a Sandbox. */
 export const enterChallenge = (model: Model, id: string): UpdateResult => {
   const challenge = challengeById(id)
   if (!challenge) return { model }
@@ -232,7 +216,6 @@ export const enterChallenge = (model: Model, id: string): UpdateResult => {
   }
 }
 
-/** Run: the Design restarts from t = 0 on the Challenge's seed. Only this run is scored. */
 export const startRun = (model: Model, run: ChallengeRun): UpdateResult => {
   const challenge = challengeById(run.id)
   if (!challenge || run._tag !== 'Building') return { model }
@@ -271,7 +254,6 @@ export const startRun = (model: Model, run: ChallengeRun): UpdateResult => {
   })
 }
 
-/** Runs canonical Steps: the clock's share, or every one left when `all`. */
 export const runSteps = (
   model: Model,
   run: ChallengeRun,
@@ -280,8 +262,7 @@ export const runSteps = (
 ): Readonly<{ model: Model; done: boolean }> => {
   const challenge = challengeById(run.id)
   if (!challenge || run._tag !== 'Running') return { model, done: false }
-  // A run owes the real time that passed, at the chosen speed, in the Challenge's own Steps.
-  const most = (mostSteps(model.board.clock.speed) * STEP_SECONDS) / challenge.stepSeconds
+  const most = (maxStepsPerTick(model.board.clock.speed) * STEP_SECONDS) / challenge.stepSeconds
   const owed = all
     ? Number.POSITIVE_INFINITY
     : Math.min(
@@ -316,7 +297,6 @@ export const runSteps = (
   }
 }
 
-/** The run is over: the provisional result shows, and the server is asked to confirm it. */
 export const finishRun = (model: Model): UpdateResult => {
   const run = boardChallenge(model.board)
   const challenge = run ? challengeById(run.id) : undefined
@@ -354,7 +334,6 @@ export const runTick = (model: Model, run: ChallengeRun, elapsedMs: number): Upd
   return ran.done ? finishRun(ran.model) : { model: ran.model }
 }
 
-/** A run action is logged at the next Step and applied there, as the server will apply it. */
 export const logRunAction = (model: Model, action: ReplayAction): UpdateResult | null => {
   const run = boardChallenge(model.board)
   if (run?._tag !== 'Running') return null
@@ -372,7 +351,6 @@ export const logRunAction = (model: Model, action: ReplayAction): UpdateResult |
   }
 }
 
-/** An incident response during a run: logged like any run action, or refused when the Challenge forbids it. */
 export const logResponse = (model: Model, response: Response): UpdateResult | null => {
   const run = boardChallenge(model.board)
   if (run?._tag !== 'Running') return null
@@ -383,8 +361,6 @@ export const logResponse = (model: Model, response: Response): UpdateResult | nu
   return logRunAction(model, action)
 }
 
-/** Leaves a Challenge for the Challenges menu; the Company comes back as it was. */
-/** The Company's board as the player left it for a Sandbox or Challenge. Its Bottleneck is searched again. */
 export const companyBoard = (model: Model): Board =>
   model.company ? { ...model.company, whatIfsAt: -1 } : freshBoard(newGame())
 
@@ -420,7 +396,6 @@ export const continued = (model: Model): UpdateResult => {
   }
 }
 
-/** Closes the board for the title screen. A Sandbox or Challenge gives the Company back. */
 export const leaveBoard = (model: Model): UpdateResult => {
   if (isExited(model.companyPhase)) return leaveExited(model, 'found')
   if (boardChallenge(model.board)) return leaveChallenge(model)
@@ -471,7 +446,6 @@ type SessionTag =
 export const sessionHandlers = (model: Model): MessageCases<UpdateResult, SessionTag> => ({
   SandboxStoreLoaded: ({ json }) =>
     Option.match(json === null ? Option.none() : parseStore(json), {
-      // A reload on a Sandbox opens it once its stored board has loaded.
       onNone: () => (model.route._tag === 'Sandbox' ? open(model, model.route) : { model }),
       onSome: (store) => {
         const loaded: Model = { ...model, passed: store.passed, freeBoard: store.free }

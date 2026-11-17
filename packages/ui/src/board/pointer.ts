@@ -2,7 +2,6 @@ import { holds } from './card-parts.ts'
 import { CARD_W, heightOf, outPort } from './geometry.ts'
 import type { BoardController } from './controller.ts'
 
-/** Wires the canvas's pointer, wheel and keyboard events to the board's gestures. */
 export const bindPointer = (c: BoardController): void => {
   const canvas = c.app.canvas
   const { signal } = c.abort
@@ -13,13 +12,11 @@ export const bindPointer = (c: BoardController): void => {
     'pointerdown',
     (event) => {
       c.coarse = event.pointerType !== 'mouse'
-      // A hand on the Board takes over from a glide still running.
       c.panSpeed = 0
       if (c.coarse) {
         c.touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
         canvas.setPointerCapture(event.pointerId)
         if (c.touches.size === 2) {
-          // A second finger turns the gesture into a pinch.
           c.letGo()
           c.gesture = null
           c.dragged = null
@@ -36,9 +33,7 @@ export const bindPointer = (c: BoardController): void => {
       c.pointer = point
       c.over = true
       c.pointerKnown = true
-      // A press on the Board is board work, not the panel the cursor last announced.
       c.activity = null
-      // A press takes over from any hover still waiting to light.
       c.hoverAim = null
       if (event.button === 2) {
         const link = c.linkAt(point)
@@ -105,7 +100,6 @@ export const bindPointer = (c: BoardController): void => {
         c.selectedLink = null
         return
       }
-      // Inside the frame of a multi-selection, a drag takes the whole group.
       const frame = c.selectionFrame()
       const lead = c.nodes().find((entry) => c.state?.selection[0] === entry.id)
       if (
@@ -128,7 +122,6 @@ export const bindPointer = (c: BoardController): void => {
         }
         return
       }
-      // The pointer's own hit test, not the lit hover: a press selects at once.
       const link = c.linkAt(point)
       if (link) {
         c.selectLink(link)
@@ -157,7 +150,6 @@ export const bindPointer = (c: BoardController): void => {
       }
       const point = c.toWorld(event)
       c.pointer = point
-      // Back on the Board: the pointer moves again, so it stops saying what the panel was.
       c.over = true
       c.pointerKnown = true
       c.activity = null
@@ -181,7 +173,6 @@ export const bindPointer = (c: BoardController): void => {
           return
         const view = c.views.get(gesture.id)
         if (!gesture.moved && view) {
-          // Picked up: it rises above the other cards.
           view.held = false
           view.lifted = true
           c.cards.addChild(view.root)
@@ -194,7 +185,6 @@ export const bindPointer = (c: BoardController): void => {
           x: Math.round((point.x - gesture.dx) / 8) * 8,
           y: Math.round((point.y - gesture.dy) / 8) * 8,
         }
-        // Each grid line it crosses is a faint detent.
         if (last && (last.x !== c.dragged.x || last.y !== c.dragged.y)) c.events.onSound?.('detent')
         c.syncCards()
         canvas.style.cursor = 'grabbing'
@@ -220,7 +210,6 @@ export const bindPointer = (c: BoardController): void => {
         canvas.style.cursor = 'copy'
         return
       }
-      // A port wins over the link leaving it: pulling a wire is not a cut.
       const node = c.nodeAt(point)
       const port = c.outPortAt(point)
       const link = node || port ? null : c.linkAt(point)
@@ -241,7 +230,6 @@ export const bindPointer = (c: BoardController): void => {
   const finish = (event: PointerEvent, cancelled: boolean) => {
     c.touches.delete(event.pointerId)
     if (c.pinch) {
-      // The pinch ends with its first finger; the other one does nothing until it lifts.
       if (c.touches.size < 2) c.pinch = null
       if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId)
       return
@@ -271,11 +259,8 @@ export const bindPointer = (c: BoardController): void => {
     }
     if (gesture.kind === 'node') {
       const node = c.nodes().find((entry) => entry.id === gesture.id)
-      // A dropped card keeps its place until the Model has it (see draw), so it
-      // does not glide back toward where it was for a frame.
       if (gesture.moved && c.dragged) {
         c.droppedAt = performance.now()
-        // The card settles where the Model will put it, clear of the others.
         const landing = c.landingOf(c.dragged) ?? c.dragged
         c.dragged = { id: gesture.id, x: landing.x, y: landing.y }
         c.syncCards()
@@ -285,7 +270,6 @@ export const bindPointer = (c: BoardController): void => {
       } else {
         c.dragged = null
         if (event.shiftKey) c.events.onNodeToggle(gesture.id)
-        // A size is bought by holding (see animate), so letting go early buys nothing.
         else if (node && c.footerAt(node, point)) {
           if (!c.state || !holds(c.state.game, node)) c.events.onFooter(gesture.id)
         } else c.events.onNodeTap(gesture.id)
@@ -329,7 +313,6 @@ export const bindPointer = (c: BoardController): void => {
       c.hoverLink = null
       c.hoverNode = null
       c.hoverAim = null
-      // A panel is open: the pointer stays on the Board and says what this Seat is doing.
       if (c.activity !== null) {
         c.emitCursor()
         return
@@ -339,14 +322,11 @@ export const bindPointer = (c: BoardController): void => {
     },
     { signal },
   )
-  // A hidden window takes the pointer with it, and a cursor left on the
-  // Board would keep pointing at a spot nobody is looking at.
   window.addEventListener(
     'blur',
     () => {
       c.over = false
       c.cursorWaiting = false
-      // A hover still waiting must not light after the window has gone.
       c.hoverAim = null
       c.events.onCursorGone?.()
     },
@@ -370,16 +350,12 @@ export const bindPointer = (c: BoardController): void => {
   canvas.addEventListener(
     'wheel',
     (event) => {
-      // A board on a page lets the page scroll; Ctrl or Cmd zooms it.
       if (c.state?.readOnly && !event.ctrlKey && !event.metaKey) return
       event.preventDefault()
-      // A trackpad's two-finger swipe slides the Board sideways with it; a swipe up or down, a mouse
-      // wheel, and a pinch zoom about the pointer.
       if (!event.ctrlKey && !event.metaKey && Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
         c.panBy(event.deltaX)
         return
       }
-      // A zoom takes over from a glide.
       c.panSpeed = 0
       const rect = c.host.getBoundingClientRect()
       const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top }

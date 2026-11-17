@@ -1,8 +1,6 @@
 import { tools } from '../parts.mjs'
 import { HEIGHT, P as STAGE, WIDTH } from '../stage.mjs'
 
-// Analytics: a chart recorder. Paper runs from a back roll to a front roll over the
-// bed while a pen on a carriage draws the trace, which is lit; a dial reads the level.
 export function draw(P, { feet = true, lit = true } = {}) {
   const t = tools(P)
   const { k, G, S, L, D, at, slab, cyl } = t
@@ -29,7 +27,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
     ),
   )
 
-  // The paper and its grid.
   const PAPER = { x: -32, y: -24, w: 42, d: 38, r: 0 }
   const PZ = HH + 0.4
   out.push(S(slab(PAPER, HH, 0.4, 1), { tone: 'hi', crease: 'lo' }))
@@ -40,7 +37,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
     grid.push(k.lineOnTop([PAPER.x, y], [PAPER.x + PAPER.w, y], PZ, P))
   out.push(L(grid.join(''), { tone: 'faint' }))
 
-  // Rolls on cheeks: the back roll, then the trace, then the front roll.
   const roll = (y, r) => {
     const F = G.frameOf([PAPER.x - 1, y, PZ + r], [1, 0, 0], [0, 1, 0], [0, 0, 1])
     return [
@@ -66,7 +62,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
     `<g style="--anatomy-weight:1px">${L(t.path(trace), { tone: lit ? 'lit' : 'mid', free: 'start' })}</g>`,
   )
 
-  // The pen carriage on its rail, between two posts.
   const RAIL_Z = HH + 9
   const post = (x) =>
     S(slab({ x, y: PEN_Y - 1.6, w: 3, d: 3.2, r: 0.5 }, HH, RAIL_Z + 2.4 - HH, 2), { tone: 'mid' })
@@ -95,7 +90,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   out.push(post(PAPER.x + PAPER.w + 3))
   out.push(roll(PAPER.y + PAPER.d - 1, 2.6))
 
-  // The level dial on the right of the deck.
   const DIAL = [26, -14]
   const DR = 8
   const DT = HH + 3.6
@@ -128,7 +122,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   )
   out.push(L(k.ring(DIAL[0], DIAL[1], 1, DT, P, 12), { tone: 'mid' }))
 
-  // Front panel: two knobs, a toggle and status lights.
   out.push(t.faceKnob('y', FRONT, 20, 6.4, 3, 2.2, 0.5))
   out.push(t.faceKnob('y', FRONT, 30, 6.4, 3, 2.2, -0.8))
   out.push(L(t.faceRect('y', FRONT, -30, -24, 4, 8.6, 0.6), { tone: 'lo' }))

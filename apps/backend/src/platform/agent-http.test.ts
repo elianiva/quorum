@@ -149,7 +149,6 @@ describe('the public agent edge', () => {
     expect(page).toContain('## Users send request kinds')
     expect(page).not.toMatch(/^---$|^:{2,}[A-Za-z]/m)
 
-    // Every link between pages lands on a resource the server has.
     for (const uri of uris) {
       const text = (await ask('resources/read', { uri })).contents[0]!.text
       for (const [, target] of text.matchAll(/\]\((quorum:\/\/wiki\/[^)#]*)/g))

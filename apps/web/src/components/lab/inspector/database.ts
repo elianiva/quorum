@@ -31,7 +31,6 @@ import { Message } from '@/game/message.ts'
 import { button } from '@quorum/ui/primitives/button'
 import { type Panel, caption, engine, nodeLink, picker, section } from './shared.ts'
 
-/** What a shard key does to the load, in one line. */
 const shardKeyNote = (t: Messages, node: GameNode): string => {
   const sharding = shardingOf(node)
   const hot = Math.round(sharding.hot * 100)
@@ -48,14 +47,12 @@ const shardKeyNote = (t: Messages, node: GameNode): string => {
   )}${far}`
 }
 
-/** A Database's topology, engine, volume, and its shards (07 "Topologies", "Variants", "Capacity"). */
 const database = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
 
   const volume = STORAGE_IOPS[node.iops]
   const iops = `${volume.iops / 1_000}k`
   const shards = Math.max(1, Math.floor(node.shards))
-  // A Data Group holds its rows one way, and one Database takes every write in it (07 "Data Groups").
   const group = dataGroupOf(game, node)
   const databases = databasesOfGroup(game, group)
   const leader = leaderOfGroup(game, group)

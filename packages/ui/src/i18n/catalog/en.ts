@@ -42,7 +42,6 @@ import { GUIDED_SUMMARY } from '@quorum/simulation/sandbox-summary'
 import { CHALLENGES } from '@quorum/simulation/challenges'
 import { copyOf, copyOfIndexed, copyOfList } from '../catalog-copy.ts'
 
-/** The English copy of the Simulation's catalog tables, read from the tables themselves so it cannot drift. */
 export const catalog = {
   achievements: copyOf(ACHIEVEMENTS, ['name', 'condition'], []),
   backups: copyOf(BACKUPS, ['name'], []),

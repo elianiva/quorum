@@ -3,23 +3,13 @@ import { type Box, type Pt, type Route } from './geometry.ts'
 import type { Wire } from './routing.ts'
 import { traceOf } from './paths.ts'
 
-/**
- * One link's belt, in three layers so belts stack as they always have: a later belt
- * covers an earlier one's chevrons where they share a trunk. The body and the mouths
- * are redrawn only when their path or colours change; the chevrons only while they move.
- */
-/** How far a card or belt off the focused path fades. */
-export const DIM = 0.3
-/** How far the belts other than the lit one fade, so one lane reads out of a crowded channel. */
-export const QUIET = 0.12
-/** Below this zoom the belts' chevrons are left out: they are a few pixels apart. */
-export const CHEVRON_SCALE = 0.5
-/** How far under a belt its region's round-trip plate sits. */
-export const PLACE_LIFT = 24
+export const OFF_PATH_ALPHA = 0.3
+export const QUIET_BELT_ALPHA = 0.12
+export const CHEVRON_MIN_ZOOM = 0.5
+export const PLACE_LIFT_PX = 24
 
 const keys = new WeakMap<object, string>()
 
-/** A link's `from>to` key, built once per link object instead of once per frame. */
 export const linkKey = (link: Readonly<{ from: string; to: string }>): string => {
   let key = keys.get(link)
   if (key === undefined) {
@@ -32,12 +22,7 @@ export const linkKey = (link: Readonly<{ from: string; to: string }>): string =>
 export class BeltView {
   readonly body = new Graphics()
   readonly mouths = new Graphics()
-  /**
-   * How far the belt's items have travelled, in world pixels. Each belt keeps its
-   * own total, so a change in its flow rate never moves items already on it.
-   */
   travel = 0
-  /** The wire this belt was last drawn along; a new object means the belt moved or bent. */
   wire: Wire | null = null
   private bodyFor: unknown = null
   private bodyRail = -1
@@ -48,18 +33,14 @@ export class BeltView {
   private mouthWidth = -1
   private mouthOff = false
   private mouthList: ReadonlyArray<Mouth> = []
-  /** The box round the belt's pieces, for culling its chevrons and packets off screen. */
   private boxFor: unknown = null
   private box = { x0: 0, y0: 0, x1: 0, y1: 0 }
 
   constructor() {
-    // Pixi batches only small Graphics by itself, and a belt is long: unbatched, every
-    // belt costs a draw call in each layer.
     this.body.context.batchMode = 'batch'
     this.mouths.context.batchMode = 'batch'
   }
 
-  /** Shows or hides the belt and dims it. */
   show(visible: boolean, alpha: number): void {
     this.body.visible = visible
     this.body.alpha = alpha
@@ -72,7 +53,6 @@ export class BeltView {
     this.mouths.destroy()
   }
 
-  /** Whether any piece of the belt is inside `view`, in world coordinates. */
   onScreen(pieces: ReadonlyArray<Route>, view: Box): boolean {
     if (pieces !== this.boxFor) {
       this.boxFor = pieces
@@ -92,7 +72,6 @@ export class BeltView {
     )
   }
 
-  /** Where the belt's pieces dive and surface, found again only when they or its look change. */
   mouthsFor(pieces: ReadonlyArray<Route>, width: number, off: boolean): ReadonlyArray<Mouth> {
     if (pieces !== this.mouthPieces || width !== this.mouthWidth || off !== this.mouthOff) {
       const list: Array<Mouth> = []
@@ -105,7 +84,6 @@ export class BeltView {
     return this.mouthList
   }
 
-  /** The body between its rails. The board draws the tunnel portals. */
   draw(
     pieces: ReadonlyArray<Route>,
     rail: number,
@@ -132,16 +110,13 @@ export class BeltView {
     for (const piece of pieces) traceOf(this.body, piece)
     this.body.stroke({ color: body, width, join: 'round' })
     this.mouths.clear()
-    // The cross-zone tick, a little before the port the call arrives on.
     const end = pieces.at(-1)?.at(-1)
     if (zone !== null && end) this.mouths.roundRect(end.x - 14, end.y - 6, 3, 12, 1.5).fill(zone)
   }
 }
 
-/** A tunnel mouth: where a belt dives or surfaces, and the belt's width there. */
 export type Mouth = Readonly<{ x: number; y: number; across: boolean; width: number; off: boolean }>
 
-/** Where a belt's pieces dive and surface. A mouth on a bend snaps to the nearest axis. */
 export const mouthsOf = (
   pieces: ReadonlyArray<Route>,
   width: number,
@@ -150,7 +125,6 @@ export const mouthsOf = (
 ): void => {
   const add = (at: Pt | undefined, along: Pt | undefined): void => {
     if (!at || !along) return
-    // A belt running up or down has a portal across it, and the other way round.
     const across = Math.abs(at.y - along.y) > Math.abs(at.x - along.x)
     out.push({ x: at.x, y: at.y, across, width, off })
   }
@@ -160,14 +134,9 @@ export const mouthsOf = (
   })
 }
 
-/** Mouths closer than this along one row share one portal. */
 const PORTAL_JOIN = 7
 const PORTAL_DEPTH = 2.5
 
-/**
- * The tunnel portals: one thin bar per row of mouths side by side, so belts that
- * dive under the same crossing go in through one entrance, as on a Factorio bus.
- */
 export const portalsOf = (
   mouths: ReadonlyArray<Mouth>,
 ): ReadonlyArray<Readonly<{ x0: number; y0: number; x1: number; y1: number; off: boolean }>> => {

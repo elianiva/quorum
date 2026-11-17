@@ -16,15 +16,11 @@ import {
 } from '../src/studies.ts'
 import type { Game } from '../src/state.ts'
 
-/* A Study asks the Design to do the thing it teaches (10 "Research shapes"), and traffic no tap
- * samples earns nothing (12 "The cost of seeing"). */
-
 const ok = (result: Result.Result<Game, unknown>): Game => {
   if (Result.isFailure(result)) throw new Error('refused ' + JSON.stringify(result.failure))
   return result.success
 }
 
-/** Adds one Analytics Node that taps each source. */
 const tap = (game: Game, sources: ReadonlyArray<string>, id: string): Game => ({
   ...game,
   nodes: [...game.nodes, node(id, 'analytics', 1200, 900)],

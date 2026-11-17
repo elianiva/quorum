@@ -31,7 +31,7 @@ import {
   DEFAULT_FPM_WORKERS,
   DNS_TTLS,
   ERAS,
-  FIRST_INCIDENT_AFTER,
+  FIRST_INCIDENT_AFTER_SECONDS,
   FRAMEWORKS,
   KINDS,
   LANGUAGES,
@@ -163,7 +163,6 @@ export { setCacheEngine, setCacheGuard, setCacheStrategy } from './components/ca
 export { setPrefetch } from './components/worker.rule.ts'
 export { setDlq, setAttempts, setMaxLength, deleteMessage } from './components/queue.rule.ts'
 
-/** Sells every Node it can. Fixed Nodes stay; it fails only when nothing sold. */
 export const sellAll = (game: Game, ids: ReadonlyArray<string>): Action => {
   let next = game
   let refusal: Action = sell(game, '')
@@ -175,16 +174,13 @@ export const sellAll = (game: Game, ids: ReadonlyArray<string>): Action => {
   return next === game ? refusal : Result.succeed(next)
 }
 
-/**
- * Cash is short (09 "Runway and running out of Cash"): at zero or below, the
- * Company places nothing, upgrades nothing, and hires nobody until Cash is
- * positive again. Selling, layoffs, research, and the backlog still run, and
- * Burn still bills.
- */
 export const shortOfCash = (game: Game): boolean => !game.sandbox && game.cash <= 0
 
 const shortfall = (): Action =>
   notAllowed('Out of Cash: no placement, upgrade, or hire until Cash is above zero.')
+
+const WIDE_COLUMN_REPLICAS = 3
+const EVENT_STREAM_COPIES = 1
 
 export const blankNode = (
   game: Game,
@@ -293,9 +289,7 @@ export const blankNode = (
     materialized: false,
     ryw: false,
     region,
-    // A Wide-column Store starts with three replicas per key; an Event Stream keeps one copy of
-    // each partition until the player pays for the second and third (07 "Event Stream").
-    n: type === 'log' ? 1 : 3,
+    n: type === 'log' ? EVENT_STREAM_COPIES : WIDE_COLUMN_REPLICAS,
     r: 1,
     w: 1,
     lost: 0,
@@ -328,7 +322,6 @@ export const place = (
   const banned = placeRefusal(game, type, region)
   if (banned) return notAllowed(banned)
   if (!openRegions(game).includes(region)) return notAllowed('Open that region first.')
-  // A new Database holds its own rows until a box puts it in a Data Group (07 "Data Groups").
   const node = blankNode(game, `n${game.nextId}`, type, x, y, region)
   return spend(game, priceOf(game, type), def.name, (paid) => ({
     ...paid,
@@ -337,11 +330,6 @@ export const place = (
   }))
 }
 
-/**
- * The Game with a box around these Nodes: the box that makes a Data Group (07 "Data Groups"). A
- * box with two or more Databases on Single primary turns them to Sharded, because one box holds
- * one dataset. A box of one kind takes that group's name.
- */
 export const placeBox = (game: Game, chosen: ReadonlyArray<string>, name?: string): Game => {
   const number =
     game.boxes.reduce((most, box) => Math.max(most, Number(box.id.slice(3)) || 0), 0) + 1
@@ -378,14 +366,12 @@ export const placeBox = (game: Game, chosen: ReadonlyArray<string>, name?: strin
   }
 }
 
-/** Draws a box around the chosen Nodes, labelled by the group they share: Data, Compute, or Box 3. A Node leaves the box it was in. */
 export const boxNodes = (game: Game, ids: ReadonlyArray<string>): Action => {
   const chosen = ids.filter((id) => game.nodes.some((node) => node.id === id))
   if (chosen.length < 2) return notAllowed('Select two or more Nodes to box.')
   return ok(placeBox(game, chosen))
 }
 
-/** Takes the box off a group of Nodes: the Nodes stay. */
 export const unboxNodes = (game: Game, ids: ReadonlyArray<string>): Action => {
   const boxes = game.boxes.filter((box) => !box.nodes.some((id) => ids.includes(id)))
   return boxes.length === game.boxes.length
@@ -399,7 +385,6 @@ export const sell = (game: Game, id: string): Action =>
       ? notAllowed(`${COMPONENTS[node.type].name} stays.`)
       : ok({
           ...game,
-          // A reserved Node still owes the Burn of its calendar week (09 "Pricing models").
           cash: game.cash + refundOf(game, node) - owedOf(game, node),
           nodes: game.nodes.filter((entry) => entry.id !== id),
           links: game.links.filter((link) => link.from !== id && link.to !== id),
@@ -409,10 +394,8 @@ export const sell = (game: Game, id: string): Action =>
 export const move = (game: Game, id: string, x: number, y: number): Game =>
   patch(game, id, { x: Math.round(x), y: Math.round(y) })
 
-/** Kinds a Node sends on its routing links. */
 const emitsOf = (node: GameNode): ReadonlyArray<Kind> => COMPONENTS[node.type].sends
 
-/** A Load Balancer passes queries on only as an L4: an L7 one reads HTTP and takes requests. */
 const relays = (from: GameNode, to: GameNode, kind: Kind): boolean =>
   !(DATA_KINDS as ReadonlyArray<Kind>).includes(kind) ||
   [from, to].every((node) => node.type !== 'lb' || node.variant === 'l4')
@@ -433,7 +416,6 @@ const reaches = (links: ReadonlyArray<GameLink>, from: string, to: string): bool
 const kindList = (kinds: ReadonlyArray<Kind>): string =>
   kinds.map((kind) => KINDS[kind].label.toLowerCase()).join(', ')
 
-/** The kinds a terminal data store holds for one dataset, and the stores that hold one. */
 const DATASET_KINDS: ReadonlyArray<Kind> = ['q-read', 'q-write', 'q-tx']
 const DATASET_STORES: ReadonlyArray<ComponentId> = ['database', 'doc', 'wide', 'dsql', 'replica']
 
@@ -445,17 +427,14 @@ export const connect = (game: Game, from: string, to: string): Action => {
   const targetDef = COMPONENTS[target.type]
   if (game.links.some((link) => link.from === from && link.to === to))
     return notAllowed('Already linked.')
-  // A Worker is not a queue: it takes work from a Queue or an Event Stream, never a user.
   if (source.type === 'server' && target.type === 'worker')
     return notAllowed(
       'A Worker takes tasks from a Queue or an Event Stream. Link the App Server into one first.',
     )
-  // A Function or Edge Function runs its work inline; only an App Server hands it to a Queue.
   if ((source.type === 'fn' || source.type === 'edge') && targetDef.accepts.includes('task'))
     return notAllowed(
       'Only an App Server hands work to a Queue. A Function or Edge Function runs its work inline.',
     )
-  // App Servers and Workers link into an Autoscaler or a Cluster to come under it: one of each.
   if (targetDef.control) {
     if (source.type !== 'server' && source.type !== 'worker')
       return notAllowed(`Link App Servers or Workers into the ${targetDef.name}.`)
@@ -465,14 +444,12 @@ export const connect = (game: Game, from: string, to: string): Action => {
         game.nodes.some((node) => node.id === entry.to && node.type === target.type),
     )
     if (taken) return notAllowed(`${sourceDef.name} already has a ${targetDef.name}.`)
-    // A mesh puts a sidecar in each pod: the service has to run in a Kubernetes Cluster first.
     if (target.type === 'mesh' && !inCluster(game, source))
       return notAllowed(
         `Link ${sourceDef.name} into a Kubernetes Cluster first: the sidecar rides in its pod.`,
       )
     return ok({ ...game, links: [...game.links, link(from, to)] })
   }
-  // A Database ships its write log to a Read Replica: the link carries no queries (07 "Read Replica").
   if (target.type === 'replica' && source.type === 'database') {
     if (
       game.links.some(
@@ -483,7 +460,6 @@ export const connect = (game: Game, from: string, to: string): Action => {
       return notAllowed('A Read Replica copies one Database.')
     return ok({ ...game, links: [...game.links, link(from, to)] })
   }
-  // A CDC Connector reads one Database's write log: that Database keeps all of its traffic.
   if (targetDef.mirror) {
     if (source.type !== 'database')
       return notAllowed(`Link a Database into the ${targetDef.name}: it reads its write log.`)
@@ -496,7 +472,6 @@ export const connect = (game: Game, from: string, to: string): Action => {
       return notAllowed(`${sourceDef.name} has no traffic to sample.`)
     return ok({ ...game, links: [...game.links, link(from, to)] })
   }
-  // Replication is a copy, not a request path: no Database sends traffic to another (07 "Read Replica").
   if (source.type === 'database' && (target.type === 'database' || target.type === 'replica'))
     return notAllowed(
       target.type === 'replica'
@@ -515,8 +490,6 @@ export const connect = (game: Game, from: string, to: string): Action => {
     return notAllowed(
       `${targetDef.name} takes ${kindList(targetDef.accepts)}. ${sourceDef.name} sends ${kindList(emitsOf(source))}.`,
     )
-  // One caller reads one Data Group. A second terminal store would split every query, and a
-  // checkout could land in a store that never held the cart.
   if (
     DATASET_STORES.includes(target.type) &&
     carried.some((kind) => DATASET_KINDS.includes(kind))
@@ -550,7 +523,6 @@ export const connect = (game: Game, from: string, to: string): Action => {
     )
   if (reaches(game.links, to, from)) return notAllowed('That link would make a loop.')
   const linked: Game = { ...game, links: [...game.links, link(from, to)] }
-  // Linking the first box to a Database moves Postgres off it, for good.
   return ok(
     source.localDb &&
       (target.type === 'database' || target.type === 'pooler' || target.type === 'cache')
@@ -559,10 +531,8 @@ export const connect = (game: Game, from: string, to: string): Action => {
   )
 }
 
-/** Timeouts a Link can wait, in seconds. */
 export const LINK_TIMEOUTS = [1, 5, 30] as const
 
-/** Sets a Link's timeout, retry policy, breaker, bulkhead or hedge. Needs Timeouts and retries. */
 export const setLinkPolicy = (
   game: Game,
   from: string,
@@ -597,7 +567,6 @@ export const setLinkPolicy = (
     !(LINK_TIMEOUTS as ReadonlyArray<number>).includes(change.timeout)
   )
     return notAllowed('A timeout is 1, 5, or 30 seconds.')
-  // A new retry policy or breaker starts fresh.
   const next = {
     ...current,
     ...change,
@@ -607,7 +576,6 @@ export const setLinkPolicy = (
   return ok({ ...game, links: game.links.map((entry, at) => (at === index ? next : entry)) })
 }
 
-/** Sets the request kinds each Link out of an API Gateway carries, or null for all of them. */
 export const setLinkKinds = (
   game: Game,
   from: string,
@@ -659,22 +627,13 @@ export const resize = (game: Game, id: string, direction: 1 | -1): Action =>
     )
   })
 
-/** What `upgradeAll` did: the Game it made, and what it left alone (15 "Bulk actions"). */
 export type UpgradeAllOutcome = Readonly<{
   readonly game: Game
   readonly upgraded: number
-  /** Nodes that were already at their largest size. */
   readonly skipped: number
-  /** Cash ran out before every Node that could grow had. */
   readonly short: boolean
 }>
 
-/**
- * Buys one size on every Node of `type` in `region`, in board order (15 "Bulk
- * actions"). A Node at its largest size is skipped, and the fold stops at the
- * first Node it cannot pay for, so Cash is never half spent on a step. The
- * caller applies the outcome as one undo entry and one log line.
- */
 export const upgradeAll = (
   game: Game,
   type: ComponentId,
@@ -704,7 +663,6 @@ export const upgradeAll = (
     }
     const step = resize(next, node.id, 1)
     if (Result.isFailure(step)) {
-      // The cap was checked above, so the only refusal left is Cash.
       if (step.failure._tag === 'Unaffordable') price = step.failure.price
       short = true
       break
@@ -713,7 +671,6 @@ export const upgradeAll = (
     upgraded += 1
   }
   if (upgraded === 0) {
-    // Nothing grew: refuse, so the panel says why and no undo entry is written.
     if (short)
       return Result.fail(Refusal.Unaffordable({ what: 'An upgrade', price, currency: 'cash' }))
     return Result.fail(
@@ -726,7 +683,6 @@ export const upgradeAll = (
 export const setFamily = (game: Game, id: string, family: FamilyId): Action =>
   withNode(game, id, (node) => {
     if (!COMPONENTS[node.type].sized) return notAllowed('Only VMs have an instance family.')
-    // 05 "App Server": ARM is its own research item.
     if (family === 'arm' && !has(game, 'arm-instances'))
       return no(
         Refusal.Locked({ what: FAMILIES.arm.name, research: RESEARCH['arm-instances'].name }),
@@ -789,11 +745,6 @@ export const setWorkers = (game: Game, id: string, workers: number): Action =>
       : notAllowed(`${RUNTIMES[node.runtime].name} sizes its own pool.`),
   )
 
-/**
- * Turns periodic restarts on or off for an App Server whose processes live across requests
- * (`pm.max_requests`, a Puma worker killer). A recycled process starts cold now and then, and a
- * leak never builds: the Node's heap returns to what it was.
- */
 export const setRecycle = (game: Game, id: string, recycle: boolean): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'server' && node.type !== 'worker')
@@ -805,7 +756,6 @@ export const setRecycle = (game: Game, id: string, recycle: boolean): Action =>
     return ok(node.recycle === recycle ? game : patch(game, id, { recycle, leak: 0 }))
   })
 
-/** Sets a Cache's TTL, or the DNS TTL. DNS needs Health checks, which make it drop dead hosts. */
 export const setTtl = (game: Game, id: string, ttl: number): Action =>
   withNode(game, id, (node) => {
     if (node.type === 'cache')
@@ -841,7 +791,6 @@ export const setPm = (game: Game, id: string, pm: PmMode): Action =>
       : notAllowed('Only PHP-FPM has a process manager.'),
   )
 
-/** Moves a Node to another zone. Needs Multiple zones; a sized Node restarts there. */
 export const setZone = (game: Game, id: string, zone: Zone): Action =>
   withNode(game, id, (node) => {
     if (!has(game, 'multi-az'))
@@ -856,7 +805,6 @@ export const setZone = (game: Game, id: string, zone: Zone): Action =>
     )
   })
 
-/** Gives a data Node a standby in another zone, at twice the Burn. Needs Multiple zones. */
 export const setStandby = (game: Game, id: string, standby: boolean, sync = true): Action =>
   withNode(game, id, (node) => {
     if (!STANDBY_TYPES.includes(node.type))
@@ -867,11 +815,6 @@ export const setStandby = (game: Game, id: string, standby: boolean, sync = true
     return ok(patch(game, id, { standby, standbySync: sync }))
   })
 
-/**
- * Sets a compute Node's pricing model (09 "Pricing models"): on-demand at the
- * full rate, reserved at 0.6× for a commitment of one calendar week, or spot at
- * 0.3× on capacity the provider can reclaim. From Series A.
- */
 export const setPricing = (game: Game, id: string, pricing: Pricing): Action =>
   withNode(game, id, (node) => {
     if (game.stage < PRICING_FROM_STAGE)
@@ -890,7 +833,6 @@ export const setPricing = (game: Game, id: string, pricing: Pricing): Action =>
       return notAllowed('Spot pricing needs research: Spot instances.')
     const current = pricingOf(game, node)
     if (current === pricing) return ok(game)
-    // A reserved term is the commitment: it holds until its calendar week ends.
     if (current === 'reserved')
       return notAllowed('A reserved Node stays reserved until its calendar week ends.')
     return ok(
@@ -901,7 +843,6 @@ export const setPricing = (game: Game, id: string, pricing: Pricing): Action =>
     )
   })
 
-/** Picks a Java App Server's collector. ZGC needs its research. */
 export const setCollector = (game: Game, id: string, collector: Collector): Action =>
   withNode(game, id, (node) => {
     if (RUNTIMES[node.runtime].language !== 'java')
@@ -912,7 +853,6 @@ export const setCollector = (game: Game, id: string, collector: Collector): Acti
     return ok(patch(game, id, { collector, ...restarted(node) }))
   })
 
-/** Sets a Go App Server's GOGC: 50, 100 or 200. Needs Go GC tuning. */
 export const setGogc = (game: Game, id: string, gogc: number): Action =>
   withNode(game, id, (node) => {
     if (RUNTIMES[node.runtime].language !== 'go') return notAllowed('Only Go has GOGC.')
@@ -922,11 +862,6 @@ export const setGogc = (game: Game, id: string, gogc: number): Action =>
     return ok(node.gogc === gogc ? game : patch(game, id, { gogc }))
   })
 
-/**
- * Turns the Company's scheduled chaos experiments on or off (Chaos engineering). While they run,
- * every `CHAOS_EVERY` sim seconds the Design's weakest Node fails `CHAOS_FAILURE` of its calls for
- * a few seconds, and the Company earns Failure Insight for it.
- */
 export const setChaos = (game: Game, chaos: boolean): Action => {
   if (game.sandbox) return notAllowed('A Sandbox runs no experiments of its own.')
   if (chaos && !has(game, 'chaos-engineering'))
@@ -934,7 +869,6 @@ export const setChaos = (game: Game, chaos: boolean): Action => {
   return ok(game.chaos === chaos ? game : { ...game, chaos, weakest: chaos ? game.weakest : null })
 }
 
-/** Opens a region: its own Users Node, and a tab on the board. Needs Multiple regions. */
 export const openRegion = (game: Game, region: Region): Action => {
   if (!has(game, 'multi-region'))
     return no(Refusal.Locked({ what: 'Regions', research: RESEARCH['multi-region'].name }))
@@ -953,7 +887,6 @@ export const openRegion = (game: Game, region: Region): Action => {
   )
 }
 
-/** Moves a Node to another open region. It restarts there. */
 export const setRegion = (game: Game, id: string, region: Region): Action =>
   withNode(game, id, (node) => {
     if (COMPONENTS[node.type].fixed || isGlobal(node))
@@ -968,7 +901,6 @@ export const setRegion = (game: Game, id: string, region: Region): Action =>
     )
   })
 
-/** Spreads a Wide-column Store or Distributed SQL Node across the open regions. */
 export const setSpread = (game: Game, id: string, spread: boolean): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'wide' && node.type !== 'dsql')
@@ -977,12 +909,6 @@ export const setSpread = (game: Game, id: string, spread: boolean): Action =>
     return ok(node.spread === spread ? game : patch(game, id, { spread }))
   })
 
-/**
- * Picks the engine every Database runs (07 "Variants"): Postgres forks a process per connection,
- * MySQL gives each a thread and holds more of them. Replicas run their primary's engine, so only
- * a Database picks one — and replication needs every Database on the same engine, so the pick
- * applies to all of them at once.
- */
 export const setDbEngine = (game: Game, id: string, dbEngine: DbEngine): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'database') return notAllowed('Only a Database picks an engine.')
@@ -994,7 +920,6 @@ export const setDbEngine = (game: Game, id: string, dbEngine: DbEngine): Action 
     })
   })
 
-/** Splits hot keys across a Cache's or Wide-column Store's shards. Needs Hybrid fan-out. */
 export const setSplit = (game: Game, id: string, split: boolean): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'cache' && node.type !== 'wide')
@@ -1004,18 +929,11 @@ export const setSplit = (game: Game, id: string, split: boolean): Action =>
     return ok(node.split === split ? game : patch(game, id, { split }))
   })
 
-/** Rolls back the routing change that withdrew the Company from the internet. */
 export const rollBackRoutes = (game: Game): Action =>
   endIncident(game, 'bgp', 'No routing change to roll back.')
 
-/** Share of the Users a phishing page drives away. The design gives no number: this is proposed. */
-export const PHISH_CHURN = 0.1
+export const PHISH_CHURN_SHARE = 0.1
 
-/**
- * Acting on a phishing Mail leaks the Company's credentials and starts the Credential leak
- * (18 "Spam and phishing"). The act is the player's, so it is an Action like any other. With the
- * credentials in a secrets manager there is nothing on the page to take (10 "Secrets management").
- */
 export const phished = (game: Game): Action => {
   if (game.sandbox) return notAllowed('A Sandbox has no credentials to leak.')
   if (has(game, 'secrets-management'))
@@ -1025,23 +943,19 @@ export const phished = (game: Game): Action => {
   if (!started) return notAllowed('There is nothing left to leak.')
   return ok({
     ...started.game,
-    users: Math.max(1, Math.floor(started.game.users * (1 - PHISH_CHURN))),
+    users: Math.max(1, Math.floor(started.game.users * (1 - PHISH_CHURN_SHARE))),
   })
 }
 
-/** Paying an invoice from a provider the Company does not use: the Cash is gone (18 "Spam"). */
 export const payFakeInvoice = (game: Game, amount: number): Action =>
   spend(game, amount, 'A fake invoice', (paid) => paid)
 
-/** Rolls back the config push that crashed the servers: they restart on the old config. */
 export const rollBackConfig = (game: Game): Action =>
   endIncident(game, 'config', 'No config push to roll back.')
 
-/** Fences the old leader: the partition's writes stop diverging. */
 export const fenceLeader = (game: Game): Action =>
   endIncident(game, 'partition', 'No partition to fence.')
 
-/** Runs the DR drill: the home region fails for a minute (10 "Era 6"). Needs Disaster recovery drills. */
 export const runDrill = (game: Game): Action => {
   if (!has(game, 'dr-drills'))
     return no(Refusal.Locked({ what: 'The DR drill', research: RESEARCH['dr-drills'].name }))
@@ -1053,7 +967,6 @@ export const runDrill = (game: Game): Action => {
   return ok({ ...started.game, drill: newDrill(game, ledger) })
 }
 
-/** Sets the quarter's guidance, on its first calendar day. */
 export const setGuidance = (game: Game, growth: number, margin: number): Action => {
   if (!game.quarter) return notAllowed('Guidance starts after the IPO.')
   if (!guidanceOpen(game)) return notAllowed('Guidance is set on the first day of a quarter.')
@@ -1070,15 +983,12 @@ export const setGuidance = (game: Game, growth: number, margin: number): Action 
   })
 }
 
-/** Cancels the report that is scanning the primary. */
 export const cancelReport = (game: Game): Action =>
   endIncident(game, 'report-db', 'No report is scanning the Database.')
 
-/** Renews an expired certificate: the site comes back. */
 export const renewCertificate = (game: Game): Action =>
   game.incident?.kind === 'certificate'
-    ? // The renewal restarts the clock: the certificate is issued again now (05).
-      ok({
+    ? ok({
         ...game,
         incident: { ...answering(game, game.incident), remaining: 0 },
         nodes: game.nodes.map((node) =>
@@ -1087,18 +997,12 @@ export const renewCertificate = (game: Game): Action =>
       })
     : notAllowed('No certificate has expired.')
 
-/** Cancels the migration that holds the table's lock: writes go through again. */
 export const cancelMigration = (game: Game): Action =>
   endIncident(game, 'migration-lock', 'No migration is locking a table.')
 
-/** Pins the dependency to a good version and redeploys: the malicious package is gone. */
 export const pinAndRedeploy = (game: Game): Action =>
   endIncident(game, 'supply-chain', 'No compromised dependency is deployed.')
 
-/**
- * Restores the deleted table from the Database's backup (11 "Accidental delete", 07 "Backups"). A
- * broken backup, or none at all, restores nothing: the users whose rows were in the table are lost.
- */
 export const restoreBackup = (game: Game): Action => {
   const incident = game.incident
   if (incident?.kind !== 'accidental-delete') return notAllowed('No table was deleted.')
@@ -1107,7 +1011,6 @@ export const restoreBackup = (game: Game): Action => {
   return ok({
     ...game,
     users: good ? game.users : Math.max(1, Math.floor(game.users * (1 - DELETE_CHURN))),
-    // A good restore takes time that grows with the rows it reads; a broken one ends the incident.
     incident: {
       ...answering(game, incident),
       remaining: good
@@ -1117,15 +1020,9 @@ export const restoreBackup = (game: Game): Action => {
   })
 }
 
-/** Restarts the Nodes whose clocks jumped: the region's timers and leases resync. */
 export const restartClocks = (game: Game): Action =>
   endIncident(game, 'leap-second', 'No clock has jumped.')
 
-/**
- * Acting on a fake advisory runs its patcher, which installs a backdoor (18 "Spam and phishing").
- * Dependency scanning catches the dropper first. The attacker uses the backdoor once it has sat
- * for BACKDOOR_FUSE sim seconds, and a Data breach starts.
- */
 export const installBackdoor = (game: Game): Action => {
   if (game.sandbox) return notAllowed('A Sandbox has nothing to compromise.')
   if (has(game, 'dependency-scanning'))
@@ -1134,7 +1031,6 @@ export const installBackdoor = (game: Game): Action => {
   return ok({ ...game, backdoorAt: game.time })
 }
 
-/** Takes a vendor's demo (18 "Spam and phishing"): the item's Study costs less Insight. */
 export const takeDiscount = (game: Game, id: ResearchId): Action => {
   if (game.sandbox) return notAllowed('A Sandbox has no vendors.')
   if (has(game, id)) return notAllowed(`${RESEARCH[id].name} is already yours.`)
@@ -1142,7 +1038,6 @@ export const takeDiscount = (game: Game, id: ResearchId): Action => {
   return ok({ ...game, discounts: [...game.discounts, id] })
 }
 
-/** Switches one of the Autopilot perk's policies on or off (13 "The Legacy shop"). */
 export const setPolicyOn = (game: Game, policy: keyof Policies, on: boolean): Action => {
   if (game.sandbox || perkLevel(game, 'autopilot') < POLICY_LEVEL[policy])
     return notAllowed('The Autopilot perk has not reached that policy.')
@@ -1151,7 +1046,6 @@ export const setPolicyOn = (game: Game, policy: keyof Policies, on: boolean): Ac
   )
 }
 
-/** Sets an alert rule's threshold. A new threshold is a fresh start: its false alarms are forgiven. */
 export const setAlertRule = (game: Game, rule: AlertRule, threshold: number): Action => {
   if (!has(game, 'alerting'))
     return no(Refusal.Locked({ what: 'Alert rules', research: RESEARCH.alerting.name }))
@@ -1165,7 +1059,6 @@ export const setAlertRule = (game: Game, rule: AlertRule, threshold: number): Ac
   })
 }
 
-/** Replaces a failed Node: it comes back cold after a restart. */
 export const replace = (game: Game, id: string): Action =>
   withNode(game, id, (node) =>
     node.life._tag !== 'Stopped'
@@ -1175,16 +1068,11 @@ export const replace = (game: Game, id: string): Action =>
         ),
   )
 
-/**
- * Whether a Node is a box or process the player can restart: not the fixed Nodes, a Managed or
- * edge Component the provider runs, or a control, tap or mirror with no process of its own.
- */
 export const restartable = (node: GameNode): boolean => {
   const def = COMPONENTS[node.type]
   return !def.fixed && !def.control && !def.tap && !def.mirror && !isGlobal(node)
 }
 
-/** Incidents a restart of the Node they hit ends: a stale cache, a bad package, a split cluster. */
 const RESTART_FIXES: ReadonlyArray<IncidentId> = [
   'stale-opcache',
   'bun-compat',
@@ -1193,12 +1081,6 @@ const RESTART_FIXES: ReadonlyArray<IncidentId> = [
   'gc-storm',
 ]
 
-/**
- * Restarts a running Node (11 "Mitigation toolbox"): it goes down for its restart time and comes
- * back by the same rules as any restart, `restarted(node)`: cold, with leaked memory freed, a
- * Cache emptied (Redis reloads its data), a Realtime Hub's clients dropped to reconnect. A Node
- * that is already down is not restarted: a Stopped one is replaced.
- */
 export const restart = (game: Game, id: string): Action =>
   withNode(game, id, (node) => {
     const name = COMPONENTS[node.type].name
@@ -1206,7 +1088,6 @@ export const restart = (game: Game, id: string): Action =>
     if (node.life._tag === 'Stopped') return notAllowed(`${name} is down for good. Replace it.`)
     if (isDown(node)) return notAllowed('It is already restarting.')
     const restarting = patch(game, id, { ...restarted(node), leak: 0 })
-    // The restart is the fix for these incidents on the Node they hit: it ends them (11).
     const incident = game.incident
     return ok(
       incident?.nodeId === id && RESTART_FIXES.includes(incident.kind)
@@ -1215,7 +1096,6 @@ export const restart = (game: Game, id: string): Action =>
     )
   })
 
-/** Fails over every Node in the zone that is down and has a standby (11 "Zone outage"). */
 export const failOverZone = (game: Game): Action => {
   if (!has(game, 'multi-az'))
     return no(Refusal.Locked({ what: 'Failing over', research: RESEARCH['multi-az'].name }))
@@ -1233,18 +1113,11 @@ export const failOverZone = (game: Game): Action => {
   return ok(next)
 }
 
-/** Data a region outage leaves behind: only the Nodes that hold no state move to another region. */
 const holdsState = (node: GameNode): boolean =>
   (COMPONENTS[node.type].group === 'data' && node.type !== 'cache' && node.type !== 'pooler') ||
   node.type === 'queue' ||
   node.type === 'log'
 
-/**
- * Fails over a Node to its standby (11 "Mitigation toolbox", 05 "Zones"): the standby in another
- * zone takes over at once instead of after the usual failover time. The standby becomes the
- * primary and nothing keeps a copy any more, so the Burn halves until the player gives it a new
- * standby. A Node with no standby has nothing to promote. Needs Multiple zones.
- */
 export const failOver = (game: Game, id: string): Action =>
   withNode(game, id, (node) => {
     if (!has(game, 'multi-az'))
@@ -1265,12 +1138,6 @@ export const failOver = (game: Game, id: string): Action =>
     return ok(game.incident ? { ...promoted, incident: answering(game, game.incident) } : promoted)
   })
 
-/**
- * Fails the region over (11 "Mitigation toolbox", "Region outage", "DR drill"): every stateless
- * Node the outage took down starts again in the nearest other open region, cold, and the Design
- * pays a replacement for each. Data that lives in one region stays down: only a store spread
- * across regions survives, and a drill still tests that. Needs Multiple zones and a second region.
- */
 export const failOverRegion = (game: Game): Action => {
   if (!has(game, 'multi-az'))
     return no(Refusal.Locked({ what: 'Failing over', research: RESEARCH['multi-az'].name }))
@@ -1307,11 +1174,6 @@ export const failOverRegion = (game: Game): Action => {
   }))
 }
 
-/**
- * Throttles the connects of a Realtime Hub during a Reconnect storm (11 "Reconnect storm"): the
- * Hub admits the wave at the rate it can take instead of refusing what it cannot, which is what
- * jittered backoff does, so the herd stops refusing clients while the Hub warms.
- */
 export const throttleConnects = (game: Game, id: string): Action =>
   withNode(game, id, (node) => {
     const incident = game.incident
@@ -1322,11 +1184,9 @@ export const throttleConnects = (game: Game, id: string): Action =>
     return ok({ ...game, incident: { ...answering(game, incident), throttled: true } })
   })
 
-/** An App Server whose runtime runs one event loop, which a heavy callback stalls. */
 const onLoop = (node: GameNode): boolean =>
   node.type === 'server' && RUNTIMES[node.runtime].blocking === 'loop'
 
-/** Every Node a Node's routing Links reach, itself included. */
 const reachable = (game: Game, from: GameNode): ReadonlyArray<GameNode> => {
   const seen = new Set<string>([from.id])
   const found: Array<GameNode> = [from]
@@ -1343,12 +1203,6 @@ const reachable = (game: Game, from: GameNode): ReadonlyArray<GameNode> => {
   return found
 }
 
-/**
- * Moves login off the blocked event loop (11 "Event loop block", 08 "Services", 05 "API
- * Gateway"): each API Gateway in front of an App Server on an event loop stops sending `login`
- * to a Link that reaches that loop, and sends it to a Link that reaches a Service on a runtime
- * without one. The incident ends once no login reaches a loop.
- */
 export const moveKind = (game: Game): Action => {
   const incident = game.incident
   if (incident?.kind !== 'loop') return notAllowed('No event loop is blocked.')
@@ -1360,7 +1214,6 @@ export const moveKind = (game: Game): Action => {
   let links = game.links
   let routed = false
   for (const gateway of gateways) {
-    // What each Link out of the Gateway reaches: a loop, a Service without one, or neither.
     const routes = links
       .filter((entry) => entry.from === gateway.id)
       .map((entry) => {
@@ -1398,11 +1251,6 @@ export const moveKind = (game: Game): Action => {
   return ok({ ...game, links, incident: answering(game, incident) })
 }
 
-/**
- * Drains a Node (11 "Mitigation toolbox"): it takes no new traffic, finishes the work it holds,
- * and rejoins the rotation when it is empty. The Incident on it is cut to the drain window,
- * because the Node it was hurting users through stops answering.
- */
 export const drain = (game: Game, id: string): Action =>
   withNode(game, id, (node) => {
     if (!has(game, 'health-checks'))
@@ -1425,11 +1273,6 @@ export const drain = (game: Game, id: string): Action =>
     })
   })
 
-/**
- * The player's first action while an Incident runs acknowledges it (11 "The incident loop"): MTTA
- * counts from the signal to this second. Any action counts, because it means the player is at the
- * board; a Sandbox and a Company otherwise are the same here.
- */
 export const acknowledge = (game: Game): Game => {
   const incident = game.incident
   if (!incident) return game
@@ -1442,11 +1285,6 @@ export const acknowledge = (game: Game): Game => {
   }
 }
 
-/**
- * Files a postmortem. Taking its action item researches the prevention at its
- * normal price. Filing without it leaves the item open, and the incident it
- * prevents stays twice as likely until the research is owned.
- */
 export const filePostmortem = (game: Game, id: number, take: boolean): Action => {
   const postmortem = game.postmortems.find((entry) => entry.id === id)
   if (!postmortem) return no(Refusal.Missing())
@@ -1459,16 +1297,10 @@ export const filePostmortem = (game: Game, id: number, take: boolean): Action =>
   return study(filed, action, true)
 }
 
-/**
- * Queues an item's Study (10 "Studies"): at the end, or first so it runs now. A locked item
- * brings its missing prerequisites, each queued ahead of what needs it, so the first Study can
- * always run. Queued members of the chain keep their place in the queue and their progress.
- */
 export const study = (game: Game, id: ResearchId, first = false): Action => {
   const entry = RESEARCH[id]
   if (has(game, id)) return notAllowed(`${entry.name} is already yours.`)
   const chain = [...missingPrerequisites(game, id), id]
-  // The whole chain must be open: the item waits for the latest Era any member needs.
   const era = Math.max(...chain.map((needed) => RESEARCH[needed].era))
   if (era > game.stage)
     return no(Refusal.TooEarly({ what: entry.name, era: ERAS[era]?.name ?? 'a later Era' }))
@@ -1493,17 +1325,12 @@ export const study = (game: Game, id: ResearchId, first = false): Action => {
   })
 }
 
-/**
- * Moves a queued Study to a position. The first one runs. No Study moves above a queued
- * prerequisite, and none moves below a queued Study that needs it, so the first can always run.
- */
 export const moveStudyTo = (game: Game, id: ResearchId, index: number): Action => {
   const from = game.studies.findIndex((item) => item.id === id)
   if (from === -1) return no(Refusal.Missing())
   const to = Math.max(0, Math.min(game.studies.length - 1, Math.trunc(index)))
   if (to === from) return ok(game)
   const up = to < from
-  // The rows the Study passes, nearest first.
   const crossed = up ? game.studies.slice(to, from).reverse() : game.studies.slice(from + 1, to + 1)
   const blocker = crossed.find((item) => (up ? needs(id, item.id) : needs(item.id, id)))
   if (blocker) {
@@ -1516,17 +1343,12 @@ export const moveStudyTo = (game: Game, id: ResearchId, index: number): Action =
   return ok({ ...game, studies })
 }
 
-/** Moves a queued Study up or down, under the same rule as a drag. The first one runs. */
 export const moveStudy = (game: Game, id: ResearchId, direction: 1 | -1): Action => {
   const index = game.studies.findIndex((item) => item.id === id)
   if (index === -1) return no(Refusal.Missing())
   return moveStudyTo(game, id, index + direction)
 }
 
-/**
- * Takes a Study off the queue, with every queued Study that needs it. Their progress and the
- * Insight they took are lost, and their Spikes end.
- */
 export const cancelStudy = (game: Game, id: ResearchId): Action => {
   if (!game.studies.some((item) => item.id === id)) return no(Refusal.Missing())
   const gone = new Set<string>(
@@ -1567,7 +1389,6 @@ const advanceEra = (game: Game, raised: boolean, firstIncidentAfter: number): Ac
   if (raised && bootstrapped && game.stage !== PRE_IPO_STAGE)
     return notAllowed('A bootstrapped Company takes no rounds.')
   const dilution = bootstrapped ? 0 : dilutionOf(game, era.dilution)
-  // The IPO: no declining it, a grant of Burn, and quarters from now on.
   if (game.stage === PRE_IPO_STAGE) {
     if (!raised) return notAllowed('The IPO cannot be declined.')
     const ledger = solveFlow(game)
@@ -1581,16 +1402,13 @@ const advanceEra = (game: Game, raised: boolean, firstIncidentAfter: number): Ac
       quarter: firstQuarter(game, ledger.revenue),
     })
   }
-  // Alumni network: former colleagues join when hiring opens.
   const alumni = stage === 1 ? alumniOf(game, perkLevel(game, 'alumni-network')) : []
   return ok({
-    // Users abroad arrive with the regions (04 "Going global").
     ...(stage === REGIONS_FROM_STAGE ? goGlobal(game) : game),
     stage,
     stageAt: game.time,
     cash: game.cash + (raised ? grantOf(game, era.grant) : 0),
     equity: raised ? game.equity * (1 - dilution) : game.equity,
-    // A bootstrapped Company declines every round, and grows at the full rate.
     round: roundStep(game.round, { _tag: raised ? 'Raised' : 'Declined' }),
     nextIncidentAt: stage === 1 ? game.time + firstIncidentAfter : game.nextIncidentAt,
     engineers: alumni.length > 0 ? [...game.engineers, ...alumni] : game.engineers,
@@ -1598,19 +1416,16 @@ const advanceEra = (game: Game, raised: boolean, firstIncidentAfter: number): Ac
   })
 }
 
-/** Takes the round: a grant for Equity, and full growth in the next Era. */
-export const raise = (game: Game, firstIncidentAfter = FIRST_INCIDENT_AFTER): Action =>
+export const raise = (game: Game, firstIncidentAfter = FIRST_INCIDENT_AFTER_SECONDS): Action =>
   advanceEra(game, true, firstIncidentAfter)
 
-/** Declines the round: keeps Equity, no grant, and slower growth in the next Era. */
-export const decline = (game: Game, firstIncidentAfter = FIRST_INCIDENT_AFTER): Action =>
+export const decline = (game: Game, firstIncidentAfter = FIRST_INCIDENT_AFTER_SECONDS): Action =>
   advanceEra(game, false, firstIncidentAfter)
 
 export const offer = (game: Game) => {
   if (game.round._tag !== 'Offered') return null
   const next = nextEra(game)
   if (!next) return null
-  // The IPO pays a thousand seconds of Burn (plan 5.19).
   const grant =
     game.stage === PRE_IPO_STAGE
       ? solveFlow(game).burn * IPO_BURN_SECONDS

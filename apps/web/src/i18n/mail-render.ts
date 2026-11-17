@@ -6,7 +6,6 @@ import { copyIn, type Messages } from './messages.ts'
 
 type Name = (t: Messages) => string
 
-/** Every catalog name and label, from its English text to the same entry in another language. */
 const names = (() => {
   const index = new Map<string, Name>()
   const catalog = copyIn('en').catalog as unknown as Readonly<
@@ -39,11 +38,9 @@ const UNIT = /^(\d+(?:\.\d+)?) (ms|s|min|h|d|DH)$/
 const ORDINAL = /^(.+?) (\d+)$/
 const SEVERITY = /^SEV(\d)$/
 
-/** One value in the player's language: a catalog name, a number with a unit, or text as it is. */
 const localizeText = (t: Messages, text: string): string => {
   const known = names.get(text)
   if (known) return known(t)
-  // The causes in a churn letter: one "- Page view: slow from far away" paragraph each.
   if (text.startsWith('- ')) {
     const own = text.slice(2)
     if (own === 'nothing one cause explains')
@@ -58,7 +55,6 @@ const localizeText = (t: Messages, text: string): string => {
       })
       .join('\n\n')
   }
-  // "Patch App Server": a patch ticket's name.
   if (text.startsWith('Patch ') && names.has(text.slice(6)))
     return `${t.mailWords.phrases.patch} ${localizeText(t, text.slice(6))}`
   const unit = UNIT.exec(text)
@@ -79,12 +75,10 @@ const localizeText = (t: Messages, text: string): string => {
         return t.units.devHours(amount)
     }
   }
-  // "App Server 2": a Node's name and its number.
   const numbered = ORDINAL.exec(text)
   const base = numbered && names.get(numbered[1] as string)
   if (base) return `${base(t)} ${numbered[2]}`
   if (SEVERITY.test(text)) return text
-  // "Search, Uploads" and "- Page view: slow": lists of names.
   if (text.includes(', ')) {
     const parts = text.split(', ')
     if (parts.every((part) => names.has(part)))
@@ -101,7 +95,6 @@ const localizeVars = (t: Messages, vars: MailVars): MailVars =>
     ]),
   )
 
-/** A Mail's subject and body in the language of `t`, or null when this build has no such letter. */
 export const writtenIn = (
   t: Messages,
   message: MailMessage,
@@ -154,7 +147,6 @@ const ACTION_KEY: Readonly<Record<string, keyof Messages['mailWords']['actions']
   patcher: 'first',
 }
 
-/** A Mail button's label in the language of `t`; `fallback` is the English the Model kept. */
 export const actionLabelIn = (
   t: Messages,
   action: Readonly<{ id: string; label: string }>,
@@ -166,7 +158,6 @@ export const actionLabelIn = (
   return words[key] ?? action.label
 }
 
-/** What a Mail says after the player answered it, in the language of `t`; `english` is what the Model kept. */
 export const answerIn = (
   t: Messages,
   answer: Readonly<{ id?: string | undefined; text: string }>,
@@ -175,7 +166,6 @@ export const answerIn = (
   return (answer.id ? words[answer.id] : undefined) ?? answer.text
 }
 
-/** A Thread's last word in the language of `t`, or null when this build has no such closing. */
 export const closingIn = (t: Messages, closing: Snippet): string | null => {
   const words = t.mailWords.closings as Readonly<
     Record<string, string | ((name: string) => string) | undefined>
@@ -186,7 +176,6 @@ export const closingIn = (t: Messages, closing: Snippet): string | null => {
   return word && typeof name === 'string' ? word(localizeText(t, name)) : null
 }
 
-/** A teammate's or a company's signature in the language of `t`. */
 export const signOf = (
   t: Messages,
   id: string,

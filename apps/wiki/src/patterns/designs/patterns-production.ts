@@ -1,9 +1,5 @@
 import { at, design, set, setLink, wire } from '../design.ts'
 
-/* Patterns: "Ran in production". Each Design is the shape a real system runs, at game scale.
-   The note under every caption says what the board does not reproduce: the company's numbers,
-   and the parts of its stack the game has no Component for. */
-
 const note = (shape: string): string =>
   `${shape} The caption is Quorum's result, not the company's numbers.`
 

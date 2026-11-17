@@ -1,9 +1,3 @@
-// The Anatomy light theme, re-inked in the Quorum blueprint palette.
-// Paper is the card white, ink is the navy foreground, and the one lit part
-// takes the blueprint accent, so every figure sits inside the game's UI.
-// The dark theme is the title screen's night shift: Graphite dark surfaces,
-// pale linework, and the page's --signal accent for lit parts and traffic.
-
 export const QUORUM_CSS = `
 .iso[data-theme="light"]{
   --anatomy-page:#f7f9fc;--anatomy-card:#ffffff;--anatomy-text:#5c6b85;--anatomy-strong:#16233d;--anatomy-muted:#8794ab;

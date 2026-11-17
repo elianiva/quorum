@@ -14,7 +14,7 @@ import {
   finalOf,
   join,
   leave,
-  MAX_CATCH_UP,
+  MAX_CATCH_UP_STEPS,
   MAX_LINKS,
   MAX_NODES,
   STORAGE_VALUE_BYTES,
@@ -70,8 +70,6 @@ describe('restore', () => {
 
 describe('storage', () => {
   test('a Game at the Room limits fits in one storage value', () => {
-    // The largest Node and Link of a new Company, repeated to the limits. Durable Object
-    // storage serializes a value as V8 does.
     const size = (value: unknown): number => serialize(value).byteLength
     const widest = <Item>(items: ReadonlyArray<Item>): Item =>
       items.reduce((best, item) => (size(item) > size(best) ? item : best))
@@ -90,7 +88,6 @@ describe('storage', () => {
     expect(size(full)).toBeLessThan(STORAGE_VALUE_BYTES * 0.8)
   })
 
-  /** Storage as the Room uses it: one put of several values, and one read of the Room's keys. */
   const storage = () => {
     const held = new Map<string, unknown>()
     const puts: Array<ReadonlyArray<string>> = []
@@ -100,7 +97,6 @@ describe('storage', () => {
       save: (next: RoomState, previous: RoomState | null) => {
         const writes = writesOf(next, previous)
         puts.push(Object.keys(writes))
-        // A stored value is a copy, as it is in a Durable Object.
         for (const [key, value] of Object.entries(writes)) held.set(key, structuredClone(value))
       },
       load: () =>
@@ -273,13 +269,11 @@ describe('the clock', () => {
     expect(advance(room, 10_000).steps).toBe(0)
   })
 
-  // A wake that replays an hour of Steps is what spends a Durable Object's whole CPU
-  // budget, so the debt one wake may run is one wake's work.
   test('an hour away runs one wake of Steps, not an hour', () => {
     const { state } = withSeats()
     const { state: next, steps } = advance(state, 60 * 60 * 1_000)
-    expect(steps).toBe(MAX_CATCH_UP)
-    expect(next.game.time - state.game.time).toBeCloseTo(MAX_CATCH_UP * 0.1, 6)
+    expect(steps).toBe(MAX_CATCH_UP_STEPS)
+    expect(next.game.time - state.game.time).toBeCloseTo(MAX_CATCH_UP_STEPS * 0.1, 6)
   })
 
   test('the Steps a wake drops do not come back on the next one', () => {
@@ -333,7 +327,6 @@ describe('intents', () => {
     const full = filled(MAX_NODES)
     const over = apply(full, [intent('place', 'server', 1, 1)])
     expect(over._tag).toBe('Failure')
-    // A move that adds nothing still applies on a full board.
     expect(apply(full, [intent('move', 'f0', 4, 5)])._tag).toBe('Success')
   })
 
@@ -354,7 +347,6 @@ describe('intents', () => {
         ],
       },
     })
-    // A new Database, linked from the App Server.
     const batch = [
       intent('place', 'database', 1, 1),
       intent('connect', 'server', `n${free.nextId}`),
@@ -395,7 +387,6 @@ describe('votes', () => {
     }
     const started = startVote(offered, owner, 'decline')
     if (Result.isFailure(started)) throw new Error('no vote')
-    // The starter's own yes is half of two Seats, so the round still waits.
     expect(started.success.game.round._tag).toBe('Offered')
     const passed = ballot(started.success, guest, true)
     expect(passed.passed).toBe('decline')

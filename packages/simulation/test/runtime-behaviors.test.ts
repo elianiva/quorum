@@ -18,8 +18,6 @@ import { step } from '../src/step.ts'
 import { freeSandbox } from '../src/sandbox.ts'
 import type { Game, GameNode } from '../src/state.ts'
 
-/* What a framework, a runtime and a Component option do to the numbers they name (06, 05, 07). */
-
 const ok = (action: Actions.Action): Game => {
   if (Result.isFailure(action)) throw new Error(JSON.stringify(action.failure))
   return action.success
@@ -97,7 +95,6 @@ describe('options', () => {
     const gateway = ok(Actions.place(game, 'gw', 100, 100))
     const id = gateway.nodes.at(-1)?.id as string
     const edged = ok(Actions.setGatewayOptions(gateway, id, { authEdge: true }))
-    // The App Server's Cost receipt for a read: what one request costs its CPU.
     const readCost = (board: Game) => solveFlow(board).nodes[server.id]?.receipts.read?.total ?? 0
     expect(readCost(gateway)).toBeGreaterThan(0)
     expect(readCost(edged)).toBeLessThan(readCost(gateway))
@@ -161,7 +158,6 @@ describe('certificates, evictions and boxes', () => {
     const ids = game.nodes.slice(-2).map((node) => node.id)
     const boxed = ok(Actions.boxNodes(game, ids))
     expect(boxed.boxes).toHaveLength(1)
-    // Both sit in the Edge group, so the cluster takes its label.
     expect(boxed.boxes[0]?.name).toBe('Edge')
     const loose = ok(Actions.unboxNodes(boxed, ids))
     expect(loose.boxes).toHaveLength(0)
@@ -179,7 +175,6 @@ describe('certificates, evictions and boxes', () => {
 })
 
 describe('routing and the Gateway fee', () => {
-  /** Users -> Gateway -> two App Servers -> Database, at Pre-seed, where login exists. */
   const routed = (): Readonly<{ game: Game; gateway: string; login: string }> => {
     let game: Game = { ...freeSandbox(), stage: 1, seed: 3 }
     const first = game.nodes.find((node) => node.type === 'server') as GameNode

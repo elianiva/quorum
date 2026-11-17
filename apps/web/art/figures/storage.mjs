@@ -1,8 +1,6 @@
 import { tools } from '../parts.mjs'
 import { HEIGHT, P as STAGE, WIDTH } from '../stage.mjs'
 
-// Object storage: a three-shelf rack of crates (buckets). One crate is pulled
-// half out of its bay, being fetched, and is lit.
 export function draw(P, { feet = true, lit = true } = {}) {
   const t = tools(P)
   const { k, S, L, D, at, slab } = t
@@ -26,7 +24,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
       S(slab({ x, y, w: POST, d: POST, r: 0.4 }, 1.2, TOP - 1.2, 2), { tone: 'mid' }),
     ].join('')
   out.push(post(X0, Y0), post(X1 - POST, Y0))
-  // A back brace between the far posts.
   out.push(
     S(slab({ x: X0 + POST, y: Y0 + 0.6, w: X1 - X0 - 2 * POST, d: 1.4, r: 0.3 }, TOP - 6, 2, 1), {
       tone: 'lo',
@@ -76,12 +73,10 @@ export function draw(P, { feet = true, lit = true } = {}) {
         21.4,
         lit && active,
       )
-      // The pulled crate stands out past the front posts, so it is drawn after them.
       if (active) pulled = svg
       else out.push(svg)
     }
   })
-  // Front posts and the top frame.
   out.push(post(X0, Y1 - POST), post(X1 - POST, Y1 - POST), pulled)
   out.push(
     S(slab({ x: X0, y: Y0, w: X1 - X0, d: Y1 - Y0, r: 0.6 }, TOP, 1.6, 2, 0.3), { tone: 'mid' }),

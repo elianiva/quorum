@@ -28,7 +28,6 @@ import {
 export { FOOT_ICONS, POOLER_MODES, ROW_ICONS, membersOf, outRate, pct }
 export type { Footer, Row, RowTone }
 
-/** What limits a Node, in the words a card has room for (15 "Node cards"). */
 const limitText = (own: Ledger['nodes'][string]): string => {
   const { cpuCores, ramGb, slots, networkKbps } = own.resources
   const share = (gauge: { used: number; total: number } | null): string =>
@@ -57,10 +56,6 @@ const limitText = (own: Ledger['nodes'][string]): string => {
   }
 }
 
-/**
- * A Node's card rows. With `profiling`, a Limit row follows the Load row and names the resource
- * that limits the Node, such as `Workers 20/20` or `CPU 22%`.
- */
 export const rowsOf = (
   game: Game,
   node: GameNode,
@@ -129,24 +124,20 @@ const baseRowsOf = (
   })
 }
 
-/** A Node's size as pips: the current size of all sizes, or null for a Component without sizes. */
 export const sizePips = (node: GameNode): Readonly<{ filled: number; total: number }> | null => {
   const def = COMPONENTS[node.type]
   if (def.sized) return { filled: node.size + 1, total: SIZES.length }
   return def.steps > 1 ? { filled: node.size, total: def.steps } : null
 }
 
-/** The header's right label, before the size pips: the copies, and the zone once zones are researched. */
 export const levelOf = (game: Game, node: GameNode, region: Region | null = null): string => {
   const copies =
     `${node.replicas > 1 ? `×${node.replicas}` : ''}${bootingOf(node) > 0 ? ` +${bootingOf(node)}` : ''}`.trim()
-  // A standby sits in the next zone over.
   const standby = ZONES[(ZONES.indexOf(node.zone) + 1) % ZONES.length] ?? ''
   const zone =
     has(game, 'multi-az') && zoned(node)
       ? `${node.zone.toUpperCase()}${node.standby ? `+${standby.toUpperCase()}` : ''}`
       : ''
-  // A Node from another region shows where it is and the round trip to reach it.
   const remote =
     region !== null && node.region !== region && !isGlobal(node) && !node.spread
       ? `${REGION_INFO[node.region].short} ${rttOf(region, node.region)} ms`

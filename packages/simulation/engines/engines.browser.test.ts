@@ -3,9 +3,6 @@ import { expect, test } from 'vitest'
 import { solverReady } from '../host/browser.ts'
 import { report, type Report } from './report.ts'
 
-/* Runs in Chromium, Firefox and WebKit (`pnpm test:engines`): the same hashes as Node, which the
-   `node` command computes beside the browser. */
-
 test('every engine ends the golden Company and every reference replay where Node does', async () => {
   await solverReady
   const node = (await (commands as unknown as { node: () => Promise<Report> }).node()) as Report

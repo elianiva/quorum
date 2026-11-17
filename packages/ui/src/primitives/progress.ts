@@ -3,15 +3,6 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
 
-/**
- * foldkit gap: upstream drives the indicator transform and the value text
- * from the Base UI Progress primitive. Here `value` (0–100) positions the
- * indicator directly; `undefined` renders an EMPTY track — animated
- * indeterminate needs primitive support. The label/value builders render
- * static content the consumer owns.
- *
- */
-
 export const progressClass = css({
   display: 'flex',
   flexWrap: 'wrap',
@@ -71,7 +62,6 @@ const progressIndicator = <M>(value: number | undefined, h: HtmlBuilder<M>): Htm
     [
       h.Class(progressIndicatorClass),
       h.DataAttribute('slot', 'progress-indicator'),
-      // Undefined = indeterminate: empty track until primitives can animate.
       h.Style({
         transform: `translateX(-${100 - (value === undefined ? 0 : clampValue(value))}%)`,
       }),
@@ -79,7 +69,6 @@ const progressIndicator = <M>(value: number | undefined, h: HtmlBuilder<M>): Htm
     [],
   )
 
-/** Styled progress bar with an accessible track. */
 export const progress = <M>(config: ProgressConfig, h: HtmlBuilder<M>): Html =>
   h.div(
     [
@@ -102,7 +91,6 @@ export const progress = <M>(config: ProgressConfig, h: HtmlBuilder<M>): Html =>
     ],
   )
 
-/** Static label for the bar (consumer-owned text). */
 export const progressLabel = <M>(
   config: StyleConfig,
   children: ReadonlyArray<Child>,
@@ -113,7 +101,6 @@ export const progressLabel = <M>(
     children,
   )
 
-/** Static value readout (consumer-owned text, e.g. "3 of 5"). */
 export const progressValue = <M>(
   config: StyleConfig,
   children: ReadonlyArray<Child>,

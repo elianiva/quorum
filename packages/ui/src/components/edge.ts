@@ -8,7 +8,6 @@ import { type ComponentView } from './shared.ts'
 export const edge: ComponentView = {
   icon: Cloud,
   layout: { rows: 4, inRow: 0, outRow: 3, footer: true },
-  // It answers at the edge with no box either, and it is CPU it runs out of, not capacity.
   rows: ({ game, node, own, inbound }) => {
     return [
       inbound,

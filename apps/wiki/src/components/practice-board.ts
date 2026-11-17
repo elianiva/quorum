@@ -25,7 +25,6 @@ import {
 
 watchBoardTheme()
 
-/** A goal's label in the page's language. The practice logic names goals in English, which is also the key. */
 const goalLabel = (l: Lang, label: string): string => {
   const english = en.islands.practice.goals
   const key = (Object.keys(english) as Array<keyof typeof english>).find(
@@ -138,7 +137,6 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
       'aria-label': t.area(t.titles[id]),
     },
   )
-  // A board on a page lets the page scroll: only Ctrl or Cmd zooms it.
   host.addEventListener(
     'wheel',
     (event) => {
@@ -320,7 +318,6 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
       css({ margin: '0', minHeight: '5', fontSize: 'type.13' }),
       state.note?.tone === 'warn' ? css({ color: 'warn' }) : css({ color: 'ok' }),
     )
-    // The refusals are the game's English sentences; the one note the board writes itself is translated.
     note.textContent = state.note
       ? state.note.text === en.islands.practice.databaseMoved
         ? t.databaseMoved
@@ -340,7 +337,6 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
   const send = (event: PracticeEvent) => {
     state = update(state, event)
     render()
-    // A new card can land outside the view: show the whole Design again.
     if (event._tag === 'Place') requestAnimationFrame(() => fitBoard(key))
   }
 
@@ -351,7 +347,6 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
     requestAnimationFrame(() => fitBoard(key))
   })
 
-  // The game's own keys for a part in hand: Enter puts it in the next free spot, Esc puts it down.
   root.addEventListener(
     'keydown',
     (event) => {
@@ -381,7 +376,6 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
     onBox: (ids, mode) => send(PracticeEvent.Box({ ids, mode })),
   })
   render()
-  // The board draws the state it was mounted with; no frame loop is needed.
   return () => {
     events.abort()
     detach()

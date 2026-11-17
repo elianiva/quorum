@@ -44,57 +44,38 @@ export const SCORE_AXES: ReadonlyArray<ScoreAxis> = ['cost', 'tail', 'complexity
 export type Challenge = Readonly<{
   id: string
   name: string
-  /** The Era whose Challenges hold it, and whose request mix it runs. */
   era: number
   brief: string
   inspiredBy: string
-  /** First-completion Legacy, 1 to 10 by difficulty; the daily drill pays none. */
   legacy: number
   start: () => Game
   duration: number
-  /** Sim seconds per Step, the same in the browser and on the server. */
   stepSeconds: number
-  /**
-   * Users from each time on, in sim seconds. The first entry is at 0. An entry with a mix
-   * sends that mix from then on, as when 240,000 clients reconnect at once.
-   */
   demand: ReadonlyArray<
     Readonly<{ at: number; users: number; mix?: Partial<Record<RequestKind, number>> }>
   >
   incidents: ReadonlyArray<
     Readonly<{ at: number; kind: IncidentId; only?: ComponentId; magnitude?: number }>
   >
-  /**
-   * Nodes that go down until replaced: the first `count` live Nodes of a type, in board
-   * order, and only in `region` when it is set.
-   */
   outages?: ReadonlyArray<
     Readonly<{ at: number; type: ComponentId; count: number; region?: RegionId }>
   >
-  /** The incident responses a run may use; unset allows every one. */
   responses?: ReadonlyArray<Response>
-  /** Most Dev Hours the Design may spend on fixes and Stack changes. */
   devHours?: number
   targets: Readonly<{
     errors: number
     tail?: number
     cost?: number
-    /** Highest share of requests refused for want of a connection. */
     refused?: number
-    /** Lowest margin: revenue less Burn, as a share of revenue. */
     margin?: number
-    /** Highest share of one request kind's requests that fail. */
     kinds?: Partial<Record<RequestKind, number>>
-    /** Highest p99 of one request kind, in ms, weighted by its rate. */
     kindTail?: Partial<Record<RequestKind, number>>
   }>
-  /** A rule the Design must keep, as the reason it breaks it, or null. */
   rule?: (game: Game) => string | null
   edges: Readonly<Record<ScoreAxis, ReadonlyArray<number>>>
 }>
 
-/** Sim seconds before the run is scored: caches and pools fill first. */
-export const WARMUP = 30
+export const RUN_WARMUP_SECONDS = 30
 
 const SEED = 20_261_102
 
@@ -138,7 +119,6 @@ const SEED_PALETTE: ReadonlyArray<ResearchId> = [
   'lang-go',
 ]
 
-/** Nodes the player can change: what Stack Overflow on a Shoestring counts. */
 const placed = (game: Game) =>
   game.nodes.filter((entry) => !COMPONENTS[entry.type].fixed && !SHARED.includes(entry.type))
 
@@ -151,24 +131,16 @@ const PRESEED_PALETTE: ReadonlyArray<ResearchId> = [
   'node-cluster',
 ]
 
-/**
- * C10k: half the requests are realtime connections that stay open for minutes, so
- * 10,000 are open at once. A runtime with a worker per connection refuses them.
- */
 const C10K_USERS = 3_400
-/** 800 requests per second at Seed's mix. */
 const SHOESTRING_USERS = 40_000
 const C10K_MIX: Partial<Record<RequestKind, number>> = { page: 0.3, read: 0.2, rt: 0.5 }
 
 const STUFFING_USERS = 12_000
-/** The forecast: launch day grows it 50× over 10 minutes. */
 const POKEMON_USERS = 4_000
-/** Users each minute from minute 1: 50× the forecast in 10 equal ratios, 4,000 × 50^(m/10). */
 const POKEMON_RAMP = [
   4_000, 5_915, 8_747, 12_935, 19_127, 28_284, 41_826, 61_850, 91_461, 135_249, 200_000,
 ]
 const LAUNCH_USERS = 20_000
-/** Half the requests keep a chat connection open: about a million at once. */
 const HERD_USERS = 60_000
 const HERD_MIX: Partial<Record<RequestKind, number>> = {
   rt: 0.5,
@@ -178,13 +150,11 @@ const HERD_MIX: Partial<Record<RequestKind, number>> = {
   login: 0.02,
   media: 0.03,
 }
-/** Every client that lost its connection logs in again before it reconnects. */
 const RECONNECT_MIX: Partial<Record<RequestKind, number>> = {
   rt: 0.45,
   login: 0.35,
   read: 0.2,
 }
-/** Each realtime request holds its connection for minutes: about two million open at once. */
 const SOCKETS_USERS = 500_000
 const SOCKETS_MIX: Partial<Record<RequestKind, number>> = { rt: 0.98, page: 0.01, read: 0.01 }
 const FRIDAY_USERS = 16_000
@@ -193,18 +163,14 @@ const EAST_USERS = 16_000
 const ONCE_USERS = 16_000
 const N_PLUS_ONE_USERS = 2_000
 const N_PLUS_ONE_COST = 2.8
-/** A migration off Rails costs about 40 Dev Hours. */
 const N_PLUS_ONE_KLOC = 40
 const THIRTEEN_USERS = 20_000
 const THIRTEEN_COST = 11.5
-/** Thousands of lines: a rewrite costs more Dev Hours than the team has. */
 const THIRTEEN_KLOC = 115
 
-/** A hot read service: what Discord's Read States answers. */
 const READ_STATES_USERS = 4_000
 const READ_STATES_MIX: Partial<Record<RequestKind, number>> = { read: 0.85, write: 0.05, rt: 0.1 }
 const NOON_USERS = 8_000
-/** An AI product: two in five requests are prompts. */
 const GPU_USERS = 8_500
 const GPU_MIX: Partial<Record<RequestKind, number>> = {
   ai: 0.4,
@@ -212,9 +178,7 @@ const GPU_MIX: Partial<Record<RequestKind, number>> = {
   read: 0.25,
   login: 0.05,
 }
-/** A paid assistant: each prompt earns four times a free one. */
 const GPU_VALUE: Partial<Record<RequestKind, number>> = { ai: 4 }
-/** A timeline service: most requests read a feed, and some accounts have millions of followers. */
 const WHALE_USERS = 8_000
 const WHALE_MIX: Partial<Record<RequestKind, number>> = {
   feed: 0.45,
@@ -227,10 +191,6 @@ const WHALE_MIX: Partial<Record<RequestKind, number>> = {
 const STORM_USERS = 10_000
 const REGEX_USERS = 24_000
 
-/**
- * A Series B board: Go App Servers behind a Load Balancer and a Database, with files,
- * checkouts, AI, exports and, with `warehouse`, a Data Warehouse.
- */
 const seriesB = (
   users: number,
   count: number,
@@ -268,7 +228,6 @@ const SUN_USERS = 400_000
 const LEAP_USERS = 8_000
 const FORTY_USERS = 20_000
 const NINES_USERS = 8_000
-/** A web app with checkout and feeds: the kinds a Design keeps up through every failure. */
 const NINES_MIX: Partial<Record<RequestKind, number>> = {
   page: 0.3,
   read: 0.3,
@@ -280,7 +239,6 @@ const NINES_MIX: Partial<Record<RequestKind, number>> = {
 }
 const DAY = 1_440
 const POSTGRES_USERS = 24_000
-/** What Postgres for Everything replaces: every data Component that is not Postgres. */
 const NOT_POSTGRES: ReadonlyArray<ComponentId> = [
   'cache',
   'search',
@@ -291,11 +249,9 @@ const NOT_POSTGRES: ReadonlyArray<ComponentId> = [
   'worker',
   'warehouse',
 ]
-/** A cheap plan: every request earns a third of its catalog value. */
 const FORTY_VALUE: Partial<Record<RequestKind, number>> = Object.fromEntries(
   REQUEST_KINDS.map((kind) => [kind, 1 / 3]),
 )
-/** Series C's mix without AI prompts: a SaaS product before its assistant. */
 const SAAS_MIX: Partial<Record<RequestKind, number>> = {
   page: 0.16,
   read: 0.2,
@@ -313,7 +269,6 @@ const SAAS_MIX: Partial<Record<RequestKind, number>> = {
   hook: 0.04,
   push: 0.02,
 }
-/** A social app's web traffic: what follows the sun is the App Servers' load. */
 const SUN_MIX: Partial<Record<RequestKind, number>> = {
   page: 0.3,
   read: 0.35,
@@ -322,17 +277,12 @@ const SUN_MIX: Partial<Record<RequestKind, number>> = {
   rt: 0.15,
 }
 
-/** A start built with the board's own actions, which accept it by construction. */
 const built = (action: Actions.Action): Game => {
   if (Result.isFailure(action))
     throw new Error(`A Challenge start was refused: ${action.failure._tag}`)
   return action.success
 }
 
-/**
- * A Series C board: Go App Servers behind a Load Balancer and a Wide-column Store, with
- * Search, a Warehouse, files, checkouts, AI, pushes and async work.
- */
 const seriesC = (
   users: number,
   palette: ReadonlyArray<ResearchId>,
@@ -360,7 +310,6 @@ const seriesC = (
     seriesCLinks(['server1', 'server2'], 'wide'),
   )
 
-/** Opens a region whose Users reach an App Server there, wired like the home ones. */
 const regionServer = (
   game: Game,
   region: RegionId,
@@ -389,7 +338,6 @@ const regionServer = (
   return built(Actions.connect(next, `users-${region}`, id))
 }
 
-/** Pre-seed's mix, without the Seed's uploads and bots: what an ORM's reads load. */
 const PAGES_AND_READS: Partial<Record<RequestKind, number>> = {
   page: 0.45,
   read: 0.35,
@@ -397,10 +345,6 @@ const PAGES_AND_READS: Partial<Record<RequestKind, number>> = {
   login: 0.05,
 }
 
-/**
- * Rails App Servers behind a Load Balancer and a Database, on a codebase of `kloc`
- * thousand lines. With `files`, Search and Object Storage for the Seed's other kinds.
- */
 const railsBoard = (
   users: number,
   count: number,
@@ -460,10 +404,6 @@ const SERIES_A_PALETTE: ReadonlyArray<ResearchId> = [
   'load-shedding',
 ]
 
-/**
- * A Series A board: Go App Servers behind a Load Balancer, each linked to the Database,
- * Object Storage and the Payment Provider. `extra` adds settings to every App Server.
- */
 const seriesA = (
   users: number,
   count: number,
@@ -495,7 +435,8 @@ const seriesA = (
   )
 }
 
-/** A Load Balancer in front of `count` App Servers, all linked to `to`. */
+const SPACIOUS_FLEET_LIMIT = 4
+
 const fleet = (
   count: number,
   extra: Partial<GameNode>,
@@ -509,9 +450,8 @@ const fleet = (
     nodes: [
       node('lb', 'lb', 320, 280),
       ...ids.map((id, index) =>
-        count <= 4
-          ? // A few App Servers get room for their cards; a large fleet packs in a grid.
-            node(id, 'server', 560, 280 + 280 * (index - (count - 1) / 2), extra)
+        count <= SPACIOUS_FLEET_LIMIT
+          ? node(id, 'server', 560, 280 + 280 * (index - (count - 1) / 2), extra)
           : node(id, 'server', 560 + 60 * Math.floor(index / 10), 40 + 52 * (index % 10), extra),
       ),
     ],
@@ -571,8 +511,6 @@ export const CHALLENGES: ReadonlyArray<Challenge> = [
     stepSeconds: 1,
     demand: [{ at: 0, users: 5_000 }],
     incidents: [],
-    // A bigger box passes too, at a higher Cost: an app box and a database box each sized
-    // and shaped for their own work are the cheapest Design under the tail target.
     targets: { errors: 0.01, tail: 300 },
     edges: {
       cost: [0.26, 0.28, 0.3, 0.32, 0.34, 0.37, 0.4, 0.45, 0.5],
@@ -900,7 +838,6 @@ export const CHALLENGES: ReadonlyArray<Challenge> = [
     legacy: 4,
     start: () => {
       const game = seriesA(ONCE_USERS, 2, {}, 4)
-      // Checkouts give up after a second and retry at once.
       return {
         ...game,
         links: game.links.map((entry) =>
@@ -918,7 +855,6 @@ export const CHALLENGES: ReadonlyArray<Challenge> = [
     targets: { errors: 0.01, kinds: { buy: 0.02 } },
     edges: {
       cost: [17, 18, 19, 20, 21, 22, 24, 26],
-      // The provider is deliberately slow for two 2 s windows, so the reference tail sits near 1.7 s.
       tail: [225, 250, 275, 300, 350, 400, 500, 750, 1_500, 2_000],
       complexity: [14, 16, 18, 20, 22, 24, 28],
     },
@@ -1249,7 +1185,6 @@ export const CHALLENGES: ReadonlyArray<Challenge> = [
         'circuit-breakers',
         'load-shedding',
       ])
-      // Every call to the Database gives up after a second and retries at once.
       return {
         ...game,
         links: game.links.map((entry) =>
@@ -1612,11 +1547,6 @@ const TRIPLED: DrillIncident = { kind: 'spike', magnitude: 3 }
 const LEAK: DrillIncident = { kind: 'leak' }
 const POOLS: DrillIncident = { kind: 'connections' }
 
-/**
- * The drill's starting Designs. Each serves its users with no incident, and
- * lists only incidents that hurt it: a leak needs a persistent runtime, and
- * doubled pools need enough PHP workers to pass Postgres's limit.
- */
 const DRILL_BASES: ReadonlyArray<
   Readonly<{
     name: string
@@ -1682,7 +1612,6 @@ const DRILL_BASES: ReadonlyArray<
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 
-/** The daily drill for a UTC date (`YYYY-MM-DD`): the same for every player, derived, never stored. */
 export const dailyDrill = (date: string): Challenge => {
   const [base_, seed] = nextRandom(fnv(date) % 2_147_483_648)
   const [incident_] = nextRandom(seed)
@@ -1702,7 +1631,6 @@ export const dailyDrill = (date: string): Challenge => {
     stepSeconds: 1,
     demand: [{ at: 0, users: base.users }],
     incidents: [{ at: 120, ...incident }],
-    // A spare App Server keeps a lost one under 1.5%: the health checks take a few seconds.
     targets: { errors: 0.015 },
     edges: {
       cost: [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1],
@@ -1729,7 +1657,6 @@ export const isDrillDate = (date: string): boolean => {
   return day >= 1 && day <= days
 }
 
-/** The Challenge for an id: a catalog entry or a daily drill. */
 export const challengeById = (id: string): Challenge | undefined => {
   if (id.startsWith('daily:')) {
     const date = id.slice('daily:'.length)
@@ -1738,21 +1665,16 @@ export const challengeById = (id: string): Challenge | undefined => {
   return CHALLENGES.find((entry) => entry.id === id)
 }
 
-/** Running totals of a run, over the scored Steps. Kept in the browser's Model while it runs. */
 export const RunTotals = Schema.Struct({
   step: Schema.Finite,
   scored: Schema.Finite,
   burn: Schema.Finite,
-  /** Σ p99 × served, and Σ served. */
   tail: Schema.Finite,
   served: Schema.Finite,
-  /** Σ failed and refused requests, and Σ demand. */
   failed: Schema.Finite,
   refused: Schema.Finite,
   demand: Schema.Finite,
-  /** Σ revenue per second, for the margin. */
   revenue: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
-  /** Σ demand, Σ failed requests and Σ p99 × rate of each kind a target names. */
   kinds: Schema.Record(
     Schema.String,
     Schema.Struct({
@@ -1784,7 +1706,6 @@ export const ChallengeResult = Schema.Struct({
   complexity: Schema.Finite,
   errors: Schema.Finite,
   refused: Schema.Finite,
-  /** Revenue less Burn, as a share of revenue. */
   margin: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   missed: Schema.NullOr(Schema.String),
   hash: Schema.String,
@@ -1797,7 +1718,6 @@ export const stepsOf = (challenge: Challenge): number =>
 const usersAt = (challenge: Challenge, time: number): number =>
   challenge.demand.reduce((users, entry) => (entry.at <= time + 1e-9 ? entry.users : users), 0)
 
-/** The demand script's mix at a time, if it sets one. */
 const mixAt = (
   challenge: Challenge,
   time: number,
@@ -1807,7 +1727,6 @@ const mixAt = (
     undefined,
   )
 
-/** The Board at a time of the script: its users, and its mix when the script sets one. */
 const scripted = (challenge: Challenge, game: Game, time: number): Game => {
   const mix = mixAt(challenge, time)
   return {
@@ -1817,10 +1736,6 @@ const scripted = (challenge: Challenge, game: Game, time: number): Game => {
   }
 }
 
-/**
- * Dev Hours a Design spends against its Challenge's start (08 "Dev Hours"): each fix it
- * adds, and a migration when its App Servers run another Stack.
- */
 export const devHoursOf = (start: Game, game: Game): number => {
   const before = serviceOf(start).fixes
   const fixes = serviceOf(game)
@@ -1832,7 +1747,6 @@ export const devHoursOf = (start: Game, game: Game): number => {
   return fixes + (moved ? migrationCost(start, to) : 0)
 }
 
-/** Takes down the first `count` live Nodes of a type, in a region if set, until they are replaced. */
 const outage = (game: Game, type: ComponentId, count: number, region?: RegionId): Game => {
   const hit = new Set(
     game.nodes
@@ -1853,7 +1767,6 @@ const outage = (game: Game, type: ComponentId, count: number, region?: RegionId)
   }
 }
 
-/** The replay's Design on the Challenge's start, or why it is refused. */
 export const beginRun = (challenge: Challenge, replay: Replay): Result.Result<Game, string> => {
   if (replay.challenge !== challenge.id) return Result.fail('The replay is for another Challenge.')
   if (replay.simVersion !== SIM_VERSION) return Result.fail('Update Quorum to submit this result.')
@@ -1871,7 +1784,6 @@ export const beginRun = (challenge: Challenge, replay: Replay): Result.Result<Ga
   return Result.succeed(scripted(challenge, built.success, 0))
 }
 
-/** Whether a run of the Challenge may take this action: a response it forbids does nothing. */
 export const responseAllowed = (
   challenge: Challenge,
   action: Replay['actions'][number]['action'],
@@ -1882,7 +1794,6 @@ export const responseAllowed = (
 
 export type RunStep = Readonly<{ game: Game; totals: RunTotals; events: ReadonlyArray<StepEvent> }>
 
-/** One Step of the canonical run: logged actions, the demand script, scripted incidents, then the Step. */
 export const advanceRun = (
   challenge: Challenge,
   replay: Replay,
@@ -1910,14 +1821,12 @@ export const advanceRun = (
         : { ...started, incident: { ...started.incident, magnitude: script.magnitude } }
     if (current.incident) events.push(StepEvent.IncidentStarted({ incident: current.incident }))
   }
-  // A coarse Step runs second by second while something is failing, so a health check
-  // that notices a dead App Server in 2 s costs 2 s of errors, not a whole Step.
-  const fine =
+  const secondBySecond =
     challenge.stepSeconds > 1 &&
     (current.incident !== null ||
       current.nodes.some((entry) => entry.life._tag !== 'Running' && entry.life._tag !== 'Warming'))
-  const parts = fine ? challenge.stepSeconds : 1
-  const scored = time >= WARMUP - 1e-9
+  const parts = secondBySecond ? challenge.stepSeconds : 1
+  const scored = time >= RUN_WARMUP_SECONDS - 1e-9
   let next = totals
   for (let part = 0; part < parts; part += 1) {
     const result = step(current, challenge.stepSeconds / parts, CHALLENGE_TUNING)
@@ -1934,7 +1843,6 @@ export const advanceRun = (
   }
 }
 
-/** Adds a share of a Step's Ledger to the totals: all of it, or one second of a fine Step. */
 const addLedger = (
   challenge: Challenge,
   totals: RunTotals,
@@ -1952,7 +1860,6 @@ const addLedger = (
   kinds: kindTotals(challenge, totals.kinds, ledger, weight),
 })
 
-/** Adds a Step's demand and failures of each kind the Challenge's targets name. */
 const kindTotals = (
   challenge: Challenge,
   kinds: RunTotals['kinds'],
@@ -1979,7 +1886,6 @@ const kindTotals = (
   return next
 }
 
-/** The first kind whose failures pass its target, if any. */
 const failingKind = (challenge: Challenge, totals: RunTotals): RequestKind | null => {
   for (const [kind, limit] of Object.entries(challenge.targets.kinds ?? {})) {
     const entry = totals.kinds[kind]
@@ -1989,7 +1895,6 @@ const failingKind = (challenge: Challenge, totals: RunTotals): RequestKind | nul
   return null
 }
 
-/** The first kind whose rate-weighted p99 passes its target, if any. */
 const slowKind = (challenge: Challenge, totals: RunTotals): RequestKind | null => {
   for (const [kind, limit] of Object.entries(challenge.targets.kindTail ?? {})) {
     const entry = totals.kinds[kind]
@@ -1999,12 +1904,10 @@ const slowKind = (challenge: Challenge, totals: RunTotals): RequestKind | null =
   return null
 }
 
-/** Nodes the player can change, plus every Link. */
 export const complexityOf = (game: Game): number =>
   game.nodes.filter((entry) => !COMPONENTS[entry.type].fixed && !SHARED.includes(entry.type))
     .length + game.links.length
 
-/** The scores of a finished run, and whether it met every target. */
 export const resultOf = (challenge: Challenge, game: Game, totals: RunTotals): ChallengeResult => {
   const cost = totals.scored > 0 ? totals.burn / totals.scored : 0
   const tail = totals.served > 0 ? totals.tail / totals.served : 0
@@ -2043,7 +1946,6 @@ export const resultOf = (challenge: Challenge, game: Game, totals: RunTotals): C
   }
 }
 
-/** Runs a replay from t = 0 to the end. Pure: the same replay gives the same result everywhere. */
 export const runChallenge = (
   challenge: Challenge,
   replay: Replay,
@@ -2061,7 +1963,6 @@ export const runChallenge = (
   return Result.succeed(resultOf(challenge, game, totals))
 }
 
-/** Which histogram bucket a score falls in: one per edge, plus one above the last. */
 export const bucketOf = (edges: ReadonlyArray<number>, value: number): number => {
   const index = edges.findIndex((edge) => value <= edge)
   return index < 0 ? edges.length : index

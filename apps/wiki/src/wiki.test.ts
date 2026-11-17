@@ -20,8 +20,8 @@ import { componentsHitBy, sandboxesFiring } from './reference/graph.ts'
 import { buildIndex, indexJson, loadIndex, search } from './search.ts'
 import * as Search from './submodels/search.ts'
 import {
-  MAX_WORDS,
-  RECENT_ENTRIES,
+  MAX_WORDS_PER_ENTRY,
+  RECENT_ENTRY_DAYS,
   dayOf,
   fallbackEntry,
   problemsIn,
@@ -29,8 +29,6 @@ import {
   renderRecent,
   tidy,
 } from '../scripts/changelog.ts'
-
-/* The wiki's contract: every page has one clean path, renders at build time, and can be found. */
 
 beforeAll(async () => {
   await loadAllProse()
@@ -42,8 +40,6 @@ test('every page has one path, without a trailing slash', () => {
   expect(paths.filter((path) => normalize(path) !== path)).toEqual([])
 })
 
-/* The build prerenders every path, so this renders the home page and each section's first page and
-   reads their links: the layouts and the navigation stay reachable without compiling the corpus. */
 const sample = ['/', ...SECTION_ORDER.map((section) => navOf('en', section)[0]?.path ?? '')]
 
 test('the home page and every section render their own page, and every link in them reaches a page', async () => {
@@ -98,7 +94,6 @@ test('search ranks a title match first, finds aliases, and survives a typo', () 
   expect(search(index, 'lb')[0]?.path).toBe('/components/lb')
   expect(search(index, 'kubernets')[0]?.path).toBe('/components/cluster')
   expect(search(index, 'zzzz')).toEqual([])
-  // stemming, a name over a long body, and a Component over its guides
   expect(search(index, 'caching')[0]?.path).toBe('/components/cache')
   expect(search(index, 'pooler')[0]?.path).toBe('/components/pooler')
   expect(search(index, 'contributing')[0]?.path).toBe('/about/contributing')
@@ -135,7 +130,7 @@ test('the arrow keys wrap around the search results', () => {
 test('the changelog shows the latest entries on the short page and every entry on the full one', () => {
   expect(dayOf('2026-11-08T23:59:00+00:00')).toBe('2026-11-08')
   expect(dayOf('2026-11-09T03:00:00+07:00')).toBe('2026-11-08')
-  const entries = Array.from({ length: RECENT_ENTRIES + 2 }, (_, n) => ({
+  const entries = Array.from({ length: RECENT_ENTRY_DAYS + 2 }, (_, n) => ({
     day: `2026-11-${String(n + 1).padStart(2, '0')}`,
     body: `Change ${n + 1}.`,
   })).sort((a, b) => b.day.localeCompare(a.day))
@@ -187,8 +182,8 @@ test('a changelog entry keeps to the Keep a Changelog sections and the day’s c
   expect(problemsIn(entry.replace('a'.repeat(40), 'b'.repeat(40)), day)).toContain(
     "the entry links bbbbbbb, which is not one of the day's commits",
   )
-  expect(problemsIn(`### Added\n\n${'word '.repeat(MAX_WORDS + 1)}`, day)).toContainEqual(
-    expect.stringContaining(`the limit is ${MAX_WORDS}`),
+  expect(problemsIn(`### Added\n\n${'word '.repeat(MAX_WORDS_PER_ENTRY + 1)}`, day)).toContainEqual(
+    expect.stringContaining(`the limit is ${MAX_WORDS_PER_ENTRY}`),
   )
 })
 

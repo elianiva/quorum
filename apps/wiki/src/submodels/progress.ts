@@ -2,8 +2,6 @@ import { Effect, Schema } from 'effect'
 import { Command, type Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
 
-/* The pages a reader has opened, kept in the browser, for the guided paths' progress. */
-
 export const Model = Schema.Struct({ visited: Schema.Array(Schema.String) })
 export type Model = typeof Model.Type
 
@@ -27,7 +25,6 @@ const read = (): ReadonlyArray<string> => {
   }
 }
 
-/** The pages already opened, plus this one. */
 export const Load = Command.define('LoadProgress', {
   args: { path: Schema.String },
   messages: [Message.Loaded],

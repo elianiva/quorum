@@ -1,8 +1,5 @@
-/* Text codecs for strings players copy and the server receives: a prefix, then base64url JSON. Pure. */
-
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
 
-/** JSON with every character above ASCII escaped, so each character is one byte. */
 const asciiJson = (value: unknown): string =>
   JSON.stringify(value).replace(
     /[\u0080-\uffff]/g,
@@ -39,11 +36,9 @@ const fromBase64Url = (text: string): string | null => {
   return out
 }
 
-/** `prefix` and the value as base64url JSON. */
 export const encodeText = (prefix: string, value: unknown): string =>
   `${prefix}${toBase64Url(asciiJson(value))}`
 
-/** The parsed JSON after `prefix`, or undefined when the text is not one. */
 export const decodeText = (prefix: string, text: string): unknown => {
   const trimmed = text.trim()
   if (!trimmed.startsWith(prefix)) return undefined

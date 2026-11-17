@@ -2,9 +2,9 @@ import { css, cx } from '@quorum/styled-system/css'
 import { copy, insightName, localeOf, localized, type Messages } from '@/i18n/messages.ts'
 import {
   ResearchMessage,
-  SHEET_DEFAULT,
-  SHEET_MAX,
-  SHEET_MIN,
+  SHEET_DEFAULT_WIDTH_PX,
+  SHEET_MAX_WIDTH_PX,
+  SHEET_MIN_WIDTH_PX,
   STUDY_QUEUE,
   queueIndex,
 } from '@/game/research.ts'
@@ -88,13 +88,11 @@ import {
   type Placed,
 } from '@quorum/ui/game/research-layouts'
 
-/** Items that list `id` as a prerequisite. */
 const followUps = (id: ResearchId): ReadonlyArray<ResearchDef> =>
   researchList.filter((entry) => entry.requires.includes(id))
 
 type State = 'owned' | 'buy' | 'saving' | 'locked'
 
-// A queued item is saving even while locked: it waits behind its queued prerequisites.
 const stateOf = (game: Game, entry: ResearchDef): State =>
   has(game, entry.id)
     ? 'owned'
@@ -104,7 +102,6 @@ const stateOf = (game: Game, entry: ResearchDef): State =>
         ? 'locked'
         : 'buy'
 
-/** The item the side pane shows: the player's pick, else the most useful next one. */
 const focusOf = (model: Model): ResearchDef => {
   const game = model.board.game
   if (model.board.research.focus) return RESEARCH[model.board.research.focus]
@@ -136,7 +133,6 @@ const NODE_CLASS: Record<State, string> = {
   }),
 }
 
-/** The recipe as pool chips, or a check once researched. */
 const price = (entry: ResearchDef, state: State, grey: boolean, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return state === 'owned'
@@ -201,13 +197,11 @@ const price = (entry: ResearchDef, state: State, grey: boolean, h: HtmlBuilder<M
       )
 }
 
-/** A Study's duration at the current speed, such as "4 min". */
 const duration = (t: Messages, game: Game, entry: ResearchDef): string => {
   const seconds = studySeconds(entry.id) / studySpeed(game)
   return seconds < 90 ? t.units.s(Math.round(seconds)) : t.units.min(Math.round(seconds / 60))
 }
 
-/** The three lever steps as a meter, so the step reads at a glance. */
 const stepMeter = (step: number, h: HtmlBuilder<Message>): Html =>
   h.span(
     [
@@ -247,12 +241,6 @@ const stepMeter = (step: number, h: HtmlBuilder<Message>): Html =>
     ),
   )
 
-/**
- * A pool's Product lever, under its cost row: what the kind takes today, what the
- * next step would take, what that costs, and the two things the player can do
- * (10 "Product levers"). A Challenge and a guided Sandbox pin their mix, so they
- * show no lever.
- */
 const leverRow = (
   game: Game,
   ledger: Ledger,
@@ -270,8 +258,6 @@ const leverRow = (
   const last = step >= MAX_LEVER_STEP
   const buildRefusal = leverRefusal(game, kind)
   const removeRefusal = leverRemoveRefusal(game, kind)
-  // A pool that limits the Study, or one the player can raise or has raised, keeps the row.
-  // Any other hint of a ladder the player cannot climb only crowds the recipe.
   if (!blocked && step <= 0 && buildRefusal !== null) return h.empty
   const nextShare = last
     ? share
@@ -479,7 +465,6 @@ const leverRow = (
   )
 }
 
-/** The item's recipe: each pool's cost, what it holds, and what it earns. */
 const costRows = (
   game: Game,
   ledger: Ledger,
@@ -627,7 +612,6 @@ const costRows = (
   )
 }
 
-/** How far the Design is from a stall's requirement, in the units its meter shows. */
 const gapOf = (
   t: Messages,
   stall: StudyStall,
@@ -663,7 +647,6 @@ const gapOf = (
   }
 }
 
-/** Why a Study waits, how far the Design has got, and what the queue does meanwhile. */
 const requirement = (
   t: Messages,
   stall: StudyStall,
@@ -783,7 +766,6 @@ const requirement = (
   )
 }
 
-/** A section of related research items, each a row that focuses its item. */
 const linkSection = (
   label: string,
   entries: ReadonlyArray<ResearchDef>,
@@ -825,7 +807,6 @@ const linkSection = (
         ],
       )
 
-/** A card's icon, name and price or status; `grey` draws it uncoloured. */
 const face = (
   open: boolean,
   entry: ResearchDef,
@@ -873,10 +854,6 @@ const face = (
             ),
           ],
           [
-            // Two lines fit inside the box by design: the box is wide enough for the
-            // longest name in every language at 150% (15 "Accessibility"). The clamp
-            // stays as the last guard against a name added later. `auto-phrase` breaks
-            // Japanese at a phrase boundary rather than mid-term, where it is supported.
             h.span(
               [
                 h.Class(
@@ -910,7 +887,6 @@ const face = (
               : h.empty,
           ],
         ),
-        // Beyond the next Era the card is a silhouette: what the item is for, never its price.
         far
           ? h.span(
               [
@@ -931,7 +907,6 @@ const face = (
   ]
 }
 
-/** A card node. Saving up: the card is the progress bar, a coloured copy wiping in from the left. */
 const card = (
   open: boolean,
   share: number,
@@ -992,14 +967,8 @@ const card = (
     : face(open, entry, state, state === 'locked', large, far, h)
 }
 
-/** The interface's type scale: the tree's boxes and spacing grow with it (15 "Accessibility"). */
 const scaleOf = (model: Model): number => (model.prefs.text === 'large' ? 1.5 : 1)
 
-/**
- * One item of the tree. The tree draws every item on every render, and an item changes only when
- * the player buys, queues, or focuses it, or while its Study runs. So each item is memoized under
- * its id, and takes the few values it draws instead of the Game, which is new on every Step.
- */
 const lazyNode = createKeyedLazy()
 
 const node = (model: Model, place: Placed, focused: boolean, h: HtmlBuilder<Message>): Html => {
@@ -1013,8 +982,6 @@ const node = (model: Model, place: Placed, focused: boolean, h: HtmlBuilder<Mess
     place.y,
     state,
     large,
-    // Beyond the next Era the item is a silhouette: a name and what it is for, no price,
-    // and no click. The player can still want it before research makes it a choice.
     entry.era > game.stage + 1 && state === 'locked',
     focused,
     state !== 'owned' && game.openActions.includes(entry.id),
@@ -1281,7 +1248,6 @@ const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
   const t = copy(h)
 
   const game = model.board.game
-  // One band per Era, the current one tinted and the ones ahead washed out.
   const bands = layout.bands.map((band) =>
     h.div(
       [
@@ -1403,10 +1369,6 @@ const backdrop = (model: Model, layout: Layout, h: HtmlBuilder<Message>) => {
   return [...bands, ...roots]
 }
 
-/**
- * The screen scrolls like a page. It opens with the focused item in view,
- * and scrolls to an item when the player focuses one that is off screen.
- */
 const scrollTo = (host: HTMLElement, target: Element, behavior: ScrollBehavior) => {
   const box = target.getBoundingClientRect()
   const view = host.getBoundingClientRect()
@@ -1420,7 +1382,6 @@ const scrollTo = (host: HTMLElement, target: Element, behavior: ScrollBehavior) 
   target.scrollIntoView({ block: 'center', inline: 'center', behavior })
 }
 
-/** Opens the tree scrolled to the focused item; the Research test resolves it by name. */
 export const ResearchScroll = Mount.define('ResearchScroll', {
   messages: [Message.Synced],
   execute: ({ element }) =>
@@ -1591,7 +1552,6 @@ const linkRow = (game: Game, entry: ResearchDef, h: HtmlBuilder<Message>): Html 
       )
 }
 
-/** One (?) link per term behind the item; each opens its page on the wiki. */
 const terms = (entry: ResearchDef, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -1652,21 +1612,12 @@ const terms = (entry: ResearchDef, h: HtmlBuilder<Message>): Html => {
     : h.empty
 }
 
-/**
- * How many rows a queue row slides for a drag from `from` to `to`. Rows keep their
- * order in the DOM, so the queue can show where the drop lands without the rows
- * moving under the pointer.
- */
 const queueSlide = (index: number, from: number, to: number): number => {
-  // The dragged row goes down to the slot the drop leaves it in. The rows between it
-  // and that slot step one place back toward where it started, so the slot follows
-  // the pointer and the rows never cross it.
   if (index === from) return to - from
   const without = index > from ? index - 1 : index
   return (without < to ? without : without + 1) - index
 }
 
-/** A small icon button in the queue. */
 const queueButton = (
   label: string,
   glyph: IconNode,
@@ -1696,7 +1647,6 @@ const queueButton = (
     h,
   )
 
-/** The Study queue, in order: the first one runs. Drag a row to reorder it. */
 const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -1706,8 +1656,6 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
   const drag = model.board.research.drag
   const dragging = DragAndDrop.isDragging(drag)
   const draggedId = DragAndDrop.maybeDraggedItemId(drag)
-  // Where the drop leaves the dragged row. The rows stay put in the DOM and slide by
-  // whole rows, so the queue shows the gap without moving the target under the pointer.
   const from = Option.match(draggedId, {
     onNone: () => -1,
     onSome: (id) => studies.findIndex((item) => item.id === id),
@@ -1739,8 +1687,6 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
           borderColor: 'hairline',
         }),
       ),
-      // The queue is a listbox, so the window-level shortcuts ignore it; Escape still closes
-      // the panel unless a drag is running (the drag component handles that Escape itself).
       h.OnKeyDownPreventDefault((key) =>
         key === 'Escape' && !dragging ? Option.some(Message.PanelClosed()) : Option.none(),
       ),
@@ -1782,7 +1728,6 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
       h.div(
         [
           ...DragAndDrop.droppable(STUDY_QUEUE, t.research.studyQueue),
-          // Rows ring together while a drop lands, inset from the panel edge.
           h.Class(
             cx(
               css({
@@ -1809,12 +1754,8 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
             const stall = studyStall(game, ledger, item.id)
             const isDragged = Option.exists(draggedId, (id) => id === item.id)
             const slide = landing === null ? 0 : queueSlide(index, from, landing)
-            // The dragged row holds the slot the drop leaves it in: a hint of the icon
-            // under the cursor's ghost, or the whole row when the keyboard moves it.
             const slot = isDragged && landing !== null
             const keyboard = drag.dragState._tag === 'KeyboardDragging'
-            // Rows share one height, so a row slides by its own height plus the gap
-            // between rows; a transition retargets it when the pointer moves on.
             const offset =
               slide === 0 ? [] : [h.Style({ translate: `0 calc(${slide} * (100% + 0.125rem))` })]
             return h.div(
@@ -1830,7 +1771,6 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                       borderRadius: 'lg',
                       paddingLeft: '1',
                     }),
-                    // A pointer drag slides its rows; the keyboard moves one at once.
                     dragging &&
                       !keyboard &&
                       css({
@@ -1869,7 +1809,6 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
                 ),
               ],
               [
-                // The icon is the drag handle, so the row's buttons keep their own keys.
                 h.span(
                   [
                     ...DragAndDrop.draggable(
@@ -2063,13 +2002,11 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
   )
 }
 
-/** The tree keeps this much of the panel, so the pane cannot squeeze it to nothing. */
 const TREE_MIN = 420
 
-/** The pane's bounds for this window: the fixed range, less whatever the tree needs. */
 const sheetBounds = (panel: number): Readonly<{ min: number; max: number }> => ({
-  min: SHEET_MIN,
-  max: Math.max(SHEET_MIN, Math.min(SHEET_MAX, panel - TREE_MIN)),
+  min: SHEET_MIN_WIDTH_PX,
+  max: Math.max(SHEET_MIN_WIDTH_PX, Math.min(SHEET_MAX_WIDTH_PX, panel - TREE_MIN)),
 })
 
 const clampSheet = (width: number, panel: number): number => {
@@ -2077,7 +2014,6 @@ const clampSheet = (width: number, panel: number): number => {
   return Math.round(Math.max(min, Math.min(max, width)))
 }
 
-/** Drag or step the pane's edge. A drag sends a width per pointer move; update.ts keeps those out of the log. */
 const attachResize = (host: HTMLElement, offer: (width: number) => void): (() => void) => {
   const sheet = host.parentElement
   if (!sheet) return () => {}
@@ -2132,8 +2068,7 @@ const attachResize = (host: HTMLElement, offer: (width: number) => void): (() =>
   host.addEventListener('pointermove', move, { signal: events.signal })
   host.addEventListener('pointerup', up, { signal: events.signal })
   host.addEventListener('pointercancel', up, { signal: events.signal })
-  // A double click puts the pane back where it started.
-  host.addEventListener('dblclick', () => offer(clampSheet(SHEET_DEFAULT, panelWidth())), {
+  host.addEventListener('dblclick', () => offer(clampSheet(SHEET_DEFAULT_WIDTH_PX, panelWidth())), {
     signal: events.signal,
   })
   host.addEventListener('keydown', key, { signal: events.signal })
@@ -2168,11 +2103,9 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
   const state = stateOf(game, entry)
   const open = state !== 'owned' && game.openActions.includes(entry.id)
   const track = t.catalog.researchTracks[entry.track].label
-  // A locked item queues with its missing prerequisites (10 "Studies"), once every one is open.
   const chain = state === 'locked' ? missingPrerequisites(game, entry.id) : []
   const era = Math.max(entry.era, ...chain.map((id) => RESEARCH[id].era))
   const ledger = ledgerOf(model)
-  // The first Study that cannot finish: the item's own, or one that queueing it would add.
   const stalled =
     state === 'owned' || era > game.stage
       ? undefined
@@ -2291,7 +2224,6 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
           ),
         ],
       ),
-      // The pane's edge: drag it, or step it with the arrow keys. Home and End go to the bounds.
       h.div(
         [
           h.Key('resize'),
@@ -2299,8 +2231,8 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
           h.AriaOrientation('vertical'),
           h.AriaLabel(t.research.resizePane),
           h.Title(t.research.resizePane),
-          h.AriaValuemin(SHEET_MIN),
-          h.AriaValuemax(SHEET_MAX),
+          h.AriaValuemin(SHEET_MIN_WIDTH_PX),
+          h.AriaValuemax(SHEET_MAX_WIDTH_PX),
           h.AriaValuenow(Math.round(model.board.research.sheetWidth)),
           h.Tabindex(0),
           h.OnMount(ResearchResize({})),
@@ -2639,13 +2571,8 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
   )
 }
 
-/**
- * Pools in reach: the one the running Study waits on, then the busiest few.
- * The deck answers two questions at a glance, so it stays four chips wide.
- */
 const DECK_POOLS = 4
 
-/** One pool in the open deck: its mark, name, figure, and how full it is. */
 const poolCell = (
   game: Game,
   ledger: Ledger,
@@ -2781,11 +2708,9 @@ const poolCell = (
   )
 }
 
-/** The pool the running Study waits on, shown as what it holds of what it needs. */
 const pinnedChip = (game: Game, pool: InsightPool, need: number, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const held = game.pools[pool]
-  // A pool with enough for the Study is one figure like the rest; a short one says what it lacks.
   const blocked = held < need
   const heldLabel = compact(held)
   const needLabel = compact(need)
@@ -2867,12 +2792,6 @@ const pinnedChip = (game: Game, pool: InsightPool, need: number, h: HtmlBuilder<
   )
 }
 
-/**
- * The pools, off the top of the screen and onto the canvas: a deck in the
- * tree's corner that names the pool the Study waits on, then the busiest few,
- * and opens every pool in place. The list folds away under the row (theme.css),
- * so the card keeps its width and the row never moves while it grows.
- */
 const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -2891,7 +2810,6 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Key('deck'),
-      // Pinned to the corner, so the top edge moves as the list opens.
       h.Class(
         css({
           pointerEvents: 'auto',
@@ -2924,7 +2842,6 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
           ),
         ],
         [
-          // Always mounted, so the list can fold away instead of popping out of the row.
           h.div(
             [
               h.Key('deck-pools'),
@@ -3012,8 +2929,6 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
                   ),
                 ],
                 [
-                  // Both labels share one cell, so the longer one sets the width in either state
-                  // and the deck does not resize as the label changes.
                   h.span(
                     [
                       h.Class(
@@ -3111,7 +3026,6 @@ export const researchPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           ),
         ],
         [
-          // A page heading, not a bar: no fill and no rule, so the tree keeps the height.
           h.div(
             [
               h.Class(
@@ -3139,8 +3053,6 @@ export const researchPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 ],
                 [t.research.research],
               ),
-              // Traffic no tap samples earns nothing and shows nothing: the first thing to fix
-              // when research drags (12 "The cost of seeing").
               unsampled.share >= 0.01
                 ? h.span(
                     [
@@ -3198,7 +3110,6 @@ export const researchPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                   ),
                 ],
                 [
-                  // Room below for the detail sheet on a narrow screen.
                   h.div(
                     [
                       h.Class(

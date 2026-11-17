@@ -1,20 +1,14 @@
-/// <reference types="vitest/config" />
 import { foldkit } from '@foldkit/vite-plugin'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
 import pandacss from '@pandacss/vite'
 import { fileURLToPath } from 'node:url'
-import { defineConfig, type Plugin } from 'vite'
+import { type Plugin } from 'vite'
+import { defineConfig } from 'vitest/config'
 import { simVersion } from '../../packages/simulation/sim-version.ts'
 import { pwa } from './pwa/plugin.ts'
 
-/**
- * Foldkit's view-identity transform wraps every function return in a module. The Simulation has
- * thousands of functions and never builds a view, so branding them only taxes every tick. The
- * localizing builder builds views for its caller, so branding it would give each element the
- * builder's identity and a locale switch would remount the board.
- */
 const skipBranding = /\/packages\/simulation\/|\/src\/i18n\/builder\.ts/
 
 const unbrandedModules = (plugin: Plugin): Plugin => {
@@ -30,15 +24,6 @@ const unbrandedModules = (plugin: Plugin): Plugin => {
   }
 }
 
-/**
- * Source maps go to Sentry only from a build that has the upload token, and never into the
- * deployed assets: hidden maps carry no link in the bundle, and the plugin deletes them after.
- */
-/**
- * The layout harness at `/harness.html` saves the player's arrangement into the
- * workspace, so an agent can read it back. Dev only: `configureServer` never runs
- * in a build.
- */
 const layoutHarness = (): Plugin => ({
   name: 'layout-harness',
   configureServer(server) {
@@ -77,13 +62,8 @@ export default defineConfig({
     sourcemap: authToken ? 'hidden' : false,
     rolldownOptions: {
       output: {
-        // The app was one 2.8 MB chunk, so every deploy made a returning player fetch all of it
-        // again. The libraries, the catalog, and the English copy change far less often than
-        // the game's code: each gets its own chunk, which keeps its hashed name, and its place
-        // in the browser's cache, until its own content changes.
         codeSplitting: {
           groups: [
-            // Pixi stays out: it loads its renderers on demand, and a group would load them all.
             { name: 'vendor', test: /\/node_modules\/(?!\.pnpm\/pixi\.js@|pixi\.js\/)/ },
             {
               name: 'catalog',
@@ -100,18 +80,12 @@ export default defineConfig({
     pandacss({ codegen: false }),
     foldkit().map(unbrandedModules),
     simVersion(),
-    // Before the source-map upload, so the worker is written for every build.
     pwa(),
-    // Last, so it sees the final bundle.
     authToken
       ? sentryVitePlugin({
           authToken,
-          // The plugin reads SENTRY_ORG and SENTRY_PROJECT from the environment itself.
           ...(release ? { release: { name: release } } : {}),
           sourcemaps: {
-            // Alchemy builds the Worker (`dist/ssr`) first and the assets (`dist/client`) second,
-            // and ships only `index.js` of the first and everything in the second. So every
-            // build uploads both directories, and only the public assets lose their maps.
             assets: ['./dist/ssr/**', './dist/client/**'],
             filesToDeleteAfterUpload: ['./dist/client/**/*.map'],
           },
@@ -123,10 +97,7 @@ export default defineConfig({
     dedupe: ['effect', 'foldkit'],
   },
   test: {
-    // The solve runs in the Rust solver; every test run installs it first.
     setupFiles: ['@quorum/simulation/host/node'],
-    // Every file imports the whole app, and the tests are CPU-bound while the main process idles,
-    // so use every core rather than Vitest's default of one fewer.
     maxWorkers: availableParallelism(),
   },
 })

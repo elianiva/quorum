@@ -1,7 +1,3 @@
-/**
- * Emits Rust source for every constant and table the solve reads, straight from
- * the TypeScript catalog, so the two sides cannot drift.
- */
 import { createHash } from 'node:crypto'
 import { writeFileSync } from 'node:fs'
 import * as catalog from '../src/catalog.ts'
@@ -17,21 +13,17 @@ const NK = ALL_KINDS.length
 const NR = REQUEST_KINDS.length
 const NB = BACKEND_KINDS.length
 
-/** A catalog id as a Rust constant name: `q-read` is `Q_READ`. */
 const constName = (id: string): string => {
   const name = id.toUpperCase().replace(/[^A-Z0-9]/g, '_')
   return /^[0-9]/.test(name) ? `_${name}` : name
 }
 
-/** One module of index constants, so a rule names `kind::LOGIN`, not a string it looks up. */
-const pushIds = (module: string, doc: string, ids: ReadonlyArray<string>) => {
-  push(`/// ${doc}`)
+const pushIds = (module: string, ids: ReadonlyArray<string>) => {
   push(`pub mod ${module} {`)
   for (const [index, id] of ids.entries()) push(`    pub const ${constName(id)}: usize = ${index};`)
   push('}')
 }
 
-/** A Rust enum over a table's distinct string values, in first-seen order. */
 const pushEnum = (name: string, values: ReadonlyArray<string>): Map<string, string> => {
   const variants = new Map<string, string>()
   for (const value of values) {
@@ -49,30 +41,21 @@ const pushEnum = (name: string, values: ReadonlyArray<string>): Map<string, stri
   return variants
 }
 
-push('// Generated from packages/simulation/src/catalog.ts. Do not edit by hand.')
 push(`pub const NK: usize = ${NK};`)
 push(`pub const NR: usize = ${NR};`)
 push(`pub const NB: usize = ${NB};`)
 push('')
 push(`pub static KINDS: [&str; NK] = [${ALL_KINDS.map((k) => `"${k}"`).join(', ')}];`)
 push('')
-pushIds('kind', 'Kind indices: request kinds first, then backend kinds.', ALL_KINDS)
-pushIds(
-  'backend',
-  'Backend kind indices, counted from `NR`: `NR + backend::Q_READ` is `kind::Q_READ`.',
-  BACKEND_KINDS,
-)
+pushIds('kind', ALL_KINDS)
+pushIds('backend', BACKEND_KINDS)
 push('')
-push('/// Whether a kind index is one a user asks for (a Request kind).')
 push('pub fn is_request_kind(kind: usize) -> bool {')
 push(`    kind < ${NR}`)
 push('}')
 
-// Every exported scalar constant, so none is retyped by hand.
 push('')
-push('// ---- scalar constants, generated ----')
 const scalarNames: Array<string> = []
-/** These get a dedicated section below, with their own index lookup. */
 const DEFINED_LATER = new Set([
   'RUNTIME_IDS',
   'LANGUAGE_IDS',
@@ -118,19 +101,12 @@ for (const [name, value] of Object.entries(catalog)) {
 }
 push(`pub static SCALAR_COUNT: usize = ${scalarNames.length};`)
 
-/** `fixedMs` as a Rust name part: `FIXED_MS`. */
 const snake = (field: string): string => constName(field.replace(/([a-z0-9])([A-Z])/g, '$1_$2'))
 
-/**
- * A table of rows, keyed by id (a record) or by position (an array): an id module for a record,
- * then one column per field that every row holds as a number or a boolean. A rule reads
- * `SEARCH_HEAPS_TAIL_P[node.heap]`, the same row the TypeScript reads as `SEARCH_HEAPS[heap].tailP`.
- */
 const pushTable = (name: string, module: string | null) => {
   const table = (catalog as Record<string, unknown>)[name] as
     | Record<string, Record<string, unknown>>
     | ReadonlyArray<Record<string, unknown>>
-  // A single settings object, such as `UNDER_ATTACK`, is a table of one row.
   const single =
     !Array.isArray(table) && Object.values(table).every((value) => typeof value !== 'object')
   const rows = Array.isArray(table)
@@ -139,7 +115,7 @@ const pushTable = (name: string, module: string | null) => {
       ? [table as Record<string, unknown>]
       : Object.values(table)
   push('')
-  if (module) pushIds(module, `\`${name}\` rows.`, Object.keys(table))
+  if (module) pushIds(module, Object.keys(table))
   for (const field of Object.keys(rows[0] ?? {})) {
     const values = rows.map((row) => row[field])
     const column = `${name}_${snake(field)}`
@@ -156,7 +132,6 @@ const pushTable = (name: string, module: string | null) => {
   }
 }
 push('')
-push('// ---- row tables, generated ----')
 pushTable('SEARCH_VARIANTS', 'search_variant')
 pushTable('SEARCH_HEAPS', 'search_heap')
 pushTable('SEARCH_REFRESH', null)
@@ -181,7 +156,6 @@ function formatNumber(value: number): string {
   return String(value)
 }
 
-// ---- record tables ----
 const requestIndex = new Map(REQUEST_KINDS.map((kind, index) => [kind, index]))
 const kindIndex = new Map(ALL_KINDS.map((kind, index) => [kind, index]))
 
@@ -195,7 +169,6 @@ const sparse = (record: Record<string, number> | undefined, total: number): Arra
 }
 
 push('')
-push('// ---- Request kind profiles ----')
 const profile = catalog.PROFILES
 push(
   `pub static PROFILE_CPU: [f64; NR] = [${REQUEST_KINDS.map((k) => formatNumber(profile[k].cpu)).join(', ')}];`,
@@ -241,22 +214,18 @@ for (const kind of REQUEST_KINDS) push(`    [${sparse(profile[kind].asyncCalls, 
 push('];')
 
 push('')
-push('// ---- Kind values ----')
 push(
   `pub static KIND_VALUE: [f64; NK] = [${ALL_KINDS.map((k) => formatNumber(catalog.KINDS[k]?.value ?? 0)).join(', ')}];`,
 )
 
-// ---- Runtimes ----
 push('')
-push('// ---- Runtimes ----')
 const RUNTIME_IDS = catalog.RUNTIME_IDS
 push(`pub const RUNTIME_COUNT: usize = ${RUNTIME_IDS.length};`)
 push(
   `pub static RUNTIME_IDS: [&str; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => `"${id}"`).join(', ')}];`,
 )
-pushIds('runtime', 'Runtime indices.', RUNTIME_IDS)
+pushIds('runtime', RUNTIME_IDS)
 const runtime = catalog.RUNTIMES
-push("/// Each runtime's language, as an index into `LANGUAGE_IDS`.")
 push(
   `pub static RUNTIME_LANGUAGE: [usize; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => catalog.LANGUAGE_IDS.indexOf(runtime[id].language)).join(', ')}];`,
 )
@@ -320,10 +289,7 @@ push(
   `pub static RUNTIME_GC_CPU: [f64; ${RUNTIME_IDS.length}] = [${RUNTIME_IDS.map((id) => formatNumber(runtime[id].gc?.cpu ?? 0)).join(', ')}];`,
 )
 
-// ---- Languages ----
 push('')
-push('// ---- Languages ----')
-// PHP-FPM pool modes, in the order the harness encodes `pm`: spares (-1 for the whole pool), spawn share, spawn ms.
 const PM_IDS = ['static', 'dynamic', 'ondemand']
 push(
   `pub static PM_SPARES: [f64; 3] = [${PM_IDS.map((id) => formatNumber(catalog.PM_MODES[id].spares ?? -1)).join(', ')}];`,
@@ -340,7 +306,7 @@ push(`pub const LANGUAGE_COUNT: usize = ${LANGUAGE_IDS.length};`)
 push(
   `pub static LANGUAGE_IDS: [&str; ${LANGUAGE_IDS.length}] = [${LANGUAGE_IDS.map((id) => `"${id}"`).join(', ')}];`,
 )
-pushIds('language', 'Language indices.', LANGUAGE_IDS)
+pushIds('language', LANGUAGE_IDS)
 const language = catalog.LANGUAGES
 push(
   `pub static LANGUAGE_VELOCITY: [f64; ${LANGUAGE_IDS.length}] = [${LANGUAGE_IDS.map((id) => formatNumber(language[id].velocity)).join(', ')}];`,
@@ -349,9 +315,7 @@ push(
   `pub static LANGUAGE_BLAST: [&str; ${LANGUAGE_IDS.length}] = [${LANGUAGE_IDS.map((id) => `"${language[id].blast}"`).join(', ')}];`,
 )
 
-// ---- Frameworks ----
 push('')
-push('// ---- Frameworks ----')
 const FRAMEWORK_IDS = catalog.FRAMEWORK_IDS
 push(`pub const FRAMEWORK_COUNT: usize = ${FRAMEWORK_IDS.length};`)
 push(
@@ -406,9 +370,7 @@ for (const id of FRAMEWORK_IDS) {
 }
 push('];')
 
-// ---- DB engines ----
 push('')
-push('// ---- Database engines ----')
 const DB_ENGINES = ['postgres', 'mysql'] as const
 push(
   `pub static DB_CONNECTIONS: [f64; 2] = [${DB_ENGINES.map((id) => formatNumber(catalog.DB_ENGINES[id].connections)).join(', ')}];`,
@@ -433,16 +395,13 @@ push(
 )
 push('pub fn db_engine_index(name: &str) -> usize { if name == "mysql" { 1 } else { 0 } }')
 
-// ---- Components ----
 push('')
-push('// ---- Components ----')
 const COMPONENT_IDS = catalog.COMPONENT_IDS
 push(`pub const COMPONENT_COUNT: usize = ${COMPONENT_IDS.length};`)
 push(
   `pub static COMPONENT_IDS: [&str; ${COMPONENT_IDS.length}] = [${COMPONENT_IDS.map((id) => `"${id}"`).join(', ')}];`,
 )
-pushIds('component', 'Component type codes.', COMPONENT_IDS)
-/** A bitmask over all 33 kinds: what a Component accepts. */
+pushIds('component', COMPONENT_IDS)
 const maskOf = (kinds: ReadonlyArray<string>): string => {
   let mask = 0n
   for (const kind of kinds) {
@@ -452,13 +411,13 @@ const maskOf = (kinds: ReadonlyArray<string>): string => {
   return `0x${mask.toString(16)}`
 }
 push(`pub static COMPONENT_ACCEPTS: [u64; ${COMPONENT_IDS.length}] = [`)
-for (const id of COMPONENT_IDS) push(`    ${maskOf(catalog.COMPONENTS[id].accepts)}, // ${id}`)
+for (const id of COMPONENT_IDS) push(`    ${maskOf(catalog.COMPONENTS[id].accepts)},`)
 push('];')
 push(`pub static COMPONENT_SENDS: [u64; ${COMPONENT_IDS.length}] = [`)
-for (const id of COMPONENT_IDS) push(`    ${maskOf(catalog.COMPONENTS[id].sends)}, // ${id}`)
+for (const id of COMPONENT_IDS) push(`    ${maskOf(catalog.COMPONENTS[id].sends)},`)
 push('];')
 push(`pub static COMPONENT_FALLBACK: [u64; ${COMPONENT_IDS.length}] = [`)
-for (const id of COMPONENT_IDS) push(`    ${maskOf(catalog.COMPONENTS[id].fallback)}, // ${id}`)
+for (const id of COMPONENT_IDS) push(`    ${maskOf(catalog.COMPONENTS[id].fallback)},`)
 push('];')
 push(
   `pub static COMPONENT_STACK: [bool; ${COMPONENT_IDS.length}] = [${COMPONENT_IDS.map((id) => catalog.COMPONENTS[id].stack).join(', ')}];`,
@@ -479,9 +438,7 @@ push(
   `pub static COMPONENT_STEPS: [f64; ${COMPONENT_IDS.length}] = [${COMPONENT_IDS.map((id) => formatNumber(catalog.COMPONENTS[id].steps)).join(', ')}];`,
 )
 
-// ---- Other tables ----
 push('')
-push('// ---- Other tables ----')
 push(
   `pub static FLAT_CAPACITY: [f64; ${COMPONENT_IDS.length}] = [${COMPONENT_IDS.map((id) => {
     const value = (FLAT_CAPACITY as Record<string, number>)[id]
@@ -492,7 +449,6 @@ push(
         : formatNumber(value)
   }).join(', ')}];`,
 )
-// A Component that serves every region from everywhere, and one whose copies span every zone.
 push(
   `pub static COMPONENT_GLOBAL: [bool; ${COMPONENT_IDS.length}] = [${COMPONENT_IDS.map((id) => catalog.GLOBAL_COMPONENTS.includes(id)).join(', ')}];`,
 )
@@ -502,15 +458,12 @@ push(
 push(
   `pub static COMPONENT_FIXED: [bool; ${COMPONENT_IDS.length}] = [${COMPONENT_IDS.map((id) => catalog.COMPONENTS[id].fixed).join(', ')}];`,
 )
-// Round trips between regions, from the catalog's own lookup.
 const REGIONS = catalog.REGIONS
 push(
   `pub static REGION_RTT: [[f64; ${REGIONS.length}]; ${REGIONS.length}] = [${REGIONS.map(
     (from) => `[${REGIONS.map((to) => formatNumber(catalog.rttOf(from, to))).join(', ')}]`,
   ).join(', ')}];`,
 )
-// Each Venture's traffic profile and rule, so the revenue layer reads the same
-// numbers the TypeScript does.
 const VENTURES = catalog.VENTURE_IDS.map((id) => catalog.VENTURES[id])
 push(
   `pub static VENTURE_VALUE: [f64; ${VENTURES.length}] = [${VENTURES.map((v) => formatNumber(v.value)).join(', ')}];`,
@@ -583,20 +536,16 @@ push(
   `pub static CDN_TTL_FACTOR: [f64; ${catalog.CDN_TTLS.length}] = [${catalog.CDN_TTLS.map((entry) => formatNumber(entry.factor)).join(', ')}];`,
 )
 
-// ---- Research and features: the `has` checks ----
 push('')
-push('// ---- Research ----')
 const RESEARCH_IDS = catalog.RESEARCH_IDS
 push(`pub const RESEARCH_COUNT: usize = ${RESEARCH_IDS.length};`)
 push(
   `pub static RESEARCH_IDS: [&str; ${RESEARCH_IDS.length}] = [${RESEARCH_IDS.map((id) => `"${id}"`).join(', ')}];`,
 )
-pushIds('research', 'Research bit indices.', RESEARCH_IDS)
-pushIds('fix', 'Fix bit indices: the code fixes a Service can ship.', catalog.FIXES)
+pushIds('research', RESEARCH_IDS)
+pushIds('fix', catalog.FIXES)
 
-// ---- derived masks and per-backend cost tables ----
 push('')
-push('// ---- derived masks ----')
 const AUTHENTICATED = new Set(catalog.AUTHENTICATED_KINDS)
 push(
   `pub static AUTHENTICATED_KINDS_MASK: [u8; NR] = [${REQUEST_KINDS.map((k) => (AUTHENTICATED.has(k as never) ? 1 : 0)).join(', ')}];`,
@@ -622,11 +571,8 @@ const queryCpu = catalog.QUERY_CPU as Record<string, number>
 push(
   `pub static QUERY_CPU_BY_BACKEND: [f64; NB] = [${BACKEND_KINDS.map((k) => (queryCpu[k] === undefined ? '-1.0' : formatNumber(queryCpu[k]!))).join(', ')}];`,
 )
-// The stamp `catalog_hash` exports, so a check can tell whether `solver.wasm` was built from
-// this catalog: the first 32 bits of the SHA-256 of every line above.
 const stamp = createHash('sha256').update(out.join('\n')).digest('hex').slice(0, 8)
 push('')
-push('/// The first 32 bits of the SHA-256 of every line above.')
 push(`pub const CATALOG_HASH: u32 = 0x${stamp};`)
 writeFileSync(process.argv[2] ?? 'src/catalog.rs', `${out.join('\n')}\n`)
 console.log(

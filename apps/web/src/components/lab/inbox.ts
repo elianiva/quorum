@@ -53,7 +53,6 @@ import { isPhone } from '@/game/viewport.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { EYEBROW, FIGURE, FLOAT, PANEL, SCROLL, WELL, groupBadge } from '@quorum/ui/game/bits'
 
-/** Where a button really goes, in words of the builder's language (a trap's names an off-site address). */
 const destinationIn = (t: Messages, h: object, action: Mail['actions'][number]): string => {
   const [kind = '', target = ''] = action.id.split(':')
   if (kind === 'trap') {
@@ -66,7 +65,6 @@ const destinationIn = (t: Messages, h: object, action: Mail['actions'][number]):
   )
 }
 
-/** The badge each kind of sender wears: a shape from the build groups, a glyph, a colour. */
 const BADGE: Record<SenderKind, { group: BuildGroup; glyph: IconNode }> = {
   cloud: { group: 'edge', glyph: Cloud },
   monitoring: { group: 'ops', glyph: Activity },
@@ -80,7 +78,6 @@ const BADGE: Record<SenderKind, { group: BuildGroup; glyph: IconNode }> = {
   spam: { group: 'edge', glyph: Ban },
 }
 
-/** The shape and glyph say what kind of party wrote; the colour is the brand it parodies. */
 const badge = (sender: Sender, size: string, h: HtmlBuilder<Message>): Html => {
   const { group, glyph } = BADGE[sender.looks]
   return groupBadge(group, glyph, size, h, false, sender.color)
@@ -89,21 +86,17 @@ const badge = (sender: Sender, size: string, h: HtmlBuilder<Message>): Html => {
 const unreadIn = (model: Model, folder: Folder): number =>
   model.board.inbox.mail.filter((mail) => folderHolds(mail, folder) && !mail.read).length
 
-/** Threads waiting on the player: it does not fall when they are read, only when they are answered. */
 const openCount = (model: Model): number =>
   model.board.inbox.mail.filter((mail) => folderHolds(mail, 'action')).length
 
-/** A letter's text in the builder's language: written again from what it says, or the English the Model kept. */
 const bodyOf = (h: HtmlBuilder<Message>, entry: Mail['entries'][number]): string =>
   (entry.message ? writtenIn(copy(h), entry.message)?.body : undefined) ??
   (entry.closing ? (closingIn(copy(h), entry.closing) ?? undefined) : undefined) ??
   entry.text
 
-/** A Mail's subject in the builder's language. */
 const subjectOf = (h: HtmlBuilder<Message>, mail: Mail): string =>
   (mail.message ? writtenIn(copy(h), mail.message)?.subject : undefined) ?? mail.subject
 
-/** One entry of a thread: its time when the Mail repeats, then its paragraphs. */
 const entryOf = (
   h: HtmlBuilder<Message>,
   entry: Mail['entries'][number],
@@ -164,7 +157,6 @@ const entryOf = (
     ],
   )
 
-/** The first line of a letter that says something, for the preview. */
 const gist = (h: HtmlBuilder<Message>, mail: Mail): string => {
   const last = mail.entries.at(-1)
   return (
@@ -172,11 +164,6 @@ const gist = (h: HtmlBuilder<Message>, mail: Mail): string => {
   )
 }
 
-/**
- * The newest letter that wants the player, as a card above the Inbox button. It stays until the
- * player reads, answers or dismisses it, so new mail cannot slip past. A decision shows its first
- * button here, so a patch is one click away.
- */
 export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -308,7 +295,6 @@ export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
           ),
         ],
       ),
-      // The clamp sits on the inner line, so the well's padding cannot show a third line.
       h.div(
         [
           h.Class(
@@ -403,19 +389,12 @@ export const peek = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** The unread count the corners and the phone's action bar show. */
 export const unreadCount = (model: Model): number =>
   unreadIn(model, 'action') + unreadIn(model, 'fyi')
 
-/** A decision is waiting: the badge turns red and the Inbox rings. */
 export const waitingMail = (model: Model): boolean =>
   model.board.inbox.mail.some((mail) => folderHolds(mail, 'action') && !mail.read)
 
-/**
- * The newest Mail that wants the player, as one line in the phone's notice stack. It replaces the
- * desktop's peek card: the phone gets the sender and the subject, and the whole line opens the
- * Inbox on that Mail.
- */
 export const mailQueueRow = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -637,8 +616,6 @@ const row = (
 
   if (mail.id === DIGEST_ID) return digestRow(mail, folded, open, h)
   const sender = senderOf(mail.sender)
-  // The priority bar (18 "Pacing and volume"): danger while a clock runs, warn while a
-  // decision waits. Noise wears none, because no clock and no question is running.
   const bar = barOf(mail)
   return h.li(
     [h.Key(String(mail.id))],
@@ -783,8 +760,6 @@ const row = (
                     ],
                     [sender.name],
                   ),
-                  // The kind label repeats the badge's shape and colour in words
-                  // (18 "Colour code").
                   h.span(
                     [
                       h.Class(
@@ -884,7 +859,6 @@ const row = (
   )
 }
 
-/** A thread the Digest folds, as one line that opens it. */
 const digestLine = (mail: Mail, h: HtmlBuilder<Message>): Html => {
   const sender = senderOf(mail.sender)
   return h.li(
@@ -985,7 +959,6 @@ const digestLine = (mail: Mail, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** The Digest's row in the list: how many older threads it folds, and the newest of them. */
 const digestRow = (
   mail: Mail,
   folded: ReadonlyArray<Mail>,
@@ -1167,7 +1140,6 @@ const digestRow = (
   )
 }
 
-/** A label chip: one Sender kind, and how much Mail in this folder it has (18 "The Inbox"). */
 const labelChip = (
   label: MailLabel | null,
   text: string,
@@ -1331,10 +1303,6 @@ const tool = (label: string, glyph: IconNode, message: Message, h: HtmlBuilder<M
     h,
   )
 
-/**
- * The Digest's reader (18 "Pacing and volume"): the threads it folded, each one a line that opens
- * the Mail it stands for. Nothing is answered here; the Digest is a shelf, not a letter.
- */
 const digestLetter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.article(
@@ -1464,8 +1432,6 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
   const threaded = mail.entries.length > 1
   const latest = mail.entries.at(-1)
   const earlier = mail.entries.slice(0, -1)
-  // The second tell (18 "How to tell"): a real advisory names an id the Glossary lists, and a
-  // fake one names an id it does not, so there is nothing here to open.
   const tell = advisoryTell(
     `${mail.subject}\n${mail.entries.map((entry) => entry.text).join('\n')}`,
   )
@@ -1500,7 +1466,6 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
                     paddingInline: '3',
                   },
                 }),
-                // The hover names where the button really goes: a trap names an off-site address.
                 attributes: [h.Key(action.id), h.Title(destinationIn(t, h, action))],
               },
               [
@@ -1534,7 +1499,6 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
           )
         : []
   return h.article(
-    // A new entry remounts the letter, which puts its scroll back at the top, on the newest line.
     [
       h.Key(`${mail.id}:${mail.entries.length}`),
       h.Class(
@@ -1746,9 +1710,6 @@ const letter = (mail: Mail, folded: ReadonlyArray<Mail>, h: HtmlBuilder<Message>
               ),
             ],
             [
-              // The newest line is what the player opened the thread for, so the rest waits behind
-              // one row (18 "The Inbox"). A repeat folds the old lines again, and the reader stays
-              // at the top, where the new line is.
               earlier.length > 0
                 ? h.details(
                     [
@@ -1909,7 +1870,6 @@ const emptyOf = (t: Messages): Record<Folder, string> => ({
   trash: t.inbox.trashIsEmpty,
 })
 
-/** The Sandbox's stress bench: send any kind of Mail, one or many, without waiting for it. */
 const generator = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
@@ -2025,7 +1985,6 @@ const generator = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** A mail window docked above the corner button: the Board stays in view and clickable. */
 export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -2036,7 +1995,6 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     model.board.inbox.focus === null
       ? undefined
       : newest.find((mail) => mail.id === model.board.inbox.focus)
-  // A phone is one screen at a time: the list until a Mail is tapped, then the Mail.
   const open = phone ? focused : (focused ?? newest[0])
   const labels = labelsIn(model.board.inbox)
   return h.section(
@@ -2347,12 +2305,9 @@ export const inboxPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               ),
             ],
             [
-              // The labels are the filter chips above the list (18 "The Inbox").
               h.div(
                 [
                   h.AriaLabel(t.inbox.labels),
-                  // The chips keep their height: a scrolled row would otherwise give its space to
-                  // the list and clip them under the first Mail.
                   h.Class(
                     css({
                       display: 'flex',

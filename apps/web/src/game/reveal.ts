@@ -19,7 +19,6 @@ import { step as disclosureStep, type DisclosureFlow } from './disclosure-machin
 
 const ALL: ReadonlyArray<Reveal> = Reveal.literals
 
-/** The Sandbox, Challenges, and every Company after the first Exit show everything. */
 export const veteran = (model: Model): boolean =>
   offCompany(model) || model.founder.history.length > 0
 
@@ -31,11 +30,9 @@ export const glowing = (model: Model, key: Reveal): boolean => {
   return flow._tag === 'Cueing' && flow.key === key && flow.left > 0
 }
 
-/** Playbooks are a Legacy feature: they appear after the first Exit. */
 export const playbooksShown = (model: Model): boolean =>
   !offCompany(model) && model.founder.history.length > 0
 
-/** A resizable Node under pressure: a hint, not the revenue-optimal answer. */
 const pressuredResizable = (game: Game, ledger: Ledger): string | null =>
   game.nodes
     .filter(
@@ -75,10 +72,8 @@ const triggered = (key: Reveal, model: Model, ledger: Ledger): boolean => {
   }
 }
 
-/** Cues on controls that are always there: they only glow. */
 const CUES: ReadonlyArray<Reveal> = ['collect', 'resize']
 
-/** A new Company shows what its state already calls for at once, with no cue. */
 export const revealAtStart = (model: Model, ledger: Ledger): Model => ({
   ...model,
   board: {
@@ -90,7 +85,6 @@ export const revealAtStart = (model: Model, ledger: Ledger): Model => ({
   },
 })
 
-/** One UI tick: queues the triggers that fired, and shows the next one once the cue is free. */
 export const advanceReveals = (model: Model, ledger: Ledger): Model => {
   if (veteran(model)) return model
   const flow = model.board.disclosure
@@ -121,7 +115,6 @@ const USES: Partial<Record<Message['_tag'], (message: Message) => Reveal | null>
       : null,
 }
 
-/** Using an element shows it for good and ends its glow. */
 export const noticed = (model: Model, message: Message): Model => {
   const key = USES[message._tag]?.(message) ?? null
   if (key === null || veteran(model)) return model
@@ -134,7 +127,6 @@ export const noticed = (model: Model, message: Message): Model => {
   }
 }
 
-/** The Node whose footer button glows on the board. */
 export const cueNode = (model: Model): string | null => {
   const flow = model.board.disclosure
   if (flow._tag !== 'Cueing' || !glowing(model, flow.key)) return null
@@ -145,7 +137,6 @@ export const cueNode = (model: Model): string | null => {
   return null
 }
 
-/** What a save says about disclosure. A save from before it shows everything. */
 export const revealsOfSave = (
   saved: unknown,
 ): Readonly<{ revealed: ReadonlyArray<Reveal>; pending: ReadonlyArray<Reveal> }> => {
@@ -160,7 +151,6 @@ export const revealsOfSave = (
   }
 }
 
-/** The disclosure flow a save opens on. */
 export const disclosureOfSave = (saved: unknown): DisclosureFlow => {
   const { revealed, pending } = revealsOfSave(saved)
   return pending.length > 0
@@ -168,7 +158,6 @@ export const disclosureOfSave = (saved: unknown): DisclosureFlow => {
     : { _tag: 'Idle', revealed }
 }
 
-/** A group's Components the dock lists: those the player can place, then the next one to unlock. */
 export const dockItems = (game: Game, group: DockGroup): ReadonlyArray<ComponentId> => {
   const items = buildItems(group)
   const placeable = items.filter((type) => isUnlocked(game, type))
@@ -185,6 +174,5 @@ export const dockItems = (game: Game, group: DockGroup): ReadonlyArray<Component
   return next ? [...placeable, next] : placeable
 }
 
-/** The dock's groups with something to list, in order: the number keys follow it. */
 export const dockGroups = (game: Game): ReadonlyArray<DockGroup> =>
   DOCK_GROUPS.map((group) => group.key).filter((key) => dockItems(game, key).length > 0)

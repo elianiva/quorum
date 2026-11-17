@@ -5,7 +5,6 @@ import type { Plugin, ResolvedConfig } from 'vite'
 import { precacheOf, type OutputEntry } from './precache.ts'
 import { serviceWorkerSource } from './service-worker.ts'
 
-/** Every file under `dir`, as paths relative to it. A missing directory holds nothing. */
 const filesUnder = (dir: string): ReadonlyArray<string> => {
   if (!existsSync(dir)) return []
   const found: Array<string> = []
@@ -20,11 +19,6 @@ const filesUnder = (dir: string): ReadonlyArray<string> => {
   return found
 }
 
-/**
- * Writes the hand-written service worker to the build root. The install list
- * comes from this build's own output, so the worker never names an asset the
- * deploy did not ship. The build fails when `sw.js` is not in the output.
- */
 export const pwa = (): Plugin => {
   let config: ResolvedConfig
 
@@ -48,7 +42,6 @@ export const pwa = (): Plugin => {
       )
       const publicFiles = filesUnder(config.publicDir)
       const precache = precacheOf(outputs, publicFiles)
-      // The hashed names change with their content, so the list identifies the build that made it.
       const buildId = createHash('sha256').update(precache.join('\n')).digest('hex').slice(0, 12)
       this.emitFile({
         type: 'asset',

@@ -9,7 +9,6 @@ import { toString as urlToString } from 'foldkit/url'
 import { type MessageCases, type UpdateResult } from './shared.ts'
 import { visit, continued, leaveBoard } from './session.ts'
 
-/** Puts the badge in the reader, once: it beeps, and the title follows. */
 export const clockIn = (model: Model): UpdateResult =>
   model.boot._tag !== 'Shut'
     ? { model }

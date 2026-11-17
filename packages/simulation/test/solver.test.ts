@@ -9,7 +9,6 @@ test('a solve that throws part-way does not leave the Bottleneck search on its b
   const bottleneck = bottleneckOf(game)
   expect(bottleneck).not.toBeNull()
 
-  // The server row is written with no capacity, then the write throws at the unknown runtime.
   const broken = {
     ...game,
     nodes: game.nodes.map((node) =>
@@ -21,8 +20,6 @@ test('a solve that throws part-way does not leave the Bottleneck search on its b
   expect(bottleneckOf(game)).toBe(bottleneck)
 })
 
-// A router notices a failed App Server late: a Load Balancer at its next health check, and DNS
-// when its TTL runs out. So the same Nodes solve differently just after the failure and later.
 test.each([
   { router: 'lb', early: 101, late: 160 },
   { router: 'dns', early: 101, late: 900 },
@@ -50,11 +47,9 @@ test.each([
         link('b', 'db'),
       ],
     }
-    // Another Design in between makes the solver compile this one from its blocks.
     solveFlow({ ...start, users: 10 })
     const expected = solveFlow({ ...design, time: late })
 
-    // The same Nodes and Links at other times: the Design is not compiled again, only moved.
     const before = solveFlow({ ...design, time: early })
     expect(before.nodes['b']?.inbound).not.toBe(expected.nodes['b']?.inbound)
     expect(solveFlow({ ...design, time: late })).toEqual(expected)

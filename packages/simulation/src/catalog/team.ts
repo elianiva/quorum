@@ -1,12 +1,7 @@
-/* The Team (08): engineers, policies, pay, deploys, and migrations. */
-
-/** Sim seconds in a calendar day: one sim second is one calendar minute. */
 export const CALENDAR_DAY = 1_440
 
-/** Dev Hours one engineer makes in a calendar day: one per hour of an 8-hour workday (08). */
 export const DEV_HOURS_PER_DAY = 8
 
-/** The founder produces this share of an engineer's Dev Hours: they also run the company. */
 export const FOUNDER_OUTPUT = 0.8
 
 export const POLICY_IDS = ['move-fast', 'balanced', 'quality'] as const
@@ -19,7 +14,6 @@ export type PolicyDef = Readonly<{
   debt: number
   badDeploy: number
   deploysPerDay: number
-  /** Share of the team's Dev Hours that pays down debt on its own. */
   paydown: number
 }>
 
@@ -53,188 +47,104 @@ export const POLICIES: Record<PolicyId, PolicyDef> = {
   },
 }
 
-/** Calendar days before a new policy takes over from the old one. */
 export const POLICY_SWITCH_DAYS = 1
 
-/** Dollars per second per engineer at salary index 1 (09 "Base prices"). */
-export const SALARY_BASE = 0.4
-/** Cash to sign an engineer in the Pre-seed Era, before the language's salary factor. */
+export const SALARY_BASE_PER_SECOND = 0.4
 export const SIGNING_BASE = 2_000
-/** Calendar days to hire, before the language's time-to-hire factor. */
 export const HIRE_DAYS = 1
-/** A new hire produces this share for their first calendar week. */
 export const RAMP_OUTPUT = 0.3
 export const RAMP_DAYS = 7
-/** A layoff costs the rest of the team this share of its velocity for a calendar week. */
 export const LAYOFF_MORALE = 0.9
 export const MORALE_DAYS = 7
 
-/**
- * Learning a language (08 "Learning a Stack"). It takes this many calendar days times the
- * language's time-to-hire factor, so a rare language is slower to learn than to hire for. The
- * engineer works at `LEARN_OUTPUT` meanwhile, and the training costs this share of a signing fee.
- */
 export const LEARN_DAYS = 7
 export const LEARN_OUTPUT = 0.5
 export const LEARN_COST = 0.25
-/** An engineer works at this share of their output on a Stack whose language they have not learned. */
 export const FOREIGN_OUTPUT = 0.7
 
-/** Coordination (08): n / (1 + k(n − 1) + βn(n − 1)). */
 export const COORDINATION = 0.08
 export const RETROGRADE = 0.0004
 
-/** Thousands of lines in the first codebase, and per Dev Hour of shipped Features. */
 export const START_KLOC = 5
 export const KLOC_PER_DH = 0.5
-/** Debt a Refactor removes per Dev Hour. */
 export const REFACTOR_PER_DH = 0.02
-/** Debt a Feature adds to a codebase with no framework. */
 export const UNSTRUCTURED_DEBT = 0.01
-/** Debt a task adds when it ships during an incident: a hotfix. */
 export const HOTFIX_DEBT = 0.02
-/** Debt a fully rushed backlog item adds: the corners a team cuts to finish it now. */
 export const RUSH_DEBT = 0.02
-/** Extra bad-deploy chance a fully rushed Feature carries into its deploy. */
 export const RUSH_BUG_CHANCE = 0.1
 
-/**
- * What a live Feature costs to keep: `0.4 × S / (S + 2,000) × (1 + debt)`, capped at 0.6, where S
- * is the Dev Hours of the Features shipped on a Service and not yet removed (08 "Upkeep"). The
- * design gives every one of these numbers.
- */
 export const UPKEEP_SHARE = 0.4
 export const UPKEEP_HALF = 2_000
 export const UPKEEP_CEILING = 0.6
 
-/**
- * A Feature's outcome, rolled from the Company's seed when it is queued (08 "Outcomes"): the share
- * of its win effect that lands on market, growth, churn, and value. Each band is a third of the
- * roll, and the realized share is uniform across its range. A Feature that only unlocks a kind or
- * meets a requirement always does that: the roll never touches `unlocks`, `load`, `payload`,
- * `queries`, or `shapes`, because "users call the new code whether it helps them or not."
- */
 export const OUTCOME_BANDS: ReadonlyArray<Readonly<{ lo: number; hi: number }>> = [
-  { lo: 0.6, hi: 1.4 }, // Win
-  { lo: -0.1, hi: 0.2 }, // Flat
-  { lo: -0.5, hi: -0.1 }, // Loss
+  { lo: 0.6, hi: 1.4 },
+  { lo: -0.1, hi: 0.2 },
+  { lo: -0.5, hi: -0.1 },
 ]
 
-/**
- * The most the Features' market gains add together (08 "Sizes"): the Era's market at most doubles
- * however many Features ship. Features reach more of the people who could use the product; they
- * cannot create new people.
- */
 export const MARKET_GAIN_CAP = 2
 
-/** Calendar days a Feature takes to reach about 63% of its effect. */
 export const ADOPTION_DAYS = 7
-/** The spread of a relative effect, for the confidence interval (08 "Measured lift"). */
 export const LIFT_SPREAD = 1
-/** 95% confidence: the z-score the interval uses. */
-export const LIFT_CONFIDENCE = 1.96
-/** The rollout band that leaves a holdout group to measure against: 5% to 50%. */
+export const LIFT_Z_SCORE = 1.96
 export const LIFT_MIN_ROLLOUT = 0.05
 export const LIFT_MAX_ROLLOUT = 0.5
 
-/** Calendar days after which Later brings a block back to the Inbox.  */
 export const BLOCK_REMIND_DAYS = 1
-/** A Team this big waits on the player before it can move: past the coordination table's flat part.  */
 export const BLOCK_SIZE_AT = 8
 
 export const MOOD_START = 1
-/** Mood at or below this makes an engineer unhappy: they write, and ask to be heard.  */
 export const UNHAPPY_MOOD = 0.35
-/** Mood recovered above this, a later slump writes again.  */
 export const CONTENT_MOOD = 0.7
-/** Mood a calendar week of a spent error budget costs: 1 at the week, 0 before.  */
 export const FREEZE_MOOD_DAYS = 7
-/** Mood each page costs the engineer it wakes.  */
 export const PAGE_MOOD = 0.08
-/** Mood a calendar day costs at a full pay gap: paid nothing against the Era's rate.  */
 export const PAY_GAP_MOOD_DAYS = 3
-/** Calendar days a spell of time off lasts.  */
 export const TIME_OFF_DAYS = 3
 
 export const HIRING_PIPELINE = 0.7
 export const TRUNK_FREQUENCY = 1.5
-/** A Data team: `report` and `ai` Features cost −30% Dev Hours. */
 export const DATA_TEAM_HOURS = 0.7
-/** A Data team: a pipeline has half the lag. */
 export const DATA_TEAM_LAG = 0.5
-/**
- * A Security team (08 "Teams": "Lowers supply-chain and breach incident chances"). It halves the
- * weakness that draws a Supply-chain compromise, same as Dependency scanning research does and
- * stacking with it, and doubles the patch grace before an overdue CVE is exploited into a Data
- * breach, so the player has more time to patch before one starts.
- */
 export const SECURITY_TEAM_SUPPLY_CHAIN = 0.5
 export const SECURITY_TEAM_GRACE = 2
 
-/** Work hours in a calendar day, in minutes: deploys happen in them. */
 export const WORK_MINUTES = 480
-/** Minutes to deploy by hand, or through a pipeline after Continuous delivery. */
 export const MANUAL_DEPLOY_MINUTES = 30
 export const CI_DEPLOY_MINUTES = 5
 export const VERIFY_MINUTES = 15
-/** Bad-deploy chance per deploy, per Era (11 "Bad deploy"). */
 export const BAD_DEPLOY_BASE: ReadonlyArray<number> = [0, 0.1, 0.1]
-/** Share of requests a bad deploy fails for each item it shipped, and at most. */
 export const BAD_DEPLOY_ERRORS = 0.08
 export const BAD_DEPLOY_MAX = 0.4
-/** Automated tests and code review lower the bad-deploy chance. */
 export const TESTS_FACTOR = 0.3
 export const CODE_REVIEW_FACTOR = 0.2
-/** A shared build cache cuts every Stack's build time (10 "Track: Product and business"). */
 export const BUILD_CACHE = 0.75
-/** A reproducible dev environment halves a new hire's ramp-up (08 "Ramp-up"). */
 export const DEV_ENVIRONMENT_RAMP = 0.5
-/** Static analysis and formal verification lower the bad-deploy chance further (11 "Bad deploy"). */
 export const STATIC_ANALYSIS_FACTOR = 0.2
 export const FORMAL_VERIFICATION_FACTOR = 0.5
-/** Formal verification trades 15% of feature velocity for correctness (10 "Track: Product and business"). */
 export const FORMAL_VERIFICATION_VELOCITY = 0.85
 
-/** The strangler steps: the share of traffic on the new Stack. */
 export const MIGRATION_STEPS: ReadonlyArray<number> = [0.05, 0.25, 0.5, 1]
-/** The share of a migration's Dev Hours each step needs. */
 export const MIGRATION_TRANCHES: ReadonlyArray<number> = [0.1, 0.2, 0.3, 0.4]
 export const MIGRATION_FACTORS = { variant: 0.1, framework: 0.5, language: 1, split: 0.3 } as const
-/** Requests on a new Stack fail this often until its bugs are fixed. */
 export const MIGRATION_BUGS = 0.03
-/** Fixing a step's bugs costs this share of its tranche, and at least 1 DH. */
 export const FIX_BUGS_SHARE = 0.25
-/** Features on a migrating service build at this speed. */
 export const MIGRATION_FEATURE_SPEED = 0.5
 
-/**
- * Services that share one Database keep this share of the coordination penalty on top of their
- * own, because a schema change still needs every team's agreement (08 "Shared database penalty").
- */
 export const SHARED_DB_COORDINATION = 0.5
 
-/** Seconds before a Link the Add timeouts and retries task touches gives up.  */
-export const TASK_LINK_TIMEOUT = 5
+export const TASK_LINK_TIMEOUT_SECONDS = 5
 
-/** A Load test shows every Node at this multiple of the demand it has now (08 "Engineering tasks"). */
 export const LOAD_TEST_DEMAND = 2
-/** Calendar days a Load test's readout lasts. */
 export const LOAD_TEST_DAYS = 1
 
-/** Dev Hours to move auth in-house from an Auth Provider, whatever the codebase (08 "Migrations"). */
 export const AUTH_MOVE_DH = 120
-/** Dev Hours to hand a Service to another team: knowledge transfer and on-call handoff (08 "Ownership"). */
 export const SERVICE_HANDOFF_DH = 8
-/** Dev Hours to point a Service at another Database: code and connection changes (08 "Ownership"). */
 export const DATASTORE_MOVE_DH = 16
-/** A Database engine change costs this share of the codebase in Dev Hours (08 "Migrations"). */
 export const ENGINE_FACTOR = 0.8
-/** Calendar minutes the data copy of an engine change takes per GB the Databases hold.  */
 export const ENGINE_COPY_MINUTES_PER_GB = 1
 
-/** Pooled queries that fail in transaction mode while the code still uses session state. */
 export const SESSION_STATE_CRASHES = 0.05
 
-/** Share of users on a paid plan, and what a plan pays per calendar day. */
 export const PAYING_SHARE = 0.05
 export const PLAN_PER_DAY = 24

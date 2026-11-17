@@ -4,7 +4,6 @@ import { QUORUM_N } from '../catalog.ts'
 import { warming } from '../life.ts'
 import { isDown } from '../lookups.ts'
 
-/** Sets a Wide-column Store's N, R and W (07 "Wide-column Store"). */
 export const setQuorum = (game: Game, id: string, n: number, r: number, w: number): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'wide') return notAllowed('Only a Wide-column Store has quorums.')

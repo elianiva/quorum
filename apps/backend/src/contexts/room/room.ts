@@ -3,8 +3,8 @@ import { Refusal } from '@quorum/simulation/action-kit'
 import * as Actions from '@quorum/simulation/actions'
 import {
   applyIntents,
-  ROOM_SAMPLES,
-  ROOM_SEATS,
+  ROOM_MAX_SAMPLES,
+  ROOM_MAX_SEATS,
   votePasses,
   type Intent,
   type Seat,
@@ -14,72 +14,40 @@ import {
 import { step } from '@quorum/simulation/step'
 import { Game, type Sample } from '@quorum/simulation/state'
 
-/* ==========================================================================
-   A Room's state and the rules that move it. Nothing here knows Cloudflare:
-   the Durable Object adapter owns storage, sockets, and alarms.
-   ========================================================================== */
-
-/** One Step, and the alarm that pays for it. */
 export const STEP_SECONDS = 0.1
 export const ALARM_MS = 500
 
-/**
- * The most Steps one wake may run: one alarm's worth at the fastest speed, plus a
- * little jitter. A Room that fell further behind drops the rest of its debt instead
- * of replaying it, so a wake costs a tick's work whatever the gap since the last
- * one. Replaying hours is what spends a Durable Object's whole CPU budget on a wake.
- */
-export const MAX_CATCH_UP = 60
+export const MAX_CATCH_UP_STEPS = 60
 
-/** The sim time one wake may owe, in milliseconds: the debt a wake may carry is one wake's work. */
-export const MAX_OWE_MS = MAX_CATCH_UP * STEP_SECONDS * 1_000
+export const MAX_OWE_MS = MAX_CATCH_UP_STEPS * STEP_SECONDS * 1_000
 
-/** How long an empty Room keeps the Company before the owner has to reclaim it. */
 export const ROOM_IDLE_MS = 24 * 60 * 60 * 1000
 
-/**
- * Every Step and every snapshot grows with the Design, so a Room takes a bounded one.
- * The bound holds at publish and after every batch of Intents: placing is free on a
- * Sandbox board, so cash does not stop a Seat there.
- *
- * The Game is one storage value, and a Durable Object value holds 2 MiB. A Node stores as
- * about 1.4 kB and a Link as about 110 bytes, so these bounds leave a quarter of that free.
- */
 export const MAX_NODES = 800
 export const MAX_LINKS = 3_200
-/** The most one Durable Object storage value holds. */
 export const STORAGE_VALUE_BYTES = 2 * 1024 * 1024
 
-/** The Rooms a deployment runs at once. A Room costs a Durable Object and its sockets. */
 export const MAX_ROOMS = 20
 
-/** A vote lapses after a minute of sim time. */
 export const VOTE_SECONDS = 60
 
 export type RoomState = Readonly<{
   name: string
   game: Game
-  /** Dashboard samples, oldest first, at most `ROOM_SAMPLES`. */
   samples: ReadonlyArray<Sample>
   seats: ReadonlyArray<Seat>
   ownerSeat: string
-  /** Claims the owner seat. It lives in the owner's Company file. */
   token: string
   speed: number
   revision: number
   vote: Vote | null
   voteSeq: number
   simVersion: string
-  /** The session still accepts Seats and Intents. */
   open: boolean
-  /** Set when the Seats voted to end the session. The owner still collects the Company. */
   ended: 'handover' | null
   startedAt: number
-  /** Wall time the last Seat left, or null while one is connected. */
   idleAt: number | null
-  /** Wall time of the last advance. */
   lastStepAt: number
-  /** Sim milliseconds not yet stepped. */
   owe: number
 }>
 
@@ -92,11 +60,10 @@ const trim = (name: string): string => {
   return clean.length > 0 ? clean : 'Guest'
 }
 
-/** The lowest palette index no Seat holds, so two Seats never share a colour. */
 const colourFor = (seats: ReadonlyArray<Seat>): number => {
   const used = new Set(seats.map((seat) => seat.colour))
-  for (let index = 0; index < ROOM_SEATS; index += 1) if (!used.has(index)) return index
-  return seats.length % ROOM_SEATS
+  for (let index = 0; index < ROOM_MAX_SEATS; index += 1) if (!used.has(index)) return index
+  return seats.length % ROOM_MAX_SEATS
 }
 
 export const openRoom = (input: {
@@ -109,7 +76,7 @@ export const openRoom = (input: {
 }): RoomState => ({
   name: input.name,
   game: { ...input.game, history: [] },
-  samples: input.samples.slice(-ROOM_SAMPLES),
+  samples: input.samples.slice(-ROOM_MAX_SAMPLES),
   seats: [],
   ownerSeat: '',
   token: input.token,
@@ -128,36 +95,18 @@ export const openRoom = (input: {
 
 const decodeGame = Schema.decodeUnknownOption(Game)
 
-/**
- * A stored Room is usable only when this build wrote it and its Game still
- * decodes. A deploy can leave an older Room's alarm running; without this
- * check its Game reaches the Simulation without the fields this build added.
- */
 export const restoreRoom = (state: RoomState, version: string): RoomState | null => {
   if (state.simVersion !== version) return null
   const game = decodeGame(state.game)
   return Option.isSome(game) ? { ...state, game: game.value } : null
 }
 
-/* ---------- Storage layout ---------- */
-
-/**
- * A Room is stored in three values. The Game is hundreds of kilobytes and the
- * samples are a hundred more, and a vote or a Seat changes neither, so each has
- * its own key and the small fields share one.
- */
 export const GAME_KEY = 'game'
 export const SAMPLES_KEY = 'samples'
 export const REST_KEY = 'rest'
-/** The whole Room as one value: the layout of a Room stored by an earlier build. */
 export const WHOLE_KEY = 'room'
 export const ROOM_KEYS = [REST_KEY, GAME_KEY, SAMPLES_KEY, WHOLE_KEY] as const
 
-/**
- * The values to write so that storage holds `next` when it holds `previous`. The
- * Game and the samples are written only when they are another object than the one
- * stored: the rules replace them when they change and pass them along when they do not.
- */
 export const writesOf = (
   next: RoomState,
   previous: RoomState | null,
@@ -171,11 +120,6 @@ export const writesOf = (
   }
 }
 
-/**
- * The Room in the values storage holds under `ROOM_KEYS`, or null when it holds
- * none. `whole` says the Room came from `WHOLE_KEY`, so the caller writes it out
- * in three values and deletes that key.
- */
 export const storedRoom = (
   read: ReadonlyMap<string, unknown>,
 ): Readonly<{ state: RoomState; whole: boolean }> | null => {
@@ -189,16 +133,11 @@ export const storedRoom = (
   return whole === undefined ? null : { state: whole, whole: true }
 }
 
-/** Whether an empty Room has outlived the Company it holds. */
 export const expired = (state: RoomState, now: number): boolean =>
   state.idleAt !== null && now - state.idleAt > ROOM_IDLE_MS
 
 const sameSeat = (seat: Seat, id: string): boolean => seat.id === id
 
-/**
- * A Seat is watching again, so the Room owes nothing for the time it held nobody:
- * it froze while it was empty, and the Step clock starts from now.
- */
 const watching = (state: RoomState, now: number): RoomState => ({
   ...state,
   idleAt: null,
@@ -206,14 +145,9 @@ const watching = (state: RoomState, now: number): RoomState => ({
   owe: 0,
 })
 
-/** The Seats a vote counts: every Seat is connected while it holds one. */
 export const connected = (state: RoomState): ReadonlyArray<string> =>
   state.seats.map((seat) => seat.id)
 
-/**
- * Puts a player in the Room. A token that matches the Room's claims the owner
- * Seat, whatever id the browser sent, so a reload returns to the same Seat.
- */
 export const join = (
   state: RoomState,
   entering: Joining,
@@ -253,7 +187,7 @@ export const join = (
       newSeat: false,
     })
   }
-  if (state.seats.length >= ROOM_SEATS) return Result.fail('full')
+  if (state.seats.length >= ROOM_MAX_SEATS) return Result.fail('full')
   const seat: Seat = {
     id: entering.id,
     name: trim(entering.name),
@@ -267,11 +201,6 @@ export const join = (
   })
 }
 
-/**
- * Puts a connection in the Room. `held` is the Seat this connection already has,
- * or '' for none. A connection holds one Seat: when it claims a different one, it
- * leaves the first, so one player cannot hold several Seats and outvote the rest.
- */
 export const enter = (
   state: RoomState,
   held: string,
@@ -284,7 +213,6 @@ export const enter = (
       : { ...joined, state: leave(joined.state, held, now) },
   )
 
-/** Takes a Seat out. A Seat that leaves drops its ballot. */
 export const leave = (state: RoomState, id: string, now: number): RoomState => {
   const seats = state.seats.filter((seat) => !sameSeat(seat, id))
   if (seats.length === state.seats.length) return state
@@ -293,9 +221,6 @@ export const leave = (state: RoomState, id: string, now: number): RoomState => {
     yes: state.vote.yes.filter((entry) => entry !== id),
     no: state.vote.no.filter((entry) => entry !== id),
   }
-  // A departure drops a ballot but never decides a vote on its own; the next
-  // ballot or the lapse does that, so an action always has an actor. A Room left
-  // with no Seat stops owing Steps until one returns.
   return {
     ...state,
     seats,
@@ -306,18 +231,14 @@ export const leave = (state: RoomState, id: string, now: number): RoomState => {
   }
 }
 
-/** Advances to now, in whole Steps, and moves the samples a Step produced out of the Game. */
 export const advance = (
   state: RoomState,
   now: number,
   wall: number = now,
 ): Readonly<{ state: RoomState; steps: number }> => {
   if (!state.open || state.ended !== null) return { state, steps: 0 }
-  // The time a Room owes is capped, so a stale clock or a stall costs one wake's
-  // work. Without the cap, the leftover debt rides in the saved state and every
-  // later wake replays it, until the object spends its CPU budget on Steps alone.
   const owed = Math.min(MAX_OWE_MS, state.owe + Math.max(0, now - state.lastStepAt) * state.speed)
-  const steps = Math.min(MAX_CATCH_UP, Math.floor(owed / (STEP_SECONDS * 1_000)))
+  const steps = Math.min(MAX_CATCH_UP_STEPS, Math.floor(owed / (STEP_SECONDS * 1_000)))
   const base: RoomState = {
     ...state,
     lastStepAt: wall,
@@ -331,7 +252,7 @@ export const advance = (
     const result = step(game, STEP_SECONDS)
     game = result.game
     if (game.history.length > 0) {
-      samples = [...samples, ...game.history].slice(-ROOM_SAMPLES)
+      samples = [...samples, ...game.history].slice(-ROOM_MAX_SAMPLES)
       game = { ...game, history: [] }
     }
   }
@@ -339,7 +260,6 @@ export const advance = (
   return { state: { ...base, game, samples, vote: lapsed }, steps }
 }
 
-/** Applies a Seat's Intents in order. A refusal changes nothing, and a batch that outgrows the Room is refused. */
 export const apply = (
   state: RoomState,
   intents: ReadonlyArray<Intent>,
@@ -349,7 +269,6 @@ export const apply = (
   return Result.match(applyIntents(state.game, intents), {
     onFailure: (refusal) => Result.fail(refusal),
     onSuccess: (game) =>
-      // Only growth is refused, so a Seat can always sell or unlink.
       (game.nodes.length > MAX_NODES && game.nodes.length > state.game.nodes.length) ||
       (game.links.length > MAX_LINKS && game.links.length > state.game.links.length)
         ? Result.fail(Refusal.NotAllowed({ reason: 'An online Company cannot grow any larger.' }))
@@ -361,7 +280,6 @@ export const apply = (
   })
 }
 
-/** Starts a vote. One vote is open at a time, and its starter votes yes. */
 export const startVote = (
   state: RoomState,
   by: string,
@@ -385,11 +303,6 @@ export type BallotOutcome = Readonly<{
   passed: VoteKind | null
 }>
 
-/**
- * Records a ballot. A vote passes when yes is more than half the connected
- * Seats. `fund` raises a round and `decline` declines it; `exit` ends the session and keeps the Company
- * for the owner, who takes the Exit offline.
- */
 export const ballot = (state: RoomState, seat: string, yes: boolean): BallotOutcome => {
   const vote = state.vote
   if (vote === null) return { state, passed: null }
@@ -430,7 +343,6 @@ export const setSpeed = (state: RoomState, value: number): RoomState => ({
 export const kick = (state: RoomState, seat: string, now: number): RoomState =>
   state.seats.some((entry) => entry.id === seat && !entry.owner) ? leave(state, seat, now) : state
 
-/** The owner's copy when the Company goes offline. */
 export const finalOf = (
   state: RoomState,
 ): Readonly<{ game: Game; samples: ReadonlyArray<Sample> }> => ({
@@ -438,7 +350,6 @@ export const finalOf = (
   samples: state.samples,
 })
 
-/** What a Seat renders. `from` is how many samples the Seat already has. */
 export const snapshotOf = (
   state: RoomState,
   from = 0,

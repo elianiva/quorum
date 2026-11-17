@@ -3,7 +3,6 @@ import { type BuildGroup } from '@quorum/simulation/catalog'
 
 let pixel: CanvasRenderingContext2D | null | undefined
 
-/** A colour as 0xRRGGBB, laid over `under` first so a translucent token keeps its strength. */
 const toInt = (value: string, under: string): number => {
   if (pixel === undefined) {
     const canvas = document.createElement('canvas')
@@ -32,7 +31,6 @@ const token = (name: string, fallback: string): number => {
   probe ??= document.createElement('span')
   probe.style.display = 'none'
   if (!probe.isConnected) document.body.append(probe)
-  // Every colour lands on a card, so translucent tokens (the dark theme's borders) blend with it.
   probe.style.color = 'var(--card, #ffffff)'
   const card = getComputedStyle(probe).color
   probe.style.color = `var(${name}, ${fallback})`
@@ -41,7 +39,6 @@ const token = (name: string, fallback: string): number => {
   return value
 }
 
-/** A plain number the theme sets, such as how far wires sink into the canvas. */
 const amount = (name: string, fallback: number): number => {
   const value = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name))
   return Number.isFinite(value) ? value : fallback
@@ -77,16 +74,13 @@ export type Palette = ReturnType<typeof resolvePalette>
 
 let resolved: Palette | null = null
 
-/** Every token is resolved once and kept, so the palette is too. */
 export const palette = (): Palette => (resolved ??= resolvePalette())
 
-/** The theme changed: the next `palette()` resolves every token again. */
 export const resetPalette = (): void => {
   colors.clear()
   resolved = null
 }
 
-/** Blends two 0xRRGGBB colours; `t` is the share of `b`. */
 export const mix = (a: number, b: number, t: number): number => {
   const channel = (shift: number) =>
     Math.round(((a >> shift) & 255) * (1 - t) + ((b >> shift) & 255) * t) << shift
@@ -95,7 +89,6 @@ export const mix = (a: number, b: number, t: number): number => {
 
 const gradients = new Map<string, FillGradient>()
 
-/** A cached top-to-bottom gradient, so redraws do not allocate textures. */
 export const gradient = (top: number, bottom: number, across = false): FillGradient => {
   const key = `${top}:${bottom}:${across}`
   const cached = gradients.get(key)

@@ -1,17 +1,11 @@
 import type { Messages } from '../messages.ts'
 
-/* The copy of the pages generated from the catalog, in Spanish. Aliases list the English terms
-   too, since many readers know the English name of a thing. */
-
 export const reference: Messages['reference'] = {
   eraN: (index) => `Era ${index}`,
   none: '—',
   yes: 'Sí',
   no: 'No',
   any: 'Cualquiera',
-  /** El punto que cierra una frase cuya última palabra es un enlace, y el espacio que separa
-      una frase terminada de la siguiente. */
-  /** Lo que separa los elementos de una lista que introduce el texto. */
   listSeparator: ', ',
   sentenceEnd: '.',
   sentenceGap: ' ',

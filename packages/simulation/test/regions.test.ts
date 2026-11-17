@@ -6,7 +6,6 @@ import { freeSandbox } from '../src/sandbox.ts'
 
 const ok = <T>(result: Result.Result<T, unknown>): T => Result.getOrThrow(result)
 
-/** Two Nodes of different kinds, both starting in the home region. */
 const twoServices = () => {
   let game = freeSandbox()
   game = ok(openRegion(game, 'eu'))
@@ -26,7 +25,6 @@ describe('moving Nodes between regions', () => {
 
     expect(game.nodes.find((node) => node.id === cluster.id)?.region).toBe('eu')
     expect(game.nodes.find((node) => node.id === storage.id)?.region).toBe('apac')
-    // Neither move carried the other Node along.
     expect(game.nodes.find((node) => node.id === cluster.id)?.region).not.toBe('apac')
     expect(game.nodes.find((node) => node.id === storage.id)?.region).not.toBe('eu')
   })

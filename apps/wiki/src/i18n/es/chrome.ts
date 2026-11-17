@@ -1,9 +1,5 @@
 import type { Messages } from '../messages.ts'
 
-/* The wiki's interface copy in Spanish. The player addresses the reader as `tú`. Game nouns
-   follow `apps/web/src/i18n/es`: Investigación, Estudio, Nodo, Componente, Tablero, Diseño,
-   Conocimiento, Legado, Empresa, Pre-semilla and Semilla. */
-
 type Chrome = Omit<Messages, 'islands' | 'options' | 'reference'>
 
 export const chrome: Chrome = {

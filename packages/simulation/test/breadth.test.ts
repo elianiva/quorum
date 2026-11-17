@@ -9,12 +9,6 @@ import { solveFlow } from '../src/solve.ts'
 import { Game } from '../src/state.ts'
 import { step } from '../src/step.ts'
 
-/*
- * The Simulation end to end, across the whole catalog. Every Component is built, every incident
- * is started, and the Company runs: nothing throws, nothing goes non-finite, the save survives a
- * round trip, and the same Game always ends in the same place. These tests assert no number.
- */
-
 const roundTrip = (game: Game): Game => Schema.decodeSync(Game)(Schema.encodeSync(Game)(game))
 
 const run = (game: Game, seconds: number): Game => {
@@ -23,7 +17,6 @@ const run = (game: Game, seconds: number): Game => {
   return current
 }
 
-/** The free Sandbox with every Component built and linked behind the App Server. */
 const everything = (): Game => {
   let game = freeSandbox()
   COMPONENT_IDS.filter((id) => !COMPONENTS[id].fixed).forEach((type, index) => {
@@ -53,7 +46,6 @@ describe('the whole catalog', { timeout: 120_000 }, () => {
   test.each(INCIDENT_IDS)('the %s incident starts and plays out', (kind) => {
     const game = everything()
     const started = forceIncident(game, solveFlow(game), kind)
-    // A kind that finds nothing to hit on this Design has nothing to play out.
     if (started === null) return
     expect(started.incident?.kind).toBe(kind)
     const over = run(started, 600)

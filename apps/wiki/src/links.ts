@@ -1,8 +1,5 @@
 import type * as Markdown from '@foldkit/markdown'
 
-/* The wiki paths and Sandboxes a document links to or places. Kept free of views so the build's
-   content index can read every file without loading the renderer. */
-
 export const linksIn = (
   document: Markdown.MarkdownDocument,
 ): Readonly<{ paths: ReadonlySet<string>; sandboxes: ReadonlySet<string> }> => {

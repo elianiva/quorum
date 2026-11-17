@@ -193,7 +193,6 @@ const renderAxisLabel = <M>(
   bounds: Readonly<{ left: number; right: number; top: number; bottom: number }>,
 ): Html | undefined => {
   if (label === undefined) return undefined
-  // oxlint-disable-next-line anti-slop/no-runtime-typeof
   const config = typeof label === 'string' ? { value: label } : label
   const x =
     axis === 'x'
@@ -252,16 +251,11 @@ const domainMax = (values: ReadonlyArray<number>): number =>
 const rangeStart = (value: ChartValue): number | undefined =>
   isNumberRange(value) && value.length >= 2 ? numeric(value[0]) : undefined
 const stringColor = (value: ChartValue | ReadonlyArray<HierarchyNode>): string | undefined => {
-  // Data rows cross into the renderer here; only CSS color strings are accepted.
-  // oxlint-disable-next-line anti-slop/no-runtime-typeof
   return typeof value === 'string' ? value : undefined
 }
 const at = (row: Datum, key: DataKey): ChartValue =>
-  // oxlint-disable-next-line anti-slop/no-runtime-typeof
   typeof key === 'function' ? key(row) : row[key]
-const keyName = (key: DataKey): string =>
-  // oxlint-disable-next-line anti-slop/no-runtime-typeof
-  typeof key === 'string' ? key : 'Value'
+const keyName = (key: DataKey): string => (typeof key === 'string' ? key : 'Value')
 const scale = (value: number, min: number, max: number, start: number, end: number): number =>
   max === min ? (start + end) / 2 : start + ((value - min) / (max - min)) * (end - start)
 const curve = (type: SeriesProps['type'], tension?: number): CurveFactory => {
@@ -387,8 +381,6 @@ const scatterCartesian = <M>(props: CartesianChartProps<M>, h: HtmlBuilder<M>): 
     const low = Math.min(0, ...values)
     const high = Math.max(1, ...values)
     const resolveEnd = (end: DomainEnd | undefined, fallback: number): number =>
-      // Axis domain entries are a public union of numeric values and named bounds.
-      // oxlint-disable-next-line anti-slop/no-runtime-typeof
       typeof end === 'number'
         ? end
         : end === 'dataMin'
@@ -1262,8 +1254,6 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
   if (catAxis !== undefined && !catAxis.props.hide && catAxis.props.tick !== false)
     elements.push(
       ...visibleCategoryTicks.map(({ value, position: tickPosition, index }) =>
-        // Callbacks preserve the upstream XAxis tick escape hatch.
-        // oxlint-disable-next-line anti-slop/no-runtime-typeof
         typeof catAxis.props.tick === 'function'
           ? catAxis.props.tick({ x: tickPosition, y: bottom + 22, value, index, band })
           : h.text(
@@ -1296,9 +1286,7 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
     for (const secondary of props.children.filter((child) => child.kind === 'xAxis').slice(1)) {
       if (secondary.kind !== 'xAxis' || secondary.props.hide || secondary.props.tick === false)
         continue
-      // Upstream uses a second XAxis to render quarter labels and boundary ticks.
       const tick = secondary.props.tick
-      // oxlint-disable-next-line anti-slop/no-runtime-typeof
       if (typeof tick === 'function')
         elements.push(
           ...categories.map((value, i) =>
@@ -1309,8 +1297,6 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
   if (numAxis !== undefined && !numAxis.props.hide && numAxis.props.tick !== false)
     elements.push(
       ...ticks.map((value, index) =>
-        // Numeric axes accept the same custom tick callback as category axes.
-        // oxlint-disable-next-line anti-slop/no-runtime-typeof
         typeof numAxis.props.tick === 'function'
           ? numAxis.props.tick({
               x: numAxis.props.orientation === 'right' ? right + 10 : left - 10,
@@ -1601,8 +1587,6 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
             props.activeIndex === i &&
             item.props.activeBar !== undefined &&
             item.props.activeBar !== false
-          // The public activeBar prop accepts a boolean or an attribute object.
-          // oxlint-disable-next-line anti-slop/no-runtime-typeof
           const activeStyle =
             active && typeof item.props.activeBar === 'object' ? item.props.activeBar : undefined
           const cellFill = item.props.cells?.[i]?.fill ?? item.props.fill ?? color
@@ -1648,8 +1632,6 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
                     [item.props.labelFormatter?.(point.value) ?? String(point.value)],
                   ),
                 ]
-          // Bar custom shapes are callbacks; scatter uses the string symbol names.
-          // oxlint-disable-next-line anti-slop/no-runtime-typeof
           if (typeof item.props.shape === 'function')
             return [
               item.props.shape({
@@ -1661,8 +1643,6 @@ const cartesian = <M>(kind: string, props: CartesianChartProps<M>, h: HtmlBuilde
               }),
               ...barLabel,
             ]
-          // The public radius prop accepts either a scalar or four corners.
-          // oxlint-disable-next-line anti-slop/no-runtime-typeof
           if (radius !== undefined && typeof radius !== 'number') {
             const corner = (value: number): number =>
               Math.min(Math.max(0, value), bounds.width / 2, bounds.height / 2)
@@ -2416,7 +2396,6 @@ const polarMeasure = (
     : typeof value === 'number'
       ? value
       : (Number(value.slice(0, -1)) / 100) * total
-// Foldkit normalizes whitespace in attribute values. Commas preserve the SVG point separators.
 const svgPoints = (points: ReadonlyArray<readonly [number, number]>): string =>
   points.flatMap(([x, y]) => [x, y]).join(',')
 const polar = <M>(
@@ -3277,8 +3256,6 @@ const weight = (node: HierarchyNode, dataKey: string): number =>
     : Math.max(0, Number(node[dataKey]) || 0)
 const hierarchyName = (node: HierarchyNode, nameKey: string): string => {
   const value = node[nameKey]
-  // A user-selected hierarchy field is parsed at the chart boundary.
-  // oxlint-disable-next-line anti-slop/no-runtime-typeof
   return typeof value === 'string' || typeof value === 'number' ? String(value) : node.name
 }
 const treemapPalette = ['#82ca9d', '#ffc658', '#8dd1e1', '#a4de6c', '#d0ed57']
@@ -3325,7 +3302,6 @@ const treemapNodes = <M>(
     index: number
     area: number
   }
-  // Recharts' treemap lays children into rows using the squarify score.
   const inset = Math.min(Math.max(0, nodeInset), width / 2, height / 2)
   const layoutRect = {
     x: x + inset,

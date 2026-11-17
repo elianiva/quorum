@@ -4,28 +4,15 @@ import { runBot, type BotRun, type Milestone } from '@quorum/simulation/pacing'
 import { budgetOf } from '@quorum/simulation/slo'
 import type { Founding } from '@quorum/simulation/state'
 
-/*
- * The numbers on the Measurements page. Every figure comes from playing the Balanced bot against the
- * real Simulation, so the page never states a value a hand wrote down (16 "What the checks cover").
- * `scripts/measure.ts` runs this and writes `snapshot.ts`; the page reads the snapshot.
- *
- * A full run takes a few minutes of CPU: the bots step the Simulation one sim second at a time.
- */
-
-/** The seeds the pacing tables use. Seeds are the Simulation's, not a playtest's. */
 export const PACING_SEEDS = [1, 2, 3, 4, 5] as const
-/** The seeds the tables that play past Seed use, since a run that far is expensive. */
 export const DEEP_SEEDS = [1, 3] as const
-/** The seeds the second-Company table uses. */
 export const LEGACY_SEEDS = [1, 2, 3] as const
 
 const NINETY_MINUTES = 90 * 60
 const ONE_THIRTY_MINUTES = 130 * 60
 
-/** A row of a table on the page: a label and the figure, already written out. */
 export type Row = Readonly<{ label: string; value: string }>
 
-/** One line of the second-Company table: its seed, then the first and second Company's times. */
 export type LegacyRow = Readonly<{
   seed: string
   first: Readonly<{ preseed: string; seed: string }>
@@ -33,27 +20,18 @@ export type LegacyRow = Readonly<{
 }>
 
 export type Measurements = Readonly<{
-  /** The git tree hash of `packages/simulation/src` the figures were taken at. */
   version: string
-  /** The UTC day they were taken, such as `2026-11-09`. */
   takenOn: string
-  /** The Balanced bot at the Challenge pace, seeds 1 to 5, until 90 sim minutes. */
   pacing: ReadonlyArray<Row>
-  /** The same bot at the live tuning, seeds 1 and 3, until 130 sim minutes. */
   live: ReadonlyArray<Row>
-  /** The same bot through Seed, seeds 1 and 3, to Series A. */
   seed: ReadonlyArray<Row>
-  /** The same bot through Series A and B, seeds 1 and 3, until 130 sim minutes. */
   series: ReadonlyArray<Row>
-  /** A second Company with the perks ten Legacy buys, seeds 1 to 3, against the first. */
   legacy: ReadonlyArray<LegacyRow>
-  /** Users the deepest run holds at 130 sim minutes. */
   reach: string
 }>
 
 const one = (value: number): string => value.toFixed(1)
 
-/** Hundreds grouped by commas, so a user count reads as a count. */
 const group = (value: number): string => {
   const digits = String(Math.round(value))
   let out = ''
@@ -65,7 +43,6 @@ const group = (value: number): string => {
   return out
 }
 
-/** A figure every seed agrees on, or the span they cover. */
 const span = (
   values: ReadonlyArray<number | null>,
   format: (value: number) => string = one,
@@ -79,7 +56,6 @@ const span = (
   return seen.length === values.length ? range : `${range}, ${never} on some seeds`
 }
 
-/** Milestone times, in sim minutes, across a set of runs. */
 const timesOf = (runs: ReadonlyArray<BotRun>, milestone: Milestone): ReadonlyArray<number | null> =>
   runs.map((run) => minutesOf(run.milestones[milestone]))
 
@@ -94,7 +70,6 @@ const play = (
   founding: Founding | null = null,
 ): BotRun => runBot(seed, until, tuning, 'balanced', untilStage, founding)
 
-/** Ten Legacy buys Angel network, Pattern recognition and Founder's reputation at level 1. */
 const SECOND: Founding = {
   venture: 'b2b-saas',
   mutators: [],
@@ -103,10 +78,7 @@ const SECOND: Founding = {
 
 export type MeasurementInput = Readonly<{ version: string; takenOn: string }>
 
-/** Plays every run the page reports and writes out its tables. */
 export const measure = ({ version, takenOn }: MeasurementInput): Measurements => {
-  // Five seeds to Seed, then the same five past it, so the table can say whether a second App
-  // Server arrives inside the window and still read the Team at the moment Seed begins.
   const paced = PACING_SEEDS.map((seed) => play(seed, NINETY_MINUTES, CHALLENGE_TUNING))
   const throughSeed = PACING_SEEDS.map((seed) => play(seed, NINETY_MINUTES, CHALLENGE_TUNING, 2))
 

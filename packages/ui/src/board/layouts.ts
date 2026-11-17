@@ -1,11 +1,6 @@
 import type { ComponentId } from '@quorum/simulation/catalog'
 import type { Layout } from '../components/shared.ts'
 
-/* Every Component's card shape: its rows, the row its input and output ports sit on, and whether
-   it has a footer. The board's geometry reads this table; each Component's view draws the same
-   layout, and a test keeps the two equal. Kept apart from COMPONENT_VIEWS so measuring a card does
-   not load the views (and the Simulation behind them). */
-
 export const LAYOUTS: Record<ComponentId, Layout> = {
   users: { rows: 3, inRow: null, outRow: 2, footer: false },
   payments: { rows: 2, inRow: null, outRow: null, footer: true },

@@ -34,7 +34,6 @@ import { widePanel } from './wide.ts'
 import { workerPanel } from './worker.ts'
 import { wsPanel } from './ws.ts'
 
-/** Each Component's Inspector panel. A Component without extra content has no entry. */
 export const PANELS: Partial<Record<ComponentId, Panel>> = {
   analytics: analyticsPanel,
   autoscaler: autoscalerPanel,

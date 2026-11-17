@@ -6,7 +6,6 @@ import { eraOf, has } from './lookups.ts'
 import { calendarMinute } from './solve.ts'
 import type { BudgetHour, Game } from './state.ts'
 
-/** Requests per second that spend the error budget: every failure but a WAF block. */
 export const budgetFailures = (ledger: Ledger): number => {
   let failed = 0
   for (const cause of ERROR_CAUSES) if (cause !== 'blocked') failed += ledger.errors[cause]
@@ -17,11 +16,8 @@ export type Budget = Readonly<{
   slo: number
   requests: number
   failed: number
-  /** Failures the SLO allows over the window. */
   allowed: number
-  /** Share of the budget left: 1 untouched, 0 spent, below 0 overspent. */
   left: number
-  /** Share of requests answered over the window. */
   availability: number
 }>
 
@@ -44,24 +40,14 @@ export const budgetOf = (game: Game): Budget => {
   }
 }
 
-/**
- * How fast the budget burns right now: the share of requests failing against the share the SLO
- * allows, so 1 spends exactly the whole budget over the window (12 "Alerting"). Zero before the
- * budget counts.
- */
 export const burnRateOf = (game: Game, ledger: Ledger): number => {
   if (!budgeted(game) || ledger.demand <= 0) return 0
   const allowed = 1 - sloOf(game, eraOf(game).slo)
   return allowed > 0 ? budgetFailures(ledger) / ledger.demand / allowed : 0
 }
 
-/** The error budget counts from Series A. */
 export const budgeted = (game: Game): boolean => !game.sandbox && game.stage >= SLO_FROM_STAGE
 
-/**
- * What the budget does to the team's velocity with Error budgets researched:
- * more than half left speeds it up, a spent budget freezes Features at half speed.
- */
 export const budgetVelocity = (game: Game): number => {
   if (!budgeted(game) || !has(game, 'error-budgets')) return 1
   const { left } = budgetOf(game)
@@ -72,7 +58,6 @@ export const budgetVelocity = (game: Game): number => {
       : ERROR_BUDGET_FACTORS.normal
 }
 
-/** Adds some seconds of the Ledger to the window, from Series A on, and drops hours older than a week. */
 export const recordBudget = (
   game: Game,
   ledger: Ledger,
@@ -97,19 +82,12 @@ export const recordBudget = (
   return [...kept, { hour, requests, failed, users: game.users }]
 }
 
-/** Counts failures outside the Ledger, such as tasks a crashed Worker lost, in the current hour. */
 export const spendBudget = (game: Game, failed: number): ReadonlyArray<BudgetHour> => {
   const last = game.budget.at(-1)
   if (!budgeted(game) || !last || failed <= 0) return game.budget
   return [...game.budget.slice(0, -1), { ...last, failed: last.failed + failed }]
 }
 
-/**
- * Dollars per second an SLA pays back to its customers (11 "SLA credits", 13 "Ventures"). While the
- * trailing week's availability sits below the target the Company signed, it credits 10% of its
- * subscription revenue. A Venture with no SLA, or one whose Era has not reached it, pays nothing;
- * neither does a Company that cannot sell to enterprises, so the credits need `enterprise-sales`.
- */
 export const slaCreditsOf = (game: Game, ledger: Ledger): number => {
   if (game.sandbox || !has(game, 'enterprise-sales')) return 0
   const signed = ventureOf(game).constraint.sla

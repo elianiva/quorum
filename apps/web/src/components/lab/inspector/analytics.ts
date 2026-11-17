@@ -60,7 +60,6 @@ export const analyticsPanel: Panel = {
         own.inbound > own.capacity ? 'warn' : 'plain',
         h,
       ),
-      // The share no tap sees: load the player pays for, with no Insight and no kind to read.
       row(
         t.hud.unclassified,
         `${Math.round(unsampled.share * 100)}%`,

@@ -1,23 +1,19 @@
 import { LogoId } from '../logos.ts'
 import { Schema } from 'effect'
 
-/** The companies Messages, as cases for the root union. */
 export const companiesCases = {
   SavesLoaded: {
     index: Schema.NullOr(Schema.String),
     now: Schema.Finite,
   },
-  /** One Company's Game, read to continue it or to open it from the Companies page. */
   CompanyLoaded: {
     id: Schema.String,
     open: Schema.Boolean,
     json: Schema.NullOr(Schema.String),
   },
-  /** The browser would not read a Company's file. The file may still be there. */
   CompanyUnread: { id: Schema.String, open: Schema.Boolean },
   CompanyNameChanged: { name: Schema.String },
   LogoChosen: { logo: LogoId },
-  /** The Companies page opens one Company's file. */
   CompanyChosen: { id: Schema.String },
   CompanyClosed: {},
   CompanyOpened: { id: Schema.String },
@@ -32,7 +28,6 @@ export const companiesCases = {
   },
   Saved: {},
   SaveFailed: {},
-  /** The title screen's connect sequence ended: the board it was opening shows. */
   CompanyFounded: {},
   PreseedStarted: {},
 }

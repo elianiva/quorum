@@ -57,7 +57,6 @@ type ExitTag =
   | 'SurveySent'
   | 'SurveyFailed'
 
-/** Sends the Exit survey. Only a Company that just ended has an Exit to report on. */
 const submitSurvey = (model: Model): UpdateResult => {
   if (!canSubmit(model.survey.phase)) return { model }
   const exited = isExited(model.companyPhase) ? model.companyPhase : null
@@ -229,8 +228,6 @@ export const exitHandlers = (model: Model): MessageCases<UpdateResult, ExitTag> 
         ),
 
   RoundRaised: () => {
-    // A Room owns the Game, and its Seats decide a funding round by vote, so
-    // the offer starts that vote instead of taking the round here.
     if (roomLive(model))
       return {
         model: { ...model, panel: 'offer' },
@@ -252,7 +249,6 @@ export const exitHandlers = (model: Model): MessageCases<UpdateResult, ExitTag> 
   },
 
   RoundDeclined: () =>
-    // Declining is a vote in a Room, as raising is: one Seat's answer is not the Room's.
     roomLive(model)
       ? {
           model: { ...model, panel: 'offer' },
@@ -287,7 +283,6 @@ export const exitHandlers = (model: Model): MessageCases<UpdateResult, ExitTag> 
       survey: { ...model.survey, phase: surveyStep(model.survey.phase, { _tag: 'Skipped' }) },
     },
   }),
-  // An answer that lands after the player left the exited Company, or skipped, changes nothing.
   SurveySent: () =>
     isExited(model.companyPhase) && isSending(model.survey.phase)
       ? {

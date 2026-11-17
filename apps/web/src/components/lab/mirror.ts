@@ -5,7 +5,7 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
   IAC_TOOLS,
   IAC_TOOL_INFO,
-  MIRROR_TIME,
+  MIRROR_TIME_MINUTES,
   OPEN_REGION_PRICE,
   REGIONS,
   SIZES,
@@ -109,23 +109,22 @@ const patternLabelOf = (t: Messages): Record<DataPatternId, string> => ({
   call: t.mirror.callSource,
 })
 
-/** Each tool's documented default workflow: how a plan finds hand changes, and what Apply waits for. */
 const toolFactsOf = (
   t: Messages,
 ): Record<(typeof IAC_TOOLS)[number], ReadonlyArray<readonly [string, string]>> => ({
   terraform: [
     [t.mirror.plan, t.mirror.refreshesLiveState],
-    [t.mirror.apply2, t.mirror.minRefresh(MIRROR_TIME)],
+    [t.mirror.apply2, t.mirror.minRefresh(MIRROR_TIME_MINUTES)],
     [t.mirror.drift, t.mirror.everyPlan],
   ],
   pulumi: [
     [t.mirror.plan, t.mirror.recordedState],
-    [t.mirror.apply2, t.mirror.min(MIRROR_TIME)],
+    [t.mirror.apply2, t.mirror.min(MIRROR_TIME_MINUTES)],
     [t.mirror.drift, 'pulumi refresh'],
   ],
   alchemy: [
     [t.mirror.plan, t.mirror.recordedState],
-    [t.mirror.apply2, t.mirror.min(MIRROR_TIME)],
+    [t.mirror.apply2, t.mirror.min(MIRROR_TIME_MINUTES)],
     [t.mirror.drift, t.mirror.alchemyDriftRepair],
   ],
 })
@@ -139,10 +138,6 @@ const valueText = (t: Messages, field: Managed, value: unknown): string =>
         : t.mirror.valueOff
       : String(value)
 
-/**
- * A Node's name, with its region when it is not in the Mirror's: a Link to the
- * source shows where it goes. A Node the plan has not built yet is named after its source.
- */
 const nodeName = (t: Messages, game: Game, id: string, mirror: Mirror): string => {
   if (id.startsWith('+')) {
     const source = game.nodes.find((entry) => entry.id === id.slice(1))
@@ -157,7 +152,6 @@ const nodeName = (t: Messages, game: Game, id: string, mirror: Mirror): string =
   return node.region === mirror.region ? name : `${name} ${t.catalog.regionInfo[node.region].short}`
 }
 
-/** A segmented control: options sunk in a well, the chosen one raised. */
 const segmented = <A>(
   key: string,
   options: ReadonlyArray<readonly [A, string]>,
@@ -663,10 +657,6 @@ const overrides = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Html =>
   )
 }
 
-/**
- * Burn per second the plan adds once it lands. It solves a second Game, so each
- * Mirror computes it once a sim second, not every frame.
- */
 const burnCached = perSecond<number>()
 const burnAdded = (game: Game, mirror: Mirror): number =>
   burnCached(
@@ -905,7 +895,6 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
   )
 }
 
-/** Regions the region on the board can mirror into, or mirror from when it is empty. */
 const startSection = (game: Game, region: RegionId, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -1016,7 +1005,6 @@ export const mirrorPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** The drift of the Mirror in a region, for its tab: 0 when in sync or not a Mirror. */
 export const tabDrift = (game: Game, region: RegionId): number => {
   const mirror = mirrorOf(game, region)
   if (!mirror) return 0

@@ -1,8 +1,6 @@
 import { tools } from '../parts.mjs'
 import { HEIGHT, P as STAGE, WIDTH } from '../stage.mjs'
 
-// A disk pack: four platters on a spindle over its motor, with an actuator comb
-// that swings one arm over each platter. The top arm, reading, is lit.
 export function pack(
   t,
   { c = [0, 0], r = 28, levels = 4, gap = 8, pivot, lit = true, motor = 12 },
@@ -16,11 +14,9 @@ export function pack(
   const levelZ = Array.from({ length: levels }, (_, index) => z0 + index * gap)
   const top = levelZ[levels - 1] + PL
 
-  // Motor under the stack.
   out.push(S(cyl(cx, cy, r * 0.42, 2.4, z0 - 2.4, 48), { tone: 'mid' }))
   out.push(L(k.knurl(cx, cy, r * 0.42, 2.4, z0, 40, P, 0.8), { tone: 'faint' }))
 
-  // The actuator: a coil block with a pivot post.
   const [px, py] = pivot ?? [0, 0]
   const block = { x: px - 8, y: py - 8, w: 16, d: 16, r: 2 }
   const armDraw = []
@@ -36,7 +32,6 @@ export function pack(
     out.push(S(cyl(px, py, 3.6, top + 6, 2, 20), { tone: 'mid' }))
     out.push(D([at([px, py, top + 8])], { size: 0.45, tone: 'hi' }))
   }
-  // An arm from the pivot toward the spindle, ending over the middle tracks.
   const toward = [cx - px, cy - py]
   const length = Math.hypot(...toward)
   const ux = toward[0] / length
@@ -66,7 +61,6 @@ export function pack(
   }
 
   levelZ.forEach((z, index) => {
-    // Spacer below this platter (the first sits on the motor).
     if (index > 0)
       out.push(
         S(cyl(cx, cy, r * 0.32, levelZ[index - 1] + PL, gap - PL, 40), {
@@ -85,7 +79,6 @@ export function pack(
     if (pivot) armDraw.push(arm(z + PL + 1.4, lit && index === levels - 1))
     if (pivot) out.push(armDraw[index])
   })
-  // The clamp and spindle cap on top.
   out.push(S(cyl(cx, cy, r * 0.36, top, 2.4, 48, 0.4), { tone: 'mid' }))
   out.push(
     D(
@@ -102,7 +95,6 @@ export function pack(
   return { flange, rest, svg: flange + rest, top }
 }
 
-// The drive controller: a small box with vents, a status row and a cable gland.
 export function controller(t, box, h = 9) {
   const { k, S, L, D, at, P } = t
   const front = box.y + box.d
@@ -125,7 +117,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   const PLATE = { x: -46, y: -46, w: 92, d: 90, r: 6 }
   out.push(t.basePlate(PLATE, { feet }))
   out.push(t.labelPlate({ x: -40, y: 30, w: 24, d: 9, r: 1 }))
-  // A ribbon cable from the actuator to the controller box at the front.
   out.push(
     t.tube(
       [

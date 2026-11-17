@@ -26,7 +26,6 @@ import { stallReasonIn } from '../../i18n/format.ts'
 import { stepOf } from '@quorum/simulation/migration'
 import { studyStall } from '@quorum/simulation/studies'
 
-/** Runs a Team panel action on the board's Game, with its undo entry and note. */
 export const teamAction = (model: Model, out: TeamOutMessage): UpdateResult => {
   const game = model.board.game
   return TeamOutMessage.match<UpdateResult>(out, {
@@ -93,8 +92,6 @@ export const teamAction = (model: Model, out: TeamOutMessage): UpdateResult => {
             ),
             'primary',
           ],
-          // The draft is spent: the next split starts from a clean form, owned by the team that
-          // made this one.
           patch: (parent, next) => ({
             team: {
               ...parent.board.team,
@@ -144,7 +141,6 @@ export const foldResearch = (model: Model, message: ResearchMessage): UpdateResu
               const t = say(parent)
               const name = t.catalog.research[id].name
               const ledger = ledgerOf(parent)
-              // A locked item brings its prerequisites: name what joined, and the first that stalls.
               const added = game.studies
                 .filter((item) => !parent.board.game.studies.some((was) => was.id === item.id))
                 .map((item) => item.id)
@@ -164,7 +160,6 @@ export const foldResearch = (model: Model, message: ResearchMessage): UpdateResu
                     ]
                   : [t.toasts.studiesQueued(names), 'primary']
               }
-              // A Study that cannot finish holds the queue: say why. Short pools only slow it.
               const stall = studyStall(game, ledger, id)
               if (stall) return [t.toasts.studyQueuedStalled(name, stallReasonIn(t, stall)), 'warn']
               const short = recipeOf(id, game.discounts)
@@ -185,7 +180,6 @@ export const foldResearch = (model: Model, message: ResearchMessage): UpdateResu
             `Study ${RESEARCH[id].name} now`,
             Actions.study(parent.board.game, id, true),
             {
-              // Study now brings the item's queued prerequisites to the front with it.
               note: (game) => {
                 const t = say(parent)
                 const running = game.studies[0]?.id
@@ -207,7 +201,6 @@ export const foldResearch = (model: Model, message: ResearchMessage): UpdateResu
             `Cancelled ${RESEARCH[id].name}`,
             Actions.cancelStudy(parent.board.game, id),
             {
-              // The queued Studies that needed it leave with it: name them.
               note: (game) => {
                 const t = say(parent)
                 const name = t.catalog.research[id].name

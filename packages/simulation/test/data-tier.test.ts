@@ -38,8 +38,6 @@ import { solveFlow } from '../src/solve.ts'
 import { step } from '../src/step.ts'
 import type { Game } from '../src/state.ts'
 
-/* The options of the data tier and the edge (05, 07): each one changes what the Ledger reads. */
-
 const ok = (result: Result.Result<Game, unknown>): Game => {
   if (Result.isFailure(result)) throw new Error('refused ' + JSON.stringify(result.failure))
   return result.success
@@ -81,7 +79,6 @@ describe('sticky sessions', () => {
 
 describe('database engines', () => {
   test('MySQL trades cheaper writes for dearer reads and scans', () => {
-    // Series B sends reports, so the Database's scan path has a Cost receipt too.
     const postgresGame = { ...freeSandbox(), stage: 4 }
     const database = postgresGame.nodes.find((node) => node.type === 'database')!
     const postgres = solveFlow(postgresGame).nodes[database.id]!
@@ -134,7 +131,6 @@ describe('sharding', () => {
 })
 
 describe('a Read Replica has a job of its own', () => {
-  // Series B sends reports (`q-scan`); the Database is the one box that answers every kind.
   const withReplica = (stage: number) => {
     const base: Game = { ...freeSandbox(), stage, users: 3_000 }
     const [placed, replica] = build(withResearch(base, 'replication'), 'replica')
@@ -183,7 +179,6 @@ describe('synchronous replicas', () => {
     let replica: string
     ;[game, replica] = build(game, 'replica')
     expect(syncWaitMs(game, database)).toBe(0)
-    // A replica with no linked Database copies nothing, so it cannot join a write.
     expect(Result.isFailure(setSync(game, replica, true))).toBe(true)
     game = ok(connect(game, database.id, replica))
     game = ok(setSync(game, replica, true))
@@ -192,7 +187,6 @@ describe('synchronous replicas', () => {
 })
 
 describe('Data Groups', () => {
-  /** The free Sandbox with a second Database in a box with the first: one Data Group (07 "Data Groups"). */
   const grouped = (game: Game) => {
     const first = game.nodes.find((node) => node.type === 'database')!.id
     let next = ok(place(game, 'database', 300, 300))
@@ -242,7 +236,6 @@ describe('Data Groups', () => {
         { ...game.services[0]!, id: 'b', datastore: second },
       ],
     }
-    // Each group holds the share of the Services that point into it, and a group with none holds nothing.
     expect(groupDataOf(game, first)).toBe(50)
     expect(groupDataOf(game, second)).toBe(50)
     expect(groupDataOf(game, third)).toBe(0)
@@ -257,7 +250,6 @@ describe('Data Groups', () => {
     const two = { ...game.services[0]!, id: 'b', datastore: second }
     const apart = { ...game, services: [one, two] }
     expect(sharesDatabase(apart, one)).toBe(false)
-    // Boxed together under Multi-leader, they hold every row twice and share the dataset.
     const together = ok(setTopology(ok(boxNodes(apart, [first, second])), first, 'multi'))
     expect(sharesDatabase(together!, together!.services[0]!)).toBe(true)
   })
@@ -275,7 +267,6 @@ describe('Data Groups', () => {
     const first = game.nodes.find((node) => node.type === 'database')!.id
     let replica: string
     ;[game, replica] = build(game, 'replica')
-    // A replica copies nothing until a Database links into it, so it stands alone.
     expect(dataGroupOf(game, database(game, replica))).toBe(replica)
     const linked = ok(connect(game, first, replica))
     expect(dataGroupOf(linked, database(linked, replica))).toBe(
@@ -293,13 +284,11 @@ describe('Data Groups', () => {
     const company: Game = { ...freeSandbox(), sandbox: false, cash: 100_000 }
     const first = company.nodes.find((node) => node.type === 'database')!.id
     const picked = ok(Work.queueTopology(company, first, 'sharded'))
-    // Nothing moves between Databases yet, so the choice needs no Dev Hours and no copy.
     expect(picked.nodes.find((node) => node.id === first)?.topology).toBe('sharded')
     expect(picked.reshard).toBeNull()
     expect(picked.backlog.some((item) => item.ref === 'reshard')).toBe(false)
     const withTwo = ok(place(picked, 'database', 300, 300))
     const second = withTwo.nodes.at(-1)!
-    // The new Database holds its own rows until a box groups it with another.
     expect(second.topology).toBe('single')
     expect(dataGroupOf(withTwo, second)).toBe(second.id)
   })
@@ -323,7 +312,6 @@ describe('Data Groups', () => {
     expect(Result.isFailure(betweenDatabases)).toBe(true)
     let replica: string
     ;[game, replica] = build(game, 'replica')
-    // The write-log link is the only way a replica copies anything (07 "Read Replica").
     game = ok(connect(game, first, replica))
     const secondLink = connect(game, second, replica)
     expect(Result.isFailure(secondLink)).toBe(true)
@@ -340,7 +328,6 @@ describe('Data Groups', () => {
     ;[game, second] = build(game, 'database')
     game = ok(boxNodes(game, [first, second]))
     game = ok(connect(game, 'server', second))
-    // Receipt for the second Database under multi-leader costs more than its single-leader rate.
     const after = solveFlow(game).nodes[second]!
     expect(after.receipts['q-write']!.total).toBeGreaterThan(
       before.receipts['q-write']!.total * 1.2,
@@ -437,7 +424,6 @@ describe('a Connection Pooler', () => {
     ;[game, first] = build(game, 'replica')
     ;[game, second] = build(game, 'replica')
     game = ok(connect(game, 'server', pooler))
-    // An L7 Load Balancer reads HTTP, so it refuses queries until it is an L4.
     expect(Result.isFailure(connect(game, pooler, lb))).toBe(true)
     game = ok(setLbVariant(game, lb, 'l4'))
     game = ok(connect(game, pooler, lb))
@@ -450,7 +436,6 @@ describe('a Connection Pooler', () => {
     expect(reads(first)).toBeGreaterThan(0)
     expect(reads(first)).toBeCloseTo(reads(second))
     expect(reads(database)).toBeCloseTo(reads(first))
-    // The pooler's server connections pass through the balancer, an equal share to each host.
     const held = (id: string) => ledger.nodes[id]?.connections?.used ?? 0
     expect(held(database)).toBeGreaterThan(0)
     expect(held(first)).toBeCloseTo(held(database))

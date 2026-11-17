@@ -9,10 +9,7 @@ export const database: ComponentView = {
   rows: ({ game, node, own, inbound, capacity, latency }) => {
     const pool = own.connections
     const engine = DB_ENGINES[node.dbEngine]
-    // Sharding (07 "Partitioning"): writes divide across the shards, and each is a copy.
     const shards = Math.max(1, Math.floor(node.shards))
-    // A Data Group holds its rows one way (07 "Data Groups"), and only a Single primary has one
-    // Database that takes every write.
     const topology = topologyOfGroup(game, dataGroupOf(game, node))
     const label =
       topology === 'sharded' ? 'Sharded' : topology === 'multi' ? 'Multi-leader' : 'Single'

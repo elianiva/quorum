@@ -41,15 +41,9 @@ import {
 } from '@quorum/simulation/catalog'
 import type { Lang } from '../i18n/lang.ts'
 
-/* The controls each Component adds to its Inspector, and the values they offer, read from the
-   catalog. An authored `## Options` section on the Component page explains what each one does. */
-
 export type OptionControl = Readonly<{
-  /** The control's name, as the page names it. */
   name: string
-  /** The values it offers, as the catalog defines them. */
   settings: string
-  /** When the Inspector shows it, or which Nodes and Stacks it applies to. */
   shown: string
 }>
 
@@ -58,13 +52,11 @@ const percent = (share: number): string => `${Math.round(share * 100)}%`
 const clock = (value: number): string =>
   value >= 3_600 ? `${value / 3_600} h` : value >= 60 ? `${value / 60} min` : `${value} s`
 const thousands = (value: number): string => (value >= 1_000 ? `${value / 1_000}k` : String(value))
-/** Sim seconds as a calendar reads them: one sim second is one calendar minute. */
 const calendar = (seconds: number): string =>
   seconds >= 1_440
     ? `${Math.round((seconds / 1_440) * 10) / 10} d`
     : `${Math.round(seconds / 60)} h`
 
-/** The controls of every Component that has any, in the language of the page. */
 export const optionControls = (
   l: Lang,
 ): Partial<Record<ComponentId, ReadonlyArray<OptionControl>>> => {
@@ -86,7 +78,6 @@ export const optionControls = (
     STORAGE_IOPS: storageIops,
     VEC_INDEXES: vecIndexes,
   } = l.cat
-  /** The Stack section App Servers and Workers share. */
   const stack: ReadonlyArray<OptionControl> = [
     { name: o.runtime, settings: o.runtimeCount(RUNTIME_IDS.length), shown: o.always },
     { name: o.framework, settings: o.frameworkCount(FRAMEWORK_IDS.length - 1), shown: o.always },

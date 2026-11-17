@@ -1,21 +1,12 @@
 import { DOCK_OF, type ComponentId, type DockGroup } from '@quorum/simulation/catalog'
-import { CARD_W, CLEARANCE, heightOf, type Pt } from '../geometry.ts'
+import { CARD_W, CARD_CLEARANCE_PX, heightOf, type Pt } from '../geometry.ts'
 import type { LabLink, LabNode } from './measure.ts'
-
-/*
- * A grouped layout: every Component type is its own block (App Servers, Workers,
- * Queues, Caches, Databases, and so on). Blocks sit in flow lanes. The lane comes
- * from the dock group, then the actual links pull a Node forward or back: a Load
- * Balancer fed by App Servers and feeding Databases moves out of edge and into the
- * bridge lane between compute and data. Blocks in one lane are layered by the links
- * between them, so every block link runs left to right.
- */
 
 const PAD = 16
 const HEADER = 28
-const BLOCK_GAP = CLEARANCE * 3
-const LANE_GAP = CLEARANCE * 6
-const PITCH = CARD_W + CLEARANCE * 3
+const BLOCK_GAP = CARD_CLEARANCE_PX * 3
+const LANE_GAP = CARD_CLEARANCE_PX * 6
+const PITCH = CARD_W + CARD_CLEARANCE_PX * 3
 
 const LANE_OF_DOCK: Record<DockGroup, number> = {
   edge: 0,
@@ -27,7 +18,6 @@ const LANE_OF_DOCK: Record<DockGroup, number> = {
   insight: 1,
 }
 
-/** Flow lanes, left to right: edge, compute, bridge, data. */
 const FLOW_LANES = [0, 1, 2, 3]
 
 type Group = {
@@ -67,7 +57,6 @@ export const groupedLayout = (
     children[from]!.push(to)
   }
 
-  // Kahn order, with the unresolved tail appended so a cycle still gets a layout.
   const indegree = parents.map((list) => list.length)
   const queue = byId.flatMap((_, at) => (indegree[at] === 0 ? [at] : []))
   const sequence: Array<number> = []
@@ -134,7 +123,6 @@ export const groupedLayout = (
   const groupKeyOf = new Map<number, string>()
   for (const [v, node] of byId.entries()) groupKeyOf.set(v, `${lane[v]}:${node.type}`)
 
-  // Grid each type group as a near-square block. Four cards make a 2 × 2, nine make a 3 × 3.
   for (const group of groups) {
     const columns = Math.max(1, Math.ceil(Math.sqrt(group.nodes.length)))
     const rows = Math.ceil(group.nodes.length / columns)
@@ -146,13 +134,12 @@ export const groupedLayout = (
         x: PAD + column * PITCH,
         y: HEADER + (heights[column] ?? 0),
       })
-      heights[column] = (heights[column] ?? 0) + height + CLEARANCE
+      heights[column] = (heights[column] ?? 0) + height + CARD_CLEARANCE_PX
     }
     group.width = PAD * 2 + (columns - 1) * PITCH + CARD_W
-    group.height = HEADER + Math.max(...heights) - CLEARANCE + PAD
+    group.height = HEADER + Math.max(...heights) - CARD_CLEARANCE_PX + PAD
   }
 
-  // Order groups inside a lane by the links between them, then by flow depth.
   const laneGroups = (flowLane: number): Array<Group> => {
     const members = groups.filter((group) => group.lane === flowLane)
     const at = new Map(members.map((group, position) => [group.key, position]))
@@ -190,7 +177,6 @@ export const groupedLayout = (
     return ordered
   }
 
-  /** Packs a cluster's blocks into a near-square grid, so the cluster reads as one place. */
   const pack = (ordered: ReadonlyArray<Group>): { width: number; height: number } => {
     const area = ordered.reduce((sum, group) => sum + group.width * group.height, 0)
     const target = Math.max(2 * PITCH, Math.ceil(Math.sqrt(area * 1.2)))

@@ -1,10 +1,8 @@
 import { COMPONENT_GLOSSARY } from './glossary-links.ts'
 import type { ComponentId, IncidentId, ResearchId } from './catalog.ts'
 
-/** The entries each Component teaches; the wiki's Component page links to them. */
 export const BY_COMPONENT: Partial<Record<ComponentId, ReadonlyArray<string>>> = COMPONENT_GLOSSARY
 
-/** The entries each Research item teaches; the wiki Research page links to them. */
 export const BY_RESEARCH: Partial<Record<ResearchId, ReadonlyArray<string>>> = {
   anycast: ['anycast', 'bgp-border-gateway-protocol'],
   'lang-node': ['async-io', 'blast-radius', 'event-loop'],
@@ -29,7 +27,6 @@ export const BY_RESEARCH: Partial<Record<ResearchId, ReadonlyArray<string>>> = {
   'on-call': ['mttd-and-mtta', 'on-call'],
   runbooks: ['runbook'],
   'sre-team': ['runbook'],
-  // The Team's remaining research (08 "Adoption", "Deploy frequency", "Teams").
   'ab-testing': ['feature-flag'],
   'trunk-based': ['continuous-delivery', 'dora-metrics'],
   'data-team': ['cdc-change-data-capture', 'oltp-and-olap'],
@@ -109,7 +106,6 @@ export const BY_RESEARCH: Partial<Record<ResearchId, ReadonlyArray<string>>> = {
   'sync-replication': ['synchronous-replication'],
   'cert-automation': ['tls-certificate'],
   waf: ['waf-web-application-firewall'],
-  // The research that closed the tracks (05, 07, 10): each links to what it teaches.
   'l4-lb': ['load-balancer'],
   'rate-limiting': ['rate-limiting', 'token-bucket'],
   esi: ['edge-side-includes', 'cache-hit-rate'],
@@ -129,7 +125,6 @@ export const BY_RESEARCH: Partial<Record<ResearchId, ReadonlyArray<string>>> = {
   'expand-contract': ['expand-and-contract', 'tech-debt'],
 }
 
-/** The entries each Incident teaches; the wiki Incident page links to them. */
 export const BY_INCIDENT: Partial<Record<IncidentId, ReadonlyArray<string>>> = {
   poison: ['at-least-once-delivery', 'dead-letter-queue'],
   'double-charge': [

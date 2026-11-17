@@ -95,7 +95,6 @@ export const incidentsHandlers = (model: Model): MessageCases<UpdateResult, Inci
       },
     ),
 
-  // Acknowledging changes nothing in the Simulation: the rules still fire, they just stop shouting.
   AlertsAcknowledged: ({ rules }) => ({
     model: { ...model, board: { ...model.board, alertQuiet: [...rules] } },
   }),

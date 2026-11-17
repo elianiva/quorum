@@ -1,18 +1,12 @@
 import { container, text } from 'takumi-js/helpers'
 
-/* The social card of one wiki page: 1200 x 630, in the game's dark palette. The build renders one
-   per English page with Takumi (vite.config.ts) and writes it to `og/<path>.png`; every language
-   shares it, because the fonts the wiki ships are Latin only. */
-
 export const OG_WIDTH = 1200
 export const OG_HEIGHT = 630
 
 export type OgCard = Readonly<{
-  /** The file under the site root, such as `og/patterns/cache-aside.png`. */
   file: string
   title: string
   summary: string
-  /** The section's name, such as "Patterns". */
   label: string
 }>
 
@@ -21,14 +15,11 @@ const MUTED = '#9aa0a6'
 const SIGNAL = '#58cef8'
 const LINE = '#2c2f34'
 
-/** The image's file for a page's logical path: `/` is `og/index.png`. */
 export const ogFile = (path: string): string => `og${path === '/' ? '/index' : path}.png`
 
-/** A title shrinks as it grows, so two or three lines always fit above the summary. */
 const titleSize = (title: string): number =>
   title.length <= 28 ? 84 : title.length <= 48 ? 68 : title.length <= 72 ? 56 : 46
 
-/** Cuts at the last whole word that fits. */
 const clip = (value: string, max: number): string => {
   if (value.length <= max) return value
   const cut = value.slice(0, max - 1)

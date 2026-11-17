@@ -18,18 +18,12 @@ import { WIKI_ORIGIN } from './site.ts'
 type Inline = Markdown.Inline
 type Block = Markdown.MarkdownDocument['blocks'][number]
 
-/* The Markdown export is English. Its pages come from `PAGES`, the English pages, so a translated
-   page has no twin: the files stay as agents already read them, and the `/es` and `/ja` pages are
-   the readers' (src/entry.server.ts links a twin only from an English page). */
-
 const ENGLISH = langOf('en')
 
-/** The Markdown twin of a page's URL: `/a/b` → `/a/b.md`, `/` → `/index.md`. */
 export const markdownPath = (path: string): string => (path === '/' ? '/index.md' : `${path}.md`)
 
 const markdownUrl = (path: string): string => `${WIKI_ORIGIN}${markdownPath(path)}`
 
-/** A link target: wiki paths point at the twin, anything else stays. */
 const target = (url: string): string => {
   if (!url.startsWith('/') || url.startsWith('//')) return url
   const hash = url.indexOf('#')
@@ -206,7 +200,6 @@ const blockMarkdown = (block: Block): string => {
   }
 }
 
-/** A document's blocks as Markdown, with directives replaced by readable text. */
 export const blocksMarkdown = (blocks: ReadonlyArray<Block>): string =>
   blocks.map(blockMarkdown).join('\n\n')
 
@@ -305,7 +298,6 @@ const tableMarkdown = (node: Node): string => {
   ].join('\n')
 }
 
-/** Rendered markup as Markdown, with the spacing around inline pieces tidied. */
 export const htmlMarkdown = (html: Html): string =>
   flow(html as Node | null)
     .replace(/[ \t]+/g, ' ')
@@ -314,7 +306,6 @@ export const htmlMarkdown = (html: Html): string =>
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 
-// A page body reads the model only for reader state, which a static document does not have.
 const modelAt = (path: string): Model => {
   const { model } = (init as unknown as (url: unknown) => Readonly<{ model: Model }>)({
     pathname: path,
@@ -326,7 +317,6 @@ const inert = inertHtml as unknown as HtmlBuilder<Message>
 
 const rendered = new Map<string, string>()
 
-/** One page as Markdown: its title and summary, its body, and what it links on to. A page never changes, so its text is made once. */
 export const pageMarkdown = (page: Page): string => {
   const cached = rendered.get(page.path)
   if (cached !== undefined) return cached
@@ -375,7 +365,6 @@ const SECTION_LABELS: Record<Section, string> = {
 const entry = (page: Page): string =>
   `- [${page.title}](${markdownUrl(page.path)}): ${page.summary.replace(/\s+/g, ' ')}`
 
-/** `/llms.txt`: the pages by section, then the pages under each generated hub. */
 export const llmsTxt = (): string => {
   const home = pageIn('en', '/')
   const sections = SECTION_ORDER.map((section) => ({
@@ -404,7 +393,6 @@ export const llmsFullTxt = (): string =>
     .map((page) => `<!-- ${markdownUrl(page.path)} -->\n\n${pageMarkdown(page)}`)
     .join('\n---\n\n')
 
-/** Every file the build adds to the output, by path from its root. */
 export const markdownFiles = async (): Promise<Readonly<Record<string, string>>> => {
   await loadAllProse()
   return {

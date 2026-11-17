@@ -7,7 +7,6 @@ import { causeOf, leftOf, RUNNING } from './life.ts'
 import type { Game, GameNode } from './state.ts'
 import { step } from './step.ts'
 
-/** The figures a change is measured by. */
 export type Figures = Readonly<{
   revenue: number
   latency: number
@@ -18,11 +17,8 @@ export type Figures = Readonly<{
 export type Preview = Readonly<{
   before: Figures
   after: Figures
-  /** Burn per second without and with the change. */
   burn: readonly [number, number]
-  /** Seconds the changed Nodes would be down restarting, 0 when nothing restarts. */
   restart: number
-  /** Cash the change costs now, 0 when it is free. */
   cash: number
 }>
 
@@ -35,7 +31,6 @@ export const figuresOf = (ledger: Ledger): Figures => ({
   errors: ledger.errorShare,
 })
 
-/** Runs a ghost in 1 s Steps with users held, so growth cannot differ between the two. */
 const ghostRun = (start: Game, seconds: number): Ledger => {
   let game = start
   for (let elapsed = 0; elapsed < seconds; elapsed += 1)
@@ -43,7 +38,6 @@ const ghostRun = (start: Game, seconds: number): Ledger => {
   return solveFlow(game)
 }
 
-/** Nodes the change touched start up and warm; returns the Game and the longest restart. */
 const settled = (before: Game, after: Game): readonly [Game, number] => {
   const old = new Map(before.nodes.map((node) => [node.id, node]))
   let restart = 0
@@ -56,7 +50,6 @@ const settled = (before: Game, after: Game): readonly [Game, number] => {
 }
 
 const previews = new WeakMap<Game, Map<string, Result.Result<Preview, Refusal>>>()
-/** The unchanged ghost, shared by every option previewed on the same Game. */
 const baselines = new WeakMap<Game, Map<number, Ledger>>()
 
 const baselineOf = (game: Game, ghost: Game, seconds: number): Ledger => {
@@ -69,10 +62,6 @@ const baselineOf = (game: Game, ghost: Game, seconds: number): Ledger => {
   return ledger
 }
 
-/**
- * Previews a change: `apply` is the action, `key` names it for the cache, one
- * entry per Game and option. A refused action returns its refusal.
- */
 export const previewOf = (
   game: Game,
   key: string,
@@ -101,7 +90,6 @@ export const previewOf = (
 }
 
 export type WhatIf = Readonly<{
-  /** Larger is one size up on `target`; Retries off stops every retry on Links into the Node. */
   change: 'larger' | 'retries-off'
   target: string
   before: number
@@ -115,7 +103,6 @@ export const whatIfsOf = (game: Game, nodeId: string): ReadonlyArray<WhatIf> => 
   const ghost: Game = { ...game, nextIncidentAt: Number.MAX_SAFE_INTEGER }
   const typeOf = (id: string) => game.nodes.find((entry) => entry.id === id)?.type
   const live = (id: string) => (ledger.nodes[id]?.inbound ?? 0) > 0
-  // The Node itself, the Caches in front of it, and the busiest Node it calls.
   const caches = game.links
     .filter((link) => link.to === nodeId && live(link.from))
     .map((link) => link.from)

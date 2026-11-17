@@ -1,12 +1,9 @@
 import { Schema } from 'effect'
 import { ServerMessage, VoteKind } from '@quorum/simulation/room'
 
-/** The Room Messages, as cases for the root union. */
 export const roomCases = {
-  /** One frame from the socket, decoded. */
   RoomReceived: { message: ServerMessage },
   RoomStatusChanged: { status: Schema.Literals(['open', 'closed', 'error', 'full']) },
-  /** The player asks to take the current Company online. */
   RoomPublishAsked: {},
   RoomPublished: { code: Schema.String, token: Schema.String },
   RoomPublishFailed: { message: Schema.String },
@@ -17,12 +14,8 @@ export const roomCases = {
   RoomSpeedChosen: { value: Schema.Finite },
   RoomKickAsked: { seat: Schema.String },
   RoomSent: {},
-  /** The Room a link named does not exist, or it has ended. */
   RoomChecked: { code: Schema.String, exists: Schema.Boolean },
-  /** The name field, while the player types. */
   RoomNameChanged: { name: Schema.String },
-  /** The player keeps the name they typed. */
   RoomNameSaved: {},
-  /** Copies this Room's link. */
   RoomLinkCopied: {},
 }

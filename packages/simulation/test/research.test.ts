@@ -16,32 +16,20 @@ import { newGame } from '../src/company.ts'
 import { demandOf } from '../src/solve-demand.ts'
 import type { Game } from '../src/state.ts'
 
-/*
- * Research is sustainable when each Era's packs flow (12 "Earning Insight", 10 "Recipes"): its
- * default recipe kinds keep a real share of the Era's demand, and the Insight they earn at the
- * Era's top traffic pays a Study of the Era's median item in a couple of base durations. Failure
- * Insight is left out: it comes from failures, not from the mix.
- */
-
-/** Least share of demand each of an Era's default recipe kinds keeps: below this a pack dries up. */
 const PACK_FLOOR = 0.02
-/** Base durations a median Study may take at the Era's top traffic: on the packs, and on any recipe. */
 const SLOWEST = 2
 const LOOSEST = 3
 
 const live = { _tag: 'Live' as const, rollout: 1, adoption: 1, lift: null }
 
-/** Insight a kind earns a second at `users`, on a 10% sample nothing drops. */
 const insightAt = (users: number, share: number) =>
   INSIGHT_YIELD * Math.sqrt(0.1 * users * RPS_PER_USER * share)
 
-/** An item's pools and their Insight cost: every pool but Failure, which failures pay for. */
 const poolsOf = (id: ResearchId): ReadonlyArray<[RequestKind, number]> =>
   (Object.entries(RECIPE[id]) as Array<[InsightPool, number]>).filter(
     (entry): entry is [RequestKind, number] => entry[0] !== 'failure',
   )
 
-/** The Era's items, priciest last, with the slowest pool of each one at the Era's top traffic. */
 const itemsOf = (stage: number) => {
   const exit = ERAS[stage]?.raiseAt ?? 1_000_000
   const mix = ERAS[stage]?.mix ?? {}
@@ -64,7 +52,6 @@ const itemsOf = (stage: number) => {
 const medianOf = (items: ReadonlyArray<{ slowest: number }>) =>
   items[Math.floor(items.length / 2)]?.slowest ?? 0
 
-/** Whether an item is paid in the Era's default recipe rather than a recipe of its own. */
 const onDefaults = (stage: number, id: ResearchId) =>
   Object.keys(RECIPE[id]).toSorted().join() === (ERA_RECIPES[stage] ?? []).toSorted().join()
 
@@ -91,7 +78,6 @@ describe('an Era pays for its research in its own packs', () => {
   })
 })
 
-/** The share of an Era's demand a kind takes once every Feature it needs is live. */
 const shareOf = (
   stage: number,
   kind: 'login' | 'upload',
@@ -109,10 +95,6 @@ const shareOf = (
 }
 
 describe('login and upload traffic', () => {
-  /*
-   * Login is the Pre-seed CPU-heavy kind and upload the Seed payload kind. A rebalance that
-   * starves either one leaves its Insight pool, and every Study that draws on it, dry.
-   */
   test('the Era that introduces a kind keeps a real share of its demand', () => {
     expect(shareOf(1, 'login', 'signup-flow', 'password-login')).toBeGreaterThanOrEqual(0.05)
     expect(

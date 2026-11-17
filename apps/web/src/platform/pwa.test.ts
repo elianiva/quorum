@@ -1,8 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { browserFamily, displayModeOf, pwaSnapshot } from './pwa.ts'
 
-/* The display mode and the install instructions are the two facts every PWA surface reads. */
-
 describe('display mode', () => {
   test('a standalone window or an installed iOS app is installed', () => {
     expect(displayModeOf(true, false)).toBe('standalone')
@@ -29,7 +27,6 @@ describe('install instructions', () => {
       'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 CriOS/120.0 Mobile/15E148 Safari/604.1'
     expect(browserFamily(iphone, 'iPhone', 5)).toBe('iosSafari')
     expect(browserFamily(chrome, 'iPhone', 5)).toBe('iosOther')
-    // iPadOS reports a Mac user agent; the touch points are what give it away.
     expect(browserFamily('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15)', 'MacIntel', 5)).toBe(
       'iosSafari',
     )

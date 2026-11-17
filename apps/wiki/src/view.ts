@@ -13,10 +13,6 @@ import { pageIn } from './pages.ts'
 import { WIKI_ORIGIN } from './site.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* The page frame: the header, the navigation rail, the page, and the facts rail. Each rail takes
-   one step of the width scale, and the page fills what the frame has left. */
-
-/** The frame the header, the section bar, and the page share. */
 export const FRAME = css({
   marginInline: 'auto',
   maxWidth: '80rem',
@@ -32,7 +28,6 @@ const GRID = css({
 })
 
 export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
-  // Every link a translated page draws points into its own language (src/i18n/builder.ts).
   const h = builderFor(model.locale, plain)
   const t = langOf(model.locale).t.site
   const page = pageIn(model.locale, model.path)
@@ -40,11 +35,7 @@ export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
   const wide = page?.wide === true
   const railPage = isHome || wide ? null : page
   const hasRail = railPage !== null && (railPage.aside !== null || railPage.headings.length >= 2)
-  // Reading pages start the app on demand: the header on intent, and a quiz, practice board, or
-  // live figure when it nears the viewport. A page whose board is already in view starts at once.
   const hydration = 'visible'
-  // The component catalog is no page: English only, left out of search and the sitemap, and its
-  // stage needs the client at once.
   if (model.path === Catalog.CATALOG_PATH && model.locale === 'en')
     return {
       title: 'Catalog · Quorum Wiki',
@@ -87,7 +78,6 @@ export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
                 ? homeView(page, model, h)
                 : article(page, model, h)
               : notFound(model, h),
-            // Facts and the contents list share one rail. A page with neither gets no cell.
             hasRail && railPage
               ? h.div(
                   [

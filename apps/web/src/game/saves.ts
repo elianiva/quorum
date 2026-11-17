@@ -5,7 +5,6 @@ import { LogoId } from './logos.ts'
 
 export const MAX_COMPANY_NAME = 40
 
-/** A Room this Company is online in: the code, the owner token, and when it went online. */
 export const RoomLink = Schema.Struct({
   code: Schema.String,
   token: Schema.String,
@@ -13,7 +12,6 @@ export const RoomLink = Schema.Struct({
 })
 export type RoomLink = typeof RoomLink.Type
 
-/** One Company in the browser's index: the list row, and where its save lives. */
 export const CompanyFile = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
@@ -22,17 +20,14 @@ export const CompanyFile = Schema.Struct({
   mutators: Schema.Array(MutatorId),
   createdAt: Schema.Finite,
   updatedAt: Schema.Finite,
-  /** The few figures the title screen lists. */
   stage: Schema.Finite,
   users: Schema.Finite,
   time: Schema.Finite,
-  /** The Room this Company is online in, or null. */
   online: Schema.NullOr(RoomLink).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
 })
 export type CompanyFile = typeof CompanyFile.Type
 
 export const SaveIndex = Schema.Struct({
-  /** The Company the title screen's Continue opens. */
   current: Schema.NullOr(Schema.String),
   companies: Schema.Array(CompanyFile),
 })
@@ -40,14 +35,11 @@ export type SaveIndex = typeof SaveIndex.Type
 
 export const EMPTY_SAVE_INDEX: SaveIndex = { current: null, companies: [] }
 
-/** A typed name, trimmed and cut to the length the founding field allows. */
 export const companyName = (name: string): string => name.trim().slice(0, MAX_COMPANY_NAME)
 
-/** The name a Company is founded with when the player leaves the field empty. */
 export const nameOr = (name: string, fallback = 'Untitled company'): string =>
   companyName(name) || fallback
 
-/** A stable id from the Company's seed, with a suffix if that Company still exists. */
 export const newSaveId = (companies: ReadonlyArray<CompanyFile>, seed: number): string => {
   const base = `c${Math.abs(Math.trunc(seed)).toString(36)}`
   const used = new Set(companies.map((file) => file.id))
@@ -79,7 +71,6 @@ export const fileFor = (args: {
   online: null,
 })
 
-/** The file's figures brought up to the Game it just saved. */
 export const refreshed = (file: CompanyFile, game: Game, now: number): CompanyFile => ({
   ...file,
   updatedAt: now,
@@ -88,7 +79,6 @@ export const refreshed = (file: CompanyFile, game: Game, now: number): CompanyFi
   time: game.time,
 })
 
-/** The index with this file added or replaced; the order stays newest first. */
 export const withFile = (index: SaveIndex, file: CompanyFile): SaveIndex => ({
   ...index,
   companies: [file, ...index.companies.filter((entry) => entry.id !== file.id)],
@@ -103,7 +93,6 @@ export const withoutFile = (index: SaveIndex, id: string): SaveIndex => ({
 export const fileOf = (index: SaveIndex, id: string | null): CompanyFile | null =>
   id === null ? null : (index.companies.find((file) => file.id === id) ?? null)
 
-/** The index with the current Company's figures brought up to the board's Game, stamped as just saved. */
 export const savedIndex = (index: SaveIndex, game: Game, now: number): SaveIndex => {
   const file = fileOf(index, index.current)
   return file === null
@@ -116,7 +105,6 @@ export const savedIndex = (index: SaveIndex, game: Game, now: number): SaveIndex
       }
 }
 
-/** The index with the current Company's figures brought up to the board's Game. */
 export const refreshedIndex = (index: SaveIndex, game: Game): SaveIndex => {
   const file = fileOf(index, index.current)
   return file === null ? index : savedIndex(index, game, file.updatedAt)

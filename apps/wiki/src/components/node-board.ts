@@ -49,8 +49,6 @@ export const drawNodeCard = (key: string, type: ComponentId, host: HTMLElement):
     onNodeToggle: NOOP,
     onBox: NOOP,
   })
-  // The board draws the state it was mounted with; fit it once the host has its size, and again
-  // after the card's layout settles. The board itself freezes after its first frames.
   const frame = requestAnimationFrame(() => fitBoard(key))
   const fitTimer = setTimeout(() => fitBoard(key), 400)
   return () => {

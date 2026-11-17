@@ -2,12 +2,6 @@ import type { Sample } from '@quorum/simulation/state'
 import type { NodeSample } from './node-metrics.ts'
 import type { Ack, AgentHead, AgentMail, AgentSnapshot, Status, Upload } from './snapshot.ts'
 
-/* ==========================================================================
-   The Room's stored copy: a head and three bounded streams. The browser sends
-   only what the server does not have. Everything here is plain data, so the
-   Durable Object stores it and the view reads it.
-   ========================================================================== */
-
 export const SAMPLES_KEPT = 600
 export const NODE_SAMPLES_KEPT = 24
 export const INBOX_KEPT = 40
@@ -15,7 +9,6 @@ export const INBOX_KEPT = 40
 export type AgentMeta = Readonly<{
   epoch: string
   rev: number
-  /** The last sim second the server has, as an absolute sequence. */
   sampleSeq: number
   nodeTime: number
   inboxHash: string
@@ -81,11 +74,6 @@ export const ackOf = (store: AgentStore): Ack => ({
   at: store.meta.at,
 })
 
-/**
- * Folds one upload into the store. A new epoch, an explicit reset, or the first
- * write replaces the streams. A revision the server already has is ignored, so
- * a retry after a lost response cannot append the same samples twice.
- */
 export const applyUpload = (
   store: AgentStore,
   upload: Upload,
@@ -118,10 +106,7 @@ export const applyUpload = (
   return { store: next, ack: ackOf(next) }
 }
 
-/* ---------- Storage ---------- */
-
-/** Samples per stored chunk, so one upload rewrites the newest chunk and not the whole series. */
-export const SAMPLE_CHUNK = 200
+export const SAMPLES_PER_CHUNK = 200
 
 export const NODE_PREFIX = 'node:'
 export const CHUNK_PREFIX = 'samples:'
@@ -131,12 +116,6 @@ export type StoredChanges = Readonly<{
   deletes: ReadonlyArray<string>
 }>
 
-/**
- * The keys an upload changed, so the Room writes those and no others. An upload
- * arrives every few seconds and most of a store is the same as before it: a Node
- * with no new sample keeps its array, and a sample keeps its object, so identity
- * tells what moved.
- */
 export const changesOf = (next: AgentStore, previous: AgentStore): StoredChanges => {
   const puts: Record<string, unknown> = {}
   const deletes: Array<string> = []
@@ -144,18 +123,18 @@ export const changesOf = (next: AgentStore, previous: AgentStore): StoredChanges
   if (next.head !== previous.head) puts.head = next.head
   if (next.inbox !== previous.inbox) puts.inbox = next.inbox
 
-  const count = Math.ceil(next.samples.length / SAMPLE_CHUNK)
+  const count = Math.ceil(next.samples.length / SAMPLES_PER_CHUNK)
   for (let index = 0; index < count; index += 1) {
-    const from = index * SAMPLE_CHUNK
-    const to = Math.min(next.samples.length, from + SAMPLE_CHUNK)
-    const before = Math.min(previous.samples.length, from + SAMPLE_CHUNK)
+    const from = index * SAMPLES_PER_CHUNK
+    const to = Math.min(next.samples.length, from + SAMPLES_PER_CHUNK)
+    const before = Math.min(previous.samples.length, from + SAMPLES_PER_CHUNK)
     const same =
       before === to &&
       previous.samples[from] === next.samples[from] &&
       previous.samples[to - 1] === next.samples[to - 1]
     if (!same) puts[`${CHUNK_PREFIX}${index}`] = next.samples.slice(from, to)
   }
-  const previousCount = Math.ceil(previous.samples.length / SAMPLE_CHUNK)
+  const previousCount = Math.ceil(previous.samples.length / SAMPLES_PER_CHUNK)
   for (let index = count; index < previousCount; index += 1) deletes.push(`${CHUNK_PREFIX}${index}`)
 
   for (const [id, samples] of Object.entries(next.nodes))

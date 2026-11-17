@@ -6,13 +6,6 @@ import type { Game } from '@quorum/simulation/state'
 import type { TradeoffOption } from '../game/tradeoff.ts'
 import { routeLinks, type RoutedLink, type RoutedNode, type Wire } from './routing.ts'
 
-/*
- * The work the game hands to its compute worker: pure functions of plain data
- * that may answer a few frames late. The worker runs them, and so does the
- * page when it cannot start a worker.
- */
-
-/** The action a Tradeoff option stands for. */
 export const optionAction = (
   game: Game,
   nodeId: string,
@@ -29,7 +22,6 @@ export const optionAction = (
 }
 
 export type Jobs = {
-  /** The Tradeoff card's ghost runs; null when the option is refused. */
   preview: {
     input: Readonly<{ game: Game; nodeId: string; option: TradeoffOption }>
     output: Preview | null
@@ -39,7 +31,6 @@ export type Jobs = {
     output: Map<string, Wire>
   }
   bottleneck: { input: Readonly<{ game: Game }>; output: string | null }
-  /** The Inspector's what-if rows for a busy Node (12 "Load diagnosis"). */
   whatIf: {
     input: Readonly<{ game: Game; nodeId: string }>
     output: ReadonlyArray<WhatIf>
@@ -61,5 +52,4 @@ export const JOBS: { [C in Channel]: (input: Jobs[C]['input']) => Jobs[C]['outpu
   whatIf: ({ game, nodeId }) => whatIfsOf(game, nodeId),
 }
 
-/** The order the worker serves waiting jobs in: what the player is touching first. */
 export const PRIORITY: ReadonlyArray<Channel> = ['route', 'preview', 'bottleneck', 'whatIf']

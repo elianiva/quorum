@@ -51,8 +51,6 @@ import {
 } from '../src/team.ts'
 import { spiked } from '../src/studies.ts'
 
-/* The Exit, Mail and Observability mechanics that change the Game: each runs in a Step or an Action. */
-
 const founded = (perks: Record<string, number>, venture = 'b2b-saas' as const) =>
   foundCompany(1, { venture, mutators: [], perks })
 
@@ -120,7 +118,6 @@ describe('the fake advisory backdoor', () => {
 })
 
 describe('The user hop', () => {
-  /** Stage 6 users on four continents all enter the home Users Node, so EU users pay 2 x 75 ms. */
   const euHop = (research: Array<'http2' | 'http3' | 'anycast'>, kind: 'page' | 'read') => {
     const game = { ...freeSandbox(), stage: 6, seed: 3 }
     const bare = game.researched.filter((id) => !['http2', 'http3', 'anycast'].includes(id))
@@ -188,13 +185,11 @@ describe('Team assignments', () => {
     if (!open) throw new Error('expected an open Feature')
     game = Result.getOrThrow(queueFeature(game, open))
 
-    // A CVE is disclosed every CVE_EVERY seconds, and each one files a patch ticket.
     const disclosed = step({ ...game, time: CVE_EVERY - 5 }, 5).game
     const patch = disclosed.backlog.find((item) => item.kind === 'patch')
     if (!patch) throw new Error('expected a patch ticket')
     expect(blockReason(disclosed, patch)).toBeNull()
 
-    // Patch now moves it ahead of the product, and the team picks it up the next Step.
     const top = Result.getOrThrow(prioritizeItem(disclosed, patch.id))
     const after = step(top, 5).game
     expect(after.backlog.find((item) => item.id === patch.id)?.spent ?? 0).toBeGreaterThan(0)
@@ -210,7 +205,6 @@ describe('Team assignments', () => {
     game = Result.getOrThrow(queueSpike(Result.getOrThrow(queueFeature(game, feature))))
     expect(spiked(game)).toBe(true)
 
-    // Behind the Feature, the Spike would go to the second team, which has no engineers.
     expect(spiked({ ...game, backlog: [...game.backlog].reverse() })).toBe(false)
   })
 })
@@ -288,7 +282,6 @@ describe('Rush quality', () => {
     const open = () => {
       const queued = Result.getOrThrow(queueFeature(preseedGame(1), FEATURE_IDS[0]!))
       return {
-        // Keep the deploy slot away so the finished Feature stays in the batch for the chance test.
         queued: {
           ...queued,
           services: queued.services.map((service) => ({
@@ -399,7 +392,6 @@ describe('Renaming teams and Services', () => {
 })
 
 describe('the solve on the sim-time grid', () => {
-  /** The Ledgers that 5 sim seconds of 100 ms Steps read, with `kind` open from the first. */
   const ledgersDuring = (kind: IncidentId): number => {
     const base: Game = { ...preseedGame(), users: 5_000 }
     const started = startIncident(base, solveFlow(base), kind, 0)
@@ -427,12 +419,10 @@ describe('the solve on the sim-time grid', () => {
       }
       game = next
     }
-    // Most Steps of a quiet Company change no Node: the check above is not empty.
     expect(kept).toBeGreaterThan(25)
   })
 
   test('an open incident that does not change is solved once a second', () => {
-    // The Step the incident opens on, then one solve at each of the five seconds crossed.
     expect(ledgersDuring('slow-query')).toBe(6)
   })
 

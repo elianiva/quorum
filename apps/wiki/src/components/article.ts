@@ -14,8 +14,6 @@ import { pathBar, pathNext } from './path-nav.ts'
 import { quadrantBadge } from './quadrant.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* One page: its header, its body (and facts beside it), and its footer. */
-
 type H = HtmlBuilder<Message>
 
 const breadcrumbs = (page: Page, h: H): Html => {
@@ -74,7 +72,6 @@ const breadcrumbs = (page: Page, h: H): Html => {
   )
 }
 
-/** Content from an Era the reader has not reached folds behind a toggle. */
 const spoiler = (page: Page, model: Model, body: Html, h: H): Html => {
   if (!hides(model.spoilers, page.era)) return body
   const l = langOf(page.locale)
@@ -399,7 +396,6 @@ const footer = (page: Page, h: H): Html => {
   )
 }
 
-/** A page of another language that waits for its translation says so, and its text keeps its own language. */
 const notice = (page: Page, h: H): Html =>
   page.fallback
     ? h.p(
@@ -427,7 +423,6 @@ export const article = (page: Page, model: Model, h: H): Html => {
   const l = langOf(page.locale)
   return h.main(
     [
-      // A wide page spans the frame; every other page fills its column.
       h.Class(
         cx(
           css({
@@ -529,7 +524,6 @@ export const article = (page: Page, model: Model, h: H): Html => {
         ],
         [
           notice(page, h),
-          // The text of a page that waits for its translation is English.
           page.fallback
             ? h.div([h.Attribute('lang', 'en')], [spoiler(page, model, page.body(model, h), h)])
             : spoiler(page, model, page.body(model, h), h),

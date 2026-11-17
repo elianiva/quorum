@@ -18,21 +18,10 @@ import {
 import { has, zoneMs } from './lookups.ts'
 import type { Game, GameNode, PerRegion } from './state.ts'
 
-/* ==========================================================================
-   Regions (05 "Zones and regions", docs/adr/0005-regions-are-tabs-over-one-design.md).
-   One Design, one graph: every Node sits in a region, and the board shows one
-   tab per open region. From Series C users live on four continents, each with
-   its own share and its own evening peak. Without GeoDNS they all enter the
-   home Users Node and the far ones pay the round trips; with GeoDNS each
-   region's users go to their own Users Node, or the nearest one alive.
-   ========================================================================== */
-
 export const isGlobal = (node: GameNode): boolean => GLOBAL_COMPONENTS.includes(node.type)
 
-/** Users live in four regions from Series C; before, every user is at home. */
 export const regional = (game: Game): boolean => game.stage >= REGIONS_FROM_STAGE
 
-/** The home region, and every region the Company opened: each has its own Users Node. */
 export const openRegions = (game: Game): ReadonlyArray<RegionId> =>
   REGIONS.filter(
     (region) =>
@@ -40,12 +29,10 @@ export const openRegions = (game: Game): ReadonlyArray<RegionId> =>
       game.nodes.some((node) => node.type === 'users' && node.region === region),
   )
 
-/** The Users Node of a region, if the region is open. */
 export const usersOf = (game: Game, region: RegionId): GameNode | undefined =>
   game.nodes.find((node) => node.type === 'users' && node.region === region) ??
   (region === HOME_REGION ? game.nodes.find((node) => node.type === 'users') : undefined)
 
-/** A region's daily cycle: its local 20:00 peak, read on the home calendar. Exact. */
 export const regionDiurnal = (time: number, region: RegionId): number => {
   const minute = (CALENDAR_START + time + REGION_INFO[region].offset) % 1440
   return 1 + DIURNAL_AMPLITUDE * cosTurns((minute - 20 * 60) / 1440)
@@ -54,35 +41,24 @@ export const regionDiurnal = (time: number, region: RegionId): number => {
 export const perRegion = (figure: (region: RegionId) => number): PerRegion =>
   Object.fromEntries(REGIONS.map((region) => [region, figure(region)])) as PerRegion
 
-/** The catalog's split of users: each region's share of the market. */
 export const MARKET_SHARES: PerRegion = perRegion((region) => REGION_INFO[region].share)
 
 const AT_HOME: PerRegion = perRegion((region) => (region === HOME_REGION ? 1 : 0))
 
-/**
- * Each region's share of the Users (04 "Users and growth"). Before Series C
- * everyone is at home; a Game from before per-region Users keeps the market split.
- */
 export const userSharesOf = (game: Game): PerRegion =>
   game.userShares ?? (regional(game) ? MARKET_SHARES : AT_HOME)
 
-/** Each region's Users. They add up to `game.users`. */
 export const regionUsers = (game: Game): PerRegion => {
   const shares = userSharesOf(game)
   return perRegion((region) => game.users * shares[region])
 }
 
-/** A Game with these Users per region: the total and each region's share. */
 export const withRegionUsers = (game: Game, users: PerRegion): Game => {
   const total = REGIONS.reduce((sum, region) => sum + users[region], 0)
   if (total <= 0) return { ...game, users: 0 }
   return { ...game, users: total, userShares: perRegion((region) => users[region] / total) }
 }
 
-/**
- * Regions arrive (04 "Going global"): every user stays at home, where they found
- * the Company, and each far region starts from a seed.
- */
 export const goGlobal = (game: Game): Game => {
   const seed = (region: RegionId): number =>
     (ABROAD_SEED * game.users * REGION_INFO[region].share) / REGION_INFO[HOME_REGION].share
@@ -92,18 +68,15 @@ export const goGlobal = (game: Game): Game => {
   )
 }
 
-/** Apdex of one region's users over the last calendar hour. */
 export const regionApdexOf = (game: Game, region: RegionId): number =>
   game.regionApdex?.[region] ?? game.apdex
 
-/** Demand relative to the mean across regions: the sum of each region's share times its cycle. */
 export const regionalCycle = (time: number, shares: PerRegion = MARKET_SHARES): number => {
   let sum = 0
   for (const region of REGIONS) sum += shares[region] * regionDiurnal(time, region)
   return sum
 }
 
-/** Each region's share of the demand right now. Sums to 1. */
 export const regionShares = (game: Game): ReadonlyArray<readonly [RegionId, number]> => {
   if (!regional(game)) return [[HOME_REGION, 1]]
   const shares = userSharesOf(game)
@@ -119,14 +92,12 @@ export const regionShares = (game: Game): ReadonlyArray<readonly [RegionId, numb
   return weights.map(([region, weight]) => [region, total > 0 ? weight / total : 0] as const)
 }
 
-/** The region a Region outage or the DR drill has taken down, if any. */
 export const outRegion = (game: Game): RegionId | null =>
   (game.incident?.kind === 'region' || game.incident?.kind === 'dr-drill') &&
   game.incident.region !== null
     ? game.incident.region
     : null
 
-/** Milliseconds a user hop pays to cross from one region to another: two round trips, less HTTP/3, less Anycast. */
 export const userRttMs = (game: Game, from: RegionId, to: RegionId): number => {
   const rtt = rttOf(from, to) * USER_ROUND_TRIPS
   if (rtt <= 0) return rtt
@@ -138,15 +109,9 @@ export type UserRoute = Readonly<{
   region: RegionId
   source: GameNode | undefined
   share: number
-  /** Milliseconds their hop to the source adds. */
   extraMs: number
 }>
 
-/**
- * Where each region's users enter the Design. Without GeoDNS, through the home
- * Users Node. With GeoDNS, through their own region's, or the nearest live one
- * that leads somewhere.
- */
 export const userRoutes = (
   game: Game,
   leadsSomewhere: (node: GameNode) => boolean,
@@ -178,14 +143,8 @@ export const userRoutes = (
   })
 }
 
-/**
- * Extra milliseconds a call between two Nodes pays for where they sit: the round
- * trip between their regions, or the cross-zone hop inside one. A Users Node
- * linked to another region pays a user's two round trips.
- */
 export const placeMs = (game: Game, from: GameNode, to: GameNode): number => {
   if (isGlobal(from) || isGlobal(to)) return 0
-  // A leaderless store spread across regions answers from a local quorum (07 "Multi-region data").
   if (
     to.type === 'wide' &&
     to.spread &&
@@ -199,15 +158,12 @@ export const placeMs = (game: Game, from: GameNode, to: GameNode): number => {
   return zoneMs(from, to)
 }
 
-/** A Node that keeps serving through a Region outage: global, or a store spread across regions. */
 export const survivesRegion = (game: Game, node: GameNode): boolean =>
   isGlobal(node) ||
   node.type === 'users' ||
-  // Leaderless: every region keeps its own quorum. Consensus: a majority of three regions survives one.
   (node.type === 'wide' && node.spread && openRegions(game).length >= 2) ||
   (node.type === 'dsql' && node.spread && openRegions(game).length >= 3)
 
-/** The regions a spread store replicates to: its own first, then the nearest open ones. */
 export const spreadRegions = (
   game: Game,
   node: GameNode,
@@ -219,16 +175,10 @@ export const spreadRegions = (
         .slice(0, limit)
     : [node.region]
 
-/**
- * The Nodes a region's tab shows: its own, stores spread across regions, and the
- * Nodes elsewhere that its Nodes link to (drawn with the round trip, or none for a
- * global Component).
- */
 export const regionView = (game: Game, region: RegionId): Game => {
   const own = (node: GameNode): boolean =>
     node.region === region || ((node.type === 'wide' || node.type === 'dsql') && node.spread)
   const shown = new Set(game.nodes.filter(own).map((node) => node.id))
-  // A global Node's own Links stay on its home tab; the region's Nodes pull in what they call.
   const local = new Set(
     game.nodes.filter((node) => node.region === region && !isGlobal(node)).map((node) => node.id),
   )

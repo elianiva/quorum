@@ -17,16 +17,10 @@ import { openRegions, regional, regionApdexOf, regionUsers } from './regions.ts'
 import type { Game } from './state.ts'
 import { forecastUsers, regionGrowth } from './step.ts'
 
-/**
- * What takes Apdex: `far` is the round trip to a Design in another region,
- * `slow` is time inside the Design, and an error cause is a failure.
- * Without Structured logs every failure reads `failed`.
- */
 export type ChurnCause = 'far' | 'slow' | 'failed' | ErrorCause
 
 const RegionIdSchema = Schema.Literals(REGIONS)
 
-/** What the player can do about a row. */
 export const ChurnFix = Schema.TaggedUnion({
   region: { region: RegionIdSchema },
   research: { research: Schema.Literals(['multi-region', 'geo-dns']) },
@@ -38,38 +32,28 @@ export type ChurnFix = typeof ChurnFix.Type
 export type ChurnRow = Readonly<{
   kind: RequestKind
   cause: ChurnCause
-  /** Apdex points this row takes from the region. The rows add up to 1 − Apdex. */
   points: number
-  /** p99 of the kind for this region's users, in ms, once Percentiles is researched. */
   p99: number | null
   target: number
-  /** Fixing this row and the ones above it wins back the points the region needs. */
   needed: boolean
   fix: ChurnFix
-  /** With `tracing`: the Node whose hop takes the most time on this kind's path, and that time. */
   hop: Readonly<{ nodeId: string; ms: number }> | null
-  /** With `rum`: the device whose round trip over the internet is the longest, and that time. */
   device: Readonly<{ device: DeviceId; ms: number }> | null
 }>
 
 export type RegionChurn = Readonly<{
   region: RegionId
   users: number
-  /** Apdex of this region's users over the last calendar hour. */
   apdex: number
-  /** Apdex of this region's users right now, which the hourly figure moves toward. */
   now: number
   target: number
-  /** Users per calendar hour, gained above 0 or lost below it. */
   perHour: number
-  /** Users after one calendar day at the current Apdex. */
   inADay: number
   rows: ReadonlyArray<ChurnRow>
 }>
 
 const MIN_POINTS = 0.002
 
-/** What fixes a failure, in one line. */
 const FAILURE_FIX: Readonly<Record<ErrorCause, string>> = {
   stranded: 'Link a Node that accepts this kind.',
   dropped: 'Add capacity: a Node is past its backlog.',
@@ -85,7 +69,6 @@ const FAILURE_FIX: Readonly<Record<ErrorCause, string>> = {
   duplicate: 'Research Idempotency keys.',
 }
 
-/** The fix for the round trip: open the region, route its users there, then build in it. */
 const farFix = (game: Game, region: RegionId): ChurnFix => {
   if (!has(game, 'multi-region')) return { _tag: 'research', research: 'multi-region' }
   if (!openRegions(game).includes(region)) return { _tag: 'region', region }
@@ -93,7 +76,6 @@ const farFix = (game: Game, region: RegionId): ChurnFix => {
   return { _tag: 'region', region }
 }
 
-/** The Node that adds the most milliseconds to a kind's requests. */
 const slowestHopOf = (
   ledger: Ledger,
   kind: RequestKind,
@@ -106,7 +88,6 @@ const slowestHopOf = (
   return best
 }
 
-/** The same hop, shown only when `tracing` is researched (12 "The visibility ladder"). */
 const slowestHop = (
   game: Game,
   ledger: Ledger,
@@ -114,7 +95,6 @@ const slowestHop = (
 ): Readonly<{ nodeId: string; ms: number }> | null =>
   has(game, 'tracing') ? slowestHopOf(ledger, kind) : null
 
-/** The device with the longest radio round trip, when `rum` splits Users by device. */
 const slowestDevice = (game: Game): Readonly<{ device: DeviceId; ms: number }> | null => {
   if (!has(game, 'rum')) return null
   const slowest = DEVICES.reduce((best, device) =>
@@ -123,7 +103,6 @@ const slowestDevice = (game: Game): Readonly<{ device: DeviceId; ms: number }> |
   return { device: slowest, ms: DEVICE_INFO[slowest].rttMs }
 }
 
-/** The rows of one region, largest first, with the ones the region needs marked. */
 const rowsOf = (game: Game, ledger: Ledger, region: RegionId, gap: number): Array<ChurnRow> => {
   const kinds = ledger.regionKinds[region] ?? {}
   const total = Object.values(kinds).reduce((sum, entry) => sum + (entry?.rate ?? 0), 0)
@@ -197,10 +176,6 @@ const rowsOf = (game: Game, ledger: Ledger, region: RegionId, gap: number): Arra
   })
 }
 
-/**
- * The Churn breakdown: one section per region that has users, the region that
- * loses the most users per hour first. Before Series C there is one region.
- */
 export const churnOf = (game: Game, ledger: Ledger): ReadonlyArray<RegionChurn> => {
   const target = eraOf(game).apdexTarget
   const users = regionUsers(game)

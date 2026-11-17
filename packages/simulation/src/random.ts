@@ -1,13 +1,8 @@
-/* A small deterministic generator, so a saved Game replays the same incidents. */
-
-/** The next value in [0, 1) and the seed after it. */
 export const nextRandom = (seed: number): readonly [number, number] => {
-  // Math.imul keeps the low 32 bits exact; a double product loses them above 2^53.
   const next = (Math.imul(seed, 1_103_515_245) + 12_345) & 0x7f_ff_ff_ff
   return [next / 2_147_483_648, next]
 }
 
-/** Picks an entry with probability proportional to its weight, or undefined when all weigh 0. */
 export const pickWeighted = <A>(
   entries: ReadonlyArray<readonly [A, number]>,
   roll: number,

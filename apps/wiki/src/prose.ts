@@ -13,7 +13,6 @@ import { css, cx } from '@quorum/styled-system/css'
 
 type Inline = Markdown.Inline
 
-/** An image with its intrinsic size, so the text below it does not move when it loads. */
 const image = (url: string, alt: string, h: HtmlBuilder<Message>): Html => {
   const size = IMAGE_SIZES[url]
   return h.img([
@@ -24,7 +23,6 @@ const image = (url: string, alt: string, h: HtmlBuilder<Message>): Html => {
   ])
 }
 
-/** The plain text of inline content, for anchors and search. */
 export const plain = (content: ReadonlyArray<Inline>): string =>
   content
     .map((node) => {
@@ -45,7 +43,6 @@ export const plain = (content: ReadonlyArray<Inline>): string =>
 
 type HeadingBlock = Extract<Markdown.Block, { _tag: 'Heading' }>
 
-/** Every heading of a document, in reading order, including those inside lists, quotes and islands. */
 const headingBlocks = (blocks: ReadonlyArray<Markdown.Block>): ReadonlyArray<HeadingBlock> =>
   blocks.flatMap((block): ReadonlyArray<HeadingBlock> => {
     switch (block._tag) {
@@ -61,10 +58,8 @@ const headingBlocks = (blocks: ReadonlyArray<Markdown.Block>): ReadonlyArray<Hea
     }
   })
 
-/** The anchors of a heading, by heading, so each section keeps one anchor in every language. */
 export type Anchors = ReadonlyMap<HeadingBlock, string>
 
-/** A heading's anchor within a document: the slug of its text, and a count after a repeat. */
 const anchorsOfTexts = (
   headings: ReadonlyArray<HeadingBlock>,
   texts: ReadonlyArray<string>,
@@ -80,9 +75,6 @@ const anchorsOfTexts = (
   )
 }
 
-/** The anchors of a translated document: the English document's, paired by position, since a
-    translation keeps the English headings in the same order and at the same levels. A translation
-    whose headings do not line up with the English falls back to slugging its own text. */
 export const anchorsFor = (
   document: Markdown.MarkdownDocument,
   english: Markdown.MarkdownDocument,
@@ -97,8 +89,6 @@ export const anchorsFor = (
   )
 }
 
-/** The second- and third-level headings of a document, in order. Pass a translation's `anchors`
-    to keep the English ids. */
 export const headingsOf = (
   document: Markdown.MarkdownDocument,
   anchors?: Anchors,
@@ -109,7 +99,6 @@ export const headingsOf = (
     return [{ id: anchors?.get(block) ?? slug(text), text, level: block.level }]
   })
 
-/** The text of a document, for the search index. */
 export const textOf = (document: Markdown.MarkdownDocument): string =>
   document.blocks
     .map((block) =>
@@ -117,7 +106,6 @@ export const textOf = (document: Markdown.MarkdownDocument): string =>
     )
     .join(' ')
 
-/** Every wiki path a document links to, without hashes, and every Sandbox it places. */
 export { linksIn } from './links.ts'
 
 const external = (url: string): boolean => /^https?:/.test(url)
@@ -128,8 +116,6 @@ export const prose = (
   h: HtmlBuilder<Message>,
   anchors?: Anchors,
 ): Html => {
-  // A page can repeat a heading, such as the changelog's "Added" on every day. Suffix the later
-  // copies so ids stay unique and each anchor link reaches its own section.
   const seen = new Map<string, number>()
   const idOf = (text: string, heading: HeadingBlock): string => {
     const given = anchors?.get(heading)

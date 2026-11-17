@@ -1,8 +1,6 @@
 import type { Messages } from '../messages.ts'
 
-/** The words a Mail's values and buttons are made of, which the letters quote. */
 export const mailWords: Messages['mailWords'] = {
-  /** What each advisory is, in plain words. */
   cves: {
     'CVE-2026-1337': {
       title: 'Contrabando de peticiones en el proxy HTTP',
@@ -29,7 +27,6 @@ export const mailWords: Messages['mailWords'] = {
       what: 'El logger trata algunas cadenas como instrucciones y, muy servicial, las ejecuta. Cualquiera que pueda colar texto en una línea de log, como un nombre de usuario, puede ejecutar código en tu servidor.',
     },
   },
-  /** A cause as a customer would put it. */
   causes: {
     far: 'va lento desde lejos',
     slow: 'va lento',
@@ -91,7 +88,6 @@ export const mailWords: Messages['mailWords'] = {
     domain: 'Renovar ahora',
   },
   reviewMigration: (language: string) => `Revisar la migración a ${language}`,
-  /** What a Mail says once the player pressed a button. */
   answers: {
     raise: 'Levantaste la ronda.',
     declineRound: 'Rechazaste la ronda.',
@@ -118,14 +114,12 @@ export const mailWords: Messages['mailWords'] = {
     easy: 'Activaste el modo Fácil.',
     trap: 'Hiciste clic. Era una trampa: la dirección no era la del remitente real.',
   },
-  /** A thread's last word, when the thing it was about is settled. */
   closings: {
     exploited: 'Explotado. El ticket venció, y también los Usuarios que confiaron en ti.',
     patched: 'Parcheado antes de la fecha límite. No pasó nada, que era justamente la idea.',
     growing: (region: string) => `${region} vuelve a crecer.`,
     unstalled: (study: string) => `${study} ya no bloquea la cola.`,
   },
-  /** How each teammate signs, in the order of the game's teammates. */
   teammateSigns: [
     "'); DROP TABLE signatures;--",
     'Enviado dos veces, o ninguna.',

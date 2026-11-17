@@ -1,34 +1,29 @@
 import * as Sentry from '@sentry/cloudflare'
-import { API_PREFIX, INGEST_PREFIX, MCP_PATH } from '@quorum/rpc'
+import { API_PREFIX, POSTHOG_PROXY_PREFIX, MCP_PATH } from '@quorum/rpc'
 import { isAppPath } from './shell-routes.ts'
 
 interface ApiBinding {
   fetch(request: Request): Promise<Response>
 }
 
-/** The part of Cloudflare's Rate Limit binding this Worker uses. */
 interface RateLimitBinding {
   limit(options: { key: string }): Promise<{ success: boolean }>
 }
 
 interface Environment {
   readonly API: ApiBinding
-  /** The static assets, for the app shell. */
   readonly ASSETS: ApiBinding
-  /** Per-IP limits declared in `alchemy.run.ts`. Local dev without them allows everything. */
   readonly RATE_LIMIT_API?: RateLimitBinding
   readonly RATE_LIMIT_INGEST?: RateLimitBinding
-  /** Without it the Sentry SDK stays off. */
   readonly SENTRY_DSN?: string
   readonly SENTRY_RELEASE?: string
 }
 
-/** PostHog Cloud US. The proxy keeps the project token and the hostname out of the page. */
 const POSTHOG_API = 'us.i.posthog.com'
 const POSTHOG_ASSETS = 'us-assets.i.posthog.com'
 
 const isIngest = (pathname: string): boolean =>
-  pathname === INGEST_PREFIX || pathname.startsWith(`${INGEST_PREFIX}/`)
+  pathname === POSTHOG_PROXY_PREFIX || pathname.startsWith(`${POSTHOG_PROXY_PREFIX}/`)
 
 const isApi = (pathname: string): boolean =>
   pathname === API_PREFIX ||
@@ -36,8 +31,10 @@ const isApi = (pathname: string): boolean =>
   pathname === MCP_PATH ||
   pathname.startsWith(`${MCP_PATH}/`)
 
-/** A limiter that fails open: an outage in the rate limiter must not stop the game. */
-const allowed = async (binding: RateLimitBinding | undefined, key: string): Promise<boolean> => {
+const allowedOrFailOpen = async (
+  binding: RateLimitBinding | undefined,
+  key: string,
+): Promise<boolean> => {
   if (binding === undefined) return true
   try {
     return (await binding.limit({ key })).success
@@ -52,14 +49,8 @@ const tooMany = (): Response =>
     headers: { 'Retry-After': '60', 'Content-Type': 'text/plain; charset=utf-8' },
   })
 
-/**
- * Forwards one analytics request to PostHog. Assets go to the asset host;
- * everything else goes to the ingest host. Cookies and any credential that is
- * not a PostHog key are dropped, and the real client IP is forwarded so
- * PostHog records the player's location rather than the Worker's.
- */
 const ingest = async (request: Request, url: URL): Promise<Response> => {
-  const path = url.pathname.slice(INGEST_PREFIX.length) || '/'
+  const path = url.pathname.slice(POSTHOG_PROXY_PREFIX.length) || '/'
   const asset = path.startsWith('/static/') || path.startsWith('/array/')
   const headers = new Headers(request.headers)
   headers.delete('cookie')
@@ -75,33 +66,24 @@ const ingest = async (request: Request, url: URL): Promise<Response> => {
   })
 }
 
-/**
- * Only requests under the API or ingest prefixes reach this module (see
- * `runWorkerFirst` in `alchemy.run.ts`). Every other path is served from the
- * static assets.
- */
 export default Sentry.withSentry(
   (env: Environment) => ({
     dsn: env.SENTRY_DSN,
     release: env.SENTRY_RELEASE,
-    // Only a browser trace is continued. PostHog ingest and other requests start none.
     tracesSampler: ({ parentSampled }) => (parentSampled ? 1 : 0),
     initialScope: { tags: { service: 'website-worker' } },
   }),
   {
-    // The incoming request carries the browser's trace headers. Sentry continues that trace, and
-    // the service binding passes the same headers on, so the API Worker joins it.
     async fetch(request: Request, env: Environment): Promise<Response> {
       const url = new URL(request.url)
       const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
       if (isIngest(url.pathname)) {
-        if (!(await allowed(env.RATE_LIMIT_INGEST, ip))) return tooMany()
+        if (!(await allowedOrFailOpen(env.RATE_LIMIT_INGEST, ip))) return tooMany()
         return ingest(request, url)
       }
-      // A path the app routes gets the shell, `/`, whatever the URL; the assets answer every other
-      // unknown path with the 404 page.
       if (isAppPath(url.pathname)) return env.ASSETS.fetch(new Request(new URL('/', url), request))
-      if (isApi(url.pathname) && !(await allowed(env.RATE_LIMIT_API, ip))) return tooMany()
+      if (isApi(url.pathname) && !(await allowedOrFailOpen(env.RATE_LIMIT_API, ip)))
+        return tooMany()
       return env.API.fetch(request)
     },
   },

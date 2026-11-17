@@ -37,10 +37,6 @@ import {
 } from '../catalog/stories.ts'
 import { solverReadyForBoard } from '../solver.ts'
 
-/* The component catalog (/catalog): a story tree, a Pixi stage, and the controls of the story on
-   show. The URL carries the story and the args that differ from their start, so a link shares the
-   exact state. The page has no prose; it is for building and debugging cards. */
-
 export const CATALOG_PATH = '/catalog'
 
 const Value = Schema.Union([Schema.String, Schema.Finite, Schema.Boolean])
@@ -85,7 +81,6 @@ const oneOf = <T extends string>(
   fallback: T,
 ): T => options.find((option) => option === text) ?? fallback
 
-/** The model a `/catalog` URL names: unknown values fall back to their start. */
 export const init = (search: Option.Option<string>): Model => {
   const query = new URLSearchParams(Option.getOrElse(search, () => ''))
   const story = storyOf(query.get('story') ?? '') ?? firstStory()
@@ -102,7 +97,6 @@ export const init = (search: Option.Option<string>): Model => {
 
 const storyOfModel = (model: Model): Story => storyOf(model.story) ?? firstStory()
 
-/** The query string a model's state is shared as. Values that equal their start are left out. */
 export const queryOf = (model: Model): string => {
   const story = storyOfModel(model)
   const query = new URLSearchParams()
@@ -117,7 +111,6 @@ export const queryOf = (model: Model): string => {
   return `${CATALOG_PATH}?${query.toString().replace(/%3A/g, ':').replace(/%3B/g, ';')}`
 }
 
-/* A change of state keeps the URL in step and redraws the stage. */
 const Paint = Command.define('PaintCatalog', {
   args: {
     story: Schema.String,
@@ -169,7 +162,6 @@ const Copy_ = Command.define('CopyCatalogState', {
 
 type Return = Update.Return<Model, Message>
 
-/** Draws the stage from a model. The page runs it once on arrival; every change runs it again. */
 export const paint = (model: Model) =>
   Paint({
     story: model.story,
@@ -205,7 +197,6 @@ export const update = (model: Model, message: Message): Return =>
     PickedBackground: ({ background }) => changed({ ...model, background }, false),
     PickedViewport: ({ viewport }) => {
       const next = { ...model, viewport }
-      // The board fits its host once the host has its new width.
       return { model: next, commands: [...commandsFor(next, false), Camera({ action: 'fit' })] }
     },
     ToggledAnimate: () => changed({ ...model, animate: !model.animate }),
@@ -229,8 +220,6 @@ export const update = (model: Model, message: Message): Return =>
     Done: () => ({ model }),
   })
 
-/* ===== View ===== */
-
 type H = HtmlBuilder<Message>
 
 const CHECKER =
@@ -248,7 +237,6 @@ const Stage = Mount.define('CatalogStage', {
   execute: ({ element }) =>
     Effect.gen(function* () {
       yield* Effect.promise(() => solverReadyForBoard())
-      // Pixi loads only on this page.
       const { attach } = yield* Effect.promise(() => import('../catalog/stage.ts'))
       yield* Effect.acquireRelease(
         Effect.sync(() => attach(element as HTMLElement)),

@@ -30,7 +30,6 @@ const renderIconNode = <M>(node: IconNode, h: HtmlBuilder<M>): ReadonlyArray<Htm
     return tag === 'path' ? h.path(attributes) : h.circle(attributes)
   })
 
-/** Styled loading spinner — a `Loader2` lucide svg with `role="status"`. */
 export const spinner = <M>(config: StyleConfig, h: HtmlBuilder<M>): Html =>
   h.svg(
     [

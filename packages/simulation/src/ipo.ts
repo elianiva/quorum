@@ -8,8 +8,8 @@ import type { Game, GameNode } from './state.ts'
 import { valuationOf } from './valuation.ts'
 
 export const PRE_IPO_STAGE = 6
-/** The IPO pays this many seconds of Burn, like a funding round (plan 5.19). */
 export const IPO_BURN_SECONDS = 1_000
+const LARGEST_FINITE_RPO = Number.MAX_SAFE_INTEGER
 
 const DATA: ReadonlyArray<ComponentId> = [
   'database',
@@ -24,11 +24,6 @@ const DATA: ReadonlyArray<ComponentId> = [
   'warehouse',
 ]
 
-/**
- * Calendar minutes of writes the home region's data would lose if it failed:
- * leaderless and consensus stores spread across regions lose none, a Database
- * with a replica in another region loses its lag, otherwise its backups decide.
- */
 export const rpoOf = (game: Game, ledger: Ledger | null): number => {
   let worst = 0
   for (const node of game.nodes) {
@@ -38,7 +33,6 @@ export const rpoOf = (game: Game, ledger: Ledger | null): number => {
       continue
     }
     if (node.type !== 'database') continue
-    // A backup a restore drill found broken restores nothing (07 "Backups").
     if (node.backup !== 'none' && node.restore === 'failed') {
       worst = Number.POSITIVE_INFINITY
       continue
@@ -57,15 +51,12 @@ export const rpoOf = (game: Game, ledger: Ledger | null): number => {
   return worst
 }
 
-/** Starts a drill record; the director runs the outage. */
 export const newDrill = (game: Game, ledger: Ledger | null): DrillPhase => ({
   _tag: 'Running',
   startedAt: game.time,
-  // Infinity means "no bound"; the saved field is finite, so use the largest one.
-  rpo: Math.min(rpoOf(game, ledger), Number.MAX_SAFE_INTEGER),
+  rpo: Math.min(rpoOf(game, ledger), LARGEST_FINITE_RPO),
 })
 
-/** Advances a running drill: it recovers once errors fall under 1%, and ends after its outage. */
 export const advanceDrill = (game: Game, ledger: Ledger): DrillPhase | null => {
   const drill = game.drill
   if (!drill || drill._tag !== 'Running') return drill
@@ -77,11 +68,9 @@ export type ChecklistItem = Readonly<{
   id: 'users' | 'reliability' | 'soc2' | 'drill' | 'residency' | 'rule40'
   label: string
   met: boolean
-  /** What it reads now, for the panel. */
   value: string
 }>
 
-/** Data Nodes the EU Users Node reaches. */
 const reachedData = (game: Game, from: GameNode): ReadonlyArray<GameNode> => {
   const seen = new Set<string>([from.id])
   const stack = [from.id]
@@ -100,7 +89,6 @@ const reachedData = (game: Game, from: GameNode): ReadonlyArray<GameNode> => {
   return found
 }
 
-/** EU users are served from an EU region: GeoDNS, an EU Users Node, and only EU data behind it. */
 export const residencyMet = (game: Game): boolean => {
   if (!has(game, 'gdpr-residency') || !has(game, 'geo-dns')) return false
   const eu = game.nodes.find((node) => node.type === 'users' && node.region === 'eu')
@@ -115,7 +103,6 @@ export const residencyMet = (game: Game): boolean => {
   )
 }
 
-/** Whether a home Database's backup is one a drill found broken. */
 export const brokenRestore = (game: Game): boolean =>
   game.nodes.some(
     (node) =>

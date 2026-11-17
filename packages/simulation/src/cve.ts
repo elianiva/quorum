@@ -15,17 +15,13 @@ import { nextRandom } from './random.ts'
 import type { Game, WorkItem } from './state.ts'
 import { enqueue, memberOf, ownerOf, serviceOf } from './team.ts'
 
-/** Share of the Users a breach drives away. */
-export const BREACH_CHURN = 0.15
+export const BREACH_CHURN_SHARE = 0.15
 
-/** A CVE can be disclosed again once this many others have come since. */
 const RECENT_CVES = 4
 
-/** Seconds a patch is overdue: 0 before its deadline. */
 export const overdueBy = (game: Game, item: WorkItem): number =>
   item.due === undefined ? 0 : Math.max(0, game.time - item.due)
 
-/** Discloses a CVE at each interval, and exploits a patch that stayed overdue. */
 export const advanceCves = (
   game: Game,
   ledger: Ledger,
@@ -41,7 +37,6 @@ export const advanceCves = (
       const target = def.affects.find((id) => next.nodes.some((node) => node.type === id))
       return target && !next.cves.includes(def.id) ? [{ def, target }] : []
     })
-    // The draw hashes the seed and the interval, so it leaves the incident generator alone.
     const [roll] = nextRandom(
       (next.seed + Math.floor(next.time / CVE_EVERY) * 7_919) % 2_147_483_648,
     )
@@ -56,8 +51,6 @@ export const advanceCves = (
         service: service.id,
       })
       const item = next.backlog.at(-1) as WorkItem
-      // The Service's owner proposes the patch: their engineer writes, and the player answers
-      // Patch now or Queue the patch (18 "Proposal to patch").
       const owner = memberOf(next, ownerOf(next, service).id, item.id)
       if (owner) {
         next = {
@@ -79,8 +72,6 @@ export const advanceCves = (
     }
   }
 
-  // A backdoor the attacker has sat on long enough starts a breach too; a Security team finds it
-  // first, in half the time, and closes it quietly.
   if (next.backdoorAt !== null) {
     const age = next.time - next.backdoorAt
     if (securityStaffed(next) && age >= BACKDOOR_FUSE / 2) next = { ...next, backdoorAt: null }
@@ -90,15 +81,13 @@ export const advanceCves = (
         next = {
           ...used.game,
           backdoorAt: null,
-          users: Math.floor(used.game.users * (1 - BREACH_CHURN)),
+          users: Math.floor(used.game.users * (1 - BREACH_CHURN_SHARE)),
         }
         events.push(StepEvent.IncidentStarted({ incident: used.incident }))
       }
     }
   }
 
-  // One breach at a time: an expired patch waits for the running incident to end. A Security team
-  // doubles the grace, so the player has more time to patch before one starts (08 "Teams").
   const grace = PATCH_GRACE * (securityStaffed(next) ? SECURITY_TEAM_GRACE : 1)
   const expired = next.backlog.find(
     (item) => item.kind === 'patch' && overdueBy(next, item) >= grace,
@@ -108,7 +97,7 @@ export const advanceCves = (
     if (started) {
       next = {
         ...started.game,
-        users: Math.floor(started.game.users * (1 - BREACH_CHURN)),
+        users: Math.floor(started.game.users * (1 - BREACH_CHURN_SHARE)),
         backlog: started.game.backlog.filter((item) => item.id !== expired.id),
       }
       events.push(StepEvent.IncidentStarted({ incident: started.incident }))

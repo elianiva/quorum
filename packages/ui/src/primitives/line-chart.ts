@@ -31,7 +31,6 @@ const chartTooltipOverlayClass = css({
   zIndex: '10',
 })
 
-/** Recharts names and prop names, with Foldkit descriptors in place of React children. */
 export type ChartValue = string | number | ReadonlyArray<number> | null | undefined
 export const isNumberRange = (value: ChartValue): value is ReadonlyArray<number> =>
   Array.isArray(value)
@@ -223,14 +222,11 @@ const numberValue = (value: ChartValue): number | undefined => {
 }
 
 const valueAt = (datum: Datum, key: DataKey): ChartValue => {
-  // Recharts accepts a string key or a row accessor; this is the API boundary.
-  // oxlint-disable-next-line anti-slop/no-runtime-typeof
   if (typeof key === 'function') return key(datum)
   return datum[key]
 }
 
 const dataKeyName = (key: DataKey): string => {
-  // oxlint-disable-next-line anti-slop/no-runtime-typeof
   return typeof key === 'string' ? key : 'Value'
 }
 

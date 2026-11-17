@@ -11,7 +11,6 @@ type Built = Readonly<{ pages: ReadonlyArray<Page>; byPath: ReadonlyMap<string, 
 const built = new Map<Locale, Built>()
 
 const buildFor = (locale: Locale): Built => {
-  // A language whose bundle has not loaded reads English, and is not remembered as built.
   if (locale !== DEFAULT_LOCALE && !isLoaded(locale)) return buildFor(DEFAULT_LOCALE)
   const known = built.get(locale)
   if (known) return known
@@ -22,25 +21,18 @@ const buildFor = (locale: Locale): Built => {
   return made
 }
 
-/** Every page in a language, in the order the sources list them. */
 export const pagesFor = (locale: Locale): ReadonlyArray<Page> => buildFor(locale).pages
 
-/** The English pages, which are also the list of every path the wiki has. */
 export const PAGES: ReadonlyArray<Page> = pagesFor(DEFAULT_LOCALE)
 
-// A reference page is built from its prose (headings and body); rebuild the cached pages when a
-// page's text arrives. Titles and paths never change, so `PAGES` stays a stable list of paths.
 onProseLoaded(() => built.clear())
 
-/** A page by its logical path in a language, such as `/glossary/latency`. */
 export const pageIn = (locale: Locale, path: string): Page | null =>
   buildFor(locale).byPath.get(path) ?? null
 
-/** A page by the URL path it is served at: `/glossary/latency`, `/es/glossary/latency` or `/ja/glossary/latency`. */
 export const pageAt = (pathname: string): Page | null =>
   pageIn(localeOfPath(pathname), stripLocale(pathname))
 
-/** The top level of the navigation: "Play the game" and the four Diátaxis kinds, in the order a new player needs them. */
 export const SECTION_ORDER: ReadonlyArray<Section> = [
   'play',
   'tutorials',
@@ -62,7 +54,6 @@ export const navOf = (locale: Locale, section: Section): ReadonlyArray<Page> =>
     .filter((page) => page.section === section && page.parent === null && page.path !== '/')
     .sort(inOrder(locale))
 
-/** The pages under a hub, in order. */
 export const childrenOf = (locale: Locale, path: string): ReadonlyArray<Page> =>
   pagesFor(locale)
     .filter((page) => page.parent === path)

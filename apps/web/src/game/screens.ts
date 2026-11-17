@@ -53,7 +53,6 @@ import {
   stampedPlaybook,
 } from './model.ts'
 
-/** Display-contents on a desktop, so the HUD, toolbar and goals keep their own corners. */
 const TOP = css({
   display: 'contents',
   _compact: {
@@ -74,7 +73,6 @@ const TOP = css({
   },
 })
 
-/** The desktop's top row, right of the HUD; its left is set from the HUD's width. */
 const TOP_ROW = css({
   pointerEvents: 'none',
   position: 'absolute',
@@ -87,7 +85,6 @@ const TOP_ROW = css({
   _compact: { display: 'contents' },
 })
 
-/** Board context first, so it holds still while incidents come and go below it. */
 const LANE = css({
   display: 'flex',
   minWidth: '0',
@@ -118,8 +115,6 @@ const BOTTOM = css({
   },
 })
 
-/** The desktop's mail preview and Research offer keep their own corners. A phone shows one queue
- *  row in the top lane instead, so neither can cover the board or the action bar. */
 const bottomNotices = (model: Model, h: HtmlBuilder<Message>): Html =>
   h.div(
     [h.Class(css({ display: 'contents', _compact: { display: 'none' } }))],
@@ -128,7 +123,6 @@ const bottomNotices = (model: Model, h: HtmlBuilder<Message>): Html =>
 
 export const labScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
   const ledger = ledgerOf(model)
-  // A screenshot is the board and nothing else: no HUD, dock, notices, or panels.
   if (model.board.screenshot)
     return h.main(
       [
@@ -156,10 +150,8 @@ export const labScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
       ),
     ],
     [
-      // The canvas is a picture; this is the board read aloud, and the keyboard's way in.
       nodeList(model, ledger, h),
       boardHost(h),
-      // On a desktop the HUD and the top row float on their own; on a phone they stack at the top.
       h.div(
         [h.Class(TOP)],
         [
@@ -168,8 +160,6 @@ export const labScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
             : boardSandbox(model.board)
               ? sandboxHud(model, ledger, h)
               : hud(model, ledger, h),
-          // On a desktop the top row runs from the HUD's right edge to the screen's: the lane
-          // centres in what the toolbar leaves, so the two never overlap. On a phone it dissolves.
           h.div(
             [h.Class(TOP_ROW), h.Style({ left: `calc(${hudWidth + 24}px * var(--type-scale))` })],
             [
@@ -212,7 +202,6 @@ export const labScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
       inspector(model, ledger, h),
       tradeoffCard(model, h),
       bottomNotices(model, h),
-      // The inspector takes the Inbox's corner; the Inbox comes back when it closes.
       boardChallenge(model.board) ||
       model.board.game.nodes.some((node) => node.id === model.board.selected)
         ? h.empty
@@ -238,7 +227,6 @@ export const labScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
       model.panel === 'dev' ? devPanel(model, h) : h.empty,
       model.panel === 'passed' ? passedPanel(model, h) : h.empty,
       model.panel === 'challenge' ? challengePanel(model, h) : h.empty,
-      // The palette floats over whatever is open: it can reach any action from any panel.
       commandPalette(model, h),
     ],
   )

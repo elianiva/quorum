@@ -30,7 +30,6 @@ test('a compute worker that fails to load answers its jobs on the page instead o
   workers[0]?.onerror?.({ message: 'failed to load', preventDefault: () => {} })
   await expect(older).resolves.toBeUndefined()
   await expect(newer).resolves.toBe(bottleneckOf(game))
-  // Later jobs skip the dead worker.
   await expect(compute('bottleneck', { game })).resolves.toBe(bottleneckOf(game))
   expect(workers).toHaveLength(1)
 })

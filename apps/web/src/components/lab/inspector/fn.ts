@@ -16,7 +16,6 @@ import { Message } from '@/game/message.ts'
 import { row } from '@quorum/ui/game/bits'
 import { type Panel, caption, section } from './shared.ts'
 
-/** A Serverless Function's executions, its cold start, and the bill it runs up (05). */
 const serverless = (
   game: Game,
   node: GameNode,

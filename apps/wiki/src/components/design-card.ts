@@ -15,7 +15,6 @@ import { DESIGN_IDS, type DesignId } from '../patterns/designs/ids.ts'
 import type { Setting } from '../patterns/design.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-// Defined on first use: this module is imported while main.ts is still loading.
 const defineDesignMounted = () =>
   Mount.define('DesignMounted', {
     args: { id: Schema.Literals(DESIGN_IDS) },
@@ -23,7 +22,6 @@ const defineDesignMounted = () =>
     execute: ({ element, id }) =>
       Effect.gen(function* () {
         yield* Effect.promise(() => solverReadyForBoard())
-        // Pixi loads only on pages that show a board.
         const { drawDesign } = yield* Effect.promise(() => import('./design-board.ts'))
         yield* Effect.acquireRelease(
           Effect.sync(() => drawDesign(id, element as HTMLElement)),
@@ -44,17 +42,11 @@ const valueOf = (l: Lang, setting: Setting): string => {
   return String(value)
 }
 
-/** The packed Design's extent with the board's fit margin around it, and the zoom the board may fall to on a phone. */
-const MARGIN = 16
+const FIT_MARGIN = 16
 const INSET = 16
 const PHONE_SCALE = 0.42
 const TOP_SCALE = 1.1
 
-/**
- * The board keeps the Design's own proportions, so the whole Design is in frame at any width. The
- * fit never zooms past `TOP_SCALE`, which caps a small Design's height, and a phone, which pans
- * instead of shrinking the cards, keeps room for the cards at their smallest zoom.
- */
 const frameFor = (id: string): { aspectRatio: string; maxHeight: string; minHeight: string } => {
   const design = DESIGNS[id]
   if (!design) return { aspectRatio: '2 / 1', maxHeight: 'none', minHeight: '0' }
@@ -62,8 +54,8 @@ const frameFor = (id: string): { aspectRatio: string; maxHeight: string; minHeig
   const right = Math.max(...design.game.nodes.map((node) => node.x + CARD_W))
   const top = Math.min(...design.game.nodes.map((node) => node.y))
   const bottom = Math.max(...design.game.nodes.map((node) => node.y + heightOf(node.type)))
-  const width = right - left + 2 * MARGIN
-  const height = bottom - top + 2 * MARGIN
+  const width = right - left + 2 * FIT_MARGIN
+  const height = bottom - top + 2 * FIT_MARGIN
   return {
     aspectRatio: `${width} / ${height + 2 * INSET}`,
     maxHeight: `${Math.round(height * TOP_SCALE + 2 * INSET)}px`,

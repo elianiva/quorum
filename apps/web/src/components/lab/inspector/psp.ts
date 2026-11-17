@@ -5,7 +5,6 @@ import type { GameNode } from '@quorum/simulation/state'
 import { Message } from '@/game/message.ts'
 import { type Panel, caption, picker, section } from './shared.ts'
 
-/** Which Payment Provider takes the checkouts (18 "Senders"): the second keeps serving through an outage of the first. */
 const paymentProvider = (node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
   return [

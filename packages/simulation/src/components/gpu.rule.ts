@@ -11,7 +11,6 @@ import {
 
 import { has, restarted } from '../lookups.ts'
 
-/** Picks a GPU Node's GPU type. H100s cannot be had during a GPU shortage. */
 export const setGpuType = (game: Game, id: string, gpu: GpuType): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'gpu') return notAllowed('Only a GPU Node has a GPU type.')
@@ -21,7 +20,6 @@ export const setGpuType = (game: Game, id: string, gpu: GpuType): Action =>
     return ok(patch(game, id, { gpu, ...restarted(node) }))
   })
 
-/** Picks a GPU Node's weight precision. INT8 and INT4 need Quantization (05 "GPU Node"). */
 export const setPrecision = (game: Game, id: string, precision: GpuPrecision): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'gpu') return notAllowed('Only a GPU Node has a precision.')
@@ -35,7 +33,6 @@ export const setPrecision = (game: Game, id: string, precision: GpuPrecision): A
     return ok(node.precision === precision ? game : patch(game, id, { precision }))
   })
 
-/** Sets a GPU Node's batch size. Continuous batching keeps the first token's wait at its floor (05). */
 export const setBatch = (game: Game, id: string, batch: number): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'gpu') return notAllowed('Only a GPU Node batches prompts.')
@@ -44,7 +41,6 @@ export const setBatch = (game: Game, id: string, batch: number): Action =>
     return ok(node.batch === batch ? game : patch(game, id, { batch }))
   })
 
-/** Picks the model a GPU Node serves. It loads the weights, so the Node comes back cold. */
 export const setGpuModel = (game: Game, id: string, gpuModel: GpuModel): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'gpu') return notAllowed('Only a GPU Node serves a model.')

@@ -1,43 +1,18 @@
-/* ==========================================================================
-   Layout motion the view cannot express on its own. Foldkit patches the DOM
-   and forgets it; this layer watches those patches and keeps shapes and
-   surfaces from changing in a single frame.
-
-   - `data-morph`: the element's box follows its content. When a patch
-     changes its size, it animates from the old size to the new one, and a
-     second change mid-way retargets from wherever the box is.
-   - `data-flip`: the container's children slide to their new places when
-     a sibling arrives or leaves, instead of jumping.
-   - `data-exit`: when a patch removes the element, it stays on screen, inert,
-     while it plays its exit (styles.css), then goes. An element in the flow
-     leaves it at once, so its neighbours and its morphing parent move while
-     it fades.
-
-   Values are `gesture` or `notice`. Gestures are answers to the player and
-   skip their motion when the keyboard drove them: shortcuts must feel instant.
-   Notices are the game talking and always move. Reduced motion drops the
-   movement and keeps the fades.
-   ========================================================================== */
-
-/** The drawer curve: morphs answer a gesture, so they start fast and land soft. */
-const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)'
+const DRAWER_EASE = 'cubic-bezier(0.32, 0.72, 0, 1)'
 const MORPH_MS = 320
 const FLIP_MS = 260
-/** An exit that never reports its end is removed after this long. */
-const EXIT_LIMIT_MS = 600
+const EXIT_FALLBACK_MS = 600
 
 type Box = Readonly<{
   top: number
   left: number
   width: number
-  /** Distance from the element's bottom edge to its offset parent's. */
   bottom: number
   inFlow: boolean
 }>
 type Size = Readonly<{ width: number; height: number }>
 
 const media = matchMedia('(prefers-reduced-motion: reduce)')
-/** The system setting, or the game's own Reduce motion (data-motion on the root). */
 const reduced = {
   get matches() {
     return media.matches || document.documentElement.dataset['motion'] === 'reduce'
@@ -58,7 +33,6 @@ const sizeOf = (element: HTMLElement): Size => ({
 const morph = (element: HTMLElement): void => {
   const running = morphs.get(element)
   const animating = running?.playState === 'running'
-  // Mid-morph, the box is where the animation has it; otherwise it is the size it last settled at.
   const from = animating ? sizeOf(element) : sizes.get(element)
   running?.cancel()
   const to = sizeOf(element)
@@ -73,7 +47,7 @@ const morph = (element: HTMLElement): void => {
   })
   morphs.set(
     element,
-    element.animate([frame(from), frame(to)], { duration: MORPH_MS, easing: EASE }),
+    element.animate([frame(from), frame(to)], { duration: MORPH_MS, easing: DRAWER_EASE }),
   )
 }
 
@@ -90,7 +64,7 @@ const flip = (container: HTMLElement): void => {
     if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue
     child.animate([{ translate: `${dx}px ${dy}px` }, { translate: '0 0' }], {
       duration: FLIP_MS,
-      easing: EASE,
+      easing: DRAWER_EASE,
       composite: 'add',
     })
   }
@@ -98,8 +72,6 @@ const flip = (container: HTMLElement): void => {
 
 const boxes = new WeakMap<HTMLElement, Box>()
 
-/** Measures what the next patch may change: boxes that morph, children that
- *  slide, and elements that may leave, so each can start from where it was. */
 const remember = (): void => {
   for (const element of document.querySelectorAll<HTMLElement>('[data-morph]'))
     if (morphs.get(element)?.playState !== 'running') sizes.set(element, sizeOf(element))
@@ -143,7 +115,7 @@ const exit = (element: HTMLElement, record: MutationRecord): void => {
   parent.insertBefore(element, next)
   const done = () => element.remove()
   element.addEventListener('animationend', (event) => event.target === element && done())
-  setTimeout(done, EXIT_LIMIT_MS)
+  setTimeout(done, EXIT_FALLBACK_MS)
 }
 
 const closestElement = (node: Node, selector: string): HTMLElement | null =>
@@ -160,7 +132,6 @@ const settle = (records: ReadonlyArray<MutationRecord>): void => {
     const list = closestElement(record.target, '[data-flip]')
     if (list) flipping.add(list)
   }
-  // Exits go back in first, so a morph measures the box with them out of the flow.
   for (const element of morphing) if (element.isConnected) morph(element)
   for (const element of flipping) if (element.isConnected) flip(element)
   remember()
@@ -174,7 +145,6 @@ export const startMotion = (root: HTMLElement): void => {
     attributes: true,
     attributeFilter: ['class', 'style'],
   })
-  // A click or key may remove something before the next patch measures it.
   addEventListener('pointerdown', remember, true)
   addEventListener('keydown', remember, true)
 }

@@ -8,8 +8,6 @@ import type { Model } from './model.ts'
 import { initialModel, update } from './update.ts'
 import { AppRoute } from './route.ts'
 
-/* Undo puts the Design back and reverses exactly the Cash the action moved; redo puts it forward. */
-
 const send = (model: Model, ...messages: ReadonlyArray<Message>): Model =>
   messages.reduce((current, message) => update(current, message).model, model)
 
@@ -92,7 +90,6 @@ const later = (model: Model, seconds: number): Model => ({
 })
 
 describe('the undo and redo stack', () => {
-  // Buy a Database, sell it, then resize the App Server: three actions that move Cash each way.
   const threeActions = (start: Model): Model => {
     const bought = send(
       start,
@@ -130,7 +127,6 @@ describe('the undo and redo stack', () => {
       expect(model.board.game.cash).toBe(acted.board.game.cash)
       expect(design(model)).toEqual(design(acted))
     }
-    // Back to the start one last time: Cash ends exactly where it started.
     model = send(model, Message.UndoChosen(), Message.UndoChosen(), Message.UndoChosen())
     expect(model.board.game.cash).toBe(start.board.game.cash)
   })
@@ -199,7 +195,6 @@ describe('Settling', () => {
     }
   }
 
-  /** Feeds Ledgers one tick at a time; returns the delta, if any, and the last Model. */
   const feed = (ledgers: ReadonlyArray<Ledger>) => {
     let model = settling()
     for (const ledger of ledgers) {

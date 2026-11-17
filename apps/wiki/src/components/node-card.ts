@@ -10,12 +10,10 @@ import { Message } from '../main.ts'
 import { solverReadyForBoard } from '../solver.ts'
 import { css } from '@quorum/styled-system/css'
 
-/** What node-board.ts asks the board for: the zoom it fits to at most, its fit margin, and its top and bottom insets. */
 const SCALE = 1.1
 const PAD = 8
 const INSET = 16
 
-// Defined on first use: this module is imported while main.ts is still loading.
 const defineCardMounted = () =>
   Mount.define('CardMounted', {
     args: { type: Schema.Literals(COMPONENT_IDS) },
@@ -23,7 +21,6 @@ const defineCardMounted = () =>
     execute: ({ element, type }) =>
       Effect.gen(function* () {
         yield* Effect.promise(() => solverReadyForBoard())
-        // Pixi loads only on pages that show a card.
         const { drawNodeCard } = yield* Effect.promise(() => import('./node-board.ts'))
         yield* Effect.acquireRelease(
           Effect.sync(() => drawNodeCard(`card-${type}`, type, element as HTMLElement)),
@@ -43,7 +40,6 @@ export const nodeCard = (type: ComponentId, h: HtmlBuilder<Message>): Html => {
       h.Role('img'),
       h.AriaLabel(l.t.islands.nodeCard(l.cat.COMPONENTS[type].name)),
       h.DataAttribute('lazy-island', ''),
-      // The card is a picture here: the page scrolls, the board does not pan.
       h.Class(
         css({
           pointerEvents: 'none',

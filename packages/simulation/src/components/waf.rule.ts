@@ -2,7 +2,6 @@ import { type Action, endIncident, notAllowed, ok, patch, withNode } from '../ac
 import type { Game } from '../state.ts'
 import { PARANOIA } from '../catalog.ts'
 
-/** Sets a WAF's paranoia level, 1 to 4. */
 export const setParanoia = (game: Game, id: string, paranoia: number): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'waf') return notAllowed('Only a WAF has a paranoia level.')
@@ -11,7 +10,6 @@ export const setParanoia = (game: Game, id: string, paranoia: number): Action =>
     return ok(node.paranoia === paranoia ? game : patch(game, id, { paranoia }))
   })
 
-/** Turns a WAF's Under attack mode on or off: it challenges every request. */
 export const setUnderAttack = (game: Game, id: string, underAttack: boolean): Action =>
   withNode(game, id, (node) =>
     node.type === 'waf'

@@ -6,10 +6,8 @@ import type { BoardEvents, BoardState } from './types.ts'
 
 export type { BoardEvents, BoardSound, BoardState, Stamp } from './types.ts'
 
-/** One zoom step from the palette: far enough to notice, close to a wheel notch. */
 export const ZOOM_STEP = 1.2
 
-/** Latest state per board, written by update and read on mount. */
 const desired = new Map<string, BoardState>()
 const controllers = new Map<string, BoardController>()
 
@@ -20,14 +18,11 @@ export const setBoard = (key: string, state: BoardState): void => {
 
 export const fitBoard = (key: string): void => controllers.get(key)?.fit()
 
-/** Zooms by one step in the given direction, about the middle of the room the chrome leaves free. */
 export const zoomBoard = (key: string, direction: 1 | -1): void =>
   controllers.get(key)?.zoomBy(direction === 1 ? ZOOM_STEP : 1 / ZOOM_STEP)
 
-/** Centers the view on a Node after a reveal, zooming in if the Board was far out. */
 export const focusBoard = (key: string, nodeId: string): void => controllers.get(key)?.focus(nodeId)
 
-/** The theme changed: resolve the tokens again and redraw every card in the new palette. */
 export const repaintBoards = (): void => {
   resetPalette()
   for (const controller of controllers.values()) controller.repaint()
@@ -35,7 +30,6 @@ export const repaintBoards = (): void => {
 
 let watchingTheme = false
 
-/** Redraws every mounted board when the page theme changes. Safe to call more than once. */
 export const watchBoardTheme = (): void => {
   if (watchingTheme) return
   watchingTheme = true
@@ -60,7 +54,6 @@ export const attachBoard = (key: string, host: HTMLElement, events: BoardEvents)
   controllers.set(key, controller)
   controller
     .start(desired.get(key))
-    // The canvas joins the host after start: fit once more so the first view is the whole Design.
     .then(() => controller.fit())
     .catch((error: unknown) => {
       console.error(`Quorum: the "${key}" board failed to start`, error)
@@ -73,22 +66,18 @@ export const attachBoard = (key: string, host: HTMLElement, events: BoardEvents)
   }
 }
 
-/** Another Seat's pointer moved: the Board at `key` draws it. */
 export const moveSeatCursor = (key: string, cursor: SeatCursor): void => {
   controllers.get(key)?.moveSeatCursor(cursor)
 }
 
-/** Another Seat's pointer is gone: the Board at `key` stops drawing it. */
 export const hideSeatCursor = (key: string, seat: string): void => {
   controllers.get(key)?.hideSeatCursor(seat)
 }
 
-/** The Room is over: no Seat's pointer stays on the Board. */
 export const clearSeatCursors = (key: string): void => {
   controllers.get(key)?.clearSeatCursors()
 }
 
-/** This Seat opened or closed a panel: the other Seats hear what it is doing. */
 export const setSeatActivity = (key: string, activity: SeatActivity | null): void => {
   controllers.get(key)?.setCursorActivity(activity)
 }

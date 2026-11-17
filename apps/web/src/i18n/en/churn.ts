@@ -7,7 +7,6 @@ export const churn = {
   users: (p0: string | number | null) => `${p0} users`,
   n1Day: (p0: string | number | null) => `1 day: ${p0}`,
   whyUsersLeave: 'Why users leave',
-  /** What takes Apdex in a row: far, slow, or a failure. */
   causes: {
     far: 'far',
     slow: 'slow',

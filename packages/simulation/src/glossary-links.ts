@@ -1,9 +1,5 @@
 import type { ComponentId } from './catalog.ts'
 
-/* The glossary entries each Component teaches, as data. Kept apart from components/defs.ts so the
-   wiki's term links do not load every Component's rules and the Simulation behind them. A test
-   keeps this map equal to COMPONENT_GLOSSARY. */
-
 export const COMPONENT_GLOSSARY: Partial<Record<ComponentId, ReadonlyArray<string>>> = {
   queue: ['at-least-once-delivery', 'backpressure', 'dead-letter-queue', 'transactional-outbox'],
   autoscaler: ['autoscaling', 'cold-start', 'diurnal-traffic', 'vertical-and-horizontal-scaling'],

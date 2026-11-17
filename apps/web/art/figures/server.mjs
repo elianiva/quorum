@@ -1,8 +1,6 @@
 import { tools } from '../parts.mjs'
 import { HEIGHT, P as STAGE, WIDTH } from '../stage.mjs'
 
-// An app server: a 2U chassis on slide rails in a small four-post rack stand.
-// The status light bar on the front panel is the part to watch.
 export function draw(P, { feet = true, lit = true } = {}) {
   const t = tools(P)
   const { k, S, L, D, at, slab } = t
@@ -33,7 +31,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
       tone: 'lo',
     })
 
-  // Back of the stand: the left posts and rails are behind the chassis.
   out.push(bottomBar({ x: xs[0] + 1, y: ys[0] + POST, w: 3, d: ys[1] - ys[0] - POST, r: 0.4 }))
   out.push(bottomBar({ x: xs[0] + POST, y: ys[0] + 1, w: xs[1] - xs[0] - POST, d: 3, r: 0.4 }))
   out.push(post(xs[0], ys[0]))
@@ -42,7 +39,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   out.push(bottomBar({ x: xs[1] + 1, y: ys[0] + POST, w: 3, d: ys[1] - ys[0] - POST, r: 0.4 }))
   out.push(bottomBar({ x: xs[0] + POST, y: ys[1] + 1, w: xs[1] - xs[0] - POST, d: 3, r: 0.4 }))
 
-  // The chassis.
   const CH = { x: -36, y: -28, w: 72, d: 51, r: 0.8 }
   const Z0 = 14
   const Z1 = 32
@@ -69,10 +65,8 @@ export function draw(P, { feet = true, lit = true } = {}) {
     ),
   )
   out.push(t.labelPlate({ x: 8, y: 4, w: 22, d: 11, r: 1 }, Z1))
-  // Side vents on the +x face.
   out.push(L(t.slots('x', CH.x + CH.w, -22, 8, 20, 28, 7, 2), { tone: 'lo' }))
 
-  // Front panel with drive caddies, vents, power button and the status bar.
   const PANEL = { x: CH.x, y: FRONT, w: CH.w, d: 1.2, r: 0.3 }
   const FACE = FRONT + 1.2
   out.push(S(slab(PANEL, Z0, Z1 - Z0, 2), { tone: 'hi', crease: 'lo' }))
@@ -89,7 +83,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   out.push(L(k.sideRing([29, FACE + 0.9, 19.6], 1, 'y', P, 12), { tone: 'lo' }))
   out.push(S(slab({ x: 24.5, y: FACE, w: 9, d: 1, r: 0.4 }, 25, 3, 2), { tone: 'hi', lit }))
 
-  // Right side of the stand and the rack ears are in front of the chassis.
   out.push(rail(36))
   out.push(post(xs[1], ys[0]))
   out.push(post(xs[1], ys[1]))
@@ -117,7 +110,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
     )
   }
 
-  // Top frame joining the four posts.
   const bar = (plan) => S(slab(plan, TOP, 3, 2, 0.4), { tone: 'mid' })
   out.push(bar({ x: xs[0], y: ys[0], w: xs[1] - xs[0] + POST, d: POST, r: 0.6 }))
   out.push(bar({ x: xs[0], y: ys[0] + POST, w: POST, d: ys[1] - ys[0] - POST, r: 0.3 }))

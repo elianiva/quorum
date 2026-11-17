@@ -4,7 +4,6 @@ import { LIFECYCLE_DAYS, RESEARCH } from '../catalog.ts'
 
 import { has } from '../lookups.ts'
 
-/** Picks the product an Object Storage Node is (07 "Object Storage"): S3 or R2. */
 export const setStoreVariant = (game: Game, id: string, storeVariant: StoreVariant): Action =>
   withNode(game, id, (node) =>
     node.type !== 'storage'
@@ -14,7 +13,6 @@ export const setStoreVariant = (game: Game, id: string, storeVariant: StoreVaria
         : ok(node.storeVariant === storeVariant ? game : patch(game, id, { storeVariant })),
   )
 
-/** Picks the class Object Storage keeps its objects in (07 "Object Storage"). */
 export const setStorageClass = (game: Game, id: string, storageClass: StorageClass): Action =>
   withNode(game, id, (node) =>
     node.type === 'storage'
@@ -22,10 +20,6 @@ export const setStorageClass = (game: Game, id: string, storageClass: StorageCla
       : notAllowed('Only Object Storage has a storage class.'),
   )
 
-/**
- * Picks how many calendar days an object stays in its class before Lifecycle rules move it one
- * class cheaper (07 "Object Storage"). Needs Lifecycle rules; 0 turns them off.
- */
 export const setLifecycle = (game: Game, id: string, lifecycle: number): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'storage')

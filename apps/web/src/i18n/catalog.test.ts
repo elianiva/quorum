@@ -8,8 +8,6 @@ import { copy, copyIn, loadLocale } from './messages.ts'
 import { changeIn } from './refusal.ts'
 import { supportedLocales } from './index.ts'
 
-// English ships in the main chunk; the other catalogs are dynamic imports. Load them like a player
-// who picked one of those languages would, before the tests read their copy.
 beforeAll(async () => {
   await Promise.all(supportedLocales.map(({ value }) => loadLocale(value)))
 })

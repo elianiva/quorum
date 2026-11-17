@@ -14,7 +14,6 @@ import type { BuildGroup } from '@quorum/simulation/catalog'
 import { groupBadge } from '@quorum/ui/game/bits'
 import type { Section } from '../frontmatter.ts'
 
-/** A kind of page's mark. Its name and its purpose are interface copy (`t.quadrants`). */
 export type Quadrant = Readonly<{
   icon: IconNode
   group: BuildGroup
@@ -42,6 +41,5 @@ export const quadrantBadge = <M>(section: Section, className: string, h: HtmlBui
     ? groupBadge('ops', QUADRANTS.about.icon, className, h, true)
     : groupBadge(QUADRANTS[section].group, QUADRANTS[section].icon, className, h)
 
-/** The group colour of a kind, as a CSS value. */
 export const quadrantColor = (section: Section): string =>
   section === 'about' ? 'var(--muted-foreground)' : `var(--group-${QUADRANTS[section].group})`

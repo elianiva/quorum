@@ -1,20 +1,13 @@
-/* The copy of the pages generated from the catalog: their titles, section headings, tables and
-   facts boxes. Catalog names and descriptions come from the catalog itself, in the page's language. */
-
 export const reference = {
   eraN: (index: number) => `Era ${index}`,
   none: '—',
   yes: 'Yes',
   no: 'No',
   any: 'Any',
-  /** The full stop that closes a sentence whose last words are a link, and the space that
-      separates a finished sentence from the next. */
-  /** What separates the items of a list the copy introduces. */
   listSeparator: ', ',
   sentenceEnd: '.',
   sentenceGap: ' ',
   factsLabel: (title: string) => `${title} facts`,
-  /** The headings of generated pages, by key. The anchor of each is the English text's slug in every language. */
   sections: {
     rules: 'Rules',
     worksWith: 'Works with',

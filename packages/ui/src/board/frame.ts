@@ -13,10 +13,10 @@ import { footerRect } from './card-parts.ts'
 import { lengthOf, pointOn, laneUnder, midOf, partOf, traceOf } from './paths.ts'
 import { BELT, SPLITTER_W, beltSpeed, arrowAt, pointAndDirection } from './marks.ts'
 import {
-  DIM,
-  QUIET,
-  CHEVRON_SCALE,
-  PLACE_LIFT,
+  OFF_PATH_ALPHA,
+  QUIET_BELT_ALPHA,
+  CHEVRON_MIN_ZOOM,
+  PLACE_LIFT_PX,
   type Mouth,
   linkKey,
   portalsOf,
@@ -24,7 +24,6 @@ import {
 import { particleColor } from './layers.ts'
 import type { BoardController } from './controller.ts'
 
-/** What every pass of one frame shares. */
 type Frame = Readonly<{
   c: BoardController
   state: BoardState
@@ -36,7 +35,6 @@ type Frame = Readonly<{
   byId: Map<string, GameNode>
 }>
 
-/** Advances every view and draws one frame of the board. */
 export const animate = (c: BoardController, seconds: number): void => {
   const state = c.state
   if (!state) return
@@ -50,16 +48,12 @@ export const animate = (c: BoardController, seconds: number): void => {
     c.activityOf,
   )
   const colors = palette()
-  // The phase is sim time: at 10× the belts carry ten times as many items per real second.
   if (!state.paused) c.phase += seconds * state.speed
-  // Reduced motion: packets hold still along the pipe, and the bottleneck does not pulse.
   const still = reducedMotion()
   const zoom = c.world.scale.x
-  const detailed = zoom >= CHEVRON_SCALE
+  const detailed = zoom >= CHEVRON_MIN_ZOOM
   const rows = rowsAt(zoom)
   const chip = chipAt(zoom)
-  // The chevrons and packets draw only for belts on screen. A card off screen is
-  // hidden too, so the cards' render group does not draw a world the view cannot see.
   const scale = zoom
   const margin = 40 / scale
   const view: Box = {
@@ -77,8 +71,6 @@ export const animate = (c: BoardController, seconds: number): void => {
         at.y + card.height >= view.y &&
         at.y <= view.y + view.h)
     card.root.visible = shown
-    // The card keeps following its Node while hidden, so it is already in place when
-    // the view returns. Only its level of detail waits for the screen.
     card.tick(seconds, still)
     if (shown) card.detail(rows, chip, colors)
   }
@@ -89,7 +81,6 @@ export const animate = (c: BoardController, seconds: number): void => {
     return false
   })
   const byId = c.shown()
-  // Once the dropped cards are in their spots, their links follow them again.
   if (
     c.heldLanding &&
     c.gesture?.kind !== 'node' &&
@@ -116,7 +107,6 @@ export const animate = (c: BoardController, seconds: number): void => {
   drawOverlay(f)
 }
 
-/** Draws every belt on screen and collects the tunnel mouths it leaves. */
 const aboveGround = (): boolean => false
 
 const drawBelts = (f: Frame): Readonly<{ mouths: Array<Mouth>; moved: boolean }> => {
@@ -125,22 +115,18 @@ const drawBelts = (f: Frame): Readonly<{ mouths: Array<Mouth>; moved: boolean }>
   const zoneHue = { a: colors.groups.edge, b: colors.groups.ops, c: colors.groups.data }
   let moved = false
 
-  // Chevrons and packets draw only for belts on screen.
   c.chevrons.begin()
   const focus = c.pathOf(state)
   c.packets.begin()
-  // Clearing marks the Graphics changed, so an empty one is left alone.
   if (c.arrows.context.instructions.length > 0) c.arrows.clear()
   c.notes.begin()
   c.places.begin()
-  // Clearing marks the Graphics changed, so an empty one is left alone.
   if (c.overlay.context.instructions.length > 0) c.overlay.clear()
   const mouths: Array<Mouth> = []
   c.syncBelts(state.game.links)
   const picked = c.selectedLink
   if (picked && !state.game.links.some((l) => l.from === picked.from && l.to === picked.to))
     c.selectedLink = null
-  // One belt is under the pointer or picked: it carries the answer, so the rest quiet down.
   const lit = c.hoverLink ?? c.selectedLink
   const litKey =
     lit && state.game.links.some((l) => l.from === lit.from && l.to === lit.to)
@@ -156,9 +142,7 @@ const drawBelts = (f: Frame): Readonly<{ mouths: Array<Mouth>; moved: boolean }>
     const picked = c.selectedLink?.from === link.from && c.selectedLink.to === link.to
     const hovered = picked || (c.hoverLink?.from === link.from && c.hoverLink.to === link.to)
     const quiet = litKey !== null && litKey !== key
-    // Off the focused path, a belt fades back.
     const off = focus !== null && !(focus.has(link.from) && focus.has(link.to))
-    // A lit belt rises above the channel it shares with the others, so nothing covers it.
     if (litKey === key) c.bodies.setChildIndex(belt.body, c.bodies.children.length - 1)
     const age = c.fresh.get(key)
     const wire = c.wireOf(from, to, key)
@@ -166,23 +150,17 @@ const drawBelts = (f: Frame): Readonly<{ mouths: Array<Mouth>; moved: boolean }>
       belt.wire = wire
       moved = true
     }
-    // A new link draws out of its port before anything flows along it.
     const drawn = age === undefined ? 1 : easeOut(Math.min(1, age / DRAW_IN_S))
     const path = drawn < 1 ? partOf(wire.path, drawn) : wire.path
-    // Where other lanes cross, a vertical lane runs through a tunnel under them.
     const pieces = drawn < 1 ? [path] : wire.pieces
     const seen = belt.onScreen(pieces, view)
     const flow = rates.get(key)
     const busy = (flow?.rate ?? 0) > 0.01
     const speed = busy && !still ? beltSpeed(flow?.rate ?? 0) : 0
-    // Advance this belt by the distance it covered: sim seconds at its own speed.
-    // A flow rate that changes under it then alters only the next frame's speed.
     if (!state.paused) belt.travel += seconds * state.speed * speed
-    belt.show(seen, quiet ? QUIET : hovered ? 1 : off ? DIM : 1)
-    // A belt the view cannot see draws nothing: not its body, its mouths or its items.
+    belt.show(seen, quiet ? QUIET_BELT_ALPHA : hovered ? 1 : off ? OFF_PATH_ALPHA : 1)
     if (!seen) continue
     const tap = COMPONENTS[to.type].tap
-    // The packets' colour; the pipe under them is a pale tint of it, with no outline.
     const hue = flow?.failing
       ? colors.danger
       : tap
@@ -190,11 +168,7 @@ const drawBelts = (f: Frame): Readonly<{ mouths: Array<Mouth>; moved: boolean }>
         : flow && busy
           ? KINDS[flow.kind].color
           : colors.edge
-    // A dark board sinks its wires toward the canvas, so saturated packets do not glare.
     const packet = mix(hue, colors.canvas, colors.wireMute)
-    // Rails stand out only where they say something: on the focused path and on errors. A call
-    // between zones pays cross-zone latency and Egress: its rails are orange in focus,
-    // and at rest an orange tick marks the port it arrives on.
     const zonal = zoneMs(from, to) > 0
     const focused = focus !== null && !off
     const rail = hovered
@@ -203,9 +177,7 @@ const drawBelts = (f: Frame): Readonly<{ mouths: Array<Mouth>; moved: boolean }>
         ? colors.warn
         : focused || flow?.failing
           ? mix(packet, colors.shade, 0.3)
-          : // At rest a faint edge in the belt's own tint keeps the path's boundary.
-            mix(packet, colors.canvas, busy ? 0.55 : 0.4)
-    // Once zones are researched a link inside one zone takes that zone's tint.
+          : mix(packet, colors.canvas, busy ? 0.55 : 0.4)
     const zones = has(state.game, 'multi-az') && zoned(from) && zoned(to)
     const crossing = zones && from.zone !== to.zone
     const body =
@@ -216,7 +188,6 @@ const drawBelts = (f: Frame): Readonly<{ mouths: Array<Mouth>; moved: boolean }>
     belt.draw(pieces, rail, body, width, zonal ? colors.warn : null)
     if (drawn >= 1)
       for (const mouth of belt.mouthsFor(pieces, width, off || quiet)) mouths.push(mouth)
-    // A lit belt marks both of its ports, so the lane shows which cards it joins.
     if (hovered && drawn >= 1) {
       for (const port of [outPort(from), inPort(to)])
         c.overlay
@@ -224,21 +195,26 @@ const drawBelts = (f: Frame): Readonly<{ mouths: Array<Mouth>; moved: boolean }>
           .fill(colors.accent)
           .stroke({ color: colors.card, width: 2 })
     }
-    // A still, busy belt shows its arrows and rate instead of chevrons: one read, not two.
-    // The items carry the flow; the chevrons are faint unless the belt is in focus.
     if (detailed && seen && busy && !still)
       c.chevrons.add(
         pieces,
         belt.travel,
         mix(packet, colors.canvas, 0.4),
-        hovered ? 0.9 : quiet ? 0.05 : focus !== null && !off ? 0.75 : off ? DIM * 0.4 : 0.3,
+        hovered
+          ? 0.9
+          : quiet
+            ? 0.05
+            : focus !== null && !off
+              ? 0.75
+              : off
+                ? OFF_PATH_ALPHA * 0.4
+                : 0.3,
         view,
       )
-    // A link between regions says what its round trip costs, under the belt.
     const place = placeLabel(state.game, from, to)
     if (place && detailed && seen && drawn >= 1 && !quiet) {
       const mid = midOf(path)
-      c.places.add(mid.x, mid.y, place, colors.ink, colors.warn, -PLACE_LIFT)
+      c.places.add(mid.x, mid.y, place, colors.ink, colors.warn, -PLACE_LIFT_PX)
     }
     if (picked) {
       const mid = pointOn(path, 0.5)
@@ -270,14 +246,12 @@ const drawBelts = (f: Frame): Readonly<{ mouths: Array<Mouth>; moved: boolean }>
     const marks = flowMarks(still, flow.rate, length)
     const shape = packetShapeOf(flow.kind)
     const alpha = tap ? 0.6 : 0.95
-    // Nothing shows on the belt while it runs through a tunnel.
     const underground =
       wire.tunnels.length === 0
         ? aboveGround
         : (t: number): boolean =>
             wire.tunnels.some(([start, end]) => t * length > start && t * length < end)
     if (marks.label === null) {
-      // Items ride on the distance this belt has travelled, each in its kind's shape.
       const along = 1 / Math.max(1, length)
       const color = particleColor(packet, alpha)
       for (let index = 0; index < marks.packets; index += 1) {
@@ -289,7 +263,6 @@ const drawBelts = (f: Frame): Readonly<{ mouths: Array<Mouth>; moved: boolean }>
         c.packets.add(shape, at.x, at.y, color)
       }
     } else {
-      // Reduced motion: still arrows along the belt, under the rate they stand for.
       for (const t of marks.arrows) {
         if (underground(t)) continue
         const at = pointAndDirection(path, t)
@@ -304,7 +277,6 @@ const drawBelts = (f: Frame): Readonly<{ mouths: Array<Mouth>; moved: boolean }>
   return { mouths, moved }
 }
 
-/** Redraws the tunnel portals when a mouth or the colour changed. */
 const drawPortals = (c: BoardController, mouths: Array<Mouth>, colors: Palette): void => {
   const portalColor = colors.edge
   const sameMouths =
@@ -326,19 +298,16 @@ const drawPortals = (c: BoardController, mouths: Array<Mouth>, colors: Palette):
     for (const portal of portalsOf(mouths))
       c.portals
         .roundRect(portal.x0, portal.y0, portal.x1 - portal.x0, portal.y1 - portal.y0, 1.25)
-        .fill({ color: portalColor, alpha: portal.off ? DIM : 0.7 })
+        .fill({ color: portalColor, alpha: portal.off ? OFF_PATH_ALPHA : 0.7 })
   }
 }
 
-/** A port that feeds several belts has a splitter over the point where they part. */
 const drawSplitters = (f: Frame, moved: boolean): void => {
   const { c, state, colors, byId } = f
-  // The fans follow the wires: with none moved and no belt drawing in, they stand.
   if (!moved && state.game.links === c.splitLinks && c.fresh.size === 0 && c.splitFresh === 0)
     return
   c.splitLinks = state.game.links
   c.splitFresh = c.fresh.size
-  // A port that feeds several belts has a splitter over the point where they part.
   const fans = new Map<string, { x: number; top: number; bottom: number; belts: number }>()
   for (const link of state.game.links) {
     const from = byId.get(link.from)
@@ -352,7 +321,6 @@ const drawSplitters = (f: Frame, moved: boolean): void => {
       belts: 0,
     }
     fan.belts += 1
-    // The fan is the stretch out of the port before the belt runs straight up or down.
     const path = c.wireOf(from, to, linkKey(link)).path
     for (let index = 1; index < path.length; index += 1) {
       const point = path[index] as Pt
@@ -377,10 +345,8 @@ const drawSplitters = (f: Frame, moved: boolean): void => {
   }
 }
 
-/** Cue, cut links, the wire in hand, selection frame, stamp and the landing outline. */
 const drawOverlay = (f: Frame): void => {
   const { c, state, colors, seconds, still, byId } = f
-  // A disclosure cue: a ring around the one footer button to press next.
   const cue = state.cue ? byId.get(state.cue) : undefined
   if (cue) {
     const rect = footerRect(cue.type)
@@ -390,7 +356,6 @@ const drawOverlay = (f: Frame): void => {
       .stroke({ color: colors.ok, width: 2.5, alpha: pulse })
   }
 
-  // Cut links fade where they were, in the colour that warned before the cut.
   c.cuts = c.cuts.filter((cut) => {
     cut.t += seconds
     const fade = 1 - easeOut(Math.min(1, cut.t / CUT_S))
@@ -404,7 +369,6 @@ const drawOverlay = (f: Frame): void => {
     return cut.t < CUT_S
   })
 
-  // A wire let go over nothing draws back into its port.
   const retract = c.retract
   if (retract) {
     retract.t += seconds
@@ -427,7 +391,6 @@ const drawOverlay = (f: Frame): void => {
   if (gesture?.kind === 'link') {
     const from = byId.get(gesture.from)
     if (from) {
-      // Free, the end rides the pointer; near a port it is pulled onto it.
       const aim = snapped ? inPort(snapped) : gesture.at
       const end = c.wireEnd ?? aim
       const k = follow(seconds, snapped ? 30 : 60, still)
@@ -460,7 +423,6 @@ const drawOverlay = (f: Frame): void => {
       .roundRect(frame.x, frame.y, frame.w, frame.h, 6)
       .fill({ color: colors.accent, alpha: 0.04 })
       .stroke({ color: colors.accent, width: 1.5, alpha: 0.85 })
-    // Square handles on the corners, as in a design tool.
     const size = 8
     for (const [cx, cy] of [
       [frame.x, frame.y],
@@ -489,7 +451,6 @@ const drawOverlay = (f: Frame): void => {
   }
   const landing = c.landingOf()
   if (state.stamp) {
-    // The Playbook shows where it will land, clear of the cards already there.
     const x = landing?.x ?? Math.round(c.pointer.x / 8) * 8
     const y = landing?.y ?? Math.round(c.pointer.y / 8) * 8
     for (const entry of state.stamp) {
@@ -507,7 +468,6 @@ const drawOverlay = (f: Frame): void => {
     }
   }
 
-  // A held card or new Node over others: an outline shows the free spot it will take.
   const held =
     gesture?.kind === 'node' && c.dragged
       ? byId.get(c.dragged.id)

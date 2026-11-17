@@ -10,7 +10,6 @@ import { Message } from '@/game/message.ts'
 import { row } from '@quorum/ui/game/bits'
 import { type Panel, caption, percent, percentNumber, section } from './shared.ts'
 
-/** The Service Mesh's members and what each sidecar costs them (05 "Service Mesh"). */
 const sidecars = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
 

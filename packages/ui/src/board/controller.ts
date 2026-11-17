@@ -21,7 +21,7 @@ import {
   type Route,
 } from './geometry.ts'
 import { compute } from './compute.ts'
-import { CHIP_NONE } from './lod.ts'
+import { CHIP_GONE_AT_ZOOM } from './lod.ts'
 import { type RoutedLink, type RoutedNode, type Wire } from './routing.ts'
 import { COMPONENT_ICONS } from '../game/component-icons.ts'
 import { CursorOverlay, type SeatCursor } from './cursors.ts'
@@ -33,7 +33,7 @@ import { silhouette, badgeGlyph } from './shapes.ts'
 import { DRAW_IN_S, CURSOR_MS, HOVER_SETTLE_MS } from './motion.ts'
 import { glyph, paint } from './glyphs.ts'
 import { BADGE_X, BADGE_Y, BADGE_R, TITLE_X, medallion, headerBand } from './card-parts.ts'
-import { pointOn, distanceTo, laneUnder, routeOf, SLACK, bent, dashed } from './paths.ts'
+import { pointOn, distanceTo, laneUnder, routeOf, ROUTE_SLACK_PX, bent, dashed } from './paths.ts'
 import { SANS, label } from './text.ts'
 import { MIN_FIT_SCALE, MIN_FIT_SCALE_PHONE, NodeView } from './node-view.ts'
 import { BeltView, linkKey, type Mouth } from './belt-view.ts'
@@ -41,29 +41,18 @@ import { ChevronLayer, PacketLayer, NoteLayer } from './layers.ts'
 
 type Mutable<T> = { -readonly [K in keyof T]: T[K] }
 
-/** The phone: narrow in portrait, short in landscape (the `compact` variant in theme.css). */
 const isPhone = (): boolean => matchMedia('(max-width: 639px), (max-height: 499px)').matches
 
-/** The share of a phone's height the Inspector's bottom sheet takes; keep it in step with its height in inspector.ts. */
-const PHONE_SHEET = 0.52
-/** The portrait phone, the only layout where the Inspector is a sheet; a short landscape window keeps its side panel. */
+const PHONE_SHEET_HEIGHT_SHARE = 0.52
 const sheetShown = (): boolean => matchMedia('(max-width: 639px) and (min-height: 500px)').matches
 
-/** A two-finger pan keeps the Board moving after the fingers leave, easing out over this long. */
-const GLIDE_S = 0.28
-/** The fastest a flick can start the glide, in pixels a second. */
-const GLIDE_MAX = 2400
-/** A gap this long between wheels means a new gesture, not a faster flick, in ms. */
-const GLIDE_GAP_MS = 120
-/** The glide waits this long after the last wheel, so a wheel still arriving keeps the pace, in ms. */
-const GLIDE_IDLE_MS = 32
-/** Below this speed, in pixels a second, the glide has stopped. */
-const GLIDE_MIN = 20
-
-/** Buying a size is held, not clicked: the fill crosses the button, and the buy lands at the end. */
+const GLIDE_EASE_SECONDS = 0.28
+const GLIDE_MAX_PX_PER_S = 2400
+const GLIDE_NEW_GESTURE_GAP_MS = 120
+const GLIDE_WHEEL_IDLE_MS = 32
+const GLIDE_STOPPED_PX_PER_S = 20
 
 type Gesture =
-  /** `cut` is the link under a finger that went down on it: a tap cuts it, a drag only pans. */
   | {
       kind: 'pan'
       x: number
@@ -79,7 +68,6 @@ type Gesture =
       x: number
       y: number
       moved: boolean
-      /** Grabbed by the selection frame, not by a card: a tap changes nothing. */
       frame?: boolean
     }
   | { kind: 'link'; from: string; at: Pt }
@@ -89,10 +77,6 @@ type Gesture =
 const isWebKit = (): boolean =>
   /AppleWebKit/.test(navigator.userAgent) && !/Chrome|Chromium|Android/.test(navigator.userAgent)
 
-/**
- * WebGPU only where an adapter exists. Safari's WebGPU throws "Length out of range of buffer" while
- * uploading vertex buffers, and some browsers expose `navigator.gpu` with no adapter behind it.
- */
 const rendererPreference = async (): Promise<Array<RendererPreference>> => {
   if (isWebKit() || !navigator.gpu) return ['webgl']
   const adapter = await navigator.gpu.requestAdapter().catch(() => null)
@@ -102,12 +86,6 @@ const rendererPreference = async (): Promise<Array<RendererPreference>> => {
 export class BoardController {
   readonly app = new Application()
   readonly world = new Container()
-  /**
-   * The belts, one BeltView per link in the Model's order, under the splitters. Each
-   * belt draws in three shared layers, so a busy Design draws in a few batches, not
-   * a few per link: bodies, then the moving chevrons in a render group of their own
-   * (they change every frame, the rest does not), then the mouths.
-   */
   readonly wires = new Container()
   readonly bodies = new Container()
   readonly chevrons = new ChevronLayer()
@@ -119,30 +97,20 @@ export class BoardController {
   splittersKey = ''
   splitLinks: Game['links'] | null = null
   splitFresh = 0
-  /** The tunnel portals, redrawn only when a mouth moves or the focus changes. */
   readonly portals = new Graphics()
-  /** The mouths the portals were last drawn for, and the colour they were drawn in. */
   mouthsDrawn: ReadonlyArray<Mouth> = []
   portalInk = -1
   readonly packets = new PacketLayer()
-  /** The still arrows reduced motion shows in place of the packets. */
   readonly arrows = new Graphics()
-  /** The rate labels on still belts: reduced motion's stand-in for moving packets. */
   readonly notes = new NoteLayer()
-  /** The round trip a link between regions pays, under its belt. */
   readonly places = new NoteLayer()
   readonly cards = new Container()
-  /** The boxes drawn around Nodes, under the belts, and their names. */
   readonly boxLayer = new Container()
   readonly boxes = new Graphics()
-  /** Replication copies, drawn as dashed lines and never as Links. */
   readonly replication = new Graphics()
   readonly boxNames = new Container()
   boxesKey = ''
   replicationKey = ''
-  /** What the last frame's boxes, replication lines, and focus path were computed from. The
-   *  frame runs 60 times a second and the Game changes a few times a second, so a frame that
-   *  reads the same inputs reuses the answer instead of scanning the Design again. */
   private boxesFrom: Readonly<{
     boxes: Game['boxes']
     nodes: Game['nodes']
@@ -164,46 +132,32 @@ export class BoardController {
   readonly overlay = new Graphics()
   readonly ghost = new Container()
   readonly views = new Map<string, NodeView>()
-  /** The Nodes as they are drawn this frame, and the views that follow their cards. */
   readonly shownCards = new Map<string, GameNode>()
   readonly drawnCards = new Map<string, { source: GameNode; drawn: Mutable<GameNode> }>()
-  /** Cards fading out after their Node left the Design. */
   leaving: Array<NodeView> = []
-  /** False until the first sync, so a loaded board does not animate in. */
   seeded = false
-  /** The Node whose card button is held down. */
   pressed: string | null = null
-  /** When the held footer button went down, in ms. */
   holdSince = 0
   state: BoardState | null = null
   gesture: Gesture = null
   hoverLink: Readonly<{ from: string; to: string }> | null = null
-  /** What the pointer just entered, and when: it lights after a rest, so a pass lights nothing. */
   hoverAim: Readonly<{
     node: string | null
     link: Readonly<{ from: string; to: string }> | null
     since: number
   }> | null = null
-  /** The link a click picked: Delete or its × badge cuts it. A click never cuts by itself. */
   selectedLink: Readonly<{ from: string; to: string }> | null = null
-  /** The Node under the pointer: with the selected one, it lights its whole path. */
   hoverNode: string | null = null
   pointer: Pt = { x: 0, y: 0 }
-  /** Fingers and pens on the board, in client coordinates. Two of them pinch. */
   readonly touches = new Map<number, Pt>()
   pinch: Readonly<{ distance: number; center: Pt }> | null = null
-  /** The speed a two-finger pan was moving at, in pixels a second, and when it last moved. */
   panSpeed = 0
   panAt = 0
-  /** The last pointer to move was a finger or a pen, which has no hover and a wide tip. */
   coarse = false
-  /** Local positions while a node is dragged, ahead of the Model. */
   dragged: Readonly<{ id: string; x: number; y: number }> | null = null
   droppedAt = 0
-  /** Where the held card, new Node or Playbook lands: the nearest spot that keeps clear. */
   landing: Pt | null = null
   landingKey = ''
-  /** Routed links, the Nodes where they were routed, and the layout key asked for last. */
   routed = new Map<string, Wire>()
   routedNodes = new Map<string, Pt>()
   private readonly wireMemo = new Map<
@@ -223,10 +177,8 @@ export class BoardController {
   private ratesFrom: Ledger['links'] | null = null
   private readonly rates = new Map<string, Ledger['links'][number]>()
   routedFor = ''
-  /** The Game and drag the routes were last checked against. */
   routedGame: Game | null = null
   routedDrag: BoardController['dragged'] = null
-  /** The layout to route next, the one routed last, and whether the worker has one. */
   routeWanted: Readonly<{
     key: string
     nodes: Array<RoutedNode>
@@ -234,51 +186,32 @@ export class BoardController {
   }> | null = null
   routeDone = ''
   routing = false
-  /**
-   * While a held card sits on another card, its links run to the spot where it
-   * will land, and they stay there while the dropped card glides into it.
-   */
   heldLanding: Map<string, Pt> | null = null
   ghostType: ComponentId | null = null
   ghostLocale = 'en'
-  /** The drawn end of a wire being pulled. It eases onto a port it snaps to. */
   wireEnd: Pt | null = null
-  /** The Node a pulled wire is snapped to, and how far its highlight has come in. */
   snapTo: string | null = null
   snapGlow = 0
-  /** A wire let go over nothing, drawing back into its port. */
   retract: { path: Route; t: number } | null = null
-  /** Links that just arrived, by key, with their age in seconds. */
   readonly fresh = new Map<string, number>()
-  /** The link the last wire drag asked for: it is already drawn, so it does not draw in. */
   wired: string | null = null
-  /** Links that just left, fading where they were. */
   cuts: Array<{ path: Route; t: number }> = []
   readonly abort = new AbortController()
-  /** The other Seats' pointers, drawn over the Board. */
   readonly cursorLayer = new CursorOverlay()
-  /** A pointer position waiting to go out, and when the last one went. */
   cursorWaiting = false
   cursorSentAt = 0
-  /** The panel this Seat is in, sent with its last position so the pointer stays put. */
   activity: SeatActivity | null = null
-  /** Whether the pointer has been on the Board, so there is a spot to keep. */
   pointerKnown = false
-  /** Whether the pointer is over the Board now. */
   over = false
-  /** Writes an activity key in this Board's language. */
   activityOf: (activity: SeatActivity) => string = (activity) => activity
   readonly resize: ResizeObserver
-  /** Watches whether the board is on screen: a board scrolled out of view draws nothing. */
   readonly sight: IntersectionObserver
   onScreen = true
   phase = 0
   started = false
   fitted = false
-  /** The host width the view was fitted to: a wider or narrower screen refits, a taller one does not. */
   fittedWidth: number | null = null
   destroyed = false
-  /** A still picture runs the ticker for a moment, then paints only on change. */
   stillSettled = false
   stillTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -295,7 +228,6 @@ export class BoardController {
     })
   }
 
-  /** Draws while the board is on screen and not suspended. A still picture settles, then paints. */
   run(): void {
     if (this.state?.animate === false) {
       if (this.stillSettled) {
@@ -305,7 +237,6 @@ export class BoardController {
       }
       if (this.stillTimer !== null) return
       this.app.start()
-      // Let the ticker paint the first frames. One render can land before the cards' textures.
       this.stillTimer = setTimeout(() => {
         this.stillTimer = null
         this.stillSettled = true
@@ -323,7 +254,6 @@ export class BoardController {
     else this.app.stop()
   }
 
-  /** Paints one frame of a still picture: no ticker runs, so panning and routing ask for this. */
   paint(): void {
     if (!this.started || this.destroyed || this.state?.animate !== false) return
     this.app.render()
@@ -334,8 +264,6 @@ export class BoardController {
     const preferred = await rendererPreference()
     await this.app.init({
       autoStart: false,
-      // Opaque, in the colour the host shows behind it. A transparent WebGPU canvas is composited
-      // as premultiplied alpha, and on Android Chrome that tinted the whole board yellow.
       backgroundAlpha: 1,
       backgroundColor: palette().canvas,
       antialias: true,
@@ -372,13 +300,8 @@ export class BoardController {
       this.overlay,
       this.ghost,
     )
-    // Pixi rebuilds a render group's batches whenever a Graphics in it changes. The
-    // chevrons, packets and overlay change every frame, the cards on each tick: in
-    // groups of their own, a frame does not repack every card.
     this.wires.isRenderGroup = true
     this.cards.isRenderGroup = true
-    // These sit outside the card batch. Batching each layer by hand stops a
-    // multi-shape layer from costing one draw per shape.
     for (const part of [this.overlay, this.arrows, this.splitters, this.portals, this.boxes])
       part.context.batchMode = 'batch'
     this.ghost.alpha = 0.55
@@ -389,8 +312,6 @@ export class BoardController {
     this.resize.observe(this.host)
     this.sight.observe(this.host)
     this.onResize()
-    // A board mounted with a state already in hand draws it now. Callers used to resend the same
-    // state every frame until the board started; one draw here replaces that.
     if (this.state !== null) this.draw(this.state)
     this.run()
   }
@@ -403,7 +324,6 @@ export class BoardController {
     const dragged = this.dragged
     if (dragged && this.gesture?.kind !== 'node') {
       const node = state.game.nodes.find((entry) => entry.id === dragged.id)
-      // If the move was refused, the card goes back once the drop is old news.
       const stale = performance.now() - this.droppedAt > 250
       if (!node || (node.x === dragged.x && node.y === dragged.y) || stale) this.dragged = null
     }
@@ -419,11 +339,6 @@ export class BoardController {
     this.run()
   }
 
-  /**
-   * On a phone the Inspector is a sheet over the lower part of the Board. A card it would cover
-   * slides up into the room above it, so the Board stays in sight and the card can still be moved.
-   * A card already clear of the sheet stays where it is.
-   */
   reveal(nodeId: string): void {
     if (!sheetShown()) return
     const node = this.state?.game.nodes.find((entry) => entry.id === nodeId)
@@ -433,7 +348,7 @@ export class BoardController {
     const top = this.world.position.y + node.y * scale
     const bottom = top + heightOf(node.type) * scale
     const roomTop = 150
-    const roomBottom = h * (1 - PHONE_SHEET) - 12
+    const roomBottom = h * (1 - PHONE_SHEET_HEIGHT_SHARE) - 12
     if (top >= roomTop && bottom <= roomBottom) return
     const middle = (roomTop + roomBottom) / 2
     const centered = middle - (heightOf(node.type) * scale) / 2
@@ -441,7 +356,6 @@ export class BoardController {
     this.paint()
   }
 
-  /** New links draw in from their port; removed ones fade where they were. */
   diffLinks(next: BoardState): void {
     const keyOf = (link: Readonly<{ from: string; to: string }>) => `${link.from}>${link.to}`
     const before = this.state?.game.links ?? []
@@ -450,7 +364,6 @@ export class BoardController {
     for (const link of next.game.links) {
       const key = keyOf(link)
       if (was.has(key)) continue
-      // A wire the player just drew is already on screen: it only glows.
       this.fresh.set(key, key === this.wired ? DRAW_IN_S : 0)
     }
     this.wired = null
@@ -463,7 +376,6 @@ export class BoardController {
     }
   }
 
-  /** Rebuilds the cards and the ghost, which keep the colours they were drawn in. */
   repaint(): void {
     for (const view of this.views.values()) view.root.destroy({ children: true })
     this.views.clear()
@@ -489,8 +401,6 @@ export class BoardController {
     const { clientWidth: w, clientHeight: h } = this.host
     if (w === 0 || h === 0) return
     this.app.renderer.resize(w, h)
-    // A rotation or a window resize fits the Design again; a phone's URL bar changing the height
-    // does not, so a panned view stays where the player left it.
     if (!this.fitted || this.fittedWidth === null || Math.abs(w - this.fittedWidth) > 32) this.fit()
     this.paint()
   }
@@ -499,10 +409,8 @@ export class BoardController {
     const nodes = this.state?.game.nodes ?? []
     const { clientWidth: w, clientHeight: h } = this.host
     if (nodes.length === 0 || w === 0 || h === 0) return
-    // Keep clear of the HUD above and the build dock below, unless the host says what to keep clear of.
     const phone = isPhone()
     const short = matchMedia('(max-height: 499px)').matches
-    // A phone has no sidebar and little room to spare, so its Design gets a narrow margin.
     const pad = phone && this.state?.pad === undefined ? 24 : (this.state?.pad ?? 80)
     const minX = Math.min(...nodes.map((node) => node.x)) - pad
     const minY = Math.min(...nodes.map((node) => node.y)) - pad
@@ -512,18 +420,14 @@ export class BoardController {
     const top = inset ? inset.top : short ? 120 : phone ? 160 : 120
     const bottom = inset ? inset.bottom : short ? 70 : phone ? 90 : 210
     const room = Math.max(1, h - top - bottom)
-    // The stats panel sits on the left on desktop: keep cards out from under it. A phone has no
-    // panel, so it uses the full width and the design's own padding is the only margin.
     const left = inset ? inset.left : phone || short ? 0 : 380
     const edge = inset || phone || short ? 0 : 24
     const across = Math.max(1, w - left - edge)
-    // Below this zoom the card text is too small to read; pan to see the rest.
     const scale = Math.max(
       phone ? MIN_FIT_SCALE_PHONE : (this.state?.minScale ?? MIN_FIT_SCALE),
       Math.min(1.1, Math.min(across / (maxX - minX), room / (maxY - minY))),
     )
     this.world.scale.set(scale)
-    // A Design wider than the phone starts at its left edge, where the Users are.
     const x =
       phone && (maxX - minX) * scale > w
         ? -minX * scale
@@ -534,10 +438,6 @@ export class BoardController {
     this.paint()
   }
 
-  /**
-   * Zooms by a factor about the middle of the room the HUD, dock and Inspector
-   * leave free, so the view keeps the same cards in the same place.
-   */
   zoomBy(factor: number): void {
     const { clientWidth: w, clientHeight: h } = this.host
     if (w === 0 || h === 0 || factor <= 0) return
@@ -555,36 +455,29 @@ export class BoardController {
     this.paint()
   }
 
-  /**
-   * Slides the view sideways with a trackpad, and remembers how fast the fingers moved, so a flick
-   * glides on after they leave the glass (see `glide`).
-   */
   panBy(deltaX: number): void {
     const now = performance.now()
     const gap = now - this.panAt
     this.panAt = now
-    // A slow drag ends when the fingers stop; only a quick wheel earns a glide.
     this.panSpeed =
-      gap > 0 && gap < GLIDE_GAP_MS
-        ? Math.max(-GLIDE_MAX, Math.min(GLIDE_MAX, (-deltaX / Math.max(8, gap)) * 1000))
+      gap > 0 && gap < GLIDE_NEW_GESTURE_GAP_MS
+        ? Math.max(
+            -GLIDE_MAX_PX_PER_S,
+            Math.min(GLIDE_MAX_PX_PER_S, (-deltaX / Math.max(8, gap)) * 1000),
+          )
         : 0
     this.world.position.x -= deltaX
   }
 
-  /**
-   * Carries a pan on after the fingers leave, easing to a stop. While wheels still arrive, the
-   * fingers or the system's own momentum are moving the view, and this waits for them.
-   */
   glide(seconds: number): void {
     if (this.panSpeed === 0) return
-    if (performance.now() - this.panAt < GLIDE_IDLE_MS) return
+    if (performance.now() - this.panAt < GLIDE_WHEEL_IDLE_MS) return
     const frame = Math.min(seconds, 0.05)
     this.world.position.x += this.panSpeed * frame
-    this.panSpeed *= Math.exp(-frame / GLIDE_S)
-    if (Math.abs(this.panSpeed) < GLIDE_MIN) this.panSpeed = 0
+    this.panSpeed *= Math.exp(-frame / GLIDE_EASE_SECONDS)
+    if (Math.abs(this.panSpeed) < GLIDE_STOPPED_PX_PER_S) this.panSpeed = 0
   }
 
-  /** Centers a Node in the room the HUD, dock, and Inspector leave free. */
   focus(nodeId: string): void {
     const node = this.state?.game.nodes.find((entry) => entry.id === nodeId)
     if (!node) return
@@ -592,7 +485,7 @@ export class BoardController {
     if (w === 0 || h === 0) return
     const phone = isPhone()
     const top = phone ? 160 : 120
-    const bottom = sheetShown() ? h * PHONE_SHEET : phone ? 90 : 210
+    const bottom = sheetShown() ? h * PHONE_SHEET_HEIGHT_SHARE : phone ? 90 : 210
     const left = phone ? 0 : 380
     const right = phone ? 0 : 380
     const roomW = Math.max(1, w - left - right)
@@ -630,7 +523,6 @@ export class BoardController {
     )
   }
 
-  /** The frame around a multi-selection, with room around the cards. */
   selectionFrame(): Readonly<{ x: number; y: number; w: number; h: number }> | null {
     const selection = this.state?.selection ?? []
     if (selection.length < 2) return null
@@ -648,17 +540,12 @@ export class BoardController {
     }
   }
 
-  /** The Nodes that move with this one: the whole selection when it is part of it. */
   groupOf(id: string): ReadonlyArray<string> {
     const selection = this.state?.selection ?? []
     return selection.length > 1 && selection.includes(id) ? selection : [id]
   }
 
-  /** The Nodes where their cards are drawn, so wires stay attached while cards glide. */
   shown(): Map<string, GameNode> {
-    // A GameNode carries a hundred fields, so spreading one per card per frame costs
-    // more than the joins it feeds. A view of the node inherits every field and owns
-    // only the two that follow the card.
     const out = this.shownCards
     out.clear()
     for (const node of this.nodes()) {
@@ -669,7 +556,6 @@ export class BoardController {
       }
       let drawn = this.drawnCards.get(node.id)
       if (!drawn || drawn.source !== node) {
-        // Own, writable x and y: assigning through the prototype throws when the node is frozen.
         const own = { writable: true, enumerable: true, configurable: true }
         drawn = {
           source: node,
@@ -687,10 +573,6 @@ export class BoardController {
     return out
   }
 
-  /**
-   * The pointer entered a Node or a belt. Its light goes out at once, and the new one waits:
-   * a pass across the Board lights nothing, and moving off clears without a delay.
-   */
   aimHover(node: string | null, link: Readonly<{ from: string; to: string }> | null): void {
     const aim = this.hoverAim
     if (
@@ -710,7 +592,6 @@ export class BoardController {
     this.hoverAim = node === null && link === null ? null : { node, link, since: performance.now() }
   }
 
-  /** Lights the hover the pointer rested on. Called each frame, so it needs no timer. */
   settleHover(now: number): void {
     const aim = this.hoverAim
     if (aim === null || now - aim.since < HOVER_SETTLE_MS) return
@@ -731,9 +612,8 @@ export class BoardController {
     )
   }
 
-  /** Whether a point is on a card's footer button. A chip has no footer, so a tap on it selects. */
   footerAt(node: GameNode, point: Pt): boolean {
-    return this.world.scale.x >= CHIP_NONE && inFooter(node, point)
+    return this.world.scale.x >= CHIP_GONE_AT_ZOOM && inFooter(node, point)
   }
 
   outPortAt(point: Pt): GameNode | null {
@@ -752,7 +632,6 @@ export class BoardController {
     this.events.onEmptyTap()
   }
 
-  /** Whether the point is on the × badge in the middle of the selected link. */
   onBadge(point: Pt): boolean {
     const link = this.selectedLink
     const from = link && this.shown().get(link.from)
@@ -767,7 +646,6 @@ export class BoardController {
   linkAt(point: Pt): Readonly<{ from: string; to: string }> | null {
     const byId = new Map(this.nodes().map((node) => [node.id, node]))
     const reach = (this.coarse ? 14 : 7) / this.world.scale.x
-    // Lanes in one channel run a few pixels apart, so the nearest belt wins, not the first.
     let nearest: Readonly<{ from: string; to: string }> | null = null
     let closest = reach
     for (const link of this.state?.game.links ?? []) {
@@ -782,18 +660,11 @@ export class BoardController {
     return nearest
   }
 
-  /**
-   * Asks the compute worker to route every link once per change to the layout,
-   * with held cards where they are dragged. One layout is on the worker at a
-   * time: when it answers, the newest layout asked for since goes next, so a long
-   * drag on a big board still gets routes as fast as the worker makes them.
-   */
   routes(): Map<string, Wire> {
     const game = this.state?.game
     if (!game || (game === this.routedGame && this.dragged === this.routedDrag)) return this.routed
     this.routedGame = game
     this.routedDrag = this.dragged
-    // A held card on top of another card has no way out, so it is routed where it will land.
     const held = this.gesture?.kind === 'node' ? this.dragged : null
     const landing = held && this.landingOf()
     const blocked = held && landing && (landing.x !== held.x || landing.y !== held.y)
@@ -823,7 +694,6 @@ export class BoardController {
     return this.routed
   }
 
-  /** The dashed replication cables the router places with the other lanes, one set per Data Group. */
   replicationLinks(game: Game): ReadonlyArray<RoutedLink> {
     const region = this.state?.region
     if (!region) return []
@@ -849,18 +719,9 @@ export class BoardController {
     })
   }
 
-  /**
-   * A link's wire between Nodes where they are drawn. A card that eases toward
-   * where it was routed bends the routed wire to stay on its port. When a card is
-   * further away, as when the worker is behind a fast drag, the link takes the
-   * quick route until its routes arrive. A held card on another card has its
-   * links drawn to its landing spot instead (see heldLanding).
-   */
   wireOf(drawnFrom: GameNode, drawnTo: GameNode, key = `${drawnFrom.id}>${drawnTo.id}`): Wire {
     const table = this.routes()
     const held = this.heldLanding
-    // A card's view is one object whose x and y change, so the memo compares them. The wire
-    // stays the same object while nothing moved, which keeps its caches and its belt's body.
     let memo = this.wireMemo.get(key)
     if (
       memo &&
@@ -874,9 +735,6 @@ export class BoardController {
       memo.held === held
     )
       return memo.wire
-    // A GameNode carries a hundred fields. Spreading one per link per frame costs more
-    // than everything else the board draws, so a held card makes only the three fields
-    // that a route reads.
     const fromAt = held?.get(drawnFrom.id)
     const toAt = held?.get(drawnTo.id)
     const from = fromAt ? { type: drawnFrom.type, x: fromAt.x, y: fromAt.y } : drawnFrom
@@ -910,7 +768,7 @@ export class BoardController {
       const db = { x: to.x - b.x, y: to.y - b.y }
       const off = Math.max(Math.abs(da.x), Math.abs(da.y), Math.abs(db.x), Math.abs(db.y))
       if (off === 0) return wire
-      if (off <= SLACK) {
+      if (off <= ROUTE_SLACK_PX) {
         const path = bent(wire.path, da, db)
         return { path, pieces: [path], tunnels: [] }
       }
@@ -919,7 +777,6 @@ export class BoardController {
     return { path, pieces: [path], tunnels: [] }
   }
 
-  /** The Ledger's rate per link key, rebuilt only when the Ledger hands over new links. */
   ratesFor(links: Ledger['links']): ReadonlyMap<string, Ledger['links'][number]> {
     if (links !== this.ratesFrom) {
       this.ratesFrom = links
@@ -940,7 +797,6 @@ export class BoardController {
     const others = state.game.nodes.filter((node) => !group.includes(node.id)).map(boxOf)
     const held = state.game.nodes.find((node) => node.id === dragged?.id)
     const members = state.game.nodes.filter((node) => group.includes(node.id))
-    // The group lands as one box, and the lead card keeps its place inside it.
     const left = Math.min(...members.map((node) => node.x))
     const top = Math.min(...members.map((node) => node.y))
     this.landing =
@@ -972,7 +828,6 @@ export class BoardController {
     return this.landing
   }
 
-  /** The two fingers on the board: how far apart, and where between them. */
   pinchOf(): Readonly<{ distance: number; center: Pt }> {
     const [a, b] = [...this.touches.values()]
     if (!a || !b) return this.pinch ?? { distance: 1, center: { x: 0, y: 0 } }
@@ -982,7 +837,6 @@ export class BoardController {
     }
   }
 
-  /** Zoom by how the fingers spread and pan by how their midpoint moved. */
   zoomTo(next: Readonly<{ distance: number; center: Pt }>): void {
     const last = this.pinch
     this.pinch = next
@@ -1005,8 +859,6 @@ export class BoardController {
     bindPointer(this)
   }
 
-  /** Puts down whatever card is held or lifted. */
-  /** Fills the held footer button and fires it at the end; dragging off it cancels. */
   advanceHold(): void {
     const id = this.pressed
     const gesture = this.gesture
@@ -1023,7 +875,6 @@ export class BoardController {
     this.letGo()
     this.syncCards()
     this.views.get(id)?.celebrate()
-    // One hold buys one size, even if the pointer stays down.
     this.events.onFooter(id)
   }
 
@@ -1034,7 +885,6 @@ export class BoardController {
     }
   }
 
-  /** A wire let go over nothing draws back into its port. */
   springBack(fromId: string): void {
     const from = this.shown().get(fromId)
     const end = this.wireEnd
@@ -1086,8 +936,6 @@ export class BoardController {
     this.seeded = true
   }
 
-  /** The Nodes upstream and downstream of the hovered or selected Node, itself included;
-   *  null when none is in focus, so nothing is dimmed. */
   pathOf(state: BoardState): ReadonlySet<string> | null {
     const focus = this.hoverNode ?? state.selected
     if (!focus) return null
@@ -1124,7 +972,6 @@ export class BoardController {
     return new Set([...down, ...up])
   }
 
-  /** One belt per link, stacked in the Model's link order, with the splitters on top. */
   syncBelts(links: ReadonlyArray<Readonly<{ from: string; to: string }>>): void {
     if (links === this.beltLinks) return
     this.beltLinks = links
@@ -1181,7 +1028,6 @@ export class BoardController {
     this.ghost.addChild(frame, name, mark)
   }
 
-  /** Draws a dashed box and a name around each group of Nodes, when one moved, came or went. */
   drawBoxes(game: Game, colors: Palette): void {
     const locale = this.state?.locale ?? 'en'
     const from = this.boxesFrom
@@ -1246,7 +1092,6 @@ export class BoardController {
     }
   }
 
-  /** Dashed lines from each Data Group's primary to its Read Replicas, on the same lanes as the Links. */
   drawReplication(state: BoardState, colors: Palette): void {
     const from = this.replicationFrom
     const pairs =
@@ -1268,8 +1113,6 @@ export class BoardController {
       replica: pair.to,
       wire: this.wireOf(pair.from, pair.to),
     }))
-    // A wire stays one object while its ends and the routes hold still, so the same wires in
-    // the same order are the same lines: no need to print every point to compare them.
     const drawn = this.replicationWires
     if (drawn.length === wires.length && wires.every(({ wire }, index) => drawn[index] === wire))
       return
@@ -1293,7 +1136,6 @@ export class BoardController {
     animate(this, seconds)
   }
 
-  /** Sends the pointer to the other Seats: the latest spot, 25 times a second. */
   flushCursor(now: number): void {
     if (!this.cursorWaiting) return
     const state = this.state
@@ -1301,7 +1143,6 @@ export class BoardController {
     this.emitCursor()
   }
 
-  /** Sends the pointer now, with what this Seat is doing: a position and its activity. */
   emitCursor(): void {
     const state = this.state
     if (state === null || !this.pointerKnown) return
@@ -1315,15 +1156,10 @@ export class BoardController {
     })
   }
 
-  /**
-   * A panel opened or closed. An open panel keeps the pointer where it last was,
-   * so the other Seats see what this Seat is doing instead of an empty Board.
-   */
   setCursorActivity(activity: SeatActivity | null): void {
     if (this.activity === activity) return
     this.activity = activity
     if (this.state === null || !this.pointerKnown) return
-    // Back on the Board: resume normal movement. Elsewhere: the pointer is gone.
     if (activity !== null || this.over) {
       this.emitCursor()
       return
@@ -1332,12 +1168,10 @@ export class BoardController {
     this.events.onCursorGone?.()
   }
 
-  /** Another Seat moved its pointer. */
   moveSeatCursor(cursor: SeatCursor): void {
     this.cursorLayer.move(cursor, performance.now())
   }
 
-  /** A Seat's pointer left its Board, or the Seat did. */
   hideSeatCursor(seat: string): void {
     this.cursorLayer.remove(seat)
   }

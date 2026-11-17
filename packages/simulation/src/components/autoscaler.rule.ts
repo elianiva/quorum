@@ -4,7 +4,6 @@ import { RESEARCH, SCALE_MAXIMA, SCALE_TARGETS } from '../catalog.ts'
 
 import { has } from '../lookups.ts'
 
-/** Sets an Autoscaler's signal, target, and copy limits. */
 export const setAutoscaler = (
   game: Game,
   id: string,

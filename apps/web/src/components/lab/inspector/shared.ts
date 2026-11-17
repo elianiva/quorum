@@ -24,7 +24,6 @@ import { button } from '@quorum/ui/primitives/button'
 import { EYEBROW, FIGURE, WELL_STYLE } from '@quorum/ui/game/bits'
 import { frameworkPickerView, runtimePickerView } from './stack-picker.ts'
 
-/** What a Component adds to its Node's Inspector, in the slots the panel has room for. */
 export type PanelContext = Readonly<{
   model: Model
   game: Game
@@ -34,24 +33,14 @@ export type PanelContext = Readonly<{
 }>
 
 export type Panel = Readonly<{
-  /** The figures under "Live now"; the common figures show when absent. */
   stats?: (
     context: Omit<PanelContext, 'model'> & Readonly<{ own: NodeLedger }>,
   ) => ReadonlyArray<Html>
   top?: (context: PanelContext) => ReadonlyArray<Html>
-  /** Sections after the instance type, before placement and region. */
   body?: (context: PanelContext) => ReadonlyArray<Html>
-  /** Sections after placement and region, before the call settings. */
   late?: (context: PanelContext) => ReadonlyArray<Html>
 }>
 
-/**
- * A folded section: the title alone until opened. Once the player has opened or
- * closed it, the browser owns that state, so a re-render on every Step leaves
- * the section as they left it. `open` forces it open while it holds, as a
- * pinned Tradeoff card does; when it stops holding, the fold is the player's
- * again.
- */
 export const section = (
   title: string,
   children: ReadonlyArray<Html>,
@@ -130,7 +119,6 @@ export const section = (
     ],
   )
 
-/** A segmented control: options sunk in a well, the chosen one raised. */
 export const segmented = (
   columns: string,
   children: ReadonlyArray<Html>,
@@ -159,8 +147,6 @@ export const segmented = (
     children,
   )
 
-/** One option in a segmented control. It grows when its label wraps, so a translation keeps the
- *  whole label instead of clipping it. */
 export const choice = (
   key: string,
   selected: boolean,
@@ -169,7 +155,6 @@ export const choice = (
   children: ReadonlyArray<Html | string>,
   title: string,
   h: HtmlBuilder<Message>,
-  /** Hovering previews the option on a Tradeoff card. */
   hover?: Message,
 ) =>
   h.button(
@@ -235,7 +220,6 @@ export const COLUMNS: Record<number, string> = {
   5: css({ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }),
 }
 
-/** One option set as a segmented control: each value with its label. */
 export const picker = <T extends string | number | boolean>(
   key: string,
   values: ReadonlyArray<readonly [T, string]>,
@@ -302,11 +286,9 @@ export const smallButton = (
     h,
   )
 
-/** A Service's name: the first Service is the Monolith, and the player names the rest. */
 export const serviceNameIn = (t: Messages, service: Service): string =>
   service.id === 'monolith' ? t.inspectorShared.monolith : service.name
 
-/** What a card calls a size: the instance size, or a step number for a flat Component. */
 export const sizeLabelIn = (t: Messages, node: GameNode, size = node.size): string =>
   COMPONENTS[node.type].sized
     ? SIZES[size]
@@ -316,7 +298,6 @@ export const sizeLabelIn = (t: Messages, node: GameNode, size = node.size): stri
 
 export const percent = (value: number) => `${Math.round(value * 100)}%`
 
-/** A share as a whole number, for a message that writes its own percent sign. */
 export const percentNumber = (value: number) => Math.round(value * 100)
 
 export const stack = (
@@ -527,7 +508,6 @@ export const stack = (
   ]
 }
 
-/** The Service an App Server or Worker belongs to (08 "Ownership"); empty while there is one Service. */
 export const serviceOwnership = (
   game: Game,
   node: GameNode,
@@ -554,7 +534,6 @@ export const serviceOwnership = (
       ]
 }
 
-/** A Node's name as a button that reveals it on the Board. */
 export const nodeLink = (
   game: Game,
   node: GameNode,
@@ -614,7 +593,6 @@ export const nodeLink = (
   )
 }
 
-/** The routing Links out of a Node, with the Node at the far end. */
 export const outbound = (
   game: Game,
   node: GameNode,
@@ -640,7 +618,6 @@ export const caption = (text: string, h: HtmlBuilder<Message>): Html =>
     [text],
   )
 
-/** A Database's engine (07 "Variants"). */
 export const engine = (node: GameNode, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return section(
@@ -668,7 +645,6 @@ export const engine = (node: GameNode, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** A Read Replica's engine: it runs the primary's, so it cannot be picked here (07 "Variants"). */
 export const replicaEngine = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const engine = engineOf(game, node)
@@ -711,7 +687,6 @@ export const replicaEngine = (game: Game, node: GameNode, h: HtmlBuilder<Message
   )
 }
 
-/** A store that can replicate across the open regions. */
 export const spreading = (
   game: Game,
   node: GameNode,
@@ -760,7 +735,6 @@ export const splitting = (node: GameNode, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** The runtime a pinned Tradeoff card asks this Node's Stack to show, if any. */
 export const pinnedRuntime = (model: Model, node: GameNode) => {
   const card = model.board.tradeoff
   return card._tag === 'Pinned' && card.nodeId === node.id && card.option.kind === 'runtime'

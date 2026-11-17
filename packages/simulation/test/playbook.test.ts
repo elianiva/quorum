@@ -12,12 +12,9 @@ import {
 import type { Game } from '../src/state.ts'
 import { assignService, nodesOfService, serviceOfNode } from '../src/work.ts'
 
-/* Playbooks (13): capture a Design, place it in another Company, share it as text. */
-
 const source = preseedGame(3)
 const ids = ['server', 'database']
 
-/** A fresh Company with the fixed Nodes only, and Cash to build. */
 const empty = (): Game => ({
   ...preseedGame(9),
   nodes: preseedGame(9).nodes.filter((node) => node.type !== 'server' && node.type !== 'database'),
@@ -98,7 +95,6 @@ describe('Playbooks', () => {
 })
 
 describe('Duplicate', () => {
-  // Users → Load Balancer → App Server → Database, with a 12 s Database timeout.
   const balanced = (): Game => {
     const built = Result.getOrThrow(
       place(
@@ -133,7 +129,6 @@ describe('Duplicate', () => {
     expect(linked(lb, copy)).toBeDefined()
     expect(linked(copy, 'database')?.timeout).toBe(12)
     expect(linked(copy, 'analytics')).toBeDefined()
-    // The original keeps its own Links.
     expect(linked(lb, 'server')).toBeDefined()
   })
 

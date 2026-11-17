@@ -1,5 +1,3 @@
-/* Number formatting shared by the HTML views and the board. */
-
 const UNITS = ['', 'k', 'M', 'B', 'T'] as const
 
 export const compact = (value: number): string => {
@@ -21,20 +19,16 @@ export const money = (value: number): string => {
   return `${sign}$${rest < 1000 ? (rest < 10 ? rest.toFixed(2) : Math.round(rest)) : compact(rest)}`
 }
 
-/** A price on a button. A Sandbox has no money, so it shows none. */
 export const priceLabel = (sandbox: boolean, value: number): string => (sandbox ? '' : money(value))
 
-/** Requests per second: one decimal under 100, compact above. */
 export const rate = (value: number): string =>
   value === Number.POSITIVE_INFINITY ? '∞' : value < 100 ? value.toFixed(1) : compact(value)
 
-/** Milliseconds: whole ms under a second, seconds above. */
 export const ms = (value: number): string =>
   value < 1000 ? `${Math.round(value)} ms` : `${(value / 1000).toFixed(value < 10_000 ? 1 : 0)} s`
 
 export const sharePercent = (share: number): string => `${(share * 100).toFixed(1)}%`
 
-/** How long a new task waits in a Queue: seconds, minutes or hours, or stalled with no Worker draining. */
 export const queueWait = (seconds: number | null): string =>
   seconds === null
     ? '—'
@@ -46,7 +40,6 @@ export const queueWait = (seconds: number | null): string =>
           ? `${Math.round(seconds / 60)} min`
           : `${Math.round(seconds / 3600)} h`
 
-/** What an alert rule pages on, at its threshold. */
 export const alertText = (
   rule: 'errors' | 'latency' | 'saturation' | 'queue' | 'budget',
   threshold: number,
@@ -61,7 +54,6 @@ export const alertText = (
           ? `Error budget burning above ${threshold}×`
           : `A Node above ${Math.round(threshold * 100)}% load`
 
-/** A setting in seconds: 30 s, 5 min, 1 h. */
 export const duration = (seconds: number): string =>
   seconds < 60 ? `${seconds} s` : seconds < 3600 ? `${seconds / 60} min` : `${seconds / 3600} h`
 

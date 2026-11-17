@@ -59,8 +59,6 @@ import { EYEBROW, FIGURE, FLOAT, NESTED, SCROLL, WELL, FIGURE_STYLE } from '@quo
 const focusable =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
-/** Opens with focus inside the panel, keeps Tab in it, and hands focus back on close. A Scene test
- *  resolves it by hand. */
 export const PanelFocus = Mount.define('PanelFocus', {
   messages: [Message.Synced],
   execute: ({ element }) =>
@@ -89,7 +87,6 @@ export const PanelFocus = Mount.define('PanelFocus', {
         panel.addEventListener('keydown', onKeyDown)
         return () => {
           panel.removeEventListener('keydown', onKeyDown)
-          // A panel that opens another one leaves focus where the new panel put it.
           if (panel.contains(document.activeElement) || document.activeElement === document.body)
             before?.focus()
         }
@@ -478,7 +475,6 @@ const keyGroupsOf = (t: Messages, easyMode: boolean): ReadonlyArray<KeyGroup> =>
   ],
 ]
 
-/** Each keys column keeps its own vertical rule; the layout folds to two, then one. */
 const keyColumnRule = (index: number): string =>
   index === 0
     ? ''
@@ -843,7 +839,6 @@ const menuItem = (
     h,
   )
 
-/** The game menu over the board. The clock holds still while it is open. */
 export const menuPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -1010,7 +1005,6 @@ export const menuPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
 
 const VOTE_TITLE = { fund: 'voteFund', decline: 'voteDecline', exit: 'voteExit' } as const
 
-/** One open vote: the count, a dot per Seat, and the two ballots. */
 const voteCard = (model: Model, open: Vote, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const seat = seatOf()
@@ -1096,7 +1090,6 @@ const voteCard = (model: Model, open: Vote, h: HtmlBuilder<Message>): Html => {
                 }),
               ),
               h.Style({
-                // A yes is filled, a no is a ring, and a Seat that has not voted is faint.
                 background: no ? 'transparent' : colour,
                 boxShadow: no ? `inset 0 0 0 1px ${colour}` : 'none',
                 opacity: yes || no ? '1' : '0.3',
@@ -1145,7 +1138,6 @@ const voteCard = (model: Model, open: Vote, h: HtmlBuilder<Message>): Html => {
     ],
   )
 }
-/** The Room: the code, the Seats, the name, the vote, the speed, and the way out. */
 export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const phase = model.room.phase
@@ -1704,8 +1696,6 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     t.room.title,
     [],
     [
-      // A Room with four Seats and a vote runs past a short window, so the rows
-      // scroll and the actions stay in reach.
       h.div(
         [
           h.Class(
@@ -1730,7 +1720,6 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** One labeled group of settings: the label, then a card whose rows divide. */
 const settingSection = (label: string, rows: ReadonlyArray<Html>, h: HtmlBuilder<Message>): Html =>
   h.div(
     [
@@ -1762,7 +1751,6 @@ const settingSection = (label: string, rows: ReadonlyArray<Html>, h: HtmlBuilder
     ],
   )
 
-/** A setting's name on the left, its control on the right. */
 const settingLabelClass = css({
   fontSize: 'type.13',
   fontWeight: 'medium',
@@ -1792,7 +1780,6 @@ const settingSwitch = (
     h,
   )
 
-/** The sound level. The slider rests while muted, and the row below it turns sound back on. */
 const volumeRow = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
@@ -1847,7 +1834,6 @@ const languageRow = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** A row that leaves the panel: a link out, or an action that runs at once. */
 const settingAction = (
   label: string,
   message: Message,
@@ -1885,7 +1871,6 @@ const settingAction = (
     h,
   )
 
-/** One setting with the control this panel has for it: a switch, a slider, a picker, or a button. */
 const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Html => {
   switch (setting.kind) {
     case 'volume':
@@ -1907,11 +1892,6 @@ const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Ht
   }
 }
 
-/**
- * Install and update for the whole app. A browser without an install dialog
- * gets its own instructions, and iPhone and iPad get the storage note: the
- * installed app does not see this browser's Company files.
- */
 const pwaSettingsSection = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   if (model.pwa.installed && !model.pwa.updateReady) return h.empty
@@ -1995,7 +1975,6 @@ export const settingsPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const sections = settingsSections(model, t)
   const section = (id: SettingsSection): Html => {
     const found = sections.find((entry) => entry.id === id)!
-    // The Agent room id belongs beside the switch that opens the relay, and only on the board.
     const rows = found.rows.flatMap((row) =>
       row.kind === 'toggle' && row.id === 'agent-access' && model.prefs.agentAccess
         ? [settingRow(row, model, h), agentRoomRow(model, h)]
@@ -2026,8 +2005,6 @@ export const settingsPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           ),
         ],
         [
-          // The slider takes the full width; the sections below split into two balanced columns.
-          // A phone folds both columns back into one.
           section('sound'),
           h.div(
             [
@@ -2095,7 +2072,6 @@ export const offerPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const title = ipo
     ? t.panels.iPO
     : t.panels.round(t.catalog.eras[model.board.game.stage + 1]?.name ?? deal.era.name)
-  // A Room decides the round by vote, so the offer shows that vote while it is open.
   const vote =
     roomLive(model) && model.room.vote !== null && model.room.vote.kind !== 'exit'
       ? model.room.vote

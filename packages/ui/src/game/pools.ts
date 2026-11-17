@@ -4,7 +4,6 @@ import { poolName } from './pool-visuals.ts'
 
 export * from './pool-visuals.ts'
 
-/** What a stalled Study waits for, as the rest of a "can’t run unless …" sentence (10 "Studies"). */
 export const stallNeed = (stall: StudyStall): string =>
   StudyStall.match(stall, {
     Breadth: ({ unit, target }) =>
@@ -20,10 +19,8 @@ export const stallNeed = (stall: StudyStall): string =>
     Shape: ({ shape, value }) => shapeNeed(shape, value),
   })
 
-/** Why a Study stalls, in one sentence, for a surface that names the Study beside it. */
 export const stallReason = (stall: StudyStall): string => `It can’t run unless ${stallNeed(stall)}.`
 
-/** The behaviour a shape asks the Design to show, in one clause. */
 export const shapeNeed = (shape: StudyShapeKind, value: number): string => {
   const pct = `${Math.round(value * 100)}%`
   switch (shape) {

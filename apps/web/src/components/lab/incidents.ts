@@ -26,14 +26,6 @@ import { compact } from '@quorum/ui/game/format'
 import { recipeOf } from '@quorum/ui/game/pools'
 import { EYEBROW, FIGURE, insightChip } from '@quorum/ui/game/bits'
 
-/**
- * Notices, in two weights. The Alarm is the live incident: it is red because one click ends it, and
- * there is never more than one. The State chip is a standing condition, such as a rule that fires
- * or a team that has stopped trusting one, so it stays quiet and waits to be read.
- *
- * Everything the player may want to reread is Mail. Nothing here is a record.
- */
-
 const ALARM = cx(
   'enter-down',
   css({
@@ -76,13 +68,10 @@ const STATE = cx(
 type IncidentAction = Readonly<{
   label: (t: Messages) => string
   on: (nodeId: string) => Message
-  /** The button presses a Node's own action, so it needs the Node the incident hit. */
   node?: true
-  /** Why the action is not ready, or null when it is. */
   locked?: (t: Messages, game: Game) => string | null
 }>
 
-/** What one click ends each incident, if a click ends it at all. */
 const ACTIONS: Readonly<Record<string, IncidentAction>> = {
   'bad-deploy': {
     label: (t) => t.incidents.rollBack,
@@ -135,7 +124,6 @@ const ACTIONS: Readonly<Record<string, IncidentAction>> = {
   },
 }
 
-/** A severity reads the same whether or not the player can pick the colour out, so the bar carries it. */
 const severity = (value: number, t: Messages, h: HtmlBuilder<Message>): Html =>
   h.span(
     [
@@ -156,7 +144,6 @@ const severity = (value: number, t: Messages, h: HtmlBuilder<Message>): Html =>
     [t.incidents.sev(value)],
   )
 
-/** The live incident, and the one click that ends it. Every incident shows, fix or no fix. */
 export const incidentNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -221,8 +208,6 @@ export const incidentNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
               severity(incident.severity, t, h),
             ],
           ),
-          // A cascade carries the incident it followed (11 "Cascades"), so this reads as the second
-          // page and not the first.
           incident.causedBy
             ? h.span(
                 [
@@ -301,10 +286,6 @@ export const incidentNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/**
- * The alert rules as one chip: what fires, what the team has stopped trusting, and the door to the
- * Alerts row, where the thresholds live. Acknowledged rules fold to a count until one clears.
- */
 export const alertsNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -432,12 +413,6 @@ export const alertsNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/**
- * The study slip a locked click leaves behind. It reads like a work order: what was blocked, the
- * Research that unblocks it, and its price. The width never changes, so a late Era's name wraps
- * inside the slip instead of stretching a sentence across the board. It waits, because a decision to
- * spend Insight does not belong on a timer.
- */
 export const researchOffer = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -512,7 +487,6 @@ export const researchOffer = (model: Model, h: HtmlBuilder<Message>): Html => {
               ),
             ],
             [
-              // The option that was refused is context, so it gives way; the Research is the offer.
               h.span(
                 [
                   h.Class(

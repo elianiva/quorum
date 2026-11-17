@@ -13,7 +13,7 @@ import {
 } from '@quorum/simulation/catalog'
 import { CALENDAR_HOUR, mailedTo } from './mail.ts'
 import {
-  EVENT_EVERY,
+  EVENT_EVERY_SECONDS,
   churnFact,
   stallFact,
   EASY_MODE_KEY,
@@ -38,7 +38,7 @@ import {
 } from '../model.ts'
 import { clockStep } from '../clock-machine.ts'
 import { advanceChange } from '../feedback.ts'
-import { SAVE_EVERY_MS, SAMPLE_EVERY, mostSteps, speedsOf } from './constant.ts'
+import { SAVE_EVERY_MS, SAMPLE_EVERY, maxStepsPerTick, speedsOf } from './constant.ts'
 import { StepEvent } from '@quorum/simulation/events'
 import {
   WriteFounder,
@@ -86,13 +86,10 @@ import { type EventMail } from '../copy/index.ts'
 import { type Ledger } from '@quorum/simulation/ledger'
 import { type LogEntry } from '../playlog.ts'
 
-/** What the player hears about a Step event, if anything. */
 export type Note = readonly [string, Tone] | null
 
-/** A Step event's toast, and the Mail behind it. */
 export type EventNote = readonly [string, Tone, EventMail] | null
 
-/** What a blocked item waits on, in the words the Mail uses (18 "Teammates"). */
 export const BLOCK_TEXT: Readonly<Record<'decision' | 'index' | 'copy' | 'size', string>> = {
   decision: 'waiting on a decision',
   index: 'waiting on an index',
@@ -210,9 +207,7 @@ export const eventText = (event: StepEvent, game: Game): EventNote =>
       { topic: 'alert-ignored', vars: { alert: alertText(rule, game.alertRules[rule]) } },
     ],
     Hired: (): EventNote => ['An engineer joined the team.', 'ok', { topic: 'hired', vars: {} }],
-    // A disclosure and its exploit are written by `security`, not by the event table.
     CveDisclosed: (): EventNote => null,
-    // The owner also proposes the patch, which is a teammate's Mail of its own (18).
     PatchProposed: ({ item }): EventNote => {
       const target = COMPONENTS[item.target as keyof typeof COMPONENTS]?.name ?? 'the Design'
       const due = `${Math.max(1, Math.round(((item.due ?? game.time) - game.time) / 60))} min`
@@ -292,7 +287,6 @@ export const eventLog = (event: StepEvent): Record<string, unknown> =>
     StudyCompleted: ({ research }) => ({ research }),
   })
 
-/** A Step event as a Toast in the player's language, for a Challenge: it has no Inbox to carry the Mail. */
 export const eventToast = (t: Messages, event: StepEvent, game: Game): Note => {
   const e = t.toasts.event
   const node = (id: string): string => {
@@ -389,13 +383,10 @@ export const eventToast = (t: Messages, event: StepEvent, game: Game): Note => {
 export const tick = (model: Model, elapsedMs: number): UpdateResult => {
   const challenge = boardChallenge(model.board)
   if (challenge?._tag === 'Running') return runTick(model, challenge, elapsedMs)
-  // A tick owes the real time that passed, at the speed the player chose, in 100 ms Steps.
   const owed =
     model.board.clock.carry + (elapsedMs * model.board.clock.speed) / (1_000 * STEP_SECONDS)
-  const most = mostSteps(model.board.clock.speed)
-  // A live Room steps the Company on the server; this tab only paints it.
+  const most = maxStepsPerTick(model.board.clock.speed)
   const steps = roomLive(model) ? 0 : Math.min(Math.floor(owed), most)
-  // Over the cap, the clock drops the excess instead of saving it for the next tick.
   const carry = roomLive(model) || steps === most ? 0 : owed - steps
   let game = model.board.game
   const events: Array<StepEvent> = []
@@ -404,7 +395,6 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
     game = result.game
     events.push(...result.events)
   }
-  // A guided Sandbox checks its objective, and may script an incident or change demand.
   const open = boardSandbox(model.board)
   const guided = open?.id ? GUIDED[open.id] : null
   let run = open
@@ -423,14 +413,11 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
     run = { ...run, progress: advance.progress }
     advanced = advance.advanced
   }
-  // Hints come from the ledger's actual limits and path diagnostics, not a revenue-bottleneck answer.
   const second = Math.floor(game.time)
   const search = model.board.whatIfsAt < 0 || second !== model.board.whatIfsAt
   const flow = solveFlow(game)
   const ledger: Ledger = { ...flow, bottleneck: null }
-  // An incident drops the clock to 1×, so the player has time to respond.
   const incident = events.some((event) => event._tag === 'IncidentStarted')
-  // With auto-pause on, a SEV1 or SEV2 stops the clock until the player resumes it.
   const severe = events.find(
     (event) => event._tag === 'IncidentStarted' && event.incident.severity <= 2,
   )
@@ -445,7 +432,6 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
         ? sessionStep(model.board.session, { _tag: 'SandboxUpdated', run })
         : model.board.session,
       whatIfsAt: search ? second : model.board.whatIfsAt,
-      // An acknowledgement lasts while its rule holds. A rule that clears starts loud again.
       alertQuiet: model.board.alertQuiet.filter(
         (rule) => !ignored(game, rule) && game.alarms[rule] >= ALERT_RULES[rule].seconds,
       ),
@@ -461,8 +447,6 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
   }
   next = advanceReveals(next, ledger)
   const commands: Array<AnyCommand> = []
-  // What-if rows (12 "Load diagnosis") run ghost Simulations, so they refresh every few sim
-  // seconds, and only for a busy selected Node once `profiling` shows them.
   const watched = model.board.selected
   const rows = model.board.whatIfs
   if (
@@ -470,7 +454,7 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
     watched &&
     has(game, 'profiling') &&
     (flow.nodes[watched]?.utilization ?? 0) >= WHAT_IF_LOAD &&
-    (rows?.nodeId !== watched || second - rows.at >= WHAT_IF_EVERY || second < rows.at)
+    (rows?.nodeId !== watched || second - rows.at >= WHAT_IF_EVERY_SIM_SECONDS || second < rows.at)
   )
     commands.push(ComputeWhatIfs({ game, nodeId: watched, at: second }))
   const logs: Array<LogEntry> = []
@@ -510,7 +494,6 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
 
   for (const event of events) {
     logs.push(line(game.time, event._tag, eventLog(event)))
-    // The Simulation files a CVE as a ticket; Security writes the advisory, and a thread closes with its ticket.
     if (!boardChallenge(next.board) && event._tag === 'CveDisclosed') {
       next = mailedTo(next, disclosureFact(event.item, game), game.time)
       continue
@@ -544,12 +527,9 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
         },
       }
     const text = eventText(event, game)
-    // An incident's postmortem is a teammate's to file, so the alarm clearing and the follow-up
-    // are two Mail: the pager's record, and a person asking for the write-up (18 "Teammates").
     if (!boardChallenge(next.board) && event._tag === 'IncidentResolved')
       next = mailedTo(next, postmortemFact(event.postmortem, game), game.time)
     if (!text) continue
-    // What happened in the Design is Mail (GDD 18); a Challenge has no Inbox, so it keeps the toast.
     if (boardChallenge(next.board)) {
       const toast = eventToast(say(next), event, game)
       if (toast) {
@@ -562,7 +542,6 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
     }
   }
 
-  // Money out (09 "Runway and running out of Cash"): the bridge arrives, or the Nodes shut down.
   if (!offCompany(next)) {
     const was = model.board.game.bridge._tag
     const bridge = next.board.game.bridge
@@ -601,7 +580,6 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
   if (change._tag === 'Settled' || change._tag === 'Lasting')
     logs.push(line(game.time, 'ChangeSettled', change.delta))
 
-  // The Dashboard's long history: every Sample the Steps added.
   next = {
     ...next,
     board: {
@@ -617,7 +595,6 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
     },
   }
 
-  // Capture actual observations, not reconstructed samples across skipped time.
   if (Math.floor(game.time / HISTORY_EVERY) > Math.floor(model.board.game.time / HISTORY_EVERY)) {
     const history: Record<string, ReadonlyArray<NodeSample>> = {}
     for (const node of game.nodes) {
@@ -640,7 +617,6 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
     }
   }
 
-  // The log records what the player was told and what limited the Design.
   const advice = nextAdvice(game, ledger)
   const told = `${advice.key}|${advice.text}`
   if (told !== next.board.lastGoal) {
@@ -656,8 +632,6 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
         game.time,
       )
   }
-  // Once a calendar hour, a region whose users fell over the hour gets a Customers Mail; its
-  // thread resolves when the region grows again (GDD 12 "The Churn breakdown").
   if (
     !offCompany(next) &&
     Math.floor(game.time / CALENDAR_HOUR) > Math.floor(model.board.game.time / CALENDAR_HOUR)
@@ -685,7 +659,6 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
         }
     }
   }
-  // A player who struggles hears about Easy mode once a Company, at an hour's turn.
   if (
     !offCompany(next) &&
     !next.prefs.easyMode &&
@@ -694,8 +667,6 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
     !next.board.inbox.mail.some((mail) => mail.key === EASY_MODE_KEY)
   )
     next = mailedTo(next, easyModeFact(game), game.time)
-  // A stalled running Study holds the queue: a teammate writes once, and the Thread waits in Needs
-  // action until the Study moves or leaves the queue (10 "Studies").
   if (!offCompany(next)) {
     const running = game.studies[0]
     const stall = running ? studyStall(game, ledger, running.id) : null
@@ -705,7 +676,6 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
       if (!mail.key.startsWith('research:stalled:') || mail.key === key) continue
       if (mail.phase._tag === 'Resolved' || mail.trashed) continue
       const name = RESEARCH[mail.key.slice('research:stalled:'.length) as ResearchId]?.name
-      // The player usually caused this, by cancelling or by shipping the fix: no new unread Mail.
       const inbox = closed(
         next.board.inbox,
         mail.key,
@@ -719,8 +689,7 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
       }
     }
   }
-  // The world writes too: teammates, CVEs, customers, and spam.
-  const bucket = Math.floor(game.time / EVENT_EVERY)
+  const bucket = Math.floor(game.time / EVENT_EVERY_SECONDS)
   if (!offCompany(next) && game.stage >= 1 && bucket > next.board.inbox.bucket) {
     const event = eventMail(game, bucket, next.board.inbox.mail)
     next = { ...next, board: { ...next.board, inbox: { ...next.board.inbox, bucket } } }
@@ -747,7 +716,6 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
       commands.push(WriteSandboxStore({ store: storeOf(next) }))
     }
   }
-  // The Founder records each Era reached in a Company.
   if (!offCompany(next) && !next.founder.erasReached.includes(game.stage)) {
     next = { ...next, founder: recordEra(next.founder, game.stage) }
     commands.push(WriteFounder({ founder: next.founder }))
@@ -756,21 +724,15 @@ export const tick = (model: Model, elapsedMs: number): UpdateResult => {
   return milestones(model, { model: next, commands }, events, ledger)
 }
 
-/** Sim seconds of history the error share is averaged over before Easy mode is offered. */
-const STRUGGLE_WINDOW = 300
+const STRUGGLE_WINDOW_SIM_SECONDS = 300
 
-/** Sim seconds between what-if runs, and the utilization a Node needs before they run. */
-const WHAT_IF_EVERY = 5
+const WHAT_IF_EVERY_SIM_SECONDS = 5
 const WHAT_IF_LOAD = 0.7
 
-/**
- * Too many failures or incidents: a tenth of requests failed over the last five sim minutes, or
- * three of the recorded postmortems are SEV1 or SEV2.
- */
 const struggling = (game: Game): boolean => {
-  const recent = game.history.slice(-STRUGGLE_WINDOW)
+  const recent = game.history.slice(-STRUGGLE_WINDOW_SIM_SECONDS)
   const errors =
-    recent.length === STRUGGLE_WINDOW &&
+    recent.length === STRUGGLE_WINDOW_SIM_SECONDS &&
     recent.reduce((sum, sample) => sum + sample.errors, 0) / recent.length >= 0.1
   const severe = game.postmortems.filter((postmortem) => postmortem.severity <= 2).length >= 3
   return errors || severe

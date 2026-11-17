@@ -1,15 +1,8 @@
-/* ==========================================================================
-   The free-tier budget. Every event passes through `allow` in `before_send`.
-   Funnel events bypass the session cap, so a conversion rate never loses its
-   numerator, but they still count against the month.
-   ========================================================================== */
-
 import { ANALYTICS_KEY, readStored, writeStored } from './storage.ts'
 
 export const SESSION_LIMIT = 80
 export const MONTH_LIMIT = 600
 
-/** Events that answer the activation and progression questions. */
 const FUNNEL = new Set([
   'app:session_start',
   'app:session_end',
@@ -62,13 +55,11 @@ const read = (now: number): Store => {
 
 const write = (store: Store): void => {
   memory = store
-  // A full or blocked storage still caps this session from memory.
   writeStored(ANALYTICS_KEY, JSON.stringify(store))
 }
 
 export const isFunnel = (event: string): boolean => FUNNEL.has(event)
 
-/** True when the event fits the month and session budgets. */
 export const allow = (event: string, now: number): boolean => {
   const store = read(now)
   if (store.events >= MONTH_LIMIT) return false

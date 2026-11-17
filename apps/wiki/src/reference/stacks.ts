@@ -29,12 +29,9 @@ import {
 } from './shared.ts'
 import { css } from '@quorum/styled-system/css'
 
-/* Languages, runtimes, and frameworks: one page per runtime and framework, and a hub that compares them. */
-
 export const runtimePath = (id: RuntimeDef['id']): string => `/runtimes/${id}`
 export const frameworkPath = (id: FrameworkDef['id']): string => `/frameworks/${id}`
 
-/** Five pips per axis, as on the stack picker. */
 const axes = (l: Lang, values: Axes, h: H): Html => {
   const t = l.t.reference.stacks
   return table(

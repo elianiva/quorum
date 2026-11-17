@@ -10,8 +10,6 @@ import { stackPages } from './stacks.ts'
 import { systemPages } from './systems.ts'
 import { venturePages } from './ventures.ts'
 
-/* Reference pages, generated from the catalog. */
-
 export const referencePages = (l: Lang): ReadonlyArray<Page> => [
   ...componentPages(l),
   ...researchPages(l),

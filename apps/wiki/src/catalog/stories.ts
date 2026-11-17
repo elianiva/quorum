@@ -7,11 +7,6 @@ import {
 } from '@quorum/simulation/catalog'
 import type { NodeStatus } from '@quorum/simulation/ledger'
 
-/* The component catalog's stories (a story is one Component's card). A story is data: the
-   controls it offers (`argTypes`), the value each starts at, and named `states`. The board state
-   a story draws is built from the Simulation's own ledger, so a card here is the card in the game.
-   Nothing about a Component is typed by hand except what a control needs to range over. */
-
 export type Value = string | number | boolean
 export type Args = Readonly<Record<string, Value>>
 
@@ -60,7 +55,6 @@ const range = (
 
 export const LIVES = ['running', 'warming', 'restarting', 'stopped'] as const
 export const STATUSES: ReadonlyArray<NodeStatus> = ['idle', 'ok', 'warn', 'danger', 'down']
-/** The research a card's rows depend on, each off to see the card without it. */
 export const RESEARCH = [
   ['profiling', 'profiling'],
   ['metrics', 'metrics'],
@@ -68,7 +62,6 @@ export const RESEARCH = [
   ['zones', 'multi-az'],
 ] as const
 
-/** What a Component's rows read from the ledger beyond the common figures. */
 const EXTRAS: Partial<Record<ComponentId, ReadonlyArray<ArgType>>> = {
   cache: [range('hitRatio', 'Ledger', 0, 1, 0.01, 0.82)],
   cdn: [range('hitRatio', 'Ledger', 0, 1, 0.01, 0.9)],
@@ -132,19 +125,14 @@ export const storyOf = (id: string): Story | null =>
 
 export const DEFAULT_STORY: ComponentId = 'cache'
 
-/** Every arg at its starting value. */
 export const initialArgs = (story: Story): Args =>
   Object.fromEntries(story.argTypes.map((arg) => [arg.key, arg.initial]))
 
-/** A state's args over the starting values. */
 export const stateArgs = (story: Story, state: State): Args => ({
   ...initialArgs(story),
   ...state.args,
 })
 
-/* The URL carries the args that differ from the start, as Storybook's `args` parameter does:
-   `args=utilization:1.2;life:stopped`. Keys and values keep to letters, digits, spaces,
-   underscores, dashes, dots; anything else is dropped. */
 const SAFE = /^[\w .-]*$/
 
 export const encodeArgs = (story: Story, args: Args): string =>

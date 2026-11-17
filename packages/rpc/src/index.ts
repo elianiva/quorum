@@ -3,10 +3,10 @@ export {
   AGENT_PREFIX,
   AGENT_ROOM_PATH,
   API_PREFIX,
-  INGEST_PREFIX,
+  POSTHOG_PROXY_PREFIX,
   MCP_PATH,
   ROOM_PATH,
-  ROOMS_FULL_CLOSE,
+  ROOMS_FULL_CLOSE_CODE,
   ROOM_SOCKET_PATH,
   RPC_PATH,
 } from './paths.ts'
@@ -18,5 +18,4 @@ import { RoomRpc } from './room.ts'
 import { SurveyRpc } from './survey.ts'
 import { SystemRpc } from './system.ts'
 
-/** The complete wire contract served by the API Worker. */
 export class Api extends SystemRpc.merge(SurveyRpc).merge(RoomRpc) {}

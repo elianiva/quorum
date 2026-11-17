@@ -38,7 +38,6 @@ import { meshDef } from './mesh.ts'
 import { ffDef } from './ff.ts'
 import { pkiDef } from './pki.ts'
 
-/** Every Component's catalog entry, by id: one folder each. */
 export const COMPONENT_DEFS: Record<ComponentId, ComponentDef> = {
   users: usersDef,
   payments: paymentsDef,
@@ -80,7 +79,6 @@ export const COMPONENT_DEFS: Record<ComponentId, ComponentDef> = {
   pki: pkiDef,
 }
 
-/** The glossary entries each Component teaches; the wiki Component page links to them. */
 export const COMPONENT_GLOSSARY: Partial<Record<ComponentId, ReadonlyArray<string>>> = {
   queue: queueGlossary,
   autoscaler: autoscalerGlossary,

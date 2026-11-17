@@ -33,7 +33,6 @@ export const CVES: ReadonlyArray<Cve> = [
   },
 ]
 
-/** Security advisories. Each one parodies a different advisory format. */
 export const CVE_LETTERS: Letters<CveVars> = [
   ({ from, id, score, title, what, severity, exposed }) => ({
     subject: `${id}: ${title}`,
@@ -57,7 +56,6 @@ export const CVE_LETTERS: Letters<CveVars> = [
   }),
 ]
 
-/** A teammate asks for another engineer. `from` is their full name; they sign with the first. */
 export const HIRE: Letters<{ readonly backlog: string }> = [
   ({ from, backlog }) => ({
     subject: `can we talk about the backlog`,
@@ -81,7 +79,6 @@ export const HIRE: Letters<{ readonly backlog: string }> = [
   }),
 ]
 
-/** An engineer who just fell for a language wants to rewrite the app servers in it. */
 export const REWRITES: ReadonlyArray<Rewrite> = [
   {
     language: 'Rust',
@@ -170,7 +167,6 @@ export const REWRITES: ReadonlyArray<Rewrite> = [
   },
 ]
 
-/** A support desk relays a customer who finds the product slow. */
 export const TICKETS: Letters = [
   ({ from }) => ({
     subject: `[Ticket #4096] "Is it supposed to be this slow?"`,
@@ -198,7 +194,6 @@ export const TICKETS: Letters = [
   }),
 ]
 
-/** A big customer asks for a Feature the Design has not built. `feature` is its catalog name. */
 export const REQUESTS: Letters<{ readonly feature: string }> = [
   ({ from, feature }) => ({
     subject: `Feature request: ${feature}`,
@@ -222,13 +217,11 @@ export const REQUESTS: Letters<{ readonly feature: string }> = [
   }),
 ]
 
-/** What a falling region's churn Mail says (GDD 12 "The Churn breakdown"). */
 export type ChurnVars = Readonly<{
   region: string
   users: string
   perHour: string
   inADay: string
-  /** The top two causes, one per line. */
   causes: string
 }>
 
@@ -243,18 +236,14 @@ export const CHURN_LETTERS: Letters<ChurnVars> = [
   }),
 ]
 
-/** An incident is over: a teammate has to file the postmortem (GDD 18 "Teammates"). */
 export type PostmortemVars = Readonly<{
   incident: string
   severity: string
-  /** The Node it hit, or the whole Design. */
   target: string
-  /** Mean time to restore, in sim seconds. */
   mttr: string
   lostUsers: string
   lostRevenue: string
   failed: string
-  /** The action item the postmortem opens, or null when it opens none. */
   action: string | null
 }>
 
@@ -277,7 +266,6 @@ export const POSTMORTEM: Letters<PostmortemVars> = [
   }),
 ]
 
-/** The Mentor offers Easy mode to a player whose pager will not stop. */
 export const EASY_MODE: Letters = [
   ({ from }) => ({
     subject: `A slower clock`,
@@ -285,7 +273,6 @@ export const EASY_MODE: Letters = [
   }),
 ]
 
-/** A teammate says why the running Study is stalled. */
 export const STALL: Letters<{ readonly research: string; readonly reason: string }> = [
   ({ research, reason }) => ({
     subject: `${research} can’t run yet`,

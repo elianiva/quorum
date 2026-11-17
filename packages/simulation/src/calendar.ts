@@ -1,8 +1,5 @@
 import { CALENDAR_START, type SaleSchedule } from './catalog.ts'
 
-/* The calendar, and an exact cosine for the daily cycles (04 "Determinism"). */
-
-/** Minutes since the calendar began. One sim second is one calendar minute. */
 export const calendarMinute = (time: number): number => CALENDAR_START + time
 
 export const clockOf = (time: number) => {
@@ -16,7 +13,6 @@ export const clockOf = (time: number) => {
 
 const PI = 3.141592653589793
 
-/** Taylor series of cos and sin around 0, exact to double precision on [−π/4, π/4]. */
 const cosSeries = (x: number): number => {
   const xx = x * x
   let term = 1
@@ -38,27 +34,16 @@ const sinSeries = (x: number): number => {
   return sum
 }
 
-/**
- * cos(2π × turns) with only + − × ÷ and floor, so every engine gets the same
- * bits (04 "Determinism"). The angle folds into [0, π/4] by symmetry first.
- */
 export const cosTurns = (turns: number): number => {
   const t = turns - Math.floor(turns)
-  // cos is even and has period 1 in turns: fold to [0, 1/2].
   const half = t > 0.5 ? 1 - t : t
-  // cos(π − x) = −cos(x): fold to [0, 1/4].
   const sign = half > 0.25 ? -1 : 1
   const quarter = half > 0.25 ? 0.5 - half : half
-  // cos(x) = sin(π/2 − x): fold to [0, 1/8].
   return quarter > 0.125
     ? sign * sinSeries((0.25 - quarter) * 2 * PI)
     : sign * cosSeries(quarter * 2 * PI)
 }
 
-/**
- * A Venture's scheduled sale (13 "Ventures"): whether it runs now, and the calendar minutes until
- * the next one starts (0 while it runs).
- */
 export const saleOf = (
   time: number,
   sale: SaleSchedule,

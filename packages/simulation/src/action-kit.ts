@@ -53,16 +53,11 @@ export const spend = (
     ? no(Refusal.Unaffordable({ what, price, currency: 'cash' }))
     : ok(apply({ ...game, cash: game.cash - price }))
 
-/**
- * The player's first action while an Incident runs acknowledges it (11 "The incident loop"), so an
- * Incident a response ended is never mistaken for one left alone to cascade.
- */
 export const answering = (game: Game, incident: Incident): Incident => ({
   ...incident,
   phase: incidentStep(incident.phase, { _tag: 'Acked', at: game.time }),
 })
 
-/** Ends an incident that one action ends. */
 export const endIncident = (game: Game, kind: IncidentId, refusal: string): Action =>
   game.incident?.kind === kind
     ? ok({ ...game, incident: { ...answering(game, game.incident), remaining: 0 } })

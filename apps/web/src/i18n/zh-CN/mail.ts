@@ -1,13 +1,10 @@
 import type { LetterVars } from '../en/mail.ts'
 import type { Messages } from '../messages.ts'
 
-/** A teammate signs with their first name. */
 const first = (name: string | number | null | undefined): string => String(name).split(' ')[0] ?? ''
 
-/** How an advisory's severity reads in a letter. */
 const SEVERITY = { critical: '危急', high: '高危', medium: '中危', low: '低危' } as const
 
-/** The advisories' titles and descriptions, by CVE id. */
 const ADVISORY: Readonly<Record<string, { readonly title: string; readonly what: string }>> = {
   'CVE-2026-1337': {
     title: 'HTTP 代理请求走私',

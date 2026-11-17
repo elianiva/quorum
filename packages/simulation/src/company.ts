@@ -2,7 +2,7 @@ import { RUNNING } from './life.ts'
 import {
   CREDIT_CAP,
   ERAS,
-  FIRST_INCIDENT_AFTER,
+  FIRST_INCIDENT_AFTER_SECONDS,
   LINK_TIMEOUT,
   START_CASH,
   type ComponentId,
@@ -143,7 +143,6 @@ export const node = (
   ...extra,
 })
 
-/** A Link with the default policy: 30 s timeout, no retries, every kind. */
 export const link = (from: string, to: string): GameLink => ({
   from,
   to,
@@ -232,10 +231,6 @@ export const company = (seed: number): Omit<Game, 'nodes' | 'links'> => ({
   fixedMix: false,
 })
 
-/**
- * The Garage: one Burstable box runs PHP under Apache and Postgres on the same
- * machine, linked to Users. Analytics samples the box.
- */
 export const newGame = (seed = 20_261_031): Game =>
   normalizeOrdinals({
     ...company(seed),
@@ -252,7 +247,6 @@ export const newGame = (seed = 20_261_031): Game =>
     links: [link('users', 'server'), link('server', 'analytics')],
   })
 
-/** Pre-seed with the Garage lessons already learned: Postgres split out, PHP-FPM, Stripe. */
 export const preseedGame = (seed = 20_261_031): Game => {
   const garage = ERAS[0]
   return normalizeOrdinals({
@@ -273,16 +267,10 @@ export const preseedGame = (seed = 20_261_031): Game => {
     equity: 1 - (garage?.dilution ?? 0),
     researched: ['stripe', 'php-fpm', 'logs', 'metrics', 'load-balancing'],
     time: 12 * 60,
-    nextIncidentAt: 12 * 60 + FIRST_INCIDENT_AFTER,
+    nextIncidentAt: 12 * 60 + FIRST_INCIDENT_AFTER_SECONDS,
   })
 }
 
-/**
- * The Head start perk's later levels (13 "The Legacy shop"): the Company starts in Seed or Series
- * A. The Design is the Pre-seed one with what the lessons of the missed Eras add (a Cache, then a
- * second App Server behind a Load Balancer), the research those Eras give, the Cash and Equity of
- * the rounds raised, and the Users that ended the last Era.
- */
 const HEAD_START: ReadonlyArray<
   Readonly<{ users: number; research: ReadonlyArray<ResearchId>; hours: number }>
 > = [
@@ -379,6 +367,6 @@ export const headStartGame = (seed: number, level: number): Game => {
     stageAt: time,
     researched: [...preseed.researched, ...start.research],
     time,
-    nextIncidentAt: time + FIRST_INCIDENT_AFTER,
+    nextIncidentAt: time + FIRST_INCIDENT_AFTER_SECONDS,
   })
 }

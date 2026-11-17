@@ -46,7 +46,6 @@ import {
 } from '@quorum/ui/game/bits'
 import { shell } from './panels.ts'
 
-/** The guided Sandbox after this one: the next in its track, then the next track. */
 export const nextGuided = (id: SandboxId): SandboxId | null => {
   const order = TRACKS.flatMap((track) => track.sandboxes)
   return order[order.indexOf(id) + 1] ?? null
@@ -133,7 +132,6 @@ const figures = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html =>
 
   const errors = ledger.errorShare * 100
   const percentiles = has(model.board.game, 'percentiles')
-  // A guided objective sets the Apdex and Burn it asks for, and may be measured on another figure.
   const open = boardSandbox(model.board)
   const objective = open?.id ? GUIDED[open.id].objectives[open.progress.objective] : undefined
   const words = open?.id ? t.catalog.guided[open.id].objectives[open.progress.objective] : undefined
@@ -322,7 +320,6 @@ const steps = (run: SandboxRun, id: SandboxId, h: HtmlBuilder<Message>): Html =>
   )
 }
 
-/** The current objective, in the goal slot, with how long it has held. */
 export const objectiveBar = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const run = boardSandbox(model.board)
@@ -440,11 +437,6 @@ const tiny = (label: string, message: Message, h: HtmlBuilder<Message>, active =
     h,
   )
 
-/**
- * A free Sandbox sets each Product lever at once, because it has no Team to build one
- * (10 "Product levers"). Only the kinds the Era's mix carries can move, so the list follows
- * the Mix buttons above it.
- */
 const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const game = model.board.game
@@ -567,11 +559,6 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/**
- * On a phone the controls fold away under their name; on a desktop they stay
- * open, and there is no summary to fold them by. On a phone the fold belongs to
- * the player once they touch it, so the open state is not written on every Step.
- */
 const controls = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.details(

@@ -12,7 +12,6 @@ import type { Game, GameNode } from '@quorum/simulation/state'
 
 const Rates = Schema.Record(Schema.String, Schema.Finite)
 
-/** Inspector history is session state, not part of the replayed Game. */
 export const NodeSample = Schema.Struct({
   time: Schema.Finite,
   inbound: Schema.Finite,
@@ -53,19 +52,15 @@ export const NodeSample = Schema.Struct({
       wait: Schema.Finite,
     }),
   ),
-  /** Load diagnosis (12): mean work per request, each kind's share of it, and where it comes from. */
   cost: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   workShare: Rates.pipe(Schema.withDecodingDefaultKey(Effect.succeed({}))),
   workUnit: Schema.NullOr(Schema.Literals(['cpu', 'workers', 'network', 'disk'])).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(null)),
   ),
-  /** Requests per second that are retries or hedged copies, and Cache or CDN misses. */
   repeated: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   misses: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
-  /** Requests per second here that each Users' Request kind causes, and what the Users send. */
   origins: Rates.pipe(Schema.withDecodingDefaultKey(Effect.succeed({}))),
   sent: Rates.pipe(Schema.withDecodingDefaultKey(Effect.succeed({}))),
-  /** The Node this one calls that adds the most time per call. */
   slowest: Schema.NullOr(
     Schema.Struct({
       id: Schema.String,
@@ -156,16 +151,8 @@ export const sampleNode = (game: Game, node: GameNode, ledger: Ledger): NodeSamp
   }
 }
 
-/** Samples one calendar hour apart: the history keeps one calendar day. */
 export const HOUR_SAMPLES = HISTORY_POINTS / 24
 
-/**
- * Load change (12 "Load diagnosis"): the change in utilization from `earlier` to `sample`, split
- * into more demand, more cost per request, and less capacity, in utilization points.
- * Utilization is inbound × cost ÷ room, so each part is its factor's share of the change in the
- * logarithm. When the work moved to another resource, cost is not comparable, and the part
- * demand does not explain counts as cost.
- */
 export const loadChangeOf = (
   sample: NodeSample,
   earlier: NodeSample,
@@ -182,7 +169,6 @@ export const loadChangeOf = (
   return { demand: demand * scale, cost: cost * scale, capacity: (total - demand - cost) * scale }
 }
 
-/** The sample one calendar hour before the one at `index` (−1 for live), or the oldest kept. */
 export const hourBefore = (
   history: ReadonlyArray<NodeSample>,
   index: number,
@@ -191,16 +177,16 @@ export const hourBefore = (
   return at >= 0 ? history[at] : index === 0 ? undefined : history[0]
 }
 
-/** Samples whose cost per request moved by a sixth or more since the one before, by index. */
+const COST_SHIFT_LOG_RATIO = Math.log(7 / 6)
+
 export const costShifts = (history: ReadonlyArray<NodeSample>): ReadonlyArray<number> =>
   history.flatMap((sample, index) => {
     const before = history[index - 1]
     if (!before || before.workUnit !== sample.workUnit || !(before.cost > 0) || !(sample.cost > 0))
       return []
-    return Math.abs(Math.log(sample.cost / before.cost)) >= Math.log(7 / 6) ? [index] : []
+    return Math.abs(Math.log(sample.cost / before.cost)) >= COST_SHIFT_LOG_RATIO ? [index] : []
   })
 
-/** A recommendation needs a measured constraint, not just a large traffic share. */
 export const hintOf = (sample: NodeSample): string | null => {
   if (sample.down)
     return 'This component is down. Check its incident or restart status before resizing it.'
@@ -233,14 +219,8 @@ export const hintOf = (sample: NodeSample): string | null => {
   }
 }
 
-/** Below this peak utilization over the kept history, the rightsizing report marks a Node. */
-export const RIGHTSIZE_THRESHOLD = 0.3
+export const RIGHTSIZE_PEAK_UTILIZATION = 0.3
 
-/**
- * Rightsizing marks a Node whose peak utilization over its kept history stayed under 30% (10
- * "Track: Cost", `rightsizing`): it never got close to busy, so its box is bigger than it needs.
- * Needs at least a full day of history (`HISTORY_POINTS`) so a quiet early moment does not count.
- */
 export const oversized = (history: ReadonlyArray<NodeSample>): boolean =>
   history.length >= HISTORY_POINTS &&
-  Math.max(...history.map((sample) => sample.utilization)) < RIGHTSIZE_THRESHOLD
+  Math.max(...history.map((sample) => sample.utilization)) < RIGHTSIZE_PEAK_UTILIZATION

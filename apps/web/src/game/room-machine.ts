@@ -2,11 +2,9 @@ import { Machine } from '@typeonce/effect-machine'
 import { Schema } from 'effect'
 import { planState } from './machine.ts'
 
-/** Why a Room ended, as the API Worker sends it. */
 export const RoomEnd = Schema.Literals(['offline', 'handover', 'expired', 'stale', 'removed'])
 export type RoomEnd = typeof RoomEnd.Type
 
-/** Where this tab stands with its Room. */
 export const RoomPhase = Schema.TaggedUnion({
   Idle: {},
   Connecting: { code: Schema.String },
@@ -92,7 +90,6 @@ export const roomMachine = Machine.make({ root: States, events: Events }).handle
   },
 })
 
-/** The Closed state carries the code it was on, so the panel can show it. */
 const ended = ({
   state,
   event,
@@ -111,5 +108,4 @@ const ended = ({
 export const roomStep = (phase: RoomPhase, event: RoomEvent): RoomPhase =>
   planState(roomMachine, phase, event)
 
-/** This tab is in a Room the server is still running. */
 export const inRoom = RoomPhase.isAnyOf(['Connecting', 'Online', 'Reconnecting'])

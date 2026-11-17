@@ -6,11 +6,6 @@ type Corner = Readonly<{ cut: boolean; r: number }>
 const round = (r: number): Corner => ({ cut: false, r })
 const cut = (r: number): Corner => ({ cut: true, r })
 
-/**
- * Card corners per build group, clockwise from the top left. Edge cards are
- * chamfered like a hexagon, Compute cards are chips, Data cards are soft like a
- * disc, and Ops cards are leaves, with two sharp corners like a diamond.
- */
 const CORNERS: Record<BuildGroup, readonly [Corner, Corner, Corner, Corner]> = {
   edge: [cut(9), cut(9), cut(9), cut(9)],
   compute: [round(10), round(10), round(10), round(10)],
@@ -18,11 +13,6 @@ const CORNERS: Record<BuildGroup, readonly [Corner, Corner, Corner, Corner]> = {
   ops: [round(16), round(4), round(16), round(4)],
 }
 
-/**
- * Traces a card's silhouette into `g`, ready to fill or stroke. `grow` offsets
- * it outward, for halos around the card; `head` keeps the bottom corners
- * square, for the header band.
- */
 export const silhouette = (
   g: Graphics,
   group: BuildGroup,
@@ -63,7 +53,6 @@ export const silhouette = (
   return g.closePath()
 }
 
-/** A build group's badge shape, centred on (x, y) with outer radius `r`. */
 export const badgeShape = (
   g: Graphics,
   group: BuildGroup,
@@ -77,7 +66,6 @@ export const badgeShape = (
     case 'diamond':
       return g.roundPoly(x, y, r * 1.12, 4, r * 0.24)
     case 'chip': {
-      // A body with three pins on each side.
       const body = r * 0.74
       const pin = r * 0.15
       for (const at of [-0.42, 0, 0.42]) {
@@ -94,7 +82,6 @@ export const badgeShape = (
   }
 }
 
-/** Glyph size inside a badge of radius `r`; a diamond has the least room. */
 export const badgeGlyph = (group: BuildGroup, r: number): number =>
   Math.round(
     r * (GROUP_SHAPES[group] === 'diamond' ? 0.9 : GROUP_SHAPES[group] === 'chip' ? 0.95 : 1.1),

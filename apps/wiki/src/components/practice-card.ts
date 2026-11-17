@@ -12,7 +12,6 @@ import { css, cx } from '@quorum/styled-system/css'
 
 const IDS = ['place', 'wire', 'rearrange'] as const
 
-// Defined on first use: this module is imported while main.ts is still loading.
 const definePracticeMounted = () =>
   Mount.define('PracticeMounted', {
     args: { id: Schema.Literals(IDS), locale: Locale },
@@ -20,7 +19,6 @@ const definePracticeMounted = () =>
     execute: ({ element, id, locale }) =>
       Effect.gen(function* () {
         yield* Effect.promise(() => solverReadyForBoard())
-        // Pixi loads only on pages that hold a board.
         const { mountPractice } = yield* Effect.promise(() => import('./practice-board.ts'))
         yield* Effect.acquireRelease(
           Effect.sync(() => mountPractice(id, locale, element as HTMLElement)),

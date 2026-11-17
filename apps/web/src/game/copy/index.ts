@@ -1,4 +1,3 @@
-/* Mail copy (GDD 18): who writes, and every letter they can write. */
 export * from './letter.ts'
 export * from './senders.ts'
 export * from './advice.ts'

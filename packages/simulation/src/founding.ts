@@ -34,17 +34,11 @@ import { perkLevel, sreStaffed } from './lookups.ts'
 import { NEW_ENGINEER } from './state.ts'
 import type { Founding, Game, GameNode, Region, Retries } from './state.ts'
 
-/** The level of a perk the Company was founded with. 0 in a Sandbox. */
 export { perkLevel }
 
 export const ventureOf = (game: Game): VentureDef =>
   game.sandbox ? VENTURES['b2b-saas'] : VENTURES[game.founding.venture]
 
-/**
- * Shared tenancy (13 "Mutators"): the share of an instance's CPU a noisy neighbour takes. It
- * changes every `STEAL_SECONDS` sim seconds and differs per instance, drawn from the Company's
- * seed, the instance and the interval, so a replay steals the same CPU at the same moments.
- */
 export const stealOf = (game: Game, node: GameNode): number => {
   if (!hasMutator(game, 'shared-tenancy')) return 0
   let hash = game.seed
@@ -57,12 +51,10 @@ export const stealOf = (game: Game, node: GameNode): number => {
 export const hasMutator = (game: Game, id: MutatorId): boolean =>
   !game.sandbox && game.founding.mutators.includes(id)
 
-/** The Legacy multiplier of a founding: the Venture's, times one plus every Mutator's share. */
 export const legacyMultiplier = (founding: Founding): number =>
   VENTURES[founding.venture].legacy *
   (1 + founding.mutators.reduce((sum, id) => sum + MUTATORS[id].legacy, 0))
 
-/** Starting Cash: ×2 per Angel network level. */
 export const angelFactor = (level: number): number => {
   let factor = 1
   for (let index = 0; index < level; index += 1) factor *= 2
@@ -72,18 +64,12 @@ export const angelFactor = (level: number): number => {
 export const insightPerk = (game: Game): number => 1 + 0.2 * perkLevel(game, 'pattern-recognition')
 export const growthPerk = (game: Game): number => 1 + 0.1 * perkLevel(game, 'founders-reputation')
 
-/** Equity a round costs: the Era's dilution less 2 points per Better terms level. */
 export const dilutionOf = (game: Game, dilution: number): number =>
   Math.max(0, dilution - 0.02 * perkLevel(game, 'better-terms'))
 
-/** Cash a round pays: Tight budget halves it. */
 export const grantOf = (game: Game, grant: number): number =>
   hasMutator(game, 'tight-budget') ? grant / 2 : grant
 
-/**
- * How much an open action item multiplies its incident's weight: War stories halves the excess,
- * and so does an SRE team, which works the items instead of only filing them (08 "Teams").
- */
 export const openActionWeight = (game: Game): number => {
   let excess = OPEN_ACTION_WEIGHT - 1
   for (let level = 0; level < perkLevel(game, 'war-stories'); level += 1) excess /= 2
@@ -91,7 +77,6 @@ export const openActionWeight = (game: Game): number => {
   return 1 + excess
 }
 
-/** What the Mutators do to an incident's weight. */
 export const mutatorWeight = (game: Game, kind: IncidentId): number =>
   (kind === 'spike' && hasMutator(game, 'hn-front-page') ? HN_WEIGHT : 1) *
   (kind === 'spike' ? ventureOf(game).constraint.spikeWeight : 1) *
@@ -99,10 +84,8 @@ export const mutatorWeight = (game: Game, kind: IncidentId): number =>
     ? CHAOS_WEIGHT
     : 1)
 
-/** The language Single language holds every App Server to: the Garage's. */
 export const FOUNDING_LANGUAGE: LanguageId = 'php'
 
-/** Why a Mutator refuses to place a Component here, or null. */
 export const placeRefusal = (game: Game, type: ComponentId, region: Region): string | null => {
   for (const id of game.founding.mutators) {
     if (game.sandbox) break
@@ -114,29 +97,20 @@ export const placeRefusal = (game: Game, type: ComponentId, region: Region): str
   return venturePlaceRefusal(game, type, region)
 }
 
-/**
- * How much likelier a Venture's signature incident is for it, and the weakness
- * that incident keeps: an incident only its own Venture can suffer often.
- */
 export const SIGNATURE_WEIGHT = 4
 export const SIGNATURE_WEAKNESS = 2
 
-/** The Venture's signature incident, or null for a Venture without one. */
 export const signatureOf = (game: Game): IncidentId | null => ventureOf(game).signature
 
-/** Whether this incident is the Venture's signature: the rule that only it can suffer. */
 export const isSignature = (game: Game, kind: IncidentId): boolean =>
   !game.sandbox && signatureOf(game) === kind
 
-/** The weight a signature incident carries for its Venture; 1 for every other. */
 export const signatureWeight = (game: Game, kind: IncidentId): number =>
   isSignature(game, kind) ? SIGNATURE_WEIGHT : 1
 
-/** The weakness a signature incident keeps for its Venture, and 0 for every other Company. */
 export const signatureWeakness = (game: Game, kind: IncidentId): number =>
   isSignature(game, kind) ? SIGNATURE_WEAKNESS : 0
 
-/** Why the Venture keeps data out of this region, or refuses the Node, or null. */
 export const venturePlaceRefusal = (
   game: Game,
   type: ComponentId,
@@ -144,12 +118,10 @@ export const venturePlaceRefusal = (
 ): string | null => {
   const venture = ventureOf(game)
   const { residency, hubsPerRegion, gpus } = venture.constraint
-  // GPUs are scarce: the Company buys a couple and resizes them (13 "Ventures", AI startup).
   if (gpus > 0 && type === 'gpu') {
     const held = game.nodes.filter((node) => node.type === 'gpu').length
     if (held >= gpus) return `${venture.name}: GPUs are scarce, ${gpus} GPU Nodes at most.`
   }
-  // Realtime is served where the players are: one Hub per region (13 "Ventures", Game backend).
   if (
     hubsPerRegion !== null &&
     game.stage >= hubsPerRegion &&
@@ -164,7 +136,6 @@ export const venturePlaceRefusal = (
   return `${venture.name}: data stays in the home region from ${ERAS[residency]?.name ?? 'here'}.`
 }
 
-/** Why the Venture refuses a retry policy, or null. Its customers already retry. */
 export const retryRefusal = (game: Game, retries: Retries): string | null => {
   const venture = ventureOf(game)
   return venture.constraint.noNaiveRetries && retries === 'naive'
@@ -172,11 +143,9 @@ export const retryRefusal = (game: Game, retries: Retries): string | null => {
     : null
 }
 
-/** A bought Component's lifecycle: procurement runs it one calendar day after it is paid for. */
 export const placedLife = (game: Game, node: GameNode): Life =>
   ventureOf(game).constraint.procurement ? restarting(CALENDAR_DAY, 'restart', 0) : node.life
 
-/** Why a Mutator refuses a runtime, or null. */
 export const runtimeRefusal = (game: Game, runtime: RuntimeId): string | null => {
   const venture = ventureOf(game)
   const languages = venture.constraint.languages
@@ -189,23 +158,14 @@ export const runtimeRefusal = (game: Game, runtime: RuntimeId): string | null =>
     : null
 }
 
-/** The next SLO level up: Strict SLO's step, and an SLA's target. */
 const stricterSlo = (slo: number): number => SLO_LEVELS.find((level) => level > slo) ?? slo
 
-/**
- * Strict SLO moves the Era's target to the next level up, and so does an SLA the Venture signed
- * from an Era on (13 "Ventures", B2B SaaS): one level, whichever of the two applies.
- */
 export const sloOf = (game: Game, slo: number): number => {
   const sla = game.sandbox ? null : ventureOf(game).constraint.sla
   const signed = sla !== null && game.stage >= sla
   return hasMutator(game, 'strict-slo') || signed ? stricterSlo(slo) : slo
 }
 
-/**
- * The board a founding starts on: the Garage, or Pre-seed for a Venture that
- * starts in it or for the Head start perk.
- */
 const startBoard = (seed: number, founding: Founding): Game => {
   const venture = VENTURES[founding.venture]
   const headStart = Math.min(PERKS['head-start'].costs.length, founding.perks['head-start'] ?? 0)
@@ -214,7 +174,6 @@ const startBoard = (seed: number, founding: Founding): Game => {
   return { ...garage, cash: venture.start.cash, equity: venture.start.equity }
 }
 
-/** A Venture that comes with a Stack and research: its first App Server, and what it knows. */
 const ventureStart = (game: Game, venture: VentureDef): Game => {
   const { runtime, researched } = venture.start
   if (runtime === null && researched.length === 0) return game
@@ -232,11 +191,6 @@ const ventureStart = (game: Game, venture: VentureDef): Game => {
   }
 }
 
-/**
- * A new Company for a founding: the Garage, or Pre-seed with Head start. It
- * starts with the perks' Cash and engineers, the research the Founder kept,
- * the Venture's own Stack and research, and the Legacy monolith's codebase.
- */
 export const foundCompany = (
   seed: number,
   founding: Founding,
@@ -266,7 +220,6 @@ export const foundCompany = (
   }
 }
 
-/** Alumni join ramped, on the first team, hired for the Service's language. */
 export const alumniOf = (game: Game, count: number) =>
   Array.from({ length: count }, (_, index) => ({
     id: `e${game.workSeq + index + 1}`,

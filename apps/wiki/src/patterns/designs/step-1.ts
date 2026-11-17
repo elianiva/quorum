@@ -1,16 +1,12 @@
 import { at, design, set, setLink, wire } from '../design.ts'
 import type { Design } from '../design.ts'
 
-/* Scaling steps 1: one box. */
-
-/** A failed host. Its table row reads "Down", and the Simulation sees a stopped Node. */
 const DOWN = Object.defineProperty(
   { _tag: 'Stopped', cause: 'failure', warm: 1 } as const,
   'toString',
   { value: () => 'Down' },
 )
 
-/** The same Design, this many sim seconds after a host went down at second zero. */
 const secondsAfter = (seconds: number, base: Design): Design => ({
   ...base,
   game: { ...base.game, time: seconds },

@@ -5,12 +5,6 @@ import { join, resolve } from 'node:path'
 import { expect, test } from 'vitest'
 import { solverCatalogHash } from '../src/solver.ts'
 
-/*
- * The solver reads the catalog from `solver/src/catalog.rs`, which `gen-catalog.ts` writes from the
- * TypeScript catalog, and `src/solver.wasm` is built from that. A catalog change that skips either
- * step would solve with the old numbers, so this regenerates the file and checks both.
- */
-
 const solver = resolve(import.meta.dirname, '../solver')
 const FIX =
   'Run `pnpm --filter @quorum/simulation catalog`, then `solver/build.sh`, and commit both.'

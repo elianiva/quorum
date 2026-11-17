@@ -17,7 +17,6 @@ test('kinds that share a packet colour share a shape', () => {
     const seen = byColour.get(KINDS[kind].color) ?? new Set<string>()
     seen.add(shape)
     byColour.set(KINDS[kind].color, seen)
-    // The colour itself is untouched: the shape is a second cue, not a replacement.
     expect(packetColor(kind)).toBe(`#${KINDS[kind].color.toString(16).padStart(6, '0')}`)
   }
   for (const [colour, shapes] of byColour)
@@ -25,7 +24,6 @@ test('kinds that share a packet colour share a shape', () => {
 })
 
 test('the shapes follow the catalog, so a save or a build keeps them', () => {
-  // The first four colours in catalog order take the four shapes in order; the fifth repeats.
   expect(packetShapeOf(REQUEST_KINDS[0]!)).toBe('circle')
   expect(packetShapeOf(REQUEST_KINDS[1]!)).toBe('square')
   expect(packetShapeOf(REQUEST_KINDS[2]!)).toBe('triangle')

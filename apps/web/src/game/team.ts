@@ -5,14 +5,10 @@ import { defineMessageUnion } from 'foldkit/message'
 import { FeatureId, PolicyId, TeamKind } from '@quorum/simulation/state'
 import { RenameTarget, type Team } from './model.ts'
 
-/* The Team panel: it owns the engineer drag gesture and turns each button and
-   each drop between teams into a Game action, which the parent runs. */
-
 export const TeamMessage = defineMessageUnion({
   DragChanged: { message: DragAndDrop.Message },
   HireChosen: {},
   LayoffChosen: { engineerId: Schema.String },
-  /** Sends an engineer to learn the Stack's language (08 "Learning a Stack"). */
   TrainChosen: { engineerId: Schema.String },
   Created: {},
   Removed: { teamId: Schema.String },
@@ -20,18 +16,13 @@ export const TeamMessage = defineMessageUnion({
   PolicyChosen: { teamId: Schema.String, policy: PolicyId },
   KindChosen: { teamId: Schema.String, kind: TeamKind },
   FeatureQueued: { id: FeatureId },
-  /** Removes a live Feature for good: its code is gone, so its upkeep ends (08 "Rollout"). */
   FeatureRemoved: { id: FeatureId },
-  /** The split's draft: its name, its owner, and the Features it moves. */
   ServiceNamed: { name: Schema.String },
   ServiceOwnerChosen: { teamId: Schema.String },
   ServiceFeatureToggled: { id: FeatureId },
   SplitChosen: {},
-  /** Moves a live Service to another team (08 "Ownership"). */
   ServiceMoved: { serviceId: Schema.String, teamId: Schema.String },
-  /** Names the Database a Service reads and writes (08 "Shared database penalty"). */
   DatastoreChosen: { serviceId: Schema.String, datastore: Schema.NullOr(Schema.String) },
-  /** Opens the name field on one team or Service. */
   RenameStarted: { target: RenameTarget, id: Schema.String },
   RenameChanged: { name: Schema.String },
   RenameCommitted: {},
@@ -67,7 +58,6 @@ type TeamReturn = Update.ReturnWithOutMessage<Team, TeamMessage, TeamOutMessage>
 
 const out = (team: Team, outMessage: TeamOutMessage): TeamReturn => ({ model: team, outMessage })
 
-/** A drop moves someone only when it lands in another team. */
 const dragged = (team: Team, message: DragAndDrop.Message): TeamReturn => {
   const next = DragAndDrop.update(team.drag, message)
   const drop = next.outMessage

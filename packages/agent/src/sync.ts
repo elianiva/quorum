@@ -2,17 +2,10 @@ import type { NodeSample } from './node-metrics.ts'
 import type { Ack, AgentHead, AgentSnapshot, Upload } from './snapshot.ts'
 import { INBOX_KEPT, NODE_SAMPLES_KEPT, SAMPLES_KEPT } from './store.ts'
 
-/* ==========================================================================
-   What the browser sends next. The Game and its screen are small enough to
-   send whole; the samples are append-only, so they go by cursor. The Inbox is
-   bounded, so it goes whole only when its hash changes.
-   ========================================================================== */
-
 export type SyncState = Readonly<{
   epoch: string
   rev: number
   acked: Ack | null
-  /** The last head sent, to skip an upload that would change nothing. */
   headJson: string | null
 }>
 
@@ -40,11 +33,6 @@ export const headOf = (snapshot: AgentSnapshot): AgentHead => ({
   inboxHash: hashOf(snapshot.inbox),
 })
 
-/**
- * One upload, or null when there is nothing new. `state.rev` moves only after
- * the server acknowledges, so a retry after a lost response reuses the revision
- * and the server can ignore it.
- */
 export const uploadOf = (snapshot: AgentSnapshot, state: SyncState): Upload | null => {
   const head = headOf(snapshot)
   const headJson = JSON.stringify(head)

@@ -1,20 +1,14 @@
-/* Regions (05 "Zones and regions"): where users live, and how far apart the regions are. */
+import { CALENDAR_DAY } from './team.ts'
 
 export const REGIONS = ['na', 'eu', 'apac', 'sa'] as const
 export type RegionId = (typeof REGIONS)[number]
 
-/** The region every Company starts in. Its Users Node is the home Users Node. */
 export const HOME_REGION: RegionId = 'na'
 
 export type RegionDef = Readonly<{
   name: string
   short: string
-  /** Share of users who live here, from Series C.  */
   share: number
-  /**
-   * Calendar minutes this region's clock runs ahead of the home clock, so its
-   * 20:00 peak lands at a different home hour (10 "Era 5": follow the sun).
-   */
   offset: number
 }>
 
@@ -25,10 +19,6 @@ export const REGION_INFO: Record<RegionId, RegionDef> = {
   sa: { name: 'South America', short: 'SA', share: 0.1, offset: 120 },
 }
 
-/**
- * Round trips between regions, in ms (05 "Zones and regions": US East to Europe 75,
- * Europe to Asia 160, US East to Sydney 200). The South America figures are proposed.
- */
 const RTT: Readonly<Record<string, number>> = {
   'na-eu': 75,
   'na-apac': 200,
@@ -38,46 +28,19 @@ const RTT: Readonly<Record<string, number>> = {
   'apac-sa': 300,
 }
 
-/** Milliseconds of one round trip between two regions; 0 inside one. Symmetric. */
 export const rttOf = (from: RegionId, to: RegionId): number =>
   from === to ? 0 : (RTT[`${from}-${to}`] ?? RTT[`${to}-${from}`] ?? 0)
 
-/**
- * A user far away pays two round trips on the user hop: one to open the connection,
- * one for the request. Calls between Nodes reuse connections and pay one.
- */
 export const USER_ROUND_TRIPS = 2
-/** Anycast takes this many ms off every user hop (10 "Infrastructure"). */
 export const ANYCAST_MS = 20
-/** HTTP/3 cuts the user hop to distant users by this share (10 "Performance"). */
 export const HTTP3_CUT = 0.2
-/** HTTP/2 cuts the user hop on page views by this share (10 "Performance"). */
 export const HTTP2_CUT = 0.15
-/** Egress price per GB between regions (09 "Egress"). */
 export const EGRESS_CROSS_REGION = 0.02
-/** Cash to open a region: its network, its accounts, its Users.  */
 export const OPEN_REGION_PRICE = 20_000
-/** The Era regions arrive in (10 "Era 5"). */
 export const REGIONS_FROM_STAGE = 5
-/**
- * When regions arrive, each far region starts with this share of the users at home,
- * times its share over North America's (04 "Going global").
- */
 export const ABROAD_SEED = 0.05
-/**
- * How much users in other regions count toward word of mouth in a region, against
- * 1 for its own users (04 "Going global"). Putsis et al. (1997) measured adoption in
- * one country speeding it in others; Takada and Jain (1991) found later countries
- * adopt faster.
- */
 export const BORDER_MIXING = 0.1
 
-/**
- * Real user monitoring splits latency by device (12 "The visibility ladder", `rum`). Devices are
- * not otherwise modelled, so a fixed, stylized mix and a radio-latency multiplier per device
- * stand in for a real client population: mobile radios and tablets' Wi-Fi-or-cellular mix both
- * add round-trip time a desktop's wired or fast Wi-Fi connection does not pay.
- */
 export const DEVICES = ['desktop', 'mobile', 'tablet'] as const
 export type DeviceId = (typeof DEVICES)[number]
 export const DEVICE_INFO: Record<
@@ -88,24 +51,16 @@ export const DEVICE_INFO: Record<
   mobile: { name: 'Mobile', share: 0.45, rttMs: 60 },
   tablet: { name: 'Tablet', share: 0.1, rttMs: 30 },
 }
-/** Every device at 0 ms: a Sample before `rum`, or one from a Company that never researched it. */
 export const NO_DEVICE_LATENCY: Record<DeviceId, number> = {
   desktop: 0,
   mobile: 0,
   tablet: 0,
 }
 
-/**
- * Calendar minutes from Apply until a Mirror's new Nodes serve (16 `mirror_time`):
- * about what `terraform apply` takes to boot instances and a replica.
- */
-export const MIRROR_TIME = 30
-/** Calendar minutes GitOps Staged holds a change on the source before the Mirrors get it (16 `stage_wait`).  */
-export const STAGE_WAIT = 60
-/** Calendar minutes until a GitOps sync: Argo CD polls every 120 s plus up to 60 s of jitter by default. */
-export const SYNC_POLL = 3
-/** Calendar minutes Mirrors do not sync while the Company moves to another IaC tool.  */
-export const IAC_SWITCH = 1_440
+export const MIRROR_TIME_MINUTES = 30
+export const STAGE_WAIT_MINUTES = 60
+export const SYNC_POLL_MINUTES = 3
+export const IAC_SWITCH_MINUTES = CALENDAR_DAY
 
 export const IAC_TOOLS = ['terraform', 'pulumi', 'alchemy'] as const
 export type IacToolId = (typeof IAC_TOOLS)[number]
@@ -113,36 +68,19 @@ export type IacToolId = (typeof IAC_TOOLS)[number]
 export const SYNC_MODES = ['all', 'staged'] as const
 export type SyncModeId = (typeof SYNC_MODES)[number]
 
-/** How a Mirror copies a source data Node (05 "Mirror a region", 07 "Multi-region data"). */
 export const DATA_PATTERNS = ['replica', 'primary', 'replicate', 'call'] as const
 export type DataPatternId = (typeof DATA_PATTERNS)[number]
 
-/**
- * Calendar minutes a plan spends reading one Node's live state before it diffs (05 "IaC tools").
- * Terraform refreshes on every plan and apply; Pulumi documents the same round trip per resource
- * as the reason `pulumi up` does not refresh by default.
- */
-export const REFRESH_TIME = 0.5
+export const REFRESH_TIME_MINUTES = 0.5
 
 export type IacToolDef = Readonly<{
   name: string
   language: string
-  /**
-   * Every plan reads live state first, so it shows every hand change (`terraform plan` refreshes).
-   * When false, plans diff against the state the last Apply recorded, and hand changes show only
-   * after the player reads live state.
-   */
   refreshOnPlan: boolean
-  /** The command that reads live state when plans do not: `pulumi refresh` or `alchemy drift`. */
   refresh: string | null
-  /** Restores drifted Nodes to the last deployed state without taking source changes (`alchemy drift --repair`). */
   repair: boolean
 }>
 
-/**
- * The IaC tools (05 "IaC tools"). All three build every Component and can set any value per
- * region. They differ in how a plan finds hand changes, as each tool's documented default workflow.
- */
 export const IAC_TOOL_INFO: Record<IacToolId, IacToolDef> = {
   terraform: {
     name: 'Terraform',

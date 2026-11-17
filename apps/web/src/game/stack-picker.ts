@@ -1,8 +1,6 @@
 import { Schema } from 'effect'
 import { defineMessageUnion } from 'foldkit/message'
 
-/** The inline Runtime and Framework lists on an App Server, Worker, or Realtime Hub: the
- *  search query, and the row the arrow keys have reached (-1 for none). */
 export const StackPicker = Schema.Struct({
   query: Schema.String,
   active: Schema.Finite,
@@ -10,9 +8,7 @@ export const StackPicker = Schema.Struct({
 export type StackPicker = typeof StackPicker.Type
 
 export const StackPickerMessage = defineMessageUnion({
-  /** The search box filters the list, which starts the arrow keys over. */
   Searched: { query: Schema.String },
-  /** The arrow keys move the highlight; `count` is how many rows the search shows. */
   Moved: { delta: Schema.Finite, count: Schema.Finite },
 })
 export type StackPickerMessage = typeof StackPickerMessage.Type

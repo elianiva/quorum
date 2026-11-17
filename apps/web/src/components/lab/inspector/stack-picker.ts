@@ -19,12 +19,10 @@ import { StackPickerMessage, type StackPicker } from '@/game/stack-picker.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { WELL, stackLogo } from '@quorum/ui/game/bits'
 
-/** Accept unaccented keyboard input as well as the spelling shown in the list. */
 const searchable = (text: string): string =>
   text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
 
 type PickerConfig<Item extends string> = Readonly<{
-  /** The DOM id prefix, so a page can hold both lists. */
   id: string
   picker: StackPicker
   toParentMessage: (message: StackPickerMessage) => Message
@@ -37,7 +35,6 @@ type PickerConfig<Item extends string> = Readonly<{
   isReady: (item: Item) => boolean
   lockHintOf: (item: Item) => string
   proposed: Item | null
-  /** Hovering a ready option previews it on a Tradeoff card. */
   previewOf: ((item: Item) => Message) | null
   t: Messages
   ariaLabel: string
@@ -309,7 +306,6 @@ const pickerView = <Item extends string>(
   )
 }
 
-/** The Runtime on an App Server, Worker or Realtime Hub. */
 export const runtimePickerView = (
   model: Model,
   node: GameNode,
@@ -356,7 +352,6 @@ export const runtimePickerView = (
   )
 }
 
-/** The Framework on an App Server or Worker, limited to the Runtime's language. */
 export const frameworkPickerView = (
   model: Model,
   node: GameNode,

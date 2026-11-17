@@ -6,7 +6,6 @@ import { type ComponentView } from './shared.ts'
 export const pki: ComponentView = {
   icon: Certificate,
   layout: { rows: 3, inRow: null, outRow: null, footer: false },
-  // It holds the certificate and renews it: the card counts what is left of its life.
   rows: ({ game, node }) => {
     const left = certDaysLeft(game)
     return [

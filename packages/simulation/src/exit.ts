@@ -14,20 +14,16 @@ import type { Ledger } from './ledger.ts'
 import { ComponentId, Founding, type Game } from './state.ts'
 import { valuationOf } from './valuation.ts'
 
-/** Legacy for a payout: √(payout / $1M), times the founding's multiplier, floored. */
 export const legacyOf = (payout: number, multiplier = 1): number =>
   Math.floor(Math.sqrt(Math.max(0, payout) / 1_000_000) * multiplier)
 
-/** A small picture of the Design at Exit: Components and positions, Links by index. */
 export const Snapshot = Schema.Struct({
   nodes: Schema.Array(Schema.Struct({ type: ComponentId, x: Schema.Finite, y: Schema.Finite })),
   links: Schema.Array(Schema.Tuple([Schema.Finite, Schema.Finite])),
 })
 export type Snapshot = typeof Snapshot.Type
 
-/** One row of the company history (13 "Company history"). */
 export const HistoryRow = Schema.Struct({
-  /** The Company's name, or empty for a row written before Companies were named. */
   name: Schema.String.pipe(Schema.withDecodingDefaultKey(Effect.succeed(''))),
   exit: Schema.Literals(EXIT_IDS),
   founding: Founding,
@@ -49,12 +45,10 @@ export type ExitOffer = Readonly<{
   legacy: number
 }>
 
-/** Step down's multiplier: 1.5, plus 0.1 per quarter in the beat streak, up to +1. */
 const multiplierOf = (game: Game, id: ExitId): number =>
   EXITS[id].multiplier +
   (id === 'step-down' ? Math.min(STREAK_BONUS_CAP, STREAK_BONUS * (game.quarter?.streak ?? 0)) : 0)
 
-/** What an Exit would pay now. The IPO is offered by the Pre-IPO round, not here. */
 export const exitOffer = (game: Game, ledger: Ledger, id: ExitId): ExitOffer => {
   const valuation = Math.min(EXITS[id].cap, valuationOf(game, ledger).valuation)
   const multiplier = multiplierOf(game, id)
@@ -63,14 +57,12 @@ export const exitOffer = (game: Game, ledger: Ledger, id: ExitId): ExitOffer => 
   return { id, valuation, multiplier, payout, legacy }
 }
 
-/** The Exits a Company can take now: Acqui-hire from Series A, Acquisition from Series B, Step down when Public. */
 export const exitOffers = (game: Game, ledger: Ledger): ReadonlyArray<ExitOffer> => {
   if (game.sandbox) return []
   return EXIT_IDS.filter((id) => {
     const def = EXITS[id]
     if (def.continues) return false
     if (id === 'step-down') return game.stage >= def.stage
-    // Once listed, the only way out is stepping down.
     return game.stage >= def.stage && game.stage < EXITS['step-down'].stage
   }).map((id) => exitOffer(game, ledger, id))
 }
@@ -101,7 +93,6 @@ export type ExitResult = Readonly<{ legacy: number; row: HistoryRow; game: Game 
 
 const resultOf = (game: Game, offer: ExitOffer, name: string): ExitResult => ({
   legacy: offer.legacy,
-  // The IPO keeps the Company: it remembers what it paid.
   game: { ...game, banked: game.banked + offer.legacy },
   row: {
     name,
@@ -117,7 +108,6 @@ const resultOf = (game: Game, offer: ExitOffer, name: string): ExitResult => ({
   },
 })
 
-/** Takes an Exit. The caller resets the Company and credits the Founder. */
 export const takeExit = (
   game: Game,
   ledger: Ledger,
@@ -130,6 +120,5 @@ export const takeExit = (
   return Result.succeed(resultOf(game, offer, name))
 }
 
-/** The IPO, on the Pre-IPO Game just before it lists: Legacy for the listing. */
 export const ipoExit = (game: Game, ledger: Ledger, name = ''): ExitResult =>
   resultOf(game, exitOffer(game, ledger, 'ipo'), name)

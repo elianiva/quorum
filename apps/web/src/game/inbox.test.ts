@@ -27,9 +27,6 @@ import { initialModel, update } from './update.ts'
 const answerOf = (mail?: { phase: { _tag: string; answer?: string } }) =>
   mail?.phase._tag === 'Answered' ? mail.phase.answer : null
 
-/* The Inbox's own rules (GDD 18): what the save keeps, the label chips, the Digest, and the
-   Mail a postmortem and a spam trap write. */
-
 const game = preseedGame()
 
 const fact = (key: string, sender: string, subject: string, spam = false): Fact => ({
@@ -52,20 +49,16 @@ const sent = (facts: ReadonlyArray<Fact>, folder: 'action' | 'fyi' | 'spam' | 't
 const act = (inbox: Inbox, id: number, action: string) =>
   updateInbox(inbox, InboxMessage.Acted({ id, action }), { game, open: true })
 
-/* The roster and the Inbox read one identity per engineer: the name on a Mail is the name in Team. */
 test('an engineer keeps one name, and the first hires have different ones', () => {
   const ids = Array.from({ length: 8 }, (_, index) => `e${index + 1}`)
   for (const id of ids) expect(senderOf(`mate:${id}`).name).toBe(identityOf(id).name)
   expect(new Set(ids.map((id) => identityOf(id).name)).size).toBe(ids.length)
   expect(senderOf('mate:e3').signIndex).toBe(identityOf('e3').index)
-  // A payroll of sixteen still has sixteen different names.
   expect(
     new Set(Array.from({ length: 16 }, (_, index) => identityOf(`e${index + 1}`).name)).size,
   ).toBe(16)
 })
 
-/* A Thread draws its Sender from its kind's pool, and every Sender of the kind resolves alike. A
-   pooled Sender that kept a stale warning open put the same CPU alarm in the Inbox twice. */
 test('advice that moved on resolves for every Sender of its kind', () => {
   const inbox = sent(
     [
@@ -83,7 +76,6 @@ test('advice that moved on resolves for every Sender of its kind', () => {
     ['monitoring:workers:a', 'Resolved'],
     ['team:hire:1', 'Active'],
   ])
-  // The advice that still holds keeps its Thread open.
   expect(resolvedExcept(inbox, 'cloud:cpu:a', 9).mail[0]?.phase._tag).toBe('Active')
 })
 
@@ -113,15 +105,12 @@ test('the save keeps the Mail and the mutes, and a reload reads it back', () => 
     InboxMessage.Trashed({ id: 1 }),
     { game, open: true },
   )
-  // The save writes JSON, as localStorage does: the same round trip a reload makes.
   const file = JSON.parse(JSON.stringify({ time: game.time, inbox: savedInbox(muted.model) }))
   const back = inboxOfSave(file)
   expect(back.mail.map((mail) => mail.subject)).toEqual(['Capacity warning', 'CVE'])
   expect(back.mail[0]?.trashed).toBe(true)
   expect(back.mutes).toEqual([{ sender: 'cloud', until: 120 }])
-  // The panel's view is not saved: it opens on Needs action, as it always does.
   expect(back.folder).toBe('action')
-  // A save from before the Inbox was saved, or one this build cannot read, opens empty.
   expect(inboxOfSave({ time: 4 })).toEqual(EMPTY_INBOX)
   expect(inboxOfSave({ inbox: { mail: 'not mail' } })).toEqual(EMPTY_INBOX)
 })
@@ -140,14 +129,12 @@ test('a label chip filters the list to one kind of Sender', () => {
     open: true,
   })
   expect(folderList(security.model).map((mail) => mail.subject)).toEqual(['CVE-2024-1'])
-  // The chip filters the list and clears the open thread, so a phone stays on the list.
   expect(security.model.focus).toBe(null)
   const all = updateInbox(security.model, InboxMessage.LabelChosen({ label: null }), {
     game,
     open: true,
   })
   expect(folderList(all.model)).toHaveLength(3)
-  // Changing folder clears the chip, so a folder is never quietly empty.
   const other = updateInbox(security.model, InboxMessage.FolderChosen({ folder: 'fyi' }), {
     game,
     open: false,
@@ -156,7 +143,6 @@ test('a label chip filters the list to one kind of Sender', () => {
 })
 
 test('past eight unread threads the oldest low-priority ones fold into one Digest', () => {
-  // Nine FYI threads: the oldest one folds, and the Digest says so.
   const nine = sent(
     Array.from({ length: 9 }, (_, index) =>
       fact(`customers:ticket:${index}`, 'customers', `Ticket ${index + 1}`),
@@ -170,7 +156,6 @@ test('past eight unread threads the oldest low-priority ones fold into one Diges
   const folded = digestOf(unread)
   expect(folded.map((mail) => mail.subject)).toEqual(['Ticket 1'])
   const list = folderList(unread)
-  // The list hides the folded thread behind one row, and that row sits where it was.
   expect(list.map((mail) => mail.subject)).toEqual([
     'Ticket 9',
     'Ticket 8',
@@ -183,7 +168,6 @@ test('past eight unread threads the oldest low-priority ones fold into one Diges
     'Digest: 1 older updates',
   ])
   expect(list.at(-1)?.id).toBe(DIGEST_ID)
-  // Nothing that needs a decision ever folds: ten unread decisions are ten rows.
   const decisions = sent(
     Array.from({ length: 10 }, (_, index) =>
       fact(`investor:round:${index}`, 'investor', `Offer ${index + 1}`),
@@ -224,10 +208,8 @@ test('a resolved incident asks a teammate to file the postmortem', () => {
     causedBy: null,
   }
   const mail = postmortemFact(postmortem, withEngineers)
-  // The sender is a person: the design gives the postmortem to a teammate, not the pager.
   expect(mail.sender.startsWith('mate:')).toBe(true)
   expect(mail.sender).toBe(`mate:${withEngineers.engineers[0]?.id}`)
-  // With nobody on the payroll the Mentor writes it, and a later advice change leaves it open.
   const lone = postmortemFact(postmortem, game)
   expect(senderOf(lone.sender).kind).toBe('mentor')
   expect(
@@ -239,18 +221,15 @@ test('a resolved incident asks a teammate to file the postmortem', () => {
     'File postmortem',
     'File and research the action item',
   ])
-  // Every one of the letters names the Node the incident hit.
   expect(mail.text).toContain('App Server')
 
   const inbox = reading(mailed(EMPTY_INBOX, mail, game.time, true))
   const id = inbox.mail[0]?.id ?? 0
   const taken = act(inbox, id, `postmortem-take:${postmortem.id}`)
   expect(taken.outMessage).toEqual({ _tag: 'ActionTaken', kind: 'postmortem-take', target: '3' })
-  // The answer stays in the Inbox as the record.
   expect(answerOf(taken.model.mail[0])).toBe(
     'You filed the postmortem and put the action item in the study queue.',
   )
-  // An incident with no action item carries one button.
   expect(postmortemFact({ ...postmortem, action: null }, game).actions).toHaveLength(1)
 })
 
@@ -262,14 +241,12 @@ test('a phishing trap leaks the credentials, and the Inbox keeps the record', ()
   expect(clicked.outMessage).toEqual({ _tag: 'ActionTaken', kind: 'trap', target: 'phish' })
   expect(answerOf(clicked.model.mail[0])).toContain('It was a trap')
 
-  // The act itself is a Simulation Action: the Credential leak incident starts and Users leave.
   const phished = Actions.phished(game)
   expect(Result.isSuccess(phished)).toBe(true)
   if (Result.isFailure(phished)) return
   expect(phished.success.incident?.kind).toBe('credential-leak')
   expect(phished.success.users).toBeLessThan(game.users)
 
-  // Through the app: the click starts the incident, and the pager's Mail lands in the Inbox.
   const model: Model = {
     ...initialModel(),
     route: AppRoute.Company(),
@@ -287,7 +264,6 @@ test('a phishing trap leaks the credentials, and the Inbox keeps the record', ()
     clickedInTheApp.board.inbox.mail.filter((mail) => mail.key.includes('incident-phishing')),
   ).toHaveLength(1)
 
-  // Reporting a phishing Mail as spam disarms it: the risk goes with the button.
   const reported = updateInbox(inbox, InboxMessage.MarkedSpam({ id: phishing?.id ?? 0 }), {
     game,
     open: true,
@@ -304,7 +280,6 @@ test('a phishing trap leaks the credentials, and the Inbox keeps the record', ()
 test('a reload opens the Company with the Mail it had', () => {
   const before = sent([fact('cloud:cpu:a', 'cloud', 'Capacity warning')], 'action')
   const json = JSON.stringify({ format: SAVE_FORMAT, ...game, inbox: savedInbox(before) })
-  // Continue names the file, and the file answers for it.
   const loading = { ...initialModel(), companyPhase: { _tag: 'Opening' as const, id: 'c' } }
   const loaded = update(loading, Message.CompanyLoaded({ id: 'c', open: true, json })).model
   expect(loaded.board.inbox.mail.map((mail) => mail.subject)).toEqual(['Capacity warning'])
@@ -319,7 +294,6 @@ test('paying a fake invoice costs the Cash printed on it', () => {
     actions: [{ id: 'trap:invoice', label: 'Pay invoice' }],
     spam: true,
   }
-  // A Company with the Cash to pay it: one without gets a refusal and keeps its money.
   const rich = { ...game, cash: 20_000 }
   const inbox = sent([invoice], 'spam')
   const id = inbox.mail[0]?.id ?? 0
@@ -334,7 +308,6 @@ test('paying a fake invoice costs the Cash printed on it', () => {
     Message.InboxChanged({ message: InboxMessage.Acted({ id, action: 'trap:invoice' }) }),
   ).model
   expect(paid.board.game.cash).toBe(rich.cash - 4_812)
-  // The Mail keeps the record of what the click cost.
   expect(answerOf(paid.board.inbox.mail[0])).toContain('It was a trap')
 })
 
@@ -366,7 +339,6 @@ test('a rewrite proposal needs a reason and never names the language the App Ser
   )
   expect(proposals(onGo(0))).toEqual([])
 
-  // While a proposal waits for an answer, its engineer stays quiet; once answered, they may ask again.
   const send = (inbox: Inbox, from: number, to: number): Inbox => {
     let next = inbox
     for (let bucket = from; bucket < to; bucket += 1) {

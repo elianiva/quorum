@@ -25,11 +25,8 @@ import {
 } from './shared.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* One page per incident, and a hub that lists them by Era. */
-
 export const incidentPath = (id: IncidentDef['id']): string => `/incidents/${id}`
 
-/** The failure page that shows this incident's shape in a real system. */
 const PRODUCTION: Partial<Record<IncidentDef['id'], string>> = {
   config: '/patterns/one-control-plane-73-hours',
   'disk-full': '/patterns/one-command-removed-the-index',
@@ -45,7 +42,6 @@ const SEVERITY_CLASS: Record<1 | 2 | 3, string> = {
   }),
 }
 
-/** SEV1 is the worst, as in a real on-call rotation. */
 export const severityChip = (severity: 1 | 2 | 3, h: H): Html =>
   h.span(
     [
@@ -212,7 +208,6 @@ export const incidentPages = (l: Lang): ReadonlyArray<Page> => {
                       key: id,
                       cells: [
                         link(incidentPath(id), def.name, h),
-                        // "Pre-seed" must not break at its hyphen in the narrow table.
                         h.span(
                           [
                             h.Class(

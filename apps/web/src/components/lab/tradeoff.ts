@@ -39,7 +39,6 @@ const axisLabelOf = (t: Messages): Record<Axis, string> => ({
   operability: t.tradeoff.operability,
 })
 
-/** Term names for the anchors the catalog names, shown as links to the wiki glossary. */
 const termsOf = (t: Messages): Readonly<Record<string, string>> => ({
   'process-per-request': t.tradeoff.processPerRequest,
   'shared-nothing': t.tradeoff.sharedNothing,
@@ -63,7 +62,6 @@ const nameOf = (t: Messages, option: TradeoffOption): string => {
   }
 }
 
-/** The option the Node runs now, in the same option set. */
 const currentOf = (node: GameNode, option: TradeoffOption): TradeoffOption => {
   switch (option.kind) {
     case 'runtime':
@@ -75,19 +73,9 @@ const currentOf = (node: GameNode, option: TradeoffOption): TradeoffOption => {
   }
 }
 
-/**
- * The six axes of an instance family, on the same radar as a Stack (16 "The
- * dominance test" scores the four families). 05's table carries the family's
- * facts, not its axes, so each read comes from them: throughput is vCPU per
- * dollar, memory is RAM per vCPU, and a Burstable box loses tail, resilience
- * and operability to the credit throttle. Velocity is the Stack's, so it sits
- * neutral. Higher is better on every axis, as for a runtime.
- */
 export const familyAxes = (family: FamilyId): Axes => {
   const { ramPerVcpu, price } = FAMILIES[family]
   const throttled = family === 'burstable'
-  // ARM is cheaper and 5% slower, and some software needs work to port (05 "App Server"), so it
-  // gives up a point of tail and a point of operability for its price.
   const arm = family === 'arm'
   return {
     throughput: price <= 0.5 ? 5 : price <= 0.9 ? 4 : price <= 1.05 ? 3 : 2,
@@ -229,7 +217,6 @@ const radar = (now: Axes, next: Axes, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** "+$0.80/s (+12%) · p99 +40 ms" from the ghost run. */
 const previewLine = (t: Messages, model: Model, preview: PreviewFigures): string =>
   deltaText(
     t,
@@ -244,7 +231,6 @@ const previewLine = (t: Messages, model: Model, preview: PreviewFigures): string
     has(model.board.game, 'percentiles'),
   )
 
-/** Cash now, the change in Burn, and the restart. */
 const costLine = (t: Messages, model: Model, preview: PreviewFigures): string => {
   const [before = 0, after = 0] = preview.burn
   const burn = after - before
@@ -362,7 +348,6 @@ const PLACE = css({
   _short: { right: '340px' },
 })
 
-/** A phone shows the effect of an option as a strip above the safe area, not a floating card. */
 const PLACE_PHONE = css({
   _compact: {
     left: '2',
@@ -374,7 +359,6 @@ const PLACE_PHONE = css({
   },
 })
 
-/** An unpinned option takes the whole screen on a phone, like every other action. */
 const PLACE_SCREEN = css({
   _compact: {
     inset: '0',
@@ -398,7 +382,6 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
   const current = currentOf(node, card.option)
   const title = `${kindTitleOf(t)[card.option.kind]}: ${nameOf(t, current)} → ${nameOf(t, card.option)}`
 
-  // Explicit reviews stay expanded even after this option set has been seen.
   if (card._tag !== 'Pinned' && model.prefs.seenTradeoffs.includes(card.option.kind))
     return h.div(
       [

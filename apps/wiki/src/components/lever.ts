@@ -6,9 +6,6 @@ import { langOf } from '../i18n/lang.ts'
 import { leverOf, leverRows } from '../reference/levers.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* A kind's Product lever as the game offers it: three steps, each with the share
-   it gives the kind, its Dev Hours, and its growth cost. */
-
 const percent = (share: number): string => `${Math.round(share * 1000) / 10}%`
 
 export const leverView = <M>(kind: LeverKind, h: HtmlBuilder<M>): Html => {

@@ -30,7 +30,6 @@ import { say, withToast, act, type UpdateResult, type Dispatch } from './shared.
 import { teamAction } from './team.ts'
 import { tradeoffOf } from './tradeoff.ts'
 
-/** A fact joins the Inbox; it needs no preview card while the Inbox panel is open. */
 export const CALENDAR_HOUR = 60
 
 export const mailedTo = (model: Model, fact: Fact, time: number, repeats = false): Model => ({
@@ -41,13 +40,11 @@ export const mailedTo = (model: Model, fact: Fact, time: number, repeats = false
   },
 })
 
-/** The Inbox's keys: J and K move, E deletes (or restores), S reports spam, 1 to 9 press a button. */
 export const mailKey = (model: Model, key: string, route: Dispatch): UpdateResult | null => {
   const list = folderList(model.board.inbox)
   const at = list.findIndex((mail) => mail.id === model.board.inbox.focus)
   const current = list[at]
   const neighbour = (list[at + 1] ?? list[at - 1])?.id ?? null
-  // Deleting or reporting a Mail moves on to its neighbour.
   const apply = (message: InboxMessage): UpdateResult =>
     Update.combine(model, [
       (next: Model) => foldInbox(next, message, route),
@@ -79,10 +76,8 @@ export const mailKey = (model: Model, key: string, route: Dispatch): UpdateResul
         ? apply(InboxMessage.MarkedSpam({ id: current.id }))
         : null
     default: {
-      // The reader shows every button, so every one of them takes a number, in order.
       if (!/^[1-9]$/.test(key)) return null
       const action = current?.phase._tag === 'Active' ? current.actions[Number(key) - 1] : undefined
-      // The Inbox owns the number keys while it is open, so they never reach the board's shortcuts.
       return current && action
         ? foldInbox(model, InboxMessage.Acted({ id: current.id, action: action.id }), route)
         : { model }
@@ -90,7 +85,6 @@ export const mailKey = (model: Model, key: string, route: Dispatch): UpdateResul
   }
 }
 
-/** A Mail button whose effect is outside the Inbox: the Message it stands for. */
 export const mailAction = (
   model: Model,
   route: Dispatch,
@@ -192,7 +186,6 @@ export const mailAction = (
     case 'resize':
     case 'quota':
     case 'reserved': {
-      // The Inspector holds a Node's size, its limit, and its pricing model (GDD 18 "Senders").
       const node = model.board.game.nodes.find((entry) => entry.id === target)
       if (!node) return { model }
       const inspected = route(model, Message.NodeTapped({ nodeId: node.id }))
@@ -238,15 +231,10 @@ export const mailAction = (
   }
 }
 
-/** What paying a fake invoice costs, in Cash: the amount printed on the invoice itself. */
 export const FAKE_INVOICE = 4_812
 
 export const FAKE_DOMAIN = 389
 
-/**
- * A trap the player clicked (18 "Spam and phishing"): the effect lands in the world, and the Mail
- * records it. Spam lies about the world, so the damage is always the player's own click.
- */
 export const trapTaken = (model: Model, target: string | null): UpdateResult => {
   const game = model.board.game
   switch (target) {
@@ -255,7 +243,6 @@ export const trapTaken = (model: Model, target: string | null): UpdateResult => 
         note: () => [say(model).toasts.credentialLeak, 'danger'],
       })
       const incident = taken.model.board.game.incident
-      // The Act starts the incident directly, so the pager's Mail is written here, not by a Step.
       return incident?.kind === 'credential-leak'
         ? {
             ...taken,
@@ -280,7 +267,6 @@ export const trapTaken = (model: Model, target: string | null): UpdateResult => 
       return act(model, 'Paid a fake domain notice', Actions.payFakeInvoice(game, FAKE_DOMAIN), {
         note: () => [say(model).toasts.paidDomain(money(FAKE_DOMAIN)), 'danger'],
       })
-    // A fake advisory's patcher installs a backdoor: it is used after a while, and a breach starts.
     case 'patcher': {
       const taken = act(model, 'Ran an unknown patcher', Actions.installBackdoor(game), {
         note: () => [say(model).toasts.patcherBackdoor, 'danger'],
@@ -292,7 +278,6 @@ export const trapTaken = (model: Model, target: string | null): UpdateResult => 
   }
 }
 
-/** An Inbox gesture. The Inbox reads the board's Game and whether its panel is open. */
 export const foldInbox = (model: Model, message: InboxMessage, route: Dispatch): UpdateResult =>
   Update.foldChild({
     update: (inbox: Inbox, child: InboxMessage) =>

@@ -1,8 +1,6 @@
 import { tools } from '../parts.mjs'
 import { HEIGHT, P as STAGE, WIDTH } from '../stage.mjs'
 
-// Payments: a card terminal with a keypad and a card in its reader, and a receipt
-// printer behind it feeding a strip off its paper roll. The card is lit.
 export function draw(P, { feet = true, lit = true } = {}) {
   const t = tools(P)
   const { k, G, S, L, D, at, slab } = t
@@ -10,7 +8,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   const PLATE = { x: -46, y: -42, w: 92, d: 82, r: 6 }
   out.push(t.basePlate(PLATE, { feet }))
 
-  // Receipt printer at the back left.
   const PR = { x: -38, y: -34, w: 40, d: 26, r: 2.4 }
   const PH = 10
   out.push(
@@ -30,7 +27,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   out.push(
     L(G.circleOf(G.frameAlong([PR.x + 34, ROLL[0], ROLL[1]], [1, 0, 0]), 0, 2, P), { tone: 'lo' }),
   )
-  // The strip leaves the front of the roll and rises out of the tear bar.
   const STRIP = { x: PR.x + 9, y: ROLL[0] + 6.4, w: 22, d: 0.5, r: 0 }
   out.push(S(slab(STRIP, ROLL[1], 15, 1), { tone: 'hi', crease: 'lo' }))
   out.push(
@@ -55,11 +51,9 @@ export function draw(P, { feet = true, lit = true } = {}) {
   )
   out.push(cheek(PR.x + PR.w - 6))
 
-  // The card terminal at the front right.
   const TM = { x: -2, y: -8, w: 34, d: 42, r: 4 }
   const TH = 7
   const FRONT = TM.y + TM.d
-  // The cable between printer and terminal, behind the terminal.
   out.push(
     t.tube(
       [
@@ -77,7 +71,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
       inner: L(k.sideSeam(TM, 2.2, P, 6), { tone: 'faint' }),
     }),
   )
-  // The reader housing at the back of the terminal, with the card in its slot.
   const RD = { x: TM.x + 4, y: TM.y + 3, w: TM.w - 8, d: 12, r: 2 }
   out.push(S(slab(RD, TH, 6, 4, 0.5), { tone: 'mid' }))
   out.push(
@@ -96,7 +89,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
       tone: 'lit',
     }),
   )
-  // Screen window, keypad and a confirm key.
   const screen = { x: TM.x + 5, y: RD.y + RD.d + 2.4, w: TM.w - 10, d: 8, r: 1 }
   out.push(S(slab(screen, TH, 0.6, 2), { tone: 'lo', crease: 'none' }))
   out.push(L(k.planOutline(k.insetPlan(screen, 1.2), TH + 0.6, P, 2), { tone: 'faint' }))

@@ -3,26 +3,13 @@ import { gap, type Route } from './geometry.ts'
 import { type PacketShape } from '../game/packets.ts'
 import { lengthOf } from './paths.ts'
 
-/*
- * Links are belts: a soft body tinted by what it carries, faint chevrons that point
- * the way it runs and move at its speed, and requests riding on it as items. A
- * busier belt runs faster. Its rails are a faint edge in its own tint, and stand
- * out on the focused path, under the pointer, on errors, and between zones. Where a
- * belt passes under others it runs through a tunnel; belts that dive under the same
- * crossing share one portal.
- */
 export const BELT = 7
-/** Width of the splitter where one port feeds several belts. */
 export const SPLITTER_W = 12
-/** World pixels between chevrons, and their half-width and depth. */
-export const CHEVRON_GAP = 14
+export const CHEVRON_GAP_PX = 14
 export const CHEVRON_HALF = 1.6
 export const CHEVRON_DEPTH = 1.4
-/** Belt speed in world pixels per second. */
 export const beltSpeed = (rate: number): number => 22 + 16 * Math.log2(1 + rate)
 
-/** A packet at (x, y), `r` from its centre to its edge, in the kind's shape: colour is not the
- *  only cue (15 "Accessibility"). */
 export const packetAt = (
   g: Graphics,
   shape: PacketShape,
@@ -42,7 +29,6 @@ export const packetAt = (
   }
 }
 
-/** A still arrow at (x, y) pointing along (ux, uy): the flow a belt carries under reduced motion. */
 export const arrowAt = (
   g: Graphics,
   x: number,
@@ -63,7 +49,6 @@ export const arrowAt = (
   ])
 }
 
-/** The point and the direction at `t` of the way along a path, by length. */
 export const pointAndDirection = (
   path: Route,
   t: number,

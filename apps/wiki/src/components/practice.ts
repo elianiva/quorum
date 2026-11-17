@@ -21,12 +21,9 @@ export type Practice = Readonly<{
   selection: ReadonlyArray<string>
   placing: ComponentId | null
   note: Note | null
-  /** Links the board started with, so a cut one can be told. */
   startLinks: number
   grouped: boolean
-  /** Moved a group of two or more Nodes. */
-  groupMoved: boolean
-  /** The game refused a Link because it would make a loop. */
+  movedGroupOfTwoOrMore: boolean
   loopRefused: boolean
 }>
 
@@ -46,7 +43,6 @@ export type PracticeEvent = typeof PracticeEvent.Type
 
 export type Goal = Readonly<{ label: string; done: boolean }>
 
-/** The Components a Practice dock offers: only what the board needs. */
 export const DOCK: Record<PracticeId, ReadonlyArray<ComponentId>> = {
   place: ['server', 'database'],
   wire: [],
@@ -103,7 +99,7 @@ export const start = (id: PracticeId): Practice => {
     note: null,
     startLinks: game.links.length,
     grouped: false,
-    groupMoved: false,
+    movedGroupOfTwoOrMore: false,
     loopRefused: false,
   }
 }
@@ -132,7 +128,7 @@ export const goals = (p: Practice): ReadonlyArray<Goal> => {
     ]
   return [
     { label: 'Select two or more Nodes with a box', done: p.grouped },
-    { label: 'Move the selected group', done: p.groupMoved },
+    { label: 'Move the selected group', done: p.movedGroupOfTwoOrMore },
     { label: 'Cut one Link', done: p.game.links.length < p.startLinks },
   ]
 }
@@ -146,7 +142,6 @@ const refuse = (p: Practice, refusal: Actions.Refusal): Practice => ({
 
 const regionNodes = (game: Game) => game.nodes.filter((entry) => entry.region === HOME_REGION)
 
-/** The game's update function, reduced to the handlers a Practice board has. */
 export const update = (p: Practice, event: PracticeEvent): Practice =>
   PracticeEvent.match<Practice>(event, {
     Arm: (event) => ({ ...p, placing: p.placing === event.type ? null : event.type, note: null }),
@@ -220,7 +215,8 @@ export const update = (p: Practice, event: PracticeEvent): Practice =>
         ...p,
         game,
         note: null,
-        groupMoved: p.groupMoved || (group.length > 1 && (dx !== 0 || dy !== 0)),
+        movedGroupOfTwoOrMore:
+          p.movedGroupOfTwoOrMore || (group.length > 1 && (dx !== 0 || dy !== 0)),
       }
     },
     Tap: (event) => ({ ...p, selected: event.nodeId, selection: [], note: null }),

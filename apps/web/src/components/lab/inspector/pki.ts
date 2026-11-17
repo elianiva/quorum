@@ -9,7 +9,6 @@ import { Message } from '@/game/message.ts'
 import { row } from '@quorum/ui/game/bits'
 import { type Panel, caption, section } from './shared.ts'
 
-/** Secrets and Certificates: what is left of the certificate, and who renews it (05). */
 const secrets = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
 

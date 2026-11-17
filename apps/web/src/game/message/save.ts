@@ -1,7 +1,6 @@
 import { IncidentId } from '@quorum/simulation/state'
 import { Schema } from 'effect'
 
-/** The save Messages, as cases for the root union. */
 export const saveCases = {
   SaveExported: {},
   SaveDownloaded: {},

@@ -1,8 +1,6 @@
 import { tools } from '../parts.mjs'
 import { HEIGHT, P as STAGE, WIDTH } from '../stage.mjs'
 
-// A CDN edge node: a short relay mast on a plinth with three sector panels, a
-// backhaul dish and an equipment cabinet. The beacon on top is lit.
 export function draw(P, { feet = true, lit = true } = {}) {
   const t = tools(P)
   const { k, G, S, L, D, slab, cyl } = t
@@ -14,7 +12,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   const MR = 2.6
   const MAST_TOP = 66
 
-  // Equipment cabinet at the back left, with a feeder to the plinth.
   const CAB = { x: -38, y: -36, w: 20, d: 26, r: 1.4 }
   const CH = 20
   out.push(
@@ -48,14 +45,11 @@ export function draw(P, { feet = true, lit = true } = {}) {
     ),
   )
 
-  // Plinth and mast foot.
   const PL = { x: M[0] - 9, y: M[1] - 9, w: 18, d: 18, r: 1.4 }
   out.push(S(slab(PL, 0, 5, 3, 0.5), { tone: 'mid' }))
   out.push(t.topScrews(k.corners(PL, 2.6), 5, 0.8))
   out.push(S(cyl(M[0], M[1], 5, 5, 3, 28, 0.4), { tone: 'mid' }))
 
-  // Sector panels around the mast, with two arms each. Back panels go before the
-  // mast and the front panel after it.
   const ANGLES = [Math.PI * 0.25, Math.PI * 0.92, Math.PI * 1.58]
   const P0 = 38
   const P1 = 56
@@ -92,7 +86,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   const facing = (angle) => Math.cos(angle) + Math.sin(angle)
   for (const angle of ANGLES.filter((a) => facing(a) <= 0)) out.push(panel(angle))
 
-  // The backhaul dish on the right, its face and feed horn turned toward us.
   const DISH_Z = 24
   const DIR = G.unit3([0.86, -0.42, 0.08])
   const DF = G.frameAlong([M[0] + DIR[0] * MR, M[1] + DIR[1] * MR, DISH_Z], DIR)
@@ -119,7 +112,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
 
   for (const angle of ANGLES.filter((a) => facing(a) > 0)) out.push(panel(angle))
 
-  // The beacon and the lightning rod.
   out.push(S(cyl(M[0], M[1], 3.6, MAST_TOP, 1.4, 24, 0.3), { tone: 'mid' }))
   out.push(S(cyl(M[0], M[1], 2.6, MAST_TOP + 1.4, 4, 24), { tone: 'hi', lit }))
   out.push(S(cyl(M[0], M[1], 3.2, MAST_TOP + 5.4, 1.2, 24, 0.3), { tone: 'mid' }))

@@ -13,7 +13,6 @@ import { row } from '@quorum/ui/game/bits'
 import { type Panel, caption, picker, section } from './shared.ts'
 import { runtimePickerView } from './stack-picker.ts'
 
-/** The runtime a Realtime Hub holds its connections on: the per-connection cost is the whole model. */
 const hubStack = (model: Model, node: GameNode, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const game = model.board.game
@@ -48,7 +47,6 @@ const hubStack = (model: Model, node: GameNode, h: HtmlBuilder<Message>): Html =
   )
 }
 
-/** A Realtime Hub's Presence, Reconnect backoff and Clustering (05 "Realtime Hub"). */
 const hub = (node: GameNode, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return section(
@@ -99,7 +97,6 @@ export const wsPanel: Panel = {
   stats: ({ game, node, own, h }) => {
     const t = copy(h)
 
-    // The Hub's limit is connections, not requests: each realtime message holds one open.
     const max = hubConnections(node, distributedErlang(game, node))
     const held = own.inbound * RT_HOLD_SECONDS
     return [

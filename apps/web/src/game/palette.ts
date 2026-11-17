@@ -63,12 +63,6 @@ import { PrefsMessage } from './prefs.ts'
 import { dockGroups, dockItems, playbooksShown, shown } from './reveal.ts'
 import { speedsOf } from './update/constant.ts'
 
-/* ==========================================================================
-   The command palette's rows. Every row carries the Message a click sends, so
-   running a row runs exactly the code the control does; nothing here reaches
-   into the Game on its own.
-   ========================================================================== */
-
 export const PALETTE_GROUPS = [
   'place',
   'node',
@@ -83,32 +77,25 @@ export const PALETTE_GROUPS = [
 export type PaletteGroup = (typeof PALETTE_GROUPS)[number]
 
 export type PaletteCommand = Readonly<{
-  /** Stable across languages, so the highlighted row survives a keystroke. */
   id: string
   group: PaletteGroup
   label: string
   glyph: IconNode
-  /** A part the dock lists, drawn with the dock's own row. */
   part?: Part
-  /** The keys that run it from the board, where it has any. */
   keys?: ReadonlyArray<string>
-  /** What the control sends: the row runs this Message and nothing else. */
   message: Message
 }>
 
-/** The modifier the board listens for: Cmd on macOS, Ctrl elsewhere. */
 export const modLabel = (): string => {
   const platform = typeof navigator === 'undefined' ? '' : navigator.userAgent
   return /Mac|iPhone|iPad|iPod/.test(platform) ? '⌘' : 'Ctrl'
 }
 
-/** A shortcut as the player types it: `⌘A` on macOS, `Ctrl+A` elsewhere. */
 export const modShortcut = (key: string): string => {
   const mod = modLabel()
   return mod === '⌘' ? `${mod}${key}` : `${mod}+${key}`
 }
 
-/** The build group and part a dock shortcut takes, so a place row hints the same keys. */
 const dockKeys = (model: Model): ReadonlyMap<ComponentId, ReadonlyArray<string>> => {
   const keys = new Map<ComponentId, ReadonlyArray<string>>()
   for (const [groupIndex, group] of dockGroups(model.board.game).entries())
@@ -121,7 +108,6 @@ const placeRows = (t: Messages, model: Model): ReadonlyArray<PaletteCommand> => 
   const game = model.board.game
   const keys = dockKeys(model)
   const rows: Array<PaletteCommand> = []
-  // The dock's list, lock and all: a locked part waits on one Research it names.
   for (const type of keys.keys()) {
     const part = partOf(t, game, type)
     const shortcut = keys.get(type)
@@ -184,7 +170,6 @@ const nodeRows = (t: Messages, model: Model): ReadonlyArray<PaletteCommand> => {
         message: Message.BulkResizeChosen({ nodeId: selected.id, mode: 'max' }),
       },
     )
-  // A link needs two ends: the selected Node is one, and these are the others it can reach.
   const linked = new Set(
     game.links.filter((link) => link.from === selected.id).map((link) => link.to),
   )
@@ -212,7 +197,6 @@ const researchRows = (t: Messages, model: Model): ReadonlyArray<PaletteCommand> 
       keys: ['R'],
       message: Message.PanelOpened({ panel: 'research' }),
     })
-  // One row per queued Study: run it first, or take it off the queue.
   for (const study of game.studies) {
     const name = t.catalog.research[study.id].name
     rows.push(
@@ -248,7 +232,6 @@ const researchRows = (t: Messages, model: Model): ReadonlyArray<PaletteCommand> 
   return rows
 }
 
-/** The panels the palette opens by name; the transient ones (offer, era, end) have no row. */
 type PalettePanel = Extract<
   Panel,
   | 'dashboard'
@@ -347,8 +330,8 @@ const viewRows = (t: Messages, model: Model): ReadonlyArray<PaletteCommand> => {
       message: Message.ScreenshotToggled(),
     },
   ]
-  // The clock holds still without Easy mode, so pause and speed are not the player's to set.
-  if (!model.prefs.easyMode) return rows
+  const playerSetsClock = model.prefs.easyMode
+  if (!playerSetsClock) return rows
   rows.push(
     {
       id: 'pause',
@@ -539,7 +522,6 @@ const settingsRows = (t: Messages, model: Model): ReadonlyArray<PaletteCommand> 
   ]
 }
 
-/** Every action the player can take from this board, in the order the palette lists them. */
 export const commandsOf = (t: Messages, model: Model): ReadonlyArray<PaletteCommand> => [
   ...placeRows(t, model),
   ...nodeRows(t, model),
@@ -552,18 +534,12 @@ export const commandsOf = (t: Messages, model: Model): ReadonlyArray<PaletteComm
   ...settingsRows(t, model),
 ]
 
-/** Folds a label to what a player would type: lower case, with no accents. */
 const folded = (text: string): string =>
   text
     .toLocaleLowerCase()
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
 
-/**
- * The rows a query keeps. Every word typed has to appear somewhere in the row's
- * group or label, and a row keeps the order it was built in, so the palette
- * does not reshuffle while the player types.
- */
 export const matchesOf = (
   commands: ReadonlyArray<PaletteCommand>,
   t: Messages,
@@ -579,10 +555,6 @@ export const matchesOf = (
   })
 }
 
-/**
- * The highlighted row. A moved row wins; otherwise a query highlights its first
- * match, and an empty palette highlights nothing, so Enter never runs a part by accident.
- */
 export const activeOf = (
   commands: ReadonlyArray<PaletteCommand>,
   query: string,

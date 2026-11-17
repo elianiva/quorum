@@ -10,7 +10,7 @@ import {
   mirrorIntent,
   planOf,
   RefusalWire,
-  ROOM_INTENTS,
+  ROOM_MAX_INTENTS_PER_FRAME,
   RoomSnapshot,
   ServerMessage,
   votePasses,
@@ -55,11 +55,9 @@ describe('plans', () => {
   })
 
   test('a move the blacklist does not name is a Seat’s to make', () => {
-    // These were never added by hand, so the modules' exports are the source.
     expect(planOf('setRetention', ['analytics', 30])).not.toBeNull()
     expect(planOf('setRuntime', ['server', 'node'])).not.toBeNull()
     expect(planOf('setFramework', ['server', 'next'])).not.toBeNull()
-    // Reads and helpers stay out.
     expect(planOf('canRaise', [])).toBeNull()
     expect(planOf('itemName', ['x'])).toBeNull()
     expect(planOf('driftOf', [])).toBeNull()
@@ -122,8 +120,8 @@ describe('intents', () => {
       id: 1,
       intents: Array.from({ length: count }, () => intent('move', node.id, 1, 1)),
     })
-    expect(Option.isSome(decode(batch(ROOM_INTENTS)))).toBe(true)
-    expect(Option.isNone(decode(batch(ROOM_INTENTS + 1)))).toBe(true)
+    expect(Option.isSome(decode(batch(ROOM_MAX_INTENTS_PER_FRAME)))).toBe(true)
+    expect(Option.isNone(decode(batch(ROOM_MAX_INTENTS_PER_FRAME + 1)))).toBe(true)
   })
 
   test('a batch stops at the first refusal', () => {
@@ -138,7 +136,6 @@ describe('intents', () => {
   test('the work and mirror tables are separate', () => {
     expect(Result.isFailure(applyIntent(game, workIntent('removeTeam', 'nope')))).toBe(true)
     expect(Result.isFailure(applyIntent(game, mirrorIntent('refreshMirror', 'eu')))).toBe(true)
-    // A name from one table is not a name in another.
     expect(Result.isFailure(applyIntent(game, { ns: 'work', name: 'move', args: [] }))).toBe(true)
   })
 

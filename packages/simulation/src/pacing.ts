@@ -125,7 +125,6 @@ export type Milestone =
   | 'warehouse'
   | 'ai-serving'
 
-/** Margin when an Era ends, at the build's prices. */
 export type MarginRecord = Readonly<{
   stage: number
   time: number
@@ -134,12 +133,10 @@ export type MarginRecord = Readonly<{
 
 export type BotRun = Readonly<{
   game: Game
-  /** Sim seconds since the Company started when each milestone first happened. */
   milestones: Readonly<Partial<Record<Milestone, number>>>
   margins: ReadonlyArray<MarginRecord>
 }>
 
-/** The order the Balanced player researches in. It skips what is not open yet. */
 const PRIORITY: ReadonlyArray<ResearchId> = [
   'stripe',
   'logs',
@@ -161,16 +158,11 @@ const PRIORITY: ReadonlyArray<ResearchId> = [
   'background-jobs',
   'queues',
   'cdn',
-  // PHP spends about six times Go's CPU per request, so the fleet it needs outgrows any budget.
   'lang-go',
   'stampede-protection',
-  // Series A: zones first, then checkout, the Autoscaler, and the SLO. Not Error budgets:
-  // incidents spend the bot's budget, and a spent budget halves velocity.
   'multi-az',
-  // The Load Balancer's last size is 64,000 requests a second: L4 carries ten times that.
   'lb-algorithms',
   'l4-lb',
-  // The Database's safety net: backups, call policy, and drills that prove the backup.
   'pitr',
   'timeouts',
   'backoff-jitter',
@@ -183,15 +175,12 @@ const PRIORITY: ReadonlyArray<ResearchId> = [
   'tiered-caching',
   'containers',
   'replication',
-  // Series B: the cheap way to serve AI first, then the Warehouse for reports.
   'sharding',
-  // Series C: regions, then the code that mirrors them.
   'multi-region',
   'geo-dns',
   'infra-as-code',
   'sync-replication',
   'consensus',
-  // Pre-IPO: the checklist's research.
   'tls-everywhere',
   'encryption-at-rest',
   'dependency-scanning',
@@ -205,7 +194,6 @@ const PRIORITY: ReadonlyArray<ResearchId> = [
   'error-budgets',
 ]
 
-/** Polyglot researches the languages right after the basics. */
 const POLYGLOT_PRIORITY: ReadonlyArray<ResearchId> = [
   ...PRIORITY.slice(0, 3),
   'lang-python',
@@ -214,36 +202,25 @@ const POLYGLOT_PRIORITY: ReadonlyArray<ResearchId> = [
   ...PRIORITY.slice(3),
 ]
 
-/** What the Balanced player researches once Chat is on the way and the Stack refuses realtime. */
 const REALTIME_RESEARCH: ReadonlyArray<ResearchId> = ['lang-node', 'node-cluster']
 
-/** The language research Polyglot moves to, and the runtime it moves to. */
 const LANGUAGE_RESEARCH: ReadonlyArray<readonly [ResearchId, RuntimeId]> = [
   ['lang-python', 'gunicorn'],
   ['lang-ruby', 'puma'],
   ['lang-node', 'node'],
 ]
 
-/** The Balanced player hires while payroll stays under this share of revenue, up to a headcount. */
-/** Far regions the Balanced player mirrors from home. */
 const FAR_REGIONS = ['eu', 'apac', 'sa'] as const
-/** Sim seconds between plans that sync a Mirror's sizes and options with home. */
 const MIRROR_EVERY = 300
-/** The size the Distributed SQL Node starts at. */
 const DSQL_SIZE = 4
 
-/** Sim seconds between the idle player's visits: two hours. */
 const IDLE_EVERY = 7_200
 
 const PAYROLL_SHARE = 0.25
-/** Engineers the bot hires up to, by Era: 4 until Seed, then 4 more each Era. */
 const maxHires = (stage: number): number => 4 + 4 * Math.max(0, stage - 2)
 
-/** Seconds of Burn the player keeps in Cash before spending. */
 const RESERVE_SECONDS = 30
-/** The player looks at the board this often, in sim seconds. */
 const LOOK_EVERY = 5
-/** A Node this busy gets attention even when the Bottleneck search names none. */
 const BUSY = 0.8
 
 const tried = (game: Game, action: Action): Game =>
@@ -260,7 +237,6 @@ const byId = (game: Game, id: string): GameNode | undefined =>
 
 const last = (game: Game): string => game.nodes.at(-1)?.id ?? ''
 
-/** Workers that fit in RAM with a margin, for runtimes with a pool. */
 const fittingWorkers = (node: GameNode): number => {
   const each = RUNTIMES[node.runtime].memoryMb + FRAMEWORKS[node.framework].memoryMb
   return Math.max(
@@ -275,7 +251,6 @@ const affordable = (game: Game, ledger: Ledger, apply: (game: Game) => Action): 
   return next !== game && next.cash >= reserve ? next : game
 }
 
-/** Places a Component and returns the Game and its id, or null when it cannot. */
 const placed = (
   game: Game,
   ledger: Ledger,
@@ -287,10 +262,6 @@ const placed = (
   return next === game ? null : [next, last(next)]
 }
 
-/**
- * Places a Component the Design cannot run without, such as the Search Engine that answers a
- * stranded query. It still has to be paid for, but it does not wait for the Burn reserve.
- */
 const placedNow = (
   game: Game,
   type: ComponentId,
@@ -301,13 +272,11 @@ const placedNow = (
   return next === game ? null : [next, last(next)]
 }
 
-/** Moves Postgres off the first box onto its own Database. */
 const splitDatabase = (game: Game, ledger: Ledger, server: GameNode): Game => {
   const db = placed(game, ledger, 'database', server.x + 320, server.y)
   return db ? tried(db[0], connect(db[0], server.id, db[1])) : game
 }
 
-/** Puts a Load Balancer in front, then adds an App Server with the same Stack and links. */
 const addServer = (game: Game, ledger: Ledger, model: GameNode): Game => {
   if (!has(game, 'load-balancing')) return game
   let next = game
@@ -316,7 +285,6 @@ const addServer = (game: Game, ledger: Ledger, model: GameNode): Game => {
     const front = placed(next, ledger, 'lb', model.x - 160, model.y)
     if (!front) return game
     next = front[0]
-    // Whatever fed the App Servers (Users, a WAF, a CDN) now feeds the Load Balancer.
     const feeders = next.links.filter((entry) =>
       servers(next).some((server) => server.id === entry.to),
     )
@@ -329,7 +297,6 @@ const addServer = (game: Game, ledger: Ledger, model: GameNode): Game => {
   const copy = placed(next, ledger, 'server', model.x, model.y - 140 * servers(next).length)
   if (!copy || !lb) return next
   next = copy[0]
-  // The copy comes at the model's size when Cash allows: copies cost 25% more each, so fewer, bigger boxes.
   for (let size = 0; size < model.size; size += 1) {
     const grown = affordable(next, ledger, (current) => resize(current, copy[1], 1))
     if (grown === next) break
@@ -344,7 +311,6 @@ const addServer = (game: Game, ledger: Ledger, model: GameNode): Game => {
   return next
 }
 
-/** Puts a Connection Pooler or a Cache between every App Server and the Database. */
 const inFront = (
   game: Game,
   ledger: Ledger,
@@ -367,7 +333,6 @@ const inFront = (
   return tried(next, connect(next, pooler[1], database.id))
 }
 
-/** Puts an edge Node between Users and whatever Users reached. */
 const inFrontOfUsers = (game: Game, ledger: Ledger, type: 'waf' | 'cdn'): Game => {
   const entry = game.links.find((link) => link.from === 'users')
   const users = byId(game, 'users')
@@ -378,14 +343,9 @@ const inFrontOfUsers = (game: Game, ledger: Ledger, type: 'waf' | 'cdn'): Game =
   return tried(rewired, connect(rewired, edge[1], entry.to))
 }
 
-/** Links every App Server to a data Node. */
 const linkServers = (game: Game, to: string): Game =>
   servers(game).reduce((current, server) => tried(current, connect(current, server.id, to)), game)
 
-/**
- * Links every Worker to the data its tasks read and write: the target the App Servers read,
- * and Object Storage for the files an upload task stores.
- */
 const linkWorkers = (game: Game): Game => {
   let next = game
   const anchor = servers(next)[0]
@@ -404,18 +364,11 @@ const linkWorkers = (game: Game): Game => {
   return next
 }
 
-/**
- * The Seed playbook: a Search Engine once search loads the Database, Object
- * Storage once uploads arrive, a WAF for the bots, a Queue and a Worker for
- * the uploads, and stampede protection on every Cache.
- */
 const seedBuild = (game: Game, ledger: Ledger): Game => {
   let next = game
   const missing = (type: ComponentId) => !next.nodes.some((node) => node.type === type)
   const anchor = servers(next)[0]
   if (!anchor) return next
-  // A stranded call means a consumer is missing. Pay for it before the Burn reserve, because
-  // every request it strands costs more than the reserve protects.
   const put = (current: Game, type: ComponentId, x: number, y: number) =>
     ledger.errors.stranded > 0
       ? placedNow(current, type, x, y)
@@ -445,7 +398,6 @@ const seedBuild = (game: Game, ledger: Ledger): Game => {
   return linkWorkers(next)
 }
 
-/** Whether `node` is an Autoscaler that a Node of `type` links into. */
 const scalesWith = (game: Game, node: GameNode, type: ComponentId): boolean =>
   node.type === 'autoscaler' &&
   game.links.some(
@@ -453,11 +405,6 @@ const scalesWith = (game: Game, node: GameNode, type: ComponentId): boolean =>
       link.to === node.id && game.nodes.some((from) => from.id === link.from && from.type === type),
   )
 
-/**
- * The Series A playbook: Object Storage, a CDN and the Payment Provider once
- * media and checkout arrive; every other App Server and Worker in a second
- * zone, a standby for every data Node; and an Autoscaler on the first App Server.
- */
 const seriesABuild = (game: Game, ledger: Ledger): Game => {
   let next = game
   const missing = (type: ComponentId) => !next.nodes.some((node) => node.type === type)
@@ -483,8 +430,6 @@ const seriesABuild = (game: Game, ledger: Ledger): Game => {
     ))
       next = affordable(next, ledger, (current) => setStandby(current, data.id, true))
   }
-  // App Servers and Workers scale as copies of one Node each: an Autoscaler follows each load. The
-  // Workers' tasks are CPU-heavy, so their Autoscaler has no ceiling; the servers' stops at 16.
   if (has(next, 'autoscaling'))
     for (const type of ['server', 'worker'] as const) {
       const nodes = next.nodes.filter((node) => node.type === type && node.region === HOME_REGION)
@@ -511,17 +456,11 @@ const seriesABuild = (game: Game, ledger: Ledger): Game => {
   return linkWorkers(next)
 }
 
-/**
- * The safety net a player builds from Series A: a backup on the Database, backoff on every call
- * into it, and an Autoscaler that keeps headroom ahead of the evening peak (it reacts in minutes,
- * and compute is a small part of the bill).
- */
 const harden = (game: Game): Game => {
   let next = game
   for (const data of next.nodes.filter((node) => node.type === 'database')) {
     if (has(next, 'pitr') && data.backup !== 'pitr')
       next = tried(next, setBackup(next, data.id, 'pitr'))
-    // A backup the roll found broken restores nothing: set it again.
     if (data.restore === 'failed') {
       next = tried(next, setBackup(next, data.id, 'none'))
       next = tried(next, setBackup(next, data.id, 'pitr'))
@@ -550,11 +489,6 @@ const harden = (game: Game): Game => {
   return next
 }
 
-/**
- * The Series B playbook: every Worker reads where the App Servers read, so
- * exports have their data; the LLM API once AI prompts arrive; a Data Warehouse
- * once reports do.
- */
 const seriesBBuild = (game: Game, ledger: Ledger): Game => {
   let next = game
   const missing = (type: ComponentId) => !next.nodes.some((node) => node.type === type)
@@ -577,11 +511,6 @@ const seriesBBuild = (game: Game, ledger: Ledger): Game => {
   return next
 }
 
-/**
- * The Series C data tier: one Postgres box caps reads, and a cache that cannot hold a hot set of
- * millions of users stops shielding it. Distributed SQL scales with its size and spreads across
- * regions, so every call the Database took moves to it, and the Database, its replicas and the pooler go.
- */
 const dsqlCutover = (game: Game, ledger: Ledger): Game => {
   if (!has(game, 'consensus')) return game
   const database = game.nodes.find(
@@ -610,10 +539,6 @@ const dsqlCutover = (game: Game, ledger: Ledger): Game => {
   return tried(next, setSpread(next, made[1], true))
 }
 
-/**
- * The Pre-IPO checklist: a Security team for SOC 2, and a DR drill that runs again after it fails
- * (10 "Era 6: Pre-IPO"). The rest is research, Mirrors, Distributed SQL and the Autoscaler.
- */
 const ipoBuild = (game: Game): Game => {
   let next = game
   if (has(next, 'security-team') && !securityStaffed(next)) {
@@ -639,11 +564,6 @@ const ipoBuild = (game: Game): Game => {
   return next
 }
 
-/**
- * A CDN is global: a Mirror's Users would enter through it and reach the home WAF, so the regional
- * stacks would idle and EU users would be served from North America. The CDN goes, and the Users
- * link straight to the WAF that stood behind it (05 "Mirror a region").
- */
 const dropCdn = (game: Game): Game => {
   const cdn = game.nodes.find((node) => node.type === 'cdn')
   if (!cdn) return game
@@ -651,16 +571,11 @@ const dropCdn = (game: Game): Game => {
     .filter((link) => link.from === cdn.id && byId(game, link.to)?.type !== 'analytics')
     .map((link) => link.to)
   const feeders = game.links.filter((link) => link.to === cdn.id).map((link) => link.from)
-  // A Users Node takes one outbound Link, so the CDN goes first.
   let next = tried(game, sell(game, cdn.id))
   for (const from of feeders) for (const to of behind) next = tried(next, connect(next, from, to))
   return next
 }
 
-/**
- * The Series C playbook: Terraform writes the home region as code, and each far region is a Mirror
- * of it, applied again whenever the home Design drifts ahead of it (05 "Mirror a region").
- */
 const seriesCBuild = (game: Game, ledger: Ledger): Game => {
   let next = dropCdn(game)
   if (!next.nodes.some((node) => node.type === 'dsql')) next = dsqlCutover(next, ledger)
@@ -674,7 +589,6 @@ const seriesCBuild = (game: Game, ledger: Ledger): Game => {
       mirror = mirrorOf(next, region)
     }
     if (!mirror || isApplying(mirror.sync)) continue
-    // A new data Node in the home region: the Mirror reads it from a replica, and copies its objects.
     for (const change of driftOf(next, mirror).changes)
       if (Change.guards.choose(change))
         next = tried(
@@ -690,20 +604,14 @@ const seriesCBuild = (game: Game, ledger: Ledger): Game => {
     if (!fresh) continue
     const drift = driftOf(next, fresh)
     const creates = drift.changes.some(Change.guards.create)
-    // New Nodes apply at once; drift in sizes and options waits for a calendar quarter-day.
     if (drift.changes.length > 0 && (creates || Math.round(next.time) % MIRROR_EVERY === 0))
       next = affordable(next, ledger, (current) => applyMirror(current, region))
   }
   return next
 }
 
-/** Read Replicas the bot places for one Database. */
 const MAX_REPLICAS = 4
 
-/**
- * A Read Replica of the same size, linked from the App Servers: reads scale with copies of the
- * Database. A pooler takes one link, so the replica gets its own connections, not the pooler's.
- */
 const addReplica = (game: Game, ledger: Ledger, database: GameNode): Game => {
   const count = game.nodes.filter((node) => node.type === 'replica').length
   const replica = placed(game, ledger, 'replica', database.x + 320, database.y - 160 - 140 * count)
@@ -714,9 +622,6 @@ const addReplica = (game: Game, ledger: Ledger, database: GameNode): Game => {
     if (grown === next) break
     next = grown
   }
-  // The Database ships its log to the replica. Each replica gets its own Connection Pooler, as in
-  // production: a pooler takes one link, so one pooler cannot front the Database and its replicas, and
-  // App Servers linked straight to a replica would each hold their whole pools on it.
   next = tried(next, connect(next, database.id, replica[1]))
   const pooler = has(next, 'pooling')
     ? placed(next, ledger, 'pooler', database.x + 160, database.y - 160 - 140 * count)
@@ -727,11 +632,9 @@ const addReplica = (game: Game, ledger: Ledger, database: GameNode): Game => {
   return next
 }
 
-/** What the Balanced player does about the Node that limits the Design. */
 const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy): Game => {
   const limit = ledger.nodes[node.id]?.limit ?? 'none'
   const grow = (current: Game) => resize(current, node.id, 1)
-  // Greedy knows one move: a bigger box, or a box off Burstable once its credits run out.
   if (strategy === 'greedy') {
     if (limit === 'credits') return tried(game, setFamily(game, node.id, 'general'))
     return affordable(game, ledger, grow)
@@ -742,7 +645,6 @@ const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy)
       return splitDatabase(game, ledger, node)
     if (limit === 'workers' && RUNTIMES[node.runtime].pool && node.workers < fittingWorkers(node))
       return tried(game, setWorkers(game, node.id, fittingWorkers(node)))
-    // More workers open more connections: near the limit, a Pooler goes in front of the Database first.
     const database = game.nodes.find((entry) => entry.type === 'database')
     const connections = database ? ledger.nodes[database.id]?.connections : null
     if (
@@ -753,7 +655,6 @@ const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy)
       !game.nodes.some((entry) => entry.type === 'pooler')
     )
       return inFront(game, ledger, database, 'pooler')
-    // Grow a box up to MAX_SIZE, then scale out: each extra copy costs 25% more than the last.
     if (node.size < (game.stage >= 3 ? MAX_SIZE : 3)) {
       const bigger = affordable(game, ledger, grow)
       const resized = byId(bigger, node.id)
@@ -761,12 +662,8 @@ const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy)
         ? tried(bigger, setWorkers(bigger, node.id, fittingWorkers(resized)))
         : bigger
     }
-    // With an Autoscaler, more copies of the same Node cost no placement; each extra card costs
-    // 25% more than the last, so the bot raises the Autoscaler's ceiling before it places a card.
     const scaler = game.nodes.find((entry) => entry.type === 'autoscaler')
     if (scaler && game.links.some((link) => link.from === node.id && link.to === scaler.id)) {
-      // Not "none": a ceiling of 16 copies of a Node at its largest size is already a fleet, and
-      // an Autoscaler with no ceiling runs away with the bill.
       const ceiling = SCALE_MAXIMA.find((most) => most > scaler.maxCopies)
       return ceiling === undefined || scaler.maxCopies === 0
         ? game
@@ -774,7 +671,6 @@ const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy)
     }
     return addServer(game, ledger, node)
   }
-  // A Load Balancer at its largest size moves to L4, which carries ten times the requests.
   if (
     node.type === 'lb' &&
     node.variant !== 'l4' &&
@@ -786,13 +682,11 @@ const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy)
     return game.nodes.some((entry) => entry.type === 'pooler')
       ? game
       : inFront(game, ledger, node, 'pooler')
-  // A Database that reads from disk wants provisioned IOPS, then the Memory family.
   if (node.type === 'database' && limit === 'disk' && game.stage >= 3) {
     if (node.iops !== 'provisioned')
       return tried(game, setStorageIops(game, node.id, 'provisioned'))
     if (node.family !== 'memory') return tried(game, setFamily(game, node.id, 'memory'))
   }
-  // A Database at its largest size reads from disk or runs out of CPU: Read Replicas take reads.
   if (
     node.type === 'database' &&
     node.size >= 8 &&
@@ -801,7 +695,6 @@ const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy)
     game.nodes.filter((entry) => entry.type === 'replica').length < MAX_REPLICAS
   )
     return addReplica(game, ledger, node)
-  // A Database at its largest size that still runs out of CPU splits into more shards.
   if (
     node.type === 'database' &&
     node.size >= 8 &&
@@ -813,7 +706,6 @@ const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy)
     const more = SHARD_COUNTS.find((count) => count > node.shards) ?? node.shards
     return tried(game, queueReshard(game, node.id, { shards: more }))
   }
-  // A busy Database gets a Cache in front before it gets a bigger box.
   if (
     node.type === 'database' &&
     has(game, 'caching') &&
@@ -825,39 +717,25 @@ const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy)
   return affordable(game, ledger, grow)
 }
 
-/** Utilization above which the Balanced bot adds capacity from Series A, to survive the peak. */
 const HEADROOM = 0.7
-/** The biggest size the bot grows an App Server to from Series A before it places another (medium before). */
 const MAX_SIZE = 8
-/** Hit ratio under which a Cache that evicts keys grows. */
 const CACHE_HIT = 0.7
-/** Nodes the bot relieves in one look. */
 const PASSES = 6
 
-/** Share of the credit cap at which the Balanced bot moves a Burstable box to General. */
 const LOW_CREDITS = 0.25
 
-/** Share of the Database's connections at which a bigger App Server waits for a Pooler. */
 const POOLER_AT = 0.6
 
-/** The tap grows only while Cash stays above this many reserves. */
 const TAP_RESERVE = 4
 
-/** Studies the bot keeps queued, the running one included. */
 const QUEUED = 2
 
-/** The Database's connections as a share of its limit, or 0 when the Design has none. */
 const connectionUse = (game: Game, ledger: Ledger): number => {
   const database = game.nodes.find((entry) => entry.type === 'database')
   const connections = database ? ledger.nodes[database.id]?.connections : null
   return connections ? connections.used / Math.max(1, connections.max) : 0
 }
 
-/**
- * Keeps the Study queue full from the priority list (10 "Studies"). A Study
- * whose recipe has a pool the Design does not earn yet would stall the queue,
- * so the bot leaves it for later.
- */
 const studies = (
   game: Game,
   ledger: Ledger,
@@ -869,12 +747,9 @@ const studies = (
     (Object.keys(RECIPE[id]) as Array<InsightPool>).every(
       (pool) => ledger.insight[pool] > 0 || game.pools[pool] >= (recipeOf(game, id)[pool] ?? 0),
     )
-  // The gate lets a Pooler through at 20 connections; the bot buys it only when the Database is
-  // near its limit, the same point where it puts one in front of the Database.
   const wants = (id: ResearchId) => id !== 'pooling' || connectionUse(game, ledger) > POOLER_AT
   let next = game
   const head = next.studies[0]
-  // A running Study keeps its shape; only a Study that has not started waits for it.
   if (
     head &&
     (!payable(head.id) ||
@@ -890,10 +765,8 @@ const studies = (
       ? RESEARCH_IDS.filter(ready).toSorted((a, b) => RESEARCH[a].cost - RESEARCH[b].cost)
       : (strategy === 'polyglot' ? POLYGLOT_PRIORITY : PRIORITY)
           .filter(ready)
-          // The Database's scale-out waits for the Eras that need it, so early Insight goes elsewhere.
           .filter((id) => id !== 'replication' || game.stage >= 3)
           .filter((id) => id !== 'sharding' || game.stage >= 4)
-  // A priority Study that needs a kind no one sends yet waits for the Feature that brings it.
   for (const blocked of order
     .filter((id) => !payable(id))
     .slice(0, 2)
@@ -912,7 +785,6 @@ const studies = (
   return next
 }
 
-/** Puts the Feature that brings a missing kind, or the Feature it needs first, at the top of the backlog. */
 const planFeatureFor = (game: Game, ledger: Ledger, id: ResearchId): Game => {
   const missing = (Object.keys(RECIPE[id]) as Array<InsightPool>).filter(
     (pool) => pool !== 'failure' && ledger.insight[pool] <= 0,
@@ -931,7 +803,6 @@ const planFeatureFor = (game: Game, ledger: Ledger, id: ResearchId): Game => {
   let next = game.backlog.some((item) => item.ref === feature.id)
     ? game
     : tried(game, queueFeature(game, feature.id))
-  // It goes above other Features, not above a migration step or a task.
   const item = next.backlog.find((entry) => entry.ref === feature.id)
   if (!item) return next
   for (let index = next.backlog.indexOf(item); index > 0; index -= 1) {
@@ -941,7 +812,6 @@ const planFeatureFor = (game: Game, ledger: Ledger, id: ResearchId): Game => {
   return next
 }
 
-/** Links every Node that carries traffic to Analytics, and grows the tap when it drops samples. */
 const sampleAll = (game: Game, ledger: Ledger): Game => {
   const tap = game.nodes.find((node) => node.type === 'analytics')
   if (!tap) return game
@@ -957,11 +827,9 @@ const sampleAll = (game: Game, ledger: Ledger): Game => {
   return grown.cash >= ledger.burn * RESERVE_SECONDS * TAP_RESERVE ? grown : next
 }
 
-/** Incidents, postmortems, the drawer, research, the Stack, and the Bottleneck. */
 const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
   let next = game.pending > 0 ? collect(game) : game
 
-  // Each action item's Study goes first: an unfixed root cause comes back.
   for (const postmortem of next.postmortems)
     next = tried(next, filePostmortem(next, postmortem.id, true))
   for (const node of next.nodes.filter((entry) => Life.guards.Stopped(entry.life)))
@@ -971,7 +839,6 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
     next = tried(next, restart(next, incident.nodeId))
   if (incident?.kind === 'slow-query' && incident.nodeId)
     next = tried(next, addIndex(next, incident.nodeId))
-  // A Feature's query shape has no index yet, and the Team waits on it: the task goes first.
   const database = next.nodes.find((node) => node.type === 'database')
   if (database && serviceOf(next).shapes > 0) next = tried(next, addIndex(next, database.id))
   if (incident?.kind === 'poison') next = tried(next, deleteMessage(next))
@@ -981,21 +848,16 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
   if (incident?.kind === 'disk-full') next = tried(next, expandVolume(next))
   if (incident?.kind === 'gc-storm' && incident.nodeId)
     next = tried(next, restart(next, incident.nodeId))
-  // Under attack mode only while the DDoS lasts: it blocks real users too.
   for (const waf of next.nodes.filter((node) => node.type === 'waf'))
     if (waf.underAttack !== (incident?.kind === 'ddos'))
       next = tried(next, setUnderAttack(next, waf.id, incident?.kind === 'ddos'))
 
   const ready = (id: ResearchId) => !has(next, id) && researchReady(next, id)
-  // Chat's realtime connections need a runtime that holds them, and PHP refuses them all.
   const chat = isBuilt(next, 'chat') || next.backlog.some((item) => item.ref === 'chat')
   const realtime =
     strategy !== 'stubborn' && chat && RUNTIMES[stackOf(next).runtime].connectionKB === null
   next = studies(next, solveFlow(next), strategy, realtime, ready)
 
-  // PHP-FPM replaces Apache as soon as it is researched. Polyglot moves to the language it
-  // researched last. Once Chat is on the way, a Stack that refuses realtime connections moves
-  // to Node.js cluster mode. Each is a migration, which the autopilot shifts step by step.
   const first = servers(next)[0]
   if (strategy !== 'stubborn' && strategy !== 'greedy' && first && !serviceOf(next).migration) {
     const latest = next.researched.findLast((id) => LANGUAGE_RESEARCH.some(([lang]) => lang === id))
@@ -1013,13 +875,11 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
     if (target && stackOf(next).runtime !== target)
       next = tried(next, changeStack(next, first.id, { runtime: target }))
   }
-  // The strangler moves the App Servers; a Worker runs the same code, so it follows the Service.
   if (strategy !== 'stubborn' && strategy !== 'greedy' && !serviceOf(next).migration) {
     const runtime = stackOf(next).runtime
     for (const worker of next.nodes.filter((node) => node.type === 'worker'))
       if (worker.runtime !== runtime) next = tried(next, setRuntime(next, worker.id, runtime))
   }
-  // A server the strangler just moved restarts with the default pool: size it to its RAM.
   for (const server of servers(next))
     if (
       RUNTIMES[server.runtime].pool &&
@@ -1028,15 +888,10 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
     )
       next = tried(next, setWorkers(next, server.id, fittingWorkers(server)))
 
-  // A blocked item waits on the player's answer: the bot approves a team-size block (a team past 8 engineers stops shipping
-  // Features otherwise). A decision block stays: it holds Features while Apdex misses its target,
-  // and an index block clears when the bot adds the index.
   for (const item of next.backlog)
     if (WorkBlock.guards.Blocked(item.block) && item.block.reason === 'size')
       next = tried(next, approveBlock(next, item.id))
 
-  // A resharding is the Database's way out, and a migration's bugs fail requests until fixed: each
-  // goes first, rushed from the pool.
   for (const item of next.backlog.filter(
     (entry) => entry.ref === 'reshard' || entry.ref === 'fix-bugs',
   )) {
@@ -1044,11 +899,9 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
     next = tried(next, rushItem(next, item.id))
   }
 
-  // A CVE's patch ticket goes first: an expired one starts a Data breach.
   for (const item of next.backlog.filter((entry) => entry.kind === 'patch'))
     next = tried(next, prioritizeItem(next, item.id))
 
-  // Transaction pooling breaks session state: drop it, first in line, rushed from the pool.
   if (next.nodes.some((node) => node.type === 'pooler')) {
     const queued = tried(next, queueTask(next, 'session-state'))
     const task = queued.backlog.find((item) => item.ref === 'session-state')
@@ -1060,7 +913,6 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
     }
   }
 
-  // Hire while payroll, the new hire included, stays a modest share of revenue.
   if (strategy !== 'greedy' && next.stage >= 1) {
     const flow = solveFlow(next)
     const language = languageOfService(next)
@@ -1080,7 +932,6 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
   if (strategy !== 'greedy' && next.stage >= 5) next = seriesCBuild(next, solveFlow(next))
   if (strategy !== 'greedy' && next.stage >= 6) next = ipoBuild(next)
 
-  // A Burstable box low on credits moves to General before it throttles, as a player watching it would.
   if (strategy !== 'greedy')
     for (const server of servers(next))
       if (server.family === 'burstable' && server.credits < LOW_CREDITS * CREDIT_CAP)
@@ -1100,8 +951,6 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
   const found = target ? byId(next, target) : undefined
   const node = found?.region === HOME_REGION ? found : undefined
   if (node) next = relieve(next, flow, node, strategy)
-  // From Series A a player keeps headroom for the evening peak (demand runs 1.45× the mean):
-  // every Node whose load, scaled to the peak hour, passes HEADROOM gets relieved, the busiest first.
   if (strategy !== 'greedy' && next.stage >= 3)
     for (let pass = 0; pass < PASSES; pass += 1) {
       const view = solveFlow(next)
@@ -1116,7 +965,6 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
             atPeak(entry.id) > HEADROOM,
         )
         .toSorted((a, b) => atPeak(b.id) - atPeak(a.id))
-      // The first Node that accepts a change: a maxed box that cannot grow does not block its siblings.
       let moved = next
       for (const entry of busy) {
         moved = relieve(next, view, entry, strategy)
@@ -1125,7 +973,6 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
       if (moved === next) break
       next = moved
     }
-  // A Cache that evicts more than it keeps hits too little to shield the Database: it grows.
   if (strategy !== 'greedy' && next.stage >= 3) {
     const view = solveFlow(next)
     for (const cache of next.nodes.filter((entry) => entry.type === 'cache')) {
@@ -1134,7 +981,6 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
         next = affordable(next, view, (current) => resize(current, cache.id, 1))
     }
   }
-  // Insight comes after capacity: the tap grows with Cash the bottleneck does not need.
   if (strategy !== 'greedy') next = sampleAll(next, solveFlow(next))
 
   if (!canRaise(next)) return next
@@ -1146,7 +992,6 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
   )
 }
 
-/** Which milestones a look reached, by comparing the Game before and after. */
 const reached = (before: Game, after: Game): ReadonlyArray<Milestone> => {
   const found: Array<Milestone> = []
   const sized = (game: Game) =>
@@ -1174,18 +1019,12 @@ const reached = (before: Game, after: Game): ReadonlyArray<Milestone> => {
   return found
 }
 
-/**
- * Plays a Company with a strategy in 1 s Steps until `until` sim seconds or
- * the Era `untilStage` begins (Seed by default). `tuning` defaults to the
- * design's pacing.
- */
 export const runBot = (
   seed: number,
   until: number,
   tuning: Tuning = CHALLENGE_TUNING,
   strategy: Strategy = 'balanced',
   untilStage = 2,
-  /** A later Company: founded with the Founder's perks, Venture and Mutators. */
   founding: Founding | null = null,
 ): BotRun => {
   let game = founding ? foundCompany(seed, founding) : newGame(seed)
@@ -1195,7 +1034,6 @@ export const runBot = (
     if (milestones[milestone] === undefined) milestones[milestone] = game.time
   }
   while (game.time < until && game.stage < untilStage) {
-    // The idle player logs in every two hours of game time, spends everything, and leaves.
     if (Math.round(game.time) % (strategy === 'idle' ? IDLE_EVERY : LOOK_EVERY) === 0) {
       const before = game
       const ledger = solveFlow(before)

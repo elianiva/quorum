@@ -1,12 +1,3 @@
-/**
- * The service worker source. It is plain JavaScript in a string because the
- * worker is not part of the page bundle: the Vite plugin writes it beside the
- * assets with the build's ID and precache list filled in.
- *
- * The worker never calls `skipWaiting` on install. A new worker waits until
- * the page asks for it, which is how the player chooses when to update.
- */
-
 const BUILD_ID = '__QUORUM_BUILD_ID__'
 const PRECACHE = '__QUORUM_PRECACHE__'
 
@@ -119,6 +110,5 @@ self.addEventListener('fetch', function (event) {
 })
 `
 
-/** The generated `sw.js`, with its build ID and install list. */
 export const serviceWorkerSource = (buildId: string, precache: ReadonlyArray<string>): string =>
   SOURCE.replace(BUILD_ID, buildId).replace(PRECACHE, JSON.stringify(precache))

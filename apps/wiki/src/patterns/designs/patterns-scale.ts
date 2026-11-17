@@ -1,8 +1,6 @@
 import { at, design, set, wire } from '../design.ts'
 import type { Design } from '../design.ts'
 
-/* Patterns in "Scaling reads and compute". */
-
 const appSize = set(
   'size',
   2,
@@ -24,7 +22,6 @@ const bigApp = set(
   'Medium gives the app four vCPUs, so the app tier is not the limit and the Database is what the guards change.',
 )
 
-/** The three Nodes every cache page shares: App Server, Cache, Database in a row. */
 const cacheRow = (
   cacheSettings: ReturnType<typeof set>[],
   app: ReturnType<typeof set> = appSize,

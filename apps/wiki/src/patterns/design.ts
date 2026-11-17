@@ -4,7 +4,6 @@ import { heightOf } from '@quorum/ui/board/size'
 import { normalizeOrdinals } from '@quorum/simulation/labels'
 import type { Game, GameLink, GameNode } from '@quorum/simulation/state'
 
-/** One setting on a Node or Link: the field it sets, how the table names it, and why. */
 export type Setting = Readonly<{
   field: string
   value: unknown
@@ -40,7 +39,6 @@ export type LinkSpec = Readonly<{
   settings: ReadonlyArray<Setting>
 }>
 
-/** A Node on the Board, at a column and row of the grid the cards sit on. */
 export const at = (
   id: string,
   type: ComponentId,
@@ -57,18 +55,10 @@ export const wire = (
 
 export type DesignDef = Readonly<{
   users: number
-  /** The Era index whose request mix the Design runs. */
   stage: number
-  /** Research the Design owns, besides the starting three. */
   researched: ReadonlyArray<ResearchId>
-  /**
-   * The kinds Users send, by weight, instead of the Era's mix. A Design that has no Node for a
-   * kind (no Payment Provider for `buy`) leaves it out, so its errors are the lesson's.
-   */
   mix?: Partial<Record<RequestKind, number>>
-  /** One sentence under the caption, for what a steady-state solve cannot show. */
   note?: string
-  /** An incident running on a Node while the Design is solved, for a pattern that only matters then. */
   incident?: Readonly<{ kind: IncidentId; node: string }>
   nodes: ReadonlyArray<NodeSpec>
   links: ReadonlyArray<LinkSpec>
@@ -81,16 +71,10 @@ const SEED = 20_261_107
 const fields = (settings: ReadonlyArray<Setting>): Record<string, unknown> =>
   Object.fromEntries(settings.map((entry) => [entry.field, entry.value]))
 
-/** The Users Node sits in column 0, and every spec's own Nodes follow it. */
-/** The grid the authored positions sit on, and the packed layout that replaces it. */
 const GRID_X = 276
 const COLUMN = 244
 const GAP = 24
 
-/**
- * Packs each column's Nodes top to bottom with a small gap, in their authored row order, and
- * centres the columns on one another, so a Design is as small as its cards allow.
- */
 const packed = (nodes: ReadonlyArray<GameNode>): ReadonlyArray<GameNode> => {
   const columns = new Map<number, Array<GameNode>>()
   for (const entry of nodes) {

@@ -24,7 +24,6 @@ export const PANEL_STYLE: SystemStyleObject = {
 }
 export const PANEL = css(PANEL_STYLE)
 export const FLOAT = css({ borderRadius: '2xl', layerStyle: 'surface', boxShadow: 'float' })
-/** A group inside a panel, one step lighter, with hairline dividers. */
 export const NESTED = css({
   borderRadius: 'xl',
   backgroundColor: 'nested',
@@ -35,14 +34,12 @@ export const NESTED = css({
     borderColor: 'hairline',
   },
 })
-/** A sunken strip: tracks, segmented controls, figure rows. */
 export const WELL_STYLE: SystemStyleObject = {
   borderRadius: 'xl',
   backgroundColor: 'well',
   boxShadow: 'well',
 }
 export const WELL = css(WELL_STYLE)
-/** A phone shows the figures as one row of chips that scrolls sideways. */
 export const CHIPS = css({
   _compact: {
     flexDirection: 'row',
@@ -94,10 +91,6 @@ const toolOff: SystemStyleObject = {
   _hover: { backgroundColor: 'well', color: 'foreground' },
 }
 
-/** A square icon control inside a panel: flat at rest, a raised ink fill when on.
- *  On a dark board a white fill outshines the board, so on is a raised grey there.
- *  Pass `style` as `css.raw({...})` to change its shape: `css` merges it over the base, while
- *  a second class from `cx` would leave two atoms for one property and let stylesheet order pick. */
 export const tool = (active: boolean, style: SystemStyleObject = {}): string =>
   cx(css(toolBase, active ? toolOn : toolOff, style), 'press')
 
@@ -119,7 +112,6 @@ export const GROUP_TEXT: Record<BuildGroup, string> = {
   ops: css({ color: 'groupOps' }),
 }
 
-/** Glyph scale inside each badge shape; a diamond has the least room. */
 const GLYPH_SCALE: Record<GroupShape, number> = {
   hexagon: 0.5,
   chip: 0.48,
@@ -127,7 +119,6 @@ const GLYPH_SCALE: Record<GroupShape, number> = {
   diamond: 0.42,
 }
 
-/** A chip's pins: three short legs on each side of its body. */
 const CHIP_PINS = [7.5, 12, 16.5].flatMap((at) => [
   [0.5, at - 0.9, 3.5, 1.8],
   [20, at - 0.9, 3.5, 1.8],
@@ -136,7 +127,6 @@ const CHIP_PINS = [7.5, 12, 16.5].flatMap((at) => [
 ])
 
 const shapeOf = <M>(shape: GroupShape, h: HtmlBuilder<M>): ReadonlyArray<Html> => {
-  // A stroke in the fill colour with round joins softens the polygon corners.
   const soft = [
     h.Fill('currentColor'),
     h.Stroke('currentColor'),
@@ -186,14 +176,8 @@ const shapeOf = <M>(shape: GroupShape, h: HtmlBuilder<M>): ReadonlyArray<Html> =
   }
 }
 
-/** What sits on a badge: a lucide glyph, or a filled brand path. */
 export type BadgeContent = IconNode | Readonly<{ path: string }>
 
-/**
- * A glyph on a shaped badge, knocked out in white. The shape says what part
- * of the system it belongs to: Edge hexagons, Compute chips, Data discs, Ops
- * diamonds. `color` overrides the group's colour; grey when `muted`.
- */
 export const groupBadge = <M>(
   group: BuildGroup,
   content: BadgeContent,
@@ -205,8 +189,6 @@ export const groupBadge = <M>(
   const shape = GROUP_SHAPES[group]
   const scale = GLYPH_SCALE[shape]
   const offset = 12 - 12 * scale
-  // A custom brand fill stays white. The theme's group fills turn pale in dark mode,
-  // so their glyph flips to the theme's paired ink instead.
   const glyph = color && !muted ? 'white' : 'onGroup'
   return h.svg(
     [
@@ -236,7 +218,6 @@ export const groupBadge = <M>(
       ...shapeOf(shape, h),
       h.g(
         [h.Transform(`translate(${offset} ${offset}) scale(${scale})`)],
-        // A nested 24-unit svg; it takes the badge's paired glyph ink.
         'path' in content
           ? [
               h.g(
@@ -260,7 +241,6 @@ export const groupBadge = <M>(
   )
 }
 
-/** A language or framework brand mark, in its brand colour. */
 export const stackLogo = <M>(id: StackLogoId, className: string, h: HtmlBuilder<M>): Html => {
   const logo = STACK_LOGOS[id]
   return h.svg(
@@ -286,7 +266,6 @@ export const stackLogo = <M>(id: StackLogoId, className: string, h: HtmlBuilder<
   )
 }
 
-/** A label over a value, for the HUD. */
 export const figure = <M>(
   name: string,
   value: string,
@@ -352,7 +331,6 @@ export const figure = <M>(
     ],
   )
 
-/** A label and a value on one line, for nested groups. */
 export const row = <M>(name: string, value: string, tone: Tone, h: HtmlBuilder<M>): Html =>
   h.div(
     [
@@ -398,7 +376,6 @@ export const row = <M>(name: string, value: string, tone: Tone, h: HtmlBuilder<M
     ],
   )
 
-/** A sunken track with a rounded fill. */
 export const meter = <M>(share: number, fill: string, h: HtmlBuilder<M>): Html =>
   h.div(
     [
@@ -415,7 +392,6 @@ export const meter = <M>(share: number, fill: string, h: HtmlBuilder<M>): Html =
     [
       h.div(
         [
-          // The fill slides rather than resizing: transform skips layout, and progress moves linearly.
           h.Class(
             cx(
               css({
@@ -438,7 +414,6 @@ export const meter = <M>(share: number, fill: string, h: HtmlBuilder<M>): Html =
     ],
   )
 
-/** A progress ring, from 0 to 1, drawn clockwise from the top. */
 export const ring = <M>(share: number, className: string, h: HtmlBuilder<M>): Html => {
   const radius = 6
   const length = 2 * Math.PI * radius
@@ -481,10 +456,6 @@ export const ring = <M>(share: number, className: string, h: HtmlBuilder<M>): Ht
   )
 }
 
-/**
- * One Insight pool and a figure: the pool's own icon in its colour, then the
- * figure. `grey` draws it uncoloured; `tone` colours the figure.
- */
 export const insightChip = <M>(
   pool: InsightPool,
   figure: string,

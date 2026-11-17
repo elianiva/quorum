@@ -18,7 +18,7 @@ import { CopyText, WriteCompany, PublishRoom, SendRoom } from '../commands.ts'
 import { ROOM_NAME_LENGTH } from '../names.ts'
 import { setRoomName } from '../../platform/room-socket.ts'
 import { refusalIn } from '../../i18n/refusal.ts'
-import { ROOM_SAMPLES, ServerMessage } from '@quorum/simulation/room'
+import { ROOM_MAX_SAMPLES, ServerMessage } from '@quorum/simulation/room'
 import type { ClientMessage } from '@quorum/simulation/room'
 import type { Sample } from '@quorum/simulation/state'
 import type { RoomEnd } from '../room-machine.ts'
@@ -30,12 +30,6 @@ import {
   type MessageCases,
   type UpdateResult,
 } from './shared.ts'
-
-/* ==========================================================================
-   The Room this tab is in. The server owns the Game; this file paints the
-   snapshots, sends what the player asks for, and writes the Company back when
-   the owner takes it offline.
-   ========================================================================== */
 
 type RoomTag =
   | 'RoomReceived'
@@ -55,7 +49,6 @@ type RoomTag =
   | 'RoomNameSaved'
   | 'RoomLinkCopied'
 
-/** The Room's server state, cleared: the name this tab sends stays. */
 const emptyRoom = (model: Model, phase: Room['phase']): Room => ({
   ...model.room,
   phase,
@@ -65,16 +58,9 @@ const emptyRoom = (model: Model, phase: Room['phase']): Room => ({
   seq: 1,
 })
 
-/** An answered funding round closes the offer it came from, as it does offline. */
 const panelAfter = (panel: Model['panel'], game: Model['board']['game']): Model['panel'] =>
   panel === 'offer' && game.round._tag !== 'Offered' ? afterRound(game) : panel
 
-/**
- * Paints one Room frame onto the Board. `whole` says how much of the Room's sample window the
- * frame carries: a Welcome every Sample the Room keeps, a Snapshot only the ones this Seat has
- * not seen. The Game keeps them exactly as an offline Game does, because the Dashboard's short
- * ranges read the Game's own history.
- */
 const painted = (
   model: Model,
   frame: Readonly<{
@@ -89,7 +75,7 @@ const painted = (
 ): Model => {
   const history = record(model.board.dashboard.history, frame.samples, frame.time)
   const samples = (whole ? frame.samples : [...model.board.game.history, ...frame.samples]).slice(
-    -ROOM_SAMPLES,
+    -ROOM_MAX_SAMPLES,
   )
   return {
     ...model,
@@ -118,8 +104,6 @@ const send = (model: Model, message: ClientMessage): UpdateResult => ({
 const received = (model: Model, message: ServerMessage): UpdateResult =>
   ServerMessage.match(message, {
     Welcome: (frame) => {
-      // The first join shows the Board; a reconnect (a rename, a dropped socket)
-      // leaves the panel the player has open alone.
       const first = RoomPhase.guards.Connecting(model.room.phase)
       const shown = painted(
         model,
@@ -165,7 +149,6 @@ const received = (model: Model, message: ServerMessage): UpdateResult =>
         },
         false,
       )
-      // Achievements belong to the owner's Founder; a guest earns none.
       return roomOwner(next)
         ? milestones(model, { model: next }, [], ledgerOf(next))
         : { model: next }
@@ -183,15 +166,11 @@ const received = (model: Model, message: ServerMessage): UpdateResult =>
     }),
     Joined: (frame) => withToast(model, say(model).room.joined(frame.seat.name), 'plain'),
     Refused: (frame) => withToast(model, refusalIn(say(model), frame.refusal), 'warn'),
-    // Cursors are Presence. The socket hands them to the Board's overlay, so
-    // they never reach the Model; these cases keep the union whole.
     Cursor: () => ({ model }),
     CursorGone: () => ({ model }),
     Final: (frame) => handover(model, frame.game),
     Ended: (frame) => {
       const next = roomStep(model.room.phase, { _tag: 'Ended', reason: frame.reason })
-      // The Room is gone. The owner has been handed the Company (Final), and a
-      // guest has nothing left to look at, so it goes back to the title.
       const route = AppRoute.guards.Room(model.route) ? AppRoute.Title() : model.route
       return withToast(
         { ...model, route, room: { ...model.room, phase: next, seats: [] }, panel: 'none' },
@@ -214,7 +193,6 @@ const REASON_KEY: Record<
 
 const reasonKeyOf = (reason: RoomEnd) => REASON_KEY[reason]
 
-/** The owner brought the Company home: write it and leave the Room. */
 const handover = (model: Model, game: Model['board']['game']): UpdateResult => {
   const code = roomCode(model)
   const file = code === null ? null : onlineFileOf(model, code)
@@ -326,7 +304,6 @@ export const roomHandlers = (model: Model): MessageCases<UpdateResult, RoomTag> 
   RoomPublishAsked: () => {
     const file = currentFile(model)
     if (file === null) return withToast(model, say(model).room.notAvailable, 'warn')
-    // Online Rooms are behind a feature key. The API Worker checks it again on the publish.
     if (file.online !== null)
       return {
         model: {
@@ -378,6 +355,5 @@ export const roomHandlers = (model: Model): MessageCases<UpdateResult, RoomTag> 
   RoomSent: () => ({ model }),
 })
 
-/** The Room this tab is in steps the Company, so the tick does not. */
 export const roomSteps = (model: Model): boolean =>
   roomLive(model) && !RoomPhase.guards.Connecting(model.room.phase)

@@ -6,13 +6,6 @@ import type { Game } from '@quorum/simulation/state'
 import { CARD_W, boxOf, freeSpot, heightOf } from './geometry.ts'
 import type { RoutedLink, RoutedNode } from './routing.ts'
 
-/*
- * The stress board: a late-stage bot game, not a hand-drawn screenshot. The bot
- * played seed 1 for 8 hours and reached Series B with 26 Nodes and 81 Links.
- * Four App Servers fan out to the data tier, every App Server taps Analytics,
- * and two zones are in use. The positions are the bot's, moved to the nearest
- * free spot so no card overlaps.
- */
 type StressZone = 'a' | 'b' | 'c'
 
 const DROPS: ReadonlyArray<readonly [string, ComponentId, number, number, StressZone]> = [
@@ -130,10 +123,8 @@ export const STRESS_LINKS: ReadonlyArray<RoutedLink> = [
 
 export type StressNode = RoutedNode & Readonly<{ zone: StressZone }>
 
-/** The bot's own coordinates are tight; spread them like the big board's screenshot. */
 const SCALE = 2
 
-/** Drops each card in order, as the bot placed it, moved to the nearest free spot. */
 export const stressNodes = (): ReadonlyArray<StressNode> =>
   DROPS.reduce<ReadonlyArray<StressNode>>((nodes, [id, type, x, y, zone]) => {
     const spot = freeSpot(nodes.map(boxOf), {
@@ -145,7 +136,6 @@ export const stressNodes = (): ReadonlyArray<StressNode> =>
     return [...nodes, { id, type, ...spot, zone }]
   }, [])
 
-/** The free Sandbox with the late-stage bot board on it. */
 export const stressBoard = (): Game =>
   normalizeOrdinals({
     ...freeSandbox(),
@@ -156,11 +146,6 @@ export const stressBoard = (): Game =>
     links: STRESS_LINKS.map((entry) => link(entry.from, entry.to)),
   })
 
-/*
- * The big board: a later screenshot of the same player's NA board, at 61 Nodes and
- * 282 Links. Every Load Balancer feeds every App Server, and every App Server calls
- * every Cache, Pooler and Queue. The positions are the screenshot's, scaled to the board.
- */
 const BIG_DROPS: ReadonlyArray<readonly [string, ComponentId, number, number]> = [
   ['users', 'users', 85, 770],
   ...[680, 790].map((y, index) => [`waf${index}`, 'waf', 175, y] as const),
@@ -245,7 +230,6 @@ export const BIG_LINKS: ReadonlyArray<RoutedLink> = [
   { from: 'app0', to: 'cluster' },
 ]
 
-/** The big board's cards, dropped in order where the screenshot has them. */
 export const bigNodes = (): ReadonlyArray<RoutedNode> =>
   BIG_DROPS.reduce<ReadonlyArray<RoutedNode>>((nodes, [id, type, x, y]) => {
     const spot = freeSpot(nodes.map(boxOf), {
@@ -257,7 +241,6 @@ export const bigNodes = (): ReadonlyArray<RoutedNode> =>
     return [...nodes, { id, type, ...spot }]
   }, [])
 
-/** The free Sandbox with the big board on it, at Public-era demand. */
 export const bigBoard = (): Game =>
   normalizeOrdinals({
     ...freeSandbox(),

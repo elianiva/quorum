@@ -235,7 +235,6 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** A small drawing of the Design at Exit. */
 export const snapshotSvg = (
   snapshot: Model['founder']['history'][number]['snapshot'],
   h: HtmlBuilder<Message>,
@@ -294,7 +293,6 @@ export const snapshotSvg = (
   )
 }
 
-/** The two questions after an Exit. Only the answers the player sends leave the browser. */
 const surveySection = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const survey = model.survey
@@ -570,7 +568,6 @@ export const exitedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** Shown while Nodes are shift-selected: copy them, box them into a Data Group, or save them as a Playbook. */
 export const selectionBar = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return model.board.selection.length === 0
@@ -632,7 +629,6 @@ export const selectionBar = (model: Model, h: HtmlBuilder<Message>): Html => {
       )
 }
 
-/** Asks before Nodes are sold: the sale waits for Enter or the button. */
 export const sellBar = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -698,7 +694,6 @@ export const sellBar = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** Shown while a Playbook follows the pointer. */
 export const stampBar = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 

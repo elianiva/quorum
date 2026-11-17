@@ -10,7 +10,6 @@ const ok = (result: Result.Result<Game, unknown>): Game => {
   return result.success
 }
 
-/** Every Node already warm, so a fresh Node's cold start does not move the figures. */
 const warm = (game: Game): Game => ({
   ...game,
   nodes: game.nodes.map((node) => ({ ...node, life: { _tag: 'Running' } as const })),

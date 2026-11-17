@@ -14,7 +14,6 @@ import { AppRoute, onBoard } from './route.ts'
 import { RoomPhase } from './room-machine.ts'
 import { dockItems } from './reveal.ts'
 
-/** The board for the route has its data: the Company file, or the board its Session names. */
 const boardFilled = (model: Model): boolean =>
   AppRoute.match(model.route, {
     Title: () => false,
@@ -25,7 +24,6 @@ const boardFilled = (model: Model): boolean =>
     Room: () => RoomPhase.isAnyOf(['Online', 'Reconnecting'])(model.room.phase),
   })
 
-/** The network is down: the game still runs, and this says so wherever the player is. */
 const offlineStatus = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return model.pwa.online
@@ -46,7 +44,6 @@ const offlineStatus = (model: Model, h: HtmlBuilder<Message>): Html => {
 
 export const view = (model: Model, builder: HtmlBuilder<Message>): Document => {
   const h = localizeBuilder(model.prefs.locale, builder)
-  // The title stays up while its monitor connects to the board.
   const screen = onBoard(model.route) && !connecting(model.boot)
   const board = screen && boardFilled(model)
   return {
@@ -72,15 +69,12 @@ export const view = (model: Model, builder: HtmlBuilder<Message>): Document => {
           [
             board
               ? labScreen(model, h)
-              : // A reload shows the board's canvas until its save fills it, never an empty Company.
-                screen
+              : screen
                 ? h.div([h.Class(css({ height: '100%', backgroundColor: 'canvas' }))])
                 : titleScreen(model, h),
           ],
         ),
-        // Outside the title's dark palette, so Settings looks the same as on the board.
         !onBoard(model.route) && model.panel === 'settings' ? settingsPanel(model, h) : h.empty,
-        // A Room URL that has not joined yet, or that ended, still says where it stands.
         AppRoute.guards.Room(model.route) && model.panel === 'room' && !boardFilled(model)
           ? roomPanel(model, h)
           : h.empty,

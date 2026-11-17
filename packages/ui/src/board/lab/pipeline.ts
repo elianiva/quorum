@@ -1,46 +1,34 @@
 import { COMPONENTS, COMPONENT_IDS, DOCK_OF } from '@quorum/simulation/catalog'
-import { CARD_W, CLEARANCE, heightOf, layoutOf, rowMid, type Placed, type Pt } from '../geometry.ts'
-
-/*
- * A copy of the Tidy pipeline that shipped before role columns, with the strategy
- * as a parameter, so variants can be compared on the same boards without any
- * other difference. `defaults` reproduces the old pipeline exactly.
- */
+import {
+  CARD_W,
+  CARD_CLEARANCE_PX,
+  heightOf,
+  layoutOf,
+  rowMid,
+  type Placed,
+  type Pt,
+} from '../geometry.ts'
 
 export type LabNode = Placed & Readonly<{ id: string; group: string }>
 export type LabLink = Readonly<{ from: string; to: string }>
 
 export type Variant = Readonly<{
   name: string
-  /** Shown in the comparison table. */
   note?: string
-  /** Column assignment: longest path, pull cards together, or keep the player's columns. */
   layering?: 'longest' | 'tight' | 'preserve'
-  /** How a column that grows past the bound makes room: push one step, or fill the next. */
   packing?: 'push' | 'fill'
-  /** Bands: global columns stacked, local columns shelf-packed, no bands, or semantic areas. */
   bands?: 'global' | 'local' | 'flat' | 'clusters' | 'clusters-columns'
-  /** Order inside a column: median sweeps, or the player's order. */
   order?: 'median' | 'input'
-  /** Rows: Brandes–Köpf straightening, or a plain stack. */
   rows?: 'bk' | 'stack'
-  /** Height bound: trade height for columns, or keep the plain layered result. */
   bound?: 'aspect' | 'none'
-  /** Stop at the first bound that meets the aspect, or keep the smallest board that does. */
   pick?: 'first' | 'minArea'
-  /** Width over height the bound loop aims for, and how much it shrinks each step. */
   aspect?: number
   shrink?: number
-  /** Space between clusters, in px. */
   clusterGap?: number
-  /** Sweeps before the ordering settles, and idle sweeps before it gives up. */
   sweeps?: number
   patience?: number
-  /** Initial order inside a column: the player's y, or a graph traversal. */
   initial?: 'input' | 'dfs' | 'bfs' | 'zone' | 'cluster' | 'type'
-  /** Cluster names from the catalog, lanes pulled forward by links, or a bridge lane for misplaced edge Nodes. */
   lanes?: 'static' | 'dynamic' | 'bridge'
-  /** Neighbour key: the median port row, or the mean. */
   key?: 'median' | 'mean'
 }>
 
@@ -59,8 +47,8 @@ export const defaults: Variant = {
   key: 'median',
 }
 
-const LANE_GAP = CLEARANCE / 2
-const PITCH = CARD_W + CLEARANCE * 3
+const LANE_GAP = CARD_CLEARANCE_PX / 2
+const PITCH = CARD_W + CARD_CLEARANCE_PX * 3
 const MAX_SWEEPS = 24
 const PATIENCE = 4
 const ASPECT = 16 / 9
@@ -165,7 +153,6 @@ export const layout = (
     return depth
   }
 
-  /** Network-simplex lite: move each card to the median of its neighbours' ranks when it shortens links. */
   const tighten = (depth: Array<number>): Array<number> => {
     const col = [...depth]
     for (let round = 0; round < 60; round += 1) {
@@ -192,7 +179,6 @@ export const layout = (
     return col
   }
 
-  /** Keeps the player's columns: cards whose x ranges overlap are one column. */
   const preserve = (): Array<number> => {
     const parent = byId.map((_, at) => at)
     const find = (v: number): number => (parent[v] === v ? v : (parent[v] = find(parent[v]!)))
@@ -206,7 +192,6 @@ export const layout = (
         Math.min(...byId.filter((_, at) => find(at) === q).map((node) => node.x)),
     )
     const col = byId.map((_, at) => roots.indexOf(find(at)))
-    // A kept column can still put a link backward; push the target one column right.
     let changed = true
     while (changed) {
       changed = false
@@ -382,7 +367,7 @@ export const layout = (
     const cardsOf = (layer: ReadonlyArray<number>) =>
       layer.filter((item) => items[item]!.id !== null)
     const gapOf = (p: number, q: number) =>
-      items[p]!.id === null && items[q]!.id === null ? LANE_GAP : CLEARANCE
+      items[p]!.id === null && items[q]!.id === null ? LANE_GAP : CARD_CLEARANCE_PX
 
     const stacked = (layer: ReadonlyArray<number>, tops: Array<number>) => {
       let at = 0
@@ -518,7 +503,7 @@ export const layout = (
         for (let k = 1; k < layer.length; k += 1) {
           const v = layer[k - 1]!
           const w = layer[k]!
-          const weight = rel[v]! + items[v]!.h + CLEARANCE - rel[w]!
+          const weight = rel[v]! + items[v]!.h + CARD_CLEARANCE_PX - rel[w]!
           const edgesAfter = after.get(root[v]!) ?? new Map<number, number>()
           edgesAfter.set(root[w]!, Math.max(edgesAfter.get(root[w]!) ?? -Infinity, weight))
           after.set(root[v]!, edgesAfter)
@@ -561,7 +546,7 @@ export const layout = (
         let at = 0
         for (const v of layer) {
           final[v] = at
-          at += items[v]!.h + CLEARANCE
+          at += items[v]!.h + CARD_CLEARANCE_PX
         }
       }
     } else {
@@ -590,7 +575,7 @@ export const layout = (
         for (let k = 1; k < layer.length; k += 1) {
           const v = layer[k - 1]!
           const w = layer[k]!
-          final[w] = Math.max(final[w]!, final[v]! + items[v]!.h + CLEARANCE)
+          final[w] = Math.max(final[w]!, final[v]! + items[v]!.h + CARD_CLEARANCE_PX)
         }
     }
 
@@ -624,7 +609,6 @@ export const layout = (
           : [],
     )
 
-  /** Lays out every band with the given columns, and measures the result. */
   const place = (col: ReadonlyArray<number>) => {
     const spots = new Map<string, Pt>()
     let y = top
@@ -658,11 +642,11 @@ export const layout = (
         let width = 0
         for (const entry of entries) {
           for (const [id, spot] of entry.band.spots) spots.set(id, { x: x + spot.x, y: y + spot.y })
-          y += entry.band.height + CLEARANCE * 4
+          y += entry.band.height + CARD_CLEARANCE_PX * 4
           width = Math.max(width, entry.band.width)
         }
-        tallest = Math.max(tallest, y - CLEARANCE * 4 - top)
-        x += width + (options.clusterGap ?? CLEARANCE * 6)
+        tallest = Math.max(tallest, y - CARD_CLEARANCE_PX * 4 - top)
+        x += width + (options.clusterGap ?? CARD_CLEARANCE_PX * 6)
       }
       const low = Math.min(...[...spots.values()].map((spot) => spot.y))
       let high = low
@@ -673,7 +657,7 @@ export const layout = (
       for (const [id, spot] of spots) spots.set(id, { x: spot.x, y: spot.y - low + top })
       return {
         spots,
-        width: x - (options.clusterGap ?? CLEARANCE * 6) - left,
+        width: x - (options.clusterGap ?? CARD_CLEARANCE_PX * 6) - left,
         height: high - low,
       }
     }
@@ -693,34 +677,28 @@ export const layout = (
       let shelfHeight = 0
       for (const entry of laid) {
         if (x > left && x + entry.band.width - left > shelfWidth) {
-          shelfTop += shelfHeight + CLEARANCE * 4
+          shelfTop += shelfHeight + CARD_CLEARANCE_PX * 4
           x = left
           shelfHeight = 0
         }
         for (const [id, spot] of entry.band.spots)
           spots.set(id, { x: x + spot.x, y: shelfTop + spot.y })
-        x += entry.band.width + CLEARANCE * 4
+        x += entry.band.width + CARD_CLEARANCE_PX * 4
         shelfHeight = Math.max(shelfHeight, entry.band.height)
-        right = Math.max(right, x - CLEARANCE * 4)
+        right = Math.max(right, x - CARD_CLEARANCE_PX * 4)
       }
-      y = shelfTop + shelfHeight + CLEARANCE * 4
-      return { spots, width: right - left, height: y - CLEARANCE * 4 - top }
+      y = shelfTop + shelfHeight + CARD_CLEARANCE_PX * 4
+      return { spots, width: right - left, height: y - CARD_CLEARANCE_PX * 4 - top }
     }
     for (const band of bands) {
       const laid = layoutBand(band.members, col)
       for (const [id, spot] of laid.spots) spots.set(id, { x: left + spot.x, y: y + spot.y })
       right = Math.max(right, left + laid.width)
-      y += laid.height + CLEARANCE * 4
+      y += laid.height + CARD_CLEARANCE_PX * 4
     }
-    return { spots, width: right - left, height: y - CLEARANCE * 4 - top }
+    return { spots, width: right - left, height: y - CARD_CLEARANCE_PX * 4 - top }
   }
 
-  /**
-   * Height-bounded layering. `push` is the shipped rule: a card that overflows its column
-   * moves one column right, then every card downstream follows. `fill` walks the graph in
-   * topological order and drops each card into the first column at or after its parents
-   * that still has room, which packs the spare height of later columns.
-   */
   const bounded = (bound: number): Array<number> => {
     if (options.packing === 'fill') {
       const col = byId.map(() => 0)
@@ -736,12 +714,14 @@ export const layout = (
         let c = parents[v]!.length > 0 ? Math.max(...parents[v]!.map((u) => col[u]! + 1)) : 0
         const fits = (column: number): boolean => {
           const stack = used[at]!
-          return (stack[column] ?? 0) + (stack[column] ? CLEARANCE : 0) + heights[v]! <= bound
+          return (
+            (stack[column] ?? 0) + (stack[column] ? CARD_CLEARANCE_PX : 0) + heights[v]! <= bound
+          )
         }
         while (!fits(c)) c += 1
         col[v] = c
         const stack = used[at]!
-        stack[c] = (stack[c] ?? 0) + (stack[c] ? CLEARANCE : 0) + heights[v]!
+        stack[c] = (stack[c] ?? 0) + (stack[c] ? CARD_CLEARANCE_PX : 0) + heights[v]!
       }
       return col
     }
@@ -764,8 +744,8 @@ export const layout = (
         let used = 0
         for (const v of stack) {
           const h = heightOf(byId[v]!.type)
-          if (used > 0 && used + CLEARANCE + h > bound) col[v] = at + 1
-          else used += (used > 0 ? CLEARANCE : 0) + h
+          if (used > 0 && used + CARD_CLEARANCE_PX + h > bound) col[v] = at + 1
+          else used += (used > 0 ? CARD_CLEARANCE_PX : 0) + h
         }
       }
       for (const v of sequence) for (const u of parents[v]!) col[v] = Math.max(col[v]!, col[u]! + 1)

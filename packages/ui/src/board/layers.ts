@@ -10,15 +10,10 @@ import {
 } from 'pixi.js'
 import { type Box, type Pt, type Route } from './geometry.ts'
 import { type PacketShape } from '../game/packets.ts'
-import { CHEVRON_GAP, CHEVRON_HALF, CHEVRON_DEPTH, packetAt } from './marks.ts'
+import { CHEVRON_GAP_PX, CHEVRON_HALF, CHEVRON_DEPTH, packetAt } from './marks.ts'
 import { arcOf } from './paths.ts'
 import { MONO } from './text.ts'
 
-/**
- * The moving chevrons of every belt, as particles of one texture: a frame only moves
- * them, in one draw call, where Graphics would rebuild their shapes. The pool only
- * grows; the particles a frame does not use are left transparent.
- */
 export class ChevronLayer {
   readonly root = new ParticleContainer<Particle>({
     dynamicProperties: { position: true, rotation: true, color: true },
@@ -26,10 +21,8 @@ export class ChevronLayer {
   private texture: Texture | null = null
   private anchor = { x: 0, y: 0 }
   private used = 0
-  /** Particles were added this frame: the container must take in the new ones. */
   private grown = false
 
-  /** The chevron, tip at its anchor and pointing along +x, drawn once at 4× resolution. */
   init(renderer: Renderer): void {
     const pad = 1.5
     const shape = new Graphics()
@@ -52,16 +45,14 @@ export class ChevronLayer {
     this.used = 0
   }
 
-  /** Lays chevrons along a belt's pieces, `offset` pixels along, where `view` shows them. */
   add(pieces: ReadonlyArray<Route>, offset: number, tint: number, alpha: number, view: Box): void {
     const texture = this.texture
     if (!texture) return
     const pool = this.root.particleChildren
-    // Setting `tint` instead parses the colour for every chevron.
     const color = particleColor(tint, alpha)
     const x1 = view.x + view.w
     const y1 = view.y + view.h
-    const first = ((offset % CHEVRON_GAP) + CHEVRON_GAP) % CHEVRON_GAP
+    const first = ((offset % CHEVRON_GAP_PX) + CHEVRON_GAP_PX) % CHEVRON_GAP_PX
     for (const piece of pieces) {
       const arc = arcOf(piece)
       let next = first
@@ -76,9 +67,8 @@ export class ChevronLayer {
           Math.min(a.x, b.x) > x1 ||
           Math.max(a.y, b.y) < view.y ||
           Math.min(a.y, b.y) > y1
-        // A segment off screen only moves the next chevron past its end.
         if (hidden) {
-          if (next <= end) next += (Math.floor((end - next) / CHEVRON_GAP) + 1) * CHEVRON_GAP
+          if (next <= end) next += (Math.floor((end - next) / CHEVRON_GAP_PX) + 1) * CHEVRON_GAP_PX
           continue
         }
         const dx = arc.ux[index] as number
@@ -88,7 +78,7 @@ export class ChevronLayer {
           const k = next - start
           const x = a.x + dx * k
           const y = a.y + dy * k
-          next += CHEVRON_GAP
+          next += CHEVRON_GAP_PX
           if (x < view.x || x > x1 || y < view.y || y > y1) continue
           let particle = pool[this.used]
           if (!particle) {
@@ -116,16 +106,10 @@ export class ChevronLayer {
   }
 }
 
-/** A packet's half-size in world pixels, and the cell each shape takes in the packet texture. */
 const PACKET_R = 2.4
 const PACKET_CELL = 10
 const PACKET_SHAPES: ReadonlyArray<PacketShape> = ['circle', 'square', 'triangle', 'diamond']
 
-/**
- * The items riding the belts, as particles cut from one texture of the four shapes:
- * a frame only moves them, where a Graphics would tessellate and upload every item.
- * Like the chevrons, the pool only grows and unused particles are left transparent.
- */
 export class PacketLayer {
   readonly root = new ParticleContainer<Particle>({
     dynamicProperties: { position: true, color: true, uvs: true },
@@ -161,7 +145,6 @@ export class PacketLayer {
     this.used = 0
   }
 
-  /** An item centred on (x, y), in a colour packed by particleColor. */
   add(shape: PacketShape, x: number, y: number, color: number): void {
     const texture = this.textures.get(shape)
     if (!texture) return
@@ -189,17 +172,11 @@ export class PacketLayer {
   }
 }
 
-/** A 0xRRGGBB colour and an alpha, packed as the particle shader reads them: alpha over BGR. */
 export const particleColor = (tint: number, alpha: number): number =>
   ((tint & 0xff) << 16) + (tint & 0xff00) + ((tint >> 16) & 0xff) + (((alpha * 255) | 0) << 24)
 
-/**
- * The rate a still belt carries (15 "Accessibility"): one pooled Text per label, on a small plate,
- * so reduced motion names the traffic the arrows stand for instead of moving packets through it.
- */
 export class NoteLayer {
   readonly root = new Container()
-  /** The plates behind the labels, cleared and drawn each frame. */
   private readonly backs = new Graphics()
   private readonly pool: Array<Text> = []
   private used = 0
@@ -210,11 +187,9 @@ export class NoteLayer {
 
   begin(): void {
     this.used = 0
-    // An empty plate layer is left alone, so an idle belt does not rebuild its Graphics.
     if (this.backs.context.instructions.length > 0) this.backs.clear()
   }
 
-  /** A label whose bottom edge sits `lift` pixels above (x, y). */
   add(x: number, y: number, text: string, tint: number, plate: number, lift: number): void {
     let view = this.pool[this.used]
     if (!view) {

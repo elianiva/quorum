@@ -2,9 +2,6 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { Message } from '../main.ts'
 import type { DesignId } from '../patterns/designs/ids.ts'
 
-/* A Pattern Design's board and settings table. The card solves its Design, which loads the
-   Simulation, so it arrives only for a page with a `Design` island (src/page-assets.ts). */
-
 type Draw = (id: DesignId, h: HtmlBuilder<Message>) => Html
 
 let draw: Draw | null = null

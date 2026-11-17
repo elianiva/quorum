@@ -16,7 +16,6 @@ test('reduced motion replaces the items with still arrows and the rate they carr
   expect(marks.packets).toBe(0)
   expect(marks.arrows.length).toBeGreaterThan(0)
   expect(marks.label).toBe('420/s')
-  // Evenly spaced, clear of both ports.
   for (const at of marks.arrows) {
     expect(at).toBeGreaterThan(0)
     expect(at).toBeLessThan(1)
@@ -34,8 +33,6 @@ test('the label is the rate in the interface figures', () => {
   expect(flowLabel(4_200)).toBe('4.20k/s')
 })
 
-/* 15 "The board": a belt between regions says what its round trip costs. */
-
 const world = (): Game => ({ ...company(1), nodes: [], links: [] })
 const at = (id: string, type: ComponentId, region: RegionId): GameNode =>
   node(id, type, 0, 0, { region })
@@ -47,7 +44,6 @@ test('a link inside one region says nothing about distance', () => {
 test('a link between two regions shows the round trip the Simulation charges', () => {
   expect(placeLabel(world(), at('a', 'server', 'na'), at('b', 'database', 'eu'))).toBe('75 ms')
   expect(placeLabel(world(), at('a', 'server', 'eu'), at('b', 'database', 'apac'))).toBe('160 ms')
-  // A Users Node pays a user's two round trips, not a Node's one.
   expect(placeLabel(world(), at('u', 'users', 'na'), at('b', 'lb', 'eu'))).toBe('150 ms')
 })
 

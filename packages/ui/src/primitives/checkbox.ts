@@ -5,15 +5,6 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import { icon } from './icon'
 import { Check, Minus } from 'lucide'
 
-/**
- * foldkit delta (inlined at style resolution): foldkit emits
- * aria-disabled/data-disabled instead of native disabled, and data-checked /
- * data-indeterminate for state.
- *
- */
-
-/** Upstream checkbox component string. The disabled: variants are inert under
- *  foldkit (never native disabled) — compat twins are inlined at style resolution. */
 export const checkboxClass = cx(
   css({
     backgroundColor: 'well',
@@ -99,8 +90,6 @@ export type CheckboxConfig<M> = Readonly<{
   wrapperClass?: string
 }>
 
-/** Styled checkbox with label and optional description, built on the
- *  @foldkit/ui Checkbox helper. */
 export const checkbox = <M>(config: CheckboxConfig<M>, h: HtmlBuilder<M>): Html =>
   FoldkitCheckbox.view<M>(
     {

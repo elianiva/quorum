@@ -1,4 +1,3 @@
-/** Reasons the Simulation and the game give in English, by id. A refusal shows them in the player's language. */
 export const reasons = {
   aNameIsNeeded: 'A name is needed.',
   aCDNTTLIs1Minute5: 'A CDN TTL is 1 minute, 5 minutes, or 1 hour.',

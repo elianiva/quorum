@@ -12,7 +12,6 @@ import type { GameNode, SearchHeap, SearchVariant } from '@quorum/simulation/sta
 import { Message } from '@/game/message.ts'
 import { type Panel, caption, picker, section } from './shared.ts'
 
-/** A Search Engine's refresh interval (07 "Search Engine"): fresher answers cost indexing CPU. */
 const search = (node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
 

@@ -1,5 +1,3 @@
-/* Achievements (14 "Achievements"): knowledge, unusual builds, and real engineering moments, never hours played. */
-
 export const ACHIEVEMENT_IDS = [
   'hello-world',
   'works-on-my-machine',

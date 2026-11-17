@@ -1,5 +1,3 @@
-/* Instance types, and the hardware constants every sized Node shares. */
-
 export const SIZES = [
   { name: 'nano', vcpu: 0.5, gbps: 0.5 },
   { name: 'micro', vcpu: 1, gbps: 1 },
@@ -34,8 +32,6 @@ export const FAMILIES: Record<FamilyId, FamilyDef> = {
   general: { id: 'general', name: 'General', ramPerVcpu: 4, price: 1, blurb: '1 vCPU : 4 GB.' },
   compute: { id: 'compute', name: 'Compute', ramPerVcpu: 2, price: 0.85, blurb: '1 vCPU : 2 GB.' },
   memory: { id: 'memory', name: 'Memory', ramPerVcpu: 8, price: 1.3, blurb: '1 vCPU : 8 GB.' },
-  // 05 "App Server": the same vCPU and RAM as General for 0.8× the price, and some software runs
-  // slower or needs work to port (the speed is 0.95; the price is 20% less).
   arm: {
     id: 'arm',
     name: 'ARM',
@@ -45,38 +41,22 @@ export const FAMILIES: Record<FamilyId, FamilyDef> = {
   },
 }
 
-/** CPU speed of an ARM box, relative to a General one: the port is not free. */
 export const ARM_SPEED = 0.95
-/** The family ARM instances unlock, and the research that unlocks it. */
 export const ARM_RESEARCH = 'arm-instances' as const
 
-/** Dollars per second for one General vCPU. */
 export const VCPU_PRICE = 0.05
-/** A Burstable box runs at this share of its vCPU when it has no credits. */
 export const BURST_BASELINE = 0.2
-/** Credits a Burstable box can bank, in core-seconds per vCPU. */
 export const CREDIT_CAP = 100
-/** GB the OS takes on every box. */
 export const OS_RAM = 0.25
-/** Postgres on the App Server: a base, plus working set per user. */
 export const LOCAL_DB_RAM = 0.6
 export const LOCAL_DB_RAM_PER_USER = 0.0015
-/** Postgres and the app fight over the same cores and page cache on one box. */
 export const LOCAL_DB_CONTENTION = 1.5
 export const MAX_CONNECTIONS = 100
-/** Server connections a pooler keeps open to each database. */
 export const POOLER_CONNECTIONS = 20
-/** Seconds a Node is down while it restarts after a resize or a change of runtime. App Servers add their runtime's startup. */
 export const RESTART_SECONDS = 2
-/** Seconds a VM takes to come back, however fast its runtime boots. */
 export const VM_RESTART_SECONDS = 1
-/** The kernel kills a process whose memory reaches this share of the box's RAM. */
 export const OOM_RATIO = 1.25
-/** Seconds a cold Node needs to warm up. */
 export const WARMUP_SECONDS = 15
-/** Milliseconds for one internal network hop in a zone. */
 export const HOP_MS = 0.5
-/** A new TCP connection per call costs a handshake, until Connection reuse (keep-alive). */
 export const HANDSHAKE_MS = 1
-/** Seconds a call waits before it gives up, until Timeouts and retries (04 "Timeouts"). */
 export const LINK_TIMEOUT = 30

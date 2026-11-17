@@ -19,7 +19,6 @@ export const line = (t: number, type: string, data: unknown): LogEntry => ({
 
 const SETTINGS = ['size', 'family', 'runtime', 'framework', 'workers', 'sample', 'localDb'] as const
 
-/** What a gesture changed in the Game, with empty parts left out. */
 export const diffOf = (before: Game, after: Game): Record<string, unknown> => {
   if (before === after) return {}
   const ids = new Set(before.nodes.map((node) => node.id))
@@ -77,7 +76,6 @@ const nodeBrief = (node: GameNode, ledger: Ledger) => {
   }
 }
 
-/** A short context attached to every gesture. */
 export const contextOf = (model: Model, ledger: Ledger): Record<string, unknown> => ({
   users: Math.round(model.board.game.users),
   cash: round(model.board.game.cash),
@@ -92,7 +90,6 @@ export const contextOf = (model: Model, ledger: Ledger): Record<string, unknown>
   selected: model.board.game.nodes.find((node) => node.id === model.board.selected)?.type ?? null,
 })
 
-/** The Company at the moment it reaches an Era: the progression funnel's row. */
 export const eraReachedOf = (model: Model, ledger: Ledger): Record<string, unknown> => {
   const game = model.board.game
   const file = currentFile(model)
@@ -121,7 +118,6 @@ export const eraReachedOf = (model: Model, ledger: Ledger): Record<string, unkno
   }
 }
 
-/** A full sample of the company, every 10 sim seconds. */
 export const sampleOf = (model: Model, ledger: Ledger): Record<string, unknown> => {
   const clock = clockOf(model.board.game.time)
   return {

@@ -6,8 +6,6 @@ import type { Game } from '../../src/state.ts'
 import { SIM_VERSION } from '../../src/version.ts'
 import { setFix } from '../../src/work.ts'
 
-/* Each Challenge's reference solution, built with the board's actions. Node, the browsers and workerd replay them. */
-
 const ok = (action: Actions.Action): Game => {
   if (Result.isFailure(action)) throw new Error(JSON.stringify(action.failure))
   return action.success
@@ -15,7 +13,6 @@ const ok = (action: Actions.Action): Game => {
 
 const lastId = (game: Game): string => game.nodes.at(-1)?.id ?? ''
 
-/** Puts a data Node between every App Server and `behind`. */
 const inFront = (game: Game, type: 'pooler' | 'cache', behind: string): Game => {
   const placed = ok(Actions.place(game, type, 800, 280))
   const id = lastId(placed)
@@ -29,7 +26,6 @@ const inFront = (game: Game, type: 'pooler' | 'cache', behind: string): Game => 
   return ok(Actions.connect(rewired, id, behind))
 }
 
-/** Puts a Node of `type` between Users and what Users call. */
 const atEdge = (game: Game, type: 'cdn' | 'waf'): Game => {
   const to = game.links.find((entry) => entry.from === 'users')?.to ?? ''
   const placed = ok(Actions.place(game, type, 240, 280))
@@ -43,7 +39,6 @@ const atEdge = (game: Game, type: 'cdn' | 'waf'): Game => {
   )
 }
 
-/** Adds copies of an App Server behind the Load Balancer, linked to what it calls. */
 const more = (game: Game, like: string, count: number): Game => {
   const proto = game.nodes.find((entry) => entry.id === like)
   if (!proto) return game
@@ -164,7 +159,6 @@ export const REFERENCE: Record<string, (game: Game) => Game> = {
     for (let step = 0; step < 3; step += 1) game = ok(Actions.resize(game, cache, 1))
     for (let step = 0; step < 3; step += 1) game = ok(Actions.resize(game, 'lb', 1))
     for (let step = 0; step < 4; step += 1) game = ok(Actions.resize(game, 'database', 1))
-    // One pool to the Database for every copy of every App Server, and for the Cache's misses.
     game = ok(Actions.place(game, 'pooler', 900, 120))
     const pooler = lastId(game)
     for (const from of [...servers(game), cache])
@@ -200,7 +194,6 @@ export const REFERENCE: Record<string, (game: Game) => Game> = {
     return servers(placed).reduce((game, id) => ok(Actions.connect(game, id, warehouse)), placed)
   },
   'gpu-economics': (start) => {
-    // One H100 node, eight GPUs, about 85% busy: the cheapest prompt there is.
     const gpus = start.nodes.filter((node) => node.type === 'gpu').map((node) => node.id)
     let game = gpus.slice(1).reduce((current, id) => ok(Actions.sell(current, id)), start)
     game = ok(Actions.setGpuType(game, 'gpu1', 'h100'))
@@ -215,7 +208,6 @@ export const REFERENCE: Record<string, (game: Game) => Game> = {
   'regex-of-doom': (start) => start,
   'forty-three-seconds': (start) => start,
   'follow-the-sun': (start) => {
-    // Each region sized for its own evening peak: South America's and Asia-Pacific's are smaller.
     const smaller = (game: Game, id: string, steps: number) => {
       let next = game
       for (let step = 0; step < steps; step += 1) next = ok(Actions.resize(next, id, -1))
@@ -225,7 +217,6 @@ export const REFERENCE: Record<string, (game: Game) => Game> = {
     return smaller(smaller(sized, 'n3', 1), 'n2', 1)
   },
   'leap-second': (start) => {
-    // A Load Balancer in Asia-Pacific that fails over to the North American App Servers.
     const placed = ok(Actions.place(start, 'lb', 300, 300, 'apac'))
     const lb = lastId(placed)
     let game = ok(Actions.connect(Actions.disconnect(placed, 'users-apac', 'n1'), 'users-apac', lb))
@@ -233,7 +224,6 @@ export const REFERENCE: Record<string, (game: Game) => Game> = {
     return game
   },
   'rule-of-40': (start) => {
-    // Every Node sized for the load it has, not the load someone hoped for.
     const target: ReadonlyArray<readonly [string, number]> = [
       ['server1', 3],
       ['server2', 3],
@@ -250,13 +240,11 @@ export const REFERENCE: Record<string, (game: Game) => Game> = {
     }, start)
   },
   'postgres-for-everything': (start) => {
-    // A Postgres big enough for search, files and timelines, and App Servers to match.
     let game = start
     for (let step = 0; step < 3; step += 1) game = ok(Actions.resize(game, 'database', 1))
     return servers(game).reduce((current, id) => ok(Actions.resize(current, id, 1)), game)
   },
   'five-nines': (start) => {
-    // Three regions on Distributed SQL; in each, six App Servers across three zones.
     let game = ok(Actions.place(start, 'dsql', 900, 220))
     const store = lastId(game)
     game = ['wide', 'server1', 'server2'].reduce(
@@ -297,20 +285,15 @@ export const REFERENCE: Record<string, (game: Game) => Game> = {
     ),
 }
 
-/** What each reference does while it runs: the responses to its incidents. */
 export const REFERENCE_ACTIONS: Record<string, Replay['actions']> = {
-  // Disable the backtracking rule a second after the WAFs pin.
   'regex-of-doom': [{ step: 121, action: { _tag: 'Respond', response: 'disable-rule' } }],
-  // Fence the old leader a second after the regions lose contact.
   'forty-three-seconds': [{ step: 121, action: { _tag: 'Respond', response: 'fence-leader' } }],
   'gone-from-the-internet': [
     { step: 121, action: { _tag: 'Respond', response: 'roll-back-routes' } },
   ],
-  // Replace the Search Engine the command removed.
   'the-typo': [{ step: 121, action: { _tag: 'Replace', node: 'search' } }],
 }
 
-/** A replay of a Design on a Challenge. */
 export const replayOf = (
   challenge: Challenge,
   game: Game,

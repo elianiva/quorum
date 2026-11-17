@@ -7,18 +7,10 @@ import { snapshotOfModel } from './agent-tools.ts'
 import { playingId, type Model } from './model.ts'
 import { AGENT_ROOMS_KEY, readStored, writeStored } from './storage.ts'
 
-/* ==========================================================================
-   The browser's side of the agent Room. While Agent access is on, it sends the
-   snapshot to the API every few seconds, and only the parts the server does
-   not have. The write key never leaves this browser; the room id is the hash
-   the player hands to an agent.
-   ========================================================================== */
-
 const INTERVAL_MS = 5_000
 
 type RoomRecord = Readonly<{ writeKey: string; roomId: string; epoch: string }>
 
-/** A Room record written by this build. A bad entry falls back to the in-memory copy. */
 const RoomRecord = Schema.Struct({
   writeKey: Schema.String,
   roomId: Schema.String,
@@ -43,22 +35,18 @@ const readRooms = (): Record<string, RoomRecord> => {
 
 const writeRooms = (rooms: Record<string, RoomRecord>): void => {
   memory = rooms
-  // Blocked storage keeps the Room for this page only.
   writeStored(AGENT_ROOMS_KEY, JSON.stringify(rooms))
 }
 
-/** The id shown in Settings, or null before this Company has one. */
 export const agentRoomId = (companyId: string): string | null =>
   readRooms()[companyId]?.roomId ?? null
 
-/** Drops Room records for Companies the list no longer names. The remote Room expires on its own. */
 export const pruneAgentRooms = (companyIds: ReadonlySet<string>): void => {
   const rooms = readRooms()
   const kept = Object.fromEntries(Object.entries(rooms).filter(([id]) => companyIds.has(id)))
   if (Object.keys(kept).length !== Object.keys(rooms).length) writeRooms(kept)
 }
 
-/** Finds or makes the Room for this Company. A new Company gets a new key and id. */
 const ensureRoom = (companyId: string): Promise<RoomRecord> => {
   const existing = readRooms()[companyId]
   if (existing) return Promise.resolve(existing)
@@ -108,7 +96,6 @@ const send = async (): Promise<void> => {
     })
     if (!response.ok) return
     if (!wanted) {
-      // The player turned access off while this upload was in flight.
       await fetch(AGENT_ROOM_PATH, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${room.writeKey}` },
@@ -118,13 +105,11 @@ const send = async (): Promise<void> => {
     const ack = (await response.json()) as Ack
     sync = { epoch: ack.epoch, rev: ack.rev, acked: ack, headJson: JSON.stringify(upload.head) }
   } catch {
-    // The next tick retries the same revision, so the server ignores a duplicate.
   } finally {
     busy = false
   }
 }
 
-/** The Company whose Room is known to exist. Clearing the Rooms forgets it. */
 let roomed: string | null = null
 
 const clearAll = async (): Promise<void> => {
@@ -142,21 +127,15 @@ const clearAll = async (): Promise<void> => {
   )
 }
 
-/** The update loop hands every Model to this, so the timer always sends the newest one. */
 export const syncAgent = (model: Model): void => {
   latest = model
-  // A Room and its write key are made only when the player turns Agent access on, not for every
-  // Company. `send` makes the first one before its first upload.
   if (!model.prefs.agentAccess) return
   const companyId = playingId(model)
-  // This runs after every Message, and the Room id is a read and a decode of local storage:
-  // once a Company has its Room, it is not looked up again.
   if (companyId === null || companyId === roomed) return
   if (agentRoomId(companyId) === null) void ensureRoom(companyId)
   else roomed = companyId
 }
 
-/** Turns the upload on or off. Called whenever settings apply. */
 export const setAgentAccess = (on: boolean): void => {
   if (on === wanted) return
   wanted = on

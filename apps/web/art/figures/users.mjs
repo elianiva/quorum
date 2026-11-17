@@ -1,8 +1,6 @@
 import { tools } from '../parts.mjs'
 import { HEIGHT, P as STAGE, WIDTH } from '../stage.mjs'
 
-// Users: five handsets in a stepped charging stand with a small wifi router beside
-// it. They are where the traffic starts; the one screen that is lit is sending.
 export function draw(P, { feet = true, lit = true } = {}) {
   const t = tools(P)
   const { k, S, L, D, at, slab } = t
@@ -52,7 +50,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   const lip = (x, y, z) =>
     S(slab({ x: x - 1, y: y + DEPTH, w: W + 2, d: 1.6, r: 0.4 }, z, 2.6, 2), { tone: 'mid' })
 
-  // The stand: a tall back step and a low front step.
   const X0 = -40
   const X1 = 14
   out.push(S(slab({ x: X0, y: -24, w: X1 - X0, d: 13, r: 1.4 }, 0, 10, 3, 0.4), { tone: 'mid' }))
@@ -69,7 +66,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
     ),
   )
 
-  // The router: a box with vents, link lights and two antennas.
   const R = { x: 22, y: -20, w: 18, d: 24, r: 2 }
   const RH = 7
   const antenna = (y) =>
@@ -78,7 +74,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
       S(t.cyl(R.x + 4, y, 0.9, RH + 2, 18, 12), { tone: 'mid', crease: 'none' }),
       S(t.cyl(R.x + 4, y, 1.1, RH + 20, 1.6, 12), { tone: 'mid' }),
     ].join('')
-  // A charging lead from the stand to the router.
   out.push(
     t.tube(
       [

@@ -4,15 +4,12 @@ import type { Layout } from '../components/shared.ts'
 import { LAYOUTS } from './layouts.ts'
 import { CARD_W, heightOf, rowMid } from './size.ts'
 
-/* Card and port geometry, shared by the board, placement and link routing. */
-
 export type Placed = Pick<GameNode, 'type' | 'x' | 'y'>
 
 export { CARD_W, FOOT, HEAD, PORT_R, ROW, heightOf, rowMid, rowTop } from './size.ts'
 
 export type { Layout }
 
-/** Row count and port rows per Component. Fixed per type, so hit tests need no flow. */
 export const layoutOf = (type: ComponentId): Layout => LAYOUTS[type]
 
 export type Pt = Readonly<{ x: number; y: number }>
@@ -26,20 +23,13 @@ export const inPort = (node: Placed): Pt => ({
   y: node.y + rowMid(layoutOf(node.type).inRow ?? 0),
 })
 
-/** How far a backward link runs out of a port before it turns. */
-export const STUB = 16
+export const BACKWARD_STUB_PX = 16
 const BEND = 6
 
 export const gap = (a: Pt, b: Pt): number => Math.hypot(b.x - a.x, b.y - a.y)
 
-/** A link's path as a polyline: straight runs with soft right-angle bends. */
 export type Route = ReadonlyArray<Pt>
 
-/**
- * Forward links bend once, halfway between the ports. Backward links leave
- * the port, drop to `lane` under both cards, and come back in from the left.
- * The router uses this while a card is on the move, and when it finds no way.
- */
 export const route = (a: Pt, b: Pt, lane: number): Route => {
   const x = Math.round((a.x + b.x) / 2)
   return smooth(
@@ -47,16 +37,15 @@ export const route = (a: Pt, b: Pt, lane: number): Route => {
       ? [a, { x, y: a.y }, { x, y: b.y }, b]
       : [
           a,
-          { x: a.x + STUB, y: a.y },
-          { x: a.x + STUB, y: lane },
-          { x: b.x - STUB, y: lane },
-          { x: b.x - STUB, y: b.y },
+          { x: a.x + BACKWARD_STUB_PX, y: a.y },
+          { x: a.x + BACKWARD_STUB_PX, y: lane },
+          { x: b.x - BACKWARD_STUB_PX, y: lane },
+          { x: b.x - BACKWARD_STUB_PX, y: b.y },
           b,
         ],
   )
 }
 
-/** Rounds each inner corner of a polyline with a short quadratic arc, sampled into it. */
 export const smooth = (corners: Route): Route => {
   const points = corners.filter((point, index) => {
     const previous = corners[index - 1]
@@ -93,10 +82,8 @@ export const smooth = (corners: Route): Route => {
   return path
 }
 
-/** The space every card keeps clear around it, so links always have a channel. */
-export const CLEARANCE = 24
+export const CARD_CLEARANCE_PX = 24
 
-/** A rectangle on the board: a card, or a Playbook's bounding box. */
 export type Box = Readonly<{ x: number; y: number; w: number; h: number }>
 
 export const boxOf = (node: Placed): Box => ({
@@ -107,18 +94,11 @@ export const boxOf = (node: Placed): Box => ({
 })
 
 export const crowds = (a: Box, b: Box): boolean =>
-  a.x < b.x + b.w + CLEARANCE &&
-  b.x < a.x + a.w + CLEARANCE &&
-  a.y < b.y + b.h + CLEARANCE &&
-  b.y < a.y + a.h + CLEARANCE
+  a.x < b.x + b.w + CARD_CLEARANCE_PX &&
+  b.x < a.x + a.w + CARD_CLEARANCE_PX &&
+  a.y < b.y + b.h + CARD_CLEARANCE_PX &&
+  b.y < a.y + a.h + CARD_CLEARANCE_PX
 
-/**
- * The nearest top-left corner on the 8 px grid where `box` keeps its clearance
- * from every card in `others`. A sideways move costs three times a vertical one,
- * so a card stays in the column it was dropped in. The nearest free corner always
- * lines up with the wanted corner or with some card's clearance edge, so those
- * lines are the only ones tried.
- */
 export const freeSpot = (
   others: ReadonlyArray<Box>,
   box: Box,
@@ -128,10 +108,10 @@ export const freeSpot = (
   const xs = new Set([x])
   const ys = new Set([y])
   for (const other of others) {
-    xs.add(Math.ceil((other.x + other.w + CLEARANCE) / 8) * 8)
-    xs.add(Math.floor((other.x - box.w - CLEARANCE) / 8) * 8)
-    ys.add(Math.ceil((other.y + other.h + CLEARANCE) / 8) * 8)
-    ys.add(Math.floor((other.y - box.h - CLEARANCE) / 8) * 8)
+    xs.add(Math.ceil((other.x + other.w + CARD_CLEARANCE_PX) / 8) * 8)
+    xs.add(Math.floor((other.x - box.w - CARD_CLEARANCE_PX) / 8) * 8)
+    ys.add(Math.ceil((other.y + other.h + CARD_CLEARANCE_PX) / 8) * 8)
+    ys.add(Math.floor((other.y - box.h - CARD_CLEARANCE_PX) / 8) * 8)
   }
   let best = { x, y }
   let bestCost = Number.POSITIVE_INFINITY

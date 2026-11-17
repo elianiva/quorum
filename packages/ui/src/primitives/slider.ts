@@ -5,13 +5,6 @@ import { childAttributes, type Html, type HtmlBuilder } from 'foldkit/html'
 import { defineView } from 'foldkit/submodel'
 import * as Subscription from 'foldkit/subscription'
 
-/**
- * foldcn gap vs upstream: single value / single thumb only (upstream is
- * multi-thumb; foldcn renders one thumb). Vertical orientation and
- * edge-aligned thumb/range geometry are owned by this module's view until
- * foldkit/ui gains parity (see foldcn issue tracker).
- */
-
 export const init = FoldkitSlider.init
 export const update = FoldkitSlider.update
 export const Model = FoldkitSlider.Model
@@ -64,8 +57,6 @@ export const sliderFilledTrackClass = css({
   '&[data-vertical]': { width: '100%' },
 })
 
-/** Upstream SliderPrimitive.Thumb string. The disabled: variants are inert
- *  under foldkit (aria-/data- twins are inlined at style resolution). */
 export const sliderThumbClass = css({
   position: 'relative',
   width: '4',
@@ -185,9 +176,6 @@ const dragActivityFromModel = (model: Model): 'Idle' | 'Active' =>
     M.orElse((): 'Idle' | 'Active' => 'Idle'),
   )
 
-/** Drag subscriptions that map pointer position along the track axis, including
- *  vertical sliders marked with `data-vertical`. Pending foldkit upstream (#27).
- */
 export const subscriptionsForRoot = (getTrackRoot: () => Document | ShadowRoot) =>
   Subscription.make<Model, Message>()((entry) => ({
     dragPointer: entry(
@@ -246,7 +234,6 @@ export const subscriptionsForRoot = (getTrackRoot: () => Document | ShadowRoot) 
             ).pipe(Effect.flatMap(() => Effect.never)),
           )
 
-          // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Stream.when widens the element type
           return Stream.when(
             Stream.merge(pointerEvents, documentDragStyles),
             Effect.sync(() => dragActivity === 'Active'),
@@ -261,7 +248,6 @@ export const subscriptionsForRoot = (getTrackRoot: () => Document | ShadowRoot) 
           dragActivity: dragActivityFromModel(model),
         }),
         dependenciesToStream: ({ dragActivity }): Stream.Stream<Message> =>
-          // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Stream.when widens the element type
           Stream.when(
             Stream.fromEventListener(document, 'keydown').pipe(
               Stream.filter(
@@ -285,7 +271,6 @@ const filledTrackStyle = (
   fraction: number,
 ): Readonly<Record<string, string>> => {
   if (orientation === 'vertical') {
-    // oxlint-disable-next-line anti-slop/no-known-value-widening -- SAFETY: style bag must be Record<string,string> for h.Style; literal evidence is intentionally widened to the style contract
     return {
       position: 'absolute',
       bottom: '0',
@@ -296,7 +281,6 @@ const filledTrackStyle = (
       'pointer-events': 'none',
     }
   }
-  // oxlint-disable-next-line anti-slop/no-known-value-widening -- SAFETY: style bag must be Record<string,string> for h.Style; literal evidence is intentionally widened to the style contract
   return {
     position: 'absolute',
     left: '0',
@@ -312,7 +296,6 @@ const thumbStyle = (
   fraction: number,
 ): Readonly<Record<string, string>> => {
   if (orientation === 'vertical') {
-    // oxlint-disable-next-line anti-slop/no-known-value-widening -- SAFETY: style bag must be Record<string,string> for h.Style; literal evidence is intentionally widened to the style contract
     return {
       position: 'absolute',
       bottom: percentString(fraction),
@@ -321,7 +304,6 @@ const thumbStyle = (
       'touch-action': 'none',
     }
   }
-  // oxlint-disable-next-line anti-slop/no-known-value-widening -- SAFETY: style bag must be Record<string,string> for h.Style; literal evidence is intentionally widened to the style contract
   return {
     position: 'absolute',
     left: `calc((100% - ${THUMB_SIZE}) * ${fraction})`,
@@ -329,7 +311,6 @@ const thumbStyle = (
   }
 }
 
-/** Per-render view inputs passed to `view` via `h.submodel`'s `viewInputs` field. */
 export type ViewInputs = Readonly<{
   value: number
   toView: (attributes: SliderAttributes) => Html
@@ -343,8 +324,6 @@ export type ViewInputs = Readonly<{
   getTrackRoot?: () => Document | ShadowRoot
 }>
 
-/** Renders an accessible slider with upstream edge-aligned geometry and
- *  vertical orientation support, delegating shadcn layout to `toView`. */
 export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h) => {
   const {
     value,
@@ -478,7 +457,6 @@ export type StyledViewInputs = Readonly<{
   orientation?: Orientation
   label?: string
   formatValue?: (value: number) => string
-  /** A control that sits after the value in the header, such as a mute button. */
   headerTrailing?: Html
   ariaLabel?: string
   ariaLabelledBy?: string
@@ -496,7 +474,6 @@ export type StyledViewInputs = Readonly<{
   headerClass?: string
 }>
 
-/** Build styled `Slider.ViewInputs`. Pass your view's `h`. */
 export const styledViewInputs = <M>(
   viewInputs: StyledViewInputs,
   h: HtmlBuilder<M>,

@@ -24,7 +24,6 @@ export const languagePicker = (locale: Locale, model: Listbox.Model, h: HtmlBuil
           itemToSearchText: (choice) => choice.label,
           maybeSelectedValue: Option.some(locale),
           ariaLabel: copyIn(locale).panels.language,
-          // Settings clips its overflow, so the menu portals out of it.
           anchor: { placement: 'bottom-end', gap: 6, portal: true },
           buttonClassName: css({
             display: 'flex',

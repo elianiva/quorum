@@ -61,7 +61,7 @@ Sentry records errors, traces, and profiles ([ADR 0013](./adr/0013-sentry-for-er
 
 ## Product analytics
 
-The browser sends anonymous PostHog events through the website Worker at `/q` (`INGEST_PREFIX` in `packages/rpc/src/paths.ts`). The Worker forwards them to PostHog Cloud US; the browser never calls PostHog directly, so ad blockers do not match the hostname.
+The browser sends anonymous PostHog events through the website Worker at `/q` (`POSTHOG_PROXY_PREFIX` in `packages/rpc/src/paths.ts`). The Worker forwards them to PostHog Cloud US; the browser never calls PostHog directly, so ad blockers do not match the hostname.
 
 - `apps/web/src/platform/analytics.ts` owns the SDK, the session, and the heartbeat.
 - `apps/web/src/game/analytics-bridge.ts` maps the playtest log to the eight events the plan keeps.

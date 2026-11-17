@@ -5,7 +5,6 @@ import { withWarm } from '../life.ts'
 
 import { has } from '../lookups.ts'
 
-/** Swaps a Cache's engine. The new one starts empty. */
 export const setCacheEngine = (game: Game, id: string, engine: CacheEngine): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'cache') return notAllowed('Only a Cache has an engine.')
@@ -14,7 +13,6 @@ export const setCacheEngine = (game: Game, id: string, engine: CacheEngine): Act
     )
   })
 
-/** Turns a Cache's stampede protection or warming on or off. Each needs its research. */
 export const setCacheGuard = (
   game: Game,
   id: string,
@@ -43,10 +41,6 @@ export const setCacheGuard = (
     return ok(patch(game, id, change))
   })
 
-/**
- * Picks what a Cache does on a write (07 "Strategies"): cache-aside, read-through,
- * write-through or write-behind. Every strategy but cache-aside needs Cache strategies.
- */
 export const setCacheStrategy = (game: Game, id: string, cacheStrategy: CacheStrategy): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'cache') return notAllowed('Only a Cache has a strategy.')

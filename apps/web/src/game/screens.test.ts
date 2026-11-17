@@ -7,7 +7,6 @@ import { AppRoute } from './route.ts'
 import { labScreen } from './screens.ts'
 import { initialModel, update } from './update.ts'
 
-/** A Company that ran for a minute, so the Dashboard has history to draw. */
 const played = (panel: Model['panel']): Model => {
   const fresh = initialModel()
   let model: Model = {
@@ -20,8 +19,6 @@ const played = (panel: Model['panel']): Model => {
   return { ...model, panel }
 }
 
-// A memoized view that receives a fresh object on every render never hits its cache, and
-// nothing on screen shows it. These fail when a lazy view's arguments stop being stable.
 describe('memoized views', () => {
   test('the Dashboard reuses its gauges, rows, and timelines for an unchanged Model', () => {
     Lazy.expectAllReused({ view: labScreen, model: played('dashboard') })

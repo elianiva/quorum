@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { play } from './sound.ts'
 
-/** The parts of a context that `play` touches before the bus asks for its convolver. */
 const refusing = (): BaseAudioContext =>
   ({
     destination: {},
@@ -32,7 +31,6 @@ describe('a browser that cannot build the audio graph', () => {
 
     expect(() => play('choose')).not.toThrow()
     expect(() => play('hover')).not.toThrow()
-    // The first sound gave up on the graph, so the second must not build another context.
     expect(built).toBe(1)
   })
 })

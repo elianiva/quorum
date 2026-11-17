@@ -11,7 +11,6 @@ import { linksFrom } from '../content.ts'
 
 const componentLinks = new Map(COMPONENT_IDS.map((id) => [id, linksFrom(`/components/${id}`)]))
 
-/** The Components whose page teaches this incident. */
 export const componentsHitBy = (incident: IncidentId): ReadonlyArray<ComponentId> =>
   COMPONENT_IDS.filter((id) => componentLinks.get(id)?.paths.has(`/incidents/${incident}`))
 
@@ -20,17 +19,14 @@ export const incidentsOn = (component: ComponentId): ReadonlyArray<string> =>
     .filter((path) => path.startsWith('/incidents/') && path !== '/incidents')
     .map((path) => path.slice('/incidents/'.length))
 
-/** The guided Sandboxes that fire this incident. */
 export const sandboxesFiring = (incident: IncidentId): ReadonlyArray<SandboxId> =>
   SANDBOX_IDS.filter((id) =>
     GUIDED_SUMMARY[id].objectives.some((objective) => objective.incident?.kind === incident),
   )
 
-/** The Components whose page places this Sandbox. */
 export const componentsPlacing = (sandbox: SandboxId): ReadonlyArray<ComponentId> =>
   COMPONENT_IDS.filter((id) => componentLinks.get(id)?.sandboxes.has(sandbox))
 
-/** Components named in this Component's page, or naming it in theirs. Not itself. */
 export const worksWith = (component: ComponentId): ReadonlyArray<ComponentId> =>
   COMPONENT_IDS.filter(
     (id) =>
@@ -39,7 +35,6 @@ export const worksWith = (component: ComponentId): ReadonlyArray<ComponentId> =>
         componentLinks.get(id)?.paths.has(`/components/${component}`)),
   )
 
-/** Research that builds on the Research which unlocks this Component: what to learn after placing it. */
 export const researchNext = (component: ComponentId): ReadonlyArray<ResearchId> => {
   const unlock = COMPONENTS[component].unlock
   return unlock

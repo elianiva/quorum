@@ -5,8 +5,6 @@ import type { Message } from '../main.ts'
 import type { Page } from '../page.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* The right rail: the page's headings. */
-
 export const toc = (page: Page, h: HtmlBuilder<Message>): Html => {
   const t = langOf(localeOf(h)).t.toc
   return page.headings.length < 2

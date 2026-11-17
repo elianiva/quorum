@@ -1,8 +1,6 @@
 import type { Design } from '../design.ts'
 import { at, design, set, setLink, wire } from '../design.ts'
 
-/* Scaling steps 3: the front door, safe change, realtime, and the data and compute that outgrow one machine. */
-
 export const step3 = {
   'gateway-auth-tls': design({
     users: 2000,

@@ -14,7 +14,6 @@ type Client = typeof import('posthog-js').default
 const TOKEN = import.meta.env.VITE_POSTHOG_KEY
 const HEARTBEAT_MS = 120_000
 const MAX_HEARTBEATS = 30
-/** `?analytics=off` disables capture, `?analytics=on` allows it in a development build. */
 const FORCED =
   typeof window === 'undefined'
     ? null
@@ -25,9 +24,6 @@ export const PRIVACY_URL = `${WIKI_URL}/about/privacy`
 export const DISCLAIMER_URL = `${WIKI_URL}/about/disclaimer`
 export const SOURCE_URL = 'https://github.com/elianiva/quorum'
 
-/** The wiki's page for an engineering term. The game links its terms here. The wiki is in English,
- *  Spanish and Japanese, each translated language under its prefix, so a player who plays in
- *  Spanish or Japanese opens that language's page and every other language opens the English one. */
 const WIKI_PREFIX: Readonly<Partial<Record<Locale, string>>> = { es: '/es', ja: '/ja' }
 
 export const glossaryUrl = (id: string, locale: Locale = 'en'): string =>
@@ -173,7 +169,6 @@ const start = async (model: Model): Promise<void> => {
       person_profiles: 'identified_only',
       persistence: 'localStorage',
       opt_out_capturing_by_default: !enabled,
-      // Headless browsers look like bots. A production build keeps the filter.
       opt_out_useragent_filter: !import.meta.env.PROD,
       respect_dnt: true,
       disable_session_recording: true,
@@ -189,14 +184,12 @@ const start = async (model: Model): Promise<void> => {
     setInterval(heartbeat, HEARTBEAT_MS)
     window.addEventListener('pagehide', end)
   } catch (error) {
-    // The SDK did not load. The game keeps running without analytics.
     if (import.meta.env.DEV) console.error('Analytics did not start', error)
   } finally {
     starting = false
   }
 }
 
-/** Keeps the latest Model for the heartbeat, and starts the SDK once it has a device id. */
 export const observe = (model: Model): void => {
   latest = model
   if (client === null && !starting && model.founder.deviceId !== '') void start(model)
@@ -220,14 +213,12 @@ export const observe = (model: Model): void => {
   })
 }
 
-/** Maps one batch of playtest-log lines to PostHog events. */
 export const forward = (entries: ReadonlyArray<LogEntry>): void => {
   if (client === null || latest === null || entries.length === 0) return
   for (const event of eventsOf(entries, { game: latest.board.game, seenComponents }))
     client.capture(event.event, event.properties)
 }
 
-/** The Settings switch. PostHog persists the choice in localStorage. */
 export const setAnalyticsEnabled = (next: boolean): void => {
   enabled = next
   if (client === null) return
@@ -235,10 +226,6 @@ export const setAnalyticsEnabled = (next: boolean): void => {
   else client.opt_out_capturing()
 }
 
-/**
- * The player pressed Install and the browser answered. `unavailable` means the
- * dialog the browser offered was gone by the time it was asked for.
- */
 export const trackInstallPrompt = (outcome: InstallOutcome): void => {
   if (client === null) return
   const mode = displayMode()

@@ -17,15 +17,8 @@ import { freeSandbox } from '../src/sandbox.ts'
 import type { FeaturePhase } from '../src/feature-machine.ts'
 import type { Game } from '../src/state.ts'
 
-/*
- * Ventures (13 "Ventures"): each one runs its own traffic, not a modifier on the Era's. The Era
- * decides which kinds a Company serves; the Venture decides how much of each, and the profile is
- * masked to the Era and scaled back to one.
- */
-
 const live: FeaturePhase = { _tag: 'Live', rollout: 1, adoption: 1, lift: null }
 
-/** The gated Features whose kind this Era serves: the ones a Company at that Era has shipped. */
 const shippedAt = (stage: number): ReadonlyArray<FeatureId> =>
   FEATURE_IDS.filter((id) => {
     const unlocks = FEATURES[id].unlocks

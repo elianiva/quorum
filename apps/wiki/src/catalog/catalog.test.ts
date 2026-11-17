@@ -8,8 +8,6 @@ import { init, queryOf } from '../submodels/catalog.ts'
 import { boardFor, GRID_COLUMNS } from './boards.ts'
 import { STORIES, decodeArgs, encodeArgs, initialArgs, stateArgs, storyOf } from './stories.ts'
 
-/* The catalog's contract: a story for every Component, and every state of every story draws. */
-
 test('every Component has exactly one story, and every story has a state to draw', () => {
   expect(STORIES.map((story) => story.id)).toEqual([...COMPONENT_IDS])
   for (const story of STORIES) expect(story.states.length, story.id).toBeGreaterThan(0)
@@ -30,7 +28,6 @@ test('every state of every story builds a board whose cards have rows', () => {
         rowsOf(board.game, node, board.ledger).length,
         `${story.id} ${state.name}`,
       ).toBeGreaterThan(0)
-      // The grid draws each state's own ledger, not one shared entry.
       const placed = grid.game.nodes[story.states.indexOf(state)]
       expect(placed && grid.ledger.nodes[placed.id]?.status, `${story.id} ${state.name}`).toBe(
         board.ledger.nodes[node.id]?.status,
@@ -45,7 +42,6 @@ test('args in the URL round-trip, clamp to their control, and ignore anything un
   if (!cache) throw new Error('no cache story')
   const changed = { ...initialArgs(cache), utilization: 1.2, life: 'stopped', selected: true }
   expect(decodeArgs(cache, encodeArgs(cache, changed))).toEqual(changed)
-  // An unchanged arg is not written; a value past its range is pulled back; junk is dropped.
   expect(encodeArgs(cache, initialArgs(cache))).toBe('')
   expect(decodeArgs(cache, 'utilization:99;life:exploded;zone:<b>;nope:1')).toEqual({
     ...initialArgs(cache),

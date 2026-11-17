@@ -1,12 +1,6 @@
-import { CARD_W, CLEARANCE, heightOf, type Pt } from '../geometry.ts'
+import { CARD_W, CARD_CLEARANCE_PX, heightOf, type Pt } from '../geometry.ts'
 import type { LabLink, LabNode } from './pipeline.ts'
 
-/*
- * A force-directed control, Fruchterman–Reingold style: every pair of cards pushes
- * apart, every link pulls its ends together, and a cooling schedule settles it.
- * Cards are then pushed out of each other until none overlap. No columns, no ports,
- * no left-to-right rule: this is what "ignore the DAG" looks like on the same board.
- */
 export const forceLayout = (
   nodes: ReadonlyArray<LabNode>,
   links: ReadonlyArray<LabLink>,
@@ -71,9 +65,8 @@ export const forceLayout = (
       py[i]! += (dy[i]! / move) * Math.min(move, temperature)
     }
   }
-  // Normalise to a sensible density: force layouts have no natural scale.
   const meanH = nodes.reduce((sum, node) => sum + heightOf(node.type), 0) / count
-  const target = 2.5 * count * (CARD_W + 2 * CLEARANCE) * (meanH + 2 * CLEARANCE)
+  const target = 2.5 * count * (CARD_W + 2 * CARD_CLEARANCE_PX) * (meanH + 2 * CARD_CLEARANCE_PX)
   const spanX = Math.max(...px) - Math.min(...px) + CARD_W
   const spanY = Math.max(...py) - Math.min(...py) + meanH
   const scale = Math.sqrt(target / (spanX * spanY))
@@ -81,7 +74,6 @@ export const forceLayout = (
     px[i] = (px[i]! - centreX) * scale + centreX
     py[i] = (py[i]! - centreY) * scale + centreY
   }
-  // Push overlapping cards apart, along the axis that needs the smaller move.
   const boxes = nodes.map((node, index) => ({ h: heightOf(node.type), index, w: CARD_W }))
   for (let step = 0; step < 400; step += 1) {
     let moved = false
@@ -89,8 +81,8 @@ export const forceLayout = (
       for (let j = i + 1; j < count; j += 1) {
         const a = boxes[i]!
         const b = boxes[j]!
-        const ox = CARD_W + CLEARANCE - Math.abs(px[i]! - px[j]!)
-        const oy = (a.h + b.h) / 2 + CLEARANCE - Math.abs(py[i]! - py[j]!)
+        const ox = CARD_W + CARD_CLEARANCE_PX - Math.abs(px[i]! - px[j]!)
+        const oy = (a.h + b.h) / 2 + CARD_CLEARANCE_PX - Math.abs(py[i]! - py[j]!)
         if (ox <= 0 || oy <= 0) continue
         moved = true
         if (ox < oy) {

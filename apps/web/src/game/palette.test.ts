@@ -13,7 +13,6 @@ import { AppRoute } from './route.ts'
 import { initialModel, update } from './update.ts'
 import { AppendLog, PlaySound, SyncBoard, ToggleFullscreen } from './commands.ts'
 
-/** A Company on the board: the palette only opens over a board. */
 const inLab = (): Model => {
   const model = initialModel()
   return { ...model, route: AppRoute.Company(), board: { ...model.board, game: newGame() } }
@@ -48,7 +47,6 @@ describe('opening and closing', () => {
     const closed = update(opened, Message.KeyPressed({ key: 'Escape' })).model
     expect(closed.palette).toEqual(EMPTY_PALETTE)
     expect(halted(closed)).toBe(false)
-    // A board hotkey typed while the palette is up does nothing behind it.
     expect(update(opened, Message.KeyPressed({ key: 'r' })).model.panel).toBe('none')
   })
 
@@ -110,7 +108,6 @@ describe('the rows and the query', () => {
       short: model.board.game.cash < price,
       locked: null,
     })
-    // The dock's next unlockable part stays in the list, naming the Research that locks it.
     expect(rows.find((row) => row.id === 'place:dns')?.part?.locked).toBe(
       t.catalog.research['dns-rr'].name,
     )
@@ -126,13 +123,10 @@ describe('the rows and the query', () => {
 
   test('a row that would do nothing stays out of the list', () => {
     const listed = ids(inLab())
-    // Nothing is selected and nothing was undone yet.
     expect(listed).not.toContain('copy')
     expect(listed).not.toContain('sell')
     expect(listed).not.toContain('undo')
-    // Easy mode is off, so the clock is not the player's to pause.
     expect(listed).not.toContain('pause')
-    // Research and Team arrive with the first Study and the first Feature.
     expect(listed).not.toContain('panel:team')
   })
 
@@ -155,13 +149,11 @@ describe('the rows and the query', () => {
 
   test('the arrows move the highlight and wrap, and a new query starts over', () => {
     const rows = commandsOf(copyIn('en'), inLab())
-    // A blank palette highlights nothing, so the first arrow picks the first row.
     expect(update(open(), Message.PaletteMoved({ delta: 1 })).model.palette.active).toBe(
       rows[0]?.id,
     )
     const up = update(open(), Message.PaletteMoved({ delta: -1 })).model
     expect(up.palette.active).toBe(rows.at(-1)?.id)
-    // A query highlights its first match, so the next arrow moves past it.
     const typed = update(open(), Message.PaletteQueryChanged({ query: 'server' })).model
     const narrowed = matchesOf(commandsOf(copyIn('en'), typed), copyIn('en'), 'server')
     expect(narrowed.length).toBeGreaterThan(1)
@@ -179,7 +171,6 @@ describe('the rows and the query', () => {
   })
 })
 
-/** The palette renders nothing when it is shut; the Scene needs a root to render either way. */
 const screen = (model: Model, h: HtmlBuilder<Message>): Html =>
   h.div([h.Key('screen')], [commandPalette(model, h)])
 

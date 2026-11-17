@@ -3,7 +3,6 @@ import type { CacheKey, Game } from '../state.ts'
 import { CACHE_KEYS } from '../catalog.ts'
 import { withWarm } from '../life.ts'
 
-/** Sets a CDN's purge on deploy and its cache key (05 "CDN"). A key change empties the cache. */
 export const setCdnOptions = (
   game: Game,
   id: string,

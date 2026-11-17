@@ -13,7 +13,6 @@ import type { Game, GameNode, StorageClass, StoreVariant } from '@quorum/simulat
 import { Message } from '@/game/message.ts'
 import { type Panel, caption, picker, section } from './shared.ts'
 
-/** Object Storage's class and lifecycle (07 "Object Storage"): price against retrieval. */
 const storage = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
   return [

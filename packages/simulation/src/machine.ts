@@ -1,14 +1,12 @@
 import { Machine } from '@typeonce/effect-machine'
 import { Effect } from 'effect'
 
-/** The root snapshot a flat machine plans from, built from a stored state. */
 export const snapshotOf = (state: Readonly<{ _tag: string }>): unknown => ({
   path: '',
   value: undefined,
   state: { path: state._tag, value: state },
 })
 
-/** Plans one event and returns the next tagged state. */
 export const planState = <State extends Readonly<{ _tag: string }>>(
   machine: unknown,
   state: State,

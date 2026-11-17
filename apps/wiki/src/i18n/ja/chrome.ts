@@ -1,10 +1,5 @@
 import type { Messages } from '../messages.ts'
 
-/* The wiki's interface copy in Japanese. Game nouns follow `apps/web/src/i18n/ja` and the
-   Japanese catalog: 設計, ボード, ノード, リンク, コンポーネント, 会社, 資金, 売上, 支出,
-   ユーザー, 時代, リサーチ, 研究, インサイト, インシデント, サンドボックス, ガレージ,
-   プレシード, シード, 事業, レガシー, ミューテーター, エグジット, 実績, 練習, チーム. */
-
 type Chrome = Omit<Messages, 'islands' | 'options' | 'reference'>
 
 export const chrome: Chrome = {

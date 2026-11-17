@@ -1,15 +1,15 @@
 import { Result, Schema } from 'effect'
 import {
   COMPONENTS,
-  IAC_SWITCH,
+  IAC_SWITCH_MINUTES,
   IAC_TOOL_INFO,
-  MIRROR_TIME,
-  REFRESH_TIME,
+  MIRROR_TIME_MINUTES,
+  REFRESH_TIME_MINUTES,
   REGION_INFO,
   RESEARCH,
   SIZES,
-  STAGE_WAIT,
-  SYNC_POLL,
+  STAGE_WAIT_MINUTES,
+  SYNC_POLL_MINUTES,
   type ComponentId,
   type DataPatternId,
   type IacToolId,
@@ -266,7 +266,6 @@ const wantLinksOf = (
     const from = game.nodes.find((node) => node.id === link.from)
     if (!from || from.region !== mirror.source) continue
     if (from.type !== 'users' && !copied.has(from.id)) continue
-    // A replication link stays as it is; the copies' own are written below.
     if (from.type === 'database' && game.nodes.find((n) => n.id === link.to)?.type === 'replica') {
       keys.add(linkKey(from.id, link.to))
       continue
@@ -275,7 +274,6 @@ const wantLinksOf = (
     if (!start) continue
     for (const end of endsOf(game, mirror, ids, link.to)) keys.add(linkKey(start, end))
   }
-  // The home Database ships its log to the replica that copies it in this region.
   for (const node of sourceNodes(game, mirror)) {
     const copy = ids[node.id]
     if (node.type === 'database' && mirror.data[node.id] === 'replica' && copy)
@@ -447,8 +445,8 @@ export const applyCost = (game: Game, mirror: Mirror): number => {
 }
 
 export const applySeconds = (game: Game, mirror: Mirror, creates: boolean): number =>
-  (creates ? MIRROR_TIME : 0) +
-  (refreshesOnPlan(game) ? REFRESH_TIME * Object.keys(mirror.code).length : 0)
+  (creates ? MIRROR_TIME_MINUTES : 0) +
+  (refreshesOnPlan(game) ? REFRESH_TIME_MINUTES * Object.keys(mirror.code).length : 0)
 
 const write = (game: Game, mirror: Mirror, destroy: boolean): Game => {
   const drift = driftOf(game, mirror)
@@ -640,7 +638,7 @@ export const pickIacTool = (game: Game, tool: IacToolId): Action => {
     ...game,
     iac: {
       tool,
-      until: game.iac ? game.time + IAC_SWITCH : game.time,
+      until: game.iac ? game.time + IAC_SWITCH_MINUTES : game.time,
       sync: game.iac?.sync ?? null,
     },
     ...(game.mirrors && {
@@ -814,13 +812,14 @@ export const repairMirror = (game: Game, region: RegionId): Action => {
     lost.length > 0
       ? withMirror(paid, {
           ...repaired,
-          sync: MirrorSync.cases.Applying.make({ readyAt: game.time + MIRROR_TIME }),
+          sync: MirrorSync.cases.Applying.make({ readyAt: game.time + MIRROR_TIME_MINUTES }),
         })
       : land(withMirror(paid, repaired), repaired),
   )
 }
 
-const syncDelay = (sync: SyncMode): number => (sync === 'staged' ? STAGE_WAIT : SYNC_POLL)
+const syncDelay = (sync: SyncMode): number =>
+  sync === 'staged' ? STAGE_WAIT_MINUTES : SYNC_POLL_MINUTES
 
 export const advanceMirrors = (game: Game): Game => {
   if (!game.mirrors || game.mirrors.length === 0) return game

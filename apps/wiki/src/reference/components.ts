@@ -42,15 +42,11 @@ import {
 } from './shared.ts'
 import { css } from '@quorum/styled-system/css'
 
-/* One page per Component, and the Components hub. Every fact comes from COMPONENTS. */
-
 export const componentPath = (id: ComponentId): string => `/components/${id}`
 
-/** The Era a Component becomes available in: its unlocking Research's, or Garage. */
 export const componentEra = (def: ComponentDef): number =>
   def.unlock ? RESEARCH[def.unlock].era : 0
 
-/** The dock groups' headings: the group's name in the language, anchored by its English name. */
 const dockTitles = (l: Lang) =>
   DOCK_GROUPS.map((group, index) =>
     titleOf(group.label, l.cat.DOCK_GROUPS[index]?.label ?? group.label),
@@ -124,7 +120,6 @@ const rules = (l: Lang, def: ComponentDef, h: H): ReadonlyArray<Html> => {
       ]
 }
 
-/** Components as a comma-separated list of links. */
 export const componentList = (l: Lang, ids: ReadonlyArray<ComponentId>, h: H): Html =>
   h.p(
     [],
@@ -178,7 +173,6 @@ const entity = (l: Lang, def: ComponentDef): Page => {
           ),
         ],
         [
-          // The card as it stands on the board, drawn by the board itself.
           h.div(
             [
               h.Class(

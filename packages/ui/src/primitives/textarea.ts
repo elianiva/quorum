@@ -49,11 +49,6 @@ export const textareaClass = css({
   fieldSizing: 'content',
 })
 
-/** Same string as the `label` item's component classes (upstream label.tsx). */
-/** Upstream string re-keyed for foldkit: the label precedes the control, so
- *  upstream's native peer-disabled sibling variant can never match; disabled
- *  state flows from the wrapper (group-field + data-disabled, mirroring
- *  switch.ts). */
 export const textareaLabelClass = css({
   gap: '2',
   fontSize: 'type.14',
@@ -101,8 +96,6 @@ export type TextareaConfig<M> = Readonly<{
   wrapperClass?: string
 }>
 
-/** Styled textarea with label and optional description, built on the
- *  @foldkit/ui Textarea helper. */
 export const textarea = <M>(config: TextareaConfig<M>, h: HtmlBuilder<M>): Html =>
   FoldkitTextarea.view<M>(
     {

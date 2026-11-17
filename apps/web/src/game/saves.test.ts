@@ -49,7 +49,6 @@ const fileIn = (index: SaveIndex, id: string): CompanyFile => {
   return file
 }
 
-/** The browser storage the commands read and write. Every write is observable. */
 type Storage = Readonly<{
   getItem: (key: string) => string | null
   setItem: (key: string, value: string) => void
@@ -73,7 +72,6 @@ const fakeStorage = (seed: Record<string, string>): Storage => {
   }
 }
 
-/** Runs commands against a fake `window.localStorage`, then puts the global back. */
 const withStorage = <A>(storage: Storage, run: () => A): A => {
   const scope = globalThis as unknown as { window: { localStorage: Storage } | undefined }
   const prior = scope.window
@@ -88,7 +86,6 @@ const withStorage = <A>(storage: Storage, run: () => A): A => {
 const runCommand = <A>(command: { effect: Effect.Effect<A, never, never> }): A =>
   Effect.runSync(command.effect)
 
-/** The same for a Command that waits on the Company files, with the fake storage held until it ends. */
 const runStored = async (
   storage: Storage,
   ...commands: ReadonlyArray<{ effect: Effect.Effect<unknown, never, never> }>
@@ -103,13 +100,11 @@ const runStored = async (
   }
 }
 
-/** A Company file as `SavesLoaded` reads it from storage. */
 const indexOf = (files: ReadonlyArray<CompanyFile>, current: string | null): SaveIndex => ({
   current,
   companies: [...files],
 })
 
-/** One stored Company. */
 const stored = (): Readonly<{
   index: SaveIndex
   game: ReturnType<typeof preseedGame>
@@ -127,7 +122,6 @@ const stored = (): Readonly<{
   return { index: indexOf([file], file.id), game, save: saveOf(game) }
 }
 
-/** A stored Company file, as this build writes it. */
 const saveOf = (game: object, extra: Record<string, unknown> = {}): string =>
   JSON.stringify({ format: SAVE_FORMAT, ...game, ...extra })
 
@@ -230,7 +224,6 @@ describe('the Companies page', () => {
       Message.CompanyLoaded({ id: 'c-one', open: true, json: saveOf(game) }),
       Message.CompanyChosen({ id: 'c-two' }),
       Message.CompanyOpened({ id: 'c-two' }),
-      // The first file answers late: it belongs to the Company the player left.
       Message.CompanyLoaded({ id: 'c-one', open: true, json: saveOf(game) }),
     )
     expect(waiting.companyPhase).toEqual({ _tag: 'Opening', id: 'c-two' })
@@ -334,7 +327,6 @@ describe('autosave and migration', () => {
       ...founded,
       board: { ...founded.board, clock: { ...founded.board.clock, speed: 40 } },
     }
-    // A tick at 40× is ten sim seconds, twice what an autosave waited for on sim time.
     const result = update(fast, Message.Ticked({ elapsedMs: TICK_MS }))
     expect((result.commands ?? []).some((command) => command.name === 'WriteCompany')).toBe(false)
   })
@@ -380,7 +372,6 @@ describe('autosave and migration', () => {
     expect(commandsOf(played, Message.TitleOpened())).toContain('WriteCompany')
   })
 
-  // The test run has no IndexedDB, so the Commands below take the path of a browser without one.
   test('the autosave writes the save format beside the Game', async () => {
     const storage = fakeStorage({})
     const founded = send(initialModel(), Message.CompanyFounded())
@@ -421,7 +412,6 @@ describe('autosave and migration', () => {
     const broken = update(loaded.model, Message.CompanyLoaded({ id: 'c-one', open: true, json }))
     expect(broken.model.companyPhase).toEqual({ _tag: 'None' })
     expect(broken.model.toast?.tone).toBe('warn')
-    // A row that can never open does not stay, or it would warn on every load.
     expect(broken.model.saves).toEqual({ current: null, companies: [] })
     expect((broken.commands ?? []).map((command) => command.name)).toEqual(
       expect.arrayContaining(['KeepBrokenSave', 'DeleteCompany']),

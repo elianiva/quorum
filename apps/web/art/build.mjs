@@ -1,13 +1,3 @@
-// Builds the component illustrations with the vendored Anatomy kit.
-//
-//   node apps/web/art/build.mjs            every figure in figures/
-//   node apps/web/art/build.mjs app db     only these figures
-//
-// Each figure module exports `figure()`, which returns { width, height, label, body } and
-// optionally a `theme` ('light' by default, or 'dark'). The SVG lands in
-// apps/web/public/art/<name>.svg with the Quorum theme embedded, so an <img> shows it
-// with the game's blueprint palette.
-
 import { readdirSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'

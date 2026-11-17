@@ -8,9 +8,6 @@ import { langOf } from '../i18n/lang.ts'
 import type { Locale } from '../i18n/locale.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* The spoiler filter: the last Era the reader reached. Pages about later Eras fold. Kept in the browser. */
-
-/** Every Era: content from any Era shows. */
 export const ALL_ERAS = -1
 
 export const Model = Schema.Struct({ era: Schema.Finite, open: Schema.Boolean })
@@ -48,18 +45,15 @@ const Save = Command.define('SaveEra', {
     }),
 })
 
-/** After a choice or Escape, return keyboard focus to the chip that opened the menu. */
 const FocusTrigger = Command.define('FocusSpoilerTrigger', {
   messages: [Message.Saved],
   execute: Effect.promise(async () => {
-    // The menu leaves the tree in the same update, so wait for its frame before focusing.
     await new Promise((resolve) => requestAnimationFrame(resolve))
     document.getElementById('spoiler-era')?.focus()
     return Message.Saved()
   }),
 })
 
-/** Move focus into the open menu, onto the chosen Era, so Escape and Tab work at once. */
 const FocusMenu = Command.define('FocusSpoilerMenu', {
   args: { era: Schema.Finite },
   messages: [Message.Saved],
@@ -93,11 +87,9 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
     Saved: () => ({ model }),
   })
 
-/** A page about `era` folds for this reader. */
 export const hides = (model: Model, era: number | null): boolean =>
   era !== null && model.era !== ALL_ERAS && era > model.era
 
-/** The control at the foot of the sidebar: a shield switch and the Era boundary it protects. */
 export const view = defineView<Model, Message, Readonly<{ locale: Locale }>>(
   (model, { locale }, h) => {
     const l = langOf(locale)

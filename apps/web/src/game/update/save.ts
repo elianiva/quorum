@@ -58,7 +58,6 @@ type SaveTag =
   | 'AgentRoomCopied'
   | 'LogCleared'
 
-/** A save with no Company open becomes one: a file on the list, opening under its seed's id. */
 const adopt = (model: Model, json: string): Model => {
   const read = readSaveFile(json)
   if (Result.isFailure(read)) return model
@@ -78,10 +77,6 @@ const adopt = (model: Model, json: string): Model => {
   }
 }
 
-/**
- * Puts an imported save on the board. `asNew` adds it to the list as a Company of its own; without
- * it the save replaces the open Company, or becomes one when no Company is open.
- */
 const applyImport = (
   model: Model,
   route: Dispatch,
@@ -97,8 +92,6 @@ const applyImport = (
   const started = fresh ? adopt(model, decoded.success) : model
   const id = fresh ? started.saves.current : playingId(model)
   if (id === null) return { model: started }
-  // The save loads as it does when the Company opens, on a fresh board: the open Company's
-  // undo stack and Inspector history belong to the Company the import replaces.
   const loaded = route(started, Message.CompanyLoaded({ id, open: fresh, json: decoded.success }))
   const board = loaded.model.board
   const [next, clear] = toasted(
@@ -115,7 +108,6 @@ const applyImport = (
     say(model).toasts.saveImported,
     'ok',
   )
-  // The import is the save now, so the copy kept for the last unreadable file is dead weight.
   return {
     ...loaded,
     model: next,
@@ -219,7 +211,6 @@ export const saveHandlers = (
       ...model.board.game,
       users: Math.max(model.board.game.users, eraOf(model.board.game).raiseAt),
     }
-    // A playtest skips the IPO checklist.
     if (ready.stage === PRE_IPO_STAGE) {
       const ledger = solveFlow(ready)
       const ipo = listed(model, ready)

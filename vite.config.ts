@@ -9,11 +9,8 @@ const ignored = [
   'node_modules/**',
   'dist/**',
   'coverage/**',
-  // Vendored from github.com/wheresryan22/anatomy; kept identical to upstream.
   'apps/web/art/kit/**',
-  // Vendored from github.com/cursor/plugins (pstack); kept identical to upstream.
   '.agents/skills/statechart/**',
-  // The Rust solver's cargo output.
   'packages/simulation/solver/target/**',
 ]
 
@@ -26,13 +23,10 @@ export default defineConfig({
   },
   lint: {
     ignorePatterns: ignored,
-    // `effect-tsrs patch --oxlint` (run by `prepare`) replaces the tsgolint
-    // backend with effect-tsrs, so type-aware lint runs only the Effect rules.
     options: { typeAware: true, typeCheck: false },
     plugins: ['typescript', 'unicorn', 'oxc', ...recommended.plugins],
     rules: {
       ...recommended.rules,
-      // effect-tsrs hands these default type-aware rules to tsgolint. Keep them off.
       'typescript/await-thenable': 'off',
       'typescript/no-array-delete': 'off',
       'typescript/no-base-to-string': 'off',

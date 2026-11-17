@@ -43,11 +43,6 @@ import { en } from './en/index.ts'
 import type { Locale } from './locale.ts'
 import type { Messages } from './messages.ts'
 
-/* What a view needs to speak a language: its interface copy, and the catalog tables with that
-   language's words laid over them. The words come from `@quorum/ui/i18n/catalog/<language>`, the
-   same tables the game reads, so a term has one translation in both places. A field a language
-   does not translate keeps its English text. English is the Simulation's own tables, untouched. */
-
 type Copy = Readonly<Record<string, object | undefined>>
 
 const overlay = <T extends Readonly<Record<string, object>>>(
@@ -138,17 +133,14 @@ const catalogView = (copy: Catalog | null) => ({
   VENTURES: overlay(VENTURES, copy?.ventures),
 })
 
-/** The catalog tables the wiki reads, with a language's words laid over them. */
 export type CatalogView = ReturnType<typeof catalogView>
 
-/** A heading of a generated page: its text in the page's language, and the anchor it keeps in every language. */
 export type Title = Readonly<{ id: string; text: string }>
 
 export type Lang = Readonly<{
   locale: Locale
   t: Messages
   cat: CatalogView
-  /** A heading of a generated page, by key. Its anchor is the English text's slug. */
   title: (key: keyof Messages['reference']['sections']) => Title
 }>
 
@@ -161,13 +153,10 @@ const make = (locale: Locale, t: Messages, catalog: Catalog | null): Lang => ({
 
 const langs: Partial<Record<Locale, Lang>> = { en: make('en', en, null) }
 
-/** Makes a language known: its interface copy and its catalog words. Done once, by its bundle. */
 export const registerLocale = (locale: Locale, t: Messages, catalog: Catalog): void => {
   langs[locale] = make(locale, t, catalog)
 }
 
-/** Whether a language's bundle has been loaded. English always is. */
 export const isLoaded = (locale: Locale): boolean => langs[locale] !== undefined
 
-/** A language's copy and catalog. A language that has not loaded reads English. */
 export const langOf = (locale: Locale): Lang => langs[locale] ?? (langs['en'] as Lang)

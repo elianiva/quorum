@@ -11,14 +11,6 @@ const TOAST_MARK: Record<Toast['tone'], string> = {
   primary: css({ backgroundColor: 'primaryStrong' }),
 }
 
-/**
- * One toast surface. A new message replaces the text in place and the surface morphs to fit it, so
- * a run of messages never blinks; it leaves when the last one expires. The same message twice in a
- * row keeps one line and a count, and a danger is announced at once rather than when it ends.
- *
- * `dockRows` is the open build group's row count. The phone dock grows upward to fit its list, so
- * the toast moves above that height instead of covering the first row.
- */
 export const toast = (
   value: Toast | null,
   overPanel: boolean,
@@ -32,7 +24,6 @@ export const toast = (
           h.Role(value.tone === 'danger' ? 'alert' : 'status'),
           h.DataAttribute('morph', 'notice'),
           h.DataAttribute('exit', 'notice'),
-          // A panel can fill a short screen, so the toast moves above it rather than over its actions.
           h.Attribute(
             'style',
             `--toast-bottom:${

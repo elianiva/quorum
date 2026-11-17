@@ -55,7 +55,6 @@ import { play } from './sound.ts'
 
 type Page = typeof MenuPage.Type | 'main' | 'save'
 
-/** The page the screen showed before main, so Back lands on the row that opened it. */
 let lastPage: Page = 'main'
 
 const rowsOf = (root: ParentNode) =>
@@ -63,10 +62,6 @@ const rowsOf = (root: ParentNode) =>
     ...root.querySelectorAll<HTMLElement>('.booth-list [data-row], .booth-footer [data-row]'),
   ].filter((row) => !(row instanceof HTMLButtonElement && row.disabled))
 
-/**
- * The rows the arrow keys walk. A section strip is one stop, at the tab it has chosen, so Down
- * leaves it for the section and Up returns to it instead of visiting its neighbours.
- */
 const walkOf = (root: ParentNode): ReadonlyArray<HTMLElement> => {
   const rows = rowsOf(root)
   const chosen = rows.find(
@@ -76,7 +71,6 @@ const walkOf = (root: ParentNode): ReadonlyArray<HTMLElement> => {
   return rows.filter((row) => row.dataset.tab === undefined || row === chosen)
 }
 
-/** The title's Mounts. A Scene test resolves them by hand. */
 export const BoothDriver = Mount.define('BoothDriver', {
   messages: [Message.Synced],
   execute: ({ element }) =>
@@ -100,8 +94,6 @@ export const BoothDriver = Mount.define('BoothDriver', {
           if (target instanceof Element && target !== document.body && !element.contains(target))
             return
           if (element.querySelector('.booth-term')) return
-          // A field is typed in, not navigated: Enter and the vertical arrows step out of it. A
-          // slider is the same, and its own Left and Right change the value.
           if (target instanceof HTMLInputElement) {
             if (event.key === 'Escape') {
               event.preventDefault()
@@ -126,7 +118,6 @@ export const BoothDriver = Mount.define('BoothDriver', {
           }
           light(event.key === ' ' ? 'Space' : event.key)
           play('tick')
-          // The Settings sections run sideways: Left and Right step them, where they walk the rows.
           const tab = target instanceof Element ? target.closest('[data-tab]') : null
           if (
             tab instanceof HTMLElement &&
@@ -149,7 +140,6 @@ export const BoothDriver = Mount.define('BoothDriver', {
           const chosen = element.querySelector<HTMLElement>(
             '.booth-tabs [data-tab][aria-pressed="true"]',
           )
-          // A hovered tab stands where the chosen one does: the strip is a single stop.
           const at =
             active?.dataset.tab !== undefined
               ? chosen
@@ -220,7 +210,6 @@ export const BoothDriver = Mount.define('BoothDriver', {
     ).pipe(Effect.as(Message.Synced())),
 })
 
-/** Each page puts the selection on its first row after Back, or main on the row that opened the last page. */
 export const PageMounted = Mount.define('PageMounted', {
   messages: [Message.Synced],
   execute: ({ element }) =>
@@ -287,7 +276,6 @@ type Row = Readonly<{
   danger?: boolean
 }>
 
-/** A row a range input sets, 0 to 100 in steps of five: the arrows change it, and Escape moves on. */
 const percentRow = (
   r: Readonly<{ key: string; label: string; value: number; onInput: (value: number) => Message }>,
   h: HtmlBuilder<Message>,
@@ -358,27 +346,18 @@ const backRow = (h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** A section's label over the rows it groups. A screen reader can jump between them. */
 const group = (text: string, h: HtmlBuilder<Message>): Html =>
   h.h2([h.Key(`group-${text}`), h.Class('booth-group')], [text])
 
-/** What a page says when it has nothing to list. */
 const note = (text: string, h: HtmlBuilder<Message>): Html =>
   h.p([h.Key(`note-${text}`), h.Class('booth-note')], [text])
 
-/** The hairline between sections that have no name. */
 const divider = (h: HtmlBuilder<Message>): Html =>
   h.div([h.Key('divider'), h.Class('booth-rule'), h.AriaHidden(true)], [])
 
-/** The rows of one menu section, in the order the player sees them. */
 const section = (label: string, rows: ReadonlyArray<Html>, h: HtmlBuilder<Message>) =>
   rows.length === 0 ? [] : [group(label, h), ...rows]
 
-/**
- * The install offer, once: only after the player has a Company to keep, never
- * in an installed app, and never again after they act on it. Where the browser
- * offers no dialog, the row says how that browser installs the app instead.
- */
 const installPromptRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
   if (model.pwa.installed || model.prefs.pwaPromptSeen || model.saves.companies.length === 0)
@@ -409,7 +388,6 @@ const mainRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
   const file = currentFile(model)
   const current = hasCompany(model) ? file : null
   const count = model.saves.companies.length
-  // A figure appears once there is progress behind it, never as a row of zeroes.
   const passed = SANDBOX_IDS.filter((id) => model.passed.includes(id)).length
   const solved = CHALLENGES.filter((entry) => model.founder.completed.includes(entry.id)).length
   return [
@@ -540,7 +518,6 @@ const sandboxRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
   ]
 }
 
-/** The founding screen's identity: the chosen logo, and the name above the fold. */
 const identity = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
@@ -569,7 +546,6 @@ const identity = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** A logo is one click, and each tile carries its own accessible name. */
 const logoPicker = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
@@ -637,7 +613,6 @@ const foundRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> =
   ]
 }
 
-/** The founding screen's Found action, below the list so it never covers a row. */
 const foundFooter = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const founding = foundingOf(model.founder)
@@ -659,7 +634,6 @@ const foundFooter = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** The Companies page: every file, newest first, with the one Continue opens marked. */
 const companyRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
   return [
@@ -689,7 +663,6 @@ const companyRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
 const dateOf = (file: CompanyFile): string =>
   new Date(file.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 
-/** One Company's file: what it is, then Open, then Delete behind a second press. */
 const saveRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
 
@@ -907,7 +880,6 @@ const achievementRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<H
   ]
 }
 
-/** One Settings row in the booth's own idiom: a switch says On or Off, and a link says where it goes. */
 const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -962,7 +934,6 @@ const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Ht
   }
 }
 
-/** The settings sections as a strip: the chosen one is underlined, and Left and Right step it. */
 const settingsTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
@@ -989,7 +960,6 @@ const settingsTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** Settings as sections. One section's rows show at a time, so nothing scrolls. */
 const settingsRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
   const sections = settingsSections(model, t)
@@ -1002,11 +972,6 @@ const settingsRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html
   ]
 }
 
-/**
- * Install and update sit under every settings section, because they are about
- * the whole app rather than one of its settings. An installed app with nothing
- * to update shows neither.
- */
 const pwaSettingsRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
   if (model.pwa.installed && !model.pwa.updateReady) return []
@@ -1064,17 +1029,14 @@ const pagesOf = (
   settings: { title: t.title.settings, rows: settingsRows },
 })
 
-/** The page the monitor shows. A Company file replaces the Companies list in place. */
 const pageOf = (model: Model): Page => {
   const page = menuOf(model.route)
   return page === 'companies' && model.saveFocus !== null ? 'save' : page
 }
 
-/** A page's heading: where it is, and the figure it spends or counts. */
 const crumb = (model: Model, page: Page, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
-  // The main menu is the place itself, so it has no trail to it.
   if (page === 'main') return h.empty
   const figure =
     page === 'found' || page === 'challenges' || page === 'legacy'
@@ -1107,7 +1069,6 @@ const hint = (h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** The busiest Node of the saved Design, by utilization. */
 const busiest = (t: Messages, game: Game): { name: string; load: number } | null => {
   const flow = solveFlow(game)
   let best: { name: string; load: number } | null = null
@@ -1119,7 +1080,6 @@ const busiest = (t: Messages, game: Game): { name: string; load: number } | null
   return best
 }
 
-/** The users line over the last Samples, in a 100 x 30 box. */
 const sparkOf = (game: Game): string => {
   const users = game.history.slice(-60).map((sample) => sample.users)
   if (users.length < 2) return ''
@@ -1244,7 +1204,6 @@ const taskbar = (model: Model, page: Page, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** The host the monitor connects to, and what it restores there: the Company, a Sandbox, or a Challenge. */
 const sessionOf = (model: Model): readonly [string, string] => {
   const t = copyIn(model.prefs.locale)
 
@@ -1271,7 +1230,6 @@ const sessionOf = (model: Model): readonly [string, string] => {
   ]
 }
 
-/** Leaving the title: the screen connects to the board before it opens. */
 const terminal = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const [host, line] = sessionOf(model)
@@ -1291,7 +1249,6 @@ const screen = (model: Model, h: HtmlBuilder<Message>): Html => {
 
   const page = pageOf(model)
   const open = hasCompany(model)
-  // The status column reads the open Company's Game. On a Company file, the file shows its own figures.
   const showStatus = open && page !== 'companies' && page !== 'save'
   return h.div(
     [h.Class(`booth-screen ${showStatus ? '' : 'is-new'}`)],
@@ -1340,7 +1297,6 @@ const screen = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** The keycap tops seen over the slab's front edge, with the keys the driver lights by name. */
 const keysOf = (t: Messages): ReadonlyArray<readonly [string, string?]> => [
   ['', t.title.escape],
   ...Array.from({ length: 5 }, () => [''] as const),
@@ -1381,7 +1337,6 @@ const desk = (h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** Under the keyboard: the reminder that the game simplifies on purpose. */
 const disclaimer = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.a(
@@ -1395,7 +1350,6 @@ const disclaimer = (h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** The edge of the screen: the build, the source, and the way to support it. */
 const strip = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const release = import.meta.env.VITE_SENTRY_RELEASE

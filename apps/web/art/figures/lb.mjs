@@ -1,8 +1,6 @@
 import { tools } from '../parts.mjs'
 import { HEIGHT, P as STAGE, WIDTH } from '../stage.mjs'
 
-// A load balancer: a rotary distributor. One inlet pipe feeds a drum whose rotor
-// turns to each of three outlets in turn; the rotor arm on top is lit.
 export function draw(P, { feet = true, lit = true } = {}) {
   const t = tools(P)
   const { k, G, S, L, D, at, cyl } = t
@@ -23,7 +21,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
     z,
   ]
 
-  // A receiver post: a short round housing with a cap, at each pipe's far end.
   const post = (x, y) =>
     [
       S(cyl(x, y, 5.4, 0, 1.4, 28), { tone: 'lo' }),
@@ -32,7 +29,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
       D([at([x, y, PIPE_Z + 7])], { size: 0.45, tone: 'hi' }),
     ].join('')
 
-  // The inlet comes in from the back left.
   const IN = Math.PI * 1.25
   const inEnd = along(IN, 36)
   out.push(post(inEnd[0], inEnd[1]))
@@ -40,7 +36,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   out.push(t.tube([along(IN, R + 2), along(IN, 36 - 4.2 - 0.7)], PR))
   out.push(flangeAt(along(IN, R + 1.4), inDir))
 
-  // The drum, with its base ring, two bands and the top cap.
   out.push(S(cyl(C[0], C[1], R + 3, 0, 2.6, 64, 0.5), { tone: 'mid' }))
   out.push(
     S(cyl(C[0], C[1], R, 2.6, H - 2.6, 64, 0.5), {
@@ -61,7 +56,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   const ticks = k.radialTicks(C[0], C[1], R - 1.2, 36, 3, H, [1.2, 2.6], P)
   out.push(L(ticks.minor, { tone: 'lo' }), L(ticks.major, { tone: 'mid' }))
   out.push(L(k.ring(C[0], C[1], R - 4.4, H, P, 48), { tone: 'faint' }))
-  // The rotor: a hub with an arm that points at the active outlet.
   const OUTS = [-Math.PI * 0.2, Math.PI * 0.05, Math.PI * 0.3]
   const aim = OUTS[1]
   const ux = Math.cos(aim)
@@ -80,7 +74,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   out.push(L(k.knurl(C[0], C[1], 4.4, H, H + 3, 22, P, 0.4), { tone: 'lo' }))
   out.push(D([at([C[0], C[1], H + 3])], { size: 0.5, tone: 'hi' }))
 
-  // Three outlets to the front, nearest last.
   const outlets = OUTS.map((angle) => ({ angle, end: along(angle, 40) })).sort(
     (a, b) => t.depth(a.end) - t.depth(b.end),
   )

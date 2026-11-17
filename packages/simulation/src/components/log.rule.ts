@@ -4,10 +4,6 @@ import { LOG_ACKS, LOG_PARTITIONS, LOG_REPLICAS, LOG_RETENTION } from '../catalo
 import { warming } from '../life.ts'
 import { isDown } from '../lookups.ts'
 
-/**
- * An Event Stream's partitions, acknowledgements, retention and partition key (07 "Event Stream").
- * Each one trades parallelism or durability against order, disk, and the window a consumer has.
- */
 export const setLogOptions = (
   game: Game,
   id: string,

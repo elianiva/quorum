@@ -9,28 +9,21 @@ export type Commit = Readonly<{
   body: string
 }>
 
-/** One day of the changelog, as a reader reads it. */
 export type Entry = Readonly<{ day: string; body: string }>
 
 const REPOSITORY = 'https://github.com/elianiva/quorum'
 const COMMIT_PREFIX = `${REPOSITORY}/commit/`
-/** Days the short page shows. */
-export const RECENT_ENTRIES = 7
-/** Words one day's entry may hold. */
-export const MAX_WORDS = 400
-/** Characters of one commit's patch that the writer reads. */
-const PATCH_PER_COMMIT = 1500
-/** Characters of all patches that the writer reads. */
-const PATCH_TOTAL = 24000
-/** Characters of the whole commit list that the writer reads. */
-const BRIEF_TOTAL = 60000
+export const RECENT_ENTRY_DAYS = 7
+export const MAX_WORDS_PER_ENTRY = 400
+const PATCH_CHARS_PER_COMMIT = 1500
+const PATCH_CHARS_TOTAL = 24000
+const BRIEF_CHARS_TOTAL = 60000
 
 const ENTRY_DIR = new URL('../changelog/', import.meta.url)
 const BRIEF_DIR = new URL('../.changelog/', import.meta.url)
 const RECENT_PAGE = new URL('../content/about/changelog.md', import.meta.url)
 const ALL_PAGE = new URL('../content/about/changelog/all.md', import.meta.url)
 
-/** The UTC day, as `YYYY-MM-DD`, of an ISO date. */
 export const dayOf = (iso: string): string => new Date(iso).toISOString().slice(0, 10)
 
 const longDate = (day: string): string =>
@@ -50,7 +43,6 @@ const frontmatter = (title: string, summary: string, order: number): string =>
     'section: about',
     `order: ${order}`,
     'aliases: changes, updates, release notes, patch notes, what is new',
-    // The entries carry their own section headings; the contents rail lists the days only.
     'toc: top',
     '---',
   ].join('\n')
@@ -61,15 +53,13 @@ const RECENT_INTRO =
 const ALL_INTRO =
   'Every day that changed Quorum, newest first. The [changelog](/about/changelog) shows only the latest days.'
 
-/** The short page: the latest entries, newest first. */
 export const renderRecent = (entries: ReadonlyArray<Entry>): string => {
   const sections = entries
-    .slice(0, RECENT_ENTRIES)
+    .slice(0, RECENT_ENTRY_DAYS)
     .map((entry) => [`## ${longDate(entry.day)}`, entry.body.trim()].join('\n\n'))
   return `${[frontmatter('Changelog', 'What changed in Quorum over the last few days.', 3), RECENT_INTRO, ...sections].join('\n\n')}\n`
 }
 
-/** The full page: every entry, newest first. */
 export const renderAll = (entries: ReadonlyArray<Entry>): string => {
   const sections = entries.map((entry) =>
     [`## ${longDate(entry.day)}`, entry.body.trim()].join('\n\n'),
@@ -79,7 +69,6 @@ export const renderAll = (entries: ReadonlyArray<Entry>): string => {
 
 const entryName = (day: string): string => `${day}.md`
 
-/** Every entry on disk, newest first. */
 export const readEntries = (): ReadonlyArray<Entry> =>
   readdirSync(ENTRY_DIR)
     .filter((name) => /^\d{4}-\d{2}-\d{2}\.md$/.test(name))
@@ -94,7 +83,6 @@ const run = (args: ReadonlyArray<string>): string =>
 
 const LOG_FORMAT = '%H%x1f%aI%x1f%s%x1f%b%x1e'
 
-/** Every non-merge commit, newest first. */
 const history = (): ReadonlyArray<Commit> =>
   run(['log', '--no-merges', `--format=${LOG_FORMAT}`])
     .split('\x1e')
@@ -105,7 +93,6 @@ const history = (): ReadonlyArray<Commit> =>
       return { hash, date, subject, body: body.join('\x1f').trim() }
     })
 
-/** The commits a UTC day holds, newest first. */
 export const commitsOn = (day: string): ReadonlyArray<Commit> =>
   history().filter((commit) => dayOf(commit.date) === day)
 
@@ -116,7 +103,6 @@ const filesOf = (hash: string): ReadonlyArray<string> =>
     .map((line) => line.split('\t')[2] ?? '')
     .filter(Boolean)
 
-/** A change a player can meet, rather than a test, a doc, or the build. */
 const playerFacing = (files: ReadonlyArray<string>): boolean => {
   const code = files.filter(
     (file) =>
@@ -141,16 +127,14 @@ const patchOf = (hash: string): string =>
   run(['show', '--format=', '--unified=1', '--no-color', hash])
     .replace(/^diff --git .*$/gm, '')
     .trim()
-    .slice(0, PATCH_PER_COMMIT)
+    .slice(0, PATCH_CHARS_PER_COMMIT)
 
-/** The commits a player could meet. The brief leaves the rest out so the writer can cover more. */
 export const playerCommits = (day: string): ReadonlyArray<Commit> =>
   commitsOn(day).filter((commit) => playerFacing(filesOf(commit.hash)))
 
-/** What the writer reads about one day: every player-visible commit, with a patch. */
 export const briefOf = (day: string): string => {
   const commits = playerCommits(day)
-  let budget = PATCH_TOTAL
+  let budget = PATCH_CHARS_TOTAL
   const blocks = commits.map((commit) => {
     const files = filesOf(commit.hash)
     const patch = budget > 0 ? patchOf(commit.hash) : ''
@@ -163,13 +147,11 @@ export const briefOf = (day: string): string => {
       ...(patch === '' ? [] : ['Patch:', patch]),
     ].join('\n')
   })
-  return blocks.join('\n\n').slice(0, BRIEF_TOTAL)
+  return blocks.join('\n\n').slice(0, BRIEF_CHARS_TOTAL)
 }
 
-/** The Keep a Changelog sections an entry may use. */
 export const KINDS = ['Added', 'Changed', 'Deprecated', 'Removed', 'Fixed', 'Security'] as const
 
-/** Why an entry cannot ship, as the messages to hand back to the writer. */
 export const problemsIn = (body: string, commits: ReadonlyArray<Commit>): ReadonlyArray<string> => {
   const text = body.trim()
   const problems: Array<string> = []
@@ -200,7 +182,8 @@ export const problemsIn = (body: string, commits: ReadonlyArray<Commit>): Readon
       problems.push(`the ${kind} section is not a bullet list`)
   }
   const words = text.split(/\s+/).filter(Boolean).length
-  if (words > MAX_WORDS) problems.push(`the entry has ${words} words; the limit is ${MAX_WORDS}`)
+  if (words > MAX_WORDS_PER_ENTRY)
+    problems.push(`the entry has ${words} words; the limit is ${MAX_WORDS_PER_ENTRY}`)
   for (const bullet of text.split('\n').filter((line) => line.startsWith('- ')))
     if (!/github\.com\/elianiva\/quorum\/commit\/[0-9a-f]{40}/.test(bullet))
       problems.push(`a bullet links no commit: ${bullet.slice(0, 60)}`)
@@ -237,7 +220,6 @@ type Message = Readonly<{ role: 'system' | 'user'; content: string }>
 const COMMIT_LINK =
   /\[([0-9a-f]{40})\]\((https:\/\/github\.com\/elianiva\/quorum\/commit\/[0-9a-f]{40})\)/g
 
-/** The prompt asks for 7-character links and plain hyphens; make sure of both. */
 export const tidy = (reply: string, commits: ReadonlyArray<Commit>): string => {
   const known = new Set(commits.map((commit) => commit.hash))
   return reply
@@ -367,8 +349,6 @@ ${briefOf(day)}`
     writeFileSync(new URL(`${day}.rejected.md`, BRIEF_DIR), `${reply}\n`)
     throw new Error(`The entry for ${day} cannot ship: ${problems.join('; ')}`)
   }
-  // The writer reads the patches and names their internals. The editor sees only the draft, so it
-  // can trim the code words without learning new ones. A failed edit keeps the draft.
   const edited = tidy(
     await ask(settings, [
       { role: 'system', content: EDITOR },
@@ -382,7 +362,6 @@ ${briefOf(day)}`
   return reply
 }
 
-/** The entry to ship when the model cannot write one: the day's player-facing commits. */
 export const fallbackEntry = (commits: ReadonlyArray<Commit>): string =>
   [
     '### Changed',
@@ -395,7 +374,6 @@ export const fallbackEntry = (commits: ReadonlyArray<Commit>): string =>
       ),
   ].join('\n')
 
-/** Writes one day's entry, or returns null when the day has nothing to say. */
 export const writeEntry = async (day: string, force = false): Promise<string | null> => {
   const target = new URL(entryName(day), ENTRY_DIR)
   if (existsSync(target) && !force) return null
@@ -407,7 +385,6 @@ export const writeEntry = async (day: string, force = false): Promise<string | n
   try {
     entry = await entryFor(day, commits)
   } catch (error) {
-    // A missing model key must not stop the changelog. The commit list is plain, but it ships.
     console.error(`The model could not write ${day}; using the commit list.`, error)
     entry = fallbackEntry(playerCommits(day))
   }
@@ -417,7 +394,6 @@ export const writeEntry = async (day: string, force = false): Promise<string | n
   return fileURLToPath(target)
 }
 
-/** Writes both pages from the entries on disk. */
 export const renderPages = (): void => {
   const entries = readEntries()
   writeFileSync(RECENT_PAGE, renderRecent(entries))
@@ -430,7 +406,6 @@ const yesterday = (): string => {
   return now.toISOString().slice(0, 10)
 }
 
-/** The day to write: the first argument, or yesterday in UTC. */
 const dayArg = (value: string | undefined): string => {
   if (value === undefined) return yesterday()
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error(`"${value}" is not a YYYY-MM-DD day`)

@@ -1,6 +1,3 @@
-// Runs the golden Company and every Challenge's reference replay in workerd, the
-// Workers runtime, and compares them with the hashes Node computes. Wall time
-// is measured from here: inside a Worker the clock stops while code runs.
 import { spawn } from 'node:child_process'
 import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -27,7 +24,6 @@ await build({
   target: 'es2022',
   outfile: join(dir, 'worker.js'),
   logLevel: 'error',
-  // The solver stays a module of its own: workerd compiles it, as the Workers runtime does.
   plugins: [
     {
       name: 'solver',

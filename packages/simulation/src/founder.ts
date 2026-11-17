@@ -30,18 +30,13 @@ export const Founder = Schema.Struct({
   perks: withDefault(Schema.Record(Schema.String, Schema.Finite), {}),
   venture: withDefault(VentureSchema, 'b2b-saas'),
   chosen: withDefault(Schema.Array(MutatorSchema), []),
-  /** Research Institutional knowledge carries into the next Company. */
   keep: withDefault(Schema.Array(ResearchSchema), []),
   playbooks: withDefault(Schema.Array(Playbook), []),
   history: withDefault(Schema.Array(HistoryRow), []),
   erasReached: withDefault(Schema.Array(Schema.Finite), []),
-  /** Challenges completed once, for their badge and first-completion Legacy. */
   completed: withDefault(Schema.Array(Schema.String), []),
-  /** A random id the browser makes once; Challenge histograms count one best per device. */
   deviceId: withDefault(Schema.String, ''),
-  /** Achievements earned in any Company or Challenge (14 "Achievements"). */
   achievements: withDefault(Schema.Array(Schema.Literals(ACHIEVEMENT_IDS)), []),
-  /** Counts the counting achievements need, across Companies. */
   stats: withDefault(
     Schema.Struct({
       postmortems: Schema.Finite,
@@ -63,7 +58,6 @@ const no = (reason: string): Change => Result.fail(Refusal.NotAllowed({ reason }
 
 export const levelOf = (founder: Founder, id: PerkId): number => founder.perks[id] ?? 0
 
-/** The next level's price, or null at the top. */
 export const perkPrice = (founder: Founder, id: PerkId): number | null =>
   PERKS[id].costs[levelOf(founder, id)] ?? null
 
@@ -78,11 +72,9 @@ export const buyPerk = (founder: Founder, id: PerkId): Change => {
   })
 }
 
-/** Picks the Venture the next Company is founded with. Every Venture is open. */
 export const chooseVenture = (founder: Founder, id: VentureId): Change =>
   founder.venture === id ? ok(founder) : ok({ ...founder, venture: id })
 
-/** Turns a Mutator on or off for the next Company. Every Mutator is open. */
 export const toggleMutator = (founder: Founder, id: MutatorId): Change =>
   ok({
     ...founder,
@@ -105,31 +97,26 @@ export const toggleKeep = (founder: Founder, id: ResearchId): Change => {
   return ok({ ...founder, keep: [...founder.keep, id] })
 }
 
-/** An Exit: Legacy, a history row, and the research the next Company starts with. */
 export const recordExit = (founder: Founder, result: ExitResult): Founder => ({
   ...founder,
   legacy: founder.legacy + result.legacy,
   earned: founder.earned + result.legacy,
   history: [...founder.history, result.row],
-  // Research kept from an earlier Company does not carry twice.
   keep: [],
 })
 
-/** Earns achievements. Already-earned ones change nothing. */
 export const earnAchievements = (founder: Founder, ids: ReadonlyArray<AchievementId>): Founder => {
   const fresh = ids.filter((id, at) => !founder.achievements.includes(id) && ids.indexOf(id) === at)
   if (fresh.length === 0) return founder
   return { ...founder, achievements: [...founder.achievements, ...fresh] }
 }
 
-/** What the next Company is founded with. */
 export const foundingOf = (founder: Founder): Founding => ({
   venture: founder.venture,
   mutators: founder.chosen.filter((id) => MUTATOR_IDS.includes(id)),
   perks: founder.perks,
 })
 
-/** Founding a Company spends the kept research. */
 export const founded = (founder: Founder): Founder => ({ ...founder, keep: [] })
 
 export const playbookSlots = (founder: Founder): number =>
@@ -147,13 +134,11 @@ export const removePlaybook = (founder: Founder, index: number): Founder => ({
   playbooks: founder.playbooks.filter((_, at) => at !== index),
 })
 
-/** Notes an Era reached in a Company. */
 export const recordEra = (founder: Founder, stage: number): Founder =>
   founder.erasReached.includes(stage)
     ? founder
     : { ...founder, erasReached: [...founder.erasReached, stage] }
 
-/** A Challenge completed: its badge, its Legacy the first time only, and Five Nines. */
 export const completeChallenge = (founder: Founder, id: string, legacy: number): Founder => {
   const done = founder.completed.includes(id)
     ? founder

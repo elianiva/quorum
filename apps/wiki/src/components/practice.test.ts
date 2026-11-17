@@ -1,8 +1,6 @@
 import { expect, test } from 'vitest'
 import { PracticeEvent, complete, goals, start, update, type Practice } from './practice.ts'
 
-/* The Practice boards drive the game's own actions: placing, Links, refusals, moving, cutting. */
-
 const run = (p: Practice, ...events: ReadonlyArray<PracticeEvent>): Practice =>
   events.reduce(update, p)
 
@@ -22,7 +20,6 @@ test('place: arming and clicking spends Cash, and both goals finish the board', 
   expect(goals(p).map((goal) => goal.done)).toEqual([true, false])
   p = run(p, PracticeEvent.Arm({ type: 'database' }), PracticeEvent.Place({ x: 400, y: 120 }))
   expect(complete(p)).toBe(true)
-  // Placing never lands on a card.
   const [a, b] = p.game.nodes.slice(-2)
   expect(a && b && (a.x !== b.x || a.y !== b.y)).toBe(true)
 })
@@ -81,7 +78,6 @@ test('wire: linking the Load Balancers in a circle shows the loop refusal and fi
 })
 
 test('a Link that closes a circle is refused as a loop', () => {
-  // Only Nodes that pass requests on can loop: two Load Balancers, each linked into the other.
   let p = start('place')
   p = { ...p, game: { ...p.game, researched: ['load-balancing'] } }
   p = run(p, PracticeEvent.Arm({ type: 'lb' }), PracticeEvent.Place({ x: 400, y: 100 }))

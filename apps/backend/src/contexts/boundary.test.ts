@@ -5,14 +5,9 @@ import { expect, test } from 'vitest'
 
 const contextsRoot = dirname(fileURLToPath(import.meta.url))
 
-/** Adapters the deployment owns, and Sentry (ADR 0013); contexts must stay platform-agnostic. */
 const importsAdapter =
   /(?:\bfrom\s+|\bimport\s*\(?\s*)['"](?:alchemy(?:\/|['"])|cloudflare:|@cloudflare\/|@sentry\/|wrangler)/
 
-/**
- * `@cloudflare/workers-types` is ambient in this package, so a context can name
- * a host type without importing anything. Keep those names at the edge.
- */
 const namesHostType =
   /\b(?:D1Database|R2Bucket|KVNamespace|DurableObjectState|DurableObjectStorage|DurableObjectNamespace|ExecutionContext|Fetcher|SqlStorage|AnalyticsEngineDataset|Ai)\b/
 

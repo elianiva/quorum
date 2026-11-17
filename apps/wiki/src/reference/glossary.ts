@@ -16,9 +16,6 @@ import {
 } from './shared.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* One page per engineering term, and a hub grouped by category. The game links its terms here. */
-
-/** The English heading of each category, which anchors it in every language. */
 const CATEGORY_NAMES: Readonly<Record<(typeof GLOSSARY_CATEGORIES)[number], string>> = {
   performance: 'Performance',
   reliability: 'Reliability',
@@ -142,11 +139,9 @@ const entity = (l: Lang, entry: GlossaryEntry, order: number): Page => {
 
 export const glossaryPages = (l: Lang): ReadonlyArray<Page> => {
   const t = l.t.reference.glossary
-  // Every page the glossary lists: the engineering terms, then the CVEs the Simulation can disclose.
   const terms: ReadonlyArray<GlossaryEntry> = [...l.cat.GLOSSARY, ...CVE_TERMS]
   const sorted = [...terms].sort((a, b) => a.term.localeCompare(b.term, l.locale))
   const entities = terms.map((entry, index) => entity(l, entry, index))
-  // A category's heading is anchored by its English name.
   const categories = GLOSSARY_CATEGORIES.map((category) =>
     titleOf(CATEGORY_NAMES[category], l.t.reference.categories[category]),
   )

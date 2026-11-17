@@ -1,8 +1,3 @@
-/**
- * The labels of Design changes the Model stores in English: the Dashboard marks them and the undo
- * history keeps them. `game/update` writes them from this English copy, and `changeIn` reads them
- * back into the player's language on display, so a change made before a language switch follows it.
- */
 export const changes = {
   leverRaised: (lever: string) => `Raised the ${lever} lever`,
   leverLowered: (lever: string) => `Lowered the ${lever} lever`,

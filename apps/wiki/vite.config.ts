@@ -16,8 +16,6 @@ import type { OgCard } from './src/og-card.ts'
 import type { Page } from './src/page.ts'
 import { WIKI_ORIGIN } from './src/site.ts'
 
-/** The day each file in the repository last changed, from one pass over the git history. A
-    shallow clone gives wrong dates, so the deploy fetches the full history (ci.yml). */
 const lastChanged = (): Map<string, string> => {
   const dates = new Map<string, string>()
   let day = ''
@@ -33,9 +31,6 @@ const lastChanged = (): Map<string, string> => {
   return dates
 }
 
-/* After Foldkit writes the HTML, write llms.txt, a .md twin of every page, the sitemap, and the
-   search index of each language beside them. The files come from the built server entry
-   (src/markdown.ts, src/entry.server.ts). The Markdown files are English. */
 const staticFiles = (): Plugin => ({
   name: 'wiki:static-files',
   apply: 'build',
@@ -95,7 +90,6 @@ const staticFiles = (): Plugin => ({
   },
 })
 
-/* The dev server builds the same indexes on demand, so search works without a build. */
 const INDEX_LOCALES: Readonly<Record<string, Locale>> = {
   '/search-index.json': 'en',
   '/es/search-index.json': 'es',
@@ -109,8 +103,6 @@ const searchIndexDev = (): Plugin => ({
       const locale = INDEX_LOCALES[(request.url ?? '').split('?')[0] ?? '']
       if (locale === undefined) return next()
       void (async () => {
-        // A translated language registers its copy and prose when its bundle loads.
-        // English ships in the main chunk.
         if (locale !== 'en') await server.ssrLoadModule(`/src/locales/${locale}.ts`)
         const { pagesFor } = (await server.ssrLoadModule('/src/pages.ts')) as {
           pagesFor: (locale: Locale) => ReadonlyArray<Page>
@@ -126,17 +118,12 @@ const searchIndexDev = (): Plugin => ({
   },
 })
 
-/* Every page is rendered at build time from src/entry.server.ts and hydrated by src/entry.ts
-   (ADR 0009). Markdown in content/ compiles to data, validated against the frontmatter and
-   island schemas, so a bad page fails the build. */
 export default defineConfig(({ command }) => ({
   plugins: [
     pandacss({ codegen: false }),
     simVersion(),
     contentIndex(),
     foldkit({
-      // A dev server restart would otherwise mint a new build id while the browser still holds the
-      // cached dependency with the old one, and hydration refuses the page. Builds stay unique.
       ...(command === 'serve' ? { buildId: 'development' } : {}),
       ssr: {
         serverEntry: '/src/entry.server.ts',
@@ -152,15 +139,8 @@ export default defineConfig(({ command }) => ({
   build: {
     rollupOptions: {
       output: {
-        // The catalog is data every page may read. The rest of the Simulation (state, director,
-        // solve) is for a live board only: pin it to a chunk that the entry never imports, so a
-        // shared board module cannot drag it into the first load.
         manualChunks(id) {
-          // The view-identity helper is the only Foldkit module the boot entry imports. Give it a
-          // chunk of its own so the home page does not fetch the framework or the catalog for it.
           if (id.includes('/foldkit/dist/brand/')) return 'brand'
-          // The framework is needed on every page; its own chunk keeps the shared runtime from
-          // landing in the Simulation chunk and pulling the engine into the first load.
           if (id.includes('/node_modules/.pnpm/effect@')) return 'framework'
           if (id.includes('/node_modules/.pnpm/@effect+')) return 'framework'
           if (id.includes('/node_modules/.pnpm/foldkit@')) return 'framework'

@@ -2,14 +2,6 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { expect, test } from 'vitest'
 import { COMPONENT_IDS, COMPONENTS } from '../src/catalog.ts'
 
-/*
- * The layout of "one file per Component": each id has a data file, `components/<id>.ts`, and the
- * Actions and helpers only it has live in `components/<id>.rule.ts`. The solve itself runs in the
- * solver (`solver/`). The data file is imported by the catalog, so it must not
- * import anything that imports the catalog back (the solver, the lookups, the state): that is an
- * import cycle, and it crashes at load.
- */
-
 const dir = new URL('../src/components/', import.meta.url)
 const read = (name: string) => readFileSync(new URL(name, dir), 'utf8')
 const importsOf = (text: string) =>

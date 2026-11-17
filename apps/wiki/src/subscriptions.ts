@@ -6,8 +6,6 @@ import { Subscription } from 'foldkit'
 import { Message, type Model } from './main.ts'
 import * as Search from './submodels/search.ts'
 
-/* "/" or Ctrl/Cmd+K focuses the search, as on most documentation sites; Escape closes the results. */
-
 const keys = Stream.callback<Message>((queue) =>
   Effect.gen(function* () {
     yield* Effect.acquireRelease(

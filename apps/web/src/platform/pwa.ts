@@ -1,9 +1,3 @@
-/**
- * The browser side of the PWA: install, update, connection state, and the app
- * badge. Nothing here reads the game's Model, and every browser API is
- * guarded, so tests run without a DOM.
- */
-
 export type PwaSnapshot = Readonly<{
   installable: boolean
   installed: boolean
@@ -13,7 +7,6 @@ export type PwaSnapshot = Readonly<{
 
 export type InstallOutcome = 'accepted' | 'dismissed' | 'unavailable'
 
-/** The install instructions a browser needs, which is its own copy in five languages. */
 export type BrowserFamily =
   | 'iosSafari'
   | 'iosOther'
@@ -24,11 +17,9 @@ export type BrowserFamily =
 
 export type DisplayMode = 'standalone' | 'browser'
 
-/** An installed app is a standalone window, a fullscreen one, or a minimal-ui one. */
 const INSTALLED_QUERY =
   '(display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui), (display-mode: window-controls-overlay)'
 
-/** The parts of the install and badge APIs that the DOM lib does not describe. */
 type InstallPromptEvent = Event &
   Readonly<{
     prompt: () => Promise<void>
@@ -60,7 +51,6 @@ const emit = (): void => {
   for (const listener of listeners) listener()
 }
 
-/** A page in a standalone window, a fullscreen one, or an installed iOS app. */
 export const displayModeOf = (standalone: boolean, iosStandalone: boolean): DisplayMode =>
   standalone || iosStandalone ? 'standalone' : 'browser'
 
@@ -71,10 +61,6 @@ export const displayMode = (): DisplayMode => {
   return displayModeOf(standalone, (navigator as BrowserNavigator).standalone === true)
 }
 
-/**
- * Which install instructions fit this browser. iPadOS reports a Macintosh user
- * agent, so a Mac with a touch screen counts as iOS.
- */
 export const browserFamily = (
   userAgent: string,
   platform: string,
@@ -84,7 +70,6 @@ export const browserFamily = (
   if (ios) return /(?:CriOS|FxiOS|EdgiOS|OPiOS)/.test(userAgent) ? 'iosOther' : 'iosSafari'
   if (/Android/.test(userAgent)) return /(?:Chrome|CriOS)/.test(userAgent) ? 'android' : 'other'
   if (/Chrome\/|Chromium\/|Edg\//.test(userAgent)) return 'chromium'
-  // Safari on macOS adds the site from the File menu, unlike Firefox, which has no install.
   if (/Safari\//.test(userAgent) && !/Firefox\//.test(userAgent)) return 'safariMac'
   return 'other'
 }
@@ -108,7 +93,6 @@ export const pwaSnapshot = (): PwaSnapshot => ({
 })
 
 const onPrompt = (event: Event): void => {
-  // Chromium shows its own mini-infobar without this. The game asks in its own words instead.
   event.preventDefault()
   deferred = event as InstallPromptEvent
   state.installable = true
@@ -137,7 +121,6 @@ const watchWorker = (worker: ServiceWorker | null): void => {
 }
 
 const watchRegistration = (found: ServiceWorkerRegistration): void => {
-  // Another tab may have installed the new worker before this one loaded.
   if (found.waiting && navigator.serviceWorker.controller) {
     state.updateReady = true
     emit()
@@ -153,8 +136,6 @@ const registerWorker = (): void => {
     .then((found) => {
       registration = found
       watchRegistration(found)
-      // `updatefound` reaches the registration object the page asked for, which is not always the
-      // one `register()` returned. A local check of `waiting` catches the worker either way.
       const checkWaiting = (): void => {
         if (!state.updateReady && found.waiting && navigator.serviceWorker.controller) {
           state.updateReady = true
@@ -163,7 +144,6 @@ const registerWorker = (): void => {
       }
       checkWaiting()
       window.setInterval(checkWaiting, 10_000)
-      // The browser checks on its own at most once a day. A long game session checks sooner.
       window.setInterval(
         () => {
           void found.update().catch(() => undefined)
@@ -174,7 +154,6 @@ const registerWorker = (): void => {
     .catch(() => undefined)
 }
 
-/** Starts the listeners once. Registration is production only; dev runs without a worker. */
 export const startPwa = (): void => {
   if (started || typeof window === 'undefined' || typeof navigator === 'undefined') return
   started = true
@@ -185,7 +164,6 @@ export const startPwa = (): void => {
   window.addEventListener('offline', onConnection)
   if ('serviceWorker' in navigator)
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      // A first install also claims the page. Only the player's update reloads it.
       if (!reloadWanted || reloaded) return
       reloaded = true
       window.location.reload()
@@ -193,7 +171,6 @@ export const startPwa = (): void => {
   registerWorker()
 }
 
-/** Calls `listener` with the state now and after every change. */
 export const watchPwa = (listener: (snapshot: PwaSnapshot) => void): (() => void) => {
   startPwa()
   const notify = (): void => listener(pwaSnapshot())
@@ -204,7 +181,6 @@ export const watchPwa = (listener: (snapshot: PwaSnapshot) => void): (() => void
   }
 }
 
-/** Opens the browser's install dialog, if it offered one. */
 export const promptInstall = async (): Promise<InstallOutcome> => {
   const event = deferred
   if (event === null) return 'unavailable'
@@ -223,10 +199,6 @@ export const promptInstall = async (): Promise<InstallOutcome> => {
   }
 }
 
-/**
- * Asks the waiting worker to activate. The page reloads once on
- * `controllerchange`, and only because the player asked for this update.
- */
 export const requestPwaUpdate = async (): Promise<void> => {
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
   const found = registration ?? (await navigator.serviceWorker.getRegistration('/'))
@@ -236,7 +208,6 @@ export const requestPwaUpdate = async (): Promise<void> => {
   waiting.postMessage({ type: 'SKIP_WAITING' })
 }
 
-/** The unread Inbox letters on the app icon. Clears the badge when there are none. */
 export const syncAppBadge = (unread: number): void => {
   if (typeof navigator === 'undefined') return
   const api = navigator as BrowserNavigator
@@ -252,7 +223,5 @@ export const syncAppBadge = (unread: number): void => {
           : api.setAppBadge(0)
         : api.setAppBadge(count)
     void result?.catch(() => undefined)
-  } catch {
-    // A browser that refuses the badge keeps the count in the Inbox.
-  }
+  } catch {}
 }

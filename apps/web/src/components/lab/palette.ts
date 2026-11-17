@@ -18,10 +18,6 @@ import {
 import { partCells } from './part-row.ts'
 import type { Model } from '@/game/model.ts'
 
-/**
- * The search field takes the keyboard when the palette opens, and the list
- * follows the highlighted row, so the arrows never move past the fold.
- */
 export const PaletteFocus = Mount.define('PaletteFocus', {
   messages: [Message.Synced],
   execute: ({ element }) =>
@@ -42,7 +38,6 @@ export const PaletteFocus = Mount.define('PaletteFocus', {
           attributes: true,
           attributeFilter: ['data-palette-active'],
         })
-        // Tab stays in the field: the rows are arrows and Enter, not a tab order.
         const keep = (event: KeyboardEvent) => {
           if (event.key !== 'Tab') return
           event.preventDefault()
@@ -58,7 +53,6 @@ export const PaletteFocus = Mount.define('PaletteFocus', {
     ).pipe(Effect.as(Message.Synced())),
 })
 
-/** The keys the board runs it with, in the app's keycap. */
 const shortcut = (command: PaletteCommand, h: HtmlBuilder<Message>): Html =>
   command.keys === undefined
     ? h.empty
@@ -89,7 +83,6 @@ const shortcut = (command: PaletteCommand, h: HtmlBuilder<Message>): Html =>
         ),
       )
 
-/** What Enter does to the highlighted row: its one action, in the ink fill. */
 const runHint = (h: HtmlBuilder<Message>): Html =>
   h.span(
     [
@@ -120,7 +113,6 @@ const runHint = (h: HtmlBuilder<Message>): Html =>
     ],
   )
 
-/** Every other row: the mark in a quiet tile, then its name. */
 const plainCell = (
   command: PaletteCommand,
   active: boolean,
@@ -180,7 +172,6 @@ const plainCell = (
   ),
 ]
 
-/** One row: the mark, its name, its shortcut, and what Enter does to it. */
 const row = (command: PaletteCommand, active: boolean, h: HtmlBuilder<Message>): Html =>
   h.button(
     [
@@ -243,7 +234,6 @@ const row = (command: PaletteCommand, active: boolean, h: HtmlBuilder<Message>):
     ],
   )
 
-/** The rows, grouped by area in the order the palette lists them. */
 const results = (
   rows: ReadonlyArray<PaletteCommand>,
   active: PaletteCommand | null,
@@ -317,7 +307,6 @@ const results = (
   )
 }
 
-/** The command palette over the board: one search field, and every action grouped by area. */
 export const commandPalette = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   if (!model.palette.open) return h.empty

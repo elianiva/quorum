@@ -2,8 +2,6 @@ import { tools } from '../parts.mjs'
 import { HEIGHT, P as STAGE, WIDTH } from '../stage.mjs'
 import { pack } from './database.mjs'
 
-// A read replica: a smaller twin disk pack driven from the master's spindle by a
-// shaft and coupling, so it turns in step. The replica's reading arm is lit.
 export function draw(P, { feet = true, lit = true } = {}) {
   const t = tools(P)
   const { G, S, D } = t
@@ -16,7 +14,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   const master = { c: MASTER, r: 21, levels: 4, gap: 7.4, motor: 11 }
   const replica = { c: REPLICA, r: 16, levels: 4, gap: 6.2, motor: 11, pivot: [40, -29], lit }
 
-  // The drive shaft between the two motors, on two pillow blocks, with a coupling.
   const SHAFT_Z = 6
   const dir = G.unit3([REPLICA[0] - MASTER[0], REPLICA[1] - MASTER[1], 0])
   const F = G.frameAlong([MASTER[0], MASTER[1], SHAFT_Z], dir)

@@ -4,9 +4,6 @@ import type { Attribute, ChildAttribute, Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
 
-// Re-export the @foldkit/ui Dialog submodel surface so a foldcn Dialog is a
-// drop-in for wiring `h.submodel`.
-
 export const Model = FoldkitDialog.Model
 export type Model = typeof Model.Type
 
@@ -18,7 +15,6 @@ export type OutMessage = typeof OutMessage.Type
 
 export const init = (config: InitConfig): Model =>
   FoldkitDialog.init({ isAnimated: true, ...config })
-/** Starts open; fold the result into the parent with Update.foldChildInit. */
 export const boot = (config: InitConfig) => FoldkitDialog.boot({ isAnimated: true, ...config })
 export const update = FoldkitDialog.update
 export const open = FoldkitDialog.open
@@ -30,9 +26,6 @@ export const view = FoldkitDialog.view
 export type InitConfig = FoldkitDialog.InitConfig
 export type RenderInfo = FoldkitDialog.RenderInfo
 
-/** foldkit delta: the host <dialog> element's own chrome (upstream Root renders
- *  nothing). Backdrop/panel are fixed-position; this only neutralizes the
- *  native dialog box. */
 export const dialogClass = css({
   backgroundColor: 'transparent',
   padding: '0',
@@ -43,11 +36,6 @@ export const dialogClass = css({
   },
 })
 
-// The @foldkit/ui Dialog defers Animation submodel attributes onto the
-// backdrop/panel elements: `data-enter` while entering, `data-leave` while
-// leaving (never `data-state`). The sync script rewrites upstream's
-// `data-open:`/`data-closed:` animation utilities to these windows during token
-// sync; persistent `data-open:` styling passes through untouched.
 export const dialogBackdropClass = cx(
   css({
     backgroundColor: 'color-mix(in oklab, #000 10%, transparent)',
@@ -86,8 +74,6 @@ export const dialogPanelClass = cx(
   'enter-modal',
 )
 
-/** Upstream renders its close control as `<Button variant="ghost" size="icon-sm"
- *  className="cn-dialog-close">`; compose the same tokens here. */
 export const dialogCloseButtonClass = css({
   borderWidth: '1px',
   borderStyle: 'solid',
@@ -181,24 +167,8 @@ export const dialogFooterClass = css({
   },
 })
 
-// These abstract away element types, base classes, and attribute spreading.
-// Use inside `styledViewInputs` content callbacks:
-//
-//   content: (render, h) => [
-//     Dialog.header({}, [
-//       Dialog.title({ attributes: render.title }, ['Title'], h),
-//       Dialog.description({ attributes: render.description }, ['Subtitle'], h),
-//     ], h),
-//     Dialog.footer({}, [button(...)], h),
-//   ]
-//
-// Every builder follows one shape: `(config, children, h)`. Attribute
-// bundles handed to you by `styledViewInputs` go in `config.attributes`.
-
 type StyleConfig<M> = Readonly<{
   className?: string
-  /** Submodel-provided attributes (from the `styledViewInputs` content
-   *  callback render bundle) to merge onto the element. */
   attributes?: ReadonlyArray<Attribute<M> | ChildAttribute>
 }>
 
@@ -212,7 +182,6 @@ export const header = <M>(
     children,
   )
 
-/** Dialog title — merges with the submodel's title attributes. */
 export const title = <M>(
   config: StyleConfig<M>,
   children: ReadonlyArray<Child>,
@@ -227,7 +196,6 @@ export const title = <M>(
     children,
   )
 
-/** Dialog description — merges with the submodel's description attributes. */
 export const description = <M>(
   config: StyleConfig<M>,
   children: ReadonlyArray<Child>,
@@ -252,7 +220,6 @@ export const footer = <M>(
     children,
   )
 
-/** Close button — merges with the submodel's closeButton attributes. */
 export const closeButton = <M>(
   config: StyleConfig<M>,
   children: ReadonlyArray<Child>,
@@ -274,21 +241,13 @@ export type DialogContent<M> = Readonly<{
 }>
 
 export type StyledViewInputs<M> = Readonly<{
-  /** Set when content renders the description element. */
   hasDescription?: boolean
-  /** Panel content. Receives the close-button, title and description
-   *  attribute bundles to spread onto your own elements, or pass to
-   *  Dialog.title / Dialog.description / Dialog.closeButton helpers via
-   *  their `attributes` config field. */
   content: (render: DialogContent<M>, h: HtmlBuilder<M>) => ReadonlyArray<Child>
   className?: string
   backdropClass?: string
   panelClass?: string
 }>
 
-/** Build styled `Dialog.ViewInputs`. Pass your view's `h` so the content
- *  callback can dispatch your app's own messages (e.g. a destructive
- *  action button next to the dialog's `closeButton`). */
 export const styledViewInputs = <M>(
   viewInputs: StyledViewInputs<M>,
   h: HtmlBuilder<M>,

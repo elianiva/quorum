@@ -5,13 +5,10 @@ import { KINDS, type EraDef, type RequestKind } from '@quorum/simulation/catalog
 import { FIGURE } from '@quorum/ui/game/bits'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* An Era's request mix, in each kind's colour from the game. */
-
 const percent = (share: number): string => `${Math.round(share * 1000) / 10}%`
 
 const colorOf = (kind: RequestKind): string => `#${KINDS[kind].color.toString(16).padStart(6, '0')}`
 
-/** The Era's request mix as one bar; with `legend`, each kind's share beneath it. */
 export const mixBar = <M>(mix: EraDef['mix'], h: HtmlBuilder<M>, legend = true): Html => {
   const entries = Object.entries(mix) as ReadonlyArray<[RequestKind, number]>
   const names = langOf(localeOf(h)).cat.KINDS

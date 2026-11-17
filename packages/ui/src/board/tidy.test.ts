@@ -65,7 +65,6 @@ test('tidy lays out a Link into the strip, or to a Node that is gone, as if it i
   ]
   const spots = tidy(nodes, links, ['all'])
   expect(spots.get('ci')!.y).toBeGreaterThan(spots.get('s')!.y + heightOf('server'))
-  // Neither Link has a column to align to, so the board ignores them.
   expect(spots).toEqual(tidy(nodes, [{ from: 's', to: 'w' }], ['all']))
 })
 
@@ -97,7 +96,6 @@ test('tidy aligns a Queue with its Worker', () => {
     return spots.get(id)!.y + heightOf(node.type) / 2
   }
   expect(spots.get('q')!.x).toBeLessThan(spots.get('w')!.x)
-  // Each spot rounds on its own, so the centres can differ by a pixel.
   expect(Math.abs(center('q') - center('w'))).toBeLessThanOrEqual(1)
 })
 
@@ -118,7 +116,6 @@ test('tidy lays the stress board out in role columns', () => {
   expect(at.get('n2')!.x).toBeGreaterThanOrEqual(at.get('n12')!.x)
   expect(at.get('n2')!.x).toBeLessThan(at.get('n1')!.x)
   expect(at.get('n5')!.x).toBe(at.get('users')!.x)
-  // Providers and Analytics sit right of the data, so no call runs backward.
   expect(at.get('n21')!.x).toBeGreaterThan(at.get('n1')!.x)
   expect(at.get('analytics')!.x).toBeGreaterThan(at.get('n21')!.x)
 })

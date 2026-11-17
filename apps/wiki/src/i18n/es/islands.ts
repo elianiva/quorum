@@ -1,7 +1,5 @@
 import type { Messages } from '../messages.ts'
 
-/* The chrome of the live views behind each Markdown directive. */
-
 export const islands: Messages['islands'] = {
   note: { tip: 'Consejo', warn: 'Ojo', real: 'Qué tan real es' },
   options: { control: 'Control', settings: 'Valores', when: 'Cuándo' },

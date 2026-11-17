@@ -16,15 +16,8 @@ import { hourBefore, loadChangeOf, type NodeSample } from '@/game/node-metrics.t
 import { WIKI_URL } from '@/platform/analytics.ts'
 import { caption, percent } from './shared.ts'
 
-/*
- * Load diagnosis (12 "Load diagnosis"): why a Node is busy. The rows name causes and give their
- * numbers. The fixes live in the wiki, behind each block's Why? link, so the player still learns
- * them.
- */
-
 const GUIDE = `${WIKI_URL}/guides/find-the-bottleneck`
 
-/** What-if rows older than this many sim seconds no longer describe the Board. */
 const WHAT_IF_FRESH = 15
 
 const whyLink = (anchor: string, h: HtmlBuilder<Message>): Html => {
@@ -116,7 +109,6 @@ const signed = (t: Messages, value: number): string =>
     `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.round(Math.abs(value) * 100)}`,
   )
 
-/** Below this change in utilization, the Load change reads Steady. */
 const STEADY = 0.02
 
 const words = (t: Messages, part: 'demand' | 'cost' | 'capacity', value: number): string => {
@@ -131,10 +123,6 @@ const words = (t: Messages, part: 'demand' | 'cost' | 'capacity', value: number)
   }
 }
 
-/**
- * Load change: what moved the load since one calendar hour earlier. Without `metrics` the player
- * gets the largest cause in words; with it, each part in points.
- */
 export const loadChange = (
   model: Model,
   history: ReadonlyArray<NodeSample>,
@@ -206,7 +194,6 @@ export const loadChange = (
   )
 }
 
-/** Amplification: the Users' Request kinds behind this Node's inbound, and what repeats. */
 export const amplification = (
   model: Model,
   node: GameNode,
@@ -218,7 +205,6 @@ export const amplification = (
   const kinds = REQUEST_KINDS.filter((kind) => (sample.origins[kind] ?? 0) > 0.005).toSorted(
     (a, b) => (sample.origins[b] ?? 0) - (sample.origins[a] ?? 0),
   )
-  // A Node that takes the Users' requests once each, with nothing repeated, has nothing to explain.
   const multiplied = kinds.some(
     (kind) =>
       Math.abs((sample.origins[kind] ?? 0) - (sample.sent[kind] ?? 0)) >
@@ -271,7 +257,6 @@ const ms = (t: Messages, value: number): string =>
 const factor = (value: number): string =>
   `× ${value >= 10 ? value.toFixed(1) : value.toFixed(2).replace(/0$/, '')}`
 
-/** The Cost receipt of each kind at a Node, the kinds that take the most CPU first. */
 export const costReceipts = (
   model: Model,
   node: GameNode,
@@ -396,7 +381,6 @@ export const costReceipts = (
   )
 }
 
-/** What-if rows: the Node's utilization after one change, from the compute worker's ghost runs. */
 export const whatIfs = (model: Model, node: GameNode, h: HtmlBuilder<Message>): Html | null => {
   const t = copy(h)
   const game = model.board.game

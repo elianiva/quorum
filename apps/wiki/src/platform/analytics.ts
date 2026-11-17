@@ -6,14 +6,13 @@ const FORCED =
     ? null
     : new URLSearchParams(window.location.search).get('analytics')
 
-/** A runaway client cannot spend the project's month on one page load. */
-const LIMIT = 300
+const MAX_EVENTS = 300
 let sent = 0
 
 const beforeSend = (event: CaptureResult | null): CaptureResult | null => {
   if (event === null || FORCED === 'off') return null
   if (!import.meta.env.PROD && FORCED === null) return null
-  if (sent >= LIMIT) return null
+  if (sent >= MAX_EVENTS) return null
   sent += 1
   return { ...event, properties: { ...event.properties, app_surface: 'wiki' } }
 }
@@ -39,7 +38,5 @@ export const startAnalytics = (): void => {
       })
       posthog.register({ app_surface: 'wiki' })
     })
-    .catch(() => {
-      // The wiki works without analytics.
-    })
+    .catch(() => {})
 }

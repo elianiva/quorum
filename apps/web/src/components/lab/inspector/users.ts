@@ -39,7 +39,6 @@ const traffic = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): ReadonlyA
             ),
           ],
           [
-            // The kind's packet shape, so the legend teaches what the belts carry (15).
             packetMark(kind, 8, h),
             h.span(
               [

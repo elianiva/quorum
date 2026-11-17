@@ -14,13 +14,6 @@ import {
   type H,
 } from '../reference/shared.ts'
 
-/*
- * The Measurements page. Its figures come from `snapshot.ts`, which `pnpm measurements` writes by
- * playing the bots in `packages/simulation/src/pacing.ts`, so no number here is typed by hand
- * (16 "What the checks cover"). The sections the bots cannot reach (replay timings, the interface,
- * the research calibration) stay in `content/design/measurements.md`, recorded by hand.
- */
-
 const code = (value: string, h: H): Html => h.code([], [value])
 
 const t = (name: string) => titleOf(name, name)
@@ -28,7 +21,6 @@ const t = (name: string) => titleOf(name, name)
 const valueOf = (rows: ReadonlyArray<Row>, label: string): string =>
   rows.find((row) => row.label === label)?.value ?? 'not measured'
 
-/** The figure without the note that some seed missed it, for a sentence that explains it. */
 const figureOf = (rows: ReadonlyArray<Row>, label: string): string =>
   valueOf(rows, label).split(',')[0] ?? ''
 
@@ -40,7 +32,6 @@ const rowTable = (rows: ReadonlyArray<Row>, headers: ReadonlyArray<string>, h: H
     [1],
   )
 
-/** The paragraphs that describe what the bot does, rather than what it measured. */
 const behaviour = (h: H): ReadonlyArray<Html> => [
   h.p(
     [],
@@ -62,8 +53,6 @@ const behaviour = (h: H): ReadonlyArray<Html> => [
   ),
 ]
 
-/** Its prose is the design record, which stays English, and the page is one with it: every
-    section heading and sentence below is written by hand in English, whatever language the wiki is in. */
 export const measurementsPage = (l: Lang) => {
   const text = authored(l, '/design/measurements')
   return page(l, {

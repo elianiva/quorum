@@ -1,16 +1,6 @@
 import type { Region } from '@quorum/simulation/state'
 import type { SeatActivity } from '@quorum/simulation/room'
 
-/* ==========================================================================
-   The other Seats' pointers. A Seat sends a position about 25 times a second,
-   not every pixel, and this file plays the gaps back as a Catmull-Rom spline,
-   the same idea as tldraw's perfect-cursors: a curve through the last few
-   points, drawn at the pace they arrived. The cursor therefore trails the
-   newest sample by a short delay, which is what smooths a jittery socket into
-   a hand.
-   ========================================================================== */
-
-/** One pointer, as another Seat sent it: position in Design coordinates. */
 export type SeatCursor = Readonly<{
   seat: string
   name: string
@@ -18,17 +8,13 @@ export type SeatCursor = Readonly<{
   x: number
   y: number
   region: Region
-  /** The panel that Seat is in. Its pointer stays put and says so. */
   activity: SeatActivity | null
 }>
 
-/** How far behind the newest sample a cursor is drawn, in milliseconds. */
 export const CURSOR_DELAY_MS = 80
 
-/** A gap longer than this is a new gesture, not motion: the cursor jumps. */
 export const CURSOR_GAP_MS = 300
 
-/** The oldest sample worth keeping, so a track never grows without bound. */
 const KEEP_MS = 2_000
 
 type Sample = Readonly<{ x: number; y: number; t: number }>
@@ -58,7 +44,6 @@ const at = (samples: ReadonlyArray<Sample>, time: number): Sample => {
   const u = span > 0 ? (time - p1.t) / span : 1
   const uu = u * u
   const uuu = uu * u
-  // The same cubic Catmull-Rom weights perfect-cursors uses.
   const q1 = -uuu + 2 * uu - u
   const q2 = 3 * uuu - 5 * uu + 2
   const q3 = -3 * uuu + 4 * uu + u
@@ -70,15 +55,12 @@ const at = (samples: ReadonlyArray<Sample>, time: number): Sample => {
   }
 }
 
-/** The samples of every moving Seat, and where each pointer is between them. */
 export class CursorTracks {
   private readonly tracks = new Map<string, Track>()
 
   move(cursor: SeatCursor, now: number): void {
     const track = this.tracks.get(cursor.seat)
     const last = track?.samples[track.samples.length - 1]
-    // A pause is not a path. Start a fresh track, so the cursor does not glide
-    // across the Board when a Seat comes back to a different spot.
     const samples =
       track === undefined || last === undefined || now - last.t > CURSOR_GAP_MS
         ? [{ x: cursor.x, y: cursor.y, t: now }]
@@ -103,7 +85,6 @@ export class CursorTracks {
     this.tracks.clear()
   }
 
-  /** Every cursor, drawn where it was `CURSOR_DELAY_MS` before `now`. */
   play(now: number): ReadonlyArray<SeatCursor> {
     const time = now - CURSOR_DELAY_MS
     return [...this.tracks.values()].map((track) => {
@@ -121,7 +102,6 @@ export class CursorTracks {
   }
 }
 
-/** The camera of the Board the overlay covers: world position and zoom. */
 export type CursorCamera = Readonly<{ x: number; y: number; scale: number }>
 
 type CursorElement = {
@@ -132,14 +112,9 @@ type CursorElement = {
   mark: SVGPathElement
   name: string
   colour: string
-  /** The activity line as it is drawn now, so a new language or panel repaints it. */
   doing: string | null
 }
 
-/**
- * The cursors on top of a Board, in a DOM layer of their own so they keep
- * their size while the Board zooms and their labels stay crisp.
- */
 export class CursorOverlay {
   private readonly tracks = new CursorTracks()
   private readonly elements = new Map<string, CursorElement>()
@@ -171,10 +146,6 @@ export class CursorOverlay {
     this.elements.clear()
   }
 
-  /**
-   * Places every cursor for this frame. Only the shown region's cursors draw.
-   * `activityOf` writes a Seat's panel in the language of this client.
-   */
   tick(
     now: number,
     camera: CursorCamera,
@@ -187,14 +158,12 @@ export class CursorOverlay {
       shown.add(cursor.seat)
       const element = this.element(cursor, activityOf)
       element.root.style.display = 'block'
-      // The arrow's tip sits 3px in and 1.5px down from its box, so the tip lands on the pointer.
       element.root.style.transform = `translate3d(${camera.x + cursor.x * camera.scale - 3}px, ${
         camera.y + cursor.y * camera.scale - 1.5
       }px, 0)`
     }
     for (const [seat, element] of this.elements) {
       if (shown.has(seat)) continue
-      // On another region tab: keep the track, hide the pointer.
       element.root.style.display = 'none'
     }
   }

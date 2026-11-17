@@ -5,16 +5,6 @@ import { previewOf } from './preview.ts'
 import { bottleneckOf, solveFlow } from './solve.ts'
 import type { Game, GameLink, GameNode } from './state.ts'
 
-/*
- * The performance budget (04 "Performance budget"): one Step of a 200-Node
- * board under 2 ms, and the Bottleneck search under 3 ms. The Tradeoff preview
- * runs 2 × 10 one-second Steps for the first option hovered on a Game, then 10 for each
- * other option, cached per Game and option. Run it with
- * `pnpm --filter @quorum/simulation exec vitest bench --run`. CI does not assert
- * timings: they depend on the machine.
- */
-
-/** Users → a Load Balancer → 6 Load Balancers × 30 App Servers → 6 Poolers → 6 Databases. */
 const bigBoard = (): Game => {
   const nodes: Array<GameNode> = [node('users', 'users', 0, 0), node('lb', 'lb', 100, 0)]
   const links: Array<GameLink> = [link('users', 'lb')]
@@ -51,10 +41,8 @@ const bigBoard = (): Game => {
 
 test('a 200-Node board', async ({ bench }) => {
   const game = bigBoard()
-  // Solved once first, so `bottleneckOf` below times the search alone.
   solveFlow(game)
   await bench.compare(
-    // A fresh Game object each time, so the per-Game cache does not answer.
     bench('solveFlow (budget 2 ms)', () => {
       solveFlow({ ...game })
     }),
@@ -73,7 +61,6 @@ test('the Tradeoff preview', { timeout: 300_000 }, async ({ bench }) => {
   const big: Game = { ...bigBoard(), cash: 1e9 }
   let second = 0
   await bench.compare(
-    // A fresh Game object each time, so the preview cache does not answer.
     bench('previewOf, Pre-seed runtime switch', () => {
       previewOf({ ...game }, 'cluster', (current) => setRuntime(current, 'server', 'node_cluster'))
     }),
@@ -81,10 +68,8 @@ test('the Tradeoff preview', { timeout: 300_000 }, async ({ bench }) => {
       previewOf({ ...game }, 'resize', (current) => resize(current, 'server', 1))
     }),
     bench('previewOf, Pre-seed second option', () => {
-      // The unchanged ghost is cached for this Game; only the changed one runs.
       previewOf(game, `resize-${(second += 1)}`, (current) => resize(current, 'server', 1))
     }),
-    // About 2.5 s each on this board: the test timeout covers its samples.
     bench('previewOf, 200-Node board resize', () => {
       previewOf({ ...big }, 'resize', (current) => resize(current, 's0-0', 1))
     }),

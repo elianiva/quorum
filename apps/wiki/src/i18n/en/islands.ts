@@ -1,5 +1,3 @@
-/* The chrome of the live views behind each Markdown directive. */
-
 export const islands = {
   note: { tip: 'Tip', warn: 'Watch out', real: 'How real is it' },
   options: { control: 'Control', settings: 'Settings', when: 'When' },

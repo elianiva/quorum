@@ -9,7 +9,6 @@ import {
 import { MAX_ROOMS } from '../contexts/room/room.ts'
 import type { SqlRunner } from './sql.ts'
 
-/** Room codes: no 0, O, 1, or I, so a code can be read aloud. */
 const ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
 const CODE_LENGTH = 6
 const TRIES = 6
@@ -26,12 +25,6 @@ const code = (): string => {
   return [...buffer].map((byte) => ALPHABET[byte % ALPHABET.length]).join('')
 }
 
-/**
- * Takes one of the cap's slots for `code`. The insert and the count are one statement, so two
- * publishes cannot both take the last slot. Rows outlive their Room, so a full table is checked
- * against the Rooms themselves once before the answer is no: a Room that is gone, or that holds
- * nobody, gives its slot up.
- */
 const reserve = async (
   code: string,
   stubOf: (code: string) => RoomStub,
@@ -60,10 +53,6 @@ const reserve = async (
   return claim()
 }
 
-/**
- * Whether a Room that already exists may take a connection. It holds a slot already, or takes one
- * if the cap has room: an empty Room gave its slot up, so its owner coming back has to claim one.
- */
 export const admit = async (
   code: string,
   stubOf: (code: string) => RoomStub,
@@ -74,10 +63,6 @@ export const admit = async (
   return held.results.length > 0 || reserve(code, stubOf, db)
 }
 
-/**
- * The Room namespace as the context sees it. One Room per code, and the code
- * is the object's name. `db` keeps the count of live Rooms against `MAX_ROOMS`.
- */
 export const roomDirectory = (
   stubOf: (code: string) => RoomStub,
   db: SqlRunner,

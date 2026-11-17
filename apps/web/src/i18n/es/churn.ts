@@ -8,7 +8,6 @@ export const churn: Messages['churn'] = {
   users: (p0: string | number | null) => `${p0} usuarios`,
   n1Day: (p0: string | number | null) => `1 día: ${p0}`,
   whyUsersLeave: 'Por qué se van los usuarios',
-  /** Qué quita Apdex seguido: lejos, lento o un fallo. */
   causes: {
     far: 'lejos',
     slow: 'lento',

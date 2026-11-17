@@ -1,8 +1,5 @@
 import type { Messages } from '../messages.ts'
 
-/* The words of the `::Options` table in Japanese: each Component's Inspector controls, the values
-   they offer and when the Inspector shows them. Product and protocol names stay as they are. */
-
 export const options: Messages['options'] = {
   always: '常時',
   after: (research) => `${research}の後`,
@@ -11,7 +8,6 @@ export const options: Messages['options'] = {
   noMax: '上限なし',
   off: 'オフ',
   none: 'なし',
-  // Control names.
   runtime: 'ランタイム',
   framework: 'フレームワーク',
   poolSize: 'プールサイズ',
@@ -91,7 +87,6 @@ export const options: Messages['options'] = {
   presence: 'プレゼンス',
   reconnectBackoff: '再接続のバックオフ',
   clustering: 'クラスタリング',
-  // Where the Inspector shows a control.
   pooledRuntimes: 'プールありのランタイム',
   phpFpm: 'PHP-FPM',
   persistentRuntimes: '常駐するランタイム',
@@ -101,7 +96,6 @@ export const options: Messages['options'] = {
   twoShardsShown: 'シャードが 2 つ以上',
   withDlq: 'デッドレターキューあり',
   searchEngines: 'Elasticsearch と OpenSearch',
-  // Values.
   workerAndUp: 'ワーカー 1 つ以上',
   offEveryFewHours: 'オフ / 数時間ごと',
   offGzip: 'オフ / Gzip',

@@ -7,11 +7,6 @@ import { hasTraffic, hourBefore, loadChangeOf, sampleNode } from './node-metrics
 import type { AgentSnapshot } from './snapshot.ts'
 import type { ToolName } from './tools.ts'
 
-/* ==========================================================================
-   The one tool implementation. It reads a plain snapshot, so the browser, the
-   Durable Object, and the tests all answer the same question the same way.
-   ========================================================================== */
-
 type Input = Record<string, unknown>
 
 const round = (n: number): number => Math.round(n * 1000) / 1000
@@ -73,8 +68,6 @@ const runs: Record<ToolName, (snapshot: AgentSnapshot, input: Input) => unknown>
       nodes: game.nodes.map((node) => ({
         ...node,
         label: labels.get(node.id),
-        // The Links that carry traffic into and out of this Node, so a reader sees what feeds it
-        // and what it calls without matching ids against `links`.
         inbound: game.links
           .filter((link) => link.to === node.id)
           .map((link) => ({ from: link.from, label: labels.get(link.from), ...carried(link) })),
@@ -195,7 +188,6 @@ const runs: Record<ToolName, (snapshot: AgentSnapshot, input: Input) => unknown>
   }),
 }
 
-/** A Node Ledger without the diagnosis fields: `explain_node` shows those, behind research. */
 const withoutDiagnosis = ({
   workShare: _work,
   workUnit: _unit,
@@ -211,7 +203,6 @@ const largestOf = (change: Readonly<{ demand: number; cost: number; capacity: nu
     Math.abs(change[part]) > Math.abs(change[best]) ? part : best,
   )
 
-/** Why an agent gets nothing, or null when it may read the Room. */
 export const refusal = (snapshot: AgentSnapshot | null): string | null => {
   if (snapshot === null)
     return 'No Room is open. Ask the player to open a Company and turn on Agent access.'
@@ -222,7 +213,6 @@ export const refusal = (snapshot: AgentSnapshot | null): string | null => {
   return null
 }
 
-/** Runs one tool over a snapshot, and returns its JSON text. Throws the reason it cannot. */
 export const readTool = (
   snapshot: AgentSnapshot | null,
   name: string,
@@ -235,7 +225,6 @@ export const readTool = (
   return JSON.stringify(run(snapshot, input))
 }
 
-/** What the "Copy state as JSON" button copies: the same views the tools return, in one document. */
 export const stateJson = (snapshot: AgentSnapshot): string =>
   JSON.stringify(
     {

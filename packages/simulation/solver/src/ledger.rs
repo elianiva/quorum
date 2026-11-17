@@ -1,28 +1,42 @@
-//! The Ledger: every figure the Simulation derives at a Step.
-//!
-//! Ported from `solve-ledger.ts` (`completionsOf`, `answersOf`, `answerOf`,
-//! `earnedOf`, `revenueOf`, `ledgerOf`) and `solve-insight.ts`. The bill lives in
-//! `bill.rs`. Market and the forecast peak read nothing the solve changes, so
-//! the host fills them in when it decodes the stream `wire.rs` writes.
-
 use crate::catalog::*;
 use crate::dist::*;
 use crate::model::{GameCtx, Limit, Order, Rates, Resources, WorkUnit};
 use crate::outcomes::Tree;
 use crate::pass::Pass;
 
-/// One region's users entering the Design.
+const DANGER_UTILIZATION: f64 = 0.9;
+const WARN_UTILIZATION: f64 = 0.7;
+const BUSY_UTILIZATION: f64 = 0.6;
+const BUSIEST_NODE_COUNT: usize = 3;
+const LIMIT_CONNECTIONS: usize = Limit::Disk as usize + 1;
+const NO_INDEX: usize = usize::MAX;
+const NO_TRAFFIC_YET: f64 = -1.0;
+const MS_PER_SECOND: f64 = 1000.0;
+const KB_PER_GB: f64 = 1_000_000.0;
+const MEDIAN: f64 = 0.5;
+const P95: f64 = 0.95;
+const P99: f64 = 0.99;
+const FAILING_MAX_SUCCESS: f64 = 0.05;
+const FAILING_MIN_STRANDED: f64 = 0.5;
+const LINK_FAILING_MIN_DROPPED_SHARE: f64 = 0.01;
+const ANALYTICS_CAPACITY_GROWTH_PER_SIZE: f64 = 2.0;
+const TAIL_SAMPLING_FAILURE_MULTIPLIER: f64 = 2.0;
+
+#[inline]
+fn has_kind(mask: u64, kind: usize) -> bool {
+    (mask >> kind) & 1 == 1
+}
+
 #[derive(Clone, Copy, Default)]
 pub struct Route {
     pub region: usize,
-    /// The Users Node they enter at, as a Node slot, or `None` when it strands.
+
     pub source: Option<usize>,
     pub share: f64,
-    /// Milliseconds their hop to the source adds.
+
     pub extra_ms: f64,
 }
 
-/// What a Queue's tasks complete at, for the async half of Apdex.
 #[derive(Default)]
 pub struct Completions {
     pub enqueued: Vec<f64>,
@@ -30,13 +44,12 @@ pub struct Completions {
     pub waits: Vec<f64>,
 }
 
-/// One request kind's figures.
 #[derive(Clone, Copy, Default)]
 pub struct KindRow {
     pub rate: f64,
     pub success: f64,
     pub apdex: f64,
-    /// `None` when no part of the kind went through a Queue.
+
     pub completion: Option<f64>,
     pub mean: f64,
     pub p50: f64,
@@ -44,7 +57,6 @@ pub struct KindRow {
     pub p99: f64,
 }
 
-/// `NodeStatus`: how a Node reads on the board.
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub enum Status {
     #[default]
@@ -55,22 +67,20 @@ pub enum Status {
     Down,
 }
 
-/// `statusOf`: down, idle, then by how full the Node runs.
 pub fn status_of(down: bool, inbound: f64, utilization: f64, trouble: bool) -> Status {
     if down {
         Status::Down
     } else if inbound <= 0.0 {
         Status::Idle
-    } else if utilization >= 0.9 {
+    } else if utilization >= DANGER_UTILIZATION {
         Status::Danger
-    } else if utilization >= 0.7 || trouble {
+    } else if utilization >= WARN_UTILIZATION || trouble {
         Status::Warn
     } else {
         Status::Ok
     }
 }
 
-/// A per-kind record and the order its keys were written in.
 #[derive(Clone, Copy)]
 pub struct Keyed {
     pub values: Rates,
@@ -79,7 +89,10 @@ pub struct Keyed {
 
 impl Default for Keyed {
     fn default() -> Self {
-        Keyed { values: [0.0; NK], keys: Order::default() }
+        Keyed {
+            values: [0.0; NK],
+            keys: Order::default(),
+        }
     }
 }
 
@@ -96,13 +109,11 @@ impl Keyed {
         self.keys.push(kind);
     }
 
-    /// The entries in key order.
     pub fn entries(&self) -> impl Iterator<Item = (usize, f64)> + '_ {
         self.keys.iter().map(|kind| (kind, self.values[kind]))
     }
 }
 
-/// `RegionKindLedger`: what one region's users get for one request kind.
 #[derive(Clone, Copy)]
 pub struct RegionKindRow {
     pub rate: f64,
@@ -114,7 +125,6 @@ pub struct RegionKindRow {
     pub p99: f64,
 }
 
-/// One Node's figures.
 #[derive(Clone, Default)]
 pub struct NodeRow {
     pub inbound: f64,
@@ -129,7 +139,7 @@ pub struct NodeRow {
     pub work_share: Keyed,
     pub work_unit: Option<WorkUnit>,
     pub cost: f64,
-    /// Each kind's Cost receipt, on App Servers, Databases, and Read Replicas.
+
     pub receipts: Vec<(usize, crate::model::Receipt)>,
     pub repeated: f64,
     pub origins: Keyed,
@@ -150,7 +160,6 @@ pub struct NodeRow {
     pub status: Status,
 }
 
-/// What one solve prints.
 #[derive(Default)]
 pub struct Ledger {
     pub kinds: Vec<KindRow>,
@@ -165,34 +174,33 @@ pub struct Ledger {
     pub p99: f64,
     pub apdex: f64,
     pub revenue: f64,
-    pub subscriptions: f64,
+    pub subscriptions_per_second: f64,
     pub fines: f64,
     pub revenue_by_kind: Vec<f64>,
     pub fines_by_kind: Vec<f64>,
-    /// Each region's users' Apdex, in the order they were first served.
+
     pub regions: Vec<(usize, f64)>,
-    /// Each region's rows by request kind, in the order they were first written.
+
     pub region_kinds: Vec<(usize, Vec<(usize, RegionKindRow)>)>,
     pub links: Vec<LinkRow>,
     pub bill: crate::bill::Bill,
     pub costs: crate::bill::Costs,
     pub velocity: f64,
-    /// `payrollOf` and `burnSharesOf`, as the host sent them.
+
     pub salaries: f64,
     pub game_shares: [f64; 4],
-    /// Insight per second, by pool: the request kinds, then failure.
+
     pub insight: [f64; INSIGHT_POOLS.len()],
-    /// Component types that sample each request kind.
+
     pub breadth: Keyed,
-    /// Regions that sample each request kind.
+
     pub breadth_regions: Keyed,
     pub failing: Vec<usize>,
-    /// The most utilized limiting Node on each kind's path.
+
     pub bottleneck_by_kind: Vec<Option<usize>>,
     pub bottleneck: Option<usize>,
 }
 
-/// `attemptsAllowed`: a Queue's max attempts with a dead-letter queue, else forever.
 pub fn attempts_allowed(dlq: bool, attempts: f64) -> f64 {
     if dlq {
         attempts
@@ -201,13 +209,16 @@ pub fn attempts_allowed(dlq: bool, attempts: f64) -> f64 {
     }
 }
 
-/// `sumRates`: every kind's rate at a Node.
 pub fn sum_rates(rates: &Rates) -> f64 {
     rates.iter().sum()
 }
 
-/// `databaseSick`: a deep health check fails when a database behind the server is down or full.
-pub fn database_sick(design: &crate::routing::Design, pass: &Pass, nodes: &[crate::model::Node], server: usize) -> bool {
+pub fn database_sick(
+    design: &crate::routing::Design,
+    pass: &Pass,
+    nodes: &[crate::model::Node],
+    server: usize,
+) -> bool {
     let mut seen = vec![false; nodes.len()];
     sick_visit(design, pass, nodes, server, &mut seen)
 }
@@ -242,7 +253,12 @@ fn sick_visit(
         }
         if (child_node.type_code == component::DATABASE
             || child_node.type_code == component::REPLICA)
-            && pass.models.get(child).map(|model| model.utilization).unwrap_or(0.0) >= 1.0
+            && pass
+                .models
+                .get(child)
+                .map(|model| model.utilization)
+                .unwrap_or(0.0)
+                >= 1.0
         {
             return true;
         }
@@ -253,7 +269,6 @@ fn sick_visit(
     false
 }
 
-/// `completionsOf`: when the async part of each kind is done.
 pub fn completions_of(pass: &Pass, nodes: &[crate::model::Node], tree: &mut Tree) -> Completions {
     let mut done = Completions {
         enqueued: vec![0.0; NR],
@@ -265,30 +280,31 @@ pub fn completions_of(pass: &Pass, nodes: &[crate::model::Node], tree: &mut Tree
             continue;
         }
         let drained = pass.drained.get(slot).copied().unwrap_or(0.0);
-        let wait = if node.depth <= 0.0 {
+        let wait_seconds = if node.depth <= 0.0 {
             0.0
         } else if drained > 0.0 {
             node.depth / drained
         } else {
             f64::INFINITY
         };
-        done.waits[slot] = wait;
+        done.waits[slot] = wait_seconds;
         let tasks = pass.tasks.get(slot).copied().unwrap_or([0.0; NK]);
         if tasks.iter().all(|rate| *rate <= 0.0) || node.down {
             continue;
         }
         let worker = tree.downstream(slot, NR + backend::TASK, 0.0);
-        // A task a busy Worker dropped waits in the Queue: the wait counts it.
-        let failure = (1.0 - worker.success - worker.fail[DROPPED]).clamp(0.0, 1.0);
+
+        let attempt_failure = (1.0 - worker.success - worker.fail[DROPPED]).clamp(0.0, 1.0);
         let allowed = attempts_allowed(node.dlq, node.attempts);
-        let lost = task_lost(failure, allowed);
-        let extra = task_attempts(failure, allowed) - 1.0;
-        let completed = if !wait.is_finite() || worker.fail[STRANDED] >= 1.0 {
+        let lost = task_lost(attempt_failure, allowed);
+        let extra_attempts = task_attempts(attempt_failure, allowed) - 1.0;
+        let completed = if !wait_seconds.is_finite() || worker.fail[STRANDED] >= 1.0 {
             failed(STRANDED)
         } else {
             let mut finished = worker.without_failures();
             finished.success = 1.0 - lost;
-            finished.fixed_ms = worker.fixed_ms + (wait + extra * TASK_RETRY_SECONDS) * 1000.0;
+            finished.fixed_ms = worker.fixed_ms
+                + (wait_seconds + extra_attempts * TASK_RETRY_SECONDS) * MS_PER_SECOND;
             finished.fail[UPSTREAM] = lost;
             finished
         };
@@ -305,7 +321,6 @@ pub fn completions_of(pass: &Pass, nodes: &[crate::model::Node], tree: &mut Tree
     done
 }
 
-/// `answersOf`: what one request of `kind` gets back for each region's users.
 pub fn answers_of(
     tree: &mut Tree,
     routes: &[Route],
@@ -328,24 +343,28 @@ pub fn answers_of(
     answers
 }
 
-/// `answerOf`: what one request of `kind` gets back over every region's users.
 pub fn answer_of(tree: &Tree, answers: &[(Route, Outcome, Outcome)], kind: usize) -> Outcome {
     if let [(route, answer, _)] = answers {
         if user_hop_ms(tree.game(), route.extra_ms, kind) + regressed_ms(tree.game()) == 0.0 {
             return *answer;
         }
     }
-    let entries: Vec<(Outcome, f64)> = answers.iter().map(|(route, answer, _)| (*answer, route.share)).collect();
+    let entries: Vec<(Outcome, f64)> = answers
+        .iter()
+        .map(|(route, answer, _)| (*answer, route.share))
+        .collect();
     blend(&entries).unwrap_or_else(|| failed(STRANDED))
 }
 
-/// A latency regression puts every answer this much further out.
 #[inline]
 fn regressed_ms(game: &GameCtx) -> f64 {
-    if game.incident == Some(crate::model::Incident::LatencyRegression) { LATENCY_REGRESSION_MS } else { 0.0 }
+    if game.incident == Some(crate::model::Incident::LatencyRegression) {
+        LATENCY_REGRESSION_MS
+    } else {
+        0.0
+    }
 }
 
-/// `userHopMs`: the user hop a request of `kind` pays.
 #[inline]
 pub fn user_hop_ms(game: &GameCtx, ms: f64, kind: usize) -> f64 {
     if kind == kind::PAGE && game.has(research::HTTP2) {
@@ -355,14 +374,12 @@ pub fn user_hop_ms(game: &GameCtx, ms: f64, kind: usize) -> f64 {
     }
 }
 
-/// `earnsInTime`: a request slower than the Venture's deadline earns nothing.
 #[inline]
 pub fn earns_in_time(game: &GameCtx, ms: f64) -> bool {
     let deadline = VENTURE_DEADLINE[game.venture.min(VENTURE_DEADLINE.len() - 1)];
     deadline < 0.0 || ms <= deadline
 }
 
-/// `earnedOf`: what one request of `kind` earns in a second, at this rate and Apdex.
 pub fn earned_of(game: &GameCtx, kind: usize, rate: f64, result: &Outcome, apdex: f64) -> f64 {
     let factor = game.value[kind];
     rate * result.success
@@ -370,22 +387,24 @@ pub fn earned_of(game: &GameCtx, kind: usize, rate: f64, result: &Outcome, apdex
         * KIND_VALUE[kind]
         * result.value
         * factor
-        * if earns_in_time(game, mean_of(result)) { 1.0 } else { 0.0 }
+        * if earns_in_time(game, mean_of(result)) {
+            1.0
+        } else {
+            0.0
+        }
 }
 
-/// What one kind earns and how it scores, shared by `revenueOf` and `ledgerOf`.
 pub struct KindScore {
     pub result: Outcome,
-    /// Each region's answer and its raw answer before the users' hop.
+
     pub answers: Vec<(Route, Outcome, Outcome)>,
-    /// How much of the Apdex the async part keeps.
+
     pub finish: f64,
     pub apdex: f64,
     pub completion: Option<f64>,
     pub earned: f64,
 }
 
-/// `revenueOf`: what the Company earns in a second, without the Node and Link rows.
 pub fn revenue_of(
     game: &GameCtx,
     demand: &Rates,
@@ -404,10 +423,9 @@ pub fn revenue_of(
         let score = score_kind(game, tree, routes, &completion, kind, rate);
         revenue += score.earned;
     }
-    revenue + game.subscriptions
+    revenue + game.subscriptions_per_second
 }
 
-/// The figures one kind scores at: its blended answer, its Apdex, and what it earns.
 pub fn score_kind(
     game: &GameCtx,
     tree: &mut Tree,
@@ -419,21 +437,37 @@ pub fn score_kind(
     let answers = answers_of(tree, routes, kind);
     let result = answer_of(tree, &answers, kind);
     let enqueued = completion.enqueued[kind];
-    let done = if enqueued > 0.0 { Some(completion.scored[kind] / enqueued) } else { None };
-    let r#async = match done {
+    let done = if enqueued > 0.0 {
+        Some(completion.scored[kind] / enqueued)
+    } else {
+        None
+    };
+    let async_share = match done {
         None => 0.0,
         Some(_) if result.success <= 0.0 => 0.0,
         Some(_) => (enqueued / (rate * result.success)).min(1.0),
     };
-    let finish = 1.0 - r#async + r#async * done.unwrap_or(1.0);
+    let finish = 1.0 - async_share + async_share * done.unwrap_or(1.0);
     let apdex = apdex_of(&result, PROFILE_APDEX[kind]) * finish;
     let earned = earned_of(game, kind, rate, &result, apdex);
-    KindScore { result, answers, finish, apdex, completion: done, earned }
+    KindScore {
+        result,
+        answers,
+        finish,
+        apdex,
+        completion: done,
+        earned,
+    }
 }
 
-/// `ledgerOf`: the whole Ledger, as far as the solve and the benchmark read it.
 pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> Ledger {
-    let crate::pass::Board { game, design, demand, nodes, .. } = setup.board;
+    let crate::pass::Board {
+        game,
+        design,
+        demand,
+        nodes,
+        ..
+    } = setup.board;
     let routes = setup.routes;
     let completion = completions_of(pass, nodes, tree);
     let mut ledger = Ledger {
@@ -449,8 +483,8 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
     let mut served = 0.0;
     let mut satisfied = 0.0;
     let mut latency_weight = 0.0;
-    // Each region's users: (region, rate sent, rate satisfied), in first-served order.
-    let mut region_rate: Vec<(usize, f64, f64)> = Vec::new();
+
+    let mut region_sent_and_satisfied: Vec<(usize, f64, f64)> = Vec::new();
     for kind in 0..NR {
         let rate = demand[kind];
         if rate <= 0.0 {
@@ -463,26 +497,29 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
             apdex: score.apdex,
             completion: score.completion,
             mean: mean_of(&score.result),
-            p50: percentile(&score.result, 0.5),
-            p95: percentile(&score.result, 0.95),
-            p99: percentile(&score.result, 0.99),
+            p50: percentile(&score.result, MEDIAN),
+            p95: percentile(&score.result, P95),
+            p99: percentile(&score.result, P99),
         };
-        // Bots earn nothing and do not count toward Apdex or errors.
+
         if !PROFILE_SCORED[kind] {
             continue;
         }
         for (route, answer, raw) in &score.answers {
             let sent = rate * route.share;
             let own = apdex_of(answer, PROFILE_APDEX[kind]) * score.finish;
-            let at = match region_rate.iter().position(|(region, _, _)| *region == route.region) {
+            let at = match region_sent_and_satisfied
+                .iter()
+                .position(|(region, _, _)| *region == route.region)
+            {
                 Some(at) => at,
                 None => {
-                    region_rate.push((route.region, 0.0, 0.0));
-                    region_rate.len() - 1
+                    region_sent_and_satisfied.push((route.region, 0.0, 0.0));
+                    region_sent_and_satisfied.len() - 1
                 }
             };
-            region_rate[at].1 += sent;
-            region_rate[at].2 += sent * answer.success * own;
+            region_sent_and_satisfied[at].1 += sent;
+            region_sent_and_satisfied[at].2 += sent * answer.success * own;
             let row = RegionKindRow {
                 rate: sent,
                 success: answer.success,
@@ -490,9 +527,13 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
                 near: apdex_of(raw, PROFILE_APDEX[kind]) * score.finish,
                 fail: answer.fail,
                 hop_ms: user_hop_ms(game, route.extra_ms, kind),
-                p99: percentile(answer, 0.99),
+                p99: percentile(answer, P99),
             };
-            let rows = match ledger.region_kinds.iter_mut().find(|(region, _)| *region == route.region) {
+            let rows = match ledger
+                .region_kinds
+                .iter_mut()
+                .find(|(region, _)| *region == route.region)
+            {
                 Some((_, rows)) => rows,
                 None => {
                     ledger.region_kinds.push((route.region, Vec::new()));
@@ -515,8 +556,8 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
         for cause in 0..CAUSE_COUNT {
             ledger.errors[cause] += rate * score.result.fail[cause];
         }
-        // Fintech fines a stale answer to a money kind.
-        if !game.sandbox && (MONEY_KINDS_MASK >> kind) & 1 == 1 {
+
+        if !game.sandbox && has_kind(MONEY_KINDS_MASK, kind) {
             let fine = rate
                 * score.result.fail[STALE]
                 * KIND_VALUE[kind]
@@ -529,40 +570,53 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
         if score.result.success > 0.0 {
             mixture.push((score.result, rate * score.result.success));
         }
-        if score.result.success < 0.05 && score.result.fail[STRANDED] >= 0.5 {
+        if score.result.success < FAILING_MAX_SUCCESS
+            && score.result.fail[STRANDED] >= FAILING_MIN_STRANDED
+        {
             ledger.failing.push(kind);
         }
     }
     let overall = blend(&mixture);
-    ledger.regions = region_rate
+    ledger.regions = region_sent_and_satisfied
         .iter()
         .map(|&(region, sent, satisfied)| (region, if sent > 0.0 { satisfied / sent } else { 1.0 }))
         .collect();
     ledger.demand = rate_total;
     ledger.served = served;
-    ledger.latency = if served > 0.0 { latency_weight / served } else { 0.0 };
-    ledger.apdex = if rate_total > 0.0 { satisfied / rate_total } else { 1.0 };
+    ledger.latency = if served > 0.0 {
+        latency_weight / served
+    } else {
+        0.0
+    };
+    ledger.apdex = if rate_total > 0.0 {
+        satisfied / rate_total
+    } else {
+        1.0
+    };
     ledger.error_share = if rate_total > 0.0 {
         ledger.errors.iter().sum::<f64>() / rate_total
     } else {
         0.0
     };
     if let Some(overall) = overall {
-        ledger.p50 = percentile(&overall, 0.5);
-        ledger.p95 = percentile(&overall, 0.95);
-        ledger.p99 = percentile(&overall, 0.99);
+        ledger.p50 = percentile(&overall, MEDIAN);
+        ledger.p95 = percentile(&overall, P95);
+        ledger.p99 = percentile(&overall, P99);
     }
-    ledger.subscriptions = game.subscriptions;
-    ledger.revenue += game.subscriptions;
+    ledger.subscriptions_per_second = game.subscriptions_per_second;
+    ledger.revenue += game.subscriptions_per_second;
 
-    // Node rows: what each Node was sent, what it could take, and what it dropped.
     let origins = origins_of(design, pass);
     for (slot, node) in nodes.iter().enumerate() {
         let rates = pass.rates(slot);
         let order = pass.order.get(slot).copied().unwrap_or_default();
         let model = pass.models.get(slot);
         let inbound = order.sum(rates);
-        let share = if node.down { 0.0 } else { model.map(|model| model.share).unwrap_or(1.0) };
+        let share = if node.down {
+            0.0
+        } else {
+            model.map(|model| model.share).unwrap_or(1.0)
+        };
         let pool = pass.connections.get(slot).copied().flatten();
         let refused_share = match pool {
             Some((used, max)) if used > max => 1.0 - max / used,
@@ -571,43 +625,62 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
         let mut out = Keyed::default();
         for &edge in design.out_edges_of(slot) {
             let edge = edge as usize;
-            let (Some(carried), Some(keys)) = (pass.links.get(edge), pass.link_kinds.get(edge)) else { continue };
+            let (Some(carried), Some(keys)) = (pass.links.get(edge), pass.link_kinds.get(edge))
+            else {
+                continue;
+            };
             for kind in keys.iter() {
                 out.add(kind, carried[kind]);
             }
         }
-        // Each kind's own hop time at this Node, before it is blended into `latency`.
+
         let mut hop_by_kind = Keyed::default();
         if let Some(model) = model {
-            for kind in order.iter().filter(|kind| (model.service_mask >> kind) & 1 == 1) {
-                hop_by_kind.set(kind, model.service_fixed[kind] + model.service_variable[kind]);
+            for kind in order
+                .iter()
+                .filter(|kind| has_kind(model.service_mask, *kind))
+            {
+                hop_by_kind.set(
+                    kind,
+                    model.service_fixed[kind] + model.service_variable[kind],
+                );
             }
         }
         let latency = if inbound > 0.0 && model.is_some() {
-            order.iter().fold(0.0, |total, kind| total + rates[kind] * hop_by_kind.values[kind]) / inbound
+            order.iter().fold(0.0, |total, kind| {
+                total + rates[kind] * hop_by_kind.values[kind]
+            }) / inbound
         } else {
             0.0
         };
-        // A Queue's wait applies to every kind it holds; every other Node waits for nothing.
+
         let mut wait_by_kind = Keyed::default();
         if node.type_code == component::QUEUE {
             let tasks = pass.tasks.get(slot).copied().unwrap_or([0.0; NK]);
-            for kind in pass.task_order.get(slot).copied().unwrap_or_default().iter() {
+            for kind in pass
+                .task_order
+                .get(slot)
+                .copied()
+                .unwrap_or_default()
+                .iter()
+            {
                 if tasks[kind] > 0.0 {
                     wait_by_kind.set(kind, completion.waits[slot]);
                 }
             }
         }
-        // The slowest 1% of this Node's own time, for its busiest kind: the first
-        // kind, then each that carries strictly more.
+
         let busiest = order.iter().fold(None::<usize>, |best, kind| match best {
-            Some(current) if rates[kind].partial_cmp(&rates[current]) != Some(core::cmp::Ordering::Greater) => {
+            Some(current)
+                if rates[kind].partial_cmp(&rates[current])
+                    != Some(core::cmp::Ordering::Greater) =>
+            {
                 Some(current)
             }
             _ => Some(kind),
         });
         let p99 = match (model, busiest) {
-            (Some(model), Some(kind)) if inbound > 0.0 && (model.service_mask >> kind) & 1 == 1 => {
+            (Some(model), Some(kind)) if inbound > 0.0 && has_kind(model.service_mask, kind) => {
                 let own = crate::dist::Hop {
                     share: 1.0,
                     fixed_ms: model.service_fixed[kind],
@@ -617,23 +690,25 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
                     value: 1.0,
                     ..crate::dist::Hop::default()
                 };
-                percentile(&through(own, &[], false), 0.99)
+                percentile(&through(own, &[], false), P99)
             }
             _ => 0.0,
         };
-        // Load diagnosis: each kind's share of the work at the limit, and the mean work per request.
+
         let work_of = |kind: usize| match model {
             Some(model) if model.work_unit.is_some() => model.work[kind],
             _ => 1.0,
         };
-        let work_total = order.iter().fold(0.0, |total, kind| total + rates[kind] * work_of(kind));
+        let work_total = order
+            .iter()
+            .fold(0.0, |total, kind| total + rates[kind] * work_of(kind));
         let mut work_share = Keyed::default();
         if work_total > 0.0 {
             for kind in order.iter() {
                 work_share.set(kind, rates[kind] * work_of(kind) / work_total);
             }
         }
-        // Each kind's Cost receipt, where the model's cost depends on the kind.
+
         let mut receipts = Vec::new();
         if let Some(model) = model {
             for kind in order.iter().filter(|kind| rates[*kind] > 0.0) {
@@ -641,7 +716,15 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
                     component::SERVER if kind < NR => {
                         let code = setup.board.code.node(slot);
                         let flags = setup.board.flags.get(slot).copied().unwrap_or_default();
-                        Some(crate::model::server_receipt(game, node, model, kind, &code.calls[kind], &flags, code.cpu[kind]))
+                        Some(crate::model::server_receipt(
+                            game,
+                            node,
+                            model,
+                            kind,
+                            &code.calls[kind],
+                            &flags,
+                            code.cpu[kind],
+                        ))
                     }
                     component::DATABASE | component::REPLICA => {
                         crate::model::database_receipt(game, node, model, rates, kind)
@@ -671,17 +754,32 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
         let queued = matches!(node.type_code, component::QUEUE | component::LOG);
         ledger.nodes[slot] = NodeRow {
             inbound,
-            traffic: Keyed { values: *rates, keys: order },
-            capacity: if inbound > 0.0 { model.map(|model| model.capacity).unwrap_or(0.0) } else { 0.0 },
+            traffic: Keyed {
+                values: *rates,
+                keys: order,
+            },
+            capacity: if inbound > 0.0 {
+                model.map(|model| model.capacity).unwrap_or(0.0)
+            } else {
+                0.0
+            },
             utilization,
-            limit: if refused_share > 0.0 { 8 } else { model.map(|model| model.limit as usize).unwrap_or(0) },
+            limit: if refused_share > 0.0 {
+                LIMIT_CONNECTIONS
+            } else {
+                model.map(|model| model.limit as usize).unwrap_or(0)
+            },
             latency,
             p99,
             hop_by_kind,
             wait_by_kind,
             work_share,
             work_unit: model.and_then(|model| model.work_unit),
-            cost: if inbound > 0.0 { work_total / inbound } else { 0.0 },
+            cost: if inbound > 0.0 {
+                work_total / inbound
+            } else {
+                0.0
+            },
             receipts,
             repeated: inbound.min(pass.repeated.get(slot).copied().unwrap_or(0.0)),
             origins: from_users,
@@ -691,8 +789,9 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
             stranded_kinds: strand.map(|(_, kinds)| kinds).unwrap_or_default(),
             connections: pool,
             hit_ratio: matches!(node.type_code, component::CACHE | component::CDN).then_some(hits),
-            evictions: (node.type_code == component::CACHE)
-                .then(|| rates[NR + backend::Q_READ] * (1.0 - hits) * eviction_share_of(game, node)),
+            evictions: (node.type_code == component::CACHE).then(|| {
+                rates[NR + backend::Q_READ] * (1.0 - hits) * eviction_share_of(game, node)
+            }),
             age: queued.then(|| completion.waits[slot]),
             lag_ms: (node.type_code == component::REPLICA).then_some(pass.lag_ms),
             disk: model.is_some_and(|model| model.disk),
@@ -700,18 +799,32 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
             resources: model.map(|model| model.resources).unwrap_or_default(),
             throttled: model.is_some_and(|model| model.throttled),
             swapping: model.is_some_and(|model| model.swapping),
-            status: status_of(node.down, inbound, utilization, stranded > 0.0 || refused_share > 0.0),
+            status: status_of(
+                node.down,
+                inbound,
+                utilization,
+                stranded > 0.0 || refused_share > 0.0,
+            ),
         };
     }
 
-    // Analytics turns sampled traffic into Insight, and fills in each tap's own row.
-    let insight = insight_of(game, nodes, setup.links, &origins, &ledger.kinds, &mut ledger.nodes);
+    let insight = insight_of(
+        game,
+        nodes,
+        setup.links,
+        &origins,
+        &ledger.kinds,
+        &mut ledger.nodes,
+    );
     ledger.insight = insight.pools;
     ledger.breadth = insight.breadth;
     ledger.breadth_regions = insight.regions;
-    ledger.links = setup.links.iter().map(|link| link_row(game, design, pass, tree, &ledger.nodes, link)).collect();
+    ledger.links = setup
+        .links
+        .iter()
+        .map(|link| link_row(game, design, pass, tree, &ledger.nodes, link))
+        .collect();
 
-    // Velocity, then the bill and how it splits across kinds and Services.
     ledger.salaries = game.salaries;
     ledger.game_shares = game.shares;
     ledger.velocity = crate::bill::velocity_of(game, nodes, &ledger.nodes);
@@ -722,34 +835,32 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
     ledger
 }
 
-/// One Link in Game order, as the Ledger reads it.
 #[derive(Clone, Copy)]
 pub struct LinkIn {
     pub from: usize,
     pub to: usize,
-    /// The routing or mirror Edge for the pair, if the Link carries traffic.
+
     pub edge: Option<usize>,
     pub breaker: bool,
 }
 
-/// One Link's figures.
 #[derive(Clone, Copy, Default)]
 pub struct LinkRow {
     pub rate: f64,
     pub traffic: Keyed,
-    /// The kind carrying the most traffic, for the particle colour.
+
     pub kind: usize,
     pub failing: bool,
     pub failure: f64,
 }
 
-/// The share of traffic an Analytics tap's Link shows as sampled.
 const TAP_LINK_SHARE: f64 = 0.15;
 
-/// `sampledTraffic`: a tap's sampled volume, attributed to its source's incoming kinds.
 fn sampled_traffic(source: Option<&NodeRow>, rate: f64) -> Keyed {
     let mut traffic = Keyed::default();
-    let Some(source) = source.filter(|source| source.inbound > 0.0) else { return traffic };
+    let Some(source) = source.filter(|source| source.inbound > 0.0) else {
+        return traffic;
+    };
     let scale = ((source.inbound - source.dropped) / source.inbound) * rate;
     for (kind, carried) in source.traffic.entries() {
         traffic.set(kind, carried * scale);
@@ -757,7 +868,6 @@ fn sampled_traffic(source: Option<&NodeRow>, rate: f64) -> Keyed {
     traffic
 }
 
-/// A Link's row: a tap's sampled share of its source, or what the Edge carried.
 fn link_row(
     game: &GameCtx,
     design: &crate::routing::Design,
@@ -766,10 +876,16 @@ fn link_row(
     rows: &[NodeRow],
     link: &LinkIn,
 ) -> LinkRow {
-    if design.nodes.get(link.to).is_some_and(|to| COMPONENT_TAP[to.type_code as usize]) {
+    if design
+        .nodes
+        .get(link.to)
+        .is_some_and(|to| COMPONENT_TAP[to.type_code as usize])
+    {
         let source = rows.get(link.from);
         return LinkRow {
-            rate: source.map_or(0.0, |source| (source.inbound - source.dropped) * TAP_LINK_SHARE),
+            rate: source.map_or(0.0, |source| {
+                (source.inbound - source.dropped) * TAP_LINK_SHARE
+            }),
             traffic: sampled_traffic(source, TAP_LINK_SHARE),
             kind: kind::PAGE,
             failing: false,
@@ -777,21 +893,36 @@ fn link_row(
         };
     }
     let carried = match link.edge {
-        Some(edge) => Keyed { values: pass.links[edge], keys: pass.link_kinds[edge] },
+        Some(edge) => Keyed {
+            values: pass.links[edge],
+            keys: pass.link_kinds[edge],
+        },
         None => Keyed::default(),
     };
     let (kind, _) = carried
         .entries()
-        .fold((kind::PAGE, -1.0), |best, (kind, rate)| if rate > best.1 { (kind, rate) } else { best });
+        .fold((kind::PAGE, NO_TRAFFIC_YET), |best, (kind, rate)| {
+            if rate > best.1 {
+                (kind, rate)
+            } else {
+                best
+            }
+        });
     let rate = carried.entries().fold(0.0, |total, (_, rate)| total + rate);
-    let failing = rows
-        .get(link.to)
-        .is_some_and(|target| target.status == Status::Down || target.refused > 0.0 || target.dropped > 0.01);
-    LinkRow { rate, traffic: carried, kind, failing, failure: link_failure(game, design, tree, link, &carried, rate) }
+    let failing = rows.get(link.to).is_some_and(|target| {
+        target.status == Status::Down
+            || target.refused > 0.0
+            || target.dropped > LINK_FAILING_MIN_DROPPED_SHARE
+    });
+    LinkRow {
+        rate,
+        traffic: carried,
+        kind,
+        failing,
+        failure: link_failure(game, design, tree, link, &carried, rate),
+    }
 }
 
-/// `linkFailure`: the share of calls that fail on a Link that retries or has a
-/// breaker, by what it carries. Zero for every other Link: nothing reads it.
 fn link_failure(
     game: &GameCtx,
     design: &crate::routing::Design,
@@ -801,24 +932,24 @@ fn link_failure(
     rate: f64,
 ) -> f64 {
     let Some(edge) = link.edge else { return 0.0 };
-    let Some(policy) = design.edges.get(edge).copied() else { return 0.0 };
+    let Some(policy) = design.edges.get(edge).copied() else {
+        return 0.0;
+    };
     let watched = policy.retry != 0 || (link.breaker && game.has(research::CIRCUIT_BREAKERS));
     if !watched || policy.open || rate <= 0.0 {
         return 0.0;
     }
-    carried
-        .entries()
-        .fold(0.0, |total, (kind, share)| total + (share / rate) * tree.failure_on(edge, kind))
+    carried.entries().fold(0.0, |total, (kind, share)| {
+        total + (share / rate) * tree.failure_on(edge, kind)
+    })
 }
 
-/// What Analytics earned: Insight by pool, and how broadly each kind is sampled.
 struct Insight {
     pools: [f64; INSIGHT_POOLS.len()],
     breadth: Keyed,
     regions: Keyed,
 }
 
-/// The samples of one Component type and request kind.
 #[derive(Clone, Copy)]
 struct Sampled {
     kind: usize,
@@ -827,8 +958,6 @@ struct Sampled {
     profiled: f64,
 }
 
-/// `insightOf`: Analytics turns sampled traffic into Insight of each request kind,
-/// and each tap's own row takes the volume it samples.
 fn insight_of(
     game: &GameCtx,
     nodes: &[crate::model::Node],
@@ -837,10 +966,12 @@ fn insight_of(
     kinds: &[KindRow],
     rows: &mut [NodeRow],
 ) -> Insight {
-    // Each tap and its sources, in the order the Links name them.
     let mut taps: Vec<(usize, Vec<usize>)> = Vec::new();
     for link in links {
-        if !nodes.get(link.to).is_some_and(|to| COMPONENT_TAP[to.type_code]) {
+        if !nodes
+            .get(link.to)
+            .is_some_and(|to| COMPONENT_TAP[to.type_code])
+        {
             continue;
         }
         match taps.iter_mut().find(|(tap, _)| *tap == link.to) {
@@ -848,43 +979,63 @@ fn insight_of(
             None => taps.push((link.to, vec![link.from])),
         }
     }
-    // Samples by Component type and kind, in the order they were first seen.
+
     let mut sampled: Vec<Sampled> = Vec::new();
-    let mut index = vec![usize::MAX; COMPONENT_TAP.len() * NR];
-    // Failed samples by Component type, in the order they were first seen.
+    let mut index = vec![NO_INDEX; COMPONENT_TAP.len() * NR];
+
     let mut failed: Vec<(usize, f64)> = Vec::new();
     let mut regions = Keyed::default();
     let mut seen_regions = [0u64; NR];
     for (tap_slot, sources) in &taps {
-        let Some(tap) = nodes.get(*tap_slot) else { continue };
-        let rate = tap.sample_rate;
+        let Some(tap) = nodes.get(*tap_slot) else {
+            continue;
+        };
+        let sample_rate = tap.sample_rate;
         let volume = sources.iter().fold(0.0, |total, source| {
-            total + rows.get(*source).map_or(0.0, |entry| entry.inbound - entry.dropped)
+            total
+                + rows
+                    .get(*source)
+                    .map_or(0.0, |entry| entry.inbound - entry.dropped)
         });
         let mut traffic = Keyed::default();
         for source in sources {
-            for (kind, value) in sampled_traffic(rows.get(*source), rate).entries() {
+            for (kind, value) in sampled_traffic(rows.get(*source), sample_rate).entries() {
                 traffic.add(kind, value);
             }
         }
-        let capacity = crate::model::grown(ANALYTICS_CAPACITY, 2.0, tap.size - 1.0);
-        // Samples beyond the tap's capacity are dropped, evenly.
-        let kept = if tap.down || volume * rate <= 0.0 { 0.0 } else { (capacity / (volume * rate)).min(1.0) };
+        let capacity = crate::model::grown(
+            ANALYTICS_CAPACITY,
+            ANALYTICS_CAPACITY_GROWTH_PER_SIZE,
+            tap.size - 1.0,
+        );
+
+        let kept = if tap.down || volume * sample_rate <= 0.0 {
+            0.0
+        } else {
+            (capacity / (volume * sample_rate)).min(1.0)
+        };
         for source in sources {
-            let (Some(entry), Some(from)) = (rows.get(*source), nodes.get(*source)) else { continue };
+            let (Some(entry), Some(from)) = (rows.get(*source), nodes.get(*source)) else {
+                continue;
+            };
             if kept <= 0.0 {
                 continue;
             }
-            let done = (entry.inbound - entry.dropped) * rate * kept;
+            let done = (entry.inbound - entry.dropped) * sample_rate * kept;
             for (kind, share) in origins[*source].entries() {
                 let samples = done * share;
                 if samples <= 0.0 {
                     continue;
                 }
                 let key = from.type_code * NR + kind;
-                if index[key] == usize::MAX {
+                if index[key] == NO_INDEX {
                     index[key] = sampled.len();
-                    sampled.push(Sampled { kind, samples: 0.0, meshed: 0.0, profiled: 0.0 });
+                    sampled.push(Sampled {
+                        kind,
+                        samples: 0.0,
+                        meshed: 0.0,
+                        profiled: 0.0,
+                    });
                 }
                 if seen_regions[kind] & (1 << from.region) == 0 {
                     seen_regions[kind] |= 1 << from.region;
@@ -895,52 +1046,75 @@ fn insight_of(
                 if from.mesh {
                     entry.meshed += samples;
                 }
-                if from.type_code == component::SERVER && RUNTIME_LANGUAGE[from.runtime] == language::JAVA {
+                if from.type_code == component::SERVER
+                    && RUNTIME_LANGUAGE[from.runtime] == language::JAVA
+                {
                     entry.profiled += samples;
                 }
-                // A request that fails or frustrates its user teaches Failure, a tolerated one half.
+
                 let answer = kinds[kind];
                 if answer.rate > 0.0 && PROFILE_SCORED[kind] {
                     let lost = samples * (1.0 - answer.success * answer.apdex);
-                    match failed.iter_mut().find(|(type_code, _)| *type_code == from.type_code) {
+                    match failed
+                        .iter_mut()
+                        .find(|(type_code, _)| *type_code == from.type_code)
+                    {
                         Some((_, total)) => *total += lost,
                         None => failed.push((from.type_code, 0.0 + lost)),
                     }
                 }
             }
         }
-        let inbound = volume * rate;
-        let utilization = if capacity > 0.0 { inbound / capacity } else { 0.0 };
+        let inbound = volume * sample_rate;
+        let utilization = if capacity > 0.0 {
+            inbound / capacity
+        } else {
+            0.0
+        };
         if let Some(row) = rows.get_mut(*tap_slot) {
             row.inbound = inbound;
             row.traffic = traffic;
             row.capacity = capacity;
             row.utilization = utilization;
-            row.limit = if inbound > capacity { Limit::Throughput as usize } else { Limit::None as usize };
+            row.limit = if inbound > capacity {
+                Limit::Throughput as usize
+            } else {
+                Limit::None as usize
+            };
             row.status = status_of(tap.down, volume, utilization, false);
         }
     }
-    // The square root per Component type and kind: a broad Design teaches more than a big one.
+
     let perk = game.insight_perk;
     let mut pools = [0.0f64; INSIGHT_POOLS.len()];
     let mut breadth = Keyed::default();
     for entry in &sampled {
         pools[entry.kind] += INSIGHT_YIELD
-            * (entry.samples.sqrt() + MESH_INSIGHT * entry.meshed.sqrt() + JVM_INSIGHT * entry.profiled.sqrt())
+            * (entry.samples.sqrt()
+                + MESH_INSIGHT * entry.meshed.sqrt()
+                + JVM_INSIGHT * entry.profiled.sqrt())
             * perk;
         breadth.add(entry.kind, 1.0);
     }
-    // Tail-based sampling keeps the failed traces: twice the Failure Insight.
-    let tail_sampled = if game.has(research::TAIL_SAMPLING) { 2.0 } else { 1.0 };
+
+    let tail_failure_multiplier = if game.has(research::TAIL_SAMPLING) {
+        TAIL_SAMPLING_FAILURE_MULTIPLIER
+    } else {
+        1.0
+    };
     for (_, lost) in &failed {
-        pools[NR] += INSIGHT_YIELD * FAILURE_YIELD * lost.max(0.0).sqrt() * perk * tail_sampled;
+        pools[NR] +=
+            INSIGHT_YIELD * FAILURE_YIELD * lost.max(0.0).sqrt() * perk * tail_failure_multiplier;
     }
-    Insight { pools, breadth, regions }
+    Insight {
+        pools,
+        breadth,
+        regions,
+    }
 }
 
-/// `evictionShareOf`: the share of a Cache's refills that push out a hot key.
 fn eviction_share_of(game: &GameCtx, node: &crate::model::Node) -> f64 {
-    let hot = (game.users * HOT_KB_PER_USER) / 1_000_000.0;
+    let hot = (game.users * HOT_KB_PER_USER) / KB_PER_GB;
     if hot > 0.0 {
         (1.0 - (crate::model::flat_scale(node.size) / hot).min(1.0)).max(0.0)
     } else {
@@ -948,10 +1122,9 @@ fn eviction_share_of(game: &GameCtx, node: &crate::model::Node) -> f64 {
     }
 }
 
-/// `originsOf`: each Node's traffic as shares of the Users' Request kinds behind it.
 pub fn origins_of(design: &crate::routing::Design, pass: &Pass) -> Vec<Keyed> {
     let count = design.nodes.len();
-    // Each Node's routing Edges in, in Link order: a mirror Edge carries no origins.
+
     let mut parents: Vec<Vec<usize>> = vec![Vec::new(); count];
     let mut routed = vec![false; design.edges.len()];
     for node in 0..count {
@@ -1001,12 +1174,11 @@ pub fn origins_of(design: &crate::routing::Design, pass: &Pass) -> Vec<Keyed> {
     origins
 }
 
-/// `bottleneckByKindOf`: the most utilized limiting Node on each kind's own path.
 pub fn bottleneck_by_kind(nodes: &[crate::model::Node], rows: &[NodeRow]) -> Vec<Option<usize>> {
     let mut by_kind = vec![None; NR];
     for (kind, by_kind) in by_kind.iter_mut().enumerate() {
         let mut best: Option<usize> = None;
-        let mut best_utilization = 0.6;
+        let mut best_utilization = BUSY_UTILIZATION;
         for (slot, node) in nodes.iter().enumerate() {
             if !COMPONENT_LIMITING[node.type_code] || node.down {
                 continue;
@@ -1028,7 +1200,6 @@ pub fn bottleneck_by_kind(nodes: &[crate::model::Node], rows: &[NodeRow]) -> Vec
     by_kind
 }
 
-/// The Nodes whose doubled capacity would earn the most, busiest first.
 pub fn busiest_nodes(nodes: &[crate::model::Node], rows: &[NodeRow]) -> Vec<usize> {
     let mut ranked: Vec<(usize, f64)> = Vec::new();
     for (slot, node) in nodes.iter().enumerate() {
@@ -1036,11 +1207,11 @@ pub fn busiest_nodes(nodes: &[crate::model::Node], rows: &[NodeRow]) -> Vec<usiz
             continue;
         }
         let utilization = rows.get(slot).map(|row| row.utilization).unwrap_or(0.0);
-        if utilization > 0.6 {
+        if utilization > BUSY_UTILIZATION {
             ranked.push((slot, utilization));
         }
     }
     ranked.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(core::cmp::Ordering::Equal));
-    ranked.truncate(3);
+    ranked.truncate(BUSIEST_NODE_COUNT);
     ranked.into_iter().map(|(slot, _)| slot).collect()
 }

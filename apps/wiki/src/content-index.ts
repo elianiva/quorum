@@ -8,11 +8,6 @@ import { Frontmatter } from './frontmatter.ts'
 import { linksIn } from './links.ts'
 import { islandAttributes } from './islands.ts'
 
-/* The one thing the client needs from every prose file, without the prose itself: which files a
-   language has, their frontmatter, and the wiki paths and Sandboxes each links to. A page's own
-   prose loads as its own chunk (src/content.ts), and each language's index loads with that
-   language's bundle, so an English reader never downloads the translations' metadata. */
-
 const WIKI = fileURLToPath(new URL('..', import.meta.url))
 
 const ROOTS = {
@@ -23,7 +18,6 @@ const ROOTS = {
 
 type Locale = keyof typeof ROOTS
 
-/** The virtual module that carries each language's index. English also carries the link graph. */
 const IDS: Readonly<Record<Locale, string>> = {
   en: 'virtual:content-index',
   es: 'virtual:content-index-es',
@@ -36,7 +30,6 @@ const RESOLVED: Readonly<Record<Locale, string>> = {
   ja: `\0${IDS.ja}`,
 }
 
-/** The public images' intrinsic sizes, so prose reserves their space before they load. */
 const IMAGE_ID = 'virtual:image-sizes'
 const IMAGE_RESOLVED = `\0${IMAGE_ID}`
 const PUBLIC = resolve(WIKI, 'public')
@@ -44,7 +37,6 @@ const IMAGE = /\.(?:png|gif|jpe?g|webp)$/i
 
 type ImageSize = Readonly<{ width: number; height: number }>
 
-/** PNG and GIF carry their size in a fixed header; the wiki's screenshots are PNG. */
 const imageSize = (data: Buffer): ImageSize | null => {
   if (data.length >= 24 && data.readUInt32BE(0) === 0x89504e47)
     return { width: data.readUInt32BE(16), height: data.readUInt32BE(20) }
@@ -132,7 +124,6 @@ export const contentIndex = (): Plugin => {
       return (await cached)[locale]
     },
     configureServer(server) {
-      // Markdown and public images are not imported by this module, so Vite cannot see their edits.
       server.watcher.add([...Object.values(ROOTS), PUBLIC])
       const reload = (file: string): void => {
         if (!file.endsWith('.md')) return

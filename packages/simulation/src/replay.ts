@@ -16,7 +16,6 @@ import { openRegions } from './regions.ts'
 import { serviceOf } from './team.ts'
 import { setFix } from './work.ts'
 
-/** A Design: every Node the player can change, by its board id, and every Link. */
 export const Design = Schema.Struct({
   nodes: Schema.Array(PlaybookNode),
   links: Schema.Array(
@@ -27,12 +26,10 @@ export const Design = Schema.Struct({
     }),
   ),
   regions: Schema.optionalKey(Schema.Array(Region)),
-  /** Fixes in the code, on a Challenge whose fixes cost Dev Hours. */
   fixes: Schema.optionalKey(Schema.Array(FixId)),
 })
 export type Design = typeof Design.Type
 
-/** What ends an incident by hand: each one the incident panel offers. */
 export const RESPONSES = [
   'disable-rule',
   'fence-leader',
@@ -53,7 +50,6 @@ export const RESPONSES = [
 ] as const
 export type Response = (typeof RESPONSES)[number]
 
-/** What the player may do while a Challenge runs: answer failures and incidents, and resize. */
 export const ReplayAction = Schema.TaggedUnion({
   Restart: { node: Schema.String },
   Replace: { node: Schema.String },
@@ -73,7 +69,6 @@ export const Replay = Schema.Struct({
 })
 export type Replay = typeof Replay.Type
 
-/** Abuse limits the server checks before running anything. */
 export const MAX_REPLAY_CHARS = 65_536
 export const MAX_DESIGN_NODES = 80
 export const MAX_REPLAY_ACTIONS = 400
@@ -81,7 +76,6 @@ export const MAX_REPLAY_ACTIONS = 400
 const changeable = (node: GameNode): boolean =>
   !COMPONENTS[node.type].fixed && !SHARED.includes(node.type)
 
-/** A Design keeps where each Node runs, which a Playbook leaves to the board it is placed on. */
 const PLACE_SETTINGS = ['zone', 'region'] as const
 const SETTINGS = [...STACK_SETTINGS, ...NODE_SETTINGS, ...PLACE_SETTINGS]
 
@@ -114,7 +108,6 @@ const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.str
 
 type Setter = (game: Game, id: string, node: GameNode) => Actions.Action
 
-/** Each setting goes through its action, so a value the board refuses is refused here too. */
 const SETTERS: ReadonlyArray<readonly [ReadonlyArray<keyof GameNode>, Setter]> = [
   [['workers'], (game, id, node) => Actions.setWorkers(game, id, node.workers)],
   [['sampleRate'], (game, id, node) => Actions.setSample(game, id, node.sampleRate)],
@@ -222,7 +215,6 @@ const SETTERS: ReadonlyArray<readonly [ReadonlyArray<keyof GameNode>, Setter]> =
 const nodeIn = (game: Game, id: string): GameNode | undefined =>
   game.nodes.find((entry) => entry.id === id)
 
-/** Sets a Node's Stack and settings. A refused setting stays as it was, as on the board. */
 const configure = (game: Game, id: string, settings: Record<string, unknown>): Built => {
   const start = nodeIn(game, id)
   if (!start) return Result.fail('A Node of the Design is missing.')
@@ -255,18 +247,11 @@ const configure = (game: Game, id: string, settings: Record<string, unknown>): B
   return Result.succeed(next)
 }
 
-/**
- * Applies a Design to a Challenge's start. Start Nodes the Design leaves out
- * are sold; the others keep their state and take the Design's settings. New
- * Nodes are placed, and every Link is made again in order. Placing or linking
- * what the board would refuse fails the Design.
- */
 export const applyDesign = (start: Game, design: Design): Built => {
   if (design.nodes.length > MAX_DESIGN_NODES) return Result.fail('The Design has too many Nodes.')
   const keys = new Set(design.nodes.map((entry) => entry.key))
   if (keys.size !== design.nodes.length) return Result.fail('The Design repeats a Node.')
   let game: Game = start
-  // A start may open regions already; the Design opens the rest.
   for (const region of (design.regions ?? []).filter(
     (open) => !openRegions(start).includes(open),
   )) {
@@ -312,7 +297,6 @@ export const applyDesign = (start: Game, design: Design): Built => {
     game = configured.success
     ids.set(entry.key, id)
   }
-  // Fixed Nodes link by id: the start's, and the Users of each region the Design opened.
   const endOf = (key: string): string | undefined =>
     ids.get(key) ?? game.nodes.find((node) => node.id === key && !changeable(node))?.id
   for (const entry of design.links) {
@@ -354,7 +338,6 @@ const RESPOND: Record<Response, (game: Game) => Actions.Action> = {
   'move-kind': Actions.moveKind,
 }
 
-/** Applies one run action. A refused action changes nothing, as a refused click does. */
 export const applyAction = (game: Game, action: ReplayAction): Game => {
   const result = ReplayAction.match(action, {
     Restart: ({ node }) => Actions.restart(game, node),

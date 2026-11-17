@@ -10,12 +10,6 @@ import { trackInstallPrompt } from '../../platform/analytics.ts'
 import { promptInstall, requestPwaUpdate, watchPwa } from '../../platform/pwa.ts'
 import type { MessageCases, UpdateResult } from './shared.ts'
 
-/* ==========================================================================
-   The PWA: the browser's install dialog, a waiting worker, and the network.
-   Rooms and feature keys need the network; the Company never does.
-   ========================================================================== */
-
-/** Opens the browser's install dialog and reports what the player chose. */
 const AskInstall = Command.define('AskPwaInstall', {
   args: {},
   messages: [Message.PwaInstallOutcome],
@@ -27,7 +21,6 @@ const AskInstall = Command.define('AskPwaInstall', {
     }),
 })
 
-/** Asks the waiting worker to activate. Its `controllerchange` reloads the page once. */
 const TakeUpdate = Command.define('TakePwaUpdate', {
   args: {},
   messages: [Message.Synced],
@@ -38,7 +31,6 @@ const TakeUpdate = Command.define('TakePwaUpdate', {
     }),
 })
 
-/** The title's prompt is one time: after it, the Settings row is the way in. */
 const seen = (model: Model): UpdateResult => {
   if (model.prefs.pwaPromptSeen) return { model }
   const prefs = { ...model.prefs, pwaPromptSeen: true }
@@ -71,7 +63,6 @@ export const pwaHandlers = (model: Model): MessageCases<UpdateResult, PwaTag> =>
   PwaPromptDismissed: () => seen(model),
 })
 
-/** The browser's PWA state while the page is open: install offer, update, and network. */
 export const pwaSubscriptions = Subscription.make<Model, Message>()((entry) => ({
   pwa: entry(
     { watching: Schema.Boolean },

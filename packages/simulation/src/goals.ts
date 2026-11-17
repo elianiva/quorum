@@ -14,10 +14,8 @@ import {
 } from './lookups.ts'
 import type { Game, GameNode } from './state.ts'
 
-/** Warn this many sim seconds before a Burstable box runs out of CPU credits. */
 const CREDIT_WARNING = 120
 
-/** Who would know the fact in real life. The web app gives each kind its Senders (GDD 18). */
 export type AdviceFrom =
   | 'cloud'
   | 'monitoring'
@@ -27,7 +25,6 @@ export type AdviceFrom =
   | 'customers'
   | 'mentor'
 
-/** A button on the Mail. The id names what it does; the web app maps it to a Message. */
 export interface AdviceAction {
   readonly id: string
   readonly label: string
@@ -36,31 +33,24 @@ export interface AdviceAction {
 type Node = { readonly node: string }
 type Nothing = Record<never, never>
 
-/** What each kind of advice is about, and the values the web app's letters may quote. */
 export type AdviceVars = {
   readonly credits: Node
   readonly memory: Node
-  /** Out of RAM because Postgres shares the box. */
   readonly 'memory-shared': Node
   readonly workers: Node
-  /** Workers busy on a runtime with a pool size the player can raise. */
   readonly 'workers-pool': Node & { readonly runtime: string }
   readonly connections: Nothing
   readonly network: Node
   readonly disk: Node
   readonly cpu: Node
   readonly throughput: Node
-  /** A Node limits the Design, without a named reason. */
   readonly limit: Node
   readonly drawer: Nothing
   readonly collect: Nothing
   readonly failed: Node
   readonly restarting: Node
-  /** A query has no index, and the player can add one. */
   readonly 'slow-query-fix': Nothing
-  /** A query has no index, and Query analysis is not researched yet. */
   readonly 'slow-query': Nothing
-  /** Writes fail: they need the primary Database. */
   readonly 'failing-writes': { readonly kind: string }
   readonly failing: { readonly kind: string }
   readonly stranded: Node
@@ -75,8 +65,6 @@ export type AdviceVars = {
 
 export type AdviceTopic = keyof AdviceVars
 
-/** A fact worth telling the player. `key` names the thing it is about, so a repeat joins its Thread.
- *  `text` is the plain fact; the web app writes the letter from `topic` and `vars`. */
 export interface Advice {
   readonly key: string
   readonly from: AdviceFrom
@@ -100,7 +88,6 @@ const advice = <T extends AdviceTopic>(
 const limitAdvice = (game: Game, node: GameNode, limit: Limit): Advice => {
   const name = nodeLabel(game, node)
   const key = (kind: string) => `${kind}:${limit}:${node.id}`
-  // A capacity fact names a Node, so its Sender offers that Node's buttons (GDD 18 "Senders").
   const cloud = cloudActions(game, node.id)
   const alerts = alertActions(node.id)
   switch (limit) {
@@ -220,13 +207,6 @@ const strandedHint = (kind: RequestKind): string => {
 
 const SHOW = (id: string): AdviceAction => ({ id: `show:${id}`, label: 'Show on Board' })
 
-/**
- * Cloud Mail about a Node (GDD 18 "Senders"): the Inspector is where a Node is resized, where its
- * limit is raised, and where its pricing model is chosen, so every button selects the Node and
- * opens it. Switch to Reserved needs a pricing model to switch: a sized compute Node from Series A.
- * Acknowledge is the one button that answers the Mail, so a warning the player has read leaves
- * Needs action while the Thread still records the cause.
- */
 export const cloudActions = (game: Game, nodeId: string): ReadonlyArray<AdviceAction> => {
   const node = game.nodes.find((entry) => entry.id === nodeId)
   return [
@@ -240,16 +220,12 @@ export const cloudActions = (game: Game, nodeId: string): ReadonlyArray<AdviceAc
   ]
 }
 
-/** Alerts Mail: Show on Board where it names a Node, and the pager's own two buttons. */
 export const alertActions = (nodeId: string | null = null): ReadonlyArray<AdviceAction> => [
   ...(nodeId === null ? [] : [SHOW(nodeId)]),
   { id: 'ack', label: 'Acknowledge' },
   { id: 'mute', label: 'Mute for 1 h' },
 ]
 
-/** A Node that reached its limit, the fact that its Mail states: the work it carries fills the
- *  resource that limits it, it has run out of RAM or CPU credits, or its working set has left RAM,
- *  so every read that misses the buffer cache now waits on the volume. */
 const atLimit = (entry: Ledger['nodes'][string]): boolean =>
   entry.utilization >= 1 || entry.swapping || entry.throttled || entry.disk
 
@@ -359,10 +335,6 @@ export const nextAdvice = (game: Game, ledger: Ledger): Advice => {
       cloudActions(game, draining.id),
     )
   }
-  // A Node that reached its limit: hint at the resource it ran out of, not the revenue-optimal
-  // answer. Load short of the limit stays on the Board's gauges, because the Mail that names a
-  // limit says the Node is at it (18 "Mail", rule 10). A limit that is a state, such as a working
-  // set that outgrew RAM, holds at any load and counts as one.
   const limited = game.nodes
     .filter((node) => COMPONENTS[node.type].limiting && !isDown(node))
     .map((node) => [node, ledger.nodes[node.id]] as const)

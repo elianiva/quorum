@@ -2,11 +2,6 @@ import { Schema } from 'effect'
 import { Rpc, RpcGroup } from 'effect/rpc'
 import { ApiError } from './errors.ts'
 
-/**
- * The Exit a survey describes: the history row an Exit writes, without its
- * snapshot. The API Worker checks it against the catalog before it stores
- * anything, so only a Company that ended can answer.
- */
 export const SurveyExit = Schema.Struct({
   exit: Schema.String,
   stage: Schema.Finite,
@@ -20,13 +15,10 @@ export const SurveyExit = Schema.Struct({
 })
 export type SurveyExit = typeof SurveyExit.Type
 
-/** The two questions after an Exit, and the Exit they describe. */
 export const SurveySubmission = Schema.Struct({
-  /** A random id the browser keeps; there are no accounts. */
   deviceId: Schema.String,
   locale: Schema.String,
   exit: SurveyExit,
-  /** What went wrong while the player played. */
   issues: Schema.String,
   likes: Schema.String,
 })

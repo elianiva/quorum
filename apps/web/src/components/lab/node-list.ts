@@ -8,7 +8,6 @@ import { rate } from '@quorum/ui/game/format'
 import { Message } from '@/game/message.ts'
 import type { Model } from '@/game/model.ts'
 
-/** A Node's load as the cards show it: the share of its limiting resource in use. */
 const loadOf = (t: Messages, ledger: Ledger, id: string): string => {
   const own = ledger.nodes[id]
   if (!own) return t.nodeList.noLoad

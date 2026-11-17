@@ -1,8 +1,3 @@
-/* The wiki's interface copy in English, the source of the shape every language must have.
-   `../es/` is typed as `Messages`, so a missing or extra key fails typecheck. Keys that code
-   reads for logic (a group's name, a section's id) stay English elsewhere; only display text
-   lives here. Game nouns follow `apps/web/src/i18n`. */
-
 export const chrome = {
   site: {
     name: 'Quorum Wiki',
@@ -136,7 +131,6 @@ export const chrome = {
     continue: 'Continue',
     again: 'Read again',
   },
-  /** The Patterns section's groups, by the English name the frontmatter uses. */
   groups: {
     Cost: { name: 'Cost', blurb: 'Pay for what you use and know what each user costs.' },
     'Deploys and change': {
@@ -196,7 +190,6 @@ export const chrome = {
     searching: 'Searching…',
     unavailable: 'Search is unavailable.',
     none: 'No page matches.',
-    /** What a page's section is called, so "tutorial" and "guide" find those pages. */
     kinds: {
       tutorials: 'tutorial',
       guides: 'guide',

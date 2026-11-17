@@ -28,18 +28,12 @@ const ok = (action: Action): Game => {
   return action.success
 }
 
-/** What the player does: once at the start, then after each objective that passes. */
 type Plan = (game: Game, passed: number) => Game
 
 const idle: Plan = (game) => game
 
-/**
- * Sim seconds per Step, far coarser than the game's 0.1 s so the suite stays fast.
- * Every play reaches the same objective at 10 s as at 1 s; `SLOW_TESTS=1` plays at 1 s.
- */
-const STEP = SLOW ? 1 : 10
+const COARSE_STEP_SECONDS = SLOW ? 1 : 10
 
-/** Plays a guided Sandbox for some sim seconds, adding an index when a slow query is found. */
 const play = (
   id: SandboxId,
   plan: Plan,
@@ -50,12 +44,11 @@ const play = (
   let game = plan(sandbox.start(), 0)
   let progress = START
   let elapsed = 0
-  for (; elapsed < seconds && !passedAll(sandbox, progress); elapsed += STEP) {
-    game = step(game, STEP).game
+  for (; elapsed < seconds && !passedAll(sandbox, progress); elapsed += COARSE_STEP_SECONDS) {
+    game = step(game, COARSE_STEP_SECONDS).game
     if (index && game.incident?.kind === 'slow-query' && game.time - game.incident.startedAt > 15)
       game = ok(addIndex(game, 'database'))
-    // The game checks objectives on the flow alone; the Bottleneck search would triple the cost.
-    const next = advanceSandbox(sandbox, progress, game, solveFlow(game), STEP)
+    const next = advanceSandbox(sandbox, progress, game, solveFlow(game), COARSE_STEP_SECONDS)
     game = next.game
     progress = next.progress
     if (next.advanced) game = plan(game, progress.objective)
@@ -72,7 +65,6 @@ const behindLoadBalancer = (game: Game): Game => {
   return ok(Actions.connect(rewired, lb, 'server'))
 }
 
-/** Adds an App Server behind the Load Balancer, linked to `to`. */
 const addServer = (game: Game, to: string, workers?: number): Game => {
   const lb = game.nodes.find((node) => node.type === 'lb')?.id ?? ''
   const placed = ok(Actions.place(game, 'server', 600, 560))
@@ -81,7 +73,6 @@ const addServer = (game: Game, to: string, workers?: number): Game => {
   return workers === undefined ? linked : ok(Actions.setWorkers(linked, id, workers))
 }
 
-/** Puts a data Node between the App Servers and the Database. */
 const inFront = (game: Game, type: 'pooler' | 'cache'): Game => {
   const placed = ok(Actions.place(game, type, 740, 280))
   const id = lastId(placed)
@@ -95,10 +86,8 @@ const inFront = (game: Game, type: 'pooler' | 'cache'): Game => {
   return ok(Actions.connect(rewired, id, 'database'))
 }
 
-/** Long enough for any objective to pass twice over. */
 const LONG = 900
 
-/** 14 "Length": the fastest pass of a guided Sandbox takes 4 to 11 sim minutes. */
 const passesInTime = (
   run: Readonly<{ objective: number; elapsed: number }>,
   objectives: number,
@@ -120,7 +109,6 @@ describe('guided Sandboxes pass with their fix and stall without it', { timeout:
             : game
     passesInTime(play('out-of-credits', plan, LONG), 3)
     expect(play('out-of-credits', idle, LONG).objective).toBe(0)
-    // A bigger Burstable box earns credits at night, then runs dry at four times the demand.
     expect(
       play(
         'out-of-credits',
@@ -144,7 +132,6 @@ describe('guided Sandboxes pass with their fix and stall without it', { timeout:
       return game
     }
     passesInTime(play('shared-box', plan, LONG), 3)
-    // One big box serves the demand but costs more than the budget allows.
     const vertical: Plan = (game, passed) =>
       passed <= 1 ? ok(Actions.resize(game, 'server', 1)) : game
     expect(play('shared-box', vertical, LONG).objective).toBe(1)
@@ -187,8 +174,6 @@ describe('guided Sandboxes pass with their fix and stall without it', { timeout:
     const bigger: Plan = (game, passed) =>
       passed === 0 ? ok(Actions.resize(game, 'server', 1)) : game
     expect(play('event-loop-stall', bigger, LONG).objective).toBe(0)
-    // Or keep one event loop for the rest, and send login hashing to its own Node.js servers.
-    // One event loop of logins alone does not survive 4× hashing: the hasher needs every core.
     const routeLogin: Plan = (game, passed) => {
       if (passed > 0) return game
       const placed = ok(Actions.place(game, 'gw', 300, 280))
@@ -216,9 +201,6 @@ describe('guided Sandboxes pass with their fix and stall without it', { timeout:
           ? ok(Actions.resize(game, 'database', 1))
           : game
     passesInTime(play('read-mostly', plan, LONG, true), 3)
-    // A Read Replica takes the reads too, and some come back stale. It holds the first objective;
-    // at 8,000 users its stale reads alone pass 1% of requests, and a replica big enough for the
-    // load costs more than the budget. The Cache is the cheaper fix, which is the lesson.
     const replica: Plan = (game, passed) => {
       if (passed > 0) return game
       const placed = ok(Actions.place(game, 'replica', 880, 520))
@@ -242,11 +224,8 @@ describe('guided Sandboxes pass with their fix and stall without it', { timeout:
       (game, passed) =>
         passed === 0 ? ok(Actions.setCacheGuard(game, 'cache', change)) : game
     passesInTime(play('stampede', guard({ coalesce: true, warming: true }), LONG), 3)
-    // A cold Cache overloads the database, its refills time out, and it stays cold.
     expect(play('stampede', idle, LONG).objective).toBe(1)
-    // Coalescing alone survives one restart; at 50% more demand the cold Cache still slows the App Servers.
     expect(play('stampede', guard({ coalesce: true }), LONG).objective).toBe(2)
-    // A bigger Database survives too, at a Burn the budget does not allow.
     const bigger: Plan = (game, passed) =>
       passed === 0
         ? ok(
@@ -281,10 +260,8 @@ describe('guided Sandboxes pass with their fix and stall without it', { timeout:
       }
     passesInTime(play('slow-uploads', queue(true), LONG), 3)
     expect(play('slow-uploads', idle, LONG).objective).toBe(1)
-    // Without a dead-letter queue, the poison message keeps the Workers busy and the queue climbs.
     const poisoned = play('slow-uploads', queue(false), LONG)
     expect(poisoned.objective).toBe(2)
-    // More PHP-FPM workers only add waiting: the boxes are out of CPU.
     const workers: Plan = (game, passed) =>
       passed === 0
         ? ok(Actions.setWorkers(ok(Actions.setWorkers(game, 'server1', 40)), 'server2', 40))
@@ -310,9 +287,7 @@ describe('guided Sandboxes pass with their fix and stall without it', { timeout:
       }
     passesInTime(play('bots', waf(2), LONG), 3)
     expect(play('bots', idle, LONG).objective).toBe(1)
-    // Paranoia 4 blocks 6% of real users: errors never fall under 1%.
     expect(play('bots', waf(4), LONG).objective).toBe(0)
-    // A third App Server rides out the flood, over the Burn budget.
     const third: Plan = (game, passed) => {
       if (passed > 0) return game
       const placed = ok(Actions.place(game, 'server', 600, 580))
@@ -329,7 +304,6 @@ describe('guided Sandboxes pass with their fix and stall without it', { timeout:
 })
 
 describe('the Series A track', () => {
-  /** A third Go App Server behind the Load Balancer, in the zone it is placed in. */
   const third = (game: Game): Game => {
     const placed = ok(Actions.place(game, 'server', 600, 580))
     const id = lastId(placed)
@@ -347,11 +321,9 @@ describe('the Series A track', () => {
         : ok(Actions.setStandby(ok(Actions.setZone(game, 'server2', 'b')), 'database', true))
     passesInTime(play('zone-outage', spread, LONG), 3)
     expect(play('zone-outage', idle, LONG).objective).toBe(1)
-    // More App Servers in the same zone go down with it.
     expect(
       play('zone-outage', (game, passed) => (passed > 0 ? game : third(game)), LONG).objective,
     ).toBe(1)
-    // Spread and a spare server survive too, over the Burn budget.
     const spare: Plan = (game, passed) => (passed > 0 ? game : third(spread(game, 0)))
     expect(play('zone-outage', spare, LONG).objective).toBe(2)
   }, 60_000)
@@ -376,13 +348,10 @@ describe('the Series A track', () => {
       }
     passesInTime(play('cold-start', scaler(true, 2, 1), LONG), 3)
     expect(play('cold-start', idle, LONG).objective).toBe(1)
-    // Two warm copies all night run over the Burn budget.
     expect(play('cold-start', scaler(true, 2, 2), LONG).objective).toBe(2)
-    // A box two sizes bigger takes the spike and costs too much at night.
     const vertical: Plan = (game, passed) =>
       passed > 0 ? game : ok(Actions.resize(ok(Actions.resize(game, 'server1', 1)), 'server1', 1))
     expect(play('cold-start', vertical, LONG).objective).toBe(2)
-    // An Autoscaler on VMs alone reacts too late, then catches up: slower, not failing.
     expect(play('cold-start', scaler(false, 1, 1), LONG).elapsed).toBeGreaterThan(
       play('cold-start', scaler(true, 2, 1), LONG).elapsed,
     )
@@ -405,7 +374,6 @@ describe('the Series A track, continued', () => {
       3,
     )
     expect(play('stale-checkout', idle, LONG).objective).toBe(1)
-    // A second replica lags as far behind as the first.
     const replicas: Plan = (game, passed) => {
       if (passed > 0) return game
       const placed = ok(Actions.place(game, 'replica', 1120, 400))
@@ -455,7 +423,6 @@ describe('the Series B track', () => {
       onBoth((game, id) => ok(Actions.setLinkPolicy(game, id, 'database', change)))
     passesInTime(play('retry-storm', policy({ retries: 'backoff' }), LONG), 3)
     passesInTime(play('retry-storm', policy({ breaker: true }), LONG), 3)
-    // Naive retries keep the Database overloaded after the trigger ends.
     expect(play('retry-storm', idle, LONG).objective).toBe(1)
     const bigger: Plan = (game, passed) =>
       passed > 0 ? game : ok(Actions.resize(ok(Actions.resize(game, 'database', 1)), 'database', 1))
@@ -485,7 +452,6 @@ describe('the Series B track', () => {
   }, 60_000)
 })
 
-/** Opens a region with an App Server behind its Users, wired like the home ones. */
 const regionServer = (game: Game, region: 'eu' | 'apac'): Game => {
   let next = ok(Actions.place(ok(Actions.openRegion(game, region)), 'server', 600, 300, region))
   const id = lastId(next)
@@ -542,7 +508,8 @@ describe('the Series C track', () => {
 describe('the free Sandbox', () => {
   test('holds demand flat, spends nothing, and starts no incidents', () => {
     let game = freeSandbox()
-    for (let elapsed = 0; elapsed < 1_800; elapsed += STEP) game = step(game, STEP).game
+    for (let elapsed = 0; elapsed < 1_800; elapsed += COARSE_STEP_SECONDS)
+      game = step(game, COARSE_STEP_SECONDS).game
     expect(game.users).toBe(freeSandbox().users)
     expect(game.cash).toBe(freeSandbox().cash)
     expect(game.incident).toBeNull()
@@ -555,8 +522,6 @@ describe('the free Sandbox', () => {
   })
 
   test('places every Component that is not fixed to the board', () => {
-    // Users and Payments come with every board, once. A second Database lands on its own and holds
-    // no rows until a box makes it a Data Group with another (07 "Data Groups").
     for (const type of COMPONENT_IDS.filter((id) => !COMPONENTS[id].fixed)) {
       const placed = Actions.place(freeSandbox(), type, 600, 500)
       expect(R.isSuccess(placed)).toBe(true)

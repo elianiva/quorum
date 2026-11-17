@@ -1,32 +1,5 @@
 import type { ComponentId } from '@quorum/simulation/catalog'
-import { CARD_W, CLEARANCE, heightOf, type Placed, type Pt } from './geometry.ts'
-
-/*
- * Tidy by role column.
- *
- * The board is five columns, left to right:
- *
- *   0. entry and external providers: Users, edge, LLM, PSP, Search
- *   1. compute and its watchers: App Servers, Analytics, Payments, Autoscalers
- *   2. queue and middle data: Queue, Cache, Storage, the Replicas that fill it
- *   3. workers and pooler: Worker, Pooler, the Replicas that fill it, the Worker's Autoscaler
- *   4. database and warehouse: Database, Warehouse, the Replicas that fill it
- *
- * A Node's column comes from its role. Entry follows the inbound path, top to
- * bottom: Users, DNS, CDN, WAF, API Gateway, Load Balancer. External providers
- * follow in name order. A Load Balancer or API Gateway fed by compute or data
- * is not entry: it gets its own column just left of the Nodes it fronts. A Replica fills the shortest data column. An Autoscaler
- * sits with the Node it scales. An external provider stays in column 0 even when
- * compute calls it, which is why some of its links run backward.
- *
- * After the columns are placed, Tidy pulls each card toward the Nodes it talks
- * to, without changing the column order. A hub counts once per neighbor, so
- * Analytics does not drag the whole board. This is what aligns the Queue with
- * its Workers and the Pooler with its Database.
- *
- * A column taller than MAX_HEIGHT wraps into sub-columns, so a late board with
- * many App Servers or Databases stays compact instead of running off screen.
- */
+import { CARD_W, CARD_CLEARANCE_PX, heightOf, type Placed, type Pt } from './geometry.ts'
 
 type Role =
   | 'entry'
@@ -100,7 +73,6 @@ const COLUMN: Record<Role, number> = {
   warehouse: 4,
 }
 
-/** The vertical order inside each column. */
 const RANK: ReadonlyArray<Partial<Record<Role, number>>> = [
   { entry: 0 },
   { control: 0, compute: 1 },
@@ -111,23 +83,18 @@ const RANK: ReadonlyArray<Partial<Record<Role, number>>> = [
   { observability: 0 },
 ]
 
-/** The inbound path, top to bottom. External providers follow it in name order. */
 const ENTRY_ORDER: ReadonlyArray<ComponentId> = ['users', 'dns', 'cdn', 'waf', 'gw', 'lb']
 
-/** The tallest a column may get before it wraps into another sub-column. */
 const MAX_HEIGHT = 3000
 
 export type TidyOptions = Readonly<{
-  /** Space between two cards in a column. */
   clearance?: number
-  /** The height at which a column wraps. */
   maxHeight?: number
 }>
 
 type TidyNode<K extends string | number> = Placed & Readonly<{ id: string; group: K }>
 type TidyLink = Readonly<{ from: string; to: string }>
 
-/** The closest nondecreasing sequence to `targets`, given the minimum gap at each step. */
 const pava = (
   targets: ReadonlyArray<number>,
   gaps: ReadonlyArray<number>,
@@ -155,10 +122,6 @@ const pava = (
   return fitted.map((value, index) => value + offset[index]!)
 }
 
-/*
- * Pull each card toward the Nodes it talks to, without changing column order.
- * A hub counts once per neighbor, so Analytics does not drag the whole board.
- */
 const alignColumns = <K extends string | number>(
   nodes: ReadonlyArray<TidyNode<K>>,
   links: ReadonlyArray<TidyLink>,
@@ -221,7 +184,7 @@ export const tidy = <K extends string | number>(
 ): ReadonlyMap<string, Pt> => {
   const spots = new Map<string, Pt>()
   if (nodes.length === 0) return spots
-  const clearance = options.clearance ?? CLEARANCE
+  const clearance = options.clearance ?? CARD_CLEARANCE_PX
   const maxHeight = options.maxHeight ?? MAX_HEIGHT
   const pitch = CARD_W + clearance * 6
   const left = Math.min(...nodes.map((node) => node.x))
@@ -242,8 +205,6 @@ export const tidy = <K extends string | number>(
   const roleOf = byId.map((node) => ROLE[node.type])
   const zoneRank = new Map(order.map((group, at) => [group, at]))
 
-  // A Replica fills the shortest data column. When a link names a data parent,
-  // it sits with that parent instead.
   const dataColumns = [2, 3, 4]
   const heights = new Map(dataColumns.map((column) => [column, 0]))
   for (const [at, node] of byId.entries())
@@ -270,7 +231,6 @@ export const tidy = <K extends string | number>(
     heights.set(column, heights.get(column)! + heightOf(byId[at]!.type) + clearance)
   }
 
-  // An Autoscaler sits with the Node it scales.
   const attached = new Set<number>()
   for (const [at, node] of byId.entries()) {
     if (ROLE[node.type] !== 'control' || node.type !== 'autoscaler') continue
@@ -283,10 +243,6 @@ export const tidy = <K extends string | number>(
     }
   }
 
-  // A Load Balancer or API Gateway takes its column from the traffic, not its
-  // role. Fed only by the entry path, it stays with the entry. Fed by compute or
-  // data, it gets a column of its own just left of the Nodes it fronts, so the
-  // wires run left to right between what feeds it and what it serves.
   const placeable = new Set<ComponentId>(['lb', 'gw'])
   for (const [at, node] of byId.entries()) {
     if (!placeable.has(node.type)) continue
@@ -296,8 +252,6 @@ export const tidy = <K extends string | number>(
     columnOf[at] = Math.max(served - 0.5, fed + 0.5)
   }
 
-  // The rest of the control plane (CI/CD, Feature Flags, Secrets, Mesh, a free
-  // Autoscaler) has few links and no place in the flow. It gets a strip below.
   const strip = byId.flatMap((node, at) =>
     ROLE[node.type] === 'control' && !attached.has(at) ? [at] : [],
   )
@@ -326,9 +280,6 @@ export const tidy = <K extends string | number>(
   const sorted = [...columns].sort((p, q) => p[0] - q[0])
   for (const [column, members] of sorted) members.sort(compare(column))
 
-  // Order the cards of one role by the mean place of their neighbours, so wires
-  // run level instead of crossing. Sweep left to right, then right to left. The
-  // role blocks and the entry path keep their order.
   const place = new Map<number, number>()
   const mark = () => {
     for (const [, members] of sorted)
@@ -360,8 +311,6 @@ export const tidy = <K extends string | number>(
 
   let columnX = left
   for (const [, members] of sorted) {
-    // A column taller than the cap wraps into sub-columns, so a late board with
-    // many App Servers or Databases stays compact instead of running off screen.
     const subColumns: Array<Array<number>> = []
     let current: Array<number> = []
     let height = 0
@@ -387,8 +336,6 @@ export const tidy = <K extends string | number>(
     })
     columnX += subColumns.length * pitch
   }
-  // A strip Node, and a Node that is gone, has no place to align to, so its
-  // Links stay out of the alignment.
   const placed = nodes.filter((node) => spots.has(node.id))
   const placedIds = new Set(placed.map((node) => node.id))
   const aligned = new Map(

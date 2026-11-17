@@ -60,6 +60,4 @@ const kbdGroup = <M>(
     children,
   )
 
-/** Styled keyboard key(s). `Kbd.group` clusters several keys. Mirrors the
- *  shadcn v4 `kbd.tsx`. */
 export const Kbd = Object.assign(kbdContainer, { group: kbdGroup })

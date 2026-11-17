@@ -15,16 +15,11 @@ import { Message } from '@/game/message.ts'
 import { row } from '@quorum/ui/game/bits'
 import { type Panel, caption, percentNumber, picker, section } from './shared.ts'
 
-/**
- * How long an Event Stream keeps a message, as a calendar reads: one sim second is one calendar
- * minute, so 1,440 sim seconds are a day.
- */
 const retentionLabel = (t: Messages, seconds: number): string =>
   seconds >= 1_440
     ? t.units.d(Math.round((seconds / 1_440) * 10) / 10)
     : t.units.h(Math.round(seconds / 60))
 
-/** An Event Stream's partitions, acknowledgements, retention and key (07 "Event Stream"). */
 const events = (node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
   return [

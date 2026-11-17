@@ -2,10 +2,6 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { expect, test } from 'vitest'
 
-/* The package's import rules (ADR 0010): no file imports an app or the wire contract, and the
-   primitives import neither the game views nor the board, so the wiki can load a button
-   without loading the Simulation or Pixi. */
-
 const root = new URL('.', import.meta.url).pathname
 
 const files = (dir: string): ReadonlyArray<string> =>

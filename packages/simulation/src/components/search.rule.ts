@@ -11,10 +11,6 @@ import {
 import { warming } from '../life.ts'
 import { isDown } from '../lookups.ts'
 
-/**
- * A Search Engine's product, shards, replicas, and heap (07 "Search Engine"). Meilisearch runs one
- * node: it takes no shards, replicas, or heap.
- */
 export const setSearchOptions = (
   game: Game,
   id: string,
@@ -57,10 +53,6 @@ export const setSearchOptions = (
     return ok(patch(game, id, { ...change, ...(copy ? { life: warming(0) } : {}) }))
   })
 
-/**
- * Picks a Search Engine's refresh interval (07 "Search Engine"): a longer interval saves indexing
- * CPU, so the Node answers more queries and a bigger share of its answers are staler.
- */
 export const setSearchRefresh = (game: Game, id: string, refresh: number): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'search') return notAllowed('Only a Search Engine has a refresh interval.')

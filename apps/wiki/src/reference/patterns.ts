@@ -15,14 +15,8 @@ import {
 } from './shared.ts'
 import { css } from '@quorum/styled-system/css'
 
-/* The Patterns hub: every page of the section, under its group, as cards. The pages themselves
-   are authored (content/patterns); this page only lists them, so a new page appears here by its
-   `group` and `order`. */
-
 export type GroupName = keyof Messages['groups']
 
-/** The groups in reading order. A page names its group in English in its frontmatter, and the
-    name and the blurb of each, in the page's language, are interface copy (`t.groups`). */
 export const PATTERN_GROUPS: ReadonlyArray<GroupName> = [
   'Foundations',
   'Scaling steps',

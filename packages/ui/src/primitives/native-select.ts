@@ -5,10 +5,6 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import { icon } from './icon'
 import { ChevronDown } from 'lucide'
 
-/** Stateless styled native `<select>` — use when every option is always
- *  visible and plain. For a searchable/filterable dropdown submodel, use
- *  `select` (Listbox-backed) instead. */
-
 export const nativeSelectSizeKeys = ['default', 'sm'] as const
 export type NativeSelectSize = (typeof nativeSelectSizeKeys)[number]
 
@@ -126,8 +122,6 @@ export type NativeSelectConfig<M> = Readonly<{
   isInvalid?: boolean
   isAutofocus?: boolean
   name?: string
-  /** `<option>` elements — pass prebuilt markup, e.g.
-   *  `cities.map((city) => h.option([], [city]))`. */
   options: ReadonlyArray<Html | string>
   className?: string
   labelClass?: string
@@ -135,24 +129,6 @@ export type NativeSelectConfig<M> = Readonly<{
   wrapperClass?: string
 }>
 
-/** Styled native select with label, chevron and optional description, built
- *  on the @foldkit/ui Select helper. Mirrors the shadcn v4 `native-select.tsx`:
- *  an `appearance-none` select whose chevron overlays the control at its right
- *  edge. Pass `<option>` markup via `options`.
- *
- *  ```ts
- *  import { nativeSelect } from './native-select'
- *
- *  nativeSelect(
- *    {
- *      id: 'fruit',
- *      label: 'Fruit',
- *      onChange: (value) => Message.PickedFruit({ value }),
- *      options: fruits.map((fruit) => h.option([h.Value(fruit)], [fruit])),
- *    },
- *    h,
- *  )
- *  ``` */
 export const nativeSelect = <M>(config: NativeSelectConfig<M>, h: HtmlBuilder<M>): Html =>
   FoldkitSelect.view<M>(
     {
@@ -223,7 +199,6 @@ export const nativeSelectChevron = <M>(h: HtmlBuilder<M>): Html =>
     }),
   )
 
-/** Helper to render an `<option>` with correct data-slot and Canvas colors. */
 export const nativeSelectOption = <M>(
   config: Readonly<{ value: string; label: string; isDisabled?: boolean; className?: string }>,
   h: HtmlBuilder<M>,
@@ -238,7 +213,6 @@ export const nativeSelectOption = <M>(
     [config.label],
   )
 
-/** Helper to render an `<optgroup>` with correct data-slot and Canvas colors. */
 export const nativeSelectOptGroup = <M>(
   config: Readonly<{ label: string; className?: string }>,
   children: ReadonlyArray<Html | string>,

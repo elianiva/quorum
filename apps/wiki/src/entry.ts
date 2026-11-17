@@ -2,10 +2,6 @@ import { startAnalytics } from './platform/analytics.ts'
 import { startTheme } from './theme.ts'
 import './styles.css'
 
-/* Every page is prerendered (ADR 0009). A page with a live island starts the app at once. The other
-   pages start it when the browser is idle after the page draws, or sooner on the reader's first
-   interaction with a control that needs it. */
-
 startTheme()
 startAnalytics()
 
@@ -20,8 +16,6 @@ const start = (() => {
 const NEEDS_HYDRATION = '[data-needs-hydration]'
 const LAZY_ISLAND = '[data-lazy-island]'
 
-/** Starts the app on the first interaction with a control that has no server-side handler. The
-    interaction waits for hydration, then replays on the control the reader touched. */
 const startOnIntent = (load: () => Promise<void>): (() => void) => {
   let hydrated = false
   let loading = false
@@ -80,8 +74,6 @@ const startOnIntent = (load: () => Promise<void>): (() => void) => {
   const onClick = (event: MouseEvent): void => {
     const control = controlOf(event.target)
     if (control === null || hydrated) return
-    // The server-rendered control has no Foldkit handler yet. Let hydration draw first, then
-    // replay the click on the same control.
     event.preventDefault()
     event.stopImmediatePropagation()
     replay =
@@ -142,8 +134,6 @@ const startOnIntent = (load: () => Promise<void>): (() => void) => {
   return begin
 }
 
-/** Starts the app when a live figure nears the viewport. A reading page's figures are below the
-    fold on a phone, so a reader who never scrolls to one never pays for the Solver or the board. */
 const startWhenVisible = (load: () => Promise<void>): void => {
   const islands = document.querySelectorAll(LAZY_ISLAND)
   if (islands.length === 0) return
@@ -168,8 +158,6 @@ const hydration = document.querySelector('[data-hydration]')?.getAttribute('data
 if (hydration === 'now' || hydration === null) void start()
 else {
   const begin = startOnIntent(start)
-  // The browser is idle once the page has drawn: load the app then, so the first click on a link
-  // finds the next page already prefetched (src/prefetch.ts) instead of paying for the app too.
   if ('requestIdleCallback' in window) requestIdleCallback(begin, { timeout: 4000 })
   else setTimeout(begin, 2000)
   if (hydration === 'visible') startWhenVisible(start)

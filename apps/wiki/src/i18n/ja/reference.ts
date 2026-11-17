@@ -1,17 +1,11 @@
 import type { Messages } from '../messages.ts'
 
-/* The copy of the pages generated from the catalog, in Japanese. Catalog names and descriptions
-   come from the catalog itself, in the page's language. Aliases keep the English search words and
-   add the Japanese ones a reader would type. */
-
 export const reference: Messages['reference'] = {
   eraN: (index) => `時代 ${index}`,
   none: '—',
   yes: 'はい',
   no: 'いいえ',
   any: 'すべて',
-  /** 文末の句点と、文と次の文の間の空白。日本語では空白を入れない。 */
-  /** 文が導く一覧の項目を区切る記号。 */
   listSeparator: '、',
   sentenceEnd: '。',
   sentenceGap: '',

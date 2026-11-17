@@ -2,10 +2,6 @@ import { expect, test } from 'vitest'
 import { COMPONENT_IDS, COMPONENTS } from '@quorum/simulation/catalog'
 import { COMPONENT_VIEWS } from './index.ts'
 
-/*
- * A card draws an in port only when the Component can take a Link, and an out port only when it
- * can send one. The Database is the one exception: its out port ships the write log to a CDC.
- */
 test('every card shows only the ports its Component can use', () => {
   for (const id of COMPONENT_IDS) {
     const def = COMPONENTS[id]

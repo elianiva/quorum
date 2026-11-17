@@ -9,7 +9,6 @@ export const setSample = (game: Game, id: string, sampleRate: number): Action =>
       : notAllowed('Only Analytics has a sample rate.'),
   )
 
-/** How long Analytics keeps traces (12 "Retention"). */
 export const setRetention = (game: Game, id: string, retention: number): Action =>
   withNode(game, id, (node) =>
     node.type === 'analytics' && (RETENTION_WINDOWS as ReadonlyArray<number>).includes(retention)

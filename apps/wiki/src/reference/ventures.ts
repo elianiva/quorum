@@ -26,12 +26,8 @@ import {
 } from './shared.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* The Ventures (13 "Ventures"): the traffic each one runs, when it is busy, and what it starts with. */
-
-/** The last Era's mix serves every kind, so a Venture with no profile of its own shows in full. */
 const WIDEST = ERAS[ERAS.length - 1]
 
-/** A profile as a mix, largest kind first, so a bar and its labels read in order. */
 const trafficOf = (def: VentureDef): Partial<Record<RequestKind, number>> => {
   const shares = def.shares ?? WIDEST?.mix ?? {}
   return Object.fromEntries(
@@ -39,7 +35,6 @@ const trafficOf = (def: VentureDef): Partial<Record<RequestKind, number>> => {
   ) as Partial<Record<RequestKind, number>>
 }
 
-/** The kinds a reader should know first: the three largest shares. */
 const busiest = (l: Lang, def: VentureDef): string =>
   (Object.entries(trafficOf(def)) as Array<[RequestKind, number]>)
     .slice(0, 3)

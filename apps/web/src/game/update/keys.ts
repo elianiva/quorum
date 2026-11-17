@@ -1,4 +1,4 @@
-import { CARD_W, CLEARANCE, boxOf, freeSpot, heightOf } from '@quorum/ui/board/geometry'
+import { CARD_W, CARD_CLEARANCE_PX, boxOf, freeSpot, heightOf } from '@quorum/ui/board/geometry'
 import { FocusInspector, ToggleFullscreen } from '../commands.ts'
 import { Message } from '../message.ts'
 import {
@@ -38,10 +38,6 @@ export const ARROWS: Record<string, Direction> = {
   ArrowRight: 'right',
 }
 
-/**
- * The spot a part placed from the keyboard lands in (15 "Accessibility"): the
- * next free corner below the Design, so Enter never drops a card on another.
- */
 export const keyboardSpot = (
   model: Model,
   w: number,
@@ -51,7 +47,7 @@ export const keyboardSpot = (
   const left = nodes.length > 0 ? Math.min(...nodes.map((node) => node.x)) : 0
   const bottom =
     nodes.length > 0 ? Math.max(...nodes.map((node) => node.y + heightOf(node.type))) : 0
-  return freeSpot(nodes.map(boxOf), { x: left, y: bottom + CLEARANCE, w, h })
+  return freeSpot(nodes.map(boxOf), { x: left, y: bottom + CARD_CLEARANCE_PX, w, h })
 }
 
 type KeysTag = 'KeyPressed'
@@ -62,14 +58,10 @@ export const keysHandlers = (
 ): MessageCases<UpdateResult, KeysTag> => ({
   KeyPressed: ({ key }) => {
     if (!onBoard(model.route)) return key === 'Escape' ? { model } : clockIn(model)
-    // A screenshot holds the board still: Escape or the same keys leave it, and no other key
-    // opens a panel over the image.
     if (model.board.screenshot)
       return key === 'Escape' || key === 'Shift+s'
         ? route(model, Message.ScreenshotToggled())
         : { model }
-    // The palette is a surface of its own: Cmd+K or Ctrl+K opens and closes it, and while it is
-    // open the search field owns every other key.
     if (key === 'Mod+k')
       return route(model, model.palette.open ? Message.PaletteClosed() : Message.PaletteOpened())
     if (model.palette.open)
@@ -232,8 +224,6 @@ export const keysHandlers = (
       case 'Enter': {
         if (confirmSellOf(model.board)) return route(model, Message.SellConfirmed())
         if (model.panel !== 'none') return { model }
-        // A part in hand (or a Playbook) lands in the next free spot: the
-        // keyboard's equivalent of clicking the board (15 "Accessibility").
         const type = placingOf(model)
         if (type) {
           const spot = keyboardSpot(model, CARD_W, heightOf(type))
@@ -248,13 +238,11 @@ export const keysHandlers = (
           )
           return route(model, Message.NodePlaced({ x: spot.x, y: spot.y }))
         }
-        // A keyboard link from the selected Node to the one the arrows reached.
         const from = linkFromOf(model.board)
         if (from !== null)
           return selected && selected !== from
             ? route(model, Message.LinkRequested({ from, to: selected }))
             : { model }
-        // A pinned Tradeoff card's Confirm, when it has a preview to confirm.
         const card = model.board.tradeoff
         if (card._tag === 'Pinned' && card.preview !== null)
           return route(model, Message.OptionConfirmed())
@@ -299,7 +287,6 @@ export const keysHandlers = (
       case 'Backspace':
         return route(model, Message.SellAsked())
       default: {
-        // With a group open, a digit picks that part.
         const picked = (
           model.board.buildGroup ? dockItems(model.board.game, model.board.buildGroup) : []
         )[Number(key) - 1]

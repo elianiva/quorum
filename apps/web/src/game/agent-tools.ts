@@ -2,11 +2,6 @@ import type { AgentMail, AgentSnapshot } from '@quorum/agent/snapshot'
 import { refusal as refusalOf, stateJson as snapshotJson } from '@quorum/agent/view'
 import { boardChallenge, boardSandbox, clockPaused, type Model } from './model.ts'
 
-/* ==========================================================================
-   The web side of the agent tools: turn the Model into the plain snapshot the
-   shared view reads. The sync module uploads it to the Room.
-   ========================================================================== */
-
 const agentMail = (mail: Model['board']['inbox']['mail'][number]): AgentMail => ({
   id: mail.id,
   sender: mail.sender,
@@ -23,7 +18,6 @@ const agentMail = (mail: Model['board']['inbox']['mail'][number]): AgentMail => 
   entries: mail.entries,
 })
 
-/** The plain snapshot of the open board: no Model, no DOM, just what tools read. */
 export const snapshotOfModel = (model: Model): AgentSnapshot => {
   const challenge = boardChallenge(model.board) !== null
   const sandbox = boardSandbox(model.board) !== null
@@ -47,8 +41,6 @@ export const snapshotOfModel = (model: Model): AgentSnapshot => {
   }
 }
 
-/** Why an agent gets nothing, or null when it may read the board. */
 export const refusal = (model: Model): string | null => refusalOf(snapshotOfModel(model))
 
-/** What the "Copy state as JSON" button copies: the same views the tools return. */
 export const stateJson = (model: Model): string => snapshotJson(snapshotOfModel(model))

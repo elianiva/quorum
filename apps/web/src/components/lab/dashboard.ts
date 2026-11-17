@@ -78,14 +78,10 @@ import {
 } from '@quorum/ui/primitives/composed-chart'
 import { EYEBROW, FIGURE, PANEL, SCROLL, WELL, FIGURE_STYLE } from '@quorum/ui/game/bits'
 
-/** Time ranges in calendar minutes: up to 10 hours read the Game's one-minute Samples, longer
-    ones the 15-minute and 1-hour blocks (12 "History and resolution"). */
-export const DASHBOARD_RANGES = [60, 360, 1440, 10_080, 43_200] as const
+export const DASHBOARD_RANGE_MINUTES = [60, 360, 1440, 10_080, 43_200] as const
 
-/** Utilization history is one point per 10 sim seconds (update.ts). */
-const NODE_EVERY = 10
+const NODE_HISTORY_EVERY_SIM_SECONDS = 10
 
-/* The series palette: the game's own hues, so the Dashboard matches the Board. */
 const BLUE = 'var(--group-edge)'
 const PURPLE = 'var(--group-compute)'
 const TEAL = 'var(--group-data)'
@@ -98,7 +94,6 @@ const MUTED = 'var(--muted-foreground)'
 type Level = 'ok' | 'warn' | 'danger'
 const LEVEL_COLOR: Record<Level, string> = { ok: GREEN, warn: AMBER, danger: RED }
 
-/** Grafana's thresholds: a value at or above `warn` is amber, at or above `danger` red. */
 type Thresholds = Readonly<{ warn: number; danger: number; invert?: boolean }>
 const levelOf = (value: number, thresholds: Thresholds): Level =>
   thresholds.invert
@@ -120,30 +115,19 @@ const hhmm = (time: number): string => {
 
 const percent = (share: number, digits = 0): string => `${(share * 100).toFixed(digits)}%`
 
-/** An SLO target as the variables bar and the SLO row print it, so 99.95% never reads 100.0%. */
 const sloText = (slo: number): string => `${Number((slo * 100).toFixed(3))}%`
 
-/** One Chart row: its label and figures. A figure is null where the history holds no value. */
 type Row = Readonly<Record<string, number | string | null>>
 
-/** The resolution a range reads: one-minute Samples, then 15-minute blocks, then 1-hour blocks. */
 const tierOf = (range: number): Tier | null =>
   range <= 600 ? null : range <= 10_080 ? 'quarter' : 'hour'
 
-/** A row's label: the clock, and the calendar day when the range spans days. */
 const labelOf = (t: Messages, time: number, range: number): string =>
   range > 1440 ? t.dashboard.dayAt(clockOf(time).day, hhmm(time)) : hhmm(time)
 
-/**
- * The rows in range, each with its label, its start in sim time (`at`), its length in calendar
- * minutes (`span`), and its figures. A block row draws the mean of each field, except p99,
- * which draws the worst minute: a block's mean p99 would hide the spike the tail is about.
- */
 const rowsOf = (model: Model, slo: number): ReadonlyArray<Row> => {
   const range = model.board.dashboard.range
   const tier = tierOf(range)
-  // The rows change when their source does: a Sample a sim second, a block a few times a
-  // minute. A crosshair move or a tick inside the second reads the rows it read before.
   const source = tier === null ? model.board.game.history : model.board.dashboard.history[tier]
   const second = tier === null ? Math.floor(model.board.game.time) : 0
   const last = lastRows
@@ -185,7 +169,6 @@ const buildRows = (model: Model, slo: number): ReadonlyArray<Row> => {
     p99: value('p99'),
     apdex: value('apdex'),
     errors: value('errors') * 100,
-    // Availability per row, so the SLO stat draws the week's dips behind its figure.
     availability: 100 - value('errors') * 100,
     revenue: value('revenue'),
     burn: value('burn'),
@@ -216,10 +199,6 @@ const buildRows = (model: Model, slo: number): ReadonlyArray<Row> => {
   return withCashRate(rows)
 }
 
-/**
- * Cash per second (12 "The Dashboard"): how fast Cash moved between two rows, which is the
- * Samples' own `cash` read as a rate. The first row has no previous row, so it draws nothing.
- */
 const withCashRate = (rows: ReadonlyArray<Row>): ReadonlyArray<Row> =>
   rows.map((row, index) => {
     const previous = rows[index - 1]
@@ -233,7 +212,6 @@ const withCashRate = (rows: ReadonlyArray<Row>): ReadonlyArray<Row> =>
     }
   })
 
-/** The row a sim time falls in, if the range holds it. */
 const rowAt = (rows: ReadonlyArray<Row>, time: number): number | null => {
   const index = rows.findIndex(
     (entry) => Number(entry.at) <= time && time < Number(entry.at) + Number(entry.span),
@@ -241,20 +219,12 @@ const rowAt = (rows: ReadonlyArray<Row>, time: number): number | null => {
   return index < 0 ? null : index
 }
 
-/** A calendar day in sim seconds: the distance to the same moment yesterday (12 "Controls"). */
 const DAY_SECONDS = 86_400
 
-/** Yesterday's line is drawn faint, so it never reads as this range's own series. */
 const COMPARE_COLOR = 'color-mix(in oklab, var(--foreground) 32%, transparent)'
 
-/** The tier the compare line reads: the Chart's own, or 15-minute blocks under a short range. */
 const compareTier = (range: number): Tier => tierOf(range) ?? 'quarter'
 
-/**
- * Yesterday's figure at each row's moment, for the compare line (12 "Controls"). It reads the
- * Dashboard's own blocks, so a short range compares against 15-minute means; a row whose moment
- * the history does not reach is null, and the line breaks there rather than guessing.
- */
 const yesterdayOf = (
   blocks: History[Tier],
   tier: Tier,
@@ -270,15 +240,9 @@ const yesterdayOf = (
   return rows.map((row) => means.get(blockIndexAt(Number(row.at) - DAY_SECONDS, tier)) ?? null)
 }
 
-/**
- * The rows with yesterday's figure beside each, for one Chart. The rows and yesterday's
- * blocks hold still between Samples, so a crosshair move reuses the copy it made before.
- */
 type Compared = Readonly<{
   blocks: ReadonlyArray<unknown>
-  /** The rows, each with `cmp`: yesterday's figure, or null where yesterday has none. */
   data: ReadonlyArray<Row>
-  /** Whether yesterday has any figure in range. Without one the Chart draws no second line. */
   any: boolean
 }>
 
@@ -305,7 +269,6 @@ const comparedRows = (
   return next
 }
 
-/** Each Node's name, numbered when the Board holds more than one of its type. */
 const namesOf = (t: Messages, nodes: Game['nodes']): ReadonlyMap<string, string> => {
   const counts = new Map<string, number>()
   const names = new Map<string, string>()
@@ -320,12 +283,6 @@ const namesOf = (t: Messages, nodes: Game['nodes']): ReadonlyMap<string, string>
 
 type NodeTrack = Readonly<{ id: string; name: string; values: ReadonlyArray<number> }>
 
-/**
- * Utilization per Node from the Model's 10-second history, with the same labels as the Board.
- *
- * The history gains a point every ten sim seconds, and the panels that read the tracks are
- * memoized on them. So while the history and the Nodes' names hold, this returns the same array.
- */
 const tracksOf = (model: Model): ReadonlyArray<NodeTrack> => {
   const t = copyIn(model.prefs.locale)
   const history = model.board.nodeHistory
@@ -359,23 +316,16 @@ let lastTracks: Readonly<{
 const runwayText = (t: Messages, seconds: number | null): string =>
   seconds === null ? '∞' : t.dashboard.runwayMonths((seconds / RUNWAY_MONTH).toFixed(1))
 
-/** A funding round the Company entered: the offer after its Mutators and perks, and the Inbox's answer. */
 type FundingRound = Readonly<{
   key: string
   name: string
   users: number
-  /** The fixed grant, or null for the IPO, which pays public money rather than a round. */
   grant: number | null
   dilution: number
   answer: 'listed' | 'raised' | 'declined' | null
   when: string
 }>
 
-/**
- * The rounds the Company entered, newest first. The Game keeps the Era but no round time and no
- * answer, so the offer comes from the Era catalog and the answer from the Inbox Thread the round
- * left (12 "Annotations" reads the Inbox for the same reason).
- */
 const fundingOf = (model: Model): ReadonlyArray<FundingRound> => {
   const t = copyIn(model.prefs.locale)
   const game = model.board.game
@@ -387,8 +337,6 @@ const fundingOf = (model: Model): ReadonlyArray<FundingRound> => {
     if (!era || !next) continue
     const mail = answers.get(`investor:round:${index}`)
     const at = mail?.entries[0]
-    // The last offer is the IPO: it sells shares to the public, pays Burn rather than a grant,
-    // and cannot be declined, so it has no term-sheet answer.
     const ipo = index === ERAS.length - 2
     rounds.push({
       key: `round-${index}`,
@@ -419,7 +367,6 @@ const teamKindOf = (
   security: t.dashboard.security,
 })
 
-/** Dev Hours per real minute, as the Team panel counts them. */
 const dhPerMinute = (rate: number): string => {
   const value = rate * 60
   return value < 10 ? value.toFixed(1) : String(Math.round(value))
@@ -428,23 +375,19 @@ const dhPerMinute = (rate: number): string => {
 const minutesText = (t: Messages, seconds: number): string =>
   t.units.minShort(Math.round(Math.max(0, seconds)))
 
-/** A time the Game did not record, in a save from before the field or a run that never signalled. */
 const minutesOrUnknown = (t: Messages, seconds: number | null | undefined): string =>
   seconds === null || seconds === undefined ? '—' : minutesText(t, seconds)
 
-/** Seconds from an Incident's start to its first signal, or null before it signals. */
 const mttdOf = (incident: NonNullable<Game['incident']>): number | null =>
   signalAtOf(incident.phase) === null
     ? null
     : Math.max(0, (signalAtOf(incident.phase) ?? 0) - incident.startedAt)
 
-/** Seconds from that signal to the acknowledgement, or null before anyone answers. */
 const mttaOf = (incident: NonNullable<Game['incident']>): number | null =>
   ackAtOf(incident.phase) === null || signalAtOf(incident.phase) === null
     ? null
     : Math.max(0, (ackAtOf(incident.phase) ?? 0) - (signalAtOf(incident.phase) ?? 0))
 
-/** What an Incident is hitting: a Node, a zone, a region, or every region. */
 const incidentTarget = (
   t: Messages,
   game: Game,
@@ -457,7 +400,6 @@ const incidentTarget = (
   return t.dashboard.everyRegion
 }
 
-/** A Postmortem's action item: its research, whether it is owned, or nothing. */
 const actionText = (t: Messages, game: Game, postmortem: Postmortem): string =>
   postmortem.action === null
     ? '—'
@@ -465,7 +407,6 @@ const actionText = (t: Messages, game: Game, postmortem: Postmortem): string =>
       ? t.dashboard.ownedAction(t.catalog.research[postmortem.action].name)
       : t.catalog.research[postmortem.action].name
 
-/** A status lamp, lit in its colour, like the dot on a Node card's icon. */
 const led = (color: string, h: HtmlBuilder<Message>): Html =>
   h.span(
     [
@@ -485,10 +426,8 @@ const led = (color: string, h: HtmlBuilder<Message>): Html =>
     [],
   )
 
-/** A sunken display inside a panel: the well recipe, where every plot sits. */
 const SCREEN = css({ borderRadius: 'xl', backgroundColor: 'well', boxShadow: 'well' })
 
-/** A panel's width in the Dashboard's 24-column grid. Every panel is full width on a phone, a Stat pair-up excepted. */
 const SPAN = {
   stat: css({ gridColumn: 'span 4 / span 4', _compact: { gridColumn: 'span 12 / span 12' } }),
   third: css({ gridColumn: 'span 8 / span 8', _compact: { gridColumn: 'span 24 / span 24' } }),
@@ -500,7 +439,6 @@ const SPAN = {
   full: css({ gridColumn: 'span 24 / span 24' }),
 }
 
-/** A Grafana panel as a Board card: raised, with a lamp and a title. `tint` is Grafana's background colour mode. */
 const panel = (
   key: string,
   span: string,
@@ -594,7 +532,6 @@ const panel = (
     ],
   )
 
-/** A panel the player has not researched yet. */
 const locked = (
   key: string,
   span: string,
@@ -706,7 +643,6 @@ const rowHeader = (label: string, count: number, h: HtmlBuilder<Message>): Html 
     ],
   )
 
-/** Chart text in the game's figure face; only foldcn's hover bands take the pointer, not the fills drawn over them. */
 const PLOT = css({
   '& text': {
     fontFamily: 'mono',
@@ -719,26 +655,17 @@ const PLOT = css({
   '& line': { pointerEvents: 'none' },
 })
 
-/** The Chart's frame, as `timeSeries` hands it to ComposedChart. */
 const CHART_HEIGHT = 168
 const CHART_MARGIN = { top: 10, right: 12, bottom: 0, left: 2 } as const
 const Y_AXIS_WIDTH = 58
 const X_AXIS_PAD = 32
 
-/** Lifts a marker's label from the bottom of the plot to its top. */
 const TOP_OF_PLOT = -(CHART_HEIGHT - 60)
 
-/** The grid's gap and page padding, so a Chart draws at the width its panel is laid out at. */
 const GRID_GAP = 8
 const GRID_PADDING = { wide: 32, compact: 24 } as const
-/** A panel's own horizontal padding (p-1.5), which its well and Charts sit inside. */
 const PANEL_PADDING = 12
 
-/**
- * The width of a panel spanning `columns` of the Dashboard's 24-column grid. A Chart is an SVG
- * laid out in pixels, so it reads the layout's own maths rather than cropping to a fixed width.
- * On a phone every panel is full width, hence `compactColumns`.
- */
 const panelWidthOf = (columns: number, compactColumns = 24): number => {
   const compact = isPhone()
   const shown = compact ? compactColumns : columns
@@ -748,14 +675,12 @@ const panelWidthOf = (columns: number, compactColumns = 24): number => {
   return Math.round(column * shown + GRID_GAP * (shown - 1))
 }
 
-/** Where row `index` of `count` draws on a Chart `width` wide: chart-core's category axis. */
 const plotX = (index: number, count: number, width: number): number => {
   const left = CHART_MARGIN.left + Y_AXIS_WIDTH + X_AXIS_PAD
   const right = width - CHART_MARGIN.right
   return left + ((right - left) * (index + 0.5)) / Math.max(1, count)
 }
 
-/** The scale the interface text draws at, which the top of the plot lays its labels out for. */
 const typeScaleOf = (model: Model): number => (model.prefs.text === 'large' ? 1.5 : 1)
 
 const ANNOTATION_COLOR: Record<AnnotationGroup, string> = {
@@ -774,18 +699,14 @@ const annotationNameOf = (t: Messages): Record<AnnotationGroup, string> => ({
   research: t.dashboard.research,
 })
 
-/** One mark on the timeline: its group, the sim second it happened, and its label. */
 type Annotation = Readonly<{ group: AnnotationGroup; at: number; label: string }>
 
-/** A Thread's key, as `mail.ts` writes it: `event:<topic>:<about>`, or a sender's own key. */
 const keyParts = (mail: Mail): ReadonlyArray<string> => mail.key.split(':')
 
-/** The Incident kind a Thread's topic names, when the two spell it the same way. */
 const incidentNameOf = (t: Messages, topic: string): string =>
   (t.catalog.incidents as Readonly<Record<string, Readonly<{ name: string }> | undefined>>)[topic]
     ?.name ?? t.dashboard.incident
 
-/** Every Research name, longest first, so "Load balancing algorithms" wins over "Load balancing". */
 const RESEARCH_NAMES: ReadonlyArray<readonly [string, ResearchId]> = (
   Object.entries(RESEARCH) as ReadonlyArray<[ResearchId, Readonly<{ name: string }>]>
 )
@@ -794,7 +715,6 @@ const RESEARCH_NAMES: ReadonlyArray<readonly [string, ResearchId]> = (
 
 const WORD = /[\p{L}\p{N}]/u
 
-/** The Research an item name in a `finished` letter names, if one is in it. */
 const researchNamed = (text: string): ResearchId | null => {
   for (const [name, id] of RESEARCH_NAMES) {
     const at = text.indexOf(name)
@@ -808,12 +728,6 @@ const researchNamed = (text: string): ResearchId | null => {
   return null
 }
 
-/**
- * What a Thread marks, if anything. The Inbox is the only record of when an
- * event happened that the Model keeps: the Game holds no deploy, Study, hire or
- * round time. It keeps only its last Threads, so the marks reach as far back as
- * its Mail does.
- */
 const markOfMail = (
   t: Messages,
   mail: Mail,
@@ -830,7 +744,6 @@ const markOfMail = (
     if (topic === 'hired') return { group: 'company', label: `◆ ${t.dashboard.hired}` }
   }
   if (mail.key === 'mentor:ipo') return { group: 'company', label: '◆ IPO' }
-  // The round a Stage's term sheet offers, which opens the next Era.
   if (from === 'investor' && topic === 'round') {
     const stage = Number(about)
     const era = t.catalog.eras[Number.isFinite(stage) ? stage + 1 : 0]?.name
@@ -839,12 +752,6 @@ const markOfMail = (
   return null
 }
 
-/**
- * Every mark the history holds, in the order the groups are drawn. A finished Study's second is
- * not on the Game: `studies` drops it and `researched` keeps only its id, so the mark comes from
- * the Inbox's `event:finished` Thread, at the second that entry was written. The Thread does not
- * say which kind of item finished, so the mark is the entry that names a Research.
- */
 const buildAnnotations = (model: Model): ReadonlyArray<Annotation> => {
   const t = copyIn(model.prefs.locale)
 
@@ -864,7 +771,6 @@ const buildAnnotations = (model: Model): ReadonlyArray<Annotation> => {
     at: entry.at,
     label: changeIn(t, entry.label),
   }))
-  // The open Incident has its own Thread: it is one mark, with the SEV the Game holds.
   const marked = new Set(open.map((mark) => `${mark.group}:${Math.floor(mark.at)}`))
   const mail: Array<Annotation> = []
   for (const thread of model.board.inbox.mail) {
@@ -883,7 +789,6 @@ const buildAnnotations = (model: Model): ReadonlyArray<Annotation> => {
           : [{ group: 'research' as const, at: entry.time, label: `⬡ ${t.dashboard.research}` }],
       ),
     )
-  // The Era the Company is in began at the second the Game kept when its round closed.
   const game = model.board.game
   const era: ReadonlyArray<Annotation> =
     game.stage > 0 && game.stageAt > 0
@@ -900,10 +805,6 @@ const buildAnnotations = (model: Model): ReadonlyArray<Annotation> => {
   )
 }
 
-/**
- * The annotations, as one list while what they are read from holds: the Charts are memoized on
- * it. An incident counts its losses on every Step, so it is compared by what its mark shows.
- */
 const annotationsOf = (model: Model): ReadonlyArray<Annotation> => {
   const { game, undo, inbox, dashboard } = model.board
   const from: AnnotationSource = [
@@ -930,11 +831,6 @@ let lastAnnotations: Readonly<{
   marks: ReadonlyArray<Annotation>
 }> | null = null
 
-/**
- * Exemplars (12 \"Practices\"): the three slowest seconds of the range, each pointing at one trace.
- * A one-minute Sample knows the Request kind that was slowest in it; the hour and quarter-hour
- * blocks keep no kind, so a longer range carries none.
- */
 type Exemplar = Readonly<{ t: string; p99: number; kind: RequestKind }>
 
 const exemplarsOf = (model: Model, rows: ReadonlyArray<Row>): ReadonlyArray<Exemplar> => {
@@ -955,7 +851,6 @@ const exemplarsOf = (model: Model, rows: ReadonlyArray<Row>): ReadonlyArray<Exem
 }
 
 const NO_EXEMPLARS: ReadonlyArray<Exemplar> = []
-/** The live rows are built again when a Sample arrives, so one list of rows has one list of exemplars. */
 const exemplarsFor = new WeakMap<ReadonlyArray<Row>, ReadonlyArray<Exemplar>>()
 
 const exemplarMarks = (
@@ -967,7 +862,6 @@ const exemplarMarks = (
       x: exemplar.t,
       stroke: 'var(--accent)',
       strokeOpacity: 0.6,
-      // Under every annotation label row, so an exemplar never draws over one.
       label: {
         value: '●',
         dx: 0,
@@ -977,7 +871,6 @@ const exemplarMarks = (
     }),
   )
 
-/** The exemplars as buttons: each opens the Waterfall of the Request kind it caught. */
 const exemplarStrip = (exemplars: ReadonlyArray<Exemplar>, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
@@ -1025,10 +918,8 @@ const exemplarStrip = (exemplars: ReadonlyArray<Exemplar>, h: HtmlBuilder<Messag
   )
 }
 
-/** The lane a mark's label draws in, and the offset that keeps it beside its line. */
 type LabelPlace = Readonly<{ lane: number; dx: number }>
 
-/** An Incident or a Deploy takes the room before a busy Design change takes it. */
 const LABEL_ORDER: Record<AnnotationGroup, number> = {
   incidents: 0,
   company: 1,
@@ -1037,32 +928,20 @@ const LABEL_ORDER: Record<AnnotationGroup, number> = {
   research: 4,
 }
 
-/** The label rows at the top of the plot: two, so a busy range still reads. */
 const LABEL_LANES = 2
-/** Rows under them, where the label a hover brings back draws without moving another. */
 const REVEAL_LANES = 2
 const LANE_HEIGHT = 12
-/** Space between two labels in a lane, and the room the leading symbol takes. */
 const LABEL_GAP = 6
 const LABEL_PAD = 14
-/** How near the crosshair, in plot pixels, a mark must sit to bring its label back. */
 const REVEAL_PX = 4
 
 const WIDE_GLYPH =
   /[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE6F\uFF00-\uFF60\uFFE0-\uFFE6]/u
 
-/** A label's width at the plot's 10px figure face: wide glyphs take two columns. */
 const labelSpan = (label: string, scale: number): number =>
   [...label].reduce((width, glyph) => width + (WIDE_GLYPH.test(glyph) ? 12.4 : 6.2), LABEL_PAD) *
   scale
 
-/**
- * Places the marks' labels in the rows at the top of the plot, an Incident before a Research.
- * A label goes in the first row where it clears the labels already there, and flips to the left
- * of its line where the right edge would clip it. A mark whose label fits nowhere keeps its line
- * and no text, so dense ranges never draw one label over another. The crosshair brings back the
- * labels the crowd dropped, in the rows under the two the chart always uses.
- */
 const labelPlacesOf = (
   marks: ReadonlyArray<Annotation>,
   rows: ReadonlyArray<Row>,
@@ -1077,7 +956,6 @@ const labelPlacesOf = (
   const placed = new Map<Annotation, LabelPlace>()
   const right = width - CHART_MARGIN.right
 
-  /** Draws a mark's label in the first free row from `from` down, and reports whether it fit. */
   const place = (mark: Annotation, from: number): boolean => {
     const index = rowAt(rows, Math.floor(mark.at))
     if (index === null) return false
@@ -1102,7 +980,6 @@ const labelPlacesOf = (
   const dropped: Array<Annotation> = []
   for (const mark of ordered) if (!place(mark, 0)) dropped.push(mark)
 
-  // The crosshair names the marks its columns dropped, nearest first.
   if (hovered !== null) {
     const plotLeft = CHART_MARGIN.left + Y_AXIS_WIDTH + X_AXIS_PAD
     const rowWidth = (right - plotLeft) / Math.max(1, rows.length)
@@ -1123,7 +1000,6 @@ const labelPlacesOf = (
   return placed
 }
 
-/** The annotations, as vertical markers on every time series, labelled where the labels fit. */
 const markersOf = (
   scale: number,
   hover: number | null,
@@ -1168,10 +1044,8 @@ type Series = Readonly<{
   key: string
   name: string
   color: string
-  /** Fill under the line with a fading gradient, as Grafana's opacity gradient mode. */
   fill?: boolean
   dashed?: boolean
-  /** Drawn under the series that carry the Signal now: the compare line (12 "Controls"). */
   faint?: boolean
 }>
 
@@ -1182,11 +1056,9 @@ type SeriesSpec = Readonly<{
   unit: string
   series: ReadonlyArray<Series>
   format: (value: number) => string
-  /** The field yesterday's line draws, where the Chart offers a compare (12 "Controls"). */
   compare?: Field
   rules?: ReadonlyArray<Readonly<{ y: number; label: string; color: string }>>
   domain?: readonly [number, number]
-  /** The panel's width in the 24-column grid, so its Chart draws at the size the panel lays out. */
   columns: number
 }>
 
@@ -1219,11 +1091,9 @@ const gradient = (id: string, color: string, h: HtmlBuilder<Message>): Html =>
     ],
   )
 
-/** The figures a series holds, skipping the moments its history does not reach. */
 const figuresOf = (rows: ReadonlyArray<Row>, key: string): ReadonlyArray<number> =>
   rows.flatMap((row) => (typeof row[key] === 'number' ? [row[key] as number] : []))
 
-/** The legend under a time series, in Grafana's list mode: swatch, name, mean, max, last. */
 const seriesLegend = (
   rows: ReadonlyArray<Row>,
   series: ReadonlyArray<Series>,
@@ -1328,10 +1198,6 @@ const seriesLegend = (
   )
 }
 
-/**
- * A Chart's values as a table, for a screen reader and for reading an exact figure: the same rows
- * the plot draws, one per time, in Grafana's table view (12 "Controls").
- */
 const seriesTable = (
   data: ReadonlyArray<Row>,
   series: ReadonlyArray<Series>,
@@ -1490,7 +1356,6 @@ const seriesTable = (
   )
 }
 
-/** What a Chart is drawn from. A Chart is memoized on these, so each is a value or a kept object. */
 type ChartInput = [
   rows: ReadonlyArray<Row>,
   marks: ReadonlyArray<Annotation>,
@@ -1506,10 +1371,6 @@ type ChartInput = [
   h: HtmlBuilder<Message>,
 ]
 
-/**
- * One time series panel. Its rows change once a sim second and the Dashboard renders four times
- * in that second, so the panel is memoized under its key on what it is drawn from.
- */
 const timeSeries = (
   model: Model,
   rows: ReadonlyArray<Row>,
@@ -1539,11 +1400,6 @@ const timeSeries = (
 
 const lazyChart = createKeyedLazy()
 
-/**
- * A caller writes its spec out on every render, so the spec is a new object each time. This
- * returns the one kept for the Chart while the new one says the same: same texts, colours, and
- * rules. The spec's `format` is a function of the language, which the builder stands for.
- */
 const keptSpec = (spec: SeriesSpec, h: HtmlBuilder<Message>): SeriesSpec => {
   const said = JSON.stringify(spec)
   const last = specs.get(spec.key)
@@ -1636,7 +1492,6 @@ const timeSeriesView = (...input: ChartInput): Html => {
                         dataKey: 't',
                         interval: Math.max(0, Math.ceil(rows.length / (width / 70)) - 1),
                         padding: { left: X_AXIS_PAD },
-                        // Ends the right-most label at the plot edge, so the well does not clip it.
                         tick: ({ x, y, value }) =>
                           h.text(
                             [
@@ -1674,7 +1529,6 @@ const timeSeriesView = (...input: ChartInput): Html => {
                             }),
                           ]
                         : []),
-                      // Yesterday goes under the series that carry the signal now.
                       ...series.filter((entry) => entry.faint).map(line),
                       ...series
                         .filter((entry) => !entry.faint)
@@ -1706,8 +1560,6 @@ const timeSeriesView = (...input: ChartInput): Html => {
   )
 }
 
-/** A sparkline's bounds: room above the peak, so a flat history is a line, not a slab, and the
-    zero line for a figure that can fall below it, such as Cash per second. */
 const sparkDomain = (
   rows: ReadonlyArray<Row>,
   key: string,
@@ -1718,7 +1570,6 @@ const sparkDomain = (
   return signed ? [Math.min(0, ...values), top] : [0, top]
 }
 
-/** Grafana's stat panel: one big coloured value over a sparkline of its history. */
 const stat = (
   key: string,
   title: string,
@@ -1731,8 +1582,6 @@ const stat = (
   background = false,
   signed = false,
 ): Html =>
-  // A tile draws a sparkline of every row, and reads only these values: it is built again when
-  // its figure or the rows change, not on every tick.
   lazyStat(key, statView, [key, title, value, level, rows, dataKey, color, h, background, signed])
 
 const lazyStat = createKeyedLazy()
@@ -1845,7 +1694,6 @@ const statView = (
     level === 'plain' ? color : LEVEL_COLOR[level],
   )
 
-/** A point on a circle, for the gauge arcs; 0° points right and angles grow clockwise. */
 const point = (cx: number, cy: number, r: number, degrees: number): string => {
   const radians = (degrees * Math.PI) / 180
   return `${(cx + r * Math.cos(radians)).toFixed(2)} ${(cy + r * Math.sin(radians)).toFixed(2)}`
@@ -1853,7 +1701,6 @@ const point = (cx: number, cy: number, r: number, degrees: number): string => {
 const arc = (cx: number, cy: number, r: number, from: number, to: number): string =>
   `M ${point(cx, cy, r, from)} A ${r} ${r} 0 ${to - from > 180 ? 1 : 0} 1 ${point(cx, cy, r, to)}`
 
-/** Grafana's gauge: a 240° arc with the threshold bands drawn as a thin outer ring. */
 const gauge = (
   key: string,
   title: string,
@@ -1974,13 +1821,6 @@ const gauge = (
 const UTILIZATION: Thresholds = { warn: 0.7, danger: 0.9 }
 const CELLS = 32
 
-/**
- * Grafana's retro LCD bar gauge: lit cells take the colour of the threshold they sit in.
- *
- * A gauge is 24 or 32 elements, and a Company with 200 Nodes draws 400 of them, which was half
- * of the Dashboard's render. A gauge looks the same until another cell lights, so each one is
- * memoized under `key`, the place it is drawn at, on the count of lit cells.
- */
 const lcd = (key: string, share: number, h: HtmlBuilder<Message>, cells = CELLS): Html => {
   const level = Math.min(share, 1)
   let lit = 0
@@ -1990,14 +1830,8 @@ const lcd = (key: string, share: number, h: HtmlBuilder<Message>, cells = CELLS)
 
 const lazyLcd = createKeyedLazy()
 
-/**
- * A panel that reads the Nodes and the Ledger, under the panel's own key. A Step that changes no
- * Node keeps the list of Nodes, and the Steps of a quiet second share one Ledger, so such a panel
- * is built again about once a sim second rather than on every tick.
- */
 const lazyPanel = createKeyedLazy()
 
-/** The Node table draws one row per Node and sorts them, so it is built again per solve. */
 const lazyNodeTable = createKeyedLazy()
 
 const lcdView = (lit: number, cells: number, h: HtmlBuilder<Message>): Html =>
@@ -2147,13 +1981,10 @@ const stateLabelOf = (t: Messages): Record<Level, string> => ({
   danger: t.dashboard.sATURATED,
 })
 
-/** A run of one state in a lane: the columns it covers, and how it draws. */
 type Run = Readonly<{ from: number; to: number; color: string; label: string }>
 
-/** One lane of a state timeline: its name, and its runs. */
 type Lane = Readonly<{ key: string; name: string; runs: ReadonlyArray<Run> }>
 
-/** Runs of the same state, one column per entry, starting at `offset`. */
 const runsOf = <S extends string>(
   states: ReadonlyArray<S>,
   offset: number,
@@ -2168,7 +1999,6 @@ const runsOf = <S extends string>(
   return out.map((run) => ({ from: run.from, to: run.to, ...describe(run.state) }))
 }
 
-/** A colour swatch and a name, for a timeline's legend. */
 const swatch = (name: string, color: string, h: HtmlBuilder<Message>): Html =>
   h.span(
     [
@@ -2199,7 +2029,6 @@ const swatch = (name: string, color: string, h: HtmlBuilder<Message>): Html =>
     ],
   )
 
-/** Grafana's state timeline: one lane per series, a block per run of the same state. */
 const laneTimeline = (
   key: string,
   span: string,
@@ -2362,7 +2191,6 @@ const laneTimeline = (
     h,
   )
 
-/** Grafana's state timeline of Node utilization: one lane per Node. */
 const stateTimeline = (
   model: Model,
   tracks: ReadonlyArray<NodeTrack>,
@@ -2371,14 +2199,14 @@ const stateTimeline = (
 ): Html =>
   lazyStateTimeline(stateTimelineView, [
     tracks,
-    Math.floor(model.board.game.time / NODE_EVERY) * NODE_EVERY,
+    Math.floor(model.board.game.time / NODE_HISTORY_EVERY_SIM_SECONDS) *
+      NODE_HISTORY_EVERY_SIM_SECONDS,
     span,
     h,
   ])
 
 const lazyStateTimeline = createLazy()
 
-/** A lane per Node, a block per run of one state: it changes when the history gains a point. */
 const stateTimelineView = (
   tracks: ReadonlyArray<NodeTrack>,
   last: number,
@@ -2388,7 +2216,7 @@ const stateTimelineView = (
   const t = copy(h)
 
   const length = Math.max(1, ...tracks.map((track) => track.values.length))
-  const first = last - (length - 1) * NODE_EVERY
+  const first = last - (length - 1) * NODE_HISTORY_EVERY_SIM_SECONDS
   const lanes = tracks.map((track) => ({
     key: track.id,
     name: track.name,
@@ -2413,7 +2241,6 @@ const stateTimelineView = (
 
 const kindColor = (kind: Kind): string => `#${KINDS[kind].color.toString(16).padStart(6, '0')}`
 
-/** The request mix now, as Grafana's donut with a table legend. `kind` narrows it to one Service. */
 const mix = (
   ledger: Ledger,
   shown: (kind: RequestKind) => boolean,
@@ -2589,7 +2416,6 @@ const mix = (
   )
 }
 
-/** Errors now, by cause, as Grafana's basic bar gauge. */
 const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -2716,12 +2542,6 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** Every Node in one table, with Grafana's coloured cells for load and status. */
-/**
- * One row of the Node table. A row reads one Node's figures, and the Ledger keeps a Node's
- * figures as one object until the next solve, so a row is memoized under the Node's id and
- * built again only when that Node was solved again or renamed.
- */
 const nodeRow = (
   id: string,
   name: string,
@@ -3016,24 +2836,16 @@ const nodeTable = (
   )
 }
 
-/** One cell of a table: its text, and optionally a colour, a fill, or a gauge bar. */
 type Cell = Readonly<{
   text: string
-  /** The text's colour, as Grafana's cell colour mode. */
   color?: string | undefined
-  /** A background fill in this colour, as the Node table's status cell. */
   fill?: string | undefined
-  /** A gauge bar in the cell, 0 to 1. */
   bar?: Readonly<{ share: number; color: string }> | undefined
-  /** A tooltip, as the lane blocks' titles. */
   hint?: string | undefined
-  /** A button in the cell, for a row that selects something. */
   onClick?: Message | undefined
-  /** A control in the cell, for a value the player sets here, as an alert threshold. */
   content?: Html | undefined
 }>
 
-/** Grafana's table: hairline rows, figures to the right, coloured and filled cells. */
 const tablePanel = (
   key: string,
   span: string,
@@ -3042,7 +2854,6 @@ const tablePanel = (
   head: ReadonlyArray<string>,
   rows: ReadonlyArray<Readonly<{ key: string; cells: ReadonlyArray<Cell> }>>,
   h: HtmlBuilder<Message>,
-  /** A plot under the table, as the Money card's Cash series. */
   extra: ReadonlyArray<Html> = [],
 ): Html => {
   const border = css({
@@ -3052,8 +2863,6 @@ const tablePanel = (
     paddingInline: '2',
     paddingBlock: '1',
   })
-  // A bar column keeps the width it has; a table of figures packs them to the right instead, so
-  // the row reads name then figures rather than spreading both across the panel.
   const bars = rows.some((row) => row.cells.some((cell) => cell.bar !== undefined))
   const columnClass = (index: number): string =>
     bars
@@ -3270,7 +3079,6 @@ const tablePanel = (
   )
 }
 
-/** Grafana's basic bar gauge: a labelled row, a bar scaled to the largest, and its figure. */
 const barList = (
   key: string,
   span: string,
@@ -3403,12 +3211,6 @@ const barList = (
   )
 }
 
-/**
- * The Money card's Cash series: the same Area the stat panels draw, over the
- * Dashboard's range. A Sample carries Cash since SIM_VERSION 26, so the row
- * that shows Cash now also shows where it has been (15 "Company and Incidents
- * panels"). The line turns red once Cash is short, like the HUD's figure.
- */
 const cashSpark = (rows: ReadonlyArray<Row>, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -3466,7 +3268,6 @@ const cashSpark = (rows: ReadonlyArray<Row>, h: HtmlBuilder<Message>): Html => {
               defs: [gradient('cash-series', color, h)],
               children: [
                 XAxis({ dataKey: 't', hide: true }),
-                // Cash can run below zero, so the axis starts at the lowest point, not at zero.
                 YAxis({
                   hide: true,
                   domain: [Math.min(0, ...values), Math.max(1, ...values) * 1.1],
@@ -3506,7 +3307,6 @@ const companyPanels = (
   const runway = runwayOf(game, ledger)
   const teams = teamOutputs(game, ledger)
   const people = teams.reduce((sum, entry) => sum + entry.headcount, 0)
-  // A layoff's morale hit is global and already inside each team's velocity (08 "Hiring").
   const morale = game.time < game.moraleUntil
   const teamUnit = `${t.dashboard.peopleAndVelocity(people)}${
     morale ? t.dashboard.moraleDrop(Math.round((1 - LAYOFF_MORALE) * 100)) : ''
@@ -3520,11 +3320,9 @@ const companyPanels = (
     [t.dashboard.payroll, t.dashboard.s(money(ledger.salaries))],
     [t.dashboard.equity, percent(game.equity)],
     [t.dashboard.runway, runwayText(t, runway)],
-    // The SLA pays its credits back on top of Burn, so Cash falls faster than the bill (09).
     ...(credits > 0
       ? [[t.dashboard.sLACredits, `−${t.units.perSecond(money(credits))}`] as const]
       : []),
-    // Cash is short and the investors' bridge waits: its terms and the way to take it (09).
     ...(game.bridge._tag === 'Offered'
       ? [
           [
@@ -3616,22 +3414,11 @@ const companyPanels = (
   ]
 }
 
-/** SEV1 is the worst Incident, so the bars soften down the game's hues as the SEV does. */
 const SEVERITY_COLOR: Readonly<Record<number, string>> = { 1: RED, 2: AMBER, 3: PURPLE }
 
-/** A run's two spans before it was live: nobody had seen it yet, then nobody had answered. */
 const UNSEEN = MUTED
 const AWAITING = BLUE
 
-/**
- * The Incident history on the Dashboard's time axis (15 "Company and Incidents
- * panels"): one lane per Postmortem, from the second its run began to the one it
- * ended at, and the running Incident as the last lane. A lane splits at the two
- * moments of the incident loop, the first signal and the acknowledgement, so the
- * spans before each show. The axis is the rows the Charts above draw, so a run
- * lines up with the traffic that ran beside it. A Postmortem saved before
- * `endedAt` has no time to place it at, so it stays in the table only.
- */
 const incidentTimeline = (
   model: Model,
   rows: ReadonlyArray<Row>,
@@ -3644,11 +3431,6 @@ const incidentTimeline = (
   const first = Number(rows[0]?.at ?? Math.floor(game.time))
   const last = Number(rows[rows.length - 1]?.at ?? first) + Number(rows[rows.length - 1]?.span ?? 1)
   const span = Math.max(1, last - first)
-  /**
-   * One lane, split where the incident loop does: the seconds no one had seen it, the seconds
-   * no one had answered, and the run the SEV tints. `pending` says a null signal means one that
-   * has not landed yet, as the running Incident's does, rather than one the Game never recorded.
-   */
   const lane = (
     key: string,
     name: string,
@@ -3698,7 +3480,6 @@ const incidentTimeline = (
       )
     if (answered !== null && end > answered)
       runs.push(block(answered, end, color, `SEV${severity} · ${hhmm(answered)}–${hhmm(end)}`))
-    // A run with no seconds to split, as a save with equal times, still draws its whole span.
     return { key, name, runs: runs.length === 0 ? [block(start, end, color, held)] : runs }
   }
   const lanes: Array<Lane> = []
@@ -3707,7 +3488,6 @@ const incidentTimeline = (
     const endedAt = postmortem.endedAt
     if (endedAt === null) continue
     const startedAt = endedAt - postmortem.duration
-    // A run that ended before the axis began, or began after it ends, has nothing to place.
     if (endedAt < first || startedAt > last) continue
     severities.add(postmortem.severity)
     const signal = postmortem.mttd
@@ -3803,7 +3583,6 @@ const incidentTimeline = (
   )
 }
 
-/** The action item's state in the Dashboard's status colours: done, open, or none. */
 const actionColor = (game: Game, postmortem: Postmortem): string =>
   postmortem.action === null ? MUTED : has(game, postmortem.action) ? GREEN : AMBER
 
@@ -4099,7 +3878,6 @@ const alertStateCopy = (
   ignored: { color: MUTED, label: t.dashboard.ignoredState },
 })
 
-/** A rule's state now, from what the Simulation counts: held seconds, and the false alarms. */
 const alertStateOf = (game: Game, rule: Rule): AlertState =>
   ignored(game, rule)
     ? 'ignored'
@@ -4109,7 +3887,6 @@ const alertStateOf = (game: Game, rule: Rule): AlertState =>
         ? 'pending'
         : 'ok'
 
-/** What each rule watches now, read the way `step.ts` reads it, so panel and pager agree. */
 const watchedOf = (game: Game, ledger: Ledger): Record<Rule, number> => {
   const slowest = Object.entries(ledger.kinds).reduce(
     (most, [kind, entry]) =>
@@ -4138,7 +3915,6 @@ const watchedOf = (game: Game, ledger: Ledger): Record<Rule, number> => {
 const asRule = (value: string | undefined): Rule | null =>
   (RULES as ReadonlyArray<string>).includes(value ?? '') ? (value as Rule) : null
 
-/** The alerts the Inbox records: the rule, when, and whether the team has given up on it. */
 const alertMarks = (
   model: Model,
 ): ReadonlyArray<Readonly<{ rule: Rule; at: number; ignored: boolean }>> =>
@@ -4154,7 +3930,6 @@ const alertMarks = (
     }))
   })
 
-/** Grafana's state timeline of the alert rules: firing where the Inbox recorded a page. */
 const alertTimeline = (model: Model, rows: ReadonlyArray<Row>, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -4162,8 +3937,6 @@ const alertTimeline = (model: Model, rows: ReadonlyArray<Row>, h: HtmlBuilder<Me
   const marks = alertMarks(model)
   const last = rows.length - 1
   const lanes = RULES.map((rule) => {
-    // An ignored rule stays ignored until the player tunes it, which the Game does not date:
-    // a lane carries the state to the end only while the team still ignores the rule.
     const given = ignored(game, rule)
     const states = rows.map(() => 'ok' as AlertState)
     for (const mark of marks) {
@@ -4177,7 +3950,6 @@ const alertTimeline = (model: Model, rows: ReadonlyArray<Row>, h: HtmlBuilder<Me
           states[at] = 'ignored'
       else if (states[index] === 'ok') states[index] = 'firing'
     }
-    // The Game holds what is true now: a rule that has held for a while is pending or firing.
     const now = alertStateOf(game, rule)
     if (now !== 'ok' && last >= 0) states[last] = now
     return {
@@ -4202,7 +3974,6 @@ const alertTimeline = (model: Model, rows: ReadonlyArray<Row>, h: HtmlBuilder<Me
   )
 }
 
-/** The three thresholds a rule allows, set here rather than on the board: tuning is a config act. */
 const thresholdPicker = (rule: Rule, chosen: number, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -4262,7 +4033,6 @@ const thresholdPicker = (rule: Rule, chosen: number, h: HtmlBuilder<Message>): H
   )
 }
 
-/** The alert rules and their thresholds, with what each watches now. */
 const alertTable = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -4313,7 +4083,6 @@ const alertTable = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html =
   )
 }
 
-/** The RED method: rate, errors and duration for each Service the Design serves, or for one. */
 const servicesTable = (
   ledger: Ledger,
   shown: (kind: RequestKind) => boolean,
@@ -4360,7 +4129,6 @@ const servicesTable = (
   )
 }
 
-/** The RED method per Service: the kinds its Features touch, summed from the Ledger's `services`. */
 const serviceTable = (
   game: Game,
   ledger: Ledger,
@@ -4407,11 +4175,6 @@ const serviceTable = (
   )
 }
 
-/**
- * One request kind's waterfall: every Node its traffic touches, in link order from the Users
- * Node out, with the hop time and the queue wait this Node adds to that kind alone (12 "The
- * visibility ladder", `tracing`). The hottest limiting hop is hinted by its actual resource.
- */
 const waterfallTable = (
   game: Game,
   ledger: Ledger,
@@ -4435,7 +4198,6 @@ const waterfallTable = (
       throughput: t.dashboard.throughput,
       none: t.dashboard.noLimit,
     })[limit]
-  // Walk the Links that carry this kind, from any Node nothing else sends it into.
   const carriesKind = (id: string): boolean => (ledger.nodes[id]?.traffic[kind] ?? 0) > 0
   const incoming = new Set(
     ledger.links.filter((link) => (link.traffic[kind] ?? 0) > 0).map((link) => link.to),
@@ -4508,7 +4270,6 @@ const LIMIT_COLOR: Record<Limit, string> = {
   none: MUTED,
 }
 
-/** The USE method: which resource limits each Node, over the session's Node history. */
 const resourceTimeline = (
   model: Model,
   tracks: ReadonlyArray<NodeTrack>,
@@ -4517,7 +4278,8 @@ const resourceTimeline = (
   lazyResourceTimeline(resourceTimelineView, [
     model.board.nodeHistory,
     tracks,
-    Math.floor(model.board.game.time / NODE_EVERY) * NODE_EVERY,
+    Math.floor(model.board.game.time / NODE_HISTORY_EVERY_SIM_SECONDS) *
+      NODE_HISTORY_EVERY_SIM_SECONDS,
     h,
   ])
 
@@ -4532,7 +4294,7 @@ const resourceTimelineView = (
   const t = copy(h)
 
   const length = Math.max(1, ...tracks.map((track) => (history[track.id] ?? []).length))
-  const first = last - (length - 1) * NODE_EVERY
+  const first = last - (length - 1) * NODE_HISTORY_EVERY_SIM_SECONDS
   const lanes = tracks.map((track) => {
     const limits = (history[track.id] ?? []).map((sample) => sample.limit)
     return {
@@ -4561,10 +4323,8 @@ const resourceTimelineView = (
   )
 }
 
-/** The churn breakdown runs a day's forecast, so it is computed once a sim second, not every frame. */
 const churnCached = perSecond<ReadonlyArray<RegionChurn>>()
 
-/** Users by region against the market, with the rate at which each region loses them. */
 const usersTable = (
   game: Game,
   ledger: Ledger,
@@ -4617,10 +4377,6 @@ const usersTable = (
   )
 }
 
-/**
- * Real user monitoring's device split: mean latency from each device's side, including its own
- * round trip, for the users row (12 "The visibility ladder", `rum`).
- */
 const deviceTable = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return tablePanel(
@@ -4640,7 +4396,6 @@ const deviceTable = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/** The Load Balancer's traffic per backend, which shows an uneven split. */
 const loadBalancer = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -4671,7 +4426,6 @@ const loadBalancer = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Messa
   )
 }
 
-/** Each App Server's copies, and the workers busy against the pool they share. */
 const appServers = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -4712,7 +4466,6 @@ const appServers = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message
   )
 }
 
-/** Connections used against the limit, refused queries, and how far a replica lags. */
 const databases = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -4760,7 +4513,6 @@ const databases = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message>
   )
 }
 
-/** A Cache's evictions: the keys a second it pushes out because the hot data does not fit its memory. */
 const evictions = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -4787,7 +4539,6 @@ const evictions = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html =>
   )
 }
 
-/** A Cache's or a CDN's hit ratio: the share of the queries it answers itself. */
 const hits = (
   key: string,
   title: string,
@@ -4821,7 +4572,6 @@ const hits = (
   )
 }
 
-/** A Queue's depth and the age of the oldest task in it. */
 const queues = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -4869,10 +4619,8 @@ const queues = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message>): 
   )
 }
 
-/** 05 "Managed Components": third-party services, which bill per use and have their own outages. */
 const MANAGED: ReadonlyArray<ComponentId> = ['psp', 'llm', 'msgp', 'auth']
 
-/** Calls into and out of each Managed Component, and whether it is up. */
 const managed = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -4917,7 +4665,6 @@ const managed = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message>):
 const rangeLabel = (t: Messages, minutes: number): string =>
   minutes >= 1440 ? t.units.dShort(minutes / 1440) : t.units.hShort(minutes / 60)
 
-/** Grafana's top bar: breadcrumb, time picker, and refresh. */
 const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -5075,7 +4822,7 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
                 ),
               ),
             ],
-            DASHBOARD_RANGES.map((minutes) =>
+            DASHBOARD_RANGE_MINUTES.map((minutes) =>
               h.button(
                 [
                   h.Key(`range-${minutes}`),
@@ -5199,12 +4946,6 @@ const topBar = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-/**
- * Grafana's template variables (12 "Controls"): a Request kind and a Region that narrow every panel
- * that reads per-kind or per-region figures, the read-only Era and SLO, the compare and table
- * switches, and a switch per annotation group. A Service drop-down appears with a second Service and
- * narrows the per-kind panels to the kinds that Service's Features touch.
- */
 const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -5325,7 +5066,6 @@ const variables = (model: Model, slo: number, h: HtmlBuilder<Message>): Html => 
         ),
       ],
     )
-  /** A control that stays pressed: the compare line, the table view, and one per mark group. */
   const toggle = (name: string, on: boolean, click: Message, color?: string) =>
     h.button(
       [
@@ -5500,9 +5240,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const rows = rowsOf(model, slo)
   const tracks = tracksOf(model)
   const latest = game.history[game.history.length - 1]
-  /** Cash per second now: the last row's `cash` against the row before it (12 "The Dashboard"). */
   const cashRate = Number(rows[rows.length - 1]?.cashRate ?? 0)
-  // The template variables: a Request kind and a Region narrow every panel that holds them.
   const kind = model.board.dashboard.kind
   const service = model.board.dashboard.service
   const serviceKinds = service === null ? null : (ledger.services[service]?.kinds ?? [])
@@ -5514,7 +5252,6 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const alerting = has(game, 'alerting')
   const resourcesShown = has(game, 'profiling') || has(game, 'tracing')
   const hasNode = (type: ComponentId): boolean => game.nodes.some((node) => node.type === type)
-  /** The p99 the Latency rule pages at: the rule's multiple of the busiest kind's Apdex T. */
   const latencyRule = ((): number | null => {
     if (!alerting) return null
     const busiest = (
@@ -5533,7 +5270,6 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
     null,
   )
   const exemplars = exemplarsOf(model, rows)
-  // The per-Node panels pack two to a row, under one Nodes row.
   const nodePanels: ReadonlyArray<Html> = [
     ...(hasNode('lb') ? [lazyPanel('load-balancer', loadBalancer, [game.nodes, ledger, h])] : []),
     ...(hasNode('server') ? [lazyPanel('app-server', appServers, [game.nodes, ledger, h])] : []),
@@ -5575,7 +5311,6 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const userPanels: ReadonlyArray<Html> = has(game, 'multi-region')
     ? [usersTable(game, ledger, region, h), ...(has(game, 'rum') ? [deviceTable(ledger, h)] : [])]
     : []
-  // Every Chart draws the same annotations, so they are read from the Model once.
   const marks = annotationsOf(model)
   const series = (spec: SeriesSpec) =>
     timeSeries(
@@ -5664,7 +5399,6 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               )
             : locked(t.dashboard.errors2, SPAN.stat, t.dashboard.errorRate, 'logs', h),
           stat(
-            // Not 'latency': the latency Chart below holds that key, and two siblings cannot share one.
             'latency-now',
             percentiles ? t.dashboard.p99Latency : t.dashboard.meanLatency,
             formats(t).ms(percentiles ? latest.p99 : latest.latency),
@@ -5953,7 +5687,6 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
         [
           h.Key('scroll'),
           h.DataAttribute('scroll', 'dashboard'),
-          // The panels run past the window: a keyboard player tabs here and scrolls the last rows (15).
           h.Tabindex(0),
           h.Role('region'),
           h.AriaLabel(t.dashboard.dashboardScrollForTheCompanyAnd),

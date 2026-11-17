@@ -1,13 +1,11 @@
 type Value = string | number
 
-/** Units and the phrases that carry a measured value. A value is a number or text already formatted. */
 export const units = {
   ms: (value: Value) => `${value} ms`,
   s: (value: Value) => `${value} s`,
   min: (value: Value) => `${value} min`,
   h: (value: Value) => `${value} h`,
   d: (value: Value) => `${value} d`,
-  /** The compact forms on a time range: 30m, 6h, 7d. */
   minShort: (value: Value) => `${value}m`,
   hShort: (value: Value) => `${value}h`,
   dShort: (value: Value) => `${value}d`,

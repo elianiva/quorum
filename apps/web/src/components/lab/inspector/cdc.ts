@@ -9,7 +9,6 @@ import { Message } from '@/game/message.ts'
 import { row } from '@quorum/ui/game/bits'
 import { type Panel, caption, percent, section } from './shared.ts'
 
-/** The CDC Connector's flow: the Database it reads, and the Stream it publishes to. */
 const changes = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
 
@@ -72,7 +71,6 @@ export const cdcPanel: Panel = {
   stats: ({ game, node, ledger, own, h }) => {
     const t = copy(h)
 
-    // It reads a Database's write log; its lag is the stream's backlog behind its consumers.
     const stream = game.nodes.find(
       (entry) =>
         entry.type === 'log' &&

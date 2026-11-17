@@ -1,7 +1,5 @@
 import { at, design, set, wire } from '../design.ts'
 
-/* Patterns: operate and observe, security and edge, cost. */
-
 export const patternsOps = {
   'tracing-sampled': design({
     users: 3_000,

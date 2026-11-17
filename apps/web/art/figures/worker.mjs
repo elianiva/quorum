@@ -2,8 +2,6 @@ import { tools } from '../parts.mjs'
 import { HEIGHT, P as STAGE, WIDTH } from '../stage.mjs'
 import { conveyor, parcel } from './queue.mjs'
 
-// A worker: a robot arm beside the end of a conveyor, lifting the next box off the
-// line. The box in its gripper is lit.
 export function draw(P, { feet = true, lit = true } = {}) {
   const t = tools(P)
   const { k, G, S, L, D, at, cyl } = t
@@ -23,8 +21,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
     S(G.disc(-len / 2, len / 2, r, G.frameAlong(c, dir), P), { tone: 'mid', inner: '' })
   const side = G.unit3(G.cross3(G.sub3(ELBOW, SHOULDER), [0, 0, 1]))
 
-  // The lifted box and the gripper over the belt (farthest), then the forearm, the
-  // elbow, the upper arm and the base.
   const BOX = 9
   const boxZ = 20
   out.push(
@@ -53,8 +49,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   out.push(S(G.sphereOf(WRIST, 3.4, P), { tone: 'mid' }))
   out.push(hub(ELBOW, side, 4.4, 8))
   out.push(D([at(G.add3(ELBOW, G.mul3(side, 4)))], { size: 0.5, tone: 'hi' }))
-  // Base: a flange and a turntable with ticks, then the shoulder yoke around the
-  // upper arm (far cheek, arm, near cheek).
   const [bx, by] = BASE
   out.push(S(cyl(bx, by, 12, 0, 2.4, 56, 0.5), { tone: 'mid' }))
   out.push(

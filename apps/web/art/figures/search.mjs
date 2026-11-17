@@ -1,8 +1,6 @@
 import { tools } from '../parts.mjs'
 import { HEIGHT, P as STAGE, WIDTH } from '../stage.mjs'
 
-// Search: a library card catalog. Twelve index drawers with pulls and label holders;
-// one drawer is pulled out to show its cards, and its front is lit.
 export function draw(P, { feet = true, lit = true } = {}) {
   const t = tools(P)
   const { k, S, L, D, at, slab } = t
@@ -14,7 +12,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   const FRONT = CASE.y + CASE.d
   const Z0 = 4
   const Z1 = 40
-  // Recessed plinth, the case and its top cap.
   out.push(
     S(slab({ x: CASE.x + 2, y: CASE.y + 2, w: CASE.w - 4, d: CASE.d - 4, r: 1 }, 0, Z0, 3), {
       tone: 'lo',
@@ -28,7 +25,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   )
   out.push(S(slab(k.insetPlan(CASE, -1), Z1, 2, 3, 0.6), { tone: 'mid' }))
   out.push(t.topScrews(k.corners(CASE, 2.6), Z1 + 2, 0.7))
-  // A tray of loose cards on top.
   const TRAY = { x: -26, y: -26, w: 16, d: 12, r: 0.8 }
   out.push(S(slab(TRAY, Z1 + 2, 2, 2, 0.3), { tone: 'mid' }))
   for (let index = 0; index < 4; index++) {
@@ -77,7 +73,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
     }
   }
 
-  // The pulled drawer: floor, far wall, cards back to front, near wall, front.
   const DX = CASE.x + 2 + PULL[0] * CW + 1.2
   const DZ = Z0 + 2 + PULL[1] * CH + 0.8
   const DW = CW - 2.4

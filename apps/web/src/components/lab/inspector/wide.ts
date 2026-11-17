@@ -7,7 +7,6 @@ import { type Panel, picker, section, splitting, spreading } from './shared.ts'
 
 const QUORUM = [1, 2, 3, 4, 5] as const
 
-/** N, R and W (07 "Wide-column Store"), then key splitting and regions. */
 const wide = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
   return [

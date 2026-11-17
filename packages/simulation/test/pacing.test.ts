@@ -5,16 +5,6 @@ import { runBot } from '../src/pacing.ts'
 import { liveFeatures } from '../src/features.ts'
 import { budgetOf } from '../src/slo.ts'
 
-/*
- * The Balanced bot at the Challenge pace (16 "Pacing model", plan D16: five seeds).
- * It asserts what the model reaches: growth alone takes the Company from 150 users
- * to the Seed threshold in about 27 minutes, so the bot raises Pre-seed at about
- * 11 minutes and Seed at 27–36. The measured times are in 16's measurements page,
- * and the annotations below report them on every run. Margin is defined from Seed
- * on and needs payroll (M4), so the Garage and Pre-seed only have to pay for
- * themselves.
- */
-
 const SEEDS = [1, 2, 3, 4, 5]
 const NINETY_MINUTES = 90 * 60
 const minutes = (seconds: number | undefined) => ((seconds ?? 0) / 60).toFixed(1)
@@ -47,20 +37,6 @@ describe('the Balanced bot at the Challenge pace', { timeout: 60_000 }, () => {
     })
 })
 
-/*
- * The Balanced bot through Seed (10 "Era 2: Seed") and 40 minutes into Series A
- * (10 "Era 3: Series A"). Growth bounds Seed again: from 5,000 to 25,000 users
- * against a 35,000 market takes about 28 minutes at the design's g, but the
- * Team's Features raise growth and the market, so Series A comes 23–30 minutes
- * after Seed. The bot places a Search Engine and a WAF as soon as it can. Its
- * autopilot ships Video, Chat, and Checkout in Series A, so media, rt and buy
- * reach its Design. PHP refuses realtime connections, so once Chat is on the
- * backlog the bot migrates to Node.js cluster mode. In Series A it researches
- * Multiple zones first, then spreads its App Servers across two zones and gives
- * every data Node a standby, and raises Series B (91–106 min on seeds 1–5). It moves each CVE patch ticket to the top of
- * the backlog, so no ticket expires into a Data breach.
- * Series C is a placeholder, so the run stops on the clock.
- */
 describe.skipIf(!SLOW)(
   'the Balanced bot through Seed and Series A into Series B',
   { timeout: 360_000 },

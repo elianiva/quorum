@@ -10,7 +10,6 @@ export const replica: ComponentView = {
   layout: { rows: 7, inRow: 0, outRow: null, footer: true },
   rows: ({ game, node, own, inbound, capacity, latency }) => {
     const pool = own.connections
-    // A Read Replica copies the Database linked into it (07 "Read Replica").
     const primary = primaryOf(game, node)
     return [
       inbound,

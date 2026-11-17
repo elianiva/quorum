@@ -1,7 +1,3 @@
-// Shared drawing helpers for the Quorum component figures. Every figure draws through
-// `tools(P)`, so the same part can be drawn by its own card camera or by the hero
-// bench camera. Heights are world units with z up; the base plate top is z = 0.
-
 import * as k from './kit/iso-kit.mjs'
 import * as G from './kit/lathe.mjs'
 import * as T from './kit/tube.mjs'
@@ -22,8 +18,6 @@ export function tools(P) {
   const cyl = (x, y, r, z, h, steps = 28, bevel = 0) => k.cylinder(x, y, r, z, h, P, steps, bevel)
   const path = (points, closed = false) => k.pathOf(points.map(at), closed)
 
-  // A point on a vertical face: face 'y' is the plane y = c (u runs along x),
-  // face 'x' is the plane x = c (u runs along y).
   const onFace = (face, c, u, z) => (face === 'y' ? [u, c, z] : [c, u, z])
   const faceRect = (face, c, u0, u1, z0, z1, r = 0) =>
     path(
@@ -34,7 +28,6 @@ export function tools(P) {
     )
   const faceLine = (face, c, a, b) =>
     path([onFace(face, c, a[0], a[1]), onFace(face, c, b[0], b[1])])
-  // A row of closed vent slots on a face.
   const slots = (face, c, u0, u1, z0, z1, count, width) => {
     const step = (u1 - u0 - width) / Math.max(1, count - 1)
     return Array.from({ length: count }, (_, index) => {
@@ -42,7 +35,6 @@ export function tools(P) {
       return faceRect(face, c, u, u + width, z0, z1, width / 2)
     }).join('')
   }
-  // A screw head on a vertical face: a ring and a centre dot.
   const faceScrews = (face, c, points, r = 0.9) =>
     L(points.map(([u, z]) => k.sideRing(onFace(face, c, u, z), r, face, P, 12)).join(''), {
       tone: 'lo',
@@ -51,19 +43,16 @@ export function tools(P) {
       points.map(([u, z]) => at(onFace(face, c, u, z))),
       { size: 0.35 },
     )
-  // A screw head on a top face.
   const topScrews = (points, z, r = 1.3) =>
     L(points.map(([x, y]) => k.ring(x, y, r, z, P, 14)).join(''), { tone: 'lo' }) +
     D(
       points.map(([x, y]) => at([x, y, z])),
       { size: 0.4 },
     )
-  // A round boss standing out of a vertical face along its normal (+x or +y).
   const faceDisc = (face, c, u, z, r, h, style = { tone: 'mid' }) => {
     const F = G.frameAlong(onFace(face, c, u, z), face === 'y' ? [0, 1, 0] : [1, 0, 0])
     return S(G.disc(0, h, r, F, P), style)
   }
-  // A knurled knob on a vertical face, with a pointer line on its face.
   const faceKnob = (face, c, u, z, r, h, angle = 0.6) => {
     const normal = face === 'y' ? [0, 1, 0] : [1, 0, 0]
     const F = G.frameOf(
@@ -83,7 +72,6 @@ export function tools(P) {
     )
   }
 
-  // The base plate on four feet that every component stands on.
   const PLATE_STEPS = 8
   function basePlate(plan, { feet = true, screws = true } = {}) {
     const out = []
@@ -103,7 +91,6 @@ export function tools(P) {
     if (screws) out.push(topScrews(k.corners(plan, 6.4), 0, 1.4))
     return out.join('')
   }
-  // A small label plate with rule lines standing for printed text.
   function labelPlate(plan, z = 0) {
     const h = 0.7
     const inner = k.insetPlan(plan, 1.2)
@@ -131,7 +118,6 @@ export function tools(P) {
       ),
     ].join('')
   }
-  // A ruler strip with ticks growing from its back edge.
   function ruler(plan, z = 0, step = 3, every = 5) {
     const t = k.topTicks(
       plan.x + 2,
@@ -149,7 +135,6 @@ export function tools(P) {
       L(t.major, { tone: 'mid' }),
     ].join('')
   }
-  // A cable or pipe along a polyline, with its own stripes.
   function tube(points, r, { tone = 'mid', bend = r * 2.6 } = {}) {
     const route = G.fillet(points, bend, 7, { P, tube: r })
     return T.tubePieces(route, r, P, { maxLength: 400 })

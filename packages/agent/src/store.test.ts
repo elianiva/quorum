@@ -128,7 +128,6 @@ describe('the agent Room store', () => {
       200,
     )
     const { puts, deletes } = changesOf(store, first)
-    // The first chunk of 200 samples, the Cache's samples, and the inbox did not move.
     expect(Object.keys(puts).sort()).toEqual(['head', 'meta', 'node:database', 'samples:1'])
     expect(puts['samples:1']).toEqual(store.samples.slice(200))
     expect(deletes).toEqual([])

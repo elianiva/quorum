@@ -39,8 +39,6 @@ import {
 } from './shared.ts'
 import { css } from '@quorum/styled-system/css'
 
-/* The systems around the board: the team, the infrastructure, prestige, and the Sandboxes. */
-
 const team = (l: Lang): Page => {
   const t = l.t.reference.team
   const { POLICIES, FEATURES, TASKS } = l.cat
@@ -488,7 +486,6 @@ const sandbox = (l: Lang, def: GuidedSummary): Page => {
 export const systemPages = (l: Lang): ReadonlyArray<Page> => {
   const t = l.t.reference.sandboxes
   const sandboxes = SANDBOX_IDS.map((id) => sandbox(l, l.cat.GUIDED[id]))
-  // An Era's heading is anchored by its English name.
   const eraTitles = ERAS.map((era, index) => titleOf(era.name, l.cat.ERAS[index]?.name ?? era.name))
   const sandboxHub = page(l, {
     path: '/sandboxes',

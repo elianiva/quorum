@@ -1,11 +1,5 @@
 import { Schema } from 'effect'
 
-/* ==========================================================================
-   Company logos. A logo is pure presentation: the Simulation never reads it,
-   and the save keeps only its id. Each mark is a monoline glyph in one hue,
-   so it reads on the title screen's dark glass and in the board's panels.
-   ========================================================================== */
-
 export const LOGO_IDS = [
   'orbit',
   'bolt',
@@ -24,9 +18,7 @@ export const DEFAULT_LOGO: LogoId = 'orbit'
 export type LogoDef = Readonly<{
   id: LogoId
   name: string
-  /** The hue of the mark's oklch color: the same mark on every screen. */
   hue: number
-  /** Stroked paths on a 24 x 24 grid. */
   paths: ReadonlyArray<string>
 }>
 

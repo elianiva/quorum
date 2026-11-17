@@ -1,6 +1,5 @@
 import type { ComponentDef } from '../catalog/components.ts'
 
-/** A Component's catalog entry, with the defaults of a plain Node filled in. */
 export const def = (
   entry: Omit<
     ComponentDef,

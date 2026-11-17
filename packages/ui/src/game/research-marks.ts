@@ -87,14 +87,6 @@ import { groupBadge } from './bits.ts'
 import { COMPONENT_ICONS } from './component-icons.ts'
 import { STACK_LOGOS, type StackLogoId } from './icons.ts'
 
-/* The mark each Research item wears, in the game's Research tree and on the wiki. */
-
-/**
- * How each item looks. An item that unlocks a Component wears that
- * Component's badge. The rest wear the badge shape of the part of the system
- * they change (Edge hexagon, Compute chip, Data disc, Ops diamond), in their
- * own colour: a brand colour, or an OKLCH hue angle.
- */
 type Look =
   | Readonly<{ component: ComponentId }>
   | Readonly<{ group: BuildGroup; logo: StackLogoId }>
@@ -218,7 +210,6 @@ export const LOOKS: Record<ResearchId, Look> = {
   'security-team': { group: 'ops', glyph: ShieldCheck, hue: 300 },
   'investor-relations': { group: 'ops', glyph: Handshake, hue: 60 },
   'guidance-modeling': { group: 'ops', glyph: TrendingUp, hue: 85 },
-  // Runtime variants (06 "Variants by language"): each wears a glyph of the part it changes.
   'php-jit': { group: 'compute', glyph: Zap, hue: 300 },
   'worker-threads': { group: 'compute', glyph: Workflow, hue: 210 },
   yjit: { group: 'compute', glyph: Rocket, hue: 20 },
@@ -257,36 +248,27 @@ export const LOOKS: Record<ResearchId, Look> = {
   'fw-tokamak': { group: 'compute', logo: 'tokamak' },
   'fw-servant': { group: 'compute', logo: 'servant' },
   'fw-ihp': { group: 'compute', logo: 'ihp' },
-  // The global developer tools (10 "Track: Product and business").
   'build-cache': { group: 'ops', glyph: FileArchive, hue: 180 },
   'dev-environment': { group: 'ops', glyph: Container, hue: 200 },
   'static-analysis': { group: 'ops', glyph: ScanSearch, hue: 150 },
   'formal-verification': { group: 'ops', glyph: BadgeCheck, hue: 140 },
-  // The last four Components: each wears its own badge, but secrets management is no Component.
   cdc: { component: 'cdc' },
   'service-mesh': { component: 'mesh' },
   'feature-flags': { component: 'ff' },
   'secrets-management': { group: 'ops', glyph: KeySquare, hue: 150 },
   'spam-filter': { group: 'ops', glyph: ShieldBan, hue: 30 },
-  // Splitting a Service: the same compute chip a migration wears.
   'service-boundaries': { group: 'compute', glyph: Split, hue: 320 },
-  // The incident loop and the SLA (11 "The incident loop", "Runbooks", "SLA credits").
   'on-call': { group: 'ops', glyph: BellRing, hue: 20 },
   runbooks: { group: 'ops', glyph: BookOpen, hue: 60 },
   'sre-team': { group: 'ops', glyph: Siren, hue: 340 },
   'enterprise-sales': { group: 'ops', glyph: Handshake, hue: 110 },
-  // The two preventions the six hand-written incident kinds open (11 "The six kinds").
   'online-migrations': { group: 'data', glyph: Split, hue: 200 },
   'leap-smearing': { group: 'ops', glyph: Timer, hue: 250 },
-  // The Team's remaining research (08 "Adoption", "Measured lift", "Hiring", "Deploy frequency",
-  // "Teams"): two team types wear the person a team badge wears, and the rest change how it works.
   'ab-testing': { group: 'ops', glyph: Funnel, hue: 190 },
   'hiring-pipeline': { group: 'ops', glyph: Users, hue: 25 },
   'trunk-based': { group: 'compute', glyph: GitBranch, hue: 145 },
   'platform-team': { group: 'ops', glyph: Container, hue: 265 },
   'data-team': { group: 'data', glyph: LineChart, hue: 210 },
-  // The options and mechanics that closed the research tracks (05, 07, 10): a Component option wears
-  // its Component, and a rule change wears the badge of the part of the system it moves.
   'l4-lb': { component: 'lb' },
   'rate-limiting': { group: 'edge', glyph: Gauge, hue: 30 },
   esi: { group: 'edge', glyph: Layers, hue: 185 },
@@ -304,7 +286,6 @@ export const LOOKS: Record<ResearchId, Look> = {
   'binary-rpc': { group: 'edge', glyph: Cable, hue: 275 },
   outbox: { group: 'data', glyph: Workflow, hue: 70 },
   'expand-contract': { group: 'data', glyph: Split, hue: 220 },
-  // The last eleven items (10 "Not built yet", 16 "Open gaps").
   profiling: { group: 'ops', glyph: Microscope, hue: 185 },
   'tail-sampling': { group: 'ops', glyph: Filter, hue: 185 },
   rum: { group: 'ops', glyph: Smartphone, hue: 185 },
@@ -318,7 +299,6 @@ export const LOOKS: Record<ResearchId, Look> = {
   'savings-plans': { group: 'ops', glyph: PiggyBank, hue: 45 },
 }
 
-/** The item's own colour: its group's, its brand's, or its hue. */
 export const colorOf = (look: Look): string =>
   'component' in look
     ? `var(--group-${COMPONENTS[look.component].group})`
@@ -328,7 +308,6 @@ export const colorOf = (look: Look): string =>
         ? (STACK_LOGOS[look.logo].color ?? 'var(--foreground)')
         : look.brand.color
 
-/** The item's mark, at node size or at the side pane's size. Grey when locked. */
 export const researchMark = <M>(
   entry: ResearchDef,
   size: 'sm' | 'lg',
@@ -396,7 +375,6 @@ export const researchMark = <M>(
   )
 }
 
-/** Each Research track's icon, at the root of its trunk. */
 export const TRACK_ICONS: Record<ResearchTrack, IconNode> = {
   infrastructure: Server,
   data: Database,

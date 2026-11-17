@@ -6,7 +6,6 @@ import { contentIndex } from './src/content-index.ts'
 import { Frontmatter } from './src/frontmatter.ts'
 import { islandAttributes } from './src/islands.ts'
 
-// Tests compile Markdown exactly as the build does.
 export default defineConfig({
   plugins: [
     foldkit(),
@@ -15,10 +14,8 @@ export default defineConfig({
     markdown({ frontmatter: Frontmatter, islands: islandAttributes }),
   ],
   resolve: { dedupe: ['effect', 'foldkit'] },
-  // The corpus tests read every page of the wiki, which a CI runner needs more than 5 s for.
   test: {
     testTimeout: 30_000,
-    // The solve runs in the Rust solver; every test run installs it first.
     setupFiles: ['@quorum/simulation/host/node'],
   },
 })

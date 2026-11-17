@@ -1,9 +1,3 @@
-/* ==========================================================================
-   A Room's id is a hash of the browser's write key. The id is safe to paste
-   into an agent prompt; the key never leaves the browser. No key is stored on
-   the server: the Durable Object's name is the hash.
-   ========================================================================== */
-
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
 
 const base64url = (bytes: Uint8Array): string => {
@@ -22,13 +16,11 @@ const base64url = (bytes: Uint8Array): string => {
   return text
 }
 
-/** 32 random bytes, base64url: 43 characters. */
 export const newWriteKey = (): string => {
   const bytes = crypto.getRandomValues(new Uint8Array(32))
   return base64url(bytes)
 }
 
-/** The public id of the Room a write key owns. */
 export const roomIdOf = async (writeKey: string): Promise<string> => {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(writeKey))
   return base64url(new Uint8Array(digest)).slice(0, 22)

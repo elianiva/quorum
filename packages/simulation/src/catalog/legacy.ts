@@ -1,17 +1,12 @@
-/* Exits and the Legacy shop (13 "Exit and Legacy"). */
-
 export const EXIT_IDS = ['acqui-hire', 'acquisition', 'ipo', 'step-down'] as const
 export type ExitId = (typeof EXIT_IDS)[number]
 
 export type ExitDef = Readonly<{
   id: ExitId
   name: string
-  /** The first Era it is offered in. The IPO is the Pre-IPO round itself. */
   stage: number
-  /** The valuation it pays on, at most. */
   cap: number
   multiplier: number
-  /** The Company goes on after it: the IPO lists, and the Public Era follows. */
   continues: boolean
 }>
 
@@ -50,7 +45,6 @@ export const EXITS: Record<ExitId, ExitDef> = {
   },
 }
 
-/** Step down adds this to its multiplier per quarter in the beat streak, up to the cap. */
 export const STREAK_BONUS = 0.1
 export const STREAK_BONUS_CAP = 1
 
@@ -73,7 +67,6 @@ export type PerkId = (typeof PERK_IDS)[number]
 export type PerkDef = Readonly<{
   id: PerkId
   name: string
-  /** Legacy per level; the length is the number of levels. */
   costs: ReadonlyArray<number>
   effect: string
 }>
@@ -98,10 +91,6 @@ const tripling = (first: number, levels: number): ReadonlyArray<number> => {
   return costs
 }
 
-/**
- * Ventures no longer cost Legacy, so the shop takes over their share. Prices rise 12.5% before
- * rounding, which leaves the twelve Perks at 1,766★ in all.
- */
 const shopPrice = (costs: ReadonlyArray<number>): ReadonlyArray<number> =>
   costs.map((cost) => Math.round(cost * 1.125))
 
@@ -182,13 +171,9 @@ export const PERKS: Record<PerkId, PerkDef> = {
 
 export const POLICY_LEVEL = { research: 1, hire: 2, upgrade: 3 } as const
 
-/** The Autopilot's hiring policy: payroll stays under this share of revenue, up to a headcount. */
 export const AUTOPILOT_PAYROLL = 0.25
 export const AUTOPILOT_HIRES = 4
-/** The Autopilot's upgrade policy buys the next size for an App Server above this load. */
 export const AUTOPILOT_LOAD = 0.7
 
-/** Playbook slots by perk level. Level 0 keeps one, so the first Company can try them. */
 export const PLAYBOOK_SLOTS: ReadonlyArray<number> = [1, 2, 5, 10, 25]
-/** Extra Company speeds by Time dilation level. */
 export const DILATION_SPEEDS: ReadonlyArray<ReadonlyArray<number>> = [[], [20], [20, 40]]

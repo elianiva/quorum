@@ -8,9 +8,6 @@ import { langOf } from '../i18n/lang.ts'
 import type { Locale } from '../i18n/locale.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-/* The quizzes on a page: the option the reader chose for each, by `<page path>#<occurrence>`,
-   counting from 1. A check, not a score: answers last until the page reloads. */
-
 export const Model = Schema.Struct({ answers: Schema.Record(Schema.String, Schema.Finite) })
 export type Model = typeof Model.Type
 
@@ -37,7 +34,6 @@ export type Question = Readonly<{
   options: string
   answer: string
   explain: string
-  /** The page's language, for the words around the question. */
   locale: Locale
 }>
 

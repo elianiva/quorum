@@ -3,11 +3,6 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 
 type Child = Html | string
 
-/** Upstream keys label disabling on a native peer-disabled sibling variant
- *  and `group-data-[disabled=true]`, neither of which matches under foldkit
- *  (no `.peer` sibling; `data-disabled` is emitted empty). Re-keyed onto a
- *  live `group` ancestor carrying data-disabled — e.g. the fieldset compound
- *  or switch wrapper. */
 export const labelClass = css({
   gap: '2',
   fontSize: 'type.14',
@@ -28,7 +23,6 @@ export const labelClass = css({
 
 type LabelConfig = Readonly<{ forId?: string; className?: string }>
 
-/** Styled label. Mirrors the shadcn v4 `label.tsx` (no Radix primitive). */
 export const label = <M>(
   config: LabelConfig,
   children: ReadonlyArray<Child>,

@@ -4,7 +4,6 @@ import { Text } from 'pixi.js'
 export const MONO = '"Geist Mono", ui-monospace, monospace'
 export const SANS = '"Geist", ui-sans-serif, system-ui, sans-serif'
 
-/** A label's font as a canvas font string: Pretext measures with it, so it must match Pixi's. */
 const fontOf = new WeakMap<Text, string>()
 
 const shapes = new WeakMap<
@@ -18,10 +17,6 @@ const shapes = new WeakMap<
   }>
 >()
 
-/**
- * The label measured, without asking the renderer: Pixi rebuilds a label's texture whenever its
- * width is read, so a label that has not changed is measured once.
- */
 const shapeOf = (view: Text, text: string) => {
   const font = fontOf.get(view) ?? `500 12px ${SANS}`
   const known = shapes.get(view)
@@ -40,7 +35,6 @@ const shapeOf = (view: Text, text: string) => {
 
 const ellipses = new Map<string, number>()
 
-/** The width of an ellipsis in a font, measured once per font. */
 const ellipsisIn = (font: string): number => {
   const known = ellipses.get(font)
   if (known !== undefined) return known
@@ -54,16 +48,9 @@ const fits = new WeakMap<
   Readonly<{ text: string; room: number; fit: string; scale: number }>
 >()
 
-/** The smallest share of its own size a label takes before it is cut with an ellipsis. */
 const MIN_LABEL_SCALE = 0.72
+const LABEL_RESOLUTION = 2
 
-/**
- * Shows `text` in `view` so it is no wider than `room`. The width comes from Pretext, not from the
- * renderer, which would rebuild the label's texture for every guess. A label that does not fit at
- * its own size is drawn a little smaller first, because a whole name reads better than an ellipsis,
- * which a Japanese name needs sooner: a full-width glyph is twice as wide. Only a label that is too
- * wide for the smallest size is cut, at a break opportunity, and ends with an ellipsis.
- */
 export const fitText = (view: Text, text: string, room: number): void => {
   const last = fits.get(view)
   if (last?.text === text && last.room === room) {
@@ -73,7 +60,6 @@ export const fitText = (view: Text, text: string, room: number): void => {
   }
   const shape = shapeOf(view, text)
   const scale = shape.width > room ? Math.max(MIN_LABEL_SCALE, room / shape.width) : 1
-  // The room in the label's own pixels: at `scale` its natural width may reach `room / scale`.
   const budget = room / scale
   let fit = shape.text
   if (shape.width > budget) {
@@ -101,8 +87,7 @@ export const label = (
   const view = new Text({
     text: '',
     style: { fontFamily: family, fontSize: size, fontWeight: weight, fill: 0x16233d },
-    // The board never renders above 2×, so a third copy of every glyph costs memory, not sharpness.
-    resolution: 2,
+    resolution: LABEL_RESOLUTION,
   })
   fontOf.set(view, `${weight} ${size}px ${family}`)
   return view

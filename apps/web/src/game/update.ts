@@ -52,8 +52,6 @@ import { roomHandlers } from './update/room.ts'
 import { pwaHandlers } from './update/pwa.ts'
 import { pwaSnapshot } from '../platform/pwa.ts'
 
-/** Every Message. Handlers live in ./update, grouped by what they touch; this file routes them. */
-
 export { TICK_MS, SPEEDS, speedsOf } from './update/constant.ts'
 
 export const initialModel = (): Model => {
@@ -104,10 +102,6 @@ export const initialModel = (): Model => {
   })
 }
 
-/** A fresh load opens the screen its URL names. A board opens once the file or
- *  store that fills it has loaded, so a reload stays on the board the player
- *  was playing; a fresh load on the title screen still waits behind the
- *  clock-in splash. */
 export const init: Runtime.RoutingApplicationInit<Model, Message, void, ApiRpc> = (url) => {
   const route = urlToAppRoute(url)
   const base = initialModel()
@@ -115,14 +109,12 @@ export const init: Runtime.RoutingApplicationInit<Model, Message, void, ApiRpc> 
     model: {
       ...base,
       route,
-      // A Room URL joins straight away; the welcome fills the Board.
       ...(AppRoute.guards.Room(route)
         ? {
             panel: 'room' as const,
             room: { ...base.room, phase: { _tag: 'Connecting' as const, code: route.room } },
           }
         : {}),
-      // A board URL skips the splash: the player was already clocked in.
       boot: onBoard(route) ? { _tag: 'Ready' } : { _tag: 'Shut' },
     },
     commands: [
@@ -148,29 +140,20 @@ export const QUIET = new Set([
   'CompanyLoaded',
   'CompanyUnread',
   'CompanyDeleted',
-  // The Inspector's Stack pickers are UI state; the option they choose is logged.
   'RuntimePickerChanged',
   'FrameworkPickerChanged',
-  // Sent by the compute worker several times a second.
   'PreviewComputed',
-  // The answers are the player's words; only sending them is a gesture.
   'SurveyChanged',
-  // The browser's install offer and network state change without a gesture.
   'PwaChanged',
-  // The palette's query and highlight are UI state; the row the player runs is logged.
   'PaletteQueryChanged',
   'PaletteMoved',
   'PaletteHighlighted',
 ])
 
-/** A team drag sends a Message per pointer move; only the drop that moves someone is a gesture. */
 export const quiet = (model: Model, message: Message, after: Model): boolean =>
   QUIET.has(message._tag) ||
-  // The Dashboard crosshair sends a Message on every pointer move, and choosing a
-  // Postmortem reads the Game without changing it, as the Inspector's sample does.
   (message._tag === 'DashboardChanged' &&
     (message.message._tag === 'Hovered' || message.message._tag === 'PostmortemChosen')) ||
-  // Resizing the pane is view state, sent on every pointer move.
   (message._tag === 'ResearchChanged' && message.message._tag === 'SheetResized') ||
   ((message._tag === 'TeamChanged' || message._tag === 'ResearchChanged') &&
     message.message._tag === 'DragChanged' &&
@@ -179,11 +162,6 @@ export const quiet = (model: Model, message: Message, after: Model): boolean =>
 export const fieldsOf = (message: Message): Record<string, unknown> =>
   Object.fromEntries(Object.entries(message).filter(([key]) => key !== '_tag'))
 
-/**
- * The Exit survey's figures for the playtest log and its PostHog event. The
- * answers stay out; their lengths say only whether each question was answered.
- * A late answer that the UI ignored does not count.
- */
 const surveyOf = (model: Model, after: Model, message: Message): Record<string, unknown> => {
   const exited = isExited(model.companyPhase) ? model.companyPhase : null
   if (
@@ -206,7 +184,6 @@ const surveyOf = (model: Model, after: Model, message: Message): Record<string, 
   }
 }
 
-/** Logs the gesture, what it changed, why it was refused, and any toast it raised. */
 export const logged = (model: Model, message: Message, result: UpdateResult): UpdateResult => {
   const logs: Array<LogEntry> = []
   const after = result.model
@@ -232,9 +209,6 @@ export const logged = (model: Model, message: Message, result: UpdateResult): Up
   return { ...result, commands: [...(result.commands ?? []), AppendLog({ entries: logs })] }
 }
 
-/** The URL follows the route: a Message that opens another screen adds a
- *  history entry for it. ChangedUrl already came from the URL, and a handler
- *  that corrects the URL itself keeps its own command. */
 export const withUrl = (model: Model, message: Message, result: UpdateResult): UpdateResult => {
   const url = urlOf(result.model.route)
   if (message._tag === 'ChangedUrl' || url === urlOf(model.route)) return result
@@ -245,10 +219,8 @@ export const withUrl = (model: Model, message: Message, result: UpdateResult): U
   return { ...result, commands: [...(result.commands ?? []), PushUrl({ url })] }
 }
 
-/** Messages that move a Company to another Era. */
 export const ROUNDS = new Set(['RoundRaised', 'RoundDeclined', 'CheatRound'])
 
-/** Whether the board draws anything differently after a Message, or has just come on screen. */
 export const boardChanged = (before: Model, after: Model): boolean =>
   before.board.game !== after.board.game ||
   before.prefs.locale !== after.prefs.locale ||
@@ -264,8 +236,6 @@ export const boardChanged = (before: Model, after: Model): boolean =>
   cueNode(before) !== cueNode(after) ||
   (onBoard(after.route) && !onBoard(before.route))
 
-/** The board follows the Model: one SyncBoard after any Message that changed what it draws.
- *  A fit asked for in the same Message runs inside it, after the new state is drawn. */
 export const withBoard = (model: Model, result: UpdateResult): UpdateResult => {
   if (!boardChanged(model, result.model)) return result
   const commands = result.commands ?? []
@@ -279,7 +249,6 @@ export const withBoard = (model: Model, result: UpdateResult): UpdateResult => {
   }
 }
 
-/** Leaving the title for a board plays the monitor's connect sequence first, unless motion is reduced. */
 export const connect = (model: Model, result: UpdateResult): UpdateResult =>
   onBoard(model.route) || !onBoard(result.model.route) || model.prefs.motion === 'reduce'
     ? result
@@ -310,8 +279,6 @@ function handle(model: Model, message: Message): UpdateResult {
   })
 }
 
-/** Handles a Message and adds its sound cue. Messages that route to another
- *  Message (keys, the Collect footer) sound once, as the Message they became. */
 function route(model: Model, message: Message): UpdateResult {
   const handled = handle(model, message)
   const result = { ...handled, model: noticed(handled.model, message) }

@@ -7,12 +7,6 @@ import { Upload } from '@quorum/agent/snapshot'
 import type { AgentRooms } from '../contexts/agent/room.ts'
 import { WIKI_PAGES } from './wiki-pages.ts'
 
-/* ==========================================================================
-   The two public edges behind the website Worker: the keyless MCP endpoint,
-   and the write-keyed upload the browser uses. The MCP protocol lives here;
-   each tool call is answered by the Room's Durable Object.
-   ========================================================================== */
-
 const MAX_BODY = 2 * 1024 * 1024
 
 const decodeUpload = Schema.decodeUnknownOption(Upload)
@@ -163,7 +157,6 @@ const room = async (
   return new Response(null, { status: 405, headers: { Allow: 'PUT, DELETE, OPTIONS' } })
 }
 
-/** Serves `/mcp` and the browser's upload path. Anything else is a 404. */
 export const agentHttp = async (request: Request, rooms: AgentRooms): Promise<Response> => {
   const origin = request.headers.get('Origin')
   if (!isAllowedOrigin(origin)) return new Response('Forbidden', { status: 403 })

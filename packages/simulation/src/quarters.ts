@@ -3,20 +3,14 @@ import type { Game, Quarter } from './state.ts'
 import { marginOf } from './valuation.ts'
 import { QuarterEvent, QuarterPhase, step as quarterStep } from './quarter-machine.ts'
 
-/** Sim seconds in a quarter: 7 calendar days. */
 export const QUARTER_SECONDS = 10_080
-/** Guidance may change only in the first calendar day. */
 export const GUIDANCE_WINDOW = 1_440
-/** Guidance levels: revenue growth over the quarter, and margin, in percent. */
-export const GUIDANCE_GROWTH = [5, 10, 20] as const
-export const GUIDANCE_MARGIN = [10, 20, 30] as const
-/** A beat adds this to the multiple, plus a share per guidance level; a miss takes this off. */
-export const BEAT = 0.5
-export const BEAT_PER_LEVEL = 0.25
-export const MISS = 1
-/** Every fourth beat in a row adds this. */
-export const STREAK = 1
-/** What quarters can add to or take from the multiple. */
+export const GUIDANCE_GROWTH_PERCENT = [5, 10, 20] as const
+export const GUIDANCE_MARGIN_PERCENT = [10, 20, 30] as const
+export const MULTIPLE_PER_BEAT = 0.5
+export const MULTIPLE_PER_GUIDANCE_LEVEL = 0.25
+export const MULTIPLE_LOST_PER_MISS = 1
+export const MULTIPLE_PER_FOURTH_BEAT = 1
 export const BONUS_LIMIT = 10
 
 export const firstQuarter = (game: Game, revenue: number): Quarter => ({
@@ -40,23 +34,23 @@ export const guidanceOpen = (game: Game): boolean => {
   )
 }
 
-/** Revenue growth since the quarter began, in percent. The quarter ends at the same hour of the week. */
 export const quarterGrowth = (quarter: Quarter, ledger: Ledger): number =>
   quarter.revenue > 0 ? (ledger.revenue / quarter.revenue - 1) * 100 : 0
 
-/** Closes a quarter that has run its 7 days and opens the next with the same guidance. */
 export const advanceQuarter = (game: Game, ledger: Ledger): Quarter | null => {
   const quarter = game.quarter
   if (!quarter || game.time - quarter.startedAt < QUARTER_SECONDS) return quarter
   const growth = quarterGrowth(quarter, ledger)
   const margin = marginOf(ledger)
   const beat =
-    growth >= (GUIDANCE_GROWTH[quarter.growth] ?? 5) &&
-    margin >= (GUIDANCE_MARGIN[quarter.margin] ?? 10)
+    growth >= (GUIDANCE_GROWTH_PERCENT[quarter.growth] ?? 5) &&
+    margin >= (GUIDANCE_MARGIN_PERCENT[quarter.margin] ?? 10)
   const streak = beat ? quarter.streak + 1 : 0
   const change = beat
-    ? BEAT + BEAT_PER_LEVEL * (quarter.growth + quarter.margin) + (streak % 4 === 0 ? STREAK : 0)
-    : -MISS
+    ? MULTIPLE_PER_BEAT +
+      MULTIPLE_PER_GUIDANCE_LEVEL * (quarter.growth + quarter.margin) +
+      (streak % 4 === 0 ? MULTIPLE_PER_FOURTH_BEAT : 0)
+    : -MULTIPLE_LOST_PER_MISS
   return {
     ...quarter,
     index: quarter.index + 1,

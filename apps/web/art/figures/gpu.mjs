@@ -1,8 +1,6 @@
 import { tools } from '../parts.mjs'
 import { HEIGHT, P as STAGE, WIDTH } from '../stage.mjs'
 
-// A GPU: a graphics card lying on two cradles, its fin stack under a shroud with two
-// fans, the bracket with display ports at the end. The light strip is lit.
 export function draw(P, { feet = true, lit = true } = {}) {
   const t = tools(P)
   const { k, S, L, D, at, slab } = t
@@ -17,7 +15,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
   }
   out.push(S(slab(PCB, PZ, 1.4, 2, 0.3), { tone: 'mid' }))
   const TOP = PZ + 1.4
-  // Gold fingers on a tab along the front edge.
   const TAB = { x: -24, y: PCB.y + PCB.d, w: 30, d: 2.6, r: 0 }
   out.push(S(slab(TAB, PZ, 1.4, 1), { tone: 'lo' }))
   const fingers = []
@@ -25,7 +22,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
     fingers.push(k.lineOnTop([x, TAB.y], [x, TAB.y + TAB.d], TOP, P))
   out.push(L(fingers.join(''), { tone: 'faint' }))
 
-  // The fin stack, far fin first.
   const FIN_TOP = 16
   for (let x = PCB.x + 2; x <= PCB.x + PCB.w - 4; x += 2) {
     out.push(
@@ -36,7 +32,6 @@ export function draw(P, { feet = true, lit = true } = {}) {
     )
   }
 
-  // The shroud with two fans and the light strip.
   const SH = { x: PCB.x, y: PCB.y, w: PCB.w, d: PCB.d, r: 1.6 }
   const SZ = FIN_TOP + 3
   out.push(S(slab(SH, FIN_TOP, 3, 4, 0.6), { tone: 'hi', crease: 'lo' }))
@@ -66,11 +61,9 @@ export function draw(P, { feet = true, lit = true } = {}) {
       lit,
     }),
   )
-  // Power socket on the back corner.
   out.push(S(slab({ x: 18, y: -16, w: 9, d: 4, r: 0.6 }, SZ, 3, 2, 0.3), { tone: 'mid' }))
   out.push(L(t.slots('y', -12, 19.6, 25.6, SZ + 0.8, SZ + 2.2, 4, 1.2), { tone: 'lo' }))
 
-  // The bracket at the near end, with ports on its outer face.
   const BX = PCB.x + PCB.w
   const BF = BX + 1.6
   out.push(S(slab({ x: BX, y: -20, w: 1.6, d: 34, r: 0.3 }, 0, 24, 1), { tone: 'mid' }))

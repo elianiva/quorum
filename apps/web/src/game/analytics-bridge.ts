@@ -2,21 +2,13 @@ import { COMPONENTS } from '@quorum/simulation/catalog'
 import type { Game } from '@quorum/simulation/state'
 import type { LogEntry } from './playlog.ts'
 
-/* ==========================================================================
-   The playlog is the event bus. This module maps one batch of log lines to the
-   PostHog events the plan keeps: no simulation imports, no browser APIs, so a
-   test can drive it with plain entries.
-   ========================================================================== */
-
 export type AnalyticsEvent = Readonly<{
   event: string
   properties: Record<string, unknown>
 }>
 
 export type BridgeContext = Readonly<{
-  /** The board after the batch, used to name the ends of a new Link. */
   game: Game
-  /** Components placed this session, so the first placement can be marked. */
   seenComponents: Set<string>
 }>
 

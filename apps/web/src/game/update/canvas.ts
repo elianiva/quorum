@@ -26,7 +26,6 @@ import {
 import { type Note } from './clock.ts'
 import { initStackPicker } from '../stack-picker.ts'
 
-/** The Nodes an edit applies to: the multi-selection, or the one Node open. */
 export const chosenIds = (model: Model): ReadonlyArray<string> =>
   model.board.selection.length > 0
     ? model.board.selection
@@ -38,7 +37,6 @@ export const NUDGE = 16
 
 export const countNodes = (count: number): string => (count === 1 ? '1 Node' : `${count} Nodes`)
 
-/** Sells every Node it can. Fixed Nodes stay; it fails only when nothing sold. */
 export const sellAll = Actions.sellAll
 
 type CanvasTag =
@@ -82,7 +80,6 @@ export const canvasHandlers = (
   }),
 
   PlacingChosen: ({ type }) => {
-    // Picking a part closes its list: the board is the next step.
     const next: Model = {
       ...model,
       panel: 'none',
@@ -102,7 +99,6 @@ export const canvasHandlers = (
 
   NodePlaced: ({ x, y }) => {
     const playbook = stampedPlaybook(model)
-    // Nothing lands on a card: a drop moves to the nearest spot that keeps clear.
     const others = regionView(model.board.game, model.board.region).nodes.map(boxOf)
     if (playbook) {
       const spot = freeSpot(others, {
@@ -178,7 +174,6 @@ export const canvasHandlers = (
   NodeTapped: ({ nodeId }) => {
     const next: Model = {
       ...model,
-      // The Stack pickers filter for the Node they were opened on, so a new Node starts them over.
       runtimePicker: initStackPicker(),
       frameworkPicker: initStackPicker(),
       board: {
@@ -374,7 +369,6 @@ export const canvasHandlers = (
     const ids = chosenIds(model)
     if (ids.length === 0) return { model }
     const sold = sellAll(model.board.game, ids)
-    // Nothing to sell (fixed Nodes): say why, without asking.
     if (Result.isFailure(sold)) return withToast(model, refusalIn(say(model), sold.failure), 'warn')
     return {
       model: {
@@ -424,7 +418,6 @@ export const canvasHandlers = (
   NodeMoved: ({ nodeId, x, y }) => {
     const node = model.board.game.nodes.find((entry) => entry.id === nodeId)
     if (!node) return { model }
-    // A card in a multi-selection takes the rest of it along.
     const group =
       model.board.selection.length > 1 && model.board.selection.includes(nodeId)
         ? model.board.selection
@@ -443,8 +436,6 @@ export const canvasHandlers = (
     })
     const dx = spot.x - left
     const dy = spot.y - top
-    // A drag shows the landing at once and becomes one move per Node, so a Room
-    // applies the same landing instead of replaying the drag.
     return act(
       model,
       `Moved ${countNodes(members.length)}`,

@@ -19,20 +19,12 @@ export { SANDBOX_IDS, type SandboxId } from './sandbox-summary.ts'
 export type Objective = Condition &
   Readonly<{
     goal: string
-    /** Users while this objective runs. Unset keeps the demand of the one before. */
     users?: number
-    /** Sim seconds the condition must hold without a break. */
     hold: number
-    /**
-     * An incident the objective fires once the condition has held for a while.
-     * With `survive`, the Design must ride it out: a break fires it again.
-     * Without, the player may fix it by hand and then hold the condition.
-     */
     incident?: Readonly<{
       kind: IncidentId
       only?: ComponentId
       survive: boolean
-      /** A fixed spike multiplier instead of a roll, so the lesson does not depend on luck. */
       magnitude?: number
     }>
   }>
@@ -40,26 +32,19 @@ export type Objective = Condition &
 export type GuidedSandbox = Readonly<{
   id: SandboxId
   name: string
-  /** The Era whose track holds it and whose rules it runs. A puzzle may pin its own request mix. */
   stage: number
   start: () => Game
   objectives: ReadonlyArray<Objective>
 }>
 
-/** Seconds an objective's condition holds before its incident fires. */
-export const INCIDENT_AFTER = 20
+export const INCIDENT_AFTER_SIM_SECONDS = 20
 
-/** A figure the HUD shows next to Demand and Burn, because the objective is measured on it. */
 export type Watch = Readonly<{
   label: string
   unit: 'ms' | 'share'
   value: (ledger: Ledger) => number
 }>
 
-/**
- * What an objective checks, and what the HUD needs to show it: the Apdex and
- * Burn it holds the Design to, and any other figure it is measured on.
- */
 type Condition = Readonly<{
   met: (game: Game, ledger: Ledger) => boolean
   apdex?: number
@@ -78,7 +63,6 @@ const within = (apdex: number, burn: number): Condition => ({
   met: (game, ledger) => serving(apdex).met(game, ledger) && ledger.burn <= burn + 1e-9,
 })
 
-/** Serving, with every Queue's backlog under `depth` tasks. */
 const draining = (apdex: number, depth: number): Condition => ({
   apdex,
   met: (game, ledger) =>
@@ -90,14 +74,12 @@ const fast = (p99: number): Condition => ({
   met: (_, ledger) => ledger.errorShare < 0.01 && ledger.p99 <= p99,
 })
 
-/** Every checkout sees its own write, and Apdex holds. */
 const checkingOut = (apdex: number): Condition => ({
   apdex,
   watch: { label: 'Checkout', unit: 'share', value: (ledger) => ledger.kinds.buy?.success ?? 1 },
   met: (_, ledger) => (ledger.kinds.buy?.success ?? 1) >= 0.995 && ledger.apdex >= apdex,
 })
 
-/** API reads come back fast at the p99, with errors under 1% and Burn within the cap. */
 const steadyReads = (p99: number, burn?: number): Condition => ({
   ...(burn === undefined ? {} : { burn }),
   watch: { label: 'Read p99', unit: 'ms', value: (ledger) => ledger.kinds.read?.p99 ?? 0 },
@@ -144,7 +126,6 @@ const COLD_BURN = 17.4
 const COLD_SPIKE = 4
 const COLD_DATABASE = 5
 
-/** What a Series A Design needs besides App Servers: files, checkouts, and their Links. */
 const seriesAData = (size = 4): ReadonlyArray<GameNode> => [
   node('database', 'database', 880, 220, { size }),
   node('storage', 'storage', 880, 420),
@@ -175,7 +156,6 @@ const STORM_BURN = 197
 const ANALYTICS_USERS = 8_000
 const ANALYTICS_BURN = 254
 
-/** What a Series B Design needs besides App Servers and its Database: files, checkouts, AI, and exports. */
 export const seriesBData = (warehouse: boolean): ReadonlyArray<GameNode> => [
   node('storage', 'storage', 880, 420),
   node('psp', 'psp', 880, 560),
@@ -216,7 +196,6 @@ const FAR_READ_MS = 140
 const MISSED_USERS = 8_000
 const HOT_USERS = 1_000_000
 
-/** What a Series C Design needs besides App Servers and its store: files, checkouts, AI, pushes, and async work. */
 export const seriesCData = (scale = 1): ReadonlyArray<GameNode> => [
   node('search', 'search', 1120, 60, { size: 2 + scale }),
   node('warehouse', 'warehouse', 1120, 220),
@@ -225,7 +204,6 @@ export const seriesCData = (scale = 1): ReadonlyArray<GameNode> => [
   node('llm', 'llm', 880, 700, { size: 1 + scale }),
   node('msgp', 'msgp', 880, 840),
   node('queue', 'queue', 360, 40),
-  // At scale, three metal Workers keep up with the exports and uploads.
   node('worker', 'worker', 880, 60, {
     size: scale > 1 ? SIZES.length - 1 : 4,
     replicas: scale > 1 ? 3 : 1,
@@ -262,10 +240,8 @@ export const SERIES_C_RESEARCH: ReadonlyArray<ResearchId> = [
   'geo-dns',
 ]
 
-/** Users served, with Apdex above `apdex`, at every request kind. */
 const answered = serving
 
-/** API reads come back fresh: under 0.5% stale or failed. */
 const fresh: Condition = {
   watch: {
     label: 'Fresh reads',
@@ -275,7 +251,6 @@ const fresh: Condition = {
   met: (_, ledger) => (ledger.kinds.read?.success ?? 1) >= 0.995 && ledger.errorShare < 0.01,
 }
 
-/** Served with Apdex above `apdex`, and API reads under `mean` ms on average. */
 const nearby = (apdex: number, mean: number): Condition => ({
   apdex,
   watch: { label: 'Read mean', unit: 'ms', value: (ledger) => ledger.kinds.read?.mean ?? 0 },
@@ -846,7 +821,6 @@ export const GUIDED: Record<SandboxId, GuidedSandbox> = {
         ],
         seriesBLinks(['server1', 'server2'], true),
       )
-      // Every call to the Database gives up after a second and retries at once.
       return {
         ...game,
         links: game.links.map((entry) =>
@@ -1023,7 +997,6 @@ export const TRACKS: ReadonlyArray<
   { stage: 5, sandboxes: ['far-away', 'missed-write', 'hot-key'] },
 ]
 
-/** A guided Sandbox opens when the one before it in its track has passed. */
 export const sandboxOpen = (id: SandboxId, passed: ReadonlyArray<SandboxId>): boolean => {
   const track = TRACKS.find((entry) => entry.sandboxes.includes(id))
   const index = track?.sandboxes.indexOf(id) ?? 0
@@ -1031,7 +1004,6 @@ export const sandboxOpen = (id: SandboxId, passed: ReadonlyArray<SandboxId>): bo
   return before === undefined || passed.includes(before)
 }
 
-/** Every Component and Stack, the Pre-seed mix, and a small Design to start from. */
 export const freeSandbox = (): Game =>
   board(
     1,
@@ -1049,7 +1021,6 @@ export const freeSandbox = (): Game =>
     false,
   )
 
-/** A copy of a Company's Design on the free Sandbox, at its current demand and mix. */
 export const sandboxOf = (game: Game): Game => ({
   ...freeSandbox(),
   stage: game.stage,
@@ -1060,11 +1031,8 @@ export const sandboxOf = (game: Game): Game => ({
 })
 
 export const Progress = Schema.Struct({
-  /** Index of the current objective; past the last one means passed. */
   objective: Schema.Finite,
-  /** Sim seconds the current objective's condition has held. */
   held: Schema.Finite,
-  /** The objective's incident has fired in this attempt. */
   fired: Schema.Boolean,
 })
 export type Progress = typeof Progress.Type
@@ -1080,11 +1048,6 @@ export type Advance = Readonly<{
   advanced: boolean
 }>
 
-/**
- * Checks the current objective against the Ledger. A break in the condition
- * starts the hold again. For an incident the Design must survive, a break that
- * lasts until the incident is over arms it again.
- */
 export const advanceSandbox = (
   sandbox: GuidedSandbox,
   progress: Progress,
@@ -1095,12 +1058,11 @@ export const advanceSandbox = (
   const objective = sandbox.objectives[progress.objective]
   if (!objective) return { game, progress, advanced: false }
   const held = objective.met(game, ledger) ? progress.held + seconds : 0
-  // The Design must recover while the incident runs. Still broken when it ends, it fires again.
   let fired =
     progress.fired &&
     !(objective.incident?.survive && game.incident === null && (held === 0 || progress.held === 0))
   let next = game
-  if (objective.incident && !fired && held >= INCIDENT_AFTER) {
+  if (objective.incident && !fired && held >= INCIDENT_AFTER_SIM_SECONDS) {
     const started = forceIncident(game, ledger, objective.incident.kind, objective.incident.only)
     if (started) {
       const magnitude = objective.incident.magnitude

@@ -9,31 +9,10 @@ import * as Subscription from 'foldkit/subscription'
 import * as Update from 'foldkit/update'
 import { modifyFields } from 'foldkit/struct'
 
-// Scroll-area has no @foldkit/ui primitive, so the scroll engine lives here:
-// the viewport scrolls natively on both axes with its native scrollbars hidden
-// (cn-compat.css), and the custom scrollbar/thumb are overlay elements driven
-// by a metrics submodel. A viewport-level subscription streams scroll +
-// ResizeObserver measurements into the model; the view derives thumb size and
-// offset with the same geometry Base UI uses (MIN_THUMB_SIZE floor, p-px
-// padding budget). Thumb drags map pointer deltas onto scrollTop/scrollLeft
-// through the ApplyScroll command; track clicks jump to the pointer through
-// ScrollToPointer.
-//
-// foldcn gaps vs upstream: wheel events over the scrollbar don't scroll the
-// viewport (foldkit's OnWheel carries no delta payload), the horizontal
-// scrollbar has no RTL mirroring (LTR geometry only), and a track press jumps
-// without continuing into a drag (dragging starts on the thumb only).
-
-/** Upstream ScrollArea root string. `cn-scroll-area` is a no-op hook upstream
- *  too — the root only needs its position context, which `relative` carries. */
 export const scrollAreaClass = css({
   position: 'relative',
 })
 
-/** Upstream Viewport string. `cn-scroll-area-viewport` is a no-op hook
- *  upstream (the primitive hides native scrollbars itself); foldkit has no
- *  primitive, so the viewport behavior (hidden native scrollbars + two-axis
- *  native scrolling) is carried by the token's cn-compat.css definition. */
 export const scrollAreaViewportClass = css({
   scrollbarWidth: 'none',
   '&::-webkit-scrollbar': { display: 'none' },
@@ -115,10 +94,6 @@ const zeroMetrics: ScrollMetrics = {
   clientWidth: 0,
 }
 
-/** Thumb size/position for one axis, mirroring Base UI's `computeThumbPosition`:
- *  track length is the viewport client size (the `data-vertical:h-full` token
- *  makes the scrollbar track full height), the p-px padding is reserved at both
- *  ends, and the thumb is floored at MIN_THUMB_SIZE. */
 export const scrollGeometry = (metrics: ScrollMetrics, axis: ScrollAxis): ScrollGeometry => {
   const vertical = axis === 'vertical'
   const clientSize = vertical ? metrics.clientHeight : metrics.clientWidth
@@ -160,8 +135,6 @@ const viewportId = (id: string): string => `${id}-viewport`
 
 export const scrollbarId = (id: string, axis: ScrollAxis): string => `${id}-scrollbar-${axis}`
 
-// MODEL
-
 const DragState = defineTaggedUnion({
   Idle: {},
   Dragging: {
@@ -183,8 +156,6 @@ export const Model = S.Struct({
   dragState: DragState,
 })
 export type Model = typeof Model.Type
-
-// MESSAGES
 
 export const Message = defineMessageUnion({
   ScrolledViewport: {
@@ -218,11 +189,6 @@ export const Message = defineMessageUnion({
 })
 export type Message = typeof Message.Type
 
-// COMMANDS
-
-/** Assigns the viewport's scroll position. The natural scroll event flows back
- *  through `ScrolledViewport`, so the thumb follows the pointer. Mirrors the
- *  silent no-op when the element is gone (virtual-list precedent). */
 export const ApplyScroll = Command.define('ApplyScroll', {
   args: { id: S.String, scrollTop: S.Finite, scrollLeft: S.Finite },
   messages: [Message.ScrolledViewport],
@@ -237,9 +203,6 @@ export const ApplyScroll = Command.define('ApplyScroll', {
     }),
 })
 
-/** Track click: jump the viewport so the pointer lands at the thumb's center,
- *  then let the scroll event flow back. Mirrors Base UI's scrollbar
- *  `onPointerDown` math. */
 export const ScrollToPointer = Command.define('ScrollToPointer', {
   args: {
     id: S.String,
@@ -271,14 +234,10 @@ export const ScrollToPointer = Command.define('ScrollToPointer', {
     }),
 })
 
-// INIT / UPDATE
-
 export type InitConfig = Readonly<{
   id: string
 }>
 
-/** Creates an initial scroll-area model. Metrics start at zero (unmeasured);
- *  the first ResizeObserver tick fills them in. */
 export const init = (config: InitConfig): Model => ({
   id: config.id,
   ...zeroMetrics,
@@ -296,7 +255,6 @@ const storeMetrics = (model: Model, metrics: ScrollMetrics): Update.Return<Model
   }),
 })
 
-/** Processes a scroll-area message and returns the next model and commands. */
 export const update = (model: Model, message: Message): Update.Return<Model, Message> =>
   Message.match(message, {
     ScrolledViewport: (metrics) => storeMetrics(model, metrics),
@@ -312,8 +270,6 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       }),
     }),
     PressedTrack: ({ axis, clientX, clientY }) =>
-      // A thumb press bubbles to the track's pointerdown (thumb → scrollbar);
-      // the press that started the drag must not also jump the viewport.
       model.dragState._tag === 'Dragging'
         ? { model }
         : {
@@ -346,8 +302,6 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       model: modifyFields(model, { dragState: () => DragState.Idle() }),
     }),
   })
-
-// SUBSCRIPTIONS
 
 type AttachState = {
   scrollListener: (() => void) | null
@@ -399,10 +353,6 @@ const viewportEventsStream = (id: string): Stream.Stream<Message> =>
           attach(element)
         }
         reconcile()
-        // Observes the whole document subtree so the listeners reattach when
-        // the viewport is (re)inserted by route changes or conditional
-        // renders; reconcile is rAF-gated and short-circuits while the cached
-        // element is still live (virtual-list precedent).
         const mutationObserver = new MutationObserver(() => {
           if (state.pendingFrame !== null) return
           state.pendingFrame = requestAnimationFrame(() => {
@@ -427,8 +377,6 @@ const DragActivity = S.Literals(['Idle', 'Active'])
 const dragActivityFromModel = (model: Model): 'Idle' | 'Active' =>
   model.dragState._tag === 'Dragging' ? 'Active' : 'Idle'
 
-/** Document pointer stream that drives the thumb drag, with the grabbing
- *  cursor / selection lock from the slider precedent. */
 const dragPointerStream = (dragActivity: 'Idle' | 'Active'): Stream.Stream<Message> => {
   const pointerEvents = Stream.merge(
     Stream.fromEventListener(document, 'pointermove').pipe(
@@ -466,15 +414,12 @@ const dragPointerStream = (dragActivity: 'Idle' | 'Active'): Stream.Stream<Messa
         }),
     ).pipe(Effect.flatMap(() => Effect.never)),
   )
-  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Stream.when widens the element type
   return Stream.when(
     Stream.merge(pointerEvents, dragStyles),
     Effect.sync(() => dragActivity === 'Active'),
   ) as Stream.Stream<Message>
 }
 
-/** Viewport scroll/resize events plus thumb-drag pointer tracking. Lift these
- *  into the app's subscriptions for every scroll-area instance. */
 export const subscriptions = Subscription.make<Model, Message>()((entry) => ({
   viewportEvents: entry(
     { id: S.String },
@@ -494,8 +439,6 @@ export const subscriptions = Subscription.make<Model, Message>()((entry) => ({
   ),
 }))
 
-// VIEW
-
 export type ViewInputs = Readonly<{
   content: Html
   className?: string
@@ -504,10 +447,7 @@ export type ViewInputs = Readonly<{
 const px = (value: number): string => `${String(value)}px`
 
 const scrollbarStyle = (axis: ScrollAxis, cornerPx: number): Readonly<Record<string, string>> => {
-  // Positioning normally comes from the primitive; foldcn emits it inline
-  // (slider precedent for primitive-owned inline styles). LTR geometry only.
   if (axis === 'vertical') {
-    // oxlint-disable-next-line anti-slop/no-known-value-widening -- SAFETY: style bag must be Record<string,string> for h.Style; literal evidence is intentionally widened to the style contract
     return {
       position: 'absolute',
       'touch-action': 'none',
@@ -518,7 +458,6 @@ const scrollbarStyle = (axis: ScrollAxis, cornerPx: number): Readonly<Record<str
       right: '0',
     }
   }
-  // oxlint-disable-next-line anti-slop/no-known-value-widening -- SAFETY: style bag must be Record<string,string> for h.Style; literal evidence is intentionally widened to the style contract
   return {
     position: 'absolute',
     'touch-action': 'none',
@@ -535,13 +474,11 @@ const thumbStyle = (
   geometry: ScrollGeometry,
 ): Readonly<Record<string, string>> => {
   if (axis === 'vertical') {
-    // oxlint-disable-next-line anti-slop/no-known-value-widening -- SAFETY: style bag must be Record<string,string> for h.Style; literal evidence is intentionally widened to the style contract
     return {
       height: px(geometry.thumbSizePx),
       transform: `translate3d(0,${px(geometry.thumbOffsetPx)},0)`,
     }
   }
-  // oxlint-disable-next-line anti-slop/no-known-value-widening -- SAFETY: style bag must be Record<string,string> for h.Style; literal evidence is intentionally widened to the style contract
   return {
     width: px(geometry.thumbSizePx),
     transform: `translate3d(${px(geometry.thumbOffsetPx)},0,0)`,
@@ -561,8 +498,6 @@ const pointerToMessage =
   ) =>
     button === 0 ? Option.some(message(clientX, clientY)) : Option.none()
 
-/** Renders the scroll area with overlay scrollbars for whichever axes
- *  overflow. Embedded via `h.submodel`. */
 export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h) => {
   const verticalGeometry = scrollGeometry(model, 'vertical')
   const horizontalGeometry = scrollGeometry(model, 'horizontal')
@@ -615,7 +550,6 @@ export const view = defineView<Model, Message, ViewInputs>((model, viewInputs, h
           h.Class(cx(scrollAreaViewportClass)),
           h.DataAttribute('slot', 'scroll-area-viewport'),
           h.Role('presentation'),
-          // Keep non-scrollable viewports out of tab order (upstream parity).
           h.Tabindex(viewportHidden ? -1 : 0),
         ],
         [viewInputs.content],

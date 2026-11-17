@@ -9,6 +9,31 @@ toc: top
 
 Quorum has no versions. It changes all the time, and this page lists the latest days, newest first, so you can see what moved since you last played. A page on this wiki can lag behind the game by a few days. Older days are in the [full changelog](/about/changelog/all).
 
+## Monday, 16 November 2026
+
+### Changed
+
+- Draw the Dashboard's Node table once per solve ([e6fd216](https://github.com/elianiva/quorum/commit/e6fd216ac84de5bf1d69f7b6ecde3decc35b49a7))
+- Look up each Node's Autoscaler once per Step, not once per Link ([db99f13](https://github.com/elianiva/quorum/commit/db99f13ce001743b2c8230c08f6039756021625e))
+- Memoize the Dashboard's Charts and stat tiles on what they are drawn from ([1525167](https://github.com/elianiva/quorum/commit/15251673d6bee2217b716f32f72001af7f4797b3))
+- Memoize the Dashboard's per-Node panels on the Nodes and the Ledger ([293a1f5](https://github.com/elianiva/quorum/commit/293a1f56f892edf44c8ad1daa73680fbb1226fd5))
+- Give the views one Ledger object per solve ([5fb9992](https://github.com/elianiva/quorum/commit/5fb999209f0c2025ebdf67c6a91a9407daa8404f))
+- Keep the Game's list of Nodes through a Step that changed none ([a92b133](https://github.com/elianiva/quorum/commit/a92b1333d6a37424281366bd817936d3f99b0bd9))
+- Keep Company files in IndexedDB, with the old localStorage key as the fallback ([dc701f3](https://github.com/elianiva/quorum/commit/dc701f3909bf6202ab4eea0ebb4b240bca8b098b))
+- Solve an open incident once a second while the solve reads the same incident ([31f7798](https://github.com/elianiva/quorum/commit/31f779830d07f8197081935d1c232f596aafa755))
+- Keep the Solver's compiled Design between solves that changed no Node or Link ([b0c1745](https://github.com/elianiva/quorum/commit/b0c1745ca779310855c26c6477cab0b6550657f8))
+- Memoize the Dashboard's Node table rows and Node timelines ([8f8953e](https://github.com/elianiva/quorum/commit/8f8953eaeea133857702eba06a30ef0cba7e5c67))
+- Map each Node's load history for the board once per history ([56f90f4](https://github.com/elianiva/quorum/commit/56f90f496369dd5b4d9caf14a5008490f758d53f))
+- Reuse the board's boxes, replication lines, and focus path between frames ([a491855](https://github.com/elianiva/quorum/commit/a491855971938b22a000ccf1e8f7188e1cb4eec7))
+- Memoize the Dashboard's LCD gauges ([2cd1d14](https://github.com/elianiva/quorum/commit/2cd1d14712b7099b4315f8f8abb82f2174dde9e9))
+- Memoize each item of the Research tree ([5a134c0](https://github.com/elianiva/quorum/commit/5a134c036e87495914634c41208dbe96af5982ec))
+- Look up a Company's agent Room once, not after every Message ([8652212](https://github.com/elianiva/quorum/commit/86522122addc39283dc27643168479a5af7481da))
+- Give the Dashboard's latency stat its own key ([083cec9](https://github.com/elianiva/quorum/commit/083cec9eb05ef97881864ea434b6c5d1af927081))
+- Split the web app's one chunk into libraries, catalog, copy, and game ([585cf89](https://github.com/elianiva/quorum/commit/585cf891ad6d98ac91604b5b93f7c2d868bf0826))
+- Reuse the Dashboard's rows and annotations between Samples ([424cb44](https://github.com/elianiva/quorum/commit/424cb44fa7854d7edb1499284b460a651b98480b))
+- Cap a chart's hover targets at 240 ([88fa1b2](https://github.com/elianiva/quorum/commit/88fa1b22b37f8f7edf94c96e00b8e662945404a3))
+- Remove the Bottleneck search the browser no longer runs ([3edd866](https://github.com/elianiva/quorum/commit/3edd8666513892e2f0b14156bb49eb173aa30451))
+
 ## Sunday, 15 November 2026
 
 ### Changed
@@ -121,37 +146,3 @@ Quorum has no versions. It changes all the time, and this page lists the latest 
 - Measure Dashboard charts by their panel and pack its rows ([b1c9916](https://github.com/elianiva/quorum/commit/b1c9916a3a8ce1b0b12b18001f454134240a151f))
 - Add Spanish as an interface language (#46) ([2baa808](https://github.com/elianiva/quorum/commit/2baa808854e74fd49097f2d3f6789801f46d2c40))
 - Refresh the layout harness fixture ([13ef92e](https://github.com/elianiva/quorum/commit/13ef92e18959c1dd04cdc8fd65d8da139dc7a904))
-
-## Sunday, 8 November 2026
-
-### Added
-
-- The Board draws coloured labels that follow teammates’ cursors, so you can watch their pointers move across the Company in real time. ([6e587a3](https://github.com/elianiva/quorum/commit/6e587a3857919d9b7492e3a4265d724ad780fc65))
-- A toast shows you each new Seat’s name when someone joins, and the funding offer panel replaces the static deal cards with a live vote. ([32c99db](https://github.com/elianiva/quorum/commit/32c99db43411353e30d8f1bf17107e15cad3a79a))
-- The Team panel warns you when the team exceeds the engineer limit, displays “Waiting on you: team too big” with the count of blocked items, and offers an Approve button to clear the wait. ([95d1170](https://github.com/elianiva/quorum/commit/95d1170e25da0d23df3d4937eef8c9484a1c0e3d))
-- Rename your Seat, and the Room panel lists each Seat as a coloured chip while showing the Room code with a copy button for easy sharing. ([c19df13](https://github.com/elianiva/quorum/commit/c19df1310c991bd48b2ead81de56ea51c2f551fb))
-
-### Changed
-
-- The Read Replica inspector displays the primary’s database engine and tells whether writes wait for the replica, revealing the trade-offs between database types. ([72070b8](https://github.com/elianiva/quorum/commit/72070b8f1e36e5acf325de795814ce9074aca6d3))
-- Research opens in a full-height sidebar; stalled Studies show a progress meter and the requirement they await, and queued items list their stall reason beside each entry. ([8cdf975](https://github.com/elianiva/quorum/commit/8cdf9751aa4f00162255e9a51c13e39688bbc04d))
-- Runtime and Framework stack pickers appear as inline searchable lists in a fixed scrollable area; use arrow keys to move through rows and press Enter to select an option while the Tradeoff card stays open. ([e78d115](https://github.com/elianiva/quorum/commit/e78d115ca15f854f342862b26a075015998b715b))
-
-### Fixed
-
-- The Dashboard fills its traffic and latency charts from the Room’s data, so recent periods show up instead of staying empty. ([195382e](https://github.com/elianiva/quorum/commit/195382eb90128b9b6e7a2902c6eeb4cc9dcf2b3f))
-
-## Saturday, 7 November 2026
-
-### Added
-
-- The wiki now includes a Patterns section that teaches system design in small pieces. Open Patterns from the wiki to browse them and apply them in your Designs. ([29835af](https://github.com/elianiva/quorum/commit/29835af7427c93ef51e0b5b963dfb1bff150e768))
-- The Settings panel adds a Volume slider. Drag the slider to adjust the warning-tone level and hear the change instantly. ([5f9446e](https://github.com/elianiva/quorum/commit/5f9446e0f830aa9dd0038ff969a18fa2d890432f))
-- The Settings panel adds an Easy mode toggle. Turn it on to run the clock at normal speed, restore the Pause button and speed controls, and have severe incidents pause automatically. ([aee5f6b](https://github.com/elianiva/quorum/commit/aee5f6bd6ff13882541e2fd84af8ea56be8a1deb))
-
-### Changed
-
-- Rush now shows its cost before you start it. After it finishes, it adds penalties to the Service and the Feature’s deployment, and a toast confirms the added penalties. ([6f48fdd](https://github.com/elianiva/quorum/commit/6f48fdd62d02fab2838db6727bbbea4eb6162e0a))
-- Dragging a row in the Research queue makes the row slide smoothly to a highlighted drop slot, showing exactly where it will land. ([553d3b2](https://github.com/elianiva/quorum/commit/553d3b296fca3478ba1361dc441fedbe28719856))
-- Research-tree node boxes expand, and long names wrap above the cost instead of being cut off, letting you read full names without ellipsis at any zoom level. ([d2fc5e8](https://github.com/elianiva/quorum/commit/d2fc5e826f5e9d4c5818bd8c51abecd9f75ef192))
-- Inbox label chips increase in height, gain wider padding and a visible outline, and the label row scrolls sideways instead of wrapping, keeping each label clear and preventing overlap. ([2675f9f](https://github.com/elianiva/quorum/commit/2675f9fc8082be8682da7780d81dc9b981f87576))

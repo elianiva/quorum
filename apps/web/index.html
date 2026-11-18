@@ -4,8 +4,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#141517" />
-    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#f1f2f3" />
+    <meta name="color-scheme" content="light" />
     <!-- iOS shows apple-touch-startup-image only for a Home Screen web app. -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link
@@ -22,7 +22,7 @@
       type="font/woff2"
       crossorigin
     />
-    <!-- The title screen is dark: paint the first frame to match it. -->
+    <!-- The menu is light: paint the first frame to match it. -->
     <style>
       @font-face {
         font-family: 'Geist';
@@ -39,7 +39,7 @@
         src: url('/fonts/geist-mono-latin-v6.woff2') format('woff2');
       }
       html {
-        background: #141517;
+        background: #f1f2f3;
       }
       /* The game is one large module. Show this until it mounts, then Foldkit replaces #root. */
       .boot {
@@ -49,8 +49,8 @@
         place-content: center;
         justify-items: center;
         gap: 18px;
-        background: #141517;
-        color: #eaebec;
+        background: #f1f2f3;
+        color: #26292b;
         font-family: 'Geist', system-ui, sans-serif;
         animation: boot-in 160ms 250ms both;
       }
@@ -64,18 +64,18 @@
         height: 2px;
         overflow: hidden;
         border-radius: 1px;
-        background: #2c2f34;
+        background: #dfe1e3;
       }
       .boot-bar::after {
         content: '';
         display: block;
         width: 36%;
         height: 100%;
-        background: #58cef8;
+        background: #3f9fd6;
         animation: boot-slide 1s ease-in-out infinite;
       }
       .boot-note {
-        color: #9aa0a6;
+        color: #6b7076;
         font-family: ui-monospace, monospace;
         font-size: 11px;
         font-weight: 500;
@@ -108,11 +108,11 @@
       noscript {
         display: block;
         padding: 24px;
-        color: #eaebec;
+        color: #26292b;
         font-family: system-ui, sans-serif;
       }
       noscript a {
-        color: #58cef8;
+        color: #2b7fa8;
       }
     </style>
     <title>Quorum: free system design game, incremental in your browser</title>

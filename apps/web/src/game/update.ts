@@ -70,6 +70,7 @@ export const initialModel = (): Model => {
     saves: EMPTY_SAVE_INDEX,
     savesReady: false,
     draft: { name: '', logo: DEFAULT_LOGO },
+    foundStep: 'company',
     saveFocus: null,
     saveConfirm: { _tag: 'List' },
     founder: emptyFounder(),

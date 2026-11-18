@@ -45,7 +45,14 @@ import { clock, compact } from '@quorum/ui/game/format'
 import { Message } from './message.ts'
 import { PrefsMessage } from './prefs.ts'
 import { settingsSections, type Setting } from './settings.ts'
-import { boardChallenge, boardSandbox, currentFile, hasCompany, type Model } from './model.ts'
+import {
+  boardChallenge,
+  boardSandbox,
+  currentFile,
+  hasCompany,
+  type FoundStep,
+  type Model,
+} from './model.ts'
 import { LOGOS } from './logos.ts'
 import { MAX_COMPANY_NAME, nameOr, recent, type CompanyFile } from './saves.ts'
 import { menuOf, type MenuPage } from './route.ts'
@@ -71,23 +78,46 @@ const walkOf = (root: ParentNode): ReadonlyArray<HTMLElement> => {
   return rows.filter((row) => row.dataset.tab === undefined || row === chosen)
 }
 
+/* A tile grid reads in two dimensions, so the arrow keys move by where the
+   tiles sit, not by the order they happen to be in. */
+const nearestCell = (
+  cells: ReadonlyArray<HTMLElement>,
+  from: HTMLElement,
+  key: string,
+): HTMLElement | null => {
+  const box = from.getBoundingClientRect()
+  const centreX = box.left + box.width / 2
+  const centreY = box.top + box.height / 2
+  const step = 2
+  const ahead = cells
+    .filter((cell) => cell !== from)
+    .map((cell) => {
+      const at = cell.getBoundingClientRect()
+      return { cell, x: at.left + at.width / 2, y: at.top + at.height / 2, at }
+    })
+    .filter(({ at }) =>
+      key === 'ArrowDown'
+        ? at.top >= box.bottom - step
+        : key === 'ArrowUp'
+          ? at.bottom <= box.top + step
+          : key === 'ArrowRight'
+            ? at.left >= box.right - step
+            : at.right <= box.left + step,
+    )
+  ahead.sort(
+    (a, b) =>
+      Math.abs(a.y - centreY) +
+      Math.abs(a.x - centreX) / 2 -
+      (Math.abs(b.y - centreY) + Math.abs(b.x - centreX) / 2),
+  )
+  return ahead[0]?.cell ?? null
+}
+
 export const BoothDriver = Mount.define('BoothDriver', {
   messages: [Message.Synced],
   execute: ({ element }) =>
     Effect.acquireRelease(
       Effect.sync(() => {
-        const screen = element.querySelector<HTMLElement>('.booth-screen')
-        const mouse = element.querySelector<HTMLElement>('.booth-mouse')
-        const keys = [...element.querySelectorAll<HTMLElement>('.booth-key')]
-        const light = (name: string) => {
-          const key =
-            keys.find((key) => key.dataset.k === name) ??
-            keys[Math.floor(Math.random() * keys.length)]
-          if (!key) return
-          key.classList.remove('is-lit')
-          void key.offsetWidth
-          key.classList.add('is-lit')
-        }
         const onKeyDown = (event: KeyboardEvent) => {
           if (event.altKey || event.metaKey || event.ctrlKey) return
           const target = event.target
@@ -116,7 +146,6 @@ export const BoothDriver = Mount.define('BoothDriver', {
             next?.focus()
             return
           }
-          light(event.key === ' ' ? 'Space' : event.key)
           play('tick')
           const tab = target instanceof Element ? target.closest('[data-tab]') : null
           if (
@@ -137,6 +166,30 @@ export const BoothDriver = Mount.define('BoothDriver', {
           const rows = walkOf(element)
           const active =
             document.activeElement instanceof HTMLElement ? document.activeElement : null
+          const grid = active?.closest('[data-grid]')
+          if (
+            grid &&
+            active &&
+            ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(event.key)
+          ) {
+            const next = nearestCell(
+              [...grid.querySelectorAll<HTMLElement>('[data-row]')],
+              active,
+              event.key,
+            )
+            if (next) {
+              event.preventDefault()
+              next.focus()
+              play('hover')
+              return
+            }
+            /* The edge of a grid is the edge of its section: sideways stops
+               there, and up and down carry on into the list. */
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+              event.preventDefault()
+              return
+            }
+          }
           const chosen = element.querySelector<HTMLElement>(
             '.booth-tabs [data-tab][aria-pressed="true"]',
           )
@@ -172,38 +225,46 @@ export const BoothDriver = Mount.define('BoothDriver', {
           }
         }
         const onPointerOver = (event: Event) => {
-          if (!(event instanceof PointerEvent)) return
+          if (!(event instanceof PointerEvent) || event.pointerType === 'touch') return
           const row = event.target instanceof Element ? event.target.closest('[data-row]') : null
-          if (!(row instanceof HTMLElement) || row === document.activeElement) return
-          if (row instanceof HTMLButtonElement && row.disabled) return
-          row.focus({ preventScroll: true })
-          if (event.pointerType !== 'touch') play('hover')
+          if (!(row instanceof HTMLElement)) return
+          const from = event.relatedTarget instanceof Node ? event.relatedTarget : null
+          if (from && row.contains(from)) return
+          play('hover')
         }
-        const onPointerMove = (event: Event) => {
-          if (!(event instanceof PointerEvent)) return
-          if (!screen || event.pointerType === 'touch') return
-          const box = screen.getBoundingClientRect()
-          const x = event.clientX - box.left
-          if (mouse) mouse.style.translate = `${((x / box.width - 0.5) * 60).toFixed(1)}% 0`
-        }
-        const onPointerDown = () => mouse?.classList.add('is-down')
-        const onPointerUp = () => mouse?.classList.remove('is-down')
         const onClick = (event: Event) => {
           if (event.target instanceof Element && event.target.closest('button')) play('choose')
         }
+        /* Only a list with more below it fades at its edge and lifts its
+           section headers; a short list keeps its last row at full strength. */
+        const lists = () => [...element.querySelectorAll<HTMLElement>('.booth-list')]
+        const measure = () => {
+          for (const list of lists())
+            list.classList.toggle('is-long', list.scrollHeight > list.clientHeight + 2)
+        }
+        const resize = new ResizeObserver(measure)
+        let watched: HTMLElement | null = null
+        const watch = () => {
+          const list = element.querySelector<HTMLElement>('.booth-list')
+          if (list !== watched) {
+            watched = list
+            resize.disconnect()
+            if (list) resize.observe(list)
+          }
+          measure()
+        }
+        watch()
+        const mutation = new MutationObserver(watch)
+        mutation.observe(element, { childList: true, subtree: true })
         window.addEventListener('keydown', onKeyDown)
         element.addEventListener('pointerover', onPointerOver)
-        element.addEventListener('pointermove', onPointerMove)
-        element.addEventListener('pointerdown', onPointerDown)
-        window.addEventListener('pointerup', onPointerUp)
         element.addEventListener('click', onClick)
         return () => {
           window.removeEventListener('keydown', onKeyDown)
           element.removeEventListener('pointerover', onPointerOver)
-          element.removeEventListener('pointermove', onPointerMove)
-          element.removeEventListener('pointerdown', onPointerDown)
-          window.removeEventListener('pointerup', onPointerUp)
           element.removeEventListener('click', onClick)
+          mutation.disconnect()
+          resize.disconnect()
         }
       }),
       (cleanup) => Effect.sync(cleanup),
@@ -272,6 +333,8 @@ type Row = Readonly<{
   back?: boolean
   to?: Page
   pressed?: boolean
+  pick?: 'radio' | 'checkbox'
+  checked?: boolean
   record?: boolean
   danger?: boolean
 }>
@@ -288,6 +351,7 @@ const percentRow = (
         h.Type('range'),
         h.Class('booth-range'),
         h.DataAttribute('row', ''),
+        h.Style({ '--fill': `${r.value}%` }),
         h.Min('0'),
         h.Max('100'),
         h.Step('5'),
@@ -301,7 +365,14 @@ const percentRow = (
 
 const row = (r: Row, h: HtmlBuilder<Message>): Html => {
   const body = [
-    r.back ? h.span([h.Class('booth-mark'), h.AriaHidden(true)], ['‹']) : h.empty,
+    r.pick
+      ? h.span(
+          [h.Class(`booth-pick is-${r.pick}${r.checked ? ' is-on' : ''}`), h.AriaHidden(true)],
+          [],
+        )
+      : r.back
+        ? h.span([h.Class('booth-mark'), h.AriaHidden(true)], ['‹'])
+        : h.empty,
     r.mark ?? h.empty,
     h.span(
       [h.Class('booth-label')],
@@ -329,6 +400,7 @@ const row = (r: Row, h: HtmlBuilder<Message>): Html => {
       ...(r.back ? [h.DataAttribute('back', '')] : []),
       ...(r.to ? [h.DataAttribute('to', r.to)] : []),
       ...(r.pressed === undefined ? [] : [h.AriaPressed(r.pressed ? 'true' : 'false')]),
+      ...(r.pick === undefined ? [] : [h.Role(r.pick), h.AriaChecked(r.checked === true)]),
       h.Class(className),
     ],
     body,
@@ -494,142 +566,306 @@ const mainRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
   ]
 }
 
+const tile = (
+  r: Readonly<{
+    key: string
+    label: string
+    detail?: string | undefined
+    state: 'done' | 'next' | 'open' | 'locked'
+    message?: Message
+  }>,
+  h: HtmlBuilder<Message>,
+): Html =>
+  h.button(
+    [
+      h.Key(r.key),
+      h.Type('button'),
+      h.DataAttribute('row', ''),
+      h.Class(`booth-tile is-${r.state}`),
+      ...(r.message ? [h.OnClick(r.message)] : [h.AriaDisabled(true)]),
+    ],
+    [
+      h.span([h.Class('booth-tile-name')], [r.label]),
+      r.detail ? h.span([h.Class('booth-tile-detail')], [r.detail]) : h.empty,
+      h.span(
+        [h.Class('booth-tile-mark'), h.AriaHidden(true)],
+        [
+          r.state === 'done'
+            ? done(h)
+            : r.state === 'locked'
+              ? locked(h)
+              : r.state === 'next'
+                ? '›'
+                : '',
+        ],
+      ),
+    ],
+  )
+
 const sandboxRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
+  const next = SANDBOX_IDS.find((id) => !model.passed.includes(id) && sandboxOpen(id, model.passed))
   return [
     backRow(h),
-    ...TRACKS.flatMap((track) => [
-      group(t.catalog.eras[track.stage]?.name ?? '', h),
-      ...track.sandboxes.map((id) => {
-        const open = sandboxOpen(id, model.passed)
-        return row(
-          {
-            key: id,
-            label: t.catalog.guided[id].name,
-            side: model.passed.includes(id) ? done(h) : open ? undefined : locked(h),
-            message: open ? Message.GuidedStarted({ id }) : null,
-          },
-          h,
-        )
-      }),
-    ]),
+    ...TRACKS.flatMap((track) => {
+      const passed = track.sandboxes.filter((id) => model.passed.includes(id)).length
+      const era = t.catalog.eras[track.stage]?.name ?? ''
+      return [
+        group(`${era} · ${passed}/${track.sandboxes.length}`, h),
+        h.div(
+          [h.Class('booth-grid'), h.DataAttribute('grid', '')],
+          track.sandboxes.map((id) => {
+            const open = sandboxOpen(id, model.passed)
+            return tile(
+              {
+                key: id,
+                label: t.catalog.guided[id].name,
+                detail: t.catalog.guided[id].objectives[0]?.goal,
+                state: model.passed.includes(id)
+                  ? 'done'
+                  : id === next
+                    ? 'next'
+                    : open
+                      ? 'open'
+                      : 'locked',
+                ...(open ? { message: Message.GuidedStarted({ id }) } : {}),
+              },
+              h,
+            )
+          }),
+        ),
+      ]
+    }),
     divider(h),
     row({ key: 'free', label: t.title.freeSandbox, message: Message.FreeSandboxStarted() }, h),
   ]
 }
 
-const identity = (model: Model, h: HtmlBuilder<Message>): Html => {
-  const t = copy(h)
-  return h.div(
-    [h.Class('booth-identity')],
+/* A tile for one choice among a grid: a venture, a mutator, or a logo. The
+   mark says whether the choice takes one or many, and the foot says what it
+   costs or pays. */
+const choiceTile = (
+  r: Readonly<{
+    key: string
+    label: string
+    detail?: string | undefined
+    value?: string | undefined
+    mark?: Html
+    pick: 'radio' | 'checkbox'
+    checked: boolean
+    message: Message
+  }>,
+  h: HtmlBuilder<Message>,
+): Html =>
+  h.button(
     [
-      companyMark(model.draft.logo, 'booth-logo-big', h),
-      h.label(
-        [h.Class('booth-field')],
+      h.Key(r.key),
+      h.Type('button'),
+      h.Role(r.pick),
+      h.AriaChecked(r.checked),
+      h.DataAttribute('row', ''),
+      h.Class(`booth-tile is-choice ${r.checked ? 'is-on' : ''}`),
+      h.OnClick(r.message),
+    ],
+    [
+      r.mark ?? h.empty,
+      h.span(
+        [h.Class('booth-tile-head')],
         [
-          h.span([h.Class('booth-field-label')], [t.title.companyName]),
-          h.input([
-            h.Class('booth-input'),
-            h.Type('text'),
-            h.Value(model.draft.name),
-            h.Placeholder(t.title.nameYourCompany),
-            h.Maxlength(MAX_COMPANY_NAME),
-            h.Autocomplete('off'),
-            h.Spellcheck(false),
-            h.AriaLabel(t.title.companyName),
-            h.DataAttribute('row', ''),
-            h.OnInput((name) => Message.CompanyNameChanged({ name })),
-          ]),
+          h.span(
+            [h.Class(`booth-pick is-${r.pick}${r.checked ? ' is-on' : ''}`), h.AriaHidden(true)],
+            [],
+          ),
+          h.span([h.Class('booth-tile-name')], [r.label]),
+          r.value ? h.span([h.Class('booth-tile-value')], [r.value]) : h.empty,
         ],
       ),
+      r.detail ? h.span([h.Class('booth-tile-detail')], [r.detail]) : h.empty,
     ],
   )
-}
 
-const logoPicker = (model: Model, h: HtmlBuilder<Message>): Html => {
+const FOUND_STEPS: ReadonlyArray<FoundStep> = ['company', 'venture', 'mutators']
+
+const foundSteps = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
+  const label: Record<FoundStep, string> = {
+    company: t.title.company,
+    venture: t.title.venture,
+    mutators: t.title.mutators,
+  }
   return h.div(
-    [h.Class('booth-logos')],
-    LOGOS.map((logo) =>
+    [
+      h.Key('found-steps'),
+      h.Class('booth-tabs is-steps'),
+      h.Role('group'),
+      h.AriaLabel(t.title.newCompany),
+    ],
+    FOUND_STEPS.map((step, index) =>
       h.button(
         [
-          h.Key(`logo-${logo.id}`),
+          h.Key(`step-${step}`),
           h.Type('button'),
-          h.Class(`booth-logo ${model.draft.logo === logo.id ? 'is-on' : ''}`),
-          h.Title(t.logos[logo.id]),
-          h.AriaLabel(t.logos[logo.id]),
-          h.AriaPressed(model.draft.logo === logo.id ? 'true' : 'false'),
           h.DataAttribute('row', ''),
-          h.OnClick(Message.LogoChosen({ logo: logo.id })),
+          h.DataAttribute('tab', step),
+          h.Class(`booth-tab ${step === model.foundStep ? 'is-on' : ''}`),
+          h.AriaPressed(step === model.foundStep ? 'true' : 'false'),
+          h.OnClick(Message.FoundStepChosen({ step })),
         ],
-        [companyMark(logo.id, 'booth-logo-mark', h)],
+        [h.span([h.Class('booth-step-number')], [`${index + 1}`]), h.span([], [label[step]])],
       ),
     ),
   )
 }
 
-const foundRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
+const companyStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
-
-  const founder = model.founder
-  const founding = foundingOf(founder)
   return [
-    backRow(h),
-    identity(model, h),
-    h.p([h.Class('booth-note')], [t.title.saveInBrowser]),
+    /* The company as it will read on the title screen: a badge in the same
+       moulded plastic as the clock-in card, which names its holder Founder. */
+    h.div(
+      [h.Class('booth-badge'), h.AriaHidden(true)],
+      [
+        companyMark(model.draft.logo, 'booth-badge-mark', h),
+        h.span([h.Class('booth-badge-name')], [nameOr(model.draft.name)]),
+        h.span([h.Class('booth-badge-line')], [t.title.founder]),
+      ],
+    ),
+    h.div(
+      [h.Class('booth-name')],
+      [
+        h.label(
+          [h.Class('booth-field')],
+          [
+            h.span([h.Class('booth-field-label')], [t.title.companyName]),
+            h.input([
+              h.Class('booth-input'),
+              h.Type('text'),
+              h.Value(model.draft.name),
+              h.Placeholder(t.title.nameYourCompany),
+              h.Maxlength(MAX_COMPANY_NAME),
+              h.Autocomplete('off'),
+              h.Spellcheck(false),
+              h.AriaLabel(t.title.companyName),
+              h.DataAttribute('row', ''),
+              h.OnInput((name) => Message.CompanyNameChanged({ name })),
+            ]),
+          ],
+        ),
+        note(t.title.saveInBrowser, h),
+      ],
+    ),
     group(t.title.logo, h),
-    logoPicker(model, h),
-    group(t.title.venture, h),
-    ...VENTURE_IDS.map((id) => {
-      const def = localized(VENTURES[id], t.catalog.ventures[id])
-      return row(
-        {
-          key: id,
-          label: def.name,
-          detail: def.summary,
-          side: id === founding.venture ? done(h) : `×${def.legacy.toFixed(1)}`,
-          message: Message.VentureChosen({ id }),
-          pressed: id === founding.venture,
-        },
-        h,
-      )
-    }),
-    group(t.title.mutators, h),
-    ...MUTATOR_IDS.map((id) =>
-      row(
-        {
-          key: id,
-          label: t.catalog.mutators[id].name,
-          detail: t.catalog.mutators[id].rule,
-          side: founding.mutators.includes(id)
-            ? done(h)
-            : `+${Math.round(MUTATORS[id].legacy * 100)}%`,
-          message: Message.MutatorToggled({ id }),
-          pressed: founding.mutators.includes(id),
-        },
-        h,
+    h.div(
+      [h.Class('booth-choices is-logos'), h.DataAttribute('grid', '')],
+      LOGOS.map((logo) =>
+        choiceTile(
+          {
+            key: `logo-${logo.id}`,
+            label: t.logos[logo.id],
+            mark: companyMark(logo.id, 'booth-choice-mark', h),
+            pick: 'radio',
+            checked: model.draft.logo === logo.id,
+            message: Message.LogoChosen({ logo: logo.id }),
+          },
+          h,
+        ),
       ),
     ),
   ]
 }
 
+const ventureStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
+  const t = copy(h)
+  const founding = foundingOf(model.founder)
+  return [
+    h.div(
+      [h.Class('booth-choices'), h.DataAttribute('grid', '')],
+      VENTURE_IDS.map((id) => {
+        const def = localized(VENTURES[id], t.catalog.ventures[id])
+        return choiceTile(
+          {
+            key: id,
+            label: def.name,
+            detail: def.summary,
+            value: `×${def.legacy.toFixed(1)}`,
+            pick: 'radio',
+            checked: id === founding.venture,
+            message: Message.VentureChosen({ id }),
+          },
+          h,
+        )
+      }),
+    ),
+  ]
+}
+
+const mutatorStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
+  const t = copy(h)
+  const founding = foundingOf(model.founder)
+  return [
+    h.div(
+      [h.Class('booth-choices'), h.DataAttribute('grid', '')],
+      MUTATOR_IDS.map((id) =>
+        choiceTile(
+          {
+            key: id,
+            label: t.catalog.mutators[id].name,
+            detail: t.catalog.mutators[id].rule,
+            value: `+${Math.round(MUTATORS[id].legacy * 100)}%`,
+            pick: 'checkbox',
+            checked: founding.mutators.includes(id),
+            message: Message.MutatorToggled({ id }),
+          },
+          h,
+        ),
+      ),
+    ),
+  ]
+}
+
+const foundRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
+  const step: Record<FoundStep, () => ReadonlyArray<Html>> = {
+    company: () => companyStep(model, h),
+    venture: () => ventureStep(model, h),
+    mutators: () => mutatorStep(model, h),
+  }
+  return [backRow(h), foundSteps(model, h), ...step[model.foundStep]()]
+}
+
 const foundFooter = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const founding = foundingOf(model.founder)
+  const next: Record<FoundStep, Readonly<{ label: string; step: FoundStep }> | null> = {
+    company: { label: t.title.venture, step: 'venture' },
+    venture: { label: t.title.mutators, step: 'mutators' },
+    mutators: null,
+  }
+  const ahead = next[model.foundStep]
   return h.div(
     [h.Class('booth-footer')],
     [
-      row(
-        {
-          key: 'found',
-          mark: companyMark(model.draft.logo, 'booth-logo-mini', h),
-          label: t.title.found(nameOr(model.draft.name)),
-          detail: t.title.legacy2(startEra(founding), legacyMultiplier(founding).toFixed(2)),
-          message: Message.CompanyFounded(),
-          big: true,
-        },
-        h,
-      ),
+      ahead
+        ? row(
+            {
+              key: 'next',
+              mark: companyMark(model.draft.logo, 'booth-logo-mini', h),
+              label: `${t.title.next}: ${ahead.label}`,
+              message: Message.FoundStepChosen({ step: ahead.step }),
+              big: true,
+            },
+            h,
+          )
+        : row(
+            {
+              key: 'found',
+              mark: companyMark(model.draft.logo, 'booth-logo-mini', h),
+              label: t.title.found(nameOr(model.draft.name)),
+              detail: t.title.legacy2(startEra(founding), legacyMultiplier(founding).toFixed(2)),
+              message: Message.CompanyFounded(),
+              big: true,
+            },
+            h,
+          ),
     ],
   )
 }
@@ -838,45 +1074,43 @@ const historyRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
 
 const achievementRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
+  const earned = model.founder.achievements.length
+  const share = Math.round((earned / ACHIEVEMENT_IDS.length) * 100)
   return [
     backRow(h),
-    ...ACHIEVEMENT_IDS.map((id) => {
-      const earned = model.founder.achievements.includes(id)
-      return row(
-        {
-          key: id,
-          label: t.catalog.achievements[id].name,
-          detail: t.catalog.achievements[id].condition,
-          side: h.span(
-            [h.Class(css({ display: 'flex', alignItems: 'center' }))],
-            [
-              earned ? done(h) : locked(h),
-              h.span(
-                [
-                  h.Class(
-                    css({
-                      position: 'absolute',
-                      width: '1px',
-                      height: '1px',
-                      padding: '0',
-                      margin: '-1px',
-                      overflow: 'hidden',
-                      clip: 'rect(0, 0, 0, 0)',
-                      whiteSpace: 'nowrap',
-                      borderWidth: '0',
-                    }),
-                  ),
-                ],
-                [earned ? t.title.earned : t.title.notYet],
-              ),
-            ],
-          ),
-          message: null,
-          record: true,
-        },
-        h,
-      )
-    }),
+    h.div(
+      [h.Class('booth-meter')],
+      [
+        h.span([h.Class('booth-meter-count')], [`${earned}/${ACHIEVEMENT_IDS.length}`]),
+        h.span(
+          [h.Class('booth-meter-track'), h.AriaHidden(true)],
+          [h.span([h.Class('booth-meter-fill'), h.Style({ width: `${share}%` })], [])],
+        ),
+      ],
+    ),
+    h.div(
+      [h.Class('booth-grid is-achievements')],
+      ACHIEVEMENT_IDS.map((id) => {
+        const isEarned = model.founder.achievements.includes(id)
+        return h.div(
+          [
+            h.Key(id),
+            h.Class(`booth-tile is-achievement ${isEarned ? 'is-earned' : 'is-locked'}`),
+            h.AriaLabel(
+              `${t.catalog.achievements[id].name}. ${t.catalog.achievements[id].condition}. ${isEarned ? t.title.earned : t.title.notYet}`,
+            ),
+          ],
+          [
+            h.span([h.Class('booth-tile-name')], [t.catalog.achievements[id].name]),
+            h.span([h.Class('booth-tile-detail')], [t.catalog.achievements[id].condition]),
+            h.span(
+              [h.Class('booth-tile-mark'), h.AriaHidden(true)],
+              [isEarned ? done(h) : locked(h)],
+            ),
+          ],
+        )
+      }),
+    ),
   ]
 }
 
@@ -1043,9 +1277,7 @@ const crumb = (model: Model, page: Page, h: HtmlBuilder<Message>): Html => {
       ? t.title.legacy(model.founder.legacy)
       : page === 'companies'
         ? `${model.saves.companies.length}`
-        : page === 'achievements'
-          ? `${model.founder.achievements.length}/${ACHIEVEMENT_IDS.length}`
-          : ''
+        : ''
   return h.div(
     [h.Class('booth-crumb')],
     [
@@ -1249,12 +1481,13 @@ const screen = (model: Model, h: HtmlBuilder<Message>): Html => {
 
   const page = pageOf(model)
   const open = hasCompany(model)
-  const showStatus = open && page !== 'companies' && page !== 'save'
+  const showStatus = open && (page === 'main' || page === 'found')
+  const wide = page === 'sandbox' || page === 'achievements' || page === 'found'
   return h.div(
     [h.Class(`booth-screen ${showStatus ? '' : 'is-new'}`)],
     [
       h.section(
-        [h.Class('booth-home')],
+        [h.Class(`booth-home ${page === 'found' ? 'is-form' : ''}`)],
         [
           h.h1(
             [
@@ -1274,12 +1507,14 @@ const screen = (model: Model, h: HtmlBuilder<Message>): Html => {
             ],
             ['Quorum'],
           ),
-          wordmark(h),
+          /* The wordmark is the main menu's title. On a page below it, the crumb
+             names the page, so the wordmark would only take the list's room. */
+          page === 'main' ? wordmark(h) : h.empty,
           crumb(model, page, h),
           h.nav(
             [
               h.Key(page === 'save' ? `save-${model.saveFocus}` : page),
-              h.Class('booth-list'),
+              h.Class(`booth-list ${wide ? 'is-wide' : ''}`),
               h.AriaLabel(t.title.mainMenu),
               h.DataAttribute('page', page),
               h.OnMount(PageMounted()),
@@ -1287,52 +1522,14 @@ const screen = (model: Model, h: HtmlBuilder<Message>): Html => {
             pagesOf(t)[page].rows(model, h),
           ),
           page === 'found' ? foundFooter(model, h) : h.empty,
-          hint(h),
+          /* The founding form carries its own way forward: the steps, then
+             Next, then Found. The keyboard hint would only take their room. */
+          page === 'found' ? h.empty : hint(h),
         ],
       ),
       showStatus ? status(model, h) : h.empty,
       taskbar(model, page, h),
       connecting(model.boot) ? terminal(model, h) : h.empty,
-    ],
-  )
-}
-
-const keysOf = (t: Messages): ReadonlyArray<readonly [string, string?]> => [
-  ['', t.title.escape],
-  ...Array.from({ length: 5 }, () => [''] as const),
-  ['space', t.title.space],
-  ...Array.from({ length: 4 }, () => [''] as const),
-  ['', t.title.backspace],
-  ['wide', t.title.enter],
-  ['', 'ArrowLeft'],
-  ['', 'ArrowUp'],
-  ['', 'ArrowDown'],
-  ['', 'ArrowRight'],
-]
-
-const desk = (h: HtmlBuilder<Message>): Html => {
-  const t = copy(h)
-  return h.div(
-    [h.Class('booth-desk'), h.AriaHidden(true)],
-    [
-      h.div(
-        [h.Class('booth-keyboard')],
-        [
-          h.div(
-            [h.Class('booth-keyrow')],
-            keysOf(t).map(([size, name]) =>
-              h.span(
-                [
-                  h.Class(`booth-key ${size ? `is-${size}` : ''}`),
-                  ...(name ? [h.DataAttribute('k', name)] : []),
-                ],
-                [],
-              ),
-            ),
-          ),
-        ],
-      ),
-      h.div([h.Class('booth-mouse')], []),
     ],
   )
 }
@@ -1412,12 +1609,10 @@ const booth = (model: Model, h: HtmlBuilder<Message>): Html =>
   h.div(
     [h.Key('booth'), h.Class('booth'), h.OnMount(BoothDriver())],
     [
+      strip(h),
       h.div(
         [h.Class('booth-stage')],
         [
-          desk(h),
-          disclaimer(h),
-          h.div([h.Class('booth-neck')], []),
           h.div(
             [h.Class('booth-monitor')],
             [
@@ -1439,7 +1634,7 @@ const booth = (model: Model, h: HtmlBuilder<Message>): Html =>
           ),
         ],
       ),
-      strip(h),
+      disclaimer(h),
     ],
   )
 

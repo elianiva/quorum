@@ -24,16 +24,23 @@
 }
 
 /* ==========================================================================
-   Title screen (src/game/title.ts): the on-call booth. Flat, moulded parts in
-   the reader's material: a monitor whose screen is the menu, a keyboard and a
-   mouse that answer it, and the server hall's edges at the sides. Stage parts
-   size in cqw of the 16:10 stage; screen parts in --s, 1% of the screen.
+   Title screen (src/game/title.ts): the on-call booth. The monitor is the
+   interface, so it fills the window: one moulded shell around one screen, the
+   playtest strip above it and the disclaimer below. Stage parts size in cqw of
+   the stage; screen parts in --s, 1% of the screen's width.
    ========================================================================== */
 .booth {
+  --booth-strip: clamp(28px, 4.6vh, 40px);
+  --booth-foot: clamp(20px, 3.4vh, 30px);
+  --booth-pad: clamp(8px, 1.5vmin, 20px);
+  --booth-gap: clamp(6px, 1.1vmin, 14px);
   position: absolute;
   inset: 0;
   display: grid;
-  place-items: center;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  justify-items: center;
+  gap: var(--booth-gap);
+  padding: var(--booth-pad);
   overflow: hidden;
   /* The room's materials, from the theme, so a light theme can restyle the booth. */
   --booth-plastic: color-mix(in oklch, var(--muted) 70%, var(--page));
@@ -41,16 +48,28 @@
   --booth-glint: color-mix(in oklch, var(--signal) 22%, transparent);
   background:
     radial-gradient(
-      ellipse 55% 50% at 50% 42%,
-      color-mix(in oklch, var(--signal) 9%, transparent),
+      ellipse 62% 56% at 50% 44%,
+      color-mix(in oklch, var(--signal) 10%, transparent),
       transparent 72%
     ),
     var(--page);
 }
+/* The stage keeps the monitor one comfortable shape: never past the viewport,
+   and never so tall that the strip or the disclaimer loses its row. */
 .booth-stage {
   position: relative;
-  width: min(130vw, max(100vw, 160vh));
+  width: min(
+    100%,
+    calc(
+      (
+          100vh - var(--booth-strip) - var(--booth-foot) - var(--booth-pad) * 2 - var(--booth-gap) *
+            2
+        ) *
+        1.6
+    )
+  );
   aspect-ratio: 16 / 10;
+  align-self: center;
   container-type: inline-size;
 }
 
@@ -60,93 +79,9 @@
   }
 }
 
-/* The desk, straight on: its top edge at 86% of the stage, lit only by the screen. */
-.booth-desk {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.booth-desk::before {
-  content: '';
-  position: absolute;
-  inset: 86% -30% -40%;
-  background:
-    radial-gradient(
-      ellipse 30% 55% at 50% 0%,
-      color-mix(in oklch, var(--signal) 14%, transparent),
-      transparent 70%
-    ),
-    linear-gradient(var(--booth-plastic), var(--page) 18%);
-  box-shadow: inset 0 1px 0 var(--booth-glint);
-}
-.booth-keyboard {
-  position: absolute;
-  left: 30%;
-  top: calc(90% - 1.4cqw);
-  z-index: 1;
-  width: 40%;
-  height: 1.4cqw;
-  border-radius: 0.4cqw 0.4cqw 0.15cqw 0.15cqw;
-  background: linear-gradient(var(--booth-plastic-hi), var(--booth-plastic));
-  box-shadow:
-    inset 0 1px 0 var(--booth-glint),
-    0 0.6cqw 1.4cqw oklch(0 0 0 / 0.6);
-}
-.booth-keyrow {
-  position: absolute;
-  inset: -0.35cqw 3% auto;
-  height: 0.5cqw;
-  display: flex;
-  gap: 0.3cqw;
-}
-.booth-key {
-  flex: 1;
-  border-radius: 0.15cqw 0.15cqw 0 0;
-  background: var(--booth-plastic-hi);
-  box-shadow: inset 0 1px 0 var(--booth-glint);
-}
-.booth-key.is-wide {
-  flex: 1.8;
-}
-.booth-key.is-space {
-  flex: 6;
-}
-.booth-key.is-lit {
-  animation: booth-key 240ms ease-out;
-}
-@keyframes booth-key {
-  from {
-    background: var(--signal);
-    box-shadow: 0 0 0.8cqw color-mix(in oklch, var(--signal) 60%, transparent);
-    translate: 0 0.12cqw;
-  }
-}
-.booth-mouse {
-  position: absolute;
-  left: 76%;
-  top: calc(90% - 1.1cqw);
-  z-index: 1;
-  width: 3cqw;
-  height: 1.1cqw;
-  border-radius: 50% 50% 0.2cqw 0.2cqw / 100% 100% 0.2cqw 0.2cqw;
-  background: linear-gradient(var(--booth-plastic-hi), var(--booth-plastic));
-  box-shadow:
-    inset 0 1px 0 var(--booth-glint),
-    0 0.4cqw 0.8cqw oklch(0 0 0 / 0.6);
-  transition: translate 120ms linear;
-}
-.booth-mouse.is-down {
-  filter: brightness(0.85);
-}
-/* Under the keyboard, on the desk: the reminder that the game simplifies on purpose. */
+/* Under the monitor: the reminder that the game simplifies on purpose. */
 .booth-disclaimer {
-  position: absolute;
-  top: 93%;
-  left: 50%;
-  z-index: 1;
-  translate: -50% 0;
-  width: max-content;
-  max-width: 60%;
+  max-width: min(100%, 62ch);
   font-family: var(--font-mono);
   font-size: var(--type-10-5);
   text-align: center;
@@ -159,50 +94,26 @@
   text-underline-offset: 3px;
 }
 
-/* The monitor, in the badge reader's moulded plastic. */
-.booth-neck {
-  position: absolute;
-  left: 46%;
-  top: 76%;
-  width: 8%;
-  height: calc(10% - 0.6cqw);
-  background: linear-gradient(
-    90deg,
-    oklch(0.16 0.004 260),
-    oklch(0.26 0.006 260) 45%,
-    oklch(0.18 0.004 260)
-  );
-}
-.booth-neck::after {
-  content: '';
-  position: absolute;
-  left: -60%;
-  right: -60%;
-  bottom: -0.6cqw;
-  height: 0.6cqw;
-  border-radius: 0.3cqw 0.3cqw 0 0;
-  background: linear-gradient(var(--booth-plastic-hi), var(--booth-plastic));
-  box-shadow: inset 0 1px 0 var(--booth-glint);
-}
+/* The monitor, in the badge reader's moulded plastic: a thin bezel, the screen
+   itself, and a chin that holds the mark and the power light. */
 .booth-monitor {
   position: absolute;
-  left: 13%;
-  top: 6%;
-  width: 74%;
-  padding: 1.1cqw 1.1cqw 2.8cqw;
-  border-radius: 1.6cqw;
-  background: linear-gradient(170deg, oklch(0.3 0.006 260), oklch(0.19 0.004 260) 60%);
+  inset: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  padding: 0.6cqw 0.6cqw 0;
+  border-radius: 1.1cqw;
+  background: linear-gradient(170deg, oklch(0.31 0.006 260), oklch(0.18 0.004 260) 60%);
   box-shadow:
-    inset 0 1px 0 oklch(1 0 0 / 0.14),
-    inset 0 -0.3cqw 0 oklch(0 0 0 / 0.45),
-    0 0 0 1px oklch(0 0 0 / 0.6),
-    0 4cqw 7cqw -2cqw oklch(0 0 0 / 0.9),
-    0 0 14cqw oklch(0.8 0.12 225 / 0.1);
+    inset 0 1px 0 oklch(1 0 0 / 0.16),
+    inset 0 -0.2cqw 0 oklch(0 0 0 / 0.45),
+    0 0 0 1px oklch(0 0 0 / 0.65),
+    0 3cqw 6cqw -2cqw oklch(0 0 0 / 0.9),
+    0 0 12cqw oklch(0.8 0.12 225 / 0.1);
 }
 .booth-chin {
-  position: absolute;
-  inset: auto 0 0;
-  height: 2.8cqw;
+  position: relative;
+  height: 2.4cqw;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -238,13 +149,13 @@
 .booth-screen {
   --s: 1cqw;
   position: relative;
-  aspect-ratio: 16 / 9;
+  height: 100%;
   display: grid;
   grid-template-columns: 1fr 30%;
   grid-template-rows: minmax(0, 1fr) auto;
   overflow: hidden;
   container-type: inline-size;
-  border-radius: 0.7cqw;
+  border-radius: 0.55cqw;
   background: radial-gradient(
     ellipse 90% 80% at 30% 20%,
     oklch(0.23 0.035 225),
@@ -278,11 +189,15 @@
     opacity: 0;
   }
 }
+.booth-home.is-form {
+  padding-top: calc(var(--s) * 2.6);
+}
 .booth-home {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   min-height: 0;
-  padding: calc(var(--s) * 4.2) calc(var(--s) * 4) 0 calc(var(--s) * 5);
+  padding: calc(var(--s) * 3.4) calc(var(--s) * 4) 0 calc(var(--s) * 5);
 }
 .booth-wordmark {
   flex: none;
@@ -330,10 +245,9 @@
   text-transform: none;
 }
 .booth-list {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-height: 0;
   width: calc(100% + var(--s) * 2.8);
-  max-width: calc(var(--s) * 64.8);
   margin: 0 calc(var(--s) * -1.4);
   padding-bottom: calc(var(--s) * 0.6);
   display: flex;
@@ -345,47 +259,65 @@
   scrollbar-color: oklch(1 0 0 / 0.15) transparent;
   /* A keyboard focus never comes to rest under the founding screen's sticky Found action. */
   scroll-padding-bottom: calc(var(--s) * 7);
-  /* A row half past the edge fades out, so the list says it goes on. */
+}
+/* A row half past the edge fades out, so a list that goes on says so. A list
+   that fits keeps its last row at full strength. */
+.booth-list.is-long {
   mask-image: linear-gradient(to bottom, #000 calc(100% - var(--s) * 3.4), transparent);
 }
 .booth-list > * {
   flex: none;
+}
+/* A page that lays its rows out as tiles, such as the levels or the
+   achievements, fills the screen width instead of bleeding past its padding. */
+.booth-list.is-wide {
+  width: 100%;
+  margin: 0;
 }
 .booth-row {
   display: flex;
   align-items: center;
   gap: calc(var(--s) * 1);
   width: 100%;
-  min-height: calc(var(--s) * 3.6);
+  min-height: calc(var(--s) * 4);
   padding: calc(var(--s) * 0.3) calc(var(--s) * 1.4);
   border-radius: calc(var(--s) * 0.8);
   color: var(--muted-foreground);
-  font-size: max(var(--type-12), calc(var(--s) * 1.6 * var(--type-scale)));
+  font-size: max(var(--type-13), calc(var(--s) * 1.7 * var(--type-scale)));
   font-weight: var(--quorum-font-weights-medium);
   text-align: left;
+  cursor: pointer;
   outline: none;
 }
 .booth-row.is-big {
-  min-height: calc(var(--s) * 4.8);
+  min-height: calc(var(--s) * 5.4);
   color: var(--foreground);
-  font-size: max(var(--type-14), calc(var(--s) * 2.1 * var(--type-scale)));
+  font-size: max(var(--type-15), calc(var(--s) * 2.3 * var(--type-scale)));
   font-weight: var(--quorum-font-weights-semibold);
 }
-.booth-row:focus {
+/* The pointer tints a row; the keyboard ring marks it. They are different
+   states, so a mouse never moves the ring off the row the keyboard is on. */
+.booth-row:hover {
   color: var(--foreground);
-  background: oklch(1 0 0 / 0.08);
-  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.06);
+  background: oklch(1 0 0 / 0.05);
+}
+.booth-row:focus-visible {
+  color: var(--foreground);
+  background: oklch(1 0 0 / 0.09);
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.08);
 }
 .booth-row:disabled {
+  cursor: default;
   opacity: 0.4;
 }
-.booth-row[aria-pressed='true']:not(:focus) {
+.booth-row[aria-pressed='true']:not(:hover):not(:focus-visible) {
   color: var(--foreground);
 }
 .booth-row.is-danger {
   color: oklch(0.78 0.16 25);
 }
-.booth-row.is-danger:focus {
+.booth-row.is-danger:hover,
+.booth-row.is-danger:focus-visible {
   color: oklch(0.86 0.14 25);
   background: oklch(0.45 0.16 25 / 0.22);
 }
@@ -454,12 +386,153 @@
   width: calc(var(--s) * 5.4);
   height: calc(var(--s) * 5.4);
 }
-.booth-identity {
+/* The founding form: one question per step, and the choices laid out as tiles. */
+.booth-badge {
   display: flex;
   flex: none;
   align-items: center;
   gap: calc(var(--s) * 1.8);
-  padding: calc(var(--s) * 0.6) calc(var(--s) * 1.4) calc(var(--s) * 1.2);
+  width: fit-content;
+  min-width: calc(var(--s) * 40);
+  max-width: calc(var(--s) * 58);
+  margin: calc(var(--s) * 0.6) calc(var(--s) * 1.4) calc(var(--s) * 1.2);
+  padding: calc(var(--s) * 1.5) calc(var(--s) * 2);
+  border-radius: calc(var(--s) * 1.1);
+  background: linear-gradient(170deg, oklch(0.31 0.008 250), oklch(0.2 0.006 250));
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.16),
+    inset 0 calc(var(--s) * -0.2) 0 oklch(0 0 0 / 0.4),
+    0 calc(var(--s) * 0.4) calc(var(--s) * 1.4) calc(var(--s) * -0.6) oklch(0 0 0 / 0.8);
+}
+.booth-badge-mark {
+  flex: none;
+  width: calc(var(--s) * 4.6);
+  height: calc(var(--s) * 4.6);
+}
+.booth-badge-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: max(var(--type-16), calc(var(--s) * 2.2 * var(--type-scale)));
+  font-weight: var(--quorum-font-weights-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.booth-badge-line {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: max(var(--type-9), calc(var(--s) * 1.15 * var(--type-scale)));
+  letter-spacing: var(--quorum-letter-spacings-badge-wide);
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.booth-name {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: calc(var(--s) * 1);
+  padding: calc(var(--s) * 0.6) calc(var(--s) * 1.4) calc(var(--s) * 1.4);
+}
+.booth-name .booth-field {
+  max-width: calc(var(--s) * 52);
+}
+.booth-name .booth-note {
+  margin: 0;
+}
+/* The step bar: a number per step, the current one lit like a chosen tab. */
+.booth-tabs.is-steps {
+  gap: calc(var(--s) * 0.6);
+  margin: calc(var(--s) * 0.4) 0 calc(var(--s) * 0.6);
+  padding-left: 0;
+}
+.booth-step-number {
+  display: inline-grid;
+  width: calc(var(--s) * 2);
+  height: calc(var(--s) * 2);
+  margin-right: calc(var(--s) * 0.7);
+  place-items: center;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.25);
+  font-size: max(var(--type-9), calc(var(--s) * 1.1));
+  color: var(--muted-foreground);
+}
+.booth-tab.is-on .booth-step-number {
+  color: var(--page);
+  background: var(--signal);
+  box-shadow: none;
+}
+.booth-choices {
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--s) * 20), 1fr));
+  gap: calc(var(--s) * 0.5);
+  padding: calc(var(--s) * 0.3) calc(var(--s) * 1.4) calc(var(--s) * 0.4);
+}
+.booth-choices.is-logos {
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--s) * 10), 1fr));
+}
+.booth-tile.is-choice {
+  gap: calc(var(--s) * 0.5);
+  min-height: calc(var(--s) * 8);
+  padding: calc(var(--s) * 0.9) calc(var(--s) * 1.4);
+}
+.booth-tile.is-choice .booth-tile-name {
+  font-size: max(var(--type-12), calc(var(--s) * 1.45 * var(--type-scale)));
+}
+.booth-tile.is-choice.is-on {
+  background: color-mix(in oklch, var(--signal) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--signal) 70%, transparent);
+}
+.booth-choice-mark {
+  width: calc(var(--s) * 3.2);
+  height: calc(var(--s) * 3.2);
+  margin-bottom: calc(var(--s) * 0.2);
+}
+.booth-tile-head {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--s) * 0.8);
+  min-width: 0;
+}
+.booth-tile-head .booth-tile-name {
+  flex: 1;
+  min-width: 0;
+}
+.booth-tile-value {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: max(var(--type-10), calc(var(--s) * 1.3 * var(--type-scale)));
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+.booth-tile.is-choice.is-on .booth-tile-value {
+  color: var(--signal);
+}
+/* A venture is one choice of many, a mutator any number: the marks say which. */
+.booth-pick {
+  position: relative;
+  flex: none;
+  width: calc(var(--s) * 1.9);
+  height: calc(var(--s) * 1.9);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.3);
+}
+.booth-pick.is-checkbox {
+  border-radius: calc(var(--s) * 0.45);
+}
+.booth-pick.is-on {
+  box-shadow: inset 0 0 0 1px var(--signal);
+}
+.booth-pick.is-on::after {
+  content: '';
+  position: absolute;
+  inset: 30%;
+  border-radius: inherit;
+  background: var(--signal);
+}
+.booth-row[aria-checked='true'] {
+  color: var(--foreground);
 }
 .booth-field {
   display: flex;
@@ -477,6 +550,7 @@
 }
 .booth-input {
   width: 100%;
+  max-width: calc(var(--s) * 46);
   padding: calc(var(--s) * 0.5) calc(var(--s) * 0.9);
   border-radius: calc(var(--s) * 0.7);
   background: oklch(0 0 0 / 0.3);
@@ -496,40 +570,6 @@
   box-shadow:
     inset 0 0 0 1px var(--signal),
     0 0 0 2px oklch(1 0 0 / 0.06);
-}
-.booth-logos {
-  display: flex;
-  flex: none;
-  flex-wrap: wrap;
-  gap: calc(var(--s) * 0.8);
-  padding: calc(var(--s) * 0.2) calc(var(--s) * 1.4) calc(var(--s) * 0.8);
-}
-.booth-logo {
-  display: grid;
-  width: calc(var(--s) * 4.4);
-  height: calc(var(--s) * 4.4);
-  place-items: center;
-  border-radius: calc(var(--s) * 0.9);
-  background: oklch(1 0 0 / 0.04);
-  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.08);
-  outline: none;
-}
-.booth-logo:hover {
-  background: oklch(1 0 0 / 0.08);
-}
-.booth-logo:focus-visible {
-  background: oklch(1 0 0 / 0.1);
-  box-shadow: inset 0 0 0 1px var(--signal);
-}
-.booth-logo.is-on {
-  background: oklch(1 0 0 / 0.08);
-  box-shadow:
-    inset 0 0 0 1px var(--signal),
-    0 0 0 1px oklch(1 0 0 / 0.04);
-}
-.booth-logo-mark {
-  width: 58%;
-  height: 58%;
 }
 .booth-file {
   display: flex;
@@ -586,6 +626,9 @@
   height: max(var(--type-14), calc(var(--s) * 1.9 * var(--type-scale)));
 }
 .booth-group {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
   flex: none;
   align-items: center;
@@ -598,6 +641,12 @@
   letter-spacing: var(--quorum-letter-spacings-badge-wide);
   text-transform: uppercase;
   color: var(--muted-foreground);
+  background: none;
+}
+/* A section header only needs a backdrop once it can stick over the rows. */
+.booth-list.is-long .booth-group {
+  background: oklch(0.16 0.022 232 / 0.86);
+  backdrop-filter: blur(8px);
 }
 .booth-group::after {
   content: '';
@@ -614,24 +663,176 @@
   margin: calc(var(--s) * 1.4) calc(var(--s) * 1.4) calc(var(--s) * 0.6);
   background: oklch(1 0 0 / 0.1);
 }
+/* Tiles: levels and achievements, laid out as a grid so a wide screen shows a
+   whole era, or half the trophy shelf, at once. */
+.booth-grid {
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--s) * 26), 1fr));
+  gap: calc(var(--s) * 0.7);
+  padding: calc(var(--s) * 0.3) calc(var(--s) * 1.4) calc(var(--s) * 1);
+}
+.booth-grid.is-achievements {
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--s) * 19), 1fr));
+  padding-top: 0;
+}
+.booth-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--s) * 0.4);
+  min-height: calc(var(--s) * 7);
+  padding: calc(var(--s) * 1.2) calc(var(--s) * 1.6);
+  padding-right: calc(var(--s) * 3.4);
+  border-radius: calc(var(--s) * 0.8);
+  background: oklch(1 0 0 / 0.04);
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.07);
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+}
+.booth-grid.is-achievements .booth-tile {
+  min-height: calc(var(--s) * 5.8);
+  padding: calc(var(--s) * 0.9) calc(var(--s) * 1.2);
+  padding-right: calc(var(--s) * 3);
+}
+.booth-tile:hover {
+  background: oklch(1 0 0 / 0.07);
+}
+.booth-tile:focus-visible {
+  background: oklch(1 0 0 / 0.09);
+  box-shadow: inset 0 0 0 1px var(--signal);
+}
+.booth-tile:disabled,
+.booth-tile[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: default;
+}
+.booth-tile-name {
+  color: var(--foreground);
+  font-size: max(var(--type-12), calc(var(--s) * 1.6 * var(--type-scale)));
+  font-weight: var(--quorum-font-weights-semibold);
+}
+.booth-tile-detail {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: max(var(--type-9), calc(var(--s) * 1.15 * var(--type-scale)));
+  line-height: var(--quorum-line-heights-snug);
+}
+.booth-tile-mark {
+  position: absolute;
+  top: calc(var(--s) * 1.1);
+  right: calc(var(--s) * 1.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  font-size: max(var(--type-14), calc(var(--s) * 1.8));
+}
+/* The next level you can start, and the achievements you have already taken. */
+.booth-tile.is-next {
+  background: color-mix(in oklch, var(--signal) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--signal) 70%, transparent);
+}
+.booth-tile.is-next .booth-tile-mark {
+  color: var(--signal);
+}
+.booth-tile.is-earned {
+  background: color-mix(in oklch, var(--signal) 8%, oklch(1 0 0 / 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--signal) 42%, transparent);
+}
+.booth-tile.is-earned .booth-tile-name {
+  color: var(--foreground);
+}
+.booth-tile.is-locked .booth-tile-name {
+  color: var(--muted-foreground);
+}
+/* A count and a bar: how much of the trophy shelf is full. */
+.booth-meter {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: calc(var(--s) * 1.6);
+  padding: calc(var(--s) * 0.8) calc(var(--s) * 1.4) calc(var(--s) * 1.2);
+}
+.booth-meter-count {
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: max(var(--type-12), calc(var(--s) * 1.6 * var(--type-scale)));
+  font-variant-numeric: tabular-nums;
+}
+.booth-meter-track {
+  flex: 1;
+  height: calc(var(--s) * 0.8);
+  overflow: hidden;
+  border-radius: calc(var(--s) * 0.4);
+  background: oklch(1 0 0 / 0.1);
+}
+.booth-meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--signal);
+  transition: width 240ms var(--ease-out);
+}
 /* A setting whose value a slider sets: the track takes the width the label leaves. */
 .booth-row.is-range {
   gap: calc(var(--s) * 1.6);
   cursor: default;
+}
+.booth-row.is-range .booth-label {
+  flex: 0 0 auto;
+  max-width: 30%;
 }
 .booth-row.is-range:focus-within {
   color: var(--foreground);
   background: oklch(1 0 0 / 0.08);
   box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.06);
 }
+/* A slider in the booth's language: the input itself paints a segmented meter
+   that fills with the signal colour, with a moulded thumb. The box stays tall
+   enough to click; the paint sits in a band across its middle. */
 .booth-range {
   flex: 1;
   min-width: 0;
-  height: calc(var(--s) * 1.6);
+  height: calc(var(--s) * 2.4);
   margin: 0;
-  accent-color: var(--signal);
-  background: transparent;
+  appearance: none;
+  border-radius: calc(var(--s) * 0.2);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(5% - 2px),
+      oklch(0.14 0.02 232) calc(5% - 2px) 5%
+    ),
+    linear-gradient(90deg, var(--signal) 0 var(--fill, 0%), oklch(1 0 0 / 0.14) var(--fill, 0%));
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% calc(var(--s) * 0.9);
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.12);
   cursor: pointer;
+}
+.booth-range::-webkit-slider-thumb {
+  appearance: none;
+  width: calc(var(--s) * 0.9);
+  height: calc(var(--s) * 1.7);
+  border-radius: calc(var(--s) * 0.2);
+  background: var(--foreground);
+  box-shadow:
+    0 0 0 1px oklch(0 0 0 / 0.45),
+    0 0 calc(var(--s) * 0.9) color-mix(in oklch, var(--signal) 55%, transparent);
+}
+.booth-range::-moz-range-thumb {
+  width: calc(var(--s) * 0.9);
+  height: calc(var(--s) * 1.7);
+  border: 0;
+  border-radius: calc(var(--s) * 0.2);
+  background: var(--foreground);
+  box-shadow:
+    0 0 0 1px oklch(0 0 0 / 0.45),
+    0 0 calc(var(--s) * 0.9) color-mix(in oklch, var(--signal) 55%, transparent);
+}
+.booth-range::-moz-range-track {
+  background: none;
 }
 .booth-range:focus-visible {
   outline: 2px solid var(--signal);
@@ -676,8 +877,8 @@
   flex: none;
   display: flex;
   gap: calc(var(--s) * 2.6);
-  margin-top: auto;
-  padding: calc(var(--s) * 1.4) 0 calc(var(--s) * 2);
+  margin-top: calc(var(--s) * 1.6);
+  padding: calc(var(--s) * 0.6) 0 calc(var(--s) * 2);
   font-family: var(--font-mono);
   font-size: max(var(--type-10), calc(var(--s) * 1.25 * var(--type-scale)));
   color: var(--muted-foreground);
@@ -845,11 +1046,11 @@
 }
 /* The playtest strip along the top edge. */
 .booth-strip {
-  position: absolute;
-  top: 18px;
-  right: 32px;
-  left: 32px;
+  position: relative;
   z-index: 2;
+  width: 100%;
+  max-width: 1600px;
+  height: var(--booth-strip);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -890,12 +1091,11 @@
     position: absolute;
     inset: 0;
     width: auto;
+    align-self: stretch;
     aspect-ratio: auto;
     container-type: normal;
   }
-  .booth-desk,
   .booth-disclaimer,
-  .booth-neck,
   .booth-chin,
   .booth-hint,
   .booth-status {
@@ -926,9 +1126,6 @@
     margin-right: calc(var(--s) * -1);
   }
   .booth-strip {
-    top: 16px;
-    right: 18px;
-    left: 18px;
     font-size: var(--type-9-5);
     letter-spacing: var(--quorum-letter-spacings-tag);
   }

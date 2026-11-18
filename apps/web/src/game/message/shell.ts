@@ -1,4 +1,4 @@
-import { Menu, SettingsSection } from '../model.ts'
+import { FoundStep, Menu, SettingsSection } from '../model.ts'
 import { Url } from 'foldkit/url'
 import { UrlRequest } from 'foldkit/navigation'
 
@@ -10,6 +10,7 @@ export const shellCases = {
   TitleRevealed: {},
   MenuChosen: { menu: Menu },
   SettingsSectionChosen: { section: SettingsSection },
+  FoundStepChosen: { step: FoundStep },
   ClickedLink: { request: UrlRequest },
   ChangedUrl: { url: Url },
   Navigated: {},

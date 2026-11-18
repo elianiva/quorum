@@ -28,6 +28,7 @@ type ShellTag =
   | 'TitleRevealed'
   | 'MenuChosen'
   | 'SettingsSectionChosen'
+  | 'FoundStepChosen'
   | 'ClickedLink'
   | 'ChangedUrl'
   | 'Navigated'
@@ -52,11 +53,14 @@ export const shellHandlers = (model: Model): MessageCases<UpdateResult, ShellTag
           model: {
             ...model,
             route: routeOfMenu(menu),
+            ...(menu === 'found' ? { foundStep: 'company' as const } : {}),
             ...(menu === 'companies' ? {} : { saveFocus: null, saveConfirm: { _tag: 'List' } }),
           },
         },
 
   SettingsSectionChosen: ({ section }) => ({ model: { ...model, settingsSection: section } }),
+
+  FoundStepChosen: ({ step }) => ({ model: { ...model, foundStep: step } }),
 
   ClickedLink: ({ request }) =>
     UrlRequest.match<UpdateResult>(request, {

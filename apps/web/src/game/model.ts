@@ -365,6 +365,10 @@ export const roomOwner = (model: Model): boolean =>
 export const SettingsSection = Schema.Literals(['sound', 'play', 'display', 'privacy', 'save'])
 export type SettingsSection = typeof SettingsSection.Type
 
+/* The founding form asks one question per step, so each choice gets the screen. */
+export const FoundStep = Schema.Literals(['company', 'venture', 'mutators'])
+export type FoundStep = typeof FoundStep.Type
+
 export const Pwa = Schema.Struct({
   installable: Schema.Boolean,
   installed: Schema.Boolean,
@@ -387,6 +391,7 @@ export const Model = Schema.Struct({
   saves: SaveIndex,
   savesReady: Schema.Boolean,
   draft: Schema.Struct({ name: Schema.String, logo: LogoId }),
+  foundStep: FoundStep,
   saveFocus: Schema.NullOr(Schema.String),
   saveConfirm: ConfirmDelete,
   founder: Founder,

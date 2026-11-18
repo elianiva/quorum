@@ -22,6 +22,7 @@ export const title: Messages['title'] = {
   legacy: (p0: string | number | null) => `${p0} de Legado`,
   mutators: 'Mutadores',
   found: (p0: string | number | null) => `Fundar ${p0}`,
+  next: 'Siguiente',
   legacy2: (p0: string | number | null, p1: string | number | null) => `${p0} · Legado ×${p1}`,
   current: 'Actual',
   noCompaniesSavedYet: 'Aún no hay empresas guardadas',
@@ -59,9 +60,6 @@ export const title: Messages['title'] = {
   clockInHint: 'Haz clic en la insignia para fichar',
   founder: 'Fundador',
   company: 'Empresa',
-  escape: 'Escape',
-  space: 'Espacio',
-  backspace: 'Retroceso',
   eraUsersTime: (era: string, users: string, time: string) =>
     `${era} · ${users} usuarios · ${time}`,
   savedCount: (count: number) => `${count} ${isOne('es', count) ? 'guardada' : 'guardadas'}`,

@@ -92,11 +92,26 @@ export const foldDashboard = Update.foldChild({
   toParentMessage: (message) => Message.DashboardChanged({ message }),
 })
 
+const readableFields = (saved: Readonly<Record<string, unknown>>): Record<string, unknown> =>
+  Object.fromEntries(
+    Object.entries(Prefs.fields)
+      .filter(
+        ([key, field]) =>
+          key in saved &&
+          Option.isSome(Schema.decodeUnknownOption(Schema.Struct({ [key]: field }))(saved)),
+      )
+      .map(([key]) => [key, saved[key]]),
+  )
+
 export const parsePrefs = (json: string) =>
-  Option.map(Schema.decodeOption(Schema.fromJsonString(Prefs))(json), (prefs) => ({
-    ...prefs,
-    volume: volumeIn(prefs.volume),
-  }))
+  Option.flatMap(
+    Schema.decodeOption(Schema.fromJsonString(Schema.Record(Schema.String, Schema.Unknown)))(json),
+    (saved) =>
+      Option.map(Schema.decodeOption(Prefs)(readableFields(saved)), (prefs) => ({
+        ...prefs,
+        volume: volumeIn(prefs.volume),
+      })),
+  )
 
 export const foldVolumeSlider = (route: Dispatch) =>
   Update.foldChild({

@@ -183,6 +183,14 @@ describe('volume', () => {
     expect(Option.getOrThrow(parsePrefs(JSON.stringify({ volume: 900 }))).volume).toBe(100)
   })
 
+  test('one unreadable saved setting does not reset the others', () => {
+    const saved = JSON.stringify({ easyMode: true, locale: 'xx', seenTradeoffs: ['gone'] })
+    const prefs = Option.getOrThrow(parsePrefs(saved))
+    expect(prefs.easyMode).toBe(true)
+    expect(prefs.locale).toBe('en')
+    expect(prefs.seenTradeoffs).toEqual([])
+  })
+
   test('the Settings panel shows the level as a slider', () => {
     Scene.scene(
       { update, view: settingsPanel },

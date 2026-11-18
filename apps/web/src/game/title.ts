@@ -1,4 +1,4 @@
-import { copyIn, nodeTitle, type Messages } from '@/i18n/messages.ts'
+import { copyIn, type Messages } from '@/i18n/messages.ts'
 import { copy, localized, eraWords } from '@/i18n/messages.ts'
 import * as Effect from 'effect/Effect'
 import { Mount } from 'foldkit'
@@ -7,17 +7,28 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
   ArrowUpRight,
   BookOpen,
+  Building2,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Coffee,
   Download,
+  FlaskConical,
   Hash,
+  FolderOpen,
   RefreshCw,
+  Rocket,
+  ScrollText,
+  Smile,
+  Store,
+  Target,
+  Timer,
   Trash2,
   Lock,
-  ScrollText,
   Settings,
-  Store,
   Trophy,
+  Users,
+  Wallet,
 } from 'lucide'
 import { css, cx } from '@quorum/styled-system/css'
 import { icon } from '@quorum/ui/primitives/icon'
@@ -26,7 +37,6 @@ import { companyMark } from '@/components/company-mark.ts'
 import { connecting, titleIsOpen } from './boot-machine.ts'
 import {
   ACHIEVEMENT_IDS,
-  COMPONENTS,
   ERAS,
   MUTATORS,
   MUTATOR_IDS,
@@ -37,11 +47,10 @@ import {
 } from '@quorum/simulation/catalog'
 import { foundingOf, levelOf, perkPrice } from '@quorum/simulation/founder'
 import { legacyMultiplier, startEra } from '@quorum/simulation/founding'
-import { solveFlow } from '@quorum/simulation/solve'
-import type { Game } from '@quorum/simulation/state'
 import { CHALLENGES, challengeById, dailyDrill } from '@quorum/simulation/challenges'
+import { eraOf } from '@quorum/simulation/lookups'
 import { SANDBOX_IDS, TRACKS, sandboxOpen } from '@quorum/simulation/sandbox'
-import { clock, compact } from '@quorum/ui/game/format'
+import { clock, compact, money, ms } from '@quorum/ui/game/format'
 import { Message } from './message.ts'
 import { PrefsMessage } from './prefs.ts'
 import { settingsSections, type Setting } from './settings.ts'
@@ -50,6 +59,7 @@ import {
   boardSandbox,
   currentFile,
   hasCompany,
+  ledgerOf,
   type FoundStep,
   type Model,
 } from './model.ts'
@@ -65,9 +75,9 @@ type Page = typeof MenuPage.Type | 'main' | 'save'
 let lastPage: Page = 'main'
 
 const rowsOf = (root: ParentNode) =>
-  [
-    ...root.querySelectorAll<HTMLElement>('.booth-list [data-row], .booth-footer [data-row]'),
-  ].filter((row) => !(row instanceof HTMLButtonElement && row.disabled))
+  [...root.querySelectorAll<HTMLElement>('.menu-list [data-row], .menu-footer [data-row]')].filter(
+    (row) => !(row instanceof HTMLButtonElement && row.disabled),
+  )
 
 const walkOf = (root: ParentNode): ReadonlyArray<HTMLElement> => {
   const rows = rowsOf(root)
@@ -113,7 +123,7 @@ const nearestCell = (
   return ahead[0]?.cell ?? null
 }
 
-export const BoothDriver = Mount.define('BoothDriver', {
+export const MenuDriver = Mount.define('MenuDriver', {
   messages: [Message.Synced],
   execute: ({ element }) =>
     Effect.acquireRelease(
@@ -123,7 +133,7 @@ export const BoothDriver = Mount.define('BoothDriver', {
           const target = event.target
           if (target instanceof Element && target !== document.body && !element.contains(target))
             return
-          if (element.querySelector('.booth-term')) return
+          if (element.querySelector('.menu-term')) return
           if (target instanceof HTMLInputElement) {
             if (event.key === 'Escape') {
               event.preventDefault()
@@ -153,7 +163,7 @@ export const BoothDriver = Mount.define('BoothDriver', {
             (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
           ) {
             event.preventDefault()
-            const tabs = [...element.querySelectorAll<HTMLElement>('.booth-tabs [data-tab]')]
+            const tabs = [...element.querySelectorAll<HTMLElement>('.menu-tabs [data-tab]')]
             const step = event.key === 'ArrowLeft' ? -1 : 1
             const next = tabs[(tabs.indexOf(tab) + step + tabs.length) % tabs.length]
             if (next && next !== tab) {
@@ -191,7 +201,7 @@ export const BoothDriver = Mount.define('BoothDriver', {
             }
           }
           const chosen = element.querySelector<HTMLElement>(
-            '.booth-tabs [data-tab][aria-pressed="true"]',
+            '.menu-tabs [data-tab][aria-pressed="true"]',
           )
           const at =
             active?.dataset.tab !== undefined
@@ -237,7 +247,7 @@ export const BoothDriver = Mount.define('BoothDriver', {
         }
         /* Only a list with more below it fades at its edge and lifts its
            section headers; a short list keeps its last row at full strength. */
-        const lists = () => [...element.querySelectorAll<HTMLElement>('.booth-list')]
+        const lists = () => [...element.querySelectorAll<HTMLElement>('.menu-list')]
         const measure = () => {
           for (const list of lists())
             list.classList.toggle('is-long', list.scrollHeight > list.clientHeight + 2)
@@ -245,7 +255,7 @@ export const BoothDriver = Mount.define('BoothDriver', {
         const resize = new ResizeObserver(measure)
         let watched: HTMLElement | null = null
         const watch = () => {
-          const list = element.querySelector<HTMLElement>('.booth-list')
+          const list = element.querySelector<HTMLElement>('.menu-list')
           if (list !== watched) {
             watched = list
             resize.disconnect()
@@ -279,9 +289,13 @@ export const PageMounted = Mount.define('PageMounted', {
       const rows = walkOf(element.parentElement ?? element)
       const from = page === 'main' ? rows.find((row) => row.dataset.to === lastPage) : undefined
       lastPage = page
-      ;(from ?? rows.find((row) => !('back' in row.dataset)) ?? rows[0])?.focus({
-        preventScroll: true,
-      })
+      /* Continue is the row a returning player wants, so it takes the focus
+         before anything else on the page. */
+      const first =
+        rows.find((row) => row.classList.contains('is-primary')) ??
+        rows.find((row) => !('back' in row.dataset)) ??
+        rows[0]
+      ;(from ?? first)?.focus({ preventScroll: true })
       return Message.Synced()
     }),
 })
@@ -315,7 +329,7 @@ const glyphPaths = (
 
 const wordmark = (h: HtmlBuilder<Message>): Html =>
   h.svg(
-    [h.ViewBox('0 0 720 194'), h.Class('booth-wordmark'), h.Role('img'), h.AriaLabel('Quorum')],
+    [h.ViewBox('0 0 720 194'), h.Class('menu-wordmark'), h.Role('img'), h.AriaLabel('Quorum')],
     [
       ...GLYPHS.flatMap(({ at, paths }, letter) => glyphPaths(paths, at, 300 + letter * 70, h)),
       h.circle([h.Cx('89'), h.Cy('180'), h.R('14')]),
@@ -325,12 +339,12 @@ const wordmark = (h: HtmlBuilder<Message>): Html =>
 type Row = Readonly<{
   key: string
   label: string
-  detail?: string
+  detail?: string | undefined
   side?: Html | string | undefined
   mark?: Html
   message: Message | null
   big?: boolean
-  back?: boolean
+  primary?: boolean
   to?: Page
   pressed?: boolean
   pick?: 'radio' | 'checkbox'
@@ -344,12 +358,12 @@ const percentRow = (
   h: HtmlBuilder<Message>,
 ): Html =>
   h.div(
-    [h.Key(r.key), h.Class('booth-row is-range')],
+    [h.Key(r.key), h.Class('menu-row is-range')],
     [
-      h.span([h.Class('booth-label')], [h.span([], [r.label])]),
+      h.span([h.Class('menu-label')], [h.span([], [r.label])]),
       h.input([
         h.Type('range'),
-        h.Class('booth-range'),
+        h.Class('menu-range'),
         h.DataAttribute('row', ''),
         h.Style({ '--fill': `${r.value}%` }),
         h.Min('0'),
@@ -359,7 +373,7 @@ const percentRow = (
         h.AriaLabel(r.label),
         h.OnInput((value) => r.onInput(Number(value))),
       ]),
-      h.span([h.Class('booth-side')], [`${Math.round(r.value)}%`]),
+      h.span([h.Class('menu-side')], [`${Math.round(r.value)}%`]),
     ],
   )
 
@@ -367,24 +381,22 @@ const row = (r: Row, h: HtmlBuilder<Message>): Html => {
   const body = [
     r.pick
       ? h.span(
-          [h.Class(`booth-pick is-${r.pick}${r.checked ? ' is-on' : ''}`), h.AriaHidden(true)],
+          [h.Class(`menu-pick is-${r.pick}${r.checked ? ' is-on' : ''}`), h.AriaHidden(true)],
           [],
         )
-      : r.back
-        ? h.span([h.Class('booth-mark'), h.AriaHidden(true)], ['‹'])
-        : h.empty,
+      : h.empty,
     r.mark ?? h.empty,
     h.span(
-      [h.Class('booth-label')],
-      [h.span([], [r.label]), r.detail ? h.span([h.Class('booth-detail')], [r.detail]) : h.empty],
+      [h.Class('menu-label')],
+      [h.span([], [r.label]), r.detail ? h.span([h.Class('menu-detail')], [r.detail]) : h.empty],
     ),
     r.side === undefined
       ? h.empty
       : typeof r.side === 'string'
-        ? h.span([h.Class('booth-side')], [r.side])
-        : h.span([h.Class('booth-side')], [r.side]),
+        ? h.span([h.Class('menu-side')], [r.side])
+        : h.span([h.Class('menu-side')], [r.side]),
   ]
-  const className = `booth-row ${r.big ? 'is-big' : ''} ${r.back ? 'is-back' : ''} ${r.danger ? 'is-danger' : ''}`
+  const className = `menu-row ${r.big ? 'is-big' : ''} ${r.primary ? 'is-primary' : ''} ${r.danger ? 'is-danger' : ''}`
   if (r.record)
     return h.div(
       [h.Key(r.key), h.Tabindex(-1), h.DataAttribute('row', ''), h.Class(`${className} is-record`)],
@@ -397,7 +409,6 @@ const row = (r: Row, h: HtmlBuilder<Message>): Html => {
       h.Disabled(r.message === null),
       ...(r.message ? [h.OnClick(r.message)] : []),
       h.DataAttribute('row', ''),
-      ...(r.back ? [h.DataAttribute('back', '')] : []),
       ...(r.to ? [h.DataAttribute('to', r.to)] : []),
       ...(r.pressed === undefined ? [] : [h.AriaPressed(r.pressed ? 'true' : 'false')]),
       ...(r.pick === undefined ? [] : [h.Role(r.pick), h.AriaChecked(r.checked === true)]),
@@ -407,28 +418,20 @@ const row = (r: Row, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-const done = (h: HtmlBuilder<Message>) => icon(h, Check, cx('booth-icon', css({ color: 'ok' })))
-const locked = (h: HtmlBuilder<Message>) => icon(h, Lock, 'booth-icon')
+const plate = (glyph: Parameters<typeof icon>[1], tone: string, h: HtmlBuilder<Message>): Html =>
+  h.span([h.Class(`menu-plate is-${tone}`)], [icon(h, glyph, 'menu-icon')])
 
-const backRow = (h: HtmlBuilder<Message>): Html => {
-  const t = copy(h)
-  return row(
-    { key: 'back', label: t.title.back, message: Message.MenuChosen({ menu: 'main' }), back: true },
-    h,
-  )
-}
+const done = (h: HtmlBuilder<Message>) => icon(h, Check, cx('menu-icon', css({ color: 'ok' })))
+const locked = (h: HtmlBuilder<Message>) => icon(h, Lock, 'menu-icon')
 
 const group = (text: string, h: HtmlBuilder<Message>): Html =>
-  h.h2([h.Key(`group-${text}`), h.Class('booth-group')], [text])
+  h.h2([h.Key(`group-${text}`), h.Class('menu-group')], [text])
 
 const note = (text: string, h: HtmlBuilder<Message>): Html =>
-  h.p([h.Key(`note-${text}`), h.Class('booth-note')], [text])
+  h.p([h.Key(`note-${text}`), h.Class('menu-note')], [text])
 
 const divider = (h: HtmlBuilder<Message>): Html =>
-  h.div([h.Key('divider'), h.Class('booth-rule'), h.AriaHidden(true)], [])
-
-const section = (label: string, rows: ReadonlyArray<Html>, h: HtmlBuilder<Message>) =>
-  rows.length === 0 ? [] : [group(label, h), ...rows]
+  h.div([h.Key('divider'), h.Class('menu-rule'), h.AriaHidden(true)], [])
 
 const installPromptRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
@@ -442,7 +445,7 @@ const installPromptRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray
         key: 'pwa-install',
         label: t.pwa.installQuorum,
         detail: model.pwa.installable ? t.pwa.installDetail : t.pwa.installHelp[family],
-        side: icon(h, Download, 'booth-icon'),
+        side: icon(h, Download, 'menu-icon'),
         message: model.pwa.installable ? Message.PwaInstallChosen() : null,
         record: !model.pwa.installable,
       },
@@ -453,15 +456,15 @@ const installPromptRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray
   ]
 }
 
-const mainRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
+/* The menu's main page reads as the board does: two cards of choices, with
+   the company on the left because that is where play resumes. */
+const startRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
 
   const game = model.board.game
   const file = currentFile(model)
   const current = hasCompany(model) ? file : null
   const count = model.saves.companies.length
-  const passed = SANDBOX_IDS.filter((id) => model.passed.includes(id)).length
-  const solved = CHALLENGES.filter((entry) => model.founder.completed.includes(entry.id)).length
   return [
     ...(model.pwa.updateReady
       ? [
@@ -470,97 +473,147 @@ const mainRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
               key: 'pwa-update',
               label: t.pwa.updateReady,
               detail: t.pwa.updateReadyDetail,
-              side: icon(h, RefreshCw, 'booth-icon'),
+              side: icon(h, RefreshCw, 'menu-icon'),
               message: Message.PwaUpdateChosen(),
-              big: true,
             },
             h,
           ),
         ]
       : []),
-    ...section(t.pwa.app, installPromptRows(model, h), h),
-    ...section(
-      t.title.company,
-      [
-        ...(current
-          ? [
-              row(
-                {
-                  key: 'continue',
-                  mark: companyMark(current.logo, 'booth-logo-mini', h),
-                  label: t.title.continueText,
-                  detail: `${current.name} · ${t.title.eraUsersTime(eraWords(t, game).name, compact(game.users), clock(game.time))}`,
-                  message: Message.Continued(),
-                  big: true,
-                },
-                h,
-              ),
-            ]
-          : []),
-        row(
-          {
-            key: 'new',
-            label: current ? t.title.newCompany : t.title.startACompany,
-            message: Message.MenuChosen({ menu: 'found' }),
-            big: !current,
-            to: 'found',
-          },
-          h,
-        ),
-        row(
-          {
-            key: 'preseed',
-            label: t.title.startInPreSeed,
-            detail: t.title.skipsGarage,
-            message: Message.PreseedStarted(),
-          },
-          h,
-        ),
-        row(
-          { key: 'import', label: t.title.importACompany, message: Message.CompanyFileAsked() },
-          h,
-        ),
-        ...(count > 0
-          ? [
-              row(
-                {
-                  key: 'companies',
-                  label: t.title.companies,
-                  detail: t.title.savedCount(count),
-                  message: Message.MenuChosen({ menu: 'companies' }),
-                  to: 'companies',
-                },
-                h,
-              ),
-            ]
-          : []),
-      ],
+    ...installPromptRows(model, h),
+    ...(current
+      ? [
+          row(
+            {
+              key: 'continue',
+              mark: companyMark(current.logo, 'menu-logo-mini', h),
+              label: t.title.continueText,
+              detail: `${current.name} · ${t.title.eraUsersTime(eraWords(t, game).name, compact(game.users), clock(game.time))}`,
+              message: Message.Continued(),
+              big: true,
+              primary: true,
+              side: icon(h, ChevronRight, 'menu-icon'),
+            },
+            h,
+          ),
+        ]
+      : []),
+    row(
+      {
+        key: 'new',
+        label: current ? t.title.newCompany : t.title.startACompany,
+        mark: plate(Building2, 'blue', h),
+        message: Message.MenuChosen({ menu: 'found' }),
+        big: !current,
+        to: 'found',
+      },
       h,
     ),
-    ...section(
-      t.title.practice,
-      [
-        row(
-          {
-            key: 'sandbox',
-            label: t.title.sandbox,
-            side: passed > 0 ? `${passed}/${SANDBOX_IDS.length}` : undefined,
-            message: Message.MenuChosen({ menu: 'sandbox' }),
-            to: 'sandbox',
-          },
-          h,
-        ),
-        row(
-          {
-            key: 'challenges',
-            label: t.title.challenges,
-            side: solved > 0 ? `${solved}/${CHALLENGES.length}` : undefined,
-            message: Message.MenuChosen({ menu: 'challenges' }),
-            to: 'challenges',
-          },
-          h,
-        ),
-      ],
+    row(
+      {
+        key: 'preseed',
+        label: t.title.startInPreSeed,
+        detail: t.title.skipsGarage,
+        mark: plate(Rocket, 'amber', h),
+        message: Message.PreseedStarted(),
+      },
+      h,
+    ),
+    row(
+      {
+        key: 'import',
+        label: t.title.importACompany,
+        mark: plate(Download, 'green', h),
+        message: Message.CompanyFileAsked(),
+      },
+      h,
+    ),
+    ...(count > 0
+      ? [
+          row(
+            {
+              key: 'companies',
+              label: t.title.companies,
+              detail: t.title.savedCount(count),
+              mark: plate(FolderOpen, 'purple', h),
+              message: Message.MenuChosen({ menu: 'companies' }),
+              to: 'companies',
+            },
+            h,
+          ),
+        ]
+      : []),
+  ]
+}
+
+const founderRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
+  const t = copy(h)
+  const earned = model.founder.achievements.length
+  const exits = model.founder.history.length
+  return [
+    row(
+      {
+        key: 'achievements',
+        label: t.title.achievements,
+        mark: plate(Trophy, 'green', h),
+        side: `${earned}/${ACHIEVEMENT_IDS.length}`,
+        message: Message.MenuChosen({ menu: 'achievements' }),
+        to: 'achievements',
+      },
+      h,
+    ),
+    row(
+      {
+        key: 'legacy',
+        label: t.title.legacyShop,
+        mark: plate(Store, 'green', h),
+        side: `${model.founder.legacy}`,
+        message: Message.MenuChosen({ menu: 'legacy' }),
+        to: 'legacy',
+      },
+      h,
+    ),
+    row(
+      {
+        key: 'history',
+        label: t.title.history,
+        mark: plate(ScrollText, 'green', h),
+        detail: exits === 0 ? t.title.noExitsYet : undefined,
+        side: exits > 0 ? `${exits}` : undefined,
+        message: Message.MenuChosen({ menu: 'history' }),
+        to: 'history',
+      },
+      h,
+    ),
+  ]
+}
+
+const practiceRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
+  const t = copy(h)
+  const passed = SANDBOX_IDS.filter((id) => model.passed.includes(id)).length
+  const solved = CHALLENGES.filter((entry) => model.founder.completed.includes(entry.id)).length
+  return [
+    row(
+      {
+        key: 'sandbox',
+        label: t.title.sandbox,
+        detail: t.title.freeSandbox,
+        mark: plate(FlaskConical, 'purple', h),
+        side: passed > 0 ? `${passed}/${SANDBOX_IDS.length}` : undefined,
+        message: Message.MenuChosen({ menu: 'sandbox' }),
+        to: 'sandbox',
+      },
+      h,
+    ),
+    row(
+      {
+        key: 'challenges',
+        label: t.title.challenges,
+        mark: plate(Target, 'pink', h),
+        side: solved > 0 ? `${solved}/${CHALLENGES.length}` : undefined,
+        message: Message.MenuChosen({ menu: 'challenges' }),
+        to: 'challenges',
+      },
       h,
     ),
   ]
@@ -581,14 +634,14 @@ const tile = (
       h.Key(r.key),
       h.Type('button'),
       h.DataAttribute('row', ''),
-      h.Class(`booth-tile is-${r.state}`),
+      h.Class(`menu-tile is-${r.state}`),
       ...(r.message ? [h.OnClick(r.message)] : [h.AriaDisabled(true)]),
     ],
     [
-      h.span([h.Class('booth-tile-name')], [r.label]),
-      r.detail ? h.span([h.Class('booth-tile-detail')], [r.detail]) : h.empty,
+      h.span([h.Class('menu-tile-name')], [r.label]),
+      r.detail ? h.span([h.Class('menu-tile-detail')], [r.detail]) : h.empty,
       h.span(
-        [h.Class('booth-tile-mark'), h.AriaHidden(true)],
+        [h.Class('menu-tile-mark'), h.AriaHidden(true)],
         [
           r.state === 'done'
             ? done(h)
@@ -606,14 +659,13 @@ const sandboxRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
   const t = copy(h)
   const next = SANDBOX_IDS.find((id) => !model.passed.includes(id) && sandboxOpen(id, model.passed))
   return [
-    backRow(h),
     ...TRACKS.flatMap((track) => {
       const passed = track.sandboxes.filter((id) => model.passed.includes(id)).length
       const era = t.catalog.eras[track.stage]?.name ?? ''
       return [
         group(`${era} · ${passed}/${track.sandboxes.length}`, h),
         h.div(
-          [h.Class('booth-grid'), h.DataAttribute('grid', '')],
+          [h.Class('menu-grid'), h.DataAttribute('grid', '')],
           track.sandboxes.map((id) => {
             const open = sandboxOpen(id, model.passed)
             return tile(
@@ -664,23 +716,23 @@ const choiceTile = (
       h.Role(r.pick),
       h.AriaChecked(r.checked),
       h.DataAttribute('row', ''),
-      h.Class(`booth-tile is-choice ${r.checked ? 'is-on' : ''}`),
+      h.Class(`menu-tile is-choice ${r.checked ? 'is-on' : ''}`),
       h.OnClick(r.message),
     ],
     [
       r.mark ?? h.empty,
       h.span(
-        [h.Class('booth-tile-head')],
+        [h.Class('menu-tile-head')],
         [
           h.span(
-            [h.Class(`booth-pick is-${r.pick}${r.checked ? ' is-on' : ''}`), h.AriaHidden(true)],
+            [h.Class(`menu-pick is-${r.pick}${r.checked ? ' is-on' : ''}`), h.AriaHidden(true)],
             [],
           ),
-          h.span([h.Class('booth-tile-name')], [r.label]),
-          r.value ? h.span([h.Class('booth-tile-value')], [r.value]) : h.empty,
+          h.span([h.Class('menu-tile-name')], [r.label]),
+          r.value ? h.span([h.Class('menu-tile-value')], [r.value]) : h.empty,
         ],
       ),
-      r.detail ? h.span([h.Class('booth-tile-detail')], [r.detail]) : h.empty,
+      r.detail ? h.span([h.Class('menu-tile-detail')], [r.detail]) : h.empty,
     ],
   )
 
@@ -696,7 +748,7 @@ const foundSteps = (model: Model, h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Key('found-steps'),
-      h.Class('booth-tabs is-steps'),
+      h.Class('menu-tabs is-steps'),
       h.Role('group'),
       h.AriaLabel(t.title.newCompany),
     ],
@@ -707,11 +759,11 @@ const foundSteps = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.Type('button'),
           h.DataAttribute('row', ''),
           h.DataAttribute('tab', step),
-          h.Class(`booth-tab ${step === model.foundStep ? 'is-on' : ''}`),
+          h.Class(`menu-tab ${step === model.foundStep ? 'is-on' : ''}`),
           h.AriaPressed(step === model.foundStep ? 'true' : 'false'),
           h.OnClick(Message.FoundStepChosen({ step })),
         ],
-        [h.span([h.Class('booth-step-number')], [`${index + 1}`]), h.span([], [label[step]])],
+        [h.span([h.Class('menu-step-number')], [`${index + 1}`]), h.span([], [label[step]])],
       ),
     ),
   )
@@ -723,22 +775,22 @@ const companyStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
     /* The company as it will read on the title screen: a badge in the same
        moulded plastic as the clock-in card, which names its holder Founder. */
     h.div(
-      [h.Class('booth-badge'), h.AriaHidden(true)],
+      [h.Class('menu-badge'), h.AriaHidden(true)],
       [
-        companyMark(model.draft.logo, 'booth-badge-mark', h),
-        h.span([h.Class('booth-badge-name')], [nameOr(model.draft.name)]),
-        h.span([h.Class('booth-badge-line')], [t.title.founder]),
+        companyMark(model.draft.logo, 'menu-badge-mark', h),
+        h.span([h.Class('menu-badge-name')], [nameOr(model.draft.name)]),
+        h.span([h.Class('menu-badge-line')], [t.title.founder]),
       ],
     ),
     h.div(
-      [h.Class('booth-name')],
+      [h.Class('menu-name')],
       [
         h.label(
-          [h.Class('booth-field')],
+          [h.Class('menu-field')],
           [
-            h.span([h.Class('booth-field-label')], [t.title.companyName]),
+            h.span([h.Class('menu-field-label')], [t.title.companyName]),
             h.input([
-              h.Class('booth-input'),
+              h.Class('menu-input'),
               h.Type('text'),
               h.Value(model.draft.name),
               h.Placeholder(t.title.nameYourCompany),
@@ -756,13 +808,13 @@ const companyStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
     ),
     group(t.title.logo, h),
     h.div(
-      [h.Class('booth-choices is-logos'), h.DataAttribute('grid', '')],
+      [h.Class('menu-choices is-logos'), h.DataAttribute('grid', '')],
       LOGOS.map((logo) =>
         choiceTile(
           {
             key: `logo-${logo.id}`,
             label: t.logos[logo.id],
-            mark: companyMark(logo.id, 'booth-choice-mark', h),
+            mark: companyMark(logo.id, 'menu-choice-mark', h),
             pick: 'radio',
             checked: model.draft.logo === logo.id,
             message: Message.LogoChosen({ logo: logo.id }),
@@ -779,7 +831,7 @@ const ventureStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
   const founding = foundingOf(model.founder)
   return [
     h.div(
-      [h.Class('booth-choices'), h.DataAttribute('grid', '')],
+      [h.Class('menu-choices'), h.DataAttribute('grid', '')],
       VENTURE_IDS.map((id) => {
         const def = localized(VENTURES[id], t.catalog.ventures[id])
         return choiceTile(
@@ -804,7 +856,7 @@ const mutatorStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
   const founding = foundingOf(model.founder)
   return [
     h.div(
-      [h.Class('booth-choices'), h.DataAttribute('grid', '')],
+      [h.Class('menu-choices'), h.DataAttribute('grid', '')],
       MUTATOR_IDS.map((id) =>
         choiceTile(
           {
@@ -829,7 +881,7 @@ const foundRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> =
     venture: () => ventureStep(model, h),
     mutators: () => mutatorStep(model, h),
   }
-  return [backRow(h), foundSteps(model, h), ...step[model.foundStep]()]
+  return [foundSteps(model, h), ...step[model.foundStep]()]
 }
 
 const foundFooter = (model: Model, h: HtmlBuilder<Message>): Html => {
@@ -842,13 +894,13 @@ const foundFooter = (model: Model, h: HtmlBuilder<Message>): Html => {
   }
   const ahead = next[model.foundStep]
   return h.div(
-    [h.Class('booth-footer')],
+    [h.Class('menu-footer')],
     [
       ahead
         ? row(
             {
               key: 'next',
-              mark: companyMark(model.draft.logo, 'booth-logo-mini', h),
+              mark: companyMark(model.draft.logo, 'menu-logo-mini', h),
               label: `${t.title.next}: ${ahead.label}`,
               message: Message.FoundStepChosen({ step: ahead.step }),
               big: true,
@@ -858,7 +910,7 @@ const foundFooter = (model: Model, h: HtmlBuilder<Message>): Html => {
         : row(
             {
               key: 'found',
-              mark: companyMark(model.draft.logo, 'booth-logo-mini', h),
+              mark: companyMark(model.draft.logo, 'menu-logo-mini', h),
               label: t.title.found(nameOr(model.draft.name)),
               detail: t.title.legacy2(startEra(founding), legacyMultiplier(founding).toFixed(2)),
               message: Message.CompanyFounded(),
@@ -873,12 +925,11 @@ const foundFooter = (model: Model, h: HtmlBuilder<Message>): Html => {
 const companyRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
   return [
-    backRow(h),
     ...recent(model.saves.companies).map((file) =>
       row(
         {
           key: file.id,
-          mark: companyMark(file.logo, 'booth-logo-mini', h),
+          mark: companyMark(file.logo, 'menu-logo-mini', h),
           label: file.name,
           detail: `${t.catalog.ventures[file.venture].name} · ${t.title.eraUsersTime(t.catalog.eras[file.stage]?.name ?? '', compact(file.users), clock(file.time))}`,
           side:
@@ -903,25 +954,24 @@ const saveRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
   const t = copy(h)
 
   const file = model.saves.companies.find((entry) => entry.id === model.saveFocus)
-  if (!file) return [backRow(h)]
+  if (!file) return []
   return [
-    row({ key: 'back', label: t.title.companies, message: Message.CompanyClosed(), back: true }, h),
     h.div(
-      [h.Class('booth-file')],
+      [h.Class('menu-file')],
       [
-        companyMark(file.logo, 'booth-logo-big', h),
+        companyMark(file.logo, 'menu-logo-big', h),
         h.div(
-          [h.Class('booth-file-text')],
+          [h.Class('menu-file-text')],
           [
-            h.span([h.Class('booth-file-name')], [file.name]),
+            h.span([h.Class('menu-file-name')], [file.name]),
             h.span(
-              [h.Class('booth-detail')],
+              [h.Class('menu-detail')],
               [
                 `${t.catalog.ventures[file.venture].name} · ${t.title.eraUsersTime(t.catalog.eras[file.stage]?.name ?? '', compact(file.users), clock(file.time))}`,
               ],
             ),
             h.span(
-              [h.Class('booth-detail')],
+              [h.Class('menu-detail')],
               [
                 file.mutators.length > 0 ? `${t.title.mutatorCount(file.mutators.length)} · ` : '',
                 t.title.started(
@@ -973,7 +1023,7 @@ const saveRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
             {
               key: 'delete',
               label: t.title.deleteCompany,
-              side: icon(h, Trash2, 'booth-icon'),
+              side: icon(h, Trash2, 'menu-icon'),
               message: Message.CompanyDeleteAsked(),
             },
             h,
@@ -1003,7 +1053,6 @@ const challengeRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Htm
       h,
     )
   return [
-    backRow(h),
     ...(drill ? [challenge(drill.id, t.title.dailyDrill, drill.brief, 0)] : []),
     ...ERAS.flatMap((era, stage) => {
       const list = CHALLENGES.filter((entry) => entry.era === stage)
@@ -1026,50 +1075,44 @@ const challengeRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Htm
 
 const legacyRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
-  return [
-    backRow(h),
-    ...PERK_IDS.map((id) => {
-      const def = localized(PERKS[id], t.catalog.perks[id])
-      const price = perkPrice(model.founder, id)
-      return row(
-        {
-          key: id,
-          label: `${def.name} ${levelOf(model.founder, id)}/${def.costs.length}`,
-          detail: def.effect,
-          side: price === null ? done(h) : t.title.legacy(price),
-          message:
-            price !== null && model.founder.legacy >= price ? Message.PerkBought({ id }) : null,
-        },
-        h,
-      )
-    }),
-  ]
+  return PERK_IDS.map((id) => {
+    const def = localized(PERKS[id], t.catalog.perks[id])
+    const price = perkPrice(model.founder, id)
+    return row(
+      {
+        key: id,
+        label: `${def.name} ${levelOf(model.founder, id)}/${def.costs.length}`,
+        detail: def.effect,
+        side: price === null ? done(h) : t.title.legacy(price),
+        message:
+          price !== null && model.founder.legacy >= price ? Message.PerkBought({ id }) : null,
+      },
+      h,
+    )
+  })
 }
 
 const historyRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
-  return [
-    backRow(h),
-    ...(model.founder.history.length === 0
-      ? [note(t.title.noExitsYet, h)]
-      : model.founder.history
-          .map((entry, index) =>
-            row(
-              {
-                key: `h${index}`,
-                label:
-                  entry.name ||
-                  `${t.catalog.exits[entry.exit].name} · ${t.catalog.ventures[entry.founding.venture].name}`,
-                detail: `${entry.name ? `${t.catalog.exits[entry.exit].name} · ` : ''}${t.catalog.ventures[entry.founding.venture].name} · ${t.title.eraUsersTime(t.catalog.eras[entry.stage]?.name ?? '', compact(entry.peak), clock(entry.time))}`,
-                side: `+${entry.legacy}`,
-                message: null,
-                record: true,
-              },
-              h,
-            ),
-          )
-          .toReversed()),
-  ]
+  return model.founder.history.length === 0
+    ? [note(t.title.noExitsYet, h)]
+    : model.founder.history
+        .map((entry, index) =>
+          row(
+            {
+              key: `h${index}`,
+              label:
+                entry.name ||
+                `${t.catalog.exits[entry.exit].name} · ${t.catalog.ventures[entry.founding.venture].name}`,
+              detail: `${entry.name ? `${t.catalog.exits[entry.exit].name} · ` : ''}${t.catalog.ventures[entry.founding.venture].name} · ${t.title.eraUsersTime(t.catalog.eras[entry.stage]?.name ?? '', compact(entry.peak), clock(entry.time))}`,
+              side: `+${entry.legacy}`,
+              message: null,
+              record: true,
+            },
+            h,
+          ),
+        )
+        .toReversed()
 }
 
 const achievementRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
@@ -1077,34 +1120,33 @@ const achievementRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<H
   const earned = model.founder.achievements.length
   const share = Math.round((earned / ACHIEVEMENT_IDS.length) * 100)
   return [
-    backRow(h),
     h.div(
-      [h.Class('booth-meter')],
+      [h.Class('menu-meter')],
       [
-        h.span([h.Class('booth-meter-count')], [`${earned}/${ACHIEVEMENT_IDS.length}`]),
+        h.span([h.Class('menu-meter-count')], [`${earned}/${ACHIEVEMENT_IDS.length}`]),
         h.span(
-          [h.Class('booth-meter-track'), h.AriaHidden(true)],
-          [h.span([h.Class('booth-meter-fill'), h.Style({ width: `${share}%` })], [])],
+          [h.Class('menu-meter-track'), h.AriaHidden(true)],
+          [h.span([h.Class('menu-meter-fill'), h.Style({ width: `${share}%` })], [])],
         ),
       ],
     ),
     h.div(
-      [h.Class('booth-grid is-achievements')],
+      [h.Class('menu-grid is-achievements')],
       ACHIEVEMENT_IDS.map((id) => {
         const isEarned = model.founder.achievements.includes(id)
         return h.div(
           [
             h.Key(id),
-            h.Class(`booth-tile is-achievement ${isEarned ? 'is-earned' : 'is-locked'}`),
+            h.Class(`menu-tile is-achievement ${isEarned ? 'is-earned' : 'is-locked'}`),
             h.AriaLabel(
               `${t.catalog.achievements[id].name}. ${t.catalog.achievements[id].condition}. ${isEarned ? t.title.earned : t.title.notYet}`,
             ),
           ],
           [
-            h.span([h.Class('booth-tile-name')], [t.catalog.achievements[id].name]),
-            h.span([h.Class('booth-tile-detail')], [t.catalog.achievements[id].condition]),
+            h.span([h.Class('menu-tile-name')], [t.catalog.achievements[id].name]),
+            h.span([h.Class('menu-tile-detail')], [t.catalog.achievements[id].condition]),
             h.span(
-              [h.Class('booth-tile-mark'), h.AriaHidden(true)],
+              [h.Class('menu-tile-mark'), h.AriaHidden(true)],
               [isEarned ? done(h) : locked(h)],
             ),
           ],
@@ -1160,7 +1202,7 @@ const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Ht
         {
           key: setting.id,
           label: setting.label,
-          side: icon(h, setting.glyph, 'booth-icon'),
+          side: icon(h, setting.glyph, 'menu-icon'),
           message: setting.message,
         },
         h,
@@ -1171,12 +1213,7 @@ const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Ht
 const settingsTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
-    [
-      h.Key('settings-tabs'),
-      h.Class('booth-tabs'),
-      h.Role('group'),
-      h.AriaLabel(t.panels.settings),
-    ],
+    [h.Key('settings-tabs'), h.Class('menu-tabs'), h.Role('group'), h.AriaLabel(t.panels.settings)],
     settingsSections(model, t).map((part) =>
       h.button(
         [
@@ -1184,7 +1221,7 @@ const settingsTabs = (model: Model, h: HtmlBuilder<Message>): Html => {
           h.Type('button'),
           h.DataAttribute('row', ''),
           h.DataAttribute('tab', part.id),
-          h.Class(`booth-tab ${part.id === model.settingsSection ? 'is-on' : ''}`),
+          h.Class(`menu-tab ${part.id === model.settingsSection ? 'is-on' : ''}`),
           h.AriaPressed(part.id === model.settingsSection ? 'true' : 'false'),
           h.OnClick(Message.SettingsSectionChosen({ section: part.id })),
         ],
@@ -1199,7 +1236,6 @@ const settingsRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html
   const sections = settingsSections(model, t)
   const active = sections.find((part) => part.id === model.settingsSection) ?? sections[0]!
   return [
-    backRow(h),
     settingsTabs(model, h),
     ...active.rows.map((setting) => settingRow(setting, model, h)),
     ...pwaSettingsRows(model, h),
@@ -1220,7 +1256,7 @@ const pwaSettingsRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<H
               key: 'pwa-install-setting',
               label: t.pwa.installQuorum,
               detail: model.pwa.installable ? t.pwa.installDetail : t.pwa.installHelp[family],
-              side: icon(h, Download, 'booth-icon'),
+              side: icon(h, Download, 'menu-icon'),
               message: model.pwa.installable ? Message.PwaInstallChosen() : null,
               record: !model.pwa.installable,
             },
@@ -1235,7 +1271,7 @@ const pwaSettingsRows = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<H
               key: 'pwa-update-setting',
               label: t.pwa.updateReady,
               detail: t.pwa.updateReadyDetail,
-              side: icon(h, RefreshCw, 'booth-icon'),
+              side: icon(h, RefreshCw, 'menu-icon'),
               message: Message.PwaUpdateChosen(),
             },
             h,
@@ -1251,7 +1287,7 @@ const pagesOf = (
   Page,
   Readonly<{ title: string; rows: (model: Model, h: HtmlBuilder<Message>) => ReadonlyArray<Html> }>
 > => ({
-  main: { title: '', rows: mainRows },
+  main: { title: '', rows: startRows },
   found: { title: t.title.newCompany, rows: foundRows },
   companies: { title: t.title.companies, rows: companyRows },
   save: { title: t.title.company, rows: saveRows },
@@ -1268,31 +1304,54 @@ const pageOf = (model: Model): Page => {
   return page === 'companies' && model.saveFocus !== null ? 'save' : page
 }
 
-const crumb = (model: Model, page: Page, h: HtmlBuilder<Message>): Html => {
+/* A card's header: the tint the board gives a Node type, its title, and one
+   figure on the right. On a page below the menu, the way back leads. */
+/* A page below the menu: the way back, the page's name, and one figure. */
+const pageHead = (
+  args: Readonly<{
+    title: string
+    figure?: string | undefined
+    back?: 'main' | 'companies'
+  }>,
+  h: HtmlBuilder<Message>,
+): Html => {
   const t = copy(h)
-
-  if (page === 'main') return h.empty
-  const figure =
-    page === 'found' || page === 'challenges' || page === 'legacy'
-      ? t.title.legacy(model.founder.legacy)
-      : page === 'companies'
-        ? `${model.saves.companies.length}`
-        : ''
-  return h.div(
-    [h.Class('booth-crumb')],
+  return h.header(
+    [h.Class('menu-page-head')],
     [
-      h.span([], [t.title.mainMenu]),
-      h.span([h.AriaHidden(true)], [' › ']),
-      h.b([], [pagesOf(t)[page].title]),
-      figure ? h.span([h.Class('booth-figure')], [figure]) : h.empty,
+      h.button(
+        [
+          h.Key('back'),
+          h.Type('button'),
+          h.Class('menu-back'),
+          h.DataAttribute('back', ''),
+          h.AriaLabel(t.title.back),
+          h.OnClick(Message.MenuChosen({ menu: args.back ?? 'main' })),
+        ],
+        [icon(h, ChevronLeft, 'menu-icon'), h.span([], [t.title.back])],
+      ),
+      h.h2([h.Class('menu-page-title')], [args.title]),
+      args.figure ? h.span([h.Class('menu-page-figure')], [args.figure]) : h.empty,
     ],
   )
 }
 
+/* A group of choices: a small caption, then the buttons on the canvas. */
+const block = (title: string, rows: ReadonlyArray<Html>, h: HtmlBuilder<Message>): Html =>
+  rows.length === 0
+    ? h.empty
+    : h.section(
+        [h.Class('menu-block')],
+        [
+          h.h2([h.Class('menu-section')], [title]),
+          h.nav([h.Class('menu-list'), h.AriaLabel(title), h.DataAttribute('grid', '')], rows),
+        ],
+      )
+
 const hint = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
-    [h.Class('booth-hint'), h.AriaHidden(true)],
+    [h.Class('menu-hint'), h.AriaHidden(true)],
     [
       ['↑↓', t.title.select],
       [t.title.enter, t.title.open],
@@ -1301,71 +1360,54 @@ const hint = (h: HtmlBuilder<Message>): Html => {
   )
 }
 
-const busiest = (t: Messages, game: Game): { name: string; load: number } | null => {
-  const flow = solveFlow(game)
-  let best: { name: string; load: number } | null = null
-  for (const node of game.nodes) {
-    if (COMPONENTS[node.type].fixed) continue
-    const load = flow.nodes[node.id]?.utilization ?? 0
-    if (!best || load > best.load) best = { name: nodeTitle(t, game, node), load }
-  }
-  return best
-}
-
-const sparkOf = (game: Game): string => {
-  const users = game.history.slice(-60).map((sample) => sample.users)
-  if (users.length < 2) return ''
-  const low = Math.min(...users)
-  const span = Math.max(...users) - low || 1
-  return `M${users
-    .map(
-      (value, i) =>
-        `${((i / (users.length - 1)) * 100).toFixed(1)} ${(28 - ((value - low) / span) * 26).toFixed(1)}`,
-    )
-    .join(' L')}`
-}
-
+/* The founder's company, read the way the board reads it: the same card, the
+   same four vitals, so the menu and the game share one instrument. */
 const status = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
   const game = model.board.game
   const file = currentFile(model)
-  const hot = busiest(t, game)
-  const spark = sparkOf(game)
-  const tone = !hot ? '' : hot.load >= 0.9 ? 'is-bad' : hot.load >= 0.7 ? 'is-warn' : 'is-ok'
+  const ledger = ledgerOf(model)
+  const era = eraWords(t, game)
+  const target = eraOf(game).apdexTarget
+  const share = Math.min(1, game.users / eraOf(game).raiseAt)
+  const vital = (label: string, value: string, note: string, glyph: Parameters<typeof icon>[1]) =>
+    h.div(
+      [h.Class('menu-vital')],
+      [
+        h.span([h.Class('menu-vital-label')], [icon(h, glyph, 'menu-icon'), h.span([], [label])]),
+        h.span([h.Class('menu-vital-value')], [value]),
+        h.span([h.Class('menu-vital-note')], [note]),
+      ],
+    )
   return h.aside(
-    [h.Class('booth-status')],
+    [h.Class('menu-hud')],
     [
-      ...(file
-        ? [
-            h.span(
-              [h.Class('booth-status-brand')],
-              [companyMark(file.logo, 'booth-status-logo', h), h.span([], [file.name])],
-            ),
-          ]
-        : []),
-      h.span(
-        [h.Class('booth-status-era')],
-        [h.span([], [eraWords(t, game).name]), ` · ${clock(game.time)}`],
+      h.header(
+        [h.Class('menu-hud-head')],
+        [
+          ...(file
+            ? [
+                companyMark(file.logo, 'menu-hud-logo', h),
+                h.span([h.Class('menu-hud-name')], [file.name]),
+              ]
+            : [h.span([h.Class('menu-hud-name')], [era.name])]),
+          h.span([h.Class('menu-hud-time')], [clock(game.time)]),
+        ],
       ),
-      h.span([h.Class('booth-status-users')], [compact(game.users)]),
-      h.span([h.Class('booth-status-unit')], [t.title.users]),
-      spark
-        ? h.svg(
-            [
-              h.ViewBox('0 0 100 30'),
-              h.Attribute('preserveAspectRatio', 'none'),
-              h.AriaHidden(true),
-            ],
-            [h.path([h.D(spark)])],
-          )
-        : h.empty,
-      hot
-        ? h.span(
-            [h.Class(`booth-status-hot ${tone}`)],
-            [h.i([], []), h.span([], [hot.name]), ` ${Math.round(hot.load * 100)}%`],
-          )
-        : h.empty,
+      h.div(
+        [h.Class('menu-hud-bar'), h.AriaHidden(true)],
+        [h.span([h.Style({ width: `${Math.round(share * 100)}%` })], [])],
+      ),
+      h.div(
+        [h.Class('menu-hud-body')],
+        [
+          vital(t.hud.cash, money(game.cash), '', Wallet),
+          vital(t.hud.users, compact(game.users), '', Users),
+          vital('Apdex', game.apdex.toFixed(2), `/ ${target.toFixed(2)}`, Smile),
+          vital(t.hud.latency, ms(ledger.latency), '', Timer),
+        ],
+      ),
     ],
   )
 }
@@ -1407,19 +1449,15 @@ const taskbar = (model: Model, page: Page, h: HtmlBuilder<Message>): Html => {
         h.OnClick(Message.MenuChosen({ menu: page === menu ? 'main' : menu })),
       ],
       [
-        icon(h, glyph, 'booth-icon'),
-        h.span([h.Class('booth-taskbar-label')], [label]),
-        extra ? h.span([h.Class('booth-figure')], [extra]) : h.empty,
+        icon(h, glyph, 'menu-icon'),
+        h.span([h.Class('menu-dock-label')], [label]),
+        extra ? h.span([h.Class('menu-figure')], [extra]) : h.empty,
       ],
     )
-  const veteran = model.founder.history.length > 0
-  const hasLegacy = model.founder.earned > 0
   return h.nav(
-    [h.Class('booth-taskbar'), h.AriaLabel(t.title.taskbar)],
+    [h.Class('menu-dock'), h.AriaLabel(t.title.taskbar)],
     [
-      ...(hasLegacy ? [tool('legacy', t.title.legacyShop, Store, `${model.founder.legacy}`)] : []),
-      ...(veteran ? [tool('history', t.title.history, ScrollText)] : []),
-      tool('achievements', t.title.achievements, Trophy),
+      hint(h),
       tool('settings', t.title.settings, Settings),
       h.a(
         [
@@ -1429,9 +1467,9 @@ const taskbar = (model: Model, page: Page, h: HtmlBuilder<Message>): Html => {
           h.Title(t.title.wiki),
           h.AriaLabel(t.title.wiki),
         ],
-        [icon(h, BookOpen, 'booth-icon'), h.span([h.Class('booth-taskbar-label')], [t.title.wiki])],
+        [icon(h, BookOpen, 'menu-icon'), h.span([h.Class('menu-dock-label')], [t.title.wiki])],
       ),
-      h.span([h.Class('booth-clock'), h.OnMount(ReaderClock())], ['--:--']),
+      h.span([h.Class('menu-clock'), h.OnMount(ReaderClock())], ['--:--']),
     ],
   )
 }
@@ -1466,70 +1504,100 @@ const terminal = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const [host, line] = sessionOf(model)
   return h.div(
-    [h.Key('term'), h.Class('booth-term'), h.AriaLive('polite')],
+    [h.Key('term'), h.Class('menu-term'), h.AriaLive('polite')],
     [
       h.p([], [h.b([], [`$ ssh ${host}`])]),
       h.p([], [line]),
       h.p([h.Class(css({ color: 'ok' }))], [t.title.connected]),
-      h.span([h.Class('booth-caret')], []),
+      h.span([h.Class('menu-caret')], []),
+    ],
+  )
+}
+
+const screenFigure = (model: Model, page: Page, h: HtmlBuilder<Message>): string | undefined => {
+  const t = copy(h)
+  switch (page) {
+    case 'found':
+    case 'challenges':
+    case 'legacy':
+      return t.title.legacy(model.founder.legacy)
+    case 'companies':
+      return `${model.saves.companies.length}`
+    default:
+      return undefined
+  }
+}
+
+/* The main menu, laid out as the board lays out its Nodes: two cards of
+   choices on the canvas, the company first because play resumes there. */
+const mainPage = (model: Model, h: HtmlBuilder<Message>): Html => {
+  const t = copy(h)
+  return h.div(
+    [h.Class('menu-main'), h.DataAttribute('page', 'main')],
+    [
+      block(t.title.company, startRows(model, h), h),
+      block(t.title.practice, practiceRows(model, h), h),
+      block(t.title.founder, founderRows(model, h), h),
+    ],
+  )
+}
+
+const pageCard = (model: Model, page: Page, h: HtmlBuilder<Message>): Html => {
+  const t = copy(h)
+  return h.div(
+    [h.Class('menu-body'), h.DataAttribute('page', page)],
+    [
+      pageHead(
+        {
+          title: pagesOf(t)[page].title,
+          back: page === 'save' ? 'companies' : 'main',
+          figure: screenFigure(model, page, h),
+        },
+        h,
+      ),
+      h.nav(
+        [
+          h.Key(page === 'save' ? `save-${model.saveFocus}` : page),
+          h.Class('menu-list'),
+          h.AriaLabel(pagesOf(t)[page].title),
+          h.DataAttribute('page', page),
+        ],
+        pagesOf(t)[page].rows(model, h),
+      ),
+      page === 'found' ? foundFooter(model, h) : h.empty,
     ],
   )
 }
 
 const screen = (model: Model, h: HtmlBuilder<Message>): Html => {
-  const t = copy(h)
-
   const page = pageOf(model)
-  const open = hasCompany(model)
-  const showStatus = open && (page === 'main' || page === 'found')
-  const wide = page === 'sandbox' || page === 'achievements' || page === 'found'
   return h.div(
-    [h.Class(`booth-screen ${showStatus ? '' : 'is-new'}`)],
     [
-      h.section(
-        [h.Class(`booth-home ${page === 'found' ? 'is-form' : ''}`)],
+      h.Key(page),
+      h.Class(`menu-page ${page === 'main' ? 'is-main' : 'is-page'}`),
+      h.DataAttribute('page', page),
+      h.OnMount(PageMounted()),
+    ],
+    [
+      h.h1(
         [
-          h.h1(
-            [
-              h.Class(
-                css({
-                  position: 'absolute',
-                  width: '1px',
-                  height: '1px',
-                  padding: '0',
-                  margin: '-1px',
-                  overflow: 'hidden',
-                  clip: 'rect(0, 0, 0, 0)',
-                  whiteSpace: 'nowrap',
-                  borderWidth: '0',
-                }),
-              ),
-            ],
-            ['Quorum'],
+          h.Class(
+            css({
+              position: 'absolute',
+              width: '1px',
+              height: '1px',
+              padding: '0',
+              margin: '-1px',
+              overflow: 'hidden',
+              clip: 'rect(0, 0, 0, 0)',
+              whiteSpace: 'nowrap',
+              borderWidth: '0',
+            }),
           ),
-          /* The wordmark is the main menu's title. On a page below it, the crumb
-             names the page, so the wordmark would only take the list's room. */
-          page === 'main' ? wordmark(h) : h.empty,
-          crumb(model, page, h),
-          h.nav(
-            [
-              h.Key(page === 'save' ? `save-${model.saveFocus}` : page),
-              h.Class(`booth-list ${wide ? 'is-wide' : ''}`),
-              h.AriaLabel(t.title.mainMenu),
-              h.DataAttribute('page', page),
-              h.OnMount(PageMounted()),
-            ],
-            pagesOf(t)[page].rows(model, h),
-          ),
-          page === 'found' ? foundFooter(model, h) : h.empty,
-          /* The founding form carries its own way forward: the steps, then
-             Next, then Found. The keyboard hint would only take their room. */
-          page === 'found' ? h.empty : hint(h),
         ],
+        ['Quorum'],
       ),
-      showStatus ? status(model, h) : h.empty,
-      taskbar(model, page, h),
-      connecting(model.boot) ? terminal(model, h) : h.empty,
+      page === 'main' ? mainPage(model, h) : pageCard(model, page, h),
     ],
   )
 }
@@ -1538,7 +1606,7 @@ const disclaimer = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.a(
     [
-      h.Class('booth-disclaimer'),
+      h.Class('menu-disclaimer'),
       h.Href(DISCLAIMER_URL),
       h.Target('_blank'),
       h.Rel('noreferrer noopener'),
@@ -1547,96 +1615,85 @@ const disclaimer = (h: HtmlBuilder<Message>): Html => {
   )
 }
 
+/* The top band: the wordmark on the left, the playtest tools on the right, in
+   the same white pill the board floats over its canvas. */
 const strip = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const release = import.meta.env.VITE_SENTRY_RELEASE
   const build = release === undefined || release === '' ? 'dev' : release.slice(0, 7)
   return h.header(
-    [h.Class('booth-strip')],
+    [h.Class('menu-band')],
     [
-      h.a(
+      h.span([h.Class('menu-brand')], [wordmark(h)]),
+      h.nav(
+        [h.Class('menu-tools'), h.AriaLabel(t.title.taskbar)],
         [
-          h.Href(build === 'dev' ? SOURCE_URL : `${SOURCE_URL}/commit/${release}`),
-          h.Target('_blank'),
-          h.Rel('noreferrer noopener'),
-          h.Title(`${t.title.build} ${build}`),
-          h.AriaLabel(`${t.title.build} ${build}`),
+          h.a(
+            [
+              h.Href(build === 'dev' ? SOURCE_URL : `${SOURCE_URL}/commit/${release}`),
+              h.Target('_blank'),
+              h.Rel('noreferrer noopener'),
+              h.Title(`${t.title.build} ${build}`),
+              h.AriaLabel(`${t.title.build} ${build}`),
+            ],
+            [
+              icon(h, Hash, 'menu-icon'),
+              h.span([h.Class('menu-tool-label')], [`${t.title.build} ${build}`]),
+            ],
+          ),
+          h.a(
+            [
+              h.Href('https://github.com/elianiva/quorum/issues'),
+              h.Target('_blank'),
+              h.Rel('noreferrer noopener'),
+            ],
+            [
+              h.span([h.Class('menu-live')], []),
+              h.span([h.Class('menu-tool-label')], [t.title.feedback]),
+              icon(h, ArrowUpRight, 'menu-icon'),
+            ],
+          ),
+          h.a(
+            [
+              h.Href('https://ko-fi.com/elianiva'),
+              h.Target('_blank'),
+              h.Rel('noreferrer noopener'),
+              h.AriaLabel(t.title.supportOnKofi),
+            ],
+            [icon(h, Coffee, 'menu-icon'), h.span([h.Class('menu-tool-label')], [t.title.support])],
+          ),
+          h.a(
+            [
+              h.Href(SOURCE_URL),
+              h.Target('_blank'),
+              h.Rel('noreferrer noopener'),
+              h.Title(t.title.openSourceOnGitHub),
+              h.AriaLabel(t.title.openSourceOnGitHub),
+            ],
+            [githubMark(h, 'menu-icon')],
+          ),
         ],
-        [
-          icon(h, Hash, css({ width: '3.5', height: '3.5' })),
-          h.span([h.Class('booth-strip-label')], [`${t.title.build} ${build}`]),
-        ],
-      ),
-      h.a(
-        [
-          h.Href('https://github.com/elianiva/quorum/issues'),
-          h.Target('_blank'),
-          h.Rel('noreferrer noopener'),
-        ],
-        [
-          h.span([h.Class('booth-strip-dot')], []),
-          h.span([], [t.title.feedback]),
-          icon(h, ArrowUpRight, css({ width: '3.5', height: '3.5' })),
-        ],
-      ),
-      h.a(
-        [
-          h.Href('https://ko-fi.com/elianiva'),
-          h.Target('_blank'),
-          h.Rel('noreferrer noopener'),
-          h.AriaLabel(t.title.supportOnKofi),
-        ],
-        [
-          icon(h, Coffee, css({ width: '3.5', height: '3.5' })),
-          h.span([h.Class('booth-strip-label')], [t.title.support]),
-        ],
-      ),
-      h.a(
-        [
-          h.Href(SOURCE_URL),
-          h.Target('_blank'),
-          h.Rel('noreferrer noopener'),
-          h.Title(t.title.openSourceOnGitHub),
-          h.AriaLabel(t.title.openSourceOnGitHub),
-        ],
-        [githubMark(h, css({ width: '3.5', height: '3.5' }))],
       ),
     ],
   )
 }
 
-const booth = (model: Model, h: HtmlBuilder<Message>): Html =>
-  h.div(
-    [h.Key('booth'), h.Class('booth'), h.OnMount(BoothDriver())],
+const room = (model: Model, h: HtmlBuilder<Message>): Html => {
+  const page = pageOf(model)
+  return h.div(
+    [h.Key('menu'), h.Class('menu'), h.OnMount(MenuDriver())],
     [
       strip(h),
       h.div(
-        [h.Class('booth-stage')],
-        [
-          h.div(
-            [h.Class('booth-monitor')],
-            [
-              screen(model, h),
-              h.div(
-                [h.Class('booth-chin'), h.AriaHidden(true)],
-                [
-                  h.svg(
-                    [h.ViewBox('0 0 100 194')],
-                    [
-                      ...GLYPHS[0]!.paths.map((d) => h.path([h.D(d)])),
-                      h.circle([h.Cx('89'), h.Cy('180'), h.R('14')]),
-                    ],
-                  ),
-                  h.span([h.Class(`booth-power ${connecting(model.boot) ? 'is-busy' : ''}`)], []),
-                ],
-              ),
-            ],
-          ),
-        ],
+        [h.Class('menu-stage')],
+        [hasCompany(model) && page === 'main' ? status(model, h) : h.empty, screen(model, h)],
       ),
+      taskbar(model, page, h),
       disclaimer(h),
+      connecting(model.boot) ? terminal(model, h) : h.empty,
     ],
   )
+}
 
 const reader = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
@@ -1722,7 +1779,7 @@ export const titleScreen = (model: Model, h: HtmlBuilder<Message>): Html =>
     [
       h.Class(
         cx(
-          'title-screen dark',
+          'title-screen',
           css({
             position: 'relative',
             display: 'grid',
@@ -1737,7 +1794,7 @@ export const titleScreen = (model: Model, h: HtmlBuilder<Message>): Html =>
     ],
     [
       titleIsOpen(model.boot)
-        ? booth(model, h)
+        ? room(model, h)
         : h.div(
             [h.Class('reader-splash')],
             [

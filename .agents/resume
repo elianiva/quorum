@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+if ! command -v node >/dev/null; then
+  echo 'Node.js is missing. Run .agents/setup.' >&2
+  exit 1
+fi
+
+node --eval '
+const [major, minor] = process.versions.node.split(".").map(Number)
+if (major < 24 || (major === 24 && minor < 11)) {
+  console.error(`Node.js ${process.versions.node} is too old; this repo requires 24.11 or newer.`)
+  process.exit(1)
+}
+' >/dev/null
+
+if [[ "$(pnpm --version 2>/dev/null || true)" != '12.0.0' ]]; then
+  echo 'pnpm 12.0.0 is missing. Run .agents/setup.' >&2
+  exit 1
+fi
+
+if [[ ! -x node_modules/.bin/tsrs || ! -x node_modules/.bin/effect-tsrs ]]; then
+  echo 'Workspace dependencies are missing. Run .agents/setup.' >&2
+  exit 1
+fi
+
+if [[ -x node_modules/.bin/lefthook ]]; then
+  node_modules/.bin/lefthook install >/dev/null
+fi
+
+echo "Orb ready: Node $(node --version), pnpm $(pnpm --version)."

@@ -1,5 +1,4 @@
 import type { Messages } from '../messages.ts'
-import { isOne } from '../plural.ts'
 
 export const title: Messages['title'] = {
   back: 'Volver',
@@ -36,8 +35,6 @@ export const title: Messages['title'] = {
   noExitsYet: 'Aún no hay Exits',
   earned: 'Conseguido',
   notYet: 'Aún no',
-  on: 'Activado',
-  off: 'Desactivado',
   mainMenu: 'Menú principal',
   select: 'Seleccionar',
   enter: 'Intro',
@@ -52,21 +49,15 @@ export const title: Messages['title'] = {
   quorumIsAGameAndSimplifies:
     'Quorum es un juego y simplifica los sistemas reales a propósito. Comprueba cómo funcionan de verdad antes de decidir.',
   build: 'Compilación',
-  saveInBrowser: 'Se guarda en este navegador. Copia una copia de seguridad en Ajustes.',
   feedback: 'Comentarios',
-  insertBadge: 'Insertar insignia',
   clockedIn: 'Fichado',
   clockIn: 'Fichar',
-  clockInHint: 'Haz clic en la insignia para fichar',
   founder: 'Fundador',
   company: 'Empresa',
   eraUsersTime: (era: string, users: string, time: string) =>
     `${era} · ${users} usuarios · ${time}`,
-  savedCount: (count: number) => `${count} ${isOne('es', count) ? 'guardada' : 'guardadas'}`,
-  mutatorCount: (count: number) => `${count} ${isOne('es', count) ? 'mutador' : 'mutadores'}`,
   users: 'usuarios',
   connected: 'Conectado.',
-  support: 'Soporte',
   supportOnKofi: 'Apoya Quorum en Ko-fi',
   openSourceOnGitHub: 'Código abierto en GitHub',
 }

@@ -12,8 +12,8 @@
     overflow: hidden;
   }
 
-  /* Both screens paint their own background; the body matches the dark title
-     screen so nothing flashes light before it renders. */
+  /* Both screens paint their own background; the body matches the light menu
+     so nothing flashes before it renders. */
   body {
     background: oklch(0.955 0.002 260);
     /* A game, not a page: no pull-to-refresh, no double-tap zoom, no grey tap flash. */
@@ -24,1398 +24,1186 @@
 }
 
 /* ==========================================================================
-   Title screen (src/game/title.ts): the menu, drawn in the board's language.
-   The canvas and its faint grid, white cards with a tinted header band, rows
-   of choices, tiles for the levels, and the dock along the foot. Nothing here
-   has a palette of its own: it reads the same tokens the board does.
+   Title screen (src/game/title.ts): the clock-in splash and the menu.
+
+   The menu is a runbook index on the board's canvas. Choices are lines on a
+   bus wire; the focused line fills with ink and lights its node. Everything
+   reads the shared tokens in packages/ui/src/theme.css: no palette of its own.
+
+   Motion has three jobs and no others: a page slides from the side its depth
+   says (deeper from the right, back from the left), the focused node's stub
+   wire draws in, and the first reveal after clocking in staggers the lines.
+   Reduced motion keeps the fades and drops the movement.
    ========================================================================== */
-.menu {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
-  gap: clamp(8px, 1.2vmin, 14px);
-  padding: clamp(10px, 1.6vmin, 18px);
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse 120% 70% at 50% -20%, oklch(1 0 0 / 0.75), transparent 62%),
-    var(--canvas);
-  color: var(--foreground);
-}
-/* The board's canvas grid, kept faint so the cards stay the subject. */
-.menu::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: radial-gradient(var(--canvas-grid) 1px, transparent 1px);
-  background-size: 22px 22px;
-  opacity: 0.45;
-}
-
-/* The top band: the wordmark, then the playtest tools in their white pill. */
-.menu-band {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-.menu-brand {
-  display: flex;
-  align-items: center;
-  padding-left: 4px;
-}
-.menu-wordmark {
-  width: 84px;
-  margin: 2px 0 0;
-  overflow: visible;
-}
-.menu-wordmark path {
-  fill: none;
-  stroke: var(--foreground);
-  stroke-width: 22;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: title-draw 900ms var(--ease-out) forwards;
-}
-.menu-wordmark circle {
-  fill: var(--signal);
-}
-@keyframes title-draw {
-  to {
-    stroke-dashoffset: 0;
+@layer components {
+  .qm-root {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--canvas);
+    background-image: radial-gradient(var(--canvas-grid) 1px, transparent 1.2px);
+    background-size: 24px 24px;
+    background-position: -12px -12px;
+    color: var(--foreground);
+    font-family: var(--sans);
   }
-}
-.menu-tools {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 4px;
-  border-radius: 999px;
-  background: var(--card);
-  box-shadow: var(--elev-raised);
-}
-.menu-tools a {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 10px;
-  border-radius: 999px;
-  color: var(--muted-foreground);
-  font-family: var(--font-mono);
-  font-size: var(--type-10);
-  letter-spacing: var(--quorum-letter-spacings-badge);
-  text-transform: uppercase;
-  transition:
-    background 140ms var(--ease-out),
-    color 140ms var(--ease-out);
-}
-.menu-tools a:hover {
-  background: var(--accent);
-  color: var(--foreground);
-}
-.menu-tools .menu-icon {
-  width: 13px;
-  height: 13px;
-}
-.menu-live {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--warn);
-}
 
-/* The stage: the page in the middle, the company's vitals floating beside it. */
-.menu-stage {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  min-height: 0;
-  place-items: center;
-}
-/* A company beside its menu: the vitals take a column of their own. */
-.menu-stage:has(.menu-hud) {
-  grid-template-columns: 248px minmax(0, 1fr);
-  justify-items: stretch;
-  gap: 16px;
-  align-items: center;
-}
-.menu-page {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-height: 0;
-  max-height: 100%;
-  width: 100%;
-  animation: menu-page-in 260ms var(--ease-out) both;
-}
-@keyframes menu-page-in {
-  from {
-    opacity: 0;
-    translate: 0 6px;
+  .qm-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
   }
-}
-@keyframes menu-rise {
-  from {
-    opacity: 0;
-    translate: 0 10px;
-  }
-}
 
-/* The HUD: the board's own card, so the menu reads the company the same way. */
-.menu-hud {
-  width: 248px;
-  overflow: hidden;
-  border-radius: var(--radius-2xl);
-  background: var(--card);
-  box-shadow: var(--elev-card);
-  animation: menu-rise 300ms var(--ease-out) 80ms both;
-}
-.menu-hud-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px 8px;
-}
-.menu-hud-logo {
-  flex: none;
-  width: 18px;
-  height: 18px;
-}
-.menu-hud-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  font-size: var(--type-14);
-  font-weight: var(--quorum-font-weights-semibold);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.menu-hud-time {
-  font-family: var(--font-mono);
-  font-size: var(--type-11);
-  color: var(--muted-foreground);
-  font-variant-numeric: tabular-nums;
-}
-.menu-hud-bar {
-  height: 4px;
-  margin: 0 12px 10px;
-  overflow: hidden;
-  border-radius: 2px;
-  background: var(--well);
-}
-.menu-hud-bar > span {
-  display: block;
-  height: 100%;
-  border-radius: 2px;
-  background: var(--primary-fill-top);
-  transition: width 320ms var(--ease-out);
-}
-.menu-hud-body {
-  display: flex;
-  flex-direction: column;
-  padding: 0 4px 6px;
-}
-.menu-vital {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  border-top: 1px solid var(--hairline-soft);
-}
-.menu-vital-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--muted-foreground);
-  font-size: var(--type-12);
-}
-.menu-vital-label .menu-icon {
-  width: 13px;
-  height: 13px;
-}
-.menu-vital-value {
-  font-family: var(--font-mono);
-  font-size: var(--type-13);
-  color: var(--foreground);
-  font-variant-numeric: tabular-nums;
-}
-.menu-vital-note {
-  font-family: var(--font-mono);
-  font-size: var(--type-10);
-  color: var(--muted-foreground);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Cards. The header carries a tint the way a Node's header carries its type. */
-/* A block of choices: a caption over a small pad of buttons, all on the
-   canvas, the way a board's controls float over its own. */
-.menu-main {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  width: 100%;
-  max-width: 720px;
-}
-.menu-block {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.menu-section {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  padding: 0 2px;
-  color: var(--muted-foreground);
-  font-family: var(--font-mono);
-  font-size: var(--type-10);
-  font-weight: var(--quorum-font-weights-normal);
-  letter-spacing: var(--quorum-letter-spacings-badge-wide);
-  text-transform: uppercase;
-}
-.menu-section::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--hairline-soft);
-}
-.menu-back {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 2px;
-  height: 32px;
-  padding: 0 11px 0 7px;
-  border-radius: 9px;
-  background: linear-gradient(var(--raised-top), var(--raised-bottom));
-  box-shadow: var(--elev-raised);
-  color: var(--muted-foreground);
-  font-size: var(--type-12);
-  white-space: nowrap;
-  transition:
-    color 130ms var(--ease-out),
-    translate 130ms var(--ease-out);
-}
-.menu-back:hover {
-  color: var(--foreground);
-  translate: 0 -1px;
-}
-.menu-back:focus-visible {
-  box-shadow:
-    var(--elev-raised),
-    0 0 0 3px color-mix(in oklab, var(--ring) 40%, transparent);
-}
-.menu-back .menu-icon {
-  width: 15px;
-  height: 15px;
-}
-.menu-page-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 4px;
-}
-.menu-page-title {
-  margin: 0;
-  font-size: var(--type-20);
-  font-weight: var(--quorum-font-weights-semibold);
-  letter-spacing: -0.02em;
-}
-.menu-page-figure {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: var(--type-11);
-  color: var(--muted-foreground);
-  font-variant-numeric: tabular-nums;
-}
-.menu-body {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  width: 100%;
-  max-width: 820px;
-  animation: menu-page-in 260ms var(--ease-out) both;
-}
-.menu-body[data-page='found'] {
-  max-width: 940px;
-}
-
-/* Buttons. Every choice is one, shaped like the board's own: a raised pill
-   on the canvas, with a dark fill for the action that resumes play. */
-.menu-list {
-  display: grid;
-  gap: 8px;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 0 2px 2px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--hairline) transparent;
-}
-.menu-main .menu-list {
-  grid-template-columns: repeat(auto-fit, minmax(196px, 1fr));
-}
-/* A caption inside a pad of buttons runs the full width above them. */
-.menu-main .menu-list > .menu-note {
-  grid-column: 1 / -1;
-  padding-bottom: 0;
-}
-.menu-body .menu-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
-}
-.menu-body .menu-list:not(.is-long) {
-  mask-image: none;
-}
-.menu-row {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 52px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  background: linear-gradient(var(--raised-top), var(--raised-bottom));
-  box-shadow: var(--elev-raised);
-  color: var(--foreground);
-  font-size: var(--type-14);
-  font-weight: var(--quorum-font-weights-medium);
-  text-align: left;
-  cursor: pointer;
-  outline: none;
-  transition:
-    box-shadow 140ms var(--ease-out),
-    background 140ms var(--ease-out),
-    translate 140ms var(--ease-out),
-    scale 140ms var(--ease-out);
-}
-.menu-row.is-big {
-  min-height: 62px;
-  font-size: var(--type-16);
-  font-weight: var(--quorum-font-weights-semibold);
-}
-/* The way back into play: the board's dark action fill, across the pad. */
-.menu-row.is-primary {
-  grid-column: 1 / -1;
-  min-height: 64px;
-  background: linear-gradient(var(--primary-fill-top), var(--primary-fill-bottom));
-  box-shadow: var(--elev-primary);
-  color: var(--on-primary-fill);
-}
-.menu-row.is-primary .menu-detail,
-.menu-row.is-primary .menu-side {
-  color: color-mix(in oklch, var(--on-primary-fill) 74%, transparent);
-}
-.menu-row:hover {
-  background: var(--card);
-  translate: 0 -1px;
-  box-shadow:
-    inset 0 1px 0 var(--highlight),
-    0 0 0 1px var(--hairline),
-    0 3px 10px -4px oklch(0.26 0.01 260 / 0.18);
-}
-.menu-row.is-primary:hover {
-  background: linear-gradient(
-    color-mix(in oklch, var(--primary-fill-top) 84%, white),
-    var(--primary-fill-bottom)
-  );
-}
-.menu-row:focus-visible {
-  box-shadow:
-    var(--elev-raised),
-    0 0 0 3px color-mix(in oklab, var(--ring) 40%, transparent);
-}
-.menu-row.is-primary:focus-visible {
-  box-shadow:
-    var(--elev-primary),
-    0 0 0 3px color-mix(in oklab, var(--ring) 45%, transparent);
-}
-.menu-row:active {
-  translate: 0 0;
-  scale: 0.995;
-}
-.menu-row:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-.menu-row[aria-pressed='true']:not(:hover):not(:focus-visible),
-.menu-row[aria-checked='true']:not(:hover):not(:focus-visible) {
-  color: var(--foreground);
-}
-.menu-row.is-danger {
-  color: var(--danger);
-}
-.menu-row.is-danger:hover,
-.menu-row.is-danger:focus-visible {
-  background: var(--danger-soft);
-}
-/* A coloured badge for a button, like the one a Node's header carries. */
-.menu-plate {
-  display: grid;
-  flex: none;
-  width: 30px;
-  height: 30px;
-  place-items: center;
-  border-radius: 9px;
-  background: color-mix(in oklch, var(--tone) 20%, var(--card));
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--tone) 46%, transparent);
-  color: var(--tone);
-}
-.menu-plate.is-blue {
-  --tone: var(--group-edge);
-}
-.menu-plate.is-purple {
-  --tone: var(--group-compute);
-}
-.menu-plate.is-green {
-  --tone: var(--group-data);
-}
-.menu-plate.is-pink {
-  --tone: var(--group-ops);
-}
-.menu-plate.is-amber {
-  --tone: var(--warn);
-}
-.menu-label {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-.menu-detail {
-  overflow: hidden;
-  color: var(--muted-foreground);
-  font-family: var(--font-mono);
-  font-size: var(--type-11);
-  font-weight: var(--quorum-font-weights-normal);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.menu-side {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 6px;
-  color: var(--muted-foreground);
-  font-family: var(--font-mono);
-  font-size: var(--type-11);
-  font-weight: var(--quorum-font-weights-normal);
-  font-variant-numeric: tabular-nums;
-}
-.menu-icon {
-  width: 16px;
-  height: 16px;
-}
-.menu-logo-mini {
-  flex: none;
-  width: 22px;
-  height: 22px;
-}
-.menu-logo-big {
-  flex: none;
-  width: 40px;
-  height: 40px;
-}
-.menu-group {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  padding: 10px 2px 2px;
-  font-family: var(--font-mono);
-  font-size: var(--type-10);
-  font-weight: var(--quorum-font-weights-normal);
-  letter-spacing: var(--quorum-letter-spacings-badge-wide);
-  text-transform: uppercase;
-  color: var(--muted-foreground);
-}
-.menu-group::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--hairline-soft);
-}
-.menu-rule {
-  flex: none;
-  height: 1px;
-  margin: 8px 2px;
-  background: var(--hairline-soft);
-}
-.menu-note {
-  flex: none;
-  margin: 0;
-  padding: 2px 4px 8px;
-  color: var(--muted-foreground);
-  font-family: var(--font-mono);
-  font-size: var(--type-10);
-}
-.menu-file {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 14px;
-  padding: 10px 4px;
-}
-.menu-file-text {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 2px;
-}
-.menu-file-name {
-  overflow: hidden;
-  font-size: var(--type-18);
-  font-weight: var(--quorum-font-weights-semibold);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* The sections of a page: one segmented control, the chosen one raised. */
-.menu-tabs {
-  display: inline-flex;
-  flex: none;
-  flex-wrap: wrap;
-  align-self: flex-start;
-  gap: 2px;
-  margin: 4px 0 10px;
-  padding: 3px;
-  border-radius: 11px;
-  background: var(--well);
-  box-shadow: var(--elev-well);
-}
-.menu-tab {
-  display: inline-flex;
-  flex: 0 1 auto;
-  align-items: center;
-  min-width: 0;
-  height: 30px;
-  padding: 0 11px;
-  border-radius: 8px;
-  color: var(--muted-foreground);
-  font-size: var(--type-12);
-  text-align: left;
-  outline: none;
-  transition:
-    background 130ms var(--ease-out),
-    box-shadow 130ms var(--ease-out),
-    color 130ms var(--ease-out);
-}
-.menu-tab:hover {
-  color: var(--foreground);
-}
-.menu-tab.is-on {
-  color: var(--foreground);
-  background: var(--card);
-  box-shadow: var(--elev-raised);
-}
-.menu-tab:focus-visible {
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 40%, transparent);
-}
-.menu-tab.is-on:focus-visible {
-  box-shadow:
-    var(--elev-raised),
-    0 0 0 3px color-mix(in oklab, var(--ring) 40%, transparent);
-}
-.menu-step-number {
-  display: inline-grid;
-  width: 18px;
-  height: 18px;
-  margin-right: 7px;
-  place-items: center;
-  border-radius: 50%;
-  background: color-mix(in oklch, var(--foreground) 8%, transparent);
-  color: var(--muted-foreground);
-  font-family: var(--font-mono);
-  font-size: var(--type-10);
-}
-.menu-tab.is-on .menu-step-number {
-  background: var(--primary-fill-top);
-  color: var(--on-primary-fill);
-}
-
-/* Tiles: levels, achievements, and the founding form's choices. */
-.menu-grid {
-  display: grid;
-  flex: none;
-  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
-  gap: 8px;
-  padding: 8px;
-}
-.menu-grid.is-achievements {
-  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
-}
-.menu-tile {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-height: 84px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--surface-nested);
-  box-shadow: inset 0 0 0 1px var(--hairline-soft);
-  text-align: left;
-  cursor: pointer;
-  outline: none;
-  transition:
-    background 130ms var(--ease-out),
-    box-shadow 130ms var(--ease-out),
-    translate 130ms var(--ease-out);
-}
-.menu-grid.is-achievements .menu-tile {
-  min-height: 72px;
-  cursor: default;
-}
-.menu-tile:hover {
-  background: var(--card);
-  translate: 0 -1px;
-}
-.menu-tile:active {
-  translate: 0 0;
-}
-.menu-tile:focus-visible {
-  background: var(--card);
-  box-shadow:
-    inset 0 0 0 1px var(--ring),
-    0 0 0 3px color-mix(in oklab, var(--ring) 40%, transparent);
-}
-.menu-tile:disabled,
-.menu-tile[aria-disabled='true'] {
-  opacity: 0.5;
-  cursor: default;
-}
-.menu-tile-name {
-  color: var(--foreground);
-  font-size: var(--type-13);
-  font-weight: var(--quorum-font-weights-semibold);
-}
-.menu-tile-detail {
-  color: var(--muted-foreground);
-  font-family: var(--font-mono);
-  font-size: var(--type-10);
-  line-height: var(--quorum-line-heights-snug);
-}
-.menu-tile-mark {
-  position: absolute;
-  top: 9px;
-  right: 9px;
-  display: flex;
-  align-items: center;
-  color: var(--muted-foreground);
-}
-.menu-tile-mark .menu-icon {
-  width: 14px;
-  height: 14px;
-}
-.menu-tile.is-next {
-  background: color-mix(in oklch, var(--signal) 12%, var(--card));
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--signal) 55%, transparent);
-}
-.menu-tile.is-next .menu-tile-mark {
-  color: var(--signal);
-}
-.menu-tile.is-earned {
-  background: color-mix(in oklch, var(--ok) 10%, var(--card));
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--ok) 40%, transparent);
-}
-.menu-tile.is-locked .menu-tile-name {
-  color: var(--muted-foreground);
-}
-.menu-meter {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px 2px;
-}
-.menu-meter-count {
-  font-family: var(--font-mono);
-  font-size: var(--type-12);
-  color: var(--foreground);
-  font-variant-numeric: tabular-nums;
-}
-.menu-meter-track {
-  flex: 1;
-  height: 6px;
-  overflow: hidden;
-  border-radius: 3px;
-  background: var(--well);
-}
-.menu-meter-fill {
-  display: block;
-  height: 100%;
-  border-radius: 3px;
-  background: var(--ok);
-  transition: width 260ms var(--ease-out);
-}
-
-/* The founding form. */
-.menu-badge {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 12px;
-  width: fit-content;
-  min-width: 320px;
-  max-width: 460px;
-  margin: 10px 8px 6px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: var(--surface-nested);
-  box-shadow: inset 0 0 0 1px var(--hairline-soft);
-}
-.menu-badge-mark {
-  flex: none;
-  width: 36px;
-  height: 36px;
-}
-.menu-badge-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  font-size: var(--type-16);
-  font-weight: var(--quorum-font-weights-semibold);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.menu-badge-line {
-  flex: none;
-  font-family: var(--font-mono);
-  font-size: var(--type-10);
-  letter-spacing: var(--quorum-letter-spacings-badge-wide);
-  text-transform: uppercase;
-  color: var(--muted-foreground);
-}
-.menu-name {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 4px 10px 10px;
-}
-.menu-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  max-width: 420px;
-}
-.menu-field-label {
-  font-family: var(--font-mono);
-  font-size: var(--type-10);
-  letter-spacing: var(--quorum-letter-spacings-badge);
-  text-transform: uppercase;
-  color: var(--muted-foreground);
-}
-.menu-input {
-  width: 100%;
-  height: 38px;
-  padding: 0 11px;
-  border-radius: 10px;
-  background: var(--card);
-  box-shadow: var(--elev-well);
-  color: var(--foreground);
-  font: inherit;
-  font-size: var(--type-16);
-  font-weight: var(--quorum-font-weights-semibold);
-  outline: none;
-  transition: box-shadow 140ms var(--ease-out);
-}
-.menu-input::placeholder {
-  color: var(--muted-foreground);
-  font-weight: var(--quorum-font-weights-medium);
-}
-.menu-input:focus-visible {
-  box-shadow:
-    var(--elev-well),
-    0 0 0 3px color-mix(in oklab, var(--ring) 40%, transparent);
-}
-.menu-choices {
-  display: grid;
-  flex: none;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 8px;
-  padding: 6px 8px 10px;
-}
-.menu-choices.is-logos {
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-}
-.menu-tile.is-choice {
-  gap: 5px;
-  min-height: 96px;
-  padding: 10px 12px;
-  cursor: pointer;
-}
-.menu-tile.is-choice .menu-tile-name {
-  font-size: var(--type-13);
-}
-.menu-tile.is-choice.is-on {
-  background: color-mix(in oklch, var(--signal) 14%, var(--card));
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--signal) 70%, transparent);
-}
-.menu-choice-mark {
-  width: 30px;
-  height: 30px;
-  margin-bottom: 2px;
-}
-.menu-tile-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.menu-tile-head .menu-tile-name {
-  flex: 1;
-  min-width: 0;
-}
-.menu-tile-value {
-  flex: none;
-  font-family: var(--font-mono);
-  font-size: var(--type-10);
-  color: var(--muted-foreground);
-  font-variant-numeric: tabular-nums;
-}
-.menu-tile.is-choice.is-on .menu-tile-value {
-  color: var(--foreground);
-}
-.menu-pick {
-  position: relative;
-  flex: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1px var(--input);
-}
-.menu-pick.is-checkbox {
-  border-radius: 5px;
-}
-.menu-pick.is-on {
-  box-shadow: inset 0 0 0 1px var(--primary);
-}
-.menu-pick.is-on::after {
-  content: '';
-  position: absolute;
-  inset: 4px;
-  border-radius: inherit;
-  background: var(--primary);
-}
-
-/* The founding form's footer holds its one action. */
-.menu-footer {
-  flex: none;
-  padding: 8px;
-  border-top: 1px solid var(--hairline-soft);
-}
-.menu-footer .menu-row {
-  min-height: 54px;
-  background: linear-gradient(var(--primary-fill-top), var(--primary-fill-bottom));
-  box-shadow: var(--elev-primary);
-  color: var(--on-primary-fill);
-}
-.menu-footer .menu-row .menu-detail,
-.menu-footer .menu-row .menu-side {
-  color: color-mix(in oklch, var(--on-primary-fill) 72%, transparent);
-}
-.menu-footer .menu-row:hover {
-  background: linear-gradient(
-    color-mix(in oklch, var(--primary-fill-top) 88%, white),
-    var(--primary-fill-bottom)
-  );
-}
-.menu-footer .menu-row:focus-visible {
-  background: linear-gradient(var(--primary-fill-top), var(--primary-fill-bottom));
-  box-shadow:
-    var(--elev-primary),
-    0 0 0 3px color-mix(in oklab, var(--ring) 45%, transparent);
-}
-
-/* A slider in the menu's language: a segmented meter filled with the signal. */
-.menu-row.is-range {
-  gap: 14px;
-  cursor: default;
-}
-.menu-row.is-range .menu-label {
-  flex: 0 0 auto;
-  max-width: 30%;
-}
-.menu-row.is-range:focus-within {
-  background: var(--primary-soft);
-}
-.menu-range {
-  flex: 1;
-  min-width: 0;
-  height: 28px;
-  margin: 0;
-  appearance: none;
-  border-radius: 5px;
-  background:
-    repeating-linear-gradient(90deg, transparent 0 calc(5% - 2px), var(--card) calc(5% - 2px) 5%),
-    linear-gradient(90deg, var(--primary-fill-top) 0 var(--fill, 0%), var(--well) var(--fill, 0%));
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 10px;
-  box-shadow: inset 0 0 0 1px var(--hairline-soft);
-  cursor: pointer;
-}
-.menu-range::-webkit-slider-thumb {
-  appearance: none;
-  width: 10px;
-  height: 22px;
-  border-radius: 4px;
-  background: var(--card);
-  box-shadow: var(--elev-raised);
-}
-.menu-range::-moz-range-thumb {
-  width: 10px;
-  height: 22px;
-  border: 0;
-  border-radius: 4px;
-  background: var(--card);
-  box-shadow: var(--elev-raised);
-}
-.menu-range::-moz-range-track {
-  background: none;
-}
-.menu-range:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-.menu-row.is-text {
-  gap: 14px;
-  cursor: default;
-}
-.menu-row.is-text input {
-  flex: 1;
-  min-width: 0;
-  height: 30px;
-  padding: 0 10px;
-  border-radius: 8px;
-  background: var(--card);
-  box-shadow: var(--elev-well);
-  color: var(--foreground);
-  font-family: var(--font-mono);
-  font-size: var(--type-11);
-  letter-spacing: var(--quorum-letter-spacings-badge);
-  text-transform: uppercase;
-  outline: none;
-}
-
-/* The keyboard hint, under the cards. */
-.menu-hint {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 12px;
-  margin-right: 4px;
-  padding: 0 12px 0 6px;
-  border-right: 1px solid var(--hairline);
-  color: var(--muted-foreground);
-  font-family: var(--font-mono);
-  font-size: var(--type-10);
-}
-.menu-hint kbd {
-  margin-right: 5px;
-  padding: 1px 6px;
-  border-radius: 5px;
-  background: var(--card);
-  box-shadow: var(--elev-raised);
-  font: inherit;
-  color: var(--foreground);
-}
-
-/* The dock: the menu's own tools, floating as the board's do. */
-.menu-dock {
-  position: relative;
-  z-index: 2;
-  justify-self: center;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 5px;
-  border-radius: 14px;
-  background: var(--card);
-  box-shadow: var(--elev-float);
-}
-.menu-dock button,
-.menu-dock a {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 10px;
-  border-radius: 9px;
-  color: var(--muted-foreground);
-  transition:
-    background 120ms var(--ease-out),
-    color 120ms var(--ease-out);
-}
-.menu-dock button:hover,
-.menu-dock a:hover,
-.menu-dock button:focus-visible,
-.menu-dock a:focus-visible {
-  background: var(--accent);
-  color: var(--foreground);
-  outline: none;
-}
-.menu-dock button[aria-pressed='true'] {
-  background: var(--primary-soft);
-  color: var(--foreground);
-}
-.menu-dock button:active,
-.menu-dock a:active,
-.menu-tools a:active {
-  scale: 0.96;
-}
-.menu-dock-label {
-  font-size: var(--type-11);
-}
-.menu-dock .menu-icon {
-  width: 15px;
-  height: 15px;
-}
-.menu-figure {
-  font-family: var(--font-mono);
-  font-size: var(--type-10);
-  color: var(--signal);
-}
-.menu-clock {
-  margin-left: 6px;
-  padding: 0 10px 0 12px;
-  border-left: 1px solid var(--hairline);
-  font-family: var(--font-mono);
-  font-size: var(--type-11);
-  color: var(--muted-foreground);
-  font-variant-numeric: tabular-nums;
-}
-
-.menu-disclaimer {
-  justify-self: center;
-  max-width: 62ch;
-  color: var(--muted-foreground);
-  font-family: var(--font-mono);
-  font-size: var(--type-10);
-  text-align: center;
-  opacity: 0.85;
-}
-.menu-disclaimer:hover {
-  opacity: 1;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-/* The connecting terminal, in the card's own paper. */
-.menu-term {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  display: grid;
-  place-content: center;
-  gap: 2px;
-  background: color-mix(in oklch, var(--canvas) 88%, transparent);
-  backdrop-filter: blur(3px);
-  font-family: var(--font-mono);
-  font-size: var(--type-12);
-  color: var(--muted-foreground);
-  text-align: center;
-}
-.menu-term p {
-  margin: 0;
-}
-.menu-term b {
-  color: var(--foreground);
-  font-weight: var(--quorum-font-weights-medium);
-}
-.menu-caret {
-  display: inline-block;
-  width: 0.55em;
-  height: 1.1em;
-  margin-top: 6px;
-  background: var(--foreground);
-  animation: menu-blink 1s steps(1) infinite;
-}
-@keyframes menu-blink {
-  50% {
-    opacity: 0.15;
-  }
-}
-
-/* Phones, short screens and portrait: one column, the dock's icons only. */
-@media (max-width: 900px), (max-aspect-ratio: 1 / 1) {
-  .menu {
-    padding: 10px;
-  }
-  .menu-tools {
-    padding: 3px;
-  }
-  .menu-tools .menu-tool-label {
-    display: none;
-  }
-  .menu-tools a {
-    padding: 0 8px;
-  }
-  .menu-hud {
-    display: none;
-  }
-  .menu-stage:has(.menu-hud) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .menu-main,
-  .menu-body {
-    width: 100%;
-  }
-  /* A phone scrolls the page under the dock rather than clipping it. */
-  .menu-stage,
-  .menu-stage:has(.menu-hud) {
+  .qm-mark {
     display: block;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding-bottom: 8px;
+    height: auto;
+    overflow: visible;
   }
-  .menu-page {
-    max-height: none;
+  .qm-mark path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 22;
   }
-  .menu-dock-label,
-  .menu-dock .menu-figure {
-    display: none;
+  .qm-mark circle {
+    fill: var(--signal);
   }
-  .menu-dock {
+
+  .qm-eyebrow {
+    margin: 0;
+    color: var(--muted-foreground);
+    font-family: var(--mono);
+    font-size: var(--type-10-5);
+    font-weight: var(--quorum-font-weights-medium);
+    letter-spacing: var(--quorum-letter-spacings-eyebrow);
+    text-transform: uppercase;
+  }
+
+  /* ---- Frame ---------------------------------------------------------- */
+  .qm {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+      max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+
+  .qm-bar {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
-    width: 100%;
-    padding: 4px;
+    gap: 12px;
+    min-height: 44px;
   }
-  .menu-dock button,
-  .menu-dock a {
+  .qm-crumb .qm-mark {
+    width: 84px;
+    color: var(--foreground);
+  }
+  .qm-tools,
+  .qm-dock-tools {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .qm-tool {
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
-    min-width: 34px;
-    padding: 0 6px;
-  }
-  .menu-hint {
-    display: none;
-  }
-  .menu-wordmark {
-    width: 64px;
-  }
-  .menu-disclaimer {
-    font-size: var(--type-9);
+    gap: 6px;
+    min-width: 36px;
+    height: 36px;
     padding: 0 8px;
+    border-radius: var(--radius-lg);
+    color: var(--muted-foreground);
+    font-size: var(--type-12-5);
+    font-weight: var(--quorum-font-weights-medium);
+    text-decoration: none;
+    transition:
+      background-color 120ms ease,
+      color 120ms ease;
   }
-  .menu-grid,
-  .menu-choices {
+  .qm-tool:hover {
+    background: var(--primary-soft);
+    color: var(--foreground);
+  }
+  .qm-tool:focus-visible {
+    outline: 2px solid var(--foreground);
+    outline-offset: 1px;
+    color: var(--foreground);
+  }
+  .qm-tool[aria-pressed='true'] {
+    background: var(--foreground);
+    color: var(--background);
+  }
+  .qm-build {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--type-11);
+  }
+
+  .qm-dock {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    min-height: 44px;
+    padding-top: 8px;
+    border-top: 1px solid var(--hairline-soft);
+  }
+  .qm-keys {
+    display: flex;
+    gap: 14px;
+    color: var(--muted-foreground);
+    font-size: var(--type-11-5);
+  }
+  .qm-key {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .qm-disclaimer {
+    justify-self: center;
+    overflow: hidden;
+    color: var(--muted-foreground);
+    font-size: var(--type-11);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .qm-disclaimer:hover {
+    color: var(--foreground);
+    text-decoration: underline;
+  }
+  .qm-disclaimer:focus-visible {
+    outline: 2px solid var(--foreground);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .qm-clock {
+    min-width: 46px;
+    padding-left: 6px;
+    color: var(--foreground);
+    font-family: var(--mono);
+    font-size: var(--type-12);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  /* ---- Page ----------------------------------------------------------- */
+  .qm-page {
+    min-height: 0;
+    display: grid;
+  }
+  .qm-page[data-enter] {
+    animation: qm-fade 200ms var(--ease-out) both;
+  }
+  .qm-page[data-enter='deeper'] {
+    animation-name: qm-deeper;
+  }
+  .qm-page[data-enter='back'] {
+    animation-name: qm-back;
+  }
+  @keyframes qm-fade {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes qm-deeper {
+    from {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+  }
+  @keyframes qm-back {
+    from {
+      opacity: 0;
+      transform: translateX(-16px);
+    }
+  }
+
+  /* ---- Main: hero beside index ---------------------------------------- */
+  .qm-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
+    align-items: center;
+    gap: clamp(24px, 6vw, 96px);
+    width: min(1120px, 100%);
+    min-height: 0;
+    margin: 0 auto;
+    padding: 12px clamp(0px, 2vw, 24px);
+  }
+  .qm-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    min-width: 0;
+  }
+  .qm-hero-title {
+    margin: 0;
+  }
+  .qm-hero-title .qm-mark {
+    width: min(100%, 420px);
+    color: var(--foreground);
+  }
+
+  .qm-readout {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 420px;
+  }
+  .qm-readout-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .qm-readout-title {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .qm-readout-name {
+    overflow: hidden;
+    font-size: var(--type-18);
+    font-weight: var(--quorum-font-weights-semibold);
+    letter-spacing: var(--quorum-letter-spacings-title);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .qm-readout-era {
+    color: var(--muted-foreground);
+    font-family: var(--mono);
+    font-size: var(--type-11-5);
+    font-variant-numeric: tabular-nums;
+  }
+  .qm-logo {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    padding: 6px;
+    border-radius: var(--radius-lg);
+    background: var(--primary-fill-bottom);
+  }
+  .qm-logo.is-small {
+    width: 28px;
+    height: 28px;
+    padding: 5px;
+    border-radius: var(--radius-md);
+  }
+  .qm-logo.is-large {
+    width: 56px;
+    height: 56px;
+    padding: 10px;
+    border-radius: var(--radius-xl);
+  }
+  .qm-raise {
+    width: 100%;
+  }
+
+  .qm-vitals {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+    border-top: 1px solid var(--hairline);
+  }
+  .qm-vital {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .qm-vital:nth-child(odd) {
+    padding-right: 14px;
+  }
+  .qm-vital:nth-child(even) {
+    padding-left: 14px;
+    border-left: 1px solid var(--hairline);
+  }
+  .qm-vital dt {
+    color: var(--muted-foreground);
+    font-size: var(--type-12);
+  }
+  .qm-vital dd {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: var(--type-14);
+    font-weight: var(--quorum-font-weights-medium);
+    font-variant-numeric: tabular-nums;
+  }
+  .qm-vital-of {
+    color: var(--muted-foreground);
+    font-size: var(--type-11);
+  }
+
+  .qm-readout .qm-cta {
+    width: 100%;
+  }
+
+  /* ---- The bus and its lines ------------------------------------------ */
+  .qm-index {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-height: 0;
+    max-height: 100%;
+    overflow: auto;
+    scrollbar-width: thin;
+    padding: 4px 4px 4px 0;
+  }
+  .qm-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .qm-section > .qm-eyebrow {
+    padding-left: 26px;
+  }
+  .qm-section:has(> .qm-grid) > .qm-eyebrow {
+    padding-left: 0;
+  }
+  .qm-bus {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0 0 0 26px;
+    list-style: none;
+  }
+  /* The wire every line hangs from. */
+  .qm-bus::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    left: 8px;
+    width: 1px;
+    background: var(--edge-solid);
+  }
+
+  .qm-line {
+    position: relative;
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 48px;
+    padding: 7px 12px 7px 10px;
+    border-radius: var(--radius-lg);
+    color: var(--foreground);
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color 100ms ease,
+      color 100ms ease;
+  }
+  .qm-line.is-bare {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding-left: 14px;
+  }
+  /* Its node on the wire. */
+  .qm-line::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -22px;
+    width: 9px;
+    height: 9px;
+    margin-top: -4.5px;
+    border-radius: 50%;
+    background: var(--canvas);
+    box-shadow: inset 0 0 0 1.5px var(--edge-solid);
+    transition:
+      background-color 120ms ease,
+      box-shadow 120ms ease;
+  }
+  /* And the stub that joins node to line when the line holds the focus. */
+  .qm-line::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -13px;
+    width: 13px;
+    height: 1.5px;
+    margin-top: -0.75px;
+    background: var(--foreground);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 140ms var(--ease-out);
+  }
+  .qm-line:focus-visible {
+    outline: none;
+    background: linear-gradient(var(--primary-fill-top), var(--primary-fill-bottom));
+    color: var(--on-primary-fill);
+    box-shadow: var(--elev-primary);
+  }
+  .qm-line:focus-visible::before {
+    background: var(--signal);
+    box-shadow:
+      inset 0 0 0 1.5px var(--foreground),
+      0 0 0 4px color-mix(in oklab, var(--signal) 35%, transparent);
+  }
+  .qm-line:focus-visible::after {
+    transform: scaleX(1);
+  }
+  .qm-line:active:not([aria-disabled='true']) {
+    transform: scale(0.99);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .qm-line:hover:not(:focus-visible) {
+      background: var(--primary-soft);
+    }
+    .qm-line:hover:not(:focus-visible)::before {
+      box-shadow: inset 0 0 0 1.5px var(--foreground);
+    }
+  }
+  .qm-line[aria-disabled='true'] {
+    cursor: default;
+  }
+  .qm-line[aria-disabled='true']:not(:focus-visible) .qm-label {
+    color: var(--muted-foreground);
+  }
+  .qm-line.is-danger {
+    color: var(--danger);
+  }
+  .qm-line.is-danger:focus-visible {
+    background: var(--danger);
+    color: var(--destructive-foreground);
+    box-shadow: none;
+  }
+  .qm-line.is-record {
+    cursor: default;
+  }
+
+  .qm-num {
+    color: var(--muted-foreground);
+    font-family: var(--mono);
+    font-size: var(--type-11);
+    font-variant-numeric: tabular-nums;
+  }
+  .qm-line:focus-visible .qm-num,
+  .qm-line:focus-visible .qm-detail,
+  .qm-line:focus-visible .qm-figure {
+    color: color-mix(in oklab, var(--on-primary-fill) 72%, transparent);
+  }
+  .qm-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+  .qm-label {
+    font-size: var(--type-14-5);
+    font-weight: var(--quorum-font-weights-medium);
+    line-height: var(--quorum-line-heights-dense);
+  }
+  .qm-detail {
+    color: var(--muted-foreground);
+    font-size: var(--type-12);
+    line-height: var(--quorum-line-heights-dense);
+  }
+  .qm-figure {
+    display: inline-flex;
+    align-items: center;
+    color: var(--muted-foreground);
+    font-family: var(--mono);
+    font-size: var(--type-12);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .qm-note {
+    margin: 4px 0;
+    color: var(--muted-foreground);
+    font-size: var(--type-13);
+  }
+
+  /* Legacy perks: one pip per level, filled as they are bought. */
+  .qm-pips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    width: 28px;
+  }
+  .qm-pips > span {
+    width: 4px;
+    height: 8px;
+    border-radius: 1px;
+    background: var(--hairline);
+  }
+  .qm-pips > span.is-on {
+    background: var(--ok);
+  }
+  .qm-line:focus-visible .qm-pips > span {
+    background: color-mix(in oklab, var(--on-primary-fill) 30%, transparent);
+  }
+  .qm-line:focus-visible .qm-pips > span.is-on {
+    background: var(--on-primary-fill);
+  }
+
+  /* A choice's mark: a ring for one of many, a square for any of many. */
+  .qm-tick {
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px var(--edge-solid);
+  }
+  .qm-tick.is-checkbox {
+    border-radius: 4px;
+  }
+  .qm-tick .qm-icon {
+    width: 12px;
+    height: 12px;
+    stroke-width: 3;
+  }
+  [aria-checked='true'] .qm-tick {
+    background: var(--foreground);
+    box-shadow: none;
+    color: var(--background);
+  }
+  .qm-tile:focus-visible[aria-checked='true'] .qm-tick,
+  .qm-line:focus-visible[aria-checked='true'] .qm-tick {
+    background: var(--on-primary-fill);
+    color: var(--primary-fill-bottom);
+  }
+
+  /* The first reveal after clocking in: the lines arrive down the wire. */
+  .qm-page[data-enter='first'] {
+    animation: none;
+  }
+  .qm-page[data-enter='first'] .qm-hero,
+  .qm-page[data-enter='first'] .qm-section {
+    animation: qm-rise 320ms var(--ease-out) both;
+  }
+  .qm-page[data-enter='first'] .qm-section:nth-child(2) {
+    animation-delay: 50ms;
+  }
+  .qm-page[data-enter='first'] .qm-section:nth-child(3) {
+    animation-delay: 100ms;
+  }
+  .qm-page[data-enter='first'] .qm-section:nth-child(4) {
+    animation-delay: 150ms;
+  }
+  .qm-page[data-enter='first'] .qm-hero .qm-mark path {
+    stroke-dasharray: 1;
+    animation: qm-draw 520ms var(--ease-out) both;
+    animation-delay: calc(var(--i) * 45ms);
+  }
+  @keyframes qm-rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  @keyframes qm-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* ---- Sub pages ------------------------------------------------------ */
+  .qm-sub {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    width: min(760px, 100%);
+    min-height: 0;
+    margin: 0 auto;
+  }
+  .qm-sub-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0 14px;
+  }
+  .qm-sub-title {
+    margin: 0;
+    overflow: hidden;
+    font-size: var(--type-26);
+    font-weight: var(--quorum-font-weights-semibold);
+    letter-spacing: var(--quorum-letter-spacings-title);
+    line-height: var(--quorum-line-heights-heading);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .qm-sub-figure {
+    color: var(--muted-foreground);
+    font-family: var(--mono);
+    font-size: var(--type-13);
+    font-variant-numeric: tabular-nums;
+  }
+  .qm-sub-body {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    min-height: 0;
+    overflow: auto;
+    scrollbar-width: thin;
+    padding: 4px 4px 24px 2px;
+  }
+
+  /* ---- Tiles ---------------------------------------------------------- */
+  .qm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+  .qm-grid.is-dense {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  }
+  .qm-grid:has(.qm-logo) {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
-  .menu-choices.is-logos {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .qm-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 48px;
+    padding: 10px 12px;
+    border-radius: var(--radius-lg);
+    background: var(--card);
+    box-shadow: 0 0 0 1px var(--hairline);
+    color: var(--foreground);
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color 100ms ease,
+      box-shadow 100ms ease;
   }
-  .menu-badge {
+  .qm-tile-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .qm-tile-name {
+    flex: 1;
     min-width: 0;
-    max-width: none;
+    font-size: var(--type-13-5);
+    font-weight: var(--quorum-font-weights-medium);
+    line-height: var(--quorum-line-heights-dense);
+  }
+  .qm-tile-state {
+    display: inline-flex;
+    color: var(--muted-foreground);
+  }
+  .qm-tile-detail {
+    color: var(--muted-foreground);
+    font-size: var(--type-12);
+    line-height: var(--quorum-line-heights-dense);
+  }
+  .qm-tile-figure {
+    margin-top: auto;
+    color: var(--muted-foreground);
+    font-family: var(--mono);
+    font-size: var(--type-11-5);
+    font-variant-numeric: tabular-nums;
+  }
+  .qm-tile.is-done .qm-tile-state {
+    color: var(--ok);
+  }
+  .qm-tile.is-next {
+    box-shadow:
+      0 0 0 1px var(--foreground),
+      inset 3px 0 0 var(--signal);
+  }
+  .qm-tile.is-locked {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--hairline);
+  }
+  .qm-tile.is-locked .qm-tile-name {
+    color: var(--muted-foreground);
+  }
+  .qm-tile.is-on {
+    box-shadow: 0 0 0 1.5px var(--foreground);
+  }
+  .qm-tile.is-badge {
+    cursor: default;
+  }
+  .qm-tile.is-badge.is-done {
+    box-shadow:
+      0 0 0 1px var(--hairline),
+      inset 3px 0 0 var(--ok);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .qm-tile:not(.is-badge, [aria-disabled='true']):hover:not(:focus-visible) {
+      background: var(--surface-nested);
+      box-shadow: 0 0 0 1px var(--foreground);
+    }
+  }
+  .qm-tile:focus-visible {
+    outline: none;
+    background: linear-gradient(var(--primary-fill-top), var(--primary-fill-bottom));
+    box-shadow:
+      var(--elev-primary),
+      0 0 0 3px color-mix(in oklab, var(--signal) 45%, transparent);
+    color: var(--on-primary-fill);
+  }
+  .qm-tile:focus-visible .qm-tile-detail,
+  .qm-tile:focus-visible .qm-tile-figure,
+  .qm-tile:focus-visible .qm-tile-state,
+  .qm-tile:focus-visible .qm-tile-name {
+    color: color-mix(in oklab, var(--on-primary-fill) 80%, transparent);
+  }
+  .qm-tile:focus-visible .qm-tile-name {
+    color: var(--on-primary-fill);
+  }
+  .qm-tile[aria-disabled='true'] {
+    cursor: default;
+  }
+  .qm-meter {
     width: 100%;
-    margin: 8px 8px 4px;
   }
-  .menu-name {
-    padding: 4px 8px 8px;
-  }
-}
 
-/* --------------------------------------------------------------------------
-   The clock-in splash (title.ts): the badge reader, in the menu's paper. The
-   badge hangs out of the slot; on a click it slides in, the LED turns green,
-   the screen says so, and the reader steps back for the menu.
-   -------------------------------------------------------------------------- */
-.reader {
-  position: relative;
-  width: 240px;
-  height: 440px;
-  animation: reader-in 500ms var(--ease-out) both;
-}
-.reader-splash {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-.reader-hint {
-  color: var(--muted-foreground);
-  font-family: var(--font-mono);
-  font-size: var(--type-11);
-  letter-spacing: var(--quorum-letter-spacings-badge-wide);
-  text-transform: uppercase;
-  animation: reader-in 500ms var(--ease-out) 200ms both;
-}
-.reader.is-in {
-  animation: reader-out 300ms ease-in 750ms both;
-}
-@keyframes reader-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
+  /* ---- Founding form -------------------------------------------------- */
+  .qm-steps {
+    display: flex;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
   }
-}
-@keyframes reader-out {
-  to {
-    opacity: 0;
-    transform: scale(0.96);
+  .qm-steps > li {
+    flex: 1;
   }
-}
-.reader-body {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 300px;
-  border-radius: 24px;
-  background: linear-gradient(170deg, var(--card), var(--surface-nested) 60%);
-  box-shadow: var(--elev-float);
-}
-.reader-screw {
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background:
-    linear-gradient(135deg, transparent 42%, var(--hairline) 42% 58%, transparent 58%),
-    radial-gradient(circle at 35% 30%, oklch(0.86 0.002 260), oklch(0.7 0.003 260));
-  box-shadow: 0 1px 0 oklch(1 0 0 / 0.8);
-}
-.reader-screen {
-  position: absolute;
-  inset: 30px 26px auto;
-  height: 112px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border-radius: 12px;
-  background: var(--well);
-  box-shadow: var(--elev-well);
-}
-.reader-time {
-  font-family: var(--font-mono);
-  font-size: 26px;
-  color: var(--foreground);
-  font-variant-numeric: tabular-nums;
-}
-.reader-status {
-  position: relative;
-  height: 14px;
-  font-family: var(--font-mono);
-  font-size: var(--type-10);
-  letter-spacing: var(--quorum-letter-spacings-badge-wide);
-  text-transform: uppercase;
-  color: var(--muted-foreground);
-}
-.reader-status-out,
-.reader-status-in {
-  position: absolute;
-  inset: 0;
-  white-space: nowrap;
-}
-.reader-status-in {
-  opacity: 0;
-  color: var(--ok);
-}
-.reader.is-in .reader-status-out {
-  animation: reader-swap-out 200ms steps(1) 700ms both;
-}
-.reader.is-in .reader-status-in {
-  animation: reader-swap-in 200ms steps(1) 700ms both;
-}
-@keyframes reader-swap-out {
-  to {
-    opacity: 0;
+  .qm-step {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 10px;
+    border-radius: var(--radius-lg);
+    color: var(--muted-foreground);
+    font-size: var(--type-13);
+    font-weight: var(--quorum-font-weights-medium);
+    cursor: pointer;
   }
-}
-@keyframes reader-swap-in {
-  to {
+  /* The step's progress is a rule under it: done steps solid, this one lit. */
+  .qm-step::after {
+    content: '';
+    position: absolute;
+    right: 10px;
+    bottom: 4px;
+    left: 10px;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--hairline);
+  }
+  .qm-step.is-past::after {
+    background: var(--foreground);
+  }
+  .qm-step[aria-current='step'] {
+    color: var(--foreground);
+  }
+  .qm-step[aria-current='step']::after {
+    background: var(--signal);
+  }
+  .qm-step-num {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px currentColor;
+    font-family: var(--mono);
+    font-size: var(--type-11);
+  }
+  .qm-step[aria-current='step'] .qm-step-num,
+  .qm-step.is-past .qm-step-num {
+    background: var(--foreground);
+    box-shadow: none;
+    color: var(--background);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .qm-step:hover {
+      color: var(--foreground);
+    }
+  }
+  .qm-step:focus-visible {
+    outline: 2px solid var(--foreground);
+    outline-offset: 0;
+    color: var(--foreground);
+  }
+
+  .qm-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .qm-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0 4px;
+    border-top: 1px solid var(--hairline);
+  }
+  .qm-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .qm-preview .qm-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .qm-foot-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .qm-file {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .qm-vitals.is-file {
+    flex: 1;
+  }
+
+  /* ---- Settings ------------------------------------------------------- */
+  .qm-tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .qm-tab {
+    position: relative;
+    min-height: 44px;
+    padding: 0 12px;
+    color: var(--muted-foreground);
+    font-size: var(--type-13-5);
+    font-weight: var(--quorum-font-weights-medium);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .qm-tab[aria-selected='true'] {
+    color: var(--foreground);
+  }
+  .qm-tab[aria-selected='true']::after {
+    content: '';
+    position: absolute;
+    right: 8px;
+    bottom: -1px;
+    left: 8px;
+    height: 2px;
+    background: var(--foreground);
+  }
+  .qm-tab:focus-visible {
+    outline: 2px solid var(--foreground);
+    outline-offset: -2px;
+    border-radius: var(--radius-md);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .qm-tab:hover {
+      color: var(--foreground);
+    }
+  }
+  .qm-bus.is-settings {
+    gap: 2px;
+  }
+  .qm-setting {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 6px 12px 6px 10px;
+    border-radius: var(--radius-lg);
+  }
+  .qm-setting::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -22px;
+    width: 9px;
+    height: 9px;
+    margin-top: -4.5px;
+    border-radius: 50%;
+    background: var(--canvas);
+    box-shadow: inset 0 0 0 1.5px var(--edge-solid);
+  }
+  .qm-setting:focus-within {
+    background: var(--primary-soft);
+  }
+  .qm-setting:has(:focus-visible)::before {
+    background: var(--signal);
+    box-shadow:
+      inset 0 0 0 1.5px var(--foreground),
+      0 0 0 4px color-mix(in oklab, var(--signal) 35%, transparent);
+  }
+  .qm-setting.is-split {
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .qm-setting.is-volume > * {
+    width: 100%;
+  }
+  .qm-switch-row {
+    width: 100%;
+    flex-direction: row-reverse;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .qm-switch:focus-visible {
+    outline: 2px solid var(--foreground);
+    outline-offset: 2px;
+  }
+  .qm-thumb:focus-visible {
+    outline: 2px solid var(--foreground);
+    outline-offset: 2px;
+  }
+
+  /* ---- Connecting ----------------------------------------------------- */
+  .qm-connect {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    background: color-mix(in oklab, var(--canvas) 80%, transparent);
+    animation: qm-fade 160ms var(--ease-out) both;
+  }
+  .qm-connect-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: min(360px, calc(100vw - 32px));
+    padding: 16px 18px;
+    border-radius: var(--radius-xl);
+    background: var(--card);
+    box-shadow: var(--elev-float);
+    font-family: var(--mono);
+  }
+  .qm-connect-host {
+    font-size: var(--type-13);
+    font-weight: var(--quorum-font-weights-medium);
+  }
+  .qm-connect-line {
+    height: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+    border-radius: 1px;
+    background: var(--hairline);
+  }
+  .qm-connect-line::after {
+    content: '';
+    display: block;
+    height: 100%;
+    background: var(--signal);
+    transform-origin: left;
+    animation: qm-fill 1100ms linear both;
+  }
+  .qm-connect-ok {
+    color: var(--ok);
+    font-size: var(--type-12);
+    animation: qm-fade 120ms 1050ms both;
+  }
+  @keyframes qm-fill {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* ---- Clock-in splash ------------------------------------------------ */
+  .qm-splash {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    padding: 24px;
+  }
+  .qm-splash-title {
+    margin: 0;
+  }
+  .qm-splash-title .qm-mark {
+    width: min(78vw, 480px);
+    color: var(--foreground);
+  }
+  .qm-splash-title .qm-mark path {
+    stroke-dasharray: 1;
+    animation: qm-draw 700ms var(--ease-out) both;
+    animation-delay: calc(120ms + var(--i) * 70ms);
+  }
+  .qm-splash-title .qm-mark circle {
+    animation: qm-fade 200ms 640ms both;
+  }
+  .qm-splash-clock {
+    color: var(--muted-foreground);
+    font-family: var(--mono);
+    font-size: var(--type-14);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--quorum-letter-spacings-tag);
+  }
+  .qm-splash-action {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    width: 220px;
+  }
+  .qm-clockin:disabled {
     opacity: 1;
   }
-}
-.reader-led {
-  position: absolute;
-  right: 28px;
-  bottom: 22px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--warn);
-  box-shadow: 0 0 8px oklch(0.7 0.15 75 / 0.7);
-  transition: background 200ms;
-}
-.reader.is-in .reader-led {
-  background: var(--ok);
-  box-shadow: 0 0 8px oklch(0.6 0.15 155 / 0.7);
-}
-.reader-slot {
-  position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: 40px;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--well);
-  box-shadow: var(--elev-well);
-}
-.reader-well {
-  position: absolute;
-  inset: 300px 0 auto;
-  display: flex;
-  justify-content: center;
-}
-.reader-card {
-  position: relative;
-  width: 176px;
-  height: 112px;
-  border-radius: 10px;
-  background: linear-gradient(160deg, var(--card), var(--surface-nested));
-  box-shadow: var(--elev-card);
-  transform: translateY(-6px);
-  transition:
-    transform 420ms var(--ease-out),
-    opacity 420ms var(--ease-out);
-}
-.reader-card:hover {
-  transform: translateY(-12px);
-}
-.reader.is-in .reader-card {
-  transform: translateY(-84px);
-  opacity: 0;
-}
-.reader-card-mark {
-  position: absolute;
-  top: 14px;
-  left: 16px;
-  width: 34px;
-  color: var(--primary-fill-top);
-}
-.reader-card-chip {
-  position: absolute;
-  top: 16px;
-  right: 18px;
-  width: 22px;
-  height: 16px;
-  border-radius: 3px;
-  background:
-    linear-gradient(0deg, transparent 46%, var(--hairline) 46% 54%, transparent 54%),
-    linear-gradient(90deg, transparent 46%, var(--hairline) 46% 54%, transparent 54%),
-    linear-gradient(160deg, var(--well), var(--surface-nested));
-}
-.reader-card-name {
-  position: absolute;
-  right: 16px;
-  bottom: 14px;
-  color: var(--muted-foreground);
-  font-family: var(--font-mono);
-  font-size: var(--type-10);
-  letter-spacing: var(--quorum-letter-spacings-stamp);
-  text-transform: uppercase;
+  .qm-splash-line {
+    height: 2px;
+    overflow: hidden;
+    border-radius: 1px;
+    background: var(--hairline);
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+  .qm-splash-line::after {
+    content: '';
+    display: block;
+    height: 100%;
+    background: var(--signal);
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  .qm-splash.is-in .qm-splash-line {
+    opacity: 1;
+  }
+  .qm-splash.is-in .qm-splash-line::after {
+    animation: qm-fill 1000ms linear both;
+  }
+
+  /* ---- Phones, portrait, short screens -------------------------------- */
+  @media (max-width: 900px), (max-aspect-ratio: 1 / 1) {
+    .qm-main {
+      grid-template-columns: minmax(0, 1fr);
+      align-content: start;
+      align-items: start;
+      gap: 22px;
+      overflow: auto;
+      scrollbar-width: thin;
+      padding: 8px 2px 20px;
+    }
+    .qm-hero {
+      gap: 18px;
+    }
+    .qm-hero-title .qm-mark {
+      width: min(62vw, 240px);
+    }
+    .qm-readout {
+      max-width: none;
+    }
+    .qm-index {
+      overflow: visible;
+      max-height: none;
+    }
+    .qm-keys,
+    .qm-disclaimer {
+      display: none;
+    }
+    .qm-dock {
+      grid-template-columns: 1fr;
+      justify-items: stretch;
+    }
+    .qm-dock-tools {
+      justify-content: space-between;
+    }
+    .qm-tool-label {
+      display: none;
+    }
+    .qm-dock .qm-tool-label {
+      display: inline;
+    }
+    .qm-foot {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .qm-foot-actions {
+      flex-direction: column-reverse;
+    }
+    .qm-foot-actions .qm-cta {
+      width: 100%;
+    }
+    .qm-sub-title {
+      font-size: var(--type-20);
+    }
+    .qm-file {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .qm-step > span:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+  @media (max-width: 480px) {
+    .qm-grid,
+    .qm-grid.is-dense {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .qm-grid:has(.qm-logo) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .qm-steps .qm-step {
+      justify-content: center;
+      font-size: var(--type-12);
+    }
+  }
+  /* A finger is wider than a pointer: every tool grows to 44px. */
+  @media (pointer: coarse), (max-width: 900px) {
+    .qm-tool {
+      min-width: 44px;
+      height: 44px;
+    }
+  }
+
+  /* Reduced motion, from the system or from Settings: fades stay, movement goes. */
+  @media (prefers-reduced-motion: reduce) {
+    .qm-page[data-enter='deeper'],
+    .qm-page[data-enter='back'],
+    .qm-page[data-enter='first'] .qm-hero,
+    .qm-page[data-enter='first'] .qm-section {
+      animation-name: qm-fade;
+    }
+    .qm-mark path {
+      stroke-dasharray: none !important;
+      animation: none !important;
+    }
+    .qm-line::after {
+      transition: none;
+    }
+    .qm-line:active:not([aria-disabled='true']) {
+      transform: none;
+    }
+  }
+  :root[data-motion='reduce'] .qm-page[data-enter='deeper'],
+  :root[data-motion='reduce'] .qm-page[data-enter='back'],
+  :root[data-motion='reduce'] .qm-page[data-enter='first'] .qm-hero,
+  :root[data-motion='reduce'] .qm-page[data-enter='first'] .qm-section {
+    animation-name: qm-fade;
+  }
+  :root[data-motion='reduce'] .qm-mark path {
+    stroke-dasharray: none;
+    animation: none;
+  }
+  :root[data-motion='reduce'] .qm-line:active:not([aria-disabled='true']) {
+    transform: none;
+  }
 }
 
 /* The Reduce motion setting, whatever the system says: animations and transitions end at once. */
@@ -1494,12 +1282,6 @@
 @media (prefers-reduced-motion: reduce) {
   .enter-backdrop {
     transition-duration: 0.01ms;
-  }
-  .menu-wordmark path {
-    stroke-dasharray: none;
-  }
-  .menu * {
-    animation: none !important;
   }
   .press:active:not([aria-haspopup], :disabled) {
     transform: none;
@@ -1620,4 +1402,38 @@
   .offline-status {
     bottom: calc(max(10px, env(safe-area-inset-bottom)) + 72px);
   }
+}
+
+/* The kit's primitives size themselves from a later layer, so the menu's own
+   sizes for them sit outside the layers: a 48px main action, a 44px way back,
+   and the same ink outline every other focused line carries. */
+.qm-cta {
+  height: 48px;
+  gap: 10px;
+  padding-inline: 18px;
+  justify-content: space-between;
+  font-size: var(--type-15);
+}
+.qm-clockin {
+  justify-content: center;
+}
+.qm-back {
+  height: 44px;
+  gap: 4px;
+  padding-inline: 8px 12px;
+  color: var(--muted-foreground);
+}
+.qm-input {
+  height: 48px;
+  padding-inline: 14px;
+  font-size: var(--type-18);
+  font-weight: var(--quorum-font-weights-medium);
+}
+.qm-cta:focus-visible,
+.qm-back:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 3px;
+}
+.qm-back:focus-visible {
+  color: var(--foreground);
 }

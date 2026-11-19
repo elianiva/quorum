@@ -107,6 +107,7 @@ export const inspector: Messages['inspector'] = {
   sharesDescribeIncomingTrafficNotCPU: '占比表示传入流量，而非 CPU 使用率。',
   sentBy: '流量来源',
   close: '关闭',
+  openOnTheWiki: (name) => `在 wiki 中打开 ${name}`,
   liveNow: '实时状态',
   loadLastDay: '过去一天的负载',
   collect: '收款',

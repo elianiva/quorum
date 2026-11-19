@@ -119,6 +119,7 @@ export const inspector: Messages['inspector'] = {
     'Les parts décrivent le trafic entrant, pas l’utilisation du CPU.',
   sentBy: 'Envoyé par',
   close: 'Fermer',
+  openOnTheWiki: (name) => `Ouvrir ${name} dans le wiki`,
   liveNow: 'En direct',
   loadLastDay: 'Charge sur 24 h',
   collect: 'Encaisser',

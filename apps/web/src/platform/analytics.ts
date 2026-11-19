@@ -29,6 +29,9 @@ const WIKI_PREFIX: Readonly<Partial<Record<Locale, string>>> = { es: '/es', ja: 
 export const glossaryUrl = (id: string, locale: Locale = 'en'): string =>
   `${WIKI_URL}${WIKI_PREFIX[locale] ?? ''}/glossary/${id}`
 
+export const componentUrl = (id: string, locale: Locale = 'en'): string =>
+  `${WIKI_URL}${WIKI_PREFIX[locale] ?? ''}/components/${id}`
+
 let client: Client | null = null
 let starting = false
 let latest: Model | null = null

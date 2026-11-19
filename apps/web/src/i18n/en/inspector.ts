@@ -115,6 +115,7 @@ export const inspector = {
   sharesDescribeIncomingTrafficNotCPU: 'Shares describe incoming traffic, not CPU usage.',
   sentBy: 'Sent by',
   close: 'Close',
+  openOnTheWiki: (name: string) => `Open ${name} on the wiki`,
   liveNow: 'Live now',
   loadLastDay: 'Load, last day',
   collect: 'Collect',

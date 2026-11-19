@@ -119,6 +119,7 @@ export const inspector: Messages['inspector'] = {
     'Las proporciones describen el tráfico entrante, no el uso de CPU.',
   sentBy: 'Enviado por',
   close: 'Cerrar',
+  openOnTheWiki: (name) => `Abrir ${name} en la wiki`,
   liveNow: 'En vivo ahora',
   loadLastDay: 'Carga del último día',
   collect: 'Cobrar',

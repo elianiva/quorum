@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, test } from 'vitest'
 import { inertHtml } from 'foldkit/html'
 import { CHALLENGES } from '@quorum/simulation/challenges'
 import { GLOSSARY, RESEARCH } from '@quorum/simulation/catalog'
-import { glossaryUrl } from '../platform/analytics.ts'
+import { componentUrl, glossaryUrl } from '../platform/analytics.ts'
 import { localizeBuilder } from './builder.ts'
 import { copy, copyIn, loadLocale } from './messages.ts'
 import { changeIn } from './refusal.ts'
@@ -91,5 +91,13 @@ describe('wiki links', () => {
     expect(glossaryUrl('apdex', 'en')).toBe('https://wiki.playquorum.dev/glossary/apdex')
     expect(glossaryUrl('apdex', 'fr')).toBe('https://wiki.playquorum.dev/glossary/apdex')
     expect(glossaryUrl('apdex')).toBe('https://wiki.playquorum.dev/glossary/apdex')
+  })
+
+  test('a component opens the wiki page in the game language, and every other language the English one', () => {
+    expect(componentUrl('cache', 'es')).toBe('https://wiki.playquorum.dev/es/components/cache')
+    expect(componentUrl('cache', 'ja')).toBe('https://wiki.playquorum.dev/ja/components/cache')
+    expect(componentUrl('cache', 'en')).toBe('https://wiki.playquorum.dev/components/cache')
+    expect(componentUrl('cache', 'fr')).toBe('https://wiki.playquorum.dev/components/cache')
+    expect(componentUrl('cache', 'zh-CN')).toBe('https://wiki.playquorum.dev/components/cache')
   })
 })

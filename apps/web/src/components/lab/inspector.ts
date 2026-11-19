@@ -1,12 +1,20 @@
 import { css, cx } from '@quorum/styled-system/css'
 import { formats } from '@/i18n/format.ts'
-import { copy, localized, nodeLabelIn, nodeTitle, type Messages } from '@/i18n/messages.ts'
+import {
+  copy,
+  localeOf,
+  localized,
+  nodeLabelIn,
+  nodeTitle,
+  type Messages,
+} from '@/i18n/messages.ts'
 import { isDown } from '@quorum/simulation/life'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
   ArrowDownToLine,
   ArrowUp,
   ArrowUpFromLine,
+  BookOpen,
   ChevronLeft,
   ChevronRight,
   ChevronsRight,
@@ -66,9 +74,16 @@ import {
   type NodeSample,
 } from '@/game/node-metrics.ts'
 import { COMPONENT_ICONS } from '@quorum/ui/game/component-icons'
+import { componentUrl } from '@/platform/analytics.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { badge } from '@quorum/ui/primitives/badge'
-import { button, closeButton } from '@quorum/ui/primitives/button'
+import {
+  button,
+  buttonBase,
+  buttonSizes,
+  buttonVariants,
+  closeButton,
+} from '@quorum/ui/primitives/button'
 import { progress } from '@quorum/ui/primitives/progress'
 import {
   EYEBROW,
@@ -2341,6 +2356,27 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
                 h,
               )
             : h.empty,
+          h.a(
+            [
+              h.Key('wiki'),
+              h.Href(componentUrl(node.type, localeOf(h))),
+              h.Target('_blank'),
+              h.Rel('noreferrer noopener'),
+              h.Title(t.inspector.openOnTheWiki(label.name)),
+              h.AriaLabel(t.inspector.openOnTheWiki(label.name)),
+              h.Class(cx(buttonBase, buttonVariants.outline, buttonSizes['icon-lg'])),
+            ],
+            [
+              icon(
+                h,
+                BookOpen,
+                css({
+                  width: '4',
+                  height: '4',
+                }),
+              ),
+            ],
+          ),
           restartable(node) && !isDown(node.life)
             ? button(
                 {

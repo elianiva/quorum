@@ -115,6 +115,7 @@ export const inspector: Messages['inspector'] = {
   sharesDescribeIncomingTrafficNotCPU: '内訳は受信トラフィックのもので、CPU使用率ではありません。',
   sentBy: '送信元',
   close: '閉じる',
+  openOnTheWiki: (name) => `wiki で${name}を開く`,
   liveNow: '現在ライブ',
   loadLastDay: '負荷 · 直近1日',
   collect: '回収',

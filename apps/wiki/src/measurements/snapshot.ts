@@ -3,14 +3,14 @@
  * `packages/simulation/src/pacing.ts`. Do not edit: change the Simulation or the measurement and
  * run the script again.
  *
- * Taken at Simulation version 409b44fe on 2026-11-17.
+ * Taken at Simulation version cee85fe9 on 2026-11-19.
  */
 
 import type { Measurements } from './measure.ts'
 
 export const SNAPSHOT: Measurements = {
-  version: '409b44fe',
-  takenOn: '2026-11-17',
+  version: 'cee85fe9',
+  takenOn: '2026-11-19',
   pacing: [
     {
       label: 'First research',

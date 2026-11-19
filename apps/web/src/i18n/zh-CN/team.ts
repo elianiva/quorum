@@ -41,6 +41,7 @@ export const team: Messages['team'] = {
   migrated: '已迁移',
   ready: '就绪',
   cancel: '取消',
+  resume: '恢复',
   shiftTo: (p0) => `切换到 ${p0}`,
   ofTraffic: (p0) => `${p0} 的流量`,
   wins: '胜出',

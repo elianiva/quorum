@@ -847,11 +847,28 @@ export const cancelItem = (game: Game, id: number): Action =>
     if (item?.kind === 'migration') return notAllowed('Cancel the migration instead.')
     if (item?.ref === 'fix-bugs') return notAllowed('The migration needs its bugs fixed.')
     if (item?.kind === 'patch') return notAllowed('A patch stays until it is built or it expires.')
+    if ([...assignments(game).values()].some((entry) => entry.id === id))
+      return ok({
+        ...game,
+        backlog: game.backlog.map((entry) => (entry.id === id ? { ...entry, held: true } : entry)),
+      })
     const gone = { ...game, backlog: game.backlog.filter((entry) => entry.id !== id) }
     if (item?.ref === 'reshard') return ok({ ...gone, reshard: null })
     if (item?.ref === 'engine') return ok({ ...gone, engineChange: null })
     return ok(gone)
   })
+
+export const resumeItem = (game: Game, id: number): Action =>
+  withItem(game, id, (index) =>
+    ok({
+      ...game,
+      backlog: game.backlog.map((entry, at) => {
+        if (at !== index) return entry
+        const { held: _, ...free } = entry
+        return free
+      }),
+    }),
+  )
 
 export const rushItem = (game: Game, id: number): Action =>
   withItem(game, id, (index) => {
@@ -1539,6 +1556,7 @@ const deploy = (game: Game, ledger: Ledger, tuning: Tuning, events: Array<StepEv
 }
 
 export const takeable = (game: Game, item: WorkItem): boolean =>
+  !item.held &&
   (item.kind !== 'spike' || game.studies[0]?.id === item.ref) &&
   (item.kind === 'patch' || item.block._tag !== 'Blocked')
 

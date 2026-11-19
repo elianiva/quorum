@@ -46,6 +46,7 @@ export const team: Messages['team'] = {
   migrated: 'Migrado',
   ready: 'Listo',
   cancel: 'Cancelar',
+  resume: 'Reanudar',
   shiftTo: (p0: string | number | null) => `Pasar al ${p0}`,
   ofTraffic: (p0: string | number | null) => `${p0} del tráfico`,
   wins: 'Gana',

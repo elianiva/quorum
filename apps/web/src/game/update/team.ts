@@ -256,6 +256,7 @@ type TeamTag =
   | 'PolicyToggled'
   | 'WorkMoved'
   | 'WorkCancelled'
+  | 'WorkResumed'
   | 'WorkApproved'
   | 'WorkDeferred'
   | 'WorkPatched'
@@ -301,6 +302,8 @@ export const teamHandlers = (model: Model): MessageCases<UpdateResult, TeamTag> 
     act(model, 'Reordered the backlog', Work.moveItem(model.board.game, id, direction)),
 
   WorkCancelled: ({ id }) => act(model, 'Cancelled work', Work.cancelItem(model.board.game, id)),
+
+  WorkResumed: ({ id }) => act(model, 'Resumed work', Work.resumeItem(model.board.game, id)),
 
   WorkApproved: ({ id }) =>
     act(model, 'Unblocked the work', Work.approveBlock(model.board.game, id)),

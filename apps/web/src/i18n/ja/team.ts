@@ -41,6 +41,7 @@ export const team: Messages['team'] = {
   migrated: '移行済み',
   ready: '準備完了',
   cancel: 'キャンセル',
+  resume: '再開',
   shiftTo: (p0) => `${p0}へ切り替え`,
   ofTraffic: (p0) => `${p0}のトラフィック`,
   wins: '勝ち',

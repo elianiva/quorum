@@ -13,6 +13,7 @@ export const teamCases = {
   PolicyToggled: { policy: Schema.Literals(['research', 'hire', 'upgrade']), on: Schema.Boolean },
   WorkMoved: { id: Schema.Finite, direction: Schema.Literals([1, -1]) },
   WorkCancelled: { id: Schema.Finite },
+  WorkResumed: { id: Schema.Finite },
   WorkApproved: { id: Schema.Finite },
   WorkDeferred: { id: Schema.Finite },
   WorkPatched: { id: Schema.Finite },

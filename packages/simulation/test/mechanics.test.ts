@@ -28,6 +28,7 @@ import {
   assignments,
   blockReason,
   cancelItem,
+  resumeItem,
   createTeam,
   featureRefusal,
   prioritizeItem,
@@ -360,9 +361,30 @@ describe('Rush quality', () => {
     const item = queued.backlog[0]!
     const before = serviceOfItem(queued, item).debt
     const rushed = Result.getOrThrow(rushItem({ ...queued, devHours: item.cost }, item.id))
-    const cancelled = Result.getOrThrow(cancelItem(rushed, item.id))
+    const held = Result.getOrThrow(cancelItem(rushed, item.id))
+    const cancelled = Result.getOrThrow(cancelItem(held, item.id))
     const advanced = step(cancelled, 0.1).game
     expect(serviceOfItem(advanced, item).debt).toBe(before)
+  })
+
+  test('cancelling work in progress returns it to the queue with its progress, and the team moves on', () => {
+    let game = Result.getOrThrow(queueFeature(preseedGame(1), FEATURE_IDS[0]!))
+    game = Result.getOrThrow(queueFeature(game, FEATURE_IDS[1]!))
+    const [first, second] = game.backlog
+    game = step(game, 60).game
+    const spent = game.backlog.find((entry) => entry.id === first!.id)!.spent
+    expect(spent).toBeGreaterThan(0)
+
+    game = Result.getOrThrow(cancelItem(game, first!.id))
+    expect(game.backlog.map((entry) => entry.id)).toEqual([first!.id, second!.id])
+    expect(game.backlog[0]!.spent).toBe(spent)
+    expect([...assignments(game).values()].map((entry) => entry.id)).toEqual([second!.id])
+
+    game = step(game, 60).game
+    expect(game.backlog.find((entry) => entry.id === first!.id)!.spent).toBe(spent)
+
+    game = Result.getOrThrow(resumeItem(game, first!.id))
+    expect([...assignments(game).values()].map((entry) => entry.id)).toEqual([first!.id])
   })
 })
 

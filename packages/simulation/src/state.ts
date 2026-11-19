@@ -515,6 +515,7 @@ export const WorkItem = Schema.Struct({
   cost: Schema.Finite,
   spent: Schema.Finite,
   rushed: Schema.optionalKey(Schema.Finite),
+  held: Schema.optionalKey(Schema.Boolean),
   due: Schema.optionalKey(Schema.Finite),
   target: Schema.optionalKey(Schema.String),
   service: Schema.optionalKey(Schema.String),

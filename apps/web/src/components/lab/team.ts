@@ -20,6 +20,7 @@ import {
   Hourglass,
   Lock,
   Pencil,
+  Play,
   Plus,
   Rabbit,
   Rocket,
@@ -3554,6 +3555,9 @@ const backlogCard = (
     [
       item.block._tag === 'Blocked'
         ? iconButton(t.team.approve, Check, Message.WorkApproved({ id: item.id }), true, h)
+        : h.empty,
+      item.held
+        ? iconButton(t.team.resume, Play, Message.WorkResumed({ id: item.id }), true, h)
         : h.empty,
       team
         ? h.empty

@@ -41,6 +41,7 @@ export const team = {
   migrated: 'Migrated',
   ready: 'Ready',
   cancel: 'Cancel',
+  resume: 'Resume',
   shiftTo: (p0: string | number | null) => `Shift to ${p0}`,
   ofTraffic: (p0: string | number | null) => `${p0} of traffic`,
   wins: 'Wins',

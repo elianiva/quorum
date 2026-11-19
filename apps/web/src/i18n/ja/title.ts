@@ -45,6 +45,7 @@ export const title: Messages['title'] = {
   history: '履歴',
   achievements: '実績',
   settings: '設定',
+  system: 'システム',
   wiki: 'Wiki',
   quorumIsAGameAndSimplifies:
     'Quorumはゲームであり、実際のシステムを意図的に単純化しています。決める前に、本物を確認してください。',

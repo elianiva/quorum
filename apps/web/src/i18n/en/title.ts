@@ -43,6 +43,7 @@ export const title = {
   history: 'History',
   achievements: 'Achievements',
   settings: 'Settings',
+  system: 'System',
   wiki: 'Wiki',
   quorumIsAGameAndSimplifies:
     'Quorum is a game and simplifies real systems on purpose. Check the real thing before you decide.',

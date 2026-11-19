@@ -51,7 +51,9 @@ export const title: Messages['title'] = {
   build: 'Compilación',
   feedback: 'Comentarios',
   clockedIn: 'Fichado',
+  insertBadge: 'Insertar insignia',
   clockIn: 'Fichar',
+  clockInHint: 'Haz clic en la insignia para fichar',
   founder: 'Fundador',
   company: 'Empresa',
   eraUsersTime: (era: string, users: string, time: string) =>

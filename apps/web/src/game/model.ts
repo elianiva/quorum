@@ -402,6 +402,8 @@ export const Model = Schema.Struct({
   prefs: Prefs,
   pwa: Pwa,
   settingsSection: SettingsSection,
+  /* Whether the menu tree has the section open as its own column. */
+  settingsOpen: Schema.Boolean,
   languagePicker: Listbox.Model,
   volumeSlider: VolumeSlider.Model,
   runtimePicker: StackPicker,

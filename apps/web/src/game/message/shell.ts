@@ -10,6 +10,8 @@ export const shellCases = {
   TitleRevealed: {},
   MenuChosen: { menu: Menu },
   SettingsSectionChosen: { section: SettingsSection },
+  SettingsSectionOpened: { section: SettingsSection },
+  SettingsSectionClosed: {},
   FoundStepChosen: { step: FoundStep },
   ClickedLink: { request: UrlRequest },
   ChangedUrl: { url: Url },

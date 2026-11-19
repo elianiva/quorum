@@ -41,9 +41,6 @@
     height: 100%;
     overflow: hidden;
     background-color: var(--canvas);
-    background-image: radial-gradient(var(--canvas-grid) 1px, transparent 1.2px);
-    background-size: 24px 24px;
-    background-position: -12px -12px;
     color: var(--foreground);
     font-family: var(--sans);
   }
@@ -94,10 +91,6 @@
     justify-content: space-between;
     gap: 12px;
     min-height: 44px;
-  }
-  .qm-crumb .qm-mark {
-    width: 84px;
-    color: var(--foreground);
   }
   .qm-tools,
   .qm-dock-tools {
@@ -189,48 +182,175 @@
     text-align: right;
   }
 
-  /* ---- Page ----------------------------------------------------------- */
-  .qm-page {
+  /* ---- The tree: a stage, the world the camera moves, a column a page --
+     The camera centres the open column, then shifts right as far as it
+     needs to keep the line it grew from readable.
+     A column's left edge follows its depth, set as --d. */
+  .qm-stage {
+    position: relative;
     min-height: 0;
-    display: grid;
+    margin-inline: calc(-1 * max(16px, env(safe-area-inset-left)))
+      calc(-1 * max(16px, env(safe-area-inset-right)));
+    overflow: clip;
+    container-type: size;
   }
-  .qm-page[data-enter] {
+  .qm-world {
+    --pad: 24px;
+    --gap: clamp(48px, 7cqw, 96px);
+    --root: min(400px, 100cqw - 2 * var(--pad));
+    --leaf: min(680px, 100cqw - 2 * var(--pad));
+    --w1: var(--leaf);
+    position: absolute;
+    inset: 0;
+    transform: translateX(calc((100cqw - var(--root)) / 2));
+    translate: var(--camera-x, 0px) var(--camera-y, 0px);
+    transition:
+      transform 380ms var(--ease-drawer),
+      translate 380ms var(--ease-drawer);
+  }
+  /* A wheel notch or a moving focus: the camera follows quickly. A trackpad
+     or a finger: it follows 1:1, with no easing to lag behind the hand. */
+  .qm-world[data-pan='step'] {
+    transition:
+      transform 380ms var(--ease-drawer),
+      translate 160ms var(--ease-out);
+  }
+  .qm-world[data-pan='track'] {
+    transition: transform 380ms var(--ease-drawer);
+  }
+  .qm-world.is-still {
+    transition: none;
+  }
+  /* A list that opens a further branch (Settings, Companies) is as narrow as
+     the root, so it still shows beside the branch it opened. */
+  .qm-world:has(> .qm-page.is-list[data-depth='1']) {
+    --w1: var(--root);
+  }
+  .qm-world[data-depth='1'] {
+    transform: translateX(calc((100cqw - var(--w1)) / 2 - var(--root) - var(--gap)));
+  }
+  .qm-world[data-depth='2'] {
+    transform: translateX(
+      calc((100cqw - var(--leaf)) / 2 - var(--root) - 2 * var(--gap) - var(--w1))
+    );
+  }
+  /* Columns take their full height on the canvas; the camera scrolls, not
+     the column. */
+  .qm-page {
+    position: absolute;
+    top: 0;
+    left: calc(var(--root) + var(--gap) + (var(--d) - 1) * (var(--w1) + var(--gap)));
+    width: var(--leaf);
+  }
+  .qm-page.is-list {
+    width: var(--root);
+  }
+  .qm-page.is-main {
+    left: 0;
+    width: var(--root);
+  }
+  .qm-ghosts {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* The wire from a parent line to the column it opened, drawn as it opens. */
+  .qm-wires {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    overflow: visible;
+    pointer-events: none;
+  }
+  .qm-wire path {
+    fill: none;
+    stroke: var(--foreground);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+    animation: qm-draw 300ms var(--ease-out) 40ms both;
+  }
+  .qm-wire circle {
+    fill: var(--signal);
+    stroke: var(--foreground);
+    stroke-width: 1.5;
+    animation: qm-fade 120ms var(--ease-out) 300ms both;
+  }
+  .qm-wire.is-leaving {
+    animation: qm-leave-fade 140ms var(--ease-out) both;
+  }
+
+  /* The open branch: its line stays lit in the parent while the rest dims. */
+  .qm-page:not(.is-active)
+    :is(
+      .qm-hero-title,
+      .qm-readout > :not(.is-open),
+      .qm-eyebrow,
+      .qm-line:not(.is-open),
+      .qm-sub-head,
+      .qm-note
+    ) {
+    opacity: 0.4;
+    transition: opacity 200ms ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .qm-page:not(.is-active):hover
+      :is(
+        .qm-hero-title,
+        .qm-readout > :not(.is-open),
+        .qm-eyebrow,
+        .qm-line:not(.is-open),
+        .qm-sub-head,
+        .qm-note
+      ) {
+      opacity: 0.8;
+    }
+  }
+
+  /* A branch grows out of its wire; a closed one draws back toward it. */
+  .qm-page[data-enter='fade'] {
     animation: qm-fade 200ms var(--ease-out) both;
   }
-  .qm-page[data-enter='deeper'] {
-    animation-name: qm-deeper;
+  .qm-page[data-enter='branch'] > * {
+    animation: qm-branch 280ms var(--ease-out) 60ms both;
   }
-  .qm-page[data-enter='back'] {
-    animation-name: qm-back;
+  .qm-page.is-leaving {
+    animation: qm-leave 160ms var(--ease-out) both;
   }
   @keyframes qm-fade {
     from {
       opacity: 0;
     }
   }
-  @keyframes qm-deeper {
+  @keyframes qm-branch {
     from {
       opacity: 0;
-      transform: translateX(16px);
+      transform: translateX(-12px);
     }
   }
-  @keyframes qm-back {
-    from {
+  @keyframes qm-leave {
+    to {
       opacity: 0;
-      transform: translateX(-16px);
+      transform: translateX(-8px);
+    }
+  }
+  @keyframes qm-leave-fade {
+    to {
+      opacity: 0;
     }
   }
 
-  /* ---- Main: hero beside index ---------------------------------------- */
+  /* ---- Root: the wordmark, the readout, the index -------------------- */
   .qm-main {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
-    align-items: center;
-    gap: clamp(24px, 6vw, 96px);
-    width: min(1120px, 100%);
-    min-height: 0;
-    margin: 0 auto;
-    padding: 12px clamp(0px, 2vw, 24px);
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    width: 100%;
+    padding: 16px 0;
   }
   .qm-hero {
     display: flex;
@@ -242,7 +362,7 @@
     margin: 0;
   }
   .qm-hero-title .qm-mark {
-    width: min(100%, 420px);
+    width: min(100%, 300px);
     color: var(--foreground);
   }
 
@@ -346,10 +466,6 @@
     display: flex;
     flex-direction: column;
     gap: 18px;
-    min-height: 0;
-    max-height: 100%;
-    overflow: auto;
-    scrollbar-width: thin;
     padding: 4px 4px 4px 0;
   }
   .qm-section {
@@ -359,9 +475,6 @@
   }
   .qm-section > .qm-eyebrow {
     padding-left: 26px;
-  }
-  .qm-section:has(> .qm-grid) > .qm-eyebrow {
-    padding-left: 0;
   }
   .qm-bus {
     position: relative;
@@ -610,11 +723,9 @@
 
   /* ---- Sub pages ------------------------------------------------------ */
   .qm-sub {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
-    width: min(760px, 100%);
-    min-height: 0;
-    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
   }
   .qm-sub-head {
     display: grid;
@@ -643,23 +754,133 @@
     display: flex;
     flex-direction: column;
     gap: 22px;
-    min-height: 0;
-    overflow: auto;
-    scrollbar-width: thin;
     padding: 4px 4px 24px 2px;
   }
 
   /* ---- Tiles ---------------------------------------------------------- */
+  /* A group of tiles is a subtree drawn as an org chart: the trunk comes down
+     the left, each row hangs from a rail off it, and each tile drops from the
+     rail onto its node. Three to a row, one on a narrow stage. The first tile
+     of a row draws the trunk beside its row and the rail across it, as far as
+     the row's last node. Logos stay a swatch grid. */
   .qm-grid {
+    --cols: 3;
+    --col-gap: 12px;
+    --row-gap: 18px;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    gap: var(--row-gap) var(--col-gap);
+    padding: calc(var(--row-gap) / 2) 0 0 26px;
   }
-  .qm-grid.is-dense {
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  /* No box of its own: the node carries the state. */
+  .qm-grid:not(:has(.qm-logo)) > .qm-tile {
+    --node: 17px;
+    position: relative;
+    gap: 2px;
+    padding: 8px 10px 8px 22px;
+    background: transparent;
+    box-shadow: none;
+  }
+  .qm-grid:not(:has(.qm-logo)) > .qm-tile::after {
+    content: '';
+    position: absolute;
+    top: calc(var(--row-gap) / -2);
+    left: 4px;
+    width: 9px;
+    height: calc(var(--row-gap) / 2 + var(--node) + 4.5px);
+    background:
+      radial-gradient(
+        circle at 4.5px calc(100% - 4.5px),
+        var(--node-fill, var(--canvas)) 3px,
+        var(--node-ring, var(--edge-solid)) 3.25px 4.5px,
+        transparent 4.75px
+      ),
+      linear-gradient(var(--edge-solid), var(--edge-solid)) 4px 0 / 1px calc(100% - 9px) no-repeat;
+  }
+  .qm-grid:not(:has(.qm-logo)) > .qm-tile:nth-child(3n + 1)::before {
+    --n: 3;
+    content: '';
+    position: absolute;
+    top: calc(var(--row-gap) / -2 - var(--up));
+    bottom: calc(var(--row-gap) / -2);
+    left: -18px;
+    width: calc(26.5px + (var(--n) - 1) * (100% + var(--col-gap)));
+    background:
+      linear-gradient(var(--edge-solid), var(--edge-solid)) 0 var(--up) / 100% 1px no-repeat,
+      linear-gradient(var(--edge-solid), var(--edge-solid)) 0 0 / 1px 100% no-repeat;
+  }
+  .qm-grid:not(:has(.qm-logo)) > .qm-tile:nth-child(3n + 1):nth-last-child(2)::before {
+    --n: 2;
+  }
+  .qm-grid:not(:has(.qm-logo)) > .qm-tile:nth-child(3n + 1):nth-last-child(1)::before {
+    --n: 1;
+  }
+  /* The last row ends the trunk at its rail. */
+  .qm-grid:not(:has(.qm-logo)) > .qm-tile:nth-child(3n + 1):nth-last-child(-n + 3)::before {
+    bottom: auto;
+    height: calc(var(--up) + 1px);
+  }
+  @container (max-width: 560px) {
+    .qm-grid {
+      --cols: 1;
+    }
+    .qm-grid:not(:has(.qm-logo)) > .qm-tile:nth-child(n)::before {
+      --n: 1;
+      content: '';
+      position: absolute;
+      top: calc(var(--row-gap) / -2 - var(--up));
+      bottom: calc(var(--row-gap) / -2);
+      left: -18px;
+      width: calc(26.5px + (var(--n) - 1) * (100% + var(--col-gap)));
+      background:
+        linear-gradient(var(--edge-solid), var(--edge-solid)) 0 var(--up) / 100% 1px no-repeat,
+        linear-gradient(var(--edge-solid), var(--edge-solid)) 0 0 / 1px 100% no-repeat;
+    }
+    .qm-grid:not(:has(.qm-logo)) > .qm-tile:nth-child(n):nth-last-child(n + 2)::before {
+      bottom: calc(var(--row-gap) / -2);
+      height: auto;
+    }
+    .qm-grid:not(:has(.qm-logo)) > .qm-tile:nth-child(n):last-child::before {
+      bottom: auto;
+      height: calc(var(--up) + 1px);
+    }
+  }
+  /* The trunk starts under the group's label. */
+  .qm-grid > .qm-tile {
+    --up: 0px;
+  }
+  .qm-grid > .qm-tile:first-child {
+    --up: 14px;
+  }
+  .qm-grid > .qm-tile.is-next {
+    --node-fill: var(--signal);
+    --node-ring: var(--foreground);
+  }
+  .qm-grid > .qm-tile.is-done {
+    --node-fill: var(--ok);
+    --node-ring: var(--ok);
+  }
+  .qm-grid > .qm-tile.is-on {
+    --node-fill: var(--foreground);
+    --node-ring: var(--foreground);
+  }
+  .qm-grid:not(:has(.qm-logo)) > .qm-tile:focus-visible {
+    --node-fill: var(--signal);
+    --node-ring: var(--foreground);
+    box-shadow: var(--elev-primary);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .qm-grid:not(:has(.qm-logo))
+      > .qm-tile:not(.is-badge, [aria-disabled='true']):hover:not(:focus-visible) {
+      --node-ring: var(--foreground);
+      background: var(--primary-soft);
+      box-shadow: none;
+    }
   }
   .qm-grid:has(.qm-logo) {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+    padding: 0;
   }
   .qm-tile {
     display: flex;
@@ -874,45 +1095,6 @@
   }
 
   /* ---- Settings ------------------------------------------------------- */
-  .qm-tabs {
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    border-bottom: 1px solid var(--hairline);
-  }
-  .qm-tab {
-    position: relative;
-    min-height: 44px;
-    padding: 0 12px;
-    color: var(--muted-foreground);
-    font-size: var(--type-13-5);
-    font-weight: var(--quorum-font-weights-medium);
-    white-space: nowrap;
-    cursor: pointer;
-  }
-  .qm-tab[aria-selected='true'] {
-    color: var(--foreground);
-  }
-  .qm-tab[aria-selected='true']::after {
-    content: '';
-    position: absolute;
-    right: 8px;
-    bottom: -1px;
-    left: 8px;
-    height: 2px;
-    background: var(--foreground);
-  }
-  .qm-tab:focus-visible {
-    outline: 2px solid var(--foreground);
-    outline-offset: -2px;
-    border-radius: var(--radius-md);
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .qm-tab:hover {
-      color: var(--foreground);
-    }
-  }
   .qm-bus.is-settings {
     gap: 2px;
   }
@@ -1022,81 +1204,301 @@
   }
 
   /* ---- Clock-in splash ------------------------------------------------ */
-  .qm-splash {
+  /* A wall badge reader. The badge hangs out of the slot; on a click it slides
+     in, the LED turns green, the screen says so, and the reader steps back for
+     the menu. The plastic follows the theme; the screen stays dark glass. */
+  .reader-splash {
     position: absolute;
     inset: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 22px;
+    gap: 6px;
     padding: 24px;
   }
-  .qm-splash-title {
+  .reader {
+    --reader-shell: linear-gradient(170deg, oklch(0.985 0.001 260), oklch(0.9 0.003 260) 60%);
+    --reader-shell-edge:
+      inset 0 1px 0 oklch(1 0 0 / 0.9), inset 0 -3px 0 oklch(0 0 0 / 0.08),
+      0 0 0 1px oklch(0 0 0 / 0.1), 0 40px 70px -24px oklch(0.3 0.01 260 / 0.35);
+    --reader-screw: radial-gradient(circle at 35% 30%, oklch(0.95 0.002 260), oklch(0.7 0.004 260));
+    --reader-slot-lip: 0 1px 0 oklch(1 0 0 / 0.9), 0 -1px 0 oklch(0 0 0 / 0.12);
+    --reader-card:
+      radial-gradient(ellipse 120% 70% at 50% 0%, oklch(0.8 0.12 225 / 0.12), transparent 70%),
+      linear-gradient(170deg, oklch(0.995 0 0), oklch(0.93 0.003 260));
+    --reader-card-edge:
+      inset 1px 0 0 oklch(1 0 0 / 0.9), inset -1px 0 0 oklch(0 0 0 / 0.06),
+      inset 0 -2px 0 oklch(0 0 0 / 0.08), 0 14px 22px -8px oklch(0.3 0.01 260 / 0.35);
+    --reader-card-ink: oklch(0.3 0.006 260);
+    --reader-card-name: oklch(0.52 0.008 260);
+    position: relative;
+    width: 240px;
+    height: 440px;
+    animation: reader-in 500ms var(--ease-out) both;
+  }
+  .dark .reader {
+    --reader-shell: linear-gradient(170deg, oklch(0.3 0.006 260), oklch(0.19 0.004 260) 60%);
+    --reader-shell-edge:
+      inset 0 1px 0 oklch(1 0 0 / 0.14), inset 0 -3px 0 oklch(0 0 0 / 0.45),
+      0 0 0 1px oklch(0 0 0 / 0.6), 0 40px 70px -24px oklch(0 0 0 / 0.9);
+    --reader-screw: radial-gradient(circle at 35% 30%, oklch(0.5 0.004 260), oklch(0.22 0.004 260));
+    --reader-slot-lip: 0 1px 0 oklch(1 0 0 / 0.12), 0 -1px 0 oklch(0 0 0 / 0.5);
+    --reader-card:
+      radial-gradient(ellipse 120% 70% at 50% 0%, oklch(0.8 0.12 225 / 0.1), transparent 70%),
+      linear-gradient(170deg, oklch(0.34 0.006 260), oklch(0.23 0.005 260));
+    --reader-card-edge:
+      inset 1px 0 0 oklch(1 0 0 / 0.08), inset -1px 0 0 oklch(0 0 0 / 0.3),
+      inset 0 -2px 0 oklch(0 0 0 / 0.35), 0 14px 22px -8px oklch(0 0 0 / 0.85);
+    --reader-card-ink: oklch(0.88 0.004 260);
+    --reader-card-name: oklch(0.7 0.006 260);
+  }
+  .reader-hint {
     margin: 0;
-  }
-  .qm-splash-title .qm-mark {
-    width: min(78vw, 480px);
-    color: var(--foreground);
-  }
-  .qm-splash-title .qm-mark path {
-    stroke-dasharray: 1;
-    animation: qm-draw 700ms var(--ease-out) both;
-    animation-delay: calc(120ms + var(--i) * 70ms);
-  }
-  .qm-splash-title .qm-mark circle {
-    animation: qm-fade 200ms 640ms both;
-  }
-  .qm-splash-clock {
     color: var(--muted-foreground);
     font-family: var(--mono);
-    font-size: var(--type-14);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: var(--quorum-letter-spacings-tag);
+    font-size: var(--type-11);
+    letter-spacing: var(--quorum-letter-spacings-badge-wide);
+    text-transform: uppercase;
+    animation: reader-in 500ms var(--ease-out) 200ms both;
   }
-  .qm-splash-action {
+  .reader.is-in,
+  .reader.is-in + .reader-hint {
+    animation: reader-out 240ms var(--ease-out) 700ms both;
+  }
+  @keyframes reader-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+  @keyframes reader-out {
+    to {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+  .reader-body {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 300px;
+    border-radius: 28px;
+    background: var(--reader-shell);
+    box-shadow: var(--reader-shell-edge);
+  }
+  .reader-screw {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background:
+      linear-gradient(135deg, transparent 42%, oklch(0 0 0 / 0.45) 42% 58%, transparent 58%),
+      var(--reader-screw);
+    box-shadow: 0 1px 0 oklch(1 0 0 / 0.08);
+  }
+  .reader-screw.is-tl {
+    top: 12px;
+    left: 12px;
+  }
+  .reader-screw.is-tr {
+    top: 12px;
+    right: 12px;
+  }
+  .reader-screw.is-bl {
+    bottom: 12px;
+    left: 12px;
+  }
+  .reader-screw.is-br {
+    bottom: 12px;
+    right: 12px;
+  }
+  .reader-screen {
+    position: absolute;
+    inset: 30px 26px auto;
+    height: 112px;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    width: 220px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 12px;
+    background:
+      repeating-linear-gradient(0deg, oklch(1 0 0 / 0.025) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at 50% 40%, oklch(0.24 0.04 220), oklch(0.13 0.02 230));
+    box-shadow:
+      inset 0 2px 8px oklch(0 0 0 / 0.8),
+      0 1px 0 oklch(1 0 0 / 0.1);
+    color: var(--signal);
+    font-family: var(--mono);
+    text-shadow: 0 0 10px oklch(0.8 0.12 225 / 0.55);
   }
-  .qm-clockin:disabled {
-    opacity: 1;
+  .reader-time {
+    font-size: var(--type-34);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--quorum-letter-spacings-label);
   }
-  .qm-splash-line {
-    height: 2px;
+  .reader-status {
+    display: grid;
+    font-size: var(--type-10-5);
+    letter-spacing: var(--quorum-letter-spacings-stamp);
+    text-transform: uppercase;
+  }
+  .reader-status > * {
+    grid-area: 1 / 1;
+    text-align: center;
+  }
+  .reader-status-out {
+    animation: reader-blink 1.6s steps(1, end) infinite;
+  }
+  .reader-status-in {
+    visibility: hidden;
+    color: oklch(0.74 0.15 155);
+    text-shadow: 0 0 10px oklch(0.74 0.15 155 / 0.6);
+  }
+  .is-in .reader-status-out {
+    animation: reader-hide 0s 320ms forwards;
+  }
+  .is-in .reader-status-in {
+    animation: reader-show 0s 320ms forwards;
+  }
+  @keyframes reader-blink {
+    50% {
+      opacity: 0.35;
+    }
+  }
+  @keyframes reader-hide {
+    to {
+      visibility: hidden;
+    }
+  }
+  @keyframes reader-show {
+    to {
+      visibility: visible;
+    }
+  }
+  .reader-led {
+    position: absolute;
+    top: 168px;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    margin-left: -4px;
+    border-radius: 50%;
+    background: oklch(0.78 0.15 70);
+    box-shadow: 0 0 10px oklch(0.78 0.15 70 / 0.8);
+    animation: reader-blink 1.6s steps(1, end) infinite;
+    transition:
+      background-color 120ms,
+      box-shadow 120ms;
+  }
+  .is-in .reader-led {
+    animation: none;
+    background: oklch(0.74 0.15 155);
+    box-shadow: 0 0 14px oklch(0.74 0.15 155 / 0.9);
+    transition-delay: 300ms;
+  }
+  /* The slot's mouth; the well below it starts at its middle, so the badge's
+     top edge disappears into it. */
+  .reader-slot {
+    position: absolute;
+    top: 228px;
+    left: 30px;
+    right: 30px;
+    height: 14px;
+    border-radius: 7px;
+    background: oklch(0.08 0 0);
+    box-shadow:
+      inset 0 3px 4px oklch(0 0 0 / 0.9),
+      var(--reader-slot-lip);
+  }
+  .reader-well {
+    position: absolute;
+    top: 235px;
+    left: 40px;
+    right: 40px;
+    bottom: 0;
     overflow: hidden;
-    border-radius: 1px;
-    background: var(--hairline);
-    opacity: 0;
-    transition: opacity 150ms ease;
+    padding: 0 10px 20px;
   }
-  .qm-splash-line::after {
-    content: '';
+  .reader-card {
+    position: relative;
     display: block;
-    height: 100%;
-    background: var(--signal);
-    transform: scaleX(0);
-    transform-origin: left;
+    width: 100%;
+    height: 186px;
+    overflow: hidden;
+    padding: 0;
+    border: 0;
+    border-radius: 0 0 14px 14px;
+    background: var(--reader-card);
+    box-shadow: var(--reader-card-edge);
+    color: var(--reader-card-ink);
+    cursor: pointer;
+    transform: translateY(-14px);
+    transition: transform 220ms var(--ease-out);
   }
-  .qm-splash.is-in .qm-splash-line {
-    opacity: 1;
+  @media (hover: hover) {
+    .reader:not(.is-in) .reader-card:hover {
+      transform: translateY(-24px);
+    }
   }
-  .qm-splash.is-in .qm-splash-line::after {
-    animation: qm-fill 1000ms linear both;
+  .reader-card:focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 3px;
+  }
+  .is-in .reader-card {
+    transform: translateY(-100%);
+    transition: transform 300ms cubic-bezier(0.55, 0, 0.3, 1);
+  }
+  .reader-card-mark {
+    position: absolute;
+    top: 44px;
+    left: 50%;
+    width: 34px;
+    margin-left: -17px;
+    overflow: visible;
+  }
+  .reader-card-mark circle {
+    filter: drop-shadow(0 0 4px oklch(0.8 0.12 225 / 0.8));
+  }
+  .reader-card-chip {
+    position: absolute;
+    left: 16px;
+    bottom: 18px;
+    width: 30px;
+    height: 22px;
+    border-radius: 5px;
+    background:
+      linear-gradient(
+        90deg,
+        transparent 32%,
+        oklch(0 0 0 / 0.3) 32% 36%,
+        transparent 36% 64%,
+        oklch(0 0 0 / 0.3) 64% 68%,
+        transparent 68%
+      ),
+      linear-gradient(0deg, transparent 46%, oklch(0 0 0 / 0.3) 46% 54%, transparent 54%),
+      linear-gradient(160deg, oklch(0.72 0.006 260), oklch(0.5 0.006 260));
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.3);
+  }
+  .reader-card-name {
+    position: absolute;
+    right: 16px;
+    bottom: 22px;
+    color: var(--reader-card-name);
+    font-family: var(--mono);
+    font-size: var(--type-10);
+    letter-spacing: var(--quorum-letter-spacings-stamp);
+    text-transform: uppercase;
   }
 
   /* ---- Phones, portrait, short screens -------------------------------- */
   @media (max-width: 900px), (max-aspect-ratio: 1 / 1) {
+    .qm-world {
+      --pad: 16px;
+    }
     .qm-main {
-      grid-template-columns: minmax(0, 1fr);
-      align-content: start;
-      align-items: start;
       gap: 22px;
-      overflow: auto;
-      scrollbar-width: thin;
-      padding: 8px 2px 20px;
+      padding: 8px 0 20px;
     }
     .qm-hero {
       gap: 18px;
@@ -1106,10 +1508,6 @@
     }
     .qm-readout {
       max-width: none;
-    }
-    .qm-index {
-      overflow: visible;
-      max-height: none;
     }
     .qm-keys,
     .qm-disclaimer {
@@ -1152,10 +1550,6 @@
     }
   }
   @media (max-width: 480px) {
-    .qm-grid,
-    .qm-grid.is-dense {
-      grid-template-columns: minmax(0, 1fr);
-    }
     .qm-grid:has(.qm-logo) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -1174,8 +1568,12 @@
 
   /* Reduced motion, from the system or from Settings: fades stay, movement goes. */
   @media (prefers-reduced-motion: reduce) {
-    .qm-page[data-enter='deeper'],
-    .qm-page[data-enter='back'],
+    .qm-world,
+    .qm-world[data-pan] {
+      transition: none;
+    }
+    .qm-page[data-enter='branch'] > *,
+    .qm-page.is-leaving,
     .qm-page[data-enter='first'] .qm-hero,
     .qm-page[data-enter='first'] .qm-section {
       animation-name: qm-fade;
@@ -1191,8 +1589,8 @@
       transform: none;
     }
   }
-  :root[data-motion='reduce'] .qm-page[data-enter='deeper'],
-  :root[data-motion='reduce'] .qm-page[data-enter='back'],
+  :root[data-motion='reduce'] .qm-page[data-enter='branch'] > *,
+  :root[data-motion='reduce'] .qm-page.is-leaving,
   :root[data-motion='reduce'] .qm-page[data-enter='first'] .qm-hero,
   :root[data-motion='reduce'] .qm-page[data-enter='first'] .qm-section {
     animation-name: qm-fade;
@@ -1413,9 +1811,6 @@
   padding-inline: 18px;
   justify-content: space-between;
   font-size: var(--type-15);
-}
-.qm-clockin {
-  justify-content: center;
 }
 .qm-back {
   height: 44px;

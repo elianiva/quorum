@@ -1,12 +1,13 @@
 /* The title screen: the clock-in splash, then the menu.
 
-   The menu reads as an on-call runbook pinned to the board's canvas. Every
-   choice is one line on a bus wire, numbered so a digit jumps to it; the line
-   that holds the focus fills with ink and lights its node on the wire. The
-   company's readout sits beside the index, with Continue as the first focus.
+   The menu is a tree on a canvas. The root column holds the wordmark, the
+   company's readout and the index; opening a line grows its page as a column
+   to the right, wired to the line it came from, and the camera pans to it.
+   Every choice is one line on a bus wire, numbered so a digit jumps to it; the
+   line that holds the focus fills with ink and lights its node on the wire.
 
    Keyboard: arrows move (lists wrap, grids move by position and stop at their
-   edges), Enter or Space opens, Esc or Backspace goes back. Every page
+   edges), Enter, Space or → opens, Esc, Backspace or ← goes back. Every page
    remembers the line that had the focus, so coming back lands where you left. */
 import { copyIn, copy, eraWords, localized } from '@/i18n/messages.ts'
 import * as Effect from 'effect/Effect'
@@ -72,9 +73,8 @@ import { menuOf, type MenuPage } from './route.ts'
 import { browserFamilyOf, onIos } from '../platform/pwa.ts'
 import { play } from './sound.ts'
 
-type Page = typeof MenuPage.Type | 'main' | 'save'
-
-const depthOf = (page: Page): number => (page === 'main' ? 0 : page === 'save' ? 2 : 1)
+/* `save` is a company under Companies; `setting` a section under Settings. */
+type Page = typeof MenuPage.Type | 'main' | 'save' | 'setting'
 
 /* ==========================================================================
    Keyboard and focus
@@ -89,9 +89,12 @@ const keyOf = (element: HTMLElement): string | undefined =>
 const shown = (element: HTMLElement) =>
   element.getClientRects().length > 0 && !(element as HTMLButtonElement).disabled
 
+/* The open column: the tree's deepest page, where the keyboard works. */
+const ACTIVE = '.qm-page.is-active'
+
 /* The page's stops in reading order. A tab row is one stop: the chosen tab. */
 const stopsOf = (root: ParentNode, from: Element | null): ReadonlyArray<HTMLElement> =>
-  [...root.querySelectorAll<HTMLElement>(`.qm-page :is(${NAV})`)].filter(
+  [...root.querySelectorAll<HTMLElement>(`${ACTIVE} :is(${NAV})`)].filter(
     (element) =>
       shown(element) &&
       (element.getAttribute('role') !== 'tab' ||
@@ -136,7 +139,6 @@ const nearest = (
 
 /* The line that last held the focus on each page, by its data-key. */
 const remembered = new Map<string, string>()
-let lastDepth = -1
 let revealed = false
 
 const pageKeyOf = (element: Element | null): string | null =>
@@ -144,7 +146,7 @@ const pageKeyOf = (element: Element | null): string | null =>
 
 const move = (to: HTMLElement | undefined) => {
   if (!to) return
-  to.focus()
+  to.focus({ preventScroll: true })
   play('hover')
 }
 
@@ -185,7 +187,8 @@ export const MenuDriver = Mount.define('MenuDriver', {
             return
           }
 
-          if (active?.getAttribute('role') === 'slider') {
+          /* A slider keeps its arrows; Esc still goes back. */
+          if (active?.getAttribute('role') === 'slider' && key !== 'Escape') {
             if (vertical) linear(key === 'ArrowUp' ? -1 : 1)
             return
           }
@@ -200,7 +203,7 @@ export const MenuDriver = Mount.define('MenuDriver', {
                 (tabs.indexOf(active) + (key === 'ArrowLeft' ? -1 : 1) + tabs.length) % tabs.length
               ]
             if (next && next !== active) {
-              next.focus()
+              next.focus({ preventScroll: true })
               next.click()
             }
             return
@@ -242,8 +245,16 @@ export const MenuDriver = Mount.define('MenuDriver', {
             return
           }
 
-          if (key === 'Escape' || key === 'Backspace') {
-            const back = element.querySelector<HTMLElement>('[data-back]')
+          /* → opens the focused branch, as Enter does. */
+          if (key === 'ArrowRight' && active?.hasAttribute('data-branch')) {
+            event.preventDefault()
+            event.stopPropagation()
+            active.click()
+            return
+          }
+
+          if (key === 'Escape' || key === 'Backspace' || key === 'ArrowLeft') {
+            const back = element.querySelector<HTMLElement>(`${ACTIVE} [data-back]`)
             if (back) {
               event.preventDefault()
               event.stopPropagation()
@@ -253,11 +264,11 @@ export const MenuDriver = Mount.define('MenuDriver', {
           }
 
           if (/^[1-9]$/.test(key)) {
-            const line = element.querySelector<HTMLElement>(`[data-hotkey="${key}"]`)
+            const line = element.querySelector<HTMLElement>(`${ACTIVE} [data-hotkey="${key}"]`)
             if (line && shown(line)) {
               event.preventDefault()
               event.stopPropagation()
-              line.focus()
+              line.focus({ preventScroll: true })
               line.click()
             }
           }
@@ -295,33 +306,383 @@ export const MenuDriver = Mount.define('MenuDriver', {
     ).pipe(Effect.as(Message.Synced())),
 })
 
-/* A page arrives from the side its depth says: deeper slides in from the
-   right, back from the left. The focus lands on the remembered line, else on
-   the page's first choice. */
+/* The focus lands on the page's remembered line, else on its first choice. */
+const focusPage = (page: HTMLElement) => {
+  const key = remembered.get(page.dataset.memory ?? '')
+  const stops = [...page.querySelectorAll<HTMLElement>(NAV)].filter(shown)
+  const target =
+    (key ? stops.find((stop) => keyOf(stop) === key) : undefined) ??
+    stops.find((stop) => stop.hasAttribute('data-first')) ??
+    stops.find((stop) => stop.getAttribute('aria-checked') === 'true') ??
+    stops.find((stop) => stop.getAttribute('role') !== 'tab' && !stop.closest('.qm-steps')) ??
+    stops[0]
+  target?.focus({ preventScroll: true })
+}
+
+/* The root draws itself in on the first reveal after clocking in; a branch
+   grows out of its wire. Only the open column takes the focus. */
 export const PageMounted = Mount.define('PageMounted', {
   messages: [Message.Synced],
   execute: ({ element }) =>
     Effect.sync(() => {
-      const depth = Number(element.getAttribute('data-depth') ?? '0')
       element.setAttribute(
         'data-enter',
-        lastDepth < 0 ? (revealed ? 'fade' : 'first') : depth >= lastDepth ? 'deeper' : 'back',
+        element.getAttribute('data-depth') !== '0' ? 'branch' : revealed ? 'fade' : 'first',
       )
-      lastDepth = depth
       revealed = true
-      const memory = element.getAttribute('data-memory') ?? ''
-      const key = remembered.get(memory)
-      const stops = [...element.querySelectorAll<HTMLElement>(NAV)].filter(shown)
-      const target =
-        (key ? stops.find((stop) => keyOf(stop) === key) : undefined) ??
-        stops.find((stop) => stop.hasAttribute('data-first')) ??
-        stops.find((stop) => stop.getAttribute('aria-checked') === 'true') ??
-        stops.find((stop) => stop.getAttribute('role') !== 'tab' && !stop.closest('.qm-steps')) ??
-        stops[0]
-      target?.focus({ preventScroll: true })
-      target?.scrollIntoView({ block: 'nearest' })
+      if (element instanceof HTMLElement && element.classList.contains('is-active'))
+        focusPage(element)
       return Message.Synced()
     }),
+})
+
+const SVG = 'http://www.w3.org/2000/svg'
+const LEAVE_MS = 160
+const SETTLE_MS = 900
+
+/* Room the camera keeps between a column and the stage's top and bottom. */
+const MARGIN = 24
+/* How long a pan mode outlives its last input. */
+const PANNING_MS = 160
+/* A finger's fling: the speed it keeps each frame, and how much of a drag
+   past the ends the canvas follows. */
+const FRICTION = 0.95
+const RUBBER = 0.35
+
+/* How the camera reaches its next height: 'glide' to frame a column that
+   opens, 'step' for a wheel notch or a focus move, 'track' to follow a
+   trackpad or a finger 1:1 with no easing at all. */
+type Pan = 'glide' | 'step' | 'track'
+
+/* The camera over the canvas. The view sets the open column's depth and CSS
+   pans across to it; this mount does the rest: it hangs each branch level with
+   the line it grew from, draws the wires, pans up and down (to frame a column
+   that opens, under the wheel or a finger, and to follow the focus), lets a
+   closed column fade where it stood, and gives the focus back to the open one.
+   Positions are read relative to the world, so a pan in flight never feeds
+   back into where the camera goes next. */
+export const TreeCamera = Mount.define('TreeCamera', {
+  messages: [Message.Synced],
+  execute: ({ element }) =>
+    Effect.acquireRelease(
+      Effect.sync(() => {
+        const world = element.querySelector<HTMLElement>('.qm-world')!
+        const stage = world.parentElement!
+        const wires = world.querySelector<SVGSVGElement>('.qm-wires')!
+        const ghosts = world.querySelector<HTMLElement>('.qm-ghosts')!
+        const columns = () =>
+          [...world.querySelectorAll<HTMLElement>(':scope > .qm-page')].sort(
+            (a, b) => Number(a.dataset.depth) - Number(b.dataset.depth),
+          )
+        const at = (node: Element) => {
+          const box = node.getBoundingClientRect()
+          const origin = world.getBoundingClientRect()
+          return {
+            top: box.top - origin.top,
+            bottom: box.bottom - origin.top,
+            left: box.left - origin.left,
+            right: box.right - origin.left,
+          }
+        }
+
+        const anchorOf = (column: HTMLElement): Element | null => {
+          const parent = columns().find(
+            (other) => Number(other.dataset.depth) === Number(column.dataset.depth) - 1,
+          )
+          if (!parent) return null
+          const from = column.dataset.from
+          return (
+            (from ? parent.querySelector(`[data-key="${CSS.escape(from)}"]`) : null) ??
+            parent.querySelector('.qm-hero-title .qm-mark, .qm-sub-head') ??
+            parent
+          )
+        }
+        const headOf = (column: HTMLElement): Element =>
+          column.firstElementChild?.firstElementChild ?? column
+
+        /* A branch hangs with its head level with the line it grew from. */
+        const place = () => {
+          for (const column of columns()) {
+            const anchor = anchorOf(column)
+            if (!anchor) continue
+            const line = at(anchor)
+            const head = at(headOf(column))
+            const top = at(column).top
+            const y = (line.top + line.bottom) / 2 - (head.top - top + (head.bottom - head.top) / 2)
+            column.style.top = `${Math.round(y)}px`
+          }
+        }
+
+        const draw = () => {
+          const live = new Set<string>()
+          for (const column of columns()) {
+            const anchor = anchorOf(column)
+            const id = column.dataset.memory ?? ''
+            if (!anchor) continue
+            live.add(id)
+            const from = at(anchor)
+            const head = at(headOf(column))
+            const x1 = from.right + 6
+            const y1 = (from.top + from.bottom) / 2
+            const x2 = at(column).left - 4
+            const y2 = (head.top + head.bottom) / 2
+            const xm = x1 + (x2 - x1) / 2
+            const r = Math.min(10, Math.abs(y2 - y1) / 2, (x2 - x1) / 4)
+            const dir = y2 >= y1 ? 1 : -1
+            const d =
+              r < 0.5
+                ? `M${x1} ${y1}H${x2}`
+                : `M${x1} ${y1}H${xm - r}Q${xm} ${y1} ${xm} ${y1 + dir * r}` +
+                  `V${y2 - dir * r}Q${xm} ${y2} ${xm + r} ${y2}H${x2}`
+            let wire = wires.querySelector<SVGGElement>(`[data-wire="${CSS.escape(id)}"]`)
+            if (!wire) {
+              wire = document.createElementNS(SVG, 'g')
+              wire.dataset.wire = id
+              wire.setAttribute('class', 'qm-wire')
+              const path = document.createElementNS(SVG, 'path')
+              path.setAttribute('pathLength', '1')
+              const tip = document.createElementNS(SVG, 'circle')
+              tip.setAttribute('r', '3.5')
+              wire.append(path, tip)
+              wires.append(wire)
+            }
+            wire.querySelector('path')!.setAttribute('d', d)
+            const tip = wire.querySelector('circle')!
+            tip.setAttribute('cx', `${x2}`)
+            tip.setAttribute('cy', `${y2}`)
+          }
+          for (const wire of wires.querySelectorAll<SVGGElement>('[data-wire]'))
+            if (!live.has(wire.dataset.wire ?? '') && !wire.classList.contains('is-leaving')) {
+              wire.classList.add('is-leaving')
+              setTimeout(() => wire.remove(), LEAVE_MS)
+            }
+        }
+
+        /* The camera's height over the world: 0 puts the world's top at the
+           stage's top. */
+        let cameraY = 0
+        let openKey = ''
+        let panTimer = 0
+        let fling = 0
+        const aim = (y: number, pan: Pan) => {
+          if (pan !== 'track') {
+            cancelAnimationFrame(fling)
+            fling = 0
+          }
+          cameraY = pan === 'track' ? y : Math.round(y)
+          clearTimeout(panTimer)
+          if (pan === 'glide') delete world.dataset.pan
+          else {
+            world.dataset.pan = pan
+            panTimer = window.setTimeout(() => delete world.dataset.pan, PANNING_MS)
+          }
+          world.style.setProperty('--camera-y', `${cameraY}px`)
+        }
+        /* The camera heights that show the open column's top and its bottom.
+           When it fits, every height between them shows all of it. */
+        const range = () => {
+          const open = world.querySelector<HTMLElement>(ACTIVE)
+          if (!open) return null
+          const box = at(open)
+          const height = element.clientHeight
+          return {
+            top: MARGIN - box.top,
+            bottom: height - MARGIN - box.bottom,
+            fits: box.bottom - box.top <= height - 2 * MARGIN,
+          }
+        }
+        /* A column that fits holds still in the middle, as a page that fits
+           does not scroll. */
+        const bounds = () => {
+          const r = range()
+          if (!r) return null
+          if (r.fits) return { low: (r.top + r.bottom) / 2, high: (r.top + r.bottom) / 2 }
+          return { low: r.bottom, high: r.top }
+        }
+        const clampY = (y: number) => {
+          const b = bounds()
+          return b ? Math.min(b.high, Math.max(b.low, y)) : y
+        }
+        /* The open column sits in the middle of the stage, unless that hides
+           the line it grew from: then the camera shifts right until the line
+           shows, as far as the open column's right edge allows. */
+        const steer = (open: HTMLElement) => {
+          const anchor = anchorOf(open)
+          let x = 0
+          if (anchor) {
+            const box = at(open)
+            const width = element.clientWidth
+            const centred = (width - (box.right - box.left)) / 2 - box.left
+            const need = 2 * MARGIN - (centred + at(anchor).left)
+            const room = width - MARGIN - (centred + box.right)
+            x = Math.max(0, Math.min(need, room))
+          }
+          world.style.setProperty('--camera-x', `${Math.round(x)}px`)
+        }
+        /* A new open column sits in the middle of the stage; one taller than
+           the stage shows its head first. */
+        const frame = () => {
+          const open = world.querySelector<HTMLElement>(ACTIVE)
+          const r = range()
+          if (!open || !r) return
+          steer(open)
+          const key = open.dataset.memory ?? ''
+          const fresh = key !== openKey
+          openKey = key
+          if (!fresh) return aim(clampY(cameraY), 'glide')
+          aim(r.fits ? (r.top + r.bottom) / 2 : r.top, 'glide')
+        }
+        /* Keep the focused line on screen, panning no further than it needs. */
+        const follow = (target: Element) => {
+          const open = world.querySelector(ACTIVE)
+          if (!open?.contains(target)) return
+          const box = at(target)
+          const height = element.clientHeight
+          const top = box.top + cameraY
+          const bottom = box.bottom + cameraY
+          if (top >= MARGIN && bottom <= height - MARGIN) return
+          const y = top < MARGIN ? MARGIN - box.top : height - MARGIN - box.bottom
+          aim(clampY(y), 'step')
+        }
+
+        /* Lines move while a page enters or reflows: redraw every frame until
+           things settle. */
+        let raf = 0
+        let until = 0
+        const settle = () => {
+          until = performance.now() + SETTLE_MS
+          if (raf) return
+          const tick = () => {
+            place()
+            draw()
+            raf = performance.now() < until ? requestAnimationFrame(tick) : 0
+          }
+          raf = requestAnimationFrame(tick)
+        }
+
+        const observer = new MutationObserver((records) => {
+          let closed = false
+          for (const record of records) {
+            if (record.target !== world) continue
+            for (const node of record.removedNodes) {
+              if (!(node instanceof HTMLElement) || !node.classList.contains('qm-page')) continue
+              closed = true
+              const ghost = node.cloneNode(true) as HTMLElement
+              ghost.classList.remove('is-active')
+              ghost.removeAttribute('data-enter')
+              for (const marked of ghost.querySelectorAll('[id]')) marked.removeAttribute('id')
+              ghost.classList.add('is-leaving')
+              ghosts.append(ghost)
+              setTimeout(() => ghost.remove(), LEAVE_MS)
+            }
+          }
+          place()
+          frame()
+          /* Closing a column takes the focus with it: hand it to the open one. */
+          const open = world.querySelector<HTMLElement>(ACTIVE)
+          const lost = document.activeElement === null || document.activeElement === document.body
+          if (closed && open && lost) focusPage(open)
+          settle()
+        })
+        observer.observe(world, { childList: true, subtree: true })
+        const resize = new ResizeObserver(() => {
+          place()
+          frame()
+          settle()
+        })
+        resize.observe(element)
+
+        const onFocus = (event: FocusEvent) => {
+          const target = event.target
+          if (target instanceof Element) requestAnimationFrame(() => follow(target))
+        }
+        /* A trackpad sends a stream of small deltas, with its own momentum
+           after the fingers lift: follow it 1:1. A mouse wheel sends notches
+           of 100px or so, or lines: ease across each one. */
+        const onWheel = (event: WheelEvent) => {
+          if (event.ctrlKey) return
+          event.preventDefault()
+          const unit =
+            event.deltaMode === WheelEvent.DOM_DELTA_LINE
+              ? 16
+              : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+                ? element.clientHeight
+                : 1
+          const notch =
+            event.deltaMode !== WheelEvent.DOM_DELTA_PIXEL || Math.abs(event.deltaY) >= 50
+          aim(clampY(cameraY - event.deltaY * unit), notch ? 'step' : 'track')
+        }
+        /* A finger drags the canvas 1:1, stretches past the ends, and flings:
+           it keeps its speed and slows down, as a native list does. */
+        let touchY: number | null = null
+        let touchAt = 0
+        let velocity = 0
+        const onTouchStart = (event: TouchEvent) => {
+          cancelAnimationFrame(fling)
+          fling = 0
+          velocity = 0
+          touchY = event.touches.length === 1 ? event.touches[0]!.clientY : null
+          touchAt = event.timeStamp
+        }
+        const onTouchMove = (event: TouchEvent) => {
+          if (touchY === null || event.touches.length !== 1) return
+          const y = event.touches[0]!.clientY
+          event.preventDefault()
+          const dy = y - touchY
+          const dt = Math.max(1, event.timeStamp - touchAt)
+          velocity = 0.8 * (dy / dt) + 0.2 * velocity
+          const next = cameraY + dy
+          const inside = clampY(next)
+          aim(next === inside ? next : cameraY + dy * RUBBER, 'track')
+          touchY = y
+          touchAt = event.timeStamp
+        }
+        const onTouchEnd = () => {
+          if (touchY === null) return
+          touchY = null
+          const inside = clampY(cameraY)
+          if (inside !== cameraY) return aim(inside, 'glide')
+          let v = velocity * 16
+          let last = performance.now()
+          const coast = (now: number) => {
+            v *= FRICTION ** ((now - last) / 16)
+            last = now
+            const want = cameraY + v
+            const next = clampY(want)
+            aim(next, 'track')
+            fling = Math.abs(v) > 0.2 && next === want ? requestAnimationFrame(coast) : 0
+          }
+          if (Math.abs(v) > 1) fling = requestAnimationFrame(coast)
+        }
+        stage.addEventListener('focusin', onFocus)
+        stage.addEventListener('wheel', onWheel, { passive: false })
+        stage.addEventListener('touchstart', onTouchStart, { passive: true })
+        stage.addEventListener('touchmove', onTouchMove, { passive: false })
+        stage.addEventListener('touchend', onTouchEnd)
+        stage.addEventListener('touchcancel', onTouchEnd)
+
+        /* The first frame lands without a pan. */
+        world.classList.add('is-still')
+        place()
+        frame()
+        requestAnimationFrame(() => requestAnimationFrame(() => world.classList.remove('is-still')))
+        settle()
+        return () => {
+          observer.disconnect()
+          resize.disconnect()
+          stage.removeEventListener('focusin', onFocus)
+          stage.removeEventListener('wheel', onWheel)
+          stage.removeEventListener('touchstart', onTouchStart)
+          stage.removeEventListener('touchmove', onTouchMove)
+          stage.removeEventListener('touchend', onTouchEnd)
+          stage.removeEventListener('touchcancel', onTouchEnd)
+          cancelAnimationFrame(raf)
+          cancelAnimationFrame(fling)
+          clearTimeout(panTimer)
+        }
+      }),
+      (cleanup) => Effect.sync(cleanup),
+    ).pipe(Effect.as(Message.Synced())),
 })
 
 export const WallClock = Mount.define('WallClock', {
@@ -408,6 +769,8 @@ type Line = Readonly<{
   pick?: 'radio' | 'checkbox' | undefined
   checked?: boolean
   index?: number
+  branch?: boolean
+  open?: boolean
 }>
 
 /* One choice on the bus. A line without a message stays focusable so a
@@ -420,13 +783,21 @@ const line = (r: Line, h: HtmlBuilder<Message>): Html =>
       h.DataAttribute('nav', ''),
       h.DataAttribute('key', r.key),
       ...(r.first ? [h.DataAttribute('first', '')] : []),
+      ...(r.branch ? [h.DataAttribute('branch', '')] : []),
       ...(r.hotkey
         ? [h.DataAttribute('hotkey', `${r.hotkey}`), h.AriaKeyshortcuts(`${r.hotkey}`)]
         : []),
       ...(r.message ? [h.OnClick(r.message)] : [h.AriaDisabled(true)]),
       ...(r.pick ? [h.Role(r.pick), h.AriaChecked(r.checked === true)] : []),
       h.Style({ '--i': `${r.index ?? 0}` }),
-      h.Class(cx('qm-line', r.danger && 'is-danger', !r.hotkey && !r.pick && !r.lead && 'is-bare')),
+      h.Class(
+        cx(
+          'qm-line',
+          r.danger && 'is-danger',
+          r.open && 'is-open',
+          !r.hotkey && !r.pick && !r.lead && 'is-bare',
+        ),
+      ),
     ],
     [
       r.hotkey
@@ -622,7 +993,7 @@ const readout = (model: Model, h: HtmlBuilder<Message>): Html => {
 }
 
 /* With no company yet, the hero has one thing to say: start one. */
-const firstRun = (h: HtmlBuilder<Message>): Html => {
+const firstRun = (open: boolean, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.section(
     [h.Class('qm-readout is-empty')],
@@ -631,11 +1002,12 @@ const firstRun = (h: HtmlBuilder<Message>): Html => {
         {
           onClick: Message.MenuChosen({ menu: 'found' }),
           size: 'lg',
-          className: 'qm-cta',
+          className: cx('qm-cta', open && 'is-open'),
           attributes: [
             h.DataAttribute('nav', ''),
             h.DataAttribute('key', 'start'),
             h.DataAttribute('first', ''),
+            h.DataAttribute('branch', ''),
           ],
         },
         [h.span([], [t.title.startACompany]), glyph(ChevronRight, h)],
@@ -691,10 +1063,15 @@ const mainIndex = (model: Model, h: HtmlBuilder<Message>): Html => {
   const solved = CHALLENGES.filter((entry) => model.founder.completed.includes(entry.id)).length
   let n = 0
   const next = () => ++n
-  const go = (menu: typeof MenuPage.Type) => Message.MenuChosen({ menu })
+  const open = menuOf(model.route)
+  const to = (menu: typeof MenuPage.Type) => ({
+    message: Message.MenuChosen({ menu }),
+    branch: true,
+    open: open === menu,
+  })
   const company = [
     ...(hasCompany(model)
-      ? [line({ key: 'new', label: t.title.newCompany, message: go('found'), hotkey: next() }, h)]
+      ? [line({ key: 'new', label: t.title.newCompany, ...to('found'), hotkey: next() }, h)]
       : []),
     line(
       {
@@ -712,7 +1089,7 @@ const mainIndex = (model: Model, h: HtmlBuilder<Message>): Html => {
               key: 'companies',
               label: t.title.companies,
               figure: `${count}`,
-              message: go('companies'),
+              ...to('companies'),
               hotkey: next(),
             },
             h,
@@ -726,7 +1103,7 @@ const mainIndex = (model: Model, h: HtmlBuilder<Message>): Html => {
         key: 'sandbox',
         label: t.title.sandbox,
         figure: `${passed}/${SANDBOX_IDS.length}`,
-        message: go('sandbox'),
+        ...to('sandbox'),
         hotkey: next(),
       },
       h,
@@ -736,7 +1113,7 @@ const mainIndex = (model: Model, h: HtmlBuilder<Message>): Html => {
         key: 'challenges',
         label: t.title.challenges,
         figure: `${solved}/${CHALLENGES.length}`,
-        message: go('challenges'),
+        ...to('challenges'),
         hotkey: next(),
       },
       h,
@@ -748,7 +1125,7 @@ const mainIndex = (model: Model, h: HtmlBuilder<Message>): Html => {
         key: 'achievements',
         label: t.title.achievements,
         figure: `${model.founder.achievements.length}/${ACHIEVEMENT_IDS.length}`,
-        message: go('achievements'),
+        ...to('achievements'),
         hotkey: next(),
       },
       h,
@@ -758,7 +1135,7 @@ const mainIndex = (model: Model, h: HtmlBuilder<Message>): Html => {
         key: 'legacy',
         label: t.title.legacyShop,
         figure: `${model.founder.legacy}`,
-        message: go('legacy'),
+        ...to('legacy'),
         hotkey: next(),
       },
       h,
@@ -768,7 +1145,7 @@ const mainIndex = (model: Model, h: HtmlBuilder<Message>): Html => {
         key: 'history',
         label: t.title.history,
         figure: `${model.founder.history.length}`,
-        message: go('history'),
+        ...to('history'),
         hotkey: next(),
       },
       h,
@@ -793,7 +1170,7 @@ const mainPage = (model: Model, h: HtmlBuilder<Message>): Html =>
         [h.Class('qm-hero')],
         [
           h.h1([h.Class('qm-hero-title')], [wordmark('is-hero', h)]),
-          hasCompany(model) ? readout(model, h) : firstRun(h),
+          hasCompany(model) ? readout(model, h) : firstRun(menuOf(model.route) === 'found', h),
         ],
       ),
       mainIndex(model, h),
@@ -1056,6 +1433,8 @@ const companiesBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Htm
                   ? t.title.current
                   : dateOf(file),
             message: Message.CompanyChosen({ id: file.id }),
+            branch: true,
+            open: model.saveFocus === file.id,
             index,
           },
           h,
@@ -1311,7 +1690,7 @@ const achievementsBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<
       h,
     ),
     h.div(
-      [h.Class('qm-grid is-dense'), h.DataAttribute('grid', '')],
+      [h.Class('qm-grid'), h.DataAttribute('grid', '')],
       [...ACHIEVEMENT_IDS]
         .sort((a, b) => Number(earned.includes(b)) - Number(earned.includes(a)))
         .map((id) => {
@@ -1415,7 +1794,6 @@ const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Ht
 const settingsBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
   const sections = settingsSections(model, t)
-  const active = sections.find((part) => part.id === model.settingsSection) ?? sections[0]!
   const pwa: Array<Html> = []
   if (!model.pwa.installed) {
     pwa.push(
@@ -1449,38 +1827,33 @@ const settingsBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html
     )
   return [
     h.div(
-      [h.Key('tabs'), h.Class('qm-tabs'), h.Role('tablist'), h.AriaLabel(t.panels.settings)],
+      [h.Key('sections'), h.Class('qm-bus')],
       sections.map((part) =>
-        h.button(
-          [
-            h.Key(part.id),
-            h.Type('button'),
-            h.Role('tab'),
-            h.Id(`menu-tab-${part.id}`),
-            h.AriaSelected(part.id === active.id),
-            h.AriaControls('menu-tab-panel'),
-            h.Tabindex(part.id === active.id ? 0 : -1),
-            ...(part.id === active.id ? [h.DataAttribute('first', '')] : []),
-            h.DataAttribute('nav', ''),
-            h.DataAttribute('key', `tab-${part.id}`),
-            h.Class('qm-tab'),
-            h.OnClick(Message.SettingsSectionChosen({ section: part.id })),
-          ],
-          [part.label],
+        line(
+          {
+            key: `section-${part.id}`,
+            label: part.label,
+            message: Message.SettingsSectionOpened({ section: part.id }),
+            branch: true,
+            open: model.settingsOpen && part.id === model.settingsSection,
+          },
+          h,
         ),
       ),
     ),
-    h.div(
-      [
-        h.Key(`panel-${active.id}`),
-        h.Id('menu-tab-panel'),
-        h.Role('tabpanel'),
-        h.AriaLabelledBy(`menu-tab-${active.id}`),
-        h.Class('qm-bus is-settings'),
-      ],
-      active.rows.map((setting) => settingRow(setting, model, h)),
-    ),
     ...(pwa.length > 0 ? [section(t.pwa.app, pwa, h)] : []),
+  ]
+}
+
+/* One section of Settings, as its own column under the section list. */
+const settingBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
+  const sections = settingsSections(model, copy(h))
+  const open = sections.find((part) => part.id === model.settingsSection) ?? sections[0]!
+  return [
+    h.div(
+      [h.Key(`rows-${open.id}`), h.Class('qm-bus is-settings')],
+      open.rows.map((setting) => settingRow(setting, model, h)),
+    ),
   ]
 }
 
@@ -1527,12 +1900,22 @@ const pagesOf = (model: Model, h: HtmlBuilder<Message>): Record<Exclude<Page, 'm
       figure: (m) => `${m.founder.achievements.length}/${ACHIEVEMENT_IDS.length}`,
     },
     settings: { title: t.title.settings, body: settingsBody },
+    setting: {
+      title:
+        settingsSections(model, t).find((part) => part.id === model.settingsSection)?.label ??
+        t.title.settings,
+      body: settingBody,
+    },
   }
 }
 
 const pageOf = (model: Model): Page => {
   const page = menuOf(model.route)
-  return page === 'companies' && model.saveFocus !== null ? 'save' : page
+  return page === 'companies' && model.saveFocus !== null
+    ? 'save'
+    : page === 'settings' && model.settingsOpen
+      ? 'setting'
+      : page
 }
 
 const subPage = (model: Model, page: Exclude<Page, 'main'>, h: HtmlBuilder<Message>): Html => {
@@ -1547,14 +1930,27 @@ const subPage = (model: Model, page: Exclude<Page, 'main'>, h: HtmlBuilder<Messa
           button(
             {
               onClick:
-                page === 'save' ? Message.CompanyClosed() : Message.MenuChosen({ menu: 'main' }),
+                page === 'save'
+                  ? Message.CompanyClosed()
+                  : page === 'setting'
+                    ? Message.SettingsSectionClosed()
+                    : Message.MenuChosen({ menu: 'main' }),
               variant: 'ghost',
               className: 'qm-back',
               attributes: [h.DataAttribute('back', ''), h.AriaKeyshortcuts('Escape')],
             },
             [
               glyph(ChevronLeft, h),
-              h.span([], [page === 'save' ? t.title.companies : t.title.back]),
+              h.span(
+                [],
+                [
+                  page === 'save'
+                    ? t.title.companies
+                    : page === 'setting'
+                      ? t.title.settings
+                      : t.title.back,
+                ],
+              ),
             ],
             h,
           ),
@@ -1568,24 +1964,87 @@ const subPage = (model: Model, page: Exclude<Page, 'main'>, h: HtmlBuilder<Messa
   )
 }
 
-const screen = (model: Model, h: HtmlBuilder<Message>): Html => {
-  const page = pageOf(model)
-  const memory =
-    page === 'save'
-      ? `save-${model.saveFocus}`
+/* The pages from the root to the open one: the tree's open branch. */
+const trailOf = (page: Page): ReadonlyArray<Page> =>
+  page === 'main'
+    ? ['main']
+    : page === 'save'
+      ? ['main', 'companies', 'save']
+      : page === 'setting'
+        ? ['main', 'settings', 'setting']
+        : ['main', page]
+
+/* The line each page grows from, by its data-key. Settings opens from the
+   dock, so it hangs from the wordmark. */
+const fromOf = (model: Model, page: Page): string | null =>
+  page === 'main' || page === 'settings'
+    ? null
+    : page === 'save'
+      ? model.saveFocus
+      : page === 'setting'
+        ? `section-${model.settingsSection}`
+        : page === 'found'
+          ? hasCompany(model)
+            ? 'new'
+            : 'start'
+          : page
+
+const memoryOf = (model: Model, page: Page): string =>
+  page === 'save'
+    ? `save-${model.saveFocus}`
+    : page === 'setting'
+      ? `setting-${model.settingsSection}`
       : page === 'found'
         ? `found-${model.foundStep}`
         : page
+
+/* One column per page on the open branch. The root keeps its key, so it stays
+   put while branches grow and close beside it. */
+const column = (
+  model: Model,
+  page: Page,
+  depth: number,
+  open: boolean,
+  h: HtmlBuilder<Message>,
+) => {
+  const memory = memoryOf(model, page)
+  const from = fromOf(model, page)
   return h.div(
     [
-      h.Key(memory),
-      h.Class(cx('qm-page', page === 'main' ? 'is-main' : 'is-sub')),
+      h.Key(depth === 0 ? 'root' : memory),
+      h.Class(
+        cx(
+          'qm-page',
+          page === 'main' ? 'is-main' : 'is-sub',
+          (page === 'settings' || page === 'companies') && 'is-list',
+          open && 'is-active',
+        ),
+      ),
+      h.Style({ '--d': `${depth}` }),
       h.DataAttribute('page', page),
       h.DataAttribute('memory', memory),
-      h.DataAttribute('depth', `${depthOf(page)}`),
+      h.DataAttribute('depth', `${depth}`),
+      ...(from === null ? [] : [h.DataAttribute('from', from)]),
       h.OnMount(PageMounted()),
     ],
     [page === 'main' ? mainPage(model, h) : subPage(model, page, h)],
+  )
+}
+
+const screen = (model: Model, h: HtmlBuilder<Message>): Html => {
+  const trail = trailOf(pageOf(model))
+  return h.div(
+    [h.Key('stage'), h.Class('qm-stage'), h.OnMount(TreeCamera())],
+    [
+      h.div(
+        [h.Class('qm-world'), h.DataAttribute('depth', `${trail.length - 1}`)],
+        [
+          h.svg([h.Key('wires'), h.Class('qm-wires'), h.AriaHidden(true)], []),
+          h.div([h.Key('ghosts'), h.Class('qm-ghosts'), h.AriaHidden(true), h.Inert(true)], []),
+          ...trail.map((page, depth) => column(model, page, depth, depth === trail.length - 1, h)),
+        ],
+      ),
+    ],
   )
 }
 
@@ -1609,16 +2068,14 @@ const toolLink = (
     r.body,
   )
 
-const toolbar = (model: Model, page: Page, h: HtmlBuilder<Message>): Html => {
+const toolbar = (h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const release = import.meta.env.VITE_SENTRY_RELEASE
   const build = release === undefined || release === '' ? 'dev' : release.slice(0, 7)
   return h.header(
     [h.Class('qm-bar')],
     [
-      page === 'main'
-        ? h.span([], [])
-        : h.span([h.Class('qm-crumb'), h.AriaHidden(true)], [wordmark('is-small', h)]),
+      h.span([], []),
       h.nav(
         [h.Class('qm-tools'), h.AriaLabel(t.title.taskbar)],
         [
@@ -1667,6 +2124,7 @@ const toolbar = (model: Model, page: Page, h: HtmlBuilder<Message>): Html => {
 
 const dock = (model: Model, page: Page, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
+  const inSettings = page === 'settings' || page === 'setting'
   const keys: ReadonlyArray<readonly [string, string]> = [
     ['↑↓', t.title.select],
     [t.title.enter, t.title.open],
@@ -1697,8 +2155,8 @@ const dock = (model: Model, page: Page, h: HtmlBuilder<Message>): Html => {
             [
               h.Type('button'),
               h.Class('qm-tool is-wide'),
-              h.AriaPressed(page === 'settings' ? 'true' : 'false'),
-              h.OnClick(Message.MenuChosen({ menu: page === 'settings' ? 'main' : 'settings' })),
+              h.AriaPressed(inSettings ? 'true' : 'false'),
+              h.OnClick(Message.MenuChosen({ menu: inSettings ? 'main' : 'settings' })),
             ],
             [glyph(Settings, h), h.span([h.Class('qm-tool-label')], [t.title.settings])],
           ),
@@ -1766,7 +2224,7 @@ const menu = (model: Model, h: HtmlBuilder<Message>): Html => {
   return h.div(
     [h.Key('menu'), h.Class('qm'), h.OnMount(MenuDriver())],
     [
-      toolbar(model, page, h),
+      toolbar(h),
       screen(model, h),
       dock(model, page, h),
       connecting(model.boot) ? connectStatus(model, h) : h.empty,
@@ -1778,37 +2236,76 @@ const menu = (model: Model, h: HtmlBuilder<Message>): Html => {
    Clock-in splash
    ========================================================================== */
 
-/* The shift starts here: the wordmark draws itself, the wall clock runs, and
-   one button clocks in. Any key does the same, so the focus starts on it. */
+/* The shift starts here: a wall badge reader with the badge hanging out of its
+   slot. A click, or any key, slides the badge in, the LED turns green, and the
+   reader steps back for the menu. */
 const splash = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const clocking = model.boot._tag === 'Clocking'
   return h.div(
-    [h.Key('splash'), h.Class(cx('qm-splash', clocking && 'is-in'))],
+    [h.Key('splash'), h.Class('reader-splash')],
     [
-      h.h1([h.Class('qm-splash-title')], [wordmark('is-splash', h)]),
-      h.span([h.Class('qm-splash-clock'), h.OnMount(WallClock()), h.AriaHidden(true)], ['--:--']),
+      h.h1([h.Class(hidden)], ['Quorum']),
       h.div(
-        [h.Class('qm-splash-action')],
+        [h.Class(cx('reader', clocking && 'is-in'))],
         [
-          button(
-            {
-              onClick: Message.ClockedIn(),
-              size: 'lg',
-              isAutofocus: true,
-              isDisabled: clocking,
-              className: 'qm-cta qm-clockin',
-            },
+          h.div(
+            [h.Class('reader-body')],
             [
-              clocking ? glyph(Check, h) : h.empty,
-              h.span([], [clocking ? t.title.clockedIn : t.title.clockIn]),
+              ...['is-tl', 'is-tr', 'is-bl', 'is-br'].map((at) =>
+                h.span([h.Class(cx('reader-screw', at))], []),
+              ),
+              h.div(
+                [h.Class('reader-screen'), h.AriaLive('polite')],
+                [
+                  h.span([h.Class('reader-time'), h.OnMount(WallClock())], ['--:--']),
+                  h.span(
+                    [h.Class('reader-status')],
+                    [
+                      h.span([h.Class('reader-status-out')], [t.title.insertBadge]),
+                      h.span([h.Class('reader-status-in')], [t.title.clockedIn]),
+                    ],
+                  ),
+                ],
+              ),
+              h.span([h.Class('reader-led')], []),
+              h.span([h.Class('reader-slot')], []),
             ],
-            h,
           ),
-          h.span([h.Class('qm-splash-line'), h.AriaHidden(true)], []),
+          h.div(
+            [h.Class('reader-well')],
+            [
+              h.button(
+                [
+                  h.Type('button'),
+                  h.AriaLabel(t.title.clockIn),
+                  h.OnClick(Message.ClockedIn()),
+                  h.Class('reader-card'),
+                ],
+                [
+                  h.svg(
+                    [h.ViewBox('0 0 100 194'), h.Class('reader-card-mark'), h.AriaHidden(true)],
+                    [
+                      ...GLYPHS[0]!.paths.map((d) =>
+                        h.path([
+                          h.D(d),
+                          h.Fill('none'),
+                          h.Stroke('currentColor'),
+                          h.StrokeWidth('22'),
+                        ]),
+                      ),
+                      h.circle([h.Fill('var(--signal)'), h.Cx('89'), h.Cy('180'), h.R('14')]),
+                    ],
+                  ),
+                  h.span([h.Class('reader-card-chip')], []),
+                  h.span([h.Class('reader-card-name')], [t.title.founder]),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
-      h.p([h.Class(hidden), h.AriaLive('polite')], [clocking ? t.title.clockedIn : '']),
+      h.p([h.Class('reader-hint'), h.AriaHidden(true)], [t.title.clockInHint]),
     ],
   )
 }

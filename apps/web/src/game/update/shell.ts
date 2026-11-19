@@ -28,6 +28,8 @@ type ShellTag =
   | 'TitleRevealed'
   | 'MenuChosen'
   | 'SettingsSectionChosen'
+  | 'SettingsSectionOpened'
+  | 'SettingsSectionClosed'
   | 'FoundStepChosen'
   | 'ClickedLink'
   | 'ChangedUrl'
@@ -53,12 +55,19 @@ export const shellHandlers = (model: Model): MessageCases<UpdateResult, ShellTag
           model: {
             ...model,
             route: routeOfMenu(menu),
+            settingsOpen: false,
             ...(menu === 'found' ? { foundStep: 'company' as const } : {}),
             ...(menu === 'companies' ? {} : { saveFocus: null, saveConfirm: { _tag: 'List' } }),
           },
         },
 
   SettingsSectionChosen: ({ section }) => ({ model: { ...model, settingsSection: section } }),
+
+  SettingsSectionOpened: ({ section }) => ({
+    model: { ...model, settingsSection: section, settingsOpen: true },
+  }),
+
+  SettingsSectionClosed: () => ({ model: { ...model, settingsOpen: false } }),
 
   FoundStepChosen: ({ step }) => ({ model: { ...model, foundStep: step } }),
 

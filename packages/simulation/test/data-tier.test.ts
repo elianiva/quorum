@@ -473,6 +473,17 @@ describe('one Data Group per caller', () => {
     expect(ledger.nodes[cache]!.stranded).toBe(0)
   })
 
+  test('a Cache reports its memory against the hot data it holds', () => {
+    let game = { ...freeSandbox(), users: 10_000 }
+    let cache: string
+    ;[game, cache] = build(game, 'cache')
+    expect(solveFlow(game).nodes[cache]!.resources.ramGb).toEqual({ used: 2, total: 1 })
+    game = ok(resize(game, cache, 1))
+    expect(solveFlow(game).nodes[cache]!.resources.ramGb).toEqual({ used: 2, total: 2 })
+    game = ok(resize(game, cache, 1))
+    expect(solveFlow(game).nodes[cache]!.resources.ramGb).toEqual({ used: 2, total: 4 })
+  })
+
   test('a Worker takes uploads from a Queue, and stores the file', () => {
     let game = { ...freeSandbox(), stage: 4, users: 3_000 }
     let worker: string

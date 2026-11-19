@@ -58,8 +58,10 @@ import {
   vcpuOf,
   zoned,
   nodeCertDaysLeft,
+  flatScale,
 } from '@quorum/simulation/lookups'
 import { LINK_TIMEOUTS, restartable } from '@quorum/simulation/actions'
+import { CACHE_HIT_LOW, hotDataGb } from '@quorum/simulation/rules'
 import type { Game, GameLink, GameNode } from '@quorum/simulation/state'
 import { compact, money, priceLabel, rate } from '@quorum/ui/game/format'
 import { Message } from '@/game/message.ts'
@@ -348,6 +350,42 @@ const warnings = (
   if (own.swapping) list.push(callout(t.inspector.outOfRAMAndSwappingEvery, 'danger', null, h))
   if (own.throttled) list.push(callout(t.inspector.outOfCPUCreditsThrottledTo, 'warn', null, h))
   if (own.disk) list.push(callout(t.inspector.theWorkingSetDoesNotFit, 'warn', null, h))
+  if (
+    node.type === 'cache' &&
+    !isDown(node.life) &&
+    own.hitRatio !== null &&
+    own.hitRatio < CACHE_HIT_LOW &&
+    (own.traffic['q-read'] ?? 0) > 0
+  ) {
+    const price = resizePrice(game, node)
+    const evicted = (own.evictions ?? 0) > 0
+    const hot = hotDataGb(game).toFixed(1)
+    const memory = flatScale(node).toFixed(0)
+    list.push(
+      callout(
+        evicted
+          ? t.inspector.theHotDataOutgrewThisCachesMemory(hot, memory, percent(own.hitRatio))
+          : t.inspector.theHotDataFitsThisCachesMemory(hot, memory, percent(own.hitRatio)),
+        'warn',
+        evicted && price !== null
+          ? button(
+              {
+                onClick: Message.ResizeChosen({ nodeId: node.id, direction: 1 }),
+                isDisabled: game.cash < price,
+                variant: 'outline',
+                size: 'sm',
+                className: css({
+                  alignSelf: 'flex-start',
+                }),
+              },
+              [game.sandbox ? t.inspector.larger : t.inspector.larger2(money(price))],
+              h,
+            )
+          : null,
+        h,
+      ),
+    )
+  }
   if (node.leak > 0) {
     list.push(
       callout(
@@ -634,7 +672,18 @@ const stats = (
           h,
         ),
     ...(own.hitRatio !== null
-      ? [row(t.inspector.hitRatio, percent(own.hitRatio), 'plain', h)]
+      ? [
+          row(
+            t.inspector.hitRatio,
+            percent(own.hitRatio),
+            node.type === 'cache' &&
+              own.hitRatio < CACHE_HIT_LOW &&
+              (own.traffic['q-read'] ?? 0) > 0
+              ? 'warn'
+              : 'plain',
+            h,
+          ),
+        ]
       : []),
     ...(own.evictions !== null
       ? [

@@ -15,6 +15,10 @@ export const inspector: Messages['inspector'] = {
   sOfHaveNowhereToGo: (p0, p1) => `Les ${p0}/s de ${p1} n'ont nulle part où aller.`,
   refusingQueriesSTooManyConnections: (p0) => `Refus des requêtes ${p0} : trop de connexions.`,
   outOfRAMAndSwappingEvery: 'Hors RAM et swapping : chaque requête est plus lente.',
+  theHotDataOutgrewThisCachesMemory: (hot, memory, hit) =>
+    `Les données chaudes occupent ${hot} Go, et ce Cache a ${memory} Go de mémoire. Il expulse des clés et son taux de succès est de ${hit}. Plus de mémoire en garde davantage et fait monter le taux.`,
+  theHotDataFitsThisCachesMemory: (hot, memory, hit) =>
+    `Les données chaudes occupent ${hot} Go, et ce Cache a ${memory} Go de mémoire. Une taille supérieure ne ferait pas monter le taux de succès. Un TTL court, des écritures nombreuses ou un démarrage à froid le maintient à ${hit}.`,
   outOfCPUCreditsThrottledTo: 'Sur les crédits CPU : limité à 20 % CPU.',
   theWorkingSetDoesNotFit: "L'ensemble de travail ne rentre pas dans RAM : lit le disque d'accès.",
   memoryGrowsGBLeaked: (p0) => `La mémoire augmente : fuite de ${p0} Go.`,

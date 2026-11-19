@@ -11,8 +11,12 @@ import {
 import { flatScale } from './lookups.ts'
 import type { Game, GameNode } from './state.ts'
 
+export const CACHE_HIT_LOW = 0.7
+
+export const hotDataGb = (game: Game): number => (game.users * HOT_KB_PER_USER) / 1_000_000
+
 export const evictionShareOf = (game: Game, node: GameNode): number => {
-  const hot = (game.users * HOT_KB_PER_USER) / 1_000_000
+  const hot = hotDataGb(game)
   return hot > 0 ? Math.max(0, 1 - Math.min(1, flatScale(node) / hot)) : 0
 }
 

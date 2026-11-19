@@ -16,6 +16,10 @@ export const inspector: Messages['inspector'] = {
   refusingQueriesSTooManyConnections: (p0) =>
     `Rechazando ${p0} consultas/s: demasiadas conexiones.`,
   outOfRAMAndSwappingEvery: 'Sin RAM y en swap: cada petición va más lenta.',
+  theHotDataOutgrewThisCachesMemory: (hot, memory, hit) =>
+    `Los datos calientes ocupan ${hot} GB, y esta Caché tiene ${memory} GB de memoria. Expulsa claves y su tasa de aciertos es ${hit}. Más memoria guarda más datos y sube la tasa.`,
+  theHotDataFitsThisCachesMemory: (hot, memory, hit) =>
+    `Los datos calientes ocupan ${hot} GB, y esta Caché tiene ${memory} GB de memoria. Un tamaño mayor no subiría la tasa de aciertos. Un TTL corto, muchas escrituras o un arranque en frío la mantienen en ${hit}.`,
   outOfCPUCreditsThrottledTo: 'Sin créditos de CPU: limitado al 20% de CPU.',
   theWorkingSetDoesNotFit: 'El conjunto de trabajo no cabe en RAM: las lecturas van a disco.',
   memoryGrowsGBLeaked: (p0) => `La memoria crece: ${p0} GB de fuga.`,

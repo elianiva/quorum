@@ -14,6 +14,10 @@ export const inspector: Messages['inspector'] = {
   sOfHaveNowhereToGo: (p0, p1) => `${p1}のうち${p0}/sが行き場を失っています。`,
   refusingQueriesSTooManyConnections: (p0) => `クエリ${p0}/sを拒否中：接続が多すぎます。`,
   outOfRAMAndSwappingEvery: 'RAMが尽きてスワップ中：すべてのリクエストが遅くなります。',
+  theHotDataOutgrewThisCachesMemory: (hot, memory, hit) =>
+    `ホットデータは${hot} GBで、このキャッシュのメモリは${memory} GBです。キーを追い出しており、ヒット率は${hit}です。メモリを増やすとより多く保持でき、ヒット率が上がります。`,
+  theHotDataFitsThisCachesMemory: (hot, memory, hit) =>
+    `ホットデータは${hot} GBで、このキャッシュのメモリは${memory} GBです。サイズを上げてもヒット率は上がりません。短いTTL、書き込みの多さ、コールドスタートのいずれかが${hit}にとどめています。`,
   outOfCPUCreditsThrottledTo: 'CPUクレジットが尽きました：CPUは20%に制限されています。',
   theWorkingSetDoesNotFit: 'ワーキングセットがRAMに収まりません：読み取りがディスクに当たります。',
   memoryGrowsGBLeaked: (p0) => `メモリが増えています：${p0} GBのリーク。`,

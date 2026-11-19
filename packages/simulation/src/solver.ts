@@ -21,6 +21,7 @@ import {
   databasesOfGroup,
   engineOf,
   eraOf,
+  flatScale,
   inCluster,
   isDown,
   meshOf,
@@ -34,6 +35,7 @@ import {
   usersOfGroup,
   zoneMs,
 } from './lookups.ts'
+import { hotDataGb } from './rule-kit.ts'
 import { isGlobal, userRoutes } from './regions.ts'
 import { demandOf, forecastPeakOf } from './solve-demand.ts'
 import {
@@ -911,6 +913,14 @@ const readLedger = (exports: Exports, game: Game): Ledger => {
       swapping: flag(),
       status: STATUSES[num()] as NodeStatus,
     }
+  for (const node of game.nodes) {
+    const own = nodes[node.id]
+    if (node.type === 'cache' && own)
+      nodes[node.id] = {
+        ...own,
+        resources: { ...own.resources, ramGb: { used: hotDataGb(game), total: flatScale(node) } },
+      }
+  }
   const links = game.links.map((link) => ({
     ...link,
     rate: num(),

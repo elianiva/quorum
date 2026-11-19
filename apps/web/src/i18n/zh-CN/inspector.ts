@@ -12,6 +12,10 @@ export const inspector: Messages['inspector'] = {
   sOfHaveNowhereToGo: (p0, p1) => `每秒有 ${p0} 个${p1}无处可去。`,
   refusingQueriesSTooManyConnections: (p0) => `连接数过多：每秒拒绝 ${p0} 次查询。`,
   outOfRAMAndSwappingEvery: 'RAM 耗尽，正在使用交换空间：所有请求都变慢了。',
+  theHotDataOutgrewThisCachesMemory: (hot, memory, hit) =>
+    `热数据占用 ${hot} GB，此缓存有 ${memory} GB 内存。它正在淘汰键，命中率为 ${hit}。增加内存可以保留更多数据，并提高命中率。`,
+  theHotDataFitsThisCachesMemory: (hot, memory, hit) =>
+    `热数据占用 ${hot} GB，此缓存有 ${memory} GB 内存。增大规格不会提高命中率。较短的 TTL、写入过多或冷启动使它停留在 ${hit}。`,
   outOfCPUCreditsThrottledTo: 'CPU 积分耗尽：CPU 被限速至 20%。',
   theWorkingSetDoesNotFit: 'RAM 容不下工作集：读取需要访问磁盘。',
   memoryGrowsGBLeaked: (p0) => `内存持续增长：已泄漏 ${p0} GB。`,

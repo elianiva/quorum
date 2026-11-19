@@ -14,6 +14,18 @@ export const inspector = {
   refusingQueriesSTooManyConnections: (p0: string | number | null) =>
     `Refusing ${p0} queries/s: too many connections.`,
   outOfRAMAndSwappingEvery: 'Out of RAM and swapping: every request is slower.',
+  theHotDataOutgrewThisCachesMemory: (
+    hot: string | number | null,
+    memory: string | number | null,
+    hit: string | number | null,
+  ) =>
+    `The hot data takes ${hot} GB, and this Cache has ${memory} GB of memory. It evicts keys, and its hit ratio is ${hit}. More memory fits more of it and raises the ratio.`,
+  theHotDataFitsThisCachesMemory: (
+    hot: string | number | null,
+    memory: string | number | null,
+    hit: string | number | null,
+  ) =>
+    `The hot data takes ${hot} GB, and this Cache has ${memory} GB of memory. A larger size would not raise the hit ratio. A short TTL, a write-heavy mix, or a cold start holds it at ${hit}.`,
   outOfCPUCreditsThrottledTo: 'Out of CPU credits: throttled to 20% CPU.',
   theWorkingSetDoesNotFit: 'The working set does not fit in RAM: reads hit disk.',
   memoryGrowsGBLeaked: (p0: string | number | null) => `Memory grows: ${p0} GB leaked.`,

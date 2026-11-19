@@ -64,6 +64,7 @@ import { newGame } from './company.ts'
 import { foundCompany } from './founding.ts'
 import type { Ledger } from './ledger.ts'
 import { has, isDown, maxSize, ramOf, researchReady, securityStaffed } from './lookups.ts'
+import { CACHE_HIT_LOW } from './rule-kit.ts'
 import { isBuilt } from './features.ts'
 import { recipeOf, shapeHolds } from './studies.ts'
 import {
@@ -719,7 +720,6 @@ const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy)
 
 const HEADROOM = 0.7
 const MAX_SIZE = 8
-const CACHE_HIT = 0.7
 const PASSES = 6
 
 const LOW_CREDITS = 0.25
@@ -977,7 +977,7 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
     const view = solveFlow(next)
     for (const cache of next.nodes.filter((entry) => entry.type === 'cache')) {
       const own = view.nodes[cache.id]
-      if (own && (own.evictions ?? 0) > 0 && (own.hitRatio ?? 1) < CACHE_HIT)
+      if (own && (own.evictions ?? 0) > 0 && (own.hitRatio ?? 1) < CACHE_HIT_LOW)
         next = affordable(next, view, (current) => resize(current, cache.id, 1))
     }
   }

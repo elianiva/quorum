@@ -9,6 +9,12 @@ toc: top
 
 Every day that changed Quorum, newest first. The [changelog](/about/changelog) shows only the latest days.
 
+## Wednesday, 18 November 2026
+
+### Changed
+
+- Keep saved settings that still read when one saved setting does not ([55b9d94](https://github.com/elianiva/quorum/commit/55b9d9418676ba520cf0ada7fbe0db0cae72ccc3))
+
 ## Monday, 16 November 2026
 
 ### Changed

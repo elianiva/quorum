@@ -144,10 +144,24 @@ let revealed = false
 const pageKeyOf = (element: Element | null): string | null =>
   element?.closest<HTMLElement>('.qm-page')?.dataset.memory ?? null
 
+/* Each line rings a step higher down its column, on a pentatonic scale, so
+   walking a list plays it like a keyboard. */
+const SCALE = [0, 2, 4, 7, 9, 12]
+const pitchOf = (line: Element): number => {
+  const page = line.closest('.qm-page')
+  const stops = page ? [...page.querySelectorAll(NAV)] : []
+  const index = Math.max(0, stops.indexOf(line))
+  return 2 ** (SCALE[index % SCALE.length]! / 12)
+}
+
+const stillMotion = () =>
+  matchMedia('(prefers-reduced-motion: reduce)').matches ||
+  document.documentElement.dataset['motion'] === 'reduce'
+
 const move = (to: HTMLElement | undefined) => {
   if (!to) return
   to.focus({ preventScroll: true })
-  play('hover')
+  play('hover', pitchOf(to))
 }
 
 export const MenuDriver = Mount.define('MenuDriver', {
@@ -286,7 +300,16 @@ export const MenuDriver = Mount.define('MenuDriver', {
           if (!line) return
           const from = event.relatedTarget instanceof Node ? event.relatedTarget : null
           if (from && line.contains(from)) return
-          play('hover')
+          play('hover', pitchOf(line))
+        }
+        /* The bus wire lights up where the pointer is beside it. */
+        const onPointerMove = (event: Event) => {
+          if (!(event instanceof PointerEvent) || event.pointerType !== 'mouse') return
+          if (!(event.target instanceof Element)) return
+          const bus = event.target.closest<HTMLElement>('.qm-bus')
+          if (!bus) return
+          const top = bus.getBoundingClientRect().top
+          bus.style.setProperty('--glow-y', `${Math.round(event.clientY - top)}px`)
         }
         const onClick = (event: Event) => {
           if (event.target instanceof Element && event.target.closest('button')) play('choose')
@@ -294,11 +317,13 @@ export const MenuDriver = Mount.define('MenuDriver', {
         window.addEventListener('keydown', onKeyDown, true)
         element.addEventListener('focusin', onFocusIn)
         element.addEventListener('pointerover', onPointerOver)
+        element.addEventListener('pointermove', onPointerMove)
         element.addEventListener('click', onClick)
         return () => {
           window.removeEventListener('keydown', onKeyDown, true)
           element.removeEventListener('focusin', onFocusIn)
           element.removeEventListener('pointerover', onPointerOver)
+          element.removeEventListener('pointermove', onPointerMove)
           element.removeEventListener('click', onClick)
         }
       }),
@@ -314,7 +339,7 @@ const focusPage = (page: HTMLElement) => {
     (key ? stops.find((stop) => keyOf(stop) === key) : undefined) ??
     stops.find((stop) => stop.hasAttribute('data-first')) ??
     stops.find((stop) => stop.getAttribute('aria-checked') === 'true') ??
-    stops.find((stop) => stop.getAttribute('role') !== 'tab' && !stop.closest('.qm-steps')) ??
+    stops.find((stop) => stop.getAttribute('role') !== 'tab' && !stop.closest('.qm-phase-head')) ??
     stops[0]
   target?.focus({ preventScroll: true })
 }
@@ -330,7 +355,12 @@ export const PageMounted = Mount.define('PageMounted', {
         element.getAttribute('data-depth') !== '0' ? 'branch' : revealed ? 'fade' : 'first',
       )
       revealed = true
-      if (element instanceof HTMLElement && element.classList.contains('is-active'))
+      /* A phase body opens inside the active column, so it takes the focus
+         for the fields it just revealed. */
+      if (
+        element instanceof HTMLElement &&
+        (element.classList.contains('is-active') || element.classList.contains('qm-phase-body'))
+      )
         focusPage(element)
       return Message.Synced()
     }),
@@ -339,20 +369,25 @@ export const PageMounted = Mount.define('PageMounted', {
 const SVG = 'http://www.w3.org/2000/svg'
 const LEAVE_MS = 160
 const SETTLE_MS = 900
+/* How long a packet takes down a new wire, the request that opens a branch. */
+const PACKET_MS = 340
 
 /* Room the camera keeps between a column and the stage's top and bottom. */
 const MARGIN = 24
-/* How long a pan mode outlives its last input. */
+/* How long a pan mode outlives its last input. An open branch holds its
+   mode until both steps, across then down, finish. */
 const PANNING_MS = 160
+const OPEN_MS = 520
 /* A finger's fling: the speed it keeps each frame, and how much of a drag
    past the ends the canvas follows. */
 const FRICTION = 0.95
 const RUBBER = 0.35
 
-/* How the camera reaches its next height: 'glide' to frame a column that
-   opens, 'step' for a wheel notch or a focus move, 'track' to follow a
-   trackpad or a finger 1:1 with no easing at all. */
-type Pan = 'glide' | 'step' | 'track'
+/* How the camera reaches its next place: 'open' for a branch that appears,
+   across then down, 'glide' to settle in one move, 'step' for a wheel notch
+   or a focus move, 'track' to follow a trackpad or a finger 1:1 with no
+   easing at all. */
+type Pan = 'open' | 'glide' | 'step' | 'track'
 
 /* The camera over the canvas. The view sets the open column's depth and CSS
    pans across to it; this mount does the rest: it hangs each branch level with
@@ -443,13 +478,39 @@ export const TreeCamera = Mount.define('TreeCamera', {
               path.setAttribute('pathLength', '1')
               const tip = document.createElementNS(SVG, 'circle')
               tip.setAttribute('r', '3.5')
+              tip.setAttribute('class', 'qm-tip')
               wire.append(path, tip)
+              /* A packet runs ahead of the stroke and pings the branch when
+                 it lands. */
+              if (!stillMotion()) {
+                const packet = document.createElementNS(SVG, 'circle')
+                packet.setAttribute('r', '4')
+                packet.setAttribute('class', 'qm-packet')
+                wire.append(packet)
+                wire.classList.add('is-sending')
+                wire.dataset.born = `${performance.now()}`
+              }
               wires.append(wire)
             }
-            wire.querySelector('path')!.setAttribute('d', d)
-            const tip = wire.querySelector('circle')!
+            const path = wire.querySelector('path')!
+            path.setAttribute('d', d)
+            const tip = wire.querySelector('.qm-tip')!
             tip.setAttribute('cx', `${x2}`)
             tip.setAttribute('cy', `${y2}`)
+            const packet = wire.querySelector('.qm-packet')
+            if (packet) {
+              const t = Math.min(1, (performance.now() - Number(wire.dataset.born)) / PACKET_MS)
+              const eased = 1 - (1 - t) ** 3
+              const point = path.getPointAtLength(path.getTotalLength() * eased)
+              packet.setAttribute('cx', `${point.x}`)
+              packet.setAttribute('cy', `${point.y}`)
+              path.style.strokeDashoffset = `${1 - eased}`
+              if (t >= 1) {
+                packet.remove()
+                wire.classList.replace('is-sending', 'is-hit')
+                play('settle')
+              }
+            }
           }
           for (const wire of wires.querySelectorAll<SVGGElement>('[data-wire]'))
             if (!live.has(wire.dataset.wire ?? '') && !wire.classList.contains('is-leaving')) {
@@ -474,7 +535,10 @@ export const TreeCamera = Mount.define('TreeCamera', {
           if (pan === 'glide') delete world.dataset.pan
           else {
             world.dataset.pan = pan
-            panTimer = window.setTimeout(() => delete world.dataset.pan, PANNING_MS)
+            panTimer = window.setTimeout(
+              () => delete world.dataset.pan,
+              pan === 'open' ? OPEN_MS : PANNING_MS,
+            )
           }
           world.style.setProperty('--camera-y', `${cameraY}px`)
         }
@@ -486,51 +550,45 @@ export const TreeCamera = Mount.define('TreeCamera', {
           const box = at(open)
           const height = element.clientHeight
           return {
+            head: box.top,
+            tail: box.bottom,
             top: MARGIN - box.top,
             bottom: height - MARGIN - box.bottom,
             fits: box.bottom - box.top <= height - 2 * MARGIN,
           }
         }
-        /* A column that fits holds still in the middle, as a page that fits
-           does not scroll. */
-        const bounds = () => {
-          const r = range()
-          if (!r) return null
-          if (r.fits) return { low: (r.top + r.bottom) / 2, high: (r.top + r.bottom) / 2 }
-          return { low: r.bottom, high: r.top }
-        }
+        /* A column that fits holds still once all of it shows, as a page that
+           fits does not scroll; until then it may pan into view. A tall one
+           may keep a height the camera already holds above its head, so
+           opening a branch never nudges it. Neither climbs further past the
+           head. */
         const clampY = (y: number) => {
-          const b = bounds()
-          return b ? Math.min(b.high, Math.max(b.low, y)) : y
-        }
-        /* The open column sits in the middle of the stage, unless that hides
-           the line it grew from: then the camera shifts right until the line
-           shows, as far as the open column's right edge allows. */
-        const steer = (open: HTMLElement) => {
-          const anchor = anchorOf(open)
-          let x = 0
-          if (anchor) {
-            const box = at(open)
-            const width = element.clientWidth
-            const centred = (width - (box.right - box.left)) / 2 - box.left
-            const need = 2 * MARGIN - (centred + at(anchor).left)
-            const room = width - MARGIN - (centred + box.right)
-            x = Math.max(0, Math.min(need, room))
+          const r = range()
+          if (!r) return y
+          if (r.fits) {
+            const stage = element.clientHeight
+            const shown = r.head + cameraY >= MARGIN && r.tail + cameraY <= stage - MARGIN
+            if (shown) return cameraY
           }
-          world.style.setProperty('--camera-x', `${Math.round(x)}px`)
+          const low = Math.min(r.top, r.bottom)
+          const high = Math.max(Math.max(r.top, r.bottom), cameraY)
+          return Math.min(high, Math.max(low, y))
         }
-        /* A new open column sits in the middle of the stage; one taller than
-           the stage shows its head first. */
+        /* The open column sits in the middle of the stage. A branch opens
+           level with the line it grew from, so the camera keeps its height
+           and only slides across; it drops or rises only when the new
+           column's head is off the stage. */
         const frame = () => {
           const open = world.querySelector<HTMLElement>(ACTIVE)
           const r = range()
           if (!open || !r) return
-          steer(open)
           const key = open.dataset.memory ?? ''
           const fresh = key !== openKey
           openKey = key
           if (!fresh) return aim(clampY(cameraY), 'glide')
-          aim(r.fits ? (r.top + r.bottom) / 2 : r.top, 'glide')
+          const head = r.head + cameraY
+          const onStage = head >= MARGIN && head <= element.clientHeight - MARGIN
+          aim(onStage ? cameraY : r.top, 'open')
         }
         /* Keep the focused line on screen, panning no further than it needs. */
         const follow = (target: Element) => {
@@ -549,6 +607,17 @@ export const TreeCamera = Mount.define('TreeCamera', {
            things settle. */
         let raf = 0
         let until = 0
+        /* A column's top is set in the same task it appears, and the browser
+           lays it out after: frame on the next frame so the camera aims at
+           where the column really sits. */
+        let pendingFrame = 0
+        const reframe = () => {
+          cancelAnimationFrame(pendingFrame)
+          pendingFrame = requestAnimationFrame(() => {
+            place()
+            frame()
+          })
+        }
         const settle = () => {
           until = performance.now() + SETTLE_MS
           if (raf) return
@@ -577,7 +646,7 @@ export const TreeCamera = Mount.define('TreeCamera', {
             }
           }
           place()
-          frame()
+          reframe()
           /* Closing a column takes the focus with it: hand it to the open one. */
           const open = world.querySelector<HTMLElement>(ACTIVE)
           const lost = document.activeElement === null || document.activeElement === document.body
@@ -677,6 +746,7 @@ export const TreeCamera = Mount.define('TreeCamera', {
           stage.removeEventListener('touchend', onTouchEnd)
           stage.removeEventListener('touchcancel', onTouchEnd)
           cancelAnimationFrame(raf)
+          cancelAnimationFrame(pendingFrame)
           cancelAnimationFrame(fling)
           clearTimeout(panTimer)
         }
@@ -1151,6 +1221,18 @@ const mainIndex = (model: Model, h: HtmlBuilder<Message>): Html => {
       h,
     ),
   ]
+  const system = [
+    line(
+      {
+        key: 'settings',
+        label: t.title.settings,
+        lead: glyph(Settings, h),
+        ...to('settings'),
+        hotkey: next(),
+      },
+      h,
+    ),
+  ]
   return h.nav(
     [h.Class('qm-index'), h.AriaLabel(t.title.mainMenu)],
     [
@@ -1158,6 +1240,7 @@ const mainIndex = (model: Model, h: HtmlBuilder<Message>): Html => {
       section(t.title.company, company, h),
       section(t.title.practice, practice, h),
       section(t.title.founder, founder, h),
+      section(t.title.system, system, h),
     ],
   )
 }
@@ -1182,45 +1265,6 @@ const mainPage = (model: Model, h: HtmlBuilder<Message>): Html =>
    ========================================================================== */
 
 const FOUND_STEPS: ReadonlyArray<FoundStep> = ['company', 'venture', 'mutators']
-
-const foundSteps = (model: Model, h: HtmlBuilder<Message>): Html => {
-  const t = copy(h)
-  const label: Record<FoundStep, string> = {
-    company: t.title.company,
-    venture: t.title.venture,
-    mutators: t.title.mutators,
-  }
-  const at = FOUND_STEPS.indexOf(model.foundStep)
-  return h.ol(
-    [
-      h.Key('steps'),
-      h.Class('qm-steps'),
-      h.AriaLabel(t.title.newCompany),
-      h.DataAttribute('grid', ''),
-    ],
-    FOUND_STEPS.map((step, index) =>
-      h.li(
-        [h.Key(step)],
-        [
-          h.button(
-            [
-              h.Type('button'),
-              h.DataAttribute('nav', ''),
-              h.DataAttribute('key', `step-${step}`),
-              ...(step === model.foundStep ? [h.AriaCurrent('step')] : []),
-              h.Class(cx('qm-step', index < at && 'is-past')),
-              h.OnClick(Message.FoundStepChosen({ step })),
-            ],
-            [
-              h.span([h.Class('qm-step-num'), h.AriaHidden(true)], [`${index + 1}`]),
-              h.span([], [label[step]]),
-            ],
-          ),
-        ],
-      ),
-    ),
-  )
-}
 
 const companyStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
@@ -1269,8 +1313,8 @@ const ventureStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
   const t = copy(h)
   const founding = foundingOf(model.founder)
   return [
-    section(
-      t.title.venture,
+    h.div(
+      [h.Class('qm-grid'), h.DataAttribute('grid', '')],
       VENTURE_IDS.map((id) => {
         const def = localized(VENTURES[id], t.catalog.ventures[id])
         return tile(
@@ -1286,8 +1330,6 @@ const ventureStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
           h,
         )
       }),
-      h,
-      true,
     ),
   ]
 }
@@ -1296,8 +1338,8 @@ const mutatorStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
   const t = copy(h)
   const founding = foundingOf(model.founder)
   return [
-    section(
-      t.title.mutators,
+    h.div(
+      [h.Class('qm-grid'), h.DataAttribute('grid', '')],
       MUTATOR_IDS.map((id) =>
         tile(
           {
@@ -1312,20 +1354,85 @@ const mutatorStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
           h,
         ),
       ),
-      h,
-      true,
     ),
   ]
 }
 
-const foundBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
-  const step: Record<FoundStep, () => ReadonlyArray<Html>> = {
-    company: () => companyStep(model, h),
-    venture: () => ventureStep(model, h),
-    mutators: () => mutatorStep(model, h),
+const stageBody = (model: Model, step: FoundStep, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
+  step === 'company'
+    ? companyStep(model, h)
+    : step === 'venture'
+      ? ventureStep(model, h)
+      : mutatorStep(model, h)
+
+/* The founding form is one trunk with three stations on it. A station already
+   answered keeps its value on the line, so the whole company stays readable
+   while you work on the next part. The open station hangs its fields off the
+   trunk; the one ahead waits as a bare node. */
+const foundStages = (model: Model, h: HtmlBuilder<Message>): Html => {
+  const t = copy(h)
+  const at = FOUND_STEPS.indexOf(model.foundStep)
+  const founding = foundingOf(model.founder)
+  const venture = localized(VENTURES[founding.venture], t.catalog.ventures[founding.venture])
+  const picked = founding.mutators.map((id) => t.catalog.mutators[id].name)
+  const label: Record<FoundStep, string> = {
+    company: t.title.company,
+    venture: t.title.venture,
+    mutators: t.title.mutators,
   }
-  return [foundSteps(model, h), ...step[model.foundStep]()]
+  const value: Record<FoundStep, string | null> = {
+    company: nameOr(model.draft.name),
+    venture: `${venture.name} ×${venture.legacy.toFixed(1)}`,
+    mutators:
+      picked.length === 0
+        ? null
+        : `${picked.slice(0, 2).join(' · ')}${picked.length > 2 ? ` +${picked.length - 2}` : ''}`,
+  }
+  return h.ol(
+    [h.Key('stages'), h.Class('qm-phases'), h.AriaLabel(t.title.newCompany)],
+    FOUND_STEPS.map((step, index) => {
+      const open = index === at
+      const done = index < at
+      const head = [
+        h.span(
+          [h.Class('qm-phase-node'), h.AriaHidden(true)],
+          [done ? glyph(Check, h) : `${index + 1}`],
+        ),
+        h.span([h.Class('qm-phase-label')], [label[step]]),
+        /* Only a station already answered carries its value. */
+        done && value[step] ? h.span([h.Class('qm-phase-value')], [value[step]!]) : h.empty,
+        open
+          ? h.empty
+          : h.span([h.Class('qm-phase-go'), h.AriaHidden(true)], [glyph(ChevronRight, h)]),
+      ]
+      return h.li(
+        [h.Key(step), h.Class(cx('qm-phase', open && 'is-open', done && 'is-done'))],
+        [
+          /* The open station is not a control: it is where you are. */
+          open
+            ? h.div([h.Class('qm-phase-head'), h.AriaCurrent('step')], head)
+            : h.button(
+                [
+                  h.Type('button'),
+                  h.DataAttribute('nav', ''),
+                  h.DataAttribute('key', `step-${step}`),
+                  h.OnClick(Message.FoundStepChosen({ step })),
+                  h.Class('qm-phase-head'),
+                ],
+                head,
+              ),
+          open
+            ? h.div([h.Class('qm-phase-body'), h.OnMount(PageMounted())], stageBody(model, step, h))
+            : h.empty,
+        ],
+      )
+    }),
+  )
 }
+
+const foundBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => [
+  foundStages(model, h),
+]
 
 /* The founding form's foot: the company as it will be founded, then the one
    action this step needs. */
@@ -1989,13 +2096,15 @@ const fromOf = (model: Model, page: Page): string | null =>
             : 'start'
           : page
 
+/* The founding column stays one column while its stations change, so the
+   camera does not re-frame on every step. */
 const memoryOf = (model: Model, page: Page): string =>
   page === 'save'
     ? `save-${model.saveFocus}`
     : page === 'setting'
       ? `setting-${model.settingsSection}`
       : page === 'found'
-        ? `found-${model.foundStep}`
+        ? 'found'
         : page
 
 /* One column per page on the open branch. The root keeps its key, so it stays
@@ -2124,7 +2233,6 @@ const toolbar = (h: HtmlBuilder<Message>): Html => {
 
 const dock = (model: Model, page: Page, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
-  const inSettings = page === 'settings' || page === 'setting'
   const keys: ReadonlyArray<readonly [string, string]> = [
     ['↑↓', t.title.select],
     [t.title.enter, t.title.open],
@@ -2149,17 +2257,8 @@ const dock = (model: Model, page: Page, h: HtmlBuilder<Message>): Html => {
         [t.title.quorumIsAGameAndSimplifies],
       ),
       h.nav(
-        [h.Class('qm-dock-tools'), h.AriaLabel(t.title.settings)],
+        [h.Class('qm-dock-tools')],
         [
-          h.button(
-            [
-              h.Type('button'),
-              h.Class('qm-tool is-wide'),
-              h.AriaPressed(inSettings ? 'true' : 'false'),
-              h.OnClick(Message.MenuChosen({ menu: inSettings ? 'main' : 'settings' })),
-            ],
-            [glyph(Settings, h), h.span([h.Class('qm-tool-label')], [t.title.settings])],
-          ),
           toolLink(
             {
               href: WIKI_URL,

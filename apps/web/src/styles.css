@@ -203,10 +203,18 @@
     position: absolute;
     inset: 0;
     transform: translateX(calc((100cqw - var(--root)) / 2));
-    translate: var(--camera-x, 0px) var(--camera-y, 0px);
+    translate: 0 var(--camera-y, 0px);
     transition:
       transform 380ms var(--ease-drawer),
       translate 380ms var(--ease-drawer);
+  }
+  /* Opening a branch reads as two moves: across to the new column, then down
+     to its head. Sideways first, so the eye follows the wire, and the drop
+     starts as the slide settles. */
+  .qm-world[data-pan='open'] {
+    transition:
+      transform 300ms var(--ease-drawer),
+      translate 260ms var(--ease-drawer) 240ms;
   }
   /* A wheel notch or a moving focus: the camera follows quickly. A trackpad
      or a finger: it follows 1:1, with no easing to lag behind the hand. */
@@ -274,11 +282,37 @@
     stroke-dasharray: 1;
     animation: qm-draw 300ms var(--ease-out) 40ms both;
   }
-  .qm-wire circle {
+  .qm-wire .qm-tip {
     fill: var(--signal);
     stroke: var(--foreground);
     stroke-width: 1.5;
     animation: qm-fade 120ms var(--ease-out) 300ms both;
+  }
+  /* While a packet runs, it draws the stroke and the tip waits for it. */
+  .qm-wire.is-sending path {
+    animation: none;
+  }
+  .qm-wire.is-sending .qm-tip {
+    opacity: 0;
+    animation: none;
+  }
+  .qm-packet {
+    fill: var(--signal);
+    stroke: var(--foreground);
+    stroke-width: 1.5;
+  }
+  .qm-wire.is-hit .qm-tip {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: qm-ping 420ms var(--ease-out) both;
+  }
+  @keyframes qm-ping {
+    0% {
+      transform: scale(1.9);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
   .qm-wire.is-leaving {
     animation: qm-leave-fade 140ms var(--ease-out) both;
@@ -315,7 +349,8 @@
   .qm-page[data-enter='fade'] {
     animation: qm-fade 200ms var(--ease-out) both;
   }
-  .qm-page[data-enter='branch'] > * {
+  .qm-page[data-enter='branch'] > *,
+  .qm-phase-body[data-enter='branch'] > * {
     animation: qm-branch 280ms var(--ease-out) 60ms both;
   }
   .qm-page.is-leaving {
@@ -396,25 +431,30 @@
     font-size: var(--type-11-5);
     font-variant-numeric: tabular-nums;
   }
+  /* A company mark is a node on the canvas: a hairline ring around the
+     glyph, no plate. The glyph keeps its hue, pulled toward the ink so it
+     reads on light and dark. */
   .qm-logo {
     width: 36px;
     height: 36px;
     flex-shrink: 0;
-    padding: 6px;
-    border-radius: var(--radius-lg);
-    background: var(--primary-fill-bottom);
+    padding: 7px;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--edge-solid);
+  }
+  .qm-logo path {
+    stroke: color-mix(in oklch, currentColor, var(--foreground) 45%);
   }
   .qm-logo.is-small {
     width: 28px;
     height: 28px;
     padding: 5px;
-    border-radius: var(--radius-md);
   }
   .qm-logo.is-large {
     width: 56px;
     height: 56px;
-    padding: 10px;
-    border-radius: var(--radius-xl);
+    padding: 12px;
   }
   .qm-raise {
     width: 100%;
@@ -476,6 +516,27 @@
   .qm-section > .qm-eyebrow {
     padding-left: 26px;
   }
+  /* A section title sits on its own trunk with a solid node, and the items
+     below hang from the same line. */
+  .qm-section:not(:has(.qm-grid .qm-logo)) > .qm-eyebrow {
+    position: relative;
+    color: var(--foreground);
+  }
+  .qm-section:not(:has(.qm-grid .qm-logo)) > .qm-eyebrow::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 4px;
+    width: 9px;
+    height: 9px;
+    margin-top: -4.5px;
+    border-radius: 50%;
+    background: var(--foreground);
+  }
+  /* The bus trunk climbs from its first line to the title's node. */
+  .qm-section > .qm-bus::before {
+    top: -12.5px;
+  }
   .qm-bus {
     position: relative;
     display: flex;
@@ -494,6 +555,27 @@
     left: 8px;
     width: 1px;
     background: var(--edge-solid);
+  }
+
+  /* A flat block of signal on the bus wire where the pointer is. Hard ends,
+     clipped to the wire, so it reads as part of the drawing, not a glow. */
+  .qm-bus::after {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 7px;
+    width: 3px;
+    background: var(--signal);
+    clip-path: inset(
+      calc(var(--glow-y, -100px) - 24px) 0 calc(100% - var(--glow-y, -100px) - 24px) 0
+    );
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 240ms var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .qm-page.is-active .qm-bus:hover::after {
+      opacity: 1;
+    }
   }
 
   .qm-line {
@@ -777,25 +859,25 @@
     --node: 17px;
     position: relative;
     gap: 2px;
-    padding: 8px 10px 8px 22px;
+    padding: 8px 10px 8px 28px;
     background: transparent;
     box-shadow: none;
   }
+  /* The stem ends at the choice itself: the tick is the node on the line,
+     so a row holds one circle, not a node beside a mark. */
   .qm-grid:not(:has(.qm-logo)) > .qm-tile::after {
     content: '';
     position: absolute;
     top: calc(var(--row-gap) / -2);
     left: 4px;
     width: 9px;
-    height: calc(var(--row-gap) / 2 + var(--node) + 4.5px);
-    background:
-      radial-gradient(
-        circle at 4.5px calc(100% - 4.5px),
-        var(--node-fill, var(--canvas)) 3px,
-        var(--node-ring, var(--edge-solid)) 3.25px 4.5px,
-        transparent 4.75px
-      ),
-      linear-gradient(var(--edge-solid), var(--edge-solid)) 4px 0 / 1px calc(100% - 9px) no-repeat;
+    height: calc(var(--row-gap) / 2 + 9px);
+    background: linear-gradient(var(--edge-solid), var(--edge-solid)) 4.5px 0 / 1px 100% no-repeat;
+  }
+  .qm-grid:not(:has(.qm-logo)) > .qm-tile > .qm-tile-head > .qm-tile-state {
+    position: absolute;
+    top: 9px;
+    left: 0.5px;
   }
   .qm-grid:not(:has(.qm-logo)) > .qm-tile:nth-child(3n + 1)::before {
     --n: 3;
@@ -864,10 +946,24 @@
     --node-fill: var(--foreground);
     --node-ring: var(--foreground);
   }
+  /* A flat tile keeps its ground on focus: the ring, the lit node and ink
+     text mark it, so the detail stays readable. */
   .qm-grid:not(:has(.qm-logo)) > .qm-tile:focus-visible {
     --node-fill: var(--signal);
     --node-ring: var(--foreground);
-    box-shadow: var(--elev-primary);
+    background: transparent;
+    box-shadow: none;
+    color: var(--foreground);
+    outline: 2px solid var(--foreground);
+    outline-offset: 2px;
+  }
+  .qm-grid:not(:has(.qm-logo)) > .qm-tile:focus-visible .qm-tile-name {
+    color: var(--foreground);
+  }
+  .qm-grid:not(:has(.qm-logo))
+    > .qm-tile:focus-visible
+    :is(.qm-tile-detail, .qm-tile-figure, .qm-tile-state) {
+    color: var(--muted-foreground);
   }
   @media (hover: hover) and (pointer: fine) {
     .qm-grid:not(:has(.qm-logo))
@@ -877,10 +973,77 @@
       box-shadow: none;
     }
   }
+  /* Logos keep a grid, but each choice is a row on the canvas: its swatch,
+     its name, its mark. No card around it. */
+  /* The logo grid has no trunk, so its label sits at the same edge as the
+     rows, not indented over a wire. */
+  .qm-section:has(.qm-grid > .qm-tile .qm-logo) > .qm-eyebrow {
+    padding-left: 0;
+  }
   .qm-grid:has(.qm-logo) {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+    gap: 10px 6px;
     padding: 0;
+  }
+  .qm-grid:has(.qm-logo) > .qm-tile {
+    align-items: center;
+    gap: 8px;
+    min-height: 0;
+    padding: 6px 4px;
+    border-radius: var(--radius-md);
+    background: transparent;
+    box-shadow: none;
+    text-align: center;
+  }
+  .qm-grid:has(.qm-logo) > .qm-tile .qm-tile-head {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  /* The chosen mark carries the state, so the tick has no job here. */
+  .qm-grid:has(.qm-logo) > .qm-tile .qm-tile-state {
+    display: none;
+  }
+  .qm-grid:has(.qm-logo) .qm-logo {
+    width: 40px;
+    height: 40px;
+    padding: 9px;
+  }
+  .qm-grid:has(.qm-logo) > .qm-tile .qm-tile-name {
+    color: var(--muted-foreground);
+    font-size: var(--type-12);
+  }
+  /* Chosen: a flat signal ring around the mark, as the open station wears. */
+  .qm-grid:has(.qm-logo) > .qm-tile.is-on .qm-logo {
+    box-shadow:
+      inset 0 0 0 1px var(--foreground),
+      0 0 0 3px var(--canvas),
+      0 0 0 5px var(--signal);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .qm-grid:has(.qm-logo) > .qm-tile:hover:not(.is-on) .qm-logo {
+      box-shadow: inset 0 0 0 1px var(--foreground);
+    }
+  }
+  .qm-grid:has(.qm-logo) > .qm-tile.is-on .qm-tile-name {
+    color: var(--foreground);
+    font-weight: var(--quorum-font-weights-semibold);
+  }
+  .qm-grid:has(.qm-logo) > .qm-tile:focus-visible {
+    outline: 2px solid var(--foreground);
+    outline-offset: 2px;
+    background: transparent;
+    box-shadow: none;
+    color: var(--foreground);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .qm-grid:has(.qm-logo) > .qm-tile:hover:not(:focus-visible) {
+      background: var(--primary-soft);
+      box-shadow: none;
+    }
+    .qm-grid:has(.qm-logo) > .qm-tile:hover .qm-tile-name {
+      color: var(--foreground);
+    }
   }
   .qm-tile {
     display: flex;
@@ -982,77 +1145,143 @@
     width: 100%;
   }
 
-  /* ---- Founding form -------------------------------------------------- */
-  .qm-steps {
+  /* ---- Founding form: three stations on one trunk -------------------- */
+  .qm-phases {
     display: flex;
-    gap: 4px;
+    flex-direction: column;
     margin: 0;
     padding: 0;
     list-style: none;
-    counter-reset: step;
   }
-  .qm-steps > li {
-    flex: 1;
-  }
-  .qm-step {
+  .qm-phase {
     position: relative;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    min-height: 44px;
-    padding: 0 10px;
-    border-radius: var(--radius-lg);
-    color: var(--muted-foreground);
-    font-size: var(--type-13);
-    font-weight: var(--quorum-font-weights-medium);
-    cursor: pointer;
   }
-  /* The step's progress is a rule under it: done steps solid, this one lit. */
-  .qm-step::after {
+  .qm-phase:not(:last-child) {
+    padding-bottom: 18px;
+  }
+  /* The trunk runs from this station's node to the next one's. */
+  .qm-phase:not(:last-child)::before {
     content: '';
     position: absolute;
-    right: 10px;
-    bottom: 4px;
-    left: 10px;
-    height: 2px;
-    border-radius: 1px;
-    background: var(--hairline);
+    top: 22px;
+    bottom: -11px;
+    left: 10.5px;
+    width: 1px;
+    background: var(--edge-solid);
   }
-  .qm-step.is-past::after {
+  .qm-phase.is-done::before {
     background: var(--foreground);
   }
-  .qm-step[aria-current='step'] {
-    color: var(--foreground);
+  .qm-phase-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 22px;
+    padding: 0;
+    border-radius: 4px;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
   }
-  .qm-step[aria-current='step']::after {
-    background: var(--signal);
+  .qm-phase.is-open .qm-phase-head {
+    position: relative;
+    cursor: default;
   }
-  .qm-step-num {
+  /* The open station's title sits on a rail of its own, run out of the node,
+     so the heading is part of the drawing. */
+  .qm-phase.is-open > .qm-phase-head::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: -2px;
+    left: 11px;
+    height: 1px;
+    background: var(--edge-solid);
+  }
+  .qm-phase-node {
     display: grid;
+    flex: 0 0 auto;
     place-items: center;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    box-shadow: inset 0 0 0 1.5px currentColor;
+    background: var(--canvas);
+    box-shadow: inset 0 0 0 1.5px var(--edge-solid);
+    color: var(--muted-foreground);
     font-family: var(--mono);
     font-size: var(--type-11);
+    font-variant-numeric: tabular-nums;
   }
-  .qm-step[aria-current='step'] .qm-step-num,
-  .qm-step.is-past .qm-step-num {
+  .qm-phase-node .qm-icon {
+    width: 12px;
+    height: 12px;
+    stroke-width: 3;
+  }
+  .qm-phase.is-done .qm-phase-node {
     background: var(--foreground);
     box-shadow: none;
     color: var(--background);
   }
-  @media (hover: hover) and (pointer: fine) {
-    .qm-step:hover {
-      color: var(--foreground);
-    }
+  /* This station: an ink node with a flat signal ring, no glow. */
+  .qm-phase.is-open .qm-phase-node {
+    background: var(--foreground);
+    box-shadow:
+      0 0 0 2px var(--canvas),
+      0 0 0 4px var(--signal);
+    color: var(--background);
   }
-  .qm-step:focus-visible {
-    outline: 2px solid var(--foreground);
-    outline-offset: 0;
+  .qm-phase-label {
+    color: var(--muted-foreground);
+    font-family: var(--mono);
+    font-size: var(--type-11);
+    letter-spacing: var(--quorum-letter-spacings-stamp);
+    text-transform: uppercase;
+  }
+  .qm-phase.is-open .qm-phase-label {
     color: var(--foreground);
+  }
+  /* What the station holds, on the line: the value, not a second label. */
+  .qm-phase-value {
+    min-width: 0;
+    margin-left: auto;
+    overflow: hidden;
+    color: var(--foreground);
+    font-size: var(--type-13-5);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .qm-phase-go {
+    display: inline-flex;
+    flex: 0 0 auto;
+    color: var(--muted-foreground);
+  }
+  .qm-phase-go .qm-icon {
+    width: 14px;
+    height: 14px;
+  }
+  .qm-phase-head:focus-visible {
+    outline: 2px solid var(--foreground);
+    outline-offset: 4px;
+  }
+  /* The open station's fields hang off the trunk on a short branch. */
+  .qm-phase-body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin: 14px 0 0 32px;
+  }
+  /* The grid's top rail is the title's rail: the body starts where that rail
+     runs, so the title sits on it. */
+  .qm-phase-body:has(> .qm-grid) {
+    margin-top: -2px;
+  }
+  /* A grid under a station puts its trunk on the station's own line, so the
+     two read as one spine. */
+  .qm-phase-body > .qm-grid:not(:has(.qm-logo)) > .qm-tile::before {
+    left: -47.5px;
+    width: calc(56px + (var(--n, 1) - 1) * (100% + var(--col-gap)));
   }
 
   .qm-field {
@@ -1543,20 +1772,6 @@
       flex-direction: column;
       align-items: stretch;
     }
-    .qm-step > span:last-child {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-  @media (max-width: 480px) {
-    .qm-grid:has(.qm-logo) {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .qm-steps .qm-step {
-      justify-content: center;
-      font-size: var(--type-12);
-    }
   }
   /* A finger is wider than a pointer: every tool grows to 44px. */
   @media (pointer: coarse), (max-width: 900px) {
@@ -1573,6 +1788,7 @@
       transition: none;
     }
     .qm-page[data-enter='branch'] > *,
+    .qm-phase-body[data-enter='branch'] > *,
     .qm-page.is-leaving,
     .qm-page[data-enter='first'] .qm-hero,
     .qm-page[data-enter='first'] .qm-section {
@@ -1609,8 +1825,10 @@
 :root[data-motion='reduce'] ::before,
 :root[data-motion='reduce'] ::after {
   animation-duration: 0.01ms !important;
+  animation-delay: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
+  transition-delay: 0.01ms !important;
 }
 
 /* The Text at 150% setting (15 "Accessibility"): the type grows, the boxes around it keep their
@@ -1823,6 +2041,20 @@
   padding-inline: 14px;
   font-size: var(--type-18);
   font-weight: var(--quorum-font-weights-medium);
+}
+/* The founding name field is a rule on the canvas, not a well: it fills in
+   at the size of the name it holds. */
+.qm-field .qm-input {
+  height: 56px;
+  padding-inline: 2px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: inset 0 -1px 0 var(--edge-solid);
+  font-size: var(--type-22);
+}
+.qm-field .qm-input:focus-visible {
+  border-color: transparent;
+  box-shadow: inset 0 -2px 0 var(--foreground);
 }
 .qm-cta:focus-visible,
 .qm-back:focus-visible {

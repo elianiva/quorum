@@ -15,6 +15,16 @@ Quorum has no versions. It changes all the time, and this page lists the latest 
 
 - Keep saved settings that still read when one saved setting does not ([55b9d94](https://github.com/elianiva/quorum/commit/55b9d9418676ba520cf0ada7fbe0db0cae72ccc3))
 
+## Tuesday, 17 November 2026
+
+### Changed
+
+- Move type-aware lint to tsrs and bump dependencies ([518e651](https://github.com/elianiva/quorum/commit/518e65180f24e809ee4a656b80d7263be4c61987))
+- Add the changelog entry for 2026-11-16 (#60) ([2f8f191](https://github.com/elianiva/quorum/commit/2f8f191948d63c9a05112e950bd77bad6df573ce))
+- Remove all comments and carry their intent in names, constants and helpers ([04d6e9e](https://github.com/elianiva/quorum/commit/04d6e9eb815c5394678b1209f9d79f01b1805f87))
+- Open online Rooms to everyone, hold 20 Seats, and cap the deployment at 20 live Rooms ([39e2de3](https://github.com/elianiva/quorum/commit/39e2de3c1dade07536ea29b6b182ec6bbb08b6d7))
+- Open the phone Inspector as a bottom sheet and slide the tapped card clear of it ([516f65a](https://github.com/elianiva/quorum/commit/516f65a3c5317e93bab25f3b22ad7d9430f83a09))
+
 ## Monday, 16 November 2026
 
 ### Changed

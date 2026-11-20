@@ -131,7 +131,7 @@ picks a direction, and each player's best results usually come from different de
   a server score per device would prove little. With accounts, the result goes up as a design plus a
   seed, and the server re-runs it and keeps its own score. That works because the simulation is
   deterministic ([Simulation](/design/04-simulation#determinism-and-randomness)).
-  [ADR 0016](https://github.com/elianiva/quorum/blob/main/docs/adr/0016-challenges-stay-in-the-browser-until-accounts.md)
+  [ADR 0016](https://github.com/elianiva/quorum/blob/main/docs/adr/0016-challenges-are-scored-in-the-browser.md)
   has the reasoning.
 - Rewards: a badge, and Legacy on first completion (1 to 10 ★ by difficulty). No Cash, no power.
 

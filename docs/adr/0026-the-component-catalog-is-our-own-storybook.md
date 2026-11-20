@@ -16,10 +16,10 @@ Considered options:
 
 - **Storybook, Histoire, or Ladle.** All three mount React or Vue components. Our views are plain functions and the card is Pixi, so each needs an adapter, and the catalog would be a second app to deploy.
 - **Tweakpane or lil-gui for the controls.** A dependency for what a switch, a select, and a range input already do.
-- **Every primitive as a story.** Cards and Nodes are where states hide, so this ships first. A primitive story would be a new `kind` of story and a new test.
+- **Every primitive as a story.** Cards and Nodes are where states hide, so a primitive story teaches little. It would also be a new `kind` of story and a new test.
 
 ## Consequences
 
 - A change to `rowsOf` or a component view shows up in the catalog with no edit to it.
-- Controls cover what a Node and its ledger entry hold. A Component's own options (a cache's strategy, a Load Balancer's policy) are not controls yet.
+- Controls cover what a Node and its ledger entry hold. A Component's own options (a cache's strategy, a Load Balancer's policy) are not controls.
 - The catalog loads Pixi and the Simulation only on its own page, as the Node card does.

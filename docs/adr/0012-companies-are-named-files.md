@@ -1,13 +1,12 @@
 # Companies are named files
 
 A player keeps any number of Companies. Each one has a name and a logo, and the title screen lists
-them. The browser stores one Game per Company, behind an index that carries the few figures the
-title screen needs.
+them. The browser stores one Company file per Company, behind an index that carries the few figures
+the title screen needs.
 
-Before this, the browser held one Company under `quorum.save.v2`. Starting another Company
-overwrote the first, and the founding settings were the Founder's "next Company" fields rather than
-a property of the Company that started. The GDD asked for three save slots ([Interface and game
-feel](https://wiki.playquorum.dev/design/15-ui-ux#save)); a fixed number is a limit with no engineering purpose, so the
+One Company under a single key meant that starting another overwrote the first, and the founding
+settings lived on the Founder's "next Company" fields rather than on the Company that started. The
+GDD asked for three save slots ([Interface and game feel](https://wiki.playquorum.dev/design/15-ui-ux#save)); a fixed number is a limit with no engineering purpose, so the
 index has no cap.
 
 ## Decision
@@ -16,13 +15,14 @@ index has no cap.
    the Company file, not to the Founder and not to the Game: the Simulation never reads them.
 2. `quorum.saves.v1` holds the index: `current`, and one entry per Company with its id, name, logo,
    Venture, Mutators, timestamps, and the Era, Users, and time the title screen lists.
-3. One Game lives under `quorum.save.v3.<id>`, with the Company's disclosure and Dashboard history.
-   An autosave writes that Company and the index, never another Company.
+3. The Company file holds the Game, the disclosure, the Dashboard history, and the Inbox, under the
+   Company's id in the `companies` store of the `quorum` database
+   ([ADR 0027](0027-company-files-live-in-indexeddb.md)). An autosave writes that Company and the
+   index, never another Company.
 4. `apps/web` owns the index, the logos, and the founding draft. `packages/simulation` keeps the
    Game, the Founding, and the Venture and Mutator rules; a Company's name reaches the history row
    at Exit, because that row records the Company ([Exit and Legacy](https://wiki.playquorum.dev/design/13-prestige#company-history)).
-5. The pre-public single save `quorum.save.v2` is gone. Public saves carry their own `format`
-   ([A Company save carries a format version](0023-a-company-save-has-a-format.md)).
+5. A Company file carries its own `format` ([ADR 0023](0023-a-company-save-has-a-format.md)).
 6. Exiting a Company deletes its file: an exited Company cannot be continued. Its history row and
    Legacy stay with the Founder.
 
@@ -33,4 +33,4 @@ index has no cap.
   board when its file says otherwise.
 - The index duplicates the Venture and Mutators so the Companies page never decodes every Game.
   `founding` in the Game stays the source of truth; the index is a cache for the list.
-- Export and import as text ([Interface and game feel](https://wiki.playquorum.dev/design/15-ui-ux#save)) serializes one Company file with its metadata and replaces the open Company's Game. The file boundary made it a serialization, not a new format.
+- Export and import as text ([Interface and game feel](https://wiki.playquorum.dev/design/15-ui-ux#save)) serializes one Company file with its metadata and replaces the open Company's Game. The file boundary makes it a serialization, not a new format.

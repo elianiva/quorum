@@ -69,7 +69,7 @@ The browser sends anonymous PostHog events through the website Worker at `/q` (`
 - `apps/wiki/src/platform/analytics.ts` sends `$pageview` for the wiki in the same project.
 - `VITE_POSTHOG_KEY` is required at build time for both apps. Without it, the SDK never loads and nothing is sent.
 - Settings has **Share anonymous usage data**. The policy is `apps/wiki/content/about/privacy.md`.
-- The Exit survey's answers are a D1 row the API Worker validates ([ADR 0015](./adr/0015-the-exit-survey-is-a-d1-row.md)). A sent survey also emits `survey:submitted` with the Exit's figures and the length of each answer, never the text.
+- The Exit survey's answers are a D1 row the API Worker validates ([ADR 0028](./adr/0028-the-exit-survey-is-a-d1-row.md)). A sent survey also emits `survey:submitted` with the Exit's figures and the length of each answer, never the text.
 
 ## Code ownership
 
@@ -97,7 +97,7 @@ The web app must not import backend implementation modules. The wiki must not im
 
 ## Cloudflare scope
 
-The stack provisions the website Worker, the API Worker, one D1 database, `Results`, bound to the API Worker as `FEEDBACK` for the Exit survey, and two Durable Object namespaces the API Worker hosts: `RoomObject` for an online Company, and `AgentRoom` for a Company exposed to agents. The D1 database keeps its first name because renaming it would create a new, empty database. The Exit survey needs a durable row the Worker validates, not an analytics event ([ADR 0015](./adr/0015-the-exit-survey-is-a-d1-row.md)). Challenges are scored in the browser and send nothing ([ADR 0016](./adr/0016-challenges-stay-in-the-browser-until-accounts.md)). The schema is in `apps/backend/migrations`, which Alchemy applies on deploy.
+The stack provisions the website Worker, the API Worker, one D1 database, `Results`, bound to the API Worker as `FEEDBACK` for the Exit survey, and two Durable Object namespaces the API Worker hosts: `RoomObject` for an online Company, and `AgentRoom` for a Company exposed to agents. The D1 database keeps its first name because renaming it would create a new, empty database. The Exit survey needs a durable row the Worker validates, not an analytics event ([ADR 0028](./adr/0028-the-exit-survey-is-a-d1-row.md)). Challenges are scored in the browser and send nothing ([ADR 0016](./adr/0016-challenges-are-scored-in-the-browser.md)). The schema is in `apps/backend/migrations`, which Alchemy applies on deploy.
 
 The survey context sees only its store service, `SurveyStore` (`apps/backend/src/contexts/survey/store.ts`). Its D1 implementation uses the structural `SqlRunner` in `apps/backend/src/platform/sql.ts`, which a `D1Database` satisfies; tests run the same SQL on `node:sqlite`. A Room and an Agent room are that requirement for the two Durable Object namespaces. Add R2, Access, or other Cloudflare
 services only when a product feature requires them.

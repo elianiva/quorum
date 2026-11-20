@@ -8,7 +8,7 @@ key is the only thing that says who may use a feature that costs the deployment 
 
 A Room costs a Durable Object and a socket, and anyone who can reach the site can publish one. Rate
 limits already cap how fast a caller can do that, but not how many Rooms a day. A key puts a list of
-accepted codes between the button and the Room, and the same list can later gate another feature
+accepted codes between the button and the Room, and the same list can gate another feature
 without inventing an account.
 
 The player enters the key in Settings, under **Feature keys**. `AccessRpc.featureKeyCheck` answers
@@ -22,9 +22,9 @@ nothing, and no endpoint reads keys back out.
 
 Considered options:
 
-- **Accounts.** The real answer, and the one the game waits for ([ADR 0016](./0016-challenges-stay-in-the-browser-until-accounts.md)).
+- **Accounts.** The real answer, and the one the game waits for ([ADR 0016](./0016-challenges-are-scored-in-the-browser.md)).
   A login, a password reset, email, and personal data to look after, all to gate one feature.
-  Rejected for now.
+  Rejected.
 - **A client-side switch.** No server check, so the first person to open the developer tools has
   every feature. Rejected.
 - **A signed token the browser mints.** The secret that signs it would ship in the bundle, so anyone

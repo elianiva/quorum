@@ -28,14 +28,14 @@ Considered options:
   and `exit_key`, so a retry keeps the first answer.
 - The handler checks the Exit against the catalog: a known Exit that ends the Company, an Era at or
   after its stage, finite non-negative figures, a known Venture, Mutators and perks, and a Legacy no
-  larger than `legacyOf(payout, legacyMultiplier(founding))`. A modified client can still forge
-  these, as it can forge the Design a Challenge replay carries; the check stops malformed and
-  impossible rows, not a determined cheater.
+  larger than `legacyOf(payout, legacyMultiplier(founding))`. A modified client can forge
+  these, as it can forge any request the Worker accepts; the check stops malformed and impossible
+  rows, not a determined cheater.
 - The answers never enter the playtest log. `SurveyChanged` is in `QUIET`, so an exported log holds
   only the fact that the player sent them.
 - A sent survey also emits `survey:submitted` through the playtest log: the Exit's type, Era, payout,
   Legacy, language, and the length of each answer, never the text. If the free-tier budget drops that
-  event, the D1 row is still there.
+  event, the D1 row is there.
 - Sentry sees the flow. `SubmitSurvey` is a traced Command, so the browser span reaches the API
   Worker's `survey.submit` span. A rejected or unreachable submission is captured as an error with
   the Exit's type, Era, and one sentence, never the answers. A store failure goes through the Worker's

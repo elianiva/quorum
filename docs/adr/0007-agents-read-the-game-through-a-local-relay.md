@@ -22,7 +22,7 @@ Considered options:
   server to reach a terminal agent. Rejected; an earlier version registered the tools with WebMCP as
   an extra, and it was removed.
 - **A hosted MCP server.** Zero install for the player, but it needs a backend store, accounts or
-  tokens, and uploads every player's game. That breaks [single-player first](./0001-single-player-first.md)
+  tokens, and uploads every player's game. That breaks [ADR 0001](./0001-the-company-has-one-player.md)
   and the client-state rule above. Rejected.
 - **Only the JSON button.** No setup, but the agent cannot look again as the game changes.
   Kept as the fallback.

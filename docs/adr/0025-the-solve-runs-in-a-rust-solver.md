@@ -8,16 +8,15 @@ them hands the Game to the Solver.
 
 The solve is where the game spends its time. A Step on a 200-Node board solves the pass loop, the
 outcome tree, and the Ledger, and the Tradeoff preview and the Bottleneck search solve again on top
-of that. In TypeScript each solve built thousands of short-lived objects, so the garbage collector
-ran on most Steps. The Solver keeps its tables in flat arrays it owns and reuses them between
-solves. On that board a full `solve` takes 2.15 ms against 8.95 ms in TypeScript, and 300 solves
-trigger 8 scavenges where TypeScript needed 184.
+of that. A TypeScript solve builds thousands of short-lived objects, so the garbage collector runs on
+most Steps. The Solver keeps its tables in flat arrays it owns and reuses them between solves. On
+that board a full `solve` takes 2.15 ms against 8.95 ms in TypeScript, and 300 solves trigger 8
+scavenges where TypeScript needs 184.
 
-Every figure matches the TypeScript solve bit for bit. Rust and JavaScript both compute in IEEE 754
+Every figure matches a TypeScript solve bit for bit. Rust and JavaScript both compute in IEEE 754
 doubles, and the Solver keeps TypeScript's order of operations, including the order it sums each
-record in. Before the TypeScript solve was deleted, both ran on every solve in every test suite:
-61,999 solves, with no difference. The purity rules of
-[ADR 0004](./0004-simulation-package.md) still hold, because every runtime runs the same module.
+record in. The purity rules of
+[ADR 0004](./0004-simulation-package.md) hold, because every runtime runs the same module.
 
 Considered options:
 

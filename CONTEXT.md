@@ -511,7 +511,7 @@ The short Challenge every player gets on one UTC day, derived from the date. It 
 _Avoid_: daily challenge, daily quest, streak
 
 **Histogram**:
-The distribution of every player's best result on one axis of one Challenge, per Simulation version. Players would see their percentile, never a rank. Not built: it waits for accounts ([ADR 0016](https://github.com/elianiva/quorum/blob/main/docs/adr/0016-challenges-stay-in-the-browser-until-accounts.md)).
+The distribution of every player's best result on one axis of one Challenge, per Simulation version. Players would see their percentile, never a rank. Not built: it waits for accounts ([ADR 0016](https://github.com/elianiva/quorum/blob/main/docs/adr/0016-challenges-are-scored-in-the-browser.md)).
 _Avoid_: leaderboard, ranking, high score
 
 ### Multiplayer

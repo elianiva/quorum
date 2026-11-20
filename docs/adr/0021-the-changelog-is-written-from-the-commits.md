@@ -1,13 +1,13 @@
 # The changelog is written from each day's commits
 
-Players check `/about/changelog` to see what moved since their last Company. The page listed commit
-subjects by day: "Wire the remaining game flows and migrate saves" says nothing to a player, and the
-list grew with every internal commit. The weekly job also failed, because the repository does not let
-`GITHUB_TOKEN` open pull requests, so no entry reached the wiki for a week at a time.
+Players check `/about/changelog` to see what moved since their last Company. A page of commit
+subjects by day says nothing to them: "Wire the remaining game flows and migrate saves" is noise,
+and the list grows with every internal commit. The workflow cannot open its pull request with
+`GITHUB_TOKEN`, because the repository does not allow it.
 
-The changelog now holds one Markdown file per UTC day in `apps/wiki/changelog/`. A daily workflow
-builds a brief from that day's commits, asks a model for a short player-facing entry, checks the
-answer, and opens a pull request with the entry and the two rendered pages.
+The changelog holds one Markdown file per UTC day in `apps/wiki/changelog/`. A daily workflow builds
+a brief from that day's commits, asks a model for a short player-facing entry, checks the answer, and
+opens a pull request with the entry and the two rendered pages.
 
 Facts stay in code. `apps/wiki/scripts/changelog.ts` picks the day's non-merge commits, reads their
 subjects, bodies, file lists, and patches, and hands the model a brief. It then checks the answer:
@@ -30,13 +30,12 @@ Considered options:
 
 - **Flue in the action.** Flue runs a one-file agent in CI, and its sandbox could read the diffs
   itself. It adds 225 packages to the lockfile (AWS SDK, Google GenAI, Express, MCP) for one prompt,
-  and it does not fix the pull-request permission that made the old job fail. Rejected; the digest
-  already gives the model the facts it needs.
-- **Commit subjects from the merge history.** The old page. It is current and cheap, and unreadable
-  to a player. Rejected.
+  and it does not fix the pull-request permission. Rejected; the digest already gives the model the
+  facts it needs.
+- **Commit subjects from the merge history.** It is cheap and unreadable to a player. Rejected.
 - **A release-please style changelog from pull requests.** The repository merges pull requests, but
-  its own commits are squashed from branches and titles describe implementation. It would still read
-  as a developer log. Rejected.
+  its own commits are squashed from branches and titles describe implementation. It reads as a
+  developer log. Rejected.
 - **Writing every entry by hand.** The best prose, and the first thing to be skipped on a busy day.
   Rejected.
 

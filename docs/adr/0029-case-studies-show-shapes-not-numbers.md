@@ -26,13 +26,12 @@ purpose ([How real is Quorum](https://github.com/elianiva/quorum/blob/main/apps/
 
 ## Consequences
 
-- A new case study is a page and a Design, like a pattern. `designs.test.ts` still checks that the
+- A new case study is a page and a Design, like a pattern. `designs.test.ts` checks that the
   Design solves, keeps its cards apart, and is placed on a page.
 - A failure page does not need a healthy result. Its board runs the incident, so the caption can show
   errors or a low Apdex, and "Where the game stops" explains the gap.
 - The group stays curated. A company with only a conference talk, or no number, does not get a page.
   It can be a reference on an existing pattern page.
 - A change to the Simulation that alters a Design's result changes its caption, not its prose. A claim
-  in the prose that depends on a result still needs a human read.
-- Real numbers go stale. Each page dates its figure in the sentence, so a 2016 number cannot read as
-  current.
+  in the prose that depends on a result needs a human read.
+- Real numbers go stale. Each page dates its figure in the sentence, so a 2016 number reads as 2016.

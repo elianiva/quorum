@@ -6,9 +6,12 @@ documentation" ([Influences](https://github.com/elianiva/quorum/blob/main/apps/w
 `apps/wiki` and is served at `https://wiki.playquorum.dev`.
 
 The wiki is a Foldkit app that Foldkit prerenders at build time (`ssr.build.prerender`). Every page
-is a static HTML file that the client then hydrates, so pages load fast, search engines read them,
-and live islands still run. `Cloudflare.Website.Foldkit` in `alchemy.run.ts` deploys it from
-Foldkit's build manifest; the wiki has no API and no custom Worker.
+is a static HTML file, so pages load fast and search engines read them. The client starts when the
+reader uses a header control, when a quiz, live figure, or practice board nears the viewport, or when
+the browser is idle after the page draws. `src/prefetch.ts` fetches the next page as the reader heads
+for its link, so the first click is as fast as the rest. `Cloudflare.Website.Foldkit` in
+`alchemy.run.ts` deploys the wiki from Foldkit's build manifest; the wiki has no API and no custom
+Worker.
 
 Content comes from two places:
 
@@ -19,8 +22,9 @@ Content comes from two places:
   `::TradeoffCard{component="lb"}` place real game views in the text. An unknown island or
   attribute fails the build.
 
-The GDD stays the design document for developers. It holds balance targets and open questions that
-players must not read as facts. The wiki rewrites it for players.
+The design document lives in the wiki's `design` section ([ADR 0014](./0014-the-design-document-lives-in-the-wiki.md)).
+It holds balance targets and open questions that players must not read as facts, and the player pages
+rewrite it for them.
 
 Considered options:
 
@@ -29,37 +33,16 @@ Considered options:
 - **A hosted wiki (MediaWiki, wiki.gg, Fandom).** Familiar editing, but no real game views, and
   stats copied by hand drift from the catalog. Rejected.
 - **Publish the GDD as is.** No extra writing, but it mixes targets, roadmap, and rules, and it is
-  written for developers. Rejected; the wiki links to it for maintainers.
+  written for developers. Rejected; the design pages stay a section of their own.
 
 ## Consequences
 
-- Decisions taken with the plan: all content is visible by default and an Era filter folds later
-  Eras; English only at launch, with routes ready for a locale prefix; community edits arrive as
-  pull requests on `apps/wiki/content`; the mini-board replays a guided Sandbox and cannot be
-  edited.
+- All content is visible by default and an Era filter folds later Eras.
+- The wiki serves English, Spanish, and Japanese, and each non-default locale has a route prefix.
+- Community edits arrive as pull requests on `apps/wiki/content`.
+- The mini-board replays a guided Sandbox and cannot be edited.
 - Tests in `apps/wiki` fail when a catalog id has no page, an internal link has no target, or the
   version history has no entry for the current `SIM_VERSION`.
 - The wiki depends on `@quorum/simulation` and `@quorum/ui` ([ADR 0010](./0010-ui-package.md)),
   never on `apps/web` or `packages/rpc`.
 - What would change it: a need for reader accounts or comments, which would need an API.
-
-## Amendment
-
-[ADR 0014](./0014-the-design-document-lives-in-the-wiki.md) moved the design document into the
-wiki's `design` section. The reasoning above still holds for the four Diátaxis kinds; the sentence
-that the GDD stays outside the wiki no longer does.
-
-## Amendment
-
-The wiki still prerenders every page. A reading page now starts the client only when the reader
-uses a header control, or when a quiz, live figure, or practice board nears the viewport. A page
-with none of those never downloads the app, catalog, or framework. The home page's first script is
-the boot entry and its view-identity helper; the app arrives on the first interaction.
-
-## Second amendment
-
-A reading page now also starts the client when the browser is idle after the page draws. Waiting
-for a first interaction made the first link click pay for the app and for the next page together.
-With the app loaded, `src/prefetch.ts` fetches the next page as the reader heads for its link, so
-the first click is as fast as the rest. The first script is still the boot entry; the app follows
-once the browser has nothing else to do.

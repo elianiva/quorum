@@ -4,17 +4,16 @@ Ventures, Mutators, and Challenges are open from the start. Legacy buys Perks on
 gated by Era, prerequisites, and Insight.
 
 The game exists to teach system design. A player should be able to choose the rules they want to
-learn. The original design did the opposite: Ventures cost Legacy, four Mutators opened on the first
-Exit, six more came from achievements, and each Challenge opened the one after it. The content that
-makes a Company different was therefore a reward for playing the same Company again. A player who
-wanted to learn data residency had to grind a default Venture first.
+learn. Gating content behind Legacy and achievements turns the content that makes a Company
+different into a reward for playing the same Company again: a player who wants to learn data
+residency must grind a default Venture first.
 
-Legacy still has a job. It is the score an Exit pays, and it buys the twelve Perks, which make later
+Legacy has a job. It is the score an Exit pays, and it buys the twelve Perks, which make later
 Companies faster. That is a power curve, not a content gate.
 
 Research is different. An Era's Research needs that Era's traffic, so the player cannot buy the
-answer before meeting the problem. That order is the curriculum, and the free Sandbox already gives
-every Research item and unlimited Cash to anyone who wants to test a late-game Design.
+answer before meeting the problem. That order is the curriculum, and the free Sandbox gives every
+Research item and unlimited Cash to anyone who wants to test a late-game Design.
 
 Considered options:
 
@@ -27,13 +26,13 @@ Considered options:
 
 ## Consequences
 
-- `Founder` no longer stores unlocked Ventures and Mutators. It stores the chosen Venture and
-  Mutators, so the next Company starts with the same rules.
+- `Founder` stores the chosen Venture and Mutators, not unlocked ones, so the next Company starts
+  with the same rules.
 - `chooseVenture` and `toggleMutator` never refuse.
-- `challengeOpen` is removed, and every Challenge route opens.
+- Every Challenge route opens; there is no `challengeOpen`.
 - A Venture row shows its Legacy multiplier, not a price.
 - The Legacy shop is the only Legacy sink. Its prices rise 12.5%, so the twelve Perks cost 1,766★
   and the prestige curve stays where
   [Balancing](https://github.com/elianiva/quorum/blob/main/apps/wiki/content/design/16-balancing.md)
   put it.
-- Achievements remain badges. They no longer unlock content.
+- Achievements are badges. They unlock no content.

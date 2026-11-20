@@ -89,8 +89,9 @@ place a caller can read it, so a phase that does not have the field cannot answe
 4. Store the tagged state in the Model or the Game. Route every write through `step`; do not write
    the phase from anywhere else.
 5. Read through selectors, never through a payload that another phase may not have.
-6. If the encoded save changes, add the old shape to `save-migration.ts`. Do not add a stored schema
-   and a `decodeTo` transform.
+6. If the encoded save changes, bump `SAVE_FORMAT` and add one function that turns the previous
+   format into the new one ([ADR 0023](../adr/0023-a-company-save-has-a-format.md)). Do not add a
+   stored schema and a `decodeTo` transform.
 7. Cover the behaviour through the integration tests that use the flow. A test that only steps the
    machine duplicates the table and does not protect a caller.
 

@@ -50,7 +50,7 @@ The message schemas live beside the Simulation because their payloads are the Ga
   keeps it for 24 hours, then reports it expired and leaves the owner the copy from when it went
   online.
 - A deploy ends the Room with `stale` rather than handing back a Game the new build cannot read.
-- A Room that no longer exists answers `roomInfo` with `exists: false`, and a link to one lands the
+- A Room that has expired answers `roomInfo` with `exists: false`, and a link to one lands the
   browser on the title screen instead of an empty board.
 - A passing `exit` vote sends the owner the final Game before the guests are told the session is
   over, so the online progress comes home with the Company.
@@ -63,11 +63,11 @@ The message schemas live beside the Simulation because their payloads are the Ga
 - Full Game snapshots. Rejected: 400 KB/s per Seat with `history`, 19 KB/s without it.
 - Deterministic lockstep or CRDTs. Rejected: the Room already orders every change, so clients never
   need to agree among themselves.
-- A fresh Company per Room. Rejected once the shape became "take your Company online": the owner
-  would have two saves to reconcile.
-- Cap'n Web for the transport. Rejected for now: it is experimental, it validates nothing at
-  runtime, and it would add a second RPC stack beside Effect RPC. The trade-off is recorded in the
-  plan and worth revisiting if the room API grows.
+- A fresh Company per Room. Rejected: the shape is "take your Company online", and the owner would
+  have two saves to reconcile.
+- Cap'n Web for the transport. Rejected: it is experimental, it validates nothing at runtime, and it
+  would add a second RPC stack beside Effect RPC. The trade-off is worth revisiting if the room API
+  grows.
 
 ## Consequences
 

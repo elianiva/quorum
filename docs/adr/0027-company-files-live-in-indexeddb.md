@@ -18,20 +18,20 @@ whether the last transaction committed.
 ## Decision
 
 1. A Company file lives in the IndexedDB database `quorum`, in the object store `companies`, under
-   the Company's id. The record is the same JSON text the key `quorum.save.v3.<id>` held, so
-   `SAVE_FORMAT` stays 1 and the import and export text is unchanged
+   the Company's id. The record is the same JSON text the key `quorum.save.v3.<id>` carries, so
+   `SAVE_FORMAT` is 1 and the import and export text is unchanged
    ([ADR 0023](0023-a-company-save-has-a-format.md)).
 2. Only Company files move. The Company list, Settings, and the other small keys stay in
    `localStorage`, so the page boots without waiting for a database.
 3. `apps/web/src/game/company-files.ts` is the one module that names the database. It reaches it
    through `CompanyDb`, four calls: get, put, remove, and keys. A `put` resolves on the
    transaction's `complete` event, never on the request's `success`.
-4. A Company moves when it is next saved. A read tries the database first and the old key second.
-   A save writes the database and removes the old key only after that write has committed. Nothing
-   moves on boot, and nothing deletes the old copy first.
-5. Where IndexedDB is absent, blocked, or refuses a write, the Company file is written to the old
-   key as before. The save fails, with the storage toast, only when both places refuse.
-6. The save of a hidden or unfocused tab writes the old key synchronously in the same turn, then
+4. A Company moves when it is next saved. A read tries the database first and the `localStorage` key
+   second. A save writes the database and removes the key only after that write has committed.
+   Nothing moves on boot, and nothing deletes the key first.
+5. Where IndexedDB is absent, blocked, or refuses a write, the Company file is written to the key.
+   The save fails, with the storage toast, only when both places refuse.
+6. The save of a hidden or unfocused tab writes the key synchronously in the same turn, then
    writes the database, and removes the key when the database write commits. A page that closes in
    between leaves the newest Company under the key.
 7. A Company with a copy in each place opens the one saved at the later sim time, the `time` field
@@ -45,8 +45,9 @@ Considered options:
   would need its own recovery. Moving on save reuses the write the game already makes.
 - **Trust the IndexedDB write on blur.** Rejected: the browser promises nothing about it, and the
   cost is the last seconds of play on every tab close.
-- **Write the old key on every autosave as well.** Rejected: it keeps the blocking write and the
-  quota problem this decision removes. The synchronous write happens only when the tab is leaving.
+- **Write the `localStorage` key on every autosave as well.** Rejected: it keeps the blocking write
+  and the quota problem this decision removes. The synchronous write happens only when the tab is
+  leaving.
 - **`strict` durability on every save.** Rejected: it flushes the disk every five seconds for a
   record the next autosave replaces.
 
@@ -54,8 +55,8 @@ Considered options:
 
 - The five-second autosave leaves the main thread, and a Company's size counts against the
   IndexedDB quota instead of the `localStorage` one.
-- A blur still pays one synchronous write of the whole file. If the `localStorage` quota is full,
-  that write fails quietly and the database write stands alone, as it would for any autosave.
+- A blur pays one synchronous write of the whole file. If the `localStorage` quota is full, that
+  write fails quietly and the database write stands alone, as it would for any autosave.
 - `LoadCompany`, `WriteCompany`, `DeleteCompany`, and `PruneSaves` are asynchronous. A second save
   can start before the first commits, so each write of a Company is numbered, and an older write
   that finishes late neither removes a newer copy under the key nor lands over it.
@@ -65,4 +66,4 @@ Considered options:
   read is skipped, because that prune's list is older than the Company.
 - The test run has no IndexedDB. Tests pass an in-memory `CompanyDb`, and the Commands take the
   fallback path there.
-- A browser that clears site data removes both places together, as before.
+- A browser that clears site data removes both places together.

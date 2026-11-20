@@ -21,13 +21,13 @@ Considered options:
 - **One `Game.boards[]`, a graph per region, and explicit inter-region gateways.** Truer to
   "separate boards", but every solve rule (latency coupling across passes, the Bottleneck search,
   weighted splits, retries, determinism) would need a cross-board pass, and a save would need a
-  migration of every Node into a board. Rejected for M6.
+  migration of every Node into a board. Rejected.
 - **One board with region lanes.** No new UI, but a four-region Design would hold four copies of
   every column on one canvas, which is the clutter the tabs exist to avoid. Rejected.
 
 ## Consequences
 
-- `GameNode.region` decodes to `na`, so every earlier save is a one-region Design and plays as before.
+- `GameNode.region` decodes to `na`, so a save without the field is a one-region Design.
 - A Link may join two regions. Its card shows the round trip on both tabs; the board draws it as a
   stub to the other tab.
 - A Region outage downs every Node in one region that does not survive it: global Components, Users

@@ -1,8 +1,8 @@
 # Update handlers live by subject
 
-One root `update.ts` routed every Message. It grew to 5,104 lines: 265 arms in one `Message.match`,
-and about 2,000 lines of helpers above them. Every new Node option, panel, and gesture made the file
-harder to navigate, and a review of one behaviour meant scrolling through unrelated ones.
+A single root `update.ts` would route every Message: 265 arms in one `Message.match`, and about
+2,000 lines of helpers above them. Every new Node option, panel, and gesture would make the file
+harder to navigate, and a review of one behaviour would mean scrolling through unrelated ones.
 
 Foldkit splits a large update two ways. A Submodel owns a Model slice, its own Messages, and its own
 update. A feature that shares the parent Model splits its own `update/` folder into handler modules
@@ -38,11 +38,11 @@ and the Submodels that already own state keep `Update.foldChild`.
 
 - A behaviour is found by its subject: `grep -l ResizeChosen apps/web/src/game/update` names the
   module and its Message case, and the two lists are checked against each other by the type system.
-- `update.ts` fell from 5,104 to 261 lines. The largest module is `options.ts` at 968 lines, which
-  holds the 89 option arms; each arm is one `act` call, so they stay together.
-- Behaviour did not change: the 280 tests pass, including the 85 that drive the root update.
+- The largest module is `options.ts` at 968 lines, which holds the 89 option arms; each arm is one
+  `act` call, so they stay together.
+- Behaviour is unchanged: the 280 tests pass, including the 85 that drive the root update.
 - `Message` tags and payloads are unchanged, so the playlog, the analytics bridge, and the DevTools
-  filter read the same entries as before.
+  filter read the same entries.
 - A new Message needs one case in `message/<subject>.ts` and one handler in `update/<subject>.ts`.
   Forgetting either fails the type check.
 - What would change it: if toasts and panels move into a Board Model, the Board can become a

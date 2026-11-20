@@ -22,6 +22,6 @@ settings list would drift from the Simulation.
 - `designs.test.ts` fails when a Design does not solve, has overlapping cards, names a field the
   game lacks, or has no page.
 - A change to the Simulation that alters a Design's result changes its caption, not its prose.
-  Claims in the prose that depend on a result still need a human read.
+  Claims in the prose that depend on a result need a human read.
 - The Design files grow with the Patterns section, so a new pattern is a page and, when buildable, one
   entry.

@@ -79,7 +79,7 @@ export const hud: Messages['hud'] = {
     `Analítica muestrea los Nodos a los que enlaza. Un pool gana con la raíz cuadrada de sus muestras, así que un tipo de petición nuevo rinde más que añadir más tráfico del mismo tipo. Una muestra fallida genera ${p0}× Conocimiento de fallos.`,
   spend: 'Gasto',
   eachResearchItemCostsInsightFrom:
-    'Cada elemento de Investigación cuesta Conocimiento de uno o más pools. Un Estudio lo consume mientras se ejecuta. El pool más bajo marca el ritmo.',
+    'Cada elemento de Investigación cuesta Conocimiento de uno o más pools. Un Estudio lo consume mientras se ejecuta. El pool más bajo marca el ritmo; un equipo inactivo puede impulsar el Estudio.',
   keep: 'Retención',
   aPoolHoldsAtMostIts:
     'Un pool retiene como máximo su tasa × la ventana de retención de Analítica. Una ventana más larga cuesta más Almacenamiento.',

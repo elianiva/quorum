@@ -61,6 +61,12 @@ export const teamAction = (model: Model, out: TeamOutMessage): UpdateResult => {
                 : 'Product team',
         Work.setTeamKind(game, teamId, kind),
       ),
+    SetResearchTeam: ({ teamId }) =>
+      act(
+        model,
+        teamId === null ? 'Stopped research boost' : 'Boosted research',
+        Work.setResearchTeam(game, teamId),
+      ),
     QueueFeature: ({ id }) =>
       act(model, `Queued ${FEATURES[id].name}`, Work.queueFeature(game, id)),
     RemoveFeature: ({ id }) =>

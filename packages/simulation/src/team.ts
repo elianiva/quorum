@@ -60,6 +60,7 @@ import {
   type RuntimeId,
   type Tuning,
 } from './catalog.ts'
+import { teamBoosting, teamReady } from './research-team.ts'
 import type { Ledger } from './ledger.ts'
 import {
   dataGroupOfService,
@@ -222,7 +223,11 @@ export const unhappy = (engineer: Engineer): boolean => engineer.mood <= UNHAPPY
 
 export const dataStaffed = (game: Game): boolean =>
   game.teams.some(
-    (team) => team.kind === 'data' && game.engineers.some((engineer) => engineer.team === team.id),
+    (team) =>
+      team.kind === 'data' &&
+      teamReady(game, team) &&
+      !teamBoosting(game, team) &&
+      game.engineers.some((engineer) => engineer.team === team.id),
   )
 
 export const memberOf = (game: Game, teamId: string, salt: number): Engineer | undefined => {
@@ -232,6 +237,11 @@ export const memberOf = (game: Game, teamId: string, salt: number): Engineer | u
 
 export const days = (count: number, tuning: Tuning): number =>
   (count * CALENDAR_DAY) / tuning.calendarPace
+
+export const KIND_CHANGE_DAYS = 3
+export const KIND_CHANGE_OUTPUT = 0.5
+export const kindChangeSeconds = (tuning: Tuning = LIVE_TUNING): number =>
+  days(KIND_CHANGE_DAYS, tuning)
 
 export const policyNow = (game: Game, team: Team, tuning: Tuning = LIVE_TUNING): PolicyDef =>
   game.time - team.since < days(POLICY_SWITCH_DAYS, tuning)
@@ -308,7 +318,10 @@ export const moraleSeconds = (tuning: Tuning = LIVE_TUNING): number => days(MORA
 export const platformStaffed = (game: Game): boolean =>
   game.teams.some(
     (team) =>
-      team.kind === 'platform' && game.engineers.some((engineer) => engineer.team === team.id),
+      team.kind === 'platform' &&
+      teamReady(game, team) &&
+      !teamBoosting(game, team) &&
+      game.engineers.some((engineer) => engineer.team === team.id),
   )
 
 const liveClusters = (game: Game): number =>
@@ -373,13 +386,15 @@ export const teamOutputs = (
       morale *
       budgetVelocity(game)
     const upkeep = team.kind === 'product' ? 1 - upkeepShare(game, owned) : 1
+    const ramp = teamReady(game, team) ? 1 : KIND_CHANGE_OUTPUT
     const rate =
       (effective *
         velocity *
         upkeep *
         DEV_HOURS_PER_DAY *
         tuning.calendarPace *
-        devHoursPerk(game)) /
+        devHoursPerk(game) *
+        ramp) /
       CALENDAR_DAY
     return { team, headcount, effective, velocity, devHoursPerSecond: rate }
   })
@@ -396,7 +411,10 @@ export const teamOutputs = (
 }
 
 export const devHoursRate = (game: Game, ledger: Ledger, tuning: Tuning = LIVE_TUNING): number =>
-  teamOutputs(game, ledger, tuning).reduce((sum, entry) => sum + entry.devHoursPerSecond, 0)
+  teamOutputs(game, ledger, tuning).reduce(
+    (sum, entry) => sum + (teamBoosting(game, entry.team) ? 0 : entry.devHoursPerSecond),
+    0,
+  )
 
 export const salaryOf = (game: Game, language: LanguageId): number =>
   SALARY_BASE_PER_SECOND * eraOf(game).salaryIndex * LANGUAGES[language].salary

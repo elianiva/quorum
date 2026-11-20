@@ -42,6 +42,13 @@ export const research: Messages['research'] = {
   queueStudy: (duration) => `Mettre en file · ${duration}`,
   queued: 'En file',
   queueCount: (count, max) => `${count} sur ${max}`,
+  speed: (p0) => `×${p0}`,
+  studySpeedTitle:
+    'Une équipe inactive accélère l’étude. Un spécialiste est plus fort dans son domaine ; une équipe Produit aide sur tous les domaines à moitié vitesse. Une exploration et la recherche de vitesse d’étude l’accélèrent aussi.',
+  boostedBy: (p0) => `Accélération : ${p0}`,
+  assignTeam: 'Assigner une équipe',
+  boostHelp:
+    'Une équipe inactive peut accélérer cette étude. Un spécialiste accélère ses propres domaines ; une équipe Produit aide sur tous les domaines à moitié vitesse.',
   requires: 'Nécessite',
   leadsTo: 'Conduit à',
   research: 'Recherche',

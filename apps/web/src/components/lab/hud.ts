@@ -54,6 +54,7 @@ import {
   limitingPool,
   progressOf as studyProgressOf,
   recipeOf as simRecipe,
+  studySpeed,
   studyStall,
 } from '@quorum/simulation/studies'
 import { DRILL_RPO } from '@quorum/simulation/catalog'
@@ -72,6 +73,7 @@ import { awaitingFeatures } from '@quorum/simulation/features'
 import { overdueBy } from '@quorum/simulation/cve'
 import { workItemName } from './team.ts'
 import { redoAvailable, settleProgress, undoAvailable } from '@/game/feedback.ts'
+import { speedFactorOf } from '@/game/research.ts'
 import { clock as mmss, compact, money, rate } from '@quorum/ui/game/format'
 import { Message } from '@/game/message.ts'
 import {
@@ -492,7 +494,8 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
   const limit = running ? limitingPool(game) : null
   const stall = running ? studyStall(game, ledger, running.id) : null
   const queued = game.studies.length - 1
-  const runningLabel = `${stall ? t.research.cannotRunShort : `${Math.floor(studyProgressOf(running) * 100)}%`}${queued > 0 ? ` · +${queued}` : ''}`
+  const speed = stall ? 1 : studySpeed(game, ledger, running?.id)
+  const runningLabel = `${stall ? t.research.cannotRunShort : `${Math.floor(studyProgressOf(running) * 100)}%`}${speed > 1 ? ` · ${t.research.speed(speedFactorOf(speed))}` : ''}${queued > 0 ? ` · +${queued}` : ''}`
   const pools = POOL_ORDER.filter(
     (pool) => game.pools[pool] >= 1 || ledger.insight[pool] > 0 || (recipe[pool] ?? 0) > 0,
   )

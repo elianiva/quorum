@@ -406,6 +406,11 @@ leading spans all read the same fields, so they agree.
   duration, its effect in one line, and what it unlocks. A silhouette shows only its effect line.
 - A queue of up to 8 Studies. The running Study shows its progress, the pool that limits it, and the
   lever that raises that pool.
+- The queue header names the Team that boosts the running Study and shows the speed it reaches, or
+  **Assign team** when no Team boosts. A pause icon marks a Team whose domain effect is on hold, and
+  its tooltip names the effect. The Team card carries the same control, with the multiplier and the
+  reason it cannot boost: no Study, a role change, backlog work, no engineers, or a track the Team
+  cannot help.
 - Each recipe pool shows the rate the Study draws and the rate the pool earns. A pool that limits the
   Study is marked, and its row carries the lever's steps and **Build**, which queues the next step on
   the backlog with its Dev Hours and growth cost.

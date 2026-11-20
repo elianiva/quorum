@@ -372,7 +372,7 @@ _Avoid_: maintenance tax, KTLO, overhead
 
 **Spike**:
 A Team's work on the running Study. It doubles the Study's speed and takes the Team's Dev Hours until the Study completes.
-_Avoid_: research task, crunch, boost
+_Avoid_: research task, crunch
 
 **Tech debt**:
 A per-Service percentage that slows Dev Hours and raises Incident chances until paid down.
@@ -435,8 +435,12 @@ The Insight pools that pay a Research item's cost, split equally. The split is a
 _Avoid_: price list, ingredients, requirements
 
 **Study**:
-The run of one Research item. It takes its Insight over its duration, and its effect starts when it completes. One runs at a time.
+The run of one Research item. It takes its Insight over its duration, and its effect starts when it completes. One runs at a time, and a Research boost or a Spike makes it faster.
 _Avoid_: research job, project, timer
+
+**Research boost**:
+An idle Team's work on the running Study. The Team adds speed in proportion to its effective engineers, up to 2×. A specialist adds its full rate on its own tracks; a Product team adds half that rate outside its own tracks. The Team's other work pauses while it boosts. The boost follows the queue while the next Study is on a track the Team can boost.
+_Avoid_: overclock, power-up, speed-up
 
 **Insight bottleneck**:
 The Insight pool whose earning rate costs the running Study the most time. The Research screen marks it with the Product lever that raises it.
@@ -568,7 +572,7 @@ _Avoid_: save, state dump
 - A **Node** is a copy of one **Component**. Compute Nodes run a **Stack** and belong to a **Service**.
 - A **Service** is owned by one **Team**. **Engineers** in Teams produce **Dev Hours**.
 - The **Simulation** turns the Design into the **Ledger** each **Step**. Every number on screen comes from the Ledger.
-- **Analytics** turns sampled traffic into **Insight** of each request kind. A **Study** takes Insight from its **Recipe**'s pools and completes a **Research** item. A **Spike** puts a **Team** on the running Study.
+- **Analytics** turns sampled traffic into **Insight** of each request kind. A **Study** takes Insight from its **Recipe**'s pools and completes a **Research** item. A **Spike** puts a **Team** on the running Study, and an idle **Team** can boost it.
 - An **Exit** turns **Equity** × **Valuation** into **Legacy**.
 - The **Founder** keeps **Legacy**, **Perks**, and **Playbooks** from one **Company** to the next.
 - A **Sandbox track** holds guided **Sandboxes** for one **Era**. **Challenges** form a separate list across Eras, and every one is open.

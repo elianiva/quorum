@@ -53,6 +53,9 @@ const out = (research: Research, outMessage: ResearchOutMessage): ResearchReturn
 export const queueIndex = (fromIndex: number, dropIndex: number): number =>
   dropIndex > fromIndex ? dropIndex - 1 : dropIndex
 
+export const speedFactorOf = (speed: number): string =>
+  Number.isInteger(speed) ? `${speed}` : `${Number(speed.toFixed(2))}`
+
 const dragged = (research: Research, message: DragAndDrop.Message): ResearchReturn => {
   const next = DragAndDrop.update(research.drag, message)
   const drop = next.outMessage

@@ -57,6 +57,7 @@ import {
   type FeatureDef,
   type InsightPool,
   type ResearchId,
+  type ResearchTrack,
   type RuntimeId,
   type Tuning,
 } from './catalog.ts'
@@ -77,7 +78,7 @@ import {
   applyMirror,
 } from './mirror.ts'
 import { bottleneckOf, diurnal, solveFlow } from './solve.ts'
-import type { Founding, Game, GameNode } from './state.ts'
+import type { Founding, Game, GameNode, TeamKind } from './state.ts'
 import { step } from './step.ts'
 import { drillDone, drillPassed } from './drill-machine.ts'
 import { languageOfService, salaryOf, serviceOf, signingOf, stackOf } from './team.ts'
@@ -86,7 +87,9 @@ import {
   approveBlock,
   assign,
   createTeam,
+  MAX_TEAMS,
   setTeamKind,
+  setResearchTeam,
   changeStack,
   hire,
   moveItem,
@@ -136,6 +139,7 @@ export type BotRun = Readonly<{
   game: Game
   milestones: Readonly<Partial<Record<Milestone, number>>>
   margins: ReadonlyArray<MarginRecord>
+  boosted: number
 }>
 
 const PRIORITY: ReadonlyArray<ResearchId> = [
@@ -202,6 +206,58 @@ const POLYGLOT_PRIORITY: ReadonlyArray<ResearchId> = [
   'lang-node',
   ...PRIORITY.slice(3),
 ]
+
+const ROLE_RESEARCH: ReadonlyArray<ResearchId> = [
+  'on-call',
+  'sre-team',
+  'platform-team',
+  'data-team',
+]
+
+const specialistKind = (track: ResearchTrack): TeamKind | null => {
+  if (track === 'data') return 'data'
+  if (track === 'reliability' || track === 'observability') return 'sre'
+  if (track === 'infrastructure' || track === 'performance' || track === 'cost') return 'platform'
+  if (track === 'security') return 'security'
+  return null
+}
+
+const roleOf = (kind: TeamKind): ResearchId =>
+  kind === 'sre'
+    ? 'sre-team'
+    : kind === 'data'
+      ? 'data-team'
+      : kind === 'platform'
+        ? 'platform-team'
+        : 'security-team'
+
+const boostStudy = (game: Game, tuning: Tuning): Game => {
+  if (game.stage < 3) return game
+  const head = game.studies[0]
+  if (!head) return game
+  const kind = specialistKind(RESEARCH[head.id].track)
+  if (!kind || !has(game, roleOf(kind))) return game
+  let next = game
+  let team = next.teams.find((entry) => entry.kind === kind)
+  if (!team) {
+    if (next.teams.length >= MAX_TEAMS) return game
+    const made = tried(next, createTeam(next))
+    const created = made.teams.at(-1)
+    if (!created || made === next) return game
+    next = tried(made, setTeamKind(made, created.id, kind, tuning))
+    team = next.teams.find((entry) => entry.id === created.id)
+    if (!team) return game
+  }
+  const founder = next.teams[0]?.id
+  const movable = next.engineers.filter((entry) => entry.team === founder)
+  if (!next.engineers.some((entry) => entry.team === team.id) && movable.length > 0) {
+    const take = Math.min(4, Math.max(1, Math.floor(movable.length / 2)))
+    for (const engineer of movable.slice(0, take))
+      next = tried(next, assign(next, engineer.id, team.id))
+  }
+  if (next.researchTeam === team.id) return next
+  return tried(next, setResearchTeam(next, team.id))
+}
 
 const REALTIME_RESEARCH: ReadonlyArray<ResearchId> = ['lang-node', 'node-cluster']
 
@@ -742,6 +798,7 @@ const studies = (
   strategy: Strategy,
   realtime: boolean,
   ready: (id: ResearchId) => boolean,
+  extra: ReadonlyArray<ResearchId> = [],
 ): Game => {
   const payable = (id: ResearchId) =>
     (Object.keys(RECIPE[id]) as Array<InsightPool>).every(
@@ -763,7 +820,7 @@ const studies = (
   const order =
     strategy === 'greedy'
       ? RESEARCH_IDS.filter(ready).toSorted((a, b) => RESEARCH[a].cost - RESEARCH[b].cost)
-      : (strategy === 'polyglot' ? POLYGLOT_PRIORITY : PRIORITY)
+      : [...extra, ...(strategy === 'polyglot' ? POLYGLOT_PRIORITY : PRIORITY)]
           .filter(ready)
           .filter((id) => id !== 'replication' || game.stage >= 3)
           .filter((id) => id !== 'sharding' || game.stage >= 4)
@@ -827,7 +884,7 @@ const sampleAll = (game: Game, ledger: Ledger): Game => {
   return grown.cash >= ledger.burn * RESERVE_SECONDS * TAP_RESERVE ? grown : next
 }
 
-const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
+const look = (game: Game, tuning: Tuning, strategy: Strategy, boost = false): Game => {
   let next = game.pending > 0 ? collect(game) : game
 
   for (const postmortem of next.postmortems)
@@ -856,7 +913,7 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
   const chat = isBuilt(next, 'chat') || next.backlog.some((item) => item.ref === 'chat')
   const realtime =
     strategy !== 'stubborn' && chat && RUNTIMES[stackOf(next).runtime].connectionKB === null
-  next = studies(next, solveFlow(next), strategy, realtime, ready)
+  next = studies(next, solveFlow(next), strategy, realtime, ready, boost ? ROLE_RESEARCH : [])
 
   const first = servers(next)[0]
   if (strategy !== 'stubborn' && strategy !== 'greedy' && first && !serviceOf(next).migration) {
@@ -982,6 +1039,7 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy): Game => {
     }
   }
   if (strategy !== 'greedy') next = sampleAll(next, solveFlow(next))
+  if (boost) next = boostStudy(next, tuning)
 
   if (!canRaise(next)) return next
   return tried(
@@ -1026,10 +1084,12 @@ export const runBot = (
   strategy: Strategy = 'balanced',
   untilStage = 2,
   founding: Founding | null = null,
+  boost = false,
 ): BotRun => {
   let game = founding ? foundCompany(seed, founding) : newGame(seed)
   const milestones: Partial<Record<Milestone, number>> = {}
   const margins: Array<MarginRecord> = []
+  let boosted = 0
   const mark = (milestone: Milestone) => {
     if (milestones[milestone] === undefined) milestones[milestone] = game.time
   }
@@ -1037,7 +1097,7 @@ export const runBot = (
     if (Math.round(game.time) % (strategy === 'idle' ? IDLE_EVERY : LOOK_EVERY) === 0) {
       const before = game
       const ledger = solveFlow(before)
-      game = look(before, tuning, strategy)
+      game = look(before, tuning, strategy, boost)
       for (const milestone of reached(before, game)) mark(milestone)
       if (game.stage > before.stage)
         margins.push({
@@ -1047,10 +1107,12 @@ export const runBot = (
         })
     }
     const result = step(game, 1, tuning)
+    if (result.events.some(StepEvent.$is('StudyCompleted')) && game.researchTeam !== null)
+      boosted += 1
     game = result.game
     if (result.events.some(StepEvent.$is('IncidentStarted'))) mark('first-incident')
     if (result.events.some(StepEvent.$is('Deployed'))) mark('first-feature')
     if (result.events.some(StepEvent.$is('StudyCompleted'))) mark('first-research')
   }
-  return { game, milestones, margins }
+  return { game, milestones, margins, boosted }
 }

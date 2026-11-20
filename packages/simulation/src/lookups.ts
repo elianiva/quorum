@@ -79,6 +79,7 @@ import {
   ZONE_SPANNING_COMPONENTS,
   type Tuning,
 } from './catalog.ts'
+import { teamBoosting, teamReady } from './research-team.ts'
 import { restarting, type DownCause } from './life.ts'
 import type {
   DbEngine,
@@ -109,13 +110,20 @@ export const insightTotal = (pools: Readonly<Record<string, number>>): number =>
 
 export const sreStaffed = (game: Game): boolean =>
   game.teams.some(
-    (team) => team.kind === 'sre' && game.engineers.some((engineer) => engineer.team === team.id),
+    (team) =>
+      team.kind === 'sre' &&
+      teamReady(game, team) &&
+      !teamBoosting(game, team) &&
+      game.engineers.some((engineer) => engineer.team === team.id),
   )
 
 export const securityStaffed = (game: Game): boolean =>
   game.teams.some(
     (team) =>
-      team.kind === 'security' && game.engineers.some((engineer) => engineer.team === team.id),
+      team.kind === 'security' &&
+      teamReady(game, team) &&
+      !teamBoosting(game, team) &&
+      game.engineers.some((engineer) => engineer.team === team.id),
   )
 
 export const eraOf = (game: Game): EraDef => ERAS[Math.min(game.stage, ERAS.length - 1)] as EraDef

@@ -56,7 +56,8 @@ player can give it; the owner writes, and Approve or Later is the answer ([Block
 
 Dev Hours a team does not spend stay in a company-wide **pool**, and the Team panel shows the pool
 and its fill rate. **Rush** spends the pool on one backlog item: it pays as much of that item's
-remaining cost as the pool holds, so an item finishes without waiting for a team to build it.
+remaining cost as the pool holds, so an item finishes without waiting for a team to build it. A Team
+that boosts a Study does not fill the pool while it boosts.
 Rushed work is hurried work: when the item finishes, it adds tech debt to its Service, 2 points for
 every full item's cost the pool paid. A half-rushed item adds 1. Cancelling the item before it
 finishes keeps none of that debt, because its code never lands. From Pre-seed, a rushed Feature also
@@ -158,6 +159,11 @@ Product, Platform, SRE, Data and Security teams exist. A Platform team needs
 `platform-team` research, an SRE team `sre-team`, a Data team `data-team`, and a Security team
 `security-team`, each with an engineer on it. Their Dev Hours build no backlog: they run the system
 instead.
+
+A team's kind also sets the Research tracks it can boost
+([Progression](/design/10-progression#research-boost)). A Product team can boost any track, at half a
+specialist's rate outside its own tracks. A kind change takes 3 calendar days at half output, its
+specialist effect does not count, and the team cannot boost until the change ends.
 
 ## Coordination
 
@@ -554,6 +560,37 @@ Only one Team can spike a Study.
 
 So research competes with the product for engineers, as it does at real companies. A player who
 needs `caching` can buy it with a Team's time instead of waiting.
+
+## Research boost
+
+An idle Team can boost the running Study from its Team card or from the Research queue. The Team
+adds speed with its effective engineers:
+
+```latex
+\text{speed} = 1 + \min\left(1,\ \text{track rate} \times \text{effective engineers}\right)
+```
+
+A specialist team has a track rate of 0.35 on its own tracks and 0 on every other track. A Product
+team has 0.35 on a product track and half that on any other track, so it can help anywhere but needs
+twice the engineers to reach the same speed.
+
+| Team type     | Tracks                                                          |
+| ------------- | --------------------------------------------------------------- |
+| Product team  | Product, runtimes, frameworks, and any other track at half rate |
+| Platform team | Infrastructure, performance, cost                               |
+| SRE team      | Reliability, observability                                      |
+| Data team     | Data                                                            |
+| Security team | Security                                                        |
+
+Only one Team boosts a Study. A Team must be idle: a Product team leaves its backlog, and a
+specialist leaves its domain effect on hold. The SRE team hands off the pager, the Data team puts the
+warehouse discount on hold, the Platform team stops running clusters, and the Security team pauses
+its desk. The boost follows the queue while the next Study is on a track the Team can boost. It clears
+when the track changes, the Team gets backlog work, the Team's kind changes, or the queue is empty.
+
+An hour a Team would have spent on its domain can go into a Study instead. The trade is visible: the
+boost is strongest where the team's kind matches the Study's track, and a team that changes kind
+pays 3 days at half output, without its specialist effect, before it can boost the new track.
 
 ## Migrations
 

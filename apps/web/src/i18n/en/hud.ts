@@ -77,7 +77,7 @@ export const hud = {
     `Analytics samples the Nodes it links to. A pool earns with the square root of its samples, so a new request kind earns more than more of the same traffic. A failed sample earns ${p0}× Failure Insight.`,
   spend: 'Spend',
   eachResearchItemCostsInsightFrom:
-    'Each Research item costs Insight from one or more pools. A Study takes it while it runs. The pool that is lowest sets the pace.',
+    'Each Research item costs Insight from one or more pools. A Study takes it while it runs. The pool that is lowest sets the pace; an idle team can boost the Study.',
   keep: 'Keep',
   aPoolHoldsAtMostIts:
     'A pool holds at most its rate × the Analytics retention window. A longer window costs more Storage.',

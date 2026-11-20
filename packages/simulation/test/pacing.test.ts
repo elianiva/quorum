@@ -70,3 +70,11 @@ describe.skipIf(!SLOW)(
       })
   },
 )
+
+describe('the boosting bot', { timeout: 60_000 }, () => {
+  test('splits a specialist team and finishes boosted Studies', () => {
+    const run = runBot(1, 130 * 60, CHALLENGE_TUNING, 'balanced', 6, null, true)
+    expect(run.boosted).toBeGreaterThan(0)
+    expect(run.game.teams.some((team) => team.kind === 'sre')).toBe(true)
+  })
+})

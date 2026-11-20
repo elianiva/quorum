@@ -47,6 +47,7 @@ Formatting: SI suffixes only (k, M, B, T). No letter suffixes such as "aa".
 | Default sample rate       |                | 10%                                                                          | [Observability](/design/12-observability#earning-insight)                  |
 | Default retention         |                | 15 min; pool cap at least 100                                                | [Observability](/design/12-observability#retention)                        |
 | Study duration            |                | 20 s (Garage) to 60 min (Public)                                             | [Progression](/design/10-progression#studies)                              |
+| Research boost            |                | 0.35 per effective engineer on a track, up to 2×; Product half rate          | [Team](/design/08-team-and-velocity#research-boost)                        |
 | Spike speed               |                | 2×                                                                           | [Team](/design/08-team-and-velocity#spikes)                                |
 | Lever steps               |                | ×2, ×3, ×4 of the kind's share                                               | [Product levers](#product-levers)                                          |
 | Lever Dev Hours           |                | 24, 80, 240                                                                  | [Product levers](#product-levers)                                          |

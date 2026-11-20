@@ -397,10 +397,19 @@ Thread resolves when the Study moves again or leaves the queue.
 A Study that runs but runs slowly has an **Insight bottleneck**: the pool whose earning rate costs it
 the most time ([Observability](/design/12-observability#the-insight-bottleneck)). The item's sidebar
 names that pool, the rate the Study draws, the rate the pool earns, and the lever that raises it. The
-player can queue the lever while the Study runs. The pace follows when the lever's deploy lands.
+player can queue the lever while the Study runs. The pace follows when the lever's deploy lands. An
+idle Team can boost the Study, but a boost only helps while the pools can feed the faster draw: the
+pool that is lowest still sets the pace. The boost raises the draw; it does not refill the pool.
 
-`speed` is 1, and two things raise it:
+`speed` is 1, and three things raise it:
 
+- **A Research boost.** An idle Team works on the Study
+  ([Team](/design/08-team-and-velocity#research-boost)). Its speed adds `0.35 × effective engineers`
+  on each of its kind's tracks, up to 2× in total. A Product team adds half that rate outside its own
+  tracks. The Team's domain effect pauses while it boosts, and the Dev Hours pool no longer fills from
+  it.
+  One Team boosts a Study. The assignment follows the queue while the next Study is on a track the
+  Team can boost, and clears when the track changes or the Team gets backlog work.
 - **A Spike.** A Team takes the running Study as its backlog item
   ([Team](/design/08-team-and-velocity#spikes)). While it does, `speed` × 2. A Spike whose Study is
   not running waits, and no Team takes it.

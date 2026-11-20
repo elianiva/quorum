@@ -7,6 +7,7 @@ import {
   SHEET_MIN_WIDTH_PX,
   STUDY_QUEUE,
   queueIndex,
+  speedFactorOf,
 } from '@/game/research.ts'
 import { Option } from 'effect'
 import * as Effect from 'effect/Effect'
@@ -22,6 +23,8 @@ import {
   ChevronDown,
   ChevronUp,
   X,
+  Zap,
+  Pause,
   type IconNode,
   Lock,
   TriangleAlert,
@@ -49,8 +52,9 @@ import type { Ledger } from '@quorum/simulation/ledger'
 import { has, missingPrerequisites, needs, researchReady } from '@quorum/simulation/lookups'
 import { mixOf } from '@quorum/simulation/features'
 import { leverRefusal, leverRemoveRefusal } from '@quorum/simulation/work'
-import type { Game } from '@quorum/simulation/state'
+import type { Game, TeamKind } from '@quorum/simulation/state'
 import {
+  boostOf,
   capOf,
   limitingPool,
   studySeconds,
@@ -197,9 +201,24 @@ const price = (entry: ResearchDef, state: State, grey: boolean, h: HtmlBuilder<M
       )
 }
 
-const duration = (t: Messages, game: Game, entry: ResearchDef): string => {
-  const seconds = studySeconds(entry.id) / studySpeed(game)
+const duration = (t: Messages, game: Game, ledger: Ledger, entry: ResearchDef): string => {
+  const seconds = studySeconds(entry.id) / studySpeed(game, ledger, entry.id)
   return seconds < 90 ? t.units.s(Math.round(seconds)) : t.units.min(Math.round(seconds / 60))
+}
+
+const pausedEffect = (t: Messages, kind: TeamKind): string | null => {
+  switch (kind) {
+    case 'sre':
+      return t.team.pagerOff
+    case 'data':
+      return t.team.dataOff
+    case 'platform':
+      return t.team.platformOff
+    case 'security':
+      return t.team.securityOff
+    default:
+      return null
+  }
 }
 
 const stepMeter = (step: number, h: HtmlBuilder<Message>): Html =>
@@ -475,6 +494,8 @@ const costRows = (
 
   const running = game.studies[0]?.id === entry.id
   const limit = running ? limitingPool(game) : null
+  const stalled = running ? studyStall(game, ledger, entry.id) : null
+  const speed = stalled ? 1 : studySpeed(game, ledger, entry.id)
   return h.section(
     [
       h.Key('cost'),
@@ -509,12 +530,40 @@ const costRows = (
             [
               h.Class(
                 css({
-                  fontSize: 'type.11-5',
-                  color: 'mutedForeground',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  gap: '0.5',
                 }),
               ),
             ],
-            [duration(t, game, entry)],
+            [
+              h.span(
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'type.11-5',
+                      color: 'mutedForeground',
+                    }),
+                  ),
+                ],
+                [duration(t, game, ledger, entry)],
+              ),
+              speed > 1
+                ? h.span(
+                    [
+                      h.Class(
+                        css({
+                          fontSize: 'type.10-5',
+                          color: 'ok',
+                        }),
+                      ),
+                      h.Title(t.research.studySpeedTitle),
+                    ],
+                    [t.research.speed(speedFactorOf(speed))],
+                  )
+                : h.empty,
+            ],
           ),
         ],
       ),
@@ -602,7 +651,7 @@ const costRows = (
             game,
             ledger,
             pool,
-            cost / (studySeconds(entry.id) / studySpeed(game)),
+            cost / (studySeconds(entry.id) / studySpeed(game, ledger, entry.id)),
             pool === limit,
             h,
           ),
@@ -1653,6 +1702,13 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
   const game = model.board.game
   const studies = game.studies
   const ledger = ledgerOf(model)
+  const head = studies[0]
+  const speed = head && studyStall(game, ledger, head.id) ? 1 : studySpeed(game, ledger)
+  const booster = game.researchTeam
+    ? game.teams.find((entry) => entry.id === game.researchTeam)
+    : undefined
+  const boosting = booster && head && boostOf(game, ledger, head.id) > 0 ? booster : null
+  const paused = boosting ? pausedEffect(t, boosting.kind) : null
   const drag = model.board.research.drag
   const dragging = DragAndDrop.isDragging(drag)
   const draggedId = DragAndDrop.maybeDraggedItemId(drag)
@@ -1698,7 +1754,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
             css({
               display: 'flex',
               flexShrink: '0',
-              alignItems: 'baseline',
+              alignItems: 'center',
               justifyContent: 'space-between',
               gap: '3',
               paddingInline: '5',
@@ -1708,20 +1764,130 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
           ),
         ],
         [
-          h.span([h.Class(EYEBROW)], [t.research.studyQueue]),
           h.span(
             [
               h.Class(
                 cx(
-                  FIGURE,
+                  EYEBROW,
                   css({
-                    fontSize: 'type.11',
-                    color: 'mutedForeground',
+                    display: 'flex',
+                    flexShrink: '0',
+                    alignItems: 'baseline',
+                    gap: '2',
+                    whiteSpace: 'nowrap',
                   }),
                 ),
               ),
             ],
-            [t.research.queueCount(studies.length, MAX_STUDIES)],
+            [
+              h.span([], [t.research.studyQueue]),
+              h.span(
+                [h.Class(css({ fontSize: 'type.10-5', color: 'mutedForeground' }))],
+                [t.research.queueCount(studies.length, MAX_STUDIES)],
+              ),
+            ],
+          ),
+          h.span(
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  minWidth: '0',
+                  flexShrink: '1',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  gap: '3',
+                  whiteSpace: 'nowrap',
+                }),
+              ),
+            ],
+            [
+              h.button(
+                [
+                  h.Type('button'),
+                  h.Title(paused ?? t.research.boostHelp),
+                  h.OnClick(Message.PanelOpened({ panel: 'team' })),
+                  h.Class(
+                    cx(
+                      css({
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '1',
+                        borderRadius: 'md',
+                        paddingInline: '1.5',
+                        paddingBlock: '0.5',
+                        fontSize: 'type.10-5',
+                        whiteSpace: 'nowrap',
+                        _hover: {
+                          backgroundColor: 'color-mix(in oklab, var(--foreground) 5%, transparent)',
+                        },
+                      }),
+                      boosting
+                        ? css({
+                            color: 'ok',
+                          })
+                        : css({
+                            color: 'mutedForeground',
+                          }),
+                    ),
+                  ),
+                ],
+                [
+                  icon(
+                    h,
+                    Zap,
+                    css({
+                      width: '3',
+                      height: '3',
+                      flexShrink: '0',
+                    }),
+                  ),
+                  h.span(
+                    [],
+                    [
+                      boosting
+                        ? t.research.boostedBy(
+                            boosting.id === game.teams[0]?.id ? t.team.coreTeam : boosting.name,
+                          )
+                        : t.research.assignTeam,
+                    ],
+                  ),
+                  ...(paused
+                    ? [
+                        icon(
+                          h,
+                          Pause,
+                          css({
+                            width: '3',
+                            height: '3',
+                            flexShrink: '0',
+                            color: 'warn',
+                          }),
+                        ),
+                      ]
+                    : []),
+                ],
+              ),
+              ...(speed > 1
+                ? [
+                    h.span(
+                      [
+                        h.Class(
+                          cx(
+                            FIGURE,
+                            css({
+                              fontSize: 'type.11',
+                              color: 'ok',
+                            }),
+                          ),
+                        ),
+                        h.Title(t.research.studySpeedTitle),
+                      ],
+                      [t.research.speed(speedFactorOf(speed))],
+                    ),
+                  ]
+                : []),
+            ],
           ),
         ],
       ),
@@ -2117,8 +2283,8 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
       ? t.research.researched
       : state === 'buy'
         ? stalled?.stall
-          ? t.research.queueStudy(duration(t, game, entry))
-          : t.research.startStudy(duration(t, game, entry))
+          ? t.research.queueStudy(duration(t, game, ledger, entry))
+          : t.research.startStudy(duration(t, game, ledger, entry))
         : era > game.stage
           ? t.research.opensIn(t.catalog.eras[era]?.name ?? eraName(era))
           : chain.length > 2

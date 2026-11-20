@@ -90,7 +90,8 @@ flowchart LR
 Research has a bottleneck of its own, and it is the L1 loop applied to a Study. A Study runs at the
 pace of its scarcest Insight pool, so the player reads the pool that costs the most time, raises the
 [Product lever](/design/10-progression#product-levers) for that kind, and pays for it with capacity
-and growth. This is the "build more miners" move of the request graph.
+and growth. This is the "build more miners" move of the request graph. An idle team can boost the
+Study too, at the cost of its other work, but the scarcest Insight pool still caps the pace.
 
 ```mermaid
 flowchart LR

@@ -1,26 +1,36 @@
 import { Result } from 'effect'
 import { describe, expect, test } from 'vitest'
-import { installBackdoor, setPolicyOn, setProvider, setSlowStart, study } from '../src/actions.ts'
+import {
+  installBackdoor,
+  moveStudyTo,
+  setPolicyOn,
+  setProvider,
+  setSlowStart,
+  study,
+} from '../src/actions.ts'
 import { saleOf } from '../src/calendar.ts'
 import {
   CALENDAR_START,
   CVE_EVERY,
   FEATURE_IDS,
   FOREIGN_OUTPUT,
+  INSIGHT_POOLS,
   LANGUAGES,
   LEARN_OUTPUT,
   RESEARCH_IDS,
   RUSH_BUG_CHANCE,
   RUSH_DEBT,
   VENTURES,
+  type ResearchId,
 } from '../src/catalog.ts'
 import { preseedGame } from '../src/company.ts'
+import { securityStaffed } from '../src/lookups.ts'
 import { foundCompany } from '../src/founding.ts'
 import { solveFlow } from '../src/solve.ts'
 import { freeSandbox } from '../src/sandbox.ts'
 import { step } from '../src/step.ts'
 import { newGame } from '../src/company.ts'
-import { NEW_ENGINEER, type Game, type WorkItem } from '../src/state.ts'
+import { NEW_ENGINEER, type Game, type Team, type WorkItem } from '../src/state.ts'
 import type { IncidentId } from '../src/catalog.ts'
 import { startIncident } from '../src/director.ts'
 import type { Ledger } from '../src/ledger.ts'
@@ -34,15 +44,18 @@ import {
   prioritizeItem,
   queueFeature,
   queueSpike,
+  removeTeam,
   rushBugOf,
   rushItem,
   serviceOfItem,
+  setResearchTeam,
   train,
   renameService,
   renameTeam,
 } from '../src/work.ts'
 import {
   badDeployChance,
+  dataStaffed,
   nextBadDeployChance,
   languageOfService,
   outputOf,
@@ -50,7 +63,7 @@ import {
   trainCost,
   trainSeconds,
 } from '../src/team.ts'
-import { spiked } from '../src/studies.ts'
+import { spiked, advanceStudies, boostOf, progressOf, studySpeed } from '../src/studies.ts'
 
 const founded = (perks: Record<string, number>, venture = 'b2b-saas' as const) =>
   foundCompany(1, { venture, mutators: [], perks })
@@ -207,6 +220,148 @@ describe('Team assignments', () => {
     expect(spiked(game)).toBe(true)
 
     expect(spiked({ ...game, backlog: [...game.backlog].reverse() })).toBe(false)
+  })
+})
+
+describe('Research boost', () => {
+  const pools = Object.fromEntries(INSIGHT_POOLS.map((pool) => [pool, 1_000_000])) as Game['pools']
+
+  const staffed = (kind: Team['kind'], change: Partial<Game> = {}): Game => {
+    const game = newGame(1)
+    const team: Team = {
+      id: 'boosters',
+      name: 'Boosters',
+      kind,
+      policy: 'balanced',
+      previous: 'balanced',
+      since: 0,
+    }
+    return {
+      ...game,
+      pools,
+      engineers: [{ ...NEW_ENGINEER, id: 'e1', team: team.id, language: 'php', hiredAt: 0 }],
+      teams: [game.teams[0]!, team],
+      studies: [{ id: 'query-analysis', phase: { _tag: 'Running', progress: 0 } }],
+      researchTeam: team.id,
+      ...change,
+    }
+  }
+  const advance = (game: Game): Game => advanceStudies(game, solveFlow(game), 1, [])
+
+  test('a specialist boosts a Study in its track and pauses its passive effect', () => {
+    const game = staffed('data')
+    const ledger = solveFlow(game)
+    const boost = boostOf(game, ledger, 'query-analysis')
+    expect(boost).toBeGreaterThan(0)
+    expect(studySpeed(game, ledger, 'query-analysis')).toBeCloseTo(1 + boost, 9)
+
+    const plain = advance({ ...game, researchTeam: null })
+    const boosted = advance(game)
+    const baseline = progressOf(plain.studies[0]) ?? 0
+    expect(progressOf(boosted.studies[0])).toBeCloseTo(baseline * (1 + boost), 9)
+    expect(dataStaffed(game)).toBe(false)
+    expect(dataStaffed({ ...game, researchTeam: null })).toBe(true)
+  })
+
+  test('a specialist outside its tracks gives no boost and keeps its passive effect', () => {
+    const game = staffed('security')
+    const ledger = solveFlow(game)
+    expect(boostOf(game, ledger, 'query-analysis')).toBe(0)
+    expect(securityStaffed(game)).toBe(true)
+    expect(Result.isFailure(setResearchTeam({ ...game, researchTeam: null }, 'boosters'))).toBe(
+      true,
+    )
+
+    const plain = advance({ ...game, researchTeam: null })
+    expect(progressOf(advance(game).studies[0])).toBeCloseTo(progressOf(plain.studies[0]) ?? 0, 9)
+  })
+
+  test('a Product team helps any track, but less than a specialist', () => {
+    const product = staffed('product')
+    const data = staffed('data')
+    const ledger = solveFlow(product)
+    const generalist = boostOf(product, ledger, 'query-analysis')
+    const specialist = boostOf(data, solveFlow(data), 'query-analysis')
+    expect(generalist).toBeGreaterThan(0)
+    expect(generalist).toBeCloseTo(specialist / 2, 9)
+  })
+
+  test('a busy team, no Study, or a role change gives no boost', () => {
+    const game = staffed('product')
+    const item: WorkItem = {
+      id: 1,
+      kind: 'feature',
+      ref: FEATURE_IDS[0]!,
+      cost: 100,
+      spent: 0,
+      block: { _tag: 'Free' },
+      answered: null,
+    }
+    const busy = { ...game, researchTeam: game.teams[0]!.id, backlog: [item] }
+    expect(assignments(busy).get(game.teams[0]!.id)).toBe(item)
+    expect(boostOf(busy, solveFlow(busy), 'query-analysis')).toBe(0)
+
+    const idle = { ...game, studies: [] }
+    expect(boostOf(idle, solveFlow(idle), 'query-analysis')).toBe(0)
+
+    const ramping = staffed('data', {
+      teams: [newGame(1).teams[0]!, { ...staffed('data').teams[1]!, kindAt: 100 }],
+    })
+    const ledger = solveFlow(ramping)
+    expect(boostOf(ramping, ledger, 'query-analysis')).toBe(0)
+    expect(Result.isFailure(setResearchTeam({ ...ramping, researchTeam: null }, 'boosters'))).toBe(
+      true,
+    )
+  })
+
+  test('a finished Study clears its booster', () => {
+    const game = staffed('data', {
+      studies: [{ id: 'query-analysis', phase: { _tag: 'Running', progress: 0.999 } }],
+    })
+    const after = advanceStudies(game, solveFlow(game), 60, [])
+    expect(after.researched).toContain('query-analysis')
+    expect(after.researchTeam).toBeNull()
+  })
+
+  test('a finished Study keeps the booster while the next one is on its track', () => {
+    const after = (next: ResearchId): Game =>
+      advanceStudies(
+        staffed('data', {
+          studies: [
+            { id: 'query-analysis', phase: { _tag: 'Running', progress: 0.999 } },
+            { id: next, phase: { _tag: 'Queued', progress: 0 } },
+          ],
+        }),
+        solveFlow(staffed('data')),
+        60,
+        [],
+      )
+    expect(after('replication').researchTeam).toBe('boosters')
+    expect(after('logs').researchTeam).toBeNull()
+  })
+
+  test('a reorder keeps the booster only when the new head is on its track', () => {
+    const game = staffed('data', {
+      studies: [
+        { id: 'query-analysis', phase: { _tag: 'Running', progress: 0.1 } },
+        { id: 'replication', phase: { _tag: 'Queued', progress: 0 } },
+      ],
+    })
+    expect(Result.getOrThrow(moveStudyTo(game, 'replication', 0)).researchTeam).toBe('boosters')
+    const other: Game = {
+      ...game,
+      studies: [
+        { id: 'query-analysis', phase: { _tag: 'Running', progress: 0.1 } },
+        { id: 'logs', phase: { _tag: 'Queued', progress: 0 } },
+      ],
+    }
+    expect(Result.getOrThrow(moveStudyTo(other, 'logs', 0)).researchTeam).toBeNull()
+  })
+
+  test('removing the boosting team clears the assignment', () => {
+    const after = Result.getOrThrow(removeTeam(staffed('data'), 'boosters'))
+    expect(after.teams.some((team) => team.id === 'boosters')).toBe(false)
+    expect(after.researchTeam).toBeNull()
   })
 })
 

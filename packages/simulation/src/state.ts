@@ -432,6 +432,7 @@ export const Team = Schema.Struct({
   policy: PolicyId,
   previous: PolicyId,
   since: Schema.Finite,
+  kindAt: Schema.optionalKey(Schema.Finite),
 })
 export type Team = typeof Team.Type
 
@@ -756,6 +757,9 @@ export const Game = Schema.Struct({
   discounts: Schema.Array(ResearchId).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   policies: Policies.pipe(
     Schema.withDecodingDefaultKey(Effect.succeed({ research: false, hire: false, upgrade: false })),
+  ),
+  researchTeam: Schema.NullOr(Schema.String).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(null)),
   ),
   policyAt: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   autopilot: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(true))),

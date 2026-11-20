@@ -234,6 +234,15 @@ export const RESEARCH_TRACKS: ReadonlyArray<Readonly<{ key: ResearchTrack; label
   { key: 'cost', label: 'Cost' },
 ]
 
+export type ResearchTeamKind = 'product' | 'platform' | 'sre' | 'data' | 'security'
+export const TEAM_TRACKS: Record<ResearchTeamKind, ReadonlyArray<ResearchTrack>> = {
+  product: ['product', 'runtimes', 'frameworks'],
+  platform: ['infrastructure', 'performance', 'cost'],
+  sre: ['reliability', 'observability'],
+  data: ['data'],
+  security: ['security'],
+}
+
 export type ResearchDef = Readonly<{
   id: ResearchId
   name: string

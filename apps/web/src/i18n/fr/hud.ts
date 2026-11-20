@@ -77,7 +77,7 @@ export const hud: Messages['hud'] = {
     `Analytique échantillonne les nœuds auxquels il est lié. Un réserve gagne avec la racine carrée de ses échantillons, donc un nouveau type de requête rapporte plus que le même trafic. Un échantillon ayant échoué rapporte ${p0}× Failure connaissances.`,
   spend: 'Dépenser',
   eachResearchItemCostsInsightFrom:
-    "Chaque élément de recherche coûte des informations provenant d'un ou plusieurs réserves. Une étude le prend pendant son exécution. La réserve la plus basse donne le ton.",
+    "Chaque élément de recherche coûte des connaissances provenant d'une ou plusieurs réserves. Une étude les prend pendant son exécution. La réserve la plus basse donne le ton ; une équipe inactive peut accélérer l'étude.",
   keep: 'Conserver',
   aPoolHoldsAtMostIts:
     'Un pool conserve au maximum son taux × la fenêtre de rétention Analytique. Une fenêtre plus longue coûte plus de stockage.',

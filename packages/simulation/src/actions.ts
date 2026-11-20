@@ -104,6 +104,7 @@ import { IPO_BURN_SECONDS, PRE_IPO_STAGE, ipoReady, newDrill } from './ipo.ts'
 import { firstQuarter, guidanceOpen } from './quarters.ts'
 import { step as quarterStep } from './quarter-machine.ts'
 import { solveFlow } from './solve.ts'
+import { boosterFor } from './research-team.ts'
 import type { AlertRule } from './events.ts'
 import { POLICY_LEVEL } from './catalog/legacy.ts'
 import type {
@@ -1297,6 +1298,11 @@ export const filePostmortem = (game: Game, id: number, take: boolean): Action =>
   return study(filed, action, true)
 }
 
+const keepBooster = (before: Game, after: Game): Game => ({
+  ...after,
+  researchTeam: boosterFor(after, before.researchTeam, after.studies[0]?.id),
+})
+
 export const study = (game: Game, id: ResearchId, first = false): Action => {
   const entry = RESEARCH[id]
   if (has(game, id)) return notAllowed(`${entry.name} is already yours.`)
@@ -1317,12 +1323,14 @@ export const study = (game: Game, id: ResearchId, first = false): Action => {
     (needed) =>
       queued.get(needed) ?? { id: needed, phase: { _tag: 'Queued' as const, progress: 0 } },
   )
-  return ok({
-    ...game,
-    studies: first
-      ? [...items, ...game.studies.filter((item) => !chain.includes(item.id))]
-      : [...game.studies, ...items.filter((item) => !queued.has(item.id))],
-  })
+  return ok(
+    keepBooster(game, {
+      ...game,
+      studies: first
+        ? [...items, ...game.studies.filter((item) => !chain.includes(item.id))]
+        : [...game.studies, ...items.filter((item) => !queued.has(item.id))],
+    }),
+  )
 }
 
 export const moveStudyTo = (game: Game, id: ResearchId, index: number): Action => {
@@ -1340,7 +1348,7 @@ export const moveStudyTo = (game: Game, id: ResearchId, index: number): Action =
   const studies = [...game.studies]
   const [item] = studies.splice(from, 1)
   if (item) studies.splice(to, 0, item)
-  return ok({ ...game, studies })
+  return ok(keepBooster(game, { ...game, studies }))
 }
 
 export const moveStudy = (game: Game, id: ResearchId, direction: 1 | -1): Action => {
@@ -1354,11 +1362,13 @@ export const cancelStudy = (game: Game, id: ResearchId): Action => {
   const gone = new Set<string>(
     game.studies.filter((item) => item.id === id || needs(item.id, id)).map((item) => item.id),
   )
-  return ok({
-    ...game,
-    studies: game.studies.filter((item) => !gone.has(item.id)),
-    backlog: game.backlog.filter((item) => !(item.kind === 'spike' && gone.has(item.ref))),
-  })
+  return ok(
+    keepBooster(game, {
+      ...game,
+      studies: game.studies.filter((item) => !gone.has(item.id)),
+      backlog: game.backlog.filter((item) => !(item.kind === 'spike' && gone.has(item.ref))),
+    }),
+  )
 }
 
 export const collect = (game: Game): Game => ({

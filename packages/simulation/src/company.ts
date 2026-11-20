@@ -212,6 +212,7 @@ export const company = (seed: number): Omit<Game, 'nodes' | 'links'> => ({
   backdoorAt: null,
   discounts: [],
   policies: { research: false, hire: false, upgrade: false },
+  researchTeam: null,
   policyAt: 0,
   autopilot: true,
   deploys: 0,

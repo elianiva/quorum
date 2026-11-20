@@ -39,6 +39,12 @@ export const research: Messages['research'] = {
   queueStudy: (duration) => `加入队列 · ${duration}`,
   queued: '已排队',
   queueCount: (count, max) => `${count} / ${max}`,
+  speed: (p0) => `×${p0}`,
+  studySpeedTitle:
+    '空闲团队可以加速研究。专家团队在自己的领域最强，产品团队以一半速度协助任何领域。技术探索和研究速度研究也会加快研究。',
+  boostedBy: (p0) => `加速：${p0}`,
+  assignTeam: '分配团队',
+  boostHelp: '空闲团队可以加速此研究。专家团队加速自己的领域，产品团队以一半速度协助任何领域。',
   firstCannotRun: (name, need) =>
     `${name}排在前面，但除非${need}，否则它无法推进。在此之前，此研究会等待。`,
   requires: '需要',

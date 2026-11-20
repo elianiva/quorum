@@ -9,6 +9,7 @@ import {
   RECIPE,
   SHAPE,
   STUDY_SHAPE_KINDS,
+  TEAM_TRACKS,
   VENDOR_DISCOUNT,
   RESEARCH,
   RETENTION_WINDOWS,
@@ -25,10 +26,12 @@ import { StepEvent } from './events.ts'
 import type { Ledger } from './ledger.ts'
 import { StudyPhase, step as studyStep } from './study-machine.ts'
 import { has, researchReady } from './lookups.ts'
+import { canBoost, boosterFor } from './research-team.ts'
 import { isFeatureLive } from './features.ts'
 import { assignments } from './work.ts'
+import { teamOutputs } from './team.ts'
 import { FeatureId as FeatureIdSchema } from './state.ts'
-import type { Game, InsightPools, Study } from './state.ts'
+import type { Game, InsightPools, Study, Team } from './state.ts'
 
 export const retentionOf = (game: Game): number =>
   game.nodes.reduce(
@@ -130,17 +133,52 @@ export const breadthGap = (
 export const broadEnough = (id: ResearchId, ledger: Ledger): boolean =>
   breadthGap(id, ledger) === null
 
-export const spiked = (game: Game): boolean => {
+export const spiked = (game: Game, id?: ResearchId): boolean => {
   const running = game.studies[0]
-  if (!running) return false
+  if (!running || (id !== undefined && running.id !== id)) return false
   return [...assignments(game).values()].some(
     (item) => item.kind === 'spike' && item.ref === running.id,
   )
 }
 
-export const studySpeed = (game: Game): number =>
-  (spiked(game) ? SPIKE_SPEED : 1) *
-  (1 + STUDY_SPEEDUP * STUDY_SPEED_RESEARCH.filter((id) => has(game, id)).length)
+export const SPECIALIST_RATE = 0.35
+export const GENERALIST_RATE = SPECIALIST_RATE / 2
+export const BOOST_CAP = 1
+
+const trackRate = (team: Team, id: ResearchId): number => {
+  const track = RESEARCH[id].track
+  if (team.kind === 'product')
+    return TEAM_TRACKS.product.includes(track) ? SPECIALIST_RATE : GENERALIST_RATE
+  return TEAM_TRACKS[team.kind].includes(track) ? SPECIALIST_RATE : 0
+}
+
+export const boostRateOf = (game: Game, ledger: Ledger, team: Team, id: ResearchId): number => {
+  if (!canBoost(game, team, id)) return 0
+  if (assignments(game).has(team.id)) return 0
+  const output = teamOutputs(game, ledger).find((entry) => entry.team.id === team.id)
+  if (!output) return 0
+  return Math.min(BOOST_CAP, trackRate(team, id) * output.effective)
+}
+
+export const boostOf = (game: Game, ledger: Ledger, id: ResearchId): number => {
+  const teamId = game.researchTeam
+  if (teamId === null) return 0
+  const head = game.studies[0]
+  if (!head || head.id !== id) return 0
+  const team = game.teams.find((entry) => entry.id === teamId)
+  if (!team) return 0
+  return boostRateOf(game, ledger, team, id)
+}
+
+export const studySpeed = (game: Game, ledger: Ledger, id?: ResearchId): number => {
+  const research = id ?? game.studies[0]?.id
+  const boost = research === undefined ? 0 : boostOf(game, ledger, research)
+  return (
+    (1 + boost) *
+    (spiked(game, id) ? SPIKE_SPEED : 1) *
+    (1 + STUDY_SPEEDUP * STUDY_SPEED_RESEARCH.filter((entry) => has(game, entry)).length)
+  )
+}
 
 export const studySeconds = (id: ResearchId): number =>
   STUDY_SECONDS[RESEARCH[id].era] ?? STUDY_SECONDS[STUDY_SECONDS.length - 1] ?? 3_600
@@ -283,15 +321,22 @@ export const advanceStudies = (
 ): Game => {
   const studies = game.studies.filter((entry) => !has(game, entry.id))
   const head = studies[0]
-  if (!head || !researchReady(game, head.id))
-    return studies.length === game.studies.length ? game : { ...game, studies }
+  if (!head || !researchReady(game, head.id)) {
+    if (studies.length === game.studies.length) return game
+    const keep = boosterFor(game, game.researchTeam, head?.id)
+    return {
+      ...game,
+      studies,
+      researchTeam: keep !== null && assignments(game).has(keep) ? null : keep,
+    }
+  }
   const starting = StudyPhase.guards.Queued(head.phase)
   if (starting && (!broadEnough(head.id, ledger) || !shapeHolds(game, ledger, head.id)))
     return studies.length === game.studies.length ? game : { ...game, studies }
   const started = starting ? studyStep(head.phase, { _tag: 'Started' }) : head.phase
   const running = { ...head, phase: started }
   const progress = started._tag === 'Queued' || started._tag === 'Running' ? started.progress : 0
-  const speed = studySpeed(game)
+  const speed = studySpeed(game, ledger, running.id)
   const share = (speed * seconds) / studySeconds(running.id)
   const recipe = Object.entries(recipeOf(game, running.id)) as Array<[InsightPool, number]>
   let paid = 1
@@ -313,11 +358,14 @@ export const advanceStudies = (
       ],
     }
   events.push(StepEvent.StudyCompleted({ research: running.id }))
+  const remaining = studies.slice(1)
+  const keep = boosterFor(game, game.researchTeam, remaining[0]?.id)
   return {
     ...game,
     pools,
+    researchTeam: keep !== null && assignments(game).has(keep) ? null : keep,
     researched: [...game.researched, running.id],
-    studies: studies.slice(1),
+    studies: remaining,
     backlog: game.backlog.filter((item) => !(item.kind === 'spike' && item.ref === running.id)),
   }
 }

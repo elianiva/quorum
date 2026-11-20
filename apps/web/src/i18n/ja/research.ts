@@ -40,6 +40,13 @@ export const research: Messages['research'] = {
   queueStudy: (duration) => `キューに追加 · ${duration}`,
   queued: '待機中',
   queueCount: (count, max) => `${count} / ${max}`,
+  speed: (p0) => `×${p0}`,
+  studySpeedTitle:
+    '待機中のチームが研究を加速します。専門チームは自分の分野で最も強く、プロダクトチームはどの分野も半分の速度で支援します。調査と研究速度の研究でも速くなります。',
+  boostedBy: (p0) => `加速: ${p0}`,
+  assignTeam: 'チームを割り当て',
+  boostHelp:
+    '待機中のチームがこの研究を加速できます。専門チームは自分の分野を加速し、プロダクトチームはどの分野も半分の速度で支援します。',
   firstCannotRun: (name, need) =>
     `${name}が先に進む必要がありますが、${need}まで進めません。それまでは、この研究も待ちます。`,
   requires: '前提',

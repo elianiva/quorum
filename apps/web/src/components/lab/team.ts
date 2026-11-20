@@ -98,6 +98,15 @@ import {
   upkeepShare,
 } from '@quorum/simulation/team'
 import { overdueBy } from '@quorum/simulation/cve'
+import { boostRateOf } from '@quorum/simulation/studies'
+import type { Ledger } from '@quorum/simulation/ledger'
+import {
+  canBoost,
+  teamBoosting,
+  teamHasEngineers,
+  teamReady,
+} from '@quorum/simulation/research-team'
+import { speedFactorOf } from '@/game/research.ts'
 import {
   adoptionShareOf,
   awaitingFeatures,
@@ -1177,6 +1186,97 @@ const kindSwitch = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
   )
 }
 
+const researchRow = (game: Game, team: Team, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
+  const t = copy(h)
+  const study = game.studies[0]
+  const assigned = assignments(game).get(team.id)
+  const rate = study ? boostRateOf(game, ledger, team, study.id) : 0
+  const boosting = game.researchTeam === team.id && rate > 0
+  const name = study ? t.catalog.research[study.id].name : null
+  const reason = !study
+    ? t.team.noStudy
+    : !teamReady(game, team)
+      ? t.team.ramping
+      : assigned
+        ? t.team.building(workItemName(t, assigned))
+        : !teamHasEngineers(game, team)
+          ? t.team.noEngineers
+          : !canBoost(game, team, study.id)
+            ? t.team.cantBoost(name ?? '')
+            : null
+  const label =
+    boosting && name ? t.team.boosting(name) : (reason ?? (name ? t.team.boost(name) : ''))
+  return h.div(
+    [
+      h.Class(
+        css(
+          {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2',
+            paddingInline: '2.5',
+            paddingBlock: '2',
+          },
+          WELL_STYLE,
+          {
+            borderRadius: 'lg',
+          },
+        ),
+      ),
+      h.Title(boosting && team.kind !== 'product' ? t.team.effectOnHold : t.team.boostHelp),
+    ],
+    [
+      icon(
+        h,
+        Zap,
+        css({
+          width: '3.5',
+          height: '3.5',
+          flexShrink: '0',
+          color: boosting ? 'ok' : 'mutedForeground',
+        }),
+      ),
+      h.span(
+        [
+          h.Class(
+            css({
+              minWidth: '0',
+              flex: '1 1 0%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: 'type.12-5',
+              color: reason && !boosting ? 'mutedForeground' : 'foreground',
+            }),
+          ),
+        ],
+        [label],
+      ),
+      rate > 0
+        ? h.span(
+            [h.Class(cx(FIGURE, css({ fontSize: 'type.11', color: 'ok' })))],
+            [t.research.speed(speedFactorOf(1 + rate))],
+          )
+        : h.empty,
+      study && rate > 0
+        ? button(
+            {
+              onClick: Message.TeamChanged({
+                message: boosting
+                  ? TeamMessage.ResearchTeamCleared()
+                  : TeamMessage.ResearchTeamChosen({ teamId: team.id }),
+              }),
+              variant: boosting ? 'outline' : 'default',
+              size: 'sm',
+            },
+            [boosting ? t.team.stopBoost : t.team.boostAction],
+            h,
+          )
+        : h.empty,
+    ],
+  )
+}
+
 const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -1350,6 +1450,21 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
         ],
       ),
       index > 0 && !sandbox && game.stage >= PLATFORM_STAGE ? kindSwitch(game, team, h) : h.empty,
+      !sandbox && !teamReady(game, team)
+        ? h.span(
+            [
+              h.Class(
+                css({
+                  marginTop: '-0.375rem',
+                  paddingInline: '1',
+                  fontSize: 'type.11',
+                  color: 'warn',
+                }),
+              ),
+            ],
+            [t.team.ramping],
+          )
+        : h.empty,
       team.kind === 'product' ? policySwitch(team, h) : h.empty,
       team.kind === 'product' && now.id !== team.policy
         ? h.span(
@@ -1452,25 +1567,28 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
       sandbox
         ? h.empty
         : team.kind === 'platform'
-          ? platformWork(h)
+          ? platformWork(game, team, h)
           : team.kind === 'sre'
-            ? sreWork(game, h)
+            ? sreWork(game, team, h)
             : team.kind === 'data'
-              ? dataWork(h)
+              ? dataWork(game, team, h)
               : team.kind === 'security'
-                ? securityWork(h)
+                ? securityWork(game, team, h)
                 : working(
                     assignments(game).get(team.id),
                     index === 0 || members.length > 0,
                     waitingFor(game, team),
+                    teamBoosting(game, team),
                     h,
                   ),
+      sandbox ? h.empty : researchRow(game, team, ledgerOf(model), h),
     ],
   )
 }
 
-const sreWork = (game: Game, h: HtmlBuilder<Message>): Html => {
+const sreWork = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
+  const holding = teamBoosting(game, team)
   return h.div(
     [
       h.Class(
@@ -1509,16 +1627,18 @@ const sreWork = (game: Game, h: HtmlBuilder<Message>): Html => {
           ),
         ],
         [
-          game.runbooks.length === 0
-            ? t.team.holdsThePager
-            : t.team.holdsThePagerRunbooks(game.runbooks.length),
+          holding
+            ? t.team.pagerOff
+            : game.runbooks.length === 0
+              ? t.team.holdsThePager
+              : t.team.holdsThePagerRunbooks(game.runbooks.length),
         ],
       ),
     ],
   )
 }
 
-const dataWork = (h: HtmlBuilder<Message>): Html => {
+const dataWork = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
     [
@@ -1557,13 +1677,13 @@ const dataWork = (h: HtmlBuilder<Message>): Html => {
             }),
           ),
         ],
-        [t.team.runsTheWarehouseReportAndAI],
+        [teamBoosting(game, team) ? t.team.dataOff : t.team.runsTheWarehouseReportAndAI],
       ),
     ],
   )
 }
 
-const platformWork = (h: HtmlBuilder<Message>): Html => {
+const platformWork = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
     [
@@ -1602,13 +1722,13 @@ const platformWork = (h: HtmlBuilder<Message>): Html => {
             }),
           ),
         ],
-        [t.team.runsClustersAndDeploys],
+        [teamBoosting(game, team) ? t.team.platformOff : t.team.runsClustersAndDeploys],
       ),
     ],
   )
 }
 
-const securityWork = (h: HtmlBuilder<Message>): Html => {
+const securityWork = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.div(
     [
@@ -1647,7 +1767,7 @@ const securityWork = (h: HtmlBuilder<Message>): Html => {
             }),
           ),
         ],
-        [t.team.securityDesk],
+        [teamBoosting(game, team) ? t.team.securityOff : t.team.securityDesk],
       ),
     ],
   )
@@ -1657,6 +1777,7 @@ const working = (
   item: WorkItem | undefined,
   staffed: boolean,
   waits: number,
+  boosting: boolean,
   h: HtmlBuilder<Message>,
 ): Html => {
   const t = copy(h)
@@ -1738,11 +1859,13 @@ const working = (
               ),
             ],
             [
-              staffed
-                ? waits > 0
-                  ? t.team.waitingItems(waits)
-                  : t.team.nothingAssigned
-                : t.team.noEngineers,
+              boosting
+                ? t.team.onResearch
+                : staffed
+                  ? waits > 0
+                    ? t.team.waitingItems(waits)
+                    : t.team.nothingAssigned
+                  : t.team.noEngineers,
             ],
           ),
         ],

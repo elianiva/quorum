@@ -100,6 +100,7 @@ import { step as hireStep } from './hire-machine.ts'
 import { step as moveStep } from './data-move-machine.ts'
 import { step as blockStep } from './work-item-machine.ts'
 import { step as featureStep } from './feature-machine.ts'
+import { canBoost, teamBoosting, teamHasEngineers, teamReady } from './research-team.ts'
 import { awaitingFeatures, isBuilt, isFeatureLive, mixOf } from './features.ts'
 import { ventureOf } from './founding.ts'
 import {
@@ -138,6 +139,7 @@ import {
   fixed,
   finishTraining,
   hireSeconds,
+  kindChangeSeconds,
   languageOfService,
   memberOf,
   membersOf,
@@ -900,6 +902,21 @@ export const rushBugOf = (game: Game, item: WorkItem, pool: number): number =>
 
 export const setAutopilot = (game: Game, autopilot: boolean): Game => ({ ...game, autopilot })
 
+export const setResearchTeam = (game: Game, teamId: string | null): Action => {
+  if (teamId === null) return ok({ ...game, researchTeam: null })
+  const team = game.teams.find((entry) => entry.id === teamId)
+  if (!team) return no(Refusal.Missing())
+  const study = game.studies[0]
+  if (!study) return notAllowed('No Study is running.')
+  if (!teamReady(game, team)) return notAllowed('The team is still learning its new role.')
+  if (assignments(game).has(team.id)) return notAllowed('The team is building something else.')
+  if (!teamHasEngineers(game, team)) return notAllowed('The team has no engineers.')
+  if (!canBoost(game, team, study.id))
+    return notAllowed(`That team can't boost ${RESEARCH[study.id].name}.`)
+  if (game.researchTeam === team.id) return ok(game)
+  return ok({ ...game, researchTeam: team.id })
+}
+
 export const blockRemind = (tuning: Tuning = LIVE_TUNING): number =>
   (BLOCK_REMIND_DAYS * CALENDAR_DAY) / tuning.calendarPace
 
@@ -1126,6 +1143,7 @@ export const removeTeam = (game: Game, teamId: string): Action => {
   if (!game.teams.some((team) => team.id === teamId)) return no(Refusal.Missing())
   return ok({
     ...game,
+    researchTeam: game.researchTeam === teamId ? null : game.researchTeam,
     teams: game.teams.filter((team) => team.id !== teamId),
     engineers: game.engineers.map((engineer) =>
       engineer.team === teamId ? { ...engineer, team: first.id } : engineer,
@@ -1188,10 +1206,16 @@ export const renameService = (game: Game, serviceId: string, name: string): Acti
   })
 }
 
-export const setTeamKind = (game: Game, teamId: string, kind: TeamKind): Action => {
+export const setTeamKind = (
+  game: Game,
+  teamId: string,
+  kind: TeamKind,
+  tuning: Tuning = LIVE_TUNING,
+): Action => {
   const team = game.teams.find((entry) => entry.id === teamId)
   if (!team) return no(Refusal.Missing())
   if (team.kind === kind) return ok(game)
+  if (game.time < (team.kindAt ?? 0)) return notAllowed('The team is still learning its new role.')
   if (kind === 'platform') {
     if (game.stage < PLATFORM_STAGE)
       return no(
@@ -1222,7 +1246,12 @@ export const setTeamKind = (game: Game, teamId: string, kind: TeamKind): Action 
   }
   return ok({
     ...game,
-    teams: game.teams.map((entry) => (entry.id === teamId ? { ...entry, kind } : entry)),
+    researchTeam: game.researchTeam === teamId ? null : game.researchTeam,
+    teams: game.teams.map((entry) =>
+      entry.id === teamId
+        ? { ...entry, kind, kindAt: game.time + kindChangeSeconds(tuning) }
+        : entry,
+    ),
   })
 }
 
@@ -1650,8 +1679,10 @@ export const advanceTeam = (
     const kept = made * policyNow(next, output.team, tuning).paydown
     paydown += kept
     const item = nextItem(next, backlog, output.team, taken)
+    if (item && next.researchTeam === output.team.id) next = { ...next, researchTeam: null }
+    const boosting = teamBoosting(next, output.team)
     if (!item) {
-      pool += made - kept
+      if (!boosting) pool += made - kept
       continue
     }
     if (item.block._tag === 'Free' && item.spent <= 0 && item.kind !== 'spike') {

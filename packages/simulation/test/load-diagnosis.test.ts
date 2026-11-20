@@ -2,9 +2,10 @@ import { describe, expect, test } from 'vitest'
 import { BLOAT_CPU, DB_ENGINES, QUERY_CPU } from '../src/catalog.ts'
 import type { Receipt } from '../src/capacity.ts'
 import { startIncident } from '../src/director.ts'
-import { freeSandbox } from '../src/sandbox.ts'
+import { GUIDED, freeSandbox } from '../src/sandbox.ts'
 import { solveFlow } from '../src/solve.ts'
 import type { Game } from '../src/state.ts'
+import { step } from '../src/step.ts'
 
 const replay = (receipt: Receipt): number =>
   receipt.lines.reduce(
@@ -87,5 +88,27 @@ describe('Amplification', () => {
     expect(failure).toBeGreaterThan(0.5)
     const attempts = 1 + failure + failure ** 2 + failure ** 3
     expect(database.repeated / database.inbound).toBeCloseTo(1 - 1 / attempts, 1)
+  })
+})
+
+describe('Timeout budget', () => {
+  test('a Link reports only the calls that exceed its own timeout', () => {
+    const start = GUIDED['retry-storm'].start()
+    const calm = solveFlow(start)
+    expect(calm.links.every((link) => link.timeout < 1e-4)).toBe(true)
+
+    const incident = startIncident(start, calm, 'retry-storm', start.time)
+    if (incident === null) throw new Error('no Retry storm target')
+    let game = incident.game
+    for (let index = 0; index < 4; index += 1) game = step(game, 5).game
+    const ledger = solveFlow(game)
+
+    const database = ledger.links.find((link) => link.from === 'server1' && link.to === 'database')!
+    expect(database.timeout).toBeGreaterThan(0.1)
+    expect(database.mean).toBeGreaterThan(1_000)
+    expect(database.p99).toBeGreaterThan(1_000)
+
+    const upstream = ledger.links.find((link) => link.from === 'lb' && link.to === 'server1')!
+    expect(upstream.timeout).toBeLessThan(1e-4)
   })
 })

@@ -136,6 +136,9 @@ impl Wire {
         self.num(row.kind as f64);
         self.flag(row.failing);
         self.num(row.failure);
+        self.num(row.timeout);
+        self.num(row.mean);
+        self.num(row.p99);
     }
 
     pub fn ledger(ledger: &Ledger) -> Vec<f64> {

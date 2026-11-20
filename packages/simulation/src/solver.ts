@@ -928,6 +928,9 @@ const readLedger = (exports: Exports, game: Game): Ledger => {
     kind: kind(),
     failing: flag(),
     failure: num(),
+    timeout: num(),
+    mean: num(),
+    p99: num(),
   }))
   const services = game.services.map((service) => service.id)
   const serviceKeyed = (): Building<number> => {

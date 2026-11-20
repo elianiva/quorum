@@ -210,24 +210,67 @@ impl<'a> Tree<'a> {
         1.0 - self.attempt(edge, kind).success
     }
 
+    pub fn over_budget_on(&mut self, edge: usize, kind: usize) -> f64 {
+        let policy = match self.board.design.edges.get(edge) {
+            Some(policy) => *policy,
+            None => return 0.0,
+        };
+        let (from, to) = (policy.from as usize, policy.to as usize);
+        if policy.open || self.partitioned(from, to) {
+            return 0.0;
+        }
+        let wait_ms = if policy.bulkhead {
+            policy.timeout.min(BULKHEAD_MS)
+        } else {
+            policy.timeout
+        };
+        let answer = self.outcome(to, kind);
+        answer.success * slower_than(&answer, wait_ms)
+    }
+
+    pub fn latency(&mut self, edge: usize, kind: usize) -> Outcome {
+        let endpoint = match self.board.design.edges.get(edge) {
+            Some(policy) => (policy.from as usize, policy.to as usize),
+            None => return failed(STRANDED),
+        };
+        let (from, to) = endpoint;
+        if self.partitioned(from, to) {
+            return failed(TIMEOUT);
+        }
+        let extra_ms = self.reach_ms(from, to);
+        let answer = self.outcome(to, kind);
+        if extra_ms > 0.0 {
+            through_one(hop(extra_ms, 0.0), answer, false)
+        } else {
+            answer
+        }
+    }
+
+    fn partitioned(&self, from: usize, to: usize) -> bool {
+        if self.board.game.incident != Some(Incident::Partition) {
+            return false;
+        }
+        let (source, target) = (&self.board.nodes[from], &self.board.nodes[to]);
+        source.region != target.region
+            && source.type_code != component::USERS
+            && !COMPONENT_GLOBAL[source.type_code]
+            && !COMPONENT_GLOBAL[target.type_code]
+    }
+
+    fn reach_ms(&self, from: usize, to: usize) -> f64 {
+        self.place_ms(from, to) + self.mesh_ms(from)
+    }
+
     fn placed(&mut self, edge: usize, kind: usize) -> Outcome {
         let (from, to) = match self.board.design.edges.get(edge) {
             Some(policy) => (policy.from as usize, policy.to as usize),
             None => return failed(STRANDED),
         };
 
-        if self.board.game.incident == Some(Incident::Partition) {
-            let (source, target) = (&self.board.nodes[from], &self.board.nodes[to]);
-            let crosses_regions = source.region != target.region;
-            if crosses_regions
-                && source.type_code != component::USERS
-                && !COMPONENT_GLOBAL[source.type_code]
-                && !COMPONENT_GLOBAL[target.type_code]
-            {
-                return failed(TIMEOUT);
-            }
+        if self.partitioned(from, to) {
+            return failed(TIMEOUT);
         }
-        let extra_ms = self.place_ms(from, to) + self.mesh_ms(from);
+        let extra_ms = self.reach_ms(from, to);
         let answer = self.call(edge, kind);
         if extra_ms > 0.0 {
             through_one(hop(extra_ms, 0.0), answer, false)

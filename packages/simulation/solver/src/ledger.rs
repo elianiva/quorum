@@ -852,6 +852,9 @@ pub struct LinkRow {
     pub kind: usize,
     pub failing: bool,
     pub failure: f64,
+    pub timeout: f64,
+    pub mean: f64,
+    pub p99: f64,
 }
 
 const TAP_LINK_SHARE: f64 = 0.15;
@@ -890,6 +893,9 @@ fn link_row(
             kind: kind::PAGE,
             failing: false,
             failure: 0.0,
+            timeout: 0.0,
+            mean: 0.0,
+            p99: 0.0,
         };
     }
     let carried = match link.edge {
@@ -914,12 +920,31 @@ fn link_row(
             || target.refused > 0.0
             || target.dropped > LINK_FAILING_MIN_DROPPED_SHARE
     });
+    let (timeout, mean, p99) = match link.edge {
+        Some(edge) if rate > 0.0 => carried.entries().fold(
+            (0.0_f64, 0.0_f64, 0.0_f64),
+            |(timeout, mean, p99), (kind, share)| {
+                let weight = share / rate;
+                let over = tree.over_budget_on(edge, kind);
+                let latency = tree.latency(edge, kind);
+                (
+                    timeout + weight * over,
+                    mean + weight * mean_of(&latency),
+                    p99.max(percentile(&latency, P99)),
+                )
+            },
+        ),
+        _ => (0.0, 0.0, 0.0),
+    };
     LinkRow {
         rate,
         traffic: carried,
         kind,
         failing,
         failure: link_failure(game, design, tree, link, &carried, rate),
+        timeout,
+        mean,
+        p99,
     }
 }
 

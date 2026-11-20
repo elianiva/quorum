@@ -121,6 +121,11 @@ tráfico, latencia, errores y saturación. Las líneas de las gráficas marcan t
 el inicio de un incidente, para que puedas comprobar que una línea se movió después de tu arreglo y no antes.
 Mira la [anotación](/glossary/annotation).
 
+Con [Registros estructurados](/research/logs), el Cuadro de mando añade una tabla de Tiempos agotados.
+Enumera cada Enlace cuyas llamadas superan su propio tiempo límite, con el presupuesto, la media y el p99
+de la llamada, y la proporción de llamadas fuera de plazo. La tabla nombra el Enlace que se quedó sin
+tiempo, mientras que los Enlaces exteriores que transmiten el fallo quedan fuera.
+
 Los rangos largos muestran bloques de tiempo promediados, pero la línea del p99 dibuja el peor minuto de cada
 bloque, porque un promedio escondería el pico. Mira el [submuestreo](/glossary/downsampling) y
 [Lee el p99](/guides/read-p99).

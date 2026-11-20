@@ -116,6 +116,11 @@ latency, errors, and saturation. Lines on the charts mark your recent Design cha
 an incident, so you can check that a line moved after your fix and not before it. See
 [annotation](/glossary/annotation).
 
+With [Structured logs](/research/logs), the Dashboard adds a Timeouts table. It lists each Link
+whose calls run past its own timeout, with the budget, the call's mean and p99, and the share of
+calls over budget. The table names the Link that ran out of time, while the outer Links that pass
+the failure on stay out of it.
+
 Long ranges show averaged blocks of time, but the p99 line draws the worst minute in each block,
 because an average would hide the spike. See [downsampling](/glossary/downsampling) and
 [Read p99](/guides/read-p99).

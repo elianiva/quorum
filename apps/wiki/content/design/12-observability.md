@@ -450,7 +450,7 @@ Each visibility step adds a row. A row appears only when its research is owned.
 | Research            | Row             | Charts                                                                                                                                                                                                                                                                                                                           |
 | ------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `metrics`           | Overview        | Stats for Users, Apdex, and Cash per second, each with a sparkline; Cash per second is the Samples' `cash` read as a rate. Time series: demand against served (traffic), mean latency, errors, and utilization per Node with lines at 70% and 90% (saturation). Revenue against Burn. From Series C, Users and Apdex per region. |
-| `logs`              | Errors          | Errors per second as a stacked area by cause: `timeout`, `refused`, `oom`, and the rest.                                                                                                                                                                                                                                         |
+| `logs`              | Errors          | Errors per second as a share of requests, the causes ranked by rate now, and a Timeouts table that names each Link whose calls run past its own timeout, with the budget, the mean and p99 call time, and the share over budget. The p99 column appears with `percentiles`.                                                      |
 | `percentiles`       | Latency         | p99 with the mean. Latency per Node as a bar gauge for the selected moment.                                                                                                                                                                                                                                                      |
 | `alerting`          | Alerts          | A state timeline per rule, OK, pending, firing and ignored, from the pages the Inbox kept and the seconds each rule has held; a table of each rule's threshold, its value now, and its state; and the threshold on the Errors and Latency Charts.                                                                                |
 | `tracing`           | Services (RED)  | One row per Request kind, with its rate, its share of the traffic, its errors, and its mean and p99 duration, and the Waterfall table under it: every Node a selected kind's traffic touches, its hop time, its Queue wait, and whether it is that kind's bottleneck. The latency Charts carry no exemplar dots.                 |
@@ -464,6 +464,14 @@ A chaos experiment ([Progression](/design/10-progression#track-reliability)) wri
 `refused` errors into the Errors row while it runs, so the experiment is visible on the same Chart as
 the failures it causes. The Team panel's Chaos switch names the Node the next experiment will hit,
 which is the Design's weakest.
+
+The Timeouts table separates the Link that ran past its own budget from the Links that carry the
+failure back to the Users. A Database that times out at an App Server's 1 s Link does not mark the
+Users' 30 s Link, because the call already failed at the inner hop. The table names the 1 s Link,
+because that is the call whose budget the player can raise or whose callee the player can fix. A Link
+that only inherits a timeout from deeper in the path does not show. The table reads the Ledger, so it
+adds no fact that the Board does not already hold: the Link's timeout is in the Inspector, and the
+call time is the callee's hop and wait.
 
 The Dashboard has eight of these rows: Overview, Errors, Latency, Alerts, Services, Resources, Users
 and SLO. Two more rows read the Game, the Ledger and the Inbox rather than a signal:

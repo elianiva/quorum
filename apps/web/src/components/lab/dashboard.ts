@@ -36,6 +36,7 @@ import { dilutionOf, grantOf } from '@quorum/simulation/founding'
 import type { KindLedger, Ledger, NodeLedger } from '@quorum/simulation/ledger'
 import { bootingOf, has } from '@quorum/simulation/lookups'
 import { evictionShareOf } from '@quorum/simulation/rules'
+import { policyOf } from '@quorum/simulation/solve-graph'
 import { regional, regionUsers } from '@quorum/simulation/regions'
 import { RUNWAY_MONTH, runwayOf } from '@quorum/simulation/runway'
 import { budgetOf, burnRateOf, slaCreditsOf } from '@quorum/simulation/slo'
@@ -1823,11 +1824,17 @@ const gauge = (
 const UTILIZATION: Thresholds = { warn: 0.7, danger: 0.9 }
 const CELLS = 32
 
-const lcd = (key: string, share: number, h: HtmlBuilder<Message>, cells = CELLS): Html => {
+const lcd = (
+  key: string,
+  share: number,
+  h: HtmlBuilder<Message>,
+  cells = CELLS,
+  color: string | null = null,
+): Html => {
   const level = Math.min(share, 1)
   let lit = 0
   while (lit < cells && (lit + 0.5) / cells <= level) lit += 1
-  return lazyLcd(key, lcdView, [lit, cells, h])
+  return lazyLcd(key, lcdView, [lit, cells, color, h])
 }
 
 const lazyLcd = createKeyedLazy()
@@ -1836,7 +1843,7 @@ const lazyPanel = createKeyedLazy()
 
 const lazyNodeTable = createKeyedLazy()
 
-const lcdView = (lit: number, cells: number, h: HtmlBuilder<Message>): Html =>
+const lcdView = (lit: number, cells: number, color: string | null, h: HtmlBuilder<Message>): Html =>
   h.div(
     [
       h.Class(
@@ -1855,6 +1862,7 @@ const lcdView = (lit: number, cells: number, h: HtmlBuilder<Message>): Html =>
     ],
     Array.from({ length: cells }, (_, index) => {
       const position = (index + 0.5) / cells
+      const tint = color ?? LEVEL_COLOR[levelOf(position, UTILIZATION)]
       return h.span(
         [
           h.Key(String(index)),
@@ -1866,10 +1874,7 @@ const lcdView = (lit: number, cells: number, h: HtmlBuilder<Message>): Html =>
             }),
           ),
           h.Style({
-            background:
-              index < lit
-                ? LEVEL_COLOR[levelOf(position, UTILIZATION)]
-                : `color-mix(in oklab, ${LEVEL_COLOR[levelOf(position, UTILIZATION)]} 10%, transparent)`,
+            background: index < lit ? tint : `color-mix(in oklab, ${tint} 10%, transparent)`,
           }),
         ],
         [],
@@ -2544,6 +2549,109 @@ const causes = (ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   )
 }
 
+const timeouts = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
+  const t = copy(h)
+
+  const names = namesOf(t, game.nodes)
+  const percentiles = has(game, 'percentiles')
+  const phone = isPhone()
+  const rows = ledger.links
+    .flatMap((link) => {
+      const policy = game.links.find((entry) => entry.from === link.from && entry.to === link.to)
+      if (policy === undefined || link.timeout <= 0.0005) return []
+      const source = game.nodes.find((node) => node.id === link.from)
+      const applied = policyOf(game, policy, source)
+      const budget = applied.bulkhead ? Math.min(applied.timeout, 1000) : applied.timeout
+      return [{ link, budget, lost: link.rate * link.timeout }]
+    })
+    .sort((a, b) => b.lost - a.lost)
+  return tablePanel(
+    'timeouts',
+    SPAN.full,
+    t.dashboard.timeouts,
+    t.dashboard.byLinkNow,
+    [
+      t.dashboard.link,
+      t.dashboard.timeoutBudget,
+      ...(phone ? [] : [t.dashboard.mean]),
+      ...(percentiles ? ['p99'] : []),
+      t.dashboard.overBudget,
+    ],
+    rows.map(({ link, budget }) => ({
+      key: `${link.from}>${link.to}`,
+      cells: [
+        { text: `${names.get(link.from) ?? link.from} → ${names.get(link.to) ?? link.to}` },
+        { text: formats(t).ms(budget) },
+        ...(phone ? [] : [{ text: formats(t).ms(link.mean) }]),
+        ...(percentiles ? [{ text: formats(t).ms(link.p99) }] : []),
+        {
+          text: '',
+          content: h.div(
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '2',
+                }),
+              ),
+            ],
+            [
+              h.div(
+                [
+                  h.Class(
+                    css({
+                      height: '1.5',
+                      minWidth: '2rem',
+                      flex: '1 1 0%',
+                      overflow: 'hidden',
+                      borderRadius: 'full',
+                      backgroundColor: 'well',
+                      boxShadow: 'well',
+                    }),
+                  ),
+                ],
+                [
+                  h.div(
+                    [
+                      h.Class(
+                        css({
+                          height: '100%',
+                          borderRadius: 'full',
+                        }),
+                      ),
+                      h.Style({
+                        width: `${Math.min(1, link.timeout) * 100}%`,
+                        background: RED,
+                      }),
+                    ],
+                    [],
+                  ),
+                ],
+              ),
+              h.span(
+                [
+                  h.Class(
+                    cx(
+                      FIGURE,
+                      css({
+                        width: '11',
+                        textAlign: 'right',
+                      }),
+                    ),
+                  ),
+                ],
+                [percent(link.timeout, link.timeout < 0.1 ? 1 : 0)],
+              ),
+            ],
+          ),
+        },
+      ],
+    })),
+    h,
+  )
+}
+
 const nodeRow = (
   id: string,
   name: string,
@@ -3042,13 +3150,20 @@ const tablePanel = (
                                           css({
                                             display: 'flex',
                                             height: '3.5',
+                                            minWidth: '4.5rem',
                                             alignItems: 'center',
                                             gap: '2',
                                           }),
                                         ),
                                       ],
                                       [
-                                        lcd(`${key}:${row.key}:${index}`, cell.bar.share, h, 24),
+                                        lcd(
+                                          `${key}:${row.key}:${index}`,
+                                          cell.bar.share,
+                                          h,
+                                          12,
+                                          cell.bar.color,
+                                        ),
                                         h.span(
                                           [
                                             h.Class(
@@ -5487,6 +5602,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             : locked('errors-series', SPAN.third, t.dashboard.errors, 'logs', h),
           causes(ledger, h),
           mix(ledger, shownKind, h),
+          ...(has(game, 'logs') ? [timeouts(game, ledger, h)] : []),
 
           ...(alerting
             ? [

@@ -56,6 +56,9 @@ export type LinkLedger = Readonly<{
   kind: Kind
   failing: boolean
   failure: number
+  timeout: number
+  mean: number
+  p99: number
 }>
 
 export type KindLedger = Readonly<{

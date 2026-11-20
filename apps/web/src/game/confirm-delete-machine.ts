@@ -10,7 +10,7 @@ export const ConfirmDelete = Schema.TaggedUnion({
 })
 export type ConfirmDelete = typeof ConfirmDelete.Type
 
-export const ConfirmDeleteEvent = Schema.TaggedUnion({
+const ConfirmDeleteEvent = Schema.TaggedUnion({
   Asked: {
     id: Schema.String,
   },
@@ -22,7 +22,7 @@ export type ConfirmDeleteEvent = typeof ConfirmDeleteEvent.Type
 const States = Machine.state({ states: ConfirmDelete.cases })
 const Events = Machine.eventsFromSchemas(ConfirmDeleteEvent)
 
-export const confirmDeleteMachine = Machine.make({ root: States, events: Events }).handle({
+const confirmDeleteMachine = Machine.make({ root: States, events: Events }).handle({
   initial: { target: 'List' },
   states: {
     List: {

@@ -82,7 +82,7 @@ const boardOf = (
   ...extra,
 })
 
-export const singleBoard = (story: Story, args: Args, animate: boolean): BoardState => {
+const singleBoard = (story: Story, args: Args, animate: boolean): BoardState => {
   const game = gameOf(args)
   const node = nodeWith(game, `catalog-${story.id}`, story.id, 1080, 280, args)
   const solved = solveFlow({ ...game, nodes: [...game.nodes, node] })
@@ -103,7 +103,7 @@ const GAP_Y = 48
 const CARD_W = 216
 export const GRID_COLUMNS = 4
 
-export const gridBoard = (story: Story, args: Args): BoardState => {
+const gridBoard = (story: Story, args: Args): BoardState => {
   const game = gameOf(args)
   const height = heightOf(story.id)
   const placed = story.states.map((state, index) => ({

@@ -13,7 +13,7 @@ export const SAVE_EVERY_MS = 5_000
 
 export const SAMPLE_EVERY = 10
 
-export const SPEEDS = [0.5, 1, 3, 10] as const
+const SPEEDS = [0.5, 1, 3, 10] as const
 
 export const speedsOf = (game: Game): ReadonlyArray<number> => [
   ...SPEEDS,

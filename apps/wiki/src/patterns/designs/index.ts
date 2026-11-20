@@ -18,5 +18,3 @@ export const DESIGNS: Readonly<Record<string, Design>> = {
   ...patternsOps,
   ...patternsProduction,
 }
-
-export { DESIGN_IDS } from './ids.ts'

@@ -298,7 +298,7 @@ const tableMarkdown = (node: Node): string => {
   ].join('\n')
 }
 
-export const htmlMarkdown = (html: Html): string =>
+const htmlMarkdown = (html: Html): string =>
   flow(html as Node | null)
     .replace(/[ \t]+/g, ' ')
     .replace(/ *\n */g, '\n')
@@ -388,7 +388,7 @@ export const llmsTxt = (): string => {
     .concat('\n')
 }
 
-export const llmsFullTxt = (): string =>
+const llmsFullTxt = (): string =>
   pagesFor('en')
     .map((page) => `<!-- ${markdownUrl(page.path)} -->\n\n${pageMarkdown(page)}`)
     .join('\n---\n\n')

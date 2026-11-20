@@ -21,7 +21,7 @@ const Sample = Schema.Struct({
   errors: Schema.Finite,
 })
 
-export const ChangeEvent = Schema.TaggedUnion({
+const ChangeEvent = Schema.TaggedUnion({
   Changed: {
     label: Schema.String,
     before: Figures,
@@ -89,7 +89,7 @@ const extended = (change: Change, event: ChangedEvent): SettlingState => ({
 const States = Machine.state({ states: ChangeState.cases })
 const Events = Machine.eventsFromSchemas(ChangeEvent)
 
-export const changeMachine = Machine.make({
+const changeMachine = Machine.make({
   root: States,
   events: Events,
   branches: {

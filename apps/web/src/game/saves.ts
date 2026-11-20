@@ -5,7 +5,7 @@ import { LogoId } from './logos.ts'
 
 export const MAX_COMPANY_NAME = 40
 
-export const RoomLink = Schema.Struct({
+const RoomLink = Schema.Struct({
   code: Schema.String,
   token: Schema.String,
   at: Schema.Finite,
@@ -35,7 +35,7 @@ export type SaveIndex = typeof SaveIndex.Type
 
 export const EMPTY_SAVE_INDEX: SaveIndex = { current: null, companies: [] }
 
-export const companyName = (name: string): string => name.trim().slice(0, MAX_COMPANY_NAME)
+const companyName = (name: string): string => name.trim().slice(0, MAX_COMPANY_NAME)
 
 export const nameOr = (name: string, fallback = 'Untitled company'): string =>
   companyName(name) || fallback

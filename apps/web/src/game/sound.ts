@@ -577,7 +577,7 @@ const clipCurve = (() => {
   return curve
 })()
 
-export const busOf = (context: BaseAudioContext, output: AudioNode): Bus => {
+const busOf = (context: BaseAudioContext, output: AudioNode): Bus => {
   const clipper = context.createWaveShaper()
   clipper.curve = clipCurve
   clipper.oversample = '2x'
@@ -668,7 +668,7 @@ const schedule = (
   }
 }
 
-export const render = (
+const render = (
   context: BaseAudioContext,
   bus: Bus,
   sound: Sound,

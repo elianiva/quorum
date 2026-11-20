@@ -163,7 +163,7 @@ const move = (to: HTMLElement | undefined) => {
   play('hover', pitchOf(to))
 }
 
-export const MenuDriver = Mount.define('MenuDriver', {
+const MenuDriver = Mount.define('MenuDriver', {
   messages: [Message.Synced],
   execute: ({ element }) =>
     Effect.acquireRelease(
@@ -345,7 +345,7 @@ const focusPage = (page: HTMLElement) => {
 
 /* The root draws itself in on the first reveal after clocking in; a branch
    grows out of its wire. Only the open column takes the focus. */
-export const PageMounted = Mount.define('PageMounted', {
+const PageMounted = Mount.define('PageMounted', {
   messages: [Message.Synced],
   execute: ({ element }) =>
     Effect.sync(() => {
@@ -395,7 +395,7 @@ type Pan = 'open' | 'glide' | 'step' | 'track'
    closed column fade where it stood, and gives the focus back to the open one.
    Positions are read relative to the world, so a pan in flight never feeds
    back into where the camera goes next. */
-export const TreeCamera = Mount.define('TreeCamera', {
+const TreeCamera = Mount.define('TreeCamera', {
   messages: [Message.Synced],
   execute: ({ element }) =>
     Effect.acquireRelease(
@@ -754,7 +754,7 @@ export const TreeCamera = Mount.define('TreeCamera', {
     ).pipe(Effect.as(Message.Synced())),
 })
 
-export const WallClock = Mount.define('WallClock', {
+const WallClock = Mount.define('WallClock', {
   messages: [Message.Synced],
   execute: ({ element }) =>
     Effect.acquireRelease(

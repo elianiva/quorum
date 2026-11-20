@@ -106,8 +106,6 @@ export const textOf = (document: Markdown.MarkdownDocument): string =>
     )
     .join(' ')
 
-export { linksIn } from './links.ts'
-
 const external = (url: string): boolean => /^https?:/.test(url)
 
 export const prose = (

@@ -106,7 +106,7 @@ export default Alchemy.Stack(
       workersDev: false,
     })
     const Website = Cloudflare.Website.Foldkit('Website', {
-      rootDir: stage === 'reference' ? 'examples/reference' : 'apps/web',
+      rootDir: 'apps/web',
       main: 'src/worker.ts',
       env: { API: ApiWorker, ...sentryEnv, ...rateLimits },
       assets: {
@@ -144,7 +144,6 @@ export default Alchemy.Stack(
     yield* Results
     yield* ApiWorker
     const website = yield* Website
-    if (stage === 'reference') return { url: website.url }
     const wiki = yield* Wiki
     return { url: website.url, wiki: wiki.url }
   }),

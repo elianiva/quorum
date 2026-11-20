@@ -73,7 +73,7 @@ const currentOf = (node: GameNode, option: TradeoffOption): TradeoffOption => {
   }
 }
 
-export const familyAxes = (family: FamilyId): Axes => {
+const familyAxes = (family: FamilyId): Axes => {
   const { ramPerVcpu, price } = FAMILIES[family]
   const throttled = family === 'burstable'
   const arm = family === 'arm'

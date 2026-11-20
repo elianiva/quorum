@@ -25,7 +25,6 @@ import { emptyFounder } from '@quorum/simulation/founder'
 import { freshBoard, milestones, sync, type UpdateResult } from './update/shared.ts'
 import { isExited } from './company-machine.ts'
 import { isSending, isSent } from './survey-machine.ts'
-import { has } from '@quorum/simulation/lookups'
 import { ledgerOf, Model, halted, EMPTY_PALETTE, EMPTY_ROOM, EMPTY_SURVEY } from './model.ts'
 import { nameOf } from '../platform/room-socket.ts'
 import { newGame } from '@quorum/simulation/company'
@@ -52,7 +51,7 @@ import { roomHandlers } from './update/room.ts'
 import { pwaHandlers } from './update/pwa.ts'
 import { pwaSnapshot } from '../platform/pwa.ts'
 
-export { TICK_MS, SPEEDS, speedsOf } from './update/constant.ts'
+export { TICK_MS, speedsOf } from './update/constant.ts'
 
 export const initialModel = (): Model => {
   const seatName = nameOf()
@@ -130,7 +129,7 @@ export const init: Runtime.RoutingApplicationInit<Model, Message, void, ApiRpc> 
   }
 }
 
-export const QUIET = new Set([
+const QUIET = new Set([
   'Ticked',
   'Synced',
   'Navigated',
@@ -152,7 +151,7 @@ export const QUIET = new Set([
   'PaletteHighlighted',
 ])
 
-export const quiet = (model: Model, message: Message, after: Model): boolean =>
+const quiet = (model: Model, message: Message, after: Model): boolean =>
   QUIET.has(message._tag) ||
   (message._tag === 'DashboardChanged' &&
     (message.message._tag === 'Hovered' || message.message._tag === 'PostmortemChosen')) ||
@@ -161,7 +160,7 @@ export const quiet = (model: Model, message: Message, after: Model): boolean =>
     message.message._tag === 'DragChanged' &&
     after.board.game === model.board.game)
 
-export const fieldsOf = (message: Message): Record<string, unknown> =>
+const fieldsOf = (message: Message): Record<string, unknown> =>
   Object.fromEntries(Object.entries(message).filter(([key]) => key !== '_tag'))
 
 const surveyOf = (model: Model, after: Model, message: Message): Record<string, unknown> => {
@@ -186,7 +185,7 @@ const surveyOf = (model: Model, after: Model, message: Message): Record<string, 
   }
 }
 
-export const logged = (model: Model, message: Message, result: UpdateResult): UpdateResult => {
+const logged = (model: Model, message: Message, result: UpdateResult): UpdateResult => {
   const logs: Array<LogEntry> = []
   const after = result.model
   const time = after.board.game.time
@@ -211,7 +210,7 @@ export const logged = (model: Model, message: Message, result: UpdateResult): Up
   return { ...result, commands: [...(result.commands ?? []), AppendLog({ entries: logs })] }
 }
 
-export const withUrl = (model: Model, message: Message, result: UpdateResult): UpdateResult => {
+const withUrl = (model: Model, message: Message, result: UpdateResult): UpdateResult => {
   const url = urlOf(result.model.route)
   if (message._tag === 'ChangedUrl' || url === urlOf(model.route)) return result
   const moved = (result.commands ?? []).some(
@@ -221,9 +220,9 @@ export const withUrl = (model: Model, message: Message, result: UpdateResult): U
   return { ...result, commands: [...(result.commands ?? []), PushUrl({ url })] }
 }
 
-export const ROUNDS = new Set(['RoundRaised', 'RoundDeclined', 'CheatRound'])
+const ROUNDS = new Set(['RoundRaised', 'RoundDeclined', 'CheatRound'])
 
-export const boardChanged = (before: Model, after: Model): boolean =>
+const boardChanged = (before: Model, after: Model): boolean =>
   before.board.game !== after.board.game ||
   before.prefs.locale !== after.prefs.locale ||
   before.board.region !== after.board.region ||
@@ -238,7 +237,7 @@ export const boardChanged = (before: Model, after: Model): boolean =>
   cueNode(before) !== cueNode(after) ||
   (onBoard(after.route) && !onBoard(before.route))
 
-export const withBoard = (model: Model, result: UpdateResult): UpdateResult => {
+const withBoard = (model: Model, result: UpdateResult): UpdateResult => {
   if (!boardChanged(model, result.model)) return result
   const commands = result.commands ?? []
   const fit = commands.some((command) => command.name === 'FitBoard')
@@ -251,7 +250,7 @@ export const withBoard = (model: Model, result: UpdateResult): UpdateResult => {
   }
 }
 
-export const connect = (model: Model, result: UpdateResult): UpdateResult =>
+const connect = (model: Model, result: UpdateResult): UpdateResult =>
   onBoard(model.route) || !onBoard(result.model.route) || model.prefs.motion === 'reduce'
     ? result
     : {
@@ -300,5 +299,3 @@ export const update = (model: Model, message: Message): UpdateResult => {
     withBoard(model, moved ? milestones(model, result, [], ledgerOf(result.model)) : result),
   )
 }
-
-export const percentilesVisible = (model: Model): boolean => has(model.board.game, 'percentiles')

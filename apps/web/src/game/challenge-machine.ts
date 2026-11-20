@@ -35,7 +35,7 @@ export type ChallengeResultRun = typeof ChallengeRun.cases.Result.Type
 
 export type ChallengeRunningRun = typeof ChallengeRun.cases.Running.Type
 
-export const ChallengeEvent = Schema.TaggedUnion({
+const ChallengeEvent = Schema.TaggedUnion({
   Run: {
     board: Game,
     replay: Replay,
@@ -67,7 +67,7 @@ const scored = (state: ChallengeRunningRun, result: ChallengeResultType): Challe
 const States = Machine.state({ states: ChallengeRun.cases })
 const Events = Machine.eventsFromSchemas(ChallengeEvent)
 
-export const challengeMachine = Machine.make({ root: States, events: Events }).handle({
+const challengeMachine = Machine.make({ root: States, events: Events }).handle({
   initial: { target: 'Building', data: { id: '', totals: NO_TOTALS } },
   states: {
     Building: {

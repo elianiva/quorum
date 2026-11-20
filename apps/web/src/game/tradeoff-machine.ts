@@ -24,7 +24,7 @@ export const TradeoffState = Schema.TaggedUnion({
 })
 export type TradeoffState = typeof TradeoffState.Type
 
-export const TradeoffEvent = Schema.TaggedUnion({
+const TradeoffEvent = Schema.TaggedUnion({
   Hovered: {
     nodeId: Schema.String,
     option: TradeoffOption,
@@ -55,7 +55,7 @@ const sameOption = (a: TradeoffOption, b: TradeoffOption): boolean =>
 const States = Machine.state({ states: TradeoffState.cases })
 const Events = Machine.eventsFromSchemas(TradeoffEvent)
 
-export const tradeoffMachine = Machine.make({ root: States, events: Events }).handle({
+const tradeoffMachine = Machine.make({ root: States, events: Events }).handle({
   initial: { target: 'Closed' },
   states: {
     Closed: {

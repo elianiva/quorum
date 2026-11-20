@@ -19,7 +19,7 @@ import { TICK_MS } from './update.ts'
 
 type KeyMessage = ReturnType<typeof Message.KeyPressed>
 
-export const keyNameOf = (key: string, shift: boolean): string =>
+const keyNameOf = (key: string, shift: boolean): string =>
   key.length !== 1
     ? shift && key.startsWith('Arrow')
       ? `Shift+${key}`

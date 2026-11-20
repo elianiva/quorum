@@ -13,12 +13,10 @@ import { Founder } from '@quorum/simulation/founder'
 import { Playbook } from '@quorum/simulation/playbook'
 import { Boot } from './boot-machine.ts'
 import { Reveal } from './machine-state.ts'
-export { Change, Delta, Figures, PreviewFigures, Reveal } from './machine-state.ts'
+export { Delta, Figures, PreviewFigures, Reveal } from './machine-state.ts'
 import { CompanyPhase, companyIdOf, isExited, isPlaying } from './company-machine.ts'
 import { SurveyPhase } from './survey-machine.ts'
-export { CompanyPhase } from './company-machine.ts'
 import { TradeoffState } from './tradeoff-machine.ts'
-export { TradeoffState } from './tradeoff-machine.ts'
 import { ClockMode, away as clockAwayOf, paused as clockPausedOf } from './clock-machine.ts'
 import { RoomPhase, inRoom } from './room-machine.ts'
 import { Seat, Vote } from '@quorum/simulation/room'
@@ -117,14 +115,14 @@ export const Toast = Schema.Struct({
 })
 export type Toast = typeof Toast.Type
 
-export const MailEntry = Schema.Struct({
+const MailEntry = Schema.Struct({
   time: Schema.Finite,
   text: Schema.String,
   message: Schema.optionalKey(MailMessage),
   closing: Schema.optionalKey(Snippet),
 })
 
-export const MailAction = Schema.Struct({ id: Schema.String, label: Schema.String })
+const MailAction = Schema.Struct({ id: Schema.String, label: Schema.String })
 
 const MAIL_FIELDS = {
   id: Schema.Finite,
@@ -151,10 +149,10 @@ export type MailLabel = typeof MailLabel.Type
 
 export { TradeoffOption }
 
-export const TradeoffKind = Schema.Literals(['runtime', 'framework', 'family'])
+const TradeoffKind = Schema.Literals(['runtime', 'framework', 'family'])
 export type TradeoffKind = typeof TradeoffKind.Type
 
-export const RevealCue = Schema.Struct({ key: Reveal, left: Schema.Finite })
+const RevealCue = Schema.Struct({ key: Reveal, left: Schema.Finite })
 export type RevealCue = typeof RevealCue.Type
 
 export const Motion = Schema.Literals(['system', 'reduce'])
@@ -166,7 +164,7 @@ export type TextSize = typeof TextSize.Type
 export const Theme = Schema.Literals(['light', 'dark'])
 export type Theme = typeof Theme.Type
 
-export const Palette = Schema.Struct({
+const Palette = Schema.Struct({
   open: Schema.Boolean,
   query: Schema.String,
   active: Schema.NullOr(Schema.String),
@@ -236,7 +234,7 @@ export const Inbox = Schema.Struct({
 })
 export type Inbox = typeof Inbox.Type
 
-export const ServiceDraft = Schema.Struct({
+const ServiceDraft = Schema.Struct({
   name: Schema.String,
   owner: Schema.String,
   features: Schema.Array(FeatureId),
@@ -246,7 +244,7 @@ export type ServiceDraft = typeof ServiceDraft.Type
 export const RenameTarget = Schema.Literals(['team', 'service'])
 export type RenameTarget = typeof RenameTarget.Type
 
-export const RenameDraft = Schema.Struct({
+const RenameDraft = Schema.Struct({
   target: RenameTarget,
   id: Schema.String,
   draft: Schema.String,
@@ -268,7 +266,7 @@ export const Research = Schema.Struct({
 })
 export type Research = typeof Research.Type
 
-export const Clock = Schema.Struct({
+const Clock = Schema.Struct({
   speed: Schema.Finite,
   mode: ClockMode,
   carry: Schema.Finite,
@@ -369,7 +367,7 @@ export type SettingsSection = typeof SettingsSection.Type
 export const FoundStep = Schema.Literals(['company', 'venture', 'mutators'])
 export type FoundStep = typeof FoundStep.Type
 
-export const Pwa = Schema.Struct({
+const Pwa = Schema.Struct({
   installable: Schema.Boolean,
   installed: Schema.Boolean,
   online: Schema.Boolean,
@@ -439,8 +437,7 @@ export const exitLegacy = (model: Model): number | null => {
   return offers.length === 0 ? null : Math.max(...offers.map((offer) => offer.legacy))
 }
 
-export const inMenu = (model: Model): boolean =>
-  model.panel === 'menu' || model.panel === 'settings'
+const inMenu = (model: Model): boolean => model.panel === 'menu' || model.panel === 'settings'
 
 export const halted = (model: Model): boolean =>
   !roomLive(model) &&

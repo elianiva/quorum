@@ -85,7 +85,7 @@ export const mailKey = (model: Model, key: string, route: Dispatch): UpdateResul
   }
 }
 
-export const mailAction = (
+const mailAction = (
   model: Model,
   route: Dispatch,
   kind: string,
@@ -231,11 +231,11 @@ export const mailAction = (
   }
 }
 
-export const FAKE_INVOICE = 4_812
+const FAKE_INVOICE = 4_812
 
-export const FAKE_DOMAIN = 389
+const FAKE_DOMAIN = 389
 
-export const trapTaken = (model: Model, target: string | null): UpdateResult => {
+const trapTaken = (model: Model, target: string | null): UpdateResult => {
   const game = model.board.game
   switch (target) {
     case 'phish': {

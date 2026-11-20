@@ -390,7 +390,7 @@ const prestige = (l: Lang): Page => {
   })
 }
 
-export const sandboxPath = (id: GuidedSummary['id']): string => `/sandboxes/${id}`
+const sandboxPath = (id: GuidedSummary['id']): string => `/sandboxes/${id}`
 
 const sandbox = (l: Lang, def: GuidedSummary): Page => {
   const t = l.t.reference.sandboxes

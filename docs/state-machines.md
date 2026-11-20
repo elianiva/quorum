@@ -46,7 +46,6 @@ debugging shape with completion and history metadata, and a `Game` is saved, has
 | Change            | `apps/web/src/game/change-machine.ts`             | `Idle`, `Settling`, `Settled`, `Lasting`                        | `Board.change`                                        |
 | Delete confirm    | `apps/web/src/game/confirm-delete-machine.ts`     | `List`, `Confirming`                                            | `Model.saveConfirm`                                   |
 | Disclosure        | `apps/web/src/game/disclosure-machine.ts`         | `Idle`, `Queued`, `Cueing`                                      | `Board.disclosure`                                    |
-| Mail              | `apps/web/src/game/mail-machine.ts`               | `Active`, `Answered`, `Resolved`                                | `Mail.phase`                                          |
 | Node lifecycle    | `packages/simulation/src/life.ts`                 | `Running`, `Warming`, `Restarting`, `Stopped`                   | `GameNode.life`                                       |
 | Stack migration   | `packages/simulation/src/migration.ts`            | `Building`, `Ready`, `Finishing`                                | `Service.migration`                                   |
 | Bridge            | `packages/simulation/src/bridge-machine.ts`       | `None`, `Offered`, `Taken`                                      | `Game.bridge`                                         |

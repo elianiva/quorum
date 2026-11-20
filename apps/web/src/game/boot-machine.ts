@@ -10,7 +10,7 @@ export const Boot = Schema.TaggedUnion({
 })
 export type Boot = typeof Boot.Type
 
-export const BootEvent = Schema.TaggedUnion({
+const BootEvent = Schema.TaggedUnion({
   ClockedIn: {},
   TitleRevealed: {},
   BoardOpened: {},
@@ -21,7 +21,7 @@ export type BootEvent = typeof BootEvent.Type
 const States = Machine.state({ states: Boot.cases })
 const Events = Machine.eventsFromSchemas(BootEvent)
 
-export const bootMachine = Machine.make({ root: States, events: Events }).handle({
+const bootMachine = Machine.make({ root: States, events: Events }).handle({
   initial: { target: 'Shut' },
   states: {
     Shut: {

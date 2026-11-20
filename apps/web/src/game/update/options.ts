@@ -51,7 +51,7 @@ const said = english.changes
 export const migrates = (game: Game, nodeId: string): boolean =>
   !game.sandbox && game.nodes.some((node) => node.id === nodeId && node.type === 'server')
 
-export const migrationNote = (t: Messages, before: Game, after: Game): Note => {
+const migrationNote = (t: Messages, before: Game, after: Game): Note => {
   const migration = serviceOf(after).migration
   if (!migration || serviceOf(before).migration === migration) return null
   return [t.toasts.migrationQueued(Math.round(migration.total)), 'primary']
@@ -68,10 +68,10 @@ export const optionMessage = (nodeId: string, option: TradeoffOption): Message =
   }
 }
 
-export const refundNote = (t: Messages, spent: number): ReadonlyArray<string> =>
+const refundNote = (t: Messages, spent: number): ReadonlyArray<string> =>
   spent > 0 ? [t.toasts.undoRefunds(money(spent), t.units.s(UNDO_SECONDS))] : []
 
-export const sizeText = (t: Messages, size: number): string =>
+const sizeText = (t: Messages, size: number): string =>
   SIZES[size] ? t.nodeList.sizes[SIZES[size].name] : String(size)
 
 type OptionsTag =

@@ -3,7 +3,7 @@ import { Schema } from 'effect'
 import { ComponentId } from '@quorum/simulation/state'
 import { planState } from './machine.ts'
 
-export const StampSource = Schema.Union([Schema.Finite, Schema.Literal('clipboard')])
+const StampSource = Schema.Union([Schema.Finite, Schema.Literal('clipboard')])
 export type StampSource = typeof StampSource.Type
 
 export const BoardFlow = Schema.TaggedUnion({
@@ -23,7 +23,7 @@ export const BoardFlow = Schema.TaggedUnion({
 })
 export type BoardFlow = typeof BoardFlow.Type
 
-export const BoardFlowEvent = Schema.TaggedUnion({
+const BoardFlowEvent = Schema.TaggedUnion({
   PartChosen: {
     type: ComponentId,
   },
@@ -49,7 +49,7 @@ export type BoardFlowEvent = typeof BoardFlowEvent.Type
 const States = Machine.state({ states: BoardFlow.cases })
 const Events = Machine.eventsFromSchemas(BoardFlowEvent)
 
-export const boardMachine = Machine.make({ root: States, events: Events }).handle({
+const boardMachine = Machine.make({ root: States, events: Events }).handle({
   initial: { target: 'Idle' },
   states: {
     Idle: {
@@ -137,39 +137,3 @@ export const boardMachine = Machine.make({ root: States, events: Events }).handl
 
 export const step = (flow: BoardFlow, event: BoardFlowEvent): BoardFlow =>
   planState(boardMachine, flow, event)
-
-export const placingOf = (flow: BoardFlow): typeof ComponentId.Type | null =>
-  BoardFlow.match(flow, {
-    Idle: () => null,
-    Placing: ({ type }) => type,
-    Stamping: () => null,
-    Linking: () => null,
-    ConfirmingSell: () => null,
-  })
-
-export const stampingOf = (flow: BoardFlow): StampSource | null =>
-  BoardFlow.match(flow, {
-    Idle: () => null,
-    Placing: () => null,
-    Stamping: ({ source }) => source,
-    Linking: () => null,
-    ConfirmingSell: () => null,
-  })
-
-export const linkFromOf = (flow: BoardFlow): string | null =>
-  BoardFlow.match(flow, {
-    Idle: () => null,
-    Placing: () => null,
-    Stamping: () => null,
-    Linking: ({ from }) => from,
-    ConfirmingSell: () => null,
-  })
-
-export const confirmSellOf = (flow: BoardFlow): ReadonlyArray<string> | null =>
-  BoardFlow.match(flow, {
-    Idle: () => null,
-    Placing: () => null,
-    Stamping: () => null,
-    Linking: () => null,
-    ConfirmingSell: ({ ids }) => ids,
-  })

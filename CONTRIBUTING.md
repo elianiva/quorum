@@ -26,7 +26,6 @@ Quorum is built on Cafe: **C**loudflare for the runtime, **A**lchemy for infrast
 | `packages/simulation` | The pure Simulation. The browser plays it; the API Worker replays it.        |
 | `packages/rpc`        | The wire contract: RPC groups, schemas, declared errors, and the API prefix. |
 | `packages/ui`         | The shared design language: primitives, the theme, and game views.           |
-| `examples/reference`  | A Foldkit Query to RPC example, deployed only to the `reference` stage.      |
 
 Alchemy composes the website and the API into one deployment. A service binding routes
 same-origin API requests to the backend.
@@ -38,7 +37,6 @@ Requirements: Node.js 24.11 or newer and pnpm 12.
 ```sh
 pnpm install
 pnpm dev            # the default stack
-pnpm dev:reference  # the reference example
 ```
 
 ## Verify a change
@@ -99,5 +97,3 @@ render it again. The other images in `docs/images` are screenshots of the runnin
 - [Tooling](docs/tooling.md) — Vite+, Turbo, and Oxfmt/Oxlint responsibilities.
 - [Guardrails](docs/guardrails.md) — the rules and the checks that enforce them.
 - [Adding a feature](docs/extending.md) — the path from contract to handler to UI.
-- The reference example is intentionally separate from the game. Copy patterns from it; do not
-  move its demo behavior into the default app.

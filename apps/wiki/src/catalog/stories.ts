@@ -53,8 +53,8 @@ const range = (
   initial: number,
 ): ArgType => ({ key, group, control: { kind: 'range', min, max, step }, initial })
 
-export const LIVES = ['running', 'warming', 'restarting', 'stopped'] as const
-export const STATUSES: ReadonlyArray<NodeStatus> = ['idle', 'ok', 'warn', 'danger', 'down']
+const LIVES = ['running', 'warming', 'restarting', 'stopped'] as const
+const STATUSES: ReadonlyArray<NodeStatus> = ['idle', 'ok', 'warn', 'danger', 'down']
 export const RESEARCH = [
   ['profiling', 'profiling'],
   ['metrics', 'metrics'],

@@ -75,7 +75,7 @@ export interface Sender {
   readonly signIndex?: number
 }
 
-export const KIND_LABEL: Record<SenderKind, string> = {
+const KIND_LABEL: Record<SenderKind, string> = {
   cloud: 'Cloud',
   monitoring: 'Alerts',
   vendor: 'Vendor',
@@ -138,7 +138,7 @@ const POOLS: Record<SenderKind, ReadonlyArray<string>> = {
   spam: ['spam-datadug'],
 }
 
-export const senderFor = (kind: SenderKind, game: Game, key: string): string => {
+const senderFor = (kind: SenderKind, game: Game, key: string): string => {
   const pool = POOLS[kind]
   return pool[hashOf(game.seed, key) % pool.length] ?? kind
 }

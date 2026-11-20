@@ -17,7 +17,7 @@ import { css } from '@quorum/styled-system/css'
 
 export type GroupName = keyof Messages['groups']
 
-export const PATTERN_GROUPS: ReadonlyArray<GroupName> = [
+const PATTERN_GROUPS: ReadonlyArray<GroupName> = [
   'Foundations',
   'Scaling steps',
   'Scaling reads and compute',

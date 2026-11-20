@@ -6,7 +6,6 @@ import {
   ledgerOf,
   onlineFileOf,
   roomCode,
-  roomLive,
   roomOwner,
   type Model,
   type Room,
@@ -354,6 +353,3 @@ export const roomHandlers = (model: Model): MessageCases<UpdateResult, RoomTag> 
   RoomKickAsked: ({ seat }) => send(model, { _tag: 'Kick', seat }),
   RoomSent: () => ({ model }),
 })
-
-export const roomSteps = (model: Model): boolean =>
-  roomLive(model) && !RoomPhase.guards.Connecting(model.room.phase)

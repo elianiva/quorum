@@ -2,7 +2,7 @@ import { EMPTY_PALETTE, type Model } from '../model.ts'
 import { activeOf, commandsOf, matchesOf } from '../palette.ts'
 import { say, type Dispatch, type MessageCases, type UpdateResult } from './shared.ts'
 
-export const paletteClosed = (model: Model): Model => ({ ...model, palette: EMPTY_PALETTE })
+const paletteClosed = (model: Model): Model => ({ ...model, palette: EMPTY_PALETTE })
 
 type PaletteTag =
   | 'PaletteOpened'

@@ -13,7 +13,7 @@ import { pageIn } from './pages.ts'
 import { WIKI_ORIGIN } from './site.ts'
 import { css, cx } from '@quorum/styled-system/css'
 
-export const FRAME = css({
+const FRAME = css({
   marginInline: 'auto',
   maxWidth: '80rem',
   paddingInline: '4',

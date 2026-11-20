@@ -20,7 +20,7 @@ export const CompanyPhase = Schema.TaggedUnion({
 })
 export type CompanyPhase = typeof CompanyPhase.Type
 
-export const CompanyPhaseEvent = Schema.TaggedUnion({
+const CompanyPhaseEvent = Schema.TaggedUnion({
   SavesLoaded: {
     current: Schema.NullOr(Schema.String),
   },
@@ -48,7 +48,7 @@ export type CompanyPhaseEvent = typeof CompanyPhaseEvent.Type
 const States = Machine.state({ states: CompanyPhase.cases })
 const Events = Machine.eventsFromSchemas(CompanyPhaseEvent)
 
-export const companyMachine = Machine.make({ root: States, events: Events }).handle({
+const companyMachine = Machine.make({ root: States, events: Events }).handle({
   initial: { target: 'None' },
   states: {
     None: {

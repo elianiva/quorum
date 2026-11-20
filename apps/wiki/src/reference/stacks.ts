@@ -30,7 +30,7 @@ import {
 import { css } from '@quorum/styled-system/css'
 
 export const runtimePath = (id: RuntimeDef['id']): string => `/runtimes/${id}`
-export const frameworkPath = (id: FrameworkDef['id']): string => `/frameworks/${id}`
+const frameworkPath = (id: FrameworkDef['id']): string => `/frameworks/${id}`
 
 const axes = (l: Lang, values: Axes, h: H): Html => {
   const t = l.t.reference.stacks

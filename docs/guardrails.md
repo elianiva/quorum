@@ -39,7 +39,7 @@ error reporters:
 Add an allowance only when the unstable call is the point of the file, and keep
 the pattern narrow. Contexts and UI code have no allowance, so unstable Effect
 APIs cannot reach them by accident. `apps/web` allows `effect/rpc` in
-`src/platform/**` only, where its RPC client lives, as `examples/reference` does.
+`src/platform/**` only, where its RPC client lives.
 
 ## Review checklist
 

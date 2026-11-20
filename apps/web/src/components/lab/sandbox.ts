@@ -46,7 +46,7 @@ import {
 } from '@quorum/ui/game/bits'
 import { shell } from './panels.ts'
 
-export const nextGuided = (id: SandboxId): SandboxId | null => {
+const nextGuided = (id: SandboxId): SandboxId | null => {
   const order = TRACKS.flatMap((track) => track.sandboxes)
   return order[order.indexOf(id) + 1] ?? null
 }

@@ -219,7 +219,7 @@ export const savePayloadOf = (model: Model, board: Board = model.board) => ({
   inbox: savedInbox(board.inbox),
 })
 
-export const saveOf = (model: Model, closing = false): AnyCommand | null => {
+const saveOf = (model: Model, closing = false): AnyCommand | null => {
   const id = playingId(model)
   if (id === null || !fileOf(model.saves, id)) return null
   const board = offCompany(model) ? model.company : model.board
@@ -237,7 +237,7 @@ export const saveCommands = (model: Model, closing = false): ReadonlyArray<AnyCo
   return command === null ? [] : [command]
 }
 
-export const stampOf = (model: Model) => {
+const stampOf = (model: Model) => {
   const playbook = stampedPlaybook(model)
   if (!playbook) return null
   return playbook.nodes.map((node) => ({

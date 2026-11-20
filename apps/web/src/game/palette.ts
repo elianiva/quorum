@@ -86,7 +86,7 @@ export type PaletteCommand = Readonly<{
   message: Message
 }>
 
-export const modLabel = (): string => {
+const modLabel = (): string => {
   const platform = typeof navigator === 'undefined' ? '' : navigator.userAgent
   return /Mac|iPhone|iPad|iPod/.test(platform) ? '⌘' : 'Ctrl'
 }

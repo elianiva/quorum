@@ -10,7 +10,7 @@ export const ClockMode = Schema.TaggedUnion({
 })
 export type ClockMode = typeof ClockMode.Type
 
-export const ClockEvent = Schema.TaggedUnion({
+const ClockEvent = Schema.TaggedUnion({
   PauseToggled: {},
   Blurred: {},
   Focused: {},
@@ -23,7 +23,7 @@ export type ClockEvent = typeof ClockEvent.Type
 const States = Machine.state({ states: ClockMode.cases })
 const Events = Machine.eventsFromSchemas(ClockEvent)
 
-export const clockMachine = Machine.make({ root: States, events: Events }).handle({
+const clockMachine = Machine.make({ root: States, events: Events }).handle({
   initial: { target: 'Running' },
   states: {
     Running: {

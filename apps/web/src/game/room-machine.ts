@@ -22,7 +22,7 @@ export const RoomPhase = Schema.TaggedUnion({
 })
 export type RoomPhase = typeof RoomPhase.Type
 
-export const RoomEvent = Schema.TaggedUnion({
+const RoomEvent = Schema.TaggedUnion({
   Connecting: { code: Schema.String },
   Joined: { seat: Schema.String, owner: Schema.Boolean },
   Dropped: {},
@@ -34,7 +34,7 @@ export type RoomEvent = typeof RoomEvent.Type
 const States = Machine.state({ states: RoomPhase.cases })
 const Events = Machine.eventsFromSchemas(RoomEvent)
 
-export const roomMachine = Machine.make({ root: States, events: Events }).handle({
+const roomMachine = Machine.make({ root: States, events: Events }).handle({
   initial: { target: 'Idle' },
   states: {
     Idle: {

@@ -1,8 +1,8 @@
 import type { SaveIndex } from './saves.ts'
 import { pruneCompanyFiles, readStored, removeStored, saveKeyOf, writeStored } from './storage.ts'
 
-export const COMPANY_DB = 'quorum'
-export const COMPANY_STORE = 'companies'
+const COMPANY_DB = 'quorum'
+const COMPANY_STORE = 'companies'
 const COMPANY_DB_VERSION = 1
 const OPEN_TIMEOUT_MS = 3000
 

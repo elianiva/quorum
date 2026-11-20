@@ -19,7 +19,7 @@ export const Session = Schema.TaggedUnion({
 })
 export type Session = typeof Session.Type
 
-export const SessionEvent = Schema.TaggedUnion({
+const SessionEvent = Schema.TaggedUnion({
   SandboxOpened: { run: SandboxRun },
   ChallengeOpened: { run: ChallengeRun },
   Closed: {},
@@ -31,7 +31,7 @@ export type SessionEvent = typeof SessionEvent.Type
 const States = Machine.state({ states: Session.cases })
 const Events = Machine.eventsFromSchemas(SessionEvent)
 
-export const sessionMachine = Machine.make({ root: States, events: Events }).handle({
+const sessionMachine = Machine.make({ root: States, events: Events }).handle({
   initial: { target: 'Company' },
   states: {
     Company: {

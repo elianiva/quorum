@@ -213,7 +213,7 @@ export const choice = (
     children,
   )
 
-export const COLUMNS: Record<number, string> = {
+const COLUMNS: Record<number, string> = {
   2: css({ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }),
   3: css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
   4: css({ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }),

@@ -14,12 +14,12 @@ import {
 import { step } from '@quorum/simulation/step'
 import { Game, type Sample } from '@quorum/simulation/state'
 
-export const STEP_SECONDS = 0.1
+const STEP_SECONDS = 0.1
 export const ALARM_MS = 500
 
 export const MAX_CATCH_UP_STEPS = 60
 
-export const MAX_OWE_MS = MAX_CATCH_UP_STEPS * STEP_SECONDS * 1_000
+const MAX_OWE_MS = MAX_CATCH_UP_STEPS * STEP_SECONDS * 1_000
 
 export const ROOM_IDLE_MS = 24 * 60 * 60 * 1000
 
@@ -29,7 +29,7 @@ export const STORAGE_VALUE_BYTES = 2 * 1024 * 1024
 
 export const MAX_ROOMS = 20
 
-export const VOTE_SECONDS = 60
+const VOTE_SECONDS = 60
 
 export type RoomState = Readonly<{
   name: string
@@ -145,8 +145,7 @@ const watching = (state: RoomState, now: number): RoomState => ({
   owe: 0,
 })
 
-export const connected = (state: RoomState): ReadonlyArray<string> =>
-  state.seats.map((seat) => seat.id)
+const connected = (state: RoomState): ReadonlyArray<string> => state.seats.map((seat) => seat.id)
 
 export const join = (
   state: RoomState,

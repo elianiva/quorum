@@ -18,7 +18,7 @@ export type Field = (typeof FIELDS)[number]
 
 const Figures = Schema.Record(Schema.String, Schema.Finite)
 
-export const Block = Schema.Struct({
+const Block = Schema.Struct({
   index: Schema.Finite,
   count: Schema.Finite,
   min: Figures,

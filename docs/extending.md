@@ -41,9 +41,8 @@ domain. Use that endpoint as the shape for your own.
    })
    ```
 
-4. Call it from the browser through `ApiRpc` in `apps/web/src/platform/rpc.ts`
-   (the pattern from `examples/reference/src/platform/rpc.ts`). `apps/web/src/entry.ts`
-   provides its layer:
+4. Call it from the browser through `ApiRpc` in `apps/web/src/platform/rpc.ts`.
+   `apps/web/src/entry.ts` provides its layer:
 
    ```ts
    const application = Runtime.makeApplication({
@@ -52,8 +51,7 @@ domain. Use that endpoint as the shape for your own.
    })
    ```
 
-5. Keep remote data in a Foldkit Query submodel, as
-   `examples/reference/src/query-example.ts` does. Update handlers decide when to
+5. Keep remote data in a Foldkit Query submodel. Update handlers decide when to
    load or revalidate; views read the query.
 
 ## Errors
@@ -64,7 +62,7 @@ throw, and do not invent a new error shape at the edge: a client cannot type wha
 the contract does not declare.
 
 The client sees two sources of failure: the declared `ApiError` and the
-transport-level `RpcClientError` from `effect/rpc`. The reference app maps the
+transport-level `RpcClientError` from `effect/rpc`. The web client maps the
 transport error into `ApiError`, which leaves the view with one type:
 
 ```ts
@@ -111,6 +109,3 @@ and Cloudflare global type names, out of context code.
 `pnpm typecheck` also rejects unstable Effect APIs outside their tsconfig
 allowlist. If a new file needs one, add the narrowest matching entry to that
 package's tsconfig, as [Guardrails](guardrails.md) describes.
-
-For the finished version of this path, read
-[`examples/reference`](../examples/reference/README.md).

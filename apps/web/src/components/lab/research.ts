@@ -1431,7 +1431,7 @@ const scrollTo = (host: HTMLElement, target: Element, behavior: ScrollBehavior) 
   target.scrollIntoView({ block: 'center', inline: 'center', behavior })
 }
 
-export const ResearchScroll = Mount.define('ResearchScroll', {
+const ResearchScroll = Mount.define('ResearchScroll', {
   messages: [Message.Synced],
   execute: ({ element }) =>
     Effect.acquireRelease(
@@ -2241,7 +2241,7 @@ const attachResize = (host: HTMLElement, offer: (width: number) => void): (() =>
   return () => events.abort()
 }
 
-export const ResearchResize = Mount.defineStream('ResearchResize', {
+const ResearchResize = Mount.defineStream('ResearchResize', {
   args: {},
   messages: [Message.ResearchChanged, Message.Synced],
   execute: ({ element }) =>

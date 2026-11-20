@@ -3,9 +3,8 @@ import type { Ledger } from '@quorum/simulation/ledger'
 import type { Game } from '@quorum/simulation/state'
 import { priceOf, refundOf } from '@quorum/simulation/lookups'
 import type { Board, Figures, Undo } from './model.ts'
-import type { Delta } from './machine-state.ts'
 
-export { SETTLE_LIMIT_SECONDS, STABLE_TICKS, STEADY_TICKS } from './machine-state.ts'
+export { STEADY_TICKS } from './machine-state.ts'
 import { SETTLE_LIMIT_SECONDS, STEADY_TICKS } from './machine-state.ts'
 
 export { figuresOf } from '@quorum/simulation/preview'
@@ -43,7 +42,7 @@ export const advanceChange = (board: Board, ledger: Ledger, seq: number): Change
   })
 
 export const UNDO_SECONDS = 30
-export const UNDO_LIMIT = 50
+const UNDO_LIMIT = 50
 
 export const snapshotOf = (label: string, game: Game, cash: number, at: number): Undo => ({
   label,
@@ -128,23 +127,4 @@ export const redoGame = (board: Board): Reversal | string => {
     undo: [...board.undo, snapshotOf(entry.label, game, cash, game.time)].slice(-UNDO_LIMIT),
     redo: board.redo.slice(0, -1),
   }
-}
-
-const signed = (value: number, digits = 2): string =>
-  `${value >= 0 ? '+' : '−'}${Math.abs(value).toFixed(digits)}`
-
-export const describeDelta = (delta: Delta, percentiles: boolean): string => {
-  const revenue = delta.after.revenue - delta.before.revenue
-  const share = delta.before.revenue > 0 ? (revenue / delta.before.revenue) * 100 : 0
-  const latency = percentiles
-    ? `p99 ${signed(delta.after.p99 - delta.before.p99, 0)} ms`
-    : `latency ${signed(delta.after.latency - delta.before.latency, 0)} ms`
-  const errors = (delta.after.errors - delta.before.errors) * 100
-  return [
-    `${revenue >= 0 ? '+' : '−'}$${Math.abs(revenue).toFixed(2)}/s (${signed(share, 0)}%)`,
-    latency,
-    Math.abs(errors) >= 0.05 ? `errors ${signed(errors, 1)}%` : null,
-  ]
-    .filter((part) => part !== null)
-    .join(' · ')
 }

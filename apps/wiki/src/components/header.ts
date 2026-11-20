@@ -14,7 +14,7 @@ import { css, cx } from '@quorum/styled-system/css'
 
 type H = HtmlBuilder<Message>
 
-export const mark = (h: H): Html =>
+const mark = (h: H): Html =>
   h.svg(
     [
       h.AriaHidden(true),
@@ -113,7 +113,7 @@ const languageCode = css({
   color: 'mutedForeground',
 })
 
-export const languageSwitcher = (model: Model, l: Lang, h: H): Html =>
+const languageSwitcher = (model: Model, l: Lang, h: H): Html =>
   h.nav(
     [
       h.Key('language'),

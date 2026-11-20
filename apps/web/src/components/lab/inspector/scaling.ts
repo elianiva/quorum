@@ -9,7 +9,7 @@ import { copy, nodeTitle } from '@/i18n/messages.ts'
 import { copiesOf, nextOf, readingOf, toneOf } from '@/game/scaling.ts'
 import { callout, caption, nodeLink, section } from './shared.ts'
 
-export const scaleStateFor = (
+const scaleStateFor = (
   game: Game,
   ledger: Ledger,
   node: GameNode,

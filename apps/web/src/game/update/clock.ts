@@ -90,14 +90,14 @@ export type Note = readonly [string, Tone] | null
 
 export type EventNote = readonly [string, Tone, EventMail] | null
 
-export const BLOCK_TEXT: Readonly<Record<'decision' | 'index' | 'copy' | 'size', string>> = {
+const BLOCK_TEXT: Readonly<Record<'decision' | 'index' | 'copy' | 'size', string>> = {
   decision: 'waiting on a decision',
   index: 'waiting on an index',
   copy: 'waiting on a database copy',
   size: 'waiting on your call because the team is too big',
 }
 
-export const eventText = (event: StepEvent, game: Game): EventNote =>
+const eventText = (event: StepEvent, game: Game): EventNote =>
   StepEvent.$match(event, {
     IncidentStarted: ({ incident }): EventNote =>
       incident.kind === 'bad-deploy'
@@ -262,7 +262,7 @@ export const eventText = (event: StepEvent, game: Game): EventNote =>
     ],
   })
 
-export const eventLog = (event: StepEvent): Record<string, unknown> =>
+const eventLog = (event: StepEvent): Record<string, unknown> =>
   StepEvent.$match(event, {
     IncidentStarted: ({ incident }) => ({ kind: incident.kind, node: incident.nodeId }),
     IncidentResolved: ({ postmortem }) => ({ ...postmortem }),
@@ -287,7 +287,7 @@ export const eventLog = (event: StepEvent): Record<string, unknown> =>
     StudyCompleted: ({ research }) => ({ research }),
   })
 
-export const eventToast = (t: Messages, event: StepEvent, game: Game): Note => {
+const eventToast = (t: Messages, event: StepEvent, game: Game): Note => {
   const e = t.toasts.event
   const node = (id: string): string => {
     const found = game.nodes.find((entry) => entry.id === id)
@@ -380,7 +380,7 @@ export const eventToast = (t: Messages, event: StepEvent, game: Game): Note => {
   })
 }
 
-export const tick = (model: Model, elapsedMs: number): UpdateResult => {
+const tick = (model: Model, elapsedMs: number): UpdateResult => {
   const challenge = boardChallenge(model.board)
   if (challenge?._tag === 'Running') return runTick(model, challenge, elapsedMs)
   const owed =

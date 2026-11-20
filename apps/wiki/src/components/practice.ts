@@ -53,7 +53,7 @@ export const dockGroups = (id: PracticeId): ReadonlyArray<DockGroup> => [
   ...new Set(DOCK[id].map((type) => DOCK_OF[type])),
 ]
 
-export const startGame = (id: PracticeId): Game => {
+const startGame = (id: PracticeId): Game => {
   const base = company(20_261_031)
   if (id === 'place')
     return normalizeOrdinals({ ...base, nodes: [node('users', 'users', 80, 120)], links: [] })

@@ -42,7 +42,7 @@ const SEVERITY_CLASS: Record<1 | 2 | 3, string> = {
   }),
 }
 
-export const severityChip = (severity: 1 | 2 | 3, h: H): Html =>
+const severityChip = (severity: 1 | 2 | 3, h: H): Html =>
   h.span(
     [
       h.Class(

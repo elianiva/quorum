@@ -285,7 +285,7 @@ export const REFERENCE: Record<string, (game: Game) => Game> = {
     ),
 }
 
-export const REFERENCE_ACTIONS: Record<string, Replay['actions']> = {
+const REFERENCE_ACTIONS: Record<string, Replay['actions']> = {
   'regex-of-doom': [{ step: 121, action: { _tag: 'Respond', response: 'disable-rule' } }],
   'forty-three-seconds': [{ step: 121, action: { _tag: 'Respond', response: 'fence-leader' } }],
   'gone-from-the-internet': [

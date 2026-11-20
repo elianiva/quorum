@@ -11,7 +11,7 @@ export const SurveyPhase = Schema.TaggedUnion({
 })
 export type SurveyPhase = typeof SurveyPhase.Type
 
-export const SurveyEvent = Schema.TaggedUnion({
+const SurveyEvent = Schema.TaggedUnion({
   Submitted: {},
   Sent: {},
   Failed: { note: Schema.String },
@@ -23,7 +23,7 @@ export type SurveyEvent = typeof SurveyEvent.Type
 const States = Machine.state({ states: SurveyPhase.cases })
 const Events = Machine.eventsFromSchemas(SurveyEvent)
 
-export const surveyMachine = Machine.make({ root: States, events: Events }).handle({
+const surveyMachine = Machine.make({ root: States, events: Events }).handle({
   initial: { target: 'Open' },
   states: {
     Open: {
@@ -73,12 +73,3 @@ export const isSending = SurveyPhase.guards.Sending
 export const isSent = SurveyPhase.guards.Sent
 
 export const isSkipped = SurveyPhase.guards.Skipped
-
-export const noteOf = (phase: SurveyPhase): string | null =>
-  SurveyPhase.match(phase, {
-    Open: () => null,
-    Sending: () => null,
-    Sent: () => null,
-    Failed: ({ note }) => note,
-    Skipped: () => null,
-  })

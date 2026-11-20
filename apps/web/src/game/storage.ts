@@ -50,7 +50,7 @@ export const removeStored = (key: string): void => {
   } catch {}
 }
 
-export const storedKeys = (): ReadonlyArray<string> => {
+const storedKeys = (): ReadonlyArray<string> => {
   const target = storage()
   if (target === null) return []
   try {

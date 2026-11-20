@@ -87,8 +87,6 @@ const schedulePersist = (): void => {
   if (pending === null) pending = setTimeout(flush, PERSIST_AFTER_MS)
 }
 
-export const logSize = (): number => load().length
-
 export const downloadLog = (): void => {
   const body = load()
     .map((entry) => JSON.stringify(entry))

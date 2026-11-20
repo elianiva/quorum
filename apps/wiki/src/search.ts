@@ -137,7 +137,7 @@ const STOPWORDS: Readonly<Record<Locale, ReadonlySet<string>>> = {
   ja: new Set(),
 }
 
-export const stem = (word: string): string => {
+const stem = (word: string): string => {
   if (word.length <= 3 || /\d/.test(word)) return word
   let out = word
   if (out.endsWith('ies') && out.length > 4) out = `${out.slice(0, -3)}y`
@@ -154,7 +154,7 @@ export const stem = (word: string): string => {
   return out.length > 3 && out.endsWith('e') ? out.slice(0, -1) : out
 }
 
-export const stemEs = (word: string): string => {
+const stemEs = (word: string): string => {
   if (word.length <= 3 || /\d/.test(word)) return word
   let out = word
   if (out.endsWith('ciones')) out = `${out.slice(0, -6)}cion`

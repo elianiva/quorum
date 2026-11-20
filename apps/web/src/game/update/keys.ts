@@ -24,25 +24,21 @@ import { nearestNode, type Direction } from '../viewport.ts'
 import { onBoard } from '../route.ts'
 import { regionView } from '@quorum/simulation/regions'
 
-export const NUDGES: Record<string, readonly [number, number]> = {
+const NUDGES: Record<string, readonly [number, number]> = {
   'Shift+ArrowUp': [0, -NUDGE],
   'Shift+ArrowDown': [0, NUDGE],
   'Shift+ArrowLeft': [-NUDGE, 0],
   'Shift+ArrowRight': [NUDGE, 0],
 }
 
-export const ARROWS: Record<string, Direction> = {
+const ARROWS: Record<string, Direction> = {
   ArrowUp: 'up',
   ArrowDown: 'down',
   ArrowLeft: 'left',
   ArrowRight: 'right',
 }
 
-export const keyboardSpot = (
-  model: Model,
-  w: number,
-  h: number,
-): Readonly<{ x: number; y: number }> => {
+const keyboardSpot = (model: Model, w: number, h: number): Readonly<{ x: number; y: number }> => {
   const nodes = regionView(model.board.game, model.board.region).nodes
   const left = nodes.length > 0 ? Math.min(...nodes.map((node) => node.x)) : 0
   const bottom =

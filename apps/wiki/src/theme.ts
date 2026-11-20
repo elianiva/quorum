@@ -20,7 +20,7 @@ const storedTheme = (): Theme | null => {
 const currentTheme = (): Theme =>
   storedTheme() ?? (document.documentElement.classList.contains('dark') ? 'dark' : systemTheme())
 
-export const applyTheme = (theme: Theme): void => {
+const applyTheme = (theme: Theme): void => {
   const root = document.documentElement
   root.classList.toggle('dark', theme === 'dark')
   root.dataset['theme'] = theme

@@ -60,7 +60,7 @@ import { clockStep } from '../clock-machine.ts'
 import { roomStep } from '../room-machine.ts'
 import { type Url } from 'foldkit/url'
 
-export const open = (model: Model, route: AppRoute): UpdateResult =>
+const open = (model: Model, route: AppRoute): UpdateResult =>
   AppRoute.match<UpdateResult>(route, {
     Title: () => ({ model: { ...model, route } }),
     Menu: ({ menu }) => ({
@@ -111,12 +111,12 @@ export const visit = (model: Model, url: Url): UpdateResult => {
   }
 }
 
-export const parseStore = Schema.decodeUnknownOption(Schema.fromJsonString(SandboxStore))
+const parseStore = Schema.decodeUnknownOption(Schema.fromJsonString(SandboxStore))
 
 const heldCompany = (model: Model): Board | null =>
   offCompany(model) ? model.company : (model.company ?? model.board)
 
-export const enterSandbox = (model: Model, game: Game, run: SandboxRun): UpdateResult => {
+const enterSandbox = (model: Model, game: Game, run: SandboxRun): UpdateResult => {
   const board = freshBoard(game)
   const next: Model = {
     ...model,
@@ -138,7 +138,7 @@ export const enterSandbox = (model: Model, game: Game, run: SandboxRun): UpdateR
   }
 }
 
-export const replaceFree = (model: Model, game: Game, text: string): UpdateResult => {
+const replaceFree = (model: Model, game: Game, text: string): UpdateResult => {
   if (boardSandbox(model.board)?.id !== null) return { model }
   const normalized = normalizeOrdinals(game)
   const next: Model = {
@@ -162,17 +162,17 @@ export const replaceFree = (model: Model, game: Game, text: string): UpdateResul
   return withToast(next, text, 'plain', [FitBoard({}), WriteSandboxStore({ store: storeOf(next) })])
 }
 
-export const tuneFree = (model: Model, game: Game): UpdateResult => {
+const tuneFree = (model: Model, game: Game): UpdateResult => {
   if (boardSandbox(model.board)?.id !== null) return { model }
   const next: Model = { ...model, board: { ...model.board, game, whatIfsAt: -1 } }
   return { model: next }
 }
 
-export const DEMAND_STEPS = [100, 250, 500, 1_000, 2_000, 4_000, 8_000, 16_000, 32_000]
+const DEMAND_STEPS = [100, 250, 500, 1_000, 2_000, 4_000, 8_000, 16_000, 32_000]
 
 export const afterRound = (game: Game): Model['panel'] => (isFinalEra(game) ? 'end' : 'era')
 
-export const spreadOut = (game: Game): Game => {
+const spreadOut = (game: Game): Game => {
   const settled = new Map<string, Array<Box>>()
   const taken = (region: string) => settled.get(region) ?? []
   for (const node of game.nodes.filter((entry) => COMPONENTS[entry.type].fixed))
@@ -186,7 +186,7 @@ export const spreadOut = (game: Game): Game => {
   return next
 }
 
-export const boardOf = (challenge: Challenge): Game =>
+const boardOf = (challenge: Challenge): Game =>
   spreadOut({ ...challenge.start(), users: challenge.demand[0]?.users ?? 0 })
 
 export const enterChallenge = (model: Model, id: string): UpdateResult => {
@@ -216,7 +216,7 @@ export const enterChallenge = (model: Model, id: string): UpdateResult => {
   }
 }
 
-export const startRun = (model: Model, run: ChallengeRun): UpdateResult => {
+const startRun = (model: Model, run: ChallengeRun): UpdateResult => {
   const challenge = challengeById(run.id)
   if (!challenge || run._tag !== 'Building') return { model }
   const replay = {
@@ -254,7 +254,7 @@ export const startRun = (model: Model, run: ChallengeRun): UpdateResult => {
   })
 }
 
-export const runSteps = (
+const runSteps = (
   model: Model,
   run: ChallengeRun,
   all: boolean,
@@ -297,7 +297,7 @@ export const runSteps = (
   }
 }
 
-export const finishRun = (model: Model): UpdateResult => {
+const finishRun = (model: Model): UpdateResult => {
   const run = boardChallenge(model.board)
   const challenge = run ? challengeById(run.id) : undefined
   if (!run || !challenge || run._tag !== 'Running') return { model }
@@ -361,10 +361,10 @@ export const logResponse = (model: Model, response: Response): UpdateResult | nu
   return logRunAction(model, action)
 }
 
-export const companyBoard = (model: Model): Board =>
+const companyBoard = (model: Model): Board =>
   model.company ? { ...model.company, whatIfsAt: -1 } : freshBoard(newGame())
 
-export const leaveChallenge = (model: Model): UpdateResult => ({
+const leaveChallenge = (model: Model): UpdateResult => ({
   model: {
     ...model,
     route: AppRoute.Menu({ menu: 'challenges' }),

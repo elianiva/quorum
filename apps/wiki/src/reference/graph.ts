@@ -14,11 +14,6 @@ const componentLinks = new Map(COMPONENT_IDS.map((id) => [id, linksFrom(`/compon
 export const componentsHitBy = (incident: IncidentId): ReadonlyArray<ComponentId> =>
   COMPONENT_IDS.filter((id) => componentLinks.get(id)?.paths.has(`/incidents/${incident}`))
 
-export const incidentsOn = (component: ComponentId): ReadonlyArray<string> =>
-  [...(componentLinks.get(component)?.paths ?? [])]
-    .filter((path) => path.startsWith('/incidents/') && path !== '/incidents')
-    .map((path) => path.slice('/incidents/'.length))
-
 export const sandboxesFiring = (incident: IncidentId): ReadonlyArray<SandboxId> =>
   SANDBOX_IDS.filter((id) =>
     GUIDED_SUMMARY[id].objectives.some((objective) => objective.incident?.kind === incident),

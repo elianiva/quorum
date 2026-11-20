@@ -3,7 +3,7 @@ import { Schema } from 'effect'
 import { planState } from './machine.ts'
 import { Reveal as RevealSchema, type Reveal } from './machine-state.ts'
 
-export const CUE_TICKS = 120
+const CUE_TICKS = 120
 
 export const DisclosureFlow = Schema.TaggedUnion({
   Idle: {
@@ -22,7 +22,7 @@ export const DisclosureFlow = Schema.TaggedUnion({
 })
 export type DisclosureFlow = typeof DisclosureFlow.Type
 
-export const DisclosureEvent = Schema.TaggedUnion({
+const DisclosureEvent = Schema.TaggedUnion({
   Ticked: {
     triggered: Schema.Array(RevealSchema),
   },
@@ -88,7 +88,7 @@ const sameKeys = (left: ReadonlyArray<Reveal>, right: ReadonlyArray<Reveal>): bo
 const States = Machine.state({ states: DisclosureFlow.cases })
 const Events = Machine.eventsFromSchemas(DisclosureEvent)
 
-export const disclosureMachine = Machine.make({
+const disclosureMachine = Machine.make({
   root: States,
   events: Events,
   branches: {

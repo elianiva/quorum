@@ -26,7 +26,7 @@ import {
 import { type Note } from './clock.ts'
 import { initStackPicker } from '../stack-picker.ts'
 
-export const chosenIds = (model: Model): ReadonlyArray<string> =>
+const chosenIds = (model: Model): ReadonlyArray<string> =>
   model.board.selection.length > 0
     ? model.board.selection
     : model.board.selected
@@ -35,9 +35,9 @@ export const chosenIds = (model: Model): ReadonlyArray<string> =>
 
 export const NUDGE = 16
 
-export const countNodes = (count: number): string => (count === 1 ? '1 Node' : `${count} Nodes`)
+const countNodes = (count: number): string => (count === 1 ? '1 Node' : `${count} Nodes`)
 
-export const sellAll = Actions.sellAll
+const sellAll = Actions.sellAll
 
 type CanvasTag =
   | 'BuildGroupChosen'

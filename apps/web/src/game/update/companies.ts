@@ -59,7 +59,7 @@ import { refusalIn } from '../../i18n/refusal.ts'
 import { disclosureOfSave, revealAtStart } from '../reveal.ts'
 import { solveFlow } from '@quorum/simulation/solve'
 
-export const startCompany = (
+const startCompany = (
   model: Model,
   game: Game,
   panel: Model['panel'],
@@ -102,9 +102,9 @@ export const startCompany = (
   }
 }
 
-export const parseFounder = Schema.decodeUnknownOption(Schema.fromJsonString(Founder))
+const parseFounder = Schema.decodeUnknownOption(Schema.fromJsonString(Founder))
 
-export const parseIndex = Schema.decodeUnknownOption(Schema.fromJsonString(SaveIndex))
+const parseIndex = Schema.decodeUnknownOption(Schema.fromJsonString(SaveIndex))
 
 const titleIfBoard = (model: Model): UpdateResult =>
   model.route._tag === 'Company'
@@ -139,7 +139,7 @@ const dropped = (
   return withToast(back.model, said, 'warn', commands)
 }
 
-export const applyCompany = (
+const applyCompany = (
   model: Model,
   id: string,
   game: Game,
@@ -189,7 +189,7 @@ export const changeFounder = (
     },
   })
 
-export const found = (model: Model): UpdateResult => {
+const found = (model: Model): UpdateResult => {
   const founder = founded(model.founder)
   const founding = foundingOf(model.founder)
   const game = foundCompany(model.board.game.seed + 7919, founding, model.founder.keep)

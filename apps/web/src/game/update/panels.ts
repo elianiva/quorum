@@ -30,7 +30,7 @@ import { type RegionId as Region, type ResearchId } from '@quorum/simulation/cat
 import { updateDashboard } from '../dashboard.ts'
 import * as VolumeSlider from '@quorum/ui/primitives/slider'
 
-export const savePrefs = (model: Model): UpdateResult => ({
+const savePrefs = (model: Model): UpdateResult => ({
   model,
   commands: [
     WritePrefs({ prefs: model.prefs }),
@@ -66,7 +66,7 @@ const plainClock = (model: Model): UpdateResult =>
         },
       }
 
-export const foldPrefs = (model: Model, message: PrefsMessage): UpdateResult =>
+const foldPrefs = (model: Model, message: PrefsMessage): UpdateResult =>
   Update.combine(model, [
     Update.foldChild({
       update: updatePrefs,
@@ -78,14 +78,14 @@ export const foldPrefs = (model: Model, message: PrefsMessage): UpdateResult =>
     savePrefs,
   ])
 
-export const foldSurvey = Update.foldChild({
+const foldSurvey = Update.foldChild({
   update: updateSurvey,
   read: (model: Model) => Option.some(model.survey),
   write: (model, survey) => ({ ...model, survey }),
   toParentMessage: (message) => Message.SurveyChanged({ message }),
 })
 
-export const foldDashboard = Update.foldChild({
+const foldDashboard = Update.foldChild({
   update: updateDashboard,
   read: (model: Model) => Option.some(model.board.dashboard),
   write: (model, dashboard) => ({ ...model, board: { ...model.board, dashboard } }),
@@ -113,7 +113,7 @@ export const parsePrefs = (json: string) =>
       })),
   )
 
-export const foldVolumeSlider = (route: Dispatch) =>
+const foldVolumeSlider = (route: Dispatch) =>
   Update.foldChild({
     update: VolumeSlider.update,
     read: (model: Model) => Option.some(model.volumeSlider),
@@ -128,7 +128,7 @@ export const foldVolumeSlider = (route: Dispatch) =>
         ),
   })
 
-export const foldLanguagePicker = (route: Dispatch) =>
+const foldLanguagePicker = (route: Dispatch) =>
   Update.foldChild({
     update: languageListbox.update,
     read: (model: Model) => Option.some(model.languagePicker),
@@ -143,7 +143,7 @@ export const foldLanguagePicker = (route: Dispatch) =>
         ),
   })
 
-export const MORE_ACTIONS: Record<MoreItem, Message> = {
+const MORE_ACTIONS: Record<MoreItem, Message> = {
   exit: Message.PanelOpened({ panel: 'exit' }),
   playbooks: Message.PanelOpened({ panel: 'playbooks' }),
   dashboard: Message.PanelOpened({ panel: 'dashboard' }),
@@ -156,7 +156,7 @@ export const MORE_ACTIONS: Record<MoreItem, Message> = {
   screenshot: Message.ScreenshotToggled(),
 }
 
-export const foldMoreMenu = (route: Dispatch) =>
+const foldMoreMenu = (route: Dispatch) =>
   Update.foldChild({
     update: moreMenu.update,
     read: (model: Model) => Option.some(model.moreMenu),

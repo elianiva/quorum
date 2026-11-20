@@ -124,7 +124,7 @@ export const teamAction = (model: Model, out: TeamOutMessage): UpdateResult => {
   })
 }
 
-export const foldTeam = (model: Model, message: TeamMessage): UpdateResult =>
+const foldTeam = (model: Model, message: TeamMessage): UpdateResult =>
   Update.foldChild({
     update: updateTeam,
     read: (parent: Model) => Option.some(parent.board.team),
@@ -133,7 +133,7 @@ export const foldTeam = (model: Model, message: TeamMessage): UpdateResult =>
     foldOutMessage: (out: TeamOutMessage) => (parent: Model) => teamAction(parent, out),
   })(model, message)
 
-export const foldResearch = (model: Model, message: ResearchMessage): UpdateResult =>
+const foldResearch = (model: Model, message: ResearchMessage): UpdateResult =>
   Update.foldChild({
     update: updateResearch,
     read: (parent: Model) => Option.some(parent.board.research),

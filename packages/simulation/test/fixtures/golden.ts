@@ -2,7 +2,7 @@ import { preseedGame } from '../../src/company.ts'
 import type { Game } from '../../src/state.ts'
 import { step } from '../../src/step.ts'
 
-export const GOLDEN_STEP = 0.25
+const GOLDEN_STEP = 0.25
 
 export const goldenGame = (): Game => preseedGame(1)
 

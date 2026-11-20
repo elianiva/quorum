@@ -235,7 +235,7 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-export const snapshotSvg = (
+const snapshotSvg = (
   snapshot: Model['founder']['history'][number]['snapshot'],
   h: HtmlBuilder<Message>,
   className: string,

@@ -19,7 +19,7 @@ Website Worker ── service binding ──► API Worker
 
 `apps/wiki` is a third deployable application with no API. Foldkit prerenders every page at build time, and `Cloudflare.Website.Foldkit` serves the files; its generated Worker answers only 404s ([ADR 0009](adr/0009-the-wiki-is-a-prerendered-app.md)).
 
-The service binding is a deployment concern. Business handlers must not depend on Cloudflare types or bindings. The root `alchemy.run.ts` owns all resource declarations and selects the default website or reference example by Alchemy stage (`reference` selects the example). Each app exposes a plain `src/worker.ts` runtime entry module; these modules do not import Alchemy or declare infrastructure.
+The service binding is a deployment concern. Business handlers must not depend on Cloudflare types or bindings. The root `alchemy.run.ts` owns all resource declarations. Each app exposes a plain `src/worker.ts` runtime entry module; these modules do not import Alchemy or declare infrastructure.
 
 ## Request routing
 
@@ -80,7 +80,6 @@ The browser sends anonymous PostHog events through the website Worker at `/q` (`
 - `packages/simulation` owns the Simulation: the catalog, the Game schema, the solver, the Step, actions, and the Sandboxes. A Node's lifecycle is one tagged state in `src/life.ts`, not separate fields ([ADR 0011](adr/0011-state-machines-are-for-flows.md)). The browser plays it and the API Worker will replay Challenges with it ([ADR 0004](adr/0004-simulation-package.md)). It imports only `effect` and its own files, and uses only exact math, so every runtime computes the same Game. The solve runs in a WebAssembly solver built from Rust in `packages/simulation/solver`. Each runtime installs it once through `@quorum/simulation/host/node`, `host/browser`, or `host/worker` ([ADR 0025](./adr/0025-the-solve-runs-in-a-rust-solver.md), [Solver README](../packages/simulation/solver/README.md)).
 - `packages/ui` (`@quorum/ui`) owns the design language and the views both apps show ([ADR 0010](adr/0010-ui-package.md)): the primitives under `src/primitives`, the Graphite theme in `src/theme.css` (each app imports it before its own styles), the shared game views, number formats, and icons under `src/game`, and the Pixi board with its routing and compute worker under `src/board`. A view takes the data it shows, never an app's Model; the board takes a `BoardState` with a `translate` function and reports gestures and sounds through callbacks. It ships TypeScript source; each app's Vite build compiles it. `src/boundary.test.ts` checks its import rules.
 - `packages/agent` owns the read-only agent surface: the tool list, the Agent snapshot schema, the incremental upload schema, the shared `readTool`, and the MCP request handler. The browser builds a snapshot from its Model and uploads it; the API Worker answers `/mcp` from the Agent room's Durable Object ([ADR 0020](adr/0020-agents-read-a-company-through-a-remote-mcp-server.md)). It imports the Simulation, so the tool view reads the same Game the board does.
-- `examples/reference` shows a complete Query-to-RPC path in a separate website app. Run it with `pnpm dev:reference`, which uses the root Alchemy entrypoint with the `reference` stage; it is deliberately excluded from the default stack.
 
 ## Dependency direction
 
@@ -88,7 +87,6 @@ The browser sends anonymous PostHog events through the website Worker at `/q` (`
 apps/web ─────────► packages/agent, packages/rpc, packages/simulation, packages/ui
 apps/backend ─────► packages/agent, packages/rpc, packages/simulation
 apps/wiki ────────► packages/simulation, packages/ui
-examples/reference ► packages/rpc
 packages/rpc ─────► effect
 packages/simulation ► effect
 packages/agent ─────► packages/simulation, effect

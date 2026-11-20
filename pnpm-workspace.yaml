@@ -1,7 +1,6 @@
 packages:
   - apps/*
   - packages/*
-  - examples/*
 catalog:
   '@pandacss/dev': 2.5.0
   '@pandacss/preset-base': 2.5.0

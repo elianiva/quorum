@@ -44,7 +44,7 @@ jobs:
       - uses: actions/cache@v6
         with:
           path: .turbo/cache
-          key: turbo-${{ runner.os }}-typecheck-${{ hashFiles('apps/**', 'packages/**', 'examples/**', 'pnpm-lock.yaml', 'turbo.json', 'tsconfig*.json', 'vite.config.ts') }}
+          key: turbo-${{ runner.os }}-typecheck-${{ hashFiles('apps/**', 'packages/**', 'pnpm-lock.yaml', 'turbo.json', 'tsconfig*.json', 'vite.config.ts') }}
           restore-keys: |
             turbo-${{ runner.os }}-typecheck-
       - run: pnpm install --frozen-lockfile
@@ -65,7 +65,7 @@ jobs:
       - uses: actions/cache@v6
         with:
           path: .turbo/cache
-          key: turbo-${{ runner.os }}-test-${{ hashFiles('apps/**', 'packages/**', 'examples/**', 'pnpm-lock.yaml', 'turbo.json', 'tsconfig*.json', 'vite.config.ts') }}
+          key: turbo-${{ runner.os }}-test-${{ hashFiles('apps/**', 'packages/**', 'pnpm-lock.yaml', 'turbo.json', 'tsconfig*.json', 'vite.config.ts') }}
           restore-keys: |
             turbo-${{ runner.os }}-test-
       - run: pnpm install --frozen-lockfile
@@ -86,7 +86,7 @@ jobs:
       - uses: actions/cache@v6
         with:
           path: .turbo/cache
-          key: turbo-${{ runner.os }}-build-${{ hashFiles('apps/**', 'packages/**', 'examples/**', 'pnpm-lock.yaml', 'turbo.json', 'tsconfig*.json', 'vite.config.ts') }}
+          key: turbo-${{ runner.os }}-build-${{ hashFiles('apps/**', 'packages/**', 'pnpm-lock.yaml', 'turbo.json', 'tsconfig*.json', 'vite.config.ts') }}
           restore-keys: |
             turbo-${{ runner.os }}-build-
       - run: pnpm install --frozen-lockfile

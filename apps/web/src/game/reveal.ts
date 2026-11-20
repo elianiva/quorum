@@ -19,8 +19,7 @@ import { step as disclosureStep, type DisclosureFlow } from './disclosure-machin
 
 const ALL: ReadonlyArray<Reveal> = Reveal.literals
 
-export const veteran = (model: Model): boolean =>
-  offCompany(model) || model.founder.history.length > 0
+const veteran = (model: Model): boolean => offCompany(model) || model.founder.history.length > 0
 
 export const shown = (model: Model, key: Reveal): boolean =>
   veteran(model) || model.board.disclosure.revealed.includes(key)
@@ -137,7 +136,7 @@ export const cueNode = (model: Model): string | null => {
   return null
 }
 
-export const revealsOfSave = (
+const revealsOfSave = (
   saved: unknown,
 ): Readonly<{ revealed: ReadonlyArray<Reveal>; pending: ReadonlyArray<Reveal> }> => {
   const disclosure =

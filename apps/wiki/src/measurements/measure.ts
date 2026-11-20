@@ -4,9 +4,9 @@ import { runBot, type BotRun, type Milestone } from '@quorum/simulation/pacing'
 import { budgetOf } from '@quorum/simulation/slo'
 import type { Founding } from '@quorum/simulation/state'
 
-export const PACING_SEEDS = [1, 2, 3, 4, 5] as const
-export const DEEP_SEEDS = [1, 3] as const
-export const LEGACY_SEEDS = [1, 2, 3] as const
+const PACING_SEEDS = [1, 2, 3, 4, 5] as const
+const DEEP_SEEDS = [1, 3] as const
+const LEGACY_SEEDS = [1, 2, 3] as const
 
 const NINETY_MINUTES = 90 * 60
 const ONE_THIRTY_MINUTES = 130 * 60

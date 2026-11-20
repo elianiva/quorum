@@ -6,7 +6,7 @@ export const MailVars = Schema.Record(
 )
 export type MailVars = typeof MailVars.Type
 
-export const LetterRef = Schema.Struct({
+const LetterRef = Schema.Struct({
   id: Schema.String,
   variant: Schema.Finite,
   vars: MailVars,

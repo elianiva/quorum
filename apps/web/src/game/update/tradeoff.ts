@@ -52,7 +52,7 @@ export const tradeoffOf = (
     },
   )
 
-export const applyOption = (model: Model, card: OpenTradeoff, route: Dispatch): UpdateResult => {
+const applyOption = (model: Model, card: OpenTradeoff, route: Dispatch): UpdateResult => {
   const closed: Model = { ...model, board: { ...model.board, tradeoff: { _tag: 'Closed' } } }
   const applied = route(closed, optionMessage(card.nodeId, card.option))
   if (applied.model.board.game === closed.board.game) return applied

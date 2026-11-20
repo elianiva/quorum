@@ -17,7 +17,7 @@ export { MENU_PAGES }
 
 export const MenuPage = Schema.Literals(MENU_PAGES)
 
-export const SandboxPath = Schema.Literals([...SANDBOX_IDS, 'free'])
+const SandboxPath = Schema.Literals([...SANDBOX_IDS, 'free'])
 
 export const AppRoute = defineRouteUnion({
   Title: {},
@@ -29,20 +29,20 @@ export const AppRoute = defineRouteUnion({
 })
 export type AppRoute = typeof AppRoute.Type
 
-export const titleRouter = pipe(root, mapTo(AppRoute.Title))
-export const menuRouter = pipe(schemaSegment('menu', MenuPage), mapTo(AppRoute.Menu))
-export const companyRouter = pipe(literal('company'), mapTo(AppRoute.Company))
-export const sandboxRouter = pipe(
+const titleRouter = pipe(root, mapTo(AppRoute.Title))
+const menuRouter = pipe(schemaSegment('menu', MenuPage), mapTo(AppRoute.Menu))
+const companyRouter = pipe(literal('company'), mapTo(AppRoute.Company))
+const sandboxRouter = pipe(
   literal('sandbox'),
   slash(schemaSegment('sandbox', SandboxPath)),
   mapTo(AppRoute.Sandbox),
 )
-export const challengeRouter = pipe(
+const challengeRouter = pipe(
   literal('challenges'),
   slash(string('challenge')),
   mapTo(AppRoute.Challenge),
 )
-export const roomRouter = pipe(literal('room'), slash(string('room')), mapTo(AppRoute.Room))
+const roomRouter = pipe(literal('room'), slash(string('room')), mapTo(AppRoute.Room))
 
 export const urlToAppRoute = parseUrlWithFallback(
   oneOf(titleRouter, menuRouter, companyRouter, sandboxRouter, challengeRouter, roomRouter),

@@ -10,9 +10,9 @@ import type { Snippet } from './mail-text.ts'
 const MAIL_KEPT = 40
 const THREAD_ENTRIES = 20
 
-export const CALENDAR_HOUR = 60
+const CALENDAR_HOUR = 60
 
-export const FOLD_AFTER_UNREAD = 8
+const FOLD_AFTER_UNREAD = 8
 
 export const DIGEST_ID = -1
 
@@ -30,10 +30,10 @@ export const EMPTY_INBOX: Inbox = {
   filter: true,
 }
 
-export const muted = (inbox: Inbox, sender: string, time: number): boolean =>
+const muted = (inbox: Inbox, sender: string, time: number): boolean =>
   inbox.mutes.some((mute) => mute.sender === sender && mute.until > time)
 
-export const muting = (inbox: Inbox, sender: string, time: number): Inbox => ({
+const muting = (inbox: Inbox, sender: string, time: number): Inbox => ({
   ...inbox,
   peek: inbox.mail.find((mail) => mail.id === inbox.peek)?.sender === sender ? null : inbox.peek,
   mutes: [
@@ -48,7 +48,7 @@ export const folderHolds = (mail: Mail, folder: Folder): boolean =>
     : !mail.trashed &&
       (folder === 'spam' ? mail.spam : !mail.spam && needsAction(mail) === (folder === 'action'))
 
-export const labelHolds = (mail: Mail, label: MailLabel | null): boolean =>
+const labelHolds = (mail: Mail, label: MailLabel | null): boolean =>
   label === null || senderOf(mail.sender).kind === label
 
 const held = (inbox: Inbox): ReadonlyArray<Mail> =>

@@ -81,7 +81,7 @@ import {
 } from '@quorum/ui/primitives/composed-chart'
 import { EYEBROW, FIGURE, PANEL, SCROLL, WELL, FIGURE_STYLE } from '@quorum/ui/game/bits'
 
-export const DASHBOARD_RANGE_MINUTES = [60, 360, 1440, 10_080, 43_200] as const
+const DASHBOARD_RANGE_MINUTES = [60, 360, 1440, 10_080, 43_200] as const
 
 const NODE_HISTORY_EVERY_SIM_SECONDS = 10
 

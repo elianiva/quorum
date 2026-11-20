@@ -1,7 +1,7 @@
 import { ANALYTICS_KEY, readStored, writeStored } from './storage.ts'
 
-export const SESSION_LIMIT = 80
-export const MONTH_LIMIT = 600
+const SESSION_LIMIT = 80
+const MONTH_LIMIT = 600
 
 const FUNNEL = new Set([
   'app:session_start',
@@ -58,7 +58,7 @@ const write = (store: Store): void => {
   writeStored(ANALYTICS_KEY, JSON.stringify(store))
 }
 
-export const isFunnel = (event: string): boolean => FUNNEL.has(event)
+const isFunnel = (event: string): boolean => FUNNEL.has(event)
 
 export const allow = (event: string, now: number): boolean => {
   const store = read(now)

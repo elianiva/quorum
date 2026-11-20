@@ -79,7 +79,7 @@ import {
   ZONE_SPANNING_COMPONENTS,
   type Tuning,
 } from './catalog.ts'
-import { provisioned } from './parts.ts'
+import { partsValueOf, provisioned } from './parts.ts'
 import { teamBoosting, teamReady } from './research-team.ts'
 import { restarting, type DownCause } from './life.ts'
 import type {
@@ -686,7 +686,9 @@ export const priceOf = (game: Game, type: ComponentId): number => {
 export const refundOf = (game: Game, node: GameNode): number => {
   if (game.sandbox) return 0
   const count = game.nodes.filter((entry) => entry.type === node.type).length
-  return Math.round(copyPrice(game, node.type, Math.max(0, count - 1)) * SELL_REFUND)
+  return Math.round(
+    (copyPrice(game, node.type, Math.max(0, count - 1)) + partsValueOf(game, node)) * SELL_REFUND,
+  )
 }
 
 export const owedOf = (game: Game, node: GameNode): number =>

@@ -164,6 +164,16 @@ describe('the undo and redo stack', () => {
     expect(redone.board.game.nodes).toHaveLength(bought.board.game.nodes.length)
   })
 
+  test('selling a built Node refunds its Parts, and undo returns the same Cash', () => {
+    const start = inLab()
+    const server = start.board.game.nodes.find((node) => node.type === 'server')
+    expect(server?.parts.cpu).toBe(true)
+    const sold = send(start, Message.NodeSold({ nodeId: 'server' }))
+    expect(sold.board.game.cash).toBeGreaterThan(start.board.game.cash)
+    const undone = send(sold, Message.UndoChosen())
+    expect(undone.board.game.cash).toBe(start.board.game.cash)
+  })
+
   test('after 30 s, an undone sale charges the place price, and an undone resize refunds nothing', () => {
     const before = placed()
     const id = before.board.game.nodes.at(-1)?.id ?? ''

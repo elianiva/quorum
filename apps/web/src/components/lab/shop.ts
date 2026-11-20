@@ -392,23 +392,25 @@ export const shopPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
 
   const cards: ReadonlyArray<PartCard> =
     slot === 'cpu'
-      ? SIZES.map((size, index) => {
-          const price = prices.cpu(index)
-          return {
-            key: `shop-cpu-${index}`,
-            title: `${Number.isInteger(size.vcpu) ? size.vcpu : size.vcpu.toFixed(1)}c`,
-            subtitle: t.nodeList.sizes[size.name],
-            specs: [`${size.vcpu} vCPU`, `${size.gbps} Gbps`],
-            price,
-            burn: null,
-            installed: node.parts.cpu && node.size === index,
-            ready: game.sandbox || game.cash >= price,
-            locked: false,
-            capacity: size.vcpu,
-            search: `${size.name} ${size.vcpu} ${size.vcpu}c ${size.gbps} gbps`,
-            message: Message.InstallCpu({ nodeId: node.id, size: index }),
-          }
-        })
+      ? SIZES.map((size, index) => ({ size, index }))
+          .filter(({ index }) => !node.parts.cpu || index >= node.size)
+          .map(({ size, index }) => {
+            const price = prices.cpu(index)
+            return {
+              key: `shop-cpu-${index}`,
+              title: `${Number.isInteger(size.vcpu) ? size.vcpu : size.vcpu.toFixed(1)}c`,
+              subtitle: t.nodeList.sizes[size.name],
+              specs: [`${size.vcpu} vCPU`, `${size.gbps} Gbps`],
+              price,
+              burn: null,
+              installed: node.parts.cpu && node.size === index,
+              ready: game.sandbox || game.cash >= price,
+              locked: false,
+              capacity: size.vcpu,
+              search: `${size.name} ${size.vcpu} ${size.vcpu}c ${size.gbps} gbps`,
+              message: Message.InstallCpu({ nodeId: node.id, size: index }),
+            }
+          })
       : slot === 'ram'
         ? FAMILY_IDS.map((family) => {
             const kit = FAMILIES[family]

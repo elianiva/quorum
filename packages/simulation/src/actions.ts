@@ -124,7 +124,7 @@ import type {
   IopsClass,
 } from './state.ts'
 import { EMPTY_PARTS, FULL_PARTS } from './state.ts'
-import { cpuPartPrice, diskPartPrice, ramPartPrice, provisioned } from './parts.ts'
+import { cpuInstallPrice, diskPartPrice, ramPartPrice, provisioned } from './parts.ts'
 
 export { Refusal, describeRefusal, type Action } from './action-kit.ts'
 export { setProvider, switchProvider } from './components/psp.rule.ts'
@@ -727,7 +727,7 @@ export const installCpu = (game: Game, id: string, size: number): Action =>
     if (!Number.isInteger(size) || size < 0 || size >= SIZES.length)
       return notAllowed('That CPU does not exist.')
     if (node.parts.cpu && node.size === size) return ok(game)
-    const price = game.sandbox ? 0 : cpuPartPrice(game, node, size)
+    const price = game.sandbox ? 0 : cpuInstallPrice(game, node, size)
     return spend(game, price, `${SIZES[size]?.name ?? 'CPU'} CPU`, (paid) =>
       patch(paid, id, {
         size,

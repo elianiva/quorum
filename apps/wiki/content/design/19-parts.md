@@ -43,7 +43,9 @@ The Parts shop is a modal with one tab per Slot. It opens from a Slot, the foote
 
 Each card has one **Install** button. The installed card gets a check and cannot be bought again. A purchase changes the Node in place, and Undo puts the old Part back with the rest of the Node's state. The shop does not keep an inventory of owned Parts.
 
-The shop prices are one-time, then the Part's Burn follows from its installed value. A CPU costs `2 × component cost × vCPU × era cost index × market`. A memory kit costs `40 × family multiplier × era cost index × market`. A volume costs `24` for general purpose or `72` for provisioned IOPS, times the era index and market. The CPU card's price is for that Part; the footer's resize still charges the next size step.
+The shop prices are one-time, then the Part's Burn follows from its installed value. A CPU costs `2 × component cost × vCPU × era cost index × market`. A memory kit costs `40 × family multiplier × era cost index × market`. A volume costs `24` for general purpose or `72` for provisioned IOPS, times the era index and market. The first CPU in an empty Slot costs the sum of the sizes from `micro` to the target, and `nano` costs its own size. Once a CPU is installed, a larger one costs the sum of the size steps from the installed size to the target, so a direct jump costs the same as walking those sizes. The footer and the bulk resize charge the same steps.
+
+Selling a Node refunds half of its placement price and half of its installed Parts at the current market, so Parts are not stranded value.
 
 ## The weekly market
 

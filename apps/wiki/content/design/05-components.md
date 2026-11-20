@@ -25,7 +25,7 @@ are in [Data tier](/design/07-data-tier). Runtime details for App Servers are in
   placed with empty Slots, and a starter Node comes equipped. The Parts shop sells each Part. A memory
   kit sets GB per vCPU rather than a fixed size, so its GB follows the CPU
   ([Parts](/design/19-parts)).
-- **Sell.** Removing a Node refunds 50% of its placement cost and stops its Burn. Reserved Nodes keep
+- **Sell.** Removing a Node refunds 50% of its placement cost and its installed Parts, and stops its Burn. Reserved Nodes keep
   burning until their term ends ([Economy](/design/09-economy#pricing-models)).
 - **Options.** A Tradeoff card presents each option. An option belongs to the choice, not to the
   Component, so several Components share the same card ([Interface](/design/15-ui-ux#tradeoff-cards)).

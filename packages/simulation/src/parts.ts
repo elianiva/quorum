@@ -63,6 +63,15 @@ export const cpuPartPrice = (game: Game, node: GameNode, size: number): number =
   return Math.round(base * eraIndex(game) * partMarket(game, 'cpu'))
 }
 
+export const cpuInstallPrice = (game: Game, node: GameNode, size: number): number => {
+  if (size <= 0) return cpuPartPrice(game, node, size)
+  if (node.parts.cpu && size <= node.size) return cpuPartPrice(game, node, size)
+  const start = node.parts.cpu ? node.size + 1 : 1
+  let total = 0
+  for (let step = start; step <= size; step += 1) total += cpuPartPrice(game, node, step)
+  return total
+}
+
 export const ramPartPrice = (game: Game, family: FamilyId): number =>
   Math.round(MARKET_RAM_KIT * FAMILIES[family].price * eraIndex(game) * partMarket(game, 'ram'))
 
@@ -75,7 +84,16 @@ export const partPrice = (
   slot: SlotKind,
   part: number | string,
 ): number => {
-  if (slot === 'cpu') return cpuPartPrice(game, node, Number(part))
+  if (slot === 'cpu') return cpuInstallPrice(game, node, Number(part))
   if (slot === 'ram') return ramPartPrice(game, part as FamilyId)
   return diskPartPrice(game, part as IopsClass)
+}
+
+export const partsValueOf = (game: Game, node: GameNode): number => {
+  if (node.type !== 'server' && node.type !== 'database') return 0
+  return (
+    (node.parts.cpu ? partPrice(game, node, 'cpu', node.size) : 0) +
+    (node.parts.ram ? partPrice(game, node, 'ram', node.family) : 0) +
+    (node.type === 'database' && node.parts.disk ? partPrice(game, node, 'disk', node.iops) : 0)
+  )
 }

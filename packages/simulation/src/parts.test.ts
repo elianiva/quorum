@@ -1,11 +1,14 @@
 import { describe, expect, test } from 'vitest'
 import { preseedGame } from './company.ts'
+import { refundOf } from './lookups.ts'
 import {
   PART_MARKET_WEEK,
+  cpuPartPrice,
   installedPart,
   marketPercent,
   partMarket,
   partPrice,
+  partsValueOf,
   provisioned,
 } from './parts.ts'
 
@@ -41,5 +44,18 @@ describe('part market', () => {
     expect(installedPart(bare, 'ram')).toBeNull()
     expect(installedPart(bare, 'disk')).toBeNull()
     expect(provisioned(bare)).toBe(false)
+  })
+
+  test('a CPU upgrade charges every step from the installed size or from micro', () => {
+    const target = 4
+    const steps = [3, 4].reduce((total, size) => total + cpuPartPrice(game, server, size), 0)
+    expect(partPrice(game, server, 'cpu', target)).toBe(steps)
+    const first = [1, 2, 3, 4].reduce((total, size) => total + cpuPartPrice(game, bare, size), 0)
+    expect(partPrice(game, bare, 'cpu', target)).toBe(first)
+  })
+
+  test('installed Parts count toward the sell refund', () => {
+    expect(partsValueOf(game, server)).toBeGreaterThan(0)
+    expect(refundOf(game, server)).toBeGreaterThan(refundOf(game, bare))
   })
 })

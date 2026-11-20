@@ -10,6 +10,8 @@ import { Message } from './message.ts'
 import { TeamMessage } from './team.ts'
 import { ResearchMessage } from './research.ts'
 import { clockAway, halted, onlineFileOf, roomCode, type Model } from './model.ts'
+import { surfaceReady } from './board-surface-machine.ts'
+import { savesReady } from './saves-machine.ts'
 import { seatColour } from './seat-colour.ts'
 import { inRoom } from './room-machine.ts'
 import { connect, onMessage, onStatus, seatOf, stop } from '@/platform/room-socket.ts'
@@ -236,7 +238,7 @@ export const subscriptions = {
       { running: Schema.Boolean },
       {
         modelToDependencies: (model: Model) => ({
-          running: onBoard(model.route) && !halted(model),
+          running: onBoard(model.route) && !halted(model) && surfaceReady(model.board.surface),
         }),
         dependenciesToStream: ({ running }: { running: boolean }) =>
           running ? ticks() : Stream.empty,
@@ -285,7 +287,7 @@ export const subscriptions = {
             seat: seatOf(),
             name: model.room.name,
             token: code === null ? null : (onlineFileOf(model, code)?.online?.token ?? null),
-            live: inRoom(model.room.phase) && model.savesReady,
+            live: inRoom(model.room.phase) && savesReady(model.saves),
           }
         },
         dependenciesToStream: ({

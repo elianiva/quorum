@@ -54,22 +54,27 @@ import {
   rampedOf,
 } from './lookups.ts'
 import {
-  IncidentEvent,
   IncidentPhase,
+  ackIncident,
   hasAck,
+  incidentPhaseOf,
+  signalIncident,
   signalAtOf,
   ackAtOf,
-  step as incidentStep,
+  step as incidentStateStep,
+  resolveIncident,
+  beginIncident,
 } from './incident-machine.ts'
 import { step as featureStep } from './feature-machine.ts'
 import { nodeLabel } from './labels.ts'
 
 export { zoned }
 import { Life, causeOf, down as takeDown, withWarm } from './life.ts'
-import { drillPassed } from './drill-machine.ts'
+import { drillPassed, step as drillStep } from './drill-machine.ts'
 import { PROMOTE_DATA_LOSS } from './components/replica.ts'
 import { nextRandom, pickWeighted } from './random.ts'
 import type { Game, GameLink, GameNode, Incident, Postmortem, Region, Zone } from './state.ts'
+import { activeIncident } from './state.ts'
 import { isGlobal, survivesRegion } from './regions.ts'
 import {
   fixed,
@@ -321,7 +326,7 @@ const hotKeyTargets = (game: Game, ledger: Ledger): ReadonlyArray<GameNode> =>
 const configured = (node: GameNode): boolean => node.type === 'server' || node.type === 'worker'
 
 const configRegion = (game: Game): Region | null => {
-  const source = (game.mirrors ?? [])[0]?.source
+  const source = game.mirrors[0]?.source
   if (source) return source
   const counts = new Map<Region, number>()
   for (const node of game.nodes)
@@ -336,12 +341,10 @@ const configRegion = (game: Game): Region | null => {
 }
 
 export const configReach = (game: Game, region: Region): ReadonlyArray<Region> =>
-  game.iac?.sync === 'all'
+  game.iac._tag === 'Chosen' && game.iac.sync === 'all'
     ? [
         region,
-        ...(game.mirrors ?? [])
-          .filter((mirror) => mirror.source === region)
-          .map((mirror) => mirror.region),
+        ...game.mirrors.filter((mirror) => mirror.source === region).map((mirror) => mirror.region),
       ]
     : [region]
 
@@ -711,7 +714,7 @@ export const startIncident = (
     impaired: 0,
     lostRevenue: 0,
     failed: 0,
-    phase: IncidentPhase.cases.Quiet.make({}),
+    phase: IncidentPhase.cases.Pending.make({}),
     severity: INCIDENTS[kind].severity,
     magnitude:
       kind === 'spike'
@@ -795,7 +798,7 @@ export const startIncident = (
                           }
                         : node,
   )
-  const drill = kind === 'audit' ? null : game.drill
+  const drill = kind === 'audit' ? drillStep(game.drill, { _tag: 'Reset' }) : game.drill
   const lost =
     kind === 'supply-chain'
       ? Math.floor(game.users * SUPPLY_CHAIN_CHURN)
@@ -827,7 +830,7 @@ export const startIncident = (
       ...game,
       nodes,
       drill,
-      incident,
+      incident: beginIncident(game.incident, incident),
       lastIncident: kind,
       users: game.users - lost,
       data: game.data * rpo,
@@ -841,7 +844,12 @@ export const directIncidents = (
   ledger: Ledger,
   gap = INCIDENT_GAP_SECONDS,
 ): Readonly<{ game: Game; events: ReadonlyArray<StepEvent> }> => {
-  if (game.sandbox || game.incident || game.stage < 1 || game.time < game.nextIncidentAt)
+  if (
+    game.sandbox ||
+    activeIncident(game) !== null ||
+    game.stage < 1 ||
+    game.time < game.nextIncidentAt
+  )
     return { game, events: [] }
   const [roll, afterRoll] = nextRandom(game.seed)
   const [spread, afterGap] = nextRandom(afterRoll)
@@ -938,7 +946,7 @@ const resolve = (
   auto = false,
   ledger?: Ledger,
 ): Readonly<{ game: Game; events: ReadonlyArray<StepEvent> }> => {
-  const incident = game.incident
+  const incident = activeIncident(game)
   if (!incident) return { game, events: [] }
   const recovered =
     incident.kind === 'bad-deploy' && incident.rollingBack
@@ -989,7 +997,7 @@ const resolve = (
   const cleared: Game = {
     ...recovered,
     nodes,
-    incident: null,
+    incident: resolveIncident(recovered.incident),
     postmortems: recovered.sandbox
       ? recovered.postmortems
       : [...recovered.postmortems, postmortem].slice(-4),
@@ -1035,24 +1043,13 @@ const resolve = (
 }
 
 export const markSignal = (game: Game, ledger: Ledger): Game => {
-  const incident = game.incident
+  const incident = activeIncident(game)
   if (!incident || signalAtOf(incident.phase) !== null) return game
   const rules = Object.keys(ALERT_RULES) as ReadonlyArray<AlertRule>
   const signalled = has(game, 'alerting')
     ? rules.some((rule) => game.alarms[rule] > 0)
     : ledger.errorShare > ALERT_RULES.errors.threshold
-  return signalled
-    ? {
-        ...game,
-        incident: {
-          ...incident,
-          phase: incidentStep(
-            incident.phase,
-            IncidentEvent.cases.Signalled.make({ at: game.time }),
-          ),
-        },
-      }
-    : game
+  return signalled ? { ...game, incident: signalIncident(game.incident, game.time) } : game
 }
 
 export const advanceIncident = (
@@ -1060,7 +1057,7 @@ export const advanceIncident = (
   ledger: Ledger,
   seconds: number,
 ): Readonly<{ game: Game; events: ReadonlyArray<StepEvent> }> => {
-  const incident = game.incident
+  const incident = activeIncident(game)
   if (!incident) return { game, events: [] }
   if (runbookCovers(game, incident.kind)) return resolve(game, true)
   const counted: Incident = {
@@ -1093,19 +1090,15 @@ export const advanceIncident = (
         }
       : counted
   const signalledAt = signalAtOf(tracked.phase)
-  const acked: Incident =
+  const onCall =
     !hasAck(tracked.phase) &&
     has(game, 'on-call') &&
     signalledAt !== null &&
     game.time >= signalledAt + ON_CALL_ACK
-      ? {
-          ...tracked,
-          phase: incidentStep(
-            tracked.phase,
-            IncidentEvent.cases.Acked.make({ at: signalledAt + ON_CALL_ACK }),
-          ),
-        }
-      : tracked
+  const ackedState = onCall
+    ? ackIncident(game.incident, (signalledAt ?? game.time) + ON_CALL_ACK)
+    : game.incident
+  const acked: Incident = { ...tracked, phase: incidentPhaseOf(ackedState) ?? tracked.phase }
   const target = game.nodes.find((node) => node.id === incident.nodeId)
   const reclaims =
     incident.kind === 'spot-reclaim' &&
@@ -1131,7 +1124,11 @@ export const advanceIncident = (
               : node,
           )
         : game.nodes
-  const next: Game = { ...game, nodes, incident: acked }
+  const next: Game = {
+    ...game,
+    nodes,
+    incident: incidentStateStep(game.incident, { _tag: 'Updated', incident: acked }),
+  }
   const elapsedAfter = game.time - incident.startedAt
   const held = nodes.find((node) => node.id === incident.nodeId)
   const fixed =
@@ -1181,7 +1178,7 @@ export const forceIncident = (
   kind: IncidentId,
   only?: ComponentId,
 ): Game | null => {
-  if (game.incident) return null
+  if (activeIncident(game) !== null) return null
   const [roll, seed] = nextRandom(game.seed)
   return startIncident({ ...game, seed }, ledger, kind, roll, only)?.game ?? null
 }

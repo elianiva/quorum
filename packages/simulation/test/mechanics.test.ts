@@ -30,7 +30,15 @@ import { solveFlow } from '../src/solve.ts'
 import { freeSandbox } from '../src/sandbox.ts'
 import { step } from '../src/step.ts'
 import { newGame } from '../src/company.ts'
-import { NEW_ENGINEER, type Game, type Team, type WorkItem } from '../src/state.ts'
+import {
+  NEW_ENGINEER,
+  type Game,
+  type Study,
+  type StudyQueue,
+  type Team,
+  type WorkItem,
+  activeIncident,
+} from '../src/state.ts'
 import type { IncidentId } from '../src/catalog.ts'
 import { startIncident } from '../src/director.ts'
 import type { Ledger } from '../src/ledger.ts'
@@ -44,12 +52,14 @@ import {
   prioritizeItem,
   queueFeature,
   queueSpike,
+  layoff,
   removeTeam,
   rushBugOf,
   rushItem,
   serviceOfItem,
   setResearchTeam,
   train,
+  hire,
   renameService,
   renameTeam,
 } from '../src/work.ts'
@@ -64,6 +74,12 @@ import {
   trainSeconds,
 } from '../src/team.ts'
 import { spiked, advanceStudies, boostOf, progressOf, studySpeed } from '../src/studies.ts'
+import { currentStudy, studyCount } from '../src/study-machine.ts'
+
+const queueOf = (...studies: ReadonlyArray<Study>): StudyQueue => {
+  const [current, ...queued] = studies
+  return current ? { _tag: 'Working', current, queued } : { _tag: 'Empty' }
+}
 
 const founded = (perks: Record<string, number>, venture = 'b2b-saas' as const) =>
   foundCompany(1, { venture, mutators: [], perks })
@@ -95,7 +111,9 @@ describe('Autopilot policies', () => {
       pools: { ...game.pools, write: 1_000, login: 1_000, read: 1_000, page: 1_000 },
     }
     next = step(next, 1).game
-    expect(next.studies.length + next.researched.length).toBeGreaterThan(game.researched.length)
+    expect(studyCount(next.studies) + next.researched.length).toBeGreaterThan(
+      game.researched.length,
+    )
   })
 })
 
@@ -241,7 +259,7 @@ describe('Research boost', () => {
       pools,
       engineers: [{ ...NEW_ENGINEER, id: 'e1', team: team.id, language: 'php', hiredAt: 0 }],
       teams: [game.teams[0]!, team],
-      studies: [{ id: 'query-analysis', phase: { _tag: 'Running', progress: 0 } }],
+      studies: queueOf({ id: 'query-analysis', phase: { _tag: 'Running', progress: 0 } }),
       researchTeam: team.id,
       ...change,
     }
@@ -257,8 +275,8 @@ describe('Research boost', () => {
 
     const plain = advance({ ...game, researchTeam: null })
     const boosted = advance(game)
-    const baseline = progressOf(plain.studies[0]) ?? 0
-    expect(progressOf(boosted.studies[0])).toBeCloseTo(baseline * (1 + boost), 9)
+    const baseline = progressOf(currentStudy(plain.studies)) ?? 0
+    expect(progressOf(currentStudy(boosted.studies))).toBeCloseTo(baseline * (1 + boost), 9)
     expect(dataStaffed(game)).toBe(false)
     expect(dataStaffed({ ...game, researchTeam: null })).toBe(true)
   })
@@ -273,7 +291,10 @@ describe('Research boost', () => {
     )
 
     const plain = advance({ ...game, researchTeam: null })
-    expect(progressOf(advance(game).studies[0])).toBeCloseTo(progressOf(plain.studies[0]) ?? 0, 9)
+    expect(progressOf(currentStudy(advance(game).studies))).toBeCloseTo(
+      progressOf(currentStudy(plain.studies)) ?? 0,
+      9,
+    )
   })
 
   test('a Product team helps any track, but less than a specialist', () => {
@@ -301,7 +322,7 @@ describe('Research boost', () => {
     expect(assignments(busy).get(game.teams[0]!.id)).toBe(item)
     expect(boostOf(busy, solveFlow(busy), 'query-analysis')).toBe(0)
 
-    const idle = { ...game, studies: [] }
+    const idle = { ...game, studies: queueOf() }
     expect(boostOf(idle, solveFlow(idle), 'query-analysis')).toBe(0)
 
     const ramping = staffed('data', {
@@ -316,21 +337,24 @@ describe('Research boost', () => {
 
   test('a finished Study clears its booster', () => {
     const game = staffed('data', {
-      studies: [{ id: 'query-analysis', phase: { _tag: 'Running', progress: 0.999 } }],
+      studies: queueOf({ id: 'query-analysis', phase: { _tag: 'Running', progress: 0.999 } }),
     })
     const after = advanceStudies(game, solveFlow(game), 60, [])
     expect(after.researched).toContain('query-analysis')
     expect(after.researchTeam).toBeNull()
+    expect(after.studies).toEqual({ _tag: 'Empty' })
+    const again = advanceStudies(after, solveFlow(after), 60, [])
+    expect(again.researched.filter((id) => id === 'query-analysis')).toHaveLength(1)
   })
 
   test('a finished Study keeps the booster while the next one is on its track', () => {
     const after = (next: ResearchId): Game =>
       advanceStudies(
         staffed('data', {
-          studies: [
+          studies: queueOf(
             { id: 'query-analysis', phase: { _tag: 'Running', progress: 0.999 } },
             { id: next, phase: { _tag: 'Queued', progress: 0 } },
-          ],
+          ),
         }),
         solveFlow(staffed('data')),
         60,
@@ -342,18 +366,18 @@ describe('Research boost', () => {
 
   test('a reorder keeps the booster only when the new head is on its track', () => {
     const game = staffed('data', {
-      studies: [
+      studies: queueOf(
         { id: 'query-analysis', phase: { _tag: 'Running', progress: 0.1 } },
         { id: 'replication', phase: { _tag: 'Queued', progress: 0 } },
-      ],
+      ),
     })
     expect(Result.getOrThrow(moveStudyTo(game, 'replication', 0)).researchTeam).toBe('boosters')
     const other: Game = {
       ...game,
-      studies: [
+      studies: queueOf(
         { id: 'query-analysis', phase: { _tag: 'Running', progress: 0.1 } },
         { id: 'logs', phase: { _tag: 'Queued', progress: 0 } },
-      ],
+      ),
     }
     expect(Result.getOrThrow(moveStudyTo(other, 'logs', 0)).researchTeam).toBeNull()
   })
@@ -362,6 +386,25 @@ describe('Research boost', () => {
     const after = Result.getOrThrow(removeTeam(staffed('data'), 'boosters'))
     expect(after.teams.some((team) => team.id === 'boosters')).toBe(false)
     expect(after.researchTeam).toBeNull()
+  })
+})
+
+describe('Hiring', () => {
+  test('a hire waits for its readyAt, then joins in one step and leaves no record', () => {
+    const game = { ...founded({ 'head-start': 1 }), cash: 1_000_000 }
+    const hired = Result.getOrThrow(hire(game))
+    expect(hired.hires).toHaveLength(1)
+    const readyAt = hired.hires[0]!.readyAt
+    expect(hired.engineers).toHaveLength(game.engineers.length)
+    const waiting = step({ ...hired, time: readyAt - 2 }, 1).game
+    expect(waiting.time).toBe(readyAt - 1)
+    expect(waiting.hires).toHaveLength(1)
+    const joined = step({ ...hired, time: readyAt - 1 }, 1).game
+    expect(joined.time).toBe(readyAt)
+    expect(joined.hires).toEqual([])
+    const engineer = joined.engineers.find((entry) => entry.id === hired.hires[0]!.id)
+    expect(engineer?.hiredAt).toBe(readyAt)
+    expect(engineer?.learning).toBeNull()
   })
 })
 
@@ -396,16 +439,16 @@ describe('Learning a Stack', () => {
     const engineer = game.engineers[0]!
     const started = Result.getOrThrow(train(game, engineer.id, 'php'))
     expect(started.cash).toBe(game.cash - trainCost(game, 'php'))
-    expect(outputOf(started, engineer)).toBe(LEARN_OUTPUT)
+    expect(outputOf(started, started.engineers[0]!)).toBe(LEARN_OUTPUT)
 
-    const readyAt = started.training[0]!.readyAt
+    const readyAt = started.engineers[0]!.learning!.readyAt
     expect(readyAt - started.time).toBe(trainSeconds('php'))
     const before = step({ ...started, time: readyAt - 10 }, 5).game
-    expect(before.training).toHaveLength(1)
+    expect(before.engineers[0]?.learning).not.toBeNull()
     expect(before.engineers[0]?.language).toBe('ruby')
 
     const after = step({ ...started, time: readyAt - 5 }, 5).game
-    expect(after.training).toEqual([])
+    expect(after.engineers[0]?.learning).toBeNull()
     const learned = after.engineers[0]!
     expect(learned.language).toBe('php')
     expect(outputOf(after, learned)).toBe(1)
@@ -428,8 +471,10 @@ describe('Learning a Stack', () => {
 
   test('laying off an engineer in training ends the training', () => {
     const started = Result.getOrThrow(train(staffed(), 'e-test', 'php'))
-    const gone = step({ ...started, engineers: [] }, 5).game
-    expect(gone.training).toEqual([])
+    expect(started.engineers[0]?.learning).not.toBeNull()
+    const gone = Result.getOrThrow(layoff(started, 'e-test'))
+    expect(gone.engineers).toEqual([])
+    expect(step(gone, 5).game.engineers).toEqual([])
   })
 })
 
@@ -533,12 +578,23 @@ describe('Rush quality', () => {
     game = Result.getOrThrow(cancelItem(game, first!.id))
     expect(game.backlog.map((entry) => entry.id)).toEqual([first!.id, second!.id])
     expect(game.backlog[0]!.spent).toBe(spent)
+    expect(game.backlog[0]!.block._tag).toBe('Held')
     expect([...assignments(game).values()].map((entry) => entry.id)).toEqual([second!.id])
 
     game = step(game, 60).game
     expect(game.backlog.find((entry) => entry.id === first!.id)!.spent).toBe(spent)
+    expect(Result.isFailure(rushItem({ ...game, devHours: 100 }, first!.id))).toBe(true)
+
+    const paid = {
+      ...game,
+      backlog: game.backlog.map((entry) =>
+        entry.id === first!.id ? { ...entry, spent: entry.cost } : entry,
+      ),
+    }
+    expect(step(paid, 60).game.backlog.some((entry) => entry.id === first!.id)).toBe(true)
 
     game = Result.getOrThrow(resumeItem(game, first!.id))
+    expect(game.backlog[0]!.block._tag).toBe('Free')
     expect([...assignments(game).values()].map((entry) => entry.id)).toEqual([first!.id])
   })
 })
@@ -580,7 +636,7 @@ describe('the solve on the sim-time grid', () => {
       ledgers.add(result.ledger)
       game = result.game
     }
-    expect(game.incident?.kind).toBe(kind)
+    expect(activeIncident(game)?.kind).toBe(kind)
     return ledgers.size
   }
 

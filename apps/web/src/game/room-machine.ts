@@ -19,6 +19,7 @@ export const RoomPhase = Schema.TaggedUnion({
     owner: Schema.Boolean,
   },
   Closed: { code: Schema.String, reason: RoomEnd },
+  Failed: { code: Schema.String, reason: Schema.Literals(['unreachable', 'full']) },
 })
 export type RoomPhase = typeof RoomPhase.Type
 
@@ -28,6 +29,7 @@ const RoomEvent = Schema.TaggedUnion({
   Dropped: {},
   Ended: { reason: RoomEnd },
   Left: {},
+  Failed: { reason: Schema.Literals(['unreachable', 'full']) },
 })
 export type RoomEvent = typeof RoomEvent.Type
 
@@ -54,6 +56,10 @@ const roomMachine = Machine.make({ root: States, events: Events }).handle({
         },
         Ended: { target: 'Closed', data: (args) => ended(args) },
         Left: { target: 'Idle' },
+        Failed: {
+          target: 'Failed',
+          data: ({ state, event }) => ({ code: state.code, reason: event.reason }),
+        },
       },
     },
     Online: {
@@ -64,6 +70,10 @@ const roomMachine = Machine.make({ root: States, events: Events }).handle({
         },
         Ended: { target: 'Closed', data: (args) => ended(args) },
         Left: { target: 'Idle' },
+        Failed: {
+          target: 'Failed',
+          data: ({ state, event }) => ({ code: state.code, reason: event.reason }),
+        },
         Connecting: { target: 'Connecting', data: ({ event }) => ({ code: event.code }) },
       },
     },
@@ -79,11 +89,33 @@ const roomMachine = Machine.make({ root: States, events: Events }).handle({
         },
         Ended: { target: 'Closed', data: (args) => ended(args) },
         Left: { target: 'Idle' },
+        Failed: {
+          target: 'Failed',
+          data: ({ state, event }) => ({ code: state.code, reason: event.reason }),
+        },
       },
     },
     Closed: {
       on: {
         Connecting: { target: 'Connecting', data: ({ event }) => ({ code: event.code }) },
+        Left: { target: 'Idle' },
+        Failed: {
+          target: 'Failed',
+          data: ({ state, event }) => ({ code: state.code, reason: event.reason }),
+        },
+      },
+    },
+    Failed: {
+      on: {
+        Connecting: { target: 'Connecting', data: ({ event }) => ({ code: event.code }) },
+        Joined: {
+          target: 'Online',
+          data: ({ state, event }) => ({
+            code: state.code,
+            seat: event.seat,
+            owner: event.owner,
+          }),
+        },
         Left: { target: 'Idle' },
       },
     },
@@ -103,6 +135,7 @@ const ended = ({
     Online: ({ code }) => ({ code, reason: event.reason }),
     Reconnecting: ({ code }) => ({ code, reason: event.reason }),
     Closed: ({ code }) => ({ code, reason: event.reason }),
+    Failed: ({ code }) => ({ code, reason: event.reason }),
   })
 
 export const roomStep = (phase: RoomPhase, event: RoomEvent): RoomPhase =>

@@ -53,7 +53,7 @@ export const migrates = (game: Game, nodeId: string): boolean =>
 
 const migrationNote = (t: Messages, before: Game, after: Game): Note => {
   const migration = serviceOf(after).migration
-  if (!migration || serviceOf(before).migration === migration) return null
+  if (migration._tag === 'Idle' || serviceOf(before).migration === migration) return null
   return [t.toasts.migrationQueued(Math.round(migration.total)), 'primary']
 }
 

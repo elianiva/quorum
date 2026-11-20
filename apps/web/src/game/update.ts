@@ -1,6 +1,5 @@
 import { AppRoute, onBoard, urlOf, urlToAppRoute } from './route.ts'
 import { DEFAULT_LOGO } from './logos.ts'
-import { EMPTY_SAVE_INDEX } from './saves.ts'
 import { Listbox, Menu as UiMenu } from '@foldkit/ui'
 import * as VolumeSlider from '@quorum/ui/primitives/slider'
 import { initStackPicker } from './stack-picker.ts'
@@ -22,7 +21,7 @@ import { contextOf, diffOf, line } from './telemetry.ts'
 import { cueNode, noticed } from './reveal.ts'
 import { cueOf } from './cues.ts'
 import { emptyFounder } from '@quorum/simulation/founder'
-import { freshBoard, milestones, sync, type UpdateResult } from './update/shared.ts'
+import { freshBoard, milestones, sync, withOverlay, type UpdateResult } from './update/shared.ts'
 import { isExited } from './company-machine.ts'
 import { isSending, isSent } from './survey-machine.ts'
 import { ledgerOf, Model, halted, EMPTY_PALETTE, EMPTY_ROOM, EMPTY_SURVEY } from './model.ts'
@@ -50,11 +49,13 @@ import { saveHandlers } from './update/save.ts'
 import { roomHandlers } from './update/room.ts'
 import { pwaHandlers } from './update/pwa.ts'
 import { pwaSnapshot } from '../platform/pwa.ts'
+import { pwaFrom } from './pwa-machine.ts'
 
 export { TICK_MS, speedsOf } from './update/constant.ts'
 
 export const initialModel = (): Model => {
   const seatName = nameOf()
+  const pwa = pwaSnapshot()
   return Model.make({
     route: AppRoute.Title(),
     boot: { _tag: 'Ready' },
@@ -64,10 +65,9 @@ export const initialModel = (): Model => {
     toastSeq: 0,
     board: freshBoard(newGame()),
     room: { ...EMPTY_ROOM, name: seatName, draft: seatName },
-    company: null,
+    parkedCompany: null,
     companyPhase: { _tag: 'None' },
-    saves: EMPTY_SAVE_INDEX,
-    savesReady: false,
+    saves: { _tag: 'Loading' },
     draft: { name: '', logo: DEFAULT_LOGO },
     foundStep: 'company',
     saveFocus: null,
@@ -92,7 +92,7 @@ export const initialModel = (): Model => {
       analytics: true,
       pwaPromptSeen: false,
     },
-    pwa: pwaSnapshot(),
+    pwa: { install: pwaFrom(pwa), online: pwa.online, updated: pwa.updated },
     settingsSection: 'sound',
     settingsOpen: false,
     languagePicker: Listbox.init({ id: 'interface-language' }),
@@ -254,7 +254,11 @@ const connect = (model: Model, result: UpdateResult): UpdateResult =>
   onBoard(model.route) || !onBoard(result.model.route) || model.prefs.motion === 'reduce'
     ? result
     : {
-        model: { ...result.model, boot: bootStep(result.model.boot, { _tag: 'BoardOpened' }) },
+        model: withOverlay(
+          { ...result.model, boot: bootStep(result.model.boot, { _tag: 'BoardOpened' }) },
+          'boot',
+          true,
+        ),
         commands: [...(result.commands ?? []), ConnectBoard({})],
       }
 

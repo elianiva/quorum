@@ -24,7 +24,15 @@ import {
 } from './catalog.ts'
 import { StepEvent } from './events.ts'
 import type { Ledger } from './ledger.ts'
-import { StudyPhase, step as studyStep } from './study-machine.ts'
+import {
+  StudyPhase,
+  currentStudy,
+  phaseStep,
+  queueStep,
+  studyList,
+  studyOf,
+  type StudyQueue,
+} from './study-machine.ts'
 import { has, researchReady } from './lookups.ts'
 import { canBoost, boosterFor } from './research-team.ts'
 import { isFeatureLive } from './features.ts'
@@ -134,7 +142,7 @@ export const broadEnough = (id: ResearchId, ledger: Ledger): boolean =>
   breadthGap(id, ledger) === null
 
 export const spiked = (game: Game, id?: ResearchId): boolean => {
-  const running = game.studies[0]
+  const running = currentStudy(game.studies)
   if (!running || (id !== undefined && running.id !== id)) return false
   return [...assignments(game).values()].some(
     (item) => item.kind === 'spike' && item.ref === running.id,
@@ -163,7 +171,7 @@ export const boostRateOf = (game: Game, ledger: Ledger, team: Team, id: Research
 export const boostOf = (game: Game, ledger: Ledger, id: ResearchId): number => {
   const teamId = game.researchTeam
   if (teamId === null) return 0
-  const head = game.studies[0]
+  const head = currentStudy(game.studies)
   if (!head || head.id !== id) return 0
   const team = game.teams.find((entry) => entry.id === teamId)
   if (!team) return 0
@@ -171,7 +179,7 @@ export const boostOf = (game: Game, ledger: Ledger, id: ResearchId): number => {
 }
 
 export const studySpeed = (game: Game, ledger: Ledger, id?: ResearchId): number => {
-  const research = id ?? game.studies[0]?.id
+  const research = id ?? currentStudy(game.studies)?.id
   const boost = research === undefined ? 0 : boostOf(game, ledger, research)
   return (
     (1 + boost) *
@@ -184,7 +192,7 @@ export const studySeconds = (id: ResearchId): number =>
   STUDY_SECONDS[RESEARCH[id].era] ?? STUDY_SECONDS[STUDY_SECONDS.length - 1] ?? 3_600
 
 export const limitingPool = (game: Game): InsightPool | null => {
-  const running = game.studies[0]
+  const running = currentStudy(game.studies)
   if (!running) return null
   let worst: InsightPool | null = null
   let least = Number.POSITIVE_INFINITY
@@ -278,7 +286,8 @@ export const StudyStall = Schema.TaggedUnion({
 export type StudyStall = typeof StudyStall.Type
 
 export const studyStall = (game: Game, ledger: Ledger, id: ResearchId): StudyStall | null => {
-  const running = StudyPhase.guards.Running(game.studies.find((item) => item.id === id)?.phase)
+  const study = studyOf(game.studies, id)
+  const running = StudyPhase.guards.Running(study?.phase)
   if (!running) {
     const breadth = breadthGap(id, ledger)
     if (breadth) return StudyStall.cases.Breadth.make(breadth)
@@ -290,14 +299,7 @@ export const studyStall = (game: Game, ledger: Ledger, id: ResearchId): StudySta
         current: shapeCurrent(game, ledger, id),
       })
   }
-  const left =
-    1 -
-    (() => {
-      const phase = game.studies.find((item) => item.id === id)?.phase
-      return StudyPhase.guards.Queued(phase) || StudyPhase.guards.Running(phase)
-        ? phase.progress
-        : 0
-    })()
+  const left = 1 - (study?.phase.progress ?? 0)
   for (const [pool, cost] of Object.entries(recipeOf(game, id)) as Array<[InsightPool, number]>) {
     if (ledger.insight[pool] > 0 || game.pools[pool] >= cost * left) continue
     const feature = Object.values(FEATURES).find(
@@ -308,10 +310,7 @@ export const studyStall = (game: Game, ledger: Ledger, id: ResearchId): StudySta
   return null
 }
 
-export const progressOf = (study: Study | undefined): number =>
-  StudyPhase.guards.Queued(study?.phase) || StudyPhase.guards.Running(study?.phase)
-    ? study.phase.progress
-    : 0
+export const progressOf = (study: Study | undefined): number => study?.phase.progress ?? 0
 
 export const advanceStudies = (
   game: Game,
@@ -319,23 +318,30 @@ export const advanceStudies = (
   seconds: number,
   events: Array<StepEvent>,
 ): Game => {
-  const studies = game.studies.filter((entry) => !has(game, entry.id))
-  const head = studies[0]
+  const known = new Set(game.researched)
+  const dropped = studyList(game.studies)
+    .filter((entry) => known.has(entry.id))
+    .map((entry) => entry.id)
+  const queue: StudyQueue =
+    dropped.length === 0
+      ? game.studies
+      : queueStep(game.studies, { _tag: 'Cancelled', ids: dropped })
+  const head = currentStudy(queue)
   if (!head || !researchReady(game, head.id)) {
-    if (studies.length === game.studies.length) return game
+    if (queue === game.studies) return game
     const keep = boosterFor(game, game.researchTeam, head?.id)
     return {
       ...game,
-      studies,
+      studies: queue,
       researchTeam: keep !== null && assignments(game).has(keep) ? null : keep,
     }
   }
   const starting = StudyPhase.guards.Queued(head.phase)
   if (starting && (!broadEnough(head.id, ledger) || !shapeHolds(game, ledger, head.id)))
-    return studies.length === game.studies.length ? game : { ...game, studies }
-  const started = starting ? studyStep(head.phase, { _tag: 'Started' }) : head.phase
+    return queue === game.studies ? game : { ...game, studies: queue }
+  const started = starting ? phaseStep(head.phase, { _tag: 'Started' }) : head.phase
   const running = { ...head, phase: started }
-  const progress = started._tag === 'Queued' || started._tag === 'Running' ? started.progress : 0
+  const progress = started.progress
   const speed = studySpeed(game, ledger, running.id)
   const share = (speed * seconds) / studySeconds(running.id)
   const recipe = Object.entries(recipeOf(game, running.id)) as Array<[InsightPool, number]>
@@ -352,14 +358,14 @@ export const advanceStudies = (
     return {
       ...game,
       pools,
-      studies: [
-        { ...running, phase: studyStep(started, { _tag: 'Ticked', progress: reached }) },
-        ...studies.slice(1),
-      ],
+      studies: queueStep(queue, {
+        _tag: 'Ticked',
+        study: { ...running, phase: phaseStep(started, { _tag: 'Ticked', progress: reached }) },
+      }),
     }
   events.push(StepEvent.StudyCompleted({ research: running.id }))
-  const remaining = studies.slice(1)
-  const keep = boosterFor(game, game.researchTeam, remaining[0]?.id)
+  const remaining = queueStep(queue, { _tag: 'Finished' })
+  const keep = boosterFor(game, game.researchTeam, currentStudy(remaining)?.id)
   return {
     ...game,
     pools,

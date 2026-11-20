@@ -12,7 +12,8 @@ import {
   type Durability,
 } from './company-files.ts'
 import { Message } from './message.ts'
-import { SAVE_FORMAT } from './save-file.ts'
+import { SAVE_FORMAT, readSaveFile } from './save-file.ts'
+import { savesOf } from './saves-machine.ts'
 import { fileFor, type SaveIndex } from './saves.ts'
 import { SAVE_PREFIX } from './storage.ts'
 import { TICK_MS, initialModel, update } from './update.ts'
@@ -84,7 +85,7 @@ const memoryDb = (seed: Record<string, string> = {}) => {
 const indexOf = (...ids: ReadonlyArray<string>): SaveIndex => {
   const game = preseedGame()
   return {
-    current: ids[0] ?? null,
+    lastPlayed: ids[0] ?? null,
     companies: ids.map((id) =>
       fileFor({ id, name: id, logo: 'signal', founding: game.founding, game, now: 1 }),
     ),
@@ -315,9 +316,145 @@ describe('a database that will not read', () => {
       Message.SavesLoaded({ index: JSON.stringify(index), now: 0 }),
     )
     const unread = update(loaded.model, Message.CompanyUnread({ id: 'c-s', open: true }))
-    expect(unread.model.saves.companies.map((file) => file.id)).toEqual(['c-s'])
+    expect(savesOf(unread.model.saves).companies.map((file) => file.id)).toEqual(['c-s'])
     expect(unread.model.companyPhase).toEqual({ _tag: 'None' })
     expect(unread.model.toast?.tone).toBe('warn')
     expect((unread.commands ?? []).map((command) => command.name)).not.toContain('DeleteCompany')
+  })
+})
+
+test('a format 1 Company save opens with explicit idle phases', () => {
+  const game = preseedGame()
+  const old = {
+    format: 1,
+    ...game,
+    drill: null,
+    quarter: null,
+    reshard: null,
+    engineChange: null,
+    services: game.services.map((service) => ({ ...service, migration: null })),
+  }
+  const read = readSaveFile(JSON.stringify(old))
+  if (read._tag === 'Failure') throw new Error(read.failure)
+  expect(read.success.game.drill).toEqual({ _tag: 'Idle' })
+  expect(read.success.game.quarter).toEqual({ _tag: 'NotStarted' })
+  expect(read.success.game.reshard.phase).toEqual({ _tag: 'Idle' })
+  expect(read.success.game.engineChange.phase).toEqual({ _tag: 'Idle' })
+  expect(read.success.game.services[0]?.migration).toEqual({ _tag: 'Idle' })
+  expect(read.success.file['format']).toBe(SAVE_FORMAT)
+})
+
+test('a format 1 Company save from the previous shape upgrades every phase', () => {
+  const game = preseedGame()
+  const engineer = {
+    id: 'eng-1',
+    team: 'core',
+    language: 'php',
+    hiredAt: 0,
+    salary: null,
+    mood: 60,
+    pages: 0,
+    offUntil: 0,
+    unhappyAt: 0,
+  }
+  const old = {
+    format: 1,
+    ...game,
+    drill: null,
+    quarter: {
+      index: 1,
+      startedAt: 0,
+      growth: 0,
+      margin: 0,
+      revenue: 0,
+      streak: 0,
+      bonus: 0,
+      last: null,
+      phase: { _tag: 'AwaitingGuidance' },
+    },
+    reshard: null,
+    engineChange: null,
+    studies: [
+      { id: 'php-fpm', phase: { _tag: 'Queued', progress: 0.5 } },
+      { id: 'gzip', phase: { _tag: 'Completed' } },
+    ],
+    services: game.services.map((service) => ({
+      ...service,
+      migration: null,
+      datastore: 'db-1',
+    })),
+    iac: { tool: 'terraform', until: 0, sync: null },
+    engineers: [engineer],
+    hires: [{ id: 'eng-2', team: 'core', language: 'go', phase: { _tag: 'Pending', readyAt: 99 } }],
+    training: [{ engineer: 'eng-1', language: 'go', readyAt: 50 }],
+    backlog: [{ id: 999, kind: 'feature', ref: 'landing-page', cost: 8, spent: 2, held: true }],
+    incident: null,
+  }
+  const read = readSaveFile(JSON.stringify(old))
+  if (read._tag === 'Failure') throw new Error(read.failure)
+  expect(read.success.game.studies).toEqual({
+    _tag: 'Working',
+    current: { id: 'php-fpm', phase: { _tag: 'Queued', progress: 0.5 } },
+    queued: [],
+  })
+  expect(read.success.game.quarter).toEqual({
+    _tag: 'Active',
+    index: 1,
+    startedAt: 0,
+    growth: 0,
+    margin: 0,
+    revenue: 0,
+    streak: 0,
+    bonus: 0,
+    last: null,
+    phase: { _tag: 'AwaitingGuidance' },
+  })
+  expect(read.success.game.services[0]?.datastore).toEqual({ _tag: 'Pinned', id: 'db-1' })
+  expect(read.success.game.iac).toEqual({
+    _tag: 'Chosen',
+    tool: 'terraform',
+    until: 0,
+    sync: null,
+  })
+  expect(read.success.game.hires).toEqual([
+    { id: 'eng-2', team: 'core', language: 'go', readyAt: 99 },
+  ])
+  expect(read.success.game.engineers[0]?.learning).toEqual({ language: 'go', readyAt: 50 })
+  expect(read.success.game.backlog[0]?.block).toEqual({ _tag: 'Held', since: game.time })
+  expect(read.success.game.incident).toEqual({ _tag: 'Quiet' })
+  expect(read.success.file['format']).toBe(SAVE_FORMAT)
+})
+
+test('a format 2 Company save opens with an explicit incident state', () => {
+  const game = preseedGame()
+  const quiet = readSaveFile(JSON.stringify({ format: 2, ...game, incident: null }))
+  if (quiet._tag === 'Failure') throw new Error(quiet.failure)
+  expect(quiet.success.game.incident).toEqual({ _tag: 'Quiet' })
+
+  const old = {
+    kind: 'slow-query',
+    remaining: 60,
+    nodeId: null,
+    startedAt: 10,
+    baseline: 100,
+    usersAtStart: 100,
+    impaired: 0,
+    lostRevenue: 0,
+    failed: 0,
+    phase: { _tag: 'Quiet' },
+  }
+  const active = readSaveFile(JSON.stringify({ format: 2, ...game, incident: old }))
+  if (active._tag === 'Failure') throw new Error(active.failure)
+  expect(active.success.game.incident).toEqual({
+    _tag: 'Active',
+    incident: {
+      ...old,
+      phase: { _tag: 'Pending' },
+      severity: 3,
+      magnitude: 3,
+      zone: null,
+      region: null,
+      causedBy: null,
+    },
   })
 })

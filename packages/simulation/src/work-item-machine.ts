@@ -18,6 +18,7 @@ export const WorkBlock = Schema.TaggedUnion({
     owner: Schema.String,
     at: Schema.Finite,
   },
+  Held: { since: Schema.Finite },
 })
 export type WorkBlock = typeof WorkBlock.Type
 
@@ -31,6 +32,8 @@ export const WorkBlockEvent = Schema.TaggedUnion({
   Approved: {},
   Later: { remindAt: Schema.Finite },
   Unblocked: {},
+  Held: { since: Schema.Finite },
+  Resumed: {},
 })
 export type WorkBlockEvent = typeof WorkBlockEvent.Type
 
@@ -51,6 +54,10 @@ export const workBlockMachine = Machine.make({ root: States, events: Events }).h
             at: event.at,
             remindAt: event.remindAt,
           }),
+        },
+        Held: {
+          target: 'Held',
+          data: ({ event }) => ({ _tag: 'Held', since: event.since }),
         },
       },
     },
@@ -74,6 +81,15 @@ export const workBlockMachine = Machine.make({ root: States, events: Events }).h
     Approved: {
       on: {
         Unblocked: { target: 'Free', data: () => ({ _tag: 'Free' }) },
+        Held: {
+          target: 'Held',
+          data: ({ event }) => ({ _tag: 'Held', since: event.since }),
+        },
+      },
+    },
+    Held: {
+      on: {
+        Resumed: { target: 'Free', data: () => ({ _tag: 'Free' }) },
       },
     },
   },

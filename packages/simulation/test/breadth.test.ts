@@ -6,7 +6,7 @@ import { forceIncident } from '../src/director.ts'
 import { hashGame } from '../src/hash.ts'
 import { freeSandbox } from '../src/sandbox.ts'
 import { solveFlow } from '../src/solve.ts'
-import { Game } from '../src/state.ts'
+import { Game, activeIncident } from '../src/state.ts'
 import { step } from '../src/step.ts'
 
 const roundTrip = (game: Game): Game => Schema.decodeSync(Game)(Schema.encodeSync(Game)(game))
@@ -47,7 +47,7 @@ describe('the whole catalog', { timeout: 120_000 }, () => {
     const game = everything()
     const started = forceIncident(game, solveFlow(game), kind)
     if (started === null) return
-    expect(started.incident?.kind).toBe(kind)
+    expect(activeIncident(started)?.kind).toBe(kind)
     const over = run(started, 600)
     finite(over)
   })

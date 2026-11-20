@@ -78,6 +78,8 @@ import { rolloutOf as rolloutShareOf } from './feature-machine.ts'
 import { budgetVelocity } from './slo.ts'
 import {
   CORE_TEAM,
+  Migration,
+  activeIncident,
   monolith,
   type Engineer,
   type Game,
@@ -119,7 +121,7 @@ export const serviceOwnedBy = (game: Game, team: Team): Service =>
   game.services.find((service) => service.owner === team.id) ?? serviceOf(game)
 
 export const pagedTeam = (game: Game): Team =>
-  ownerOf(game, serviceOfId(game, game.incident?.service ?? undefined))
+  ownerOf(game, serviceOfId(game, activeIncident(game)?.service ?? undefined))
 
 const featureTouches = (id: FeatureId, kind: RequestKind): boolean => {
   const def = FEATURES[id]
@@ -137,13 +139,16 @@ export const serviceOfKind = (game: Game, kind: RequestKind): Service => {
 }
 
 export const blastService = (game: Game): Service =>
-  serviceOfId(game, game.incident?.service ?? undefined)
+  serviceOfId(game, activeIncident(game)?.service ?? undefined)
 
 export const failsKind = (game: Game, kind: RequestKind): boolean =>
-  game.incident?.kind === 'bad-deploy' && serviceOfKind(game, kind).id === blastService(game).id
+  activeIncident(game)?.kind === 'bad-deploy' &&
+  serviceOfKind(game, kind).id === blastService(game).id
 
 const datastoreOf = (game: Game, service: Service): string =>
-  service.datastore ?? game.nodes.find((node) => node.type === 'database')?.id ?? ''
+  service.datastore._tag === 'Pinned'
+    ? service.datastore.id
+    : (game.nodes.find((node) => node.type === 'database')?.id ?? '')
 
 export const sharesDatabase = (game: Game, service: Service): boolean => {
   const group = dataGroupOfService(game, service)
@@ -256,15 +261,14 @@ export const rampSeconds = (game: Game, tuning: Tuning = LIVE_TUNING): number =>
   )
 }
 
-export const trainingOf = (game: Game, engineer: Engineer): Training | undefined =>
-  game.training.find((entry) => entry.engineer === engineer.id)
+export const trainingOf = (engineer: Engineer): Training | null => engineer.learning
 
 export const fluencyOf = (
   game: Game,
   engineer: Engineer,
   language: LanguageId = languageOfService(game),
 ): number =>
-  trainingOf(game, engineer) ? LEARN_OUTPUT : engineer.language === language ? 1 : FOREIGN_OUTPUT
+  trainingOf(engineer) ? LEARN_OUTPUT : engineer.language === language ? 1 : FOREIGN_OUTPUT
 
 export const outputOf = (
   game: Game,
@@ -279,7 +283,9 @@ export const outputOf = (
 
 export const learnTargetOf = (game: Game): LanguageId => {
   const migration = serviceOf(game).migration
-  return migration ? RUNTIMES[migration.runtime].language : languageOfService(game)
+  return Migration.guards.Idle(migration)
+    ? languageOfService(game)
+    : RUNTIMES[migration.runtime].language
 }
 
 export const trainSeconds = (language: LanguageId, tuning: Tuning = LIVE_TUNING): number =>
@@ -289,18 +295,17 @@ export const trainCost = (game: Game, language: LanguageId): number =>
   Math.round(LEARN_COST * signingOf(game, language))
 
 export const finishTraining = (game: Game): Game => {
-  const done = game.training.filter((entry) => entry.readyAt <= game.time)
-  const gone = game.training.filter(
-    (entry) => !game.engineers.some((engineer) => engineer.id === entry.engineer),
+  const done = game.engineers.filter(
+    (engineer) => engineer.learning !== null && engineer.learning.readyAt <= game.time,
   )
-  if (done.length === 0 && gone.length === 0) return game
+  if (done.length === 0) return game
   return {
     ...game,
-    training: game.training.filter((entry) => !done.includes(entry) && !gone.includes(entry)),
-    engineers: game.engineers.map((engineer) => {
-      const finished = done.find((entry) => entry.engineer === engineer.id)
-      return finished ? { ...engineer, language: finished.language } : engineer
-    }),
+    engineers: game.engineers.map((engineer) =>
+      engineer.learning !== null && engineer.learning.readyAt <= game.time
+        ? { ...engineer, language: engineer.learning.language, learning: null }
+        : engineer,
+    ),
   }
 }
 
@@ -564,7 +569,7 @@ export const enqueue = (
 export const buggy = (game: Game, node: GameNode): boolean => {
   const migration = serviceOf(game).migration
   return (
-    !!migration &&
+    !Migration.guards.Idle(migration) &&
     migration.bugs &&
     node.type === 'server' &&
     node.runtime === migration.runtime &&

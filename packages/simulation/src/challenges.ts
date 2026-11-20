@@ -34,6 +34,8 @@ import { nextRandom } from './random.ts'
 import { applyAction, applyDesign, type Replay, type Response } from './replay.ts'
 import { solveFlow } from './solve.ts'
 import type { Game, GameLink, GameNode } from './state.ts'
+import { activeIncident } from './state.ts'
+import { updateIncident } from './incident-machine.ts'
 import { StepEvent } from './events.ts'
 import { step } from './step.ts'
 import { SIM_VERSION } from './version.ts'
@@ -1814,16 +1816,20 @@ export const advanceRun = (
   for (const script of challenge.incidents) {
     if (!within(script.at)) continue
     const started = forceIncident(current, solveFlow(current), script.kind, script.only)
-    if (!started || started.incident === null) continue
+    if (!started || activeIncident(started) === null) continue
     current =
       script.magnitude === undefined
         ? started
-        : { ...started, incident: { ...started.incident, magnitude: script.magnitude } }
-    if (current.incident) events.push(StepEvent.IncidentStarted({ incident: current.incident }))
+        : {
+            ...started,
+            incident: updateIncident(started.incident, { magnitude: script.magnitude }),
+          }
+    const incident = activeIncident(current)
+    if (incident) events.push(StepEvent.IncidentStarted({ incident }))
   }
   const secondBySecond =
     challenge.stepSeconds > 1 &&
-    (current.incident !== null ||
+    (activeIncident(current) !== null ||
       current.nodes.some((entry) => entry.life._tag !== 'Running' && entry.life._tag !== 'Warming'))
   const parts = secondBySecond ? challenge.stepSeconds : 1
   const scored = time >= RUN_WARMUP_SECONDS - 1e-9

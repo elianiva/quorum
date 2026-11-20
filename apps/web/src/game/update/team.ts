@@ -25,6 +25,7 @@ import { learnTargetOf, serviceOf } from '@quorum/simulation/team'
 import { stallReasonIn } from '../../i18n/format.ts'
 import { stepOf } from '@quorum/simulation/migration'
 import { studyStall } from '@quorum/simulation/studies'
+import { currentStudy, studyList } from '@quorum/simulation/study-machine'
 
 export const teamAction = (model: Model, out: TeamOutMessage): UpdateResult => {
   const game = model.board.game
@@ -147,8 +148,10 @@ const foldResearch = (model: Model, message: ResearchMessage): UpdateResult =>
               const t = say(parent)
               const name = t.catalog.research[id].name
               const ledger = ledgerOf(parent)
-              const added = game.studies
-                .filter((item) => !parent.board.game.studies.some((was) => was.id === item.id))
+              const added = studyList(game.studies)
+                .filter(
+                  (item) => !studyList(parent.board.game.studies).some((was) => was.id === item.id),
+                )
                 .map((item) => item.id)
               if (added.length > 1) {
                 const names = added.map((study) => t.catalog.research[study].name)
@@ -188,7 +191,7 @@ const foldResearch = (model: Model, message: ResearchMessage): UpdateResult =>
             {
               note: (game) => {
                 const t = say(parent)
-                const running = game.studies[0]?.id
+                const running = currentStudy(game.studies)?.id
                 return [
                   running && running !== id
                     ? t.toasts.studyingNowThen(
@@ -210,9 +213,11 @@ const foldResearch = (model: Model, message: ResearchMessage): UpdateResult =>
               note: (game) => {
                 const t = say(parent)
                 const name = t.catalog.research[id].name
-                const gone = parent.board.game.studies
+                const gone = studyList(parent.board.game.studies)
                   .filter(
-                    (item) => item.id !== id && !game.studies.some((left) => left.id === item.id),
+                    (item) =>
+                      item.id !== id &&
+                      !studyList(game.studies).some((left) => left.id === item.id),
                   )
                   .map((item) => t.catalog.research[item.id].name)
                 return [
@@ -357,14 +362,14 @@ export const teamHandlers = (model: Model): MessageCases<UpdateResult, TeamTag> 
     act(model, 'Shifted traffic', Work.shiftMigration(model.board.game), {
       note: (game) => {
         const migration = serviceOf(game).migration
-        return migration
-          ? [
+        return migration._tag === 'Idle'
+          ? [say(model).toasts.migrationDone, 'ok']
+          : [
               say(model).toasts.migrationMoved(
                 percent(MIGRATION_STEPS[stepOf(migration) - 1] ?? 0),
               ),
               'ok',
             ]
-          : [say(model).toasts.migrationDone, 'ok']
       },
     }),
 

@@ -10,6 +10,7 @@ import { ventureOf } from './founding.ts'
 import type { Ledger } from './ledger.ts'
 import { has, isDown, vcpuOf } from './lookups.ts'
 import type { Game, GameNode, ScaleSignal } from './state.ts'
+import { activeIncident } from './state.ts'
 
 export type ScalePhase = 'steady' | 'booting' | 'up' | 'down' | 'paused'
 
@@ -129,7 +130,7 @@ export const scaleStateOf = (
     scaler.schedule && has(game, 'scheduled-scaling') ? peakLoadOf(game, reading) : reading
   const most = scaler.maxCopies > 0 ? scaler.maxCopies : Number.POSITIVE_INFINITY
   const raw =
-    game.incident?.kind === 'runaway-bill'
+    activeIncident(game)?.kind === 'runaway-bill'
       ? Math.max(copies, most === Number.POSITIVE_INFINITY ? 16 : most)
       : Math.ceil((copies * Math.max(reading, planned)) / scaler.target)
   const demand = Math.min(most, Math.max(scaler.minCopies, raw))

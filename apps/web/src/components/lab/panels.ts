@@ -37,10 +37,12 @@ import {
 } from '@/game/model.ts'
 import { seatColour } from '@/game/seat-colour.ts'
 import type { Vote } from '@quorum/simulation/room'
+import { openVoteOf } from '@quorum/simulation/vote-machine'
 import { companyMark } from '@/components/company-mark.ts'
 import { speedsOf } from '@/game/update.ts'
 import { modShortcut } from '@/game/palette.ts'
 import { roomOwner } from '@/game/model.ts'
+import { pwaInstallable, pwaInstalled } from '@/game/pwa-machine.ts'
 import { ROOM_NAME_LENGTH } from '@/game/names.ts'
 import { RoomPhase } from '@/game/room-machine.ts'
 import { seatOf } from '@/platform/room-socket.ts'
@@ -1143,7 +1145,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const file = currentFile(model)
   const owner = roomOwner(model)
   const live = RoomPhase.isAnyOf(['Online', 'Reconnecting'])(phase)
-  const vote = model.room.vote
+  const vote = openVoteOf(model.room.vote)
   const seat = seatOf()
   const unchanged = model.room.draft.trim() === model.room.name
 
@@ -1652,6 +1654,23 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           [t.room.joining],
         ),
       )
+    if (RoomPhase.guards.Failed(phase))
+      body.push(
+        h.p(
+          [
+            h.Class(
+              css({
+                paddingInline: '5',
+                paddingTop: '3',
+                fontSize: 'type.14',
+                lineHeight: 'fine',
+                color: 'mutedForeground',
+              }),
+            ),
+          ],
+          [phase.reason === 'full' ? t.room.full : t.room.connectFailed],
+        ),
+      )
     body.push(codeBlock(phase.code))
     body.push(nameBlock)
     if (live) {
@@ -1687,7 +1706,7 @@ export const roomPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   if (live && owner) {
     actions.push(primaryButton(t.room.takeOffline, Message.RoomTakeOfflineAsked(), h))
     actions.push(secondaryButton(t.room.leave, Message.RoomLeaveAsked(), h, LogOut))
-  } else if (live || RoomPhase.guards.Connecting(phase)) {
+  } else if (live || RoomPhase.guards.Connecting(phase) || RoomPhase.guards.Failed(phase)) {
     actions.push(primaryButton(t.room.leave, Message.RoomLeaveAsked(), h))
   }
 
@@ -1893,12 +1912,12 @@ const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Ht
 
 const pwaSettingsSection = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
-  if (model.pwa.installed) return h.empty
+  if (pwaInstalled(model.pwa.install)) return h.empty
   const family = browserFamilyOf()
   const rows: Array<Html> = []
-  if (!model.pwa.installed) {
+  if (!pwaInstalled(model.pwa.install)) {
     rows.push(
-      model.pwa.installable
+      pwaInstallable(model.pwa.install)
         ? settingAction(t.pwa.installQuorum, Message.PwaInstallChosen(), Download, h)
         : h.div(
             [
@@ -2053,11 +2072,8 @@ export const offerPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const title = ipo
     ? t.panels.iPO
     : t.panels.round(t.catalog.eras[model.board.game.stage + 1]?.name ?? deal.era.name)
-  const vote =
-    roomLive(model) && model.room.vote !== null && model.room.vote.kind !== 'exit'
-      ? model.room.vote
-      : null
-  if (vote !== null)
+  const vote = roomLive(model) ? openVoteOf(model.room.vote) : null
+  if (vote !== null && vote.kind !== 'exit')
     return shell(
       title,
       [],

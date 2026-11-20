@@ -2,7 +2,7 @@ import { nodeLabel } from '@quorum/simulation/labels'
 import type { NodeLedger } from '@quorum/simulation/ledger'
 import { has } from '@quorum/simulation/lookups'
 import { solveFlow } from '@quorum/simulation/solve'
-import type { GameLink } from '@quorum/simulation/state'
+import { activeIncident, type GameLink } from '@quorum/simulation/state'
 import { hasTraffic, hourBefore, loadChangeOf, sampleNode } from './node-metrics.ts'
 import type { AgentSnapshot } from './snapshot.ts'
 import type { ToolName } from './tools.ts'
@@ -87,7 +87,7 @@ const runs: Record<ToolName, (snapshot: AgentSnapshot, input: Input) => unknown>
   get_incidents: (snapshot, input) => {
     const game = snapshot.game!
     return {
-      active: game.incident,
+      active: activeIncident(game),
       alertRules: game.alertRules,
       alarms: game.alarms,
       falseAlarms: game.falseAlarms,

@@ -1,5 +1,6 @@
-import { type Action, answering, notAllowed, ok, spend } from '../action-kit.ts'
+import { type Action, answered, notAllowed, ok, spend } from '../action-kit.ts'
 import type { Game } from '../state.ts'
+import { activeIncident } from '../state.ts'
 import { SWITCH_PROVIDER_PRICE } from '../catalog.ts'
 
 export const setProvider = (game: Game, provider: 'first' | 'second'): Action => {
@@ -10,8 +11,8 @@ export const setProvider = (game: Game, provider: 'first' | 'second'): Action =>
     ...paid,
     nodes: paid.nodes.map((node) => (node.type === 'psp' ? { ...node, provider } : node)),
     incident:
-      provider === 'second' && paid.incident?.kind === 'psp-outage'
-        ? { ...answering(paid, paid.incident), remaining: 0 }
+      provider === 'second' && activeIncident(paid)?.kind === 'psp-outage'
+        ? answered(paid, { remaining: 0 })
         : paid.incident,
   }))
 }

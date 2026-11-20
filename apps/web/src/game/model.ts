@@ -12,6 +12,8 @@ import { exitOffers } from '@quorum/simulation/exit'
 import { Founder } from '@quorum/simulation/founder'
 import { Playbook } from '@quorum/simulation/playbook'
 import { Boot } from './boot-machine.ts'
+import { BoardSurface } from './board-surface-machine.ts'
+import { PwaInstall } from './pwa-machine.ts'
 import { Reveal } from './machine-state.ts'
 export { Delta, Figures, PreviewFigures, Reveal } from './machine-state.ts'
 import { CompanyPhase, companyIdOf, isExited, isPlaying } from './company-machine.ts'
@@ -19,7 +21,8 @@ import { SurveyPhase } from './survey-machine.ts'
 import { TradeoffState } from './tradeoff-machine.ts'
 import { ClockMode, away as clockAwayOf, paused as clockPausedOf } from './clock-machine.ts'
 import { RoomPhase, inRoom } from './room-machine.ts'
-import { Seat, Vote } from '@quorum/simulation/room'
+import { Seat } from '@quorum/simulation/room'
+import { RoomVote } from '@quorum/simulation/vote-machine'
 import { ChangeState } from './change-machine.ts'
 import { ConfirmDelete } from './confirm-delete-machine.ts'
 import { DisclosureFlow } from './disclosure-machine.ts'
@@ -32,7 +35,8 @@ import { NodeSample } from './node-metrics.ts'
 import { StackPicker } from './stack-picker.ts'
 import { AppRoute, MENU_PAGES } from './route.ts'
 import { LogoId } from './logos.ts'
-import { fileOf, SaveIndex } from './saves.ts'
+import { fileOf } from './saves.ts'
+import { SavesState, savesOf } from './saves-machine.ts'
 import {
   ComponentId,
   FeatureId,
@@ -287,6 +291,7 @@ export type WhatIfRow = typeof WhatIfRow.Type
 export const Board = Schema.Struct({
   game: Game,
   session: Session,
+  surface: BoardSurface,
   region: Region,
   selected: Schema.NullOr(Schema.String),
   selection: Schema.Array(Schema.String),
@@ -332,7 +337,7 @@ export const Room = Schema.Struct({
   phase: RoomPhase,
   seats: Schema.Array(Seat),
   speed: Schema.Finite,
-  vote: Schema.NullOr(Vote),
+  vote: RoomVote,
   seq: Schema.Finite,
   name: Schema.String,
   draft: Schema.String,
@@ -343,7 +348,7 @@ export const EMPTY_ROOM: Room = {
   phase: { _tag: 'Idle' },
   seats: [],
   speed: 1,
-  vote: null,
+  vote: { _tag: 'Idle' },
   seq: 1,
   name: '',
   draft: '',
@@ -352,7 +357,7 @@ export const EMPTY_ROOM: Room = {
 export const roomLive = (model: Model): boolean => inRoom(model.room.phase)
 
 export const onlineFileOf = (model: Model, code: string) =>
-  model.saves.companies.find((file) => file.online?.code === code) ?? null
+  savesOf(model.saves).companies.find((file) => file.online?.code === code) ?? null
 
 export const roomCode = (model: Model): string | null =>
   RoomPhase.guards.Idle(model.room.phase) ? null : model.room.phase.code
@@ -367,9 +372,8 @@ export type SettingsSection = typeof SettingsSection.Type
 export const FoundStep = Schema.Literals(['company', 'venture', 'mutators'])
 export type FoundStep = typeof FoundStep.Type
 
-const Pwa = Schema.Struct({
-  installable: Schema.Boolean,
-  installed: Schema.Boolean,
+export const Pwa = Schema.Struct({
+  install: PwaInstall,
   online: Schema.Boolean,
   updated: Schema.Boolean,
 })
@@ -384,10 +388,9 @@ export const Model = Schema.Struct({
   toastSeq: Schema.Finite,
   board: Board,
   room: Room,
-  company: Schema.NullOr(Board),
+  parkedCompany: Schema.NullOr(Board),
   companyPhase: CompanyPhase,
-  saves: SaveIndex,
-  savesReady: Schema.Boolean,
+  saves: SavesState,
   draft: Schema.Struct({ name: Schema.String, logo: LogoId }),
   foundStep: FoundStep,
   saveFocus: Schema.NullOr(Schema.String),
@@ -421,7 +424,8 @@ export const ledgerOf = (model: Model): Ledger => {
 
 const ledgers = new WeakMap<Ledger, Ledger>()
 
-export const currentFile = (model: Model) => fileOf(model.saves, companyIdOf(model.companyPhase))
+export const currentFile = (model: Model) =>
+  fileOf(savesOf(model.saves), companyIdOf(model.companyPhase))
 
 export const playingId = (model: Model): string | null =>
   isPlaying(model.companyPhase) ? model.companyPhase.id : null
@@ -431,20 +435,17 @@ export const hasCompany = (model: Model): boolean =>
 
 export const offCompany = (model: Model): boolean => model.board.session._tag !== 'Company'
 
+export const parkedCompanyOf = (model: Model): Board | null =>
+  offCompany(model) && isPlaying(model.companyPhase) ? model.parkedCompany : null
+
 export const exitLegacy = (model: Model): number | null => {
   if (offCompany(model) || isExited(model.companyPhase)) return null
   const offers = exitOffers(model.board.game, ledgerOf(model))
   return offers.length === 0 ? null : Math.max(...offers.map((offer) => offer.legacy))
 }
 
-const inMenu = (model: Model): boolean => model.panel === 'menu' || model.panel === 'settings'
-
 export const halted = (model: Model): boolean =>
-  !roomLive(model) &&
-  (clockPausedOf(model.board.clock.mode) ||
-    inMenu(model) ||
-    model.palette.open ||
-    model.boot._tag === 'Connecting')
+  !roomLive(model) && clockPausedOf(model.board.clock.mode)
 
 export const clockPaused = (model: Model): boolean =>
   !roomLive(model) && clockPausedOf(model.board.clock.mode)

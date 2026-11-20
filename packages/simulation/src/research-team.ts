@@ -1,4 +1,5 @@
 import { RESEARCH, TEAM_TRACKS, type ResearchId, type ResearchTrack } from './catalog.ts'
+import { currentStudy } from './study-machine.ts'
 import type { Game, Team } from './state.ts'
 
 export const teamReady = (game: Game, team: Team): boolean =>
@@ -16,7 +17,7 @@ export const canBoost = (game: Game, team: Team, id: ResearchId): boolean => {
 }
 
 export const teamBoosting = (game: Game, team: Team): boolean => {
-  const study = game.studies[0]
+  const study = currentStudy(game.studies)
   return study !== undefined && game.researchTeam === team.id && canBoost(game, team, study.id)
 }
 

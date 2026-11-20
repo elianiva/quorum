@@ -9,7 +9,7 @@ import {
   ClearLog,
   ExportLog,
 } from '../commands.ts'
-import { Game } from '@quorum/simulation/state'
+import { activeIncident, Game } from '@quorum/simulation/state'
 import { IPO_BURN_SECONDS, PRE_IPO_STAGE } from '@quorum/simulation/ipo'
 import { Message } from '../message.ts'
 import { Model, currentFile, hasCompany, offCompany, playingId } from '../model.ts'
@@ -17,6 +17,7 @@ import { Result } from 'effect'
 import { cheatCash, cheatInsight } from '../cheats.ts'
 import { decodeSave, encodeSave, readSaveFile, saveFileName } from '../save-file.ts'
 import { fileFor, newSaveId, withFile } from '../saves.ts'
+import { savesOf } from '../saves-machine.ts'
 import { step } from '../company-machine.ts'
 import { eraOf, isFinalEra, nextEra } from '@quorum/simulation/lookups'
 import { firstQuarter } from '@quorum/simulation/quarters'
@@ -63,7 +64,7 @@ const adopt = (model: Model, json: string): Model => {
   if (Result.isFailure(read)) return model
   const game = read.success.game
   const file = fileFor({
-    id: newSaveId(model.saves.companies, game.seed),
+    id: newSaveId(savesOf(model.saves).companies, game.seed),
     name: say(model).title.importedCompany,
     logo: model.draft.logo,
     founding: game.founding,
@@ -72,7 +73,10 @@ const adopt = (model: Model, json: string): Model => {
   })
   return {
     ...model,
-    saves: { ...withFile(model.saves, file), current: file.id },
+    saves: {
+      _tag: 'Ready',
+      index: { ...withFile(savesOf(model.saves), file), lastPlayed: file.id },
+    },
     companyPhase: step(model.companyPhase, { _tag: 'Open', id: file.id }),
   }
 }
@@ -90,7 +94,7 @@ const applyImport = (
     return withToast(model, reasonIn(say(model), decoded.failure), 'warn')
   const fresh = asNew || playingId(model) === null
   const started = fresh ? adopt(model, decoded.success) : model
-  const id = fresh ? started.saves.current : playingId(model)
+  const id = fresh ? savesOf(started.saves).lastPlayed : playingId(model)
   if (id === null) return { model: started }
   const loaded = route(started, Message.CompanyLoaded({ id, open: fresh, json: decoded.success }))
   const board = loaded.model.board
@@ -240,12 +244,11 @@ export const saveHandlers = (
   },
 
   IncidentForced: ({ kind }) => {
-    if (model.board.game.incident)
+    const running = activeIncident(model.board.game)
+    if (running !== null)
       return withToast(
         model,
-        say(model).toasts.incidentRunning(
-          say(model).catalog.incidents[model.board.game.incident.kind].name,
-        ),
+        say(model).toasts.incidentRunning(say(model).catalog.incidents[running.kind].name),
         'warn',
       )
     const game = forceIncident(model.board.game, solveFlow(model.board.game), kind)

@@ -24,6 +24,8 @@ export type BoardEvents = Readonly<{
     }>,
   ) => void
   onCursorGone?: () => void
+  onReady?: () => void
+  onUnavailable?: (reason: 'webgl' | 'start') => void
   onStartFailed?: (error: unknown) => void
   onSound?: (sound: BoardSound, pitch?: number, spatial?: boolean) => void
 }>

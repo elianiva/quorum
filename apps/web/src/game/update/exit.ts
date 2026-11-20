@@ -35,6 +35,7 @@ import { solveFlow } from '@quorum/simulation/solve'
 import { takeExit } from '@quorum/simulation/exit'
 import { clockStep } from '../clock-machine.ts'
 import { withoutFile } from '../saves.ts'
+import { savesOf, withSaves } from '../saves-machine.ts'
 
 type ExitTag =
   | 'ExitTaken'
@@ -110,8 +111,9 @@ export const exitHandlers = (model: Model): MessageCases<UpdateResult, ExitTag> 
               : [],
           )
           const founder = earned.founder
-          const removed = earned.saves.current
-          const saves = removed === null ? earned.saves : withoutFile(earned.saves, removed)
+          const removed = savesOf(earned.saves).lastPlayed
+          const saves =
+            removed === null ? savesOf(earned.saves) : withoutFile(savesOf(earned.saves), removed)
           const phase = step(earned.companyPhase, {
             _tag: 'ExitTaken',
             id: companyIdOf(earned.companyPhase) ?? '',
@@ -124,7 +126,7 @@ export const exitHandlers = (model: Model): MessageCases<UpdateResult, ExitTag> 
             survey: EMPTY_SURVEY,
             companyPhase: phase,
             panel: isExited(phase) ? 'exited' : earned.panel,
-            saves,
+            saves: withSaves(earned.saves, saves),
             board: {
               ...earned.board,
               selected: null,

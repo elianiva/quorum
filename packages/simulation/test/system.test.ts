@@ -14,7 +14,6 @@ import {
 } from '../src/catalog.ts'
 import * as Mirrors from '../src/mirror.ts'
 import * as Work from '../src/work.ts'
-import * as Hire from '../src/hire-machine.ts'
 import * as Study from '../src/study-machine.ts'
 import * as WorkItem from '../src/work-item-machine.ts'
 import * as Mirror from '../src/mirror-machine.ts'
@@ -56,17 +55,18 @@ const edges = <S extends { _tag: string }, E>(
 
 const bridgeOk = edges(Bridge.BridgeState, Bridge.BridgeEvent, Bridge.step)
 const roundOk = edges(EraRound.EraRound, EraRound.EraRoundEvent, EraRound.step)
-const drillOk = edges(Drill.DrillPhase, Drill.DrillEvent, Drill.step)
-const quarterOk = edges(Quarter.QuarterPhase, Quarter.QuarterEvent, Quarter.step)
+const drillOk = edges(Drill.DrillState, Drill.DrillEvent, Drill.step)
+const quarterOk = edges(Quarter.QuarterState, Quarter.QuarterEvent, Quarter.step)
 const serviceOk = edges(NodeService.NodeService, NodeService.NodeServiceEvent, NodeService.step)
 const scalerOk = edges(Autoscaler.Autoscaler, Autoscaler.AutoscalerEvent, Autoscaler.step)
 const fuseOk = edges(Breaker.Breaker, Breaker.BreakerEvent, Breaker.step)
-const hireOk = edges(Hire.HirePhase, Hire.HireEvent, Hire.step)
-const studyOk = edges(Study.StudyPhase, Study.StudyEvent, Study.step)
+const studyOk = edges(Study.StudyPhase, Study.StudyEvent, Study.phaseStep)
+const queueOk = edges(Study.StudyQueue, Study.StudyQueueEvent, Study.queueStep)
 const blockOk = edges(WorkItem.WorkBlock, WorkItem.WorkBlockEvent, WorkItem.step)
 const mirrorOk = edges(Mirror.MirrorSync, Mirror.MirrorEvent, Mirror.step)
 const moveOk = edges(DataMove.DataMovePhase, DataMove.DataMoveEvent, DataMove.step)
-const incidentOk = edges(Incident.IncidentPhase, Incident.IncidentEvent, Incident.step)
+const incidentOk = edges(Incident.IncidentState, Incident.IncidentEvent, Incident.step)
+const incidentPhaseOk = edges(Incident.IncidentPhase, Incident.IncidentEvent, Incident.phaseStep)
 
 type Move =
   | { kind: 'place'; type: number; x: number; region: number }
@@ -205,14 +205,18 @@ const check = (before: Game, after: Game, m: Move) => {
     expect(Number.isFinite(figure), `finite figures ${at}`).toBe(true)
   expect(bridgeOk(before.bridge, after.bridge), `bridge edge ${at}`).toBe(true)
   expect(roundOk(before.round, after.round), `round edge ${at}`).toBe(true)
-  if (before.drill && after.drill && before.drill.startedAt === after.drill.startedAt)
-    expect(drillOk(before.drill, after.drill), `drill edge ${at}`).toBe(true)
-  if (before.quarter && after.quarter)
-    expect(quarterOk(before.quarter.phase, after.quarter.phase), `quarter edge ${at}`).toBe(true)
-  if (before.incident && after.incident && before.incident.startedAt === after.incident.startedAt)
-    expect(incidentOk(before.incident.phase, after.incident.phase), `incident edge ${at}`).toBe(
-      true,
-    )
+  expect(drillOk(before.drill, after.drill), `drill edge ${at}`).toBe(true)
+  expect(quarterOk(before.quarter, after.quarter), `quarter edge ${at}`).toBe(true)
+  expect(incidentOk(before.incident, after.incident), `incident edge ${at}`).toBe(true)
+  if (
+    before.incident._tag === 'Active' &&
+    after.incident._tag === 'Active' &&
+    before.incident.incident.startedAt === after.incident.incident.startedAt
+  )
+    expect(
+      incidentPhaseOk(before.incident.incident.phase, after.incident.incident.phase),
+      `incident phase edge ${at}`,
+    ).toBe(true)
   for (const node of after.nodes) {
     const old = before.nodes.find((entry) => entry.id === node.id)
     if (old) {
@@ -421,8 +425,9 @@ const teamCheck = (before: Game, after: Game, m: TeamMove) => {
   for (const id of after.researched)
     for (const needed of RESEARCH[id].requires)
       expect(after.researched.includes(needed), `${id} needs ${needed} ${at}`).toBe(true)
-  expect(unique(after.studies.map((entry) => entry.id)), `one Study per Research ${at}`).toBe(true)
-  for (const entry of after.studies)
+  const studies = Study.studyList(after.studies)
+  expect(unique(studies.map((entry) => entry.id)), `one Study per Research ${at}`).toBe(true)
+  for (const entry of studies)
     expect(after.researched.includes(entry.id), `${entry.id} is queued and done ${at}`).toBe(false)
   expect(
     unique([...after.hires.map((h) => h.id), ...after.engineers.map((e) => e.id)]),
@@ -434,30 +439,43 @@ const teamCheck = (before: Game, after: Game, m: TeamMove) => {
     if (entry.block._tag === 'Blocked')
       expect(entry.spent, `a Blocked item has no work ${at}`).toBeLessThanOrEqual(1e-9)
   }
-  for (const hire of after.hires) {
-    const old = before.hires.find((entry) => entry.id === hire.id)
-    if (old) expect(hireOk(old.phase, hire.phase), `hire edge ${at}`).toBe(true)
-  }
-  for (const entry of after.studies) {
-    const old = before.studies.find((candidate) => candidate.id === entry.id)
+  for (const entry of studies) {
+    const old = Study.studyOf(before.studies, entry.id)
     if (old) expect(studyOk(old.phase, entry.phase), `study edge ${at}`).toBe(true)
   }
+  expect(queueOk(before.studies, after.studies), `study queue edge ${at}`).toBe(true)
   for (const entry of after.backlog) {
     const old = before.backlog.find((candidate) => candidate.id === entry.id)
     if (old) expect(blockOk(old.block, entry.block), `block edge ${at}`).toBe(true)
   }
-  for (const mirror of after.mirrors ?? []) {
-    const old = before.mirrors?.find((entry) => entry.region === mirror.region)
+  for (const mirror of after.mirrors) {
+    const old = before.mirrors.find((entry) => entry.region === mirror.region)
     if (old) expect(mirrorOk(old.sync, mirror.sync), `mirror edge ${at}`).toBe(true)
   }
-  for (const key of ['reshard', 'engineChange'] as const) {
-    const was = before[key]
-    const now = after[key]
-    if (was && now) expect(moveOk(was.phase, now.phase), `${key} edge ${at}`).toBe(true)
-  }
+  for (const key of ['reshard', 'engineChange'] as const)
+    expect(moveOk(before[key].phase, after[key].phase), `${key} edge ${at}`).toBe(true)
 }
 
 describe('the Team, the Studies and the Mirrors', () => {
+  test('an IaC tool turns NotChosen into Chosen, and a Mirror needs it', () => {
+    const base = teamStart()
+    expect(base.iac._tag).toBe('NotChosen')
+    expect(Mirrors.toolOf(base)).toBeNull()
+    expect(Result.isFailure(Mirrors.setSyncMode(base, 'all'))).toBe(true)
+    expect(Result.isFailure(Mirrors.startMirror(base, 'eu', 'na'))).toBe(true)
+    const chosen = take(base, Mirrors.pickIacTool(base, 'terraform'))
+    expect(chosen.iac._tag).toBe('Chosen')
+    expect(Mirrors.toolOf(chosen)).toBe('terraform')
+    expect(Mirrors.switchLeft(chosen)).toBe(0)
+    const switched = take(chosen, Mirrors.pickIacTool(chosen, 'pulumi'))
+    expect(Mirrors.switchLeft(switched)).toBeGreaterThan(0)
+    expect(chosen.mirrors).toEqual([])
+    const mirrored = take(chosen, Mirrors.startMirror(chosen, 'eu', 'na'))
+    expect(mirrored.mirrors).toHaveLength(1)
+    const applied = take(mirrored, Mirrors.applyMirror(mirrored, 'eu'))
+    expect(Result.isFailure(Mirrors.pickIacTool(applied, 'pulumi'))).toBe(true)
+  })
+
   test('random moves keep every engineer, item and Study single, and every machine on its edges', () => {
     fc.assert(
       fc.property(fc.array(teamMove, { minLength: 10, maxLength: 60 }), (moves) => {

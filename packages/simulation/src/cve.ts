@@ -12,7 +12,7 @@ import { StepEvent } from './events.ts'
 import type { Ledger } from './ledger.ts'
 import { securityStaffed } from './lookups.ts'
 import { nextRandom } from './random.ts'
-import type { Game, WorkItem } from './state.ts'
+import { activeIncident, type Game, type WorkItem } from './state.ts'
 import { enqueue, memberOf, ownerOf, serviceOf } from './team.ts'
 
 export const BREACH_CHURN_SHARE = 0.15
@@ -75,7 +75,7 @@ export const advanceCves = (
   if (next.backdoorAt !== null) {
     const age = next.time - next.backdoorAt
     if (securityStaffed(next) && age >= BACKDOOR_FUSE / 2) next = { ...next, backdoorAt: null }
-    else if (age >= BACKDOOR_FUSE && !next.incident) {
+    else if (age >= BACKDOOR_FUSE && activeIncident(next) === null) {
       const used = startIncident(next, ledger, 'breach', 0)
       if (used) {
         next = {
@@ -92,7 +92,7 @@ export const advanceCves = (
   const expired = next.backlog.find(
     (item) => item.kind === 'patch' && overdueBy(next, item) >= grace,
   )
-  if (expired && !next.incident) {
+  if (expired && activeIncident(next) === null) {
     const started = startIncident(next, ledger, 'breach', 0)
     if (started) {
       next = {

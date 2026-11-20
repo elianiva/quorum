@@ -2,7 +2,7 @@ import { Result } from 'effect'
 import { expect, test } from 'vitest'
 import * as Actions from '@quorum/simulation/actions'
 import { preseedGame } from '@quorum/simulation/company'
-import { NEW_ENGINEER, type Game, type Postmortem } from '@quorum/simulation/state'
+import { NEW_ENGINEER, activeIncident, type Game, type Postmortem } from '@quorum/simulation/state'
 import {
   DIGEST_ID,
   EMPTY_INBOX,
@@ -244,7 +244,7 @@ test('a phishing trap leaks the credentials, and the Inbox keeps the record', ()
   const phished = Actions.phished(game)
   expect(Result.isSuccess(phished)).toBe(true)
   if (Result.isFailure(phished)) return
-  expect(phished.success.incident?.kind).toBe('credential-leak')
+  expect(activeIncident(phished.success)?.kind).toBe('credential-leak')
   expect(phished.success.users).toBeLessThan(game.users)
 
   const model: Model = {
@@ -259,7 +259,7 @@ test('a phishing trap leaks the credentials, and the Inbox keeps the record', ()
       message: InboxMessage.Acted({ id: phishing?.id ?? 0, action: 'trap:phish' }),
     }),
   ).model
-  expect(clickedInTheApp.board.game.incident?.kind).toBe('credential-leak')
+  expect(activeIncident(clickedInTheApp.board.game)?.kind).toBe('credential-leak')
   expect(
     clickedInTheApp.board.inbox.mail.filter((mail) => mail.key.includes('incident-phishing')),
   ).toHaveLength(1)
@@ -325,7 +325,7 @@ test('a rewrite proposal needs a reason and never names the language the App Ser
       hiredAt: 0,
     })),
     nodes: base.nodes.map((node) => (node.type === 'server' ? { ...node, runtime: 'go' } : node)),
-    services: base.services.map((service) => ({ ...service, debt, migration: null })),
+    services: base.services.map((service) => ({ ...service, debt, migration: { _tag: 'Idle' } })),
   })
   const proposals = (game: Game) =>
     Array.from({ length: 2_000 }, (_, bucket) => eventMail(game, bucket)).filter((fact) =>

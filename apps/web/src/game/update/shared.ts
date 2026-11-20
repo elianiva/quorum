@@ -41,6 +41,8 @@ import { cueNode } from '../reveal.ts'
 import { offerOf } from '../offer.ts'
 import { eraReachedOf, line } from '../telemetry.ts'
 import { fileOf, refreshedIndex } from '../saves.ts'
+import { savesOf } from '../saves-machine.ts'
+import { overlayClose, overlayOpen } from '../clock-machine.ts'
 import { ghostReason } from '@quorum/simulation/playbook'
 import { initTeam } from '../team.ts'
 import { nodeLabel, normalizeOrdinals } from '@quorum/simulation/labels'
@@ -64,6 +66,7 @@ export type MessageCases<Output, Tags extends Message['_tag']> = {
 export const freshBoard = (game: Game): Board => ({
   game: normalizeOrdinals(game),
   session: { _tag: 'Company' },
+  surface: { _tag: 'Starting' },
   region: 'na',
   selected: null,
   selection: [],
@@ -166,10 +169,27 @@ export const milestones = (
 
 export const say = (model: Model): Messages => copyIn(model.prefs.locale)
 
-export const closePanel = (model: Model): Model => ({
+export const withOverlay = (
+  model: Model,
+  cause: 'palette' | 'menu' | 'boot',
+  open: boolean,
+): Model => ({
   ...model,
-  panel: model.panel === 'settings' && onBoard(model.route) ? 'menu' : 'none',
+  board: {
+    ...model.board,
+    clock: {
+      ...model.board.clock,
+      mode: open
+        ? overlayOpen(model.board.clock.mode, cause)
+        : overlayClose(model.board.clock.mode, cause),
+    },
+  },
 })
+
+export const closePanel = (model: Model): Model => {
+  const panel = model.panel === 'settings' && onBoard(model.route) ? 'menu' : 'none'
+  return withOverlay({ ...model, panel }, 'menu', panel === 'menu')
+}
 
 const loadHistories = new WeakMap<
   Model['board']['nodeHistory'],
@@ -221,12 +241,12 @@ export const savePayloadOf = (model: Model, board: Board = model.board) => ({
 
 const saveOf = (model: Model, closing = false): AnyCommand | null => {
   const id = playingId(model)
-  if (id === null || !fileOf(model.saves, id)) return null
-  const board = offCompany(model) ? model.company : model.board
+  if (id === null || !fileOf(savesOf(model.saves), id)) return null
+  const board = offCompany(model) ? model.parkedCompany : model.board
   if (board === null) return null
   return WriteCompany({
     id,
-    index: refreshedIndex(model.saves, board.game),
+    index: refreshedIndex(savesOf(model.saves), board.game),
     ...savePayloadOf(model, board),
     ...(closing ? { closing } : {}),
   })

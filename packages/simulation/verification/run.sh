@@ -9,7 +9,7 @@ out="${OUT:-$(mktemp -d)}"
 failed=0
 export PATH="$HOME/.local/bin:$PATH"
 
-for model in runway/Runway node-life/NodeLife incident/Incident quarter/Quarter drill/Drill era-round/EraRound; do
+for model in runway/Runway node-life/NodeLife incident/Incident quarter/Quarter drill/Drill era-round/EraRound iac/Iac work-block/WorkBlock gesture/Gesture; do
   dir="${model%%/*}"
   name="${model##*/}"
   echo "=== $name"

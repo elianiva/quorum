@@ -6,6 +6,7 @@ import { FocusInspector } from '../commands.ts'
 import { Message } from '../message.ts'
 import { Model, confirmSellOf, placingOf, stampedPlaybook } from '../model.ts'
 import { step as boardStep } from '../board-machine.ts'
+import { boardSurfaceStep } from '../board-surface-machine.ts'
 import { Result } from 'effect'
 import { capture, SHARED, duplicate, ghostReason, placePlaybook } from '@quorum/simulation/playbook'
 import { isOne } from '../../i18n/plural.ts'
@@ -40,6 +41,8 @@ const countNodes = (count: number): string => (count === 1 ? '1 Node' : `${count
 const sellAll = Actions.sellAll
 
 type CanvasTag =
+  | 'BoardReady'
+  | 'BoardFailed'
   | 'BuildGroupChosen'
   | 'PlacingChosen'
   | 'NodePlaced'
@@ -72,6 +75,26 @@ export const canvasHandlers = (
   model: Model,
   route: Dispatch,
 ): MessageCases<UpdateResult, CanvasTag> => ({
+  BoardReady: () => ({
+    model: {
+      ...model,
+      board: {
+        ...model.board,
+        surface: boardSurfaceStep(model.board.surface, { _tag: 'Started' }),
+      },
+    },
+  }),
+
+  BoardFailed: ({ reason }) => ({
+    model: {
+      ...model,
+      board: {
+        ...model.board,
+        surface: boardSurfaceStep(model.board.surface, { _tag: 'Unavailable', reason }),
+      },
+    },
+  }),
+
   BuildGroupChosen: ({ group }) => ({
     model: {
       ...model,

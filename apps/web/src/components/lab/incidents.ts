@@ -13,7 +13,7 @@ import { ALERT_RULES } from '@quorum/simulation/catalog'
 import type { AlertRule } from '@quorum/simulation/events'
 import { has } from '@quorum/simulation/lookups'
 import { ignored } from '@quorum/simulation/step'
-import type { Game } from '@quorum/simulation/state'
+import { activeIncident, type Game } from '@quorum/simulation/state'
 import { formats } from '@/i18n/format.ts'
 import { copy, insightName, type Messages } from '@/i18n/messages.ts'
 import { nameIn } from '@/i18n/refusal.ts'
@@ -147,8 +147,8 @@ const severity = (value: number, t: Messages, h: HtmlBuilder<Message>): Html =>
 export const incidentNotice = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
-  const incident = model.board.game.incident
-  if (!incident) return h.empty
+  const incident = activeIncident(model.board.game)
+  if (incident === null) return h.empty
   const action = ACTIONS[incident.kind]
   const nodeId = incident.nodeId
   const ready = action !== undefined && (action.node !== true || nodeId !== null)

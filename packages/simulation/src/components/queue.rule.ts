@@ -1,5 +1,6 @@
-import { type Action, answering, notAllowed, ok, patch, withNode } from '../action-kit.ts'
+import { type Action, answered, notAllowed, ok, patch, withNode } from '../action-kit.ts'
 import type { Game } from '../state.ts'
+import { activeIncident } from '../state.ts'
 import { MAX_ATTEMPTS, QUEUE_LENGTHS } from '../catalog.ts'
 
 export const setDlq = (game: Game, id: string, dlq: boolean): Action =>
@@ -33,6 +34,6 @@ export const setMaxLength = (game: Game, id: string, maxLength: number): Action 
   })
 
 export const deleteMessage = (game: Game): Action =>
-  game.incident?.kind === 'poison'
-    ? ok({ ...game, incident: { ...answering(game, game.incident), remaining: 0 } })
+  activeIncident(game)?.kind === 'poison'
+    ? ok({ ...game, incident: answered(game, { remaining: 0 }) })
     : notAllowed('No poison message is stuck.')

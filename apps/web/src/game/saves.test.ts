@@ -1,3 +1,4 @@
+import { savesOf } from './saves-machine.ts'
 import { savedInbox } from './inbox.ts'
 import { describe, expect, test } from 'vitest'
 import { Effect } from 'effect'
@@ -100,8 +101,8 @@ const runStored = async (
   }
 }
 
-const indexOf = (files: ReadonlyArray<CompanyFile>, current: string | null): SaveIndex => ({
-  current,
+const indexOf = (files: ReadonlyArray<CompanyFile>, lastPlayed: string | null): SaveIndex => ({
+  lastPlayed,
   companies: [...files],
 })
 
@@ -157,14 +158,14 @@ describe('naming a Company', () => {
 
   test('a second Company becomes its own file, and the first one stays', () => {
     const first = send(initialModel(), Message.CompanyFounded())
-    const firstId = first.saves.current
+    const firstId = savesOf(first.saves).lastPlayed
     const second = send(
       { ...first, draft: { name: 'Second Co', logo: 'cube' } },
       Message.CompanyFounded(),
     )
-    expect(second.saves.companies).toHaveLength(2)
-    expect(second.saves.current).not.toBe(firstId)
-    expect(fileIn(second.saves, firstId!)).toMatchObject({ name: 'Untitled company' })
+    expect(savesOf(second.saves).companies).toHaveLength(2)
+    expect(savesOf(second.saves).lastPlayed).not.toBe(firstId)
+    expect(fileIn(savesOf(second.saves), firstId!)).toMatchObject({ name: 'Untitled company' })
     expect(currentFile(second)).toMatchObject({ name: 'Second Co', logo: 'cube' })
   })
 
@@ -189,7 +190,7 @@ describe('the Companies page', () => {
       initialModel(),
       Message.SavesLoaded({ index: JSON.stringify(index), now: 2_000 }),
     )
-    expect(loaded.model.saves).toEqual(index)
+    expect(savesOf(loaded.model.saves)).toEqual(index)
     expect(loaded.model.companyPhase).toEqual({ _tag: 'Opening', id: 'c-one' })
     expect(loaded.commands).toEqual(
       expect.arrayContaining([
@@ -227,13 +228,13 @@ describe('the Companies page', () => {
       Message.CompanyLoaded({ id: 'c-one', open: true, json: saveOf(game) }),
     )
     expect(waiting.companyPhase).toEqual({ _tag: 'Opening', id: 'c-two' })
-    expect(waiting.saves.current).toBe('c-one')
+    expect(savesOf(waiting.saves).lastPlayed).toBe('c-one')
     const landed = send(
       waiting,
       Message.CompanyLoaded({ id: 'c-two', open: true, json: saveOf(other) }),
     )
     expect(landed.companyPhase).toEqual({ _tag: 'Open', id: 'c-two' })
-    expect(landed.saves.current).toBe('c-two')
+    expect(savesOf(landed.saves).lastPlayed).toBe('c-two')
     expect(landed.board.game.seed).toBe(other.seed)
   })
 
@@ -252,7 +253,7 @@ describe('the Companies page', () => {
     )
     expect(hasCompany(opened)).toBe(true)
     expect(opened.route).toEqual(AppRoute.Company())
-    expect(opened.saves.current).toBe('c-one')
+    expect(savesOf(opened.saves).lastPlayed).toBe('c-one')
     expect(opened.board.game.seed).toBe(game.seed)
     expect(opened.board.disclosure.revealed).toEqual(['undo'])
   })
@@ -267,9 +268,9 @@ describe('the Companies page', () => {
     const asked = send(opened, Message.CompanyChosen({ id: 'c-one' }), Message.CompanyDeleteAsked())
     expect(asked.saveConfirm).toEqual({ _tag: 'Confirming', id: 'c-one' })
     const result = update(asked, Message.CompanyDeleteConfirmed())
-    expect(result.model.saves).toEqual(EMPTY_SAVE_INDEX)
+    expect(savesOf(result.model.saves)).toEqual(EMPTY_SAVE_INDEX)
     expect(result.model.companyPhase).toEqual({ _tag: 'None' })
-    expect(result.model.saves.current).toBeNull()
+    expect(savesOf(result.model.saves).lastPlayed).toBeNull()
     expect(result.commands).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -306,8 +307,8 @@ describe('the Companies page', () => {
       Message.CompanyDeleteAsked(),
       Message.CompanyDeleteConfirmed(),
     )
-    expect(opened.saves.current).toBe('c-one')
-    expect(opened.saves.companies.map((file) => file.id)).toEqual(['c-one'])
+    expect(savesOf(opened.saves).lastPlayed).toBe('c-one')
+    expect(savesOf(opened.saves).companies.map((file) => file.id)).toEqual(['c-one'])
     expect(hasCompany(opened)).toBe(true)
   })
 
@@ -341,7 +342,7 @@ describe('autosave and migration', () => {
 
   test('the autosave writes the open Company file', () => {
     const founded = send(initialModel(), Message.CompanyFounded())
-    const id = founded.saves.current
+    const id = savesOf(founded.saves).lastPlayed
     const saved = tick(founded, 20)
     expect(saved.board.clock.savedAt).toBeGreaterThan(founded.board.clock.savedAt)
     const result = update(tick(founded, 19), Message.Ticked({ elapsedMs: TICK_MS }))
@@ -357,7 +358,7 @@ describe('autosave and migration', () => {
 
   test('leaving the board brings the Company file up to date for the title list', () => {
     const founded = send(initialModel(), Message.CompanyFounded())
-    const id = founded.saves.current
+    const id = savesOf(founded.saves).lastPlayed
     const played: Model = {
       ...founded,
       board: {
@@ -367,7 +368,7 @@ describe('autosave and migration', () => {
     }
     const left = send(played, Message.TitleOpened())
     expect(left.route).toEqual(AppRoute.Title())
-    expect(left.saves.current).toBe(id)
+    expect(savesOf(left.saves).lastPlayed).toBe(id)
     expect(currentFile(left)).toMatchObject({ users: 999, time: 123 })
     expect(commandsOf(played, Message.TitleOpened())).toContain('WriteCompany')
   })
@@ -375,14 +376,14 @@ describe('autosave and migration', () => {
   test('the autosave writes the save format beside the Game', async () => {
     const storage = fakeStorage({})
     const founded = send(initialModel(), Message.CompanyFounded())
-    const id = founded.saves.current
+    const id = savesOf(founded.saves).lastPlayed
     expect(id).not.toBeNull()
     const board = founded.board
     await runStored(
       storage,
       WriteCompany({
         id: id!,
-        index: refreshedIndex(founded.saves, board.game),
+        index: refreshedIndex(savesOf(founded.saves), board.game),
         game: board.game,
         revealed: board.disclosure.revealed,
         pending:
@@ -399,7 +400,7 @@ describe('autosave and migration', () => {
     >
     expect(saved['format']).toBe(SAVE_FORMAT)
     expect(saved['seed']).toBe(board.game.seed)
-    expect(JSON.parse(storage.getItem('quorum.saves.v1') ?? '{}')).toMatchObject({ current: id })
+    expect(JSON.parse(storage.getItem('quorum.saves.v1') ?? '{}')).toMatchObject({ lastPlayed: id })
   })
 
   test('a Company file without this format keeps a copy and leaves the list', () => {
@@ -412,7 +413,7 @@ describe('autosave and migration', () => {
     const broken = update(loaded.model, Message.CompanyLoaded({ id: 'c-one', open: true, json }))
     expect(broken.model.companyPhase).toEqual({ _tag: 'None' })
     expect(broken.model.toast?.tone).toBe('warn')
-    expect(broken.model.saves).toEqual({ current: null, companies: [] })
+    expect(savesOf(broken.model.saves)).toEqual({ lastPlayed: null, companies: [] })
     expect((broken.commands ?? []).map((command) => command.name)).toEqual(
       expect.arrayContaining(['KeepBrokenSave', 'DeleteCompany']),
     )

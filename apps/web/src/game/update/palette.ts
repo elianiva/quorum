@@ -1,8 +1,9 @@
 import { EMPTY_PALETTE, type Model } from '../model.ts'
 import { activeOf, commandsOf, matchesOf } from '../palette.ts'
-import { say, type Dispatch, type MessageCases, type UpdateResult } from './shared.ts'
+import { say, withOverlay, type Dispatch, type MessageCases, type UpdateResult } from './shared.ts'
 
-const paletteClosed = (model: Model): Model => ({ ...model, palette: EMPTY_PALETTE })
+export const paletteClosed = (model: Model): Model =>
+  withOverlay({ ...model, palette: EMPTY_PALETTE }, 'palette', false)
 
 type PaletteTag =
   | 'PaletteOpened'
@@ -17,7 +18,11 @@ export const paletteHandlers = (
   route: Dispatch,
 ): MessageCases<UpdateResult, PaletteTag> => ({
   PaletteOpened: () => ({
-    model: { ...model, palette: { open: true, query: '', active: null } },
+    model: withOverlay(
+      { ...model, palette: { open: true, query: '', active: null } },
+      'palette',
+      true,
+    ),
   }),
 
   PaletteClosed: () => ({ model: paletteClosed(model) }),

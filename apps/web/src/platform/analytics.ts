@@ -5,6 +5,7 @@ import { SIM_VERSION } from '@quorum/simulation/version'
 import { eventsOf } from '../game/analytics-bridge.ts'
 import { allow } from '../game/analytics-budget.ts'
 import { halted, ledgerOf, type Model } from '../game/model.ts'
+import { savesOf } from '../game/saves-machine.ts'
 import type { LogEntry } from '../game/playlog.ts'
 import { onBoard } from '../game/route.ts'
 import { displayMode, type InstallOutcome } from './pwa.ts'
@@ -96,8 +97,8 @@ const sessionStart = (model: Model): Record<string, unknown> => {
     utm_source: params.get('utm_source'),
     utm_medium: params.get('utm_medium'),
     utm_campaign: params.get('utm_campaign'),
-    is_returning: model.saves.companies.length > 0,
-    company_count: model.saves.companies.length,
+    is_returning: savesOf(model.saves).companies.length > 0,
+    company_count: savesOf(model.saves).companies.length,
     locale: model.prefs.locale,
     viewport_bucket: typeof window === 'undefined' ? null : viewportBucket(window.innerWidth),
     is_pwa: mode === 'standalone',
@@ -138,7 +139,7 @@ const heartbeat = (): void => {
   const kind = model.board.session._tag.toLowerCase()
   client.capture('game:heartbeat', {
     session_kind: kind,
-    company_id: kind === 'company' ? model.saves.current : null,
+    company_id: kind === 'company' ? savesOf(model.saves).lastPlayed : null,
     era: game.stage,
     era_name: eraOf(game).name,
     users: Math.round(game.users),
@@ -198,10 +199,11 @@ export const observe = (model: Model): void => {
   if (client === null && !starting && model.founder.deviceId !== '') void start(model)
   if (onBoard(model.route) && model.board.session._tag === 'Company') {
     maxEra = Math.max(maxEra, model.board.game.stage)
-    if (model.saves.current !== null) companies.add(model.saves.current)
+    const played = savesOf(model.saves).lastPlayed
+    if (played !== null) companies.add(played)
   }
   if (client === null) return
-  const signature = `${model.prefs.locale}|${model.saves.current ?? ''}|${model.board.session._tag}|${model.board.game.stage}|${model.board.game.founding.venture}`
+  const signature = `${model.prefs.locale}|${savesOf(model.saves).lastPlayed ?? ''}|${model.board.session._tag}|${model.board.game.stage}|${model.board.game.founding.venture}`
   if (signature === lastContext) return
   lastContext = signature
   const kind = model.board.session._tag.toLowerCase()
@@ -209,7 +211,7 @@ export const observe = (model: Model): void => {
     app_surface: 'game',
     locale: model.prefs.locale,
     session_kind: kind,
-    company_id: kind === 'company' ? model.saves.current : null,
+    company_id: kind === 'company' ? savesOf(model.saves).lastPlayed : null,
     era: model.board.game.stage,
     era_name: eraOf(model.board.game).name,
     venture: model.board.game.founding.venture,

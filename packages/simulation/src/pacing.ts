@@ -67,6 +67,7 @@ import type { Ledger } from './ledger.ts'
 import { has, isDown, maxSize, ramOf, researchReady, securityStaffed } from './lookups.ts'
 import { CACHE_HIT_LOW } from './rule-kit.ts'
 import { isBuilt } from './features.ts'
+import { currentStudy, studyCount, studyOf } from './study-machine.ts'
 import { recipeOf, shapeHolds } from './studies.ts'
 import {
   Change,
@@ -78,7 +79,14 @@ import {
   applyMirror,
 } from './mirror.ts'
 import { bottleneckOf, diurnal, solveFlow } from './solve.ts'
-import type { Founding, Game, GameNode, TeamKind } from './state.ts'
+import {
+  Migration,
+  activeIncident,
+  type Founding,
+  type Game,
+  type GameNode,
+  type TeamKind,
+} from './state.ts'
 import { step } from './step.ts'
 import { drillDone, drillPassed } from './drill-machine.ts'
 import { languageOfService, salaryOf, serviceOf, signingOf, stackOf } from './team.ts'
@@ -233,7 +241,7 @@ const roleOf = (kind: TeamKind): ResearchId =>
 
 const boostStudy = (game: Game, tuning: Tuning): Game => {
   if (game.stage < 3) return game
-  const head = game.studies[0]
+  const head = currentStudy(game.studies)
   if (!head) return game
   const kind = specialistKind(RESEARCH[head.id].track)
   if (!kind || !has(game, roleOf(kind))) return game
@@ -614,8 +622,9 @@ const ipoBuild = (game: Game): Game => {
   }
   if (
     has(next, 'dr-drills') &&
-    !next.incident &&
-    (!next.drill || (drillDone(next.drill) && !drillPassed(next.drill)))
+    activeIncident(next) === null &&
+    drillDone(next.drill) &&
+    !drillPassed(next.drill)
   )
     next = tried(next, runDrill(next))
   return next
@@ -638,7 +647,7 @@ const seriesCBuild = (game: Game, ledger: Ledger): Game => {
   if (!next.nodes.some((node) => node.type === 'dsql')) next = dsqlCutover(next, ledger)
   if (!has(next, 'multi-region') || !has(next, 'geo-dns') || !has(next, 'infra-as-code'))
     return next
-  if (!next.iac) next = tried(next, pickIacTool(next, 'terraform'))
+  if (next.iac._tag === 'NotChosen') next = tried(next, pickIacTool(next, 'terraform'))
   for (const region of FAR_REGIONS) {
     let mirror = mirrorOf(next, region)
     if (!mirror) {
@@ -758,7 +767,7 @@ const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy)
     (limit === 'cpu' || limit === 'disk') &&
     has(game, 'sharding') &&
     node.shards < 8 &&
-    !game.reshard
+    game.reshard.phase._tag === 'Idle'
   ) {
     const more = SHARD_COUNTS.find((count) => count > node.shards) ?? node.shards
     return tried(game, queueReshard(game, node.id, { shards: more }))
@@ -806,7 +815,7 @@ const studies = (
     )
   const wants = (id: ResearchId) => id !== 'pooling' || connectionUse(game, ledger) > POOLER_AT
   let next = game
-  const head = next.studies[0]
+  const head = currentStudy(next.studies)
   if (
     head &&
     (!payable(head.id) ||
@@ -830,13 +839,8 @@ const studies = (
     .toReversed())
     next = planFeatureFor(next, ledger, blocked)
   for (const id of order) {
-    if (next.studies.length >= QUEUED) break
-    if (
-      payable(id) &&
-      shapeHolds(next, ledger, id) &&
-      wants(id) &&
-      !next.studies.some((entry) => entry.id === id)
-    )
+    if (studyCount(next.studies) >= QUEUED) break
+    if (payable(id) && shapeHolds(next, ledger, id) && wants(id) && !studyOf(next.studies, id))
       next = tried(next, study(next, id))
   }
   return next
@@ -891,7 +895,7 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy, boost = false): Ga
     next = tried(next, filePostmortem(next, postmortem.id, true))
   for (const node of next.nodes.filter((entry) => Life.guards.Stopped(entry.life)))
     next = tried(next, replace(next, node.id))
-  const incident = next.incident
+  const incident = activeIncident(next)
   if (incident?.kind === 'leak' && incident.nodeId)
     next = tried(next, restart(next, incident.nodeId))
   if (incident?.kind === 'slow-query' && incident.nodeId)
@@ -916,7 +920,12 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy, boost = false): Ga
   next = studies(next, solveFlow(next), strategy, realtime, ready, boost ? ROLE_RESEARCH : [])
 
   const first = servers(next)[0]
-  if (strategy !== 'stubborn' && strategy !== 'greedy' && first && !serviceOf(next).migration) {
+  if (
+    strategy !== 'stubborn' &&
+    strategy !== 'greedy' &&
+    first &&
+    Migration.guards.Idle(serviceOf(next).migration)
+  ) {
     const latest = next.researched.findLast((id) => LANGUAGE_RESEARCH.some(([lang]) => lang === id))
     const polyglot = LANGUAGE_RESEARCH.find(([id]) => id === latest)?.[1]
     const target =
@@ -932,7 +941,11 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy, boost = false): Ga
     if (target && stackOf(next).runtime !== target)
       next = tried(next, changeStack(next, first.id, { runtime: target }))
   }
-  if (strategy !== 'stubborn' && strategy !== 'greedy' && !serviceOf(next).migration) {
+  if (
+    strategy !== 'stubborn' &&
+    strategy !== 'greedy' &&
+    Migration.guards.Idle(serviceOf(next).migration)
+  ) {
     const runtime = stackOf(next).runtime
     for (const worker of next.nodes.filter((node) => node.type === 'worker'))
       if (worker.runtime !== runtime) next = tried(next, setRuntime(next, worker.id, runtime))

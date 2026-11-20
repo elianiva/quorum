@@ -22,7 +22,8 @@ import type { Ledger } from './ledger.ts'
 import { isDown, pricingOf } from './lookups.ts'
 import { openRegions, regionDiurnal, regionUsers, spreadRegions } from './regions.ts'
 import { budgetOf, budgeted } from './slo.ts'
-import type { Game, GameNode } from './state.ts'
+import { Migration, QuarterState, type Game, type GameNode } from './state.ts'
+import { activeIncident } from './state.ts'
 import { valuationOf } from './valuation.ts'
 
 export type AchievementStats = Readonly<{
@@ -103,7 +104,7 @@ const anyGrew = (before: Game, after: Game, where: (node: GameNode) => boolean):
   after.nodes.some((node) => where(node) && grew(before, node))
 
 const memoryIncident = (game: Game, events: ReadonlyArray<StepEvent>): boolean =>
-  game.incident?.kind === 'leak' ||
+  activeIncident(game)?.kind === 'leak' ||
   game.nodes.some((node) => node.leak > 0) ||
   game.postmortems.some((postmortem) => postmortem.kind === 'leak') ||
   events.some(
@@ -139,7 +140,7 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
     )
   },
   blocked: ({ before, events }) =>
-    before.incident?.kind === 'loop' &&
+    activeIncident(before)?.kind === 'loop' &&
     before.nodes.some(
       (node) =>
         node.type === 'server' &&
@@ -175,12 +176,12 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
   'big-rewrite': ({ before, after }) => {
     const moved = before.services.find(
       (service) =>
-        service.migration !== null &&
+        !Migration.guards.Idle(service.migration) &&
         RUNTIMES[service.migration.runtime].language !==
           RUNTIMES[service.migration.fromRuntime].language,
     )
-    if (moved === undefined || moved.migration === null) return false
-    if (after.services.some((service) => service.migration !== null)) return false
+    if (moved === undefined || Migration.guards.Idle(moved.migration)) return false
+    if (after.services.some((service) => !Migration.guards.Idle(service.migration))) return false
     const target = RUNTIMES[moved.migration.runtime].language
     const apps = servers(after)
     return apps.length > 0 && apps.every((node) => RUNTIMES[node.runtime].language === target)
@@ -205,16 +206,19 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
     moment.after.nodes.every(
       (node) => COMPONENTS[node.type].group !== 'data' || POSTGRES.has(node.type),
     ),
-  'hug-of-death': ({ before, events }) =>
-    before.incident !== null &&
-    before.incident.kind === 'spike' &&
-    before.incident.magnitude >= 10 &&
-    events.some(
-      (event) =>
-        event._tag === 'IncidentResolved' &&
-        event.postmortem.kind === 'spike' &&
-        event.postmortem.lostUsers <= 0,
-    ),
+  'hug-of-death': ({ before, events }) => {
+    const incident = activeIncident(before)
+    return (
+      incident?.kind === 'spike' &&
+      incident.magnitude >= 10 &&
+      events.some(
+        (event) =>
+          event._tag === 'IncidentResolved' &&
+          event.postmortem.kind === 'spike' &&
+          event.postmortem.lostUsers <= 0,
+      )
+    )
+  },
   'egress-shock': ({ ledger }) => {
     const lines = ledger.burnLines
     return (
@@ -238,8 +242,9 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
     after.stage >= SERIES_A && valuationOf(after, ledger).valuation >= 1e10,
   'everyone-online': ({ after }) => after.users >= SIX_BILLION,
   'rule-of-40': ({ after, ledger }) =>
-    after.quarter !== null && valuationOf(after, ledger).ruleOf40 >= 80,
-  'beat-and-raise': ({ after }) => after.quarter !== null && after.quarter.streak >= 8,
+    QuarterState.guards.Active(after.quarter) && valuationOf(after, ledger).ruleOf40 >= 80,
+  'beat-and-raise': ({ after }) =>
+    QuarterState.guards.Active(after.quarter) && after.quarter.streak >= 8,
   quorum: ({ after, ledger }) =>
     openRegions(after).length >= SPREAD_REGIONS &&
     wideStores(after).some(
@@ -253,7 +258,7 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
     after.users >= BILLION && wideStores(after).some((node) => node.r === 1 && node.w === 1),
   'warm-start': ({ before, after, ledger }) => {
     const prior = before.history.at(-1)?.p99
-    if (before.incident?.kind !== 'spike' || prior === undefined || prior <= 0) return false
+    if (activeIncident(before)?.kind !== 'spike' || prior === undefined || prior <= 0) return false
     const scaled = after.nodes.some((node) => {
       if (node.type !== 'server' || RUNTIMES[node.runtime].language !== 'java') return false
       const was = before.nodes.find((entry) => entry.id === node.id)
@@ -267,7 +272,7 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
     return scaled && ledger.p99 <= prior
   },
   celebrity: ({ before, events }) =>
-    before.incident?.kind === 'hot-key' &&
+    activeIncident(before)?.kind === 'hot-key' &&
     events.some(
       (event) =>
         event._tag === 'IncidentResolved' &&

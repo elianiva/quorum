@@ -40,7 +40,13 @@ import { policyOf } from '@quorum/simulation/solve-graph'
 import { regional, regionUsers } from '@quorum/simulation/regions'
 import { RUNWAY_MONTH, runwayOf } from '@quorum/simulation/runway'
 import { budgetOf, burnRateOf, slaCreditsOf } from '@quorum/simulation/slo'
-import type { Game, Postmortem, Sample } from '@quorum/simulation/state'
+import {
+  activeIncident,
+  type Game,
+  type Incident,
+  type Postmortem,
+  type Sample,
+} from '@quorum/simulation/state'
 import { ignored } from '@quorum/simulation/step'
 import { autoscalerViewOf } from '@quorum/simulation/scaling'
 import { teamOutputs } from '@quorum/simulation/team'
@@ -381,21 +387,17 @@ const minutesText = (t: Messages, seconds: number): string =>
 const minutesOrUnknown = (t: Messages, seconds: number | null | undefined): string =>
   seconds === null || seconds === undefined ? '—' : minutesText(t, seconds)
 
-const mttdOf = (incident: NonNullable<Game['incident']>): number | null =>
+const mttdOf = (incident: Incident): number | null =>
   signalAtOf(incident.phase) === null
     ? null
     : Math.max(0, (signalAtOf(incident.phase) ?? 0) - incident.startedAt)
 
-const mttaOf = (incident: NonNullable<Game['incident']>): number | null =>
+const mttaOf = (incident: Incident): number | null =>
   ackAtOf(incident.phase) === null || signalAtOf(incident.phase) === null
     ? null
     : Math.max(0, (ackAtOf(incident.phase) ?? 0) - (signalAtOf(incident.phase) ?? 0))
 
-const incidentTarget = (
-  t: Messages,
-  game: Game,
-  incident: NonNullable<Game['incident']>,
-): string => {
+const incidentTarget = (t: Messages, game: Game, incident: Incident): string => {
   if (incident.nodeId !== null)
     return namesOf(t, game.nodes).get(incident.nodeId) ?? incident.nodeId
   if (incident.zone !== null) return t.dashboard.zone(incident.zone.toUpperCase())
@@ -759,7 +761,7 @@ const buildAnnotations = (model: Model): ReadonlyArray<Annotation> => {
   const t = copyIn(model.prefs.locale)
 
   const shown = model.board.dashboard.groups
-  const incident = model.board.game.incident
+  const incident = activeIncident(model.board.game)
   const open: ReadonlyArray<Annotation> = incident
     ? [
         {
@@ -810,6 +812,7 @@ const buildAnnotations = (model: Model): ReadonlyArray<Annotation> => {
 
 const annotationsOf = (model: Model): ReadonlyArray<Annotation> => {
   const { game, undo, inbox, dashboard } = model.board
+  const incident = activeIncident(game)
   const from: AnnotationSource = [
     model.prefs.locale,
     dashboard.groups,
@@ -817,9 +820,9 @@ const annotationsOf = (model: Model): ReadonlyArray<Annotation> => {
     inbox.mail,
     game.stage,
     game.stageAt,
-    game.incident?.startedAt ?? null,
-    game.incident?.severity ?? null,
-    game.incident?.kind ?? null,
+    incident?.startedAt ?? null,
+    incident?.severity ?? null,
+    incident?.kind ?? null,
   ]
   const last = lastAnnotations
   if (last !== null && last.from.every((value, index) => value === from[index])) return last.marks
@@ -3605,7 +3608,6 @@ const incidentTimeline = (
   const severities = new Set<number>()
   for (const postmortem of game.postmortems) {
     const endedAt = postmortem.endedAt
-    if (endedAt === null) continue
     const startedAt = endedAt - postmortem.duration
     if (endedAt < first || startedAt > last) continue
     severities.add(postmortem.severity)
@@ -3622,7 +3624,7 @@ const incidentTimeline = (
       ),
     )
   }
-  const incident = game.incident
+  const incident = activeIncident(game)
   const now = Math.floor(game.time)
   if (incident !== null && incident.startedAt <= now) {
     severities.add(incident.severity)
@@ -3708,7 +3710,7 @@ const actionColor = (game: Game, postmortem: Postmortem): string =>
 const runningIncident = (game: Game, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
-  const incident = game.incident
+  const incident = activeIncident(game)
   if (incident === null)
     return tablePanel(
       'incident-running',
@@ -5818,7 +5820,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
           ...(game.sandbox
             ? []
             : [rowHeader(t.dashboard.company, 3, h), ...companyPanels(model, ledger, rows, h)]),
-          ...(game.incident === null && game.postmortems.length === 0
+          ...(activeIncident(game) === null && game.postmortems.length === 0
             ? []
             : [
                 rowHeader(

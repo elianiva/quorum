@@ -26,13 +26,14 @@ import {
   dataGroupOf,
   databasesOfGroup,
   dataOf,
+  datastoreNodeOf,
   groupDataOf,
   leaderOfGroup,
   shardingOf,
   syncWaitMs,
   topologyOfGroup,
 } from '../src/lookups.ts'
-import { sharesDatabase } from '../src/team.ts'
+import { serviceOf, sharesDatabase } from '../src/team.ts'
 import { freeSandbox } from '../src/sandbox.ts'
 import { solveFlow } from '../src/solve.ts'
 import { step } from '../src/step.ts'
@@ -232,8 +233,8 @@ describe('Data Groups', () => {
       ...game,
       data: 100,
       services: [
-        { ...game.services[0]!, id: 'a', datastore: first },
-        { ...game.services[0]!, id: 'b', datastore: second },
+        { ...game.services[0]!, id: 'a', datastore: { _tag: 'Pinned', id: first } },
+        { ...game.services[0]!, id: 'b', datastore: { _tag: 'Pinned', id: second } },
       ],
     }
     expect(groupDataOf(game, first)).toBe(50)
@@ -241,13 +242,28 @@ describe('Data Groups', () => {
     expect(groupDataOf(game, third)).toBe(0)
   })
 
+  test('an Auto datastore follows the first Database, and a Pinned one names its own', () => {
+    const game = freeSandbox()
+    const first = game.nodes.find((node) => node.type === 'database')!.id
+    expect(serviceOf(game).datastore._tag).toBe('Auto')
+    expect(datastoreNodeOf(game, serviceOf(game))?.id).toBe(first)
+    const pinned = { ...serviceOf(game), datastore: { _tag: 'Pinned' as const, id: first } }
+    expect(datastoreNodeOf(game, pinned)?.id).toBe(first)
+    const missing = { ...serviceOf(game), datastore: { _tag: 'Pinned' as const, id: 'missing' } }
+    expect(datastoreNodeOf(game, missing)?.id).toBe(first)
+  })
+
   test('two Data Groups share no rows, so they take no shared-database penalty', () => {
     let game = freeSandbox()
     const first = game.nodes.find((node) => node.type === 'database')!.id
     let second: string
     ;[game, second] = build(game, 'database')
-    const one = { ...game.services[0]!, id: 'a', datastore: first }
-    const two = { ...game.services[0]!, id: 'b', datastore: second }
+    const one = { ...game.services[0]!, id: 'a', datastore: { _tag: 'Pinned' as const, id: first } }
+    const two = {
+      ...game.services[0]!,
+      id: 'b',
+      datastore: { _tag: 'Pinned' as const, id: second },
+    }
     const apart = { ...game, services: [one, two] }
     expect(sharesDatabase(apart, one)).toBe(false)
     const together = ok(setTopology(ok(boxNodes(apart, [first, second])), first, 'multi'))
@@ -285,7 +301,7 @@ describe('Data Groups', () => {
     const first = company.nodes.find((node) => node.type === 'database')!.id
     const picked = ok(Work.queueTopology(company, first, 'sharded'))
     expect(picked.nodes.find((node) => node.id === first)?.topology).toBe('sharded')
-    expect(picked.reshard).toBeNull()
+    expect(picked.reshard.phase._tag).toBe('Idle')
     expect(picked.backlog.some((item) => item.ref === 'reshard')).toBe(false)
     const withTwo = ok(place(picked, 'database', 300, 300))
     const second = withTwo.nodes.at(-1)!
@@ -298,8 +314,8 @@ describe('Data Groups', () => {
     const company: Game = { ...game, sandbox: false, cash: 100_000 }
     const result = Work.queueTopology(company, first, 'multi')
     if (Result.isFailure(result)) throw new Error('refused ' + JSON.stringify(result.failure))
-    expect(result.success.reshard?.topology).toBe('multi')
-    expect(result.success.reshard?.group).toBe(group)
+    expect(result.success.reshard.topology).toBe('multi')
+    expect(result.success.reshard.group).toBe(group)
     expect(result.success.backlog.some((item) => item.ref === 'reshard')).toBe(true)
   })
 

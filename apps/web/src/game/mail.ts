@@ -319,7 +319,7 @@ const rewriteFact = (
   const key = `team:rewrite:${mate}`
   if (inbox.some((mail) => mail.key === key && !mail.trashed && needsAction(mail))) return null
   if (!game.nodes.some((node) => node.type === 'server')) return null
-  if (game.services.some((service) => service.migration !== null)) return null
+  if (game.services.some((service) => service.migration._tag !== 'Idle')) return null
   if (game.apdex >= 0.9 && !game.services.some((service) => service.debt >= 0.25)) return null
   const current = LANGUAGES[languageOfService(game)].name
   const open = REWRITES.filter((entry) => entry.language !== current)

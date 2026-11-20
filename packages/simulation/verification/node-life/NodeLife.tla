@@ -4,7 +4,7 @@
    `left` is the seconds a Restarting Node still has to wait; 2 is the longest in this model. *)
 EXTENDS Naturals
 
-CONSTANT ResizeGuard   \* "down" is the code (isDown); "stopped" and "none" are broken variants
+CONSTANT ResizeGuard   \* "down" is the code (isDown); "stopped" and "none" remove the guard
 
 VARIABLES life, left, service, last
 vars == <<life, left, service, last>>

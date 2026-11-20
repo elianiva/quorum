@@ -1,4 +1,5 @@
 import { EMPTY_SAVE_INDEX, fileFor, withFile } from './saves.ts'
+import { savesOf } from './saves-machine.ts'
 import { SAVE_FORMAT, saveFileName } from './save-file.ts'
 import { ResearchMessage, STUDY_QUEUE } from './research.ts'
 import { TeamMessage } from './team.ts'
@@ -28,6 +29,7 @@ import { NEW_ENGINEER, type Postmortem, type WorkItem } from '@quorum/simulation
 import * as Work from '@quorum/simulation/work'
 import { SHARED } from '@quorum/simulation/playbook'
 import { queueFeature } from '@quorum/simulation/work'
+import { studyList, type Study, type StudyQueue } from '@quorum/simulation/study-machine'
 import { encodeText } from '@quorum/simulation/codec'
 import { JOBS } from '@quorum/ui/board/jobs'
 import { TOAST_MS } from './commands.ts'
@@ -64,7 +66,7 @@ const storedWith = (
     game,
     now: 1_000,
   })
-  return { index: JSON.stringify({ current: file.id, companies: [file] }), id: file.id }
+  return { index: JSON.stringify({ lastPlayed: file.id, companies: [file] }), id: file.id }
 }
 
 const tick = (model: Model, times = 1): Model => {
@@ -140,7 +142,7 @@ test('the menu button opens a menu over the board that holds the clock, and Esca
   const key = Message.KeyPressed({ key: 'Escape' })
   const opened = update(inLab(), Message.PanelOpened({ panel: 'menu' }))
   expect(opened.model.route).toEqual(AppRoute.Company())
-  expect(opened.model.board.clock.mode._tag !== 'Running').toBe(false)
+  expect(opened.model.board.clock.mode._tag).toBe('PausedByOverlay')
   expect(opened.commands).toEqual(
     expect.arrayContaining([
       expect.objectContaining({
@@ -150,9 +152,15 @@ test('the menu button opens a menu over the board that holds the clock, and Esca
     ]),
   )
   const settings = update(opened.model, Message.PanelOpened({ panel: 'settings' })).model
+  expect(settings.board.clock.mode._tag).toBe('PausedByOverlay')
   expect(update(settings, key).model.panel).toBe('menu')
+  const research = update(opened.model, Message.PanelOpened({ panel: 'research' })).model
+  expect(research.board.clock.mode._tag).toBe('Running')
+  const direct = update(inLab(), Message.PanelOpened({ panel: 'settings' })).model
+  expect(direct.board.clock.mode._tag).toBe('PausedByOverlay')
   const resumed = update(opened.model, key)
   expect(resumed.model.panel).toBe('none')
+  expect(resumed.model.board.clock.mode._tag).toBe('Running')
   expect(resumed.commands).toEqual(
     expect.arrayContaining([
       expect.objectContaining({
@@ -162,6 +170,38 @@ test('the menu button opens a menu over the board that holds the clock, and Esca
     ]),
   )
   expect(update(resumed.model, key).model.panel).toBe('menu')
+})
+
+test('a board that cannot start is unavailable, and a failed Room shows why', () => {
+  const failed = update(inLab(), Message.BoardFailed({ reason: 'webgl' })).model
+  expect(failed.board.surface).toEqual({ _tag: 'Unavailable', reason: 'webgl' })
+
+  const connecting: Model = {
+    ...inLab(),
+    route: AppRoute.Room({ room: 'ABC123' }),
+    room: { ...EMPTY_ROOM, phase: { _tag: 'Connecting', code: 'ABC123' } },
+  }
+  const closed = update(connecting, Message.RoomStatusChanged({ status: 'error' })).model
+  expect(closed.room.phase).toEqual({
+    _tag: 'Failed',
+    code: 'ABC123',
+    reason: 'unreachable',
+  })
+  const ticked = update(closed, Message.Ticked({ elapsedMs: TICK_MS })).model
+  expect(ticked.board.game.time).toBeGreaterThan(closed.board.game.time)
+})
+
+test('the palette holds the clock and closing it restores the pause that was already there', () => {
+  const easy = {
+    ...inLab(),
+    prefs: { ...inLab().prefs, easyMode: true },
+  }
+  const paused = update(easy, Message.PauseToggled()).model
+  expect(paused.board.clock.mode._tag).toBe('PausedByPlayer')
+  const opened = update(paused, Message.PaletteOpened()).model
+  expect(opened.board.clock.mode._tag).toBe('PausedByOverlay')
+  const closed = update(opened, Message.PaletteClosed()).model
+  expect(closed.board.clock.mode._tag).toBe('PausedByPlayer')
 })
 
 test('Research suspends board rendering without holding the clock, and closing it resumes rendering', () => {
@@ -529,13 +569,21 @@ describe('Tradeoff cards', () => {
     expect(confirmed.board.tradeoff).toEqual({ _tag: 'Closed' })
     expect(confirmed.prefs.seenTradeoffs).toEqual(['runtime'])
     expect(confirmed.board.game.nodes.find((node) => node.id === 'server')?.runtime).toBe('php_fpm')
-    expect(confirmed.board.game.services[0]?.migration?.runtime).toBe('node_cluster')
+    expect(
+      confirmed.board.game.services[0]?.migration._tag === 'Idle'
+        ? null
+        : confirmed.board.game.services[0]?.migration.runtime,
+    ).toBe('node_cluster')
     expect(confirmed.board.game.backlog.some((item) => item.kind === 'migration')).toBe(true)
     expect(confirmed.board.change).not.toBeNull()
     const fresh = { ...ready(), prefs: confirmed.prefs }
     const clicked = send(fresh, Message.OptionChosen({ nodeId: 'server', option }))
     expect(clicked.board.tradeoff).toEqual({ _tag: 'Closed' })
-    expect(clicked.board.game.services[0]?.migration?.runtime).toBe('node_cluster')
+    expect(
+      clicked.board.game.services[0]?.migration._tag === 'Idle'
+        ? null
+        : clicked.board.game.services[0]?.migration.runtime,
+    ).toBe('node_cluster')
   })
 
   test('a Sandbox swaps the Stack at once', () => {
@@ -661,7 +709,11 @@ describe('Tradeoff cards', () => {
         }),
         Message.OptionConfirmed(),
       )
-      expect(confirmed.board.game.services[0]?.migration?.runtime).toBe(runtime)
+      expect(
+        confirmed.board.game.services[0]?.migration._tag === 'Idle'
+          ? null
+          : confirmed.board.game.services[0]?.migration.runtime,
+      ).toBe(runtime)
       expect(confirmed.board.game.nodes.find((node) => node.id === 'server')?.runtime).toBe(
         'php_fpm',
       )
@@ -729,7 +781,7 @@ describe('Exit', () => {
       Message.CompanyLoaded({ id, open: true, json: saveOf(game) }),
     )
     expect(hasCompany(loaded)).toBe(true)
-    expect(loaded.saves.current).toBe(id)
+    expect(savesOf(loaded.saves).lastPlayed).toBe(id)
     expect(loaded.board.game.time).toBeCloseTo(game.time)
     expect(loaded.board.game.users).toBe(game.users)
     expect(loaded.companyPhase).toMatchObject({ _tag: 'Open' })
@@ -1074,7 +1126,7 @@ describe('URL routing', () => {
       game,
       now: 1_000,
     })
-    return { game, index: { current: file.id, companies: [file] } }
+    return { game, index: { lastPlayed: file.id, companies: [file] } }
   }
   const founder = () => {
     const record = { ...initialModel().founder, deviceId: 'device' }
@@ -1150,8 +1202,8 @@ describe('URL routing', () => {
     ).model
     expect(boardSandbox(after.board)?.id).toBeNull()
     expect(after.board.game.seed).toBe(99)
-    expect(after.company?.game.seed).toBe(game.seed)
-    expect(after.saves.current).toBe('c-one')
+    expect(after.parkedCompany?.game.seed).toBe(game.seed)
+    expect(savesOf(after.saves).lastPlayed).toBe('c-one')
   })
 
   test('a Challenge URL on a fresh load opens it once the Founder has loaded', () => {
@@ -1440,7 +1492,7 @@ test('the Mentor offers Easy mode once to a Company with too many severe inciden
     failed: 0,
     action: null,
     severity,
-    endedAt: null,
+    endedAt: 60,
     causedBy: null,
   })
   const atHourTurn = (postmortems: ReadonlyArray<Postmortem>): Model => ({
@@ -1485,10 +1537,10 @@ test('a queued Study can run now, keeping the running one’s progress, and be c
       ...lab.board,
       game: {
         ...lab.board.game,
-        studies: [
+        studies: studyQueue([
           { id: first.id, phase: { _tag: 'Running', progress: 0.25 } },
           { id: second.id, phase: { _tag: 'Queued', progress: 0 } },
-        ],
+        ]),
       },
     },
   }
@@ -1496,7 +1548,7 @@ test('a queued Study can run now, keeping the running one’s progress, and be c
     queued,
     Message.ResearchChanged({ message: ResearchMessage.StudyPrioritized({ id: second.id }) }),
   ).model
-  expect(now.board.game.studies).toEqual([
+  expect(studyList(now.board.game.studies)).toEqual([
     { id: second.id, phase: { _tag: 'Queued', progress: 0 } },
     { id: first.id, phase: { _tag: 'Running', progress: 0.25 } },
   ])
@@ -1506,12 +1558,12 @@ test('a queued Study can run now, keeping the running one’s progress, and be c
       message: ResearchMessage.StudyMoved({ id: first.id, direction: -1 }),
     }),
   ).model
-  expect(back.board.game.studies.map((item) => item.id)).toEqual([first.id, second.id])
+  expect(studyList(back.board.game.studies).map((item) => item.id)).toEqual([first.id, second.id])
   const cancelled = update(
     back,
     Message.ResearchChanged({ message: ResearchMessage.StudyCancelled({ id: first.id }) }),
   ).model
-  expect(cancelled.board.game.studies).toEqual([
+  expect(studyList(cancelled.board.game.studies)).toEqual([
     { id: second.id, phase: { _tag: 'Queued', progress: 0 } },
   ])
 })
@@ -1528,10 +1580,10 @@ test('dragging a Study row reorders the queue and keeps its progress', () => {
       ...lab.board,
       game: {
         ...lab.board.game,
-        studies: [
+        studies: studyQueue([
           { id: first.id, phase: { _tag: 'Running', progress: 0.25 } },
           { id: second.id, phase: { _tag: 'Queued', progress: 0 } },
-        ],
+        ]),
       },
     },
   }
@@ -1559,7 +1611,7 @@ test('dragging a Study row reorders the queue and keeps its progress', () => {
     }),
   )
   const dropped = send(over, DragAndDrop.Message.ReleasedPointer())
-  expect(dropped.board.game.studies).toEqual([
+  expect(studyList(dropped.board.game.studies)).toEqual([
     { id: second.id, phase: { _tag: 'Queued', progress: 0 } },
     { id: first.id, phase: { _tag: 'Running', progress: 0.25 } },
   ])
@@ -1570,10 +1622,15 @@ const queuedStudy = (id: ResearchId, progress = 0) => ({
   phase: { _tag: 'Queued' as const, progress },
 })
 
-const withStudies = (studies: Model['board']['game']['studies'], model = inLab()): Model => ({
+const studyQueue = (studies: ReadonlyArray<Study>): StudyQueue =>
+  studies.length === 0
+    ? { _tag: 'Empty' }
+    : { _tag: 'Working', current: studies[0]!, queued: studies.slice(1) }
+
+const withStudies = (studies: ReadonlyArray<Study>, model = inLab()): Model => ({
   ...model,
   panel: 'research',
-  board: { ...model.board, game: { ...model.board.game, studies } },
+  board: { ...model.board, game: { ...model.board.game, studies: studyQueue(studies) } },
 })
 
 const research = (model: Model, message: ResearchMessage) =>
@@ -1581,13 +1638,16 @@ const research = (model: Model, message: ResearchMessage) =>
 
 test('queueing a locked item queues its missing prerequisites first, within the queue limit', () => {
   const queued = research(withStudies([]), ResearchMessage.Bought({ id: 'opcache' }))
-  expect(queued.board.game.studies).toEqual([queuedStudy('php-fpm'), queuedStudy('opcache')])
+  expect(studyList(queued.board.game.studies)).toEqual([
+    queuedStudy('php-fpm'),
+    queuedStudy('opcache'),
+  ])
   expect(queued.toast?.message).toMatch(/^Studies queued: PHP-FPM, OPcache\./)
   const behind = research(
     withStudies([queuedStudy('php-fpm', 0.4), queuedStudy('gzip')]),
     ResearchMessage.Bought({ id: 'opcache' }),
   )
-  expect(behind.board.game.studies).toEqual([
+  expect(studyList(behind.board.game.studies)).toEqual([
     queuedStudy('php-fpm', 0.4),
     queuedStudy('gzip'),
     queuedStudy('opcache'),
@@ -1610,7 +1670,7 @@ test('Study now brings the chain to the front, and queued members keep their pro
     withStudies([running, queuedStudy('php-fpm', 0.4)]),
     ResearchMessage.StudyPrioritized({ id: 'opcache' }),
   )
-  expect(now.board.game.studies).toEqual([
+  expect(studyList(now.board.game.studies)).toEqual([
     queuedStudy('php-fpm', 0.4),
     queuedStudy('opcache'),
     running,
@@ -1646,7 +1706,7 @@ test('no move puts a Study above a queued prerequisite, by drag or by arrow', as
     )
     return send(over, DragAndDrop.Message.ReleasedPointer())
   }
-  const ids = (model: Model) => model.board.game.studies.map((item) => item.id)
+  const ids = (model: Model) => studyList(model.board.game.studies).map((item) => item.id)
   const above = drag(start, 'opcache', 2, 0)
   expect(ids(above)).toEqual(['php-fpm', 'gzip', 'opcache'])
   expect(above.toast?.message).toBe('OPcache needs PHP-FPM first.')
@@ -1672,11 +1732,11 @@ test('cancelling a prerequisite cancels the queued Studies that need it, and its
   }
   expect(spiked.board.game.backlog.some((item) => item.kind === 'spike')).toBe(true)
   const cancelled = research(spiked, ResearchMessage.StudyCancelled({ id: 'php-fpm' }))
-  expect(cancelled.board.game.studies).toEqual([queuedStudy('gzip')])
+  expect(studyList(cancelled.board.game.studies)).toEqual([queuedStudy('gzip')])
   expect(cancelled.board.game.backlog.some((item) => item.kind === 'spike')).toBe(false)
   expect(cancelled.toast?.message).toBe('Study cancelled: PHP-FPM, with OPcache, which needed it.')
   const alone = research(start, ResearchMessage.StudyCancelled({ id: 'opcache' }))
-  expect(alone.board.game.studies).toEqual([queuedStudy('php-fpm'), queuedStudy('gzip')])
+  expect(studyList(alone.board.game.studies)).toEqual([queuedStudy('php-fpm'), queuedStudy('gzip')])
 })
 
 test('pointer-rate Messages stay out of the playtest log, and gestures go in', () => {
@@ -1700,7 +1760,7 @@ test('a save this build cannot read is kept aside and leaves the list', () => {
   }
   const loaded = opened(saveOf(game))
   expect(hasCompany(loaded.model)).toBe(true)
-  expect(loaded.model.saves.current).toBe(id)
+  expect(savesOf(loaded.model.saves).lastPlayed).toBe(id)
   expect(loaded.model.board.game.nodes).toEqual(game.nodes)
 
   const renamed = saveOf({
@@ -1712,7 +1772,7 @@ test('a save this build cannot read is kept aside and leaves the list', () => {
     expect(broken.model.companyPhase).toEqual({ _tag: 'None' })
     expect(broken.model.toast?.tone).toBe('warn')
     expect(hasCompany(broken.model)).toBe(false)
-    expect(broken.model.saves).toEqual({ current: null, companies: [] })
+    expect(savesOf(broken.model.saves)).toEqual({ lastPlayed: null, companies: [] })
     expect(broken.commands).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ name: 'KeepBrokenSave' }),
@@ -1727,11 +1787,11 @@ test('a Company whose file is gone leaves the list, and says so only when opened
   const { index, id } = storedWith(game)
   const waiting = update(initialModel(), Message.SavesLoaded({ index, now: 0 })).model
   const quiet = update(waiting, Message.CompanyLoaded({ id, open: false, json: null }))
-  expect(quiet.model.saves).toEqual({ current: null, companies: [] })
+  expect(savesOf(quiet.model.saves)).toEqual({ lastPlayed: null, companies: [] })
   expect(quiet.model.toast).toBeNull()
 
   const opened = update(waiting, Message.CompanyLoaded({ id, open: true, json: null }))
-  expect(opened.model.saves).toEqual({ current: null, companies: [] })
+  expect(savesOf(opened.model.saves)).toEqual({ lastPlayed: null, companies: [] })
   expect(opened.model.toast?.tone).toBe('warn')
   expect(opened.commands).toEqual(
     expect.arrayContaining([expect.objectContaining({ name: 'DeleteCompany' })]),
@@ -1751,7 +1811,7 @@ test('a save travels as one line of text, and only a save of this format opens i
   const playable: Model = {
     ...start,
     companyPhase: { _tag: 'Open', id: 'c' },
-    saves: { ...withFile(EMPTY_SAVE_INDEX, file), current: 'c' },
+    saves: { _tag: 'Ready', index: { ...withFile(EMPTY_SAVE_INDEX, file), lastPlayed: 'c' } },
   }
   const exported = update(playable, Message.SaveExported())
   const copied = (
@@ -1822,14 +1882,16 @@ test('a save imported with no Company open becomes a new Company', () => {
   const imported = update(initialModel(), Message.SaveImported({ text }))
   expect(hasCompany(imported.model)).toBe(true)
   expect(imported.model.toast?.tone).toBe('ok')
-  expect(imported.model.saves.companies).toHaveLength(1)
-  expect(imported.model.saves.companies[0]).toMatchObject({
+  expect(savesOf(imported.model.saves).companies).toHaveLength(1)
+  expect(savesOf(imported.model.saves).companies[0]).toMatchObject({
     name: 'Imported company',
     venture: game.founding.venture,
     stage: game.stage,
     users: game.users,
   })
-  expect(imported.model.saves.current).toBe(imported.model.saves.companies[0]?.id)
+  expect(savesOf(imported.model.saves).lastPlayed).toBe(
+    savesOf(imported.model.saves).companies[0]?.id,
+  )
   expect(imported.model.board.game.cash).toBe(777)
   expect(imported.model.route).toEqual(AppRoute.Company())
   expect((imported.commands ?? []).map((command) => command.name)).toContain('WriteCompany')
@@ -1840,8 +1902,8 @@ test('Import a company adds a Company beside the open one', () => {
   const game = { ...preseedGame(), cash: 555 }
   const text = JSON.stringify({ format: SAVE_FORMAT, ...game })
   const imported = update(founded, Message.CompanyImported({ text }))
-  expect(imported.model.saves.companies).toHaveLength(2)
-  expect(imported.model.saves.current).not.toBe(founded.saves.current)
+  expect(savesOf(imported.model.saves).companies).toHaveLength(2)
+  expect(savesOf(imported.model.saves).lastPlayed).not.toBe(savesOf(founded.saves).lastPlayed)
   expect(imported.model.board.game.cash).toBe(555)
   expect(hasCompany(imported.model)).toBe(true)
   expect(imported.model.toast?.tone).toBe('ok')
@@ -1950,7 +2012,7 @@ test('a stalled running Study raises a teammate alert that opens Research and cl
       game: {
         ...preseedGame(),
         nextIncidentAt: Number.MAX_SAFE_INTEGER,
-        studies: [{ id: 'auth-provider', phase: { _tag: 'Queued', progress: 0 } }],
+        studies: studyQueue([{ id: 'auth-provider', phase: { _tag: 'Queued', progress: 0 } }]),
       },
     },
   }
@@ -2652,6 +2714,48 @@ test('a passed round closes the offer it came from', () => {
     }),
   ).model
   expect(painted.panel).toBe('era')
+})
+
+test('a Room frame’s vote is open in the model, and a frame with none closes it', () => {
+  const vote = {
+    id: 2,
+    kind: 'fund' as const,
+    by: 'tab-1',
+    yes: ['tab-1'],
+    no: [],
+    closesAt: 60,
+  }
+  const model: Model = {
+    ...inLab(),
+    room: {
+      ...EMPTY_ROOM,
+      phase: { _tag: 'Online', code: 'ABC234', seat: 'tab-1', owner: true },
+    },
+  }
+  const painted = update(
+    model,
+    Message.RoomReceived({
+      message: {
+        _tag: 'Snapshot',
+        revision: 2,
+        time: model.board.game.time,
+        game: model.board.game,
+        samples: [],
+        seats: [],
+        owner: 'tab-1',
+        speed: 1,
+        vote,
+      },
+    }),
+  ).model
+  expect(painted.room.vote).toEqual({ _tag: 'Open', vote })
+  const seated = update(
+    painted,
+    Message.RoomReceived({
+      message: { _tag: 'Seats', seats: [], owner: 'tab-1', speed: 1, vote: null },
+    }),
+  ).model
+  expect(seated.room.vote).toEqual({ _tag: 'Idle' })
 })
 
 test('a Seat that joins is announced to the others', () => {

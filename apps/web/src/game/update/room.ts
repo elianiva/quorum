@@ -13,12 +13,14 @@ import {
 import { RoomPhase, roomStep } from '../room-machine.ts'
 import { afterRound } from './session.ts'
 import { withFile } from '../saves.ts'
+import { savesOf, withSaves } from '../saves-machine.ts'
 import { CopyText, WriteCompany, PublishRoom, SendRoom } from '../commands.ts'
 import { ROOM_NAME_LENGTH } from '../names.ts'
 import { setRoomName } from '../../platform/room-socket.ts'
 import { refusalIn } from '../../i18n/refusal.ts'
 import { ROOM_MAX_SAMPLES, ServerMessage } from '@quorum/simulation/room'
-import type { ClientMessage } from '@quorum/simulation/room'
+import type { ClientMessage, Vote } from '@quorum/simulation/room'
+import { RoomVote } from '@quorum/simulation/vote-machine'
 import type { Sample } from '@quorum/simulation/state'
 import type { RoomEnd } from '../room-machine.ts'
 import {
@@ -48,12 +50,17 @@ type RoomTag =
   | 'RoomNameSaved'
   | 'RoomLinkCopied'
 
+const noVote: RoomVote = RoomVote.cases.Idle.make({})
+
+const roomVoteOf = (vote: Vote | null): RoomVote =>
+  vote === null ? noVote : RoomVote.cases.Open.make({ vote })
+
 const emptyRoom = (model: Model, phase: Room['phase']): Room => ({
   ...model.room,
   phase,
   seats: [],
   speed: 1,
-  vote: null,
+  vote: noVote,
   seq: 1,
 })
 
@@ -66,7 +73,7 @@ const painted = (
     game: Model['board']['game']
     seats: Room['seats']
     speed: number
-    vote: Room['vote']
+    vote: Vote | null
     samples: ReadonlyArray<Sample>
     time: number
   }>,
@@ -90,7 +97,7 @@ const painted = (
       ...model.room,
       seats: frame.seats,
       speed: frame.speed,
-      vote: frame.vote,
+      vote: roomVoteOf(frame.vote),
     },
   }
 }
@@ -128,7 +135,7 @@ const received = (model: Model, message: ServerMessage): UpdateResult =>
           }),
           seats: frame.seats,
           speed: frame.speed,
-          vote: frame.vote,
+          vote: roomVoteOf(frame.vote),
         },
       }
       return roomOwner(next)
@@ -159,7 +166,7 @@ const received = (model: Model, message: ServerMessage): UpdateResult =>
           ...model.room,
           seats: frame.seats,
           speed: frame.speed,
-          vote: frame.vote,
+          vote: roomVoteOf(frame.vote),
         },
       },
     }),
@@ -196,7 +203,10 @@ const handover = (model: Model, game: Model['board']['game']): UpdateResult => {
   const code = roomCode(model)
   const file = code === null ? null : onlineFileOf(model, code)
   const board = { ...model.board, game }
-  const online = file === null ? model.saves : withFile(model.saves, { ...file, online: null })
+  const online =
+    file === null
+      ? model.saves
+      : withSaves(model.saves, withFile(savesOf(model.saves), { ...file, online: null }))
   const next: Model = {
     ...model,
     board,
@@ -211,7 +221,7 @@ const handover = (model: Model, game: Model['board']['game']): UpdateResult => {
       : [
           WriteCompany({
             id: file.id,
-            index: withFile(next.saves, { ...file, online: null }),
+            index: withFile(savesOf(next.saves), { ...file, online: null }),
             ...savePayloadOf(next, board),
           }),
         ]
@@ -221,10 +231,13 @@ const handover = (model: Model, game: Model['board']['game']): UpdateResult => {
 const published = (model: Model, code: string, token: string): UpdateResult => {
   const file = currentFile(model)
   if (file === null) return withToast(model, say(model).room.notAvailable, 'warn')
-  const saves = withFile(model.saves, {
-    ...file,
-    online: { code, token, at: Date.now() },
-  })
+  const saves = withSaves(
+    model.saves,
+    withFile(savesOf(model.saves), {
+      ...file,
+      online: { code, token, at: Date.now() },
+    }),
+  )
   const next: Model = {
     ...model,
     saves,
@@ -234,7 +247,9 @@ const published = (model: Model, code: string, token: string): UpdateResult => {
   }
   return {
     model: next,
-    commands: [WriteCompany({ id: file.id, index: saves, ...savePayloadOf(next, next.board) })],
+    commands: [
+      WriteCompany({ id: file.id, index: savesOf(saves), ...savePayloadOf(next, next.board) }),
+    ],
   }
 }
 
@@ -242,20 +257,34 @@ export const roomHandlers = (model: Model): MessageCases<UpdateResult, RoomTag> 
   RoomReceived: ({ message }) => received(model, message),
   RoomStatusChanged: ({ status }) => {
     if (status === 'open') return { model }
+    const phase = model.room.phase
     if (status === 'full') {
-      const next: Model = {
-        ...model,
-        room: { ...model.room, phase: roomStep(model.room.phase, { _tag: 'Left' }), seats: [] },
-        route: hasCompany(model) ? AppRoute.Company() : AppRoute.Title(),
-        panel: 'none',
+      if (!RoomPhase.guards.Connecting(phase) && !RoomPhase.guards.Online(phase)) return { model }
+      return {
+        model: {
+          ...model,
+          room: {
+            ...model.room,
+            phase: roomStep(phase, { _tag: 'Failed', reason: 'full' }),
+          },
+        },
       }
-      return withToast(next, say(model).room.full, 'warn')
     }
-    if (!RoomPhase.guards.Online(model.room.phase)) return { model }
+    if (RoomPhase.guards.Connecting(phase))
+      return {
+        model: {
+          ...model,
+          room: {
+            ...model.room,
+            phase: roomStep(phase, { _tag: 'Failed', reason: 'unreachable' }),
+          },
+        },
+      }
+    if (!RoomPhase.guards.Online(phase)) return { model }
     return {
       model: {
         ...model,
-        room: { ...model.room, phase: roomStep(model.room.phase, { _tag: 'Dropped' }) },
+        room: { ...model.room, phase: roomStep(phase, { _tag: 'Dropped' }) },
       },
     }
   },

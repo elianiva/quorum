@@ -3,7 +3,13 @@ import type { Ledger } from './ledger.ts'
 import { has, isDown, securityStaffed } from './lookups.ts'
 import { survivesRegion } from './regions.ts'
 import { budgetOf } from './slo.ts'
-import { drillPassed, drillRto, step as drillStep, type DrillPhase } from './drill-machine.ts'
+import {
+  DrillState,
+  drillPassed,
+  drillRto,
+  startDrill,
+  step as drillStep,
+} from './drill-machine.ts'
 import type { Game, GameNode } from './state.ts'
 import { valuationOf } from './valuation.ts'
 
@@ -51,15 +57,12 @@ export const rpoOf = (game: Game, ledger: Ledger | null): number => {
   return worst
 }
 
-export const newDrill = (game: Game, ledger: Ledger | null): DrillPhase => ({
-  _tag: 'Running',
-  startedAt: game.time,
-  rpo: Math.min(rpoOf(game, ledger), LARGEST_FINITE_RPO),
-})
+export const newDrill = (game: Game, ledger: Ledger | null): DrillState =>
+  startDrill(game.drill, game.time, Math.min(rpoOf(game, ledger), LARGEST_FINITE_RPO))
 
-export const advanceDrill = (game: Game, ledger: Ledger): DrillPhase | null => {
+export const advanceDrill = (game: Game, ledger: Ledger): DrillState => {
   const drill = game.drill
-  if (!drill || drill._tag !== 'Running') return drill
+  if (!DrillState.guards.Running(drill)) return drill
   const elapsed = game.time - drill.startedAt
   return drillStep(drill, { _tag: 'Ticked', elapsed, errorShare: ledger.errorShare })
 }
@@ -142,19 +145,19 @@ export const checklistOf = (game: Game, ledger: Ledger): ReadonlyArray<Checklist
       id: 'drill',
       label: 'DR drill',
       met: drillPassed(drill),
-      value: !drill
-        ? 'Not run'
-        : drill._tag === 'Running'
-          ? 'Running'
-          : drillPassed(drill)
-            ? `RTO ${Math.round(drillRto(drill) ?? 0)} min`
+      value: DrillState.match(drill, {
+        Idle: () => 'Not run',
+        Running: () => 'Running',
+        Recovered: (phase) =>
+          drillPassed(phase)
+            ? `RTO ${Math.round(drillRto(phase) ?? 0)} min`
             : brokenRestore(game)
               ? 'Restore failed'
-              : drill._tag === 'Failed'
-                ? 'Not recovered'
-                : drill.rpo >= DRILL_RPO
-                  ? 'Data lost'
-                  : `RTO ${Math.round(drillRto(drill) ?? 0)} min`,
+              : phase.rpo >= DRILL_RPO
+                ? 'Data lost'
+                : `RTO ${Math.round(drillRto(phase) ?? 0)} min`,
+        Failed: () => (brokenRestore(game) ? 'Restore failed' : 'Not recovered'),
+      }),
     },
     {
       id: 'residency',

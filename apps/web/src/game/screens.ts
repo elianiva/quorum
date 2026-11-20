@@ -1,4 +1,5 @@
 import { css, cx } from '@quorum/styled-system/css'
+import { activeIncident } from '@quorum/simulation/state'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import { dock } from '@/components/lab/dock.ts'
 import {
@@ -135,7 +136,7 @@ export const labScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
           }),
         ),
       ],
-      [nodeList(model, ledger, h), boardHost(h), screenshotExit(h)],
+      [nodeList(model, ledger, h), boardHost(model, h), screenshotExit(h)],
     )
   const hudWidth: 248 | 276 = boardChallenge(model.board) || boardSandbox(model.board) ? 248 : 276
   return h.main(
@@ -151,7 +152,7 @@ export const labScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
     ],
     [
       nodeList(model, ledger, h),
-      boardHost(h),
+      boardHost(model, h),
       h.div(
         [h.Class(TOP)],
         [
@@ -173,7 +174,7 @@ export const labScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
                       ? objectiveBar(model, h)
                       : h.empty,
                   incidentNotice(model, h),
-                  model.board.game.incident ? h.empty : mailQueueRow(model, h),
+                  activeIncident(model.board.game) !== null ? h.empty : mailQueueRow(model, h),
                   alertsNotice(model, h),
                 ],
               ),

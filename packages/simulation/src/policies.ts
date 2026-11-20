@@ -7,6 +7,7 @@ import {
   AUTOPILOT_PAYROLL,
   POLICY_LEVEL,
 } from './catalog/legacy.ts'
+import { currentStudy } from './study-machine.ts'
 import { recipeOf } from './studies.ts'
 import { perkLevel } from './founding.ts'
 import type { Ledger } from './ledger.ts'
@@ -29,7 +30,7 @@ const payable = (game: Game, ledger: Ledger, id: keyof typeof RESEARCH): boolean
 export const applyPolicies = (game: Game, ledger: Ledger): Game => {
   if (game.sandbox || perkLevel(game, 'autopilot') === 0) return game
   let next = game
-  if (policyOn(next, 'research') && next.studies.length === 0) {
+  if (policyOn(next, 'research') && currentStudy(next.studies) === undefined) {
     const cheapest = RESEARCH_IDS.filter(
       (id) =>
         researchReady(next, id) && payable(next, ledger, id) && Result.isSuccess(study(next, id)),

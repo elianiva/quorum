@@ -66,8 +66,6 @@ export const pips = (
   }
 }
 
-export const HOLD_S = 0.6
-
 export const inFooter = (node: GameNode, point: Pt): boolean => {
   if (!layoutOf(node.type).footer) return false
   const rect = footerRect(node.type)

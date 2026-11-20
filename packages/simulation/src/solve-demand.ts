@@ -17,6 +17,7 @@ import { mixOf } from './features.ts'
 import { has } from './lookups.ts'
 import { regional, regionalCycle, userSharesOf } from './regions.ts'
 import { type Game } from './state.ts'
+import { activeIncident } from './state.ts'
 
 export const diurnal = (time: number): number => {
   const minute = calendarMinute(time) % 1440
@@ -44,9 +45,10 @@ export const ventureWeekly = (game: Game): number => {
 
 export const demandOf = (game: Game): Partial<Record<RequestKind, number>> => {
   const mix = mixOf(game)
-  const spike = game.incident?.kind === 'spike' ? game.incident.magnitude : 1
-  const deadline = game.incident?.kind === 'deadline-day' ? DEADLINE_SURGE : 1
-  const surge = game.incident ? KIND_SURGE[game.incident.kind] : undefined
+  const incident = activeIncident(game)
+  const spike = incident?.kind === 'spike' ? incident.magnitude : 1
+  const deadline = incident?.kind === 'deadline-day' ? DEADLINE_SURGE : 1
+  const surge = incident ? KIND_SURGE[incident.kind] : undefined
   const cycle = game.sandbox
     ? game.scenario?.daily && regional(game)
       ? regionalCycle(game.time, userSharesOf(game))
@@ -69,11 +71,11 @@ export const demandOf = (game: Game): Partial<Record<RequestKind, number>> => {
   }
   const stuffing = has(game, 'credential-protection') ? CREDENTIAL_PROTECTION_BLOCK : 1
   const attack =
-    game.incident?.kind === 'bot-surge'
+    incident?.kind === 'bot-surge'
       ? total * BOT_SURGE
-      : game.incident?.kind === 'ddos'
+      : incident?.kind === 'ddos'
         ? total * DDOS_MAGNITUDE
-        : game.incident?.kind === 'stuffing'
+        : incident?.kind === 'stuffing'
           ? total * (mix.login ?? 0.04) * STUFFING_MAGNITUDE * stuffing
           : 0
   if (attack > 0) demand.bot = (demand.bot ?? 0) + attack

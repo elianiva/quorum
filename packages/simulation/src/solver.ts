@@ -48,6 +48,7 @@ import {
   samplingOf,
 } from './solve-graph.ts'
 import type { Game } from './state.ts'
+import { activeIncident } from './state.ts'
 import {
   badDeployShareOf,
   blastService,
@@ -465,7 +466,7 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
   const subscriptions = subscriptionsOf(game)
   const perk = insightPerk(game)
   const staffed = dataStaffed(game) ? 1 : 0
-  const incident = game.incident
+  const incident = activeIncident(game)
   const incidentNode = game.nodes.findIndex((entry) => entry.id === incident?.nodeId)
   const target = chaosTarget(game)
   const chaos = game.nodes.findIndex((entry) => entry.id === target)
@@ -615,7 +616,7 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
     row[SLOT.storePut] = storageRequestBurnOf(node, 0, 1)
     row[SLOT.syncWait] = data ? syncWaitMs(game, node) : 0
     row[SLOT.iopsFactor] =
-      game.reshard?.node === node.id &&
+      game.reshard.node === node.id &&
       game.reshard.phase._tag === 'Copying' &&
       game.time < game.reshard.phase.until
         ? S.RESHARD_IOPS

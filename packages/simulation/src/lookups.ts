@@ -90,6 +90,7 @@ import type {
   Service,
   StorageClass,
 } from './state.ts'
+import { activeIncident } from './state.ts'
 
 export const perkLevel = (game: Game, id: PerkId): number =>
   game.sandbox ? 0 : Math.min(PERKS[id].costs.length, game.founding.perks[id] ?? 0)
@@ -192,7 +193,7 @@ export const sampleIndex = (node: GameNode): number => {
 
 export const vcpuOf = (node: GameNode): number => SIZES[node.size]?.vcpu ?? 1
 
-export const stuffing = (game: Game): boolean => game.incident?.kind === 'stuffing'
+export const stuffing = (game: Game): boolean => activeIncident(game)?.kind === 'stuffing'
 
 export const hopMs = (game: Game): number => HOP_MS + (has(game, 'keepalive') ? 0 : HANDSHAKE_MS)
 
@@ -450,9 +451,10 @@ export const replicationPairsOf = (game: Game): ReadonlyArray<{ from: GameNode; 
   })
 
 export const datastoreNodeOf = (game: Game, service: Service): GameNode | null => {
+  const pinned = service.datastore._tag === 'Pinned' ? service.datastore.id : undefined
   const id =
-    service.datastore && game.nodes.some((node) => node.id === service.datastore)
-      ? service.datastore
+    pinned !== undefined && game.nodes.some((node) => node.id === pinned)
+      ? pinned
       : databasesOf(game)[0]?.id
   return id ? (game.nodes.find((node) => node.id === id) ?? null) : null
 }

@@ -14,6 +14,7 @@ import {
   shapeHolds,
   studyStall,
 } from '../src/studies.ts'
+import { currentStudy } from '../src/study-machine.ts'
 import type { Game } from '../src/state.ts'
 
 const ok = (result: Result.Result<Game, unknown>): Game => {
@@ -102,21 +103,29 @@ test('a Study keeps running when its shape lapses, and waits for it before it st
   const base = withPools({ ...preseedGame(), stage: 3 })
   const running: Game = {
     ...base,
-    studies: [{ id: 'autoscaling', phase: { _tag: 'Running', progress: 0.5 } }],
+    studies: {
+      _tag: 'Working',
+      current: { id: 'autoscaling', phase: { _tag: 'Running', progress: 0.5 } },
+      queued: [],
+    },
   }
   const ledger = solveFlow(running)
   expect(shapeHolds(running, ledger, 'autoscaling')).toBe(false)
   expect(studyStall(running, ledger, 'autoscaling')).toBeNull()
 
   const after = advanceStudies(running, ledger, 10, [])
-  expect(progressOf(after.studies[0])).toBeGreaterThan(0.5)
+  expect(progressOf(currentStudy(after.studies))).toBeGreaterThan(0.5)
 
   const queued: Game = {
     ...base,
-    studies: [{ id: 'autoscaling', phase: { _tag: 'Queued', progress: 0 } }],
+    studies: {
+      _tag: 'Working',
+      current: { id: 'autoscaling', phase: { _tag: 'Queued', progress: 0 } },
+      queued: [],
+    },
   }
   const waiting = advanceStudies(queued, solveFlow(queued), 10, [])
-  expect(waiting.studies[0]?.phase).toMatchObject({ _tag: 'Queued', progress: 0 })
+  expect(currentStudy(waiting.studies)?.phase).toMatchObject({ _tag: 'Queued', progress: 0 })
 })
 
 test('a trace needs three Component types, and profiling needs four', () => {

@@ -4,7 +4,7 @@
    and a calendar day is DAY ticks (the real Step is 0.1 s of a 1440 s day). *)
 EXTENDS Naturals, Integers, FiniteSets, TLC
 
-CONSTANTS Salary, DAY, ReBridge, SameStep  \* ReBridge and SameStep = TRUE are the broken variants
+CONSTANTS Salary, DAY, ReBridge, SameStep  \* ReBridge and SameStep = TRUE remove a guard
 
 Nodes == {"a", "b"}
 Cost == ("a" :> 2) @@ ("b" :> 3)

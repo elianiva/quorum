@@ -68,6 +68,8 @@ import {
 } from './model.ts'
 import { LOGOS } from './logos.ts'
 import { MAX_COMPANY_NAME, nameOr, recent, type CompanyFile } from './saves.ts'
+import { savesOf } from './saves-machine.ts'
+import { pwaInstallable, pwaInstalled } from './pwa-machine.ts'
 import { menuOf, type MenuPage } from './route.ts'
 import { browserFamilyOf, onIos } from '../platform/pwa.ts'
 import { play } from './sound.ts'
@@ -1089,17 +1091,21 @@ const firstRun = (open: boolean, h: HtmlBuilder<Message>): Html => {
 const notices = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
   const out: Array<Html> = []
-  if (!model.pwa.installed && !model.prefs.pwaPromptSeen && model.saves.companies.length > 0) {
+  if (
+    !pwaInstalled(model.pwa.install) &&
+    !model.prefs.pwaPromptSeen &&
+    savesOf(model.saves).companies.length > 0
+  ) {
     out.push(
       line(
         {
           key: 'pwa-install',
           label: t.pwa.installQuorum,
-          detail: model.pwa.installable
+          detail: pwaInstallable(model.pwa.install)
             ? t.pwa.installPrompt
             : t.pwa.installHelp[browserFamilyOf()],
           figure: glyph(Download, h),
-          message: model.pwa.installable ? Message.PwaInstallChosen() : null,
+          message: pwaInstallable(model.pwa.install) ? Message.PwaInstallChosen() : null,
         },
         h,
       ),
@@ -1114,7 +1120,7 @@ const notices = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => 
 
 const mainIndex = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
-  const count = model.saves.companies.length
+  const count = savesOf(model.saves).companies.length
   const passed = SANDBOX_IDS.filter((id) => model.passed.includes(id)).length
   const solved = CHALLENGES.filter((entry) => model.founder.completed.includes(entry.id)).length
   let n = 0
@@ -1508,11 +1514,11 @@ const fileLine = (file: CompanyFile, h: HtmlBuilder<Message>) => {
 
 const companiesBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
-  if (model.saves.companies.length === 0) return [note(t.title.noCompaniesSavedYet, h)]
+  if (savesOf(model.saves).companies.length === 0) return [note(t.title.noCompaniesSavedYet, h)]
   return [
     h.div(
       [h.Class('qm-bus')],
-      recent(model.saves.companies).map((file, index) =>
+      recent(savesOf(model.saves).companies).map((file, index) =>
         line(
           {
             key: file.id,
@@ -1522,7 +1528,7 @@ const companiesBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Htm
             figure:
               file.online !== null
                 ? `${t.room.onlineMark} · ${file.online.code}`
-                : file.id === model.saves.current
+                : file.id === savesOf(model.saves).lastPlayed
                   ? t.title.current
                   : dateOf(file),
             message: Message.CompanyChosen({ id: file.id }),
@@ -1539,9 +1545,9 @@ const companiesBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Htm
 
 const saveBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
-  const file = model.saves.companies.find((entry) => entry.id === model.saveFocus)
+  const file = savesOf(model.saves).companies.find((entry) => entry.id === model.saveFocus)
   if (!file) return []
-  const isCurrent = file.id === model.saves.current
+  const isCurrent = file.id === savesOf(model.saves).lastPlayed
   const started = new Date(file.createdAt).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
@@ -1888,17 +1894,17 @@ const settingsBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html
   const t = copy(h)
   const sections = settingsSections(model, t)
   const pwa: Array<Html> = []
-  if (!model.pwa.installed) {
+  if (!pwaInstalled(model.pwa.install)) {
     pwa.push(
       line(
         {
           key: 'pwa-install-setting',
           label: t.pwa.installQuorum,
-          detail: model.pwa.installable
+          detail: pwaInstallable(model.pwa.install)
             ? t.pwa.installDetail
             : t.pwa.installHelp[browserFamilyOf()],
           figure: glyph(Download, h),
-          message: model.pwa.installable ? Message.PwaInstallChosen() : null,
+          message: pwaInstallable(model.pwa.install) ? Message.PwaInstallChosen() : null,
         },
         h,
       ),
@@ -1953,11 +1959,11 @@ const pagesOf = (model: Model, h: HtmlBuilder<Message>): Record<Exclude<Page, 'm
     companies: {
       title: t.title.companies,
       body: companiesBody,
-      figure: (m) => `${m.saves.companies.length}`,
+      figure: (m) => `${savesOf(m.saves).companies.length}`,
     },
     save: {
       title:
-        model.saves.companies.find((entry) => entry.id === model.saveFocus)?.name ??
+        savesOf(model.saves).companies.find((entry) => entry.id === model.saveFocus)?.name ??
         t.title.company,
       body: saveBody,
     },

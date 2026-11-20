@@ -5,21 +5,26 @@ import { ERAS } from '@quorum/simulation/catalog'
 import { newGame } from '@quorum/simulation/company'
 import { intent } from '@quorum/simulation/room'
 import { sandboxOf } from '@quorum/simulation/sandbox'
+import { openVoteOf } from '@quorum/simulation/vote-machine'
 import {
   advance,
   ALARM_MS,
   apply,
   ballot,
   enter,
+  expired,
   finalOf,
   join,
   leave,
   MAX_CATCH_UP_STEPS,
   MAX_LINKS,
   MAX_NODES,
+  ROOM_IDLE_MS,
   STORAGE_VALUE_BYTES,
   openRoom,
+  resting,
   restoreRoom,
+  snapshotOf,
   startVote,
   storedRoom,
   writesOf,
@@ -62,9 +67,55 @@ describe('restore', () => {
   test('a Game missing a field added since the Room opened gets its default', () => {
     const room = open()
     const old = { ...room.game } as unknown as Record<string, unknown>
-    delete old['training']
+    delete old['studies']
     const restored = restoreRoom({ ...room, game: old as unknown as Game }, 'test')
-    expect(restored?.game.training).toEqual([])
+    expect(restored?.game.studies).toEqual({ _tag: 'Empty' })
+  })
+})
+
+describe('the lifecycle', () => {
+  test('a Room with no one in it is idle from the wall time it opened', () => {
+    const room = open()
+    expect(room.lifecycle).toEqual({ _tag: 'Idle', since: 0 })
+    expect(expired(room, ROOM_IDLE_MS)).toBe(false)
+    expect(expired(room, ROOM_IDLE_MS + 1)).toBe(true)
+  })
+
+  test('a Room with a seat is live, and an empty one is idle again', () => {
+    const { state, owner, guest } = withSeats()
+    expect(state.lifecycle).toEqual({ _tag: 'Live' })
+    const empty = leave(leave(state, guest, 10), owner, 20)
+    expect(empty.lifecycle).toEqual({ _tag: 'Idle', since: 20 })
+    expect(expired(empty, 20 + ROOM_IDLE_MS)).toBe(false)
+    expect(expired(empty, 20 + ROOM_IDLE_MS + 1)).toBe(true)
+  })
+
+  test('a seat joining an idle Room makes it live again', () => {
+    const { state, owner, guest } = withSeats()
+    const empty = leave(leave(state, guest, 10), owner, 20)
+    const back = join(empty, { id: 'tab-9', name: 'Back' }, 3_600_000)
+    if (Result.isFailure(back)) throw new Error('seat did not join')
+    expect(back.success.state.lifecycle).toEqual({ _tag: 'Live' })
+  })
+
+  test('a seated Room with no socket is abandoned, and a later rest keeps its date', () => {
+    const { state } = withSeats()
+    const abandoned = resting(state, 99)
+    expect(abandoned.lifecycle).toEqual({ _tag: 'Abandoned', since: 99 })
+    expect(abandoned.seats).toHaveLength(2)
+    expect(resting(abandoned, 100)).toBe(abandoned)
+    expect(expired(abandoned, 99 + ROOM_IDLE_MS)).toBe(false)
+    expect(expired(abandoned, 99 + ROOM_IDLE_MS + 1)).toBe(true)
+  })
+
+  test('an ended Room refuses a late join', () => {
+    const { state, owner, guest } = withSeats()
+    const started = startVote(state, owner, 'exit')
+    if (Result.isFailure(started)) throw new Error('no vote')
+    const passed = ballot(started.success, guest, true)
+    expect(passed.state.lifecycle).toEqual({ _tag: 'Ended', reason: 'handover' })
+    expect(Result.isFailure(join(passed.state, { id: 'tab-9', name: 'Late' }, 30))).toBe(true)
+    expect(advance(passed.state, 10_000).steps).toBe(0)
   })
 })
 
@@ -115,8 +166,48 @@ describe('storage', () => {
     expect(restoreRoom(store.load()!.state, 'test')).toEqual(state)
   })
 
+  test('a Room saved before the lifecycle loads with the lifecycle it had', () => {
+    const split = storage()
+    const room = open()
+    const { lifecycle: _lifecycle, ...parts } = room
+    split.held.set(REST_KEY, { ...parts, open: true, ended: null, idleAt: 42 })
+    split.held.set(GAME_KEY, structuredClone(room.game))
+    split.held.set(SAMPLES_KEY, [])
+    expect(split.load()).toEqual({
+      state: { ...room, lifecycle: { _tag: 'Idle', since: 42 } },
+      whole: false,
+    })
+
+    const whole = storage()
+    whole.held.set(WHOLE_KEY, { ...parts, open: true, ended: 'handover', idleAt: null })
+    expect(whole.load()).toEqual({
+      state: { ...room, lifecycle: { _tag: 'Ended', reason: 'handover' } },
+      whole: true,
+    })
+  })
+
   test('empty storage holds no Room', () => {
     expect(storage().load()).toBeNull()
+  })
+
+  test('a Room saved before the vote was a machine loads its vote', () => {
+    const room = open()
+    const { vote: _vote, ...parts } = room
+    const vote = {
+      id: 4,
+      kind: 'fund' as const,
+      by: 'tab-1',
+      yes: ['tab-1'],
+      no: [],
+      closesAt: 90,
+    }
+    const split = storage()
+    split.held.set(GAME_KEY, structuredClone(room.game))
+    split.held.set(SAMPLES_KEY, [])
+    split.held.set(REST_KEY, { ...parts, vote: null })
+    expect(split.load()?.state.vote).toEqual({ _tag: 'Idle' })
+    split.held.set(REST_KEY, { ...parts, vote })
+    expect(split.load()?.state.vote).toEqual({ _tag: 'Open', vote })
   })
 
   test('a vote and a Seat do not rewrite the Game or the samples', () => {
@@ -135,7 +226,7 @@ describe('storage', () => {
 
   test('an accepted Intent rewrites the Game, and a Step the samples it added', () => {
     const store = storage()
-    const room = open()
+    const { state: room } = withSeats()
     store.save(room, null)
     const moved = apply(room, [intent('move', node.id, 4, 5)])
     if (Result.isFailure(moved)) throw new Error('the move did not apply')
@@ -177,7 +268,7 @@ describe('seats', () => {
     if (Result.isSuccess(joined)) {
       expect(joined.success.seat.owner).toBe(true)
       expect(joined.success.state.ownerSeat).toBe('tab-1')
-      expect(joined.success.state.idleAt).toBeNull()
+      expect(joined.success.state.lifecycle).toEqual({ _tag: 'Live' })
     }
   })
 
@@ -242,30 +333,31 @@ describe('seats', () => {
     const { state, owner, guest } = withSeats()
     const one = leave(state, guest, 10)
     expect(one.seats.length).toBe(1)
-    expect(one.idleAt).toBeNull()
+    expect(one.lifecycle).toEqual({ _tag: 'Live' })
     const none = leave(one, owner, 20)
     expect(none.seats.length).toBe(0)
-    expect(none.idleAt).toBe(20)
+    expect(none.lifecycle).toEqual({ _tag: 'Idle', since: 20 })
   })
 })
 
 describe('the clock', () => {
   test('a wall second is ten Steps', () => {
-    const room = open()
+    const { state: room } = withSeats()
     const { state, steps } = advance(room, 1_000)
     expect(steps).toBe(10)
     expect(state.game.time).toBeCloseTo(room.game.time + 1, 6)
   })
 
   test('a sim second adds one sample and leaves the Game lean', () => {
-    const room = open()
+    const { state: room } = withSeats()
     const { state } = advance(room, 4_000)
     expect(state.samples.length).toBeGreaterThan(0)
     expect(state.game.history).toEqual([])
   })
 
   test('a paused Room does not step', () => {
-    const room = { ...open(), open: false }
+    const { state, owner, guest } = withSeats()
+    const room = leave(leave(state, guest, 10), owner, 20)
     expect(advance(room, 10_000).steps).toBe(0)
   })
 
@@ -296,7 +388,7 @@ describe('the clock', () => {
 
 describe('intents', () => {
   test('an accepted intent bumps the revision and keeps history out', () => {
-    const room = open()
+    const { state: room } = withSeats()
     const applied = apply(room, [intent('move', node.id, 4, 5)])
     expect(applied._tag).toBe('Success')
     if (applied._tag === 'Success') {
@@ -306,7 +398,7 @@ describe('intents', () => {
   })
 
   test('a refusal changes nothing', () => {
-    const room = open()
+    const { state: room } = withSeats()
     const applied = apply(room, [intent('sell', 'nope')])
     expect(applied._tag).toBe('Failure')
   })
@@ -314,7 +406,7 @@ describe('intents', () => {
   test("a Sandbox places for free, but not past the Room's Node limit", () => {
     const free = sandboxOf(game)
     const filled = (count: number): RoomState => ({
-      ...open(),
+      ...withSeats().state,
       game: {
         ...free,
         nodes: Array.from({ length: count }, (_, index) => ({ ...node, id: `f${index}` })),
@@ -334,7 +426,7 @@ describe('intents', () => {
     const free = sandboxOf(game)
     const link = free.links[0]!
     const filled = (count: number): RoomState => ({
-      ...open(),
+      ...withSeats().state,
       game: {
         ...free,
         links: [
@@ -364,7 +456,8 @@ describe('votes', () => {
     if (Result.isFailure(started)) return
     const one = ballot(started.success, guest, true)
     expect(one.passed).toBe('exit')
-    expect(one.state.ended).toBe('handover')
+    expect(one.state.lifecycle).toEqual({ _tag: 'Ended', reason: 'handover' })
+    expect(expired(one.state, 10 * ROOM_IDLE_MS)).toBe(false)
   })
 
   test('a seat that leaves drops its ballot', () => {
@@ -372,11 +465,22 @@ describe('votes', () => {
     const started = startVote(state, owner, 'exit')
     if (Result.isFailure(started)) throw new Error('no vote')
     const voted = ballot(started.success, owner, true)
-    expect(voted.state.vote?.yes).toContain(owner)
+    expect(openVoteOf(voted.state.vote)?.yes).toContain(owner)
     const left = leave(voted.state, guest, 1)
-    expect(left.vote?.yes).toContain(owner)
+    expect(openVoteOf(left.vote)?.yes).toContain(owner)
     const after = ballot(left, owner, true)
     expect(after.passed).toBe('exit')
+  })
+
+  test('the last seat leaving closes the vote', () => {
+    const { state, owner, guest } = withSeats()
+    const started = startVote(state, owner, 'fund')
+    if (Result.isFailure(started)) throw new Error('no vote')
+    const one = leave(started.success, guest, 1)
+    expect(openVoteOf(one.vote)).not.toBeNull()
+    const none = leave(one, owner, 2)
+    expect(openVoteOf(none.vote)).toBeNull()
+    expect(none.lifecycle).toEqual({ _tag: 'Idle', since: 2 })
   })
 
   test('a round is declined only when the vote to decline passes', () => {
@@ -402,11 +506,44 @@ describe('votes', () => {
     if (Result.isFailure(started)) throw new Error('no vote')
     expect(startVote(started.success, owner, 'fund')._tag).toBe('Failure')
   })
+
+  test('a ballot with no vote open changes nothing', () => {
+    const { state, guest } = withSeats()
+    expect(ballot(state, guest, true).state).toBe(state)
+  })
+
+  test('a vote that runs out of time closes', () => {
+    const { state, owner } = withSeats()
+    const started = startVote(state, owner, 'exit')
+    if (Result.isFailure(started)) throw new Error('no vote')
+    const near = { ...started.success, game: { ...started.success.game, time: 54 } }
+    const { state: later } = advance(near, 60_000)
+    expect(later.vote).toEqual({ _tag: 'Idle' })
+  })
+
+  test('a ballot whose action fails closes the vote', () => {
+    const { state, owner, guest } = withSeats()
+    const started = startVote(state, owner, 'fund')
+    if (Result.isFailure(started)) throw new Error('no vote')
+    const passed = ballot(started.success, guest, true)
+    expect(passed.passed).toBeNull()
+    expect(passed.state.vote).toEqual({ _tag: 'Idle' })
+  })
+
+  test('a snapshot carries the open vote and hides an idle one', () => {
+    const { state, owner } = withSeats()
+    expect(snapshotOf(state).vote).toBeNull()
+    const started = startVote(state, owner, 'exit')
+    if (Result.isFailure(started)) throw new Error('no vote')
+    const open = openVoteOf(started.success.vote)
+    expect(snapshotOf(started.success).vote).toEqual(open)
+    expect(open?.id).toBe(1)
+  })
 })
 
 describe('the handover', () => {
   test('the owner gets the samples back inside the Game', () => {
-    const room = open()
+    const { state: room } = withSeats()
     const { state } = advance(room, 4_000)
     const final = finalOf(state)
     expect(final.game.history).toEqual([...state.samples])
@@ -418,8 +555,9 @@ describe('the handover', () => {
     if (Result.isFailure(started)) throw new Error('no vote')
     const passed = ballot(started.success, guest, true)
     expect(passed.passed).toBe('exit')
-    if (passed.state.ended === null) throw new Error('not ended')
+    if (passed.state.lifecycle._tag !== 'Ended') throw new Error('not ended')
     expect(Result.isSuccess(apply(passed.state, [intent('move', node.id, 1, 1)]))).toBe(false)
+    expect(Result.isFailure(startVote(passed.state, owner, 'fund'))).toBe(true)
     expect(finalOf(passed.state).game.history.length).toBe(passed.state.samples.length)
   })
 })

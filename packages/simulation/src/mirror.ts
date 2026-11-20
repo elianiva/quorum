@@ -141,7 +141,7 @@ const ok = (game: Game): Action => Result.succeed(game)
 const no = (refusal: Refusal): Action => Result.fail(refusal)
 const notAllowed = (reason: string): Action => no(Refusal.NotAllowed({ reason }))
 
-export const mirrorsOf = (game: Game): ReadonlyArray<Mirror> => game.mirrors ?? []
+export const mirrorsOf = (game: Game): ReadonlyArray<Mirror> => game.mirrors
 
 export const mirrorOf = (game: Game, region: RegionId): Mirror | undefined =>
   mirrorsOf(game).find((mirror) => mirror.region === region)
@@ -151,7 +151,8 @@ const withMirror = (game: Game, mirror: Mirror): Game => ({
   mirrors: mirrorsOf(game).map((entry) => (entry.region === mirror.region ? mirror : entry)),
 })
 
-export const toolOf = (game: Game): IacToolId | null => game.iac?.tool ?? null
+export const toolOf = (game: Game): IacToolId | null =>
+  game.iac._tag === 'Chosen' ? game.iac.tool : null
 
 export const refreshesOnPlan = (game: Game): boolean => {
   const tool = toolOf(game)
@@ -172,7 +173,8 @@ export const patternsFor = (type: ComponentId): ReadonlyArray<DataPatternId> =>
 const defaultPattern = (type: ComponentId): DataPattern =>
   type === 'database' ? 'replica' : 'replicate'
 
-export const switchLeft = (game: Game): number => Math.max(0, (game.iac?.until ?? 0) - game.time)
+export const switchLeft = (game: Game): number =>
+  game.iac._tag === 'Chosen' ? Math.max(0, game.iac.until - game.time) : 0
 
 type Want = Readonly<{ source: string; spec: NodeSpec }>
 
@@ -631,38 +633,39 @@ const locked = (what: string, research: 'infra-as-code' | 'gitops'): Action =>
 
 export const pickIacTool = (game: Game, tool: IacToolId): Action => {
   if (!has(game, 'infra-as-code')) return locked('An IaC tool', 'infra-as-code')
-  if (game.iac?.tool === tool)
+  if (game.iac._tag === 'Chosen' && game.iac.tool === tool)
     return notAllowed(`The code is already in ${IAC_TOOL_INFO[tool].name}.`)
   if (switchLeft(game) > 0) return notAllowed('Finish the current move first.')
+  if (game.mirrors.some((mirror) => isApplying(mirror.sync)))
+    return notAllowed('An Apply is landing.')
+  const chosen = game.iac._tag === 'Chosen' ? game.iac : null
   return ok({
     ...game,
     iac: {
+      _tag: 'Chosen',
       tool,
-      until: game.iac ? game.time + IAC_SWITCH_MINUTES : game.time,
-      sync: game.iac?.sync ?? null,
+      until: chosen ? game.time + IAC_SWITCH_MINUTES : game.time,
+      sync: chosen ? chosen.sync : null,
     },
-    ...(game.mirrors && {
-      mirrors: game.mirrors.map((mirror) => ({
-        ...mirror,
-        sync: MirrorSync.cases.InSync.make({ seen: null }),
-      })),
-    }),
+    mirrors: game.mirrors.map((mirror) => ({
+      ...mirror,
+      sync: MirrorSync.cases.InSync.make({ seen: null }),
+    })),
   })
 }
 
 export const setSyncMode = (game: Game, sync: SyncMode | null): Action => {
   if (sync !== null && !has(game, 'gitops')) return locked('GitOps', 'gitops')
-  if (!game.iac) return notAllowed('Pick an IaC tool first.')
+  if (game.iac._tag !== 'Chosen') return notAllowed('Pick an IaC tool first.')
   return ok({
     ...game,
     iac: { ...game.iac, sync },
-    ...(game.mirrors && { mirrors: game.mirrors.map((mirror) => ({ ...mirror, driftAt: null })) }),
   })
 }
 
 export const startMirror = (game: Game, target: RegionId, source: RegionId): Action => {
   if (!has(game, 'infra-as-code')) return locked('Mirror a region', 'infra-as-code')
-  if (!game.iac) return notAllowed('Pick an IaC tool first.')
+  if (game.iac._tag !== 'Chosen') return notAllowed('Pick an IaC tool first.')
   if (target === source) return notAllowed('Pick another region to mirror from.')
   if (!openRegions(game).includes(source)) return notAllowed('Open the source region first.')
   if (mirrorOf(game, target)) return notAllowed(`${REGION_INFO[target].name} is already a Mirror.`)
@@ -703,7 +706,7 @@ export const stopMirror = (game: Game, region: RegionId): Action =>
     : notAllowed('That region is not a Mirror.')
 
 const applyRefusal = (game: Game, mirror: Mirror): Action | null => {
-  if (!game.iac) return notAllowed('Pick an IaC tool first.')
+  if (game.iac._tag !== 'Chosen') return notAllowed('Pick an IaC tool first.')
   const left = switchLeft(game)
   if (left > 0)
     return notAllowed(
@@ -822,7 +825,7 @@ const syncDelay = (sync: SyncMode): number =>
   sync === 'staged' ? STAGE_WAIT_MINUTES : SYNC_POLL_MINUTES
 
 export const advanceMirrors = (game: Game): Game => {
-  if (!game.mirrors || game.mirrors.length === 0) return game
+  if (game.mirrors.length === 0) return game
   let next = game
   for (const mirror of game.mirrors) {
     const current = mirrorOf(next, mirror.region)
@@ -831,7 +834,7 @@ export const advanceMirrors = (game: Game): Game => {
       if (next.time >= current.sync.readyAt) next = land(next, current)
       continue
     }
-    const sync = next.iac?.sync ?? null
+    const sync = next.iac._tag === 'Chosen' ? next.iac.sync : null
     if (sync === null || switchLeft(next) > 0) continue
     const watched = {
       ...current,

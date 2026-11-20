@@ -2,7 +2,7 @@
 (* The funding round (era-round-machine.ts). step.ts writes Offered when `canRaise` holds; actions.ts
    `advanceEra` (raise and decline) writes Raised or Declined and moves to the next Era. `users` is
    a level from 0 to 3; Era `stage` needs level stage + 1 (`raiseAt`). `Check` = TRUE is the code: advanceEra also
-   needs round = Offered; FALSE is the old code. *)
+   needs round = Offered; FALSE removes the guard. *)
 EXTENDS Naturals
 
 CONSTANT Check

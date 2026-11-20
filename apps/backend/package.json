@@ -12,6 +12,7 @@
     "@quorum/simulation": "workspace:*",
     "@sentry/cloudflare": "11.13.0",
     "@sentry/effect": "11.13.0",
+    "@typeonce/effect-machine": "0.46.0",
     "effect": "4.1.4"
   }
 }

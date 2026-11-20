@@ -17,6 +17,7 @@ import {
 } from './catalog.ts'
 import { has, zoneMs } from './lookups.ts'
 import type { Game, GameNode, PerRegion } from './state.ts'
+import { activeIncident } from './state.ts'
 
 export const isGlobal = (node: GameNode): boolean => GLOBAL_COMPONENTS.includes(node.type)
 
@@ -92,11 +93,12 @@ export const regionShares = (game: Game): ReadonlyArray<readonly [RegionId, numb
   return weights.map(([region, weight]) => [region, total > 0 ? weight / total : 0] as const)
 }
 
-export const outRegion = (game: Game): RegionId | null =>
-  (game.incident?.kind === 'region' || game.incident?.kind === 'dr-drill') &&
-  game.incident.region !== null
-    ? game.incident.region
+export const outRegion = (game: Game): RegionId | null => {
+  const incident = activeIncident(game)
+  return (incident?.kind === 'region' || incident?.kind === 'dr-drill') && incident.region !== null
+    ? incident.region
     : null
+}
 
 export const userRttMs = (game: Game, from: RegionId, to: RegionId): number => {
   const rtt = rttOf(from, to) * USER_ROUND_TRIPS

@@ -96,9 +96,9 @@ import {
   sreStaffed,
   topologyOfGroup,
 } from './lookups.ts'
-import { step as hireStep } from './hire-machine.ts'
 import { step as moveStep } from './data-move-machine.ts'
 import { step as blockStep } from './work-item-machine.ts'
+import { currentStudy } from './study-machine.ts'
 import { step as featureStep } from './feature-machine.ts'
 import { canBoost, teamBoosting, teamHasEngineers, teamReady } from './research-team.ts'
 import { awaitingFeatures, isBuilt, isFeatureLive, mixOf } from './features.ts'
@@ -106,6 +106,7 @@ import { ventureOf } from './founding.ts'
 import {
   bugsFixed,
   cancelMigration,
+  isIdle as migrationIdle,
   isReady,
   shiftMigration,
   startMigration,
@@ -115,7 +116,8 @@ import {
 } from './migration.ts'
 import { nextRandom } from './random.ts'
 import { openRegions } from './regions.ts'
-import { NEW_ENGINEER } from './state.ts'
+import { NEW_ENGINEER, activeIncident } from './state.ts'
+import { updateIncident } from './incident-machine.ts'
 import { warming } from './life.ts'
 import type {
   GameNode,
@@ -225,11 +227,15 @@ export const queueEngineChange = (game: Game, nodeId: string, to: DbEngine): Act
   const node = game.nodes.find((entry) => entry.id === nodeId)
   if (!node || node.type !== 'database') return notAllowed('Only a Database changes engine.')
   if (node.dbEngine === to) return notAllowed(`It already runs ${DB_ENGINES[to].name}.`)
-  if (game.engineChange || queued(game, 'engine'))
+  if (game.engineChange.phase._tag !== 'Idle' || queued(game, 'engine'))
     return notAllowed('A Database engine change is already running.')
   return ok({
     ...enqueue(game, 'move', 'engine', engineCost(game), false, { target: nodeId }),
-    engineChange: { node: nodeId, to, phase: { _tag: 'Building' } },
+    engineChange: {
+      node: nodeId,
+      to,
+      phase: moveStep(game.engineChange.phase, { _tag: 'Queued' }),
+    },
   })
 }
 
@@ -243,7 +249,8 @@ export const queueTopology = (game: Game, nodeId: string, topology: DbTopology):
     return notAllowed(
       'Single primary holds one Database. Split the Data Group, or pick Sharded or Multi-leader.',
     )
-  if (game.reshard || queued(game, 'reshard')) return notAllowed('A resharding is already running.')
+  if (game.reshard.phase._tag !== 'Idle' || queued(game, 'reshard'))
+    return notAllowed('A resharding is already running.')
   if (databasesOfGroup(game, group).length <= 1) return setTopology(game, nodeId, topology)
   return ok({
     ...enqueue(game, 'move', 'reshard', RESHARD_DH, false, { target: nodeId }),
@@ -253,7 +260,7 @@ export const queueTopology = (game: Game, nodeId: string, topology: DbTopology):
       shards: node.shards,
       key: node.shardKey,
       topology,
-      phase: { _tag: 'Building' },
+      phase: moveStep(game.reshard.phase, { _tag: 'Queued' }),
     },
   })
 }
@@ -273,7 +280,8 @@ export const queueReshard = (
   if (shards > 1 && !has(game, 'sharding'))
     return Result.fail(Refusal.Locked({ what: 'Sharding', research: RESEARCH.sharding.name }))
   if (shards === node.shards && key === node.shardKey) return ok(game)
-  if (game.reshard || queued(game, 'reshard')) return notAllowed('A resharding is already running.')
+  if (game.reshard.phase._tag !== 'Idle' || queued(game, 'reshard'))
+    return notAllowed('A resharding is already running.')
   return ok({
     ...enqueue(game, 'move', 'reshard', RESHARD_DH, false, { target: nodeId }),
     reshard: {
@@ -282,7 +290,7 @@ export const queueReshard = (
       shards,
       key,
       topology: node.topology,
-      phase: { _tag: 'Building' },
+      phase: moveStep(game.reshard.phase, { _tag: 'Queued' }),
     },
   })
 }
@@ -307,18 +315,20 @@ const moved = (game: Game, item: WorkItem, tuning: Tuning): Game => {
   if (item.ref === 'datastore') {
     const serviceId = item.service
     if (!serviceId) return game
-    const datastore = item.target && item.target !== '' ? item.target : null
+    const pinned = item.target && item.target !== '' ? item.target : null
     if (
-      datastore !== null &&
-      !game.nodes.some((node) => node.id === datastore && node.type === 'database')
+      pinned !== null &&
+      !game.nodes.some((node) => node.id === pinned && node.type === 'database')
     )
       return game
     if (!game.services.some((service) => service.id === serviceId)) return game
-    return withServiceId(game, serviceId, { datastore })
+    return withServiceId(game, serviceId, {
+      datastore: pinned === null ? { _tag: 'Auto' } : { _tag: 'Pinned', id: pinned },
+    })
   }
   if (item.ref === 'reshard') {
     const reshard = game.reshard
-    if (!reshard) return game
+    if (reshard.phase._tag === 'Idle') return game
     const rows = groupDataOf(game, reshardGroupOf(game, reshard))
     const copy = Math.max(1, (rows * RESHARD_MINUTES_PER_GB * 60) / CALENDAR_DAY)
     return {
@@ -330,7 +340,7 @@ const moved = (game: Game, item: WorkItem, tuning: Tuning): Game => {
     }
   }
   const change = game.engineChange
-  if (!change) return game
+  if (change.phase._tag === 'Idle') return game
   const copy = (game.data * ENGINE_COPY_MINUTES_PER_GB * 60) / CALENDAR_DAY
   return {
     ...game,
@@ -341,7 +351,7 @@ const moved = (game: Game, item: WorkItem, tuning: Tuning): Game => {
   }
 }
 
-const reshardGroupOf = (game: Game, reshard: NonNullable<Game['reshard']>): string => {
+const reshardGroupOf = (game: Game, reshard: Game['reshard']): string => {
   if (reshard.group) return reshard.group
   const node = game.nodes.find((entry) => entry.id === reshard.node)
   return node ? dataGroupOf(game, node) : ''
@@ -349,11 +359,14 @@ const reshardGroupOf = (game: Game, reshard: NonNullable<Game['reshard']>): stri
 
 const finishReshard = (game: Game): Game => {
   const reshard = game.reshard
-  if (!reshard || reshard.phase._tag !== 'Copying' || game.time < reshard.phase.until) return game
+  if (reshard.phase._tag !== 'Copying' || game.time < reshard.phase.until) return game
   const group = reshardGroupOf(game, reshard)
   return {
     ...game,
-    reshard: null,
+    reshard: {
+      ...reshard,
+      phase: moveStep(reshard.phase, { _tag: 'Finished' }),
+    },
     nodes: game.nodes.map((node) =>
       node.type === 'database'
         ? {
@@ -368,10 +381,13 @@ const finishReshard = (game: Game): Game => {
 
 const finishEngineChange = (game: Game): Game => {
   const change = game.engineChange
-  if (!change || change.phase._tag !== 'Copying' || game.time < change.phase.until) return game
+  if (change.phase._tag !== 'Copying' || game.time < change.phase.until) return game
   return {
     ...game,
-    engineChange: null,
+    engineChange: {
+      ...change,
+      phase: moveStep(change.phase, { _tag: 'Finished' }),
+    },
     nodes: game.nodes.map((node) =>
       node.type === 'database' ? { ...node, dbEngine: change.to } : node,
     ),
@@ -422,7 +438,11 @@ export const taskRefusal = (game: Game, id: TaskId): Refusal | null => {
   if (queued(game, id)) return Refusal.NotAllowed({ reason: `${def.name} is on the backlog.` })
   if ((FIXES as ReadonlyArray<string>).includes(id) && serviceOf(game).fixes.includes(id as FixId))
     return Refusal.NotAllowed({ reason: `${def.name} is done.` })
-  if (id === 'add-index' && serviceOf(game).shapes <= 0 && game.incident?.kind !== 'slow-query')
+  if (
+    id === 'add-index' &&
+    serviceOf(game).shapes <= 0 &&
+    activeIncident(game)?.kind !== 'slow-query'
+  )
     return Refusal.NotAllowed({ reason: 'Every query has an index.' })
   if (id === 'refactor' && serviceOf(game).debt <= 0)
     return Refusal.NotAllowed({ reason: 'There is no tech debt.' })
@@ -688,12 +708,12 @@ export const splitService = (game: Game, request: SplitRequest): Action => {
     fixes: [],
     shapes: 0,
     indexes: 0,
-    migration: null,
+    migration: { _tag: 'Idle' },
     nextDeployAt: serviceOf(game).nextDeployAt,
     lastDeploy: [],
     owner: request.owner,
     features,
-    datastore: request.datastore ?? null,
+    datastore: request.datastore ? { _tag: 'Pinned', id: request.datastore } : { _tag: 'Auto' },
   }
   const next: Game = {
     ...game,
@@ -738,7 +758,8 @@ export const setDatastore = (game: Game, serviceId: string, datastore: string | 
     !game.nodes.some((node) => node.id === datastore && node.type === 'database')
   )
     return notAllowed('That Database is not on the Board.')
-  if ((service.datastore ?? null) === datastore) return ok(game)
+  const current = service.datastore._tag === 'Pinned' ? service.datastore.id : null
+  if (current === datastore) return ok(game)
   if (
     game.backlog.some(
       (item) => item.kind === 'move' && item.ref === 'datastore' && item.service === serviceId,
@@ -813,7 +834,7 @@ export const setFix = (game: Game, id: FixId, on: boolean): Action => {
 }
 
 export const queueSpike = (game: Game): Action => {
-  const running = game.studies[0]
+  const running = currentStudy(game.studies)
   if (game.sandbox) return notAllowed(SANDBOX)
   if (!running) return notAllowed('No Study is running.')
   if (queued(game, running.id))
@@ -852,11 +873,29 @@ export const cancelItem = (game: Game, id: number): Action =>
     if ([...assignments(game).values()].some((entry) => entry.id === id))
       return ok({
         ...game,
-        backlog: game.backlog.map((entry) => (entry.id === id ? { ...entry, held: true } : entry)),
+        backlog: game.backlog.map((entry) =>
+          entry.id === id
+            ? { ...entry, block: blockStep(entry.block, { _tag: 'Held', since: game.time }) }
+            : entry,
+        ),
       })
     const gone = { ...game, backlog: game.backlog.filter((entry) => entry.id !== id) }
-    if (item?.ref === 'reshard') return ok({ ...gone, reshard: null })
-    if (item?.ref === 'engine') return ok({ ...gone, engineChange: null })
+    if (item?.ref === 'reshard')
+      return ok({
+        ...gone,
+        reshard: {
+          ...gone.reshard,
+          phase: moveStep(gone.reshard.phase, { _tag: 'Finished' }),
+        },
+      })
+    if (item?.ref === 'engine')
+      return ok({
+        ...gone,
+        engineChange: {
+          ...gone.engineChange,
+          phase: moveStep(gone.engineChange.phase, { _tag: 'Finished' }),
+        },
+      })
     return ok(gone)
   })
 
@@ -864,11 +903,9 @@ export const resumeItem = (game: Game, id: number): Action =>
   withItem(game, id, (index) =>
     ok({
       ...game,
-      backlog: game.backlog.map((entry, at) => {
-        if (at !== index) return entry
-        const { held: _, ...free } = entry
-        return free
-      }),
+      backlog: game.backlog.map((entry, at) =>
+        at === index ? { ...entry, block: blockStep(entry.block, { _tag: 'Resumed' }) } : entry,
+      ),
     }),
   )
 
@@ -878,6 +915,7 @@ export const rushItem = (game: Game, id: number): Action =>
     if (!item) return no(Refusal.Missing())
     if (item.kind === 'spike') return notAllowed('A Spike ends when its Study completes.')
     if (item.block._tag === 'Blocked') return notAllowed('It waits on you first.')
+    if (item.block._tag === 'Held') return notAllowed('Resume it first.')
     if (game.devHours < 0.01) return notAllowed('The Dev Hours pool is empty.')
     const paid = Math.min(game.devHours, item.cost - item.spent)
     const backlog = game.backlog.map((entry, at) =>
@@ -906,7 +944,7 @@ export const setResearchTeam = (game: Game, teamId: string | null): Action => {
   if (teamId === null) return ok({ ...game, researchTeam: null })
   const team = game.teams.find((entry) => entry.id === teamId)
   if (!team) return no(Refusal.Missing())
-  const study = game.studies[0]
+  const study = currentStudy(game.studies)
   if (!study) return notAllowed('No Study is running.')
   if (!teamReady(game, team)) return notAllowed('The team is still learning its new role.')
   if (assignments(game).has(team.id)) return notAllowed('The team is building something else.')
@@ -993,9 +1031,9 @@ export const addIndex = (game: Game, nodeId: string): Action => {
   if (!has(game, 'query-analysis'))
     return no(Refusal.Locked({ what: 'Add index', research: RESEARCH['query-analysis'].name }))
   if (game.sandbox) {
-    const incident = game.incident
+    const incident = activeIncident(game)
     if (incident?.kind !== 'slow-query') return notAllowed('Every query has an index.')
-    return ok({ ...game, incident: { ...incident, remaining: 0 } })
+    return ok({ ...game, incident: updateIncident(game.incident, { remaining: 0 }) })
   }
   const existing = game.backlog.find((item) => item.ref === 'add-index')
   const queuedTop: Action = existing
@@ -1029,10 +1067,7 @@ export const hire = (game: Game, tuning: Tuning = LIVE_TUNING): Action => {
         id: `e${game.workSeq + 1}`,
         team,
         language,
-        phase: {
-          _tag: 'Pending',
-          readyAt: game.time + hireSeconds(game, language, tuning),
-        },
+        readyAt: game.time + hireSeconds(game, language, tuning),
       },
     ],
   })
@@ -1058,7 +1093,7 @@ export const train = (
   if (!engineer) return no(Refusal.Missing())
   if (engineer.language === language)
     return notAllowed(`They already know ${LANGUAGES[language].name}.`)
-  if (trainingOf(game, engineer)) return notAllowed('They are already learning a language.')
+  if (trainingOf(engineer)) return notAllowed('They are already learning a language.')
   if (shortOfCash(game))
     return notAllowed('Out of Cash: no placement, upgrade, or hire until Cash is above zero.')
   const price = trainCost(game, language)
@@ -1067,10 +1102,14 @@ export const train = (
   return ok({
     ...game,
     cash: game.cash - price,
-    training: [
-      ...game.training,
-      { engineer: engineerId, language, readyAt: game.time + trainSeconds(language, tuning) },
-    ],
+    engineers: game.engineers.map((entry) =>
+      entry.id === engineerId
+        ? {
+            ...entry,
+            learning: { language, readyAt: game.time + trainSeconds(language, tuning) },
+          }
+        : entry,
+    ),
   })
 }
 
@@ -1287,7 +1326,7 @@ export const changeStack = (
   const target = targetOf(node, choice)
   const migration = serviceOf(game).migration
   if (
-    migration &&
+    !migrationIdle(migration) &&
     ((target.runtime === migration.runtime && target.framework === migration.framework) ||
       (target.runtime === node.runtime && target.framework === node.framework))
   )
@@ -1310,13 +1349,14 @@ const deployed = (
 }
 
 export const rollback = (game: Game): Action => {
-  if (game.incident?.kind !== 'bad-deploy') return notAllowed('No deploy needs rolling back.')
-  if (game.incident.rollingBack) return notAllowed('That deploy is already rolling back.')
+  const incident = activeIncident(game)
+  if (incident?.kind !== 'bad-deploy') return notAllowed('No deploy needs rolling back.')
+  if (incident.rollingBack) return notAllowed('That deploy is already rolling back.')
   if (!has(game, 'ci')) return no(Refusal.Locked({ what: 'Roll back', research: RESEARCH.ci.name }))
   const minutes = deployMinutesOf(game) * (platformStaffed(game) ? 0.5 : 1)
   return ok({
     ...game,
-    incident: { ...game.incident, rollingBack: true, remaining: minutes },
+    incident: updateIncident(game.incident, { rollingBack: true, remaining: minutes }),
   })
 }
 
@@ -1328,7 +1368,7 @@ export const nextFeature = (game: Game): FeatureId | undefined =>
 const autopilot = (game: Game, events: Array<StepEvent>): Game => {
   let next = game
   const migration = serviceOf(next).migration
-  if (migration && isReady(migration)) {
+  if (isReady(migration)) {
     const shifted = shiftMigration(next)
     if (Result.isSuccess(shifted)) {
       next = shifted.success
@@ -1364,8 +1404,9 @@ export const advanceMorale = (
   if (game.sandbox || game.engineers.length === 0) return game
   const days = (seconds * tuning.calendarPace) / CALENDAR_DAY
   const freeze = budgetVelocity(game) < 1 ? days / FREEZE_MOOD_DAYS : 0
+  const incident = activeIncident(game)
   const fresh =
-    game.incident !== null && game.incident.startedAt !== (before.incident?.startedAt ?? -1)
+    incident !== null && incident.startedAt !== (activeIncident(before)?.startedAt ?? -1)
   const pagedId = fresh ? ownerOf(game, blastService(game)).id : null
   const engineers = game.engineers.map((engineer) => {
     const page = pagedId !== null && engineer.team === pagedId ? PAGE_MOOD : 0
@@ -1410,10 +1451,8 @@ const completed = (game: Game, item: WorkItem, tuning: Tuning): Game => {
   }
   if (item.kind === 'move') return moved(game, item, tuning)
   const service = serviceOfItem(game, item)
-  if (item.kind === 'migration') {
-    const migration = serviceOf(game).migration
-    return migration ? withService(game, { migration: trancheBuilt(migration) }) : game
-  }
+  if (item.kind === 'migration')
+    return withService(game, { migration: trancheBuilt(serviceOf(game).migration) })
   if (item.kind === 'feature') {
     const id = item.ref as FeatureId
     const team = game.teams[0]
@@ -1432,25 +1471,25 @@ const completed = (game: Game, item: WorkItem, tuning: Tuning): Game => {
     )
   }
   const id = item.ref as TaskId
-  const hotfix = game.incident !== null && id !== 'refactor' ? HOTFIX_DEBT : 0
+  const hotfix = activeIncident(game) !== null && id !== 'refactor' ? HOTFIX_DEBT : 0
   const after = withService(game, { debt: Math.min(1, service.debt + hotfix) })
   switch (id) {
     case 'add-index':
       return withService(
-        after.incident?.kind === 'slow-query'
-          ? { ...after, incident: { ...after.incident, remaining: 0 } }
+        activeIncident(after)?.kind === 'slow-query'
+          ? { ...after, incident: updateIncident(after.incident, { remaining: 0 }) }
           : after,
         { shapes: Math.max(0, service.shapes - 1), indexes: service.indexes + 1 },
       )
     case 'fix-leak': {
-      const leak = after.incident?.kind === 'leak' ? after.incident : null
+      const leak = activeIncident(after)?.kind === 'leak' ? activeIncident(after) : null
       const cleaned: Game = leak
         ? {
             ...after,
             nodes: after.nodes.map((node) =>
               node.id === leak.nodeId ? { ...node, leak: 0 } : node,
             ),
-            incident: { ...leak, remaining: 0 },
+            incident: updateIncident(after.incident, { remaining: 0 }),
           }
         : after
       return withService(cleaned, { fixes: [...service.fixes, 'fix-leak'] })
@@ -1486,8 +1525,8 @@ const completed = (game: Game, item: WorkItem, tuning: Tuning): Game => {
         node.type === 'cluster' ? { ...node, upgradedAt: after.time } : node,
       )
       const incident =
-        after.incident?.kind === 'cluster-upgrade'
-          ? { ...after.incident, remaining: 0 }
+        activeIncident(after)?.kind === 'cluster-upgrade'
+          ? updateIncident(after.incident, { remaining: 0 })
           : after.incident
       return { ...after, nodes, incident }
     }
@@ -1515,7 +1554,7 @@ const deployService = (
       deployEvery(game, tuning) +
       (hotUpgrade ? ELIXIR_HOT_UPGRADE_DEV_HOURS * SIM_SECONDS_PER_DEV_HOUR : 0),
   })
-  if (game.incident?.kind === 'bad-deploy') return after
+  if (activeIncident(game)?.kind === 'bad-deploy') return after
   const batch = awaitingFeatures(game).filter((id) => serviceOfFeature(game, id).id === service.id)
   if (batch.length === 0) return after
   const chance = nextBadDeployChance(after, tuning, service)
@@ -1585,8 +1624,8 @@ const deploy = (game: Game, ledger: Ledger, tuning: Tuning, events: Array<StepEv
 }
 
 export const takeable = (game: Game, item: WorkItem): boolean =>
-  !item.held &&
-  (item.kind !== 'spike' || game.studies[0]?.id === item.ref) &&
+  item.block._tag !== 'Held' &&
+  (item.kind !== 'spike' || currentStudy(game.studies)?.id === item.ref) &&
   (item.kind === 'patch' || item.block._tag !== 'Blocked')
 
 const builds = (game: Game, team: Team, index: number): boolean =>
@@ -1625,38 +1664,32 @@ export const advanceTeam = (
   const events: Array<StepEvent> = []
   let next = game
 
-  const phases = next.hires.map((hire) => ({
-    hire,
-    phase: hireStep(hire.phase, { _tag: 'Joined', at: next.time }),
-  }))
-  const joined = phases.filter((entry) => entry.phase._tag === 'Joined')
+  const joined = next.hires.filter((hire) => hire.readyAt <= next.time)
   if (joined.length > 0) {
     const teams = new Set(next.teams.map((team) => team.id))
     next = {
       ...next,
-      hires: phases
-        .filter((entry) => entry.phase._tag !== 'Joined')
-        .map((entry) => ({ ...entry.hire, phase: entry.phase })),
+      hires: next.hires.filter((hire) => !joined.includes(hire)),
       engineers: [
         ...next.engineers,
-        ...joined.map((entry) => ({
-          id: entry.hire.id,
-          team: teams.has(entry.hire.team) ? entry.hire.team : (next.teams[0]?.id ?? 'core'),
-          language: entry.hire.language,
-          hiredAt: entry.hire.phase._tag === 'Pending' ? entry.hire.phase.readyAt : next.time,
+        ...joined.map((hire) => ({
+          id: hire.id,
+          team: teams.has(hire.team) ? hire.team : (next.teams[0]?.id ?? 'core'),
+          language: hire.language,
+          hiredAt: hire.readyAt,
           ...NEW_ENGINEER,
           salary: eraOf(next).salaryIndex,
         })),
       ],
     }
-    for (const entry of joined) events.push(StepEvent.Hired({ engineerId: entry.hire.id }))
+    for (const hire of joined) events.push(StepEvent.Hired({ engineerId: hire.id }))
   }
 
   next = finishTraining(next)
 
   if (next.autopilot) next = autopilot(next, events)
 
-  const migrating = serviceOf(next).migration !== null
+  const migrating = !migrationIdle(serviceOf(next).migration)
   const backlog = next.backlog.map((item) => ({ ...item }))
   const taken = new Set<number>()
   let pool = next.devHours
@@ -1689,13 +1722,13 @@ export const advanceTeam = (
       const reason = blockReason(next, item)
       const owner = memberOf(next, ownerOf(next, serviceOfItem(next, item)).id, item.id)
       if (reason !== null && owner) {
-        item.block = {
+        item.block = blockStep(item.block, {
           _tag: 'Blocked',
           reason,
           owner: owner.id,
           at: next.time,
           remindAt: next.time + blockRemind(tuning),
-        }
+        })
         events.push(StepEvent.Blocked({ item: { ...item }, reason, engineerId: owner.id }))
         pool += made - kept
         continue
@@ -1707,13 +1740,17 @@ export const advanceTeam = (
     item.spent += put
     pool += made - kept - put / speed
   }
-  const finished = backlog.filter((item) => item.spent >= item.cost - 1e-9)
+  const finished = backlog.filter(
+    (item) =>
+      (item.block._tag === 'Free' || item.block._tag === 'Approved') &&
+      item.spent >= item.cost - 1e-9,
+  )
   const service = serviceOf(next)
   next = withService(
     {
       ...next,
       devHours: pool,
-      backlog: backlog.filter((item) => item.spent < item.cost - 1e-9),
+      backlog: backlog.filter((item) => !finished.includes(item)),
     },
     { debt: Math.max(0, service.debt - paydown * REFACTOR_PER_DH) },
   )

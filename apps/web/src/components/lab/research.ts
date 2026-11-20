@@ -63,6 +63,7 @@ import {
   progressOf as studyProgressOf,
   type StudyStall,
 } from '@quorum/simulation/studies'
+import { currentStudy, studyList } from '@quorum/simulation/study-machine'
 import { compact, sharePercent } from '@quorum/ui/game/format'
 import { Message } from '@/game/message.ts'
 import { stallNeedIn, stallReasonIn } from '@/i18n/format.ts'
@@ -100,7 +101,7 @@ type State = 'owned' | 'buy' | 'saving' | 'locked'
 const stateOf = (game: Game, entry: ResearchDef): State =>
   has(game, entry.id)
     ? 'owned'
-    : game.studies.some((item) => item.id === entry.id)
+    : studyList(game.studies).some((item) => item.id === entry.id)
       ? 'saving'
       : !researchReady(game, entry.id)
         ? 'locked'
@@ -492,7 +493,7 @@ const costRows = (
 ): Html => {
   const t = copy(h)
 
-  const running = game.studies[0]?.id === entry.id
+  const running = currentStudy(game.studies)?.id === entry.id
   const limit = running ? limitingPool(game) : null
   const stalled = running ? studyStall(game, ledger, entry.id) : null
   const speed = stalled ? 1 : studySpeed(game, ledger, entry.id)
@@ -1035,7 +1036,7 @@ const node = (model: Model, place: Placed, focused: boolean, h: HtmlBuilder<Mess
     focused,
     state !== 'owned' && game.openActions.includes(entry.id),
     state === 'saving'
-      ? Math.min(1, studyProgressOf(game.studies.find((item) => item.id === entry.id)))
+      ? Math.min(1, studyProgressOf(studyList(game.studies).find((item) => item.id === entry.id)))
       : 0,
     h,
   ])
@@ -1700,7 +1701,7 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
   const t = copy(h)
 
   const game = model.board.game
-  const studies = game.studies
+  const studies = studyList(game.studies)
   const ledger = ledgerOf(model)
   const head = studies[0]
   const speed = head && studyStall(game, ledger, head.id) ? 1 : studySpeed(game, ledger)
@@ -2265,7 +2266,7 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
   const t = copy(h)
 
   const game = model.board.game
-  const queued = game.studies.findIndex((item) => item.id === entry.id)
+  const queued = studyList(game.studies).findIndex((item) => item.id === entry.id)
   const state = stateOf(game, entry)
   const open = state !== 'owned' && game.openActions.includes(entry.id)
   const track = t.catalog.researchTracks[entry.track].label
@@ -2295,7 +2296,9 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                 ? t.research.studyNow
                 : stalled?.stall
                   ? t.research.queued
-                  : t.research.studying(Math.floor(studyProgressOf(game.studies[0]) * 100))
+                  : t.research.studying(
+                      Math.floor(studyProgressOf(currentStudy(game.studies)) * 100),
+                    )
   const first = stalled && stalled.id !== entry.id ? t.catalog.research[stalled.id].name : null
   const consequence =
     first === null
@@ -2964,7 +2967,7 @@ const poolDeck = (model: Model, h: HtmlBuilder<Message>): Html => {
   const game = model.board.game
   const ledger = ledgerOf(model)
   const open = model.board.research.poolsOpen
-  const running = game.studies[0]
+  const running = currentStudy(game.studies)
   const limit = running ? limitingPool(game) : null
   const need =
     running && limit

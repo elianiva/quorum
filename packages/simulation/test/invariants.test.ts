@@ -1,6 +1,6 @@
 import fc from 'fast-check'
 import { describe, expect, test } from 'vitest'
-import { raise, setGuidance } from '../src/actions.ts'
+import { raise, runDrill, setGuidance } from '../src/actions.ts'
 import {
   GUIDANCE_WINDOW,
   QUARTER_SECONDS,
@@ -14,10 +14,12 @@ import { Result } from 'effect'
 import { node, preseedGame } from '../src/company.ts'
 import { hashGame } from '../src/hash.ts'
 import { RESPONSES, applyAction, type ReplayAction } from '../src/replay.ts'
-import { CALENDAR_DAY } from '../src/catalog.ts'
+import { CALENDAR_DAY, DRILL_RTO, DRILL_SECONDS } from '../src/catalog.ts'
+import { checklistOf } from '../src/ipo.ts'
+import { freeSandbox } from '../src/sandbox.ts'
 import { solveFlow } from '../src/solve.ts'
 import { step } from '../src/step.ts'
-import type { Game } from '../src/state.ts'
+import { QuarterState, type Game } from '../src/state.ts'
 
 type Move =
   | { kind: 'wait'; seconds: number }
@@ -149,6 +151,8 @@ describe('random plays', () => {
 describe('rules found by the models in verification/', () => {
   test('guidance opens on the first day of every quarter, and only then', () => {
     let game: Game = { ...preseedGame() }
+    expect(guidanceOpen(game)).toBe(false)
+    expect(Result.isFailure(setGuidance(game, 1, 1))).toBe(true)
     game = { ...game, quarter: firstQuarter(game, 1) }
     expect(guidanceOpen(game)).toBe(true)
     const set = setGuidance(game, 1, 1)
@@ -156,10 +160,35 @@ describe('rules found by the models in verification/', () => {
     game = set.success
     expect(guidanceOpen(game)).toBe(false)
     const later = { ...game, time: game.time + QUARTER_SECONDS }
-    const next = { ...later, quarter: advanceQuarter(later, solveFlow(later)) }
-    expect(next.quarter?.index).toBe(2)
+    const next = {
+      ...later,
+      quarter: advanceQuarter(later.quarter, later.time, solveFlow(later)),
+    }
+    if (!QuarterState.guards.Active(next.quarter)) throw new Error('no quarter')
+    expect(next.quarter.index).toBe(2)
     expect(guidanceOpen(next)).toBe(true)
     expect(guidanceOpen({ ...next, time: next.time + GUIDANCE_WINDOW })).toBe(false)
+  })
+
+  test('a drill starts from Idle, runs, and ends by its limit', () => {
+    let game: Game = { ...freeSandbox(), stage: 6, seed: 3 }
+    const drillValue = (value: Game) =>
+      checklistOf(value, solveFlow(value)).find((item) => item.id === 'drill')?.value
+    expect(game.drill._tag).toBe('Idle')
+    expect(drillValue(game)).toBe('Not run')
+    const started = runDrill(game)
+    if (Result.isFailure(started)) throw new Error('drill refused')
+    game = started.success
+    expect(game.drill._tag).toBe('Running')
+    expect(drillValue(game)).toBe('Running')
+    let ticks = 0
+    while (game.drill._tag === 'Running' && ticks <= DRILL_SECONDS + DRILL_RTO) {
+      game = step(game, 1).game
+      ticks += 1
+    }
+    expect(game.drill._tag).toBe('Failed')
+    expect(ticks).toBe(DRILL_SECONDS + DRILL_RTO)
+    expect(drillValue(game)).toBe('Not recovered')
   })
 
   test('a round is answered only while it is on the table', () => {

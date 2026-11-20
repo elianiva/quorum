@@ -83,7 +83,7 @@ export const animate = (c: BoardController, seconds: number): void => {
   const byId = c.shown()
   if (
     c.heldLanding &&
-    c.gesture?.kind !== 'node' &&
+    c.gesture._tag !== 'Dragging' &&
     (performance.now() - c.droppedAt > 1000 ||
       [...c.heldLanding].every(
         ([id, spot]) => byId.get(id)?.x === spot.x && byId.get(id)?.y === spot.y,
@@ -386,9 +386,10 @@ const drawOverlay = (f: Frame): void => {
   }
 
   const gesture = c.gesture
-  const snapped = gesture?.kind === 'link' && c.snapTo ? byId.get(c.snapTo) : undefined
+  const snapped =
+    gesture._tag === 'Linking' && gesture.snapTo ? byId.get(gesture.snapTo) : undefined
   c.snapGlow += ((snapped ? 1 : 0) - c.snapGlow) * follow(seconds, 26, still)
-  if (gesture?.kind === 'link') {
+  if (gesture._tag === 'Linking') {
     const from = byId.get(gesture.from)
     if (from) {
       const aim = snapped ? inPort(snapped) : gesture.at
@@ -436,7 +437,7 @@ const drawOverlay = (f: Frame): void => {
         .stroke({ color: colors.accent, width: 1.5 })
   }
 
-  if (gesture?.kind === 'box') {
+  if (gesture._tag === 'Boxing') {
     const left = Math.min(gesture.from.x, gesture.at.x)
     const top = Math.min(gesture.from.y, gesture.at.y)
     c.overlay
@@ -468,19 +469,19 @@ const drawOverlay = (f: Frame): void => {
     }
   }
 
-  const held =
-    gesture?.kind === 'node' && c.dragged
-      ? byId.get(c.dragged.id)
-      : state.placing && c.ghost.visible
-        ? {
-            type: state.placing,
-            x: Math.round((c.pointer.x - CARD_W / 2) / 8) * 8,
-            y: Math.round((c.pointer.y - heightOf(state.placing) / 2) / 8) * 8,
-          }
-        : undefined
+  const dragging = gesture._tag === 'Dragging' ? c.held() : null
+  const held = dragging
+    ? byId.get(dragging.id)
+    : state.placing && c.ghost.visible
+      ? {
+          type: state.placing,
+          x: Math.round((c.pointer.x - CARD_W / 2) / 8) * 8,
+          y: Math.round((c.pointer.y - heightOf(state.placing) / 2) / 8) * 8,
+        }
+      : undefined
   if (held && landing && (landing.x !== held.x || landing.y !== held.y)) {
-    const group = gesture?.kind === 'node' && c.dragged ? c.groupOf(c.dragged.id) : []
-    const from = state.game.nodes.find((node) => node.id === c.dragged?.id)
+    const group = dragging ? c.groupOf(dragging.id) : []
+    const from = state.game.nodes.find((node) => node.id === dragging?.id)
     const outlines =
       group.length > 1 && from
         ? state.game.nodes

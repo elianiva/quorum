@@ -28,12 +28,12 @@ export const CompanyFile = Schema.Struct({
 export type CompanyFile = typeof CompanyFile.Type
 
 export const SaveIndex = Schema.Struct({
-  current: Schema.NullOr(Schema.String),
+  lastPlayed: Schema.NullOr(Schema.String),
   companies: Schema.Array(CompanyFile),
 })
 export type SaveIndex = typeof SaveIndex.Type
 
-export const EMPTY_SAVE_INDEX: SaveIndex = { current: null, companies: [] }
+export const EMPTY_SAVE_INDEX: SaveIndex = { lastPlayed: null, companies: [] }
 
 const companyName = (name: string): string => name.trim().slice(0, MAX_COMPANY_NAME)
 
@@ -86,7 +86,7 @@ export const withFile = (index: SaveIndex, file: CompanyFile): SaveIndex => ({
 
 export const withoutFile = (index: SaveIndex, id: string): SaveIndex => ({
   ...index,
-  current: index.current === id ? null : index.current,
+  lastPlayed: index.lastPlayed === id ? null : index.lastPlayed,
   companies: index.companies.filter((entry) => entry.id !== id),
 })
 
@@ -94,7 +94,7 @@ export const fileOf = (index: SaveIndex, id: string | null): CompanyFile | null 
   id === null ? null : (index.companies.find((file) => file.id === id) ?? null)
 
 export const savedIndex = (index: SaveIndex, game: Game, now: number): SaveIndex => {
-  const file = fileOf(index, index.current)
+  const file = fileOf(index, index.lastPlayed)
   return file === null
     ? index
     : {
@@ -106,7 +106,7 @@ export const savedIndex = (index: SaveIndex, game: Game, now: number): SaveIndex
 }
 
 export const refreshedIndex = (index: SaveIndex, game: Game): SaveIndex => {
-  const file = fileOf(index, index.current)
+  const file = fileOf(index, index.lastPlayed)
   return file === null ? index : savedIndex(index, game, file.updatedAt)
 }
 

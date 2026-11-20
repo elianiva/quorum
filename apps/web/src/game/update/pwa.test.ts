@@ -19,8 +19,7 @@ describe('the PWA state', () => {
       }),
     ).model
     expect(after.pwa).toEqual({
-      installable: true,
-      installed: false,
+      install: { _tag: 'Installable' },
       online: false,
       updated: false,
     })
@@ -43,8 +42,7 @@ describe('the PWA state', () => {
 
   test('an accepted install hides the offer and keeps the prompt from coming back', () => {
     const after = update(initialModel(), Message.PwaInstallOutcome({ outcome: 'accepted' })).model
-    expect(after.pwa.installed).toBe(true)
-    expect(after.pwa.installable).toBe(false)
+    expect(after.pwa.install._tag).toBe('Installed')
     expect(after.prefs.pwaPromptSeen).toBe(true)
   })
 

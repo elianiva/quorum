@@ -25,7 +25,7 @@ import {
   postmortemFact,
 } from '../mail.ts'
 import { recordEra } from '@quorum/simulation/founder'
-import { Game } from '@quorum/simulation/state'
+import { activeIncident, Game } from '@quorum/simulation/state'
 import { HISTORY_EVERY, HISTORY_POINTS, sampleNode, type NodeSample } from '../node-metrics.ts'
 import {
   Model,
@@ -81,6 +81,7 @@ import { sessionStep } from '../session-machine.ts'
 import { solveFlow } from '@quorum/simulation/solve'
 import { ignored, step } from '@quorum/simulation/step'
 import { studyStall } from '@quorum/simulation/studies'
+import { currentStudy } from '@quorum/simulation/study-machine'
 import { tidy } from '@quorum/ui/board/tidy'
 import { type EventMail } from '../copy/index.ts'
 import { type Ledger } from '@quorum/simulation/ledger'
@@ -407,8 +408,9 @@ const tick = (model: Model, elapsedMs: number): UpdateResult => {
       solveFlow(game),
       steps * STEP_SECONDS,
     )
-    if (advance.game.incident && advance.game.incident !== game.incident)
-      events.push(StepEvent.IncidentStarted({ incident: advance.game.incident }))
+    const started = activeIncident(advance.game)
+    if (started !== null && started !== activeIncident(game))
+      events.push(StepEvent.IncidentStarted({ incident: started }))
     game = advance.game
     run = { ...run, progress: advance.progress }
     advanced = advance.advanced
@@ -668,7 +670,7 @@ const tick = (model: Model, elapsedMs: number): UpdateResult => {
   )
     next = mailedTo(next, easyModeFact(game), game.time)
   if (!offCompany(next)) {
-    const running = game.studies[0]
+    const running = currentStudy(game.studies)
     const stall = running ? studyStall(game, ledger, running.id) : null
     const key = running && stall ? `research:stalled:${running.id}` : null
     if (running && stall) next = mailedTo(next, stallFact(game, running.id, stall), game.time)

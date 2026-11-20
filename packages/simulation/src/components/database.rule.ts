@@ -1,7 +1,7 @@
 import {
   type Action,
   Refusal,
-  answering,
+  answered,
   no,
   notAllowed,
   ok,
@@ -10,6 +10,7 @@ import {
   withNode,
 } from '../action-kit.ts'
 import type { Backup, DbRetention, DbTopology, Game, IopsClass, ShardKey } from '../state.ts'
+import { activeIncident } from '../state.ts'
 import {
   RESEARCH,
   RESTORE_DRILL_DH,
@@ -98,11 +99,10 @@ export const setTopology = (game: Game, id: string, topology: DbTopology): Actio
   })
 
 export const expandVolume = (game: Game): Action => {
-  const target = game.nodes.find((node) => node.id === game.incident?.nodeId)
-  if (game.incident?.kind !== 'disk-full' || !target) return notAllowed('No disk is full.')
+  const incident = activeIncident(game)
+  const target = game.nodes.find((node) => node.id === incident?.nodeId)
+  if (incident?.kind !== 'disk-full' || !target) return notAllowed('No disk is full.')
   return spend(game, replacePrice(game, target), 'A bigger volume', (paid) =>
-    paid.incident
-      ? { ...paid, incident: { ...answering(paid, paid.incident), remaining: 0 } }
-      : paid,
+    activeIncident(paid) ? { ...paid, incident: answered(paid, { remaining: 0 }) } : paid,
   )
 }

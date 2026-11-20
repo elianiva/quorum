@@ -12,6 +12,7 @@ import {
   offCompany,
   boardChallenge,
   boardSandbox,
+  parkedCompanyOf,
   type Board,
   type ChallengeRun,
   type SandboxRun,
@@ -40,6 +41,7 @@ import {
   freshBoard,
   say,
   saveCommands,
+  withOverlay,
   withToast,
   act,
   storeOf,
@@ -54,6 +56,7 @@ import { normalizeOrdinals } from '@quorum/simulation/labels'
 import { reasonIn } from '../../i18n/refusal.ts'
 import { copyIn } from '../../i18n/messages.ts'
 import { savedIndex } from '../saves.ts'
+import { savesOf, withSaves } from '../saves-machine.ts'
 import { sessionStep } from '../session-machine.ts'
 import { isExited } from '../company-machine.ts'
 import { clockStep } from '../clock-machine.ts'
@@ -89,7 +92,7 @@ const open = (model: Model, route: AppRoute): UpdateResult =>
           phase: roomStep(model.room.phase, { _tag: 'Connecting', code: room }),
           seats: [],
           speed: 1,
-          vote: null,
+          vote: { _tag: 'Idle' },
         },
       },
     }),
@@ -114,7 +117,7 @@ export const visit = (model: Model, url: Url): UpdateResult => {
 const parseStore = Schema.decodeUnknownOption(Schema.fromJsonString(SandboxStore))
 
 const heldCompany = (model: Model): Board | null =>
-  offCompany(model) ? model.company : (model.company ?? model.board)
+  offCompany(model) ? model.parkedCompany : (model.parkedCompany ?? model.board)
 
 const enterSandbox = (model: Model, game: Game, run: SandboxRun): UpdateResult => {
   const board = freshBoard(game)
@@ -123,7 +126,7 @@ const enterSandbox = (model: Model, game: Game, run: SandboxRun): UpdateResult =
     route: AppRoute.Sandbox({ sandbox: run.id ?? 'free' }),
     toast: null,
     panel: 'none',
-    company: heldCompany(model),
+    parkedCompany: heldCompany(model),
     board: {
       ...board,
       session: sessionStep(board.session, { _tag: 'SandboxOpened', run }),
@@ -198,7 +201,7 @@ export const enterChallenge = (model: Model, id: string): UpdateResult => {
     route: AppRoute.Challenge({ challenge: id }),
     toast: null,
     panel: 'none',
-    company: heldCompany(model),
+    parkedCompany: heldCompany(model),
     board: {
       ...freshBoard(game),
       session: sessionStep(freshBoard(game).session, {
@@ -361,8 +364,8 @@ export const logResponse = (model: Model, response: Response): UpdateResult | nu
   return logRunAction(model, action)
 }
 
-const companyBoard = (model: Model): Board =>
-  model.company ? { ...model.company, whatIfsAt: -1 } : freshBoard(newGame())
+export const companyBoard = (model: Model): Board =>
+  model.parkedCompany ? { ...model.parkedCompany, whatIfsAt: -1 } : freshBoard(newGame())
 
 const leaveChallenge = (model: Model): UpdateResult => ({
   model: {
@@ -373,7 +376,7 @@ const leaveChallenge = (model: Model): UpdateResult => ({
       ...companyBoard(model),
       session: sessionStep(model.board.session, { _tag: 'Closed' }),
     },
-    company: null,
+    parkedCompany: null,
   },
 })
 
@@ -399,17 +402,30 @@ export const continued = (model: Model): UpdateResult => {
 export const leaveBoard = (model: Model): UpdateResult => {
   if (isExited(model.companyPhase)) return leaveExited(model, 'found')
   if (boardChallenge(model.board)) return leaveChallenge(model)
-  if (!boardSandbox(model.board))
+  if (!boardSandbox(model.board)) {
+    const left = withOverlay(
+      withOverlay(
+        {
+          ...model,
+          route: AppRoute.Title(),
+          panel: 'none',
+          saves: withSaves(
+            model.saves,
+            savedIndex(savesOf(model.saves), model.board.game, Date.now()),
+          ),
+          board: { ...model.board, flow: { _tag: 'Idle' }, screenshot: false },
+        },
+        'palette',
+        false,
+      ),
+      'boot',
+      false,
+    )
     return {
-      model: {
-        ...model,
-        route: AppRoute.Title(),
-        panel: 'none',
-        saves: savedIndex(model.saves, model.board.game, Date.now()),
-        board: { ...model.board, flow: { _tag: 'Idle' }, screenshot: false },
-      },
+      model: withOverlay(left, 'menu', false),
       commands: saveCommands(model),
     }
+  }
   const free = boardSandbox(model.board)
   const freeBoard = free?.id === null ? model.board.game : model.freeBoard
   const next: Model = {
@@ -421,7 +437,7 @@ export const leaveBoard = (model: Model): UpdateResult => {
       screenshot: false,
       session: sessionStep(model.board.session, { _tag: 'Closed' }),
     },
-    company: null,
+    parkedCompany: null,
     freeBoard,
   }
   return { model: next, commands: [WriteSandboxStore({ store: storeOf(next) })] }
@@ -503,8 +519,8 @@ export const sessionHandlers = (model: Model): MessageCases<UpdateResult, Sessio
       : replaceFree(model, stressBoard(), say(model).toasts.stressBoardLoaded),
 
   CompanyCopied: () =>
-    model.company && hasCompany(model)
-      ? replaceFree(model, sandboxOf(model.company.game), say(model).toasts.designCopied)
+    parkedCompanyOf(model) && hasCompany(model)
+      ? replaceFree(model, sandboxOf(parkedCompanyOf(model)!.game), say(model).toasts.designCopied)
       : withToast(model, say(model).toasts.noCompanyToCopy, 'plain'),
 
   DemandStepped: ({ direction }) => {

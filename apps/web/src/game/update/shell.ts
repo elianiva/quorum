@@ -6,7 +6,7 @@ import { isExited } from '../company-machine.ts'
 import { leaveExited } from './companies.ts'
 import { routeOfMenu } from '../route.ts'
 import { toString as urlToString } from 'foldkit/url'
-import { type MessageCases, type UpdateResult } from './shared.ts'
+import { withOverlay, type MessageCases, type UpdateResult } from './shared.ts'
 import { visit, continued, leaveBoard } from './session.ts'
 
 export const clockIn = (model: Model): UpdateResult =>
@@ -38,7 +38,13 @@ type ShellTag =
 export const shellHandlers = (model: Model): MessageCases<UpdateResult, ShellTag> => ({
   Continued: () => continued(model),
 
-  Connected: () => ({ model: { ...model, boot: bootStep(model.boot, { _tag: 'Connected' }) } }),
+  Connected: () => ({
+    model: withOverlay(
+      { ...model, boot: bootStep(model.boot, { _tag: 'Connected' }) },
+      'boot',
+      false,
+    ),
+  }),
 
   TitleOpened: () => leaveBoard(model),
 
@@ -52,13 +58,17 @@ export const shellHandlers = (model: Model): MessageCases<UpdateResult, ShellTag
     isExited(model.companyPhase)
       ? leaveExited(model, menu)
       : {
-          model: {
-            ...model,
-            route: routeOfMenu(menu),
-            settingsOpen: false,
-            ...(menu === 'found' ? { foundStep: 'company' as const } : {}),
-            ...(menu === 'companies' ? {} : { saveFocus: null, saveConfirm: { _tag: 'List' } }),
-          },
+          model: withOverlay(
+            {
+              ...model,
+              route: routeOfMenu(menu),
+              settingsOpen: false,
+              ...(menu === 'found' ? { foundStep: 'company' as const } : {}),
+              ...(menu === 'companies' ? {} : { saveFocus: null, saveConfirm: { _tag: 'List' } }),
+            },
+            'menu',
+            false,
+          ),
         },
 
   SettingsSectionChosen: ({ section }) => ({ model: { ...model, settingsSection: section } }),

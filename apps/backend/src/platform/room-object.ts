@@ -10,6 +10,7 @@ import {
   type VoteKind,
 } from '@quorum/simulation/room'
 import type { Region } from '@quorum/simulation/state'
+import { openVoteOf } from '@quorum/simulation/vote-machine'
 import type { PublishInput, RoomStub } from '../contexts/room/directory.ts'
 import {
   advance,
@@ -21,6 +22,7 @@ import {
   kick,
   leave,
   openRoom,
+  resting,
   restoreRoom,
   setSpeed,
   snapshotOf,
@@ -108,13 +110,18 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
       await this.clear()
       return { exists: false, seats: 0, idle: false }
     }
-    return { exists: true, seats: this.state.seats.length, idle: this.state.idleAt !== null }
+    return {
+      exists: true,
+      seats: this.state.seats.length,
+      idle: this.state.lifecycle._tag === 'Idle' || this.state.lifecycle._tag === 'Abandoned',
+    }
   }
 
   async fetch(request: Request): Promise<Response> {
     if (request.headers.get('Upgrade') !== 'websocket')
       return new Response('Expected a WebSocket', { status: 426 })
-    if (this.state === null) return new Response('No such Room', { status: 404 })
+    if (this.state === null || this.state.lifecycle._tag === 'Ended')
+      return new Response('No such Room', { status: 404 })
     if (this.ctx.getWebSockets().length >= MAX_SOCKETS_PER_ROOM)
       return new Response('The Room is busy', { status: 429 })
 
@@ -178,7 +185,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     const state = this.state
     if (state === null) return
     if (this.nobody() && expired(state, Date.now())) return this.clear()
-    if (!state.open || state.ended !== null || this.nobody()) return this.stop()
+    if (state.lifecycle._tag !== 'Live' || this.nobody()) return this.stop()
     this.advanceNow()
     this.broadcast()
     if (Date.now() - this.savedAt > 4_000) await this.save()
@@ -221,7 +228,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
       seats: next.state.seats,
       owner: next.state.ownerSeat,
       speed: next.state.speed,
-      vote: next.state.vote,
+      vote: openVoteOf(next.state.vote),
     })
     ws.serializeAttachment({
       seat: seat.id,
@@ -240,7 +247,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     if (this.state === null) return this.end(ws, 'removed')
     const seat = this.seatOf(ws)
     if (seat === '') return
-    if (this.state.ended !== null) {
+    if (this.state.lifecycle._tag === 'Ended') {
       this.send(ws, {
         _tag: 'Refused',
         id,
@@ -265,7 +272,8 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
   private async ballot(ws: WebSocket, vote: number, yes: boolean): Promise<void> {
     if (this.state === null) return this.end(ws, 'removed')
     const seat = this.seatOf(ws)
-    if (seat === '' || this.state.vote === null || this.state.vote.id !== vote) return
+    const open = openVoteOf(this.state.vote)
+    if (seat === '' || open === null || open.id !== vote) return
     this.advanceNow()
     const current = this.state
     if (current === null) return
@@ -394,7 +402,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
       seats: current.seats,
       owner: current.ownerSeat,
       speed: current.speed,
-      vote: current.vote,
+      vote: openVoteOf(current.vote),
     })
     ws.serializeAttachment({
       seat: this.seatOf(ws),
@@ -427,10 +435,16 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
   private async stop(): Promise<void> {
     const state = this.state
     if (state === null) return
-    const idleAt = state.idleAt ?? Date.now()
-    if (state.idleAt === null) this.state = { ...state, idleAt }
+    if (state.lifecycle._tag === 'Ended') {
+      if (this.nobody()) await this.clear()
+      return
+    }
+    this.state = resting(state, Date.now())
     await this.save()
-    await this.ctx.storage.setAlarm(idleAt + ROOM_IDLE_MS + 1_000)
+    const lifecycle = this.state.lifecycle
+    const since =
+      lifecycle._tag === 'Idle' || lifecycle._tag === 'Abandoned' ? lifecycle.since : Date.now()
+    await this.ctx.storage.setAlarm(since + ROOM_IDLE_MS + 1_000)
   }
 
   private rest(): void {
@@ -496,7 +510,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
       seats: current.seats,
       owner: current.ownerSeat,
       speed: current.speed,
-      vote: current.vote,
+      vote: openVoteOf(current.vote),
     })
   }
 
@@ -521,7 +535,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
 
   private async schedule(): Promise<void> {
     const state = this.state
-    if (state !== null && state.open && state.ended === null && !this.nobody()) {
+    if (state !== null && state.lifecycle._tag === 'Live' && !this.nobody()) {
       await this.ctx.storage.setAlarm(Date.now() + ALARM_MS)
       return
     }

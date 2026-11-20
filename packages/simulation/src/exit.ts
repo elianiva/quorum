@@ -11,7 +11,7 @@ import {
 import { Refusal } from './actions.ts'
 import { legacyMultiplier } from './founding.ts'
 import type { Ledger } from './ledger.ts'
-import { ComponentId, Founding, type Game } from './state.ts'
+import { ComponentId, Founding, QuarterState, type Game } from './state.ts'
 import { valuationOf } from './valuation.ts'
 
 export const legacyOf = (payout: number, multiplier = 1): number =>
@@ -47,7 +47,12 @@ export type ExitOffer = Readonly<{
 
 const multiplierOf = (game: Game, id: ExitId): number =>
   EXITS[id].multiplier +
-  (id === 'step-down' ? Math.min(STREAK_BONUS_CAP, STREAK_BONUS * (game.quarter?.streak ?? 0)) : 0)
+  (id === 'step-down'
+    ? Math.min(
+        STREAK_BONUS_CAP,
+        STREAK_BONUS * (QuarterState.guards.Active(game.quarter) ? game.quarter.streak : 0),
+      )
+    : 0)
 
 export const exitOffer = (game: Game, ledger: Ledger, id: ExitId): ExitOffer => {
   const valuation = Math.min(EXITS[id].cap, valuationOf(game, ledger).valuation)

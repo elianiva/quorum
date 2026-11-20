@@ -23,8 +23,10 @@ import {
   withFile,
   withoutFile,
   SaveIndex,
-  type CompanyFile,
+  CompanyFile,
+  EMPTY_SAVE_INDEX,
 } from '../saves.ts'
+import { savesOf, savesStep, withSaves } from '../saves-machine.ts'
 import { foundCompany } from '@quorum/simulation/founding'
 import {
   freshBoard,
@@ -71,8 +73,11 @@ const startCompany = (
     companyPhase: opened(model.companyPhase, file.id),
     toast: null,
     panel,
-    company: null,
-    saves: { current: file.id, companies: withFile(model.saves, file).companies },
+    parkedCompany: null,
+    saves: {
+      _tag: 'Ready',
+      index: { lastPlayed: file.id, companies: withFile(savesOf(model.saves), file).companies },
+    },
     draft: { name: '', logo: model.draft.logo },
     saveFocus: null,
     saveConfirm: { _tag: 'List' },
@@ -91,7 +96,7 @@ const startCompany = (
             seed: game.seed,
             venture: game.founding.venture,
             mutators: game.founding.mutators,
-            first: model.saves.companies.length === 0,
+            first: savesOf(model.saves).companies.length === 0,
             viewport:
               typeof window === 'undefined' ? null : [window.innerWidth, window.innerHeight],
             agent: typeof navigator === 'undefined' ? null : navigator.userAgent,
@@ -104,7 +109,19 @@ const startCompany = (
 
 const parseFounder = Schema.decodeUnknownOption(Schema.fromJsonString(Founder))
 
-const parseIndex = Schema.decodeUnknownOption(Schema.fromJsonString(SaveIndex))
+const StoredIndex = Schema.Struct({
+  current: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  lastPlayed: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  companies: Schema.Array(CompanyFile),
+})
+
+const decodeIndex = Schema.decodeUnknownOption(Schema.fromJsonString(StoredIndex))
+
+export const parseIndex = (text: string) =>
+  Option.map(decodeIndex(text), (stored): SaveIndex => ({
+    lastPlayed: stored.lastPlayed ?? stored.current ?? null,
+    companies: stored.companies,
+  }))
 
 const titleIfBoard = (model: Model): UpdateResult =>
   model.route._tag === 'Company'
@@ -120,10 +137,10 @@ const dropped = (
   kept: Readonly<{ json: string; reason: string }> | null,
   warn: boolean,
 ): UpdateResult => {
-  const saves = withoutFile(model.saves, id)
+  const saves = withoutFile(savesOf(model.saves), id)
   const back = titleIfBoard({
     ...model,
-    saves,
+    saves: withSaves(model.saves, saves),
     saveFocus: null,
     saveConfirm: { _tag: 'List' },
     companyPhase: step(model.companyPhase, { _tag: 'Failed', id }),
@@ -151,7 +168,7 @@ const applyCompany = (
   const played = normalizeOrdinals(game)
   const inbox = inboxOfSave(file)
   const aside = offCompany(model)
-  const held = aside ? (model.company ?? model.board) : model.board
+  const held = aside ? (model.parkedCompany ?? model.board) : model.board
   const companyBoard: Board = {
     ...held,
     disclosure: disclosureOfSave(file),
@@ -164,15 +181,17 @@ const applyCompany = (
   const next: Model = {
     ...model,
     companyPhase: loaded,
-    saves: { ...model.saves, current: id },
+    saves: withSaves(model.saves, { ...savesOf(model.saves), lastPlayed: id }),
     route: open && !aside ? AppRoute.Company() : model.route,
     panel: open && !aside ? 'none' : model.panel,
     saveFocus: null,
     saveConfirm: { _tag: 'List' },
     board: aside ? model.board : companyBoard,
-    company: aside ? companyBoard : model.company,
+    parkedCompany: aside ? companyBoard : model.parkedCompany,
   }
-  return { model: { ...next, saves: refreshedIndex(next.saves, played) } }
+  return {
+    model: { ...next, saves: withSaves(next.saves, refreshedIndex(savesOf(next.saves), played)) },
+  }
 }
 
 export const changeFounder = (
@@ -195,7 +214,7 @@ const found = (model: Model): UpdateResult => {
   const game = foundCompany(model.board.game.seed + 7919, founding, model.founder.keep)
   const now = Date.now()
   const file = fileFor({
-    id: newSaveId(model.saves.companies, game.seed),
+    id: newSaveId(savesOf(model.saves).companies, game.seed),
     name: nameOr(model.draft.name),
     logo: model.draft.logo,
     founding,
@@ -215,7 +234,7 @@ export const leaveExited = (model: Model, menu: Menu): UpdateResult => ({
     route: routeOfMenu(menu),
     panel: 'none',
     companyPhase: step(model.companyPhase, { _tag: 'Closed' }),
-    saves: { ...model.saves, current: null },
+    saves: withSaves(model.saves, { ...savesOf(model.saves), lastPlayed: null }),
     saveFocus: null,
     saveConfirm: { _tag: 'List' },
     survey: EMPTY_SURVEY,
@@ -248,7 +267,16 @@ type CompaniesTag =
   | 'PreseedStarted'
 
 const loadedSaves = (model: Model, index: string | null): UpdateResult => {
-  if (index === null) return titleIfBoard(model)
+  if (index === null) {
+    const back = titleIfBoard(model)
+    return {
+      ...back,
+      model: {
+        ...back.model,
+        saves: savesStep(model.saves, { _tag: 'Loaded', index: EMPTY_SAVE_INDEX }),
+      },
+    }
+  }
   const parsed = Option.getOrNull(parseIndex(index))
   if (!parsed) {
     const back = titleIfBoard(model)
@@ -259,13 +287,13 @@ const loadedSaves = (model: Model, index: string | null): UpdateResult => {
   }
   const loaded: Model = {
     ...model,
-    saves: parsed,
+    saves: { _tag: 'Ready', index: parsed },
     companyPhase: step(model.companyPhase, {
       _tag: 'SavesLoaded',
-      current: parsed.current,
+      current: parsed.lastPlayed,
     }),
   }
-  if (parsed.current === null) {
+  if (parsed.lastPlayed === null) {
     const back = titleIfBoard(loaded)
     return { ...back, commands: [PruneSaves({ index: parsed }), ...(back.commands ?? [])] }
   }
@@ -273,18 +301,13 @@ const loadedSaves = (model: Model, index: string | null): UpdateResult => {
     model: loaded,
     commands: [
       PruneSaves({ index: parsed }),
-      LoadCompany({ id: parsed.current, open: model.route._tag === 'Company' }),
+      LoadCompany({ id: parsed.lastPlayed, open: model.route._tag === 'Company' }),
     ],
   }
 }
 
 export const companiesHandlers = (model: Model): MessageCases<UpdateResult, CompaniesTag> => ({
-  SavesLoaded: ({ index }) => {
-    const result = loadedSaves(model, index)
-    return result.model.savesReady
-      ? result
-      : { ...result, model: { ...result.model, savesReady: true } }
-  },
+  SavesLoaded: ({ index }) => loadedSaves(model, index),
   CompanyLoaded: ({ id, open, json }) => {
     if (json === null) return dropped(model, id, null, open)
     const read = readSaveFile(json)
@@ -308,7 +331,7 @@ export const companiesHandlers = (model: Model): MessageCases<UpdateResult, Comp
   LogoChosen: ({ logo }) => ({ model: { ...model, draft: { ...model.draft, logo } } }),
 
   CompanyChosen: ({ id }) =>
-    fileOf(model.saves, id)
+    fileOf(savesOf(model.saves), id)
       ? { model: { ...model, saveFocus: id, saveConfirm: { _tag: 'List' } } }
       : { model },
 
@@ -322,7 +345,7 @@ export const companiesHandlers = (model: Model): MessageCases<UpdateResult, Comp
   }),
 
   CompanyOpened: ({ id }) => {
-    if (fileOf(model.saves, id) === null) return { model }
+    if (fileOf(savesOf(model.saves), id) === null) return { model }
     const phase = model.companyPhase
     if (isPlaying(phase) && phase.id === id)
       return continued({ ...model, saveFocus: null, saveConfirm: { _tag: 'List' } })
@@ -359,12 +382,12 @@ export const companiesHandlers = (model: Model): MessageCases<UpdateResult, Comp
 
   CompanyDeleteConfirmed: () => {
     const id = model.saveFocus
-    if (id === null || fileOf(model.saves, id) === null) return { model }
-    const saves = withoutFile(model.saves, id)
-    const current = model.saves.current === id || companyIdOf(model.companyPhase) === id
+    if (id === null || fileOf(savesOf(model.saves), id) === null) return { model }
+    const saves = withoutFile(savesOf(model.saves), id)
+    const current = savesOf(model.saves).lastPlayed === id || companyIdOf(model.companyPhase) === id
     const next: Model = {
       ...model,
-      saves,
+      saves: withSaves(model.saves, saves),
       saveFocus: null,
       saveConfirm: confirmDeleteStep(model.saveConfirm, { _tag: 'Confirmed' }),
       ...(current
@@ -412,7 +435,7 @@ export const companiesHandlers = (model: Model): MessageCases<UpdateResult, Comp
     const game = { ...preseedGame(model.board.game.seed + 7919), founding }
     const now = Date.now()
     const file = fileFor({
-      id: newSaveId(model.saves.companies, game.seed),
+      id: newSaveId(savesOf(model.saves).companies, game.seed),
       name: nameOr(model.draft.name),
       logo: model.draft.logo,
       founding,

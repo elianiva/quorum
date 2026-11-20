@@ -61,8 +61,9 @@ import { MAX_NAME_CHARS } from '@quorum/simulation/work'
 import { perkLevel } from '@quorum/simulation/founding'
 import { has, sreStaffed } from '@quorum/simulation/lookups'
 import { openRegions } from '@quorum/simulation/regions'
-import type {
-  BlockKind,
+import {
+  activeIncident,
+  type BlockKind,
   Engineer,
   Game,
   GameNode,
@@ -99,6 +100,7 @@ import {
 } from '@quorum/simulation/team'
 import { overdueBy } from '@quorum/simulation/cve'
 import { boostRateOf } from '@quorum/simulation/studies'
+import { currentStudy } from '@quorum/simulation/study-machine'
 import type { Ledger } from '@quorum/simulation/ledger'
 import {
   canBoost,
@@ -686,7 +688,7 @@ const engineerSeat = (game: Game, engineer: Engineer, h: HtmlBuilder<Message>): 
   const ramp = (game.time - engineer.hiredAt) / rampSeconds(game)
   const ramping = ramp < 1
   const name = nameOf(engineer.id)
-  const training = trainingOf(game, engineer)
+  const training = trainingOf(engineer)
   const learned = training
     ? 1 - (training.readyAt - game.time) / trainSeconds(training.language)
     : 0
@@ -727,7 +729,7 @@ const engineerControls = (
   const next = teams[(index + 1) % teams.length]
   const language = learnTargetOf(game)
   const price = trainCost(game, language)
-  const learns = engineer.language !== language && !trainingOf(game, engineer)
+  const learns = engineer.language !== language && !trainingOf(engineer)
   return [
     teams.length > 1 || learns
       ? corner(
@@ -1188,7 +1190,7 @@ const kindSwitch = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
 
 const researchRow = (game: Game, team: Team, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
-  const study = game.studies[0]
+  const study = currentStudy(game.studies)
   const assigned = assignments(game).get(team.id)
   const rate = study ? boostRateOf(game, ledger, team, study.id) : 0
   const boosting = game.researchTeam === team.id && rate > 0
@@ -1553,14 +1555,7 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
               ],
             ),
           ),
-          ...pending.map((entry) =>
-            pendingSeat(
-              game,
-              entry.id,
-              entry.phase._tag === 'Pending' ? entry.phase.readyAt : game.time,
-              h,
-            ),
-          ),
+          ...pending.map((entry) => pendingSeat(game, entry.id, entry.readyAt, h)),
           index === 0 && !sandbox && game.stage >= 1 ? hireSeat(game, h) : h.empty,
         ],
       ),
@@ -1997,7 +1992,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
       ),
       ...game.services.map((service) => {
         const owner = ownerOf(game, service)
-        const paged = game.incident?.service === service.id
+        const paged = activeIncident(game)?.service === service.id
         const editService =
           renaming !== null && renaming.target === 'service' && renaming.id === service.id
             ? renaming
@@ -2181,7 +2176,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                         h.option(
                           [
                             h.Value(''),
-                            ...((service.datastore ?? '') === '' ? [h.Selected(true)] : []),
+                            ...(service.datastore._tag === 'Auto' ? [h.Selected(true)] : []),
                           ],
                           [t.team.firstDatabase],
                         ),
@@ -2191,7 +2186,10 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                             h.option(
                               [
                                 h.Value(node.id),
-                                ...(service.datastore === node.id ? [h.Selected(true)] : []),
+                                ...(service.datastore._tag === 'Pinned' &&
+                                service.datastore.id === node.id
+                                  ? [h.Selected(true)]
+                                  : []),
                               ],
                               [nodeTitle(t, game, node)],
                             ),
@@ -2686,7 +2684,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
   const migration = serviceOf(game).migration
-  if (!migration) return h.empty
+  if (migration._tag === 'Idle') return h.empty
   const shifted = stepOf(migration)
   const done = migration._tag === 'Finishing'
   const current = shifted > 0 ? (MIGRATION_STEPS[shifted - 1] ?? 1) : 0
@@ -3679,7 +3677,7 @@ const backlogCard = (
       item.block._tag === 'Blocked'
         ? iconButton(t.team.approve, Check, Message.WorkApproved({ id: item.id }), true, h)
         : h.empty,
-      item.held
+      item.block._tag === 'Held'
         ? iconButton(t.team.resume, Play, Message.WorkResumed({ id: item.id }), true, h)
         : h.empty,
       team
@@ -3834,7 +3832,7 @@ const deployPill = (game: Game, h: HtmlBuilder<Message>): Html => {
   const built = awaitingFeatures(game).length
   const left = serviceOf(game).nextDeployAt - game.time
   const chance = nextBadDeployChance(game)
-  const stalled = game.incident?.kind === 'bad-deploy'
+  const stalled = activeIncident(game)?.kind === 'bad-deploy'
   return h.div(
     [
       h.Key('deploy'),

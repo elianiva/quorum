@@ -16,6 +16,7 @@ import {
   RUNTIMES,
   type ResearchId,
 } from '@quorum/simulation/catalog'
+import { activeIncident } from '@quorum/simulation/state'
 import { FocusInspector } from '../commands.ts'
 import { Message } from '../message.ts'
 import { Model, type Inbox } from '../model.ts'
@@ -242,7 +243,7 @@ const trapTaken = (model: Model, target: string | null): UpdateResult => {
       const taken = act(model, 'Gave away the credentials', Actions.phished(game), {
         note: () => [say(model).toasts.credentialLeak, 'danger'],
       })
-      const incident = taken.model.board.game.incident
+      const incident = activeIncident(taken.model.board.game)
       return incident?.kind === 'credential-leak'
         ? {
             ...taken,

@@ -25,12 +25,18 @@ import type { Ledger } from '@quorum/simulation/ledger'
 import { has } from '@quorum/simulation/lookups'
 import { mixOf } from '@quorum/simulation/features'
 import { leverRefusal } from '@quorum/simulation/work'
-import { IncidentId } from '@quorum/simulation/state'
+import { activeIncident, IncidentId } from '@quorum/simulation/state'
 import { GUIDED, TRACKS, type SandboxId } from '@quorum/simulation/sandbox'
 import { clock, money, rate, sharePercent } from '@quorum/ui/game/format'
 import { Message } from '@/game/message.ts'
 import { isPhone } from '@/game/viewport.ts'
-import { boardSandbox, hasCompany, type Model, type SandboxRun } from '@/game/model.ts'
+import {
+  boardSandbox,
+  hasCompany,
+  parkedCompanyOf,
+  type Model,
+  type SandboxRun,
+} from '@/game/model.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
 import { nativeSelect, nativeSelectOption } from '@quorum/ui/primitives/native-select'
@@ -741,8 +747,8 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
           id: 'sandbox-incident',
           label: t.sandbox.incident,
           size: 'sm',
-          value: model.board.game.incident?.kind ?? '',
-          isDisabled: model.board.game.incident !== null,
+          value: activeIncident(model.board.game)?.kind ?? '',
+          isDisabled: activeIncident(model.board.game) !== null,
           onChange: (kind) =>
             Schema.is(IncidentId)(kind) ? Message.IncidentForced({ kind }) : Message.Synced(),
           wrapperClass: css({
@@ -864,7 +870,7 @@ const controlsBody = (model: Model, h: HtmlBuilder<Message>): Html => {
             ],
             h,
           ),
-          model.company && hasCompany(model)
+          parkedCompanyOf(model) && hasCompany(model)
             ? button(
                 {
                   onClick: Message.CompanyCopied(),

@@ -1,11 +1,11 @@
 import { RUNNING, warming, withWarm } from './life.ts'
 import { PROMOTE_DATA_LOSS } from './components/replica.ts'
-import { step as incidentStep } from './incident-machine.ts'
 import { step as roundStep } from './era-round-machine.ts'
 import {
   type Action,
   Refusal,
   endIncident,
+  answered,
   answering,
   no,
   notAllowed,
@@ -102,7 +102,9 @@ import {
 import { restoreSeconds, startIncident, zoned } from './director.ts'
 import { IPO_BURN_SECONDS, PRE_IPO_STAGE, ipoReady, newDrill } from './ipo.ts'
 import { firstQuarter, guidanceOpen } from './quarters.ts'
-import { step as quarterStep } from './quarter-machine.ts'
+import { QuarterState, step as quarterStep } from './quarter-machine.ts'
+import { activeIncident } from './state.ts'
+import { currentStudy, queueStep, studyList, studyOf } from './study-machine.ts'
 import { solveFlow } from './solve.ts'
 import { boosterFor } from './research-team.ts'
 import type { AlertRule } from './events.ts'
@@ -939,7 +941,7 @@ export const phished = (game: Game): Action => {
   if (game.sandbox) return notAllowed('A Sandbox has no credentials to leak.')
   if (has(game, 'secrets-management'))
     return notAllowed('The credentials live in the vault. The page has nothing to take.')
-  if (game.incident) return notAllowed('Wait for the incident to end.')
+  if (activeIncident(game) !== null) return notAllowed('Wait for the incident to end.')
   const started = startIncident(game, solveFlow(game), 'credential-leak', 0)
   if (!started) return notAllowed('There is nothing left to leak.')
   return ok({
@@ -960,8 +962,8 @@ export const fenceLeader = (game: Game): Action =>
 export const runDrill = (game: Game): Action => {
   if (!has(game, 'dr-drills'))
     return no(Refusal.Locked({ what: 'The DR drill', research: RESEARCH['dr-drills'].name }))
-  if (game.incident) return notAllowed('Wait for the incident to end.')
-  if (game.drill?._tag === 'Running') return notAllowed('A drill is running.')
+  if (activeIncident(game) !== null) return notAllowed('Wait for the incident to end.')
+  if (game.drill._tag === 'Running') return notAllowed('A drill is running.')
   const ledger = solveFlow(game)
   const started = startIncident(game, ledger, 'dr-drill', 0)
   if (!started) return notAllowed('Nothing runs in the home region.')
@@ -969,18 +971,14 @@ export const runDrill = (game: Game): Action => {
 }
 
 export const setGuidance = (game: Game, growth: number, margin: number): Action => {
-  if (!game.quarter) return notAllowed('Guidance starts after the IPO.')
+  if (QuarterState.guards.NotStarted(game.quarter))
+    return notAllowed('Guidance starts after the IPO.')
   if (!guidanceOpen(game)) return notAllowed('Guidance is set on the first day of a quarter.')
   if (![0, 1, 2].includes(growth) || ![0, 1, 2].includes(margin))
     return notAllowed('Pick a level for each.')
   return ok({
     ...game,
-    quarter: {
-      ...game.quarter,
-      growth,
-      margin,
-      phase: quarterStep(game.quarter.phase, { _tag: 'GuidanceSet' }),
-    },
+    quarter: quarterStep(game.quarter, { _tag: 'GuidanceSet', growth, margin }),
   })
 }
 
@@ -988,10 +986,10 @@ export const cancelReport = (game: Game): Action =>
   endIncident(game, 'report-db', 'No report is scanning the Database.')
 
 export const renewCertificate = (game: Game): Action =>
-  game.incident?.kind === 'certificate'
+  activeIncident(game)?.kind === 'certificate'
     ? ok({
         ...game,
-        incident: { ...answering(game, game.incident), remaining: 0 },
+        incident: answered(game, { remaining: 0 }),
         nodes: game.nodes.map((node) =>
           node.certUntil === null ? node : { ...node, certUntil: game.time + certLifeOf(game) },
         ),
@@ -1005,19 +1003,18 @@ export const pinAndRedeploy = (game: Game): Action =>
   endIncident(game, 'supply-chain', 'No compromised dependency is deployed.')
 
 export const restoreBackup = (game: Game): Action => {
-  const incident = game.incident
+  const incident = activeIncident(game)
   if (incident?.kind !== 'accidental-delete') return notAllowed('No table was deleted.')
   const target = game.nodes.find((node) => node.id === incident.nodeId)
   const good = target !== undefined && target.backup !== 'none' && target.restore !== 'failed'
   return ok({
     ...game,
     users: good ? game.users : Math.max(1, Math.floor(game.users * (1 - DELETE_CHURN))),
-    incident: {
-      ...answering(game, incident),
+    incident: answered(game, {
       remaining: good
         ? Math.min(incident.remaining, restoreSeconds(game, target?.backup ?? 'none'))
         : 0,
-    },
+    }),
   })
 }
 
@@ -1089,10 +1086,10 @@ export const restart = (game: Game, id: string): Action =>
     if (node.life._tag === 'Stopped') return notAllowed(`${name} is down for good. Replace it.`)
     if (isDown(node)) return notAllowed('It is already restarting.')
     const restarting = patch(game, id, { ...restarted(node), leak: 0 })
-    const incident = game.incident
+    const incident = activeIncident(game)
     return ok(
       incident?.nodeId === id && RESTART_FIXES.includes(incident.kind)
-        ? { ...restarting, incident: { ...answering(game, incident), remaining: 0 } }
+        ? { ...restarting, incident: answered(game, { remaining: 0 }) }
         : restarting,
     )
   })
@@ -1100,7 +1097,7 @@ export const restart = (game: Game, id: string): Action =>
 export const failOverZone = (game: Game): Action => {
   if (!has(game, 'multi-az'))
     return no(Refusal.Locked({ what: 'Failing over', research: RESEARCH['multi-az'].name }))
-  const zone = game.incident?.kind === 'zone' ? game.incident.zone : null
+  const zone = activeIncident(game)?.kind === 'zone' ? activeIncident(game)?.zone : null
   if (zone === null) return notAllowed('No zone is down.')
   const standbys = game.nodes.filter((node) => node.zone === zone && node.standby && isDown(node))
   if (standbys.length === 0)
@@ -1128,7 +1125,7 @@ export const failOver = (game: Game, id: string): Action =>
       return notAllowed(`${name} keeps no standby. Copies of an App Server spread across zones.`)
     if (!node.standby) return notAllowed(`${name} has no standby. Give it one before a zone fails.`)
     if (!isDown(node)) return notAllowed(`${name} is serving: there is nothing to fail over.`)
-    const out = game.incident?.zone ?? null
+    const out = activeIncident(game)?.zone ?? null
     const zone = ZONES.find((entry) => entry !== node.zone && entry !== out) ?? node.zone
     const loss = !node.standbySync && node.type === 'database' ? PROMOTE_DATA_LOSS : 0
     const promoted = patch({ ...game, data: game.data * (1 - loss) }, id, {
@@ -1136,13 +1133,13 @@ export const failOver = (game: Game, id: string): Action =>
       zone,
       standby: false,
     })
-    return ok(game.incident ? { ...promoted, incident: answering(game, game.incident) } : promoted)
+    return ok(activeIncident(game) !== null ? { ...promoted, incident: answering(game) } : promoted)
   })
 
 export const failOverRegion = (game: Game): Action => {
   if (!has(game, 'multi-az'))
     return no(Refusal.Locked({ what: 'Failing over', research: RESEARCH['multi-az'].name }))
-  const incident = game.incident
+  const incident = activeIncident(game)
   if ((incident?.kind !== 'region' && incident?.kind !== 'dr-drill') || incident.region === null)
     return notAllowed('No region is down.')
   const out = incident.region
@@ -1171,18 +1168,18 @@ export const failOverRegion = (game: Game): Action => {
         ? { ...node, region: target, ...restarted(node) }
         : node,
     ),
-    incident: paid.incident ? answering(paid, paid.incident) : paid.incident,
+    incident: activeIncident(paid) !== null ? answering(paid) : paid.incident,
   }))
 }
 
 export const throttleConnects = (game: Game, id: string): Action =>
   withNode(game, id, (node) => {
-    const incident = game.incident
+    const incident = activeIncident(game)
     if (node.type !== 'ws') return notAllowed('Only a Realtime Hub takes connects.')
     if (incident?.kind !== 'reconnect' || incident.nodeId !== id)
       return notAllowed('No reconnect wave is hitting this Hub.')
     if (incident.throttled === true) return notAllowed('Its connects are already throttled.')
-    return ok({ ...game, incident: { ...answering(game, incident), throttled: true } })
+    return ok({ ...game, incident: answered(game, { throttled: true }) })
   })
 
 const onLoop = (node: GameNode): boolean =>
@@ -1205,7 +1202,7 @@ const reachable = (game: Game, from: GameNode): ReadonlyArray<GameNode> => {
 }
 
 export const moveKind = (game: Game): Action => {
-  const incident = game.incident
+  const incident = activeIncident(game)
   if (incident?.kind !== 'loop') return notAllowed('No event loop is blocked.')
   const gateways = game.nodes.filter(
     (node) => node.type === 'gw' && !isDown(node) && reachable(game, node).some(onLoop),
@@ -1249,7 +1246,7 @@ export const moveKind = (game: Game): Action => {
     )
   }
   if (!routed) return notAllowed('No event loop is behind an API Gateway.')
-  return ok({ ...game, links, incident: answering(game, incident) })
+  return ok({ ...game, links, incident: answering(game) })
 }
 
 export const drain = (game: Game, id: string): Action =>
@@ -1261,12 +1258,10 @@ export const drain = (game: Game, id: string): Action =>
     if (node.service._tag === 'Shut') return notAllowed('It is shut down.')
     if (isDown(node)) return notAllowed('It is already down.')
     if (node.service._tag === 'Draining') return notAllowed('It is already draining.')
+    const active = activeIncident(game)
     const incident =
-      game.incident?.nodeId === id
-        ? {
-            ...answering(game, game.incident),
-            remaining: Math.min(game.incident.remaining, DRAIN_SECONDS),
-          }
+      active?.nodeId === id
+        ? answered(game, { remaining: Math.min(active.remaining, DRAIN_SECONDS) })
         : game.incident
     return ok({
       ...patch(game, id, { service: { _tag: 'Draining', since: game.time } }),
@@ -1274,17 +1269,8 @@ export const drain = (game: Game, id: string): Action =>
     })
   })
 
-export const acknowledge = (game: Game): Game => {
-  const incident = game.incident
-  if (!incident) return game
-  return {
-    ...game,
-    incident: {
-      ...incident,
-      phase: incidentStep(incident.phase, { _tag: 'Acked', at: game.time }),
-    },
-  }
-}
+export const acknowledge = (game: Game): Game =>
+  activeIncident(game) === null ? game : { ...game, incident: answering(game) }
 
 export const filePostmortem = (game: Game, id: number, take: boolean): Action => {
   const postmortem = game.postmortems.find((entry) => entry.id === id)
@@ -1300,7 +1286,7 @@ export const filePostmortem = (game: Game, id: number, take: boolean): Action =>
 
 const keepBooster = (before: Game, after: Game): Game => ({
   ...after,
-  researchTeam: boosterFor(after, before.researchTeam, after.studies[0]?.id),
+  researchTeam: boosterFor(after, before.researchTeam, currentStudy(after.studies)?.id),
 })
 
 export const study = (game: Game, id: ResearchId, first = false): Action => {
@@ -1310,10 +1296,10 @@ export const study = (game: Game, id: ResearchId, first = false): Action => {
   const era = Math.max(...chain.map((needed) => RESEARCH[needed].era))
   if (era > game.stage)
     return no(Refusal.TooEarly({ what: entry.name, era: ERAS[era]?.name ?? 'a later Era' }))
-  const queued = new Map(game.studies.map((item) => [item.id, item]))
+  const queued = new Map(studyList(game.studies).map((item) => [item.id, item]))
   if (!first && queued.has(id)) return notAllowed(`${entry.name} is in the queue.`)
   const fresh = chain.filter((needed) => !queued.has(needed)).length
-  if (game.studies.length + fresh > MAX_STUDIES)
+  if (studyList(game.studies).length + fresh > MAX_STUDIES)
     return notAllowed(
       fresh > 1
         ? `The queue holds ${MAX_STUDIES} Studies, and ${entry.name} needs ${fresh} of them.`
@@ -1323,50 +1309,56 @@ export const study = (game: Game, id: ResearchId, first = false): Action => {
     (needed) =>
       queued.get(needed) ?? { id: needed, phase: { _tag: 'Queued' as const, progress: 0 } },
   )
+  const added = first ? items : items.filter((item) => !queued.has(item.id))
   return ok(
     keepBooster(game, {
       ...game,
-      studies: first
-        ? [...items, ...game.studies.filter((item) => !chain.includes(item.id))]
-        : [...game.studies, ...items.filter((item) => !queued.has(item.id))],
+      studies: queueStep(game.studies, { _tag: 'Added', studies: added, first }),
     }),
   )
 }
 
 export const moveStudyTo = (game: Game, id: ResearchId, index: number): Action => {
-  const from = game.studies.findIndex((item) => item.id === id)
+  const list = studyList(game.studies)
+  const from = list.findIndex((item) => item.id === id)
   if (from === -1) return no(Refusal.Missing())
-  const to = Math.max(0, Math.min(game.studies.length - 1, Math.trunc(index)))
+  const to = Math.max(0, Math.min(list.length - 1, Math.trunc(index)))
   if (to === from) return ok(game)
   const up = to < from
-  const crossed = up ? game.studies.slice(to, from).reverse() : game.studies.slice(from + 1, to + 1)
+  const crossed = up ? list.slice(to, from).reverse() : list.slice(from + 1, to + 1)
   const blocker = crossed.find((item) => (up ? needs(id, item.id) : needs(item.id, id)))
   if (blocker) {
     const [before, after] = up ? [blocker.id, id] : [id, blocker.id]
     return notAllowed(`${RESEARCH[after].name} needs ${RESEARCH[before].name} first.`)
   }
-  const studies = [...game.studies]
-  const [item] = studies.splice(from, 1)
-  if (item) studies.splice(to, 0, item)
-  return ok(keepBooster(game, { ...game, studies }))
+  return ok(
+    keepBooster(game, {
+      ...game,
+      studies: queueStep(game.studies, { _tag: 'Moved', id, to }),
+    }),
+  )
 }
 
 export const moveStudy = (game: Game, id: ResearchId, direction: 1 | -1): Action => {
-  const index = game.studies.findIndex((item) => item.id === id)
+  const index = studyList(game.studies).findIndex((item) => item.id === id)
   if (index === -1) return no(Refusal.Missing())
   return moveStudyTo(game, id, index + direction)
 }
 
 export const cancelStudy = (game: Game, id: ResearchId): Action => {
-  if (!game.studies.some((item) => item.id === id)) return no(Refusal.Missing())
-  const gone = new Set<string>(
-    game.studies.filter((item) => item.id === id || needs(item.id, id)).map((item) => item.id),
+  if (!studyOf(game.studies, id)) return no(Refusal.Missing())
+  const gone = new Set<ResearchId>(
+    studyList(game.studies)
+      .filter((item) => item.id === id || needs(item.id, id))
+      .map((item) => item.id),
   )
   return ok(
     keepBooster(game, {
       ...game,
-      studies: game.studies.filter((item) => !gone.has(item.id)),
-      backlog: game.backlog.filter((item) => !(item.kind === 'spike' && gone.has(item.ref))),
+      studies: queueStep(game.studies, { _tag: 'Cancelled', ids: [...gone] }),
+      backlog: game.backlog.filter(
+        (item) => !(item.kind === 'spike' && gone.has(item.ref as ResearchId)),
+      ),
     }),
   )
 }

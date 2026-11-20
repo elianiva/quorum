@@ -12,7 +12,9 @@ import {
   nextEra,
   researchAffordable,
 } from './lookups.ts'
+import { studyCount } from './study-machine.ts'
 import type { Game, GameNode } from './state.ts'
+import { activeIncident } from './state.ts'
 
 const CREDIT_WARNING = 120
 
@@ -275,7 +277,7 @@ export const nextAdvice = (game: Game, ledger: Ledger): Advice => {
       alertActions(restarting.id),
     )
   }
-  if (game.incident?.kind === 'slow-query')
+  if (activeIncident(game)?.kind === 'slow-query')
     return has(game, 'query-analysis')
       ? advice(
           'monitoring:slow-query',
@@ -365,7 +367,7 @@ export const nextAdvice = (game: Game, ledger: Ledger): Advice => {
         { id: 'decline', label: 'Decline' },
       ],
     )
-  if (researchAffordable(game) && game.studies.length === 0 && game.researched.length < 3)
+  if (researchAffordable(game) && studyCount(game.studies) === 0 && game.researched.length < 3)
     return advice(
       'mentor:research',
       'mentor',

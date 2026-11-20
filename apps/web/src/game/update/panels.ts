@@ -1,7 +1,7 @@
 import { ApplySettings, FocusDashboard, WritePrefs } from '../commands.ts'
 import { EMPTY_RESEARCH, ResearchMessage } from '../research.ts'
 import { Message } from '../message.ts'
-import { Model, Prefs, clockAway, halted, offCompany, roomLive } from '../model.ts'
+import { Model, Prefs, clockAway, offCompany, roomLive } from '../model.ts'
 import { isExited } from '../company-machine.ts'
 import { clockStep } from '../clock-machine.ts'
 import { Option, Schema } from 'effect'
@@ -11,6 +11,7 @@ import { Update } from 'foldkit'
 import {
   closePanel,
   saveCommands,
+  withOverlay,
   withToast,
   type Dispatch,
   type MessageCases,
@@ -226,8 +227,9 @@ export const panelsHandlers = (
             },
           }
         : opened
+    const withMenu = withOverlay(next, 'menu', panel === 'menu' || panel === 'settings')
     return {
-      model: next,
+      model: withMenu,
       commands: panel === 'dashboard' && model.panel !== 'dashboard' ? [FocusDashboard({})] : [],
     }
   },
@@ -323,7 +325,7 @@ export const panelsHandlers = (
         }
       : model
     const commands = unsaved ? saveCommands(saved, true) : []
-    if (!model.prefs.blurPause || halted(model) || roomLive(model) || !onBoard(model.route))
+    if (!model.prefs.blurPause || roomLive(model) || !onBoard(model.route))
       return { model: saved, commands }
     const next: Model = {
       ...saved,

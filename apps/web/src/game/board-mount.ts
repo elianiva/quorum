@@ -7,11 +7,15 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import { attachBoard } from '@quorum/ui/board/board'
 import { copy } from '@/i18n/messages.ts'
 import { Message } from './message.ts'
+import { surfaceUnavailable } from './board-surface-machine.ts'
+import type { Model } from './model.ts'
 import { play } from './sound.ts'
 import { reportBoardFailure } from '@/platform/sentry.ts'
 import { hideCursor, sendCursor } from '@/platform/room-socket.ts'
 
 type BoardMessage =
+  | ReturnType<typeof Message.BoardReady>
+  | ReturnType<typeof Message.BoardFailed>
   | ReturnType<typeof Message.NodeTapped>
   | ReturnType<typeof Message.NodeMoved>
   | ReturnType<typeof Message.LinkRequested>
@@ -25,6 +29,8 @@ type BoardMessage =
 const BoardMounted = Mount.defineStream('BoardMounted', {
   args: {},
   messages: [
+    Message.BoardReady,
+    Message.BoardFailed,
     Message.NodeTapped,
     Message.NodeMoved,
     Message.LinkRequested,
@@ -54,6 +60,8 @@ const BoardMounted = Mount.defineStream('BoardMounted', {
               onCursor: sendCursor,
               onCursorGone: hideCursor,
               onSound: play,
+              onReady: () => offer(Message.BoardReady()),
+              onUnavailable: (reason) => offer(Message.BoardFailed({ reason })),
               onStartFailed: reportBoardFailure,
             }),
           ),
@@ -64,31 +72,37 @@ const BoardMounted = Mount.defineStream('BoardMounted', {
     ),
 })
 
-export const boardHost = (h: HtmlBuilder<Message>): Html => {
+export const boardHost = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
+  const surface = model.board.surface
+  const reason = surfaceUnavailable(surface) ? surface.reason : null
   return h.div(
     [
       h.Key('board'),
       h.Class(css({ position: 'absolute', inset: '0', backgroundColor: 'canvas' })),
-      h.OnMount(BoardMounted({})),
+      ...(reason === null
+        ? [h.OnMount(BoardMounted({}))]
+        : [h.DataAttribute('board-unavailable', reason === 'webgl' ? 'webgl' : 'error')]),
     ],
-    [
-      h.div(
-        [h.Class('board-unavailable'), h.Role('status')],
-        [
-          h.p([h.Class('board-unavailable-webgl')], [t.panels.webglUnavailable]),
-          h.a(
+    reason === null
+      ? []
+      : [
+          h.div(
+            [h.Class('board-unavailable'), h.Role('status')],
             [
-              h.Class('board-unavailable-webgl'),
-              h.Href('https://get.webgl.org'),
-              h.Target('_blank'),
-              h.Rel('noreferrer noopener'),
+              h.p([h.Class('board-unavailable-webgl')], [t.panels.webglUnavailable]),
+              h.a(
+                [
+                  h.Class('board-unavailable-webgl'),
+                  h.Href('https://get.webgl.org'),
+                  h.Target('_blank'),
+                  h.Rel('noreferrer noopener'),
+                ],
+                [t.panels.webglHelp],
+              ),
+              h.p([h.Class('board-unavailable-error')], [t.panels.boardFailed]),
             ],
-            [t.panels.webglHelp],
           ),
-          h.p([h.Class('board-unavailable-error')], [t.panels.boardFailed]),
         ],
-      ),
-    ],
   )
 }

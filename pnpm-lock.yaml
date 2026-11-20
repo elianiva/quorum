@@ -200,6 +200,9 @@ importers:
       '@sentry/effect':
         specifier: 11.13.0
         version: 11.13.0(effect@4.1.4)
+      '@typeonce/effect-machine':
+        specifier: 0.46.0
+        version: 0.46.0(effect@4.1.4)
       effect:
         specifier: 4.1.4
         version: 4.1.4
@@ -391,6 +394,9 @@ importers:
       '@quorum/styled-system':
         specifier: workspace:*
         version: link:../styled-system
+      '@typeonce/effect-machine':
+        specifier: 0.46.0
+        version: 0.46.0(effect@4.1.4)
       d3-shape:
         specifier: ^3.2.1
         version: 3.2.1

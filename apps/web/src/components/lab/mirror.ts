@@ -22,6 +22,7 @@ import {
   patternsFor,
   previewApply,
   switchLeft,
+  toolOf,
   Change,
   type Drift,
   type Managed,
@@ -236,7 +237,7 @@ const heading = (text: string, h: HtmlBuilder<Message>): Html =>
 const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
-  const current = game.iac?.tool ?? null
+  const current = toolOf(game)
   const left = switchLeft(game)
   return h.section(
     [
@@ -390,7 +391,7 @@ const toolCards = (game: Game, h: HtmlBuilder<Message>): Html => {
 
 const gitops = (game: Game, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
-  return !has(game, 'gitops') || !game.iac
+  return !has(game, 'gitops') || game.iac._tag !== 'Chosen'
     ? h.empty
     : h.section(
         [
@@ -412,7 +413,7 @@ const gitops = (game: Game, h: HtmlBuilder<Message>): Html => {
               ['all', t.mirror.allAtOnce],
               ['staged', t.mirror.staged],
             ] as const,
-            game.iac.sync,
+            game.iac._tag === 'Chosen' ? game.iac.sync : null,
             (sync) => Message.SyncModePicked({ sync }),
             h,
           ),
@@ -673,7 +674,8 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
   const burn = drift.changes.length > 0 ? burnAdded(game, mirror) : 0
   const changes = drift.changes
   const pending = isApplying(mirror.sync)
-  const tool = game.iac ? IAC_TOOL_INFO[game.iac.tool] : null
+  const current = toolOf(game)
+  const tool = current ? IAC_TOOL_INFO[current] : null
   return h.section(
     [
       h.Key(`mirror-${mirror.region}`),
@@ -742,7 +744,7 @@ const mirrorSection = (game: Game, mirror: Mirror, h: HtmlBuilder<Message>): Htm
         ],
       ),
       dataChoices(game, mirror, h),
-      game.iac
+      game.iac._tag === 'Chosen'
         ? h.div(
             [
               h.Key('computed'),
@@ -948,7 +950,7 @@ const startSection = (game: Game, region: RegionId, h: HtmlBuilder<Message>): Ht
                   onClick: empty
                     ? Message.MirrorStarted({ target: region, source: other })
                     : Message.MirrorStarted({ target: other, source: region }),
-                  isDisabled: !game.iac,
+                  isDisabled: game.iac._tag !== 'Chosen',
                   size: 'sm',
                   variant: 'outline',
                 },
@@ -992,7 +994,7 @@ export const mirrorPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
         [
           toolCards(game, h),
           gitops(game, h),
-          game.iac
+          game.iac._tag === 'Chosen'
             ? mirror
               ? mirrorSection(game, mirror, h)
               : startSection(game, region, h)

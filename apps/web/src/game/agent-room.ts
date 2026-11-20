@@ -5,6 +5,7 @@ import { newWriteKey, roomIdOf } from '@quorum/agent/room-id'
 import { uploadOf, type SyncState } from '@quorum/agent/sync'
 import { snapshotOfModel } from './agent-tools.ts'
 import { playingId, type Model } from './model.ts'
+import { AgentSync, agentSyncEnabled, agentSyncStep } from './agent-sync-machine.ts'
 import { AGENT_ROOMS_KEY, readStored, writeStored } from './storage.ts'
 
 const INTERVAL_MS = 5_000
@@ -21,12 +22,12 @@ const decodeRooms = Schema.decodeUnknownOption(Schema.fromJsonString(Rooms))
 
 let memory: Record<string, RoomRecord> = {}
 const pending = new Map<string, Promise<RoomRecord>>()
-let wanted = false
+let phase: AgentSync = { _tag: 'Off' }
 let timer: ReturnType<typeof setInterval> | undefined
 let latest: Model | null = null
 let active: Readonly<{ companyId: string; room: RoomRecord }> | null = null
 let sync: SyncState | null = null
-let busy = false
+let sending = false
 
 const readRooms = (): Record<string, RoomRecord> => {
   const stored = readStored(AGENT_ROOMS_KEY)
@@ -71,50 +72,64 @@ const ensureRoom = (companyId: string): Promise<RoomRecord> => {
 }
 
 const send = async (): Promise<void> => {
-  if (!wanted || busy || latest === null) return
-  const companyId = playingId(latest)
-  if (companyId === null) return
-  const room = await ensureRoom(companyId)
-  if (active?.room.roomId !== room.roomId) {
-    active = { companyId, room }
-    sync = { epoch: room.epoch, rev: 0, acked: null, headJson: null }
-  }
-  if (sync === null) return
-
-  const upload = uploadOf(snapshotOfModel(latest), sync)
-  if (upload === null) return
-
-  busy = true
+  if (sending || phase._tag !== 'Ready' || latest === null) return
+  sending = true
   try {
-    const response = await fetch(AGENT_ROOM_PATH, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${room.writeKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(upload),
-    })
-    if (!response.ok) return
-    if (!wanted) {
-      await fetch(AGENT_ROOM_PATH, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${room.writeKey}` },
+    const { companyId, roomId, rev: knownRev } = phase
+    const room = await ensureRoom(companyId)
+    if (room.roomId !== roomId) {
+      phase = agentSyncStep(phase, {
+        _tag: 'RoomCreated',
+        companyId,
+        roomId: room.roomId,
+        epoch: room.epoch,
       })
       return
     }
-    const ack = (await response.json()) as Ack
-    sync = { epoch: ack.epoch, rev: ack.rev, acked: ack, headJson: JSON.stringify(upload.head) }
-  } catch {
+    if (active?.room.roomId !== room.roomId) {
+      active = { companyId, room }
+      sync = { epoch: room.epoch, rev: knownRev, acked: null, headJson: null }
+    }
+    if (sync === null) return
+
+    const upload = uploadOf(snapshotOfModel(latest), sync)
+    if (upload === null) return
+
+    phase = agentSyncStep(phase, { _tag: 'Uploading' })
+    try {
+      const response = await fetch(AGENT_ROOM_PATH, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${room.writeKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(upload),
+      })
+      if (!response.ok) {
+        phase = agentSyncStep(phase, { _tag: 'Failed', reason: 'upload refused' })
+        return
+      }
+      if (!agentSyncEnabled(phase)) {
+        await fetch(AGENT_ROOM_PATH, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${room.writeKey}` },
+        })
+        phase = { _tag: 'Off' }
+        return
+      }
+      const ack = (await response.json()) as Ack
+      sync = { epoch: ack.epoch, rev: ack.rev, acked: ack, headJson: JSON.stringify(upload.head) }
+      phase = agentSyncStep(phase, { _tag: 'Uploaded', rev: ack.rev })
+    } catch {
+      phase = agentSyncStep(phase, { _tag: 'Failed', reason: 'network' })
+    }
   } finally {
-    busy = false
+    sending = false
   }
 }
 
-let roomed: string | null = null
-
 const clearAll = async (): Promise<void> => {
   active = null
-  roomed = null
   sync = null
   const rooms = Object.values(readRooms())
   await Promise.allSettled(
@@ -129,20 +144,37 @@ const clearAll = async (): Promise<void> => {
 
 export const syncAgent = (model: Model): void => {
   latest = model
-  if (!model.prefs.agentAccess) return
+  if (!model.prefs.agentAccess) {
+    if (agentSyncEnabled(phase)) phase = agentSyncStep(phase, { _tag: 'Disabled' })
+    return
+  }
+  if (phase._tag === 'Off' || phase._tag === 'Failed')
+    phase = agentSyncStep(phase, { _tag: 'Enabled' })
   const companyId = playingId(model)
-  if (companyId === null || companyId === roomed) return
-  if (agentRoomId(companyId) === null) void ensureRoom(companyId)
-  else roomed = companyId
+  if (companyId === null) return
+  if (phase._tag === 'Creating' && phase.companyId === companyId) return
+  if ((phase._tag === 'Ready' || phase._tag === 'Uploading') && phase.companyId === companyId)
+    return
+  phase = agentSyncStep(phase, { _tag: 'Watching', companyId })
+  void ensureRoom(companyId).then((room) => {
+    if (phase._tag === 'Creating' && phase.companyId === companyId)
+      phase = agentSyncStep(phase, {
+        _tag: 'RoomCreated',
+        companyId,
+        roomId: room.roomId,
+        epoch: room.epoch,
+      })
+  })
 }
 
 export const setAgentAccess = (on: boolean): void => {
-  if (on === wanted) return
-  wanted = on
+  if (on === agentSyncEnabled(phase)) return
   if (on) {
+    phase = agentSyncStep(phase, { _tag: 'Enabled' })
     timer ??= setInterval(() => void send(), INTERVAL_MS)
     void send()
   } else {
+    phase = agentSyncStep(phase, { _tag: 'Disabled' })
     if (timer !== undefined) clearInterval(timer)
     timer = undefined
     void clearAll()

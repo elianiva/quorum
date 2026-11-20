@@ -21,11 +21,13 @@ export type StackTarget = Readonly<{ runtime: RuntimeId; framework: FrameworkId 
 
 export const stepOf = (migration: Migration): number =>
   Migration.match(migration, {
+    Idle: () => 0,
     Building: ({ step }) => step,
     Ready: ({ step }) => step,
     Finishing: () => MIGRATION_STEPS.length,
   })
 
+export const isIdle = Migration.guards.Idle
 export const isReady = Migration.guards.Ready
 
 export const trancheBuilt = (migration: Migration): Migration => {
@@ -42,7 +44,7 @@ export const trancheBuilt = (migration: Migration): Migration => {
   })
 }
 
-export const shifted = (migration: Migration, moved: boolean): Migration | null => {
+export const shifted = (migration: Migration, moved: boolean): Migration => {
   if (!Migration.guards.Ready(migration)) return migration
   const { runtime, framework, fromRuntime, fromFramework, total } = migration
   const step = migration.step + 1
@@ -57,7 +59,7 @@ export const shifted = (migration: Migration, moved: boolean): Migration | null 
           total,
           bugs,
         })
-      : null
+      : Migration.cases.Idle.make({})
   return Migration.cases.Building.make({
     runtime,
     framework,
@@ -69,8 +71,12 @@ export const shifted = (migration: Migration, moved: boolean): Migration | null 
   })
 }
 
-export const fixed = (migration: Migration): Migration | null =>
-  Migration.guards.Finishing(migration) ? null : { ...migration, bugs: false }
+export const fixed = (migration: Migration): Migration => {
+  if (Migration.guards.Idle(migration)) return migration
+  return Migration.guards.Finishing(migration)
+    ? Migration.cases.Idle.make({})
+    : { ...migration, bugs: false }
+}
 
 export const migrationFactor = (from: StackTarget, to: StackTarget): number => {
   const language = RUNTIMES[to.runtime].language
@@ -92,7 +98,9 @@ export const migrationCost = (game: Game, to: StackTarget): number =>
   )
 
 export const trancheOf = (migration: Migration, step: number): number =>
-  Math.round(migration.total * (MIGRATION_TRANCHES[step - 1] ?? 0) * 10) / 10
+  Migration.guards.Idle(migration)
+    ? 0
+    : Math.round(migration.total * (MIGRATION_TRANCHES[step - 1] ?? 0) * 10) / 10
 
 export const targetOf = (
   node: GameNode,
@@ -133,7 +141,7 @@ export const serversAt = (game: Game, step: number): number => {
 
 export const startMigration = (game: Game, to: StackTarget): Action => {
   const running = serviceOf(game).migration
-  if (running)
+  if (!Migration.guards.Idle(running))
     return Result.fail(
       Refusal.NotAllowed({
         reason: Migration.guards.Finishing(running)
@@ -163,7 +171,8 @@ export const startMigration = (game: Game, to: StackTarget): Action => {
 
 export const shiftMigration = (game: Game): Action => {
   const migration = serviceOf(game).migration
-  if (!migration) return Result.fail(Refusal.NotAllowed({ reason: 'No migration is running.' }))
+  if (Migration.guards.Idle(migration))
+    return Result.fail(Refusal.NotAllowed({ reason: 'No migration is running.' }))
   if (!Migration.guards.Ready(migration))
     return Result.fail(Refusal.NotAllowed({ reason: 'The next step is still being built.' }))
   const step = migration.step + 1
@@ -184,15 +193,13 @@ export const shiftMigration = (game: Game): Action => {
   return Result.succeed(withService(next, { migration: shifted(migration, moved) }))
 }
 
-export const bugsFixed = (game: Game): Game => {
-  const migration = serviceOf(game).migration
-  if (!migration) return game
-  return withService(game, { migration: fixed(migration) })
-}
+export const bugsFixed = (game: Game): Game =>
+  withService(game, { migration: fixed(serviceOf(game).migration) })
 
 export const cancelMigration = (game: Game): Action => {
   const migration = serviceOf(game).migration
-  if (!migration) return Result.fail(Refusal.NotAllowed({ reason: 'No migration is running.' }))
+  if (Migration.guards.Idle(migration))
+    return Result.fail(Refusal.NotAllowed({ reason: 'No migration is running.' }))
   if (Migration.guards.Finishing(migration))
     return Result.fail(Refusal.NotAllowed({ reason: 'Every App Server has moved. Fix its bugs.' }))
   const from = { runtime: migration.fromRuntime, framework: migration.fromFramework }
@@ -205,7 +212,7 @@ export const cancelMigration = (game: Game): Action => {
           (item) => item.kind !== 'migration' && item.ref !== 'fix-bugs',
         ),
       },
-      { migration: null },
+      { migration: Migration.cases.Idle.make({}) },
     ),
   )
 }

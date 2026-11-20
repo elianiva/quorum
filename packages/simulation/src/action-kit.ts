@@ -1,7 +1,8 @@
 import { Data, Result } from 'effect'
 import type { IncidentId } from './catalog.ts'
 import type { Game, GameNode, Incident } from './state.ts'
-import { step as incidentStep } from './incident-machine.ts'
+import { activeIncident } from './state.ts'
+import { ackIncident, updateIncident, type IncidentState } from './incident-machine.ts'
 
 export type Refusal = Data.TaggedEnum<{
   Locked: { readonly what: string; readonly research: string }
@@ -53,12 +54,12 @@ export const spend = (
     ? no(Refusal.Unaffordable({ what, price, currency: 'cash' }))
     : ok(apply({ ...game, cash: game.cash - price }))
 
-export const answering = (game: Game, incident: Incident): Incident => ({
-  ...incident,
-  phase: incidentStep(incident.phase, { _tag: 'Acked', at: game.time }),
-})
+export const answering = (game: Game): IncidentState => ackIncident(game.incident, game.time)
+
+export const answered = (game: Game, change: Partial<Incident>): IncidentState =>
+  updateIncident(answering(game), change)
 
 export const endIncident = (game: Game, kind: IncidentId, refusal: string): Action =>
-  game.incident?.kind === kind
-    ? ok({ ...game, incident: { ...answering(game, game.incident), remaining: 0 } })
+  activeIncident(game)?.kind === kind
+    ? ok({ ...game, incident: answered(game, { remaining: 0 }) })
     : notAllowed(refusal)

@@ -7,6 +7,7 @@ import { freeSandbox } from '../src/sandbox.ts'
 import { solveFlow } from '../src/solve.ts'
 import { step } from '../src/step.ts'
 import type { Game, GameNode } from '../src/state.ts'
+import { activeIncident } from '../src/state.ts'
 
 const ok = (action: Actions.Action): Game => {
   if (Result.isFailure(action)) throw new Error(describeRefusal(action.failure))
@@ -57,7 +58,7 @@ describe('Restart', () => {
     const restarted = ok(Actions.restart(split, hub))
     expect(kept(restarted, hub).life._tag).toBe('Restarting')
     const after = run(restarted, 120, 5)
-    expect(after.incident).toBeNull()
+    expect(activeIncident(after)).toBeNull()
     expect(realtime(after)).toBeGreaterThan(0.99)
   })
 
@@ -67,7 +68,7 @@ describe('Restart', () => {
     const server = of(stale, 'server')
     expect(errors(stale)).toBeGreaterThan(0.05)
     const after = run(ok(Actions.restart(stale, server.id)), 10)
-    expect(after.incident).toBeNull()
+    expect(activeIncident(after)).toBeNull()
     expect(errors(after)).toBeLessThan(0.01)
   })
 
@@ -76,7 +77,7 @@ describe('Restart', () => {
     game = ok(Actions.setRuntime(game, of(game, 'server').id, 'bun'))
     const broken = strike(run(game, 30, 5), 'bun-compat')
     const after = run(ok(Actions.restart(broken, of(broken, 'server').id)), 10)
-    expect(after.incident).toBeNull()
+    expect(activeIncident(after)).toBeNull()
   })
 
   test('a Database restarts too, and a Stopped Node is replaced instead', () => {
@@ -126,7 +127,7 @@ describe('Fail over', () => {
     for (let seed = 1; seed < 60; seed++) {
       const calm = zoneGame(seed)
       const started = forceIncident(calm, solveFlow(calm), 'zone')
-      if (started?.incident?.zone !== 'a') continue
+      if (!started || activeIncident(started)?.zone !== 'a') continue
       const database = of(started, 'database')
       expect(errors(started)).toBeGreaterThan(0.9)
       expect(errors(run(started, 5))).toBeGreaterThan(0.9)
@@ -168,7 +169,7 @@ describe('Fail over', () => {
       const calm = regionGame()
       const server = of(calm, 'server')
       const down = kind === 'region' ? strike(calm, 'region') : ok(Actions.runDrill(calm))
-      expect(down.incident?.region).toBe('na')
+      expect(activeIncident(down)?.region).toBe('na')
       expect(errors(down)).toBeGreaterThan(0.9)
       const moved = run(ok(Actions.failOverRegion(down)), 3)
       expect(kept(moved, server.id).region).toBe('eu')
@@ -234,7 +235,7 @@ describe('Move login', () => {
     expect(solveFlow(blocked).nodes[node.id]?.traffic.login).toBeGreaterThan(0)
     const moved = run(ok(Actions.moveKind(blocked)), 2)
     expect(solveFlow(moved).nodes[node.id]?.traffic.login ?? 0).toBe(0)
-    expect(moved.incident).toBeNull()
+    expect(activeIncident(moved)).toBeNull()
   })
 
   test('it is refused when no Service can take login off a loop', () => {

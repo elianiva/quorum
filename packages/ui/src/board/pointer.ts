@@ -13,21 +13,19 @@ export const bindPointer = (c: BoardController): void => {
     (event) => {
       c.coarse = event.pointerType !== 'mouse'
       c.panSpeed = 0
-      if (c.coarse) {
-        c.touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
+      if (event.pointerType !== 'mouse') {
         canvas.setPointerCapture(event.pointerId)
-        if (c.touches.size === 2) {
-          c.letGo()
-          c.gesture = null
-          c.dragged = null
-          if (c.pressed) {
-            c.pressed = null
-            c.syncCards()
-          }
-          c.pinch = c.pinchOf()
+        const touch = { id: event.pointerId, x: event.clientX, y: event.clientY }
+        if (c.gesture._tag === 'Pinching') {
+          if (c.gesture.touches.length >= 2) return
+          c.beginPinch([...c.gesture.touches, touch])
           return
         }
-        if (c.touches.size > 2) return
+        if (!event.isPrimary) {
+          const first = c.pointerOf(c.gesture)
+          if (first) c.beginPinch([first, touch])
+          return
+        }
       }
       const point = c.toWorld(event)
       c.pointer = point
@@ -43,13 +41,15 @@ export const bindPointer = (c: BoardController): void => {
       if (event.button !== 0) return
       canvas.setPointerCapture(event.pointerId)
       if (c.state?.readOnly) {
-        c.gesture = {
-          kind: 'pan',
+        c.gestureStep({
+          _tag: 'EmptyPressed',
+          pointerId: event.pointerId,
           x: event.clientX,
           y: event.clientY,
-          moved: false,
+          at: point,
           cut: null,
-        }
+          box: false,
+        })
         return
       }
       if (c.state?.stamp) {
@@ -63,36 +63,58 @@ export const bindPointer = (c: BoardController): void => {
       const port = c.outPortAt(point)
       if (port) {
         c.hoverLink = null
-        c.gesture = { kind: 'link', from: port.id, at: point }
         c.wireEnd = outPort(c.shown().get(port.id) ?? port)
-        c.snapTo = null
         c.snapGlow = 0
         c.events.onSound?.('pull', 1, true)
+        c.gestureStep({
+          _tag: 'PortPressed',
+          pointerId: event.pointerId,
+          from: port.id,
+          at: point,
+        })
         return
       }
       const node = c.nodeAt(point)
       if (node) {
         if (c.footerAt(node, point)) {
-          c.pressed = node.id
-          c.holdSince = c.state && holds(c.state.game, node) ? performance.now() : 0
+          c.gestureStep({
+            _tag: 'FooterPressed',
+            pointerId: event.pointerId,
+            id: node.id,
+            dx: point.x - node.x,
+            dy: point.y - node.y,
+            x: event.clientX,
+            y: event.clientY,
+            since: c.state && holds(c.state.game, node) ? performance.now() : null,
+          })
           c.syncCards()
         } else {
           const view = c.views.get(node.id)
           if (view) view.held = true
-        }
-        c.gesture = {
-          kind: 'node',
-          id: node.id,
-          dx: point.x - node.x,
-          dy: point.y - node.y,
-          x: event.clientX,
-          y: event.clientY,
-          moved: false,
+          c.gestureStep({
+            _tag: 'NodePressed',
+            pointerId: event.pointerId,
+            id: node.id,
+            dx: point.x - node.x,
+            dy: point.y - node.y,
+            x: event.clientX,
+            y: event.clientY,
+            at: point,
+            frame: false,
+          })
         }
         return
       }
       if (event.shiftKey) {
-        c.gesture = { kind: 'box', from: point, at: point }
+        c.gestureStep({
+          _tag: 'EmptyPressed',
+          pointerId: event.pointerId,
+          x: event.clientX,
+          y: event.clientY,
+          at: point,
+          cut: null,
+          box: true,
+        })
         return
       }
       if (c.selectedLink && c.onBadge(point)) {
@@ -110,16 +132,17 @@ export const bindPointer = (c: BoardController): void => {
         point.y >= frame.y &&
         point.y <= frame.y + frame.h
       ) {
-        c.gesture = {
-          kind: 'node',
+        c.gestureStep({
+          _tag: 'NodePressed',
+          pointerId: event.pointerId,
           id: lead.id,
           dx: point.x - lead.x,
           dy: point.y - lead.y,
           x: event.clientX,
           y: event.clientY,
-          moved: false,
+          at: point,
           frame: true,
-        }
+        })
         return
       }
       const link = c.linkAt(point)
@@ -127,13 +150,15 @@ export const bindPointer = (c: BoardController): void => {
         c.selectLink(link)
         return
       }
-      c.gesture = {
-        kind: 'pan',
+      c.gestureStep({
+        _tag: 'EmptyPressed',
+        pointerId: event.pointerId,
         x: event.clientX,
         y: event.clientY,
-        moved: false,
+        at: point,
         cut: c.coarse ? c.linkAt(point) : null,
-      }
+        box: false,
+      })
     },
     { signal },
   )
@@ -141,12 +166,18 @@ export const bindPointer = (c: BoardController): void => {
   canvas.addEventListener(
     'pointermove',
     (event) => {
-      if (c.touches.has(event.pointerId)) {
-        c.touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
-        if (c.pinch) {
-          c.zoomTo(c.pinchOf())
-          return
-        }
+      if (c.gesture._tag === 'Pinching') {
+        const before = c.gesture
+        const next = c.gestureStep({
+          _tag: 'PointerMoved',
+          pointerId: event.pointerId,
+          x: event.clientX,
+          y: event.clientY,
+          at: c.toWorld(event),
+          over: null,
+        })
+        if (next._tag === 'Pinching') c.zoomBetween(before, next)
+        return
       }
       const point = c.toWorld(event)
       c.pointer = point
@@ -155,49 +186,64 @@ export const bindPointer = (c: BoardController): void => {
       c.activity = null
       c.cursorWaiting = true
       const gesture = c.gesture
-      if (gesture?.kind === 'pan') {
-        const dx = event.clientX - gesture.x
-        const dy = event.clientY - gesture.y
-        if (!gesture.moved && Math.hypot(dx, dy) < 4) return
-        gesture.moved = true
-        c.world.position.x += dx
-        c.world.position.y += dy
-        gesture.x = event.clientX
-        gesture.y = event.clientY
+      if (gesture._tag === 'Panning') {
+        const next = c.gestureStep({
+          _tag: 'PointerMoved',
+          pointerId: event.pointerId,
+          x: event.clientX,
+          y: event.clientY,
+          at: point,
+          over: null,
+        })
+        if (next._tag !== 'Panning' || !next.moved) return
+        c.world.position.x += event.clientX - gesture.x
+        c.world.position.y += event.clientY - gesture.y
         c.paint()
         canvas.style.cursor = 'grabbing'
         return
       }
-      if (gesture?.kind === 'node') {
-        if (!gesture.moved && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) < 4)
-          return
-        const view = c.views.get(gesture.id)
-        if (!gesture.moved && view) {
+      if (
+        gesture._tag === 'Dragging' ||
+        gesture._tag === 'PressPending' ||
+        gesture._tag === 'Holding'
+      ) {
+        const next = c.gestureStep({
+          _tag: 'PointerMoved',
+          pointerId: event.pointerId,
+          x: event.clientX,
+          y: event.clientY,
+          at: point,
+          over: null,
+        })
+        if (next._tag !== 'Dragging' || !next.moved) return
+        const view = c.views.get(next.id)
+        if (!(gesture._tag === 'Dragging' && gesture.moved) && view) {
           view.held = false
           view.lifted = true
           c.cards.addChild(view.root)
           c.events.onSound?.('lift', 1, true)
         }
-        gesture.moved = true
-        const last = c.dragged
-        c.dragged = {
-          id: gesture.id,
-          x: Math.round((point.x - gesture.dx) / 8) * 8,
-          y: Math.round((point.y - gesture.dy) / 8) * 8,
-        }
-        if (last && (last.x !== c.dragged.x || last.y !== c.dragged.y)) c.events.onSound?.('detent')
+        const last = c.heldOf(gesture)
+        const held = c.heldOf(next)
+        if (last && held && (last.x !== held.x || last.y !== held.y)) c.events.onSound?.('detent')
         c.syncCards()
         canvas.style.cursor = 'grabbing'
         return
       }
-      if (gesture?.kind === 'link' || gesture?.kind === 'box') {
-        gesture.at = point
-        const target = c.nodeAt(point)
-        const next = target && target.id !== gesture.from ? target.id : null
-        if (next !== c.snapTo) {
-          if (next) c.events.onSound?.('snap')
-          else c.events.onSound?.('detent', 0.7)
-          c.snapTo = next
+      if (gesture._tag === 'Linking' || gesture._tag === 'Boxing') {
+        const next = c.gestureStep({
+          _tag: 'PointerMoved',
+          pointerId: event.pointerId,
+          x: event.clientX,
+          y: event.clientY,
+          at: point,
+          over: c.nodeAt(point)?.id ?? null,
+        })
+        if (next._tag === 'Linking' || next._tag === 'Boxing') {
+          if (next.snapTo !== gesture.snapTo) {
+            if (next.snapTo) c.events.onSound?.('snap')
+            else c.events.onSound?.('detent', 0.7)
+          }
         }
         canvas.style.cursor = 'crosshair'
         return
@@ -228,63 +274,83 @@ export const bindPointer = (c: BoardController): void => {
   )
 
   const finish = (event: PointerEvent, cancelled: boolean) => {
-    c.touches.delete(event.pointerId)
-    if (c.pinch) {
-      if (c.touches.size < 2) c.pinch = null
+    const gesture = c.gesture
+    if (gesture._tag === 'Pinching') {
+      c.gestureStep({ _tag: 'TouchEnded', pointerId: event.pointerId })
       if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId)
       return
     }
-    const gesture = c.gesture
-    c.gesture = null
+    const point = c.toWorld(event)
+    const over = c.nodeAt(point)?.id ?? null
+    const pressed = c.pressedId() !== null
+    c.gestureStep(
+      cancelled ? { _tag: 'PointerCancelled' } : { _tag: 'PointerReleased', at: point, over },
+    )
     c.letGo()
-    c.holdSince = 0
-    if (c.pressed) {
-      c.pressed = null
-      c.syncCards()
-    }
+    if (pressed) c.syncCards()
     if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId)
     canvas.style.cursor = 'grab'
-    if (!gesture || cancelled) {
-      if (gesture?.kind === 'link') c.springBack(gesture.from)
-      c.dragged = null
+    if (cancelled) {
+      if (gesture._tag === 'Linking') c.springBack(gesture.from)
+      c.dropped = null
       return
     }
-    const point = c.toWorld(event)
-    if (gesture.kind === 'pan' && !gesture.moved) {
+    if (gesture._tag === 'Idle') {
+      c.dropped = null
+      return
+    }
+    if (gesture._tag === 'Panning') {
+      if (gesture.moved) return
       if (gesture.cut) c.selectLink(gesture.cut)
       else {
         c.selectedLink = null
         c.events.onEmptyTap()
       }
+      return
     }
-    if (gesture.kind === 'node') {
-      const node = c.nodes().find((entry) => entry.id === gesture.id)
-      if (gesture.moved && c.dragged) {
+    if (gesture._tag === 'Dragging') {
+      const held = c.heldOf(gesture)
+      if (gesture.moved && held) {
         c.droppedAt = performance.now()
-        const landing = c.landingOf(c.dragged) ?? c.dragged
-        c.dragged = { id: gesture.id, x: landing.x, y: landing.y }
+        const landing = c.landingOf(held) ?? held
+        c.dropped = { id: gesture.id, x: landing.x, y: landing.y }
         c.syncCards()
         c.events.onNodeMove(gesture.id, landing.x, landing.y)
-      } else if (gesture.frame) {
-        c.dragged = null
-      } else {
-        c.dragged = null
-        if (event.shiftKey) c.events.onNodeToggle(gesture.id)
-        else if (node && c.footerAt(node, point)) {
-          if (!c.state || !holds(c.state.game, node)) c.events.onFooter(gesture.id)
-        } else c.events.onNodeTap(gesture.id)
+        return
       }
+      c.dropped = null
+      if (gesture.frame) return
+      if (event.shiftKey) {
+        c.events.onNodeToggle(gesture.id)
+        return
+      }
+      const node = c.nodes().find((entry) => entry.id === gesture.id)
+      if (node && c.footerAt(node, point)) {
+        if (!c.state || !holds(c.state.game, node)) c.events.onFooter(gesture.id)
+      } else c.events.onNodeTap(gesture.id)
+      return
     }
-    if (gesture.kind === 'link') {
-      const target = c.nodeAt(point)
-      if (target && target.id !== gesture.from) {
-        c.wired = `${gesture.from}>${target.id}`
+    if (gesture._tag === 'PressPending' || gesture._tag === 'Holding') {
+      c.dropped = null
+      if (event.shiftKey) {
+        c.events.onNodeToggle(gesture.id)
+        return
+      }
+      const node = c.nodes().find((entry) => entry.id === gesture.id)
+      if (node && c.footerAt(node, point)) {
+        if (gesture._tag === 'PressPending' && gesture.since === null) c.events.onFooter(gesture.id)
+      } else c.events.onNodeTap(gesture.id)
+      return
+    }
+    if (gesture._tag === 'Linking') {
+      if (over !== null && over !== gesture.from) {
+        c.wired = `${gesture.from}>${over}`
         c.wireEnd = null
-        c.snapTo = null
-        c.events.onLink(gesture.from, target.id)
+        c.events.onLink(gesture.from, over)
       } else c.springBack(gesture.from)
+      return
     }
-    if (gesture.kind === 'box') {
+    if (gesture._tag === 'Boxing') {
       const left = Math.min(gesture.from.x, point.x)
       const right = Math.max(gesture.from.x, point.x)
       const top = Math.min(gesture.from.y, point.y)

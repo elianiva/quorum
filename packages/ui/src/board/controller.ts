@@ -1,6 +1,6 @@
 import 'pixi.js/unsafe-eval'
 import type { Ledger } from '@quorum/simulation/ledger'
-import { HOLD_S, inFooter } from './card-parts.ts'
+import { inFooter } from './card-parts.ts'
 import { Application, Container, Graphics, Point, type RendererPreference } from 'pixi.js'
 import { COMPONENTS, type ComponentId } from '@quorum/simulation/catalog'
 import { replicationPairsOf } from '@quorum/simulation/lookups'
@@ -38,6 +38,17 @@ import { SANS, label } from './text.ts'
 import { MIN_FIT_SCALE, MIN_FIT_SCALE_PHONE, NodeView } from './node-view.ts'
 import { BeltView, linkKey, type Mouth } from './belt-view.ts'
 import { ChevronLayer, PacketLayer, NoteLayer } from './layers.ts'
+import {
+  IDLE_GESTURE,
+  gestureStep,
+  holdOf,
+  holdProgress,
+  pressedNode,
+  touchCenter,
+  type GestureEvent,
+  type GestureState,
+  type TouchPoint,
+} from './gesture-machine.ts'
 
 type Mutable<T> = { -readonly [K in keyof T]: T[K] }
 
@@ -51,28 +62,6 @@ const GLIDE_MAX_PX_PER_S = 2400
 const GLIDE_NEW_GESTURE_GAP_MS = 120
 const GLIDE_WHEEL_IDLE_MS = 32
 const GLIDE_STOPPED_PX_PER_S = 20
-
-type Gesture =
-  | {
-      kind: 'pan'
-      x: number
-      y: number
-      moved: boolean
-      cut: Readonly<{ from: string; to: string }> | null
-    }
-  | {
-      kind: 'node'
-      id: string
-      dx: number
-      dy: number
-      x: number
-      y: number
-      moved: boolean
-      frame?: boolean
-    }
-  | { kind: 'link'; from: string; at: Pt }
-  | { kind: 'box'; from: Pt; at: Pt }
-  | null
 
 const isWebKit = (): boolean =>
   /AppleWebKit/.test(navigator.userAgent) && !/Chrome|Chromium|Android/.test(navigator.userAgent)
@@ -136,10 +125,8 @@ export class BoardController {
   readonly drawnCards = new Map<string, { source: GameNode; drawn: Mutable<GameNode> }>()
   leaving: Array<NodeView> = []
   seeded = false
-  pressed: string | null = null
-  holdSince = 0
   state: BoardState | null = null
-  gesture: Gesture = null
+  gesture: GestureState = IDLE_GESTURE
   hoverLink: Readonly<{ from: string; to: string }> | null = null
   hoverAim: Readonly<{
     node: string | null
@@ -149,12 +136,10 @@ export class BoardController {
   selectedLink: Readonly<{ from: string; to: string }> | null = null
   hoverNode: string | null = null
   pointer: Pt = { x: 0, y: 0 }
-  readonly touches = new Map<number, Pt>()
-  pinch: Readonly<{ distance: number; center: Pt }> | null = null
   panSpeed = 0
   panAt = 0
   coarse = false
-  dragged: Readonly<{ id: string; x: number; y: number }> | null = null
+  dropped: Readonly<{ id: string; x: number; y: number }> | null = null
   droppedAt = 0
   landing: Pt | null = null
   landingKey = ''
@@ -178,7 +163,7 @@ export class BoardController {
   private readonly rates = new Map<string, Ledger['links'][number]>()
   routedFor = ''
   routedGame: Game | null = null
-  routedDrag: BoardController['dragged'] = null
+  routedHeld = ''
   routeWanted: Readonly<{
     key: string
     nodes: Array<RoutedNode>
@@ -190,7 +175,6 @@ export class BoardController {
   ghostType: ComponentId | null = null
   ghostLocale = 'en'
   wireEnd: Pt | null = null
-  snapTo: string | null = null
   snapGlow = 0
   retract: { path: Route; t: number } | null = null
   readonly fresh = new Map<string, number>()
@@ -321,11 +305,11 @@ export class BoardController {
     const opened = state.selected !== null && state.selected !== this.state?.selected
     this.state = state
     this.activityOf = state.translateActivity ?? ((activity) => activity)
-    const dragged = this.dragged
-    if (dragged && this.gesture?.kind !== 'node') {
-      const node = state.game.nodes.find((entry) => entry.id === dragged.id)
+    const dropped = this.dropped
+    if (dropped && this.gesture._tag !== 'Dragging') {
+      const node = state.game.nodes.find((entry) => entry.id === dropped.id)
       const stale = performance.now() - this.droppedAt > 250
-      if (!node || (node.x === dragged.x && node.y === dragged.y) || stale) this.dragged = null
+      if (!node || (node.x === dropped.x && node.y === dropped.y) || stale) this.dropped = null
     }
     if (!this.started) return
     if (state.suspended) {
@@ -507,20 +491,33 @@ export class BoardController {
     return { x: local.x, y: local.y }
   }
 
-  nodes(dragged = this.dragged): ReadonlyArray<GameNode> {
+  nodes(held = this.held()): ReadonlyArray<GameNode> {
     const nodes = this.state?.game.nodes ?? []
-    if (!dragged) return nodes
-    const lead = nodes.find((node) => node.id === dragged.id)
-    const group = this.groupOf(dragged.id)
-    const dx = lead ? dragged.x - lead.x : 0
-    const dy = lead ? dragged.y - lead.y : 0
+    if (!held) return nodes
+    const lead = nodes.find((node) => node.id === held.id)
+    const group = this.groupOf(held.id)
+    const dx = lead ? held.x - lead.x : 0
+    const dy = lead ? held.y - lead.y : 0
     return nodes.map((node) =>
-      node.id === dragged.id
-        ? { ...node, x: dragged.x, y: dragged.y }
+      node.id === held.id
+        ? { ...node, x: held.x, y: held.y }
         : group.includes(node.id)
           ? { ...node, x: node.x + dx, y: node.y + dy }
           : node,
     )
+  }
+
+  heldOf(gesture: GestureState): Readonly<{ id: string; x: number; y: number }> | null {
+    if (gesture._tag !== 'Dragging' || !gesture.moved) return null
+    return {
+      id: gesture.id,
+      x: Math.round((gesture.at.x - gesture.dx) / 8) * 8,
+      y: Math.round((gesture.at.y - gesture.dy) / 8) * 8,
+    }
+  }
+
+  held(): Readonly<{ id: string; x: number; y: number }> | null {
+    return this.heldOf(this.gesture) ?? this.dropped
   }
 
   selectionFrame(): Readonly<{ x: number; y: number; w: number; h: number }> | null {
@@ -662,10 +659,12 @@ export class BoardController {
 
   routes(): Map<string, Wire> {
     const game = this.state?.game
-    if (!game || (game === this.routedGame && this.dragged === this.routedDrag)) return this.routed
+    const at = this.held()
+    const heldKey = at ? `${at.id}:${at.x}:${at.y}` : ''
+    if (!game || (game === this.routedGame && heldKey === this.routedHeld)) return this.routed
     this.routedGame = game
-    this.routedDrag = this.dragged
-    const held = this.gesture?.kind === 'node' ? this.dragged : null
+    this.routedHeld = heldKey
+    const held = this.gesture._tag === 'Dragging' ? this.heldOf(this.gesture) : null
     const landing = held && this.landingOf()
     const blocked = held && landing && (landing.x !== held.x || landing.y !== held.y)
     const placed = blocked ? this.nodes({ id: held.id, x: landing.x, y: landing.y }) : this.nodes()
@@ -786,7 +785,9 @@ export class BoardController {
     return this.rates
   }
 
-  landingOf(dragged = this.gesture?.kind === 'node' ? this.dragged : null): Pt | null {
+  landingOf(
+    dragged = this.gesture._tag === 'Dragging' ? this.heldOf(this.gesture) : null,
+  ): Pt | null {
     const state = this.state
     if (!state) return null
     const pointer = { x: Math.round(this.pointer.x), y: Math.round(this.pointer.y) }
@@ -828,31 +829,53 @@ export class BoardController {
     return this.landing
   }
 
-  pinchOf(): Readonly<{ distance: number; center: Pt }> {
-    const [a, b] = [...this.touches.values()]
-    if (!a || !b) return this.pinch ?? { distance: 1, center: { x: 0, y: 0 } }
-    return {
-      distance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)),
-      center: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
-    }
-  }
-
-  zoomTo(next: Readonly<{ distance: number; center: Pt }>): void {
-    const last = this.pinch
-    this.pinch = next
-    if (!last) return
+  zoomBetween(
+    before: Readonly<{ touches: ReadonlyArray<TouchPoint>; distance: number }>,
+    next: Readonly<{ touches: ReadonlyArray<TouchPoint>; distance: number }>,
+  ): void {
+    if (before.touches.length < 2 || next.touches.length < 2 || before.distance <= 0) return
+    const last = touchCenter(before.touches)
+    const now = touchCenter(next.touches)
     const rect = this.host.getBoundingClientRect()
-    const from = this.world.toLocal(new Point(last.center.x - rect.left, last.center.y - rect.top))
+    const from = this.world.toLocal(new Point(last.x - rect.left, last.y - rect.top))
     const scale = Math.min(
       1.6,
-      Math.max(0.25, (this.world.scale.x * next.distance) / last.distance),
+      Math.max(0.25, (this.world.scale.x * next.distance) / before.distance),
     )
     this.world.scale.set(scale)
-    this.world.position.set(
-      next.center.x - rect.left - from.x * scale,
-      next.center.y - rect.top - from.y * scale,
-    )
+    this.world.position.set(now.x - rect.left - from.x * scale, now.y - rect.top - from.y * scale)
     this.paint()
+  }
+
+  toClient(at: Pt): Pt {
+    const rect = this.host.getBoundingClientRect()
+    const point = this.world.toGlobal(new Point(at.x, at.y))
+    return { x: point.x + rect.left, y: point.y + rect.top }
+  }
+
+  pointerOf(gesture: GestureState): TouchPoint | null {
+    if (gesture._tag === 'Pinching') return gesture.touches[0] ?? null
+    if (gesture._tag === 'Idle') return null
+    if (gesture._tag === 'Panning' || gesture._tag === 'PressPending' || gesture._tag === 'Holding')
+      return { id: gesture.pointerId, x: gesture.x, y: gesture.y }
+    const at = this.toClient(gesture.at)
+    return { id: gesture.pointerId, x: at.x, y: at.y }
+  }
+
+  beginPinch(touches: ReadonlyArray<TouchPoint>): void {
+    if (this.gestureStep({ _tag: 'SecondTouch', touches: [...touches] })._tag !== 'Pinching') return
+    this.letGo()
+    this.dropped = null
+    this.syncCards()
+  }
+
+  gestureStep(event: GestureEvent): GestureState {
+    this.gesture = gestureStep(this.gesture, event)
+    return this.gesture
+  }
+
+  pressedId(): string | null {
+    return pressedNode(this.gesture)
   }
 
   bindPointer(): void {
@@ -860,22 +883,18 @@ export class BoardController {
   }
 
   advanceHold(): void {
-    const id = this.pressed
-    const gesture = this.gesture
-    if (this.holdSince && (gesture?.kind !== 'node' || gesture.moved || gesture.id !== id))
-      this.holdSince = 0
-    const share = this.holdSince
-      ? Math.min(1, (performance.now() - this.holdSince) / 1000 / HOLD_S)
-      : 0
-    for (const [key, view] of this.views) view.setHold(key === id ? share : 0)
-    if (share < 1 || !id) return
-    this.holdSince = 0
-    this.gesture = null
-    this.pressed = null
+    const state = this.gesture
+    const hold = holdOf(state)
+    const now = performance.now()
+    const share = hold ? holdProgress(hold.since, now) : 0
+    for (const [key, view] of this.views) view.setHold(key === hold?.id ? share : 0)
+    if (hold === null) return
+    const next = this.gestureStep({ _tag: 'HoldTicked', now })
+    if (state._tag !== 'Holding' || next._tag !== 'Idle') return
     this.letGo()
     this.syncCards()
-    this.views.get(id)?.celebrate()
-    this.events.onFooter(id)
+    this.views.get(state.id)?.celebrate()
+    this.events.onFooter(state.id)
   }
 
   letGo(): void {
@@ -889,7 +908,6 @@ export class BoardController {
     const from = this.shown().get(fromId)
     const end = this.wireEnd
     this.wireEnd = null
-    this.snapTo = null
     if (!from || !end) return
     const lane = laneUnder(from, end.y)
     this.retract = { path: route(outPort(from), end, lane), t: 0 }
@@ -902,6 +920,7 @@ export class BoardController {
     const colors = palette()
     const live = new Set<string>()
     const path = this.pathOf(state)
+    const pressed = this.pressedId()
     for (const node of this.nodes()) {
       live.add(node.id)
       let view = this.views.get(node.id)
@@ -916,7 +935,7 @@ export class BoardController {
         node,
         state.ledger,
         state.selected === node.id || state.selection.includes(node.id),
-        this.pressed === node.id,
+        pressed === node.id,
         colors,
         state.history[node.id] ?? [],
         state.ordinals[node.id] ?? 0,

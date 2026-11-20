@@ -13,6 +13,8 @@ import {
 } from './catalog.ts'
 import { normalizeOrdinals } from './labels.ts'
 import type { Game, GameLink, GameNode } from './state.ts'
+import { activeIncident } from './state.ts'
+import { updateIncident } from './incident-machine.ts'
 
 export { SANDBOX_IDS, type SandboxId } from './sandbox-summary.ts'
 
@@ -1060,16 +1062,21 @@ export const advanceSandbox = (
   const held = objective.met(game, ledger) ? progress.held + seconds : 0
   let fired =
     progress.fired &&
-    !(objective.incident?.survive && game.incident === null && (held === 0 || progress.held === 0))
+    !(
+      objective.incident?.survive &&
+      activeIncident(game) === null &&
+      (held === 0 || progress.held === 0)
+    )
   let next = game
   if (objective.incident && !fired && held >= INCIDENT_AFTER_SIM_SECONDS) {
     const started = forceIncident(game, ledger, objective.incident.kind, objective.incident.only)
     if (started) {
       const magnitude = objective.incident.magnitude
+      const active = activeIncident(started)
       next =
-        magnitude === undefined || started.incident === null
+        magnitude === undefined || active === null
           ? started
-          : { ...started, incident: { ...started.incident, magnitude } }
+          : { ...started, incident: updateIncident(started.incident, { magnitude }) }
       fired = true
     }
   }

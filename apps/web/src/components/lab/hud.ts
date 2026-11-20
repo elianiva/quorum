@@ -57,7 +57,9 @@ import {
   studySpeed,
   studyStall,
 } from '@quorum/simulation/studies'
+import { currentStudy, studyCount } from '@quorum/simulation/study-machine'
 import { DRILL_RPO } from '@quorum/simulation/catalog'
+import { activeIncident, QuarterState } from '@quorum/simulation/state'
 import { PRE_IPO_STAGE, brokenRestore, checklistOf, residencyMet } from '@quorum/simulation/ipo'
 import {
   GUIDANCE_GROWTH_PERCENT,
@@ -489,11 +491,11 @@ const insightCard = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Htm
   const t = copy(h)
 
   const game = model.board.game
-  const running = game.studies[0]
+  const running = currentStudy(game.studies)
   const recipe = running ? simRecipe(game, running.id) : {}
   const limit = running ? limitingPool(game) : null
   const stall = running ? studyStall(game, ledger, running.id) : null
-  const queued = game.studies.length - 1
+  const queued = studyCount(game.studies) - 1
   const speed = stall ? 1 : studySpeed(game, ledger, running?.id)
   const runningLabel = `${stall ? t.research.cannotRunShort : `${Math.floor(studyProgressOf(running) * 100)}%`}${speed > 1 ? ` · ${t.research.speed(speedFactorOf(speed))}` : ''}${queued > 0 ? ` · +${queued}` : ''}`
   const pools = POOL_ORDER.filter(
@@ -1595,7 +1597,9 @@ export const vitalsPanel = (model: Model, ledger: Ledger, h: HtmlBuilder<Message
           game.stage === PRE_IPO_STAGE && !offCompany(model)
             ? checklist(model, ledger, h)
             : h.empty,
-          game.quarter && !offCompany(model) ? quarterly(model, ledger, h) : h.empty,
+          QuarterState.guards.Active(game.quarter) && !offCompany(model)
+            ? quarterly(model, ledger, h)
+            : h.empty,
           shown(model, 'team') ? building(model, ledger, h) : h.empty,
         ],
       ),
@@ -1799,7 +1803,9 @@ export const hud = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html
         ],
       ),
       game.stage === PRE_IPO_STAGE && !offCompany(model) ? checklist(model, ledger, h) : h.empty,
-      game.quarter && !offCompany(model) ? quarterly(model, ledger, h) : h.empty,
+      QuarterState.guards.Active(game.quarter) && !offCompany(model)
+        ? quarterly(model, ledger, h)
+        : h.empty,
       shown(model, 'team') ? building(model, ledger, h) : h.empty,
     ],
   )
@@ -1938,7 +1944,7 @@ const checklistValue = (t: Messages, game: Board['game'], item: ChecklistItem): 
       : t.hud.checkSoc2
   if (item.id === 'residency') return residencyMet(game) ? t.hud.checkEu : t.hud.checkNotYet
   if (item.id !== 'drill') return item.value
-  if (!drill) return t.hud.checkNotRun
+  if (drill._tag === 'Idle') return t.hud.checkNotRun
   if (drill._tag === 'Running') return t.hud.checkRunning
   if (drillPassed(drill)) return t.hud.checkRto(Math.round(drillRto(drill) ?? 0))
   if (brokenRestore(game)) return t.hud.checkRestoreFailed
@@ -1953,7 +1959,8 @@ const checklist = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html 
 
   const game = model.board.game
   const items = checklistOf(game, ledger)
-  const drillReady = has(game, 'dr-drills') && !game.incident && !(game.drill?._tag === 'Running')
+  const drillReady =
+    has(game, 'dr-drills') && activeIncident(game) === null && game.drill._tag !== 'Running'
   return h.div(
     [
       h.Key('ipo'),
@@ -2107,7 +2114,7 @@ const quarterly = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html 
 
   const game = model.board.game
   const quarter = game.quarter
-  if (!quarter) return h.empty
+  if (!QuarterState.guards.Active(quarter)) return h.empty
   const day = Math.min(7, Math.floor((game.time - quarter.startedAt) / 1_440) + 1)
   const value = valuationOf(game, ledger)
   const open = guidanceOpen(game)
@@ -2592,7 +2599,7 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
 
   const game = model.board.game
   const affordable =
-    game.studies.length > 0
+    studyCount(game.studies) > 0
       ? 0
       : researchList.filter((entry) => !has(game, entry.id) && researchReady(game, entry.id)).length
   return h.nav(

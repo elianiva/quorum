@@ -1,7 +1,7 @@
 import type { Ledger } from './ledger.ts'
-import type { Game, Quarter } from './state.ts'
+import type { Game } from './state.ts'
 import { marginOf } from './valuation.ts'
-import { QuarterEvent, QuarterPhase, step as quarterStep } from './quarter-machine.ts'
+import { QuarterPhase, QuarterState, step as quarterStep, type Quarter } from './quarter-machine.ts'
 
 export const QUARTER_SECONDS = 10_080
 export const GUIDANCE_WINDOW = 1_440
@@ -13,33 +13,27 @@ export const MULTIPLE_LOST_PER_MISS = 1
 export const MULTIPLE_PER_FOURTH_BEAT = 1
 export const BONUS_LIMIT = 10
 
-export const firstQuarter = (game: Game, revenue: number): Quarter => ({
-  index: 1,
-  startedAt: game.time,
-  growth: 0,
-  margin: 0,
-  revenue,
-  streak: 0,
-  bonus: 0,
-  last: null,
-  phase: QuarterPhase.cases.AwaitingGuidance.make({}),
-})
+export const firstQuarter = (game: Game, revenue: number): QuarterState =>
+  quarterStep(game.quarter, { _tag: 'Started', startedAt: game.time, revenue })
 
-export const guidanceOpen = (game: Game): boolean => {
-  const quarter = game.quarter
-  return (
-    !!quarter &&
-    QuarterPhase.guards.AwaitingGuidance(quarter.phase) &&
-    game.time - quarter.startedAt < GUIDANCE_WINDOW
-  )
-}
+export const guidanceOpen = (game: Game): boolean =>
+  QuarterState.match(game.quarter, {
+    NotStarted: () => false,
+    Active: (quarter) =>
+      QuarterPhase.guards.AwaitingGuidance(quarter.phase) &&
+      game.time - quarter.startedAt < GUIDANCE_WINDOW,
+  })
 
 export const quarterGrowth = (quarter: Quarter, ledger: Ledger): number =>
   quarter.revenue > 0 ? (ledger.revenue / quarter.revenue - 1) * 100 : 0
 
-export const advanceQuarter = (game: Game, ledger: Ledger): Quarter | null => {
-  const quarter = game.quarter
-  if (!quarter || game.time - quarter.startedAt < QUARTER_SECONDS) return quarter
+export const advanceQuarter = (
+  quarter: QuarterState,
+  time: number,
+  ledger: Ledger,
+): QuarterState => {
+  if (!QuarterState.guards.Active(quarter)) return quarter
+  if (time - quarter.startedAt < QUARTER_SECONDS) return quarter
   const growth = quarterGrowth(quarter, ledger)
   const margin = marginOf(ledger)
   const beat =
@@ -51,14 +45,12 @@ export const advanceQuarter = (game: Game, ledger: Ledger): Quarter | null => {
       MULTIPLE_PER_GUIDANCE_LEVEL * (quarter.growth + quarter.margin) +
       (streak % 4 === 0 ? MULTIPLE_PER_FOURTH_BEAT : 0)
     : -MULTIPLE_LOST_PER_MISS
-  return {
-    ...quarter,
-    index: quarter.index + 1,
-    startedAt: game.time,
+  return quarterStep(quarter, {
+    _tag: 'Ended',
+    startedAt: time,
     revenue: ledger.revenue,
     streak,
     bonus: Math.max(-BONUS_LIMIT, Math.min(BONUS_LIMIT, quarter.bonus + change)),
     last: { beat, growth, margin },
-    phase: quarterStep(quarter.phase, QuarterEvent.cases.Started.make({})),
-  }
+  })
 }

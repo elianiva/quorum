@@ -25,8 +25,9 @@ resolved, and a Company can be loading while another is open. The app uses
    `effect` and its own files at runtime; the machine library is schema and planning code with no
    platform dependency.
 5. The live schema describes the live shape only. A format change bumps `SAVE_FORMAT` and adds one
-   function that turns the previous format into the new one ([ADR 0023](0023-a-company-save-has-a-format.md)).
-   There is no stored schema with a `decodeTo` transform.
+   function in `apps/web/src/game/save-file.ts` that turns the previous format into the new one
+   ([ADR 0023](0023-a-company-save-has-a-format.md)). There is no stored schema with a `decodeTo`
+   transform. A Room's stored Game is gated by `SIM_VERSION` and is not migrated.
 6. Behaviour is covered through the integration tests that call the flow: `update.test.ts`,
    `inbox.test.ts`, `saves.test.ts`, and the Simulation's Step and replay tests. A test that steps
    the machine's table duplicates the table, so there is none.
@@ -49,7 +50,8 @@ The inventory is in [State machines](../state-machines.md). The flows fall into 
   Mirror that is in sync, or a Drain's start from a Node that is in service.
 - A late or repeated event is a no-op. `planState` returns the input state when the machine's
   transition table has no transition for the event.
-- A save from another format is refused with a message that names both versions
+- A save from an older format opens through `readSaveFile` in `apps/web/src/game/save-file.ts`. A
+  file from another format is refused with a message that names both versions
   ([ADR 0023](0023-a-company-save-has-a-format.md)).
 - The encoded Game changes when a phase replaces fields, so the golden hashes and `SIM_VERSION`
   move with it.

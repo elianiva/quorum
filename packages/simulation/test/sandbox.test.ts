@@ -22,6 +22,7 @@ import { solve, solveFlow } from '../src/solve.ts'
 import { addIndex } from '../src/work.ts'
 import { step } from '../src/step.ts'
 import type { Game } from '../src/state.ts'
+import { activeIncident } from '../src/state.ts'
 
 const ok = (action: Action): Game => {
   if (Result.isFailure(action)) throw new Error(JSON.stringify(action.failure))
@@ -46,7 +47,8 @@ const play = (
   let elapsed = 0
   for (; elapsed < seconds && !passedAll(sandbox, progress); elapsed += COARSE_STEP_SECONDS) {
     game = step(game, COARSE_STEP_SECONDS).game
-    if (index && game.incident?.kind === 'slow-query' && game.time - game.incident.startedAt > 15)
+    const incident = activeIncident(game)
+    if (index && incident?.kind === 'slow-query' && game.time - incident.startedAt > 15)
       game = ok(addIndex(game, 'database'))
     const next = advanceSandbox(sandbox, progress, game, solveFlow(game), COARSE_STEP_SECONDS)
     game = next.game
@@ -512,7 +514,7 @@ describe('the free Sandbox', () => {
       game = step(game, COARSE_STEP_SECONDS).game
     expect(game.users).toBe(freeSandbox().users)
     expect(game.cash).toBe(freeSandbox().cash)
-    expect(game.incident).toBeNull()
+    expect(activeIncident(game)).toBeNull()
     expect(solve(game).demand).toBeCloseTo(solve(freeSandbox()).demand, 6)
   })
 

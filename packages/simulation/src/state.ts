@@ -28,18 +28,17 @@ import {
   NO_DEVICE_LATENCY,
 } from './catalog.ts'
 import { COMPONENT_FIELDS } from './components/fields.ts'
-import { DrillPhase } from './drill-machine.ts'
+import { DrillState } from './drill-machine.ts'
 import { BridgeState } from './bridge-machine.ts'
-import { QuarterPhase } from './quarter-machine.ts'
-import { HirePhase } from './hire-machine.ts'
+import { QuarterState } from './quarter-machine.ts'
+import { StudyQueue } from './study-machine.ts'
 import { Breaker } from './breaker-machine.ts'
 import { Autoscaler } from './autoscaler-machine.ts'
 import { EraRound } from './era-round-machine.ts'
 import { DataMovePhase } from './data-move-machine.ts'
-import { StudyPhase } from './study-machine.ts'
 import { NodeService } from './node-service-machine.ts'
 import { BlockKind, WorkBlock } from './work-item-machine.ts'
-import { IncidentPhase } from './incident-machine.ts'
+import { Incident, IncidentState } from './incident-machine.ts'
 import { MirrorSync, NodeSpec, Observed } from './mirror-machine.ts'
 import { FeaturePhase } from './feature-machine.ts'
 
@@ -288,29 +287,8 @@ export const GameLink = Schema.Struct({
 })
 export type GameLink = typeof GameLink.Type
 
-export const Incident = Schema.Struct({
-  kind: IncidentId,
-  remaining: Schema.Finite,
-  nodeId: Schema.NullOr(Schema.String),
-  startedAt: Schema.Finite,
-  baseline: Schema.Finite,
-  usersAtStart: Schema.Finite,
-  impaired: Schema.Finite,
-  lostRevenue: Schema.Finite,
-  failed: Schema.Finite,
-  phase: IncidentPhase.pipe(
-    Schema.withDecodingDefaultKey(Effect.succeed({ _tag: 'Quiet' } as const)),
-  ),
-  severity: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(3))),
-  magnitude: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(3))),
-  zone: Schema.NullOr(Zone).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
-  region: Schema.NullOr(Region).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
-  service: Schema.optionalKey(Schema.NullOr(Schema.String)),
-  causedBy: Schema.NullOr(IncidentId).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
-  throttled: Schema.optionalKey(Schema.Boolean),
-  rollingBack: Schema.optionalKey(Schema.Boolean),
-})
-export type Incident = typeof Incident.Type
+export { Incident, IncidentState } from './incident-machine.ts'
+export type { IncidentPhase } from './incident-machine.ts'
 
 export const Postmortem = Schema.Struct({
   id: Schema.Finite,
@@ -325,7 +303,7 @@ export const Postmortem = Schema.Struct({
   failed: Schema.Finite,
   action: Schema.NullOr(ResearchId),
   severity: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(3))),
-  endedAt: Schema.NullOr(Schema.Finite).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
+  endedAt: Schema.Finite,
   auto: Schema.optionalKey(Schema.Boolean),
   causedBy: Schema.NullOr(IncidentId).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
   service: Schema.optionalKey(Schema.NullOr(Schema.String)),
@@ -386,12 +364,19 @@ export const FalseAlarms = Schema.Struct({
 })
 export type FalseAlarms = typeof FalseAlarms.Type
 
+export const Training = Schema.Struct({
+  language: LanguageId,
+  readyAt: Schema.Finite,
+})
+export type Training = typeof Training.Type
+
 export const Engineer = Schema.Struct({
   id: Schema.String,
   team: Schema.String,
   language: LanguageId,
   hiredAt: Schema.Finite,
   salary: Schema.NullOr(Schema.Finite).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
+  learning: Schema.NullOr(Training).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
   mood: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(MOOD_START))),
   pages: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   offUntil: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
@@ -401,6 +386,7 @@ export type Engineer = typeof Engineer.Type
 
 export const NEW_ENGINEER = {
   salary: null,
+  learning: null,
   mood: MOOD_START,
   pages: 0,
   offUntil: 0,
@@ -411,16 +397,9 @@ export const Hire = Schema.Struct({
   id: Schema.String,
   team: Schema.String,
   language: LanguageId,
-  phase: HirePhase,
-})
-export type Hire = typeof Hire.Type
-
-export const Training = Schema.Struct({
-  engineer: Schema.String,
-  language: LanguageId,
   readyAt: Schema.Finite,
 })
-export type Training = typeof Training.Type
+export type Hire = typeof Hire.Type
 
 export const TeamKind = Schema.Literals(['product', 'platform', 'sre', 'data', 'security'])
 export type TeamKind = typeof TeamKind.Type
@@ -446,6 +425,7 @@ const MIGRATION_FIELDS = {
 } as const
 
 export const Migration = Schema.TaggedUnion({
+  Idle: {},
   Building: {
     ...MIGRATION_FIELDS,
     step: Schema.Finite,
@@ -478,6 +458,27 @@ export const Resharding = Schema.Struct({
 })
 export type Resharding = typeof Resharding.Type
 
+export const NO_ENGINE_CHANGE: EngineChange = {
+  node: '',
+  to: 'postgres',
+  phase: { _tag: 'Idle' },
+}
+
+export const NO_RESHARD: Resharding = {
+  node: '',
+  shards: 1,
+  key: 'hash',
+  group: '',
+  topology: 'single',
+  phase: { _tag: 'Idle' },
+}
+
+export const Datastore = Schema.TaggedUnion({
+  Auto: {},
+  Pinned: { id: Schema.String },
+})
+export type Datastore = typeof Datastore.Type
+
 export const Service = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
@@ -486,12 +487,16 @@ export const Service = Schema.Struct({
   fixes: Schema.Array(FixId),
   shapes: Schema.Finite,
   indexes: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
-  migration: Schema.NullOr(MigrationState),
+  migration: MigrationState.pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed({ _tag: 'Idle' } as const)),
+  ),
   nextDeployAt: Schema.Finite,
   lastDeploy: Schema.Array(FeatureId),
   owner: Schema.String.pipe(Schema.withDecodingDefaultKey(Effect.succeed('core'))),
   features: Schema.Array(FeatureId).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
-  datastore: Schema.NullOr(Schema.String).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
+  datastore: Datastore.pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed({ _tag: 'Auto' } as const)),
+  ),
 })
 export type Service = typeof Service.Type
 
@@ -516,7 +521,6 @@ export const WorkItem = Schema.Struct({
   cost: Schema.Finite,
   spent: Schema.Finite,
   rushed: Schema.optionalKey(Schema.Finite),
-  held: Schema.optionalKey(Schema.Boolean),
   due: Schema.optionalKey(Schema.Finite),
   target: Schema.optionalKey(Schema.String),
   service: Schema.optionalKey(Schema.String),
@@ -546,12 +550,12 @@ export const monolith = (fixes: ReadonlyArray<typeof FixId.Type>): Service => ({
   fixes,
   shapes: 0,
   indexes: 0,
-  migration: null,
+  migration: { _tag: 'Idle' },
   nextDeployAt: 0,
   lastDeploy: [],
   owner: 'core',
   features: [],
-  datastore: null,
+  datastore: { _tag: 'Auto' },
 })
 
 const OLD_MONOLITH = monolith([
@@ -563,25 +567,7 @@ const OLD_MONOLITH = monolith([
   'health-check',
 ])
 
-export const QuarterResult = Schema.Struct({
-  beat: Schema.Boolean,
-  growth: Schema.Finite,
-  margin: Schema.Finite,
-})
-export type QuarterResult = typeof QuarterResult.Type
-
-export const Quarter = Schema.Struct({
-  index: Schema.Finite,
-  startedAt: Schema.Finite,
-  growth: Schema.Finite,
-  margin: Schema.Finite,
-  revenue: Schema.Finite,
-  streak: Schema.Finite,
-  bonus: Schema.Finite,
-  last: Schema.NullOr(QuarterResult),
-  phase: QuarterPhase,
-})
-export type Quarter = typeof Quarter.Type
+export { Quarter, QuarterResult, QuarterState } from './quarter-machine.ts'
 
 export const Founding = Schema.Struct({
   venture: VentureId,
@@ -606,8 +592,7 @@ export const NO_INSIGHT: InsightPools = Object.fromEntries(
   INSIGHT_POOLS.map((pool) => [pool, 0]),
 ) as InsightPools
 
-export const Study = Schema.Struct({ id: ResearchId, phase: StudyPhase })
-export type Study = typeof Study.Type
+export { Study, StudyQueue } from './study-machine.ts'
 
 export const Scenario = Schema.Struct({
   mix: Schema.optionalKey(Schema.Record(Schema.String, Schema.Finite)),
@@ -626,12 +611,20 @@ export type SyncMode = typeof SyncMode.Type
 export const DataPattern = Schema.Literals(DATA_PATTERNS)
 export type DataPattern = typeof DataPattern.Type
 
-export const Infra = Schema.Struct({
+const INFRA_FIELDS = {
   tool: IacTool,
   until: Schema.Finite,
   sync: Schema.NullOr(SyncMode),
-})
+} as const
+
+export const Infra = Schema.Struct(INFRA_FIELDS)
 export type Infra = typeof Infra.Type
+
+export const Iac = Schema.TaggedUnion({
+  NotChosen: {},
+  Chosen: INFRA_FIELDS,
+})
+export type Iac = typeof Iac.Type
 
 export { NodeSpec, Observed }
 
@@ -692,7 +685,9 @@ export const Game = Schema.Struct({
   ),
   insight: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   pools: InsightPools.pipe(Schema.withDecodingDefaultKey(Effect.succeed(NO_INSIGHT))),
-  studies: Schema.Array(Study).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
+  studies: StudyQueue.pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed({ _tag: 'Empty' } as const)),
+  ),
   users: Schema.Finite,
   pending: Schema.Finite,
   spilled: Schema.Finite,
@@ -707,7 +702,9 @@ export const Game = Schema.Struct({
   userShares: Schema.NullOr(PerRegion).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
   steady: Schema.NullOr(PerRegion).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
   regionApdex: Schema.NullOr(PerRegion).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
-  incident: Schema.NullOr(Incident),
+  incident: IncidentState.pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed({ _tag: 'Quiet' } as const)),
+  ),
   lastIncident: Schema.NullOr(IncidentId),
   nextIncidentAt: Schema.Finite,
   postmortems: Schema.Array(Postmortem),
@@ -728,14 +725,11 @@ export const Game = Schema.Struct({
   devHours: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   engineers: Schema.Array(Engineer).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   hires: Schema.Array(Hire).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
-  training: Schema.Array(Training).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   teams: Schema.Array(Team).pipe(Schema.withDecodingDefaultKey(Effect.succeed([CORE_TEAM]))),
   moraleUntil: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   loadTestUntil: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
-  reshard: Schema.NullOr(Resharding).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
-  engineChange: Schema.NullOr(EngineChange).pipe(
-    Schema.withDecodingDefaultKey(Effect.succeed(null)),
-  ),
+  reshard: Resharding.pipe(Schema.withDecodingDefaultKey(Effect.succeed(NO_RESHARD))),
+  engineChange: EngineChange.pipe(Schema.withDecodingDefaultKey(Effect.succeed(NO_ENGINE_CHANGE))),
   services: Schema.Array(Service).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed([OLD_MONOLITH])),
   ),
@@ -769,18 +763,23 @@ export const Game = Schema.Struct({
   data: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   uploads: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   budget: Schema.Array(BudgetHour).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
-  drill: Schema.NullOr(DrillPhase).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
+  drill: DrillState.pipe(Schema.withDecodingDefaultKey(Effect.succeed({ _tag: 'Idle' } as const))),
   chaos: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
   weakest: Schema.NullOr(Schema.String).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
-  quarter: Schema.NullOr(Quarter).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
+  quarter: QuarterState.pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed({ _tag: 'NotStarted' } as const)),
+  ),
   founding: Founding.pipe(Schema.withDecodingDefaultKey(Effect.succeed(DEFAULT_FOUNDING))),
   banked: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   peak: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
-  iac: Schema.optionalKey(Infra),
-  mirrors: Schema.optionalKey(Schema.Array(Mirror)),
+  iac: Iac.pipe(Schema.withDecodingDefaultKey(Effect.succeed({ _tag: 'NotChosen' } as const))),
+  mirrors: Schema.Array(Mirror).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   levers: Schema.Record(Schema.String, Schema.Finite).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed({})),
   ),
   fixedMix: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
 })
 export type Game = typeof Game.Type
+
+export const activeIncident = (game: Game): Incident | null =>
+  game.incident._tag === 'Active' ? game.incident.incident : null

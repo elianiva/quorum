@@ -2,7 +2,7 @@ import { COMPONENTS } from '@quorum/simulation/catalog'
 import { eraOf, insightTotal } from '@quorum/simulation/lookups'
 import type { Ledger } from '@quorum/simulation/ledger'
 import { clockOf } from '@quorum/simulation/solve'
-import type { Game, GameNode } from '@quorum/simulation/state'
+import { activeIncident, type Game, type GameNode } from '@quorum/simulation/state'
 import { clockPaused, currentFile, type Model } from './model.ts'
 import type { LogEntry } from './playlog.ts'
 
@@ -145,7 +145,7 @@ export const sampleOf = (model: Model, ledger: Ledger): Record<string, unknown> 
     insight: round(insightTotal(model.board.game.pools), 1),
     insightRate: round(insightTotal(ledger.insight), 2),
     bottleneck: null,
-    incident: model.board.game.incident?.kind ?? null,
+    incident: activeIncident(model.board.game)?.kind ?? null,
     nodes: model.board.game.nodes
       .filter((node) => !COMPONENTS[node.type].fixed)
       .map((node) => nodeBrief(node, ledger)),

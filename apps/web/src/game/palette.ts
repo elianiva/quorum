@@ -53,6 +53,7 @@ import {
 import { has, researchReady, resizePrice } from '@quorum/simulation/lookups'
 import { openRegions, regionView } from '@quorum/simulation/regions'
 import { SHARED } from '@quorum/simulation/playbook'
+import { studyList } from '@quorum/simulation/study-machine'
 import { COMPONENT_ICONS } from '@quorum/ui/game/component-icons'
 import { nodeTitle, type Messages } from '../i18n/messages.ts'
 import { partOf, type Part } from './parts.ts'
@@ -197,7 +198,7 @@ const researchRows = (t: Messages, model: Model): ReadonlyArray<PaletteCommand> 
       keys: ['R'],
       message: Message.PanelOpened({ panel: 'research' }),
     })
-  for (const study of game.studies) {
+  for (const study of studyList(game.studies)) {
     const name = t.catalog.research[study.id].name
     rows.push(
       {

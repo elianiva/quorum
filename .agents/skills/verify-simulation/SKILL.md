@@ -1,11 +1,11 @@
 ---
 name: verify-simulation
-description: Model-check the Simulation's runway and bridge, Node life, and Incident phase against TLA+ models. Use when a change touches runway.ts, life.ts, node-service-machine.ts, incident-machine.ts, bridge-machine.ts, or any code that writes a Node's `life` or `service`.
+description: Model-check the Simulation's state machines against TLA+ models. Use when a change touches a machine under packages/simulation/src or packages/ui/src/board, or any code that writes a Node's `life` or `service`, a Study queue, a work item's block, an IaC tool, or an Incident.
 ---
 
 # Verify the Simulation
 
-Six small TLA+ models in `packages/simulation/verification/` check rules that the unit tests do not reach. Each model is a hand-written copy of the code. A pass covers the model, not the code.
+Nine small TLA+ models in `packages/simulation/verification/` check rules that the unit tests do not reach. Each model is a hand-written copy of the code. A pass covers the model, not the code.
 
 ## Run
 
@@ -13,7 +13,7 @@ Six small TLA+ models in `packages/simulation/verification/` check rules that th
 packages/simulation/verification/run.sh
 ```
 
-The script checks every model with the `statechart` skill and prints each report. It needs the network on the first run (mise installs Java and TLC). Run time is about 15 seconds. Read each result with the `statechart` skill.
+The script checks every model with the `statechart` skill and prints each report. It needs the network on the first run (mise installs Java and TLC). Run time is about two minutes. Read each result with the `statechart` skill.
 
 Random plays of the real code run in `packages/simulation/test/invariants.test.ts` and `packages/simulation/test/system.test.ts`. `system.test.ts` also plays the Team, Studies and Mirrors (hire, layoff, features, items, Research, IaC moves) and checks unique engineers, items and Studies, Research prerequisites, no double Research, and the edges of the hire, study, work-item, mirror, reshard and engine-change machines. It places every Component in random Designs, links, answers and steps them, and after every move checks that the Game is valid, every figure is finite, a Shut Node is Stopped, and the bridge, round, drill, quarter, incident, Node service, scaler and Link fuse each moved along an edge their machine declares (edges are found by sending the machine random events, so a direct write that skips `step` is caught if it makes an illegal move) (`pnpm --filter @quorum/simulation test`).
 
@@ -21,27 +21,17 @@ Random plays of the real code run in `packages/simulation/test/invariants.test.t
 
 Last confirmed against commit `9fe79ad6`. Move this commit forward only after you confirm each model still describes the code at the new commit.
 
-| Model                    | Rules                                                                                                                                          | Code it describes                                                                                                                                   |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `runway/Runway.tla`      | the bridge is offered once and taken once; no shutdown after accept; shutdown ends with net Burn 0; the player gets a Step to answer the offer | `runway.ts` `advanceRunway`, `acceptBridge`, `shutdown`; `bridge-machine.ts`                                                                        |
-| `node-life/NodeLife.tla` | a Shut Node is Stopped; a restart does not end early                                                                                           | `life.ts`; `node-service-machine.ts`; `lookups.ts` `restarted`; `step.ts` `advanceNode`; `actions.ts` `resize`, `drain`; `runway.ts` `shutdownNode` |
-| `quarter/Quarter.tla`    | guidance can be set at the start of every quarter                                                                                              | `quarter-machine.ts`; `quarters.ts` `advanceQuarter`; `actions.ts` `setGuidance`                                                                    |
-| `drill/Drill.tla`        | a drill ends by its limit; a finished drill never changes; `data-loss` is never written                                                        | `drill-machine.ts`; `ipo.ts` `advanceDrill`                                                                                                         |
-| `era-round/EraRound.tla` | a round is answered only when it is on the table                                                                                               | `era-round-machine.ts`; `step.ts` (Offered); `actions.ts` `advanceEra`, `raise`, `decline`                                                          |
-| `incident/Incident.tla`  | phase matches the recorded times; the first signal and ack stay                                                                                | `incident-machine.ts`; `director.ts` `markSignal`, `advanceIncident`; `actions.ts` `acknowledge`                                                    |
-
-## Findings fixed (each model keeps its old code as a variant that must fail)
-
-- Runway `AnswerWindow`: `advanceRunway` now shuts Nodes down only when the bridge was already `Offered` before this Step. Variant: `SameStep = TRUE`.
-- NodeLife `NoEarlyRecovery`: `resize`, `setQuorum`, the Log replica setting, and the Search index change rebalance only a Node that is not down (`isDown`). Variant: `ResizeGuard = "stopped"`.
-- Quarter `GuidanceOpensEachQuarter`: `Started` now moves the quarter to `AwaitingGuidance` from either phase, and `guidanceOpen` also needs the first calendar day (`GUIDANCE_WINDOW`). The model does not describe that window. Variant: `Reopen = FALSE`.
-- EraRound `AnswerNeedsOffer`: `advanceEra` refuses when the round is not `Offered`. Variant: `Check = FALSE`. The `Advanced` event is still never sent.
-- Work item `Blocked`: `rushItem` paid Dev Hours into a Blocked item, and a fully paid one finishes without the player's answer. `rushItem` now refuses a Blocked item. Found by `system.test.ts` ("a Blocked item has no work").
-- `random.ts`: the generator multiplied in a double, lost precision above 2^53 and fell into a 10,466-value cycle. It now uses `Math.imul`; `invariants.test.ts` checks it against exact BigInt math.
-- Dead events (no sender in `src/`, so their arrows never run): drill `Reset`, era-round `Advanced`, hire `Hired`, study `Queued`. Left alone; they are design leftovers, not bugs.
-- Machines with no TLA+ model (autoscaler, breaker, node service, hire, study, work item, mirror, data move, feature): each has one or two writers and a linear or two-state shape, so `system.test.ts` checks their edges on the real code instead. Add a model if one gains a second writer that races with time.
-
-`packages/simulation/test/invariants.test.ts` covers the first two and the last two on the real code.
+| Model                      | Rules                                                                                                                                          | Code it describes                                                                                                                                   |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `runway/Runway.tla`        | the bridge is offered once and taken once; no shutdown after accept; shutdown ends with net Burn 0; the player gets a Step to answer the offer | `runway.ts` `advanceRunway`, `acceptBridge`, `shutdown`; `bridge-machine.ts`                                                                        |
+| `node-life/NodeLife.tla`   | a Shut Node is Stopped; a restart does not end early                                                                                           | `life.ts`; `node-service-machine.ts`; `lookups.ts` `restarted`; `step.ts` `advanceNode`; `actions.ts` `resize`, `drain`; `runway.ts` `shutdownNode` |
+| `quarter/Quarter.tla`      | guidance can be set at the start of every quarter                                                                                              | `quarter-machine.ts`; `quarters.ts` `advanceQuarter`; `actions.ts` `setGuidance`                                                                    |
+| `drill/Drill.tla`          | a drill ends by its limit; a finished drill never changes; `data-loss` is never written                                                        | `drill-machine.ts`; `ipo.ts` `advanceDrill`                                                                                                         |
+| `era-round/EraRound.tla`   | a round is answered only when it is on the table                                                                                               | `era-round-machine.ts`; `step.ts` (Offered); `actions.ts` `advanceEra`, `raise`, `decline`                                                          |
+| `incident/Incident.tla`    | phase matches the recorded times; the first signal and ack stay                                                                                | `incident-machine.ts`; `director.ts` `markSignal`, `advanceIncident`; `actions.ts` `acknowledge`                                                    |
+| `iac/Iac.tla`              | sync needs a tool; a switch blocks Apply; no Apply lands while another is landing                                                              | `state.ts` `Iac`; `mirror.ts` `pickIacTool`, `setSyncMode`, `switchLeft`, `applyRefusal`                                                            |
+| `work-block/WorkBlock.tla` | a Held item is never rushed or worked; a Blocked item never finishes; only a Free or Approved item finishes                                    | `work-item-machine.ts`; `work.ts` `advanceTeam`, `cancelItem`, `resumeItem`, `approveBlock`, `rushItem`, `takeable`                                 |
+| `gesture/Gesture.tla`      | a pointer up or cancel returns to Idle; a pinch drops the card; a hold needs a press; link, box and footer actions fire only from their phase  | `packages/ui/src/board/gesture-machine.ts`; `pointer.ts`; `controller.ts` `beginPinch`, `advanceHold`                                               |
 
 `run.sh` exits 1 when a rule breaks. Do not weaken a rule to make it pass.
 
@@ -53,4 +43,4 @@ Last confirmed against commit `9fe79ad6`. Move this commit forward only after yo
 4. Change a rule only for an intended change in the promise. Cite the evidence.
 5. Keep verification edits in their own commit.
 
-Each model has a variable that switches on a broken variant (`ReBridge` in Runway, `ResizeGuard = "none"` in NodeLife). Use it to confirm a model can still fail.
+Each model has a constant that removes one guard. Set it to confirm the model can still fail.

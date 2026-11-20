@@ -62,7 +62,7 @@ import {
 } from '@quorum/simulation/lookups'
 import { LINK_TIMEOUTS, restartable } from '@quorum/simulation/actions'
 import { CACHE_HIT_LOW, hotDataGb } from '@quorum/simulation/rules'
-import type { Game, GameLink, GameNode } from '@quorum/simulation/state'
+import { activeIncident, type Game, type GameLink, type GameNode } from '@quorum/simulation/state'
 import { compact, money, priceLabel, rate } from '@quorum/ui/game/format'
 import { Message } from '@/game/message.ts'
 import type { Model } from '@/game/model.ts'
@@ -229,7 +229,7 @@ const warnings = (
       ),
     )
   }
-  const incident = game.incident
+  const incident = activeIncident(game)
   if (incident?.nodeId === node.id && incident.kind === 'reconnect' && incident.throttled !== true)
     list.push(
       callout(
@@ -391,7 +391,7 @@ const warnings = (
       [t.inspector.upgradeClustersDH(TASKS['upgrade-cluster'].dh)],
       h,
     )
-    if (game.incident?.kind === 'cluster-upgrade' && game.incident.nodeId === node.id)
+    if (incident?.kind === 'cluster-upgrade' && incident.nodeId === node.id)
       list.push(callout(t.inspector.theProviderIsForcingAnUpgrade, 'danger', upgrade, h))
     else if (quartersBehind(game, node) > 0)
       list.push(callout(t.inspector.itsKubernetesVersionIsOutOf, 'warn', upgrade, h))
@@ -433,7 +433,11 @@ const warnings = (
         h,
       ),
     )
-  if (node.type === 'database' && game.engineChange?.node === node.id)
+  if (
+    node.type === 'database' &&
+    game.engineChange.phase._tag !== 'Idle' &&
+    game.engineChange.node === node.id
+  )
     list.push(
       callout(
         game.engineChange.phase._tag === 'Copying'
@@ -447,7 +451,11 @@ const warnings = (
         h,
       ),
     )
-  if (node.type === 'database' && game.reshard?.node === node.id)
+  if (
+    node.type === 'database' &&
+    game.reshard.phase._tag !== 'Idle' &&
+    game.reshard.node === node.id
+  )
     list.push(
       callout(
         game.reshard.phase._tag === 'Copying'
@@ -461,7 +469,7 @@ const warnings = (
         h,
       ),
     )
-  if (node.type === 'queue' && game.incident?.kind === 'poison' && game.incident.nodeId === node.id)
+  if (node.type === 'queue' && incident?.kind === 'poison' && incident.nodeId === node.id)
     list.push(
       callout(
         node.dlq ? t.inspector.aTaskKeepsFailingTheDead : t.inspector.aTaskKeepsFailingWorkersRetry,
@@ -484,8 +492,8 @@ const warnings = (
         h,
       ),
     )
-  if (game.incident?.kind === 'spot-reclaim' && game.incident.nodeId === node.id) {
-    const left = Math.max(0, Math.ceil(SPOT_WARNING - (game.time - game.incident.startedAt)))
+  if (incident?.kind === 'spot-reclaim' && incident.nodeId === node.id) {
+    const left = Math.max(0, Math.ceil(SPOT_WARNING - (game.time - incident.startedAt)))
     list.push(
       callout(
         isDown(node.life) ? t.inspector.spotReclaimed : t.inspector.spotReclaimsIn(t.units.s(left)),
@@ -530,23 +538,19 @@ const warnings = (
         h,
       ),
     )
-  if (node.type === 'waf' && game.incident?.kind === 'regex')
+  if (node.type === 'waf' && incident?.kind === 'regex')
     fix(t.inspector.aRuleBacktracksCPUAt100, t.inspector.disableRule, Message.RuleDisabled())
-  if (node.type === 'database' && game.incident?.kind === 'report-db')
+  if (node.type === 'database' && incident?.kind === 'report-db')
     fix(
       t.inspector.aReportIsScanningEveryTable,
       t.inspector.cancelReport,
       Message.ReportCancelled(),
     )
-  if (node.type === 'psp' && game.incident?.kind === 'psp-outage')
+  if (node.type === 'psp' && incident?.kind === 'psp-outage')
     fix(t.inspector.providerOutage, t.inspector.switchProvider, Message.ProviderSwitched())
-  if (
-    node.type === 'database' &&
-    game.incident?.kind === 'disk-full' &&
-    game.incident.nodeId === node.id
-  )
+  if (node.type === 'database' && incident?.kind === 'disk-full' && incident.nodeId === node.id)
     fix(t.inspector.theDiskIsFullWritesFail, t.inspector.expandVolume, Message.VolumeExpanded())
-  if (node.type === 'waf' && game.incident?.kind === 'ddos' && !node.underAttack)
+  if (node.type === 'waf' && incident?.kind === 'ddos' && !node.underAttack)
     list.push(
       callout(
         t.inspector.aFloodOfJunkTraffic,
@@ -567,7 +571,7 @@ const warnings = (
         h,
       ),
     )
-  if (node.type === 'database' && game.incident?.kind === 'slow-query') {
+  if (node.type === 'database' && incident?.kind === 'slow-query') {
     const analysed = has(game, 'query-analysis')
     list.push(
       callout(

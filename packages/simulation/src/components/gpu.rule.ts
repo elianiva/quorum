@@ -1,5 +1,6 @@
 import { type Action, Refusal, no, notAllowed, ok, patch, withNode } from '../action-kit.ts'
 import type { Game, GpuType } from '../state.ts'
+import { activeIncident } from '../state.ts'
 import {
   RESEARCH,
   type GpuModel,
@@ -15,7 +16,7 @@ export const setGpuType = (game: Game, id: string, gpu: GpuType): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'gpu') return notAllowed('Only a GPU Node has a GPU type.')
     if (node.gpu === gpu) return ok(game)
-    if (gpu === 'h100' && game.incident?.kind === 'gpu-shortage')
+    if (gpu === 'h100' && activeIncident(game)?.kind === 'gpu-shortage')
       return notAllowed('No H100 capacity this month.')
     return ok(patch(game, id, { gpu, ...restarted(node) }))
   })

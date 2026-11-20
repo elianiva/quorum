@@ -1,7 +1,7 @@
 import { CALENDAR_DAY } from './catalog.ts'
 import { has } from './lookups.ts'
 import type { Ledger } from './ledger.ts'
-import type { Game } from './state.ts'
+import { QuarterState, type Game } from './state.ts'
 
 export const VALUATION_SCALE = 0.00015
 export const INVESTOR_RELATIONS = 2
@@ -32,9 +32,10 @@ export const valuationOf = (game: Game, ledger: Ledger): Valuation => {
   const margin = marginOf(ledger)
   const ruleOf40 = growth + margin
   const base = Math.min(30, Math.max(2, 4 + 0.15 * Math.max(0, ruleOf40)))
+  const bonus = QuarterState.guards.Active(game.quarter) ? game.quarter.bonus : 0
   const multiple = Math.max(
     1,
-    base + (has(game, 'investor-relations') ? INVESTOR_RELATIONS : 0) + (game.quarter?.bonus ?? 0),
+    base + (has(game, 'investor-relations') ? INVESTOR_RELATIONS : 0) + bonus,
   )
   return { arr, growth, margin, ruleOf40, multiple, valuation: arr * multiple }
 }

@@ -94,6 +94,8 @@ import { canRaise } from './actions.ts'
 import { isDraining, step as serviceStep } from './node-service-machine.ts'
 import { burnRateOf, recordBudget, slaCreditsOf, spendBudget } from './slo.ts'
 import { calendarMinute, carryLedger, chaosRunning, solveFlow } from './solve.ts'
+import { activeIncident } from './state.ts'
+import { ackAtOf, signalAtOf, updateIncident } from './incident-machine.ts'
 import { advanceDrill } from './ipo.ts'
 import { advanceQuarter, QUARTER_SECONDS } from './quarters.ts'
 import { advanceRunway } from './runway.ts'
@@ -234,7 +236,7 @@ const REFILL_STALL_LOAD = 0.9
 
 const refillsStall = (game: Game, ledger: Ledger, node: GameNode): boolean =>
   node.type === 'cache' &&
-  game.incident?.kind === 'stampede' &&
+  activeIncident(game)?.kind === 'stampede' &&
   game.links.some((link) => {
     if (link.from !== node.id) return false
     const target = game.nodes.find((entry) => entry.id === link.to)
@@ -406,7 +408,8 @@ const advanceNode = (
   }
   if (
     node.type === 'database' &&
-    (node.depth > 0 || (game.incident?.kind === 'retry-storm' && game.incident.nodeId === node.id))
+    (node.depth > 0 ||
+      (activeIncident(game)?.kind === 'retry-storm' && activeIncident(game)?.nodeId === node.id))
   ) {
     const own = ledger.nodes[node.id]
     const drain = own && own.inbound > 0 ? own.capacity : Number.POSITIVE_INFINITY
@@ -453,7 +456,7 @@ const advanceCertificate = (
     return { ...node, certUntil: game.time + life }
   })
   const next = changed ? { ...game, nodes } : game
-  if (!certNodes(next).some((node) => certExpired(next, node)) || next.incident)
+  if (!certNodes(next).some((node) => certExpired(next, node)) || activeIncident(next) !== null)
     return { game: next, events: [] }
   const started = startIncident(next, ledger, 'certificate', 0)
   return started
@@ -534,7 +537,7 @@ const advanceAlarms = (
     if (game.alarms[rule] >= limit || next[rule] < limit) continue
     if (ignored(game, rule)) continue
     events.push(StepEvent.AlertFired({ rule }))
-    if (!game.incident) {
+    if (activeIncident(game) === null) {
       counts[rule] += 1
       if (counts[rule] === ALERT_FATIGUE) events.push(StepEvent.AlertIgnored({ rule }))
     }
@@ -635,7 +638,7 @@ export const step = (game: Game, seconds: number, tuning: Tuning = LIVE_TUNING):
         pools.failure +
         (chaotic ? CHAOS_INSIGHT * seconds : 0) +
         (game.time < game.loadTestUntil ? LOAD_TEST_INSIGHT * seconds : 0) +
-        (game.drill?._tag === 'Running' ? DRILL_INSIGHT * seconds : 0),
+        (game.drill._tag === 'Running' ? DRILL_INSIGHT * seconds : 0),
     },
     weakest: game.chaos
       ? (game.nodes
@@ -649,7 +652,7 @@ export const step = (game: Game, seconds: number, tuning: Tuning = LIVE_TUNING):
     uploads: (puts * UPLOAD_MB) / 1_000,
     budget: recordBudget(game, ledger, seconds),
     drill: advanceDrill({ ...game, time }, ledger),
-    quarter: advanceQuarter({ ...game, time }, ledger),
+    quarter: advanceQuarter(game.quarter, time, ledger),
     time,
     earned: game.earned + earned,
     history: crossedSecond ? [...game.history, sample].slice(-HISTORY) : game.history,
@@ -683,12 +686,17 @@ export const step = (game: Game, seconds: number, tuning: Tuning = LIVE_TUNING):
   next = advanceFeatures(next, ledger.demand, seconds, tuning)
   next = advanceMorale(next, game, seconds, tuning, events)
   const lost = lostOnCrash(next, game.time, seconds) + lostOnBroker(game, game.time, seconds)
-  if (lost > 0)
+  if (lost > 0) {
+    const incident = activeIncident(next)
     next = {
       ...next,
       budget: spendBudget(next, lost),
-      incident: next.incident ? { ...next.incident, failed: next.incident.failed + lost } : null,
+      incident:
+        incident === null
+          ? next.incident
+          : updateIncident(next.incident, { failed: incident.failed + lost }),
     }
+  }
 
   next = applyPolicies(next, ledger)
 
@@ -733,12 +741,23 @@ const INCIDENT_TALLIES: ReadonlySet<string> = new Set([
   'failed',
 ])
 
+const samePhase = (before: Game['incident'], after: Game['incident']): boolean => {
+  if (before._tag !== 'Active' || after._tag !== 'Active') return true
+  const was = before.incident.phase
+  const now = after.incident.phase
+  return (
+    was._tag === now._tag && signalAtOf(was) === signalAtOf(now) && ackAtOf(was) === ackAtOf(now)
+  )
+}
+
 const sameIncident = (before: Game['incident'], after: Game['incident']): boolean => {
   if (before === after) return true
-  if (before === null || after === null) return false
-  const was: Readonly<Record<string, unknown>> = before
-  const now: Readonly<Record<string, unknown>> = after
+  if (before._tag === 'Quiet' || after._tag === 'Quiet') return before._tag === after._tag
+  if (!samePhase(before, after)) return false
+  const was: Readonly<Record<string, unknown>> = before.incident
+  const now: Readonly<Record<string, unknown>> = after.incident
   const keys = new Set([...Object.keys(was), ...Object.keys(now)])
-  for (const key of keys) if (!INCIDENT_TALLIES.has(key) && was[key] !== now[key]) return false
+  for (const key of keys)
+    if (key !== 'phase' && !INCIDENT_TALLIES.has(key) && was[key] !== now[key]) return false
   return true
 }

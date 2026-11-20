@@ -3,7 +3,8 @@ import { Schema } from 'effect'
 import { DRILL_RECOVERED, DRILL_RPO, DRILL_RTO, DRILL_SECONDS } from './catalog.ts'
 import { planState } from './machine.ts'
 
-export const DrillPhase = Schema.TaggedUnion({
+export const DrillState = Schema.TaggedUnion({
+  Idle: {},
   Running: {
     startedAt: Schema.Finite,
     rpo: Schema.Finite,
@@ -19,9 +20,13 @@ export const DrillPhase = Schema.TaggedUnion({
     reason: Schema.Literals(['timeout', 'data-loss']),
   },
 })
-export type DrillPhase = typeof DrillPhase.Type
+export type DrillState = typeof DrillState.Type
 
 export const DrillEvent = Schema.TaggedUnion({
+  Started: {
+    startedAt: Schema.Finite,
+    rpo: Schema.Finite,
+  },
   Ticked: {
     elapsed: Schema.Finite,
     errorShare: Schema.Finite,
@@ -30,8 +35,14 @@ export const DrillEvent = Schema.TaggedUnion({
 })
 export type DrillEvent = typeof DrillEvent.Type
 
-const States = Machine.state({ states: DrillPhase.cases })
+const States = Machine.state({ states: DrillState.cases })
 const Events = Machine.eventsFromSchemas(DrillEvent)
+
+const started = (event: { startedAt: number; rpo: number }) => ({
+  _tag: 'Running' as const,
+  startedAt: event.startedAt,
+  rpo: event.rpo,
+})
 
 export const drillMachine = Machine.make({
   root: States,
@@ -43,8 +54,16 @@ export const drillMachine = Machine.make({
     },
   },
 }).handle({
-  initial: { target: 'Running', data: { startedAt: 0, rpo: 0 } },
+  initial: { target: 'Idle' },
   states: {
+    Idle: {
+      on: {
+        Started: {
+          target: 'Running',
+          data: ({ event }) => started(event),
+        },
+      },
+    },
     Running: {
       on: {
         Ticked: {
@@ -72,21 +91,41 @@ export const drillMachine = Machine.make({
             })
           },
         },
+        Reset: { target: 'Idle', data: () => ({ _tag: 'Idle' }) },
       },
     },
-    Recovered: {},
-    Failed: {},
+    Recovered: {
+      on: {
+        Started: {
+          target: 'Running',
+          data: ({ event }) => started(event),
+        },
+        Reset: { target: 'Idle', data: () => ({ _tag: 'Idle' }) },
+      },
+    },
+    Failed: {
+      on: {
+        Started: {
+          target: 'Running',
+          data: ({ event }) => started(event),
+        },
+        Reset: { target: 'Idle', data: () => ({ _tag: 'Idle' }) },
+      },
+    },
   },
 })
 
-export const step = (phase: DrillPhase, event: DrillEvent): DrillPhase =>
-  planState(drillMachine, phase, event)
+export const step = (state: DrillState, event: DrillEvent): DrillState =>
+  planState(drillMachine, state, event)
 
-export const drillPassed = (phase: DrillPhase | null): boolean =>
-  DrillPhase.guards.Recovered(phase) && phase.rto < DRILL_RTO && phase.rpo < DRILL_RPO
+export const startDrill = (state: DrillState, startedAt: number, rpo: number): DrillState =>
+  step(state, { _tag: 'Started', startedAt, rpo })
 
-export const drillDone = (phase: DrillPhase | null): boolean =>
-  phase !== null && !DrillPhase.guards.Running(phase)
+export const drillPassed = (state: DrillState): boolean =>
+  DrillState.guards.Recovered(state) && state.rto < DRILL_RTO && state.rpo < DRILL_RPO
 
-export const drillRto = (phase: DrillPhase | null): number | null =>
-  DrillPhase.guards.Recovered(phase) ? phase.rto : null
+export const drillDone = (state: DrillState): boolean =>
+  DrillState.guards.Recovered(state) || DrillState.guards.Failed(state)
+
+export const drillRto = (state: DrillState): number | null =>
+  DrillState.guards.Recovered(state) ? state.rto : null

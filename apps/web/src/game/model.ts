@@ -70,8 +70,15 @@ export const Panel = Schema.Literals([
   'mirror',
   'cost',
   'vitals',
+  'shop',
 ])
 export type Panel = typeof Panel.Type
+
+export const ShopSlot = Schema.Literals(['cpu', 'ram', 'disk'])
+export type ShopSlot = typeof ShopSlot.Type
+
+export const ShopSort = Schema.Literals(['recommended', 'price-asc', 'price-desc', 'capacity'])
+export type ShopSort = typeof ShopSort.Type
 
 export const BuildGroupKey = Schema.Literals(
   DOCK_GROUPS.map((group) => group.key) as [DockGroup, ...Array<DockGroup>],
@@ -383,6 +390,9 @@ export const Model = Schema.Struct({
   route: AppRoute,
   boot: Boot,
   panel: Panel,
+  shopSlot: ShopSlot.pipe(Schema.withDecodingDefaultKey(Effect.succeed('cpu' as const))),
+  shopQuery: Schema.String.pipe(Schema.withDecodingDefaultKey(Effect.succeed(''))),
+  shopSort: ShopSort.pipe(Schema.withDecodingDefaultKey(Effect.succeed('recommended' as const))),
   palette: Palette,
   toast: Schema.NullOr(Toast),
   toastSeq: Schema.Finite,

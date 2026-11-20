@@ -42,6 +42,7 @@ export const drawDesign = (id: string, host: HTMLElement): (() => void) => {
   }
   setBoard(key, state)
   const detach = attachBoard(key, host, {
+    onSlot: NOOP,
     onNodeTap: NOOP,
     onNodeMove: NOOP,
     onFooter: NOOP,

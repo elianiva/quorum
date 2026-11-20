@@ -2073,8 +2073,12 @@ test('buying ten sizes grows a Node once, and Max reaches the largest size', () 
     board: { ...inLab().board, game: { ...preseedGame(), cash: 1e9 } },
   }
   const picking = update(base, Message.PlacingChosen({ type: 'server' }))
-  const placed = update(picking.model, Message.NodePlaced({ x: 400, y: 300 })).model
-  const id = placed.board.game.nodes.at(-1)?.id ?? ''
+  const dropped = update(picking.model, Message.NodePlaced({ x: 400, y: 300 })).model
+  const id = dropped.board.game.nodes.at(-1)?.id ?? ''
+  const placed = [
+    Message.InstallCpu({ nodeId: id, size: 1 }),
+    Message.InstallRam({ nodeId: id, family: 'general' }),
+  ].reduce((model, message) => update(model, message).model, dropped)
   const sizeOf = (model: typeof placed) =>
     model.board.game.nodes.find((node) => node.id === id)?.size ?? -1
   const before = sizeOf(placed)
@@ -2085,12 +2089,62 @@ test('buying ten sizes grows a Node once, and Max reaches the largest size', () 
   expect(sizeOf(max)).toBe(SIZES.length - 1)
 })
 
+test('a new App Server starts empty and its Slots open the Parts shop', () => {
+  const base = {
+    ...inLab(),
+    board: { ...inLab().board, game: { ...preseedGame(), cash: 1e9 } },
+  }
+  const picking = update(base, Message.PlacingChosen({ type: 'server' }))
+  const placed = update(picking.model, Message.NodePlaced({ x: 400, y: 300 })).model
+  const id = placed.board.game.nodes.at(-1)?.id ?? ''
+  const server = (model: typeof placed) => model.board.game.nodes.find((node) => node.id === id)
+
+  expect(server(placed)?.parts).toEqual({ cpu: false, ram: false, disk: false })
+  const refused = update(placed, Message.BulkResizeChosen({ nodeId: id, mode: 'ten' })).model
+  expect(server(refused)?.size).toBe(1)
+
+  const opened = update(placed, Message.ShopOpened({ nodeId: id, slot: 'cpu' })).model
+  expect(opened.panel).toBe('shop')
+  expect(opened.shopSlot).toBe('cpu')
+  const cpu = update(opened, Message.InstallCpu({ nodeId: id, size: 2 })).model
+  expect(server(cpu)?.parts.cpu).toBe(true)
+  expect(server(cpu)?.size).toBe(2)
+  expect(cpu.panel).toBe('shop')
+  const ram = update(cpu, Message.InstallRam({ nodeId: id, family: 'general' })).model
+  expect(server(ram)?.parts.ram).toBe(true)
+  expect(server(ram)?.family).toBe('general')
+})
+
+test('a new Database starts with empty Slots and installs its Disk Part', () => {
+  const base = {
+    ...inLab(),
+    board: { ...inLab().board, game: { ...preseedGame(), cash: 1e9 } },
+  }
+  const picking = update(base, Message.PlacingChosen({ type: 'database' }))
+  const placed = update(picking.model, Message.NodePlaced({ x: 400, y: 300 })).model
+  const id = placed.board.game.nodes.at(-1)?.id ?? ''
+  const database = (model: typeof placed) => model.board.game.nodes.find((node) => node.id === id)
+
+  expect(database(placed)?.parts).toEqual({ cpu: false, ram: false, disk: false })
+  const opened = update(placed, Message.ShopOpened({ nodeId: id, slot: 'disk' })).model
+  expect(opened.panel).toBe('shop')
+  expect(opened.shopSlot).toBe('disk')
+  const disk = update(opened, Message.InstallDisk({ nodeId: id, iops: 'provisioned' })).model
+  expect(database(disk)?.parts.disk).toBe(true)
+  expect(database(disk)?.iops).toBe('provisioned')
+})
+
 test('upgrade all of a kind is one action with one undo entry and one toast that says what happened', () => {
   const start = (cash: number): Model => {
     let model: Model = { ...inLab(), board: { ...inLab().board, game: { ...newGame(), cash } } }
     for (const y of [400, 560]) {
       const picking = update(model, Message.PlacingChosen({ type: 'server' }))
-      model = update(picking.model, Message.NodePlaced({ x: 400, y })).model
+      const dropped = update(picking.model, Message.NodePlaced({ x: 400, y })).model
+      const id = dropped.board.game.nodes.at(-1)?.id ?? ''
+      model = [
+        Message.InstallCpu({ nodeId: id, size: 1 }),
+        Message.InstallRam({ nodeId: id, family: 'general' }),
+      ].reduce((current, message) => update(current, message).model, dropped)
     }
     return model
   }

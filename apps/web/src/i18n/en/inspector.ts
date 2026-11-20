@@ -84,6 +84,17 @@ export const inspector = {
   upgradeAll: (p0: string | number | null) => `Upgrade all ${p0}`,
   upgradeAll2: 'Upgrade all',
   instance: 'Instance',
+  parts: 'Parts',
+  partsHint:
+    'Buy a CPU, a memory kit, or a volume. Each shelf shows what it costs and what it adds to Burn.',
+  partsCpu: 'CPU',
+  partsMemory: 'Memory',
+  partsDisk: 'Disk',
+  openShop: 'Open parts shop',
+  partsAppDisk: 'The App Server disk is swap. Swap parts are not sold yet.',
+  partsMemoryHint: 'A kit sets the GB per vCPU. The RAM slot shows what this CPU gets.',
+  partsDiskHint: 'The volume class sets the IOPS and the burn of the database disk.',
+  partsBurn: (p0: string | number | null) => `×${p0} burn`,
   smallerFree: 'Smaller (free)',
   vCPUGB: (p0: string | number | null, p1: string | number | null, p2: string | number | null) =>
     `${p0} · ${p1} vCPU · ${p2} GB`,

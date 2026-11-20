@@ -2,15 +2,22 @@ import { DashboardMessage } from '../dashboard.ts'
 import { InboxMessage } from '../inbox.ts'
 import { Listbox, Menu as UiMenu } from '@foldkit/ui'
 import { Message as VolumeSliderMessage } from '@quorum/ui/primitives/slider'
-import { Panel, Tone } from '../model.ts'
+import { Panel, ShopSlot, ShopSort, Tone } from '../model.ts'
 import { PrefsMessage } from '../prefs.ts'
 import { SurveyMessage } from '../survey.ts'
 import { StackPickerMessage } from '../stack-picker.ts'
 import { Schema } from 'effect'
-import { ResearchId } from '@quorum/simulation/state'
+import { FamilyId, IopsClass, ResearchId } from '@quorum/simulation/state'
 
 export const panelsCases = {
   PanelOpened: { panel: Panel },
+  ShopOpened: { nodeId: Schema.String, slot: ShopSlot },
+  ShopSlotChosen: { slot: ShopSlot },
+  ShopQueryChanged: { query: Schema.String },
+  ShopSortChosen: { sort: ShopSort },
+  InstallCpu: { nodeId: Schema.String, size: Schema.Finite },
+  InstallRam: { nodeId: Schema.String, family: FamilyId },
+  InstallDisk: { nodeId: Schema.String, iops: IopsClass },
   AlertsShown: {},
   ResearchOfferDismissed: {},
   ResearchShown: { id: ResearchId },

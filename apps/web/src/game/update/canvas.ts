@@ -2,6 +2,7 @@ import { Actions } from '../board-actions.ts'
 import { intent, workIntent } from '@quorum/simulation/room'
 import { CARD_W, boxOf, crowds, freeSpot, heightOf } from '@quorum/ui/board/geometry'
 import { COMPONENTS } from '@quorum/simulation/catalog'
+import { missingParts, provisioned } from '@quorum/simulation/parts'
 import { FocusInspector } from '../commands.ts'
 import { Message } from '../message.ts'
 import { Model, confirmSellOf, placingOf, stampedPlaybook } from '../model.ts'
@@ -510,6 +511,8 @@ export const canvasHandlers = (
   FooterPressed: ({ nodeId }) => {
     const node = model.board.game.nodes.find((entry) => entry.id === nodeId)
     if (!node) return { model }
+    if (!provisioned(node))
+      return route(model, Message.ShopOpened({ nodeId, slot: missingParts(node)[0] ?? 'cpu' }))
     if (node.type === 'payments') return route(model, Message.Collected())
     if (node.life._tag === 'Stopped') return route(model, Message.ReplaceBought({ nodeId }))
     return route(model, Message.ResizeChosen({ nodeId, direction: 1 }))

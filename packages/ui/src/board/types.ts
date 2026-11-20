@@ -1,4 +1,5 @@
 import { type ComponentId } from '@quorum/simulation/catalog'
+import { type SlotKind } from '@quorum/simulation/parts'
 import { type Ledger } from '@quorum/simulation/ledger'
 import { type Game, type Region } from '@quorum/simulation/state'
 import { type SeatActivity } from '@quorum/simulation/room'
@@ -7,6 +8,7 @@ export type BoardSound = 'pull' | 'lift' | 'detent' | 'snap' | 'release'
 
 export type BoardEvents = Readonly<{
   onNodeTap: (nodeId: string) => void
+  onSlot: (nodeId: string, slot: SlotKind) => void
   onNodeMove: (nodeId: string, x: number, y: number) => void
   onFooter: (nodeId: string) => void
   onLink: (from: string, to: string) => void

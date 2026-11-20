@@ -7,8 +7,8 @@ import { WritePrefs } from '../commands.ts'
 import { Message } from '../message.ts'
 import type { Model } from '../model.ts'
 import { trackInstallPrompt } from '../../platform/analytics.ts'
-import { promptInstall, requestPwaUpdate, watchPwa } from '../../platform/pwa.ts'
-import type { MessageCases, UpdateResult } from './shared.ts'
+import { promptInstall, watchPwa } from '../../platform/pwa.ts'
+import { say, withToast, type MessageCases, type UpdateResult } from './shared.ts'
 
 const AskInstall = Command.define('AskPwaInstall', {
   args: {},
@@ -21,33 +21,21 @@ const AskInstall = Command.define('AskPwaInstall', {
     }),
 })
 
-const TakeUpdate = Command.define('TakePwaUpdate', {
-  args: {},
-  messages: [Message.Synced],
-  execute: () =>
-    Effect.promise(async () => {
-      await requestPwaUpdate()
-      return Message.Synced()
-    }),
-})
-
 const seen = (model: Model): UpdateResult => {
   if (model.prefs.pwaPromptSeen) return { model }
   const prefs = { ...model.prefs, pwaPromptSeen: true }
   return { model: { ...model, prefs }, commands: [WritePrefs({ prefs })] }
 }
 
-type PwaTag =
-  | 'PwaChanged'
-  | 'PwaInstallChosen'
-  | 'PwaInstallOutcome'
-  | 'PwaUpdateChosen'
-  | 'PwaPromptDismissed'
+type PwaTag = 'PwaChanged' | 'PwaInstallChosen' | 'PwaInstallOutcome' | 'PwaPromptDismissed'
 
 export const pwaHandlers = (model: Model): MessageCases<UpdateResult, PwaTag> => ({
-  PwaChanged: ({ installable, installed, updateReady, online }) => ({
-    model: { ...model, pwa: { installable, installed, updateReady, online } },
-  }),
+  PwaChanged: ({ installable, installed, online, updated }) => {
+    const next = { ...model, pwa: { installable, installed, online, updated } }
+    return updated && !model.pwa.updated
+      ? withToast(next, say(model).pwa.updated, 'plain')
+      : { model: next }
+  },
 
   PwaInstallChosen: () => ({ model, commands: [AskInstall({})] }),
 
@@ -57,8 +45,6 @@ export const pwaHandlers = (model: Model): MessageCases<UpdateResult, PwaTag> =>
       pwa:
         outcome === 'accepted' ? { ...model.pwa, installed: true, installable: false } : model.pwa,
     }),
-
-  PwaUpdateChosen: () => ({ model, commands: [TakeUpdate({})] }),
 
   PwaPromptDismissed: () => seen(model),
 })

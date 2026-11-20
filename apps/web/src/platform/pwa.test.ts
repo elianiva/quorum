@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { browserFamily, displayModeOf, pwaSnapshot } from './pwa.ts'
+import { browserFamily, displayModeOf, pwaSnapshot, startPwa } from './pwa.ts'
 
 describe('display mode', () => {
   test('a standalone window or an installed iOS app is installed', () => {
@@ -13,9 +13,35 @@ describe('display mode', () => {
     expect(pwaSnapshot()).toEqual({
       installable: false,
       installed: false,
-      updateReady: false,
       online: true,
+      updated: false,
     })
+  })
+})
+
+describe('the update marker', () => {
+  test('a reload after an update reads the marker once', () => {
+    const made = new Map<string, string>([['quorum.pwa.updated', '1']])
+    const scope = globalThis as unknown as { window: unknown; sessionStorage: unknown }
+    const priorWindow = scope.window
+    const priorSession = scope.sessionStorage
+    scope.window = {
+      matchMedia: () => ({ matches: false }),
+      addEventListener: () => undefined,
+    }
+    scope.sessionStorage = {
+      getItem: (key: string) => made.get(key) ?? null,
+      setItem: (key: string, value: string) => void made.set(key, value),
+      removeItem: (key: string) => void made.delete(key),
+    }
+    try {
+      startPwa()
+      expect(pwaSnapshot().updated).toBe(true)
+      expect(made.has('quorum.pwa.updated')).toBe(false)
+    } finally {
+      scope.window = priorWindow
+      scope.sessionStorage = priorSession
+    }
   })
 })
 

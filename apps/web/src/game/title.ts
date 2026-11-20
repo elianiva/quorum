@@ -23,7 +23,6 @@ import {
   Coffee,
   Download,
   Lock,
-  RefreshCw,
   Settings,
   Trash2,
   type IconNode,
@@ -1090,19 +1089,6 @@ const firstRun = (open: boolean, h: HtmlBuilder<Message>): Html => {
 const notices = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
   const out: Array<Html> = []
-  if (model.pwa.updateReady)
-    out.push(
-      line(
-        {
-          key: 'pwa-update',
-          label: t.pwa.updateReady,
-          detail: t.pwa.updateReadyDetail,
-          figure: glyph(RefreshCw, h),
-          message: Message.PwaUpdateChosen(),
-        },
-        h,
-      ),
-    )
   if (!model.pwa.installed && !model.prefs.pwaPromptSeen && model.saves.companies.length > 0) {
     out.push(
       line(
@@ -1919,19 +1905,6 @@ const settingsBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html
     )
     if (onIos()) pwa.push(note(t.pwa.moveNote, h))
   }
-  if (model.pwa.updateReady)
-    pwa.push(
-      line(
-        {
-          key: 'pwa-update-setting',
-          label: t.pwa.updateReady,
-          detail: t.pwa.updateReadyDetail,
-          figure: glyph(RefreshCw, h),
-          message: Message.PwaUpdateChosen(),
-        },
-        h,
-      ),
-    )
   return [
     h.div(
       [h.Key('sections'), h.Class('qm-bus')],

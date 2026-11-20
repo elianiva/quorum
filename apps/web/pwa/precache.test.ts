@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { excludedFromCache, precacheOf, type OutputEntry } from './precache.ts'
 import { serviceWorkerSource } from './service-worker.ts'
 
@@ -98,12 +98,177 @@ test('the worker carries its build ID and install list', () => {
   expect(source).toContain("const BUILD = 'abc123'")
   expect(source).toContain("const CACHE = 'quorum-' + BUILD")
   expect(source).toContain('["/","/assets/index-abc.js"]')
-  expect(source).toContain(
-    "if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting()",
-  )
+  expect(source).toContain('self.skipWaiting()')
+  expect(source).toContain("fetch(path, { cache: 'reload' })")
+  expect(source).toContain("fetch(request, { cache: 'no-cache' })")
+  expect(source).toContain('client.navigate(client.url)')
   expect(source).toContain("url.pathname === '/sw.js'")
   expect(source).toContain("url.pathname === '/harness.html'")
   expect(source).toContain('{ ignoreVary: true }')
+})
+
+test('install fetches every file past the HTTP cache and takes over at once', async () => {
+  const source = serviceWorkerSource('abc123', ['/', '/assets/index-abc.js'])
+  const listeners: Record<string, (event: unknown) => void> = {}
+  const stored = new Map<string, Response>()
+  const fetched: Array<{ path: string; cache: RequestCache | undefined }> = []
+  let skipped = 0
+  const scope = {
+    addEventListener: (type: string, listener: (event: unknown) => void) => {
+      listeners[type] = listener
+    },
+    skipWaiting: async () => {
+      skipped += 1
+    },
+  }
+  const cachesStub = {
+    open: async () => ({
+      put: async (key: string, value: Response) => void stored.set(key, value),
+    }),
+  }
+  const fetchStub = async (path: string, init?: RequestInit) => {
+    fetched.push({ path, cache: init?.cache })
+    return new Response(`<html>${path}</html>`)
+  }
+  new Function('self', 'caches', 'fetch', source)(scope, cachesStub, fetchStub)
+  let done: Promise<unknown> = Promise.resolve()
+  listeners.install({ waitUntil: (promise: Promise<unknown>) => (done = promise) })
+  await done
+  expect(fetched).toEqual([
+    { path: '/', cache: 'reload' },
+    { path: '/assets/index-abc.js', cache: 'reload' },
+  ])
+  expect(skipped).toBe(1)
+  expect(await stored.get('/')?.text()).toBe('<html>/</html>')
+})
+
+const activate = async (stale: ReadonlyArray<string>) => {
+  const source = serviceWorkerSource('new', ['/'])
+  const listeners: Record<string, (event: unknown) => void> = {}
+  const deleted: Array<string> = []
+  const navigated: Array<string> = []
+  let claimed = 0
+  const scope = {
+    addEventListener: (type: string, listener: (event: unknown) => void) => {
+      listeners[type] = listener
+    },
+    clients: {
+      claim: async () => {
+        claimed += 1
+      },
+      matchAll: async () => [
+        {
+          url: 'https://play.example/company',
+          navigate: async (url: string) => {
+            navigated.push(url)
+            return null
+          },
+        },
+        {
+          url: 'https://play.example/',
+          navigate: async (url: string) => {
+            navigated.push(url)
+            return null
+          },
+        },
+      ],
+    },
+  }
+  const cachesStub = {
+    keys: async () => stale,
+    delete: async (key: string) => {
+      deleted.push(key)
+      return true
+    },
+  }
+  new Function('self', 'caches', source)(scope, cachesStub)
+  let done: Promise<unknown> = Promise.resolve()
+  listeners.activate({ waitUntil: (promise: Promise<unknown>) => (done = promise) })
+  await vi.runAllTimersAsync()
+  await done
+  return { deleted, claimed, navigated }
+}
+
+test('activate deletes the old cache and navigates the windows that still run it', async () => {
+  vi.useFakeTimers()
+  try {
+    const result = await activate(['quorum-old', 'quorum-new', 'other'])
+    expect(result.deleted).toEqual(['quorum-old'])
+    expect(result.claimed).toBe(1)
+    expect(result.navigated).toEqual(['https://play.example/company', 'https://play.example/'])
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
+test('a first install claims the page without navigating it', async () => {
+  vi.useFakeTimers()
+  try {
+    const result = await activate(['other'])
+    expect(result.deleted).toEqual([])
+    expect(result.claimed).toBe(1)
+    expect(result.navigated).toEqual([])
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
+test('a navigation reads the network first and updates the stored shell', async () => {
+  const source = serviceWorkerSource('abc123', ['/'])
+  const listeners: Record<string, (event: unknown) => void> = {}
+  const stored = new Map<string, Response>([['/', new Response('<html>old</html>')]])
+  const cachesStub = {
+    match: async (key: string) => stored.get(key),
+    open: async () => ({
+      put: async (key: string, value: Response) => void stored.set(key, value),
+    }),
+  }
+  let asked: { url: string; cache: RequestCache | undefined } | null = null
+  const fetchStub = async (request: Request, init?: RequestInit) => {
+    asked = { url: request.url, cache: init?.cache }
+    return new Response('<html>new</html>')
+  }
+  const scope = {
+    addEventListener: (type: string, listener: (event: unknown) => void) => {
+      listeners[type] = listener
+    },
+    location: { origin: 'https://play.example' },
+  }
+  new Function('self', 'caches', 'fetch', source)(scope, cachesStub, fetchStub)
+  let answered: Promise<Response> = Promise.resolve(new Response())
+  listeners.fetch({
+    request: { method: 'GET', mode: 'navigate', url: 'https://play.example/company' },
+    respondWith: (promise: Promise<Response>) => (answered = promise),
+  })
+  const response = await answered
+  expect(await response.text()).toBe('<html>new</html>')
+  expect(asked).toEqual({ url: 'https://play.example/company', cache: 'no-cache' })
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  expect(await stored.get('/')?.text()).toBe('<html>new</html>')
+})
+
+test('a navigation falls back to the stored shell when the network fails', async () => {
+  const source = serviceWorkerSource('abc123', ['/'])
+  const listeners: Record<string, (event: unknown) => void> = {}
+  const cachesStub = {
+    match: async (key: string) => (key === '/' ? new Response('<html>cached</html>') : undefined),
+  }
+  const fetchStub = async () => {
+    throw new Error('offline')
+  }
+  const scope = {
+    addEventListener: (type: string, listener: (event: unknown) => void) => {
+      listeners[type] = listener
+    },
+    location: { origin: 'https://play.example' },
+  }
+  new Function('self', 'caches', 'fetch', source)(scope, cachesStub, fetchStub)
+  let answered: Promise<Response> = Promise.resolve(new Response())
+  listeners.fetch({
+    request: { method: 'GET', mode: 'navigate', url: 'https://play.example/company' },
+    respondWith: (promise: Promise<Response>) => (answered = promise),
+  })
+  expect(await (await answered).text()).toBe('<html>cached</html>')
 })
 
 test('the worker caches the shell at / and strips redirects from what it stores', async () => {
@@ -118,6 +283,7 @@ test('the worker caches the shell at / and strips redirects from what it stores'
     addEventListener: (type: string, listener: (event: unknown) => void) => {
       listeners[type] = listener
     },
+    skipWaiting: async () => undefined,
   }
   const cachesStub = {
     open: async () => ({ put: async (k: string, v: Response) => void stored.set(k, v) }),

@@ -12,7 +12,6 @@ import {
   House,
   LogOut,
   Play,
-  RefreshCw,
   Settings,
   Trash2,
   Users,
@@ -1894,7 +1893,7 @@ const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Ht
 
 const pwaSettingsSection = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
-  if (model.pwa.installed && !model.pwa.updateReady) return h.empty
+  if (model.pwa.installed) return h.empty
   const family = browserFamilyOf()
   const rows: Array<Html> = []
   if (!model.pwa.installed) {
@@ -1948,24 +1947,6 @@ const pwaSettingsSection = (model: Model, h: HtmlBuilder<Message>): Html => {
         ),
       )
   }
-  if (model.pwa.updateReady)
-    rows.push(
-      settingAction(t.pwa.updateReady, Message.PwaUpdateChosen(), RefreshCw, h),
-      h.p(
-        [
-          h.Class(
-            css({
-              paddingInline: '4',
-              paddingBottom: '3',
-              fontSize: 'type.12',
-              lineHeight: 'snug',
-              color: 'mutedForeground',
-            }),
-          ),
-        ],
-        [t.pwa.updateReadyDetail],
-      ),
-    )
   return settingSection(t.pwa.app, rows, h)
 }
 

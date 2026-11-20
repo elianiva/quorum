@@ -372,8 +372,8 @@ export type FoundStep = typeof FoundStep.Type
 export const Pwa = Schema.Struct({
   installable: Schema.Boolean,
   installed: Schema.Boolean,
-  updateReady: Schema.Boolean,
   online: Schema.Boolean,
+  updated: Schema.Boolean,
 })
 export type Pwa = typeof Pwa.Type
 

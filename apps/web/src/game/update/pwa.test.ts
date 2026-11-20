@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { copyIn } from '../../i18n/messages.ts'
 import { Message } from '../message.ts'
 import { initialModel, update } from '../update.ts'
 
@@ -13,17 +14,31 @@ describe('the PWA state', () => {
       Message.PwaChanged({
         installable: true,
         installed: false,
-        updateReady: true,
         online: false,
+        updated: false,
       }),
     ).model
     expect(after.pwa).toEqual({
       installable: true,
       installed: false,
-      updateReady: true,
       online: false,
+      updated: false,
     })
     expect(after.board).toBe(before.board)
+  })
+
+  test('the first snapshot after a deploy says that Quorum updated, and the next one is quiet', () => {
+    const before = initialModel()
+    const changed = Message.PwaChanged({
+      installable: false,
+      installed: true,
+      online: true,
+      updated: true,
+    })
+    const after = update(before, changed)
+    expect(after.model.toast?.message).toBe(copyIn('en').pwa.updated)
+    const again = update(after.model, changed)
+    expect(again.model.toast).toBe(after.model.toast)
   })
 
   test('an accepted install hides the offer and keeps the prompt from coming back', () => {
@@ -37,10 +52,6 @@ describe('the PWA state', () => {
     const result = update(initialModel(), Message.PwaPromptDismissed())
     expect(result.model.prefs.pwaPromptSeen).toBe(true)
     expect(result.commands?.map((command) => command.name)).toContain('WritePrefs')
-  })
-
-  test('the player taking an update asks the worker, and nothing else reloads the page', () => {
-    expect(commandsOf(Message.PwaUpdateChosen())).toContain('TakePwaUpdate')
   })
 
   test('pressing install asks the browser', () => {

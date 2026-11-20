@@ -1,8 +1,8 @@
 export type PwaSnapshot = Readonly<{
   installable: boolean
   installed: boolean
-  updateReady: boolean
   online: boolean
+  updated: boolean
 }>
 
 export type InstallOutcome = 'accepted' | 'dismissed' | 'unavailable'
@@ -20,6 +20,11 @@ export type DisplayMode = 'standalone' | 'browser'
 const INSTALLED_QUERY =
   '(display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui), (display-mode: window-controls-overlay)'
 
+const UPDATE_KEY = 'quorum.pwa.updated'
+const UPDATE_CHECK_MS = 30 * 60 * 1000
+const UPDATE_CHECK_FLOOR_MS = 5 * 60 * 1000
+const UPDATE_RELOAD_MS = 2000
+
 type InstallPromptEvent = Event &
   Readonly<{
     prompt: () => Promise<void>
@@ -36,19 +41,45 @@ type BrowserNavigator = Navigator &
 const state = {
   installable: false,
   installed: false,
-  updateReady: false,
+  updated: false,
 }
 
 let deferred: InstallPromptEvent | null = null
 let started = false
-let registration: ServiceWorkerRegistration | null = null
-let reloadWanted = false
-let reloaded = false
+let checkedAt = 0
 let badge = -1
 const listeners = new Set<() => void>()
 
 const emit = (): void => {
   for (const listener of listeners) listener()
+}
+
+const session = (): Storage | null => {
+  try {
+    return typeof sessionStorage === 'undefined' ? null : sessionStorage
+  } catch {
+    return null
+  }
+}
+
+const takeUpdated = (): boolean => {
+  const store = session()
+  if (store === null) return false
+  try {
+    const found = store.getItem(UPDATE_KEY) === '1'
+    if (found) store.removeItem(UPDATE_KEY)
+    return found
+  } catch {
+    return false
+  }
+}
+
+const markUpdated = (): void => {
+  const store = session()
+  if (store === null) return
+  try {
+    store.setItem(UPDATE_KEY, '1')
+  } catch {}
 }
 
 export const displayModeOf = (standalone: boolean, iosStandalone: boolean): DisplayMode =>
@@ -88,8 +119,8 @@ const onlineNow = (): boolean =>
 export const pwaSnapshot = (): PwaSnapshot => ({
   installable: state.installable,
   installed: state.installed || displayMode() === 'standalone',
-  updateReady: state.updateReady,
   online: onlineNow(),
+  updated: state.updated,
 })
 
 const onPrompt = (event: Event): void => {
@@ -108,48 +139,23 @@ const onInstalled = (): void => {
 
 const onConnection = (): void => emit()
 
-const watchWorker = (worker: ServiceWorker | null): void => {
-  if (worker === null) return
-  const check = (): void => {
-    if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-      state.updateReady = true
-      emit()
-    }
-  }
-  worker.addEventListener('statechange', check)
-  check()
-}
-
-const watchRegistration = (found: ServiceWorkerRegistration): void => {
-  if (found.waiting && navigator.serviceWorker.controller) {
-    state.updateReady = true
-    emit()
-  }
-  watchWorker(found.installing)
-  found.addEventListener('updatefound', () => watchWorker(found.installing))
-}
-
 const registerWorker = (): void => {
   if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return
   void navigator.serviceWorker
     .register('/sw.js', { scope: '/' })
     .then((found) => {
-      registration = found
-      watchRegistration(found)
-      const checkWaiting = (): void => {
-        if (!state.updateReady && found.waiting && navigator.serviceWorker.controller) {
-          state.updateReady = true
-          emit()
-        }
+      const check = (): void => {
+        const now = Date.now()
+        if (now - checkedAt < UPDATE_CHECK_FLOOR_MS) return
+        checkedAt = now
+        void found.update().catch(() => undefined)
       }
-      checkWaiting()
-      window.setInterval(checkWaiting, 10_000)
-      window.setInterval(
-        () => {
-          void found.update().catch(() => undefined)
-        },
-        30 * 60 * 1000,
-      )
+      check()
+      window.setInterval(check, UPDATE_CHECK_MS)
+      window.addEventListener('online', check)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') check()
+      })
     })
     .catch(() => undefined)
 }
@@ -158,16 +164,19 @@ export const startPwa = (): void => {
   if (started || typeof window === 'undefined' || typeof navigator === 'undefined') return
   started = true
   state.installed = displayMode() === 'standalone'
+  state.updated = takeUpdated()
   window.addEventListener('beforeinstallprompt', onPrompt)
   window.addEventListener('appinstalled', onInstalled)
   window.addEventListener('online', onConnection)
   window.addEventListener('offline', onConnection)
-  if ('serviceWorker' in navigator)
+  if ('serviceWorker' in navigator) {
+    const controlled = navigator.serviceWorker.controller !== null
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!reloadWanted || reloaded) return
-      reloaded = true
-      window.location.reload()
+      if (!controlled) return
+      markUpdated()
+      window.setTimeout(() => window.location.reload(), UPDATE_RELOAD_MS)
     })
+  }
   registerWorker()
 }
 
@@ -197,15 +206,6 @@ export const promptInstall = async (): Promise<InstallOutcome> => {
   } finally {
     emit()
   }
-}
-
-export const requestPwaUpdate = async (): Promise<void> => {
-  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
-  const found = registration ?? (await navigator.serviceWorker.getRegistration('/'))
-  const waiting = found?.waiting
-  if (!waiting) return
-  reloadWanted = true
-  waiting.postMessage({ type: 'SKIP_WAITING' })
 }
 
 export const syncAppBadge = (unread: number): void => {

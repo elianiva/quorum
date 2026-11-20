@@ -22,12 +22,11 @@ const pwaCases = {
   PwaChanged: {
     installable: Schema.Boolean,
     installed: Schema.Boolean,
-    updateReady: Schema.Boolean,
     online: Schema.Boolean,
+    updated: Schema.Boolean,
   },
   PwaInstallChosen: {},
   PwaInstallOutcome: { outcome: Schema.Literals(['accepted', 'dismissed', 'unavailable']) },
-  PwaUpdateChosen: {},
   PwaPromptDismissed: {},
 } as const
 

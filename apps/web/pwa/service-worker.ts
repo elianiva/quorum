@@ -9,8 +9,8 @@ const CACHE = 'quorum-' + BUILD
 const SERVER = /^\/(?:api|q|mcp)(?:\/|$)/
 /* Hashed code and the art load on first use and stay for the next visit. */
 const RUNTIME = /^\/(?:assets|art)\//
-/* A static response may carry Vary: Origin, and the precache was fetched without one.
-   The shell is hashed and same-origin, so the header cannot change what it holds. */
+/* The page marks the reload as an update before the worker navigates it. */
+const UPDATE_SETTLE_MS = 500
 
 /* A redirected response cannot answer a navigation: the browser fails the load with ERR_FAILED.
    Rebuild it from its body so the cache never holds the flag. */
@@ -27,18 +27,23 @@ function clean(response) {
 
 self.addEventListener('install', function (event) {
   event.waitUntil(
-    caches.open(CACHE).then(function (cache) {
-      return Promise.all(
-        PRECACHE.map(function (path) {
-          return fetch(path).then(function (response) {
-            if (!response.ok) throw new Error('precache ' + path + ' ' + response.status)
-            return clean(response).then(function (copy) {
-              return cache.put(path, copy)
+    caches
+      .open(CACHE)
+      .then(function (cache) {
+        return Promise.all(
+          PRECACHE.map(function (path) {
+            return fetch(path, { cache: 'reload' }).then(function (response) {
+              if (!response.ok) throw new Error('precache ' + path + ' ' + response.status)
+              return clean(response).then(function (copy) {
+                return cache.put(path, copy)
+              })
             })
-          })
-        }),
-      )
-    }),
+          }),
+        )
+      })
+      .then(function () {
+        return self.skipWaiting()
+      }),
   )
 })
 
@@ -47,24 +52,36 @@ self.addEventListener('activate', function (event) {
     caches
       .keys()
       .then(function (keys) {
+        const stale = keys.filter(function (key) {
+          return key.indexOf('quorum-') === 0 && key !== CACHE
+        })
         return Promise.all(
-          keys
-            .filter(function (key) {
-              return key.indexOf('quorum-') === 0 && key !== CACHE
-            })
-            .map(function (key) {
-              return caches.delete(key)
-            }),
-        )
+          stale.map(function (key) {
+            return caches.delete(key)
+          }),
+        ).then(function () {
+          return stale.length > 0
+        })
       })
-      .then(function () {
-        return self.clients.claim()
+      .then(function (replaced) {
+        return self.clients.claim().then(function () {
+          if (!replaced) return
+          return new Promise(function (resolve) {
+            setTimeout(resolve, UPDATE_SETTLE_MS)
+          }).then(function () {
+            return self.clients.matchAll({ type: 'window' }).then(function (windows) {
+              return Promise.all(
+                windows.map(function (client) {
+                  return client.navigate(client.url).catch(function () {
+                    return null
+                  })
+                }),
+              )
+            })
+          })
+        })
       }),
   )
-})
-
-self.addEventListener('message', function (event) {
-  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting()
 })
 
 function bypass(request, url) {
@@ -74,6 +91,22 @@ function bypass(request, url) {
   return url.pathname === '/sw.js' || url.pathname === '/harness.html'
 }
 
+function refreshShell(request) {
+  return fetch(request, { cache: 'no-cache' }).then(function (response) {
+    if (!response.ok) return response
+    const copy = response.clone()
+    caches
+      .open(CACHE)
+      .then(function (cache) {
+        return clean(copy).then(function (stored) {
+          return cache.put('/', stored)
+        })
+      })
+      .catch(function () {})
+    return response
+  })
+}
+
 self.addEventListener('fetch', function (event) {
   const request = event.request
   const url = new URL(request.url)
@@ -81,12 +114,9 @@ self.addEventListener('fetch', function (event) {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      caches.match('/', { ignoreVary: true }).then(function (cached) {
-        if (cached) return cached
-        return fetch(request).catch(function () {
-          return caches.match('/', { ignoreVary: true }).then(function (shell) {
-            return shell || Response.error()
-          })
+      refreshShell(request).catch(function () {
+        return caches.match('/', { ignoreVary: true }).then(function (shell) {
+          return shell || Response.error()
         })
       }),
     )
@@ -99,9 +129,12 @@ self.addEventListener('fetch', function (event) {
       return fetch(request).then(function (response) {
         if (response.ok && RUNTIME.test(url.pathname)) {
           const copy = response.clone()
-          caches.open(CACHE).then(function (cache) {
-            return cache.put(request, copy)
-          })
+          caches
+            .open(CACHE)
+            .then(function (cache) {
+              return cache.put(request, copy)
+            })
+            .catch(function () {})
         }
         return response
       })

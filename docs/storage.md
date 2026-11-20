@@ -26,6 +26,8 @@ files.
 | `quorum.save.broken.v1` | The last Company file this build could not read           | Nothing; a support copy       | Replaced by a failure, cleared by an import |
 
 `quorum.room.seat` lives in `sessionStorage`: it names this tab's Seat and dies with the tab.
+`quorum.pwa.updated` lives there too: it marks the reload after a deploy, so the game can say that
+it updated.
 
 The keys above are the only localStorage keys Quorum writes. `quorum.save.v1` and `quorum.save.v2` were the pre-public single saves. `sweepLegacyStorage` removes them on boot. `PruneSaves` removes Company files and Agent Room records that the index does not name, so a failed index write or a deleted Company cannot leak storage.
 

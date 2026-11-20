@@ -121,7 +121,10 @@ import type {
   Zone,
   Region,
   DbEngine,
+  IopsClass,
 } from './state.ts'
+import { EMPTY_PARTS, FULL_PARTS } from './state.ts'
+import { cpuPartPrice, diskPartPrice, ramPartPrice, provisioned } from './parts.ts'
 
 export { Refusal, describeRefusal, type Action } from './action-kit.ts'
 export { setProvider, switchProvider } from './components/psp.rule.ts'
@@ -202,6 +205,7 @@ export const blankNode = (
     y: Math.round(y),
     size: 1,
     family: 'general',
+    parts: { ...FULL_PARTS },
     runtime: stack?.runtime ?? 'mod_php',
     framework: stack?.framework ?? 'none',
     workers: stack?.workers ?? DEFAULT_FPM_WORKERS,
@@ -326,10 +330,14 @@ export const place = (
   if (banned) return notAllowed(banned)
   if (!openRegions(game).includes(region)) return notAllowed('Open that region first.')
   const node = blankNode(game, `n${game.nextId}`, type, x, y, region)
+  const parts =
+    (type === 'server' || type === 'database') && !game.fixedMix
+      ? { ...EMPTY_PARTS }
+      : { ...FULL_PARTS }
   return spend(game, priceOf(game, type), def.name, (paid) => ({
     ...paid,
     nextId: paid.nextId + 1,
-    nodes: [...paid.nodes, { ...node, life: placedLife(paid, node) }],
+    nodes: [...paid.nodes, { ...node, parts, life: placedLife(paid, node) }],
   }))
 }
 
@@ -605,6 +613,8 @@ export const resize = (game: Game, id: string, direction: 1 | -1): Action =>
   withNode(game, id, (node) => {
     const def = COMPONENTS[node.type]
     const lowest = def.sized ? 0 : 1
+    if (def.sized && !provisioned(node))
+      return notAllowed('Install the missing parts before changing the size.')
     const rebalances = !game.sandbox && REBALANCE_TYPES.includes(node.type) && !isDown(node)
     if (direction === -1) {
       if (node.size <= lowest) return notAllowed(`${def.name} is at its smallest size.`)
@@ -707,6 +717,61 @@ export const setFamily = (game: Game, id: string, family: FamilyId): Action =>
       }),
       devHours: game.devHours - port,
     })
+  })
+
+const partNode = (node: GameNode): boolean => node.type === 'server' || node.type === 'database'
+
+export const installCpu = (game: Game, id: string, size: number): Action =>
+  withNode(game, id, (node) => {
+    if (!partNode(node)) return notAllowed('Only an App Server or Database takes parts.')
+    if (!Number.isInteger(size) || size < 0 || size >= SIZES.length)
+      return notAllowed('That CPU does not exist.')
+    if (node.parts.cpu && node.size === size) return ok(game)
+    const price = game.sandbox ? 0 : cpuPartPrice(game, node, size)
+    return spend(game, price, `${SIZES[size]?.name ?? 'CPU'} CPU`, (paid) =>
+      patch(paid, id, {
+        size,
+        parts: { ...node.parts, cpu: true },
+        ...restarted(node),
+      }),
+    )
+  })
+
+export const installRam = (game: Game, id: string, family: FamilyId): Action =>
+  withNode(game, id, (node) => {
+    if (!partNode(node)) return notAllowed('Only an App Server or Database takes parts.')
+    if (!node.parts.cpu) return notAllowed('Install a CPU before a memory kit.')
+    if (family === 'arm' && !has(game, 'arm-instances'))
+      return no(
+        Refusal.Locked({ what: FAMILIES.arm.name, research: RESEARCH['arm-instances'].name }),
+      )
+    if (node.parts.ram && node.family === family) return ok(game)
+    const price = game.sandbox ? 0 : ramPartPrice(game, family)
+    return spend(game, price, `${FAMILIES[family].name} memory kit`, (paid) =>
+      patch(paid, id, {
+        family,
+        parts: { ...node.parts, ram: true },
+        ...restarted(node),
+        credits: family === 'burstable' ? (CREDIT_CAP * vcpuOf(node)) / 2 : 0,
+      }),
+    )
+  })
+
+export const installDisk = (game: Game, id: string, iops: IopsClass): Action =>
+  withNode(game, id, (node) => {
+    if (node.type !== 'database') return notAllowed('Only a Database has a volume slot.')
+    if (node.parts.disk && node.iops === iops) return ok(game)
+    const price = game.sandbox ? 0 : diskPartPrice(game, iops)
+    return spend(
+      game,
+      price,
+      iops === 'provisioned' ? 'Provisioned IOPS' : 'General purpose',
+      (paid) =>
+        patch(paid, id, {
+          iops,
+          parts: { ...node.parts, disk: true },
+        }),
+    )
   })
 
 const defaultWorkers = (node: GameNode, runtime: RuntimeId): number =>

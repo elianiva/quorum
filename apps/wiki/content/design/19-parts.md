@@ -1,0 +1,58 @@
+---
+title: 19. Parts
+summary: The CPU, memory, and disk Parts that fill a Node's Slots, and the Parts shop that sells them.
+section: design
+order: 19
+---
+
+An [App Server](/design/05-components#app-server) and a [Database](/design/07-data-tier#relational-database) have three **Slots**: CPU, Memory, and Disk. A **Part** fills one Slot, and the card draws it as a cartridge with two screws. Outside the guided Sandboxes, a new App Server or Database is placed with empty Slots. The **Parts shop** is a popup that sells a Part for one Slot, so the player can build a Node component by component instead of buying a predetermined instance type.
+
+The design borrows two shapes. A Factorio machine has slots that accept modules, and a rack server has separate CPU, DIMM, and drive bays. The game keeps the slot and the separate purchase, and it leaves out real compatibility. Any CPU Part fits any Slot, and any memory kit fits any CPU.
+
+Starter Nodes come with their Parts already installed, and the guided Sandboxes place equipped Nodes, so their exercises keep running. A Node placed outside a guided Sandbox begins empty and stays inert until its CPU and Memory are installed. A Database also needs its Disk.
+
+## The three Parts
+
+| Slot   | Part     | What it sets                                            | Sold as                                                 |
+| ------ | -------- | ------------------------------------------------------- | ------------------------------------------------------- |
+| CPU    | A size   | vCPU, network, and the CPU share of Burn                | Nine sizes, from `nano` to `metal`                      |
+| Memory | A kit    | GB per vCPU, and the family multiplier on the CPU price | Five kits: Burstable, General, Compute, Memory, and ARM |
+| Disk   | A volume | The IOPS class of a Database                            | General purpose or Provisioned IOPS                     |
+
+The CPU Part carries the size. A size step doubles vCPU, doubles the network limit, and doubles the CPU share of Burn. The first size is `nano` at 0.5 vCPU. `metal` is 96 vCPU, and its last step is 1.5× rather than a double. A CPU swap restarts the Node.
+
+The memory kit carries the family. It does not carry a fixed GB number. The kit says GB per vCPU, so a General kit gives 8 GB at 2 vCPU and 16 GB at 4 vCPU. The family multiplier scales the CPU price: Burstable 0.4×, Compute 0.85×, General 1×, Memory 1.3×, ARM 0.8×. The family model becomes a Part. A kit swap restarts the Node, and ARM needs research `arm-instances`. The RAM Slot stays empty until a CPU is installed, because the kit has no capacity without one.
+
+The volume kit exists only on a Database. General purpose gives 3,000 IOPS at 1× the box. Provisioned IOPS gives 64,000 at 1.5×. The App Server has a Disk Slot with no Part for sale, because swap has no IOPS choice in the model. The empty Slot stays visible so the card does not pretend the server has no disk.
+
+## The card
+
+The card has a light faceplate, a tinted header, engraved row separators, and a dark footer key. The three Slots sit in a strip under the rows, each one a 58 px cartridge in a recessed well. The Part body takes a muted tint of its group color, the label sits at the top, and the value is centered. Two small screws hold the cartridge in place. An empty Slot shows a plus and a dashed edge.
+
+A click on a Slot opens the Parts shop on that Slot. A Node with a missing Part also gets an **Install parts** footer, and its Inspector has one **Open parts shop** button. The rest of the Inspector stays about the Node, not the shop.
+
+The tint follows the Slot's limiting resource. A Slot's outline turns amber at 70% utilization and red at 90%, so a saturated RAM Part is visible without opening the Inspector. The Part body uses `mix(hue, colors.muted, 0.35)`, which keeps the Part from outshining the card around it. A Database shows `3k` or `64k` on its Disk Part, and an App Server shows the empty Disk Slot.
+
+## The shop
+
+The Parts shop is a modal with one tab per Slot. It opens from a Slot, the footer, or the Inspector. The header names the Node and the Slot, and shows the installed Part or **Empty slot**.
+
+- **CPU** shows nine cards from `0.5c` to `96c`. Each names the size, vCPU, network, and price. Installing a larger CPU restarts the Node.
+- **Memory** shows five kit cards. Each names the kit, GB per vCPU, the GB it gives this CPU, its Burn multiplier, and its price. The cards are disabled until a CPU is installed.
+- **Disk** shows the two volume classes on a Database. Each names its IOPS, Burn multiplier, and price. An App Server says that swap Parts are not sold.
+
+Each card has one **Install** button. The installed card gets a check and cannot be bought again. A purchase changes the Node in place, and Undo puts the old Part back with the rest of the Node's state. The shop does not keep an inventory of owned Parts.
+
+The shop prices are one-time, then the Part's Burn follows from its installed value. A CPU costs `2 × component cost × vCPU × era cost index × market`. A memory kit costs `40 × family multiplier × era cost index × market`. A volume costs `24` for general purpose or `72` for provisioned IOPS, times the era index and market. The CPU card's price is for that Part; the footer's resize still charges the next size step.
+
+## The weekly market
+
+Part prices move on a seven-calendar-day cycle. A market multiplier swings between 0.85× and 1.15×, and CPU, Memory, and Disk each have their own phase, so the shelves do not all rise together. The shop shows the multiplier as a signed percentage and an arrow, and the week strip marks today. The prices on the cards use the market at the current game time.
+
+In a Sandbox the cards show the market price as a reference and the install is free. The shop says **Free in Sandbox** so the price is not mistaken for a bill.
+
+## Where it stops
+
+A real server lets an engineer keep a Part after removing it, pair a 4 vCPU CPU with 24 GB of RAM, and move a kit between Nodes. The game does not model a parts bin. The memory kit is a ratio, so the RAM moves with the CPU, and the solver reads one family instead of a list of DIMMs. A parts bin and arbitrary vCPU/RAM pairs need a module list in the Game state and a solver ABI that takes that list. The card and the shop would read the same list, so their shape would not change.
+
+The shop uses the existing `size`, `family`, and `iops` fields plus the `parts` flags that say whether each Slot is filled. A new Part is a catalog row and a solver that understands it. The three Slots are the place to add it.

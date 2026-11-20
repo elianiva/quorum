@@ -10,6 +10,8 @@ El Servidor de aplicaciones representa a una máquina virtual que ejecuta tu có
 
 Responde él mismo las vistas de página y los bots, y convierte todos los demás tipos de petición en llamadas al backend: consultas de lectura y escritura, llamadas de autenticación, tareas, cobros y más. Su capacidad depende de su tipo de instancia, su [runtime y su framework](/runtimes). Lo fija el más ajustado de cuatro límites: CPU, slots de worker, memoria y red.
 
+La CPU y la memoria son **Piezas**. La tienda de piezas del Inspector vende una CPU más grande o un kit de memoria distinto, y la tarjeta muestra el par instalado. Una [Base de datos](/components/database) también tiene una ranura de disco para su volumen.
+
 Una petición retiene su slot de worker mientras espera cada llamada al backend. Así que una Base de datos lenta también reduce la capacidad de los runtimes que retienen un worker mientras esperan. Es la [ley de Little](/glossary/littles-law).
 
 La máquina del Garaje ejecuta Postgres en el mismo equipo. Cuando la enlazas con una [Base de datos](/components/database), un [Pooler de conexiones](/components/pooler) o una [Caché](/components/cache), Postgres sale de la máquina para siempre. Una máquina Burstable gana créditos de CPU mientras está ociosa y se limita cuando se agotan.

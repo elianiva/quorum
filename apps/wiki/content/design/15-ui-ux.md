@@ -152,7 +152,8 @@ The 26-Node bot board lands at 2376×1103 with 9 backward links. A column taller
 
 ## Node cards
 
-Each card is a small window, like Upload Labs. The card is the main information surface.
+Each card is a small window, like Upload Labs, with a light faceplate, a tinted header, and a dark
+footer key. The card is the main information surface.
 
 ```text
 ┌─ APP · PHP-FPM · Laravel ─────── L3 ┐
@@ -161,9 +162,18 @@ Each card is a small window, like Upload Labs. The card is the main information 
 │ Limit       workers 20/20            │   ← after research `profiling`
 │ Latency     38 ms   p99 210 ms       │   ← p99 after research `percentiles`
 │ Out         900/s                    │
-│ [Upgrade $1.2k]                      │
+│ [ ↑ medium ]                         │
+│ [CPU 2c] [RAM 8g] [DISK +]          │
 └──────────────────────────────────────┘
 ```
+
+Rows use engraved separators, and the footer is a dark key against the light faceplate. The three
+chips under the footer are **Slots**. CPU, Memory, and Disk hold **Parts**, and an empty Slot shows a
+plus. Each Slot is a screwed cartridge in a recessed well. A Slot's outline
+turns amber at 70% of its limit and red at 90%, so a saturated Part is visible without the Inspector.
+Outside the guided Sandboxes, a new Node starts with empty Slots and an **Install parts** footer; a starter Node comes equipped.
+Click a Slot, the footer, or the Inspector's **Open parts shop** button to open the **Parts shop**
+popup ([Parts](/design/19-parts)).
 
 With research `profiling`, the card carries the `Limit` row. The gauges that explain the limit live in
 the Inspector. A goal bar names the tightest limit, and a bar follows for every limit the Ledger can
@@ -262,7 +272,7 @@ Rule: no action needs more than five repeated clicks without a bulk alternative.
 
 | Panel     | Opens with   | Contents                                                                                                                             |
 | --------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Inspector | Click a Node | All numbers for the Node, its options, its history, and its Tradeoff cards                                                           |
+| Inspector | Click a Node | All numbers for the Node, its Parts, options, history, and Tradeoff cards                                                            |
 | Research  | `R`          | The tree by track, the Insight bottleneck, and its lever ([Research screen](#research-screen))                                       |
 | Dashboard | `D`          | Charts over time, with its template variables, compare line and table view ([Observability](/design/12-observability#the-dashboard)) |
 | Team      | `T`          | Teams, engineers, the Services and the split, the backlog, policies, DORA metrics, and the levers its Features own                   |

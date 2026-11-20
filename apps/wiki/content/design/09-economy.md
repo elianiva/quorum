@@ -103,6 +103,14 @@ arrives. The Cost panel shows each one on purpose.
 | Object storage write              | S3 $0.006, R2 $0.0054 per write: $5.00 and $4.50 per million × 1,200                                                                   |
 | Engineer salary (base)            | $0.40/s                                                                                                                                |
 
+The Parts shop sells the parts behind these lines. Each Part has a one-time price, then its Burn
+follows the installed value. The CPU's Burn stays the vCPU line, and its one-time price is
+`2 × component cost × vCPU`. A memory kit is `40 × its family multiplier`. A volume is `24` for
+general purpose or `72` for provisioned IOPS. The Era cost index applies to all three, and a weekly
+market multiplier from 0.85 to 1.15 moves each Slot on its own phase. A CPU or memory swap restarts
+the Node. A volume swap changes the IOPS cap and the Burn. Buying a Part separately changes one line,
+not the whole box ([Parts](/design/19-parts)).
+
 These are Garage prices. Every price in this document, including placement, Burn, egress, and
 third-party fees, is multiplied by the Era's cost index, except the Payment Provider's fee, the Auth
 Provider's per-user price, and the API Gateway's per-request price. Those three are real-dollar fees

@@ -31,10 +31,6 @@ import {
   WIDE_REBALANCE_MINUTES_PER_GB,
   DOC_REBALANCE_MINUTES_PER_GB,
   LOG_REPLICATE_MINUTES_PER_GB,
-  SCALE_COOLDOWN_SECONDS,
-  SCALE_QUEUE_DEPTH,
-  SCALE_RPS_PER_VCPU,
-  SCALE_IN,
   STEADY_CHURN,
   UPLOAD_MB,
   WRITE_BEHIND_SECONDS,
@@ -44,7 +40,6 @@ import {
   TLS_TERMINATORS,
   DRAIN_SECONDS,
   WARMUP_SECONDS,
-  SCHEDULE_LEAD_MINUTES,
   CHAOS_INSIGHT,
   DRILL_INSIGHT,
   LOAD_TEST_INSIGHT,
@@ -72,7 +67,7 @@ import {
   isFeatureLive,
   leverGrowthFactor,
 } from './features.ts'
-import { growthPerk, ventureOf } from './founding.ts'
+import { growthPerk } from './founding.ts'
 import type { Ledger } from './ledger.ts'
 import {
   certExpired,
@@ -94,10 +89,10 @@ import {
 import { causeOf, warming, warmOf, withWarm } from './life.ts'
 import { isOpen, step as breakerStep } from './breaker-machine.ts'
 import { step as scalerStep } from './autoscaler-machine.ts'
+import { autoscalerFor, scaleStateOf } from './scaling.ts'
 import { canRaise } from './actions.ts'
 import { isDraining, step as serviceStep } from './node-service-machine.ts'
 import { burnRateOf, recordBudget, slaCreditsOf, spendBudget } from './slo.ts'
-import { cosTurns } from './calendar.ts'
 import { calendarMinute, carryLedger, chaosRunning, solveFlow } from './solve.ts'
 import { advanceDrill } from './ipo.ts'
 import { advanceQuarter, QUARTER_SECONDS } from './quarters.ts'
@@ -315,50 +310,6 @@ const warmupOf = (game: Game, node: GameNode): number =>
               ? Math.max(WARMUP_SECONDS, game.data * LOG_REPLICATE_MINUTES_PER_GB)
               : WARMUP_SECONDS
 
-const autoscalers = new WeakMap<Game, ReadonlyMap<string, GameNode>>()
-
-const autoscalerOf = (game: Game, node: GameNode): GameNode | undefined => {
-  if (node.type !== 'server' && node.type !== 'worker') return undefined
-  let scaled = autoscalers.get(game)
-  if (scaled === undefined) {
-    const byId = new Map(game.nodes.map((entry) => [entry.id, entry]))
-    const found = new Map<string, GameNode>()
-    for (const link of game.links) {
-      const target = byId.get(link.to)
-      if (target?.type === 'autoscaler' && !isDown(target) && !found.has(link.from))
-        found.set(link.from, target)
-    }
-    scaled = found
-    autoscalers.set(game, scaled)
-  }
-  return scaled.get(node.id)
-}
-
-const scaleLoadOf = (
-  game: Game,
-  node: GameNode,
-  own: NonNullable<Ledger['nodes'][string]>,
-  signal: GameNode['signal'],
-): number => {
-  const copies = Math.max(1, node.replicas)
-  if (signal === 'rps')
-    return own.inbound / (copies * Math.max(1, vcpuOf(node)) * SCALE_RPS_PER_VCPU)
-  if (signal === 'queue') {
-    let waiting = 0
-    for (const link of game.links) {
-      if (link.to !== node.id) continue
-      const from = game.nodes.find((entry) => entry.id === link.from)
-      if (from?.type === 'queue') waiting += from.depth
-    }
-    return waiting / (copies * SCALE_QUEUE_DEPTH)
-  }
-  if (signal === 'cpu') {
-    const cpu = own.resources.cpuCores
-    return cpu && cpu.total > 0 ? cpu.used / cpu.total : 0
-  }
-  return own.utilization
-}
-
 const scale = (game: Game, node: GameNode, ledger: Ledger, seconds: number): GameNode => {
   if (node.scaler._tag === 'Scaling') {
     const readyIn = node.scaler.readyIn - seconds
@@ -371,50 +322,21 @@ const scale = (game: Game, node: GameNode, ledger: Ledger, seconds: number): Gam
       life: withWarm(node.life, (warmOf(node.life) * node.replicas) / replicas),
     }
   }
-  const scaler = autoscalerOf(game, node)
-  if (!scaler || isDown(node) || game.time - node.scaledAt < SCALE_COOLDOWN_SECONDS) return node
-  const own = ledger.nodes[node.id]
-  if (!own) return node
-  const load = scaleLoadOf(game, node, own, scaler.signal)
-  const planned = scaler.schedule && has(game, 'scheduled-scaling') ? peakLoadOf(game, load) : load
-  const most = scaler.maxCopies > 0 ? scaler.maxCopies : Number.POSITIVE_INFINITY
-  const wanted =
-    game.incident?.kind === 'runaway-bill'
-      ? Math.max(node.replicas, most === Number.POSITIVE_INFINITY ? 16 : most)
-      : Math.min(
-          most,
-          Math.max(
-            scaler.minCopies,
-            Math.ceil((node.replicas * Math.max(load, planned)) / scaler.target),
-          ),
-        )
-  if (wanted > node.replicas)
+  const scaler = autoscalerFor(game, node)
+  if (!scaler || isDown(node)) return node
+  const state = scaleStateOf(game, ledger, node, scaler)
+  if (state.cooldown > 0 || state.phase === 'paused' || state.phase === 'steady') return node
+  if (state.phase === 'up')
     return {
       ...node,
       scaler: {
         _tag: 'Scaling',
-        pending: wanted - node.replicas,
+        pending: state.wanted - node.replicas,
         readyIn: inCluster(game, node) ? POD_REACTION_SECONDS : VM_REACTION_SECONDS,
       },
       scaledAt: game.time,
     }
-  if (
-    node.replicas > scaler.minCopies &&
-    load < scaler.target * SCALE_IN &&
-    (load * node.replicas) / (node.replicas - 1) < scaler.target
-  )
-    return { ...node, replicas: node.replicas - 1, scaledAt: game.time }
-  return node
-}
-
-export const peakLoadOf = (game: Game, load: number): number => {
-  const venture = ventureOf(game)
-  const minute = calendarMinute(game.time) % 1440
-  const peak = venture.peak * 60
-  const ahead = (((peak - minute) % 1440) + 1440) % 1440
-  if (ahead > SCHEDULE_LEAD_MINUTES) return load
-  const now = 1 + venture.amplitude * cosTurns((minute - peak) / 1440)
-  return now > 0 ? (load * (1 + venture.amplitude)) / now : load
+  return { ...node, replicas: node.replicas - 1, scaledAt: game.time }
 }
 
 const advanceNode = (

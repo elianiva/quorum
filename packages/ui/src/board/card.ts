@@ -131,8 +131,12 @@ export const sizePips = (node: GameNode): Readonly<{ filled: number; total: numb
 }
 
 export const levelOf = (game: Game, node: GameNode, region: Region | null = null): string => {
-  const copies =
-    `${node.replicas > 1 ? `×${node.replicas}` : ''}${bootingOf(node) > 0 ? ` +${bootingOf(node)}` : ''}`.trim()
+  const booting = bootingOf(node)
+  const copies = `${node.replicas > 1 ? `×${node.replicas}` : ''}${
+    booting > 0
+      ? ` +${booting}${node.scaler._tag === 'Scaling' ? ` · ${Math.ceil(node.scaler.readyIn)} s` : ''}`
+      : ''
+  }`.trim()
   const standby = ZONES[(ZONES.indexOf(node.zone) + 1) % ZONES.length] ?? ''
   const zone =
     has(game, 'multi-az') && zoned(node)

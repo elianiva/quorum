@@ -42,6 +42,7 @@ import { RUNWAY_MONTH, runwayOf } from '@quorum/simulation/runway'
 import { budgetOf, burnRateOf, slaCreditsOf } from '@quorum/simulation/slo'
 import type { Game, Postmortem, Sample } from '@quorum/simulation/state'
 import { ignored } from '@quorum/simulation/step'
+import { autoscalerViewOf } from '@quorum/simulation/scaling'
 import { teamOutputs } from '@quorum/simulation/team'
 import {
   type Field,
@@ -54,6 +55,7 @@ import {
 import { isPhone } from '@/game/viewport.ts'
 import { compact, money, rate as rateText } from '@quorum/ui/game/format'
 import { Message } from '@/game/message.ts'
+import { nextOf, readingOf } from '@/game/scaling.ts'
 import {
   ANNOTATION_GROUPS,
   type AnnotationGroup,
@@ -4583,6 +4585,58 @@ const appServers = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message
   )
 }
 
+const autoscaling = (game: Game, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
+  const t = copy(h)
+
+  const titleOf = (id: string): string => {
+    const node = game.nodes.find((entry) => entry.id === id)
+    return node === undefined ? id : nodeTitle(t, game, node)
+  }
+  const scalers = game.nodes.filter((node) => node.type === 'autoscaler')
+  return tablePanel(
+    'autoscaling',
+    SPAN.half,
+    t.dashboard.autoscaling,
+    t.dashboard.autoscalingHint,
+    [t.dashboard.node, t.dashboard.signal, t.dashboard.copies, t.dashboard.next],
+    scalers.flatMap((scaler) => {
+      const view = autoscalerViewOf(game, ledger, scaler)
+      if (view.members.length === 0)
+        return [
+          {
+            key: scaler.id,
+            cells: [
+              { text: titleOf(scaler.id) },
+              { text: '—' },
+              { text: '—' },
+              { text: t.inspectorAutoscaler.linkAHint },
+            ],
+          },
+        ]
+      return view.members.map((member) => ({
+        key: `${scaler.id}-${member.nodeId}`,
+        cells: [
+          {
+            text:
+              scalers.length > 1
+                ? `${titleOf(scaler.id)} → ${titleOf(member.nodeId)}`
+                : titleOf(member.nodeId),
+          },
+          { text: readingOf(t, member) },
+          {
+            text:
+              member.booting > 0
+                ? t.dashboard.copiesBooting(member.copies, member.booting)
+                : String(member.copies),
+          },
+          { text: view.active ? nextOf(t, member) : t.inspectorAutoscaler.paused },
+        ],
+      }))
+    }),
+    h,
+  )
+}
+
 const databases = (nodes: Game['nodes'], ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -5390,6 +5444,7 @@ export const dashboardPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const nodePanels: ReadonlyArray<Html> = [
     ...(hasNode('lb') ? [lazyPanel('load-balancer', loadBalancer, [game.nodes, ledger, h])] : []),
     ...(hasNode('server') ? [lazyPanel('app-server', appServers, [game.nodes, ledger, h])] : []),
+    ...(hasNode('autoscaler') ? [lazyPanel('autoscaling', autoscaling, [game, ledger, h])] : []),
     ...(hasNode('database') || hasNode('replica')
       ? [lazyPanel('databases', databases, [game.nodes, ledger, h])]
       : []),

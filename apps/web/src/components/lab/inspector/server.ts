@@ -6,6 +6,7 @@ import { has } from '@quorum/simulation/lookups'
 import type { Game, GameNode } from '@quorum/simulation/state'
 import { Message } from '@/game/message.ts'
 import { type Panel, picker, pinnedRuntime, section, serviceOwnership, stack } from './shared.ts'
+import { scaledNodeSections } from './scaling.ts'
 
 const fanout = (node: GameNode, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
@@ -116,7 +117,8 @@ const routing = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyA
 }
 
 export const serverPanel: Panel = {
-  body: ({ model, game, node, h }) => [
+  body: ({ model, game, node, ledger, h }) => [
+    ...scaledNodeSections(game, ledger, node, h),
     ...stack(model, node, h, pinnedRuntime(model, node)),
     ...serviceOwnership(game, node, h),
     ...collector(game, node, h),

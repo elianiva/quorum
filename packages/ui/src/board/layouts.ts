@@ -25,7 +25,7 @@ export const LAYOUTS: Record<ComponentId, Layout> = {
   gw: { rows: 4, inRow: 0, outRow: 3, footer: false },
   ws: { rows: 4, inRow: 0, outRow: null, footer: true },
   psp: { rows: 3, inRow: 0, outRow: null, footer: true },
-  autoscaler: { rows: 3, inRow: 0, outRow: null, footer: false },
+  autoscaler: { rows: 5, inRow: 0, outRow: null, footer: false },
   ci: { rows: 3, inRow: null, outRow: null, footer: false },
   cluster: { rows: 3, inRow: 0, outRow: null, footer: false },
   warehouse: { rows: 3, inRow: 0, outRow: null, footer: false },

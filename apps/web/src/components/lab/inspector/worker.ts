@@ -4,6 +4,7 @@ import { PREFETCH } from '@quorum/simulation/catalog'
 import type { GameNode } from '@quorum/simulation/state'
 import { Message } from '@/game/message.ts'
 import { type Panel, picker, pinnedRuntime, section, serviceOwnership, stack } from './shared.ts'
+import { scaledNodeSections } from './scaling.ts'
 
 const prefetching = (node: GameNode, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
@@ -23,7 +24,8 @@ const prefetching = (node: GameNode, h: HtmlBuilder<Message>): Html => {
 }
 
 export const workerPanel: Panel = {
-  body: ({ model, game, node, h }) => [
+  body: ({ model, game, node, ledger, h }) => [
+    ...scaledNodeSections(game, ledger, node, h),
     ...stack(model, node, h, pinnedRuntime(model, node)),
     ...serviceOwnership(game, node, h),
     prefetching(node, h),

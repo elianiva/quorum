@@ -100,6 +100,7 @@ import {
 } from '@quorum/ui/game/bits'
 import {
   sizeLabelIn,
+  callout,
   caption,
   choice,
   nodeLink,
@@ -192,48 +193,6 @@ const gauge = (
     ],
   )
 }
-
-const callout = (
-  text: string,
-  tone: 'danger' | 'warn',
-  action: Html | null,
-  h: HtmlBuilder<Message>,
-  className = '',
-) =>
-  h.div(
-    [
-      h.Key(text),
-      h.Class(
-        cx(
-          css({
-            marginInline: '4',
-            marginBottom: '3',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '2',
-            borderRadius: 'xl',
-            paddingInline: '3',
-            paddingBlock: '2.5',
-            fontSize: 'type.12',
-            lineHeight: 'snug',
-          }),
-          tone === 'danger'
-            ? css({
-                backgroundColor: 'color-mix(in oklab, var(--danger) 8%, transparent)',
-                color: 'danger',
-                boxShadow: 'dangerLineInset',
-              })
-            : css({
-                backgroundColor: 'color-mix(in oklab, var(--warn) 10%, transparent)',
-                color: 'warn',
-                boxShadow: 'warnLine',
-              }),
-          className,
-        ),
-      ),
-    ],
-    [h.span([], [text]), ...(action ? [action] : [])],
-  )
 
 const warnings = (
   game: Game,
@@ -2225,7 +2184,7 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
         ],
         [def.blurb],
       ),
-      ...trafficMeters(game, node, ledger, h),
+      ...(def.control ? [] : trafficMeters(game, node, ledger, h)),
       ...warnings(game, node, ledger, h),
       h.div(
         [

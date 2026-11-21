@@ -144,7 +144,9 @@ fn prepare(design: &Design, inputs: &Inputs) -> Result<Prepared, i32> {
     let mut first_vec = vec![NO_NODE; nodes.len()];
     for edge in &design.edges {
         let (from, to) = (edge.from as usize, edge.to as usize);
-        if nodes[from].type_code == component::LB && nodes[from].sticky {
+        if nodes[from].type_code == component::LB
+            && (nodes[from].sticky || nodes[from].policy == crate::routing::LB_HASH as usize)
+        {
             nodes[to].pinned = true;
         }
         if nodes[to].type_code == component::VEC && !nodes[to].down {

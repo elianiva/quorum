@@ -10,7 +10,7 @@ const LB_WEIGHTED: u8 = 0;
 const LB_ROUND_ROBIN: u8 = 1;
 const LB_LEAST_CONNECTIONS: u8 = 2;
 const LB_POWER_OF_TWO_CHOICES: u8 = 3;
-const LB_HASH: u8 = 4;
+pub const LB_HASH: u8 = 4;
 
 const WEIGHT_FLOOR: f64 = 1e-6;
 const WEIGHT_WHEN_NOT_FINITE: f64 = 1e9;

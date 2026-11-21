@@ -350,7 +350,7 @@ describe('Database load', () => {
 })
 
 describe('Load Balancer policies', () => {
-  const balanced = (policy: GameNode['policy']): ReadonlyArray<number> => {
+  const balanced = (policy: GameNode['policy']) => {
     let game = freeSandbox()
     const lb = ok(Actions.place(game, 'lb', 300, 280))
     const lbId = lb.nodes.at(-1)!.id
@@ -373,15 +373,23 @@ describe('Load Balancer policies', () => {
       ),
     }
     const ledger = solveFlow(game)
-    return [ledger.nodes.server!.inbound, ledger.nodes[secondId]!.inbound]
+    return {
+      split: [ledger.nodes.server!.inbound, ledger.nodes[secondId]!.inbound],
+      reads: ledger.nodes.database!.traffic['q-read']!,
+    }
   }
-  const share = ([first, second]: ReadonlyArray<number>) => first! / (first! + second!)
+  const share = ({ split: [first, second] }: ReturnType<typeof balanced>) =>
+    first! / (first! + second!)
 
   test('two choices and consistent hash route differently from weighted once researched', () => {
     const weighted = share(balanced('weighted'))
     expect(share(balanced('hash'))).toBeCloseTo(0.5, 6)
     expect(share(balanced('p2c'))).toBeGreaterThan(0.5)
     expect(share(balanced('p2c'))).toBeLessThan(weighted)
+  })
+
+  test('consistent hash keeps each key on one server, so the Database gets fewer reads', () => {
+    expect(balanced('hash').reads).toBeLessThan(balanced('round-robin').reads * 0.9)
   })
 })
 

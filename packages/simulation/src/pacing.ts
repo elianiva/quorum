@@ -31,6 +31,9 @@ import {
   setStandby,
   setStorageIops,
   setUnderAttack,
+  setParanoia,
+  setRyw,
+  setSync,
   setZone,
   setWorkers,
   study,
@@ -67,6 +70,7 @@ import type { Ledger } from './ledger.ts'
 import { has, isDown, maxSize, ramOf, researchReady, securityStaffed } from './lookups.ts'
 import { CACHE_HIT_LOW } from './rule-kit.ts'
 import { isBuilt } from './features.ts'
+import { churnOf, type ChurnRow } from './churn.ts'
 import { currentStudy, studyCount, studyOf } from './study-machine.ts'
 import { recipeOf, shapeHolds } from './studies.ts'
 import {
@@ -676,6 +680,106 @@ const seriesCBuild = (game: Game, ledger: Ledger): Game => {
   return next
 }
 
+const MIN_ROW_POINTS = 0.005
+
+const worstRows = (game: Game, ledger: Ledger): ReadonlyArray<ChurnRow> =>
+  churnOf(game, ledger)
+    .flatMap((region) => region.rows)
+    .filter((row) => row.points >= MIN_ROW_POINTS)
+    .toSorted((a, b) => b.points - a.points)
+    .slice(0, 3)
+
+const needsOf = (rows: ReadonlyArray<ChurnRow>): ReadonlyArray<ResearchId> =>
+  rows.flatMap((row): ReadonlyArray<ResearchId> => {
+    if (row.cause === 'stale') return ['ryw-routing', 'sync-replication']
+    if (row.cause === 'refused')
+      return row.kind === 'rt'
+        ? ['lang-node', 'node-cluster', 'lang-go']
+        : ['pooling', 'websockets']
+    if (row.cause === 'stranded' && row.kind === 'report') return ['data-warehouse']
+    return []
+  })
+
+const strandedLinks = (game: Game, ledger: Ledger): Game => {
+  let next = game
+  for (const server of servers(game)) {
+    for (const kind of ledger.nodes[server.id]?.strandedKinds ?? []) {
+      const taker = next.nodes.find(
+        (node) =>
+          !isDown(node) &&
+          node.id !== server.id &&
+          COMPONENTS[node.type].accepts.includes(kind) &&
+          (node.type !== 'database' || !next.nodes.some((entry) => entry.type === 'pooler')),
+      )
+      if (taker && !next.links.some((link) => link.from === server.id && link.to === taker.id))
+        next = tried(next, connect(next, server.id, taker.id))
+    }
+  }
+  return next
+}
+
+const remedy = (game: Game, ledger: Ledger, row: ChurnRow, strategy: Strategy): Game => {
+  let next = game
+  if (row.cause === 'stale') {
+    for (const server of servers(next).filter((entry) => !entry.ryw))
+      next = tried(next, setRyw(next, server.id, true))
+    for (const replica of next.nodes.filter((node) => node.type === 'replica' && !node.sync))
+      next = tried(next, setSync(next, replica.id, true))
+    return next
+  }
+  if (row.cause === 'stranded') return strandedLinks(next, ledger)
+  if (row.cause === 'blocked') {
+    for (const waf of next.nodes.filter((node) => node.type === 'waf' && node.paranoia > 1))
+      next = tried(next, setParanoia(next, waf.id, waf.paranoia - 1))
+    return next
+  }
+  if (row.cause === 'refused' && row.kind === 'rt') {
+    const first = servers(next)[0]
+    const target = has(next, 'lang-go') ? 'go' : has(next, 'node-cluster') ? 'node_cluster' : null
+    if (
+      first &&
+      target &&
+      RUNTIMES[first.runtime].connectionKB === null &&
+      Migration.guards.Idle(serviceOf(next).migration)
+    )
+      return tried(next, changeStack(next, first.id, { runtime: target }))
+    return next
+  }
+  if (row.cause === 'refused') {
+    const full = next.nodes.find((node) => {
+      const connections = ledger.nodes[node.id]?.connections
+      return connections && connections.used > 0.9 * connections.max
+    })
+    if (
+      full &&
+      has(next, 'pooling') &&
+      !next.links.some((link) => link.to === full.id && byId(next, link.from)?.type === 'pooler')
+    )
+      return inFront(next, ledger, full, 'pooler')
+    return next
+  }
+  if (['dropped', 'timeout', 'slow', 'oom', 'crash', 'failed'].includes(row.cause)) {
+    const node =
+      row.fix._tag === 'node'
+        ? byId(next, row.fix.nodeId)
+        : next.nodes
+            .filter((entry) => COMPONENTS[entry.type].limiting && !isDown(entry))
+            .toSorted(
+              (a, b) =>
+                (ledger.nodes[b.id]?.utilization ?? 0) - (ledger.nodes[a.id]?.utilization ?? 0),
+            )[0]
+    if (node) return relieve(next, ledger, node, strategy)
+  }
+  return next
+}
+
+const react = (
+  game: Game,
+  ledger: Ledger,
+  rows: ReadonlyArray<ChurnRow>,
+  strategy: Strategy,
+): Game => rows.reduce((current, row) => remedy(current, ledger, row, strategy), game)
+
 const MAX_REPLICAS = 4
 
 const addReplica = (game: Game, ledger: Ledger, database: GameNode): Game => {
@@ -918,7 +1022,11 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy, boost = false): Ga
   const chat = isBuilt(next, 'chat') || next.backlog.some((item) => item.ref === 'chat')
   const realtime =
     strategy !== 'stubborn' && chat && RUNTIMES[stackOf(next).runtime].connectionKB === null
-  next = studies(next, solveFlow(next), strategy, realtime, ready, boost ? ROLE_RESEARCH : [])
+  const failing = strategy !== 'greedy' && next.stage >= 4 ? worstRows(next, solveFlow(next)) : []
+  next = studies(next, solveFlow(next), strategy, realtime, ready, [
+    ...needsOf(failing),
+    ...(boost ? ROLE_RESEARCH : []),
+  ])
 
   const first = servers(next)[0]
   if (
@@ -960,7 +1068,10 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy, boost = false): Ga
       next = tried(next, setWorkers(next, server.id, fittingWorkers(server)))
 
   for (const item of next.backlog)
-    if (WorkBlock.guards.Blocked(item.block) && item.block.reason === 'size')
+    if (
+      WorkBlock.guards.Blocked(item.block) &&
+      (item.block.reason === 'size' || item.block.reason === 'decision')
+    )
       next = tried(next, approveBlock(next, item.id))
 
   for (const item of next.backlog.filter(
@@ -1000,6 +1111,8 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy, boost = false): Ga
   if (strategy !== 'greedy' && next.stage >= 3) next = seriesABuild(next, solveFlow(next))
   if (strategy !== 'greedy' && next.stage >= 3) next = harden(next)
   if (strategy !== 'greedy' && next.stage >= 4) next = seriesBBuild(next, solveFlow(next))
+  if (failing.length > 0)
+    next = react(next, solveFlow(next), worstRows(next, solveFlow(next)), strategy)
   if (strategy !== 'greedy' && next.stage >= 5) next = seriesCBuild(next, solveFlow(next))
   if (strategy !== 'greedy' && next.stage >= 6) next = ipoBuild(next)
 

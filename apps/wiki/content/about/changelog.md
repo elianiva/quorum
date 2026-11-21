@@ -9,6 +9,18 @@ toc: top
 
 Quorum has no versions. It changes all the time, and this page lists the latest days, newest first, so you can see what moved since you last played. A page on this wiki can lag behind the game by a few days. Older days are in the [full changelog](/about/changelog/all).
 
+## Friday, 20 November 2026
+
+### Changed
+
+- Replace implicit phases with explicit state machines ([dd5f688](https://github.com/elianiva/quorum/commit/dd5f6882738c29d1b2a104400ac11e6423a5f519))
+- Record the ADRs as current decisions and renumber the duplicates ([3aba303](https://github.com/elianiva/quorum/commit/3aba30308515fcb12da4ab32cd7ff52a19d52727))
+- Remove the reference example, the art generator, and unused code, dependencies and exports ([42070c3](https://github.com/elianiva/quorum/commit/42070c367298adc112523a7812518170f407ad8d))
+- Let idle teams boost the running Study ([f5c92f2](https://github.com/elianiva/quorum/commit/f5c92f21e2496eea2aaae0a44bd5ca21b18e0bee))
+- Show what the Autoscaler is doing and what it does next ([1c4b845](https://github.com/elianiva/quorum/commit/1c4b84588a4e39b433c0f31adec4bf20e380d3b2))
+- Show which Link runs past its timeout on the Dashboard ([430a166](https://github.com/elianiva/quorum/commit/430a166238b2154a80468330eda4de8639ef18b7))
+- Replace the running build when a deploy lands ([fe8640f](https://github.com/elianiva/quorum/commit/fe8640fbd90cd0f747e1dc108788af94b1ec9397))
+
 ## Wednesday, 18 November 2026
 
 ### Changed
@@ -100,41 +112,3 @@ Quorum has no versions. It changes all the time, and this page lists the latest 
 - Build the Era's mix once per Game, and share one probe record across its Nodes ([9bffae3](https://github.com/elianiva/quorum/commit/9bffae348c0a0a52ac5da80bb401d2eace341087))
 - Make the solve stop when it settles, and score the bottleneck on revenue alone ([674b035](https://github.com/elianiva/quorum/commit/674b035724e5a76de3101bdf213a3805368a2e1f))
 - Add the installable PWA shell and offline play ([e86e17a](https://github.com/elianiva/quorum/commit/e86e17ace69a469b4e00ee66f02e4b2ad03ecf24))
-
-## Thursday, 12 November 2026
-
-### Changed
-
-- Speed up the simulation solve with dense per-pass caches ([3ed0c95](https://github.com/elianiva/quorum/commit/3ed0c95e30b0ec8610d27fab6b225e1eedf38290))
-- Polish the install shell with maskable icons and startup images ([805ced8](https://github.com/elianiva/quorum/commit/805ced87339978f15d0ec2343480cfa53a73fc32))
-- Build sound Nodes from the context, not from globals ([8de1b1b](https://github.com/elianiva/quorum/commit/8de1b1b40387c896929aa7b2e2be3a2819c6acd1))
-- Stop Tidy from crashing on Links with no place ([2c710e5](https://github.com/elianiva/quorum/commit/2c710e5b59996abc3bb43ca27b4fbf4e656bb805))
-- Add the changelog entry for 2026-11-11 (#49) ([f6ffca9](https://github.com/elianiva/quorum/commit/f6ffca9c730df1a55afd39df8370e0fd616a5f7d))
-- Add a command palette over the board ([fa727da](https://github.com/elianiva/quorum/commit/fa727da928d515639d2997f83abb5dc96ae600b2))
-- Write down feature keys ([9a23e91](https://github.com/elianiva/quorum/commit/9a23e91fb0eaf5b5bd9ed245993eea88be4d0aeb))
-- Gate online Rooms behind a feature key ([23fc23b](https://github.com/elianiva/quorum/commit/23fc23b380625d8107229b9e84c481cb2dac5e27))
-
-## Wednesday, 11 November 2026
-
-### Changed
-
-- Show the sectioned menu and settings in the wiki ([67f1e40](https://github.com/elianiva/quorum/commit/67f1e408a1d704176e0f8fa6bba3900ecfea3dfd))
-- Rework the home menu and settings into sections ([41cd1e9](https://github.com/elianiva/quorum/commit/41cd1e955f1156c27e9ee10288d8a10ae512329a))
-- Keep a panel above the scrim that blurs the board ([1bb68ca](https://github.com/elianiva/quorum/commit/1bb68ca3842024d2ebb90e66d772536a2d5672cf))
-- Open the pause menu from the Sandbox HUD button ([21e4e55](https://github.com/elianiva/quorum/commit/21e4e55d59c7fc94280596968991ad5720e86285))
-- Add the changelog entry for 2026-11-10 (#48) ([6bb6fcc](https://github.com/elianiva/quorum/commit/6bb6fcc4e06339918392a3eec648cf0b07d4f1ea))
-- Remove the press page ([b835409](https://github.com/elianiva/quorum/commit/b835409bcf86774e4ee179e1944dd0d83fc59fa4))
-- Give every Venture its own traffic profile ([dd286ff](https://github.com/elianiva/quorum/commit/dd286ff572fbc686cb86c2ba5ab4ed823b709824))
-- Report board start failures to Sentry ([61c70f8](https://github.com/elianiva/quorum/commit/61c70f832ebf65355b1213413f75c29edac40761))
-- Fix board start under a CSP without unsafe-eval ([05f269d](https://github.com/elianiva/quorum/commit/05f269d4454af1e30da8de9154ea3f22ca454d78))
-- feat(web): import a Company from a save file on the title screen ([f2293dd](https://github.com/elianiva/quorum/commit/f2293dd2b4a83a4f82046c6c0966d3d0847a4a96))
-- feat(web): move Company saves as files and prune unreadable ones ([8aec25e](https://github.com/elianiva/quorum/commit/8aec25ea8c2e201916918190ba1c6f72d71f08b6))
-- Describe the reason first lever card in the wiki ([e289326](https://github.com/elianiva/quorum/commit/e289326240e3f3ac3fe620bd01dd7b381098ad88))
-- Rework the Product lever card into a reason first hint ([047afe9](https://github.com/elianiva/quorum/commit/047afe9014307694af53ba1be5a77567a721a77d))
-- Teach players to raise a pool with a product lever ([bfdae3c](https://github.com/elianiva/quorum/commit/bfdae3cf7ddeeab29eb5e5e6a738347f9f173c17))
-- Record the product levers as built in the design record ([6769c39](https://github.com/elianiva/quorum/commit/6769c396496d1f90c8b2d01ab4d3a3252fd20b6e))
-- Put product levers in the Research screen and the free Sandbox ([6f29014](https://github.com/elianiva/quorum/commit/6f2901477d2237376cb1344b567a0916bc0d7ac0))
-- Build product levers into the Simulation ([8dd7b00](https://github.com/elianiva/quorum/commit/8dd7b00d0f654f592398418b22e6fff8d2319982))
-- Trace product levers to real products and mark the baseline ([7299ef0](https://github.com/elianiva/quorum/commit/7299ef06d61f39a7c53c072c9a191afaaa3f3a74))
-- Set the lever constants and put the mechanic on the roadmap ([52a19cf](https://github.com/elianiva/quorum/commit/52a19cf8e1921eeddc715a035c21766b2e58a7dc))
-- Cap product levers by Venture and turn them off in Challenges ([c5a38b6](https://github.com/elianiva/quorum/commit/c5a38b6c4f4e6b9e850a2e7608a090b9b7116fb8))

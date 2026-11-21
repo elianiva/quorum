@@ -9,6 +9,18 @@ toc: top
 
 Every day that changed Quorum, newest first. The [changelog](/about/changelog) shows only the latest days.
 
+## Friday, 20 November 2026
+
+### Changed
+
+- Replace implicit phases with explicit state machines ([dd5f688](https://github.com/elianiva/quorum/commit/dd5f6882738c29d1b2a104400ac11e6423a5f519))
+- Record the ADRs as current decisions and renumber the duplicates ([3aba303](https://github.com/elianiva/quorum/commit/3aba30308515fcb12da4ab32cd7ff52a19d52727))
+- Remove the reference example, the art generator, and unused code, dependencies and exports ([42070c3](https://github.com/elianiva/quorum/commit/42070c367298adc112523a7812518170f407ad8d))
+- Let idle teams boost the running Study ([f5c92f2](https://github.com/elianiva/quorum/commit/f5c92f21e2496eea2aaae0a44bd5ca21b18e0bee))
+- Show what the Autoscaler is doing and what it does next ([1c4b845](https://github.com/elianiva/quorum/commit/1c4b84588a4e39b433c0f31adec4bf20e380d3b2))
+- Show which Link runs past its timeout on the Dashboard ([430a166](https://github.com/elianiva/quorum/commit/430a166238b2154a80468330eda4de8639ef18b7))
+- Replace the running build when a deploy lands ([fe8640f](https://github.com/elianiva/quorum/commit/fe8640fbd90cd0f747e1dc108788af94b1ec9397))
+
 ## Wednesday, 18 November 2026
 
 ### Changed

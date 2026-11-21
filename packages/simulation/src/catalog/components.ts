@@ -150,8 +150,8 @@ export const INTERNET_MS = 30
 
 export const UPLOAD_MB = 2
 
-export const EGRESS_ORIGIN = 0.09
-export const EGRESS_CDN = 0.02
+export const EGRESS_ORIGIN = 0.45
+export const EGRESS_CDN = 0.1
 
 export const AUTHENTICATED_KINDS: ReadonlyArray<RequestKind> = [
   'read',

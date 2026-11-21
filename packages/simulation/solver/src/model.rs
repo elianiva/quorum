@@ -32,6 +32,7 @@ struct Collector {
     memory_factor: f64,
     pause_ms: f64,
     cpu: f64,
+    tuning: f64,
 }
 
 pub mod topology {
@@ -967,6 +968,7 @@ fn collector_of(node: &Node) -> Collector {
             memory_factor: 1.0,
             pause_ms: 0.0,
             cpu: 0.0,
+            tuning: 1.0,
         };
     }
     if language == language::JAVA {
@@ -976,6 +978,7 @@ fn collector_of(node: &Node) -> Collector {
             memory_factor: COLLECTOR_MEMORY[index],
             pause_ms: COLLECTOR_PAUSE[index],
             cpu: RUNTIME_GC_CPU[node.runtime],
+            tuning: 1.0,
         };
     }
     if language == language::GO {
@@ -985,6 +988,7 @@ fn collector_of(node: &Node) -> Collector {
             memory_factor: GOGC_MEMORY[index],
             pause_ms: RUNTIME_GC_PAUSE[node.runtime],
             cpu: RUNTIME_GC_CPU[node.runtime] * GOGC_CPU[index],
+            tuning: 1.0 + RUNTIME_GC_CPU[node.runtime] * (GOGC_CPU[index] - 1.0),
         };
     }
     Collector {
@@ -992,6 +996,7 @@ fn collector_of(node: &Node) -> Collector {
         memory_factor: 1.0,
         pause_ms: RUNTIME_GC_PAUSE[node.runtime],
         cpu: RUNTIME_GC_CPU[node.runtime],
+        tuning: 1.0,
     }
 }
 
@@ -1061,7 +1066,26 @@ pub fn server_model(
         memory_factor: collector_memory,
         pause_ms: gc_pause,
         cpu: gc_cpu,
+        tuning: gc_tuning,
     } = collector_of(node);
+    let usable = if RUNTIME_PARALLEL[runtime] {
+        vcpu
+    } else if model == Concurrency::Process {
+        vcpu.min(processes.max(1.0))
+    } else {
+        vcpu.min(processes)
+    };
+    let throttled = node.family == BURSTABLE_FAMILY && node.credits < 1.0;
+    let shared = if ctx.flags.mesh {
+        usable * (1.0 - MESH_OVERHEAD)
+    } else {
+        usable
+    };
+    let cores = if throttled {
+        shared.min(BURST_BASELINE * vcpu)
+    } else {
+        shared
+    };
     let mut ram_used = OS_RAM * copies;
     ram_used += (resident
         * (RUNTIME_MEMORY_MB[runtime] * variant_factor * collector_memory
@@ -1072,6 +1096,20 @@ pub fn server_model(
         ram_used += LOCAL_DB_RAM + game.users * LOCAL_DB_RAM_PER_USER;
     }
 
+    if RUNTIME_PERSISTENT[runtime] && !ctx.flags.worker {
+        let total_rate: f64 = arriving[..NR].iter().sum();
+        let offered_work: f64 = (0..NR).map(|kind| arriving[kind] * code.cpu[kind]).sum();
+        let admitted = if offered_work > 0.0 {
+            (cores * 1000.0 / offered_work).min(1.0)
+        } else {
+            1.0
+        };
+        ram_used += (total_rate * admitted
+            * ACTIVE_USERS_PER_RPS
+            * LANGUAGE_SESSION_KB[RUNTIME_LANGUAGE[runtime]]
+            * collector_memory)
+            / KB_PER_GB;
+    }
     ram_used += node.leak;
     ram_used += connection_ram;
     let swapping = ram_used > ram;
@@ -1099,24 +1137,6 @@ pub fn server_model(
         1.0
     };
 
-    let usable = if RUNTIME_PARALLEL[runtime] {
-        vcpu
-    } else if model == Concurrency::Process {
-        vcpu.min(processes.max(1.0))
-    } else {
-        vcpu.min(processes)
-    };
-    let throttled = node.family == BURSTABLE_FAMILY && node.credits < 1.0;
-    let shared = if ctx.flags.mesh {
-        usable * (1.0 - MESH_OVERHEAD)
-    } else {
-        usable
-    };
-    let cores = if throttled {
-        shared.min(BURST_BASELINE * vcpu)
-    } else {
-        shared
-    };
     let per_request = cores.min(1.0);
 
     let mut arrived = [0usize; NR];
@@ -1132,7 +1152,8 @@ pub fn server_model(
     let kinds = &arrived[..count];
     let mut cpu = [0.0f64; NR];
     for &kind in kinds {
-        cpu[kind] = (code.cpu[kind] / efficiency) * if collecting > 1.0 { collecting } else { 1.0 };
+        cpu[kind] = ((code.cpu[kind] / efficiency) * gc_tuning)
+            * if collecting > 1.0 { collecting } else { 1.0 };
     }
     let mut cpu_work = 0.0;
     for &kind in kinds {
@@ -1414,7 +1435,7 @@ pub fn server_model_shed(
     ctx: &ServerCtx,
 ) -> Model {
     let full = server_model(game, node, arriving, code, call_latency, ctx);
-    if full.utilization <= SATURATED_LOAD_SHARE || ctx.flags.worker {
+    if full.utilization <= SHED_FROM || ctx.flags.worker {
         return full;
     }
     let degrade = node.degrade && game.has(research::GRACEFUL_DEGRADATION);
@@ -1427,7 +1448,10 @@ pub fn server_model_shed(
         let cpu = |kind: usize| PROFILE_CPU[crate::pass::profile_of(game, kind)];
         kinds.sort_by(|a, b| cpu(*b).total_cmp(&cpu(*a)));
     } else {
-        kinds.sort_by(|a, b| KIND_VALUE[*a].total_cmp(&KIND_VALUE[*b]));
+        let density = |kind: usize| {
+            KIND_VALUE[kind] / PROFILE_CPU[crate::pass::profile_of(game, kind)].max(f64::EPSILON)
+        };
+        kinds.sort_by(|a, b| density(*a).total_cmp(&density(*b)));
     }
     let keep = |dropped: usize, fraction: f64| {
         let mut kept = [0.0f64; NK];
@@ -1443,13 +1467,13 @@ pub fn server_model_shed(
     let run = |kept: &Rates| server_model(game, node, kept, code, call_latency, ctx);
 
     let mut dropped = 0;
-    while dropped < kinds.len() && run(&keep(dropped + 1, 1.0)).utilization > SATURATED_LOAD_SHARE {
+    while dropped < kinds.len() && run(&keep(dropped + 1, 1.0)).utilization > SHED_TO {
         dropped += 1;
     }
     let (mut low, mut high) = (0.0f64, 1.0f64);
     for _ in 0..SHED_BISECTION_STEPS {
         let middle = (low + high) / 2.0;
-        if run(&keep(dropped, middle)).utilization > SATURATED_LOAD_SHARE {
+        if run(&keep(dropped, middle)).utilization > SHED_TO {
             high = middle;
         } else {
             low = middle;

@@ -65,6 +65,7 @@ pub fn is_request_kind(kind: usize) -> bool {
 pub const ABROAD_SEED: f64 = 0.05;
 pub const ACCIDENTAL_DELETE_SECONDS: f64 = 120.0;
 pub static ACHIEVEMENT_IDS: [&str; 42] = ["hello-world", "works-on-my-machine", "split-brain", "averages-lie", "shared-nothing", "blocked", "off-by-one-region", "littles-law", "metastable", "big-rewrite", "strangler", "quorum", "eventually", "polyglot", "zero-gc", "no-cache", "celebrity", "follow-the-sun", "postgres-for-everything", "hug-of-death", "egress-shock", "chaos-monkey", "blameless", "nines", "five-nines", "monoglot", "default-alive", "unicorn", "decacorn", "everyone-online", "warm-start", "rule-of-40", "beat-and-raise", "serial-founder", "two-hard-things", "conways-law", "fallacies", "thundering-herd", "runbook", "finops", "spot-the-difference", "let-it-crash"];
+pub const ACTIVE_USERS_PER_RPS: f64 = 50.0;
 pub const ADOPTION_DAYS: f64 = 7.0;
 pub const ALERT_FATIGUE: f64 = 5.0;
 pub const ANALYTICS_CAPACITY: f64 = 4.0;
@@ -192,10 +193,10 @@ pub const EDGE_MEMORY_MB: f64 = 128.0;
 pub const EDGE_MS: f64 = 5.0;
 pub const EDGE_READ_HIT: f64 = 0.3;
 pub const EDGE_REQUEST_PRICE: f64 = 0.00036;
-pub const EGRESS_CDN: f64 = 0.02;
+pub const EGRESS_CDN: f64 = 0.1;
 pub const EGRESS_CROSS_REGION: f64 = 0.02;
 pub const EGRESS_CROSS_ZONE: f64 = 0.01;
-pub const EGRESS_ORIGIN: f64 = 0.09;
+pub const EGRESS_ORIGIN: f64 = 0.45;
 pub const ELIXIR_HOT_UPGRADE_DEV_HOURS: f64 = 4.0;
 pub const ENGINE_COPY_MINUTES_PER_GB: f64 = 1.0;
 pub const ENGINE_FACTOR: f64 = 0.8;
@@ -276,6 +277,8 @@ pub const LAG_SURGE: f64 = 10.0;
 pub const LATENCY_REGRESSION_MS: f64 = 150.0;
 pub const LAUNCH_SURGE: f64 = 6.0;
 pub const LAYOFF_MORALE: f64 = 0.9;
+pub const LEAK_FROM_STAGE: f64 = 2.0;
+pub const LEAK_KB_PER_REQUEST: f64 = 12.0;
 pub const LEAK_RATE: f64 = 0.025;
 pub const LEAP_SECOND_SECONDS: f64 = 60.0;
 pub const LEARN_COST: f64 = 0.25;
@@ -469,6 +472,8 @@ pub const SERVICE_HANDOFF_DH: f64 = 8.0;
 pub const SESSION_STATE_CRASHES: f64 = 0.05;
 pub static SHARD_COUNTS: [f64; 4] = [1.0, 2.0, 4.0, 8.0];
 pub const SHARED_DB_COORDINATION: f64 = 0.5;
+pub const SHED_FROM: f64 = 1.0;
+pub const SHED_TO: f64 = 0.95;
 pub const SIGNING_BASE: f64 = 2000.0;
 pub const SIM_SECONDS_PER_DEV_HOUR: f64 = 0.3125;
 pub const SLA_CREDIT: f64 = 0.1;
@@ -566,7 +571,7 @@ pub const YJIT_MEMORY: f64 = 1.2;
 pub const YJIT_SPEED: f64 = 1.3;
 pub static ZONES: [&str; 3] = ["a", "b", "c"];
 pub static ZONE_SPANNING_COMPONENTS: [&str; 5] = ["psp", "llm", "lb", "waf", "gw"];
-pub static SCALAR_COUNT: usize = 504;
+pub static SCALAR_COUNT: usize = 509;
 
 
 pub mod search_variant {
@@ -801,7 +806,7 @@ pub static RUNTIME_BLOCKING: [Blocking; 28] = [Blocking::None, Blocking::None, B
 pub static RUNTIME_CONNECTIONS: [f64; 28] = [1.0, 1.0, 10.0, 10.0, 5.0, 1.0, 10.0, 10.0, 10.0, 10.0, 10.0, 1.0, 10.0, 10.0, 10.0, 1.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0];
 pub static RUNTIME_VELOCITY: [f64; 28] = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 1.0, 1.0, 0.8, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
 pub static RUNTIME_GC_PAUSE: [f64; 28] = [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 30.0, 30.0, 30.0, 30.0, 15.0, 15.0, -1.0, -1.0, -1.0, 12.0];
-pub static RUNTIME_GC_CPU: [f64; 28] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.15];
+pub static RUNTIME_GC_CPU: [f64; 28] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.25, 0.12, 0.12, 0.12, 0.12, 0.1, 0.1, 0.0, 0.0, 0.0, 0.15];
 
 pub static PM_SPARES: [f64; 3] = [-1.0, 2.0, 0.0];
 pub static PM_SPAWN_SHARE: [f64; 3] = [0.0, 0.02, 0.1];
@@ -822,6 +827,7 @@ pub mod language {
     pub const HASKELL: usize = 10;
 }
 pub static LANGUAGE_VELOCITY: [f64; 11] = [1.2, 1.1, 1.15, 1.15, 0.95, 0.9, 1.0, 1.0, 0.6, 0.7, 1.15];
+pub static LANGUAGE_SESSION_KB: [f64; 11] = [130.0, 340.0, 420.0, 360.0, 210.0, 210.0, 280.0, 145.0, 85.0, 65.0, 180.0];
 pub static LANGUAGE_BLAST: [&str; 11] = ["request", "request", "whole", "request", "request", "request", "request", "request", "task", "whole", "request"];
 
 pub const FRAMEWORK_COUNT: usize = 31;
@@ -1366,4 +1372,4 @@ pub static MONEY_KINDS_MASK: u64 = 0x206;
 pub static DATA_KINDS_MASK: u64 = 0x8b760000;
 pub static QUERY_CPU_BY_BACKEND: [f64; NB] = [8.0, 25.0, -1.0, 80.0, -1.0, 60.0, -1.0, 30.0, 40.0, -1.0, 100.0, -1.0, -1.0, -1.0, -1.0, -1.0];
 
-pub const CATALOG_HASH: u32 = 0xe292028d;
+pub const CATALOG_HASH: u32 = 0x1521be0e;

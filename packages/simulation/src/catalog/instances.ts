@@ -60,3 +60,6 @@ export const WARMUP_SECONDS = 15
 export const HOP_MS = 0.5
 export const HANDSHAKE_MS = 1
 export const LINK_TIMEOUT = 30
+export const ACTIVE_USERS_PER_RPS = 50
+export const SHED_FROM = 1
+export const SHED_TO = 0.95

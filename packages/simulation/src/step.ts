@@ -15,6 +15,8 @@ import {
   FICKLE_SHARE,
   FIRST_KIND_INSIGHT,
   FUNNEL_GROWTH,
+  LEAK_FROM_STAGE,
+  LEAK_KB_PER_REQUEST,
   LIVE_TUNING,
   OOM_RATIO,
   PROFILES,
@@ -424,6 +426,17 @@ const advanceNode = (
     if (node.credits >= 1 && balance < 1)
       events.push(StepEvent.CreditsExhausted({ nodeId: node.id }))
     next = { ...next, credits: balance }
+  }
+  if (
+    (node.type === 'server' || node.type === 'worker') &&
+    RUNTIMES[node.runtime].persistent &&
+    !node.recycle &&
+    !isDown(node) &&
+    !game.sandbox &&
+    game.stage >= LEAK_FROM_STAGE
+  ) {
+    const inbound = ledger.nodes[node.id]?.inbound ?? 0
+    next = { ...next, leak: next.leak + (inbound * LEAK_KB_PER_REQUEST * seconds) / 1_000_000 }
   }
   const ram = ledger.nodes[node.id]?.resources.ramGb
   const killable = RUNTIMES[node.runtime].pool || node.leak > 0

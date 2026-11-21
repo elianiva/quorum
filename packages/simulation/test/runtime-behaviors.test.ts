@@ -1,7 +1,8 @@
 import { Result } from 'effect'
 import { describe, expect, test } from 'vitest'
 import * as Actions from '../src/actions.ts'
-import { GATEWAY_PRICE, GPU_MODELS, type ResearchId } from '../src/catalog.ts'
+import { GATEWAY_PRICE, GPU_MODELS, LIVE_TUNING, type ResearchId } from '../src/catalog.ts'
+import { preseedGame } from '../src/company.ts'
 import { gpuFits } from '../src/rules.ts'
 import {
   badDeployChance,
@@ -224,5 +225,92 @@ describe('routing and the Gateway fee', () => {
     const inbound = ledger.nodes[gateway]?.inbound ?? 0
     expect(inbound).toBeGreaterThan(0)
     expect(ledger.burnLines.requests).toBeCloseTo(inbound * GATEWAY_PRICE, 6)
+  })
+})
+
+describe('load-driven server memory', () => {
+  const quiet = { ...LIVE_TUNING, firstIncidentAfter: 1e12, incidentGap: 1e12 }
+  const serverGame = (users: number, patch: Partial<GameNode>): Game => {
+    const game = freeSandbox()
+    return {
+      ...game,
+      stage: 3,
+      users,
+      nodes: game.nodes.map((node) =>
+        node.type === 'server'
+          ? { ...node, size: 3, ...patch }
+          : node.type === 'database'
+            ? { ...node, size: 8 }
+            : node,
+      ),
+    }
+  }
+  const serverOf = (game: Game) => solveFlow(game).nodes.server!
+  const ramShare = (game: Game): number => {
+    const { used, total } = serverOf(game).resources.ramGb!
+    return used / total
+  }
+  const usersAt = (utilization: number, patch: Partial<GameNode>): number => {
+    let low = 1
+    let high = 1e9
+    for (let index = 0; index < 50; index += 1) {
+      const middle = Math.sqrt(low * high)
+      if (serverOf(serverGame(middle, patch)).utilization < utilization) low = middle
+      else high = middle
+    }
+    return low
+  }
+
+  test('a persistent runtime holds RAM for each active User, and a shared-nothing one does not', () => {
+    const go = { runtime: 'go' } as const
+    expect(ramShare(serverGame(20_000, go))).toBeGreaterThan(ramShare(serverGame(5_000, go)) * 1.5)
+    const php = { runtime: 'php_fpm' } as const
+    expect(ramShare(serverGame(20_000, php))).toBeCloseTo(ramShare(serverGame(5_000, php)), 9)
+  })
+
+  test('GOGC trades CPU for RAM: 50 costs capacity, 200 costs memory', () => {
+    const users = usersAt(0.8, { runtime: 'go', family: 'compute' })
+    const at = (gogc: number) => serverGame(users, { runtime: 'go', family: 'compute', gogc })
+    expect(serverOf(at(50)).utilization).toBeGreaterThan(serverOf(at(100)).utilization)
+    expect(serverOf(at(100)).utilization).toBeGreaterThan(serverOf(at(200)).utilization)
+    expect(ramShare(at(50))).toBeLessThan(ramShare(at(100)))
+    expect(ramShare(at(100))).toBeLessThan(ramShare(at(200)))
+  })
+
+  test('a JVM that fits on General swaps on Compute, and Memory leaves room', () => {
+    const users = usersAt(0.85, { runtime: 'tomcat' })
+    const on = (family: GameNode['family']) =>
+      serverOf(serverGame(users, { runtime: 'tomcat', family }))
+    expect(on('general').swapping).toBe(false)
+    expect(on('compute').swapping).toBe(true)
+    expect(on('memory').utilization).toBeLessThanOrEqual(on('general').utilization)
+  })
+
+  test('shedding leaves a Node under saturation alone and keeps revenue past it', () => {
+    const revenue = (users: number, shed: boolean) =>
+      solveFlow(serverGame(users, { runtime: 'go', shed })).revenue
+    const calm = usersAt(0.95, { runtime: 'go' })
+    const overloaded = usersAt(1.5, { runtime: 'go' })
+    expect(revenue(calm, true)).toBeCloseTo(revenue(calm, false), 9)
+    expect(revenue(overloaded, true)).toBeGreaterThan(revenue(overloaded, false) * 1.3)
+  })
+
+  test('a Node leaks with the requests it serves until it recycles', () => {
+    const run = (users: number, recycle: boolean): number => {
+      let game: Game = {
+        ...preseedGame(),
+        stage: 3,
+        users,
+        cash: 1e9,
+        nodes: preseedGame().nodes.map((node) =>
+          node.type === 'server' ? { ...node, runtime: 'go', size: 3, recycle } : node,
+        ),
+      }
+      for (let second = 0; second < 600; second += 30) game = step(game, 30, quiet).game
+      return game.nodes.find((node) => node.type === 'server')!.leak
+    }
+    expect(run(4_000, false)).toBeGreaterThan(0)
+    expect(run(8_000, false)).toBeGreaterThan(run(4_000, false) * 1.5)
+    expect(run(8_000, true)).toBe(0)
   })
 })

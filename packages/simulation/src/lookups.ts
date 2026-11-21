@@ -257,6 +257,7 @@ export const warmAfterRestart = (node: GameNode, warming = false): number =>
     : 0
 
 export const restarted = (node: GameNode, cause: DownCause = 'restart', warming = false) => ({
+  leak: 0,
   life: restarting(restartSeconds(node), cause, warmAfterRestart(node, warming)),
   ...(node.service._tag === 'Shut' ? { service: { _tag: 'InService' as const } } : {}),
 })

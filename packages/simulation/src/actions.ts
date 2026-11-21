@@ -719,7 +719,6 @@ export const setRuntime = (game: Game, id: string, runtime: RuntimeId): Action =
         runtime,
         framework,
         workers: def.pool ? defaultWorkers(node, runtime) : node.workers,
-        leak: 0,
         ...restarted({ ...node, runtime }),
       }),
     )
@@ -1085,7 +1084,7 @@ export const restart = (game: Game, id: string): Action =>
     if (!restartable(node)) return notAllowed(`${name} has no process of yours to restart.`)
     if (node.life._tag === 'Stopped') return notAllowed(`${name} is down for good. Replace it.`)
     if (isDown(node)) return notAllowed('It is already restarting.')
-    const restarting = patch(game, id, { ...restarted(node), leak: 0 })
+    const restarting = patch(game, id, restarted(node))
     const incident = activeIncident(game)
     return ok(
       incident?.nodeId === id && RESTART_FIXES.includes(incident.kind)

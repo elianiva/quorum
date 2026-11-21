@@ -2492,7 +2492,9 @@ pub fn database_model(
     } else {
         1.0
     };
-    let working_set = (LOCAL_DB_RAM + group_users * LOCAL_DB_RAM_PER_USER) * shard_share;
+    let working_set = (LOCAL_DB_RAM + group_users * LOCAL_DB_RAM_PER_USER)
+        * shard_share
+        * RETENTION_HOT_SET[node.keep.min(2)];
     let footprint = working_set + connection_ram;
     let disk = footprint > ram - OS_RAM;
     let logical = sharding_of(node);
@@ -2556,7 +2558,12 @@ pub fn database_model(
     }
 
     let cdc_ops = if node.cdc_mirrored { writes + txs } else { 0.0 };
-    let disk_ops = writes + txs + puts + gets + scans + if disk { reads } else { 0.0 } + cdc_ops;
+    let disk_ops = (writes + puts) * IO_PER_WRITE
+        + txs * IO_PER_TX
+        + gets
+        + scans * IO_PER_SCAN
+        + if disk { reads * IO_PER_SPILLED_READ } else { 0.0 }
+        + cdc_ops;
     let io_utilization = if iops > 0.0 { disk_ops / iops } else { 0.0 };
     let io_wait = wait_for(disk_ms(node.iops), io_utilization.min(0.98), 1.0);
     let cpu_utilization = if cores > 0.0 {

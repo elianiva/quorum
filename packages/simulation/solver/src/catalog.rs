@@ -265,6 +265,10 @@ pub static INSIGHT_POOLS: [&str; 18] = ["page", "read", "write", "login", "searc
 pub const INSIGHT_YIELD: f64 = 1.0;
 pub static INTERNAL_TOOL_FEATURES: [&str; 4] = ["dashboards", "audit-log", "status-page", "data-export"];
 pub const INTERNET_MS: f64 = 30.0;
+pub const IO_PER_SCAN: f64 = 40.0;
+pub const IO_PER_SPILLED_READ: f64 = 4.0;
+pub const IO_PER_TX: f64 = 12.0;
+pub const IO_PER_WRITE: f64 = 6.0;
 pub const JEMALLOC_MEMORY: f64 = 1.05;
 pub const JEMALLOC_SPEED: f64 = 1.05;
 pub const JVM_INSIGHT: f64 = 0.25;
@@ -571,7 +575,7 @@ pub const YJIT_MEMORY: f64 = 1.2;
 pub const YJIT_SPEED: f64 = 1.3;
 pub static ZONES: [&str; 3] = ["a", "b", "c"];
 pub static ZONE_SPANNING_COMPONENTS: [&str; 5] = ["psp", "llm", "lb", "waf", "gw"];
-pub static SCALAR_COUNT: usize = 509;
+pub static SCALAR_COUNT: usize = 513;
 
 
 pub mod search_variant {
@@ -1138,6 +1142,7 @@ pub static COLLECTOR_MEMORY: [f64; 3] = [1.0, 0.95, 1.15];
 pub static STORAGE_IOPS: [f64; 2] = [3000.0, 64000.0];
 pub static RETENTION_SCAN_MS: [f64; 3] = [0.0, 200.0, 0.0];
 pub static RETENTION_REBUILD: [f64; 3] = [1.0, 1.0, 3.0];
+pub static RETENTION_HOT_SET: [f64; 3] = [1.0, 0.4, 0.25];
 pub static SHARD_HOT: [f64; 4] = [0.0, 0.5, 0.3, 0.0];
 pub static SHARD_CROSS: [f64; 4] = [1.0, 1.0, 0.1, 0.2];
 pub static SHARD_FAR_MS: [f64; 4] = [0.0, 0.0, 0.0, 70.0];
@@ -1372,4 +1377,4 @@ pub static MONEY_KINDS_MASK: u64 = 0x206;
 pub static DATA_KINDS_MASK: u64 = 0x8b760000;
 pub static QUERY_CPU_BY_BACKEND: [f64; NB] = [8.0, 25.0, -1.0, 80.0, -1.0, 60.0, -1.0, 30.0, 40.0, -1.0, 100.0, -1.0, -1.0, -1.0, -1.0, -1.0];
 
-pub const CATALOG_HASH: u32 = 0x1521be0e;
+pub const CATALOG_HASH: u32 = 0xe5b02c82;

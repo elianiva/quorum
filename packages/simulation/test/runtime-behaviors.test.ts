@@ -314,3 +314,37 @@ describe('load-driven server memory', () => {
     expect(run(8_000, true)).toBe(0)
   })
 })
+
+describe('Database load', () => {
+  const databaseGame = (users: number, patch: Partial<GameNode>): Game => {
+    const game = freeSandbox()
+    return {
+      ...game,
+      stage: 4,
+      users,
+      nodes: game.nodes.map((node) =>
+        node.type === 'database'
+          ? { ...node, size: 7, ...patch }
+          : node.type === 'server'
+            ? { ...node, runtime: 'tokio', size: 8 }
+            : node,
+      ),
+    }
+  }
+  const apdex = (users: number, patch: Partial<GameNode>) =>
+    solveFlow(databaseGame(users, patch)).apdex
+
+  test('Provisioned IOPS only pays once the disk is the limit', () => {
+    expect(apdex(10_000, { iops: 'provisioned' })).toBeCloseTo(apdex(10_000, {}), 2)
+    expect(apdex(100_000, { iops: 'provisioned' })).toBeGreaterThan(apdex(100_000, {}) + 0.2)
+  })
+
+  test('archiving old rows shrinks the hot set so the working set fits in RAM again', () => {
+    const spilled = { size: 3 } as const
+    const users = 11_000
+    expect(solveFlow(databaseGame(users, spilled)).nodes.database!.disk).toBe(true)
+    expect(
+      solveFlow(databaseGame(users, { ...spilled, keep: 'archive' })).nodes.database!.disk,
+    ).toBe(false)
+  })
+})

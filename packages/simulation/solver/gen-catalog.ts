@@ -509,6 +509,9 @@ push(
   `pub static RETENTION_REBUILD: [f64; 3] = [${['keep', 'archive', 'delete'].map((id) => formatNumber(catalog.DB_RETENTIONS[id as 'keep'].rebuild)).join(', ')}];`,
 )
 push(
+  `pub static RETENTION_HOT_SET: [f64; 3] = [${['keep', 'archive', 'delete'].map((id) => formatNumber(catalog.DB_RETENTIONS[id as 'keep'].hotSet)).join(', ')}];`,
+)
+push(
   `pub static SHARD_HOT: [f64; 4] = [${['hash', 'range', 'tenant', 'region'].map((id) => formatNumber(catalog.SHARD_KEYS[id as 'hash'].hot)).join(', ')}];`,
 )
 push(

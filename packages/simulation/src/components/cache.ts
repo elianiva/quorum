@@ -11,6 +11,7 @@ export const CACHE_TTLS = [
   { ttl: 3_600, factor: 0.97, stale: 0.1 },
 ] as const
 export const HOT_KB_PER_USER = 200
+export const HOT_BASE_USERS = 10_000
 export const CACHE_OPS = 50_000
 
 export const WRITE_BEHIND_SECONDS = 10

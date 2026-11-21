@@ -4,6 +4,7 @@ import {
   GPU_CACHE_GB,
   GPU_TYPES,
   COMPONENTS,
+  HOT_BASE_USERS,
   HOT_KB_PER_USER,
   type ComponentId,
   type Kind,
@@ -13,7 +14,8 @@ import type { Game, GameNode } from './state.ts'
 
 export const CACHE_HIT_LOW = 0.7
 
-export const hotDataGb = (game: Game): number => (game.users * HOT_KB_PER_USER) / 1_000_000
+export const hotDataGb = (game: Game): number =>
+  (Math.min(game.users, Math.sqrt(game.users * HOT_BASE_USERS)) * HOT_KB_PER_USER) / 1_000_000
 
 export const evictionShareOf = (game: Game, node: GameNode): number => {
   const hot = hotDataGb(game)

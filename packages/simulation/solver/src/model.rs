@@ -1759,6 +1759,11 @@ pub mod cache {
     use super::*;
 
     #[inline]
+    pub fn hot_data_gb(users: f64) -> f64 {
+        (users.min((users * HOT_BASE_USERS).sqrt()) * HOT_KB_PER_USER) / KB_PER_GB
+    }
+
+    #[inline]
     pub fn ttl_row(node: &Node) -> usize {
         if node.ttl_seconds <= 10.0 {
             0
@@ -1795,7 +1800,7 @@ pub mod cache {
 
     pub fn hit_ratio(game: &GameCtx, node: &Node, write_share: f64, warm_share: f64) -> f64 {
         let memory = flat_scale(node.size);
-        let hot = (game.users * HOT_KB_PER_USER) / 1_000_000.0;
+        let hot = hot_data_gb(game.users);
         let fits = if hot > 0.0 {
             (memory / hot).min(1.0)
         } else {

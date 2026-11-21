@@ -384,3 +384,23 @@ describe('Load Balancer policies', () => {
     expect(share(balanced('p2c'))).toBeLessThan(weighted)
   })
 })
+
+describe('Cache working set', () => {
+  const evicting = (users: number, size: number): number => {
+    let game = freeSandbox()
+    const placed = ok(Actions.place(game, 'cache', 600, 280))
+    const id = placed.nodes.at(-1)!.id
+    game = ok(Actions.connect(Actions.disconnect(placed, 'server', 'database'), 'server', id))
+    game = ok(Actions.connect(game, id, 'database'))
+    return evictionShareOf(
+      { ...game, users },
+      { ...game.nodes.find((node) => node.id === id)!, size },
+    )
+  }
+
+  test('the hot set grows slower than the Users, so a bigger Cache keeps up with growth', () => {
+    expect(evicting(500_000, 6)).toBe(0)
+    expect(evicting(20_000_000, 8)).toBe(0)
+    expect(evicting(20_000_000, 6)).toBeGreaterThan(0.5)
+  })
+})

@@ -248,6 +248,7 @@ pub const HN_WEIGHT: f64 = 3.0;
 pub const HOME_REGION: &str = "na";
 pub const HOP_MS: f64 = 0.5;
 pub const HOTFIX_DEBT: f64 = 0.02;
+pub const HOT_BASE_USERS: f64 = 10000.0;
 pub const HOT_KB_PER_USER: f64 = 200.0;
 pub const HOT_KEY_SHARE: f64 = 0.3;
 pub const HOT_SHARD_CPU: f64 = 3.0;
@@ -575,7 +576,7 @@ pub const YJIT_MEMORY: f64 = 1.2;
 pub const YJIT_SPEED: f64 = 1.3;
 pub static ZONES: [&str; 3] = ["a", "b", "c"];
 pub static ZONE_SPANNING_COMPONENTS: [&str; 5] = ["psp", "llm", "lb", "waf", "gw"];
-pub static SCALAR_COUNT: usize = 513;
+pub static SCALAR_COUNT: usize = 514;
 
 
 pub mod search_variant {
@@ -1377,4 +1378,4 @@ pub static MONEY_KINDS_MASK: u64 = 0x206;
 pub static DATA_KINDS_MASK: u64 = 0x8b760000;
 pub static QUERY_CPU_BY_BACKEND: [f64; NB] = [8.0, 25.0, -1.0, 80.0, -1.0, 60.0, -1.0, 30.0, 40.0, -1.0, 100.0, -1.0, -1.0, -1.0, -1.0, -1.0];
 
-pub const CATALOG_HASH: u32 = 0xe5b02c82;
+pub const CATALOG_HASH: u32 = 0xccbc83f3;

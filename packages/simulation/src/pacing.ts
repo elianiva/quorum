@@ -692,6 +692,7 @@ const addReplica = (game: Game, ledger: Ledger, database: GameNode): Game => {
   const pooler = has(next, 'pooling')
     ? placed(next, ledger, 'pooler', database.x + 160, database.y - 160 - 140 * count)
     : null
+  if (has(next, 'pooling') && !pooler) return game
   const front = pooler ? pooler[1] : null
   if (pooler && front) next = tried(pooler[0], connect(pooler[0], front, replica[1]))
   for (const from of servers(next)) next = tried(next, connect(next, from.id, front ?? replica[1]))

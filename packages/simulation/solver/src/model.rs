@@ -877,7 +877,7 @@ fn speed_parts(game: &GameCtx, node: &Node) -> [(Cause, f64); 7] {
         1.0
     };
     let arm = if node.family == ARM_FAMILY {
-        ARM_SPEED
+        LANGUAGE_ARM_SPEED[language]
     } else {
         1.0
     };
@@ -2524,7 +2524,11 @@ pub fn database_model(
         BURST_BASELINE * vcpu
     } else {
         vcpu
-    }) * if slowed { STORM_SLOWDOWN } else { 1.0 };
+    }) * if node.family == ARM_FAMILY {
+        ARM_DATA_SPEED
+    } else {
+        1.0
+    } * if slowed { STORM_SLOWDOWN } else { 1.0 };
     let per_request = cores.min(1.0);
     let cost = db_cpu(game, node, arriving, cores, scatter, disk, database_count);
     let DbCpu {

@@ -75,8 +75,8 @@ pub const ANYCAST_MS: f64 = 20.0;
 pub const APACHE_MAX_WORKERS: f64 = 150.0;
 pub const APACHE_SPARE: f64 = 5.0;
 pub const APDEX_WINDOW: f64 = 60.0;
+pub const ARM_DATA_SPEED: f64 = 0.93;
 pub const ARM_RESEARCH: &str = "arm-instances";
-pub const ARM_SPEED: f64 = 0.95;
 pub static AUTHENTICATED_KINDS: [&str; 10] = ["read", "write", "search", "upload", "buy", "job", "report", "ai", "feed", "hook"];
 pub const AUTH_CHECK_MS: f64 = 0.02;
 pub const AUTH_MOVE_DH: f64 = 120.0;
@@ -833,6 +833,7 @@ pub mod language {
 }
 pub static LANGUAGE_VELOCITY: [f64; 11] = [1.2, 1.1, 1.15, 1.15, 0.95, 0.9, 1.0, 1.0, 0.6, 0.7, 1.15];
 pub static LANGUAGE_SESSION_KB: [f64; 11] = [130.0, 340.0, 420.0, 360.0, 210.0, 210.0, 280.0, 145.0, 85.0, 65.0, 180.0];
+pub static LANGUAGE_ARM_SPEED: [f64; 11] = [0.88, 0.9, 0.97, 0.9, 1.0, 0.98, 0.97, 0.95, 1.0, 0.98, 0.9];
 pub static LANGUAGE_BLAST: [&str; 11] = ["request", "request", "whole", "request", "request", "request", "request", "request", "task", "whole", "request"];
 
 pub const FRAMEWORK_COUNT: usize = 31;
@@ -1378,4 +1379,4 @@ pub static MONEY_KINDS_MASK: u64 = 0x206;
 pub static DATA_KINDS_MASK: u64 = 0x8b760000;
 pub static QUERY_CPU_BY_BACKEND: [f64; NB] = [8.0, 25.0, -1.0, 80.0, -1.0, 60.0, -1.0, 30.0, 40.0, -1.0, 100.0, -1.0, -1.0, -1.0, -1.0, -1.0];
 
-pub const CATALOG_HASH: u32 = 0xccbc83f3;
+pub const CATALOG_HASH: u32 = 0xb9cc35dd;

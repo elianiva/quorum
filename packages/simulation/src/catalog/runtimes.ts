@@ -24,6 +24,7 @@ export type LanguageDef = Readonly<{
   hireTime: number
   buildMinutes: number
   sessionKB: number
+  armSpeed: number
   blast: 'request' | 'whole' | 'task'
 }>
 
@@ -38,6 +39,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     hireTime: 1,
     buildMinutes: 0.5,
     sessionKB: 130,
+    armSpeed: 0.88,
     blast: 'request',
   },
   ruby: {
@@ -48,6 +50,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     hireTime: 1.5,
     buildMinutes: 1,
     sessionKB: 340,
+    armSpeed: 0.9,
     blast: 'request',
   },
   node: {
@@ -58,6 +61,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     hireTime: 1,
     buildMinutes: 3,
     sessionKB: 420,
+    armSpeed: 0.97,
     blast: 'whole',
   },
   python: {
@@ -68,6 +72,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     hireTime: 1,
     buildMinutes: 1,
     sessionKB: 360,
+    armSpeed: 0.9,
     blast: 'request',
   },
   go: {
@@ -78,6 +83,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     hireTime: 1.4,
     buildMinutes: 1.5,
     sessionKB: 210,
+    armSpeed: 1,
     blast: 'request',
   },
   java: {
@@ -88,6 +94,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     hireTime: 1.1,
     buildMinutes: 6,
     sessionKB: 210,
+    armSpeed: 0.98,
     blast: 'request',
   },
   csharp: {
@@ -98,6 +105,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     hireTime: 1.1,
     buildMinutes: 4,
     sessionKB: 280,
+    armSpeed: 0.97,
     blast: 'request',
   },
   elixir: {
@@ -108,6 +116,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     hireTime: 2.5,
     buildMinutes: 2,
     sessionKB: 145,
+    armSpeed: 0.95,
     blast: 'request',
   },
   rust: {
@@ -118,6 +127,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     hireTime: 2,
     buildMinutes: 12,
     sessionKB: 85,
+    armSpeed: 1,
     blast: 'task',
   },
   zig: {
@@ -128,6 +138,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     hireTime: 3,
     buildMinutes: 6,
     sessionKB: 65,
+    armSpeed: 0.98,
     blast: 'whole',
   },
   haskell: {
@@ -138,6 +149,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     hireTime: 2.5,
     buildMinutes: 8,
     sessionKB: 180,
+    armSpeed: 0.9,
     blast: 'request',
   },
 }

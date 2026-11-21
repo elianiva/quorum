@@ -412,3 +412,34 @@ describe('Cache working set', () => {
     expect(evicting(20_000_000, 6)).toBeGreaterThan(0.5)
   })
 })
+
+describe('ARM instances', () => {
+  const utilization = (id: string, patch: Partial<GameNode>): number => {
+    const game = freeSandbox()
+    return solveFlow({
+      ...game,
+      stage: 3,
+      users: 6_000,
+      nodes: game.nodes.map((node) =>
+        node.id === id
+          ? { ...node, size: 3, ...patch }
+          : node.type === 'server'
+            ? { ...node, runtime: 'go', size: 8 }
+            : { ...node, size: 8 },
+      ),
+    }).nodes[id]!.utilization
+  }
+
+  test('a Database on ARM gives up some capacity for the lower price', () => {
+    expect(utilization('database', { family: 'arm' })).toBeGreaterThan(
+      utilization('database', { family: 'general' }),
+    )
+  })
+
+  test('ARM costs a PHP server more capacity than a Go one', () => {
+    const loss = (runtime: GameNode['runtime']) =>
+      utilization('server', { runtime, family: 'arm' }) /
+      utilization('server', { runtime, family: 'general' })
+    expect(loss('php_fpm')).toBeGreaterThan(loss('go'))
+  })
+})

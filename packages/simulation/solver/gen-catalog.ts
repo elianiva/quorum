@@ -315,6 +315,9 @@ push(
   `pub static LANGUAGE_SESSION_KB: [f64; ${LANGUAGE_IDS.length}] = [${LANGUAGE_IDS.map((id) => formatNumber(language[id].sessionKB)).join(', ')}];`,
 )
 push(
+  `pub static LANGUAGE_ARM_SPEED: [f64; ${LANGUAGE_IDS.length}] = [${LANGUAGE_IDS.map((id) => formatNumber(language[id].armSpeed)).join(', ')}];`,
+)
+push(
   `pub static LANGUAGE_BLAST: [&str; ${LANGUAGE_IDS.length}] = [${LANGUAGE_IDS.map((id) => `"${language[id].blast}"`).join(', ')}];`,
 )
 

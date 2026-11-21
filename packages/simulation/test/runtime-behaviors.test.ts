@@ -348,3 +348,39 @@ describe('Database load', () => {
     ).toBe(false)
   })
 })
+
+describe('Load Balancer policies', () => {
+  const balanced = (policy: GameNode['policy']): ReadonlyArray<number> => {
+    let game = freeSandbox()
+    const lb = ok(Actions.place(game, 'lb', 300, 280))
+    const lbId = lb.nodes.at(-1)!.id
+    const second = ok(Actions.place(lb, 'server', 600, 560))
+    const secondId = second.nodes.at(-1)!.id
+    game = ok(Actions.connect(Actions.disconnect(second, 'users', 'server'), 'users', lbId))
+    game = ok(Actions.connect(ok(Actions.connect(game, lbId, 'server')), lbId, secondId))
+    game = ok(Actions.connect(game, secondId, 'database'))
+    game = {
+      ...game,
+      users: 20_000,
+      nodes: game.nodes.map((node) =>
+        node.id === lbId
+          ? { ...node, policy, warm: 1 }
+          : node.id === secondId
+            ? { ...node, warm: 1, family: 'burstable', credits: 0 }
+            : node.type === 'database'
+              ? { ...node, size: 8 }
+              : node,
+      ),
+    }
+    const ledger = solveFlow(game)
+    return [ledger.nodes.server!.inbound, ledger.nodes[secondId]!.inbound]
+  }
+  const share = ([first, second]: ReadonlyArray<number>) => first! / (first! + second!)
+
+  test('two choices and consistent hash route differently from weighted once researched', () => {
+    const weighted = share(balanced('weighted'))
+    expect(share(balanced('hash'))).toBeCloseTo(0.5, 6)
+    expect(share(balanced('p2c'))).toBeGreaterThan(0.5)
+    expect(share(balanced('p2c'))).toBeLessThan(weighted)
+  })
+})

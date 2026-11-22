@@ -3,14 +3,14 @@
  * `packages/simulation/src/pacing.ts`. Do not edit: change the Simulation or the measurement and
  * run the script again.
  *
- * Taken at Simulation version 6d6e0e26 on 2026-11-20.
+ * Taken at Simulation version 2b7c05b3 on 2026-11-22.
  */
 
 import type { Measurements } from './measure.ts'
 
 export const SNAPSHOT: Measurements = {
-  version: '6d6e0e26',
-  takenOn: '2026-11-20',
+  version: '2b7c05b3',
+  takenOn: '2026-11-22',
   pacing: [
     {
       label: 'First research',
@@ -38,7 +38,7 @@ export const SNAPSHOT: Measurements = {
     },
     {
       label: 'Second App Server',
-      value: '46.9–67.7',
+      value: '46.9–64.0',
     },
     {
       label: 'First incident',
@@ -72,11 +72,11 @@ export const SNAPSHOT: Measurements = {
     },
     {
       label: 'Series A',
-      value: '56.4–62.8',
+      value: '76.3–77.7',
     },
     {
       label: 'Series B',
-      value: '96.5–107.7',
+      value: '106.8–117.8',
     },
   ],
   seed: [
@@ -94,37 +94,37 @@ export const SNAPSHOT: Measurements = {
     },
     {
       label: 'Second App Server',
-      value: '46.9–53.9',
+      value: '46.9–53.8',
     },
     {
       label: 'Series A',
-      value: '64.4–75.4',
+      value: '82.5–87.2',
     },
     {
       label: 'Seed length',
-      value: '29.3–37.0',
+      value: '47.4–48.8',
     },
   ],
   series: [
     {
       label: 'Series A',
-      value: '64.4–75.4',
+      value: '82.5–87.2',
     },
     {
       label: 'Second zone and standbys',
-      value: '68.5–79.5',
+      value: '86.6–91.3',
     },
     {
       label: 'Series B',
-      value: '118.8, never on some seeds',
+      value: 'never',
     },
     {
       label: 'Users at 130 min',
-      value: '117,157–224,676',
+      value: '123,293–132,640',
     },
     {
       label: 'Availability at 130 min',
-      value: '96.35%–97.89%',
+      value: '98.21%–98.91%',
     },
   ],
   legacy: [
@@ -162,5 +162,5 @@ export const SNAPSHOT: Measurements = {
       },
     },
   ],
-  reach: '117,157–224,676',
+  reach: '123,293–132,640',
 }

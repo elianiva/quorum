@@ -1,11 +1,15 @@
 ---
 title: 19. Parts
-summary: The CPU, memory, and disk Parts that fill a Node's Slots, and the Parts shop that sells them.
+summary: The CPU, memory, and disk Parts that fill a Node's Slots, and the two shop modes that sell them.
 section: design
 order: 19
 ---
 
-An [App Server](/design/05-components#app-server) and a [Database](/design/07-data-tier#relational-database) have three **Slots**: CPU, Memory, and Disk. A **Part** fills one Slot, and the card draws it as a cartridge that seats into the Node card. The Slots are a preview until **Custom instances** is researched. Before then, a new Node buys a fixed instance type, and the Slots show the CPU, memory, and disk that type includes. The **Instance catalog** is the shop in this phase: it lists each family and size, the GB per vCPU, the network, the switching price, and the Burn. After the research, the shop becomes the **Parts catalog**, and the player can build a Node component by component instead of buying a predetermined instance type.
+An [App Server](/design/05-components#app-server) and a [Database](/design/07-data-tier#relational-database) have three **Slots**: CPU, Memory, and Disk. A **Part** fills one Slot, and the card draws it as a cartridge that seats into the Node card. The Slots are a preview until **Custom instances** is researched. Before then, a new Node buys a fixed instance type, and the Slots show the CPU, memory, and disk that type includes. The **Instance catalog** is the shop in this phase: it lists each family and size, the GB per vCPU, the network, the switching price, and the Burn.
+
+After the research, the shop has two modes. The **Instance catalog** sells a preset and installs the CPU, memory, and disk Parts that the chosen family and size need, at the current Part prices. The **Parts catalog** sells each Slot on its own. A mode switch in the shop header moves between them. The Instance catalog keeps its family rail and size cards, and the Parts catalog keeps its one tab per Slot. A new Node can use either mode.
+
+Selecting an instance buys only the Parts that are missing, so a Node that already has a CPU and memory kit pays only for the change. The preset never downgrades an installed CPU. Once a CPU is installed, the cards below its size are hidden, and the card footer remains the way to shrink the Node.
 
 The families keep real CPU-to-memory ratios: Burstable 2 GB per vCPU, General 4, Compute 2, Memory 8, and ARM 4. These match the AWS T4g.medium, M7g, C7g, R7g, and Graviton shapes. The ratios are a property of the instance type before the research and of the memory kit after it.
 
@@ -31,31 +35,35 @@ The volume kit exists only on a Database. General purpose gives 3,000 IOPS at 1�
 
 ## The card
 
-The card has a light faceplate, a tinted header, engraved row separators, and a dark footer key. The three Slots sit in a strip under the rows, each one a 58 px cartridge in a recessed well. The Part body takes a muted tint of its group color, the label sits at the top, and the value is centered. Two small screws hold the cartridge in place. An empty Slot shows a plus and a dashed edge.
+The card has a light faceplate, a tinted header, engraved row separators, and a dark footer key. The three Slots sit in a strip under the rows, each one a 58 px cartridge in a recessed well. The Part body takes a muted tint of its group color, the label sits at the top, and the value is centered. A connector edge seats the cartridge in the well. An empty Slot shows a plus and a dashed edge.
 
-A click on a Slot opens the Parts shop on that Slot. A Node with a missing Part also gets an **Install parts** footer, and its Inspector has one **Open parts shop** button. The rest of the Inspector stays about the Node, not the shop.
+A click on a Slot opens the shop on the Parts catalog for that Slot. The header also switches to the Instance catalog. A Node with a missing Part also gets an **Install parts** footer. Its Inspector has an **Open parts catalog** button and an **Open instance catalog** link. The rest of the Inspector stays about the Node, not the shop.
 
 The tint follows the Slot's limiting resource. A Slot's outline turns amber at 70% utilization and red at 90%, so a saturated RAM Part is visible without opening the Inspector. The Part body uses `mix(hue, colors.muted, 0.35)`, which keeps the Part from outshining the card around it. A Database shows `3k` or `64k` on its Disk Part, and an App Server shows the empty Disk Slot.
 
 ## The shop
 
-The Parts shop is a modal with one tab per Slot. It opens from a Slot, the footer, or the Inspector. The header names the Node and the Slot, and shows the installed Part or **Empty slot**.
+The shop is a modal with two modes. The header switches between **Instances** and **Parts**. A Slot opens the Parts catalog on that Slot. The footer's **Install parts** button also opens the Parts catalog. The Inspector has a button for each mode. Before Custom instances, only the Instance catalog is available and the Parts mode is locked.
+
+The Instance catalog has a family rail and the size cards for the selected family. It shows the CPU, memory, network, switch price, and Burn for each size. Selecting a card installs the matching Parts in one action with one Undo. If the Node already has a Part, the preset keeps it and buys only what is missing. A Database also gets a general purpose disk if it has none. The preset does not downgrade an installed CPU, so the cards below the installed size are hidden.
+
+The Parts catalog has one tab per Slot. The header names the Node and the Slot, and shows the installed Part or **Empty slot**.
 
 - **CPU** shows nine cards from `0.5c` to `96c`. Each names the size, vCPU, network, and price. Installing a larger CPU restarts the Node.
 - **Memory** shows five kit cards. Each names the kit, GB per vCPU, the GB it gives this CPU, its Burn multiplier, and its price. The ARM card also names the porting Dev Hours. The cards are disabled until a CPU is installed, and ARM waits for the research and the Dev Hours.
 - **Disk** shows the two volume classes on a Database. Each names its IOPS, Burn multiplier, and price. An App Server says that swap Parts are not sold.
 
-Each card has one **Install** button. The installed card gets a check and cannot be bought again. A purchase changes the Node in place, and Undo puts the old Part back with the rest of the Node's state. The shop does not keep an inventory of owned Parts.
+Each card has one **Install** button. In the Instance catalog, a card says **Select** before the research and **Install** after it. The installed card gets a check and says **Current** and **Installed**. A purchase changes the Node in place, and Undo puts the old Part back with the rest of the Node's state. The shop does not keep an inventory of owned Parts.
 
-The shop prices are one-time, then the Part's Burn follows from its installed value. A CPU costs `2 × component cost × vCPU × era cost index × market`. A memory kit costs `40 × family multiplier × era cost index × market`. A volume costs `24` for general purpose or `72` for provisioned IOPS, times the era index and market. The first CPU in an empty Slot costs the sum of the sizes from `micro` to the target, and `nano` costs its own size. Once a CPU is installed, a larger one costs the sum of the size steps from the installed size to the target, so a direct jump costs the same as walking those sizes. The footer and the bulk resize charge the same steps.
+The prices are one-time, then the Part's Burn follows from its installed value. A CPU costs `2 × component cost × vCPU × era cost index × market`. A memory kit costs `40 × family multiplier × era cost index × market`. A volume costs `24` for general purpose or `72` for provisioned IOPS, times the era index and market. The first CPU in an empty Slot costs the sum of the sizes from `micro` to the target, and `nano` costs its own size. Once a CPU is installed, a larger one costs the sum of the size steps from the installed size to the target, so a direct jump costs the same as walking those sizes. The Parts catalog and the post-research Instance catalog both charge these Part prices. The pre-research Instance catalog, the card footer, and the bulk resize use the instance resize price instead.
 
 Selling a Node refunds half of its placement price and half of its installed Parts at the current market, so Parts are not stranded value.
 
 ## The weekly market
 
-Part prices move on a seven-calendar-day cycle. A market multiplier swings between 0.85× and 1.15×, and CPU, Memory, and Disk each have their own phase, so the shelves do not all rise together. The shop shows the multiplier as a signed percentage and an arrow, and the week strip marks today. The prices on the cards use the market at the current game time.
+Part prices move on a seven-calendar-day cycle. A market multiplier swings between 0.85× and 1.15×, and CPU, Memory, and Disk each have their own phase, so the shelves do not all rise together. The Parts catalog shows the multiplier as a signed percentage and an arrow, and the week strip marks today. The Parts catalog and the post-research Instance catalog use the market at the current game time. The pre-research Instance catalog uses the instance resize schedule.
 
-In a Sandbox the cards show the market price as a reference and the install is free. The shop says **Free in Sandbox** so the price is not mistaken for a bill.
+In a Sandbox the cards show the reference price and the install is free. The shop says **Free in Sandbox** so the price is not mistaken for a bill.
 
 ## Where it stops
 

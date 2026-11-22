@@ -169,11 +169,12 @@ footer key. The card is the main information surface.
 
 Rows use engraved separators, and the footer is a dark key against the light faceplate. The three
 chips under the footer are **Slots**. CPU, Memory, and Disk hold **Parts**, and an empty Slot shows a
-plus. Each Slot is a screwed cartridge in a recessed well. A Slot's outline
+plus. Each Slot is a seated cartridge in a recessed well. A Slot's outline
 turns amber at 70% of its limit and red at 90%, so a saturated Part is visible without the Inspector.
-Outside the guided Sandboxes, a new Node starts with empty Slots and an **Install parts** footer; a starter Node comes equipped.
-Click a Slot, the footer, or the Inspector's **Open parts shop** button to open the **Parts shop**
-popup ([Parts](/design/19-parts)).
+After Custom instances, a new Node outside the guided Sandboxes starts with empty Slots and an
+**Install parts** footer; a starter Node comes equipped. Click a Slot, the footer, or the Inspector's
+**Open parts catalog** button to open the shop. The header switches between the **Instance catalog**
+and the **Parts catalog** ([Parts](/design/19-parts)).
 
 With research `profiling`, the card carries the `Limit` row. The gauges that explain the limit live in
 the Inspector. A goal bar names the tightest limit, and a bar follows for every limit the Ledger can

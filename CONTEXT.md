@@ -88,16 +88,24 @@ A CPU, memory kit, or volume that fills one Slot on an App Server or Database. A
 _Avoid_: module, upgrade, component
 
 **Slot**:
-One of three places on an App Server or Database for a Part: CPU, Memory, or Disk. The card draws each Slot as a screwed cartridge, and an empty Slot stays open.
+One of three places on an App Server or Database for a Part: CPU, Memory, or Disk. The card draws each Slot as a seated cartridge, and an empty Slot stays open.
 _Avoid_: bay, socket, port
 
 **Empty Slot**:
-A Slot with no Part. Outside the guided Sandboxes, a new App Server or Database starts with empty Slots. A Node with no CPU or memory, or a Database with no disk, serves nothing.
+A Slot with no Part. After Custom instances, a new App Server or Database starts with empty Slots outside the guided Sandboxes. A Node with no CPU or memory, or a Database with no disk, serves nothing.
 _Avoid_: blank slot, missing part, uninstalled
 
-**Parts shop**:
-The popup that sells Parts for a selected Node. It opens from a Slot, a Node's footer, or the Inspector, and has one tab per Slot.
-_Avoid_: parts store, shop (alone in UI copy), market
+**Shop**:
+The popup that sells compute for a selected Node. It opens from a Slot, a Node's footer, or the Inspector. Before Custom instances, it has one mode: the Instance catalog. After the research, it has two modes: the Instance catalog and the Parts catalog.
+_Avoid_: parts store, market
+
+**Instance catalog**:
+The shop mode that sells a fixed instance type. Before Custom instances, it is the only mode and prices the instance type. After the research, it is a preset that installs the matching CPU, memory, and disk Parts at the current Part prices.
+_Avoid_: instance shop, instance store
+
+**Parts catalog**:
+The shop mode that sells one Part for one Slot. It opens on the Slot the player chose and has one tab per Slot.
+_Avoid_: parts store, parts shop (in UI copy)
 
 **Part market**:
 The weekly multiplier on Part prices, from 0.85× to 1.15×. CPU, Memory, and Disk each move on their own phase.

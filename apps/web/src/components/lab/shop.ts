@@ -22,13 +22,14 @@ import {
   STORAGE_IOPS,
 } from '@quorum/simulation/catalog'
 import type { FamilyId } from '@quorum/simulation/catalog'
-import type { IopsClass } from '@quorum/simulation/state'
-import { burnOf, has } from '@quorum/simulation/lookups'
+import type { GameNode, IopsClass } from '@quorum/simulation/state'
+import { burnOf, has, ramOf, resizePrice, vcpuOf } from '@quorum/simulation/lookups'
 import {
   installedPart,
   marketDirection,
   marketPercent,
   partPrice,
+  partsUnlocked,
   type SlotKind,
 } from '@quorum/simulation/parts'
 import { copy, nodeTitle, type Messages } from '@/i18n/messages.ts'
@@ -60,6 +61,8 @@ type PartCard = Readonly<{
   subtitle: string
   specs: ReadonlyArray<string>
   price: number
+  priceLabel?: string | undefined
+  cta?: string | undefined
   burn: string | null
   installed: boolean
   ready: boolean
@@ -240,7 +243,10 @@ const partCard = (card: PartCard, t: Messages, h: HtmlBuilder<Message>): Html =>
           ),
         ],
         [
-          h.span([h.Class(cx(FIGURE, css({ fontSize: 'type.13' })))], [money(card.price)]),
+          h.span(
+            [h.Class(cx(FIGURE, css({ fontSize: 'type.13' })))],
+            [card.priceLabel ?? money(card.price)],
+          ),
           h.span(
             [
               h.Class(
@@ -250,7 +256,13 @@ const partCard = (card: PartCard, t: Messages, h: HtmlBuilder<Message>): Html =>
                 }),
               ),
             ],
-            [card.installed ? t.shop.installed : card.locked ? t.research.locked : t.shop.install],
+            [
+              card.installed
+                ? t.shop.installed
+                : card.locked
+                  ? t.research.locked
+                  : (card.cta ?? t.shop.install),
+            ],
           ),
         ],
       ),
@@ -376,11 +388,412 @@ const slotButton = (
   )
 }
 
+const instanceSwitchPrice = (
+  game: Model['board']['game'],
+  node: GameNode,
+  size: number,
+): number => {
+  if (size <= node.size) return 0
+  const priced = game.sandbox ? { ...game, sandbox: false } : game
+  let total = 0
+  for (let at = node.size; at < size; at += 1) {
+    total += resizePrice(priced, { ...node, size: at }) ?? 0
+  }
+  return total
+}
+
+const instancePanel = (model: Model, node: GameNode, h: HtmlBuilder<Message>): Html => {
+  const t = copy(h)
+  const game = model.board.game
+  const family = model.shopFamily
+  const kit = FAMILIES[family]
+  const armLocked = family === 'arm' && !has(game, 'arm-instances')
+  const cards: ReadonlyArray<PartCard> = SIZES.map((size, index) => {
+    const vcpu = size.vcpu
+    const gb = Math.round(vcpu * kit.ramPerVcpu)
+    const port =
+      family === 'arm' && node.type === 'server' && node.family !== 'arm' && !game.sandbox
+        ? LANGUAGES[RUNTIMES[node.runtime].language].armPortDh
+        : 0
+    const projected = { ...node, family, size: index }
+    const installed = node.family === family && node.size === index
+    const downgrade = index < node.size
+    const sameSize = index === node.size
+    return {
+      key: `shop-instance-${family}-${index}`,
+      title: `${Number.isInteger(vcpu) ? vcpu : vcpu.toFixed(1)}c`,
+      subtitle: t.nodeList.sizes[size.name],
+      specs: [`${gb} GB`, `${size.gbps} Gbps`, ...(port > 0 ? [t.units.devHours(port)] : [])],
+      price: instanceSwitchPrice(game, node, index),
+      priceLabel: installed
+        ? t.shop.current
+        : downgrade || sameSize
+          ? t.shop.freeSwitch
+          : undefined,
+      cta: installed ? undefined : downgrade ? t.shop.downgrade : t.shop.select,
+      burn: t.units.perSecond(money(burnOf(game, projected))),
+      installed,
+      ready:
+        !armLocked &&
+        game.devHours >= port &&
+        (game.sandbox || game.cash >= instanceSwitchPrice(game, node, index)),
+      locked: armLocked,
+      capacity: vcpu,
+      search: `${size.name} ${family} ${vcpu} ${gb} gb ${size.gbps} gbps`,
+      message: Message.SelectInstance({ nodeId: node.id, family, size: index }),
+    }
+  })
+
+  const familyRail = h.aside(
+    [h.Class(css({ display: 'flex', minWidth: '0', flexDirection: 'column', gap: '4' }))],
+    [
+      h.div(
+        [h.Class(css({ display: 'flex', flexDirection: 'column', gap: '1.5' }))],
+        [
+          h.span(
+            [h.Class(cx(EYEBROW, css({ paddingInline: '2', color: 'mutedForeground' })))],
+            [t.shop.family],
+          ),
+          ...FAMILY_IDS.map((id) => {
+            const selected = id === family
+            const locked = id === 'arm' && !has(game, 'arm-instances')
+            return h.button(
+              [
+                h.Type('button'),
+                h.OnClick(Message.ShopFamilyChosen({ family: id })),
+                h.AriaPressed(selected ? 'true' : 'false'),
+                h.Key(`shop-family-${id}`),
+                h.Class(
+                  cx(
+                    css({
+                      display: 'flex',
+                      width: '100%',
+                      minWidth: '0',
+                      alignItems: 'center',
+                      gap: '2',
+                      borderRadius: 'lg',
+                      paddingInline: '2',
+                      paddingBlock: '2',
+                      textAlign: 'left',
+                      color: 'mutedForeground',
+                      _hover: { color: 'foreground' },
+                    }),
+                    selected
+                      ? css({
+                          layerStyle: 'raised',
+                          boxShadow: 'raised',
+                          color: 'foreground',
+                        })
+                      : css({}),
+                  ),
+                ),
+              ],
+              [
+                icon(
+                  h,
+                  selected ? Check : Cpu,
+                  css({ width: '3.5', height: '3.5', flexShrink: '0' }),
+                ),
+                h.div(
+                  [
+                    h.Class(
+                      css({
+                        display: 'flex',
+                        minWidth: '0',
+                        flexDirection: 'column',
+                        gap: '0.25',
+                      }),
+                    ),
+                  ],
+                  [
+                    h.span(
+                      [
+                        h.Class(
+                          css({
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            fontSize: 'type.12',
+                            fontWeight: 'medium',
+                          }),
+                        ),
+                      ],
+                      [t.catalog.families[id].name],
+                    ),
+                    h.span(
+                      [h.Class(css({ fontSize: 'type.10-5', color: 'mutedForeground' }))],
+                      [`${FAMILIES[id].ramPerVcpu} GB/vCPU`],
+                    ),
+                  ],
+                ),
+                ...(locked
+                  ? [
+                      icon(
+                        h,
+                        Lock,
+                        css({
+                          width: '3',
+                          height: '3',
+                          flexShrink: '0',
+                          color: 'mutedForeground',
+                        }),
+                      ),
+                    ]
+                  : []),
+              ],
+            )
+          }),
+        ],
+      ),
+      h.div(
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2',
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderColor: 'border',
+              paddingInline: '2',
+              paddingTop: '3',
+            }),
+          ),
+        ],
+        [
+          h.p(
+            [h.Class(css({ fontSize: 'type.10-5', lineHeight: 'snug', color: 'mutedForeground' }))],
+            [t.shop.partsLocked],
+          ),
+          button<Message>(
+            {
+              onClick: Message.ResearchShown({ id: 'custom-instances' }),
+              variant: 'outline',
+              size: 'sm',
+            },
+            t.shop.openResearch,
+            h,
+          ),
+        ],
+      ),
+    ],
+  )
+
+  const center = h.section(
+    [h.Class(css({ display: 'flex', minWidth: '0', flexDirection: 'column', gap: '3' }))],
+    [
+      h.div(
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: '3',
+            }),
+          ),
+        ],
+        [
+          h.span(
+            [h.Class(css({ fontSize: 'type.17', fontWeight: 'semibold' }))],
+            [t.catalog.families[family].name],
+          ),
+          h.span(
+            [h.Class(css({ fontSize: 'type.11-5', color: 'mutedForeground' }))],
+            [t.shop.sizeCount(cards.length)],
+          ),
+        ],
+      ),
+      h.p(
+        [h.Class(css({ fontSize: 'type.11-5', color: 'mutedForeground' }))],
+        [t.catalog.families[family].blurb],
+      ),
+      h.div(
+        [
+          h.Class(
+            cx(
+              css({
+                display: 'grid',
+                gap: '2',
+                _narrow: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+              }),
+              css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
+            ),
+          ),
+        ],
+        cards.map((card) => partCard(card, t, h)),
+      ),
+    ],
+  )
+
+  const current = {
+    cpu: `${vcpuOf(node)}c`,
+    ram: `${Math.round(ramOf(node))}g`,
+    disk: node.type === 'database' ? (node.iops === 'provisioned' ? '64k' : '3k') : t.shop.swap,
+  }
+  const summary = h.aside(
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          minWidth: '0',
+          flexDirection: 'column',
+          gap: '3',
+          borderLeftWidth: '1px',
+          borderLeftStyle: 'solid',
+          borderColor: 'border',
+          paddingLeft: '4',
+          _narrow: {
+            borderLeftWidth: '0',
+            borderTopWidth: '1px',
+            borderTopStyle: 'solid',
+            paddingLeft: '0',
+            paddingTop: '4',
+          },
+        }),
+      ),
+    ],
+    [
+      h.div(
+        [h.Class(css({ display: 'flex', flexDirection: 'column', gap: '1.5' }))],
+        [
+          h.span([h.Class(cx(EYEBROW, css({ color: 'mutedForeground' })))], [t.shop.build]),
+          h.div(
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  justifyContent: 'space-between',
+                  gap: '2',
+                  fontSize: 'type.11-5',
+                }),
+              ),
+            ],
+            [
+              h.span([h.Class(css({ color: 'mutedForeground' }))], [t.shop.family]),
+              h.span([h.Class(FIGURE)], [t.catalog.families[node.family].name]),
+            ],
+          ),
+          ...[
+            [t.inspector.partsCpu, current.cpu] as const,
+            [t.inspector.partsMemory, current.ram] as const,
+            [t.inspector.partsDisk, current.disk] as const,
+          ].map(([label, value]) =>
+            h.div(
+              [
+                h.Class(
+                  css({
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '2',
+                    fontSize: 'type.11-5',
+                  }),
+                ),
+              ],
+              [
+                h.span([h.Class(css({ color: 'mutedForeground' }))], [label]),
+                h.span([h.Class(cx(FIGURE, css({ fontSize: 'type.11-5' })))], [value]),
+              ],
+            ),
+          ),
+        ],
+      ),
+      h.div(
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1',
+              borderTopWidth: '1px',
+              borderTopStyle: 'solid',
+              borderColor: 'border',
+              paddingTop: '3',
+            }),
+          ),
+        ],
+        [
+          h.div(
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  justifyContent: 'space-between',
+                  gap: '2',
+                }),
+              ),
+            ],
+            [
+              h.span(
+                [h.Class(css({ fontSize: 'type.11-5', color: 'mutedForeground' }))],
+                [t.shop.burn],
+              ),
+              h.span(
+                [h.Class(cx(FIGURE, css({ fontSize: 'type.12' })))],
+                [t.units.perSecond(money(burnOf(game, node)))],
+              ),
+            ],
+          ),
+          h.p(
+            [
+              h.Class(
+                css({
+                  paddingTop: '1',
+                  fontSize: 'type.10-5',
+                  lineHeight: 'snug',
+                  color: 'mutedForeground',
+                }),
+              ),
+            ],
+            [t.shop.instanceHint],
+          ),
+          ...(game.sandbox
+            ? [h.span([h.Class(css({ fontSize: 'type.10-5', color: 'ok' }))], [t.shop.free])]
+            : []),
+        ],
+      ),
+    ],
+  )
+
+  return shell(
+    t.shop.instanceTitle,
+    [],
+    [
+      h.div(
+        [
+          h.Class(
+            css({
+              display: 'grid',
+              gridTemplateColumns: '180px minmax(0, 1fr) 200px',
+              gap: '4',
+              paddingInline: '5',
+              paddingBottom: '5',
+              overflowY: 'auto',
+              _narrow: {
+                gridTemplateColumns: 'minmax(0, 1fr)',
+                gap: '4',
+                paddingInline: '4',
+              },
+            }),
+          ),
+        ],
+        [familyRail, center, summary],
+      ),
+    ],
+    css({ maxWidth: 'calc(980px * var(--type-scale))' }),
+    h,
+  )
+}
+
 export const shopPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const game = model.board.game
   const node = game.nodes.find((entry) => entry.id === model.board.selected)
   if (!node || (node.type !== 'server' && node.type !== 'database')) return h.empty
+  if (!partsUnlocked(game)) return instancePanel(model, node, h)
 
   const slot = model.shopSlot
   const percent = marketPercent(game, slot)

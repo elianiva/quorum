@@ -1,6 +1,18 @@
 export const shop = {
   title: 'Catálogo de piezas',
   subtitle: 'Construye este Nodo pieza a pieza. Los precios cambian durante la semana.',
+  instanceTitle: 'Catálogo de instancias',
+  instanceHint:
+    'La CPU y la memoria vienen con el tipo de instancia. Investiga Instancias personalizadas para comprarlas por separado.',
+  partsLocked: 'Instancias personalizadas desbloquea piezas separadas.',
+  openResearch: 'Abrir investigación',
+  openInstanceCatalog: 'Abrir catálogo de instancias',
+  family: 'Familia',
+  sizeCount: (p0: number) => (p0 === 1 ? '1 tamaño' : `${p0} tamaños`),
+  freeSwitch: 'Gratis',
+  downgrade: 'Bajar',
+  select: 'Elegir',
+  current: 'Actual',
   slots: 'Ranuras',
   build: 'Construcción',
   search: 'Buscar piezas',

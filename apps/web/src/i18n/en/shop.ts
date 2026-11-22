@@ -1,6 +1,18 @@
 export const shop = {
   title: 'Parts catalog',
   subtitle: 'Build this Node part by part. Prices move with the week.',
+  instanceTitle: 'Instance catalog',
+  instanceHint:
+    'The CPU and memory come with the instance type. Research Custom instances to buy them separately.',
+  partsLocked: 'Custom instances unlocks separate Parts.',
+  openResearch: 'Open research',
+  openInstanceCatalog: 'Open instance catalog',
+  family: 'Family',
+  sizeCount: (p0: number) => (p0 === 1 ? '1 size' : `${p0} sizes`),
+  freeSwitch: 'Free',
+  downgrade: 'Downgrade',
+  select: 'Select',
+  current: 'Current',
   slots: 'Slots',
   build: 'Build',
   search: 'Search parts',

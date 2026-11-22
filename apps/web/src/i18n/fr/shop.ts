@@ -1,6 +1,18 @@
 export const shop = {
   title: 'Catalogue de pièces',
   subtitle: 'Construisez ce Nœud pièce par pièce. Les prix changent au fil de la semaine.',
+  instanceTitle: "Catalogue d'instances",
+  instanceHint:
+    "Le CPU et la mémoire viennent avec le type d'instance. Débloquez Instances personnalisées pour les acheter séparément.",
+  partsLocked: 'Instances personnalisées débloque des pièces séparées.',
+  openResearch: 'Ouvrir la recherche',
+  openInstanceCatalog: "Ouvrir le catalogue d'instances",
+  family: 'Famille',
+  sizeCount: (p0: number) => (p0 === 1 ? '1 taille' : `${p0} tailles`),
+  freeSwitch: 'Gratuit',
+  downgrade: 'Réduire',
+  select: 'Choisir',
+  current: 'Actuel',
   slots: 'Emplacements',
   build: 'Configuration',
   search: 'Rechercher des pièces',

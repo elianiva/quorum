@@ -1141,6 +1141,20 @@ const instance = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => 
         ),
         h,
       ),
+      h.div(
+        [h.Class(css({ paddingTop: '1' }))],
+        [
+          button<Message>(
+            {
+              onClick: Message.ShopOpened({ nodeId: node.id, slot: 'cpu' }),
+              variant: 'outline',
+              size: 'sm',
+            },
+            t.shop.openInstanceCatalog,
+            h,
+          ),
+        ],
+      ),
       ...(hasPricing(node) && game.stage >= PRICING_FROM_STAGE ? [pricing(game, node, h)] : []),
     ],
     h,

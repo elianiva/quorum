@@ -5,11 +5,13 @@ section: design
 order: 19
 ---
 
-An [App Server](/design/05-components#app-server) and a [Database](/design/07-data-tier#relational-database) have three **Slots**: CPU, Memory, and Disk. A **Part** fills one Slot, and the card draws it as a cartridge with two screws. Outside the guided Sandboxes, a new App Server or Database is placed with empty Slots. The **Parts shop** is a popup that sells a Part for one Slot, so the player can build a Node component by component instead of buying a predetermined instance type.
+An [App Server](/design/05-components#app-server) and a [Database](/design/07-data-tier#relational-database) have three **Slots**: CPU, Memory, and Disk. A **Part** fills one Slot, and the card draws it as a cartridge that seats into the Node card. The Slots are a preview until **Custom instances** is researched. Before then, a new Node buys a fixed instance type, and the Slots show the CPU, memory, and disk that type includes. The **Instance catalog** is the shop in this phase: it lists each family and size, the GB per vCPU, the network, the switching price, and the Burn. After the research, the shop becomes the **Parts catalog**, and the player can build a Node component by component instead of buying a predetermined instance type.
+
+The families keep real CPU-to-memory ratios: Burstable 2 GB per vCPU, General 4, Compute 2, Memory 8, and ARM 4. These match the AWS T4g.medium, M7g, C7g, R7g, and Graviton shapes. The ratios are a property of the instance type before the research and of the memory kit after it.
 
 The design borrows two shapes. A Factorio machine has slots that accept modules, and a rack server has separate CPU, DIMM, and drive bays. The game keeps the slot and the separate purchase, and it leaves out real compatibility. Any CPU Part fits any Slot, and any memory kit fits any CPU.
 
-Starter Nodes come with their Parts already installed, and the guided Sandboxes place equipped Nodes, so their exercises keep running. A Node placed outside a guided Sandbox begins empty and stays inert until its CPU and Memory are installed. A Database also needs its Disk.
+Starter Nodes come with their Parts already installed, and the guided Sandboxes place equipped Nodes, so their exercises keep running. A Node placed after the research begins empty and stays inert until its CPU and Memory are installed. A Database also needs its Disk.
 
 ## The three Parts
 

@@ -1,6 +1,18 @@
 export const shop = {
   title: 'パーツカタログ',
   subtitle: 'このノードをパーツごとに組み立てます。価格は週の間に変わります。',
+  instanceTitle: 'インスタンスカタログ',
+  instanceHint:
+    'CPUとメモリはインスタンスタイプに含まれます。カスタムインスタンスを研究すると別々に購入できます。',
+  partsLocked: 'カスタムインスタンスでパーツを個別に購入できます。',
+  openResearch: '研究を開く',
+  openInstanceCatalog: 'インスタンスカタログを開く',
+  family: 'ファミリー',
+  sizeCount: (p0: number) => (p0 === 1 ? '1サイズ' : `${p0}サイズ`),
+  freeSwitch: '無料',
+  downgrade: '縮小',
+  select: '選択',
+  current: '現在',
   slots: 'スロット',
   build: '構成',
   search: 'パーツを検索',

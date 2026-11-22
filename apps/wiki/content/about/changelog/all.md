@@ -9,6 +9,19 @@ toc: top
 
 Every day that changed Quorum, newest first. The [changelog](/about/changelog) shows only the latest days.
 
+## Saturday, 21 November 2026
+
+### Changed
+
+- Make ARM cost capacity by language, and on data nodes ([36f0ffb](https://github.com/elianiva/quorum/commit/36f0ffb1845d9222555876437d01c6fa87ea4017))
+- Make the pacing bot fix the worst failing kind after Series B ([a21efb4](https://github.com/elianiva/quorum/commit/a21efb4af6df03b01f9bc8d3016cf28fdb217bfe))
+- Pin each server behind a consistent-hash Load Balancer, like sticky but evenly ([4935b1c](https://github.com/elianiva/quorum/commit/4935b1cc19b18480bb919c8b469abc0f9ce6ff20))
+- Make the pacing bot skip a replica it cannot put a pooler in front of ([403d148](https://github.com/elianiva/quorum/commit/403d1484f3973821c1dfbb14f8321d0423134d9d))
+- Let the Cache hot set grow with the square root of the Users ([4ca8423](https://github.com/elianiva/quorum/commit/4ca842372436986ce46dc4fd8722ac2668d30e6d))
+- Unlock Load Balancer policies in the Solver once lb-algorithms is researched ([c8fb223](https://github.com/elianiva/quorum/commit/c8fb223743eaa2d84d974b0de5e4c7179ee5f5d3))
+- Make Database disk I/O scale with load and let retention shrink the hot set ([befdc2c](https://github.com/elianiva/quorum/commit/befdc2c14d4727955a9646ea1cdcbaceb486a4af))
+- Make server memory, GC tuning, shedding and leaks scale with load ([500bc2e](https://github.com/elianiva/quorum/commit/500bc2e2664bdf2e993c942e43a8fb2fbab979bb))
+
 ## Wednesday, 18 November 2026
 
 ### Changed

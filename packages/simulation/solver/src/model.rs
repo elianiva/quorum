@@ -1110,6 +1110,9 @@ pub fn server_model(
             * collector_memory)
             / KB_PER_GB;
     }
+    if ctx.flags.worker {
+        ram_used += (node.prefetch * resident * PREFETCH_TASK_MB) / 1024.0;
+    }
     ram_used += node.leak;
     ram_used += connection_ram;
     let swapping = ram_used > ram;

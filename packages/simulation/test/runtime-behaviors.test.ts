@@ -473,3 +473,37 @@ describe('GPU serving options', () => {
     expect(earned('int4')).toBeLessThan(earned('fp16') * 0.8)
   })
 })
+
+describe('Worker prefetch', () => {
+  const ramShare = (prefetch: number): number => {
+    const game = freeSandbox()
+    const queue = ok(Actions.place(game, 'queue', 400, 100))
+    const queueId = queue.nodes.at(-1)!.id
+    const worker = ok(
+      Actions.place(ok(Actions.connect(queue, 'server', queueId)), 'worker', 600, 100),
+    )
+    const workerId = worker.nodes.at(-1)!.id
+    const wired = ok(
+      Actions.connect(ok(Actions.connect(worker, queueId, workerId)), workerId, 'database'),
+    )
+    const { used, total } = solveFlow({
+      ...wired,
+      stage: 4,
+      users: 10_000,
+      scenario: { mix: { page: 0.5, read: 0.3, job: 0.2 } },
+      nodes: wired.nodes.map((node) =>
+        node.id === workerId
+          ? { ...node, runtime: 'go', size: 2, family: 'compute', prefetch, replicas: 60, warm: 1 }
+          : node.id === queueId
+            ? { ...node, warm: 1 }
+            : node,
+      ),
+    }).nodes[workerId]!.resources.ramGb!
+    return used / total
+  }
+
+  test('each prefetched task holds RAM, so a deep prefetch crowds a small Worker', () => {
+    expect(ramShare(100)).toBeGreaterThan(ramShare(10) * 3)
+    expect(ramShare(10)).toBeGreaterThan(ramShare(1))
+  })
+})

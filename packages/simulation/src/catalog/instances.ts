@@ -63,6 +63,7 @@ export const LINK_TIMEOUT = 30
 export const ACTIVE_USERS_PER_RPS = 50
 export const SHED_FROM = 1
 export const SHED_TO = 0.95
+export const PREFETCH_TASK_MB = 20
 export const IO_PER_WRITE = 6
 export const IO_PER_TX = 12
 export const IO_PER_SCAN = 40

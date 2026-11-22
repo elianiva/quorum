@@ -391,6 +391,7 @@ pub const POLICY_SWITCH_DAYS: f64 = 1.0;
 pub const POOLER_CONNECTIONS: f64 = 20.0;
 pub const POOL_FLOOR: f64 = 100.0;
 pub static PREFETCH: [f64; 3] = [1.0, 10.0, 100.0];
+pub const PREFETCH_TASK_MB: f64 = 20.0;
 pub const PREMIERE_SURGE: f64 = 4.0;
 pub const PRESENCE_CPU: f64 = 0.15;
 pub const PRESENCE_VALUE: f64 = 1.25;
@@ -576,7 +577,7 @@ pub const YJIT_MEMORY: f64 = 1.2;
 pub const YJIT_SPEED: f64 = 1.3;
 pub static ZONES: [&str; 3] = ["a", "b", "c"];
 pub static ZONE_SPANNING_COMPONENTS: [&str; 5] = ["psp", "llm", "lb", "waf", "gw"];
-pub static SCALAR_COUNT: usize = 514;
+pub static SCALAR_COUNT: usize = 515;
 
 
 pub mod search_variant {
@@ -1379,4 +1380,4 @@ pub static MONEY_KINDS_MASK: u64 = 0x206;
 pub static DATA_KINDS_MASK: u64 = 0x8b760000;
 pub static QUERY_CPU_BY_BACKEND: [f64; NB] = [8.0, 25.0, -1.0, 80.0, -1.0, 60.0, -1.0, 30.0, 40.0, -1.0, 100.0, -1.0, -1.0, -1.0, -1.0, -1.0];
 
-pub const CATALOG_HASH: u32 = 0xa8c5a0f7;
+pub const CATALOG_HASH: u32 = 0xc03f3cb6;

@@ -443,3 +443,33 @@ describe('ARM instances', () => {
     expect(loss('php_fpm')).toBeGreaterThan(loss('go'))
   })
 })
+
+describe('GPU serving options', () => {
+  const earned = (precision: GameNode['precision']): number => {
+    const game = freeSandbox()
+    const placed = ok(Actions.place(game, 'gpu', 600, 560))
+    const id = placed.nodes.at(-1)!.id
+    const linked = ok(Actions.connect(placed, 'server', id))
+    return solveFlow({
+      ...linked,
+      stage: 4,
+      users: 10_000,
+      scenario: { mix: { page: 0.5, read: 0.3, ai: 0.2 } },
+      nodes: linked.nodes.map((node) =>
+        node.id === id
+          ? { ...node, size: 8, gpu: 'h100', precision, warm: 1 }
+          : node.type === 'server'
+            ? { ...node, runtime: 'tokio', size: 7 }
+            : node.type === 'database'
+              ? { ...node, size: 8 }
+              : node,
+      ),
+    }).revenue
+  }
+
+  test('a lower precision serves faster but its answers earn less', () => {
+    expect(earned('int4')).toBeLessThan(earned('int8'))
+    expect(earned('int8')).toBeLessThan(earned('fp16'))
+    expect(earned('int4')).toBeLessThan(earned('fp16') * 0.8)
+  })
+})

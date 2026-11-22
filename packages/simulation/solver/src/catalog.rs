@@ -637,12 +637,12 @@ pub mod gpu_precision {
     pub const INT4: usize = 2;
 }
 pub static GPU_PRECISIONS_SPEED: [f64; 3] = [1.0, 2.0, 3.0];
-pub static GPU_PRECISIONS_VALUE: [f64; 3] = [1.0, 0.95, 0.85];
+pub static GPU_PRECISIONS_VALUE: [f64; 3] = [1.0, 0.92, 0.7];
 pub static GPU_PRECISIONS_MEMORY: [f64; 3] = [1.0, 0.5, 0.25];
 
 pub static GPU_BATCHES_BATCH: [f64; 3] = [1.0, 8.0, 32.0];
 pub static GPU_BATCHES_GAIN: [f64; 3] = [1.0, 1.6, 2.2];
-pub static GPU_BATCHES_TTFT: [f64; 3] = [0.0, 150.0, 500.0];
+pub static GPU_BATCHES_TTFT: [f64; 3] = [0.0, 700.0, 3200.0];
 
 pub mod cache_engine {
     pub const REDIS: usize = 0;
@@ -1379,4 +1379,4 @@ pub static MONEY_KINDS_MASK: u64 = 0x206;
 pub static DATA_KINDS_MASK: u64 = 0x8b760000;
 pub static QUERY_CPU_BY_BACKEND: [f64; NB] = [8.0, 25.0, -1.0, 80.0, -1.0, 60.0, -1.0, 30.0, 40.0, -1.0, 100.0, -1.0, -1.0, -1.0, -1.0, -1.0];
 
-pub const CATALOG_HASH: u32 = 0xb9cc35dd;
+pub const CATALOG_HASH: u32 = 0xa8c5a0f7;

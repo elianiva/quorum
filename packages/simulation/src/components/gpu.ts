@@ -16,15 +16,15 @@ export const GPU_CACHE_GB = 0.25
 export const GPU_FIRST_TOKEN_MS = 300
 export const GPU_PRECISIONS = {
   fp16: { name: 'FP16', speed: 1, value: 1, memory: 1 },
-  int8: { name: 'INT8', speed: 2, value: 0.95, memory: 0.5 },
-  int4: { name: 'INT4', speed: 3, value: 0.85, memory: 0.25 },
+  int8: { name: 'INT8', speed: 2, value: 0.92, memory: 0.5 },
+  int4: { name: 'INT4', speed: 3, value: 0.7, memory: 0.25 },
 } as const
 export type GpuPrecision = keyof typeof GPU_PRECISIONS
 
 export const GPU_BATCHES = [
   { batch: 1, gain: 1, ttft: 0 },
-  { batch: 8, gain: 1.6, ttft: 150 },
-  { batch: 32, gain: 2.2, ttft: 500 },
+  { batch: 8, gain: 1.6, ttft: 700 },
+  { batch: 32, gain: 2.2, ttft: 3_200 },
 ] as const
 
 export const gpuGlossary: ReadonlyArray<string> = ['model-inference']

@@ -3,13 +3,13 @@
  * `packages/simulation/src/pacing.ts`. Do not edit: change the Simulation or the measurement and
  * run the script again.
  *
- * Taken at Simulation version 6e7e936b on 2026-11-22.
+ * Taken at Simulation version 99ba907d on 2026-11-22.
  */
 
 import type { Measurements } from './measure.ts'
 
 export const SNAPSHOT: Measurements = {
-  version: '6e7e936b',
+  version: '99ba907d',
   takenOn: '2026-11-22',
   pacing: [
     {
@@ -64,19 +64,19 @@ export const SNAPSHOT: Measurements = {
   live: [
     {
       label: 'Pre-seed',
-      value: '6.3',
+      value: '6.1',
     },
     {
       label: 'Seed',
-      value: '26.7–27.5',
+      value: '26.6–33.0',
     },
     {
       label: 'Series A',
-      value: '63.2–67.5',
+      value: '68.7–82.8',
     },
     {
       label: 'Series B',
-      value: '90.6, never on some seeds',
+      value: '92.2–112.0',
     },
   ],
   seed: [

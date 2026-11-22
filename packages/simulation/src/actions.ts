@@ -691,13 +691,22 @@ export const setFamily = (game: Game, id: string, family: FamilyId): Action =>
         Refusal.Locked({ what: FAMILIES.arm.name, research: RESEARCH['arm-instances'].name }),
       )
     if (node.family === family) return ok(game)
-    return ok(
-      patch(game, id, {
+    const port =
+      family === 'arm' && (node.type === 'server' || node.type === 'worker') && !game.sandbox
+        ? LANGUAGES[RUNTIMES[node.runtime].language].armPortDh
+        : 0
+    if (game.devHours < port)
+      return notAllowed(
+        `Porting ${LANGUAGES[RUNTIMES[node.runtime].language].name} to ARM needs ${port} Dev Hours.`,
+      )
+    return ok({
+      ...patch(game, id, {
         family,
         ...restarted(node),
         credits: family === 'burstable' ? (CREDIT_CAP * vcpuOf(node)) / 2 : 0,
       }),
-    )
+      devHours: game.devHours - port,
+    })
   })
 
 const defaultWorkers = (node: GameNode, runtime: RuntimeId): number =>
@@ -813,6 +822,8 @@ export const setStandby = (game: Game, id: string, standby: boolean, sync = true
       return notAllowed('Only a Database, Pooler, Cache, Search Engine, or Queue keeps a standby.')
     if (standby && !has(game, 'multi-az'))
       return no(Refusal.Locked({ what: 'A standby', research: RESEARCH['multi-az'].name }))
+    if (standby && node.type === 'cache' && node.engine === 'memcached')
+      return notAllowed('Memcached has no replication, so it cannot keep a standby.')
     if (node.standby === standby && node.standbySync === sync) return ok(game)
     return ok(patch(game, id, { standby, standbySync: sync }))
   })

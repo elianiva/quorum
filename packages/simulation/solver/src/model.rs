@@ -1682,11 +1682,7 @@ pub fn flat_component(
         ),
 
         component::CACHE => {
-            let cores = if CACHE_ENGINES_SCALES[node.cache_engine] {
-                grown(1.0, 2.0, node.size - 3.0).max(1.0)
-            } else {
-                1.0
-            };
+            let cores = grown(1.0, CACHE_ENGINES_GROWTH[node.cache_engine], node.size - 3.0).max(1.0);
             flat(
                 CACHE_OPS * CACHE_ENGINES_SPEED[node.cache_engine] * cores
                     / hot_key_factor(game, node),
@@ -1812,7 +1808,7 @@ pub mod cache {
     }
 
     pub fn hit_ratio(game: &GameCtx, node: &Node, write_share: f64, warm_share: f64) -> f64 {
-        let memory = flat_scale(node.size);
+        let memory = flat_scale(node.size) * CACHE_ENGINES_MEMORY[node.cache_engine];
         let hot = hot_data_gb(game.users);
         let fits = if hot > 0.0 {
             (memory / hot).min(1.0)

@@ -649,7 +649,8 @@ pub mod cache_engine {
     pub const REDIS: usize = 0;
     pub const MEMCACHED: usize = 1;
 }
-pub static CACHE_ENGINES_SCALES: [bool; 2] = [false, true];
+pub static CACHE_ENGINES_GROWTH: [f64; 2] = [1.7, 2.0];
+pub static CACHE_ENGINES_MEMORY: [f64; 2] = [1.0, 1.12];
 pub static CACHE_ENGINES_SPEED: [f64; 2] = [1.0, 1.2];
 pub static CACHE_ENGINES_WARM_AFTER_RESTART: [f64; 2] = [0.5, 0.0];
 
@@ -1381,4 +1382,4 @@ pub static MONEY_KINDS_MASK: u64 = 0x206;
 pub static DATA_KINDS_MASK: u64 = 0x8b760000;
 pub static QUERY_CPU_BY_BACKEND: [f64; NB] = [8.0, 25.0, -1.0, 80.0, -1.0, 60.0, -1.0, 30.0, 40.0, -1.0, 100.0, -1.0, -1.0, -1.0, -1.0, -1.0];
 
-pub const CATALOG_HASH: u32 = 0x9853056f;
+pub const CATALOG_HASH: u32 = 0x57715396;

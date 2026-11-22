@@ -531,8 +531,79 @@ describe('Cache engines', () => {
     }).nodes[id]!.capacity
   }
 
-  test('Memcached is a fifth faster at one core and pulls ahead as it gains threads', () => {
+  test('Memcached is a fifth faster at one core and pulls ahead as it gains threads, but Redis scales too', () => {
     expect(capacity('memcached', 3) / capacity('redis', 3)).toBeCloseTo(1.2, 5)
-    expect(capacity('memcached', 6) / capacity('redis', 6)).toBeGreaterThan(4)
+    expect(capacity('memcached', 6) / capacity('redis', 6)).toBeGreaterThan(1.5)
+    expect(capacity('redis', 6)).toBeGreaterThan(capacity('redis', 3))
+  })
+})
+
+describe('Redis keeps what Memcached gives up', () => {
+  const cacheGame = (): Readonly<{ game: Game; id: string }> => {
+    const placed = ok(Actions.place(freeSandbox(), 'cache', 600, 280))
+    return { game: placed, id: placed.nodes.at(-1)!.id }
+  }
+
+  test('Memcached refuses write-behind and a standby, and Redis takes both', () => {
+    const { game, id } = cacheGame()
+    const memcached = ok(Actions.setCacheEngine(game, id, 'memcached'))
+    expect(Result.isFailure(Actions.setCacheStrategy(memcached, id, 'write-behind'))).toBe(true)
+    expect(Result.isFailure(Actions.setStandby(memcached, id, true))).toBe(true)
+    ok(Actions.setCacheStrategy(game, id, 'write-behind'))
+    ok(Actions.setStandby(game, id, true))
+  })
+
+  test('a Cache with write-behind or a standby cannot switch to Memcached', () => {
+    const { game, id } = cacheGame()
+    expect(
+      Result.isFailure(
+        Actions.setCacheEngine(
+          ok(Actions.setCacheStrategy(game, id, 'write-behind')),
+          id,
+          'memcached',
+        ),
+      ),
+    ).toBe(true)
+    expect(
+      Result.isFailure(
+        Actions.setCacheEngine(ok(Actions.setStandby(game, id, true)), id, 'memcached'),
+      ),
+    ).toBe(true)
+  })
+
+  test('Memcached holds more of the hot set in the same RAM', () => {
+    const { game, id } = cacheGame()
+    const node = game.nodes.find((entry) => entry.id === id)!
+    const big = { ...game, users: 200_000 }
+    expect(evictionShareOf(big, { ...node, engine: 'memcached', size: 3 })).toBeLessThan(
+      evictionShareOf(big, { ...node, engine: 'redis', size: 3 }),
+    )
+  })
+})
+
+describe('Porting to ARM', () => {
+  const server = (runtime: GameNode['runtime'], devHours: number, sandbox = false): Game => {
+    const game = preseedGame()
+    return {
+      ...game,
+      sandbox,
+      devHours,
+      researched: [...game.researched, 'arm-instances'],
+      nodes: game.nodes.map((node) => (node.type === 'server' ? { ...node, runtime } : node)),
+    }
+  }
+
+  test('the first move to ARM spends Dev Hours by language, and a dearer port is refused when short', () => {
+    const go = ok(Actions.setFamily(server('go', 100), 'server', 'arm'))
+    const php = ok(Actions.setFamily(server('php_fpm', 100), 'server', 'arm'))
+    expect(100 - go.devHours).toBe(4)
+    expect(100 - php.devHours).toBe(16)
+    expect(Result.isFailure(Actions.setFamily(server('php_fpm', 10), 'server', 'arm'))).toBe(true)
+    expect(Result.isSuccess(Actions.setFamily(server('go', 10), 'server', 'arm'))).toBe(true)
+  })
+
+  test('a guided Sandbox ports for free', () => {
+    const moved = ok(Actions.setFamily(server('php_fpm', 0, true), 'server', 'arm'))
+    expect(moved.devHours).toBe(0)
   })
 })

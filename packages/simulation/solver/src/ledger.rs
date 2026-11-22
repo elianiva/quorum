@@ -1140,7 +1140,9 @@ fn insight_of(
 fn eviction_share_of(game: &GameCtx, node: &crate::model::Node) -> f64 {
     let hot = crate::model::cache::hot_data_gb(game.users);
     if hot > 0.0 {
-        (1.0 - (crate::model::flat_scale(node.size) / hot).min(1.0)).max(0.0)
+        (1.0 - (crate::model::flat_scale(node.size) * CACHE_ENGINES_MEMORY[node.cache_engine] / hot)
+            .min(1.0))
+        .max(0.0)
     } else {
         0.0
     }

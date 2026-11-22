@@ -25,6 +25,7 @@ export type LanguageDef = Readonly<{
   buildMinutes: number
   sessionKB: number
   armSpeed: number
+  armPortDh: number
   blast: 'request' | 'whole' | 'task'
 }>
 
@@ -40,6 +41,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     buildMinutes: 0.5,
     sessionKB: 130,
     armSpeed: 0.95,
+    armPortDh: 16,
     blast: 'request',
   },
   ruby: {
@@ -51,6 +53,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     buildMinutes: 1,
     sessionKB: 340,
     armSpeed: 0.95,
+    armPortDh: 24,
     blast: 'request',
   },
   node: {
@@ -62,6 +65,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     buildMinutes: 3,
     sessionKB: 420,
     armSpeed: 1,
+    armPortDh: 12,
     blast: 'whole',
   },
   python: {
@@ -73,6 +77,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     buildMinutes: 1,
     sessionKB: 360,
     armSpeed: 0.97,
+    armPortDh: 24,
     blast: 'request',
   },
   go: {
@@ -84,6 +89,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     buildMinutes: 1.5,
     sessionKB: 210,
     armSpeed: 1.03,
+    armPortDh: 4,
     blast: 'request',
   },
   java: {
@@ -95,6 +101,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     buildMinutes: 6,
     sessionKB: 210,
     armSpeed: 1.02,
+    armPortDh: 8,
     blast: 'request',
   },
   csharp: {
@@ -106,6 +113,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     buildMinutes: 4,
     sessionKB: 280,
     armSpeed: 1.02,
+    armPortDh: 8,
     blast: 'request',
   },
   elixir: {
@@ -117,6 +125,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     buildMinutes: 2,
     sessionKB: 145,
     armSpeed: 1,
+    armPortDh: 12,
     blast: 'request',
   },
   rust: {
@@ -128,6 +137,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     buildMinutes: 12,
     sessionKB: 85,
     armSpeed: 1.03,
+    armPortDh: 6,
     blast: 'task',
   },
   zig: {
@@ -139,6 +149,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     buildMinutes: 6,
     sessionKB: 65,
     armSpeed: 1,
+    armPortDh: 8,
     blast: 'whole',
   },
   haskell: {
@@ -150,6 +161,7 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     buildMinutes: 8,
     sessionKB: 180,
     armSpeed: 0.93,
+    armPortDh: 32,
     blast: 'request',
   },
 }

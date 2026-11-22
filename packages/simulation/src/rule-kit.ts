@@ -1,4 +1,5 @@
 import {
+  CACHE_ENGINES,
   GPU_PRECISIONS,
   GPU_MODELS,
   GPU_CACHE_GB,
@@ -19,7 +20,9 @@ export const hotDataGb = (game: Game): number =>
 
 export const evictionShareOf = (game: Game, node: GameNode): number => {
   const hot = hotDataGb(game)
-  return hot > 0 ? Math.max(0, 1 - Math.min(1, flatScale(node) / hot)) : 0
+  return hot > 0
+    ? Math.max(0, 1 - Math.min(1, (flatScale(node) * CACHE_ENGINES[node.engine].memory) / hot))
+    : 0
 }
 
 export const gpuNeedGB = (node: GameNode): number =>

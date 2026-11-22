@@ -2,8 +2,8 @@ import { Effect, Schema } from 'effect'
 import { def } from './define.ts'
 
 export const CACHE_ENGINES = {
-  redis: { name: 'Redis', scales: false, speed: 1, warmAfterRestart: 0.5 },
-  memcached: { name: 'Memcached', scales: true, speed: 1.2, warmAfterRestart: 0 },
+  redis: { name: 'Redis', growth: 1.7, memory: 1, speed: 1, warmAfterRestart: 0.5 },
+  memcached: { name: 'Memcached', growth: 2, memory: 1.12, speed: 1.2, warmAfterRestart: 0 },
 } as const
 export const CACHE_TTLS = [
   { ttl: 10, factor: 0.6, stale: 0.005 },

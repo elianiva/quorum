@@ -5,7 +5,7 @@ A Cache answers repeated reads from memory so the [Database](/components/databas
 - Place it when reads dominate and Database CPU is high. The [Read Mostly](/sandboxes/read-mostly) Sandbox shows the symptom.
 - Place it before a [Read Replica](/components/replica) when the same hot rows are read again and again: it costs the least of the three. When the hot data outgrows its memory, or reads are spread over many rows, add a replica.
 - Resize it when the hit ratio falls as users grow.
-- Switch to Memcached when a single Redis thread is the limit.
+- Switch to Memcached when speed or memory is the limit and the Cache needs no write-behind and no standby.
 
 ## How it works
 
@@ -40,7 +40,7 @@ See [Cache stampede protection](/patterns/cache-stampede-protection).
 
 ### Engine and TTL
 
-- **Engine**: Redis runs on one main thread and reloads part of its data after a restart. Memcached uses every core and comes back empty.
+- **Engine**: Redis reloads part of its data after a restart, can hold write-behind, and can keep a standby, but its speed grows slowly with size because one main thread still orders the commands. Memcached is faster at the same size, holds a little more in the same RAM, and uses every core. It comes back empty and can do neither write-behind nor a standby.
 - **TTL**: how long a value stays. A longer TTL keeps more of the hits and serves staler data.
 - **Warming**: with [Cache warming](/research/cache-warming), Warm start fills the Cache before it takes traffic, so a restart does not begin cold. See [Cache warming and tiered caching](/patterns/cache-warming-and-tiered-caching).
 - **Hot keys**: with [Hybrid fan-out](/research/hybrid-fanout), Split puts a hot key on its own shard, so one key stops setting the pace. See [Hot keys and hot shards](/patterns/hot-keys-and-hot-shards).
@@ -92,4 +92,4 @@ See [Cache stampede protection](/patterns/cache-stampede-protection).
 ## Tips
 
 - Turn on coalescing as soon as you own Stampede protection.
-- Use Memcached when one Redis thread is the limit.
+- Use Memcached for a large, read-mostly Cache. Keep Redis for write-behind, a standby, or a warm restart.

@@ -100,7 +100,7 @@ family it belongs to: Edge, Compute, Data or Ops.
 | Edge Function            | 0         | Per request               | Unlimited                                   | 5 ms                   |       |
 | Database                 | 90        | Instance price            | CPU and connections                         | 2.5 ms                 | 9     |
 | Connection Pooler        | 80        | 0.03                      | 10,000 queries/s                            | 0.3 ms                 | 4     |
-| Cache                    | 150       | 0.06                      | 50,000 ops/s per core                       | 0.5 ms                 | 8     |
+| Cache                    | 150       | 0.06                      | 100,000 ops/s per core (Redis)              | 0.5 ms                 | 8     |
 | Read Replica             | 60        | 0.7× Database             | As Database (reads and scans only)          | 2.5 ms                 | 9     |
 | Search Engine            | 300       | 0.25                      | 400 queries/s per node                      | 15 ms                  | 8     |
 | Object Storage           | 280       | 0.01 + $0.000032 per GB   | Unlimited                                   | 40 ms first byte       |       |
@@ -304,13 +304,13 @@ runtime variant, and its framework. [Runtimes and frameworks](/design/06-runtime
 | Compute         | 1 : 2 GB      | 0.85×          | CPU-bound runtimes and kinds: Go, Rust, Java, `login`, `upload`                    |
 | Memory          | 1 : 8 GB      | 1.3×           | Memory-bound runtimes: many PHP-FPM or Ruby workers, the JVM                       |
 | Burstable       | 1 : 2 GB      | 0.4×           | Garage. Earns CPU credits while idle and is throttled to 20% when credits run out. |
-| ARM             | Same as above | 0.8×           | 20% cheaper. Some runtimes and libraries are slower or need work to port.          |
+| ARM             | Same as above | 0.8×           | 20% cheaper. The first move of a server or Worker costs Dev Hours by language.     |
 
 Sizes go from `nano` (0.5 vCPU) to `metal` (96 vCPU): nine sizes, each step doubling vCPU and RAM, and
 `metal` a 1.5× last step.
 
 The ARM family needs research `arm-instances` ([Progression](/design/10-progression#track-infrastructure)).
-It runs at 0.95× a General box's CPU speed, so the 20% it saves costs 5% of the capacity. Any sized
+Its speed depends on the language: 0.93× a General box's CPU for Haskell, 0.95× for PHP and Ruby, up to 1.03× for Go and Rust. A Database on ARM runs at General's speed. The first move of a server or Worker to ARM costs Dev Hours: Go 4, Rust 6, Java, C# and Zig 8, Node and Elixir 12, PHP 16, Ruby and Python 24, Haskell 32. A guided Sandbox ports for free. Any sized
 Node can take it, not just the App Server.
 
 The App Server answers `page` and `bot` itself and turns other kinds into backend kinds
@@ -327,9 +327,9 @@ A Worker runs the same runtimes as an App Server, but it pulls `task` from a Que
 receiving user requests. Its latency does not count toward user latency. Its throughput decides
 how long the queue grows.
 
-| Option   | Effect                                                                                           |
-| -------- | ------------------------------------------------------------------------------------------------ |
-| Prefetch | Jobs taken from the queue ahead of time. Higher prefetch is faster, and a crash loses more jobs. |
+| Option   | Effect                                                                                                                             |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Prefetch | Jobs taken from the queue ahead of time. Higher prefetch is faster, a crash loses more jobs, and each job held takes 20 MB of RAM. |
 
 ### Serverless Function
 
@@ -373,12 +373,12 @@ Real products: vLLM or Triton on NVIDIA T4, A100, and H100.
 
 Serves `infer`. Capacity is measured in tokens per second.
 
-| Option       | Effect                                                                                                                                                                                                                 |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GPU type     | T4: cheap, slow. A100: balanced. H100: fastest per dollar, and scarce. Placing an H100 has a waiting list in some calendar months.                                                                                     |
-| Batch size   | Larger batches raise throughput and raise time to first token. Continuous batching (research) keeps latency low at high throughput.                                                                                    |
-| Quantization | FP16, INT8, INT4. Lower precision is faster and uses less memory, and it lowers answer quality, which lowers `ai` value by 5% (INT8) or 15% (INT4).                                                                    |
-| Model size   | Small (3B), medium (7B), large (34B). Larger models earn more per prompt (0.6×, 1×, 1.8×), serve fewer tokens (2×, 1×, 0.25×) and need more GPU memory (6, 14, 68 GB at FP16). A model that does not fit causes `oom`. |
+| Option       | Effect                                                                                                                                                                                                                                                    |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GPU type     | T4: cheap, slow. A100: balanced. H100: fastest per dollar, and scarce. Placing an H100 has a waiting list in some calendar months.                                                                                                                        |
+| Batch size   | Larger batches raise throughput and raise time to first token. Continuous batching (research) keeps latency low at high throughput.                                                                                                                       |
+| Quantization | FP16, INT8, INT4. Lower precision is faster and uses less memory, and it lowers answer quality, which lowers `ai` value by 1% (INT8) or 3% (INT4). INT4 keeps 0.75× of its speed at batch 8 and 0.5× at batch 32, so INT8 wins once requests are batched. |
+| Model size   | Small (3B), medium (7B), large (34B). Larger models earn more per prompt (0.6×, 1×, 1.8×), serve fewer tokens (2×, 1×, 0.25×) and need more GPU memory (6, 14, 68 GB at FP16). A model that does not fit causes `oom`.                                    |
 
 The GPU has a type, a model, a precision and a batch. T4 holds 16 GB per GPU, A100 and H100 80 GB.
 The Node needs the model's weights at its precision plus 0.25 GB of attention cache for each prompt in
@@ -387,9 +387,9 @@ model, a smaller batch or a bigger GPU fits it. Changing the model reloads the w
 comes back cold.
 
 Quantization (`quantization`) adds INT8 and INT4. INT8 serves 2× the tokens and INT4 3×, their weights
-take half and a quarter of the memory, and each answer is worth 5% or 15% less. Continuous batching
+take half and a quarter of the memory, and each answer is worth 1% or 3% less. INT4's speed falls to 0.75× at batch 8 and 0.5× at batch 32. Continuous batching
 (`continuous-batching`) adds batch 8 and batch 32, at 1.6× and 2.2× the throughput with the time to
-the first token unchanged. Without it a larger batch adds 150 ms or 500 ms to that wait.
+the first token unchanged. Without it a larger batch adds 700 ms or 3,200 ms to that wait.
 
 ### Edge Function
 

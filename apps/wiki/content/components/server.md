@@ -24,9 +24,9 @@ The Stack is the language, its runtime, and the framework. It sets how the box s
 
 - **Runtime**: the server that runs your code. Each one uses a model such as a process per request, a thread pool, or an event loop, and the model decides how a request waits on a backend. See [Runtimes](/runtimes).
 - **Framework**: the library around the runtime. It adds CPU and memory to every request, and it buys velocity. The picker lists the frameworks for the runtime's language.
-- **Pool size**: how many worker processes serve requests. A request holds one slot while it waits on each backend call, so a slow Database fills the pool while CPU stays idle. The figure beside the control says how many workers the box's RAM fits. Go past it and the box swaps, then kills a process.
+- **Pool size**: how many worker processes serve requests. A request holds one slot while it waits on each backend call, so a slow Database fills the pool while CPU stays idle. Drag the slider, type a count, or press Fit to RAM. The slider is logarithmic, and its red zone starts where the box's RAM stops fitting workers. Go past it and the box swaps, then kills a process.
 - **Process manager**: PHP-FPM keeps a pool of worker processes, and the process manager decides which of them stay running. Static keeps the whole pool resident, so no request waits for a fork, and the box holds that memory even when idle. Dynamic keeps the busy workers plus two spares, so a burst makes a small share of requests wait a moment for a fork. On demand keeps only the busy workers, so idle RAM is lowest and more requests wait. Pick Static when RAM is spare, Dynamic for most Designs, and On demand when memory is the limit and the tail can wait.
-- **Recycle workers**: restarts each process now and then. It caps a memory leak before the process runs out, and every restart comes back cold. Turn it on for a runtime that keeps memory between requests.
+- **Recycle workers**: restarts each process now and then. It caps a memory leak before the process runs out, and every restart comes back cold. Turn it on for a runtime that keeps memory between requests. A persistent runtime leaks in proportion to the requests it serves, so a busy box needs it sooner.
 - **Compression**: Gzip on the responses that shrink well. It cuts their size, the egress they bill, and the time they take to reach a user, and it costs CPU on each one. Uploads and media do not shrink.
 - **Service**: which Service the Node belongs to. It appears once the app splits into more than one Service.
 
@@ -37,7 +37,7 @@ The Stack is the language, its runtime, and the framework. It sets how the box s
 
 ### Overload
 
-- **Shedding**: [Priority load shedding](/patterns/load-shedding) answers a full Node by dropping whole request kinds, lowest value first, until it is back under its line. The default, Drop evenly, refuses a share of every kind instead of whole kinds. The kinds it keeps stay fast, and the dropped ones count as errors.
+- **Shedding**: [Priority load shedding](/patterns/load-shedding) answers a full Node by dropping whole request kinds, lowest value per CPU first, until it is back under its line. The default, Drop evenly, refuses a share of every kind instead of whole kinds. The kinds it keeps stay fast, and the dropped ones count as errors.
 - **Degradation**: [Graceful degradation](/patterns/graceful-degradation) drops the kinds that cost the most CPU first, so the cheap, high-volume kinds keep their latency. A Node with both settings on degrades first.
 - **Read your writes**: sends a read that follows a write to the primary, so a lagging replica cannot answer it with old data. See [Read your writes](/patterns/read-your-writes).
 
@@ -48,7 +48,7 @@ The Stack is the language, its runtime, and the framework. It sets how the box s
 ## How it fails
 
 - Overloaded, it queues requests, then drops them.
-- A box with too little RAM swaps, and a pool sized too big for its RAM is killed.
+- A box with too little RAM swaps, and a pool sized too big for its RAM is killed. A persistent runtime also holds memory for each active user, so a busy box can run out of RAM before CPU, and the Compute family has half the RAM of General.
 
 ### [Instance failure](/incidents/instance)
 

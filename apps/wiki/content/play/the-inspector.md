@@ -61,7 +61,7 @@ cause means and what fixes it.
 - **Smaller (free)** drops one size and costs nothing, but the Node restarts and the Cash you paid for the size does not come back.
 - **Larger · $** buys one size. A click buys one. Hold it to buy more, one every quarter of a second. The key `U` does the same for the selected Node.
 - **Buy ten sizes** and **Buy to the largest size** buy several in a row, as far as your Cash goes. A toast says what happened and ends with **Undo (Z) refunds $x for 30 s.**
-- The family row picks **Burstable**, **General**, **Compute**, **Memory** or **ARM**. A family can show a Tradeoff card first. Read it and press **Confirm**.
+- The family row picks **Burstable**, **General**, **Compute**, **Memory** or **ARM**. A family can show a Tradeoff card first. Read it and press **Confirm**. Moving a server or Worker to ARM also costs Dev Hours, more for PHP, Ruby and Python than for Go.
 
 Refusals are plain: **App Server is at its largest size.** and **App Server is at its smallest size.**
 

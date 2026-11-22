@@ -95,7 +95,7 @@ Every write the Database answers adds rows, and so does every realtime message i
 | Archive after 30 d | A tenth | Waits on a restore of the archived rows.         |
 | Delete after 30 d  | Nothing | Rebuilds its figures from the event log, slower. |
 
-A window caps the rows at what the Company writes inside it, so an old Company that archives stops growing. The price is the history, since a report over the window is slow or has to be rebuilt. The card says which policy is on, and [Data tier](/design/07-data-tier#data-volume) holds the trade.
+A window caps the rows at what the Company writes inside it, so an old Company that archives stops growing. The price is the history, since a report over the window is slow or has to be rebuilt. An archive or delete window also shrinks the hot data, so a Database whose working set had outgrown RAM can fit again. The card says which policy is on, and [Data tier](/design/07-data-tier#data-volume) holds the trade.
 
 ### Reports
 

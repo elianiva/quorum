@@ -96,9 +96,9 @@ Formatting: SI suffixes only (k, M, B, T). No letter suffixes such as "aa".
 | ESI page gain             |                | +20 points of `page` hit ratio (10)                                          | [CDN](/design/05-components#cdn)                                           |
 | Bot management            |                | false positives × 0.5                                                        | [WAF](/design/05-components#waf)                                           |
 | Schedule lead             |                | 120 calendar minutes before the peak                                         | [Autoscaler](/design/05-components#autoscaler)                             |
-| ARM price, speed          |                | 0.8×, and 0.95× CPU                                                          | [App Server](/design/05-components#app-server)                             |
-| Quantization value        |                | INT8 0.95, INT4 0.85; speed 2× and 3×                                        | [GPU Node](/design/05-components#gpu-node)                                 |
-| Batch gain, TTFT          |                | batch 8: 1.6×, +150 ms; batch 32: 2.2×, +500 ms                              | [GPU Node](/design/05-components#gpu-node)                                 |
+| ARM price, speed          |                | 0.8×, and 0.93× to 1.03× CPU by language; port 4 to 32 Dev Hours             | [App Server](/design/05-components#app-server)                             |
+| Quantization value        |                | INT8 0.99, INT4 0.97; speed 2× and 3×; INT4 ×0.75 at batch 8, ×0.5 at 32     | [GPU Node](/design/05-components#gpu-node)                                 |
+| Batch gain, TTFT          |                | batch 8: 1.6×, +700 ms; batch 32: 2.2×, +3,200 ms                            | [GPU Node](/design/05-components#gpu-node)                                 |
 | Bulkhead wait             |                | 1,000 ms per call                                                            | [Links](/design/05-components#links)                                       |
 | Hedge load                |                | +10% calls on the Link                                                       | [Links](/design/05-components#links)                                       |
 | Serialization CPU         |                | 0.02 reference ms per backend call                                           | [Performance](/design/10-progression#track-performance)                    |
@@ -350,8 +350,8 @@ startup, ORM, cacheability, native build, and the six axes) and better on one.
 Across languages, BEAM holds the most realtime connections per GB, beating Go and Kestrel. The
 option sets are the 28 runtimes, each language's frameworks, the instance families (Burstable,
 General, Compute, Memory), and the PHP-FPM pool modes. Axum and Actix are within about 5% of each
-other on CPU and velocity, and ARM runs at 0.8× the price and 0.95× the CPU, so a CPU-millisecond on
-ARM costs 0.84× General's. The fix for a dominated option is to change the option, not to tweak a
+other on CPU and velocity, and ARM runs at 0.8× the price and 0.93× to 1.03× the CPU by language, with a one-time port cost
+in Dev Hours, so a CPU-millisecond on ARM costs 0.78× to 0.86× General's. The fix for a dominated option is to change the option, not to tweak a
 number.
 
 ## Runtime balance targets

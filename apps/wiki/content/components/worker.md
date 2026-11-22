@@ -20,7 +20,7 @@ The Stack controls work as they do on an [App Server](/components/server#options
 - **Pool size**: how many tasks run at once. More workers drain the Queue faster, hold more memory, and cost more CPU when the tasks compete for it.
 - **Process manager**: PHP-FPM's rule for which workers stay running. Static keeps the whole pool resident, Dynamic keeps two spares, and On demand keeps only the busy workers. The trade is the same: idle RAM against a short wait for a fork.
 - **Recycle workers**: restarts each process now and then, which caps a leak and costs a cold start. A planned restart hands its prefetched tasks back first.
-- **Prefetch**: how many tasks each worker takes from the Queue ahead of time. A higher prefetch spends less time waiting on the broker, and a crash loses more.
+- **Prefetch**: how many tasks each worker takes from the Queue ahead of time. A higher prefetch spends less time waiting on the broker, a crash loses more, and every prefetched task holds its memory, so a deep prefetch crowds a small Worker.
 
 ## How it fails
 

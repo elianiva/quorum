@@ -114,10 +114,10 @@ real share of revenue at every size of company. [Balancing](/design/16-balancing
 
 Each price follows one of two rules, so a player who knows the real price can check it:
 
-| Rule        | Prices                                                                                                                             | Mapping                                                                          |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Time-billed | Instances, GPUs, managed Nodes, storage, the Kubernetes control plane, LLM tokens                                                  | $1 per sim second in the game is $1 per real hour. A vCPU is $0.05.              |
-| Per use     | Egress, the Payment Provider, push and email messages, Data Warehouse scans, Gateway, function, Queue, and Object Storage requests | The real list price per GB, per checkout, per message, per scan, or per request. |
+| Rule        | Prices                                                                                                                             | Mapping                                                                                                          |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Time-billed | Instances, GPUs, managed Nodes, storage, the Kubernetes control plane, LLM tokens                                                  | $1 per sim second in the game is $1 per real hour. A vCPU is $0.05.                                              |
+| Per use     | Egress, the Payment Provider, push and email messages, Data Warehouse scans, Gateway, function, Queue, and Object Storage requests | The real list price per checkout, per message, per scan, or per request. Egress is tuned, see [Egress](#egress). |
 
 LLM tokens use the time-billed rule because they compete with GPU Nodes for the same prompts. On
 the same scale, a busy H100 is cheaper per prompt than the LLM API only while it is more than half
@@ -168,11 +168,14 @@ it is a Company-wide discount and not a fifth model on the card.
 
 | Path                          | Price per GB |
 | ----------------------------- | ------------ |
-| Origin to internet            | $0.09        |
-| CDN to internet               | $0.02        |
+| Origin to internet            | $0.45        |
+| CDN to internet               | $0.10        |
 | Cross-zone, each direction    | $0.01        |
 | Cross-region                  | $0.02        |
 | Object storage R2 to internet | $0           |
+
+The origin and CDN prices are tuned, not real: AWS lists $0.09 and about $0.085. At the real price,
+Gzip and a CDN would never change the bill ([Tuned on purpose](/design/reality-check#tuned-on-purpose)).
 
 `media` at 5 MB per request makes egress the largest line on the bill in the Series A Era unless a CDN
 or R2 serves it. A player who ignores egress sees revenue rise and margin fall.

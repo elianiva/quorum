@@ -1,4 +1,7 @@
 import { describe, expect, test } from 'vitest'
+import { Result } from 'effect'
+import { installRam } from './actions.ts'
+import { LANGUAGES, RUNTIMES } from './catalog.ts'
 import { preseedGame } from './company.ts'
 import { refundOf } from './lookups.ts'
 import {
@@ -57,5 +60,52 @@ describe('part market', () => {
   test('installed Parts count toward the sell refund', () => {
     expect(partsValueOf(game, server)).toBeGreaterThan(0)
     expect(refundOf(game, server)).toBeGreaterThan(refundOf(game, bare))
+  })
+})
+
+describe('ARM porting through the memory kit', () => {
+  const base = preseedGame()
+  const server = base.nodes.find((node) => node.type === 'server')!
+  const database = base.nodes.find((node) => node.type === 'database')!
+  const port = LANGUAGES[RUNTIMES[server.runtime].language].armPortDh
+  const armed = {
+    ...base,
+    cash: 100_000,
+    devHours: 100,
+    researched: [...base.researched, 'arm-instances' as const],
+  }
+
+  test('installing an ARM kit charges the language port', () => {
+    const result = installRam(armed, server.id, 'arm')
+    expect(Result.isSuccess(result)).toBe(true)
+    if (!Result.isSuccess(result)) return
+    expect(result.success.devHours).toBe(100 - port)
+    expect(result.success.nodes.find((node) => node.id === server.id)?.family).toBe('arm')
+  })
+
+  test('a server without the Dev Hours cannot install the ARM kit', () => {
+    const result = installRam({ ...armed, devHours: 0 }, server.id, 'arm')
+    expect(Result.isFailure(result)).toBe(true)
+    if (!Result.isFailure(result)) return
+    expect(JSON.stringify(result.failure)).toContain('Dev Hours')
+  })
+
+  test('a node already on ARM does not port again', () => {
+    const node = { ...server, family: 'arm' as const, parts: { ...server.parts, ram: false } }
+    const game = {
+      ...armed,
+      nodes: armed.nodes.map((entry) => (entry.id === node.id ? node : entry)),
+    }
+    const result = installRam(game, node.id, 'arm')
+    expect(Result.isSuccess(result)).toBe(true)
+    if (!Result.isSuccess(result)) return
+    expect(result.success.devHours).toBe(100)
+  })
+
+  test('a database ports for free', () => {
+    const result = installRam(armed, database.id, 'arm')
+    expect(Result.isSuccess(result)).toBe(true)
+    if (!Result.isSuccess(result)) return
+    expect(result.success.devHours).toBe(100)
   })
 })

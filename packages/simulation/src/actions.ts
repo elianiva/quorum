@@ -693,6 +693,11 @@ export const upgradeAll = (
   return Result.succeed({ game: next, upgraded, skipped, short })
 }
 
+const armPortOf = (game: Game, node: GameNode, family: FamilyId): number =>
+  family === 'arm' && (node.type === 'server' || node.type === 'worker') && !game.sandbox
+    ? LANGUAGES[RUNTIMES[node.runtime].language].armPortDh
+    : 0
+
 export const setFamily = (game: Game, id: string, family: FamilyId): Action =>
   withNode(game, id, (node) => {
     if (!COMPONENTS[node.type].sized) return notAllowed('Only VMs have an instance family.')
@@ -701,10 +706,7 @@ export const setFamily = (game: Game, id: string, family: FamilyId): Action =>
         Refusal.Locked({ what: FAMILIES.arm.name, research: RESEARCH['arm-instances'].name }),
       )
     if (node.family === family) return ok(game)
-    const port =
-      family === 'arm' && (node.type === 'server' || node.type === 'worker') && !game.sandbox
-        ? LANGUAGES[RUNTIMES[node.runtime].language].armPortDh
-        : 0
+    const port = armPortOf(game, node, family)
     if (game.devHours < port)
       return notAllowed(
         `Porting ${LANGUAGES[RUNTIMES[node.runtime].language].name} to ARM needs ${port} Dev Hours.`,
@@ -747,14 +749,20 @@ export const installRam = (game: Game, id: string, family: FamilyId): Action =>
       )
     if (node.parts.ram && node.family === family) return ok(game)
     const price = game.sandbox ? 0 : ramPartPrice(game, family)
-    return spend(game, price, `${FAMILIES[family].name} memory kit`, (paid) =>
-      patch(paid, id, {
+    const port = node.family === 'arm' ? 0 : armPortOf(game, node, family)
+    if (game.devHours < port)
+      return notAllowed(
+        `Porting ${LANGUAGES[RUNTIMES[node.runtime].language].name} to ARM needs ${port} Dev Hours.`,
+      )
+    return spend(game, price, `${FAMILIES[family].name} memory kit`, (paid) => ({
+      ...patch(paid, id, {
         family,
         parts: { ...node.parts, ram: true },
         ...restarted(node),
         credits: family === 'burstable' ? (CREDIT_CAP * vcpuOf(node)) / 2 : 0,
       }),
-    )
+      devHours: paid.devHours - port,
+    }))
   })
 
 export const installDisk = (game: Game, id: string, iops: IopsClass): Action =>

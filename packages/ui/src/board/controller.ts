@@ -68,7 +68,6 @@ const GLIDE_NEW_GESTURE_GAP_MS = 120
 const GLIDE_WHEEL_IDLE_MS = 32
 const GLIDE_STOPPED_PX_PER_S = 20
 
-
 const isWebKit = (): boolean =>
   /AppleWebKit/.test(navigator.userAgent) && !/Chrome|Chromium|Android/.test(navigator.userAgent)
 

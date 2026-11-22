@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest'
 import * as Actions from '../src/actions.ts'
 import { GATEWAY_PRICE, GPU_MODELS, LIVE_TUNING, type ResearchId } from '../src/catalog.ts'
 import { preseedGame } from '../src/company.ts'
+import { RUNNING } from '../src/life.ts'
 import { gpuFits } from '../src/rules.ts'
 import {
   badDeployChance,
@@ -356,7 +357,10 @@ describe('Load Balancer policies', () => {
     const lbId = lb.nodes.at(-1)!.id
     const second = ok(Actions.place(lb, 'server', 600, 560))
     const secondId = second.nodes.at(-1)!.id
-    game = ok(Actions.connect(Actions.disconnect(second, 'users', 'server'), 'users', lbId))
+    const fitted = ok(
+      Actions.installRam(ok(Actions.installCpu(second, secondId, 1)), secondId, 'general'),
+    )
+    game = ok(Actions.connect(Actions.disconnect(fitted, 'users', 'server'), 'users', lbId))
     game = ok(Actions.connect(ok(Actions.connect(game, lbId, 'server')), lbId, secondId))
     game = ok(Actions.connect(game, secondId, 'database'))
     game = {
@@ -366,7 +370,7 @@ describe('Load Balancer policies', () => {
         node.id === lbId
           ? { ...node, policy, warm: 1 }
           : node.id === secondId
-            ? { ...node, warm: 1, family: 'burstable', credits: 0 }
+            ? { ...node, warm: 1, family: 'burstable', credits: 0, life: RUNNING }
             : node.type === 'database'
               ? { ...node, size: 8 }
               : node,

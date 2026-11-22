@@ -23,6 +23,8 @@ The CPU Part carries the size. A size step doubles vCPU, doubles the network lim
 
 The memory kit carries the family. It does not carry a fixed GB number. The kit says GB per vCPU, so a General kit gives 8 GB at 2 vCPU and 16 GB at 4 vCPU. The family multiplier scales the CPU price: Burstable 0.4×, Compute 0.85×, General 1×, Memory 1.3×, ARM 0.8×. The family model becomes a Part. A kit swap restarts the Node, and ARM needs research `arm-instances`. The RAM Slot stays empty until a CPU is installed, because the kit has no capacity without one.
 
+ARM is the one kit that also costs Dev Hours. Moving an App Server to ARM ports its runtime, at the language's rate: Go 4, Rust 6, Java, C# and Zig 8, Node and Elixir 12, PHP 16, Ruby and Python 24, Haskell 32. A Database ports for free because it has no runtime, and a Sandbox ports for free. ARM's speed also depends on the language, from 0.93× a General box's CPU for Haskell to 1.03× for Go and Rust. The shop names the porting cost on the ARM card and disables the card until the Company has the Dev Hours.
+
 The volume kit exists only on a Database. General purpose gives 3,000 IOPS at 1× the box. Provisioned IOPS gives 64,000 at 1.5×. The App Server has a Disk Slot with no Part for sale, because swap has no IOPS choice in the model. The empty Slot stays visible so the card does not pretend the server has no disk.
 
 ## The card
@@ -38,7 +40,7 @@ The tint follows the Slot's limiting resource. A Slot's outline turns amber at 7
 The Parts shop is a modal with one tab per Slot. It opens from a Slot, the footer, or the Inspector. The header names the Node and the Slot, and shows the installed Part or **Empty slot**.
 
 - **CPU** shows nine cards from `0.5c` to `96c`. Each names the size, vCPU, network, and price. Installing a larger CPU restarts the Node.
-- **Memory** shows five kit cards. Each names the kit, GB per vCPU, the GB it gives this CPU, its Burn multiplier, and its price. The cards are disabled until a CPU is installed.
+- **Memory** shows five kit cards. Each names the kit, GB per vCPU, the GB it gives this CPU, its Burn multiplier, and its price. The ARM card also names the porting Dev Hours. The cards are disabled until a CPU is installed, and ARM waits for the research and the Dev Hours.
 - **Disk** shows the two volume classes on a Database. Each names its IOPS, Burn multiplier, and price. An App Server says that swap Parts are not sold.
 
 Each card has one **Install** button. The installed card gets a check and cannot be bought again. A purchase changes the Node in place, and Undo puts the old Part back with the rest of the Node's state. The shop does not keep an inventory of owned Parts.

@@ -13,7 +13,14 @@ import {
   X,
 } from 'lucide'
 import { clockOf } from '@quorum/simulation/calendar'
-import { FAMILIES, FAMILY_IDS, SIZES, STORAGE_IOPS } from '@quorum/simulation/catalog'
+import {
+  FAMILIES,
+  FAMILY_IDS,
+  LANGUAGES,
+  RUNTIMES,
+  SIZES,
+  STORAGE_IOPS,
+} from '@quorum/simulation/catalog'
 import type { FamilyId } from '@quorum/simulation/catalog'
 import type { IopsClass } from '@quorum/simulation/state'
 import { burnOf, has } from '@quorum/simulation/lookups'
@@ -417,18 +424,28 @@ export const shopPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             const gb = cpuReady ? Math.round((SIZES[node.size]?.vcpu ?? 0) * kit.ramPerVcpu) : 0
             const price = prices.ram(family)
             const locked = family === 'arm' && !has(game, 'arm-instances')
+            const port =
+              family === 'arm' && node.type === 'server' && node.family !== 'arm' && !game.sandbox
+                ? LANGUAGES[RUNTIMES[node.runtime].language].armPortDh
+                : 0
             return {
               key: `shop-ram-${family}`,
               title: t.catalog.families[family].name,
               subtitle: `${kit.ramPerVcpu} GB/vCPU`,
-              specs: cpuReady ? [`${gb} GB now`] : [],
+              specs: cpuReady
+                ? [`${gb} GB now`, ...(port > 0 ? [t.units.devHours(port)] : [])]
+                : [],
               price,
               burn: t.inspector.partsBurn(kit.price),
               installed: node.parts.ram && node.family === family,
-              ready: cpuReady && !locked && (game.sandbox || game.cash >= price),
+              ready:
+                cpuReady &&
+                !locked &&
+                game.devHours >= port &&
+                (game.sandbox || game.cash >= price),
               locked,
               capacity: kit.ramPerVcpu,
-              search: `${family} ${kit.ramPerVcpu} gb vcpu ${kit.price} burn`,
+              search: `${family} ${kit.ramPerVcpu} gb vcpu ${kit.price} burn ${port} dh`,
               message: Message.InstallRam({ nodeId: node.id, family }),
             }
           })

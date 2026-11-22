@@ -133,6 +133,11 @@ const volumeDrag = Subscription.lift(VolumeSlider.subscriptions)<Model, Message>
   toParentMessage: (message) => Message.VolumeSliderChanged({ message }),
 })
 
+const poolDrag = Subscription.lift(VolumeSlider.subscriptions)<Model, Message>({
+  read: (model) => (model.board.selected === null ? Option.none() : Option.some(model.poolSlider)),
+  toParentMessage: (message) => Message.PoolSliderChanged({ message }),
+})
+
 const teamDragScroll = Stream.callback<Message>((queue) =>
   Effect.gen(function* () {
     yield* Effect.acquireRelease(
@@ -229,6 +234,7 @@ const ticks = (): Stream.Stream<Message> =>
 export const subscriptions = {
   ...teamDrag,
   ...volumeDrag,
+  ...poolDrag,
   researchDragPointer: researchDrag.documentPointer,
   researchDragEscape: researchDrag.documentEscape,
   researchDragKeyboard: researchDrag.documentKeyboard,

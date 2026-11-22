@@ -2,6 +2,7 @@ import { AppRoute, onBoard, urlOf, urlToAppRoute } from './route.ts'
 import { DEFAULT_LOGO } from './logos.ts'
 import { Listbox, Menu as UiMenu } from '@foldkit/ui'
 import * as VolumeSlider from '@quorum/ui/primitives/slider'
+import { POOL_SLIDER_STEPS } from './pool-scale.ts'
 import { initStackPicker } from './stack-picker.ts'
 import {
   CheckRoom,
@@ -97,6 +98,8 @@ export const initialModel = (): Model => {
     settingsOpen: false,
     languagePicker: Listbox.init({ id: 'interface-language' }),
     volumeSlider: VolumeSlider.init({ id: 'volume', min: 0, max: 100, step: 5 }),
+    poolSlider: VolumeSlider.init({ id: 'pool', min: 0, max: POOL_SLIDER_STEPS, step: 10 }),
+    poolDraft: null,
     runtimePicker: initStackPicker(),
     frameworkPicker: initStackPicker(),
     moreMenu: UiMenu.init({ id: 'more-menu' }),

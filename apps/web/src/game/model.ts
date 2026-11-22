@@ -407,6 +407,8 @@ export const Model = Schema.Struct({
   settingsOpen: Schema.Boolean,
   languagePicker: Listbox.Model,
   volumeSlider: VolumeSlider.Model,
+  poolSlider: VolumeSlider.Model,
+  poolDraft: Schema.NullOr(Schema.Finite),
   runtimePicker: StackPicker,
   frameworkPicker: StackPicker,
   moreMenu: UiMenu.Model,

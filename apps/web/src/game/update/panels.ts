@@ -30,6 +30,7 @@ import { listing, openingFolder } from '../inbox.ts'
 import { type RegionId as Region, type ResearchId } from '@quorum/simulation/catalog'
 import { updateDashboard } from '../dashboard.ts'
 import * as VolumeSlider from '@quorum/ui/primitives/slider'
+import { poolFromSlider } from '../pool-scale.ts'
 
 const savePrefs = (model: Model): UpdateResult => ({
   model,
@@ -129,6 +130,43 @@ const foldVolumeSlider = (route: Dispatch) =>
         ),
   })
 
+const foldPoolSlider = (route: Dispatch) =>
+  Update.foldChild({
+    update: VolumeSlider.update,
+    read: (model: Model) => Option.some(model.poolSlider),
+    write: (model, poolSlider) => ({ ...model, poolSlider }),
+    toParentMessage: (message) => Message.PoolSliderChanged({ message }),
+    foldOutMessage:
+      ({ value }) =>
+      (model) => {
+        const nodeId = model.board.selected
+        if (model.poolSlider.dragState._tag === 'Dragging' || nodeId === null)
+          return { model: { ...model, poolDraft: value } }
+        return route(
+          { ...model, poolDraft: null },
+          Message.WorkersChosen({ nodeId, workers: poolFromSlider(value) }),
+        )
+      },
+  })
+
+const foldPoolSliderMessage = (
+  route: Dispatch,
+  model: Model,
+  message: Message & { _tag: 'PoolSliderChanged' },
+): UpdateResult => {
+  const folded = foldPoolSlider(route)(model, message.message)
+  const draft = folded.model.poolDraft
+  const nodeId = folded.model.board.selected
+  if (message.message._tag === 'CancelledDrag')
+    return { ...folded, model: { ...folded.model, poolDraft: null } }
+  if (message.message._tag !== 'ReleasedDragPointer' || draft === null || nodeId === null)
+    return folded
+  return route(
+    { ...folded.model, poolDraft: null },
+    Message.WorkersChosen({ nodeId, workers: poolFromSlider(draft) }),
+  )
+}
+
 const foldLanguagePicker = (route: Dispatch) =>
   Update.foldChild({
     update: languageListbox.update,
@@ -184,6 +222,7 @@ type PanelsTag =
   | 'DashboardChanged'
   | 'LanguagePickerChanged'
   | 'VolumeSliderChanged'
+  | 'PoolSliderChanged'
   | 'RuntimePickerChanged'
   | 'FrameworkPickerChanged'
   | 'MoreMenuChanged'
@@ -366,6 +405,8 @@ export const panelsHandlers = (
   LanguagePickerChanged: ({ message }) => foldLanguagePicker(route)(model, message),
 
   VolumeSliderChanged: ({ message }) => foldVolumeSlider(route)(model, message),
+
+  PoolSliderChanged: (message) => foldPoolSliderMessage(route, model, message),
 
   RuntimePickerChanged: ({ message }) => ({
     model: { ...model, runtimePicker: updateStackPicker(model.runtimePicker, message) },

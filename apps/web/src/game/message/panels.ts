@@ -31,6 +31,7 @@ export const panelsCases = {
   DashboardChanged: { message: DashboardMessage },
   LanguagePickerChanged: { message: Listbox.Message },
   VolumeSliderChanged: { message: VolumeSliderMessage },
+  PoolSliderChanged: { message: VolumeSliderMessage },
   RuntimePickerChanged: { message: StackPickerMessage },
   FrameworkPickerChanged: { message: StackPickerMessage },
   MoreMenuChanged: { message: UiMenu.Message },

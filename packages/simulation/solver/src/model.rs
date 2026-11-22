@@ -1641,6 +1641,11 @@ pub fn flat_component(
             let capacity = (GPU_TYPES_TOKENS[node.gpu] * scale) / TOKENS_PER_PROMPT
                 * GPU_MODELS_SPEED[node.gpu_model]
                 * GPU_PRECISIONS_SPEED[node.precision]
+                * if node.precision == gpu_precision::INT4 {
+                    GPU_BATCHES_INT4[batch]
+                } else {
+                    1.0
+                }
                 * GPU_BATCHES_GAIN[batch]
                 * node.warm_share.max(0.1);
 
@@ -1682,7 +1687,12 @@ pub fn flat_component(
             } else {
                 1.0
             };
-            flat(CACHE_OPS * cores / hot_key_factor(game, node), 0.5, 0.2)
+            flat(
+                CACHE_OPS * CACHE_ENGINES_SPEED[node.cache_engine] * cores
+                    / hot_key_factor(game, node),
+                0.5,
+                0.2,
+            )
         }
         component::WAF => {
             let waf = Waf::of(node, game);
@@ -2527,11 +2537,7 @@ pub fn database_model(
         BURST_BASELINE * vcpu
     } else {
         vcpu
-    }) * if node.family == ARM_FAMILY {
-        ARM_DATA_SPEED
-    } else {
-        1.0
-    } * if slowed { STORM_SLOWDOWN } else { 1.0 };
+    }) * if slowed { STORM_SLOWDOWN } else { 1.0 };
     let per_request = cores.min(1.0);
     let cost = db_cpu(game, node, arriving, cores, scatter, disk, database_count);
     let DbCpu {

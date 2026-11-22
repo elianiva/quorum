@@ -41,7 +41,6 @@ export const FAMILIES: Record<FamilyId, FamilyDef> = {
   },
 }
 
-export const ARM_DATA_SPEED = 0.93
 export const ARM_RESEARCH = 'arm-instances' as const
 
 export const VCPU_PRICE = 0.05

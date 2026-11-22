@@ -430,9 +430,10 @@ describe('ARM instances', () => {
     }).nodes[id]!.utilization
   }
 
-  test('a Database on ARM gives up some capacity for the lower price', () => {
-    expect(utilization('database', { family: 'arm' })).toBeGreaterThan(
+  test('a Database on ARM matches General capacity', () => {
+    expect(utilization('database', { family: 'arm' })).toBeCloseTo(
       utilization('database', { family: 'general' }),
+      9,
     )
   })
 
@@ -445,7 +446,7 @@ describe('ARM instances', () => {
 })
 
 describe('GPU serving options', () => {
-  const earned = (precision: GameNode['precision']): number => {
+  const load = (precision: GameNode['precision'], batch: number): number => {
     const game = freeSandbox()
     const placed = ok(Actions.place(game, 'gpu', 600, 560))
     const id = placed.nodes.at(-1)!.id
@@ -457,20 +458,20 @@ describe('GPU serving options', () => {
       scenario: { mix: { page: 0.5, read: 0.3, ai: 0.2 } },
       nodes: linked.nodes.map((node) =>
         node.id === id
-          ? { ...node, size: 8, gpu: 'h100', precision, warm: 1 }
+          ? { ...node, size: 5, gpu: 'h100', precision, batch, warm: 1 }
           : node.type === 'server'
             ? { ...node, runtime: 'tokio', size: 7 }
             : node.type === 'database'
               ? { ...node, size: 8 }
               : node,
       ),
-    }).revenue
+    }).nodes[id]!.utilization
   }
 
-  test('a lower precision serves faster but its answers earn less', () => {
-    expect(earned('int4')).toBeLessThan(earned('int8'))
-    expect(earned('int8')).toBeLessThan(earned('fp16'))
-    expect(earned('int4')).toBeLessThan(earned('fp16') * 0.8)
+  test('INT4 serves most one request at a time, and INT8 wins once requests are batched', () => {
+    expect(load('int4', 1)).toBeLessThan(load('int8', 1))
+    expect(load('int8', 32)).toBeLessThan(load('int4', 32))
+    expect(load('int8', 1)).toBeLessThan(load('fp16', 1))
   })
 })
 
@@ -505,5 +506,33 @@ describe('Worker prefetch', () => {
   test('each prefetched task holds RAM, so a deep prefetch crowds a small Worker', () => {
     expect(ramShare(100)).toBeGreaterThan(ramShare(10) * 3)
     expect(ramShare(10)).toBeGreaterThan(ramShare(1))
+  })
+})
+
+describe('Cache engines', () => {
+  const capacity = (engine: GameNode['engine'], size: number): number => {
+    const game = freeSandbox()
+    const placed = ok(Actions.place(game, 'cache', 600, 280))
+    const id = placed.nodes.at(-1)!.id
+    const linked = ok(
+      Actions.connect(
+        ok(Actions.connect(Actions.disconnect(placed, 'server', 'database'), 'server', id)),
+        id,
+        'database',
+      ),
+    )
+    return solveFlow({
+      ...linked,
+      stage: 4,
+      users: 20_000,
+      nodes: linked.nodes.map((node) =>
+        node.id === id ? { ...node, engine, size, warm: 1 } : node,
+      ),
+    }).nodes[id]!.capacity
+  }
+
+  test('Memcached is a fifth faster at one core and pulls ahead as it gains threads', () => {
+    expect(capacity('memcached', 3) / capacity('redis', 3)).toBeCloseTo(1.2, 5)
+    expect(capacity('memcached', 6) / capacity('redis', 6)).toBeGreaterThan(4)
   })
 })

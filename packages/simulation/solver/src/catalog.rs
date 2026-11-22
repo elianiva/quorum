@@ -75,7 +75,6 @@ pub const ANYCAST_MS: f64 = 20.0;
 pub const APACHE_MAX_WORKERS: f64 = 150.0;
 pub const APACHE_SPARE: f64 = 5.0;
 pub const APDEX_WINDOW: f64 = 60.0;
-pub const ARM_DATA_SPEED: f64 = 0.93;
 pub const ARM_RESEARCH: &str = "arm-instances";
 pub static AUTHENTICATED_KINDS: [&str; 10] = ["read", "write", "search", "upload", "buy", "job", "report", "ai", "feed", "hook"];
 pub const AUTH_CHECK_MS: f64 = 0.02;
@@ -105,7 +104,7 @@ pub const BREAKER_THRESHOLD: f64 = 0.5;
 pub const BUILD_CACHE: f64 = 0.75;
 pub const BULKHEAD_MS: f64 = 1000.0;
 pub const BURST_BASELINE: f64 = 0.2;
-pub const CACHE_OPS: f64 = 50000.0;
+pub const CACHE_OPS: f64 = 100000.0;
 pub const CALENDAR_DAY: f64 = 1440.0;
 pub const CALENDAR_PACE: f64 = 24.0;
 pub const CALENDAR_START: f64 = 840.0;
@@ -577,7 +576,7 @@ pub const YJIT_MEMORY: f64 = 1.2;
 pub const YJIT_SPEED: f64 = 1.3;
 pub static ZONES: [&str; 3] = ["a", "b", "c"];
 pub static ZONE_SPANNING_COMPONENTS: [&str; 5] = ["psp", "llm", "lb", "waf", "gw"];
-pub static SCALAR_COUNT: usize = 515;
+pub static SCALAR_COUNT: usize = 514;
 
 
 pub mod search_variant {
@@ -638,18 +637,20 @@ pub mod gpu_precision {
     pub const INT4: usize = 2;
 }
 pub static GPU_PRECISIONS_SPEED: [f64; 3] = [1.0, 2.0, 3.0];
-pub static GPU_PRECISIONS_VALUE: [f64; 3] = [1.0, 0.92, 0.7];
+pub static GPU_PRECISIONS_VALUE: [f64; 3] = [1.0, 0.99, 0.97];
 pub static GPU_PRECISIONS_MEMORY: [f64; 3] = [1.0, 0.5, 0.25];
 
 pub static GPU_BATCHES_BATCH: [f64; 3] = [1.0, 8.0, 32.0];
 pub static GPU_BATCHES_GAIN: [f64; 3] = [1.0, 1.6, 2.2];
 pub static GPU_BATCHES_TTFT: [f64; 3] = [0.0, 700.0, 3200.0];
+pub static GPU_BATCHES_INT4: [f64; 3] = [1.0, 0.75, 0.5];
 
 pub mod cache_engine {
     pub const REDIS: usize = 0;
     pub const MEMCACHED: usize = 1;
 }
 pub static CACHE_ENGINES_SCALES: [bool; 2] = [false, true];
+pub static CACHE_ENGINES_SPEED: [f64; 2] = [1.0, 1.2];
 pub static CACHE_ENGINES_WARM_AFTER_RESTART: [f64; 2] = [0.5, 0.0];
 
 pub static CACHE_TTLS_TTL: [f64; 3] = [10.0, 60.0, 3600.0];
@@ -834,7 +835,7 @@ pub mod language {
 }
 pub static LANGUAGE_VELOCITY: [f64; 11] = [1.2, 1.1, 1.15, 1.15, 0.95, 0.9, 1.0, 1.0, 0.6, 0.7, 1.15];
 pub static LANGUAGE_SESSION_KB: [f64; 11] = [130.0, 340.0, 420.0, 360.0, 210.0, 210.0, 280.0, 145.0, 85.0, 65.0, 180.0];
-pub static LANGUAGE_ARM_SPEED: [f64; 11] = [0.88, 0.9, 0.97, 0.9, 1.0, 0.98, 0.97, 0.95, 1.0, 0.98, 0.9];
+pub static LANGUAGE_ARM_SPEED: [f64; 11] = [0.95, 0.95, 1.0, 0.97, 1.03, 1.02, 1.02, 1.0, 1.03, 1.0, 0.93];
 pub static LANGUAGE_BLAST: [&str; 11] = ["request", "request", "whole", "request", "request", "request", "request", "request", "task", "whole", "request"];
 
 pub const FRAMEWORK_COUNT: usize = 31;
@@ -1380,4 +1381,4 @@ pub static MONEY_KINDS_MASK: u64 = 0x206;
 pub static DATA_KINDS_MASK: u64 = 0x8b760000;
 pub static QUERY_CPU_BY_BACKEND: [f64; NB] = [8.0, 25.0, -1.0, 80.0, -1.0, 60.0, -1.0, 30.0, 40.0, -1.0, 100.0, -1.0, -1.0, -1.0, -1.0, -1.0];
 
-pub const CATALOG_HASH: u32 = 0xc03f3cb6;
+pub const CATALOG_HASH: u32 = 0x9853056f;

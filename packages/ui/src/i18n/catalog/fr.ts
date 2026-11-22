@@ -1667,6 +1667,11 @@ export const catalog: Catalog = {
       blurb: "Déverrouille l'répartiteur de charge : divisé par capacité, ignore les hôtes morts.",
       name: 'Équilibrage de charge',
     },
+    'custom-instances': {
+      blurb:
+        "Débloque des pièces CPU, mémoire et disque séparées, avec des prix qui changent chaque semaine. Avant, un nœud achète un type d'instance fixe.",
+      name: 'Instances personnalisées',
+    },
     'health-checks': {
       blurb: "DNS arrête d'envoyer les utilisateurs vers un hôte mort.",
       name: 'Sondes de disponibilité',

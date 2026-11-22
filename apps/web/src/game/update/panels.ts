@@ -213,6 +213,8 @@ type PanelsTag =
   | 'PanelOpened'
   | 'ShopOpened'
   | 'ShopSlotChosen'
+  | 'ShopFamilyChosen'
+  | 'SelectInstance'
   | 'ShopQueryChanged'
   | 'ShopSortChosen'
   | 'InstallCpu'
@@ -290,6 +292,7 @@ export const panelsHandlers = (
         ...model,
         panel: 'shop',
         shopSlot: slot,
+        shopFamily: node.family,
         shopQuery: '',
         board: {
           ...model.board,
@@ -302,6 +305,26 @@ export const panelsHandlers = (
   },
 
   ShopSlotChosen: ({ slot }) => ({ model: { ...model, shopSlot: slot, shopQuery: '' } }),
+
+  ShopFamilyChosen: ({ family }) => ({
+    model: { ...model, shopFamily: family, shopQuery: '' },
+  }),
+
+  SelectInstance: ({ nodeId, family, size }) => {
+    const node = model.board.game.nodes.find((entry) => entry.id === nodeId)
+    if (!node) return { model }
+    const steps = Array.from({ length: Math.abs(size - node.size) }, () =>
+      intent('resize', nodeId, size < node.size ? -1 : 1),
+    )
+    const intents = [
+      ...(node.family === family ? [] : [intent('setFamily', nodeId, family)]),
+      ...steps,
+    ]
+    return act(model, 'Selected an instance', intents, {
+      undoable: true,
+      panel: () => 'shop',
+    })
+  },
 
   ShopQueryChanged: ({ query }) => ({ model: { ...model, shopQuery: query } }),
 

@@ -62,6 +62,7 @@ export const initialModel = (): Model => {
     boot: { _tag: 'Ready' },
     panel: 'none',
     shopSlot: 'cpu',
+    shopFamily: 'general',
     shopQuery: '',
     shopSort: 'recommended',
     palette: EMPTY_PALETTE,

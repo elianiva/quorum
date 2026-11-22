@@ -21,10 +21,11 @@ are in [Data tier](/design/07-data-tier). Runtime details for App Servers are in
   restarts the Node, so it is briefly down unless a redundant Node carries the load. Real cloud
   prices scale linearly with size, so a bigger box earns no discount. What it saves is a network hop,
   a load balancer, and per-process overhead ([Balancing](/design/16-balancing#vertical-and-horizontal)).
-- **Parts.** An App Server and a Database have three Slots: CPU, Memory, and Disk. Outside the guided Sandboxes, a new Node is
-  placed with empty Slots, and a starter Node comes equipped. The Parts shop sells each Part. A memory
-  kit sets GB per vCPU rather than a fixed size, so its GB follows the CPU
-  ([Parts](/design/19-parts)).
+- **Parts.** An App Server and a Database have three Slots: CPU, Memory, and Disk. Before **Custom
+  instances** is researched, a new Node buys a fixed instance type and its Slots show what that type
+  includes. After the research, a new Node is placed with empty Slots, a starter Node comes equipped,
+  and the Parts shop sells each Part. A memory kit sets GB per vCPU rather than a fixed size, so its
+  GB follows the CPU ([Parts](/design/19-parts)).
 - **Sell.** Removing a Node refunds 50% of its placement cost and its installed Parts, and stops its Burn. Reserved Nodes keep
   burning until their term ends ([Economy](/design/09-economy#pricing-models)).
 - **Options.** A Tradeoff card presents each option. An option belongs to the choice, not to the

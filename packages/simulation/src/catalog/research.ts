@@ -6,6 +6,7 @@ export const RESEARCH_IDS = [
   'stripe',
   'dns-rr',
   'load-balancing',
+  'custom-instances',
   'health-checks',
   'auth-provider',
   'caching',
@@ -282,6 +283,16 @@ const RESEARCH_LIST: ReadonlyArray<ResearchDef> = [
     era: 0,
     requires: [],
     blurb: 'Unlocks the Load Balancer: split by capacity, skip dead hosts.',
+  }),
+  research({
+    id: 'custom-instances',
+    name: 'Custom instances',
+    track: 'infrastructure',
+    cost: 60,
+    era: 0,
+    requires: [],
+    blurb:
+      'Unlocks separate CPU, memory, and disk Parts, with prices that move each week. Before this, a Node buys a fixed instance type.',
   }),
   research({
     id: 'health-checks',

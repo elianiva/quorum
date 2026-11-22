@@ -23,7 +23,7 @@ describe('the Balanced bot at the Challenge pace', { timeout: 60_000 }, () => {
       const sized = run.game.nodes.filter(
         (node) => node.type === 'server' || node.type === 'database',
       )
-      expect(sized.every((node) => provisioned(node))).toBe(true)
+      expect(sized.every((node) => provisioned(run.game, node))).toBe(true)
       const garage = run.margins.find((entry) => entry.stage === 0)
       const preseed = run.margins.find((entry) => entry.stage === 1)
       expect(garage?.live ?? -1).toBeGreaterThan(0)

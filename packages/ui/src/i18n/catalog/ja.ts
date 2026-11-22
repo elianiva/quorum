@@ -2777,6 +2777,11 @@ export const catalog: Catalog = {
       name: 'ロードバランシング',
       blurb: 'ロードバランサーを解放。容量で振り分け、死んだホストは飛ばす。',
     },
+    'custom-instances': {
+      name: 'カスタムインスタンス',
+      blurb:
+        'CPU、メモリ、ディスクを別々のパーツとして解放。価格は毎週変動する。それまでは固定のインスタンスタイプを購入する。',
+    },
     'health-checks': {
       name: 'ヘルスチェック',
       blurb: 'DNSが死んだホストにユーザーを送らなくなる。',

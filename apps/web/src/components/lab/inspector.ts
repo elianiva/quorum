@@ -61,7 +61,7 @@ import {
   flatScale,
 } from '@quorum/simulation/lookups'
 import { LINK_TIMEOUTS, restartable } from '@quorum/simulation/actions'
-import { installedPart, missingParts, type SlotKind } from '@quorum/simulation/parts'
+import { installedPart, missingParts, partsUnlocked, type SlotKind } from '@quorum/simulation/parts'
 import { CACHE_HIT_LOW, hotDataGb } from '@quorum/simulation/rules'
 import { activeIncident, type Game, type GameLink, type GameNode } from '@quorum/simulation/state'
 import { compact, money, priceLabel, rate } from '@quorum/ui/game/format'
@@ -1149,7 +1149,7 @@ const instance = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => 
 
 const partsPanel = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
-  const missing = missingParts(node)
+  const missing = missingParts(game, node)
   const partRow = (slot: SlotKind, label: string): Html => {
     const value = installedPart(node, slot)
     return h.button(
@@ -2364,7 +2364,9 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
           ...(panel?.top?.(context) ?? []),
           ...(def.sized
             ? node.type === 'server' || node.type === 'database'
-              ? [partsPanel(game, node, h)]
+              ? partsUnlocked(game)
+                ? [partsPanel(game, node, h)]
+                : [instance(game, node, h)]
               : [instance(game, node, h)]
             : []),
           ...(panel?.body?.(context) ?? []),

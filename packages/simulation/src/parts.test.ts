@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { Result } from 'effect'
-import { installRam } from './actions.ts'
-import { LANGUAGES, RUNTIMES } from './catalog.ts'
+import { installCpu, installRam } from './actions.ts'
+import { FAMILIES, LANGUAGES, RUNTIMES } from './catalog.ts'
 import { preseedGame } from './company.ts'
 import { refundOf } from './lookups.ts'
 import {
@@ -9,8 +9,10 @@ import {
   cpuPartPrice,
   installedPart,
   marketPercent,
+  missingParts,
   partMarket,
   partPrice,
+  partsUnlocked,
   partsValueOf,
   provisioned,
 } from './parts.ts'
@@ -19,6 +21,10 @@ describe('part market', () => {
   const game = preseedGame()
   const server = game.nodes.find((node) => node.type === 'server')!
   const bare = { ...server, parts: { cpu: false, ram: false, disk: false } }
+  const unlocked = {
+    ...game,
+    researched: [...game.researched, 'custom-instances' as const],
+  }
 
   test('each slot moves on its own weekly phase', () => {
     const start = {
@@ -42,11 +48,33 @@ describe('part market', () => {
     expect(marketPercent(later, 'cpu')).not.toBe(marketPercent(game, 'cpu'))
   })
 
-  test('an empty Node has no Parts and is not provisioned', () => {
+  test('a locked Node treats its parts as a bundle', () => {
     expect(installedPart(bare, 'cpu')).toBeNull()
     expect(installedPart(bare, 'ram')).toBeNull()
     expect(installedPart(bare, 'disk')).toBeNull()
-    expect(provisioned(bare)).toBe(false)
+    expect(partsUnlocked(game)).toBe(false)
+    expect(provisioned(game, bare)).toBe(true)
+    expect(missingParts(game, bare)).toEqual([])
+    expect(partsValueOf(game, bare)).toBe(0)
+  })
+
+  test('an empty Node with Custom instances is not provisioned', () => {
+    expect(partsUnlocked(unlocked)).toBe(true)
+    expect(provisioned(unlocked, bare)).toBe(false)
+    expect(missingParts(unlocked, bare)).toEqual(['cpu', 'ram'])
+  })
+
+  test('the family ratios match the real families', () => {
+    expect(FAMILIES.burstable.ramPerVcpu).toBe(2)
+    expect(FAMILIES.general.ramPerVcpu).toBe(4)
+    expect(FAMILIES.compute.ramPerVcpu).toBe(2)
+    expect(FAMILIES.memory.ramPerVcpu).toBe(8)
+    expect(FAMILIES.arm.ramPerVcpu).toBe(4)
+  })
+
+  test('the Parts actions wait for Custom instances', () => {
+    expect(Result.isFailure(installCpu(game, server.id, 2))).toBe(true)
+    expect(Result.isFailure(installRam(game, server.id, 'general'))).toBe(true)
   })
 
   test('a CPU upgrade charges every step from the installed size or from micro', () => {
@@ -58,8 +86,8 @@ describe('part market', () => {
   })
 
   test('installed Parts count toward the sell refund', () => {
-    expect(partsValueOf(game, server)).toBeGreaterThan(0)
-    expect(refundOf(game, server)).toBeGreaterThan(refundOf(game, bare))
+    expect(partsValueOf(unlocked, server)).toBeGreaterThan(0)
+    expect(refundOf(unlocked, server)).toBeGreaterThan(refundOf(unlocked, bare))
   })
 })
 
@@ -72,7 +100,7 @@ describe('ARM porting through the memory kit', () => {
     ...base,
     cash: 100_000,
     devHours: 100,
-    researched: [...base.researched, 'arm-instances' as const],
+    researched: [...base.researched, 'arm-instances' as const, 'custom-instances' as const],
   }
 
   test('installing an ARM kit charges the language port', () => {

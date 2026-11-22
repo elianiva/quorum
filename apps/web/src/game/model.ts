@@ -39,6 +39,7 @@ import { fileOf } from './saves.ts'
 import { SavesState, savesOf } from './saves-machine.ts'
 import {
   ComponentId,
+  FamilyId,
   FeatureId,
   Game,
   GameLink,
@@ -391,6 +392,7 @@ export const Model = Schema.Struct({
   boot: Boot,
   panel: Panel,
   shopSlot: ShopSlot.pipe(Schema.withDecodingDefaultKey(Effect.succeed('cpu' as const))),
+  shopFamily: FamilyId.pipe(Schema.withDecodingDefaultKey(Effect.succeed('general' as const))),
   shopQuery: Schema.String.pipe(Schema.withDecodingDefaultKey(Effect.succeed(''))),
   shopSort: ShopSort.pipe(Schema.withDecodingDefaultKey(Effect.succeed('recommended' as const))),
   palette: Palette,

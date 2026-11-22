@@ -511,8 +511,11 @@ export const canvasHandlers = (
   FooterPressed: ({ nodeId }) => {
     const node = model.board.game.nodes.find((entry) => entry.id === nodeId)
     if (!node) return { model }
-    if (!provisioned(node))
-      return route(model, Message.ShopOpened({ nodeId, slot: missingParts(node)[0] ?? 'cpu' }))
+    if (!provisioned(model.board.game, node))
+      return route(
+        model,
+        Message.ShopOpened({ nodeId, slot: missingParts(model.board.game, node)[0] ?? 'cpu' }),
+      )
     if (node.type === 'payments') return route(model, Message.Collected())
     if (node.life._tag === 'Stopped') return route(model, Message.ReplaceBought({ nodeId }))
     return route(model, Message.ResizeChosen({ nodeId, direction: 1 }))

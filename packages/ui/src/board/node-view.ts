@@ -4,6 +4,7 @@ import { COMPONENTS, POOLS, type BuildGroup, type ComponentId } from '@quorum/si
 import { POOL_ICONS } from '../game/pool-visuals.ts'
 import { type Ledger, type NodeStatus } from '@quorum/simulation/ledger'
 import { type Game, type GameNode, type Region } from '@quorum/simulation/state'
+import { partsUnlocked } from '@quorum/simulation/parts'
 import {
   CARD_W,
   HEAD,
@@ -420,7 +421,7 @@ export class NodeView {
     const layout = layoutOf(node.type)
     const rows = rowsOf(game, node, ledger, history)
     const footer = footerOf(game, node)
-    const slots = slotsOf(node, own)
+    const slots = slotsOf(node, own, partsUnlocked(game))
     this.chipName = t(def.name)
     this.chipHue = colors.groups[this.group]
     this.chipStatus = own.status

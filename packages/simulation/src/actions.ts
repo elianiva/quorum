@@ -124,7 +124,13 @@ import type {
   IopsClass,
 } from './state.ts'
 import { EMPTY_PARTS, FULL_PARTS } from './state.ts'
-import { cpuInstallPrice, diskPartPrice, ramPartPrice, provisioned } from './parts.ts'
+import {
+  cpuInstallPrice,
+  diskPartPrice,
+  partsUnlocked,
+  ramPartPrice,
+  provisioned,
+} from './parts.ts'
 
 export { Refusal, describeRefusal, type Action } from './action-kit.ts'
 export { setProvider, switchProvider } from './components/psp.rule.ts'
@@ -331,7 +337,7 @@ export const place = (
   if (!openRegions(game).includes(region)) return notAllowed('Open that region first.')
   const node = blankNode(game, `n${game.nextId}`, type, x, y, region)
   const parts =
-    (type === 'server' || type === 'database') && !game.fixedMix
+    (type === 'server' || type === 'database') && !game.fixedMix && partsUnlocked(game)
       ? { ...EMPTY_PARTS }
       : { ...FULL_PARTS }
   return spend(game, priceOf(game, type), def.name, (paid) => ({
@@ -613,7 +619,7 @@ export const resize = (game: Game, id: string, direction: 1 | -1): Action =>
   withNode(game, id, (node) => {
     const def = COMPONENTS[node.type]
     const lowest = def.sized ? 0 : 1
-    if (def.sized && !provisioned(node))
+    if (def.sized && !provisioned(game, node))
       return notAllowed('Install the missing parts before changing the size.')
     const rebalances = !game.sandbox && REBALANCE_TYPES.includes(node.type) && !isDown(node)
     if (direction === -1) {
@@ -726,6 +732,8 @@ const partNode = (node: GameNode): boolean => node.type === 'server' || node.typ
 export const installCpu = (game: Game, id: string, size: number): Action =>
   withNode(game, id, (node) => {
     if (!partNode(node)) return notAllowed('Only an App Server or Database takes parts.')
+    if (!partsUnlocked(game))
+      return no(Refusal.Locked({ what: 'A Part', research: RESEARCH['custom-instances'].name }))
     if (!Number.isInteger(size) || size < 0 || size >= SIZES.length)
       return notAllowed('That CPU does not exist.')
     if (node.parts.cpu && node.size === size) return ok(game)
@@ -742,6 +750,8 @@ export const installCpu = (game: Game, id: string, size: number): Action =>
 export const installRam = (game: Game, id: string, family: FamilyId): Action =>
   withNode(game, id, (node) => {
     if (!partNode(node)) return notAllowed('Only an App Server or Database takes parts.')
+    if (!partsUnlocked(game))
+      return no(Refusal.Locked({ what: 'A Part', research: RESEARCH['custom-instances'].name }))
     if (!node.parts.cpu) return notAllowed('Install a CPU before a memory kit.')
     if (family === 'arm' && !has(game, 'arm-instances'))
       return no(
@@ -768,6 +778,8 @@ export const installRam = (game: Game, id: string, family: FamilyId): Action =>
 export const installDisk = (game: Game, id: string, iops: IopsClass): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'database') return notAllowed('Only a Database has a volume slot.')
+    if (!partsUnlocked(game))
+      return no(Refusal.Locked({ what: 'A Part', research: RESEARCH['custom-instances'].name }))
     if (node.parts.disk && node.iops === iops) return ok(game)
     const price = game.sandbox ? 0 : diskPartPrice(game, iops)
     return spend(

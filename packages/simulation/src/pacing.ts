@@ -25,6 +25,7 @@ import {
   setDlq,
   setFamily,
   setRuntime,
+  setStorageIops,
   setAutoscaler,
   setBackup,
   setLbVariant,
@@ -70,6 +71,7 @@ import { newGame } from './company.ts'
 import { foundCompany } from './founding.ts'
 import type { Ledger } from './ledger.ts'
 import { has, isDown, maxSize, ramOf, researchReady, securityStaffed } from './lookups.ts'
+import { partsUnlocked } from './parts.ts'
 import { CACHE_HIT_LOW } from './rule-kit.ts'
 import { isBuilt } from './features.ts'
 import { churnOf, type ChurnRow } from './churn.ts'
@@ -163,6 +165,7 @@ const PRIORITY: ReadonlyArray<ResearchId> = [
   'opcache',
   'metrics',
   'load-balancing',
+  'custom-instances',
   'query-analysis',
   'caching',
   'pooling',
@@ -356,6 +359,24 @@ const placeWithParts = (
   if (Result.isFailure(placed)) return placed
   let next = placed.success
   const id = last(next)
+  if (!partsUnlocked(next)) {
+    const current = (): GameNode | undefined => next.nodes.find((entry) => entry.id === id)
+    while (current() !== undefined && current()!.size !== size) {
+      const direction = current()!.size < size ? 1 : -1
+      const grown = resize(next, id, direction)
+      if (Result.isFailure(grown)) break
+      next = grown.success
+    }
+    const familyAction = setFamily(next, id, family)
+    if (Result.isFailure(familyAction)) return familyAction
+    next = familyAction.success
+    if (type === 'database') {
+      const diskAction = setStorageIops(next, id, iops)
+      if (Result.isFailure(diskAction)) return diskAction
+      next = diskAction.success
+    }
+    return Result.succeed(next)
+  }
   const parts = [
     () => installCpu(next, id, size),
     () => installRam(next, id, family),
@@ -387,7 +408,9 @@ const placedProvisioned = (
 
 const changeFamily = (game: Game, node: GameNode, family: GameNode['family']): Action =>
   node.type === 'server' || node.type === 'database'
-    ? installRam(game, node.id, family)
+    ? partsUnlocked(game)
+      ? installRam(game, node.id, family)
+      : setFamily(game, node.id, family)
     : setFamily(game, node.id, family)
 
 const splitDatabase = (game: Game, ledger: Ledger, server: GameNode): Game => {
@@ -906,7 +929,13 @@ const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy)
       ? game
       : inFront(game, ledger, node, 'pooler')
   if (node.type === 'database' && limit === 'disk' && game.stage >= 3) {
-    if (node.iops !== 'provisioned') return tried(game, installDisk(game, node.id, 'provisioned'))
+    if (node.iops !== 'provisioned')
+      return tried(
+        game,
+        partsUnlocked(game)
+          ? installDisk(game, node.id, 'provisioned')
+          : setStorageIops(game, node.id, 'provisioned'),
+      )
     if (node.family !== 'memory') return tried(game, changeFamily(game, node, 'memory'))
   }
   if (

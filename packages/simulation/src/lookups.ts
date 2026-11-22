@@ -557,7 +557,7 @@ export const storageRequestBurnOf = (node: GameNode, gets: number, puts: number)
 export const burnOf = (game: Game, node: GameNode): number => {
   if (node.service._tag === 'Shut') return 0
   const def = COMPONENTS[node.type]
-  if (def.sized && !provisioned(node)) return 0
+  if (def.sized && !provisioned(game, node)) return 0
   const index = eraOf(game).costIndex
   if (def.sized) {
     const savings = def.group === 'compute' && has(game, 'savings-plans') ? SAVINGS_PLAN_RATE : 1

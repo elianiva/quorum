@@ -13,6 +13,8 @@ export const panelsCases = {
   PanelOpened: { panel: Panel },
   ShopOpened: { nodeId: Schema.String, slot: ShopSlot },
   ShopSlotChosen: { slot: ShopSlot },
+  ShopFamilyChosen: { family: FamilyId },
+  SelectInstance: { nodeId: Schema.String, family: FamilyId, size: Schema.Finite },
   ShopQueryChanged: { query: Schema.String },
   ShopSortChosen: { sort: ShopSort },
   InstallCpu: { nodeId: Schema.String, size: Schema.Finite },

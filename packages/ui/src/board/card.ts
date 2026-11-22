@@ -1,4 +1,4 @@
-import { COMPONENTS, SIZES, ZONES, REGION_INFO, rttOf } from '@quorum/simulation/catalog'
+import { COMPONENTS, FAMILIES, SIZES, ZONES, REGION_INFO, rttOf } from '@quorum/simulation/catalog'
 import type { Ledger } from '@quorum/simulation/ledger'
 import {
   bootingOf,
@@ -139,14 +139,20 @@ export type Slot = Readonly<{
 export const slotsOf = (
   node: GameNode,
   own: Ledger['nodes'][string],
+  unlocked = true,
 ): ReadonlyArray<Slot> | null => {
   if (!layoutOf(node.type).slots) return null
-  const cores = vcpuOf(node)
-  const cpu = node.parts.cpu ? `${Number.isInteger(cores) ? cores : cores.toFixed(1)}c` : '+'
-  const ram = node.parts.ram ? `${Math.round(ramOf(node))}g` : '+'
+  const cores = unlocked ? vcpuOf(node) : (SIZES[node.size]?.vcpu ?? 1)
+  const cpuPresent = unlocked ? node.parts.cpu : true
+  const ramPresent = unlocked ? node.parts.ram : true
+  const diskPresent = unlocked ? node.parts.disk : node.type === 'database'
+  const cpu = cpuPresent ? `${Number.isInteger(cores) ? cores : cores.toFixed(1)}c` : '+'
+  const ram = ramPresent
+    ? `${Math.round(unlocked ? ramOf(node) : cores * FAMILIES[node.family].ramPerVcpu)}g`
+    : '+'
   const disk =
     node.type === 'database'
-      ? node.parts.disk
+      ? diskPresent
         ? node.iops === 'provisioned'
           ? '64k'
           : '3k'
@@ -159,23 +165,23 @@ export const slotsOf = (
       kind: 'cpu',
       label: 'CPU',
       value: cpu,
-      empty: !node.parts.cpu,
-      tone: node.parts.cpu ? tight(own.limit === 'cpu' || own.limit === 'credits') : 'plain',
+      empty: !cpuPresent,
+      tone: cpuPresent ? tight(own.limit === 'cpu' || own.limit === 'credits') : 'plain',
     },
     {
       kind: 'ram',
       label: 'RAM',
       value: ram,
-      empty: !node.parts.ram,
-      tone: node.parts.ram ? tight(own.limit === 'memory') : 'plain',
+      empty: !ramPresent,
+      tone: ramPresent ? tight(own.limit === 'memory') : 'plain',
     },
     {
       kind: 'disk',
       label: 'DISK',
       value: disk,
-      empty: node.type !== 'database' || !node.parts.disk,
+      empty: node.type !== 'database' || !diskPresent,
       tone:
-        node.type === 'database' && node.parts.disk
+        node.type === 'database' && diskPresent
           ? tight(own.limit === 'disk' || own.limit === 'throughput')
           : 'plain',
     },
@@ -214,7 +220,7 @@ export const footerOf = (game: Game, node: GameNode): Footer | null => {
   if (!layoutOf(node.type).footer) return null
   const own = COMPONENT_VIEWS[node.type].footer
   if (own) return own(game, node)
-  if (!provisioned(node))
+  if (!provisioned(game, node))
     return { glyph: 'parts', text: 'Install parts', enabled: true, tone: 'accent' }
   if (node.life._tag === 'Stopped') {
     const price = replacePrice(game, node)

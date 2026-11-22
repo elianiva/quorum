@@ -5,6 +5,8 @@ import type { Game, GameNode, IopsClass } from './state.ts'
 export const PART_SLOTS = ['cpu', 'ram', 'disk'] as const
 export type SlotKind = (typeof PART_SLOTS)[number]
 
+export const partsUnlocked = (game: Game): boolean => game.researched.includes('custom-instances')
+
 export const PART_MARKET_WEEK = 7 * CALENDAR_DAY
 export const PART_MARKET_SWING = 0.15
 
@@ -17,7 +19,8 @@ const MARKET_PHASE: Record<SlotKind, number> = {
 const MARKET_RAM_KIT = 40
 const MARKET_DISK = { general: 24, provisioned: 72 } as const
 
-export const missingParts = (node: GameNode): ReadonlyArray<SlotKind> => {
+export const missingParts = (game: Game, node: GameNode): ReadonlyArray<SlotKind> => {
+  if (!partsUnlocked(game)) return []
   if (node.type !== 'server' && node.type !== 'database') return []
   return PART_SLOTS.filter((slot) => {
     if (slot === 'disk' && node.type !== 'database') return false
@@ -25,7 +28,8 @@ export const missingParts = (node: GameNode): ReadonlyArray<SlotKind> => {
   })
 }
 
-export const provisioned = (node: GameNode): boolean => missingParts(node).length === 0
+export const provisioned = (game: Game, node: GameNode): boolean =>
+  missingParts(game, node).length === 0
 
 export const installedPart = (node: GameNode, slot: SlotKind): string | null => {
   if (slot === 'disk' && node.type !== 'database') return null
@@ -90,6 +94,7 @@ export const partPrice = (
 }
 
 export const partsValueOf = (game: Game, node: GameNode): number => {
+  if (!partsUnlocked(game)) return 0
   if (node.type !== 'server' && node.type !== 'database') return 0
   return (
     (node.parts.cpu ? partPrice(game, node, 'cpu', node.size) : 0) +

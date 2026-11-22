@@ -2067,10 +2067,15 @@ test('the $ key opens the cloud bill without changing the Game', () => {
   expect(closed.model.panel).toBe('none')
 })
 
+const withCustom = (game: ReturnType<typeof preseedGame>) => ({
+  ...game,
+  researched: [...game.researched, 'custom-instances' as const],
+})
+
 test('buying ten sizes grows a Node once, and Max reaches the largest size', () => {
   const base = {
     ...inLab(),
-    board: { ...inLab().board, game: { ...preseedGame(), cash: 1e9 } },
+    board: { ...inLab().board, game: withCustom({ ...preseedGame(), cash: 1e9 }) },
   }
   const picking = update(base, Message.PlacingChosen({ type: 'server' }))
   const dropped = update(picking.model, Message.NodePlaced({ x: 400, y: 300 })).model
@@ -2089,10 +2094,52 @@ test('buying ten sizes grows a Node once, and Max reaches the largest size', () 
   expect(sizeOf(max)).toBe(SIZES.length - 1)
 })
 
-test('a new App Server starts empty and its Slots open the Parts shop', () => {
+test('before Custom instances, a new App Server starts as a bundle and its Slots open the instance catalog', () => {
   const base = {
     ...inLab(),
     board: { ...inLab().board, game: { ...preseedGame(), cash: 1e9 } },
+  }
+  const picking = update(base, Message.PlacingChosen({ type: 'server' }))
+  const placed = update(picking.model, Message.NodePlaced({ x: 400, y: 300 })).model
+  const id = placed.board.game.nodes.at(-1)?.id ?? ''
+  const server = (model: typeof placed) => model.board.game.nodes.find((node) => node.id === id)
+
+  expect(server(placed)?.parts).toEqual({ cpu: true, ram: true, disk: true })
+  const opened = update(placed, Message.ShopOpened({ nodeId: id, slot: 'cpu' })).model
+  expect(opened.panel).toBe('shop')
+  expect(opened.shopFamily).toBe('general')
+  const refused = update(opened, Message.InstallCpu({ nodeId: id, size: 2 })).model
+  expect(server(refused)?.size).toBe(1)
+  expect(server(refused)?.parts.cpu).toBe(true)
+})
+
+test('the instance catalog switches a bundle to another size and family', () => {
+  const base = {
+    ...inLab(),
+    board: { ...inLab().board, game: { ...preseedGame(), cash: 1e9 } },
+  }
+  const picking = update(base, Message.PlacingChosen({ type: 'server' }))
+  const placed = update(picking.model, Message.NodePlaced({ x: 400, y: 300 })).model
+  const id = placed.board.game.nodes.at(-1)?.id ?? ''
+  const server = (model: typeof placed) => model.board.game.nodes.find((node) => node.id === id)
+  const opened = update(placed, Message.ShopOpened({ nodeId: id, slot: 'cpu' })).model
+  const chosen = update(opened, Message.ShopFamilyChosen({ family: 'compute' })).model
+  expect(chosen.shopFamily).toBe('compute')
+  const selected = update(
+    chosen,
+    Message.SelectInstance({ nodeId: id, family: 'compute', size: 2 }),
+  ).model
+  expect(server(selected)?.family).toBe('compute')
+  expect(server(selected)?.size).toBe(2)
+  expect(server(selected)?.parts.cpu).toBe(true)
+  expect(selected.board.game.cash).toBeLessThan(opened.board.game.cash)
+  expect(selected.board.undo.length).toBe(opened.board.undo.length + 1)
+})
+
+test('with Custom instances, a new App Server starts empty and its Slots open the Parts shop', () => {
+  const base = {
+    ...inLab(),
+    board: { ...inLab().board, game: withCustom({ ...preseedGame(), cash: 1e9 }) },
   }
   const picking = update(base, Message.PlacingChosen({ type: 'server' }))
   const placed = update(picking.model, Message.NodePlaced({ x: 400, y: 300 })).model
@@ -2115,10 +2162,10 @@ test('a new App Server starts empty and its Slots open the Parts shop', () => {
   expect(server(ram)?.family).toBe('general')
 })
 
-test('a new Database starts with empty Slots and installs its Disk Part', () => {
+test('with Custom instances, a new Database starts with empty Slots and installs its Disk Part', () => {
   const base = {
     ...inLab(),
-    board: { ...inLab().board, game: { ...preseedGame(), cash: 1e9 } },
+    board: { ...inLab().board, game: withCustom({ ...preseedGame(), cash: 1e9 }) },
   }
   const picking = update(base, Message.PlacingChosen({ type: 'database' }))
   const placed = update(picking.model, Message.NodePlaced({ x: 400, y: 300 })).model

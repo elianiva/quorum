@@ -63,6 +63,7 @@ export const initialModel = (): Model => {
     panel: 'none',
     shopSlot: 'cpu',
     shopFamily: 'general',
+    shopMode: 'instance',
     shopQuery: '',
     shopSort: 'recommended',
     palette: EMPTY_PALETTE,

@@ -74,7 +74,7 @@ export const inspector: Messages['inspector'] = {
   partsCpu: 'CPU',
   partsMemory: '内存',
   partsDisk: '磁盘',
-  openShop: '打开部件商店',
+  openShop: '打开部件目录',
   partsAppDisk: 'App Server 的磁盘是交换空间。暂不出售交换部件。',
   partsMemoryHint: '内存套件决定每个 vCPU 的 GB。RAM 插槽显示当前 CPU 获得的容量。',
   partsDiskHint: '卷类别决定数据库磁盘的 IOPS 和 burn。',

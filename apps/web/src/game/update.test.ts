@@ -28,6 +28,7 @@ import { solveFlow } from '@quorum/simulation/solve'
 import { NEW_ENGINEER, type Postmortem, type WorkItem } from '@quorum/simulation/state'
 import * as Work from '@quorum/simulation/work'
 import { SHARED } from '@quorum/simulation/playbook'
+import { presetPlan } from '@quorum/simulation/parts'
 import { queueFeature } from '@quorum/simulation/work'
 import { studyList, type Study, type StudyQueue } from '@quorum/simulation/study-machine'
 import { encodeText } from '@quorum/simulation/codec'
@@ -2108,6 +2109,9 @@ test('before Custom instances, a new App Server starts as a bundle and its Slots
   const opened = update(placed, Message.ShopOpened({ nodeId: id, slot: 'cpu' })).model
   expect(opened.panel).toBe('shop')
   expect(opened.shopFamily).toBe('general')
+  expect(opened.shopMode).toBe('instance')
+  const forced = update(opened, Message.ShopModeChosen({ mode: 'parts' })).model
+  expect(forced.shopMode).toBe('instance')
   const refused = update(opened, Message.InstallCpu({ nodeId: id, size: 2 })).model
   expect(server(refused)?.size).toBe(1)
   expect(server(refused)?.parts.cpu).toBe(true)
@@ -2153,6 +2157,7 @@ test('with Custom instances, a new App Server starts empty and its Slots open th
   const opened = update(placed, Message.ShopOpened({ nodeId: id, slot: 'cpu' })).model
   expect(opened.panel).toBe('shop')
   expect(opened.shopSlot).toBe('cpu')
+  expect(opened.shopMode).toBe('parts')
   const cpu = update(opened, Message.InstallCpu({ nodeId: id, size: 2 })).model
   expect(server(cpu)?.parts.cpu).toBe(true)
   expect(server(cpu)?.size).toBe(2)
@@ -2179,6 +2184,111 @@ test('with Custom instances, a new Database starts with empty Slots and installs
   const disk = update(opened, Message.InstallDisk({ nodeId: id, iops: 'provisioned' })).model
   expect(database(disk)?.parts.disk).toBe(true)
   expect(database(disk)?.iops).toBe('provisioned')
+})
+
+test('with Custom instances, the shop switches between Parts and Instances', () => {
+  const base = {
+    ...inLab(),
+    board: { ...inLab().board, game: withCustom({ ...preseedGame(), cash: 1e9 }) },
+  }
+  const picking = update(base, Message.PlacingChosen({ type: 'server' }))
+  const placed = update(picking.model, Message.NodePlaced({ x: 400, y: 300 })).model
+  const id = placed.board.game.nodes.at(-1)?.id ?? ''
+
+  const opened = update(placed, Message.ShopOpened({ nodeId: id, slot: 'cpu' })).model
+  expect(opened.shopMode).toBe('parts')
+  const instance = update(opened, Message.ShopModeChosen({ mode: 'instance' })).model
+  expect(instance.shopMode).toBe('instance')
+  expect(instance.shopQuery).toBe('')
+
+  const direct = update(
+    placed,
+    Message.ShopOpened({ nodeId: id, slot: 'cpu', mode: 'instance' }),
+  ).model
+  expect(direct.shopMode).toBe('instance')
+})
+
+test('with Custom instances, the Instance catalog installs the matching Parts', () => {
+  const base = {
+    ...inLab(),
+    board: { ...inLab().board, game: withCustom({ ...preseedGame(), cash: 1e9 }) },
+  }
+  const picking = update(base, Message.PlacingChosen({ type: 'server' }))
+  const placed = update(picking.model, Message.NodePlaced({ x: 400, y: 300 })).model
+  const id = placed.board.game.nodes.at(-1)?.id ?? ''
+  const server = (model: typeof placed) => model.board.game.nodes.find((node) => node.id === id)
+
+  const opened = update(
+    placed,
+    Message.ShopOpened({ nodeId: id, slot: 'cpu', mode: 'instance' }),
+  ).model
+  const before = server(opened)!
+  const plan = presetPlan(opened.board.game, before, 'compute', 2)
+  expect(plan).not.toBeNull()
+  const selected = update(
+    opened,
+    Message.SelectInstance({ nodeId: id, family: 'compute', size: 2 }),
+  ).model
+  const next = server(selected)!
+  expect(next.family).toBe('compute')
+  expect(next.size).toBe(2)
+  expect(next.parts).toEqual({ cpu: true, ram: true, disk: false })
+  expect(selected.board.game.cash).toBe(opened.board.game.cash - (plan?.price ?? 0))
+  expect(selected.board.undo.length).toBe(opened.board.undo.length + 1)
+})
+
+test('with Custom instances, a Database preset installs its Disk Part', () => {
+  const base = {
+    ...inLab(),
+    board: { ...inLab().board, game: withCustom({ ...preseedGame(), cash: 1e9 }) },
+  }
+  const picking = update(base, Message.PlacingChosen({ type: 'database' }))
+  const placed = update(picking.model, Message.NodePlaced({ x: 400, y: 300 })).model
+  const id = placed.board.game.nodes.at(-1)?.id ?? ''
+  const database = (model: typeof placed) => model.board.game.nodes.find((node) => node.id === id)
+
+  const opened = update(
+    placed,
+    Message.ShopOpened({ nodeId: id, slot: 'disk', mode: 'instance' }),
+  ).model
+  const plan = presetPlan(opened.board.game, database(opened)!, 'general', 2)
+  expect(plan).not.toBeNull()
+  const selected = update(
+    opened,
+    Message.SelectInstance({ nodeId: id, family: 'general', size: 2 }),
+  ).model
+  const next = database(selected)!
+  expect(next.parts).toEqual({ cpu: true, ram: true, disk: true })
+  expect(next.iops).toBe('general')
+  expect(selected.board.game.cash).toBe(opened.board.game.cash - (plan?.price ?? 0))
+  expect(selected.board.undo.length).toBe(opened.board.undo.length + 1)
+})
+
+test('an instance preset does not downgrade an installed CPU', () => {
+  const base = {
+    ...inLab(),
+    board: { ...inLab().board, game: withCustom({ ...preseedGame(), cash: 1e9 }) },
+  }
+  const picking = update(base, Message.PlacingChosen({ type: 'server' }))
+  const placed = update(picking.model, Message.NodePlaced({ x: 400, y: 300 })).model
+  const id = placed.board.game.nodes.at(-1)?.id ?? ''
+  const server = (model: typeof placed) => model.board.game.nodes.find((node) => node.id === id)
+  const installed = [
+    Message.InstallCpu({ nodeId: id, size: 3 }),
+    Message.InstallRam({ nodeId: id, family: 'general' }),
+  ].reduce((model, message) => update(model, message).model, placed)
+  const opened = update(
+    installed,
+    Message.ShopOpened({ nodeId: id, slot: 'cpu', mode: 'instance' }),
+  ).model
+  const before = server(opened)!
+  const refused = update(
+    opened,
+    Message.SelectInstance({ nodeId: id, family: 'general', size: 2 }),
+  ).model
+  expect(server(refused)?.size).toBe(before.size)
+  expect(refused.board.game.cash).toBe(opened.board.game.cash)
+  expect(refused.board.undo.length).toBe(opened.board.undo.length)
 })
 
 test('upgrade all of a kind is one action with one undo entry and one toast that says what happened', () => {

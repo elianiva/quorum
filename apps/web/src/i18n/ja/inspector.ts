@@ -83,7 +83,7 @@ export const inspector: Messages['inspector'] = {
   partsCpu: 'CPU',
   partsMemory: 'メモリ',
   partsDisk: 'ディスク',
-  openShop: 'パーツショップを開く',
+  openShop: 'パーツカタログを開く',
   partsAppDisk: 'App Server のディスクはスワップです。スワップパーツはまだ販売していません。',
   partsMemoryHint:
     'キットは vCPU あたりの GB を決めます。RAM スロットには、この CPU が得る容量が表示されます。',

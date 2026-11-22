@@ -7,6 +7,10 @@ export const shop = {
   partsLocked: 'Instancias personalizadas desbloquea piezas separadas.',
   openResearch: 'Abrir investigación',
   openInstanceCatalog: 'Abrir catálogo de instancias',
+  instances: 'Instancias',
+  parts: 'Piezas',
+  presetHint:
+    'Elegir una instancia instala las piezas de CPU, memoria y disco correspondientes a los precios de esta semana.',
   family: 'Familia',
   sizeCount: (p0: number) => (p0 === 1 ? '1 tamaño' : `${p0} tamaños`),
   freeSwitch: 'Gratis',

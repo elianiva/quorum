@@ -102,3 +102,30 @@ export const partsValueOf = (game: Game, node: GameNode): number => {
     (node.type === 'database' && node.parts.disk ? partPrice(game, node, 'disk', node.iops) : 0)
   )
 }
+
+export type PresetPlan = Readonly<{
+  cpu: boolean
+  ram: boolean
+  disk: boolean
+  price: number
+}>
+
+export const presetPlan = (
+  game: Game,
+  node: GameNode,
+  family: FamilyId,
+  size: number,
+): PresetPlan | null => {
+  if (!partsUnlocked(game)) return null
+  if (node.type !== 'server' && node.type !== 'database') return null
+  if (!Number.isInteger(size) || size < 0 || size >= SIZES.length) return null
+  if (node.parts.cpu && size < node.size) return null
+  const cpu = !node.parts.cpu || node.size !== size
+  const ram = !node.parts.ram || node.family !== family
+  const disk = node.type === 'database' && !node.parts.disk
+  const price =
+    (cpu ? partPrice(game, node, 'cpu', size) : 0) +
+    (ram ? partPrice(game, node, 'ram', family) : 0) +
+    (disk ? partPrice(game, node, 'disk', 'general') : 0)
+  return { cpu, ram, disk, price }
+}

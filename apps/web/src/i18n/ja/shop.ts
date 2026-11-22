@@ -7,6 +7,10 @@ export const shop = {
   partsLocked: 'カスタムインスタンスでパーツを個別に購入できます。',
   openResearch: '研究を開く',
   openInstanceCatalog: 'インスタンスカタログを開く',
+  instances: 'インスタンス',
+  parts: 'パーツ',
+  presetHint:
+    'インスタンスを選ぶと、対応するCPU、メモリ、ディスクのパーツを今週の価格で取り付けます。',
   family: 'ファミリー',
   sizeCount: (p0: number) => (p0 === 1 ? '1サイズ' : `${p0}サイズ`),
   freeSwitch: '無料',

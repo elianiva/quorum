@@ -1242,16 +1242,39 @@ const partsPanel = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html =
         ],
       ),
       h.div(
-        [h.Class(css({ display: 'flex', paddingTop: '1' }))],
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1',
+              paddingTop: '1',
+            }),
+          ),
+        ],
         [
           button(
             {
-              onClick: Message.ShopOpened({ nodeId: node.id, slot: missing[0] ?? 'cpu' }),
+              onClick: Message.ShopOpened({
+                nodeId: node.id,
+                slot: missing[0] ?? 'cpu',
+                mode: 'parts',
+              }),
               variant: 'outline',
               size: 'sm',
               className: css({ width: '100%' }),
             },
             t.inspector.openShop,
+            h,
+          ),
+          button(
+            {
+              onClick: Message.ShopOpened({ nodeId: node.id, slot: 'cpu', mode: 'instance' }),
+              variant: 'ghost',
+              size: 'sm',
+              className: css({ width: '100%' }),
+            },
+            t.shop.openInstanceCatalog,
             h,
           ),
         ],

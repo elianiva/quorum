@@ -30,6 +30,7 @@ import {
   marketPercent,
   partPrice,
   partsUnlocked,
+  presetPlan,
   type SlotKind,
 } from '@quorum/simulation/parts'
 import { copy, nodeTitle, type Messages } from '@/i18n/messages.ts'
@@ -38,7 +39,7 @@ import { button } from '@quorum/ui/primitives/button'
 import { icon } from '@quorum/ui/primitives/icon'
 import { EYEBROW, FIGURE } from '@quorum/ui/game/bits'
 import { Message } from '@/game/message.ts'
-import type { Model, ShopSort } from '@/game/model.ts'
+import type { Model, ShopMode, ShopSort } from '@/game/model.ts'
 import { shell } from './panels.ts'
 
 const SLOT_ORDER: ReadonlyArray<SlotKind> = ['cpu', 'ram', 'disk']
@@ -85,6 +86,62 @@ const slotCopy = (t: Messages): Readonly<Record<ShopSort, string>> => ({
   'price-desc': t.shop.sortPriceHigh,
   capacity: t.shop.sortCapacity,
 })
+
+const modeSwitch = (model: Model, t: Messages, h: HtmlBuilder<Message>): Html => {
+  const unlocked = partsUnlocked(model.board.game)
+  const mode = unlocked ? model.shopMode : 'instance'
+  const tab = (value: ShopMode, label: string) => {
+    const active = mode === value
+    const locked = value === 'parts' && !unlocked
+    return h.button(
+      [
+        h.Type('button'),
+        h.AriaPressed(active ? 'true' : 'false'),
+        ...(locked ? [h.Disabled(true), h.Title(t.shop.partsLocked)] : []),
+        ...(active || locked ? [] : [h.OnClick(Message.ShopModeChosen({ mode: value }))]),
+        h.Class(
+          cx(
+            css({
+              borderRadius: 'md',
+              paddingInline: '2.5',
+              paddingBlock: '1',
+              fontSize: 'type.11-5',
+              fontWeight: 'medium',
+              color: 'mutedForeground',
+              _hover: { color: 'foreground' },
+            }),
+            active
+              ? css({
+                  backgroundColor: 'card',
+                  boxShadow: 'raised',
+                  color: 'foreground',
+                })
+              : css({}),
+            locked
+              ? css({ cursor: 'not-allowed', opacity: 0.55, _hover: { color: 'mutedForeground' } })
+              : css({}),
+          ),
+        ),
+      ],
+      [label],
+    )
+  }
+  return h.div(
+    [
+      h.Class(
+        css({
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.5',
+          borderRadius: 'lg',
+          backgroundColor: 'well',
+          padding: '0.5',
+        }),
+      ),
+    ],
+    [tab('instance', t.shop.instances), tab('parts', t.shop.parts)],
+  )
+}
 
 const cardStyle = (installed: boolean) =>
   cx(
@@ -407,36 +464,69 @@ const instancePanel = (model: Model, node: GameNode, h: HtmlBuilder<Message>): H
   const game = model.board.game
   const family = model.shopFamily
   const kit = FAMILIES[family]
+  const unlocked = partsUnlocked(game)
   const armLocked = family === 'arm' && !has(game, 'arm-instances')
-  const cards: ReadonlyArray<PartCard> = SIZES.map((size, index) => {
+  const sizes = SIZES.map((size, index) => ({ size, index })).filter(
+    ({ index }) => !unlocked || !node.parts.cpu || index >= node.size,
+  )
+  const cards: ReadonlyArray<PartCard> = sizes.map(({ size, index }) => {
     const vcpu = size.vcpu
     const gb = Math.round(vcpu * kit.ramPerVcpu)
     const port =
       family === 'arm' && node.type === 'server' && node.family !== 'arm' && !game.sandbox
         ? LANGUAGES[RUNTIMES[node.runtime].language].armPortDh
         : 0
-    const projected = { ...node, family, size: index }
-    const installed = node.family === family && node.size === index
-    const downgrade = index < node.size
-    const sameSize = index === node.size
+    const plan = unlocked ? presetPlan(game, node, family, index) : null
+    const price = unlocked ? (plan?.price ?? 0) : instanceSwitchPrice(game, node, index)
+    const projected = {
+      ...node,
+      family,
+      size: index,
+      ...(unlocked
+        ? {
+            parts: {
+              ...node.parts,
+              cpu: true,
+              ram: true,
+              disk: node.type === 'database' ? true : node.parts.disk,
+            },
+          }
+        : {}),
+    }
+    const installed = unlocked
+      ? node.family === family &&
+        node.size === index &&
+        node.parts.cpu &&
+        node.parts.ram &&
+        (node.type !== 'database' || node.parts.disk)
+      : node.family === family && node.size === index
+    const downgrade = !unlocked && index < node.size
+    const sameSize = !unlocked && index === node.size
     return {
       key: `shop-instance-${family}-${index}`,
       title: `${Number.isInteger(vcpu) ? vcpu : vcpu.toFixed(1)}c`,
       subtitle: t.nodeList.sizes[size.name],
       specs: [`${gb} GB`, `${size.gbps} Gbps`, ...(port > 0 ? [t.units.devHours(port)] : [])],
-      price: instanceSwitchPrice(game, node, index),
+      price,
       priceLabel: installed
         ? t.shop.current
         : downgrade || sameSize
           ? t.shop.freeSwitch
           : undefined,
-      cta: installed ? undefined : downgrade ? t.shop.downgrade : t.shop.select,
+      cta: installed
+        ? undefined
+        : unlocked
+          ? undefined
+          : downgrade
+            ? t.shop.downgrade
+            : t.shop.select,
       burn: t.units.perSecond(money(burnOf(game, projected))),
       installed,
       ready:
+        (unlocked ? plan !== null : true) &&
         !armLocked &&
         game.devHours >= port &&
-        (game.sandbox || game.cash >= instanceSwitchPrice(game, node, index)),
+        (game.sandbox || game.cash >= price),
       locked: armLocked,
       capacity: vcpu,
       search: `${size.name} ${family} ${vcpu} ${gb} gb ${size.gbps} gbps`,
@@ -545,37 +635,49 @@ const instancePanel = (model: Model, node: GameNode, h: HtmlBuilder<Message>): H
           }),
         ],
       ),
-      h.div(
-        [
-          h.Class(
-            css({
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '2',
-              borderTopWidth: '1px',
-              borderTopStyle: 'solid',
-              borderColor: 'border',
-              paddingInline: '2',
-              paddingTop: '3',
-            }),
-          ),
-        ],
-        [
-          h.p(
-            [h.Class(css({ fontSize: 'type.10-5', lineHeight: 'snug', color: 'mutedForeground' }))],
-            [t.shop.partsLocked],
-          ),
-          button<Message>(
-            {
-              onClick: Message.ResearchShown({ id: 'custom-instances' }),
-              variant: 'outline',
-              size: 'sm',
-            },
-            t.shop.openResearch,
-            h,
-          ),
-        ],
-      ),
+      ...(unlocked
+        ? []
+        : [
+            h.div(
+              [
+                h.Class(
+                  css({
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2',
+                    borderTopWidth: '1px',
+                    borderTopStyle: 'solid',
+                    borderColor: 'border',
+                    paddingInline: '2',
+                    paddingTop: '3',
+                  }),
+                ),
+              ],
+              [
+                h.p(
+                  [
+                    h.Class(
+                      css({
+                        fontSize: 'type.10-5',
+                        lineHeight: 'snug',
+                        color: 'mutedForeground',
+                      }),
+                    ),
+                  ],
+                  [t.shop.partsLocked],
+                ),
+                button<Message>(
+                  {
+                    onClick: Message.ResearchShown({ id: 'custom-instances' }),
+                    variant: 'outline',
+                    size: 'sm',
+                  },
+                  t.shop.openResearch,
+                  h,
+                ),
+              ],
+            ),
+          ]),
     ],
   )
 
@@ -627,9 +729,16 @@ const instancePanel = (model: Model, node: GameNode, h: HtmlBuilder<Message>): H
   )
 
   const current = {
-    cpu: `${vcpuOf(node)}c`,
-    ram: `${Math.round(ramOf(node))}g`,
-    disk: node.type === 'database' ? (node.iops === 'provisioned' ? '64k' : '3k') : t.shop.swap,
+    cpu: node.parts.cpu ? `${vcpuOf(node)}c` : '+',
+    ram: node.parts.ram ? `${Math.round(ramOf(node))}g` : '+',
+    disk:
+      node.type === 'database'
+        ? node.parts.disk
+          ? node.iops === 'provisioned'
+            ? '64k'
+            : '3k'
+          : '+'
+        : t.shop.swap,
   }
   const summary = h.aside(
     [
@@ -748,7 +857,7 @@ const instancePanel = (model: Model, node: GameNode, h: HtmlBuilder<Message>): H
                 }),
               ),
             ],
-            [t.shop.instanceHint],
+            [unlocked ? t.shop.presetHint : t.shop.instanceHint],
           ),
           ...(game.sandbox
             ? [h.span([h.Class(css({ fontSize: 'type.10-5', color: 'ok' }))], [t.shop.free])]
@@ -760,7 +869,7 @@ const instancePanel = (model: Model, node: GameNode, h: HtmlBuilder<Message>): H
 
   return shell(
     t.shop.instanceTitle,
-    [],
+    [modeSwitch(model, t, h)],
     [
       h.div(
         [
@@ -793,7 +902,8 @@ export const shopPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const game = model.board.game
   const node = game.nodes.find((entry) => entry.id === model.board.selected)
   if (!node || (node.type !== 'server' && node.type !== 'database')) return h.empty
-  if (!partsUnlocked(game)) return instancePanel(model, node, h)
+  const mode = partsUnlocked(game) ? model.shopMode : 'instance'
+  if (mode === 'instance') return instancePanel(model, node, h)
 
   const slot = model.shopSlot
   const percent = marketPercent(game, slot)
@@ -1500,7 +1610,7 @@ export const shopPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
 
   return shell(
     t.shop.title,
-    [],
+    [modeSwitch(model, t, h)],
     [
       h.div(
         [

@@ -90,7 +90,7 @@ export const inspector = {
   partsCpu: 'CPU',
   partsMemory: 'Memory',
   partsDisk: 'Disk',
-  openShop: 'Open parts shop',
+  openShop: 'Open parts catalog',
   partsAppDisk: 'The App Server disk is swap. Swap parts are not sold yet.',
   partsMemoryHint: 'A kit sets the GB per vCPU. The RAM slot shows what this CPU gets.',
   partsDiskHint: 'The volume class sets the IOPS and the burn of the database disk.',

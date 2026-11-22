@@ -85,7 +85,7 @@ export const inspector: Messages['inspector'] = {
   partsCpu: 'CPU',
   partsMemory: 'Mémoire',
   partsDisk: 'Disque',
-  openShop: 'Ouvrir la boutique de pièces',
+  openShop: 'Ouvrir le catalogue de pièces',
   partsAppDisk:
     "Le disque de l'App Server est du swap. Les pièces de swap ne sont pas encore vendues.",
   partsMemoryHint: 'Le kit fixe les Go par vCPU. L’emplacement RAM montre ce que ce CPU obtient.',

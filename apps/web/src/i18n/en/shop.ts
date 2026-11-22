@@ -7,6 +7,10 @@ export const shop = {
   partsLocked: 'Custom instances unlocks separate Parts.',
   openResearch: 'Open research',
   openInstanceCatalog: 'Open instance catalog',
+  instances: 'Instances',
+  parts: 'Parts',
+  presetHint:
+    "Picking an instance installs the matching CPU, memory, and disk Parts at this week's prices.",
   family: 'Family',
   sizeCount: (p0: number) => (p0 === 1 ? '1 size' : `${p0} sizes`),
   freeSwitch: 'Free',

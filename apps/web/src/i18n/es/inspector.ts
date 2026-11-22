@@ -85,7 +85,7 @@ export const inspector: Messages['inspector'] = {
   partsCpu: 'CPU',
   partsMemory: 'Memoria',
   partsDisk: 'Disco',
-  openShop: 'Abrir tienda de piezas',
+  openShop: 'Abrir catálogo de piezas',
   partsAppDisk: 'El disco del App Server es swap. Aún no se venden piezas de swap.',
   partsMemoryHint: 'El kit fija los GB por vCPU. La ranura RAM muestra lo que recibe esta CPU.',
   partsDiskHint: 'La clase de volumen fija las IOPS y el burn del disco de la base de datos.',

@@ -78,6 +78,9 @@ export type Panel = typeof Panel.Type
 export const ShopSlot = Schema.Literals(['cpu', 'ram', 'disk'])
 export type ShopSlot = typeof ShopSlot.Type
 
+export const ShopMode = Schema.Literals(['instance', 'parts'])
+export type ShopMode = typeof ShopMode.Type
+
 export const ShopSort = Schema.Literals(['recommended', 'price-asc', 'price-desc', 'capacity'])
 export type ShopSort = typeof ShopSort.Type
 
@@ -393,6 +396,7 @@ export const Model = Schema.Struct({
   panel: Panel,
   shopSlot: ShopSlot.pipe(Schema.withDecodingDefaultKey(Effect.succeed('cpu' as const))),
   shopFamily: FamilyId.pipe(Schema.withDecodingDefaultKey(Effect.succeed('general' as const))),
+  shopMode: ShopMode.pipe(Schema.withDecodingDefaultKey(Effect.succeed('instance' as const))),
   shopQuery: Schema.String.pipe(Schema.withDecodingDefaultKey(Effect.succeed(''))),
   shopSort: ShopSort.pipe(Schema.withDecodingDefaultKey(Effect.succeed('recommended' as const))),
   palette: Palette,

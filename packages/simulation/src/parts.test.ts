@@ -14,6 +14,7 @@ import {
   partPrice,
   partsUnlocked,
   partsValueOf,
+  presetPlan,
   provisioned,
 } from './parts.ts'
 
@@ -88,6 +89,48 @@ describe('part market', () => {
   test('installed Parts count toward the sell refund', () => {
     expect(partsValueOf(unlocked, server)).toBeGreaterThan(0)
     expect(refundOf(unlocked, server)).toBeGreaterThan(refundOf(unlocked, bare))
+  })
+
+  test('an instance preset buys only the Parts that are missing', () => {
+    expect(presetPlan(game, bare, 'general', 2)).toBeNull()
+    const first = presetPlan(unlocked, bare, 'general', 2)
+    expect(first).not.toBeNull()
+    expect(first?.cpu).toBe(true)
+    expect(first?.ram).toBe(true)
+    expect(first?.disk).toBe(false)
+    expect(first?.price).toBe(
+      partPrice(unlocked, bare, 'cpu', 2) + partPrice(unlocked, bare, 'ram', 'general'),
+    )
+
+    const same = presetPlan(unlocked, server, 'general', server.size)
+    expect(same).toEqual({ cpu: false, ram: false, disk: false, price: 0 })
+
+    const family = presetPlan(unlocked, server, 'memory', server.size)
+    expect(family?.cpu).toBe(false)
+    expect(family?.ram).toBe(true)
+    expect(family?.price).toBe(partPrice(unlocked, server, 'ram', 'memory'))
+
+    const larger = presetPlan(unlocked, server, 'general', server.size + 1)
+    expect(larger?.cpu).toBe(true)
+    expect(larger?.ram).toBe(false)
+    expect(larger?.price).toBe(partPrice(unlocked, server, 'cpu', server.size + 1))
+  })
+
+  test('an instance preset never hides a CPU downgrade', () => {
+    const larger = { ...server, size: server.size + 1 }
+    expect(presetPlan(unlocked, larger, 'general', server.size)).toBeNull()
+  })
+
+  test('a Database preset adds the general purpose disk when it is missing', () => {
+    const database = game.nodes.find((node) => node.type === 'database')!
+    const bareDatabase = { ...database, parts: { cpu: false, ram: false, disk: false } }
+    const plan = presetPlan(unlocked, bareDatabase, 'general', database.size)
+    expect(plan?.disk).toBe(true)
+    expect(plan?.price).toBe(
+      partPrice(unlocked, bareDatabase, 'cpu', database.size) +
+        partPrice(unlocked, bareDatabase, 'ram', 'general') +
+        partPrice(unlocked, bareDatabase, 'disk', 'general'),
+    )
   })
 })
 

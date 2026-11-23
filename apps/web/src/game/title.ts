@@ -303,28 +303,17 @@ const MenuDriver = Mount.define('MenuDriver', {
           if (from && line.contains(from)) return
           play('hover', pitchOf(line))
         }
-        /* The bus wire lights up where the pointer is beside it. */
-        const onPointerMove = (event: Event) => {
-          if (!(event instanceof PointerEvent) || event.pointerType !== 'mouse') return
-          if (!(event.target instanceof Element)) return
-          const bus = event.target.closest<HTMLElement>('.qm-bus')
-          if (!bus) return
-          const top = bus.getBoundingClientRect().top
-          bus.style.setProperty('--glow-y', `${Math.round(event.clientY - top)}px`)
-        }
         const onClick = (event: Event) => {
           if (event.target instanceof Element && event.target.closest('button')) play('choose')
         }
         window.addEventListener('keydown', onKeyDown, true)
         element.addEventListener('focusin', onFocusIn)
         element.addEventListener('pointerover', onPointerOver)
-        element.addEventListener('pointermove', onPointerMove)
         element.addEventListener('click', onClick)
         return () => {
           window.removeEventListener('keydown', onKeyDown, true)
           element.removeEventListener('focusin', onFocusIn)
           element.removeEventListener('pointerover', onPointerOver)
-          element.removeEventListener('pointermove', onPointerMove)
           element.removeEventListener('click', onClick)
         }
       }),

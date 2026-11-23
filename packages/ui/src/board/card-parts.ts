@@ -1,16 +1,18 @@
 import { Graphics } from 'pixi.js'
 import { type BuildGroup, type ComponentId } from '@quorum/simulation/catalog'
 import { type Game, type GameNode } from '@quorum/simulation/state'
-import { CARD_W, FOOT, HEAD, layoutOf, rowTop, type Pt } from './geometry.ts'
+import { CARD_W, HEAD, INSET, KEY_H, keyTop, layoutOf, type Pt } from './geometry.ts'
 import { footerOf } from './card.ts'
 import { GROUP_SHAPES } from '../game/icons.ts'
-import { type Palette, mix, gradient, gradientX } from './palette.ts'
+import { type Palette, mix, gradient } from './palette.ts'
 import { silhouette, badgeShape } from './shapes.ts'
 
-export const footerRect = (type: ComponentId) => {
-  const y = rowTop(layoutOf(type).rows) + 4
-  return { x: 8, y, w: CARD_W - 16, h: FOOT - 13 }
-}
+export const footerRect = (type: ComponentId) => ({
+  x: INSET,
+  y: keyTop(type),
+  w: CARD_W - INSET * 2,
+  h: KEY_H,
+})
 
 export const BADGE_X = 20
 export const BADGE_Y = 13
@@ -40,7 +42,10 @@ export const medallion = (g: Graphics, group: BuildGroup, tone: number, colors: 
 
 export const headerBand = (g: Graphics, group: BuildGroup, hue: number, colors: Palette): void => {
   silhouette(g, group, 0, 0, CARD_W, HEAD, 0, true).fill(
-    gradientX(mix(colors.card, hue, 0.22), mix(colors.card, hue, 0.04)),
+    gradient(
+      mix(mix(colors.card, 0xffffff, 0.4), hue, 0.14),
+      mix(mix(colors.card, colors.shade, 0.08), hue, 0.24),
+    ),
   )
   g.moveTo(20, 0.5)
     .lineTo(CARD_W - 20, 0.5)
@@ -51,6 +56,48 @@ export const headerBand = (g: Graphics, group: BuildGroup, hue: number, colors: 
   g.moveTo(10, HEAD + 1)
     .lineTo(CARD_W - 10, HEAD + 1)
     .stroke({ color: 0xffffff, width: 1, alpha: 0.32 })
+}
+
+export const screw = (
+  g: Graphics,
+  cx: number,
+  cy: number,
+  colors: Palette,
+  empty = false,
+): void => {
+  g.circle(cx, cy, 3).fill({ color: colors.shade, alpha: 0.22 })
+  if (empty) {
+    g.circle(cx, cy, 2.2).stroke({ color: colors.shade, width: 0.8, alpha: 0.28 })
+    return
+  }
+  const steel = mix(colors.muted, colors.card, 0.45)
+  g.circle(cx, cy, 2.4).fill(gradient(mix(steel, 0xffffff, 0.35), mix(steel, 0x000000, 0.38)))
+  g.circle(cx, cy, 2.4).stroke({
+    color: mix(colors.shade, 0x000000, 0.25),
+    width: 0.7,
+    alignment: 1,
+  })
+  g.moveTo(cx - 1.4, cy + 0.8)
+    .lineTo(cx + 1.4, cy - 0.8)
+    .stroke({ color: mix(colors.shade, 0x000000, 0.4), width: 0.9 })
+}
+
+export const recess = (
+  g: Graphics,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+  colors: Palette,
+  fill = colors.well,
+): void => {
+  g.roundRect(x, y + 1, w, h, r).fill({ color: mix(colors.card, 0xffffff, 0.25), alpha: 0.7 })
+  g.roundRect(x, y, w, h, r).fill(gradient(mix(fill, colors.shade, 0.08), fill))
+  g.roundRect(x, y, w, h, r).stroke({ color: colors.shade, width: 1, alignment: 1, alpha: 0.14 })
+  g.moveTo(x + r, y + 1.5)
+    .lineTo(x + w - r, y + 1.5)
+    .stroke({ color: colors.shade, width: 1, alpha: 0.08 })
 }
 
 export const pipsWidth = (total: number): number => total * (total > 5 ? 5.5 : 7) - 2

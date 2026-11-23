@@ -1,7 +1,7 @@
-import type { ComponentId } from '@quorum/simulation/catalog'
+import { COMPONENTS, type ComponentId } from '@quorum/simulation/catalog'
 import type { Layout } from '../components/shared.ts'
 
-export const LAYOUTS: Record<ComponentId, Layout> = {
+const BASE: Record<ComponentId, Layout> = {
   users: { rows: 3, inRow: null, outRow: 2, footer: false },
   payments: { rows: 2, inRow: null, outRow: null, footer: true },
   analytics: { rows: 5, inRow: 0, outRow: null, footer: true },
@@ -41,3 +41,12 @@ export const LAYOUTS: Record<ComponentId, Layout> = {
   ff: { rows: 3, inRow: null, outRow: null, footer: false },
   pki: { rows: 3, inRow: null, outRow: null, footer: false },
 }
+
+export const placementRows = (type: ComponentId): number => (COMPONENTS[type].fixed ? 0 : 1)
+
+export const LAYOUTS = Object.fromEntries(
+  Object.entries(BASE).map(([type, layout]) => [
+    type,
+    { ...layout, rows: layout.rows + placementRows(type as ComponentId) },
+  ]),
+) as Record<ComponentId, Layout>

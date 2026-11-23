@@ -6,8 +6,10 @@ import { type Ledger, type NodeStatus } from '@quorum/simulation/ledger'
 import { type Game, type GameNode, type Region } from '@quorum/simulation/state'
 import { partsUnlocked } from '@quorum/simulation/parts'
 import {
+  BAY_H,
   CARD_W,
   HEAD,
+  INSET,
   PORT_R,
   ROW,
   SLOT_H,
@@ -16,20 +18,13 @@ import {
   layoutOf,
   rowMid,
   rowTop,
+  bayTop,
+  panelBottom,
   slotLeft,
   slotTop,
   type Pt,
 } from './geometry.ts'
-import {
-  FOOT_ICONS,
-  ROW_ICONS,
-  footerOf,
-  levelOf,
-  rowsOf,
-  sizePips,
-  slotsOf,
-  type RowTone,
-} from './card.ts'
+import { FOOT_ICONS, ROW_ICONS, footerOf, rowsOf, sizePips, slotsOf, type RowTone } from './card.ts'
 import { COMPONENT_ICONS } from '../game/component-icons.ts'
 import { type Palette, mix, gradient } from './palette.ts'
 import { silhouette, badgeGlyph } from './shapes.ts'
@@ -43,6 +38,8 @@ import {
   TITLE_X,
   medallion,
   headerBand,
+  recess,
+  screw,
   pipsWidth,
   pips,
 } from './card-parts.ts'
@@ -70,8 +67,7 @@ export class NodeView {
   private chipLoad = 0
   private readonly title = label(15, SANS, '700')
   private readonly titleShadow = label(15, SANS, '700')
-  private readonly level = label(10.5, MONO)
-  private readonly ordinal = label(9, MONO, '700')
+  private readonly grip = new Graphics()
   private readonly glyphs: Array<Sprite> = []
   private readonly names: Array<Text> = []
   private readonly values: Array<Text> = []
@@ -156,8 +152,7 @@ export class NodeView {
       this.mark,
       this.titleShadow,
       this.title,
-      this.level,
-      this.ordinal,
+      this.grip,
       this.foot,
       this.footMark,
       this.markRing,
@@ -175,9 +170,7 @@ export class NodeView {
     this.titleShadow.position.set(TITLE_X, HEAD / 2 + 1)
     this.titleShadow.alpha = 0.45
     this.titleShadow.style.fill = 0xffffff
-    this.level.anchor.set(1, 0.5)
-    this.ordinal.anchor.set(1, 0)
-    this.ordinal.position.set(CARD_W - 10, 3)
+    this.grip.context.batchMode = 'batch'
     for (let index = 0; index < layout.rows; index += 1) {
       const mark = glyph(13)
       const name = label(11, SANS, '500')
@@ -223,7 +216,7 @@ export class NodeView {
     for (const part of [
       this.frame,
       this.title,
-      this.level,
+      this.grip,
       this.foot,
       this.markRing,
       this.slotsLayer,
@@ -419,7 +412,7 @@ export class NodeView {
     if (!own) return
     const def = COMPONENTS[node.type]
     const layout = layoutOf(node.type)
-    const rows = rowsOf(game, node, ledger, history)
+    const rows = rowsOf(game, node, ledger, history, region, ordinal)
     const footer = footerOf(game, node)
     const slots = slotsOf(node, own, partsUnlocked(game))
     this.chipName = t(def.name)
@@ -444,7 +437,6 @@ export class NodeView {
       selected,
       Math.ceil(leftOf(node.life)),
       warmOf(node.life) < 1,
-      levelOf(game, node, region),
       ordinal,
       colors.card,
       colors.shade,
@@ -484,24 +476,41 @@ export class NodeView {
     if (frameKey !== this.frameKey) {
       this.frameKey = frameKey
       this.frame.clear()
-      silhouette(this.frame, group, 1, 3, CARD_W - 2, height).fill({
+      silhouette(this.frame, group, 1, 4, CARD_W - 2, height).fill({
         color: colors.shade,
-        alpha: 0.035,
+        alpha: 0.06,
       })
-      silhouette(this.frame, group, 0, 1, CARD_W, height).fill({ color: colors.shade, alpha: 0.05 })
+      silhouette(this.frame, group, 0, 2, CARD_W, height).fill(mix(colors.card, colors.shade, 0.3))
       silhouette(this.frame, group, 0, 0, CARD_W, height).fill(
-        gradient(mix(colors.card, 0xffffff, 0.55), mix(colors.card, colors.shade, 0.09)),
+        gradient(mix(colors.card, 0xffffff, 0.5), mix(colors.card, colors.shade, 0.05)),
       )
       headerBand(this.frame, group, hue, colors)
+      const glint = mix(colors.card, 0xffffff, 0.25)
+      silhouette(this.frame, group, 0, 0, CARD_W, height, -1.5).stroke({
+        color: glint,
+        width: 1,
+        alpha: 0.5,
+      })
+      if (layout.rows > 0)
+        recess(
+          this.frame,
+          INSET,
+          HEAD + INSET,
+          CARD_W - INSET * 2,
+          panelBottom(node.type) - HEAD - INSET,
+          7,
+          colors,
+          mix(colors.card, colors.well, 0.5),
+        )
       for (let index = 1; index < layout.rows; index += 1) {
         this.frame
-          .moveTo(10, rowTop(index))
-          .lineTo(CARD_W - 10, rowTop(index))
-          .stroke({ color: colors.shade, width: 1, alpha: 0.09 })
+          .moveTo(14, rowTop(index))
+          .lineTo(CARD_W - 14, rowTop(index))
+          .stroke({ color: colors.shade, width: 1, alpha: 0.1 })
         this.frame
-          .moveTo(10, rowTop(index) + 1)
-          .lineTo(CARD_W - 10, rowTop(index) + 1)
-          .stroke({ color: 0xffffff, width: 1, alpha: 0.5 })
+          .moveTo(14, rowTop(index) + 1)
+          .lineTo(CARD_W - 14, rowTop(index) + 1)
+          .stroke({ color: glint, width: 1, alpha: 0.6 })
       }
       if (isDown(node.life))
         silhouette(this.frame, group, 0, 0, CARD_W, height).fill({
@@ -584,10 +593,17 @@ export class NodeView {
     }
     if (slots) {
       this.slotPads.clear()
-      this.slotPads
-        .moveTo(10, slotTop(node.type) - 7)
-        .lineTo(CARD_W - 10, slotTop(node.type) - 7)
-        .stroke({ color: colors.border, width: 1, alpha: 0.55 })
+      recess(
+        this.slotPads,
+        INSET,
+        bayTop(node.type),
+        CARD_W - INSET * 2,
+        BAY_H,
+        10,
+        colors,
+        mix(colors.card, colors.well, 0.5),
+      )
+      const pinsAt = (SLOT_W - (8 * 4.2 + 2.6)) / 2
       slots.forEach((slot, index) => {
         const x = slotLeft(index)
         const y = slotTop(node.type)
@@ -600,33 +616,9 @@ export class NodeView {
         const alert = slot.tone === 'danger' ? hotDanger : slot.tone === 'warn' ? hotWarn : null
         const body = mix(hue, colors.muted, 0.35)
         const gold = mix(colors.warn, 0xffffff, 0.35)
-        const steel = mix(colors.muted, colors.card, 0.45)
-        const socket = mix(colors.well, colors.shade, 0.12)
-
-        const screw = (cx: number, cy: number, empty: boolean): void => {
-          this.slotPads.circle(cx, cy, 3).fill({ color: colors.shade, alpha: 0.22 })
-          if (empty) {
-            this.slotPads
-              .circle(cx, cy, 2.2)
-              .stroke({ color: colors.shade, width: 0.8, alpha: 0.28 })
-            return
-          }
-          this.slotPads
-            .circle(cx, cy, 2.4)
-            .fill(gradient(mix(steel, 0xffffff, 0.35), mix(steel, 0x000000, 0.38)))
-          this.slotPads
-            .circle(cx, cy, 2.4)
-            .stroke({ color: mix(colors.shade, 0x000000, 0.25), width: 0.7, alignment: 1 })
-          this.slotPads
-            .moveTo(cx - 1.4, cy + 0.8)
-            .lineTo(cx + 1.4, cy - 0.8)
-            .stroke({ color: mix(colors.shade, 0x000000, 0.4), width: 0.9 })
-        }
+        const socket = mix(colors.card, colors.well, 0.7)
 
         this.slotPads.roundRect(x - 2, y - 2, SLOT_W + 4, SLOT_H + 4, 11).fill(socket)
-        this.slotPads
-          .roundRect(x - 2, y - 2, SLOT_W + 4, SLOT_H + 4, 11)
-          .stroke({ color: mix(colors.border, colors.shade, 0.35), width: 1, alignment: 1 })
         this.slotPads.roundRect(x, y, SLOT_W, SLOT_H, 9).fill({ color: colors.shade, alpha: 0.12 })
 
         if (!slot.empty) {
@@ -653,19 +645,21 @@ export class NodeView {
             .roundRect(x + 5, y + SLOT_H - 11, SLOT_W - 10, 6, 3)
             .fill({ color: 0x000000, alpha: 0.2 })
           for (let pin = 0; pin < 9; pin += 1)
-            this.slotPads.roundRect(x + 10 + pin * 4.2, y + SLOT_H - 6, 2.6, 3.6, 0.9).fill(gold)
-          screw(x + 8, y + 8, false)
-          screw(x + SLOT_W - 8, y + 8, false)
-          screw(x + 8, y + SLOT_H - 10, false)
-          screw(x + SLOT_W - 8, y + SLOT_H - 10, false)
+            this.slotPads
+              .roundRect(x + pinsAt + pin * 4.2, y + SLOT_H - 6, 2.6, 3.6, 0.9)
+              .fill(gold)
+          screw(this.slotPads, x + 8, y + 8, colors, false)
+          screw(this.slotPads, x + SLOT_W - 8, y + 8, colors, false)
+          screw(this.slotPads, x + 8, y + SLOT_H - 10, colors, false)
+          screw(this.slotPads, x + SLOT_W - 8, y + SLOT_H - 10, colors, false)
         } else {
-          screw(x + 8, y + 8, true)
-          screw(x + SLOT_W - 8, y + 8, true)
-          screw(x + 8, y + SLOT_H - 10, true)
-          screw(x + SLOT_W - 8, y + SLOT_H - 10, true)
+          screw(this.slotPads, x + 8, y + 8, colors, true)
+          screw(this.slotPads, x + SLOT_W - 8, y + 8, colors, true)
+          screw(this.slotPads, x + 8, y + SLOT_H - 10, colors, true)
+          screw(this.slotPads, x + SLOT_W - 8, y + SLOT_H - 10, colors, true)
           for (let pin = 0; pin < 9; pin += 1)
             this.slotPads
-              .roundRect(x + 10 + pin * 4.2, y + SLOT_H - 6, 2.6, 3.6, 0.9)
+              .roundRect(x + pinsAt + pin * 4.2, y + SLOT_H - 6, 2.6, 3.6, 0.9)
               .fill({ color: mix(gold, colors.shade, 0.5), alpha: 0.7 })
           this.slotPads
             .roundRect(x + 3, y + 3, SLOT_W - 6, SLOT_H - 6, 6)
@@ -673,9 +667,10 @@ export class NodeView {
         }
 
         this.slotPads.roundRect(x - 2, y - 2, SLOT_W + 4, SLOT_H + 4, 11).stroke({
-          color: alert ?? mix(colors.border, hue, 0.3),
+          color: alert ?? colors.shade,
           width: alert ? 1.5 : 1,
           alignment: 1,
+          alpha: alert ? 1 : 0.1,
         })
 
         const name = this.slotNames[index]
@@ -683,10 +678,10 @@ export class NodeView {
         if (!name || !value) return
         name.text = t(slot.label)
         name.style.fill = slot.empty ? colors.muted : mix(0xffffff, hue, 0.18)
-        name.position.set(x + SLOT_W / 2, y + 13)
+        name.position.set(x + SLOT_W / 2, y + 12)
         value.text = t(slot.value)
         value.style.fill = slot.empty ? (alert ?? colors.muted) : 0xffffff
-        value.position.set(x + SLOT_W / 2, y + 29)
+        value.position.set(x + SLOT_W / 2, y + 27)
       })
     }
     if (!this.shadowDrawn) {
@@ -751,16 +746,28 @@ export class NodeView {
           badgeTone,
           colors.well,
         )
-      right -= width + 7
+      right -= width + 8
     }
-    this.ordinal.text = ordinal > 0 ? `#${ordinal}` : ''
-    this.ordinal.visible = ordinal > 0
-    this.ordinal.style.fill = colors.muted
-    this.level.text = t(levelOf(game, node, region))
-    this.level.style.fill = colors.muted
-    this.level.position.set(right, HEAD / 2)
-    if (this.level.text) right -= this.level.width + 8
+    this.title.text = title
+    this.title.scale.set(1)
+    if (size && right - 4 - TITLE_X < this.title.width) {
+      right = CARD_W - 12
+      if (bars) this.bars.clear()
+    }
     fitText(this.title, title, right - 4 - this.title.x)
+    this.grip.clear()
+    const grip = this.title.x + this.title.width + 8
+    if (right - 4 - grip >= 14)
+      for (let x = grip; x <= right - 6; x += 4) {
+        this.grip
+          .moveTo(x, HEAD / 2 - 5)
+          .lineTo(x, HEAD / 2 + 5)
+          .stroke({ color: colors.shade, width: 1, alpha: 0.16 })
+        this.grip
+          .moveTo(x + 1, HEAD / 2 - 5)
+          .lineTo(x + 1, HEAD / 2 + 5)
+          .stroke({ color: mix(colors.card, 0xffffff, 0.25), width: 1, alpha: 0.45 })
+      }
     this.titleShadow.text = this.title.text
     this.titleShadow.scale.set(this.title.scale.x, this.title.scale.y)
 

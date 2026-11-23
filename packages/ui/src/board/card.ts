@@ -11,11 +11,13 @@ import {
   zoned,
 } from '@quorum/simulation/lookups'
 import { isGlobal } from '@quorum/simulation/regions'
+import { nodeLabelOf } from '@quorum/simulation/labels'
 import type { Game, GameNode, Region } from '@quorum/simulation/state'
 import { provisioned, type SlotKind } from '@quorum/simulation/parts'
 import { COMPONENT_VIEWS } from '../components/index.ts'
 import { ms, priceLabel, rate } from '../game/format.ts'
 import { layoutOf } from './geometry.ts'
+import { placementRows } from './layouts.ts'
 import { POOLER_MODES } from '../components/pooler.ts'
 import {
   FOOT_ICONS,
@@ -64,8 +66,28 @@ export const rowsOf = (
   node: GameNode,
   ledger: Ledger,
   history: ReadonlyArray<number> = [],
+  region: Region | null = null,
+  ordinal = nodeLabelOf(game, node).ordinal,
 ): ReadonlyArray<Row> => {
-  const rows = baseRowsOf(game, node, ledger, history)
+  const rows = withLimit(game, node, ledger, baseRowsOf(game, node, ledger, history))
+  if (placementRows(node.type) === 0 || rows.length === 0) return rows
+  const parts = [
+    ordinal > 0 ? `#${ordinal}` : '',
+    ...tagsOf(game, node, region).map((tag) => tag.text),
+  ]
+  const value = parts.filter(Boolean).join(' · ')
+  return [
+    ...rows.slice(0, layoutOf(node.type).rows - 1),
+    { glyph: 'placement', name: 'Placement', value: value || '–', tone: value ? 'plain' : 'muted' },
+  ]
+}
+
+const withLimit = (
+  game: Game,
+  node: GameNode,
+  ledger: Ledger,
+  rows: ReadonlyArray<Row>,
+): ReadonlyArray<Row> => {
   const own = ledger.nodes[node.id]
   if (!own || !has(game, 'profiling') || own.inbound <= 0 || own.limit === 'none') return rows
   const at = rows.findIndex((row) => row.glyph === 'load')
@@ -195,7 +217,9 @@ export const sizePips = (node: GameNode): Readonly<{ filled: number; total: numb
   return def.steps > 1 ? { filled: node.size, total: def.steps } : null
 }
 
-export const levelOf = (game: Game, node: GameNode, region: Region | null = null): string => {
+type Tag = Readonly<{ kind: 'remote' | 'zone' | 'copies'; text: string }>
+
+const tagsOf = (game: Game, node: GameNode, region: Region | null = null): ReadonlyArray<Tag> => {
   const booting = bootingOf(node)
   const copies = `${node.replicas > 1 ? `×${node.replicas}` : ''}${
     booting > 0
@@ -213,7 +237,13 @@ export const levelOf = (game: Game, node: GameNode, region: Region | null = null
       : node.spread && (node.type === 'wide' || node.type === 'dsql')
         ? 'Spread'
         : ''
-  return [remote, zone, copies].filter(Boolean).join(' · ')
+  return (
+    [
+      { kind: 'remote', text: remote },
+      { kind: 'zone', text: zone },
+      { kind: 'copies', text: copies },
+    ] as const
+  ).filter((tag) => tag.text !== '')
 }
 
 export const footerOf = (game: Game, node: GameNode): Footer | null => {

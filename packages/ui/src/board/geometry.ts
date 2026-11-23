@@ -8,16 +8,21 @@ export type Placed = Pick<GameNode, 'type' | 'x' | 'y'>
 
 export {
   CARD_W,
-  FOOT,
   HEAD,
+  INSET,
+  KEY_H,
   PORT_R,
   ROW,
+  BAY_H,
   SLOT_H,
   SLOT_W,
   heightOf,
   rowMid,
   rowTop,
   slotLeft,
+  bayTop,
+  keyTop,
+  panelBottom,
   slotTop,
 } from './size.ts'
 

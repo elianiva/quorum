@@ -18,6 +18,7 @@ import {
   HandCoins,
   Inbox,
   Layers,
+  MapPin,
   ListOrdered,
   LogIn,
   RotateCcw,
@@ -67,6 +68,7 @@ export const ROW_ICONS = {
   copies: Copy,
   version: Tag,
   limit: Gauge,
+  placement: MapPin,
 } as const
 
 export const FOOT_ICONS = {

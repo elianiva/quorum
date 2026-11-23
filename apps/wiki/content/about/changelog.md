@@ -27,6 +27,43 @@ Quorum has no versions. It changes all the time, and this page lists the latest 
 - Make each prefetched Worker task hold RAM ([86cf66a](https://github.com/elianiva/quorum/commit/86cf66af0bee46972b086045d58b4558e806151d))
 - Make INT4 and INT8 serving cost answer quality and lengthen the batch delay ([5a35895](https://github.com/elianiva/quorum/commit/5a35895a515a7dd82f37c6f63eda7eb8ec8b66dd))
 
+## Saturday, 21 November 2026
+
+### Changed
+
+- Make ARM cost capacity by language, and on data nodes ([36f0ffb](https://github.com/elianiva/quorum/commit/36f0ffb1845d9222555876437d01c6fa87ea4017))
+- Make the pacing bot fix the worst failing kind after Series B ([a21efb4](https://github.com/elianiva/quorum/commit/a21efb4af6df03b01f9bc8d3016cf28fdb217bfe))
+- Pin each server behind a consistent-hash Load Balancer, like sticky but evenly ([4935b1c](https://github.com/elianiva/quorum/commit/4935b1cc19b18480bb919c8b469abc0f9ce6ff20))
+- Make the pacing bot skip a replica it cannot put a pooler in front of ([403d148](https://github.com/elianiva/quorum/commit/403d1484f3973821c1dfbb14f8321d0423134d9d))
+- Let the Cache hot set grow with the square root of the Users ([4ca8423](https://github.com/elianiva/quorum/commit/4ca842372436986ce46dc4fd8722ac2668d30e6d))
+- Unlock Load Balancer policies in the Solver once lb-algorithms is researched ([c8fb223](https://github.com/elianiva/quorum/commit/c8fb223743eaa2d84d974b0de5e4c7179ee5f5d3))
+- Make Database disk I/O scale with load and let retention shrink the hot set ([befdc2c](https://github.com/elianiva/quorum/commit/befdc2c14d4727955a9646ea1cdcbaceb486a4af))
+- Make server memory, GC tuning, shedding and leaks scale with load ([500bc2e](https://github.com/elianiva/quorum/commit/500bc2e2664bdf2e993c942e43a8fb2fbab979bb))
+
+## Friday, 20 November 2026
+
+### Changed
+
+- Replace implicit phases with explicit state machines ([dd5f688](https://github.com/elianiva/quorum/commit/dd5f6882738c29d1b2a104400ac11e6423a5f519))
+- Record the ADRs as current decisions and renumber the duplicates ([3aba303](https://github.com/elianiva/quorum/commit/3aba30308515fcb12da4ab32cd7ff52a19d52727))
+- Remove the reference example, the art generator, and unused code, dependencies and exports ([42070c3](https://github.com/elianiva/quorum/commit/42070c367298adc112523a7812518170f407ad8d))
+- Let idle teams boost the running Study ([f5c92f2](https://github.com/elianiva/quorum/commit/f5c92f21e2496eea2aaae0a44bd5ca21b18e0bee))
+- Show what the Autoscaler is doing and what it does next ([1c4b845](https://github.com/elianiva/quorum/commit/1c4b84588a4e39b433c0f31adec4bf20e380d3b2))
+- Show which Link runs past its timeout on the Dashboard ([430a166](https://github.com/elianiva/quorum/commit/430a166238b2154a80468330eda4de8639ef18b7))
+- Replace the running build when a deploy lands ([fe8640f](https://github.com/elianiva/quorum/commit/fe8640fbd90cd0f747e1dc108788af94b1ec9397))
+
+## Thursday, 19 November 2026
+
+### Changed
+
+- Show the Cache's memory and load, and name a low hit ratio's cause ([19b4517](https://github.com/elianiva/quorum/commit/19b4517b993f599ab81e4ce35aa0b230b6b5cc88))
+- Open the Component's wiki page from the Inspector ([d72d04a](https://github.com/elianiva/quorum/commit/d72d04abbf968b0d05a08cab60bd2082b8487559))
+- Return cancelled work in progress to the queue ([59840c8](https://github.com/elianiva/quorum/commit/59840c8e55dec512c70d3d47d00d8312cc78fdf9))
+- Put the whole menu on one spine and move Settings into the list ([0c4d771](https://github.com/elianiva/quorum/commit/0c4d77155de0266e908818c2c735ec7a5deab1d7))
+- Turn the menu into a tree on a panning canvas ([786aff3](https://github.com/elianiva/quorum/commit/786aff32728b558ae4eacd74428175725447b1aa))
+- Add the changelog entry for 2026-11-18 (#62) ([768de40](https://github.com/elianiva/quorum/commit/768de40903e103fdfa0ed6b4bd512a49da062663))
+- Add the changelog entry for 2026-11-17 (#61) ([a60af49](https://github.com/elianiva/quorum/commit/a60af49b388488991628ff20f0dd6d154942d538))
+
 ## Wednesday, 18 November 2026
 
 ### Changed
@@ -67,54 +104,3 @@ Quorum has no versions. It changes all the time, and this page lists the latest 
 - Reuse the Dashboard's rows and annotations between Samples ([424cb44](https://github.com/elianiva/quorum/commit/424cb44fa7854d7edb1499284b460a651b98480b))
 - Cap a chart's hover targets at 240 ([88fa1b2](https://github.com/elianiva/quorum/commit/88fa1b22b37f8f7edf94c96e00b8e662945404a3))
 - Remove the Bottleneck search the browser no longer runs ([3edd866](https://github.com/elianiva/quorum/commit/3edd8666513892e2f0b14156bb49eb173aa30451))
-
-## Sunday, 15 November 2026
-
-### Changed
-
-- Explain that the game's name comes from the quorum term ([7805061](https://github.com/elianiva/quorum/commit/78050610ef0144f9f196ddffe6c4c407118a84fd))
-- Add system design interview guides, concept hubs, and query-shaped titles ([2461054](https://github.com/elianiva/quorum/commit/2461054aa645a17109f1f8e6a8c408afc86d18e3))
-- Add seoTitle, FAQ and learning-resource data, and links to the new hubs ([ce2caaf](https://github.com/elianiva/quorum/commit/ce2caaf5f0102070bd54bb1fff5de235503019d6))
-- Note that the Cache graph is a simplification of cache-aside ([e8da189](https://github.com/elianiva/quorum/commit/e8da189d994fb455b802d33b6f21a6fd3ac27b16))
-- Answer unknown game paths with a real 404 ([94fbc2e](https://github.com/elianiva/quorum/commit/94fbc2e06077f656f693fb50bc8b4d85e27620a9))
-- Improve search metadata for the game and the wiki ([6d62265](https://github.com/elianiva/quorum/commit/6d62265002abd4de10dfa4e395a5b6d81a02e925))
-
-## Saturday, 14 November 2026
-
-### Changed
-
-- Put the Cache left of the Pooler in Tidy ([b25e62d](https://github.com/elianiva/quorum/commit/b25e62dce69cdedd241099c50fc7fa552032b2c4))
-- Cache the shell at / so the service worker never serves a redirect ([a383859](https://github.com/elianiva/quorum/commit/a3838599fd728eb833ae22da8cfe120c8bdea231))
-- Load the wiki app only when a page needs it ([8b5a6da](https://github.com/elianiva/quorum/commit/8b5a6da4d55484f6865e34a042f48c36f96dc5b4))
-- Pick the board renderer from what the browser can run ([eca1aa1](https://github.com/elianiva/quorum/commit/eca1aa118eef466148a59b04f327b1420e01207d))
-- Allow WebAssembly compile in the web CSP ([4f759ab](https://github.com/elianiva/quorum/commit/4f759abdc2ceba291017af37988754d4490f74bf))
-- Merge shared styles with css() so an override wins again ([d121ac6](https://github.com/elianiva/quorum/commit/d121ac6fbf9a4e25f460287ab93a04b3bc2707f7))
-- Replace a trapped Solver, drop the blocks it never reads, and tidy the host ([7a9e0ca](https://github.com/elianiva/quorum/commit/7a9e0ca8b418575883432b0bd8916886d77b1923))
-- Precache the Solver and keep a failed solve away from the Bottleneck search ([02c9e0d](https://github.com/elianiva/quorum/commit/02c9e0d182cae3ee2ff7b4706b3779af30ed55d9))
-- Replace leftover Tailwind classes with Panda and shorten the class prefix to q ([9717cac](https://github.com/elianiva/quorum/commit/9717cac2c150fa070896017cba536e9675668fb9))
-- Use dark ink for group badges in dark mode ([5ff981f](https://github.com/elianiva/quorum/commit/5ff981f0ed539fe97e3d39e0fff443dd7e5e0026))
-- Use the shared design tokens across the interfaces ([ea8a41e](https://github.com/elianiva/quorum/commit/ea8a41eb4aa52e4afeb83da155cc6ad51350a121))
-- Add the changelog entry for 2026-11-13 (#54) ([30af726](https://github.com/elianiva/quorum/commit/30af726de877663574339a638d84db410fe83a98))
-- Add the shared type, radius, motion, and shadow tokens ([0961d27](https://github.com/elianiva/quorum/commit/0961d278c1aabcf946280d186cf99c6e8978f8cd))
-- Add light and dark mode to the wiki ([6e8be0e](https://github.com/elianiva/quorum/commit/6e8be0e99386d6d290ae7eb73c4e403fda73f0dd))
-- Use Panda tokens across the game views ([a023ecc](https://github.com/elianiva/quorum/commit/a023ecc1b71e12b05165ed124288380b478d1463))
-- Use Panda tokens in the shared controls ([7e87df7](https://github.com/elianiva/quorum/commit/7e87df73fbcb90981af11f69f9ac4d448c1fb810))
-- Make Panda tokens follow the dark theme ([9266d81](https://github.com/elianiva/quorum/commit/9266d81c0e38bc30fa9de6af3303901968eb66bd))
-- Use Panda's class joiner directly ([f036b09](https://github.com/elianiva/quorum/commit/f036b096a2cc4725b969997bf37bc9ab070255d3))
-- Remove Tailwind from the build ([1b89b5e](https://github.com/elianiva/quorum/commit/1b89b5e5183aa4e876f343691b6ad38a5748551c))
-- Move the app shell and lab views onto Panda CSS ([6ecc403](https://github.com/elianiva/quorum/commit/6ecc403f685600b6d79997fc8589e7933fe02fa5))
-
-## Friday, 13 November 2026
-
-### Changed
-
-- Serve the wiki in Japanese ([86704dd](https://github.com/elianiva/quorum/commit/86704ddb17d43b7fdcc5c76af3f46610f3927433))
-- Write the wiki's pages in Japanese ([b68afe7](https://github.com/elianiva/quorum/commit/b68afe7797487f790b413eeb5c0bdffc7d121999))
-- Translate the wiki's interface copy into Japanese ([18838f6](https://github.com/elianiva/quorum/commit/18838f64b1937987904b72d345cfc785f650d048))
-- Add the changelog entry for 2026-11-12 (#53) ([faa9781](https://github.com/elianiva/quorum/commit/faa9781ff220f726e824a67ac7810d4d267b9f77))
-- Reuse each Node's calls and cost table while the Design holds ([7bd3cfa](https://github.com/elianiva/quorum/commit/7bd3cfaffbe1902de8662dfc5132fb8ef3bebea6))
-- Serve the wiki in Spanish (#51) ([6b464be](https://github.com/elianiva/quorum/commit/6b464bedc4b33f51853653b29b0d6773312b3d8f))
-- Keep the Graph while the Design holds, and stop copying lists on every Link ([1e82900](https://github.com/elianiva/quorum/commit/1e82900ac337f52c280431c9558fa55bc2195596))
-- Build the Era's mix once per Game, and share one probe record across its Nodes ([9bffae3](https://github.com/elianiva/quorum/commit/9bffae348c0a0a52ac5da80bb401d2eace341087))
-- Make the solve stop when it settles, and score the bottleneck on revenue alone ([674b035](https://github.com/elianiva/quorum/commit/674b035724e5a76de3101bdf213a3805368a2e1f))
-- Add the installable PWA shell and offline play ([e86e17a](https://github.com/elianiva/quorum/commit/e86e17ace69a469b4e00ee66f02e4b2ad03ecf24))

@@ -76,6 +76,19 @@ export const bindPointer = (c: BoardController): void => {
       }
       const node = c.nodeAt(point)
       if (node) {
+        const slot = c.slotAt(node, point)
+        if (slot) {
+          c.slotPress = {
+            pointerId: event.pointerId,
+            id: node.id,
+            slot,
+            x: event.clientX,
+            y: event.clientY,
+            moved: false,
+          }
+          canvas.style.cursor = 'pointer'
+          return
+        }
         if (c.footerAt(node, point)) {
           c.gestureStep({
             _tag: 'FooterPressed',
@@ -185,6 +198,12 @@ export const bindPointer = (c: BoardController): void => {
       c.pointerKnown = true
       c.activity = null
       c.cursorWaiting = true
+      if (c.slotPress) {
+        if (Math.hypot(event.clientX - c.slotPress.x, event.clientY - c.slotPress.y) >= 4)
+          c.slotPress.moved = true
+        canvas.style.cursor = 'pointer'
+        return
+      }
       const gesture = c.gesture
       if (gesture._tag === 'Panning') {
         const next = c.gestureStep({
@@ -263,9 +282,11 @@ export const bindPointer = (c: BoardController): void => {
       canvas.style.cursor = port
         ? 'crosshair'
         : node
-          ? c.footerAt(node, point)
+          ? c.slotAt(node, point)
             ? 'pointer'
-            : 'move'
+            : c.footerAt(node, point)
+              ? 'pointer'
+              : 'move'
           : link
             ? 'pointer'
             : 'grab'
@@ -274,6 +295,13 @@ export const bindPointer = (c: BoardController): void => {
   )
 
   const finish = (event: PointerEvent, cancelled: boolean) => {
+    if (c.slotPress) {
+      const press = c.slotPress
+      c.slotPress = null
+      if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId)
+      if (!cancelled && !press.moved) c.events.onSlot(press.id, press.slot)
+      return
+    }
     const gesture = c.gesture
     if (gesture._tag === 'Pinching') {
       c.gestureStep({ _tag: 'TouchEnded', pointerId: event.pointerId })
@@ -394,6 +422,7 @@ export const bindPointer = (c: BoardController): void => {
       c.over = false
       c.cursorWaiting = false
       c.hoverAim = null
+      c.slotPress = null
       c.events.onCursorGone?.()
     },
     { signal },

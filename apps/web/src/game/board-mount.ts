@@ -17,6 +17,7 @@ type BoardMessage =
   | ReturnType<typeof Message.BoardReady>
   | ReturnType<typeof Message.BoardFailed>
   | ReturnType<typeof Message.NodeTapped>
+  | ReturnType<typeof Message.ShopOpened>
   | ReturnType<typeof Message.NodeMoved>
   | ReturnType<typeof Message.LinkRequested>
   | ReturnType<typeof Message.LinkCut>
@@ -32,6 +33,7 @@ const BoardMounted = Mount.defineStream('BoardMounted', {
     Message.BoardReady,
     Message.BoardFailed,
     Message.NodeTapped,
+    Message.ShopOpened,
     Message.NodeMoved,
     Message.LinkRequested,
     Message.LinkCut,
@@ -49,6 +51,7 @@ const BoardMounted = Mount.defineStream('BoardMounted', {
           Effect.sync(() =>
             attachBoard('board', element as HTMLElement, {
               onNodeTap: (nodeId) => offer(Message.NodeTapped({ nodeId })),
+              onSlot: (nodeId, slot) => offer(Message.ShopOpened({ nodeId, slot })),
               onNodeMove: (nodeId, x, y) => offer(Message.NodeMoved({ nodeId, x, y })),
               onFooter: (nodeId) => offer(Message.FooterPressed({ nodeId })),
               onLink: (from, to) => offer(Message.LinkRequested({ from, to })),

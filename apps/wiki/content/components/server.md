@@ -10,6 +10,8 @@ The App Server stands for a virtual machine that runs your code.
 
 It answers page views and bots itself, and turns every other request kind into backend calls: read and write queries, auth calls, tasks, charges, and more. Its capacity depends on its instance type, its [runtime, and its framework](/runtimes). The tightest of four limits sets it: CPU, worker slots, memory, and network.
 
+CPU and memory are **Parts**. After **Custom instances**, a new Node outside the guided Sandboxes starts with empty Slots. The shop's Parts catalog sells a bigger CPU or a different memory kit, and its Instance catalog installs a preset bundle at the same Part prices. The card shows the installed pair. A [Database](/components/database) also has a Disk Slot for its volume, and needs it before it serves.
+
 A request holds its worker slot while it waits on each backend call. So a slow Database also lowers the capacity of runtimes that hold a worker while they wait. This is [Little's law](/glossary/littles-law).
 
 The Garage box runs Postgres on the same machine. When you link it to a [Database](/components/database), [Connection Pooler](/components/pooler), or [Cache](/components/cache), Postgres moves off the box for good. A Burstable box earns CPU credits while idle and is throttled when they run out.

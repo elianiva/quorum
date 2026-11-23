@@ -77,6 +77,18 @@ export const inspector: Messages['inspector'] = {
   upgradeAll: (p0) => `すべてアップグレード (${p0})`,
   upgradeAll2: 'すべてアップグレード',
   instance: 'インスタンス',
+  parts: 'パーツ',
+  partsHint:
+    'CPU、メモリキット、ボリュームを個別に購入できます。各棚に費用と burn への加算が表示されます。',
+  partsCpu: 'CPU',
+  partsMemory: 'メモリ',
+  partsDisk: 'ディスク',
+  openShop: 'パーツカタログを開く',
+  partsAppDisk: 'App Server のディスクはスワップです。スワップパーツはまだ販売していません。',
+  partsMemoryHint:
+    'キットは vCPU あたりの GB を決めます。RAM スロットには、この CPU が得る容量が表示されます。',
+  partsDiskHint: 'ボリュームクラスは、データベースディスクの IOPS と burn を決めます。',
+  partsBurn: (p0: string | number | null) => `×${p0} burn`,
   smallerFree: '小さくする (無料)',
   vCPUGB: (p0, p1, p2) => `${p0} · ${p1} vCPU · ${p2} GB`,
   largestSize: '最大サイズ',

@@ -65,7 +65,9 @@ The Database is the source of truth. It serves `q-read`, `q-write`, and `q-tx`. 
 A general purpose volume answers 3,000 disk operations a second and a provisioned one 64,000, and provisioned storage bills 1.5× the Database's box. A disk
 operation waits 1 / IOPS ms and queues as the volume fills. So a Database whose working set outgrows
 RAM meets the volume before its CPU: at 96 vCPU a general purpose volume caps reads at 3,000 a
-second while the CPU would answer 8,000. A shard brings its own volume.
+second while the CPU would answer 8,000. A shard brings its own volume. The volume is the Database's
+Disk Part. The Parts catalog sells the two classes, and the Instance catalog adds a general purpose
+volume to a preset. The card shows the installed one as `3k` or `64k` ([Parts](/design/19-parts)).
 
 ### Variants
 

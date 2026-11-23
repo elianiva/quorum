@@ -23,6 +23,7 @@ import {
   offerPanel,
   settingsPanel,
 } from '@/components/lab/panels.ts'
+import { shopPanel } from '@/components/lab/shop.ts'
 import { inboxButton, inboxPanel, mailQueueRow, peek } from '@/components/lab/inbox.ts'
 import { churnPanel } from '@/components/lab/churn.ts'
 import { costPanel } from '@/components/lab/cost.ts'
@@ -222,6 +223,7 @@ export const labScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
       model.panel === 'cost' ? costPanel(model, h) : h.empty,
       model.panel === 'mirror' ? mirrorPanel(model, h) : h.empty,
       model.panel === 'vitals' ? vitalsPanel(model, ledger, h) : h.empty,
+      model.panel === 'shop' ? shopPanel(model, h) : h.empty,
       model.panel === 'offer' ? offerPanel(model, h) : h.empty,
       model.panel === 'era' ? eraPanel(model, h) : h.empty,
       model.panel === 'end' ? endPanel(model, h) : h.empty,

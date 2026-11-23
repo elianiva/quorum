@@ -274,6 +274,7 @@ export const LOOKS: Record<ResearchId, Look> = {
   esi: { group: 'edge', glyph: Layers, hue: 185 },
   'bot-management': { group: 'edge', glyph: ScanEye, hue: 350 },
   'scheduled-scaling': { group: 'compute', glyph: Timer, hue: 40 },
+  'custom-instances': { group: 'compute', glyph: Boxes, hue: 200 },
   'arm-instances': { group: 'compute', glyph: Cpu, hue: 120 },
   quantization: { group: 'compute', glyph: Zap, hue: 285 },
   'continuous-batching': { group: 'compute', glyph: Workflow, hue: 150 },

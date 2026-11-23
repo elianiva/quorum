@@ -79,6 +79,18 @@ export const inspector: Messages['inspector'] = {
   upgradeAll: (p0) => `Tout mettre à niveau (${p0})`,
   upgradeAll2: 'Tout mettre à niveau',
   instance: 'Instance',
+  parts: 'Pièces',
+  partsHint:
+    'Achetez un CPU, un kit mémoire ou un volume. Chaque étagère indique son coût et ce qu’elle ajoute au burn.',
+  partsCpu: 'CPU',
+  partsMemory: 'Mémoire',
+  partsDisk: 'Disque',
+  openShop: 'Ouvrir le catalogue de pièces',
+  partsAppDisk:
+    "Le disque de l'App Server est du swap. Les pièces de swap ne sont pas encore vendues.",
+  partsMemoryHint: 'Le kit fixe les Go par vCPU. L’emplacement RAM montre ce que ce CPU obtient.',
+  partsDiskHint: 'La classe de volume fixe les IOPS et le burn du disque de la base de données.',
+  partsBurn: (p0: string | number | null) => `×${p0} burn`,
   smallerFree: 'Réduire (gratuit)',
   vCPUGB: (p0, p1, p2) => `${p0} · ${p1} vCPU · ${p2} Go`,
   largestSize: 'Taille maximale',

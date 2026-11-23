@@ -365,6 +365,7 @@ export const mountPractice = (id: PracticeId, locale: Locale, root: HTMLElement)
 
   setBoard(key, boardState(state))
   const detach = attachBoard(key, host, {
+    onSlot: () => {},
     onNodeTap: (nodeId) => send(PracticeEvent.Tap({ nodeId })),
     onNodeMove: (nodeId, x, y) => send(PracticeEvent.Move({ nodeId, x, y })),
     onFooter: (nodeId) => send(PracticeEvent.Footer({ nodeId })),

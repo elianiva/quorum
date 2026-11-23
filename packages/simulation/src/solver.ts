@@ -35,6 +35,7 @@ import {
   usersOfGroup,
   zoneMs,
 } from './lookups.ts'
+import { provisioned } from './parts.ts'
 import { hotDataGb } from './rule-kit.ts'
 import { isGlobal, userRoutes } from './regions.ts'
 import { demandOf, forecastPeakOf } from './solve-demand.ts'
@@ -550,7 +551,7 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
     row[SLOT.collector] = indexIn(COLLECTORS, node.collector)
     row[SLOT.recycle] = node.recycle ? 1 : 0
     row[SLOT.warm] = warmOf(node.life)
-    row[SLOT.down] = isDown(node) ? 1 : 0
+    row[SLOT.down] = isDown(node) || !provisioned(game, node) ? 1 : 0
     row[SLOT.zone] = positionOf(S.ZONES, node.zone)
     row[SLOT.region] = positionOf(S.REGIONS, node.region)
     row[SLOT.dbEngine] = engineOf(game, node) === 'mysql' ? 1 : 0

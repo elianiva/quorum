@@ -9,6 +9,7 @@ import { PrefsMessage, updatePrefs, volumeIn } from '../prefs.ts'
 import { updateSurvey } from '../survey.ts'
 import { Update } from 'foldkit'
 import {
+  act,
   closePanel,
   saveCommands,
   withOverlay,
@@ -17,6 +18,7 @@ import {
   type MessageCases,
   type UpdateResult,
 } from './shared.ts'
+import { intent } from '@quorum/simulation/room'
 import { foldInbox } from './mail.ts'
 import { leaveExited } from './companies.ts'
 import { has } from '@quorum/simulation/lookups'
@@ -31,6 +33,7 @@ import { type RegionId as Region, type ResearchId } from '@quorum/simulation/cat
 import { updateDashboard } from '../dashboard.ts'
 import * as VolumeSlider from '@quorum/ui/primitives/slider'
 import { poolFromSlider } from '../pool-scale.ts'
+import { partsUnlocked, presetPlan } from '@quorum/simulation/parts'
 
 const savePrefs = (model: Model): UpdateResult => ({
   model,
@@ -209,6 +212,16 @@ const foldMoreMenu = (route: Dispatch) =>
 
 type PanelsTag =
   | 'PanelOpened'
+  | 'ShopOpened'
+  | 'ShopSlotChosen'
+  | 'ShopFamilyChosen'
+  | 'ShopModeChosen'
+  | 'SelectInstance'
+  | 'ShopQueryChanged'
+  | 'ShopSortChosen'
+  | 'InstallCpu'
+  | 'InstallRam'
+  | 'InstallDisk'
   | 'ResearchShown'
   | 'ChurnFixTaken'
   | 'PanelClosed'
@@ -272,6 +285,94 @@ export const panelsHandlers = (
       commands: panel === 'dashboard' && model.panel !== 'dashboard' ? [FocusDashboard({})] : [],
     }
   },
+
+  ShopOpened: ({ nodeId, slot, mode }) => {
+    const node = model.board.game.nodes.find((entry) => entry.id === nodeId)
+    if (!node || (node.type !== 'server' && node.type !== 'database')) return { model }
+    const unlocked = partsUnlocked(model.board.game)
+    return {
+      model: {
+        ...model,
+        panel: 'shop',
+        shopSlot: slot,
+        shopFamily: node.family,
+        shopMode: unlocked ? (mode ?? 'parts') : 'instance',
+        shopQuery: '',
+        board: {
+          ...model.board,
+          selected: nodeId,
+          selection: [],
+          tradeoff: { _tag: 'Closed' },
+        },
+      },
+    }
+  },
+
+  ShopSlotChosen: ({ slot }) => ({ model: { ...model, shopSlot: slot, shopQuery: '' } }),
+
+  ShopFamilyChosen: ({ family }) => ({
+    model: { ...model, shopFamily: family, shopQuery: '' },
+  }),
+
+  ShopModeChosen: ({ mode }) => ({
+    model: {
+      ...model,
+      shopMode: partsUnlocked(model.board.game) ? mode : 'instance',
+      shopQuery: '',
+    },
+  }),
+
+  SelectInstance: ({ nodeId, family, size }) => {
+    const node = model.board.game.nodes.find((entry) => entry.id === nodeId)
+    if (!node) return { model }
+    if (!partsUnlocked(model.board.game)) {
+      const steps = Array.from({ length: Math.abs(size - node.size) }, () =>
+        intent('resize', nodeId, size < node.size ? -1 : 1),
+      )
+      const intents = [
+        ...(node.family === family ? [] : [intent('setFamily', nodeId, family)]),
+        ...steps,
+      ]
+      return act(model, 'Selected an instance', intents, {
+        undoable: true,
+        panel: () => 'shop',
+      })
+    }
+    const plan = presetPlan(model.board.game, node, family, size)
+    if (plan === null) return { model }
+    const intents = [
+      ...(plan.cpu ? [intent('installCpu', nodeId, size)] : []),
+      ...(plan.ram ? [intent('installRam', nodeId, family)] : []),
+      ...(plan.disk ? [intent('installDisk', nodeId, 'general')] : []),
+    ]
+    if (intents.length === 0) return { model }
+    return act(model, 'Selected an instance', intents, {
+      undoable: true,
+      panel: () => 'shop',
+    })
+  },
+
+  ShopQueryChanged: ({ query }) => ({ model: { ...model, shopQuery: query } }),
+
+  ShopSortChosen: ({ sort }) => ({ model: { ...model, shopSort: sort } }),
+
+  InstallCpu: ({ nodeId, size }) =>
+    act(model, 'Installed a CPU', intent('installCpu', nodeId, size), {
+      undoable: true,
+      panel: () => 'shop',
+    }),
+
+  InstallRam: ({ nodeId, family }) =>
+    act(model, 'Installed a memory kit', intent('installRam', nodeId, family), {
+      undoable: true,
+      panel: () => 'shop',
+    }),
+
+  InstallDisk: ({ nodeId, iops }) =>
+    act(model, 'Installed a volume', intent('installDisk', nodeId, iops), {
+      undoable: true,
+      panel: () => 'shop',
+    }),
 
   ResearchOfferDismissed: () => ({
     model: { ...model, board: { ...model.board, researchOffer: null } },

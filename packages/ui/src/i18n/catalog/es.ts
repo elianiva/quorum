@@ -2923,6 +2923,11 @@ export const catalog: Catalog = {
       blurb:
         'Desbloquea el balanceador de carga: reparte por capacidad y se salta los hosts caídos.',
     },
+    'custom-instances': {
+      name: 'Instancias personalizadas',
+      blurb:
+        'Desbloquea piezas de CPU, memoria y disco por separado, con precios que cambian cada semana. Antes, un Nodo compra un tipo de instancia fijo.',
+    },
     'health-checks': {
       name: 'Comprobaciones de estado',
       blurb: 'DNS deja de enviar usuarios a un host caído.',

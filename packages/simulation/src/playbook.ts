@@ -62,6 +62,7 @@ export const NODE_SETTINGS = [
   'dbEngine',
   'topology',
   'iops',
+  'parts',
   'shards',
   'storageClass',
   'keep',
@@ -187,6 +188,19 @@ const configure = (game: Game, id: string, settings: Record<string, unknown>): G
     if (Result.isSuccess(action)) next = action.success
   }
   const node = () => next.nodes.find((entry) => entry.id === id)
+  const rawParts = settings.parts
+  if (rawParts !== null && typeof rawParts === 'object') {
+    const p = rawParts as Record<string, unknown>
+    if (typeof p.cpu === 'boolean' && typeof p.ram === 'boolean' && typeof p.disk === 'boolean')
+      next = {
+        ...next,
+        nodes: next.nodes.map((entry) =>
+          entry.id === id
+            ? { ...entry, parts: { cpu: p.cpu, ram: p.ram, disk: p.disk } as GameNode['parts'] }
+            : entry,
+        ),
+      }
+  }
   if (typeof settings.family === 'string')
     tryAction(setFamily(next, id, settings.family as GameNode['family']))
   if (typeof settings.size === 'number')

@@ -79,6 +79,7 @@ import {
   ZONE_SPANNING_COMPONENTS,
   type Tuning,
 } from './catalog.ts'
+import { partsValueOf, provisioned } from './parts.ts'
 import { teamBoosting, teamReady } from './research-team.ts'
 import { restarting, type DownCause } from './life.ts'
 import type {
@@ -191,7 +192,8 @@ export const sampleIndex = (node: GameNode): number => {
   return index === -1 ? 2 : index
 }
 
-export const vcpuOf = (node: GameNode): number => SIZES[node.size]?.vcpu ?? 1
+export const vcpuOf = (node: GameNode): number =>
+  node.parts.cpu ? (SIZES[node.size]?.vcpu ?? 1) : 0
 
 export const stuffing = (game: Game): boolean => activeIncident(game)?.kind === 'stuffing'
 
@@ -206,7 +208,8 @@ export const zoned = (node: GameNode): boolean =>
 export const zoneMs = (from: GameNode, to: GameNode): number =>
   zoned(from) && zoned(to) && from.zone !== to.zone ? CROSS_ZONE_MS : 0
 
-export const ramOf = (node: GameNode): number => vcpuOf(node) * FAMILIES[node.family].ramPerVcpu
+export const ramOf = (node: GameNode): number =>
+  node.parts.ram ? vcpuOf(node) * FAMILIES[node.family].ramPerVcpu : 0
 
 export const isDown = (node: GameNode): boolean =>
   node.life._tag === 'Restarting' || node.life._tag === 'Stopped'
@@ -554,6 +557,7 @@ export const storageRequestBurnOf = (node: GameNode, gets: number, puts: number)
 export const burnOf = (game: Game, node: GameNode): number => {
   if (node.service._tag === 'Shut') return 0
   const def = COMPONENTS[node.type]
+  if (def.sized && !provisioned(game, node)) return 0
   const index = eraOf(game).costIndex
   if (def.sized) {
     const savings = def.group === 'compute' && has(game, 'savings-plans') ? SAVINGS_PLAN_RATE : 1
@@ -682,7 +686,9 @@ export const priceOf = (game: Game, type: ComponentId): number => {
 export const refundOf = (game: Game, node: GameNode): number => {
   if (game.sandbox) return 0
   const count = game.nodes.filter((entry) => entry.type === node.type).length
-  return Math.round(copyPrice(game, node.type, Math.max(0, count - 1)) * SELL_REFUND)
+  return Math.round(
+    (copyPrice(game, node.type, Math.max(0, count - 1)) + partsValueOf(game, node)) * SELL_REFUND,
+  )
 }
 
 export const owedOf = (game: Game, node: GameNode): number =>

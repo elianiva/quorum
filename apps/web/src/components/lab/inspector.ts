@@ -61,6 +61,7 @@ import {
   flatScale,
 } from '@quorum/simulation/lookups'
 import { LINK_TIMEOUTS, restartable } from '@quorum/simulation/actions'
+import { installedPart, missingParts, partsUnlocked, type SlotKind } from '@quorum/simulation/parts'
 import { CACHE_HIT_LOW, hotDataGb } from '@quorum/simulation/rules'
 import { activeIncident, type Game, type GameLink, type GameNode } from '@quorum/simulation/state'
 import { compact, money, priceLabel, rate } from '@quorum/ui/game/format'
@@ -1140,9 +1141,148 @@ const instance = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => 
         ),
         h,
       ),
+      h.div(
+        [h.Class(css({ paddingTop: '1' }))],
+        [
+          button<Message>(
+            {
+              onClick: Message.ShopOpened({ nodeId: node.id, slot: 'cpu' }),
+              variant: 'outline',
+              size: 'sm',
+            },
+            t.shop.openInstanceCatalog,
+            h,
+          ),
+        ],
+      ),
       ...(hasPricing(node) && game.stage >= PRICING_FROM_STAGE ? [pricing(game, node, h)] : []),
     ],
     h,
+  )
+}
+
+const partsPanel = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Html => {
+  const t = copy(h)
+  const missing = missingParts(game, node)
+  const partRow = (slot: SlotKind, label: string): Html => {
+    const value = installedPart(node, slot)
+    return h.button(
+      [
+        h.Type('button'),
+        h.OnClick(Message.ShopOpened({ nodeId: node.id, slot })),
+        h.Class(
+          cx(
+            css({
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '2',
+              borderRadius: 'lg',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'border',
+              paddingInline: '2.5',
+              paddingBlock: '1.5',
+              fontSize: 'type.12',
+              textAlign: 'left',
+              color: 'mutedForeground',
+              _hover: { borderColor: 'mutedForeground', color: 'foreground' },
+            }),
+            value === null ? css({ borderStyle: 'dashed' }) : css({}),
+          ),
+        ),
+      ],
+      [
+        h.span([h.Class(css({ fontWeight: 'medium' }))], [label]),
+        h.span(
+          [
+            h.Class(
+              cx(
+                FIGURE,
+                css({ fontSize: 'type.12', color: value === null ? 'warn' : 'foreground' }),
+              ),
+            ),
+          ],
+          [value ?? '+'],
+        ),
+      ],
+    )
+  }
+  return section(
+    t.inspector.parts,
+    [
+      h.p(
+        [
+          h.Class(
+            css({
+              paddingInline: '1',
+              paddingBottom: '1',
+              fontSize: 'type.12',
+              lineHeight: 'snug',
+              color: 'mutedForeground',
+            }),
+          ),
+        ],
+        [t.inspector.partsHint],
+      ),
+      h.div(
+        [
+          h.Class(
+            css({
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+              gap: '1',
+            }),
+          ),
+        ],
+        [
+          partRow('cpu', t.inspector.partsCpu),
+          partRow('ram', t.inspector.partsMemory),
+          partRow('disk', t.inspector.partsDisk),
+        ],
+      ),
+      h.div(
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1',
+              paddingTop: '1',
+            }),
+          ),
+        ],
+        [
+          button(
+            {
+              onClick: Message.ShopOpened({
+                nodeId: node.id,
+                slot: missing[0] ?? 'cpu',
+                mode: 'parts',
+              }),
+              variant: 'outline',
+              size: 'sm',
+              className: css({ width: '100%' }),
+            },
+            t.inspector.openShop,
+            h,
+          ),
+          button(
+            {
+              onClick: Message.ShopOpened({ nodeId: node.id, slot: 'cpu', mode: 'instance' }),
+              variant: 'ghost',
+              size: 'sm',
+              className: css({ width: '100%' }),
+            },
+            t.shop.openInstanceCatalog,
+            h,
+          ),
+        ],
+      ),
+      ...(hasPricing(node) && game.stage >= PRICING_FROM_STAGE ? [pricing(game, node, h)] : []),
+    ],
+    h,
+    true,
   )
 }
 
@@ -2259,7 +2399,13 @@ export const inspector = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>)
             : []),
           ...resources(node, ledger, h),
           ...(panel?.top?.(context) ?? []),
-          ...(def.sized ? [instance(game, node, h)] : []),
+          ...(def.sized
+            ? node.type === 'server' || node.type === 'database'
+              ? partsUnlocked(game)
+                ? [partsPanel(game, node, h)]
+                : [instance(game, node, h)]
+              : [instance(game, node, h)]
+            : []),
           ...(panel?.body?.(context) ?? []),
           ...(has(game, 'multi-az') && zoned(node) ? [placement(node, h)] : []),
           ...regionSection(game, node, h),

@@ -70,7 +70,7 @@ makes the standby the primary and halves the Burn again until the player adds a 
 
 | Line          | Formula                                                                                                                                                                                                                                                                                                               |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Compute       | Σ instances `vCPU × $0.05 × family price × pricing model` × cost index; RAM comes with the family                                                                                                                                                                                                                     |
+| Compute       | Σ instances `vCPU × $0.05 × family price × pricing model` × cost index; before Custom instances, RAM comes with the family                                                                                                                                                                                            |
 | Managed data  | Σ data Nodes at their size price; a Database adds its provisioned volume and each shard                                                                                                                                                                                                                               |
 | Storage       | Object storage: GB stored × price × storage class, plus its retrieval fee ([Data tier](/design/07-data-tier#object-storage))                                                                                                                                                                                          |
 | Egress        | GB out × egress price ([Egress](#egress))                                                                                                                                                                                                                                                                             |
@@ -102,6 +102,18 @@ arrives. The Cost panel shows each one on purpose.
 | Object storage read               | S3 $0.00048, R2 $0.000432 per read: $0.40 and $0.36 per million × 1,200                                                                |
 | Object storage write              | S3 $0.006, R2 $0.0054 per write: $5.00 and $4.50 per million × 1,200                                                                   |
 | Engineer salary (base)            | $0.40/s                                                                                                                                |
+
+The Parts catalog sells the parts behind these lines. Each Part has a one-time price, then its Burn
+follows the installed value. The CPU's Burn stays the vCPU line, and its one-time price is
+`2 × component cost × vCPU`. The first CPU in an empty Slot costs the sum of the sizes from
+`micro` to the target, and `nano` costs its own size. A larger CPU costs
+the sum of the size steps from the installed one. The Parts catalog and the post-research Instance
+catalog charge these Part prices. The pre-research Instance catalog, the footer, and the bulk resize
+use the instance resize price instead. A memory kit is `40 × its family multiplier`. A volume is
+`24` for general purpose or `72` for provisioned IOPS. The Era cost index applies to all three, and
+a weekly market multiplier from 0.85 to 1.15 moves each Slot on its own phase. A CPU or memory swap
+restarts the Node. A volume swap changes the IOPS cap and the Burn. Selling a Node refunds half of its placement price and half of
+its installed Parts ([Parts](/design/19-parts)).
 
 These are Garage prices. Every price in this document, including placement, Burn, egress, and
 third-party fees, is multiplied by the Era's cost index, except the Payment Provider's fee, the Auth

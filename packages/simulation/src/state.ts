@@ -80,6 +80,16 @@ export type PerRegion = typeof PerRegion.Type
 export const Backup = Schema.Literals(['none', 'nightly', 'pitr'])
 export type Backup = typeof Backup.Type
 
+export const NodeParts = Schema.Struct({
+  cpu: Schema.Boolean,
+  ram: Schema.Boolean,
+  disk: Schema.Boolean,
+})
+export type NodeParts = typeof NodeParts.Type
+
+export const FULL_PARTS: NodeParts = { cpu: true, ram: true, disk: true }
+export const EMPTY_PARTS: NodeParts = { cpu: false, ram: false, disk: false }
+
 export const Pricing = Schema.Literals(PRICING_IDS)
 export type Pricing = typeof Pricing.Type
 
@@ -106,6 +116,7 @@ const NODE_FIELD_ORDER = [
   'y',
   'size',
   'family',
+  'parts',
   'runtime',
   'framework',
   'workers',
@@ -221,6 +232,7 @@ const NODE_FIELDS_UNORDERED = {
   y: Schema.Finite,
   size: Schema.Finite,
   family: FamilyId,
+  parts: NodeParts.pipe(Schema.withDecodingDefaultKey(Effect.succeed(FULL_PARTS))),
   runtime: RuntimeId,
   framework: FrameworkId,
   sample: Schema.Finite,

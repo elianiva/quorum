@@ -13,6 +13,8 @@ It answers reads, writes, transactions, and timeline writes itself, and nothing 
 
 Its CPU limits how many queries it answers. When the working set outgrows RAM, reads go to disk and slow down. Report scans evict the buffer cache, so every other query slows too.
 
+The volume is its Disk Part. After **Custom instances**, a new Database outside the guided Sandboxes starts with an empty Disk Slot. The shop's Parts catalog sells a general purpose or a provisioned volume. Its Instance catalog adds a general purpose volume when a preset needs one. The card shows the installed class.
+
 ## Options
 
 ::Options{id="database"}

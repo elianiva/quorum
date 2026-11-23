@@ -22,6 +22,30 @@ Every day that changed Quorum, newest first. The [changelog](/about/changelog) s
 - Make Database disk I/O scale with load and let retention shrink the hot set ([befdc2c](https://github.com/elianiva/quorum/commit/befdc2c14d4727955a9646ea1cdcbaceb486a4af))
 - Make server memory, GC tuning, shedding and leaks scale with load ([500bc2e](https://github.com/elianiva/quorum/commit/500bc2e2664bdf2e993c942e43a8fb2fbab979bb))
 
+## Friday, 20 November 2026
+
+### Changed
+
+- Replace implicit phases with explicit state machines ([dd5f688](https://github.com/elianiva/quorum/commit/dd5f6882738c29d1b2a104400ac11e6423a5f519))
+- Record the ADRs as current decisions and renumber the duplicates ([3aba303](https://github.com/elianiva/quorum/commit/3aba30308515fcb12da4ab32cd7ff52a19d52727))
+- Remove the reference example, the art generator, and unused code, dependencies and exports ([42070c3](https://github.com/elianiva/quorum/commit/42070c367298adc112523a7812518170f407ad8d))
+- Let idle teams boost the running Study ([f5c92f2](https://github.com/elianiva/quorum/commit/f5c92f21e2496eea2aaae0a44bd5ca21b18e0bee))
+- Show what the Autoscaler is doing and what it does next ([1c4b845](https://github.com/elianiva/quorum/commit/1c4b84588a4e39b433c0f31adec4bf20e380d3b2))
+- Show which Link runs past its timeout on the Dashboard ([430a166](https://github.com/elianiva/quorum/commit/430a166238b2154a80468330eda4de8639ef18b7))
+- Replace the running build when a deploy lands ([fe8640f](https://github.com/elianiva/quorum/commit/fe8640fbd90cd0f747e1dc108788af94b1ec9397))
+
+## Thursday, 19 November 2026
+
+### Changed
+
+- Show the Cache's memory and load, and name a low hit ratio's cause ([19b4517](https://github.com/elianiva/quorum/commit/19b4517b993f599ab81e4ce35aa0b230b6b5cc88))
+- Open the Component's wiki page from the Inspector ([d72d04a](https://github.com/elianiva/quorum/commit/d72d04abbf968b0d05a08cab60bd2082b8487559))
+- Return cancelled work in progress to the queue ([59840c8](https://github.com/elianiva/quorum/commit/59840c8e55dec512c70d3d47d00d8312cc78fdf9))
+- Put the whole menu on one spine and move Settings into the list ([0c4d771](https://github.com/elianiva/quorum/commit/0c4d77155de0266e908818c2c735ec7a5deab1d7))
+- Turn the menu into a tree on a panning canvas ([786aff3](https://github.com/elianiva/quorum/commit/786aff32728b558ae4eacd74428175725447b1aa))
+- Add the changelog entry for 2026-11-18 (#62) ([768de40](https://github.com/elianiva/quorum/commit/768de40903e103fdfa0ed6b4bd512a49da062663))
+- Add the changelog entry for 2026-11-17 (#61) ([a60af49](https://github.com/elianiva/quorum/commit/a60af49b388488991628ff20f0dd6d154942d538))
+
 ## Wednesday, 18 November 2026
 
 ### Changed

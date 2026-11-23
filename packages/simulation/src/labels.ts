@@ -1,5 +1,7 @@
 import { COMPONENTS } from './catalog.ts'
 import type { Game, GameNode } from './state.ts'
+import { FULL_PARTS } from './state.ts'
+import { partsUnlocked } from './parts.ts'
 
 export const nodeLabelOf = (
   game: Game,
@@ -29,17 +31,28 @@ export const nextOrdinal = (game: Game, type: GameNode['type']): number => {
 
 export const normalizeOrdinals = (game: Game): Game => {
   const next = new Map<GameNode['type'], number>()
+  const unlocked = partsUnlocked(game)
   let changed = false
   const nodes = game.nodes.map((node) => {
     const highest = next.get(node.type) ?? 0
-    if (node.ordinal > 0) {
-      if (node.ordinal > highest) next.set(node.type, node.ordinal)
-      return node
+    const placed =
+      node.ordinal > 0
+        ? node
+        : (() => {
+            const ordinal = highest + 1
+            next.set(node.type, ordinal)
+            changed = true
+            return { ...node, ordinal }
+          })()
+    if (placed.ordinal > highest) next.set(placed.type, placed.ordinal)
+    const sized = placed.type === 'server' || placed.type === 'database'
+    const missing =
+      !placed.parts.cpu || !placed.parts.ram || (placed.type === 'database' && !placed.parts.disk)
+    if (sized && !unlocked && missing) {
+      changed = true
+      return { ...placed, parts: { ...FULL_PARTS } }
     }
-    const ordinal = highest + 1
-    next.set(node.type, ordinal)
-    changed = true
-    return { ...node, ordinal }
+    return placed
   })
   return changed ? { ...game, nodes } : game
 }

@@ -21,7 +21,13 @@ are in [Data tier](/design/07-data-tier). Runtime details for App Servers are in
   restarts the Node, so it is briefly down unless a redundant Node carries the load. Real cloud
   prices scale linearly with size, so a bigger box earns no discount. What it saves is a network hop,
   a load balancer, and per-process overhead ([Balancing](/design/16-balancing#vertical-and-horizontal)).
-- **Sell.** Removing a Node refunds 50% of its placement cost and stops its Burn. Reserved Nodes keep
+- **Parts.** An App Server and a Database have three Slots: CPU, Memory, and Disk. Before **Custom
+  instances** is researched, a new Node buys a fixed instance type and its Slots show what that type
+  includes. After the research, a new Node is placed with empty Slots, a starter Node comes equipped,
+  and the shop sells each Part in its Parts catalog or a preset in its Instance catalog. A memory kit
+  sets GB per vCPU rather than a fixed size, so its GB follows the CPU
+  ([Parts](/design/19-parts)).
+- **Sell.** Removing a Node refunds 50% of its placement cost and its installed Parts, and stops its Burn. Reserved Nodes keep
   burning until their term ends ([Economy](/design/09-economy#pricing-models)).
 - **Options.** A Tradeoff card presents each option. An option belongs to the choice, not to the
   Component, so several Components share the same card ([Interface](/design/15-ui-ux#tradeoff-cards)).
@@ -307,7 +313,7 @@ runtime variant, and its framework. [Runtimes and frameworks](/design/06-runtime
 | ARM             | Same as above | 0.8×           | 20% cheaper. The first move of a server or Worker costs Dev Hours by language.     |
 
 Sizes go from `nano` (0.5 vCPU) to `metal` (96 vCPU): nine sizes, each step doubling vCPU and RAM, and
-`metal` a 1.5× last step.
+`metal` a 1.5× last step. The App Server's CPU and memory are Parts. The shop's Parts catalog sells a size and a memory kit, and its Instance catalog installs both as a preset. The card shows the installed pair as `2c` and `8g` ([Parts](/design/19-parts)).
 
 The ARM family needs research `arm-instances` ([Progression](/design/10-progression#track-infrastructure)).
 Its speed depends on the language: 0.93× a General box's CPU for Haskell, 0.95× for PHP and Ruby, up to 1.03× for Go and Rust. A Database on ARM runs at General's speed. The first move of a server or Worker to ARM costs Dev Hours: Go 4, Rust 6, Java, C# and Zig 8, Node and Elixir 12, PHP 16, Ruby and Python 24, Haskell 32. A guided Sandbox ports for free. Any sized

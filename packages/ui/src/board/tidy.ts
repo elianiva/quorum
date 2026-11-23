@@ -145,7 +145,7 @@ const alignColumns = <K extends string | number>(
   const degree = (id: string) => neighbours.get(id)?.length ?? 1
   const mean = () => nodes.reduce((sum, node) => sum + centerOf(node.id), 0) / nodes.length
   const initialMean = mean()
-  for (let iteration = 0; iteration < 5; iteration += 1) {
+  for (let iteration = 0; iteration < 12; iteration += 1) {
     for (const ids of columns.values()) {
       const targets = ids.map((id) => {
         const near = neighbours.get(id) ?? []

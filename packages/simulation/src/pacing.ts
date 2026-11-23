@@ -17,11 +17,15 @@ import {
   resize,
   sell,
   restart,
+  installCpu,
+  installDisk,
+  installRam,
   setCacheGuard,
   renewCertificate,
   setDlq,
   setFamily,
   setRuntime,
+  setStorageIops,
   setAutoscaler,
   setBackup,
   setLbVariant,
@@ -29,7 +33,6 @@ import {
   setSpread,
   runDrill,
   setStandby,
-  setStorageIops,
   setUnderAttack,
   setParanoia,
   setRyw,
@@ -68,6 +71,7 @@ import { newGame } from './company.ts'
 import { foundCompany } from './founding.ts'
 import type { Ledger } from './ledger.ts'
 import { has, isDown, maxSize, ramOf, researchReady, securityStaffed } from './lookups.ts'
+import { partsUnlocked } from './parts.ts'
 import { CACHE_HIT_LOW } from './rule-kit.ts'
 import { isBuilt } from './features.ts'
 import { churnOf, type ChurnRow } from './churn.ts'
@@ -161,6 +165,7 @@ const PRIORITY: ReadonlyArray<ResearchId> = [
   'opcache',
   'metrics',
   'load-balancing',
+  'custom-instances',
   'query-analysis',
   'caching',
   'pooling',
@@ -341,8 +346,75 @@ const placedNow = (
   return next === game ? null : [next, last(next)]
 }
 
+const placeWithParts = (
+  game: Game,
+  type: 'server' | 'database',
+  x: number,
+  y: number,
+  size: number,
+  family: GameNode['family'],
+  iops: GameNode['iops'],
+): Action => {
+  const placed = place(game, type, x, y)
+  if (Result.isFailure(placed)) return placed
+  let next = placed.success
+  const id = last(next)
+  if (!partsUnlocked(next)) {
+    const current = (): GameNode | undefined => next.nodes.find((entry) => entry.id === id)
+    while (current() !== undefined && current()!.size !== size) {
+      const direction = current()!.size < size ? 1 : -1
+      const grown = resize(next, id, direction)
+      if (Result.isFailure(grown)) break
+      next = grown.success
+    }
+    const familyAction = setFamily(next, id, family)
+    if (Result.isFailure(familyAction)) return familyAction
+    next = familyAction.success
+    if (type === 'database') {
+      const diskAction = setStorageIops(next, id, iops)
+      if (Result.isFailure(diskAction)) return diskAction
+      next = diskAction.success
+    }
+    return Result.succeed(next)
+  }
+  const parts = [
+    () => installCpu(next, id, size),
+    () => installRam(next, id, family),
+    ...(type === 'database' ? [() => installDisk(next, id, iops)] : []),
+  ]
+  for (const install of parts) {
+    const action = install()
+    if (Result.isFailure(action)) return action
+    next = action.success
+  }
+  return Result.succeed(next)
+}
+
+const placedProvisioned = (
+  game: Game,
+  ledger: Ledger,
+  type: 'server' | 'database',
+  x: number,
+  y: number,
+  size: number,
+  family: GameNode['family'],
+  iops: GameNode['iops'] = 'general',
+): readonly [Game, string] | null => {
+  const next = affordable(game, ledger, (current) =>
+    placeWithParts(current, type, x, y, size, family, iops),
+  )
+  return next === game ? null : [next, last(next)]
+}
+
+const changeFamily = (game: Game, node: GameNode, family: GameNode['family']): Action =>
+  node.type === 'server' || node.type === 'database'
+    ? partsUnlocked(game)
+      ? installRam(game, node.id, family)
+      : setFamily(game, node.id, family)
+    : setFamily(game, node.id, family)
+
 const splitDatabase = (game: Game, ledger: Ledger, server: GameNode): Game => {
-  const db = placed(game, ledger, 'database', server.x + 320, server.y)
+  const db = placedProvisioned(game, ledger, 'database', server.x + 320, server.y, 1, 'general')
   return db ? tried(db[0], connect(db[0], server.id, db[1])) : game
 }
 
@@ -363,14 +435,17 @@ const addServer = (game: Game, ledger: Ledger, model: GameNode): Game => {
     for (const server of servers(next)) next = tried(next, connect(next, front[1], server.id))
     lb = byId(next, front[1])
   }
-  const copy = placed(next, ledger, 'server', model.x, model.y - 140 * servers(next).length)
+  const copy = placedProvisioned(
+    next,
+    ledger,
+    'server',
+    model.x,
+    model.y - 140 * servers(next).length,
+    model.size,
+    model.family,
+  )
   if (!copy || !lb) return next
   next = copy[0]
-  for (let size = 0; size < model.size; size += 1) {
-    const grown = affordable(next, ledger, (current) => resize(current, copy[1], 1))
-    if (grown === next) break
-    next = grown
-  }
   next = tried(next, setRuntime(next, copy[1], model.runtime))
   if (RUNTIMES[model.runtime].pool)
     next = tried(next, setWorkers(next, copy[1], fittingWorkers(byId(next, copy[1]) ?? model)))
@@ -807,11 +882,11 @@ const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy)
   const limit = ledger.nodes[node.id]?.limit ?? 'none'
   const grow = (current: Game) => resize(current, node.id, 1)
   if (strategy === 'greedy') {
-    if (limit === 'credits') return tried(game, setFamily(game, node.id, 'general'))
+    if (limit === 'credits') return tried(game, changeFamily(game, node, 'general'))
     return affordable(game, ledger, grow)
   }
   if (node.type === 'server') {
-    if (limit === 'credits') return tried(game, setFamily(game, node.id, 'general'))
+    if (limit === 'credits') return tried(game, changeFamily(game, node, 'general'))
     if (node.localDb && (limit === 'memory' || limit === 'cpu'))
       return splitDatabase(game, ledger, node)
     if (limit === 'workers' && RUNTIMES[node.runtime].pool && node.workers < fittingWorkers(node))
@@ -855,8 +930,13 @@ const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy)
       : inFront(game, ledger, node, 'pooler')
   if (node.type === 'database' && limit === 'disk' && game.stage >= 3) {
     if (node.iops !== 'provisioned')
-      return tried(game, setStorageIops(game, node.id, 'provisioned'))
-    if (node.family !== 'memory') return tried(game, setFamily(game, node.id, 'memory'))
+      return tried(
+        game,
+        partsUnlocked(game)
+          ? installDisk(game, node.id, 'provisioned')
+          : setStorageIops(game, node.id, 'provisioned'),
+      )
+    if (node.family !== 'memory') return tried(game, changeFamily(game, node, 'memory'))
   }
   if (
     node.type === 'database' &&
@@ -1119,7 +1199,7 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy, boost = false): Ga
   if (strategy !== 'greedy')
     for (const server of servers(next))
       if (server.family === 'burstable' && server.credits < LOW_CREDITS * CREDIT_CAP)
-        next = tried(next, setFamily(next, server.id, 'general'))
+        next = tried(next, changeFamily(next, server, 'general'))
 
   const flow = solveFlow(next)
   const target =

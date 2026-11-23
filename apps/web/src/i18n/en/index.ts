@@ -56,6 +56,7 @@ import { pools } from './pools.ts'
 import { research } from './research.ts'
 import { sandbox } from './sandbox.ts'
 import { survey } from './survey.ts'
+import { shop } from './shop.ts'
 import { team } from './team.ts'
 import { title } from './title.ts'
 import { pwa } from './pwa.ts'
@@ -115,6 +116,7 @@ export const en = {
   pools,
   research,
   sandbox,
+  shop,
   survey,
   team,
   title,

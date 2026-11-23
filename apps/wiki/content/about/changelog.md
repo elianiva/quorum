@@ -9,6 +9,19 @@ toc: top
 
 Quorum has no versions. It changes all the time, and this page lists the latest days, newest first, so you can see what moved since you last played. A page on this wiki can lag behind the game by a few days. Older days are in the [full changelog](/about/changelog/all).
 
+## Saturday, 21 November 2026
+
+### Changed
+
+- Make ARM cost capacity by language, and on data nodes ([36f0ffb](https://github.com/elianiva/quorum/commit/36f0ffb1845d9222555876437d01c6fa87ea4017))
+- Make the pacing bot fix the worst failing kind after Series B ([a21efb4](https://github.com/elianiva/quorum/commit/a21efb4af6df03b01f9bc8d3016cf28fdb217bfe))
+- Pin each server behind a consistent-hash Load Balancer, like sticky but evenly ([4935b1c](https://github.com/elianiva/quorum/commit/4935b1cc19b18480bb919c8b469abc0f9ce6ff20))
+- Make the pacing bot skip a replica it cannot put a pooler in front of ([403d148](https://github.com/elianiva/quorum/commit/403d1484f3973821c1dfbb14f8321d0423134d9d))
+- Let the Cache hot set grow with the square root of the Users ([4ca8423](https://github.com/elianiva/quorum/commit/4ca842372436986ce46dc4fd8722ac2668d30e6d))
+- Unlock Load Balancer policies in the Solver once lb-algorithms is researched ([c8fb223](https://github.com/elianiva/quorum/commit/c8fb223743eaa2d84d974b0de5e4c7179ee5f5d3))
+- Make Database disk I/O scale with load and let retention shrink the hot set ([befdc2c](https://github.com/elianiva/quorum/commit/befdc2c14d4727955a9646ea1cdcbaceb486a4af))
+- Make server memory, GC tuning, shedding and leaks scale with load ([500bc2e](https://github.com/elianiva/quorum/commit/500bc2e2664bdf2e993c942e43a8fb2fbab979bb))
+
 ## Friday, 20 November 2026
 
 ### Changed
@@ -84,28 +97,3 @@ Quorum has no versions. It changes all the time, and this page lists the latest 
 - Note that the Cache graph is a simplification of cache-aside ([e8da189](https://github.com/elianiva/quorum/commit/e8da189d994fb455b802d33b6f21a6fd3ac27b16))
 - Answer unknown game paths with a real 404 ([94fbc2e](https://github.com/elianiva/quorum/commit/94fbc2e06077f656f693fb50bc8b4d85e27620a9))
 - Improve search metadata for the game and the wiki ([6d62265](https://github.com/elianiva/quorum/commit/6d62265002abd4de10dfa4e395a5b6d81a02e925))
-
-## Saturday, 14 November 2026
-
-### Changed
-
-- Put the Cache left of the Pooler in Tidy ([b25e62d](https://github.com/elianiva/quorum/commit/b25e62dce69cdedd241099c50fc7fa552032b2c4))
-- Cache the shell at / so the service worker never serves a redirect ([a383859](https://github.com/elianiva/quorum/commit/a3838599fd728eb833ae22da8cfe120c8bdea231))
-- Load the wiki app only when a page needs it ([8b5a6da](https://github.com/elianiva/quorum/commit/8b5a6da4d55484f6865e34a042f48c36f96dc5b4))
-- Pick the board renderer from what the browser can run ([eca1aa1](https://github.com/elianiva/quorum/commit/eca1aa118eef466148a59b04f327b1420e01207d))
-- Allow WebAssembly compile in the web CSP ([4f759ab](https://github.com/elianiva/quorum/commit/4f759abdc2ceba291017af37988754d4490f74bf))
-- Merge shared styles with css() so an override wins again ([d121ac6](https://github.com/elianiva/quorum/commit/d121ac6fbf9a4e25f460287ab93a04b3bc2707f7))
-- Replace a trapped Solver, drop the blocks it never reads, and tidy the host ([7a9e0ca](https://github.com/elianiva/quorum/commit/7a9e0ca8b418575883432b0bd8916886d77b1923))
-- Precache the Solver and keep a failed solve away from the Bottleneck search ([02c9e0d](https://github.com/elianiva/quorum/commit/02c9e0d182cae3ee2ff7b4706b3779af30ed55d9))
-- Replace leftover Tailwind classes with Panda and shorten the class prefix to q ([9717cac](https://github.com/elianiva/quorum/commit/9717cac2c150fa070896017cba536e9675668fb9))
-- Use dark ink for group badges in dark mode ([5ff981f](https://github.com/elianiva/quorum/commit/5ff981f0ed539fe97e3d39e0fff443dd7e5e0026))
-- Use the shared design tokens across the interfaces ([ea8a41e](https://github.com/elianiva/quorum/commit/ea8a41eb4aa52e4afeb83da155cc6ad51350a121))
-- Add the changelog entry for 2026-11-13 (#54) ([30af726](https://github.com/elianiva/quorum/commit/30af726de877663574339a638d84db410fe83a98))
-- Add the shared type, radius, motion, and shadow tokens ([0961d27](https://github.com/elianiva/quorum/commit/0961d278c1aabcf946280d186cf99c6e8978f8cd))
-- Add light and dark mode to the wiki ([6e8be0e](https://github.com/elianiva/quorum/commit/6e8be0e99386d6d290ae7eb73c4e403fda73f0dd))
-- Use Panda tokens across the game views ([a023ecc](https://github.com/elianiva/quorum/commit/a023ecc1b71e12b05165ed124288380b478d1463))
-- Use Panda tokens in the shared controls ([7e87df7](https://github.com/elianiva/quorum/commit/7e87df73fbcb90981af11f69f9ac4d448c1fb810))
-- Make Panda tokens follow the dark theme ([9266d81](https://github.com/elianiva/quorum/commit/9266d81c0e38bc30fa9de6af3303901968eb66bd))
-- Use Panda's class joiner directly ([f036b09](https://github.com/elianiva/quorum/commit/f036b096a2cc4725b969997bf37bc9ab070255d3))
-- Remove Tailwind from the build ([1b89b5e](https://github.com/elianiva/quorum/commit/1b89b5e5183aa4e876f343691b6ad38a5748551c))
-- Move the app shell and lab views onto Panda CSS ([6ecc403](https://github.com/elianiva/quorum/commit/6ecc403f685600b6d79997fc8589e7933fe02fa5))

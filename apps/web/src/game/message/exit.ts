@@ -4,6 +4,8 @@ import { Schema } from 'effect'
 
 export const exitCases = {
   ExitTaken: { exit: Schema.Literals(EXIT_IDS) },
+  ExitAsked: { exit: Schema.Literals(EXIT_IDS) },
+  ExitCancelled: {},
   KeepToggled: { id: ResearchId },
   PerkBought: { id: Schema.Literals(PERK_IDS) },
   VentureChosen: { id: VentureId },

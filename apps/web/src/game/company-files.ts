@@ -147,6 +147,9 @@ export const readCompany = async (db: CompanyDb | null, id: string): Promise<Com
 let turns = 0
 const lastWrite = new Map<string, number>()
 const lastSafety = new Map<string, number>()
+const deleted = new Map<string, number>()
+
+const deletedOnce = (id: string): number => deleted.get(id) ?? 0
 
 export const writeCompany = async (
   db: CompanyDb | null,
@@ -156,6 +159,7 @@ export const writeCompany = async (
 ): Promise<boolean> => {
   const key = saveKeyOf(id)
   const turn = (turns += 1)
+  const before = deletedOnce(id)
   lastWrite.set(id, turn)
   const wroteOldKeyNow = closing && writeStored(key, json)
   if (wroteOldKeyNow) lastSafety.set(id, turn)
@@ -163,9 +167,18 @@ export const writeCompany = async (
     try {
       const removesOldKey = wroteOldKeyNow || readStored(key) !== null
       await db.put(id, json, removesOldKey ? 'strict' : 'relaxed')
+      if (before !== deletedOnce(id)) {
+        removeStored(key)
+        await db.remove(id).catch(() => undefined)
+        return false
+      }
       if ((lastSafety.get(id) ?? 0) <= turn) removeStored(key)
       return true
     } catch {}
+  }
+  if (before !== deletedOnce(id)) {
+    removeStored(key)
+    return false
   }
   if (lastWrite.get(id) !== turn) return true
   const wrote = wroteOldKeyNow || writeStored(key, json)
@@ -174,6 +187,7 @@ export const writeCompany = async (
 }
 
 export const deleteCompany = async (db: CompanyDb | null, id: string): Promise<void> => {
+  deleted.set(id, deletedOnce(id) + 1)
   removeStored(saveKeyOf(id))
   if (db === null) return
   await db.remove(id).catch(() => undefined)

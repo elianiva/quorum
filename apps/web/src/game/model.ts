@@ -5,7 +5,7 @@ import * as VolumeSlider from '@quorum/ui/primitives/slider'
 import { Locale } from '../i18n/index.ts'
 import { Effect, Schema } from 'effect'
 import { DragAndDrop } from '@foldkit/ui'
-import { DOCK_GROUPS, REQUEST_KINDS, type DockGroup } from '@quorum/simulation/catalog'
+import { DOCK_GROUPS, EXIT_IDS, REQUEST_KINDS, type DockGroup } from '@quorum/simulation/catalog'
 import type { Ledger } from '@quorum/simulation/ledger'
 import { solveFlow } from '@quorum/simulation/solve'
 import { exitOffers } from '@quorum/simulation/exit'
@@ -411,6 +411,7 @@ export const Model = Schema.Struct({
   foundStep: FoundStep,
   saveFocus: Schema.NullOr(Schema.String),
   saveConfirm: ConfirmDelete,
+  exitConfirm: Schema.NullOr(Schema.Literals(EXIT_IDS)),
   founder: Founder,
   survey: Survey,
   passed: Schema.Array(SandboxId),

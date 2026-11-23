@@ -188,7 +188,7 @@ export const withOverlay = (
 
 export const closePanel = (model: Model): Model => {
   const panel = model.panel === 'settings' && onBoard(model.route) ? 'menu' : 'none'
-  return withOverlay({ ...model, panel }, 'menu', panel === 'menu')
+  return withOverlay({ ...model, panel, exitConfirm: null }, 'menu', panel === 'menu')
 }
 
 const loadHistories = new WeakMap<

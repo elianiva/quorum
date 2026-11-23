@@ -21,7 +21,16 @@ import {
 import { browserFamilyOf, onIos } from '@/platform/pwa.ts'
 import { offer } from '@quorum/simulation/actions'
 import { PRE_IPO_STAGE } from '@quorum/simulation/ipo'
-import { INCIDENT_IDS } from '@quorum/simulation/catalog'
+import {
+  COMPONENT_IDS,
+  COMPONENTS,
+  ERAS,
+  INCIDENT_IDS,
+  REQUEST_KINDS,
+  RESEARCH,
+  RESEARCH_IDS,
+} from '@quorum/simulation/catalog'
+import { dilutionOf, grantOf } from '@quorum/simulation/founding'
 import { eraOf, isFinalEra, nextEra } from '@quorum/simulation/lookups'
 import { cheatCash, cheatInsight } from '@/game/cheats.ts'
 import { clock, compact, money } from '@quorum/ui/game/format'
@@ -2229,10 +2238,112 @@ export const offerPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
+const chip = (label: string, h: HtmlBuilder<Message>) =>
+  h.span(
+    [
+      h.Key(label),
+      h.Class(
+        css({
+          borderRadius: 'full',
+          backgroundColor: 'well',
+          boxShadow: 'well',
+          paddingInline: '2.5',
+          paddingBlock: '0.5',
+          fontSize: 'type.11-5',
+          whiteSpace: 'nowrap',
+        }),
+      ),
+    ],
+    [label],
+  )
+
+const chipRow = (labels: ReadonlyArray<string>, h: HtmlBuilder<Message>) =>
+  h.div(
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '1.5',
+        }),
+      ),
+    ],
+    labels.map((label) => chip(label, h)),
+  )
+
+const eraSection = (label: string, body: ReadonlyArray<Html>, h: HtmlBuilder<Message>) =>
+  h.div(
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2',
+        }),
+      ),
+    ],
+    [h.span([h.Class(EYEBROW)], [label]), ...body],
+  )
+
+const eraFacts = (rows: ReadonlyArray<readonly [string, string]>, h: HtmlBuilder<Message>) =>
+  h.div(
+    [
+      h.Class(
+        cx(
+          NESTED,
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+          }),
+        ),
+      ),
+    ],
+    rows.map(([label, value]) =>
+      h.div(
+        [
+          h.Key(label),
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: '3',
+              paddingInline: '4',
+              paddingBlock: '2.5',
+              fontSize: 'type.12-5',
+            }),
+          ),
+        ],
+        [
+          h.span([h.Class(css({ color: 'mutedForeground' }))], [label]),
+          h.span([h.Class(FIGURE)], [value]),
+        ],
+      ),
+    ),
+  )
+
+const percentText = (value: number): string => `${Number((value * 100).toFixed(2))}%`
+
 export const eraPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
-
-  const era = localized(eraOf(model.board.game), eraWords(t, model.board.game))
+  const game = model.board.game
+  const era = localized(eraOf(game), eraWords(t, game))
+  const before = ERAS[game.stage - 1]
+  const kinds = REQUEST_KINDS.filter(
+    (kind) =>
+      era.mix[kind] !== undefined && (before === undefined || before.mix[kind] === undefined),
+  ).map((kind) => t.catalog.kinds[kind].label)
+  const components = COMPONENT_IDS.filter((id) => {
+    const unlock = COMPONENTS[id].unlock
+    return unlock !== null && RESEARCH[unlock].era === game.stage
+  }).map((id) => t.catalog.components[id].name)
+  const research = RESEARCH_IDS.filter((id) => RESEARCH[id].era === game.stage).length
+  const raised = game.round._tag === 'Raised'
+  const declined = game.round._tag === 'Declined'
+  const equity = Math.round(game.equity * 100)
+  const dilution = Math.round(dilutionOf(game, era.dilution) * 100)
+  const equityBefore =
+    dilution >= 100 ? equity : Math.round((game.equity / (1 - dilution / 100)) * 100)
   return shell(
     era.name,
     [],
@@ -2241,6 +2352,7 @@ export const eraPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
         [
           h.Class(
             cx(
+              SCROLL,
               css({
                 display: 'flex',
                 flexDirection: 'column',
@@ -2255,7 +2367,7 @@ export const eraPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
         ],
         [
           h.img([
-            h.Src(`/art/era-${Math.min(7, model.board.game.stage)}.svg`),
+            h.Src(`/art/era-${Math.min(7, game.stage)}.svg`),
             h.Alt(''),
             h.Class(
               css({
@@ -2269,6 +2381,7 @@ export const eraPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               }),
             ),
           ]),
+          h.span([h.Class(EYEBROW)], [t.panels.eraProgress(game.stage, ERAS.length)]),
           h.span(
             [
               h.Class(
@@ -2295,18 +2408,83 @@ export const eraPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             [era.arrivals],
           ),
           stats(
-            css({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }),
+            css({
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              _narrow: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+            }),
             [
               stat(
-                t.panels.nextRound,
-                Number.isFinite(era.raiseAt) ? t.panels.users(compact(era.raiseAt)) : '—',
+                t.panels.milestone,
+                Number.isFinite(era.raiseAt) ? compact(era.raiseAt) : '—',
                 h,
               ),
               stat(t.panels.apdexTarget, era.apdexTarget.toFixed(2), h),
+              stat(t.panels.slo, percentText(era.slo), h),
               stat(t.panels.prices, `×${era.costIndex}`, h),
             ],
             h,
           ),
+          raised || declined || game.stage >= ERAS.length - 1
+            ? eraSection(
+                t.panels.theRound,
+                [
+                  h.span(
+                    [
+                      h.Class(
+                        css({
+                          fontSize: 'type.13',
+                          color: 'mutedForeground',
+                        }),
+                      ),
+                    ],
+                    [
+                      game.stage >= ERAS.length - 1
+                        ? t.panels.quartersBegin
+                        : raised
+                          ? `${t.panels.cash(money(grantOf(game, era.grant)))} · ${t.panels.equity(equityBefore, equity)}`
+                          : `${t.panels.equityStays(equity)} · ${t.panels.growth07}`,
+                    ],
+                  ),
+                ],
+                h,
+              )
+            : h.empty,
+          Number.isFinite(era.raiseAt)
+            ? eraSection(
+                t.panels.nextRound,
+                [
+                  eraFacts(
+                    [
+                      [t.hud.cash, money(grantOf(game, era.grant))],
+                      [t.panels.dilution, `${dilution}%`],
+                    ],
+                    h,
+                  ),
+                ],
+                h,
+              )
+            : h.empty,
+          kinds.length > 0 ? eraSection(t.panels.newRequestKinds, [chipRow(kinds, h)], h) : h.empty,
+          components.length > 0
+            ? eraSection(
+                t.panels.newComponents,
+                [
+                  chipRow(components, h),
+                  h.span(
+                    [
+                      h.Class(
+                        css({
+                          fontSize: 'type.11-5',
+                          color: 'mutedForeground',
+                        }),
+                      ),
+                    ],
+                    [t.panels.newResearch(research)],
+                  ),
+                ],
+                h,
+              )
+            : h.empty,
         ],
       ),
       footer([primaryButton(t.panels.continueText, Message.PanelClosed(), h)], h),

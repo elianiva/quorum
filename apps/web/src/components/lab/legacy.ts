@@ -14,7 +14,7 @@ import {
   Upload,
   X,
 } from 'lucide'
-import { COMPONENTS } from '@quorum/simulation/catalog'
+import { COMPONENTS, EXITS } from '@quorum/simulation/catalog'
 import { exitOffers } from '@quorum/simulation/exit'
 import { keepSlots, playbookSlots } from '@quorum/simulation/founder'
 import { refundOf } from '@quorum/simulation/lookups'
@@ -26,7 +26,7 @@ import { confirmSellOf, ledgerOf, type Model, stampedPlaybook } from '@/game/mod
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
 import { textarea } from '@quorum/ui/primitives/textarea'
-import { EYEBROW, FIGURE, NESTED, SCROLL, WELL, FIGURE_STYLE } from '@quorum/ui/game/bits'
+import { EYEBROW, FIGURE, FIGURE_STYLE, FLOAT, NESTED, SCROLL, WELL } from '@quorum/ui/game/bits'
 import { SurveyMessage } from '@/game/survey.ts'
 import { isSending, isSent, isSkipped } from '@/game/survey-machine.ts'
 import { shell } from './panels.ts'
@@ -112,6 +112,7 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const ledger = ledgerOf(model)
   const value = valuationOf(game, ledger)
   const offers = exitOffers(game, ledger)
+  const equity = Math.round(game.equity * 100)
   return shell(
     t.legacy.exit,
     [],
@@ -141,7 +142,7 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
             [
               stat(t.legacy.valuation, money(value.valuation), h),
               stat(t.legacy.ruleOf40, value.ruleOf40.toFixed(0), h),
-              stat(t.legacy.equity, `${Math.round(game.equity * 100)}%`, h),
+              stat(t.legacy.equity, `${equity}%`, h),
               stat(t.legacy.legacy, legacyMultiplier(game.founding).toFixed(2), h),
             ],
             h,
@@ -163,15 +164,23 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                 ),
               ),
             ],
-            offers.map((offer) =>
-              h.div(
+            offers.map((offer) => {
+              const defined = EXITS[offer.id]
+              const confirming = model.exitConfirm === offer.id
+              const streak = offer.multiplier - defined.multiplier
+              const notes = [
+                Number.isFinite(defined.cap) ? t.legacy.exitCap(money(defined.cap)) : '',
+                streak > 0 ? t.legacy.exitStreak(streak.toFixed(1)) : '',
+                defined.continues ? t.legacy.exitContinues : t.legacy.exitEnds,
+              ].filter((entry) => entry !== '')
+              return h.div(
                 [
                   h.Key(offer.id),
                   h.Class(
                     css({
                       display: 'flex',
-                      alignItems: 'center',
-                      gap: '3',
+                      flexDirection: 'column',
+                      gap: '2',
                       paddingInline: '4',
                       paddingBlock: '3',
                     }),
@@ -183,49 +192,121 @@ export const exitPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
                       h.Class(
                         css({
                           display: 'flex',
-                          minWidth: '0',
-                          flex: '1 1 0%',
-                          flexDirection: 'column',
-                          gap: '0.5',
+                          alignItems: 'center',
+                          gap: '3',
                         }),
                       ),
                     ],
                     [
-                      h.span(
+                      h.div(
                         [
                           h.Class(
                             css({
-                              fontSize: 'type.14',
-                              fontWeight: 'semibold',
+                              display: 'flex',
+                              minWidth: '0',
+                              flex: '1 1 0%',
+                              flexDirection: 'column',
+                              gap: '0.5',
                             }),
                           ),
                         ],
-                        [t.catalog.exits[offer.id].name],
-                      ),
-                      h.span(
                         [
-                          h.Class(
-                            cx(
-                              FIGURE,
-                              css({
-                                fontSize: 'type.11-5',
-                                color: 'mutedForeground',
-                              }),
-                            ),
+                          h.span(
+                            [
+                              h.Class(
+                                css({
+                                  fontSize: 'type.14',
+                                  fontWeight: 'semibold',
+                                }),
+                              ),
+                            ],
+                            [t.catalog.exits[offer.id].name],
+                          ),
+                          h.span(
+                            [
+                              h.Class(
+                                cx(
+                                  FIGURE,
+                                  css({
+                                    fontSize: 'type.11-5',
+                                    color: 'mutedForeground',
+                                  }),
+                                ),
+                              ),
+                            ],
+                            [
+                              t.legacy.exitMath(
+                                equity,
+                                money(offer.valuation),
+                                offer.multiplier.toFixed(1),
+                                money(offer.payout),
+                              ),
+                            ],
+                          ),
+                          h.span(
+                            [
+                              h.Class(
+                                css({
+                                  fontSize: 'type.11',
+                                  color: 'mutedForeground',
+                                }),
+                              ),
+                            ],
+                            [notes.join(' · ')],
                           ),
                         ],
-                        [t.legacy.payout(money(offer.payout), offer.multiplier.toFixed(1))],
                       ),
+                      confirming
+                        ? h.div(
+                            [
+                              h.Class(
+                                css({
+                                  display: 'flex',
+                                  flexShrink: '0',
+                                  gap: '2',
+                                }),
+                              ),
+                            ],
+                            [
+                              button(
+                                {
+                                  onClick: Message.ExitCancelled(),
+                                  variant: 'ghost',
+                                  size: 'lg',
+                                },
+                                t.legacy.cancel,
+                                h,
+                              ),
+                              button(
+                                { onClick: Message.ExitTaken({ exit: offer.id }), size: 'lg' },
+                                t.legacy.takeLegacy(offer.legacy),
+                                h,
+                              ),
+                            ],
+                          )
+                        : button(
+                            { onClick: Message.ExitAsked({ exit: offer.id }), size: 'lg' },
+                            [t.legacy.takeLegacy(offer.legacy)],
+                            h,
+                          ),
                     ],
                   ),
-                  button(
-                    { onClick: Message.ExitTaken({ exit: offer.id }), size: 'lg' },
-                    [t.legacy.takeLegacy(offer.legacy)],
-                    h,
-                  ),
+                  confirming
+                    ? h.span(
+                        [
+                          h.Class(
+                            css({
+                              fontSize: 'type.11-5',
+                              color: 'warn',
+                            }),
+                          ),
+                        ],
+                        [t.legacy.exitConfirmNote(offer.legacy)],
+                      )
+                    : h.empty,
                 ],
-              ),
-            ),
+              )
+            }),
           ),
         ],
       ),
@@ -439,7 +520,7 @@ const surveySection = (model: Model, h: HtmlBuilder<Message>): Html => {
   )
 }
 
-export const exitedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
+export const exitScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
   const exited = model.companyPhase
@@ -447,124 +528,271 @@ export const exitedPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const row = exited.row
   const slots = keepSlots(model.founder)
   const kept = model.founder.keep
-  return shell(
-    t.catalog.exits[row.exit].name,
-    [],
+  const venture = t.catalog.ventures[row.founding.venture].name
+  const mutators = row.founding.mutators.map((id) => t.catalog.mutators[id].name)
+  return h.main(
+    [
+      h.Key('exit'),
+      h.Class(
+        css({
+          display: 'grid',
+          height: '100%',
+          placeItems: 'center',
+          overflow: 'auto',
+          backgroundColor: 'canvas',
+          padding: '6',
+          _compact: { padding: '0' },
+        }),
+      ),
+    ],
     [
       h.div(
         [
+          h.Role('dialog'),
+          h.AriaLabel(t.catalog.exits[row.exit].name),
           h.Class(
             cx(
+              FLOAT,
+              'enter-modal',
               css({
                 display: 'flex',
-                minHeight: '0',
+                maxHeight: '100%',
+                width: '100%',
+                maxWidth: '680px',
                 flexDirection: 'column',
-                alignItems: 'center',
-                gap: '4',
-                paddingInline: '6',
-                paddingTop: '1',
-                paddingBottom: '5',
+                overflow: 'hidden',
+                _compact: {
+                  height: '100%',
+                  maxHeight: 'none',
+                  maxWidth: 'none',
+                  borderRadius: '0',
+                  boxShadow: 'none',
+                },
               }),
-              SCROLL,
             ),
           ),
         ],
         [
-          snapshotSvg(
-            row.snapshot,
-            h,
-            css({
-              height: '180px',
-              width: '100%',
-              maxWidth: '520px',
-              borderRadius: 'xl',
-              backgroundColor: 'well',
-              boxShadow: 'well',
-              padding: '2',
-            }),
-          ),
-          h.span(
+          h.div(
             [
               h.Class(
-                css(FIGURE_STYLE, {
-                  fontSize: 'type.30',
-                  fontWeight: 'semibold',
-                  letterSpacing: 'heading',
+                css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '4',
+                  paddingInline: '6',
+                  paddingTop: '4',
+                  paddingBottom: '2',
                 }),
               ),
             ],
-            [t.legacy.legacy2(row.legacy)],
-          ),
-          stats(
-            css({
-              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-              _narrow: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
-            }),
             [
-              stat(t.legacy.payout2, money(row.payout), h),
-              stat(t.legacy.peakUsers, compact(row.peak), h),
-              stat(t.legacy.era, t.catalog.eras[row.stage]?.name ?? '', h),
-              stat(t.legacy.played, clock(row.time), h),
-            ],
-            h,
-          ),
-          slots > 0
-            ? h.div(
+              h.span(
                 [
                   h.Class(
                     css({
-                      display: 'flex',
-                      width: '100%',
-                      flexDirection: 'column',
-                      gap: '2',
+                      fontSize: 'type.17',
+                      fontWeight: 'semibold',
+                      letterSpacing: 'tight',
                     }),
                   ),
                 ],
+                [t.catalog.exits[row.exit].name],
+              ),
+              h.span([h.Class(EYEBROW)], [t.catalog.eras[row.stage]?.name ?? '']),
+            ],
+          ),
+          h.div(
+            [
+              h.Class(
+                cx(
+                  css({
+                    display: 'flex',
+                    minHeight: '0',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4',
+                    paddingInline: '6',
+                    paddingTop: '1',
+                    paddingBottom: '5',
+                  }),
+                  SCROLL,
+                ),
+              ),
+            ],
+            [
+              snapshotSvg(
+                row.snapshot,
+                h,
+                css({
+                  height: '180px',
+                  flexShrink: '0',
+                  width: '100%',
+                  maxWidth: '520px',
+                  borderRadius: 'xl',
+                  backgroundColor: 'well',
+                  boxShadow: 'well',
+                  padding: '2',
+                }),
+              ),
+              h.span(
                 [
-                  h.span([h.Class(EYEBROW)], [t.legacy.keepResearch(kept.length, slots)]),
+                  h.Class(
+                    css(FIGURE_STYLE, {
+                      fontSize: 'type.30',
+                      fontWeight: 'semibold',
+                      letterSpacing: 'heading',
+                    }),
+                  ),
+                ],
+                [t.legacy.legacy2(row.legacy)],
+              ),
+              stats(
+                css({
+                  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                  _narrow: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+                }),
+                [
+                  stat(t.legacy.payout2, money(row.payout), h),
+                  stat(t.legacy.peakUsers, compact(row.peak), h),
+                  stat(t.legacy.era, t.catalog.eras[row.stage]?.name ?? '', h),
+                  stat(t.legacy.played, clock(row.time), h),
+                ],
+                h,
+              ),
+              h.div(
+                [
+                  h.Class(
+                    cx(
+                      NESTED,
+                      css({
+                        display: 'flex',
+                        width: '100%',
+                        flexDirection: 'column',
+                      }),
+                    ),
+                  ),
+                ],
+                [
                   h.div(
                     [
                       h.Class(
                         css({
                           display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: '1.5',
+                          alignItems: 'baseline',
+                          justifyContent: 'space-between',
+                          gap: '3',
+                          paddingInline: '4',
+                          paddingBlock: '2.5',
+                          fontSize: 'type.12-5',
                         }),
                       ),
                     ],
-                    exited.researched.map((id) =>
-                      button(
-                        {
-                          onClick: Message.KeepToggled({ id }),
-                          size: 'xs',
-                          variant: kept.includes(id) ? 'default' : 'outline',
-                          attributes: [h.Key(id)],
-                        },
-                        t.catalog.research[id].name,
-                        h,
+                    [
+                      h.span([h.Class(css({ color: 'mutedForeground' }))], [t.legacy.founding]),
+                      h.span([h.Class(FIGURE)], [venture]),
+                    ],
+                  ),
+                  mutators.length > 0
+                    ? h.div(
+                        [
+                          h.Class(
+                            css({
+                              display: 'flex',
+                              alignItems: 'baseline',
+                              justifyContent: 'space-between',
+                              gap: '3',
+                              paddingInline: '4',
+                              paddingBlock: '2.5',
+                              fontSize: 'type.12-5',
+                            }),
+                          ),
+                        ],
+                        [
+                          h.span([h.Class(css({ color: 'mutedForeground' }))], [t.legacy.mutators]),
+                          h.span([h.Class(FIGURE)], [mutators.join(' · ')]),
+                        ],
+                      )
+                    : h.empty,
+                  h.div(
+                    [
+                      h.Class(
+                        css({
+                          display: 'flex',
+                          alignItems: 'baseline',
+                          justifyContent: 'space-between',
+                          gap: '3',
+                          paddingInline: '4',
+                          paddingBlock: '2.5',
+                          fontSize: 'type.12-5',
+                        }),
                       ),
-                    ),
+                    ],
+                    [
+                      h.span([h.Class(css({ color: 'mutedForeground' }))], [t.legacy.legacy]),
+                      h.span([h.Class(FIGURE)], [legacyMultiplier(row.founding).toFixed(2)]),
+                    ],
                   ),
                 ],
-              )
-            : h.empty,
-          surveySection(model, h),
-        ],
-      ),
-      footer(
-        [
-          button(
-            { onClick: Message.MenuChosen({ menu: 'legacy' }), variant: 'outline', size: 'lg' },
-            t.legacy.legacyShop,
+              ),
+              slots > 0
+                ? h.div(
+                    [
+                      h.Class(
+                        css({
+                          display: 'flex',
+                          width: '100%',
+                          flexDirection: 'column',
+                          gap: '2',
+                        }),
+                      ),
+                    ],
+                    [
+                      h.span([h.Class(EYEBROW)], [t.legacy.keepResearch(kept.length, slots)]),
+                      h.div(
+                        [
+                          h.Class(
+                            css({
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: '1.5',
+                            }),
+                          ),
+                        ],
+                        exited.researched.map((id) =>
+                          button(
+                            {
+                              onClick: Message.KeepToggled({ id }),
+                              size: 'xs',
+                              variant: kept.includes(id) ? 'default' : 'outline',
+                              attributes: [h.Key(id)],
+                            },
+                            t.catalog.research[id].name,
+                            h,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : h.empty,
+              surveySection(model, h),
+            ],
+          ),
+          footer(
+            [
+              button(
+                { onClick: Message.MenuChosen({ menu: 'legacy' }), variant: 'outline', size: 'lg' },
+                t.legacy.legacyShop,
+                h,
+              ),
+              button({ onClick: Message.TitleOpened(), size: 'lg' }, t.legacy.nextCompany, h),
+            ],
             h,
           ),
-          button({ onClick: Message.TitleOpened(), size: 'lg' }, t.legacy.nextCompany, h),
         ],
-        h,
       ),
     ],
-    css({ maxWidth: '680px' }),
-    h,
   )
 }
 

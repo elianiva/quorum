@@ -39,6 +39,8 @@ import { savesOf, withSaves } from '../saves-machine.ts'
 
 type ExitTag =
   | 'ExitTaken'
+  | 'ExitAsked'
+  | 'ExitCancelled'
   | 'KeepToggled'
   | 'PerkBought'
   | 'VentureChosen'
@@ -126,6 +128,7 @@ export const exitHandlers = (model: Model): MessageCases<UpdateResult, ExitTag> 
             survey: EMPTY_SURVEY,
             companyPhase: phase,
             panel: isExited(phase) ? 'exited' : earned.panel,
+            exitConfirm: null,
             saves: withSaves(earned.saves, saves),
             board: {
               ...earned.board,
@@ -159,6 +162,10 @@ export const exitHandlers = (model: Model): MessageCases<UpdateResult, ExitTag> 
         },
       },
     ),
+
+  ExitAsked: ({ exit }) => ({ model: { ...model, exitConfirm: exit } }),
+
+  ExitCancelled: () => ({ model: { ...model, exitConfirm: null } }),
 
   KeepToggled: ({ id }) => changeFounder(model, toggleKeep(model.founder, id)),
 

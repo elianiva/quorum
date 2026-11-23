@@ -78,6 +78,7 @@ export const initialModel = (): Model => {
     foundStep: 'company',
     saveFocus: null,
     saveConfirm: { _tag: 'List' },
+    exitConfirm: null,
     founder: emptyFounder(),
     survey: EMPTY_SURVEY,
     passed: [],

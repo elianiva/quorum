@@ -253,6 +253,7 @@ export const panelsHandlers = (
     const opened: Model = {
       ...model,
       panel,
+      exitConfirm: null,
       board: {
         ...model.board,
         team: initTeam(),

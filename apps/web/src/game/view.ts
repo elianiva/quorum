@@ -5,10 +5,11 @@ import type { Document, Html, HtmlBuilder } from 'foldkit/html'
 import { toast } from '@/components/lab/toast.ts'
 import { roomPanel, settingsPanel } from '@/components/lab/panels.ts'
 import { labScreen } from './screens.ts'
+import { exitScreen } from '@/components/lab/legacy.ts'
 import { titleScreen } from './title.ts'
 import type { Message } from './message.ts'
 import { boardChallenge, boardSandbox, type Model } from './model.ts'
-import { isPlaying } from './company-machine.ts'
+import { isExited, isPlaying } from './company-machine.ts'
 import { connecting } from './boot-machine.ts'
 import { AppRoute, onBoard } from './route.ts'
 import { RoomPhase } from './room-machine.ts'
@@ -46,6 +47,7 @@ export const view = (model: Model, builder: HtmlBuilder<Message>): Document => {
   const h = localizeBuilder(model.prefs.locale, builder)
   const screen = onBoard(model.route) && !connecting(model.boot)
   const board = screen && boardFilled(model)
+  const exited = screen && AppRoute.guards.Company(model.route) && isExited(model.companyPhase)
   return {
     title: 'Quorum',
     lang: model.prefs.locale,
@@ -65,13 +67,15 @@ export const view = (model: Model, builder: HtmlBuilder<Message>): Document => {
       ],
       [
         h.div(
-          [h.Key(board ? 'board' : 'title'), h.Class(css({ height: '100%' }))],
+          [h.Key(exited ? 'exit' : board ? 'board' : 'title'), h.Class(css({ height: '100%' }))],
           [
-            board
-              ? labScreen(model, h)
-              : screen
-                ? h.div([h.Class(css({ height: '100%', backgroundColor: 'canvas' }))])
-                : titleScreen(model, h),
+            exited
+              ? exitScreen(model, h)
+              : board
+                ? labScreen(model, h)
+                : screen
+                  ? h.div([h.Class(css({ height: '100%', backgroundColor: 'canvas' }))])
+                  : titleScreen(model, h),
           ],
         ),
         !onBoard(model.route) && model.panel === 'settings' ? settingsPanel(model, h) : h.empty,

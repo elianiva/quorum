@@ -835,6 +835,8 @@ export const ON_CALL_ACK = 5
 export const SRE_MTTR = 0.4
 export const SLA_CREDIT = 0.1
 export const LEAK_RATE = 1 / 40
+export const LEAK_KB_PER_REQUEST = 12
+export const LEAK_FROM_STAGE = 2
 
 export const ALERT_RULES = {
   errors: { threshold: 0.01, seconds: 30 },

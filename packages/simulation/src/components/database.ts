@@ -37,13 +37,14 @@ export const STORAGE_IOPS = {
 export const SHARD_COUNTS = [1, 2, 4, 8] as const
 
 export const DB_RETENTIONS = {
-  keep: { name: 'Keep everything', days: 0, price: 1, scanMs: 0, rebuild: 1 },
+  keep: { name: 'Keep everything', days: 0, price: 1, scanMs: 0, rebuild: 1, hotSet: 1 },
   archive: {
     name: 'Archive after 30 d',
     days: 30,
     price: 0.1,
     scanMs: 200,
     rebuild: 1,
+    hotSet: 0.4,
   },
   delete: {
     name: 'Delete after 30 d',
@@ -51,6 +52,7 @@ export const DB_RETENTIONS = {
     price: 0,
     scanMs: 0,
     rebuild: 3,
+    hotSet: 0.25,
   },
 } as const
 export const ROW_KB = 10

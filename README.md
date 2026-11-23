@@ -72,6 +72,19 @@ grow while Apdex stays above the Era target, and they leave when it drops.
 
 ![The Research tree, with Infrastructure, Data, Reliability, and Observability tracks by Era](docs/images/research.png)
 
+### Start with an instance type, unlock custom Parts
+
+Before **Custom instances**, a new App Server or Database buys a fixed instance type, the way AWS
+and Azure sell one: a family, a size, and the CPU and memory that come with it. Each family keeps a
+real CPU-to-memory ratio: Burstable 2 GB per vCPU, General 4, Compute 2, Memory 8, and ARM 4.
+
+Early Research unlocks **Custom instances**. From then on, a new App Server or Database starts with
+empty Slots, and the shop has two modes. The **Instance catalog** sells a preset and installs the
+matching CPU, memory, and disk Parts at the current Part prices. The **Parts catalog** sells each
+Part on its own, with prices that move each week. GCP is the cloud that sells custom machine types
+next to predefined ones. Quorum makes you unlock the custom path, then lets you use either one. That
+is less faithful to how most clouds sell compute and more fun to play.
+
 At each Milestone, investors offer a Funding round: Cash for Equity. Each Era brings new request
 kinds that break the Design in a new way.
 

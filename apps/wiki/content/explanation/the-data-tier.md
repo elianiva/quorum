@@ -104,8 +104,9 @@ soften it.
 
 :::Note{tone="real"}
 Redis answers commands on one main thread, so one core caps a Redis node and one slow command blocks
-every client. Memcached uses every core but keeps nothing on restart. Quorum models both as Cache
-engines with different limits.
+every client. Memcached uses every core and packs values tighter but keeps nothing on restart, and it
+has no replication. Quorum models both as Cache engines: Memcached wins on speed and memory, Redis on
+write-behind, a standby, and a warm restart.
 :::
 
 ## Read Replicas: more reads, older data

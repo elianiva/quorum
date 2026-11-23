@@ -17,11 +17,15 @@ import {
   resize,
   sell,
   restart,
+  installCpu,
+  installDisk,
+  installRam,
   setCacheGuard,
   renewCertificate,
   setDlq,
   setFamily,
   setRuntime,
+  setStorageIops,
   setAutoscaler,
   setBackup,
   setLbVariant,
@@ -29,8 +33,10 @@ import {
   setSpread,
   runDrill,
   setStandby,
-  setStorageIops,
   setUnderAttack,
+  setParanoia,
+  setRyw,
+  setSync,
   setZone,
   setWorkers,
   study,
@@ -65,8 +71,10 @@ import { newGame } from './company.ts'
 import { foundCompany } from './founding.ts'
 import type { Ledger } from './ledger.ts'
 import { has, isDown, maxSize, ramOf, researchReady, securityStaffed } from './lookups.ts'
+import { partsUnlocked } from './parts.ts'
 import { CACHE_HIT_LOW } from './rule-kit.ts'
 import { isBuilt } from './features.ts'
+import { churnOf, type ChurnRow } from './churn.ts'
 import { currentStudy, studyCount, studyOf } from './study-machine.ts'
 import { recipeOf, shapeHolds } from './studies.ts'
 import {
@@ -157,6 +165,7 @@ const PRIORITY: ReadonlyArray<ResearchId> = [
   'opcache',
   'metrics',
   'load-balancing',
+  'custom-instances',
   'query-analysis',
   'caching',
   'pooling',
@@ -337,8 +346,75 @@ const placedNow = (
   return next === game ? null : [next, last(next)]
 }
 
+const placeWithParts = (
+  game: Game,
+  type: 'server' | 'database',
+  x: number,
+  y: number,
+  size: number,
+  family: GameNode['family'],
+  iops: GameNode['iops'],
+): Action => {
+  const placed = place(game, type, x, y)
+  if (Result.isFailure(placed)) return placed
+  let next = placed.success
+  const id = last(next)
+  if (!partsUnlocked(next)) {
+    const current = (): GameNode | undefined => next.nodes.find((entry) => entry.id === id)
+    while (current() !== undefined && current()!.size !== size) {
+      const direction = current()!.size < size ? 1 : -1
+      const grown = resize(next, id, direction)
+      if (Result.isFailure(grown)) break
+      next = grown.success
+    }
+    const familyAction = setFamily(next, id, family)
+    if (Result.isFailure(familyAction)) return familyAction
+    next = familyAction.success
+    if (type === 'database') {
+      const diskAction = setStorageIops(next, id, iops)
+      if (Result.isFailure(diskAction)) return diskAction
+      next = diskAction.success
+    }
+    return Result.succeed(next)
+  }
+  const parts = [
+    () => installCpu(next, id, size),
+    () => installRam(next, id, family),
+    ...(type === 'database' ? [() => installDisk(next, id, iops)] : []),
+  ]
+  for (const install of parts) {
+    const action = install()
+    if (Result.isFailure(action)) return action
+    next = action.success
+  }
+  return Result.succeed(next)
+}
+
+const placedProvisioned = (
+  game: Game,
+  ledger: Ledger,
+  type: 'server' | 'database',
+  x: number,
+  y: number,
+  size: number,
+  family: GameNode['family'],
+  iops: GameNode['iops'] = 'general',
+): readonly [Game, string] | null => {
+  const next = affordable(game, ledger, (current) =>
+    placeWithParts(current, type, x, y, size, family, iops),
+  )
+  return next === game ? null : [next, last(next)]
+}
+
+const changeFamily = (game: Game, node: GameNode, family: GameNode['family']): Action =>
+  node.type === 'server' || node.type === 'database'
+    ? partsUnlocked(game)
+      ? installRam(game, node.id, family)
+      : setFamily(game, node.id, family)
+    : setFamily(game, node.id, family)
+
 const splitDatabase = (game: Game, ledger: Ledger, server: GameNode): Game => {
-  const db = placed(game, ledger, 'database', server.x + 320, server.y)
+  const db = placedProvisioned(game, ledger, 'database', server.x + 320, server.y, 1, 'general')
   return db ? tried(db[0], connect(db[0], server.id, db[1])) : game
 }
 
@@ -359,14 +435,17 @@ const addServer = (game: Game, ledger: Ledger, model: GameNode): Game => {
     for (const server of servers(next)) next = tried(next, connect(next, front[1], server.id))
     lb = byId(next, front[1])
   }
-  const copy = placed(next, ledger, 'server', model.x, model.y - 140 * servers(next).length)
+  const copy = placedProvisioned(
+    next,
+    ledger,
+    'server',
+    model.x,
+    model.y - 140 * servers(next).length,
+    model.size,
+    model.family,
+  )
   if (!copy || !lb) return next
   next = copy[0]
-  for (let size = 0; size < model.size; size += 1) {
-    const grown = affordable(next, ledger, (current) => resize(current, copy[1], 1))
-    if (grown === next) break
-    next = grown
-  }
   next = tried(next, setRuntime(next, copy[1], model.runtime))
   if (RUNTIMES[model.runtime].pool)
     next = tried(next, setWorkers(next, copy[1], fittingWorkers(byId(next, copy[1]) ?? model)))
@@ -676,6 +755,106 @@ const seriesCBuild = (game: Game, ledger: Ledger): Game => {
   return next
 }
 
+const MIN_ROW_POINTS = 0.005
+
+const worstRows = (game: Game, ledger: Ledger): ReadonlyArray<ChurnRow> =>
+  churnOf(game, ledger)
+    .flatMap((region) => region.rows)
+    .filter((row) => row.points >= MIN_ROW_POINTS)
+    .toSorted((a, b) => b.points - a.points)
+    .slice(0, 3)
+
+const needsOf = (rows: ReadonlyArray<ChurnRow>): ReadonlyArray<ResearchId> =>
+  rows.flatMap((row): ReadonlyArray<ResearchId> => {
+    if (row.cause === 'stale') return ['ryw-routing', 'sync-replication']
+    if (row.cause === 'refused')
+      return row.kind === 'rt'
+        ? ['lang-node', 'node-cluster', 'lang-go']
+        : ['pooling', 'websockets']
+    if (row.cause === 'stranded' && row.kind === 'report') return ['data-warehouse']
+    return []
+  })
+
+const strandedLinks = (game: Game, ledger: Ledger): Game => {
+  let next = game
+  for (const server of servers(game)) {
+    for (const kind of ledger.nodes[server.id]?.strandedKinds ?? []) {
+      const taker = next.nodes.find(
+        (node) =>
+          !isDown(node) &&
+          node.id !== server.id &&
+          COMPONENTS[node.type].accepts.includes(kind) &&
+          (node.type !== 'database' || !next.nodes.some((entry) => entry.type === 'pooler')),
+      )
+      if (taker && !next.links.some((link) => link.from === server.id && link.to === taker.id))
+        next = tried(next, connect(next, server.id, taker.id))
+    }
+  }
+  return next
+}
+
+const remedy = (game: Game, ledger: Ledger, row: ChurnRow, strategy: Strategy): Game => {
+  let next = game
+  if (row.cause === 'stale') {
+    for (const server of servers(next).filter((entry) => !entry.ryw))
+      next = tried(next, setRyw(next, server.id, true))
+    for (const replica of next.nodes.filter((node) => node.type === 'replica' && !node.sync))
+      next = tried(next, setSync(next, replica.id, true))
+    return next
+  }
+  if (row.cause === 'stranded') return strandedLinks(next, ledger)
+  if (row.cause === 'blocked') {
+    for (const waf of next.nodes.filter((node) => node.type === 'waf' && node.paranoia > 1))
+      next = tried(next, setParanoia(next, waf.id, waf.paranoia - 1))
+    return next
+  }
+  if (row.cause === 'refused' && row.kind === 'rt') {
+    const first = servers(next)[0]
+    const target = has(next, 'lang-go') ? 'go' : has(next, 'node-cluster') ? 'node_cluster' : null
+    if (
+      first &&
+      target &&
+      RUNTIMES[first.runtime].connectionKB === null &&
+      Migration.guards.Idle(serviceOf(next).migration)
+    )
+      return tried(next, changeStack(next, first.id, { runtime: target }))
+    return next
+  }
+  if (row.cause === 'refused') {
+    const full = next.nodes.find((node) => {
+      const connections = ledger.nodes[node.id]?.connections
+      return connections && connections.used > 0.9 * connections.max
+    })
+    if (
+      full &&
+      has(next, 'pooling') &&
+      !next.links.some((link) => link.to === full.id && byId(next, link.from)?.type === 'pooler')
+    )
+      return inFront(next, ledger, full, 'pooler')
+    return next
+  }
+  if (['dropped', 'timeout', 'slow', 'oom', 'crash', 'failed'].includes(row.cause)) {
+    const node =
+      row.fix._tag === 'node'
+        ? byId(next, row.fix.nodeId)
+        : next.nodes
+            .filter((entry) => COMPONENTS[entry.type].limiting && !isDown(entry))
+            .toSorted(
+              (a, b) =>
+                (ledger.nodes[b.id]?.utilization ?? 0) - (ledger.nodes[a.id]?.utilization ?? 0),
+            )[0]
+    if (node) return relieve(next, ledger, node, strategy)
+  }
+  return next
+}
+
+const react = (
+  game: Game,
+  ledger: Ledger,
+  rows: ReadonlyArray<ChurnRow>,
+  strategy: Strategy,
+): Game => rows.reduce((current, row) => remedy(current, ledger, row, strategy), game)
+
 const MAX_REPLICAS = 4
 
 const addReplica = (game: Game, ledger: Ledger, database: GameNode): Game => {
@@ -692,6 +871,7 @@ const addReplica = (game: Game, ledger: Ledger, database: GameNode): Game => {
   const pooler = has(next, 'pooling')
     ? placed(next, ledger, 'pooler', database.x + 160, database.y - 160 - 140 * count)
     : null
+  if (has(next, 'pooling') && !pooler) return game
   const front = pooler ? pooler[1] : null
   if (pooler && front) next = tried(pooler[0], connect(pooler[0], front, replica[1]))
   for (const from of servers(next)) next = tried(next, connect(next, from.id, front ?? replica[1]))
@@ -702,11 +882,11 @@ const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy)
   const limit = ledger.nodes[node.id]?.limit ?? 'none'
   const grow = (current: Game) => resize(current, node.id, 1)
   if (strategy === 'greedy') {
-    if (limit === 'credits') return tried(game, setFamily(game, node.id, 'general'))
+    if (limit === 'credits') return tried(game, changeFamily(game, node, 'general'))
     return affordable(game, ledger, grow)
   }
   if (node.type === 'server') {
-    if (limit === 'credits') return tried(game, setFamily(game, node.id, 'general'))
+    if (limit === 'credits') return tried(game, changeFamily(game, node, 'general'))
     if (node.localDb && (limit === 'memory' || limit === 'cpu'))
       return splitDatabase(game, ledger, node)
     if (limit === 'workers' && RUNTIMES[node.runtime].pool && node.workers < fittingWorkers(node))
@@ -750,8 +930,13 @@ const relieve = (game: Game, ledger: Ledger, node: GameNode, strategy: Strategy)
       : inFront(game, ledger, node, 'pooler')
   if (node.type === 'database' && limit === 'disk' && game.stage >= 3) {
     if (node.iops !== 'provisioned')
-      return tried(game, setStorageIops(game, node.id, 'provisioned'))
-    if (node.family !== 'memory') return tried(game, setFamily(game, node.id, 'memory'))
+      return tried(
+        game,
+        partsUnlocked(game)
+          ? installDisk(game, node.id, 'provisioned')
+          : setStorageIops(game, node.id, 'provisioned'),
+      )
+    if (node.family !== 'memory') return tried(game, changeFamily(game, node, 'memory'))
   }
   if (
     node.type === 'database' &&
@@ -917,7 +1102,11 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy, boost = false): Ga
   const chat = isBuilt(next, 'chat') || next.backlog.some((item) => item.ref === 'chat')
   const realtime =
     strategy !== 'stubborn' && chat && RUNTIMES[stackOf(next).runtime].connectionKB === null
-  next = studies(next, solveFlow(next), strategy, realtime, ready, boost ? ROLE_RESEARCH : [])
+  const failing = strategy !== 'greedy' && next.stage >= 4 ? worstRows(next, solveFlow(next)) : []
+  next = studies(next, solveFlow(next), strategy, realtime, ready, [
+    ...needsOf(failing),
+    ...(boost ? ROLE_RESEARCH : []),
+  ])
 
   const first = servers(next)[0]
   if (
@@ -959,7 +1148,10 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy, boost = false): Ga
       next = tried(next, setWorkers(next, server.id, fittingWorkers(server)))
 
   for (const item of next.backlog)
-    if (WorkBlock.guards.Blocked(item.block) && item.block.reason === 'size')
+    if (
+      WorkBlock.guards.Blocked(item.block) &&
+      (item.block.reason === 'size' || item.block.reason === 'decision')
+    )
       next = tried(next, approveBlock(next, item.id))
 
   for (const item of next.backlog.filter(
@@ -999,13 +1191,15 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy, boost = false): Ga
   if (strategy !== 'greedy' && next.stage >= 3) next = seriesABuild(next, solveFlow(next))
   if (strategy !== 'greedy' && next.stage >= 3) next = harden(next)
   if (strategy !== 'greedy' && next.stage >= 4) next = seriesBBuild(next, solveFlow(next))
+  if (failing.length > 0)
+    next = react(next, solveFlow(next), worstRows(next, solveFlow(next)), strategy)
   if (strategy !== 'greedy' && next.stage >= 5) next = seriesCBuild(next, solveFlow(next))
   if (strategy !== 'greedy' && next.stage >= 6) next = ipoBuild(next)
 
   if (strategy !== 'greedy')
     for (const server of servers(next))
       if (server.family === 'burstable' && server.credits < LOW_CREDITS * CREDIT_CAP)
-        next = tried(next, setFamily(next, server.id, 'general'))
+        next = tried(next, changeFamily(next, server, 'general'))
 
   const flow = solveFlow(next)
   const target =

@@ -12,7 +12,6 @@ const LIMIT_CONNECTIONS: usize = Limit::Disk as usize + 1;
 const NO_INDEX: usize = usize::MAX;
 const NO_TRAFFIC_YET: f64 = -1.0;
 const MS_PER_SECOND: f64 = 1000.0;
-const KB_PER_GB: f64 = 1_000_000.0;
 const MEDIAN: f64 = 0.5;
 const P95: f64 = 0.95;
 const P99: f64 = 0.99;
@@ -1139,9 +1138,11 @@ fn insight_of(
 }
 
 fn eviction_share_of(game: &GameCtx, node: &crate::model::Node) -> f64 {
-    let hot = (game.users * HOT_KB_PER_USER) / KB_PER_GB;
+    let hot = crate::model::cache::hot_data_gb(game.users);
     if hot > 0.0 {
-        (1.0 - (crate::model::flat_scale(node.size) / hot).min(1.0)).max(0.0)
+        (1.0 - (crate::model::flat_scale(node.size) * CACHE_ENGINES_MEMORY[node.cache_engine] / hot)
+            .min(1.0))
+        .max(0.0)
     } else {
         0.0
     }

@@ -42,9 +42,15 @@ export const headerBand = (g: Graphics, group: BuildGroup, hue: number, colors: 
   silhouette(g, group, 0, 0, CARD_W, HEAD, 0, true).fill(
     gradientX(mix(colors.card, hue, 0.22), mix(colors.card, hue, 0.04)),
   )
+  g.moveTo(20, 0.5)
+    .lineTo(CARD_W - 20, 0.5)
+    .stroke({ color: 0xffffff, width: 1, alpha: 0.55 })
   g.moveTo(0, HEAD)
     .lineTo(CARD_W, HEAD)
     .stroke({ color: mix(colors.border, hue, 0.35), width: 1, alpha: 0.8 })
+  g.moveTo(10, HEAD + 1)
+    .lineTo(CARD_W - 10, HEAD + 1)
+    .stroke({ color: 0xffffff, width: 1, alpha: 0.32 })
 }
 
 export const pipsWidth = (total: number): number => total * (total > 5 ? 5.5 : 7) - 2

@@ -10,7 +10,7 @@ const LB_WEIGHTED: u8 = 0;
 const LB_ROUND_ROBIN: u8 = 1;
 const LB_LEAST_CONNECTIONS: u8 = 2;
 const LB_POWER_OF_TWO_CHOICES: u8 = 3;
-const LB_HASH: u8 = 4;
+pub const LB_HASH: u8 = 4;
 
 const WEIGHT_FLOOR: f64 = 1e-6;
 const WEIGHT_WHEN_NOT_FINITE: f64 = 1e9;
@@ -220,6 +220,7 @@ pub struct Weights<'a> {
     pub live: &'a [f64],
     pub nominal: &'a [f64],
     pub sick: &'a [bool],
+    pub lb_algorithms: bool,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -291,7 +292,7 @@ impl Splits {
                 let start = self.pairs.len();
                 let (count, read) = self
                     .scratch
-                    .split_reading(design, node, kind, weights, false);
+                    .split_reading(design, node, kind, weights, weights.lb_algorithms);
                 self.pairs.extend_from_slice(&self.scratch.pairs[..count]);
                 self.read_of[key] = read;
                 self.pair_start[key] = start as u32;
@@ -497,6 +498,7 @@ impl Scratch {
             live: weights,
             nominal,
             sick,
+            ..
         } = *weights;
         let source = design.nodes[node];
         if self.takers(design, node, kind) == 0 {
@@ -870,6 +872,7 @@ mod tests {
             live: &[1.0, 1.0],
             nominal: &[1.0, 1.0],
             sick: &[false, false],
+            lb_algorithms: false,
         };
         let mut scratch = Scratch::default();
         for (kind, name) in KINDS.iter().enumerate().take(NR) {

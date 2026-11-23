@@ -23,6 +23,9 @@ export type LanguageDef = Readonly<{
   salary: number
   hireTime: number
   buildMinutes: number
+  sessionKB: number
+  armSpeed: number
+  armPortDh: number
   blast: 'request' | 'whole' | 'task'
 }>
 
@@ -36,6 +39,9 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     salary: 0.85,
     hireTime: 1,
     buildMinutes: 0.5,
+    sessionKB: 130,
+    armSpeed: 0.95,
+    armPortDh: 16,
     blast: 'request',
   },
   ruby: {
@@ -45,6 +51,9 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     salary: 1.1,
     hireTime: 1.5,
     buildMinutes: 1,
+    sessionKB: 340,
+    armSpeed: 0.95,
+    armPortDh: 24,
     blast: 'request',
   },
   node: {
@@ -54,6 +63,9 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     salary: 1,
     hireTime: 1,
     buildMinutes: 3,
+    sessionKB: 420,
+    armSpeed: 1,
+    armPortDh: 12,
     blast: 'whole',
   },
   python: {
@@ -63,6 +75,9 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     salary: 1.05,
     hireTime: 1,
     buildMinutes: 1,
+    sessionKB: 360,
+    armSpeed: 0.97,
+    armPortDh: 24,
     blast: 'request',
   },
   go: {
@@ -72,6 +87,9 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     salary: 1.15,
     hireTime: 1.4,
     buildMinutes: 1.5,
+    sessionKB: 210,
+    armSpeed: 1.03,
+    armPortDh: 4,
     blast: 'request',
   },
   java: {
@@ -81,6 +99,9 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     salary: 1.05,
     hireTime: 1.1,
     buildMinutes: 6,
+    sessionKB: 210,
+    armSpeed: 1.02,
+    armPortDh: 8,
     blast: 'request',
   },
   csharp: {
@@ -90,6 +111,9 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     salary: 1,
     hireTime: 1.1,
     buildMinutes: 4,
+    sessionKB: 280,
+    armSpeed: 1.02,
+    armPortDh: 8,
     blast: 'request',
   },
   elixir: {
@@ -99,6 +123,9 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     salary: 1.2,
     hireTime: 2.5,
     buildMinutes: 2,
+    sessionKB: 145,
+    armSpeed: 1,
+    armPortDh: 12,
     blast: 'request',
   },
   rust: {
@@ -108,6 +135,9 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     salary: 1.25,
     hireTime: 2,
     buildMinutes: 12,
+    sessionKB: 85,
+    armSpeed: 1.03,
+    armPortDh: 6,
     blast: 'task',
   },
   zig: {
@@ -117,6 +147,9 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     salary: 1.25,
     hireTime: 3,
     buildMinutes: 6,
+    sessionKB: 65,
+    armSpeed: 1,
+    armPortDh: 8,
     blast: 'whole',
   },
   haskell: {
@@ -126,6 +159,9 @@ export const LANGUAGES: Record<LanguageId, LanguageDef> = {
     salary: 1.4,
     hireTime: 2.5,
     buildMinutes: 8,
+    sessionKB: 180,
+    armSpeed: 0.93,
+    armPortDh: 32,
     blast: 'request',
   },
 }
@@ -660,7 +696,7 @@ export const RUNTIMES: Record<RuntimeId, RuntimeDef> = {
     warmup: 30,
     parallel: true,
     blocking: null,
-    gc: { pauseMs: 30, cpu: 0 },
+    gc: { pauseMs: 30, cpu: 0.12 },
     connectionKB: 1_024,
     research: 'lang-java',
     blurb:
@@ -684,7 +720,7 @@ export const RUNTIMES: Record<RuntimeId, RuntimeDef> = {
     warmup: 30,
     parallel: true,
     blocking: null,
-    gc: { pauseMs: 30, cpu: 0 },
+    gc: { pauseMs: 30, cpu: 0.12 },
     connectionKB: 10,
     research: 'virtual-threads',
     blurb:
@@ -708,7 +744,7 @@ export const RUNTIMES: Record<RuntimeId, RuntimeDef> = {
     warmup: 30,
     parallel: false,
     blocking: 'loop',
-    gc: { pauseMs: 30, cpu: 0 },
+    gc: { pauseMs: 30, cpu: 0.12 },
     connectionKB: 10,
     velocity: 0.8,
     research: 'webflux',
@@ -733,7 +769,7 @@ export const RUNTIMES: Record<RuntimeId, RuntimeDef> = {
     warmup: 0,
     parallel: true,
     blocking: null,
-    gc: { pauseMs: 30, cpu: 0 },
+    gc: { pauseMs: 30, cpu: 0.12 },
     connectionKB: 1_024,
     build: 3,
     research: 'graal-native',
@@ -758,7 +794,7 @@ export const RUNTIMES: Record<RuntimeId, RuntimeDef> = {
     warmup: 15,
     parallel: true,
     blocking: null,
-    gc: { pauseMs: 15, cpu: 0 },
+    gc: { pauseMs: 15, cpu: 0.1 },
     connectionKB: 10,
     research: 'lang-csharp',
     blurb: '.NET async on every core. Waiting holds no thread. A shorter JIT warmup than the JVM.',
@@ -781,7 +817,7 @@ export const RUNTIMES: Record<RuntimeId, RuntimeDef> = {
     warmup: 0,
     parallel: true,
     blocking: null,
-    gc: { pauseMs: 15, cpu: 0 },
+    gc: { pauseMs: 15, cpu: 0.1 },
     connectionKB: 10,
     research: 'native-aot',
     blurb:

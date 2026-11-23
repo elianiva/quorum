@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { SLOW } from './slow.ts'
 import { CHALLENGE_TUNING } from '../src/catalog.ts'
 import { runBot } from '../src/pacing.ts'
+import { provisioned } from '../src/parts.ts'
 import { liveFeatures } from '../src/features.ts'
 import { budgetOf } from '../src/slo.ts'
 
@@ -19,6 +20,10 @@ describe('the Balanced bot at the Challenge pace', { timeout: 60_000 }, () => {
       expect(run.milestones.preseed ?? Infinity).toBeLessThanOrEqual(20 * 60)
       expect(run.milestones['first-research'] ?? Infinity).toBeLessThan(5 * 60)
       expect(run.milestones['db-split'] ?? Infinity).toBeLessThan(10 * 60)
+      const sized = run.game.nodes.filter(
+        (node) => node.type === 'server' || node.type === 'database',
+      )
+      expect(sized.every((node) => provisioned(run.game, node))).toBe(true)
       const garage = run.margins.find((entry) => entry.stage === 0)
       const preseed = run.margins.find((entry) => entry.stage === 1)
       expect(garage?.live ?? -1).toBeGreaterThan(0)

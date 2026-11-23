@@ -70,7 +70,7 @@ makes the standby the primary and halves the Burn again until the player adds a 
 
 | Line          | Formula                                                                                                                                                                                                                                                                                                               |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Compute       | Σ instances `vCPU × $0.05 × family price × pricing model` × cost index; RAM comes with the family                                                                                                                                                                                                                     |
+| Compute       | Σ instances `vCPU × $0.05 × family price × pricing model` × cost index; before Custom instances, RAM comes with the family                                                                                                                                                                                            |
 | Managed data  | Σ data Nodes at their size price; a Database adds its provisioned volume and each shard                                                                                                                                                                                                                               |
 | Storage       | Object storage: GB stored × price × storage class, plus its retrieval fee ([Data tier](/design/07-data-tier#object-storage))                                                                                                                                                                                          |
 | Egress        | GB out × egress price ([Egress](#egress))                                                                                                                                                                                                                                                                             |
@@ -103,6 +103,18 @@ arrives. The Cost panel shows each one on purpose.
 | Object storage write              | S3 $0.006, R2 $0.0054 per write: $5.00 and $4.50 per million × 1,200                                                                   |
 | Engineer salary (base)            | $0.40/s                                                                                                                                |
 
+The Parts catalog sells the parts behind these lines. Each Part has a one-time price, then its Burn
+follows the installed value. The CPU's Burn stays the vCPU line, and its one-time price is
+`2 × component cost × vCPU`. The first CPU in an empty Slot costs the sum of the sizes from
+`micro` to the target, and `nano` costs its own size. A larger CPU costs
+the sum of the size steps from the installed one. The Parts catalog and the post-research Instance
+catalog charge these Part prices. The pre-research Instance catalog, the footer, and the bulk resize
+use the instance resize price instead. A memory kit is `40 × its family multiplier`. A volume is
+`24` for general purpose or `72` for provisioned IOPS. The Era cost index applies to all three, and
+a weekly market multiplier from 0.85 to 1.15 moves each Slot on its own phase. A CPU or memory swap
+restarts the Node. A volume swap changes the IOPS cap and the Burn. Selling a Node refunds half of its placement price and half of
+its installed Parts ([Parts](/design/19-parts)).
+
 These are Garage prices. Every price in this document, including placement, Burn, egress, and
 third-party fees, is multiplied by the Era's cost index, except the Payment Provider's fee, the Auth
 Provider's per-user price, and the API Gateway's per-request price. Those three are real-dollar fees
@@ -114,10 +126,10 @@ real share of revenue at every size of company. [Balancing](/design/16-balancing
 
 Each price follows one of two rules, so a player who knows the real price can check it:
 
-| Rule        | Prices                                                                                                                             | Mapping                                                                          |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Time-billed | Instances, GPUs, managed Nodes, storage, the Kubernetes control plane, LLM tokens                                                  | $1 per sim second in the game is $1 per real hour. A vCPU is $0.05.              |
-| Per use     | Egress, the Payment Provider, push and email messages, Data Warehouse scans, Gateway, function, Queue, and Object Storage requests | The real list price per GB, per checkout, per message, per scan, or per request. |
+| Rule        | Prices                                                                                                                             | Mapping                                                                                                          |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Time-billed | Instances, GPUs, managed Nodes, storage, the Kubernetes control plane, LLM tokens                                                  | $1 per sim second in the game is $1 per real hour. A vCPU is $0.05.                                              |
+| Per use     | Egress, the Payment Provider, push and email messages, Data Warehouse scans, Gateway, function, Queue, and Object Storage requests | The real list price per checkout, per message, per scan, or per request. Egress is tuned, see [Egress](#egress). |
 
 LLM tokens use the time-billed rule because they compete with GPU Nodes for the same prompts. On
 the same scale, a busy H100 is cheaper per prompt than the LLM API only while it is more than half
@@ -168,11 +180,14 @@ it is a Company-wide discount and not a fifth model on the card.
 
 | Path                          | Price per GB |
 | ----------------------------- | ------------ |
-| Origin to internet            | $0.09        |
-| CDN to internet               | $0.02        |
+| Origin to internet            | $0.45        |
+| CDN to internet               | $0.10        |
 | Cross-zone, each direction    | $0.01        |
 | Cross-region                  | $0.02        |
 | Object storage R2 to internet | $0           |
+
+The origin and CDN prices are tuned, not real: AWS lists $0.09 and about $0.085. At the real price,
+Gzip and a CDN would never change the bill ([Tuned on purpose](/design/reality-check#tuned-on-purpose)).
 
 `media` at 5 MB per request makes egress the largest line on the bill in the Series A Era unless a CDN
 or R2 serves it. A player who ignores egress sees revenue rise and margin fall.

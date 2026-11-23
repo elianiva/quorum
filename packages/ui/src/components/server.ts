@@ -4,7 +4,7 @@ import { type ComponentView } from './shared.ts'
 
 export const server: ComponentView = {
   icon: Server,
-  layout: { rows: 5, inRow: 0, outRow: 4, footer: true },
+  layout: { rows: 5, inRow: 0, outRow: 4, footer: true, slots: true },
   rows: ({ node, inbound, capacity, latency, out }) => {
     const runtime = RUNTIMES[node.runtime]
     const framework = node.framework === 'none' ? null : node.framework

@@ -312,6 +312,12 @@ push(
   `pub static LANGUAGE_VELOCITY: [f64; ${LANGUAGE_IDS.length}] = [${LANGUAGE_IDS.map((id) => formatNumber(language[id].velocity)).join(', ')}];`,
 )
 push(
+  `pub static LANGUAGE_SESSION_KB: [f64; ${LANGUAGE_IDS.length}] = [${LANGUAGE_IDS.map((id) => formatNumber(language[id].sessionKB)).join(', ')}];`,
+)
+push(
+  `pub static LANGUAGE_ARM_SPEED: [f64; ${LANGUAGE_IDS.length}] = [${LANGUAGE_IDS.map((id) => formatNumber(language[id].armSpeed)).join(', ')}];`,
+)
+push(
   `pub static LANGUAGE_BLAST: [&str; ${LANGUAGE_IDS.length}] = [${LANGUAGE_IDS.map((id) => `"${language[id].blast}"`).join(', ')}];`,
 )
 
@@ -504,6 +510,9 @@ push(
 )
 push(
   `pub static RETENTION_REBUILD: [f64; 3] = [${['keep', 'archive', 'delete'].map((id) => formatNumber(catalog.DB_RETENTIONS[id as 'keep'].rebuild)).join(', ')}];`,
+)
+push(
+  `pub static RETENTION_HOT_SET: [f64; 3] = [${['keep', 'archive', 'delete'].map((id) => formatNumber(catalog.DB_RETENTIONS[id as 'keep'].hotSet)).join(', ')}];`,
 )
 push(
   `pub static SHARD_HOT: [f64; 4] = [${['hash', 'range', 'tenant', 'region'].map((id) => formatNumber(catalog.SHARD_KEYS[id as 'hash'].hot)).join(', ')}];`,

@@ -23,6 +23,7 @@ export const fit = (): void => fitBoard(BOARD_KEY)
 
 export const attach = (host: HTMLElement): (() => void) => {
   const detach = attachBoard(BOARD_KEY, host, {
+    onSlot: NOOP,
     onNodeTap: NOOP,
     onNodeMove: NOOP,
     onFooter: NOOP,

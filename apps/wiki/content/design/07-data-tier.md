@@ -55,17 +55,19 @@ The Database is the source of truth. It serves `q-read`, `q-write`, and `q-tx`. 
 \text{capacity} = \operatorname{min}\left(\text{cpu limit},\ \text{connection limit},\ \text{iops limit}\right)
 ```
 
-| Limit        | Detail                                                                                                                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| CPU          | Each query kind has a CPU cost. Missing indexes multiply it.                                                                                                                   |
-| IOPS         | Reads that miss the buffer cache and every write go to disk. Storage class sets IOPS: general purpose (3,000 base) or provisioned (up to 64,000 at higher cost).               |
-| Connections  | Postgres forks one process per connection, about 8 MB each. `max_connections` is 100 by default. MySQL uses a thread per connection, about 1 MB each, and handles 500 of them. |
-| Buffer cache | RAM that holds hot data. When the working set exceeds RAM, reads go to disk and latency jumps. This is why a Memory instance can beat a Compute instance for a database.       |
+| Limit        | Detail                                                                                                                                                                                                                                                 |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| CPU          | Each query kind has a CPU cost. Missing indexes multiply it.                                                                                                                                                                                           |
+| IOPS         | Reads that miss the buffer cache and every write go to disk. Storage class sets IOPS: general purpose (3,000 base) or provisioned (up to 64,000 at higher cost). A write costs 6 I/Os, a transaction 12, a scan 40, and a read that spilled to disk 4. |
+| Connections  | Postgres forks one process per connection, about 8 MB each. `max_connections` is 100 by default. MySQL uses a thread per connection, about 1 MB each, and handles 500 of them.                                                                         |
+| Buffer cache | RAM that holds hot data. When the working set exceeds RAM, reads go to disk and latency jumps. This is why a Memory instance can beat a Compute instance for a database.                                                                               |
 
 A general purpose volume answers 3,000 disk operations a second and a provisioned one 64,000, and provisioned storage bills 1.5× the Database's box. A disk
 operation waits 1 / IOPS ms and queues as the volume fills. So a Database whose working set outgrows
 RAM meets the volume before its CPU: at 96 vCPU a general purpose volume caps reads at 3,000 a
-second while the CPU would answer 8,000. A shard brings its own volume.
+second while the CPU would answer 8,000. A shard brings its own volume. The volume is the Database's
+Disk Part. The Parts catalog sells the two classes, and the Instance catalog adds a general purpose
+volume to a preset. The card shows the installed one as `3k` or `64k` ([Parts](/design/19-parts)).
 
 ### Variants
 
@@ -194,10 +196,10 @@ four strategies.
 
 ### Variants
 
-| Variant   | Profile                                                                                                                                                                                                  |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Redis     | Data structures (sorted sets, streams), optional persistence, replication. Executes commands on one main thread, so one core caps a node and one slow command (for example `KEYS *`) blocks all clients. |
-| Memcached | Multi-threaded, simple keys and values only, no persistence. Scales up on one big box better than Redis. Restart means a cold cache.                                                                     |
+| Variant   | Profile                                                                                                                                                                                                                                                                               |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Redis     | Data structures (sorted sets, streams), optional persistence, replication. Orders commands on one main thread, with I/O threads that add capacity as the node grows (1.7× a size step), so one core still caps a node and one slow command (for example `KEYS *`) blocks all clients. |
+| Memcached | Multi-threaded, simple keys and values only, no persistence, no replication. 1.2× Redis at one core, doubles a size step, and holds 12% more in the same RAM. No write-behind and no standby. Restart means a cold cache.                                                             |
 
 ### Hit ratio
 
@@ -208,6 +210,8 @@ four strategies.
 \text{invalidation rate} &= \operatorname{min}\left(0.5,\ 2 \times \text{write share}\right)
 \end{aligned}
 ```
+
+Cache memory is the RAM of the size times the engine's memory factor, 1 for Redis and 1.12 for Memcached. Hot data grows with the square root of the Users times 10,000, capped at one 200 KB entry per User.
 
 The square root models a skewed access pattern. A small cache already holds the hottest keys, so the
 first GB of cache is worth more than the tenth. `ttl_factor` is the Cache's row in [TTL](#ttl), and

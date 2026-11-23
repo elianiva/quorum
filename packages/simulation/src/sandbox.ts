@@ -150,7 +150,7 @@ const SERIES_A_RESEARCH: ReadonlyArray<ResearchId> = [
 ]
 
 const STALE_USERS = 8_000
-const GC_USERS = 4_000
+const GC_USERS = 2800
 const GC_P99 = 110
 const GC_BURN = 93.2
 const STORM_USERS = 10_000

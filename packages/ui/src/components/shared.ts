@@ -30,6 +30,7 @@ import {
   Unplug,
   Users,
   Wallet,
+  Wrench,
   type IconNode,
 } from 'lucide'
 import type { InsightPool } from '@quorum/simulation/catalog'
@@ -76,6 +77,7 @@ export const FOOT_ICONS = {
   max: ChevronsUp,
   resize: ChevronsUp,
   more: Plus,
+  parts: Wrench,
 } as const
 
 export type Row = Readonly<{
@@ -111,6 +113,7 @@ export type Layout = Readonly<{
   inRow: number | null
   outRow: number | null
   footer: boolean
+  slots?: boolean
 }>
 
 export type RowContext = Readonly<{

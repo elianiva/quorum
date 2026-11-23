@@ -59,6 +59,7 @@ import { team } from './team.ts'
 import { title } from './title.ts'
 import { pwa } from './pwa.ts'
 import { survey } from './survey.ts'
+import { shop } from './shop.ts'
 import { tradeoff } from './tradeoff.ts'
 import { catalog } from '@quorum/ui/i18n/catalog/ja'
 
@@ -115,6 +116,7 @@ export const ja = {
   pools,
   research,
   sandbox,
+  shop,
   team,
   title,
   survey,

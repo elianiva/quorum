@@ -2,6 +2,7 @@ import { causeOf, isDown, warmOf } from '@quorum/simulation/life'
 import type { Ledger } from '@quorum/simulation/ledger'
 import type { Game } from '@quorum/simulation/state'
 import { priceOf, refundOf } from '@quorum/simulation/lookups'
+import { partsValueOf } from '@quorum/simulation/parts'
 import type { Board, Figures, Undo } from './model.ts'
 
 export { STEADY_TICKS } from './machine-state.ts'
@@ -88,7 +89,7 @@ const settledCash = (game: Game, entry: Undo): number => {
   let added = 0
   let counted = game
   for (const node of entry.nodes.filter((entry) => !current.has(entry.id))) {
-    added += priceOf(counted, node.type)
+    added += priceOf(counted, node.type) + partsValueOf(counted, node)
     counted = { ...counted, nodes: [...counted.nodes, node] }
   }
   return removed - added

@@ -121,7 +121,16 @@ import type {
   Zone,
   Region,
   DbEngine,
+  IopsClass,
 } from './state.ts'
+import { EMPTY_PARTS, FULL_PARTS } from './state.ts'
+import {
+  cpuInstallPrice,
+  diskPartPrice,
+  partsUnlocked,
+  ramPartPrice,
+  provisioned,
+} from './parts.ts'
 
 export { Refusal, describeRefusal, type Action } from './action-kit.ts'
 export { setProvider, switchProvider } from './components/psp.rule.ts'
@@ -202,6 +211,7 @@ export const blankNode = (
     y: Math.round(y),
     size: 1,
     family: 'general',
+    parts: { ...FULL_PARTS },
     runtime: stack?.runtime ?? 'mod_php',
     framework: stack?.framework ?? 'none',
     workers: stack?.workers ?? DEFAULT_FPM_WORKERS,
@@ -326,10 +336,14 @@ export const place = (
   if (banned) return notAllowed(banned)
   if (!openRegions(game).includes(region)) return notAllowed('Open that region first.')
   const node = blankNode(game, `n${game.nextId}`, type, x, y, region)
+  const parts =
+    (type === 'server' || type === 'database') && !game.fixedMix && partsUnlocked(game)
+      ? { ...EMPTY_PARTS }
+      : { ...FULL_PARTS }
   return spend(game, priceOf(game, type), def.name, (paid) => ({
     ...paid,
     nextId: paid.nextId + 1,
-    nodes: [...paid.nodes, { ...node, life: placedLife(paid, node) }],
+    nodes: [...paid.nodes, { ...node, parts, life: placedLife(paid, node) }],
   }))
 }
 
@@ -605,6 +619,8 @@ export const resize = (game: Game, id: string, direction: 1 | -1): Action =>
   withNode(game, id, (node) => {
     const def = COMPONENTS[node.type]
     const lowest = def.sized ? 0 : 1
+    if (def.sized && !provisioned(game, node))
+      return notAllowed('Install the missing parts before changing the size.')
     const rebalances = !game.sandbox && REBALANCE_TYPES.includes(node.type) && !isDown(node)
     if (direction === -1) {
       if (node.size <= lowest) return notAllowed(`${def.name} is at its smallest size.`)
@@ -683,6 +699,11 @@ export const upgradeAll = (
   return Result.succeed({ game: next, upgraded, skipped, short })
 }
 
+const armPortOf = (game: Game, node: GameNode, family: FamilyId): number =>
+  family === 'arm' && (node.type === 'server' || node.type === 'worker') && !game.sandbox
+    ? LANGUAGES[RUNTIMES[node.runtime].language].armPortDh
+    : 0
+
 export const setFamily = (game: Game, id: string, family: FamilyId): Action =>
   withNode(game, id, (node) => {
     if (!COMPONENTS[node.type].sized) return notAllowed('Only VMs have an instance family.')
@@ -691,12 +712,85 @@ export const setFamily = (game: Game, id: string, family: FamilyId): Action =>
         Refusal.Locked({ what: FAMILIES.arm.name, research: RESEARCH['arm-instances'].name }),
       )
     if (node.family === family) return ok(game)
-    return ok(
-      patch(game, id, {
+    const port = armPortOf(game, node, family)
+    if (game.devHours < port)
+      return notAllowed(
+        `Porting ${LANGUAGES[RUNTIMES[node.runtime].language].name} to ARM needs ${port} Dev Hours.`,
+      )
+    return ok({
+      ...patch(game, id, {
         family,
         ...restarted(node),
         credits: family === 'burstable' ? (CREDIT_CAP * vcpuOf(node)) / 2 : 0,
       }),
+      devHours: game.devHours - port,
+    })
+  })
+
+const partNode = (node: GameNode): boolean => node.type === 'server' || node.type === 'database'
+
+export const installCpu = (game: Game, id: string, size: number): Action =>
+  withNode(game, id, (node) => {
+    if (!partNode(node)) return notAllowed('Only an App Server or Database takes parts.')
+    if (!partsUnlocked(game))
+      return no(Refusal.Locked({ what: 'A Part', research: RESEARCH['custom-instances'].name }))
+    if (!Number.isInteger(size) || size < 0 || size >= SIZES.length)
+      return notAllowed('That CPU does not exist.')
+    if (node.parts.cpu && node.size === size) return ok(game)
+    const price = game.sandbox ? 0 : cpuInstallPrice(game, node, size)
+    return spend(game, price, `${SIZES[size]?.name ?? 'CPU'} CPU`, (paid) =>
+      patch(paid, id, {
+        size,
+        parts: { ...node.parts, cpu: true },
+        ...restarted(node),
+      }),
+    )
+  })
+
+export const installRam = (game: Game, id: string, family: FamilyId): Action =>
+  withNode(game, id, (node) => {
+    if (!partNode(node)) return notAllowed('Only an App Server or Database takes parts.')
+    if (!partsUnlocked(game))
+      return no(Refusal.Locked({ what: 'A Part', research: RESEARCH['custom-instances'].name }))
+    if (!node.parts.cpu) return notAllowed('Install a CPU before a memory kit.')
+    if (family === 'arm' && !has(game, 'arm-instances'))
+      return no(
+        Refusal.Locked({ what: FAMILIES.arm.name, research: RESEARCH['arm-instances'].name }),
+      )
+    if (node.parts.ram && node.family === family) return ok(game)
+    const price = game.sandbox ? 0 : ramPartPrice(game, family)
+    const port = node.family === 'arm' ? 0 : armPortOf(game, node, family)
+    if (game.devHours < port)
+      return notAllowed(
+        `Porting ${LANGUAGES[RUNTIMES[node.runtime].language].name} to ARM needs ${port} Dev Hours.`,
+      )
+    return spend(game, price, `${FAMILIES[family].name} memory kit`, (paid) => ({
+      ...patch(paid, id, {
+        family,
+        parts: { ...node.parts, ram: true },
+        ...restarted(node),
+        credits: family === 'burstable' ? (CREDIT_CAP * vcpuOf(node)) / 2 : 0,
+      }),
+      devHours: paid.devHours - port,
+    }))
+  })
+
+export const installDisk = (game: Game, id: string, iops: IopsClass): Action =>
+  withNode(game, id, (node) => {
+    if (node.type !== 'database') return notAllowed('Only a Database has a volume slot.')
+    if (!partsUnlocked(game))
+      return no(Refusal.Locked({ what: 'A Part', research: RESEARCH['custom-instances'].name }))
+    if (node.parts.disk && node.iops === iops) return ok(game)
+    const price = game.sandbox ? 0 : diskPartPrice(game, iops)
+    return spend(
+      game,
+      price,
+      iops === 'provisioned' ? 'Provisioned IOPS' : 'General purpose',
+      (paid) =>
+        patch(paid, id, {
+          iops,
+          parts: { ...node.parts, disk: true },
+        }),
     )
   })
 
@@ -719,7 +813,6 @@ export const setRuntime = (game: Game, id: string, runtime: RuntimeId): Action =
         runtime,
         framework,
         workers: def.pool ? defaultWorkers(node, runtime) : node.workers,
-        leak: 0,
         ...restarted({ ...node, runtime }),
       }),
     )
@@ -814,6 +907,8 @@ export const setStandby = (game: Game, id: string, standby: boolean, sync = true
       return notAllowed('Only a Database, Pooler, Cache, Search Engine, or Queue keeps a standby.')
     if (standby && !has(game, 'multi-az'))
       return no(Refusal.Locked({ what: 'A standby', research: RESEARCH['multi-az'].name }))
+    if (standby && node.type === 'cache' && node.engine === 'memcached')
+      return notAllowed('Memcached has no replication, so it cannot keep a standby.')
     if (node.standby === standby && node.standbySync === sync) return ok(game)
     return ok(patch(game, id, { standby, standbySync: sync }))
   })
@@ -1085,7 +1180,7 @@ export const restart = (game: Game, id: string): Action =>
     if (!restartable(node)) return notAllowed(`${name} has no process of yours to restart.`)
     if (node.life._tag === 'Stopped') return notAllowed(`${name} is down for good. Replace it.`)
     if (isDown(node)) return notAllowed('It is already restarting.')
-    const restarting = patch(game, id, { ...restarted(node), leak: 0 })
+    const restarting = patch(game, id, restarted(node))
     const incident = activeIncident(game)
     return ok(
       incident?.nodeId === id && RESTART_FIXES.includes(incident.kind)

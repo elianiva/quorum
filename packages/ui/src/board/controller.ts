@@ -3,6 +3,7 @@ import type { Ledger } from '@quorum/simulation/ledger'
 import { inFooter } from './card-parts.ts'
 import { Application, Container, Graphics, Point, type RendererPreference } from 'pixi.js'
 import { COMPONENTS, type ComponentId } from '@quorum/simulation/catalog'
+import { type SlotKind } from '@quorum/simulation/parts'
 import { replicationPairsOf } from '@quorum/simulation/lookups'
 import { type Game, type GameNode } from '@quorum/simulation/state'
 import { type SeatActivity } from '@quorum/simulation/room'
@@ -16,6 +17,10 @@ import {
   layoutOf,
   outPort,
   route,
+  SLOT_H,
+  SLOT_W,
+  slotLeft,
+  slotTop,
   type Placed,
   type Pt,
   type Route,
@@ -127,6 +132,14 @@ export class BoardController {
   seeded = false
   state: BoardState | null = null
   gesture: GestureState = IDLE_GESTURE
+  slotPress: {
+    pointerId: number
+    id: string
+    slot: SlotKind
+    x: number
+    y: number
+    moved: boolean
+  } | null = null
   hoverLink: Readonly<{ from: string; to: string }> | null = null
   hoverAim: Readonly<{
     node: string | null
@@ -611,6 +624,18 @@ export class BoardController {
 
   footerAt(node: GameNode, point: Pt): boolean {
     return this.world.scale.x >= CHIP_GONE_AT_ZOOM && inFooter(node, point)
+  }
+
+  slotAt(node: GameNode, point: Pt): SlotKind | null {
+    if (!layoutOf(node.type).slots) return null
+    const top = node.y + slotTop(node.type)
+    if (point.y < top || point.y > top + SLOT_H) return null
+    const kinds: ReadonlyArray<SlotKind> = ['cpu', 'ram', 'disk']
+    const index = kinds.findIndex((_, at) => {
+      const left = node.x + slotLeft(at)
+      return point.x >= left && point.x <= left + SLOT_W
+    })
+    return index < 0 ? null : (kinds[index] ?? null)
   }
 
   outPortAt(point: Pt): GameNode | null {

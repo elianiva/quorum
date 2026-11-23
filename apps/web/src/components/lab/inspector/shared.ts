@@ -1,11 +1,12 @@
 import { css, cx } from '@quorum/styled-system/css'
 import { copy, localized, nodeLabelIn, nodeTitle, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
-import { ChevronRight, Minus, Plus } from 'lucide'
+import { ChevronRight } from 'lucide'
 import {
   COMPONENTS,
   FRAMEWORKS,
   PM_MODES,
+  POOL_LIMITS,
   OS_RAM,
   RUNTIMES,
   SIZES,
@@ -18,6 +19,8 @@ import { engineOf, has, ramOf } from '@quorum/simulation/lookups'
 import type { DbEngine, Game, GameLink, GameNode, PmMode, Service } from '@quorum/simulation/state'
 import { serviceOfNode } from '@quorum/simulation/work'
 import { Message } from '@/game/message.ts'
+import { POOL_SLIDER_STEPS, poolFromSlider, sliderFromPool } from '@/game/pool-scale.ts'
+import * as Slider from '@quorum/ui/primitives/slider'
 import type { Model } from '@/game/model.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { button } from '@quorum/ui/primitives/button'
@@ -300,6 +303,197 @@ export const percent = (value: number) => `${Math.round(value * 100)}%`
 
 export const percentNumber = (value: number) => Math.round(value * 100)
 
+const POOL_TICKS = [1, 10, 100, POOL_LIMITS.max] as const
+
+const poolControl = (
+  model: Model,
+  node: GameNode,
+  fit: number,
+  t: Messages,
+  h: HtmlBuilder<Message>,
+): Html => {
+  const choose = (workers: number) => Message.WorkersChosen({ nodeId: node.id, workers })
+  const shown = model.poolDraft === null ? node.workers : poolFromSlider(model.poolDraft)
+  const position = model.poolDraft ?? sliderFromPool(node.workers)
+  const over = shown > fit
+  const fitFraction = Math.min(
+    1,
+    sliderFromPool(Math.max(POOL_LIMITS.min, fit)) / POOL_SLIDER_STEPS,
+  )
+  return h.div(
+    [h.Class(css({ display: 'flex', flexDirection: 'column', gap: '2' }))],
+    [
+      h.div(
+        [h.Class(css({ display: 'flex', alignItems: 'center', gap: '2' }))],
+        [
+          h.div(
+            [h.Class(css({ flex: '1 1 0%', minWidth: '0' }))],
+            [
+              h.submodel({
+                slotId: 'pool',
+                model: model.poolSlider,
+                view: Slider.view,
+                toParentMessage: (message) => Message.PoolSliderChanged({ message }),
+                viewInputs: {
+                  value: position,
+                  ariaLabel: t.inspectorShared.poolSize,
+                  formatValue: (value) => String(poolFromSlider(value)),
+                  toView: (attributes) =>
+                    h.div(
+                      [
+                        ...attributes.root,
+                        h.Class(css({ position: 'relative', height: '8', width: '100%' })),
+                      ],
+                      [
+                        h.div(
+                          [
+                            ...attributes.track,
+                            h.Class(css({ height: '5', width: '100%', cursor: 'pointer' })),
+                          ],
+                          [
+                            h.div(
+                              [
+                                h.Class(
+                                  css({
+                                    position: 'absolute',
+                                    left: '0',
+                                    right: '0',
+                                    top: '1.5',
+                                    height: '2',
+                                    borderRadius: 'full',
+                                    overflow: 'hidden',
+                                    display: 'flex',
+                                    boxShadow: 'well',
+                                    pointerEvents: 'none',
+                                  }),
+                                ),
+                              ],
+                              [
+                                h.div([
+                                  h.Style({ width: `${fitFraction * 100}%` }),
+                                  h.Class(css({ backgroundColor: 'primary', opacity: '0.45' })),
+                                ]),
+                                h.div([
+                                  h.Class(
+                                    css({
+                                      flex: '1 1 0%',
+                                      backgroundColor: 'danger',
+                                      opacity: '0.35',
+                                    }),
+                                  ),
+                                ]),
+                              ],
+                            ),
+                          ],
+                        ),
+                        ...POOL_TICKS.map((tick) =>
+                          h.span(
+                            [
+                              h.Style({
+                                left: `${(sliderFromPool(tick) / POOL_SLIDER_STEPS) * 100}%`,
+                              }),
+                              h.Class(
+                                cx(
+                                  FIGURE,
+                                  css({
+                                    position: 'absolute',
+                                    top: '5',
+                                    transform: 'translateX(-50%)',
+                                    fontSize: 'type.10',
+                                    color: 'mutedForeground',
+                                    pointerEvents: 'none',
+                                  }),
+                                ),
+                              ),
+                            ],
+                            [String(tick)],
+                          ),
+                        ),
+                        ...(fit >= POOL_LIMITS.min
+                          ? [
+                              h.span([
+                                h.AriaHidden(true),
+                                h.Style({ left: `${fitFraction * 100}%` }),
+                                h.Class(
+                                  css({
+                                    position: 'absolute',
+                                    top: '1',
+                                    width: '0.5',
+                                    height: '3.5',
+                                    backgroundColor: 'foreground',
+                                    borderRadius: 'full',
+                                    pointerEvents: 'none',
+                                  }),
+                                ),
+                              ]),
+                            ]
+                          : []),
+                        h.div([
+                          ...attributes.thumb,
+                          h.Class(cx(Slider.sliderThumbClass, css({ top: '0.5' }))),
+                        ]),
+                      ],
+                    ),
+                },
+              }),
+            ],
+          ),
+          h.input([
+            h.Key(`${node.id}-pool-${shown}`),
+            h.Type('number'),
+            h.Min(String(POOL_LIMITS.min)),
+            h.Max(String(POOL_LIMITS.max)),
+            h.Step('1'),
+            h.Attribute('value', String(shown)),
+            h.AriaLabel(t.inspectorShared.workerCount),
+            h.Class(
+              cx(
+                FIGURE,
+                css(WELL_STYLE, {
+                  width: '16',
+                  height: '7',
+                  textAlign: 'center',
+                  fontSize: 'type.13',
+                }),
+              ),
+            ),
+            h.OnChange((value) =>
+              choose(Number.isFinite(Number(value)) ? Number(value) : node.workers),
+            ),
+          ]),
+        ],
+      ),
+      h.div(
+        [h.Class(css({ display: 'flex', alignItems: 'center', gap: '2' }))],
+        [
+          button(
+            {
+              onClick: choose(Math.max(POOL_LIMITS.min, fit)),
+              isDisabled: fit < POOL_LIMITS.min || node.workers === fit,
+              variant: 'outline',
+              size: 'sm',
+            },
+            [t.inspectorShared.fitWorkers],
+            h,
+          ),
+          h.span(
+            [
+              h.Class(
+                cx(
+                  css({ marginLeft: 'auto', fontSize: 'type.11-5' }),
+                  FIGURE,
+                  over ? css({ color: 'danger' }) : css({ color: 'mutedForeground' }),
+                ),
+              ),
+            ],
+            [t.inspectorShared.rAMFits(fit)],
+          ),
+        ],
+      ),
+    ],
+  )
+}
+
 export const stack = (
   model: Model,
   node: GameNode,
@@ -339,81 +533,7 @@ export const stack = (
       reviewingRuntime !== null,
     ),
     ...(runtime.pool
-      ? [
-          section(
-            t.inspectorShared.poolSize,
-            [
-              h.div(
-                [
-                  h.Class(
-                    css({
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '2',
-                    }),
-                  ),
-                ],
-                [
-                  smallButton(
-                    t.inspectorShared.fewerWorkers,
-                    Minus,
-                    Message.WorkersChosen({
-                      nodeId: node.id,
-                      workers: Math.max(1, Math.round(node.workers * 0.75)),
-                    }),
-                    node.workers > 1,
-                    h,
-                  ),
-                  h.span(
-                    [
-                      h.Class(
-                        cx(
-                          FIGURE,
-                          css({
-                            width: '12',
-                            textAlign: 'center',
-                            fontSize: 'type.13',
-                          }),
-                        ),
-                      ),
-                    ],
-                    [String(node.workers)],
-                  ),
-                  smallButton(
-                    t.inspectorShared.moreWorkers,
-                    Plus,
-                    Message.WorkersChosen({
-                      nodeId: node.id,
-                      workers: Math.max(node.workers + 1, Math.round(node.workers * 1.5)),
-                    }),
-                    true,
-                    h,
-                  ),
-                  h.span(
-                    [
-                      h.Class(
-                        cx(
-                          css({
-                            marginLeft: 'auto',
-                          }),
-                          FIGURE,
-                          css({
-                            fontSize: 'type.11-5',
-                          }),
-                          node.workers > fit
-                            ? css({ color: 'danger' })
-                            : css({ color: 'mutedForeground' }),
-                        ),
-                      ),
-                    ],
-                    [t.inspectorShared.rAMFits(fit)],
-                  ),
-                ],
-              ),
-            ],
-            h,
-          ),
-        ]
+      ? [section(t.inspectorShared.poolSize, [poolControl(model, node, fit, t, h)], h)]
       : []),
     section(
       t.inspectorShared.framework,

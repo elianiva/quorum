@@ -9,6 +9,7 @@ import { PrefsMessage, updatePrefs, volumeIn } from '../prefs.ts'
 import { updateSurvey } from '../survey.ts'
 import { Update } from 'foldkit'
 import {
+  act,
   closePanel,
   saveCommands,
   withOverlay,
@@ -17,6 +18,7 @@ import {
   type MessageCases,
   type UpdateResult,
 } from './shared.ts'
+import { intent } from '@quorum/simulation/room'
 import { foldInbox } from './mail.ts'
 import { leaveExited } from './companies.ts'
 import { has } from '@quorum/simulation/lookups'
@@ -30,6 +32,8 @@ import { listing, openingFolder } from '../inbox.ts'
 import { type RegionId as Region, type ResearchId } from '@quorum/simulation/catalog'
 import { updateDashboard } from '../dashboard.ts'
 import * as VolumeSlider from '@quorum/ui/primitives/slider'
+import { poolFromSlider } from '../pool-scale.ts'
+import { partsUnlocked, presetPlan } from '@quorum/simulation/parts'
 
 const savePrefs = (model: Model): UpdateResult => ({
   model,
@@ -129,6 +133,43 @@ const foldVolumeSlider = (route: Dispatch) =>
         ),
   })
 
+const foldPoolSlider = (route: Dispatch) =>
+  Update.foldChild({
+    update: VolumeSlider.update,
+    read: (model: Model) => Option.some(model.poolSlider),
+    write: (model, poolSlider) => ({ ...model, poolSlider }),
+    toParentMessage: (message) => Message.PoolSliderChanged({ message }),
+    foldOutMessage:
+      ({ value }) =>
+      (model) => {
+        const nodeId = model.board.selected
+        if (model.poolSlider.dragState._tag === 'Dragging' || nodeId === null)
+          return { model: { ...model, poolDraft: value } }
+        return route(
+          { ...model, poolDraft: null },
+          Message.WorkersChosen({ nodeId, workers: poolFromSlider(value) }),
+        )
+      },
+  })
+
+const foldPoolSliderMessage = (
+  route: Dispatch,
+  model: Model,
+  message: Message & { _tag: 'PoolSliderChanged' },
+): UpdateResult => {
+  const folded = foldPoolSlider(route)(model, message.message)
+  const draft = folded.model.poolDraft
+  const nodeId = folded.model.board.selected
+  if (message.message._tag === 'CancelledDrag')
+    return { ...folded, model: { ...folded.model, poolDraft: null } }
+  if (message.message._tag !== 'ReleasedDragPointer' || draft === null || nodeId === null)
+    return folded
+  return route(
+    { ...folded.model, poolDraft: null },
+    Message.WorkersChosen({ nodeId, workers: poolFromSlider(draft) }),
+  )
+}
+
 const foldLanguagePicker = (route: Dispatch) =>
   Update.foldChild({
     update: languageListbox.update,
@@ -171,6 +212,16 @@ const foldMoreMenu = (route: Dispatch) =>
 
 type PanelsTag =
   | 'PanelOpened'
+  | 'ShopOpened'
+  | 'ShopSlotChosen'
+  | 'ShopFamilyChosen'
+  | 'ShopModeChosen'
+  | 'SelectInstance'
+  | 'ShopQueryChanged'
+  | 'ShopSortChosen'
+  | 'InstallCpu'
+  | 'InstallRam'
+  | 'InstallDisk'
   | 'ResearchShown'
   | 'ChurnFixTaken'
   | 'PanelClosed'
@@ -184,6 +235,7 @@ type PanelsTag =
   | 'DashboardChanged'
   | 'LanguagePickerChanged'
   | 'VolumeSliderChanged'
+  | 'PoolSliderChanged'
   | 'RuntimePickerChanged'
   | 'FrameworkPickerChanged'
   | 'MoreMenuChanged'
@@ -233,6 +285,94 @@ export const panelsHandlers = (
       commands: panel === 'dashboard' && model.panel !== 'dashboard' ? [FocusDashboard({})] : [],
     }
   },
+
+  ShopOpened: ({ nodeId, slot, mode }) => {
+    const node = model.board.game.nodes.find((entry) => entry.id === nodeId)
+    if (!node || (node.type !== 'server' && node.type !== 'database')) return { model }
+    const unlocked = partsUnlocked(model.board.game)
+    return {
+      model: {
+        ...model,
+        panel: 'shop',
+        shopSlot: slot,
+        shopFamily: node.family,
+        shopMode: unlocked ? (mode ?? 'parts') : 'instance',
+        shopQuery: '',
+        board: {
+          ...model.board,
+          selected: nodeId,
+          selection: [],
+          tradeoff: { _tag: 'Closed' },
+        },
+      },
+    }
+  },
+
+  ShopSlotChosen: ({ slot }) => ({ model: { ...model, shopSlot: slot, shopQuery: '' } }),
+
+  ShopFamilyChosen: ({ family }) => ({
+    model: { ...model, shopFamily: family, shopQuery: '' },
+  }),
+
+  ShopModeChosen: ({ mode }) => ({
+    model: {
+      ...model,
+      shopMode: partsUnlocked(model.board.game) ? mode : 'instance',
+      shopQuery: '',
+    },
+  }),
+
+  SelectInstance: ({ nodeId, family, size }) => {
+    const node = model.board.game.nodes.find((entry) => entry.id === nodeId)
+    if (!node) return { model }
+    if (!partsUnlocked(model.board.game)) {
+      const steps = Array.from({ length: Math.abs(size - node.size) }, () =>
+        intent('resize', nodeId, size < node.size ? -1 : 1),
+      )
+      const intents = [
+        ...(node.family === family ? [] : [intent('setFamily', nodeId, family)]),
+        ...steps,
+      ]
+      return act(model, 'Selected an instance', intents, {
+        undoable: true,
+        panel: () => 'shop',
+      })
+    }
+    const plan = presetPlan(model.board.game, node, family, size)
+    if (plan === null) return { model }
+    const intents = [
+      ...(plan.cpu ? [intent('installCpu', nodeId, size)] : []),
+      ...(plan.ram ? [intent('installRam', nodeId, family)] : []),
+      ...(plan.disk ? [intent('installDisk', nodeId, 'general')] : []),
+    ]
+    if (intents.length === 0) return { model }
+    return act(model, 'Selected an instance', intents, {
+      undoable: true,
+      panel: () => 'shop',
+    })
+  },
+
+  ShopQueryChanged: ({ query }) => ({ model: { ...model, shopQuery: query } }),
+
+  ShopSortChosen: ({ sort }) => ({ model: { ...model, shopSort: sort } }),
+
+  InstallCpu: ({ nodeId, size }) =>
+    act(model, 'Installed a CPU', intent('installCpu', nodeId, size), {
+      undoable: true,
+      panel: () => 'shop',
+    }),
+
+  InstallRam: ({ nodeId, family }) =>
+    act(model, 'Installed a memory kit', intent('installRam', nodeId, family), {
+      undoable: true,
+      panel: () => 'shop',
+    }),
+
+  InstallDisk: ({ nodeId, iops }) =>
+    act(model, 'Installed a volume', intent('installDisk', nodeId, iops), {
+      undoable: true,
+      panel: () => 'shop',
+    }),
 
   ResearchOfferDismissed: () => ({
     model: { ...model, board: { ...model.board, researchOffer: null } },
@@ -366,6 +506,8 @@ export const panelsHandlers = (
   LanguagePickerChanged: ({ message }) => foldLanguagePicker(route)(model, message),
 
   VolumeSliderChanged: ({ message }) => foldVolumeSlider(route)(model, message),
+
+  PoolSliderChanged: (message) => foldPoolSliderMessage(route, model, message),
 
   RuntimePickerChanged: ({ message }) => ({
     model: { ...model, runtimePicker: updateStackPicker(model.runtimePicker, message) },

@@ -1,6 +1,6 @@
 use crate::catalog::*;
 use crate::ledger::{self, Ledger, Route};
-use crate::model::{database_model, flat_component, flat_scale, Order, Rates, ServerCtx};
+use crate::model::{database_model, flat_component, flat_scale, GameCtx, Order, Rates, ServerCtx};
 use crate::outcomes::{hop_ms, tree, Memo};
 use crate::pass::{forward, is_down, Board, Pass, Run, BOOST_FACTOR};
 use crate::routing::{Splits, Weights};
@@ -177,7 +177,7 @@ pub fn solve_with(
         let current = forward(
             &Run {
                 board,
-                weights: weights_of(&state),
+                weights: weights_of(&state, board.game),
                 call_latency: &state.call_latency,
                 inflight: &state.inflight,
                 connections: &state.connection_used,
@@ -238,7 +238,7 @@ pub fn solve_with(
             };
         }
     };
-    let mut tree = tree(board, &current, weights_of(&state), splits, memo);
+    let mut tree = tree(board, &current, weights_of(&state, board.game), splits, memo);
     let revenue = ledger::revenue_of(
         board.game,
         board.demand,
@@ -267,8 +267,9 @@ fn apply(state: &mut State, (weights, sick): (Vec<f64>, Vec<usize>)) {
 }
 
 #[inline]
-fn weights_of(state: &State) -> Weights<'_> {
+fn weights_of<'a>(state: &'a State, game: &GameCtx) -> Weights<'a> {
     Weights {
+        lb_algorithms: game.has(crate::catalog::research::LB_ALGORITHMS),
         live: &state.weights,
         nominal: &state.nominal,
         sick: &state.sick,
@@ -304,7 +305,7 @@ fn feed_back(
     let mut next_failures = vec![[f64::NAN; NK]; board.design.edges.len()];
     let mut next_task_failure = vec![f64::NAN; count];
     {
-        let mut tree = tree(board, current, weights_of(state), splits, memo);
+        let mut tree = tree(board, current, weights_of(state, board.game), splits, memo);
         let hop = hop_ms(board.game);
         for (slot, node) in board.nodes.iter().enumerate() {
             let model = current.models.get(slot);

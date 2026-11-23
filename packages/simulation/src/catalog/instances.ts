@@ -41,7 +41,6 @@ export const FAMILIES: Record<FamilyId, FamilyDef> = {
   },
 }
 
-export const ARM_SPEED = 0.95
 export const ARM_RESEARCH = 'arm-instances' as const
 
 export const VCPU_PRICE = 0.05
@@ -60,3 +59,11 @@ export const WARMUP_SECONDS = 15
 export const HOP_MS = 0.5
 export const HANDSHAKE_MS = 1
 export const LINK_TIMEOUT = 30
+export const ACTIVE_USERS_PER_RPS = 50
+export const SHED_FROM = 1
+export const SHED_TO = 0.95
+export const PREFETCH_TASK_MB = 20
+export const IO_PER_WRITE = 6
+export const IO_PER_TX = 12
+export const IO_PER_SCAN = 40
+export const IO_PER_SPILLED_READ = 4

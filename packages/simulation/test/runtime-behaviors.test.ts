@@ -1,7 +1,9 @@
 import { Result } from 'effect'
 import { describe, expect, test } from 'vitest'
 import * as Actions from '../src/actions.ts'
-import { GATEWAY_PRICE, GPU_MODELS, type ResearchId } from '../src/catalog.ts'
+import { GATEWAY_PRICE, GPU_MODELS, LIVE_TUNING, type ResearchId } from '../src/catalog.ts'
+import { preseedGame } from '../src/company.ts'
+import { RUNNING } from '../src/life.ts'
 import { gpuFits } from '../src/rules.ts'
 import {
   badDeployChance,
@@ -224,5 +226,388 @@ describe('routing and the Gateway fee', () => {
     const inbound = ledger.nodes[gateway]?.inbound ?? 0
     expect(inbound).toBeGreaterThan(0)
     expect(ledger.burnLines.requests).toBeCloseTo(inbound * GATEWAY_PRICE, 6)
+  })
+})
+
+describe('load-driven server memory', () => {
+  const quiet = { ...LIVE_TUNING, firstIncidentAfter: 1e12, incidentGap: 1e12 }
+  const serverGame = (users: number, patch: Partial<GameNode>): Game => {
+    const game = freeSandbox()
+    return {
+      ...game,
+      stage: 3,
+      users,
+      nodes: game.nodes.map((node) =>
+        node.type === 'server'
+          ? { ...node, size: 3, ...patch }
+          : node.type === 'database'
+            ? { ...node, size: 8 }
+            : node,
+      ),
+    }
+  }
+  const serverOf = (game: Game) => solveFlow(game).nodes.server!
+  const ramShare = (game: Game): number => {
+    const { used, total } = serverOf(game).resources.ramGb!
+    return used / total
+  }
+  const usersAt = (utilization: number, patch: Partial<GameNode>): number => {
+    let low = 1
+    let high = 1e9
+    for (let index = 0; index < 50; index += 1) {
+      const middle = Math.sqrt(low * high)
+      if (serverOf(serverGame(middle, patch)).utilization < utilization) low = middle
+      else high = middle
+    }
+    return low
+  }
+
+  test('a persistent runtime holds RAM for each active User, and a shared-nothing one does not', () => {
+    const go = { runtime: 'go' } as const
+    expect(ramShare(serverGame(20_000, go))).toBeGreaterThan(ramShare(serverGame(5_000, go)) * 1.5)
+    const php = { runtime: 'php_fpm' } as const
+    expect(ramShare(serverGame(20_000, php))).toBeCloseTo(ramShare(serverGame(5_000, php)), 9)
+  })
+
+  test('GOGC trades CPU for RAM: 50 costs capacity, 200 costs memory', () => {
+    const users = usersAt(0.8, { runtime: 'go', family: 'compute' })
+    const at = (gogc: number) => serverGame(users, { runtime: 'go', family: 'compute', gogc })
+    expect(serverOf(at(50)).utilization).toBeGreaterThan(serverOf(at(100)).utilization)
+    expect(serverOf(at(100)).utilization).toBeGreaterThan(serverOf(at(200)).utilization)
+    expect(ramShare(at(50))).toBeLessThan(ramShare(at(100)))
+    expect(ramShare(at(100))).toBeLessThan(ramShare(at(200)))
+  })
+
+  test('a JVM that fits on General swaps on Compute, and Memory leaves room', () => {
+    const users = usersAt(0.85, { runtime: 'tomcat' })
+    const on = (family: GameNode['family']) =>
+      serverOf(serverGame(users, { runtime: 'tomcat', family }))
+    expect(on('general').swapping).toBe(false)
+    expect(on('compute').swapping).toBe(true)
+    expect(on('memory').utilization).toBeLessThanOrEqual(on('general').utilization)
+  })
+
+  test('shedding leaves a Node under saturation alone and keeps revenue past it', () => {
+    const revenue = (users: number, shed: boolean) =>
+      solveFlow(serverGame(users, { runtime: 'go', shed })).revenue
+    const calm = usersAt(0.95, { runtime: 'go' })
+    const overloaded = usersAt(1.5, { runtime: 'go' })
+    expect(revenue(calm, true)).toBeCloseTo(revenue(calm, false), 9)
+    expect(revenue(overloaded, true)).toBeGreaterThan(revenue(overloaded, false) * 1.3)
+  })
+
+  test('a Node leaks with the requests it serves until it recycles', () => {
+    const run = (users: number, recycle: boolean): number => {
+      let game: Game = {
+        ...preseedGame(),
+        stage: 3,
+        users,
+        cash: 1e9,
+        nodes: preseedGame().nodes.map((node) =>
+          node.type === 'server' ? { ...node, runtime: 'go', size: 3, recycle } : node,
+        ),
+      }
+      for (let second = 0; second < 600; second += 30) game = step(game, 30, quiet).game
+      return game.nodes.find((node) => node.type === 'server')!.leak
+    }
+    expect(run(4_000, false)).toBeGreaterThan(0)
+    expect(run(8_000, false)).toBeGreaterThan(run(4_000, false) * 1.5)
+    expect(run(8_000, true)).toBe(0)
+  })
+})
+
+describe('Database load', () => {
+  const databaseGame = (users: number, patch: Partial<GameNode>): Game => {
+    const game = freeSandbox()
+    return {
+      ...game,
+      stage: 4,
+      users,
+      nodes: game.nodes.map((node) =>
+        node.type === 'database'
+          ? { ...node, size: 7, ...patch }
+          : node.type === 'server'
+            ? { ...node, runtime: 'tokio', size: 8 }
+            : node,
+      ),
+    }
+  }
+  const apdex = (users: number, patch: Partial<GameNode>) =>
+    solveFlow(databaseGame(users, patch)).apdex
+
+  test('Provisioned IOPS only pays once the disk is the limit', () => {
+    expect(apdex(10_000, { iops: 'provisioned' })).toBeCloseTo(apdex(10_000, {}), 2)
+    expect(apdex(100_000, { iops: 'provisioned' })).toBeGreaterThan(apdex(100_000, {}) + 0.2)
+  })
+
+  test('archiving old rows shrinks the hot set so the working set fits in RAM again', () => {
+    const spilled = { size: 3 } as const
+    const users = 11_000
+    expect(solveFlow(databaseGame(users, spilled)).nodes.database!.disk).toBe(true)
+    expect(
+      solveFlow(databaseGame(users, { ...spilled, keep: 'archive' })).nodes.database!.disk,
+    ).toBe(false)
+  })
+})
+
+describe('Load Balancer policies', () => {
+  const balanced = (policy: GameNode['policy']) => {
+    let game = freeSandbox()
+    const lb = ok(Actions.place(game, 'lb', 300, 280))
+    const lbId = lb.nodes.at(-1)!.id
+    const second = ok(Actions.place(lb, 'server', 600, 560))
+    const secondId = second.nodes.at(-1)!.id
+    const fitted = ok(
+      Actions.installRam(ok(Actions.installCpu(second, secondId, 1)), secondId, 'general'),
+    )
+    game = ok(Actions.connect(Actions.disconnect(fitted, 'users', 'server'), 'users', lbId))
+    game = ok(Actions.connect(ok(Actions.connect(game, lbId, 'server')), lbId, secondId))
+    game = ok(Actions.connect(game, secondId, 'database'))
+    game = {
+      ...game,
+      users: 20_000,
+      nodes: game.nodes.map((node) =>
+        node.id === lbId
+          ? { ...node, policy, warm: 1 }
+          : node.id === secondId
+            ? { ...node, warm: 1, family: 'burstable', credits: 0, life: RUNNING }
+            : node.type === 'database'
+              ? { ...node, size: 8 }
+              : node,
+      ),
+    }
+    const ledger = solveFlow(game)
+    return {
+      split: [ledger.nodes.server!.inbound, ledger.nodes[secondId]!.inbound],
+      reads: ledger.nodes.database!.traffic['q-read']!,
+    }
+  }
+  const share = ({ split: [first, second] }: ReturnType<typeof balanced>) =>
+    first! / (first! + second!)
+
+  test('two choices and consistent hash route differently from weighted once researched', () => {
+    const weighted = share(balanced('weighted'))
+    expect(share(balanced('hash'))).toBeCloseTo(0.5, 6)
+    expect(share(balanced('p2c'))).toBeGreaterThan(0.5)
+    expect(share(balanced('p2c'))).toBeLessThan(weighted)
+  })
+
+  test('consistent hash keeps each key on one server, so the Database gets fewer reads', () => {
+    expect(balanced('hash').reads).toBeLessThan(balanced('round-robin').reads * 0.9)
+  })
+})
+
+describe('Cache working set', () => {
+  const evicting = (users: number, size: number): number => {
+    let game = freeSandbox()
+    const placed = ok(Actions.place(game, 'cache', 600, 280))
+    const id = placed.nodes.at(-1)!.id
+    game = ok(Actions.connect(Actions.disconnect(placed, 'server', 'database'), 'server', id))
+    game = ok(Actions.connect(game, id, 'database'))
+    return evictionShareOf(
+      { ...game, users },
+      { ...game.nodes.find((node) => node.id === id)!, size },
+    )
+  }
+
+  test('the hot set grows slower than the Users, so a bigger Cache keeps up with growth', () => {
+    expect(evicting(500_000, 6)).toBe(0)
+    expect(evicting(20_000_000, 8)).toBe(0)
+    expect(evicting(20_000_000, 6)).toBeGreaterThan(0.5)
+  })
+})
+
+describe('ARM instances', () => {
+  const utilization = (id: string, patch: Partial<GameNode>): number => {
+    const game = freeSandbox()
+    return solveFlow({
+      ...game,
+      stage: 3,
+      users: 6_000,
+      nodes: game.nodes.map((node) =>
+        node.id === id
+          ? { ...node, size: 3, ...patch }
+          : node.type === 'server'
+            ? { ...node, runtime: 'go', size: 8 }
+            : { ...node, size: 8 },
+      ),
+    }).nodes[id]!.utilization
+  }
+
+  test('a Database on ARM matches General capacity', () => {
+    expect(utilization('database', { family: 'arm' })).toBeCloseTo(
+      utilization('database', { family: 'general' }),
+      9,
+    )
+  })
+
+  test('ARM costs a PHP server more capacity than a Go one', () => {
+    const loss = (runtime: GameNode['runtime']) =>
+      utilization('server', { runtime, family: 'arm' }) /
+      utilization('server', { runtime, family: 'general' })
+    expect(loss('php_fpm')).toBeGreaterThan(loss('go'))
+  })
+})
+
+describe('GPU serving options', () => {
+  const load = (precision: GameNode['precision'], batch: number): number => {
+    const game = freeSandbox()
+    const placed = ok(Actions.place(game, 'gpu', 600, 560))
+    const id = placed.nodes.at(-1)!.id
+    const linked = ok(Actions.connect(placed, 'server', id))
+    return solveFlow({
+      ...linked,
+      stage: 4,
+      users: 10_000,
+      scenario: { mix: { page: 0.5, read: 0.3, ai: 0.2 } },
+      nodes: linked.nodes.map((node) =>
+        node.id === id
+          ? { ...node, size: 5, gpu: 'h100', precision, batch, warm: 1 }
+          : node.type === 'server'
+            ? { ...node, runtime: 'tokio', size: 7 }
+            : node.type === 'database'
+              ? { ...node, size: 8 }
+              : node,
+      ),
+    }).nodes[id]!.utilization
+  }
+
+  test('INT4 serves most one request at a time, and INT8 wins once requests are batched', () => {
+    expect(load('int4', 1)).toBeLessThan(load('int8', 1))
+    expect(load('int8', 32)).toBeLessThan(load('int4', 32))
+    expect(load('int8', 1)).toBeLessThan(load('fp16', 1))
+  })
+})
+
+describe('Worker prefetch', () => {
+  const ramShare = (prefetch: number): number => {
+    const game = freeSandbox()
+    const queue = ok(Actions.place(game, 'queue', 400, 100))
+    const queueId = queue.nodes.at(-1)!.id
+    const worker = ok(
+      Actions.place(ok(Actions.connect(queue, 'server', queueId)), 'worker', 600, 100),
+    )
+    const workerId = worker.nodes.at(-1)!.id
+    const wired = ok(
+      Actions.connect(ok(Actions.connect(worker, queueId, workerId)), workerId, 'database'),
+    )
+    const { used, total } = solveFlow({
+      ...wired,
+      stage: 4,
+      users: 10_000,
+      scenario: { mix: { page: 0.5, read: 0.3, job: 0.2 } },
+      nodes: wired.nodes.map((node) =>
+        node.id === workerId
+          ? { ...node, runtime: 'go', size: 2, family: 'compute', prefetch, replicas: 60, warm: 1 }
+          : node.id === queueId
+            ? { ...node, warm: 1 }
+            : node,
+      ),
+    }).nodes[workerId]!.resources.ramGb!
+    return used / total
+  }
+
+  test('each prefetched task holds RAM, so a deep prefetch crowds a small Worker', () => {
+    expect(ramShare(100)).toBeGreaterThan(ramShare(10) * 3)
+    expect(ramShare(10)).toBeGreaterThan(ramShare(1))
+  })
+})
+
+describe('Cache engines', () => {
+  const capacity = (engine: GameNode['engine'], size: number): number => {
+    const game = freeSandbox()
+    const placed = ok(Actions.place(game, 'cache', 600, 280))
+    const id = placed.nodes.at(-1)!.id
+    const linked = ok(
+      Actions.connect(
+        ok(Actions.connect(Actions.disconnect(placed, 'server', 'database'), 'server', id)),
+        id,
+        'database',
+      ),
+    )
+    return solveFlow({
+      ...linked,
+      stage: 4,
+      users: 20_000,
+      nodes: linked.nodes.map((node) =>
+        node.id === id ? { ...node, engine, size, warm: 1 } : node,
+      ),
+    }).nodes[id]!.capacity
+  }
+
+  test('Memcached is a fifth faster at one core and pulls ahead as it gains threads, but Redis scales too', () => {
+    expect(capacity('memcached', 3) / capacity('redis', 3)).toBeCloseTo(1.2, 5)
+    expect(capacity('memcached', 6) / capacity('redis', 6)).toBeGreaterThan(1.5)
+    expect(capacity('redis', 6)).toBeGreaterThan(capacity('redis', 3))
+  })
+})
+
+describe('Redis keeps what Memcached gives up', () => {
+  const cacheGame = (): Readonly<{ game: Game; id: string }> => {
+    const placed = ok(Actions.place(freeSandbox(), 'cache', 600, 280))
+    return { game: placed, id: placed.nodes.at(-1)!.id }
+  }
+
+  test('Memcached refuses write-behind and a standby, and Redis takes both', () => {
+    const { game, id } = cacheGame()
+    const memcached = ok(Actions.setCacheEngine(game, id, 'memcached'))
+    expect(Result.isFailure(Actions.setCacheStrategy(memcached, id, 'write-behind'))).toBe(true)
+    expect(Result.isFailure(Actions.setStandby(memcached, id, true))).toBe(true)
+    ok(Actions.setCacheStrategy(game, id, 'write-behind'))
+    ok(Actions.setStandby(game, id, true))
+  })
+
+  test('a Cache with write-behind or a standby cannot switch to Memcached', () => {
+    const { game, id } = cacheGame()
+    expect(
+      Result.isFailure(
+        Actions.setCacheEngine(
+          ok(Actions.setCacheStrategy(game, id, 'write-behind')),
+          id,
+          'memcached',
+        ),
+      ),
+    ).toBe(true)
+    expect(
+      Result.isFailure(
+        Actions.setCacheEngine(ok(Actions.setStandby(game, id, true)), id, 'memcached'),
+      ),
+    ).toBe(true)
+  })
+
+  test('Memcached holds more of the hot set in the same RAM', () => {
+    const { game, id } = cacheGame()
+    const node = game.nodes.find((entry) => entry.id === id)!
+    const big = { ...game, users: 200_000 }
+    expect(evictionShareOf(big, { ...node, engine: 'memcached', size: 3 })).toBeLessThan(
+      evictionShareOf(big, { ...node, engine: 'redis', size: 3 }),
+    )
+  })
+})
+
+describe('Porting to ARM', () => {
+  const server = (runtime: GameNode['runtime'], devHours: number, sandbox = false): Game => {
+    const game = preseedGame()
+    return {
+      ...game,
+      sandbox,
+      devHours,
+      researched: [...game.researched, 'arm-instances'],
+      nodes: game.nodes.map((node) => (node.type === 'server' ? { ...node, runtime } : node)),
+    }
+  }
+
+  test('the first move to ARM spends Dev Hours by language, and a dearer port is refused when short', () => {
+    const go = ok(Actions.setFamily(server('go', 100), 'server', 'arm'))
+    const php = ok(Actions.setFamily(server('php_fpm', 100), 'server', 'arm'))
+    expect(100 - go.devHours).toBe(4)
+    expect(100 - php.devHours).toBe(16)
+    expect(Result.isFailure(Actions.setFamily(server('php_fpm', 10), 'server', 'arm'))).toBe(true)
+    expect(Result.isSuccess(Actions.setFamily(server('go', 10), 'server', 'arm'))).toBe(true)
+  })
+
+  test('a guided Sandbox ports for free', () => {
+    const moved = ok(Actions.setFamily(server('php_fpm', 0, true), 'server', 'arm'))
+    expect(moved.devHours).toBe(0)
   })
 })

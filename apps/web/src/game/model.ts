@@ -39,6 +39,7 @@ import { fileOf } from './saves.ts'
 import { SavesState, savesOf } from './saves-machine.ts'
 import {
   ComponentId,
+  FamilyId,
   FeatureId,
   Game,
   GameLink,
@@ -70,8 +71,18 @@ export const Panel = Schema.Literals([
   'mirror',
   'cost',
   'vitals',
+  'shop',
 ])
 export type Panel = typeof Panel.Type
+
+export const ShopSlot = Schema.Literals(['cpu', 'ram', 'disk'])
+export type ShopSlot = typeof ShopSlot.Type
+
+export const ShopMode = Schema.Literals(['instance', 'parts'])
+export type ShopMode = typeof ShopMode.Type
+
+export const ShopSort = Schema.Literals(['recommended', 'price-asc', 'price-desc', 'capacity'])
+export type ShopSort = typeof ShopSort.Type
 
 export const BuildGroupKey = Schema.Literals(
   DOCK_GROUPS.map((group) => group.key) as [DockGroup, ...Array<DockGroup>],
@@ -383,6 +394,11 @@ export const Model = Schema.Struct({
   route: AppRoute,
   boot: Boot,
   panel: Panel,
+  shopSlot: ShopSlot.pipe(Schema.withDecodingDefaultKey(Effect.succeed('cpu' as const))),
+  shopFamily: FamilyId.pipe(Schema.withDecodingDefaultKey(Effect.succeed('general' as const))),
+  shopMode: ShopMode.pipe(Schema.withDecodingDefaultKey(Effect.succeed('instance' as const))),
+  shopQuery: Schema.String.pipe(Schema.withDecodingDefaultKey(Effect.succeed(''))),
+  shopSort: ShopSort.pipe(Schema.withDecodingDefaultKey(Effect.succeed('recommended' as const))),
   palette: Palette,
   toast: Schema.NullOr(Toast),
   toastSeq: Schema.Finite,
@@ -407,6 +423,8 @@ export const Model = Schema.Struct({
   settingsOpen: Schema.Boolean,
   languagePicker: Listbox.Model,
   volumeSlider: VolumeSlider.Model,
+  poolSlider: VolumeSlider.Model,
+  poolDraft: Schema.NullOr(Schema.Finite),
   runtimePicker: StackPicker,
   frameworkPicker: StackPicker,
   moreMenu: UiMenu.Model,

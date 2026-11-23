@@ -6,7 +6,20 @@ import { CARD_W, heightOf, rowMid } from './size.ts'
 
 export type Placed = Pick<GameNode, 'type' | 'x' | 'y'>
 
-export { CARD_W, FOOT, HEAD, PORT_R, ROW, heightOf, rowMid, rowTop } from './size.ts'
+export {
+  CARD_W,
+  FOOT,
+  HEAD,
+  PORT_R,
+  ROW,
+  SLOT_H,
+  SLOT_W,
+  heightOf,
+  rowMid,
+  rowTop,
+  slotLeft,
+  slotTop,
+} from './size.ts'
 
 export type { Layout }
 

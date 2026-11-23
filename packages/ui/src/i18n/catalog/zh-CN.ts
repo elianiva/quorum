@@ -1378,6 +1378,10 @@ export const catalog: Catalog = {
     stripe: { blurb: '支付节点自动收款。', name: 'Stripe Billing' },
     'dns-rr': { blurb: '解锁 DNS，将用户分配到最多 8 台主机。', name: 'DNS 轮询' },
     'load-balancing': { blurb: '解锁负载均衡器，按容量分流并跳过故障主机。', name: '负载均衡' },
+    'custom-instances': {
+      blurb: '解锁独立的 CPU、内存和磁盘部件，价格每周浮动。在此之前，节点购买固定的实例类型。',
+      name: '自定义实例',
+    },
     'health-checks': { blurb: 'DNS 不再将用户发送到故障主机。', name: '健康检查' },
     'auth-provider': { blurb: '解锁身份认证服务，登录不再占用你的 CPU。', name: '托管身份认证' },
     caching: { blurb: '解锁 Redis，大多数读取查询不再抵达数据库。', name: '缓存技术' },

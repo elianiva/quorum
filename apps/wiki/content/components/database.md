@@ -13,6 +13,8 @@ It answers reads, writes, transactions, and timeline writes itself, and nothing 
 
 Its CPU limits how many queries it answers. When the working set outgrows RAM, reads go to disk and slow down. Report scans evict the buffer cache, so every other query slows too.
 
+The volume is its Disk Part. After **Custom instances**, a new Database outside the guided Sandboxes starts with an empty Disk Slot. The shop's Parts catalog sells a general purpose or a provisioned volume. Its Instance catalog adds a general purpose volume when a preset needs one. The card shows the installed class.
+
 ## Options
 
 ::Options{id="database"}
@@ -95,7 +97,7 @@ Every write the Database answers adds rows, and so does every realtime message i
 | Archive after 30 d | A tenth | Waits on a restore of the archived rows.         |
 | Delete after 30 d  | Nothing | Rebuilds its figures from the event log, slower. |
 
-A window caps the rows at what the Company writes inside it, so an old Company that archives stops growing. The price is the history, since a report over the window is slow or has to be rebuilt. The card says which policy is on, and [Data tier](/design/07-data-tier#data-volume) holds the trade.
+A window caps the rows at what the Company writes inside it, so an old Company that archives stops growing. The price is the history, since a report over the window is slow or has to be rebuilt. An archive or delete window also shrinks the hot data, so a Database whose working set had outgrown RAM can fit again. The card says which policy is on, and [Data tier](/design/07-data-tier#data-volume) holds the trade.
 
 ### Reports
 

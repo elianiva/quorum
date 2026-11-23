@@ -4,7 +4,6 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
   BACKUPS,
   SHARD_COUNTS,
-  STORAGE_IOPS,
   DB_RETENTIONS,
   RESHARD_DH,
   SHARD_KEYS,
@@ -18,14 +17,7 @@ import {
   primaryOf,
   shardingOf,
 } from '@quorum/simulation/lookups'
-import type {
-  Game,
-  GameNode,
-  IopsClass,
-  ShardKey,
-  DbRetention,
-  DbTopology,
-} from '@quorum/simulation/state'
+import type { Game, GameNode, ShardKey, DbRetention, DbTopology } from '@quorum/simulation/state'
 
 import { Message } from '@/game/message.ts'
 import { button } from '@quorum/ui/primitives/button'
@@ -50,8 +42,6 @@ const shardKeyNote = (t: Messages, node: GameNode): string => {
 const database = (game: Game, node: GameNode, h: HtmlBuilder<Message>): ReadonlyArray<Html> => {
   const t = copy(h)
 
-  const volume = STORAGE_IOPS[node.iops]
-  const iops = `${volume.iops / 1_000}k`
   const shards = Math.max(1, Math.floor(node.shards))
   const group = dataGroupOf(game, node)
   const databases = databasesOfGroup(game, group)
@@ -171,24 +161,6 @@ const database = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readonly
       h,
     ),
     engine(node, h),
-    section(
-      t.inspectorDatabase.volume,
-      [
-        picker(
-          'volume',
-          (Object.keys(STORAGE_IOPS) as ReadonlyArray<IopsClass>).map(
-            (id) => [id, t.catalog.storageIops[id].name] as const,
-          ),
-          node.iops,
-          (chosen) => Message.StorageIopsChosen({ nodeId: node.id, iops: chosen }),
-          h,
-          () => true,
-          css({ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }),
-        ),
-        caption(t.inspectorDatabase.iOPSAtTheBoxSBurn(iops, volume.burn), h),
-      ],
-      h,
-    ),
     section(
       t.inspectorDatabase.shards,
       [

@@ -3,14 +3,14 @@
  * `packages/simulation/src/pacing.ts`. Do not edit: change the Simulation or the measurement and
  * run the script again.
  *
- * Taken at Simulation version 86f1fe8a on 2026-11-22.
+ * Taken at Simulation version 2d0f4fbb on 2026-11-23.
  */
 
 import type { Measurements } from './measure.ts'
 
 export const SNAPSHOT: Measurements = {
-  version: '86f1fe8a',
-  takenOn: '2026-11-22',
+  version: '2d0f4fbb',
+  takenOn: '2026-11-23',
   pacing: [
     {
       label: 'First research',
@@ -76,7 +76,7 @@ export const SNAPSHOT: Measurements = {
     },
     {
       label: 'Series B',
-      value: '92.2–112.0',
+      value: '92.3–112.2',
     },
   ],
   seed: [
@@ -120,11 +120,11 @@ export const SNAPSHOT: Measurements = {
     },
     {
       label: 'Users at 130 min',
-      value: '122,831–123,165',
+      value: '122,349–122,521',
     },
     {
       label: 'Availability at 130 min',
-      value: '96.69%–98.76%',
+      value: '96.68%–98.73%',
     },
   ],
   legacy: [
@@ -162,5 +162,5 @@ export const SNAPSHOT: Measurements = {
       },
     },
   ],
-  reach: '122,831–123,165',
+  reach: '122,349–122,521',
 }

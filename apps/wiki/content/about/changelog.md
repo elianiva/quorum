@@ -9,6 +9,24 @@ toc: top
 
 Quorum has no versions. It changes all the time, and this page lists the latest days, newest first, so you can see what moved since you last played. A page on this wiki can lag behind the game by a few days. Older days are in the [full changelog](/about/changelog/all).
 
+## Sunday, 22 November 2026
+
+### Changed
+
+- Describe the two shop modes in the docs ([16b71a7](https://github.com/elianiva/quorum/commit/16b71a7ea3c2baa7f6f4741c1c57225cc5dafab5))
+- Offer both catalogs after Custom instances ([b242162](https://github.com/elianiva/quorum/commit/b24216220f120d29b65aef20d32cf8da08be868c))
+- Add the instance catalog to the shop ([15a1420](https://github.com/elianiva/quorum/commit/15a142051158cf925a5fadf6903f1b96a47e0ff4))
+- Gate the Parts behind Custom instances ([51fbc7a](https://github.com/elianiva/quorum/commit/51fbc7a194a886cb5324e01045c47a9e8592e777))
+- Adjust the Parts for the rebased balance ([febe16c](https://github.com/elianiva/quorum/commit/febe16c2508e3a43a7efdef367e98847b8e0931b))
+- Update the wiki and design record for the balance, cache engine, ARM and GPU changes ([646e45b](https://github.com/elianiva/quorum/commit/646e45b9e559d5f1f6742c4217eea45781b75a40))
+- Give Redis and Memcached real tradeoffs and make ARM cost Dev Hours to port ([37d2a2b](https://github.com/elianiva/quorum/commit/37d2a2b04fc8fb0a0fa95977376a6eb42ceb5f4e))
+- Record the Redis, Memcached and ARM porting tradeoffs in the reality check ([32bbda6](https://github.com/elianiva/quorum/commit/32bbda6deafef49e444ba0511162d6572daec238))
+- Move Cache engines, ARM and GPU precision toward real figures ([0abb716](https://github.com/elianiva/quorum/commit/0abb716905e9ce5e8651b72d831562ce8dbb6ab6))
+- Document the balance numbers that are tuned on purpose, and the real figures behind them ([22eb7bf](https://github.com/elianiva/quorum/commit/22eb7bfda7150063d7561598719be714c496e363))
+- Replace the pool size stepper with a log slider that shows how many workers RAM fits ([a5599d6](https://github.com/elianiva/quorum/commit/a5599d64603e65a5373af04c77492f617d5a3e98))
+- Make each prefetched Worker task hold RAM ([86cf66a](https://github.com/elianiva/quorum/commit/86cf66af0bee46972b086045d58b4558e806151d))
+- Make INT4 and INT8 serving cost answer quality and lengthen the batch delay ([5a35895](https://github.com/elianiva/quorum/commit/5a35895a515a7dd82f37c6f63eda7eb8ec8b66dd))
+
 ## Saturday, 21 November 2026
 
 ### Changed
@@ -86,14 +104,3 @@ Quorum has no versions. It changes all the time, and this page lists the latest 
 - Reuse the Dashboard's rows and annotations between Samples ([424cb44](https://github.com/elianiva/quorum/commit/424cb44fa7854d7edb1499284b460a651b98480b))
 - Cap a chart's hover targets at 240 ([88fa1b2](https://github.com/elianiva/quorum/commit/88fa1b22b37f8f7edf94c96e00b8e662945404a3))
 - Remove the Bottleneck search the browser no longer runs ([3edd866](https://github.com/elianiva/quorum/commit/3edd8666513892e2f0b14156bb49eb173aa30451))
-
-## Sunday, 15 November 2026
-
-### Changed
-
-- Explain that the game's name comes from the quorum term ([7805061](https://github.com/elianiva/quorum/commit/78050610ef0144f9f196ddffe6c4c407118a84fd))
-- Add system design interview guides, concept hubs, and query-shaped titles ([2461054](https://github.com/elianiva/quorum/commit/2461054aa645a17109f1f8e6a8c408afc86d18e3))
-- Add seoTitle, FAQ and learning-resource data, and links to the new hubs ([ce2caaf](https://github.com/elianiva/quorum/commit/ce2caaf5f0102070bd54bb1fff5de235503019d6))
-- Note that the Cache graph is a simplification of cache-aside ([e8da189](https://github.com/elianiva/quorum/commit/e8da189d994fb455b802d33b6f21a6fd3ac27b16))
-- Answer unknown game paths with a real 404 ([94fbc2e](https://github.com/elianiva/quorum/commit/94fbc2e06077f656f693fb50bc8b4d85e27620a9))
-- Improve search metadata for the game and the wiki ([6d62265](https://github.com/elianiva/quorum/commit/6d62265002abd4de10dfa4e395a5b6d81a02e925))

@@ -9,6 +9,18 @@ toc: top
 
 Quorum has no versions. It changes all the time, and this page lists the latest days, newest first, so you can see what moved since you last played. A page on this wiki can lag behind the game by a few days. Older days are in the [full changelog](/about/changelog/all).
 
+## Friday, 20 November 2026
+
+### Changed
+
+- Replace implicit phases with explicit state machines ([dd5f688](https://github.com/elianiva/quorum/commit/dd5f6882738c29d1b2a104400ac11e6423a5f519))
+- Record the ADRs as current decisions and renumber the duplicates ([3aba303](https://github.com/elianiva/quorum/commit/3aba30308515fcb12da4ab32cd7ff52a19d52727))
+- Remove the reference example, the art generator, and unused code, dependencies and exports ([42070c3](https://github.com/elianiva/quorum/commit/42070c367298adc112523a7812518170f407ad8d))
+- Let idle teams boost the running Study ([f5c92f2](https://github.com/elianiva/quorum/commit/f5c92f21e2496eea2aaae0a44bd5ca21b18e0bee))
+- Show what the Autoscaler is doing and what it does next ([1c4b845](https://github.com/elianiva/quorum/commit/1c4b84588a4e39b433c0f31adec4bf20e380d3b2))
+- Show which Link runs past its timeout on the Dashboard ([430a166](https://github.com/elianiva/quorum/commit/430a166238b2154a80468330eda4de8639ef18b7))
+- Replace the running build when a deploy lands ([fe8640f](https://github.com/elianiva/quorum/commit/fe8640fbd90cd0f747e1dc108788af94b1ec9397))
+
 ## Thursday, 19 November 2026
 
 ### Changed
@@ -97,18 +109,3 @@ Quorum has no versions. It changes all the time, and this page lists the latest 
 - Use Panda's class joiner directly ([f036b09](https://github.com/elianiva/quorum/commit/f036b096a2cc4725b969997bf37bc9ab070255d3))
 - Remove Tailwind from the build ([1b89b5e](https://github.com/elianiva/quorum/commit/1b89b5e5183aa4e876f343691b6ad38a5748551c))
 - Move the app shell and lab views onto Panda CSS ([6ecc403](https://github.com/elianiva/quorum/commit/6ecc403f685600b6d79997fc8589e7933fe02fa5))
-
-## Friday, 13 November 2026
-
-### Changed
-
-- Serve the wiki in Japanese ([86704dd](https://github.com/elianiva/quorum/commit/86704ddb17d43b7fdcc5c76af3f46610f3927433))
-- Write the wiki's pages in Japanese ([b68afe7](https://github.com/elianiva/quorum/commit/b68afe7797487f790b413eeb5c0bdffc7d121999))
-- Translate the wiki's interface copy into Japanese ([18838f6](https://github.com/elianiva/quorum/commit/18838f64b1937987904b72d345cfc785f650d048))
-- Add the changelog entry for 2026-11-12 (#53) ([faa9781](https://github.com/elianiva/quorum/commit/faa9781ff220f726e824a67ac7810d4d267b9f77))
-- Reuse each Node's calls and cost table while the Design holds ([7bd3cfa](https://github.com/elianiva/quorum/commit/7bd3cfaffbe1902de8662dfc5132fb8ef3bebea6))
-- Serve the wiki in Spanish (#51) ([6b464be](https://github.com/elianiva/quorum/commit/6b464bedc4b33f51853653b29b0d6773312b3d8f))
-- Keep the Graph while the Design holds, and stop copying lists on every Link ([1e82900](https://github.com/elianiva/quorum/commit/1e82900ac337f52c280431c9558fa55bc2195596))
-- Build the Era's mix once per Game, and share one probe record across its Nodes ([9bffae3](https://github.com/elianiva/quorum/commit/9bffae348c0a0a52ac5da80bb401d2eace341087))
-- Make the solve stop when it settles, and score the bottleneck on revenue alone ([674b035](https://github.com/elianiva/quorum/commit/674b035724e5a76de3101bdf213a3805368a2e1f))
-- Add the installable PWA shell and offline play ([e86e17a](https://github.com/elianiva/quorum/commit/e86e17ace69a469b4e00ee66f02e4b2ad03ecf24))

@@ -2,6 +2,9 @@ import { describe, expect, test } from 'vitest'
 import {
   ERAS,
   ERA_RECIPES,
+  FEATURES,
+  FEATURE_IDS,
+  RESEARCH,
   INSIGHT_YIELD,
   RECIPE,
   RPS_PER_USER,
@@ -93,6 +96,29 @@ const shareOf = (
   const total = Object.values(demand).reduce((sum, rate) => sum + (rate ?? 0), 0)
   return (demand[kind] ?? 0) / total
 }
+
+describe('a Feature whose kind needs a fixing component', () => {
+  const gated: ReadonlyArray<FeatureId> = [
+    'checkout',
+    'chat',
+    'ai-assistant',
+    'activity-feed',
+    'push-notifications',
+  ]
+
+  test('is gated on the research that fixes it, so the fix lands before the pain', () => {
+    for (const id of gated) expect(FEATURES[id].research, id).not.toBeNull()
+  })
+
+  test('that research is paid in kinds other than the one the Feature brings, and opens in time', () => {
+    for (const id of FEATURE_IDS) {
+      const { research, unlocks, era } = FEATURES[id]
+      if (!research) continue
+      expect(RESEARCH[research].era, id).toBeLessThanOrEqual(era)
+      if (unlocks) expect(Object.keys(RECIPE[research]), id).not.toContain(unlocks.kind)
+    }
+  })
+})
 
 describe('login and upload traffic', () => {
   test('the Era that introduces a kind keeps a real share of its demand', () => {

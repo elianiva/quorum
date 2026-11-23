@@ -191,6 +191,7 @@ const PRIORITY: ReadonlyArray<ResearchId> = [
   'restore-drills',
   'cert-automation',
   'checkout',
+  'websockets',
   'tracing',
   'slo-dashboards',
   'autoscaling',
@@ -214,6 +215,8 @@ const PRIORITY: ReadonlyArray<ResearchId> = [
   'hosted-models',
   'data-warehouse',
   'error-budgets',
+  'notifications',
+  'hybrid-fanout',
 ]
 
 const POLYGLOT_PRIORITY: ReadonlyArray<ResearchId> = [

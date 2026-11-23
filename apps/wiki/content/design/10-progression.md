@@ -246,6 +246,10 @@ its scarcest pool, so equal supply from each pool is the target ([Product levers
 Until Seed, the default recipe is the request kinds that the item's Era brings. From Series A, it is
 the kinds of the Era before. A Series A kind such as `buy` arrives only when its Feature ships, and
 the Checkout Feature itself needs research, so a Series A default of `buy` could never be paid.
+The same holds for every Feature that brings a kind only a new Component can serve: Chat needs
+`websockets`, the AI assistant needs `hosted-models`, the Activity feed needs `hybrid-fanout`, and Push
+notifications need `notifications`. Each of those items uses the default recipe, so the fix is in
+hand before the kind arrives and the player never serves it unfixed while the Insight comes in.
 
 | Era      | Default recipe                            |
 | -------- | ----------------------------------------- |
@@ -279,41 +283,39 @@ uses the item's recipe.
 
 Items whose recipe is not the default:
 
-| Item                                                                    | Recipe                          | Why                                         |
-| ----------------------------------------------------------------------- | ------------------------------- | ------------------------------------------- |
-| `logs`                                                                  | `page`                          | The first traffic the player sees           |
-| `metrics`, `query-analysis`, `eager-loading`                            | `read`                          | Slow reads show the problem                 |
-| `percentiles`                                                           | `read`, `login`                 | bcrypt makes `login` the slow tail          |
-| `alerting`                                                              | Failure, `read`                 | An alert needs something to fire on         |
-| `health-checks`                                                         | Failure, `read`                 | A check needs a Node that fails             |
-| `caching`                                                               | `read`                          | A cache serves reads                        |
-| `pooling`, `pitr`, `online-migrations`                                  | `write`                         | Connections and data loss show under writes |
-| `replication`, `ryw-routing`, `sharding`, `denormalization`             | `read`, `write`                 | The read and write split                    |
-| `cache-strategies`                                                      | `read`, `write`                 | Each strategy differs on writes             |
-| `stampede-protection`                                                   | `read`, Failure                 | A stampede is a failure on cached reads     |
-| `full-text-search`                                                      | `search`                        |                                             |
-| `object-storage`                                                        | `upload`                        |                                             |
-| `cdn`, `http2`, `http3`                                                 | `page`, `upload`                | Static assets and payloads                  |
-| `waf`, `bot-management`                                                 | `bot`                           | Bots teach how bots behave                  |
-| `credential-protection`                                                 | `login`, `bot`                  | Credential stuffing is bot `login`          |
-| `funnels`                                                               | `page`, `login`                 | Sign-up is the funnel                       |
-| `auth-provider`                                                         | `login`                         |                                             |
-| `idempotency-keys`                                                      | `buy`                           | Retried charges                             |
-| `notifications`                                                         | `push`                          |                                             |
-| `websockets`                                                            | `rt`                            |                                             |
-| `tiered-caching`                                                        | `media`                         |                                             |
-| `esi`                                                                   | `page`, `media`                 |                                             |
-| `slo-dashboards`                                                        | Failure, `buy`                  | The budget protects the money path          |
-| `sync-replication`, `consensus`                                         | `write`, `buy`                  | Money cannot be lost                        |
-| `data-warehouse`, `precompute`                                          | `report`                        |                                             |
-| `cdc`                                                                   | `report`, `write`               |                                             |
-| `outbox`                                                                | `buy`, `job`                    | Dual writes between money and jobs          |
-| `embeddings`                                                            | `ai`, `search`                  |                                             |
-| `hosted-models`, `model-serving`, `quantization`, `continuous-batching` | `ai`                            |                                             |
-| `hybrid-fanout`, `leaderless`                                           | `feed`                          | Hot keys come from celebrity feeds          |
-| `rum`                                                                   | `page`, `feed`                  | Latency from the user's side                |
-| `tail-sampling`                                                         | Failure                         | It keeps the failed traces                  |
-| `anomaly-detection`                                                     | Failure, `feed`, `hook`, `push` |                                             |
+| Item                                                        | Recipe                          | Why                                         |
+| ----------------------------------------------------------- | ------------------------------- | ------------------------------------------- |
+| `logs`                                                      | `page`                          | The first traffic the player sees           |
+| `metrics`, `query-analysis`, `eager-loading`                | `read`                          | Slow reads show the problem                 |
+| `percentiles`                                               | `read`, `login`                 | bcrypt makes `login` the slow tail          |
+| `alerting`                                                  | Failure, `read`                 | An alert needs something to fire on         |
+| `health-checks`                                             | Failure, `read`                 | A check needs a Node that fails             |
+| `caching`                                                   | `read`                          | A cache serves reads                        |
+| `pooling`, `pitr`, `online-migrations`                      | `write`                         | Connections and data loss show under writes |
+| `replication`, `ryw-routing`, `sharding`, `denormalization` | `read`, `write`                 | The read and write split                    |
+| `cache-strategies`                                          | `read`, `write`                 | Each strategy differs on writes             |
+| `stampede-protection`                                       | `read`, Failure                 | A stampede is a failure on cached reads     |
+| `full-text-search`                                          | `search`                        |                                             |
+| `object-storage`                                            | `upload`                        |                                             |
+| `cdn`, `http2`, `http3`                                     | `page`, `upload`                | Static assets and payloads                  |
+| `waf`, `bot-management`                                     | `bot`                           | Bots teach how bots behave                  |
+| `credential-protection`                                     | `login`, `bot`                  | Credential stuffing is bot `login`          |
+| `funnels`                                                   | `page`, `login`                 | Sign-up is the funnel                       |
+| `auth-provider`                                             | `login`                         |                                             |
+| `idempotency-keys`                                          | `buy`                           | Retried charges                             |
+| `tiered-caching`                                            | `media`                         |                                             |
+| `esi`                                                       | `page`, `media`                 |                                             |
+| `slo-dashboards`                                            | Failure, `buy`                  | The budget protects the money path          |
+| `sync-replication`, `consensus`                             | `write`, `buy`                  | Money cannot be lost                        |
+| `data-warehouse`, `precompute`                              | `report`                        |                                             |
+| `cdc`                                                       | `report`, `write`               |                                             |
+| `outbox`                                                    | `buy`, `job`                    | Dual writes between money and jobs          |
+| `embeddings`                                                | `ai`, `search`                  |                                             |
+| `model-serving`, `quantization`, `continuous-batching`      | `ai`                            |                                             |
+| `leaderless`                                                | `feed`                          | Hot keys come from celebrity feeds          |
+| `rum`                                                       | `page`, `feed`                  | Latency from the user's side                |
+| `tail-sampling`                                             | Failure                         | It keeps the failed traces                  |
+| `anomaly-detection`                                         | Failure, `feed`, `hook`, `push` |                                             |
 
 **Breadth.** Some Observability items also need their recipe kinds sampled at a number of
 Component types. A trace needs more than one hop. The count is checked before the Study starts, like

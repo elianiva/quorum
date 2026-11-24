@@ -924,3 +924,51 @@
   :name "Formal verification" :track product :cost 5_000 :era 3
   :requires (testing-culture)
   :blurb "Proofs and property-based tests catch the bugs tests miss: bad deploys −50%, but every Feature costs 15% more Dev Hours.")
+(types "../catalog/research.ts" ResearchTeamKind)
+(types "../catalog/runtimes.ts" FrameworkId)
+(types "../catalog/kinds.ts" InsightPool)
+
+(def TEAM_TRACKS :type "Record<ResearchTeamKind, ReadonlyArray<ResearchTrack>>"
+  (:product ["product" "runtimes" "frameworks"]
+   :platform ["infrastructure" "performance" "cost"]
+   :sre ["reliability" "observability"]
+   :data ["data"]
+   :security ["security"]))
+
+(def researchList RESEARCH_LIST)
+
+(def FRAMEWORK_RESEARCH :type "Record<FrameworkId, ResearchId | null>"
+  (:none null (... FRAMEWORK_UNLOCKS)))
+
+(def EVERY_KIND :type "ReadonlyArray<InsightPool>"
+  ["page"
+   "read"
+   "write"
+   "login"
+   "search"
+   "upload"
+   "media"
+   "rt"
+   "buy"
+   "job"
+   "report"
+   "ai"
+   "feed"
+   "hook"
+   "push"])
+
+(def ERA_RECIPES :type "ReadonlyArray<ReadonlyArray<InsightPool>>"
+  [["page" "read"]
+   ["write" "login"]
+   ["search" "upload"]
+   ["search" "upload"]
+   ["media" "rt" "buy"]
+   ["job" "report" "ai"]
+   EVERY_KIND
+   EVERY_KIND])
+
+(def STUDY_SECONDS :type const [20 60 120 240 480 900 1_800 3_600])
+(def MAX_STUDIES 8)
+(def SPIKE_SPEED 2)
+(def STUDY_SPEEDUP 0.25)
+(def STUDY_SPEED_RESEARCH :type "ReadonlyArray<ResearchId>" ["trace-search" "notebooks"])

@@ -24,6 +24,7 @@ Quorum is built on Cafe: **C**loudflare for the runtime, **A**lchemy for infrast
 | `apps/wiki`           | The player wiki, prerendered at build time. Prose lives in `content/`.       |
 | `apps/backend`        | Effect RPC handlers and the API Worker entry.                                |
 | `packages/simulation` | The pure Simulation. The browser plays it; the API Worker replays it.        |
+| `packages/qmc`        | The content compiler: catalog content in `.qm` files to TypeScript and Rust. |
 | `packages/rpc`        | The wire contract: RPC groups, schemas, declared errors, and the API prefix. |
 | `packages/ui`         | The shared design language: primitives, the theme, and game views.           |
 

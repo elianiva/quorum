@@ -139,7 +139,7 @@ The Dev Hours and the growth cost are the same for every kind: 24, 80, or 240 De
 or 4% off growth. Each step's growth cost adds to the one before, so three steps leave growth 7%
 lower than no lever. The load is the kind's own profile, so the last column is the price of a step.
 The build holds these numbers in `LEVER_DH`, `LEVER_GROWTH`, `LEVER_STEPS`, and `LEVER_CAPS`
-(`packages/simulation/src/catalog/levers.ts`), and `levers.test.ts` checks them against the mix and
+(`packages/simulation/content/levers.qm`), and `levers.test.ts` checks them against the mix and
 the revenue rule below.
 
 **The Pre-seed check.** At 7,000 users and the 20\:00 peak, demand is 203 rps. `login` is 6%, 12 rps at

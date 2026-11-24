@@ -57,7 +57,7 @@ axe-core 4.11 (WCAG 2.0/2.1 A and AA plus best practices), before and after the 
 Measured at Simulation version 17, before the catalog grew, on seed 1 at 130 minutes, with the
 Balanced bot's own Design and a larger Analytics tap. The first column is research available in each
 Era then, and the last column is how long the tap took to buy all of it. The second column is the
-current catalog's total for the Era, summed from `packages/simulation/src/catalog/research.ts`. It is
+current catalog's total for the Era, summed from `packages/simulation/content/research.qm`. It is
 not a measurement, so the time column does not describe it.
 
 These figures assume no Product lever. A lever raises a pool's share and shortens its Era's Studies,

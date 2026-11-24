@@ -8,6 +8,7 @@
 - Use only `tsrs` and `effect-tsrs` for diagnostics. `vp lint` runs its type-aware rules through the `tsrs` that Vite+ bundles. Never run `tsc`, `tsgo`, or `vp lint --type-check`; do not add `typescript` or turn on `typeCheck` in `vite.config.ts`.
 - Alchemy and infrastructure live only in the root `alchemy.run.ts`; `src/worker.ts` files never import Alchemy.
 - Game rules, catalog, and Game schema live in `packages/simulation`; rendering, input, and storage live in `apps/web`.
+- Catalog data lives in `packages/simulation/content/*.qm` (ADR 0030). Edit it there, never in `src/generated`, then run `pnpm --filter @quorum/simulation content`, and `solver/build.sh` when `solver/src/catalog.rs` changed.
 - Never type a catalog number into `apps/wiki/content`; wiki facts come from the catalog. The exception is `apps/wiki/content/design`, the game design document (ADR 0014), which may state numbers by hand.
 - `packages/ui` views take data and Messages, never an app's Model.
 - Agent tools only read. The tool list, the snapshot and the view live in `packages/agent`; the browser uploads a snapshot and the API Worker answers MCP.

@@ -48,6 +48,8 @@ pub const BUILTIN_FORMS: &[&str] = &[
     "tracks",
     "study-shapes",
     "research",
+    "mix",
+    "era",
 ];
 
 const MAX_DEPTH: usize = 64;

@@ -4,7 +4,7 @@
 //! Rules that relate entries to each other, such as references and cycles, live in `check`.
 
 use crate::diag::{suggest, Diagnostic, Sink};
-use crate::num::{Dimension, Number, Unit};
+use crate::num::{Dimension, Number, Ratio, Unit};
 use crate::reader::{Kind, Sexp};
 use crate::source::Span;
 use std::collections::BTreeMap;
@@ -106,12 +106,53 @@ pub struct Research {
     pub span: Span,
 }
 
+/// A traffic mix: the share of requests of each kind. Shares are exact, so the check that they
+/// sum to 100% needs no tolerance.
+#[derive(Debug)]
+pub struct Mix {
+    pub name: Option<Name>,
+    pub shares: Vec<(Name, Spanned<Number>)>,
+    pub span: Span,
+}
+
+#[derive(Debug)]
+pub enum MixRef {
+    Named(Name),
+    Inline(Mix),
+}
+
+#[derive(Debug)]
+pub struct Era {
+    pub id: Name,
+    pub name: Spanned<Value>,
+    pub slo: Spanned<Number>,
+    /// `None` when the Era has no incidents (`:incident-every none`).
+    pub incident_every: Option<Spanned<Number>>,
+    pub max_severity: Spanned<Number>,
+    pub market: Spanned<Number>,
+    /// `None` when the Era never raises (`:raise-at never`).
+    pub raise_at: Option<Spanned<Number>>,
+    pub raise_span: Span,
+    pub grant: Spanned<Number>,
+    pub dilution: Spanned<Number>,
+    pub growth: Spanned<Number>,
+    pub apdex_target: Spanned<Number>,
+    pub cost_index: Spanned<Number>,
+    pub salary_index: Spanned<Number>,
+    pub mix: MixRef,
+    pub question: Spanned<Value>,
+    pub arrivals: Spanned<Value>,
+    pub span: Span,
+}
+
 #[derive(Default, Debug)]
 pub struct Catalog {
     pub imports: Vec<Import>,
     pub tracks: Vec<Track>,
     pub shape_kinds: Vec<ShapeKind>,
     pub research: Vec<Research>,
+    pub mixes: Vec<Mix>,
+    pub eras: Vec<Era>,
 }
 
 /// Lowers one file. The driver lowers files in parallel and concatenates them in file order.
@@ -132,6 +173,8 @@ impl Catalog {
         self.tracks.extend(other.tracks);
         self.shape_kinds.extend(other.shape_kinds);
         self.research.extend(other.research);
+        self.mixes.extend(other.mixes);
+        self.eras.extend(other.eras);
     }
 }
 
@@ -140,7 +183,7 @@ struct Lower {
     catalog: Catalog,
 }
 
-const FORMS: &[&str] = &["import", "tracks", "study-shapes", "research"];
+const FORMS: &[&str] = &["import", "tracks", "study-shapes", "research", "mix", "era"];
 
 /// A form's keyword arguments, after the head and any positional arguments.
 struct Keys<'a> {
@@ -188,6 +231,21 @@ impl Lower {
             "research" => {
                 if let Some(r) = self.research(form) {
                     self.catalog.research.push(r);
+                }
+            }
+            "mix" => {
+                let items = form.list().unwrap();
+                let name = items.get(1).and_then(|n| self.name(n, "a mix name"));
+                if let (Some(name), Some(mix)) = (name, self.mix(&items[2..], form.span)) {
+                    self.catalog.mixes.push(Mix {
+                        name: Some(name),
+                        ..mix
+                    });
+                }
+            }
+            "era" => {
+                if let Some(era) = self.era(form) {
+                    self.catalog.eras.push(era);
                 }
             }
             other => {
@@ -610,6 +668,193 @@ impl Lower {
             kind,
             fields,
             span: sexp.span,
+        })
+    }
+
+    /// A number whose unit has the given dimension.
+    fn measure(
+        &mut self,
+        sexp: &Sexp,
+        what: &str,
+        dimension: Dimension,
+    ) -> Option<Spanned<Number>> {
+        match sexp.kind {
+            Kind::Num(n) if n.unit.dimension() == dimension => Some(Spanned {
+                value: n,
+                span: sexp.span,
+            }),
+            Kind::Num(n) => {
+                self.sink.push(
+                    Diagnostic::error(
+                        "unit",
+                        sexp.span,
+                        format!("{what} is {dimension}, found {}", n.unit.dimension()),
+                    )
+                    .label("wrong unit"),
+                );
+                None
+            }
+            _ => {
+                self.sink.push(Diagnostic::error(
+                    "expected-number",
+                    sexp.span,
+                    format!("{what} is a number, found {}", sexp.describe()),
+                ));
+                None
+            }
+        }
+    }
+
+    /// A share from 0% to 100%.
+    fn share(&mut self, sexp: &Sexp, what: &str) -> Option<Spanned<Number>> {
+        let n = self.measure(sexp, what, Dimension::Share)?;
+        let share = n.value.base();
+        if share < Ratio::int(0) || share > Ratio::int(1) {
+            self.sink.push(Diagnostic::error(
+                "range",
+                sexp.span,
+                format!("{what} is between 0% and 100%, found {}", n.value),
+            ));
+            return None;
+        }
+        Some(n)
+    }
+
+    /// `none` or `never`, written as a symbol in place of a value.
+    fn is_word(sexp: &Sexp, word: &str) -> bool {
+        sexp.symbol() == Some(word)
+    }
+
+    /// `:kind share …` pairs.
+    fn mix(&mut self, items: &[Sexp], span: Span) -> Option<Mix> {
+        let mut shares = Vec::new();
+        let mut ok = true;
+        for pair in items.chunks(2) {
+            match pair {
+                [key, value] if key.keyword().is_some() => {
+                    let kind = Name {
+                        text: key.keyword().unwrap().to_string(),
+                        span: key.span,
+                    };
+                    match self.share(value, "a mix share") {
+                        Some(share) => shares.push((kind, share)),
+                        None => ok = false,
+                    }
+                }
+                _ => {
+                    self.sink.push(Diagnostic::error(
+                        "expected-key",
+                        pair[0].span,
+                        "a mix is :kind share pairs, like :page 60%",
+                    ));
+                    ok = false;
+                }
+            }
+        }
+        ok.then_some(Mix {
+            name: None,
+            shares,
+            span,
+        })
+    }
+
+    fn era(&mut self, form: &Sexp) -> Option<Era> {
+        const KEYS: &[&str] = &[
+            "name",
+            "slo",
+            "incident-every",
+            "max-severity",
+            "market",
+            "raise-at",
+            "grant",
+            "dilution",
+            "growth",
+            "apdex-target",
+            "cost-index",
+            "salary-index",
+            "mix",
+            "question",
+            "arrivals",
+        ];
+        let (args, keys) = self.keys(form, 1, KEYS)?;
+        let id = self.name(&args[0], "an era id");
+        let what = "an era";
+        let req = |cx: &mut Lower, key: &str| keys.required(key, what, &mut cx.sink);
+        let name = req(self, "name").and_then(|v| self.text(v, "a name"));
+        let question = req(self, "question").and_then(|v| self.text(v, "a question"));
+        let arrivals = req(self, "arrivals").and_then(|v| self.text(v, "the arrivals"));
+        let slo = req(self, "slo").and_then(|v| self.share(v, "an SLO"));
+        let dilution = req(self, "dilution").and_then(|v| self.share(v, "a dilution"));
+        let growth = req(self, "growth").and_then(|v| self.share(v, "a growth rate"));
+        let apdex_target = req(self, "apdex-target").and_then(|v| self.share(v, "an Apdex target"));
+        let market = req(self, "market").and_then(|v| self.count(v, "a market", 1));
+        let grant = req(self, "grant").and_then(|v| self.count(v, "a grant", 0));
+        let cost_index = req(self, "cost-index").and_then(|v| self.count(v, "a cost index", 1));
+        let salary_index =
+            req(self, "salary-index").and_then(|v| self.count(v, "a salary index", 1));
+        let max_severity = req(self, "max-severity").and_then(|v| {
+            let n = self.count(v, "a severity", 1)?;
+            if n.value.value > Ratio::int(3) {
+                self.sink.push(Diagnostic::error(
+                    "range",
+                    v.span,
+                    "a severity is 1, 2, or 3",
+                ));
+                return None;
+            }
+            Some(n)
+        });
+        let incident_every = req(self, "incident-every").map(|v| {
+            if Self::is_word(v, "none") {
+                Ok(None)
+            } else {
+                self.measure(v, "an incident interval", Dimension::Time)
+                    .map(Some)
+                    .ok_or(())
+            }
+        });
+        let raise = keys.required("raise-at", what, &mut self.sink);
+        let raise_at = raise.map(|v| {
+            if Self::is_word(v, "never") {
+                Ok(None)
+            } else {
+                self.count(v, "a raise target", 1).map(Some).ok_or(())
+            }
+        });
+        let mix = req(self, "mix").and_then(|v| match &v.kind {
+            Kind::Symbol(s) => Some(MixRef::Named(Name {
+                text: s.clone(),
+                span: v.span,
+            })),
+            Kind::List(items) => self.mix(items, v.span).map(MixRef::Inline),
+            _ => {
+                self.sink.push(Diagnostic::error(
+                    "bad-value",
+                    v.span,
+                    "a mix is a mix name or (:kind share …)",
+                ));
+                None
+            }
+        });
+        Some(Era {
+            id: id?,
+            name: name?,
+            slo: slo?,
+            incident_every: incident_every?.ok()?,
+            max_severity: max_severity?,
+            market: market?,
+            raise_at: raise_at?.ok()?,
+            raise_span: raise?.span,
+            grant: grant?,
+            dilution: dilution?,
+            growth: growth?,
+            apdex_target: apdex_target?,
+            cost_index: cost_index?,
+            salary_index: salary_index?,
+            mix: mix?,
+            question: question?,
+            arrivals: arrivals?,
+            span: form.span,
         })
     }
 }

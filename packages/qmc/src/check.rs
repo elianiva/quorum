@@ -3,7 +3,7 @@
 
 use crate::diag::{suggest, Diagnostic, Sink};
 use crate::graph;
-use crate::lower::{Catalog, FieldType, Name, Research, Value};
+use crate::lower::{Catalog, FieldType, Mix, MixRef, Name, Research, Value};
 use crate::num::{Dimension, Ratio, Unit};
 use crate::par;
 use crate::source::Span;
@@ -11,7 +11,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 type Pass = fn(&Catalog) -> Sink;
 
-const PASSES: &[Pass] = &[names, requires, cycles, eras, shapes, imports, insight];
+const PASSES: &[Pass] = &[
+    names, requires, cycles, eras, shapes, imports, insight, era_rules, mixes,
+];
 
 pub fn run(catalog: &Catalog) -> Sink {
     let jobs = PASSES
@@ -231,6 +233,139 @@ fn eras(catalog: &Catalog) -> Sink {
     sink
 }
 
+/// Each Era's money and incidents agree with each other, and every research names a real Era.
+fn era_rules(catalog: &Catalog) -> Sink {
+    let mut sink = Sink::default();
+    unique(catalog.eras.iter().map(|e| &e.id), "the era", &mut sink);
+    if catalog.eras.is_empty() {
+        if let Some(r) = catalog.research.first() {
+            sink.push(Diagnostic::error(
+                "no-eras",
+                r.era.span,
+                "research names an Era, but no (era …) is declared",
+            ));
+        }
+        return sink;
+    }
+    for era in &catalog.eras {
+        match &era.raise_at {
+            Some(raise) if raise.value.value > era.market.value.value => sink.push(
+                Diagnostic::error(
+                    "raise-above-market",
+                    raise.span,
+                    format!(
+                        "`{}` raises at {} users, but its market is only {}",
+                        era.id.text, raise.value, era.market.value
+                    ),
+                )
+                .label("can never be reached")
+                .note(era.market.span, "the market is set here"),
+            ),
+            None => {
+                for (what, n) in [("grant", &era.grant), ("dilution", &era.dilution)] {
+                    if n.value.value != Ratio::int(0) {
+                        sink.push(
+                            Diagnostic::error(
+                                "never-raises",
+                                n.span,
+                                format!(
+                                    "`{}` never raises, so its {what} is never paid",
+                                    era.id.text
+                                ),
+                            )
+                            .label(format!("set the {what} to 0"))
+                            .note(era.raise_span, "the Era never raises"),
+                        );
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    let last = catalog.eras.len() - 1;
+    for r in &catalog.research {
+        let era = r.era.value.value;
+        if era > Ratio::int(last as i128) {
+            sink.push(
+                Diagnostic::error("unknown-era", r.era.span, format!("there is no Era {era}"))
+                    .label(format!("Eras are numbered 0 to {last}"))
+                    .note(catalog.eras[last].id.span, "the last Era"),
+            );
+        }
+    }
+    sink
+}
+
+/// Every mix an Era uses exists and sums to exactly 100%.
+fn mixes(catalog: &Catalog) -> Sink {
+    let mut sink = Sink::default();
+    let named = unique(
+        catalog.mixes.iter().filter_map(|m| m.name.as_ref()),
+        "the mix",
+        &mut sink,
+    );
+    let known: Vec<&str> = named.keys().copied().collect();
+    for era in &catalog.eras {
+        match &era.mix {
+            MixRef::Named(name) if !named.contains_key(name.text.as_str()) => {
+                sink.push(unknown("unknown-mix", name, "mix", &known));
+            }
+            MixRef::Named(_) => {}
+            MixRef::Inline(mix) => check_mix(mix, &mut sink),
+        }
+    }
+    for mix in &catalog.mixes {
+        check_mix(mix, &mut sink);
+    }
+    sink
+}
+
+fn check_mix(mix: &Mix, sink: &mut Sink) {
+    let mut seen: BTreeMap<&str, Span> = BTreeMap::new();
+    let mut total = Ratio::int(0);
+    for (kind, share) in &mix.shares {
+        total = total + share.value.base();
+        if let Some(first) = seen.insert(&kind.text, kind.span) {
+            sink.push(
+                Diagnostic::error(
+                    "duplicate",
+                    kind.span,
+                    format!("`{}` has two shares in one mix", kind.text),
+                )
+                .note(first, "first share here"),
+            );
+        }
+        if share.value.base() == Ratio::int(0) {
+            sink.push(
+                Diagnostic::warning(
+                    "zero-share",
+                    share.span,
+                    format!("`{}` has a 0% share", kind.text),
+                )
+                .help("leave the kind out instead"),
+            );
+        }
+    }
+    if total != Ratio::int(1) {
+        let percent = total * Ratio::int(100);
+        let gap = (Ratio::int(1) + Ratio::new(-total.num, total.den)) * Ratio::int(100);
+        let fix = if gap > Ratio::int(0) {
+            format!("add {gap}% to a kind")
+        } else {
+            format!("take {}% from a kind", Ratio::new(-gap.num, gap.den))
+        };
+        sink.push(
+            Diagnostic::error(
+                "mix-total",
+                mix.span,
+                format!("the shares sum to {percent}%, not 100%"),
+            )
+            .label("every request needs a kind")
+            .help(fix),
+        );
+    }
+}
+
 fn shapes(catalog: &Catalog) -> Sink {
     let mut sink = Sink::default();
     let kinds: BTreeMap<&str, _> = catalog
@@ -315,6 +450,13 @@ fn imports(catalog: &Catalog) -> Sink {
             );
         }
     };
+    for era in &catalog.eras {
+        for value in [&era.name, &era.question, &era.arrivals] {
+            if let Value::Ref(path) = &value.value {
+                check(&path[0], &mut sink);
+            }
+        }
+    }
     for r in &catalog.research {
         let shape_values = r.shape.iter().flat_map(|s| s.fields.iter().map(|(_, v)| v));
         for value in [&r.name, &r.blurb].into_iter().chain(shape_values) {
@@ -376,11 +518,22 @@ fn insight(catalog: &Catalog) -> Sink {
 mod tests {
     use crate::diag::Severity;
 
-    const PRELUDE: &str = "(tracks (data \"Data\")) (study-shapes (read-share :share share) (backlog :seconds seconds))\n";
+    const PRELUDE: &str = "(tracks (data \"Data\")) \
+        (study-shapes (read-share :share share) (backlog :seconds seconds))\n";
+
+    /// An Era with valid defaults; `extra` keys come first, so they win over the defaults.
+    fn era(id: &str, extra: &str) -> String {
+        format!(
+            "(era {id} {extra} :name \"{id}\" :slo 99% :incident-every none :max-severity 1 \
+             :market 100 :raise-at 50 :grant 10 :dilution 10% :growth 1% :apdex-target 90% \
+             :cost-index 1 :salary-index 1 :mix (:page 100%) :question \"q\" :arrivals \"a\")\n"
+        )
+    }
 
     /// The codes `compile` reports for `body`, errors first, in source order.
     fn codes(body: &str) -> Vec<(Severity, &'static str)> {
-        let compiled = crate::compile(vec![("t.qm".into(), format!("{PRELUDE}{body}"))]);
+        let eras = era("e0", "") + &era("e1", "") + &era("e2", "");
+        let compiled = crate::compile(vec![("t.qm".into(), format!("{PRELUDE}{eras}{body}"))]);
         let mut out: Vec<_> = compiled
             .diagnostics
             .iter()
@@ -440,7 +593,8 @@ mod tests {
         let compiled = crate::compile(vec![(
             "t.qm".into(),
             format!(
-                "{PRELUDE}{}{}",
+                "{PRELUDE}{}{}{}",
+                era("e0", ""),
                 r("pooling", 0, "", ""),
                 r("b", 0, "poolign", "")
             ),
@@ -504,17 +658,149 @@ mod tests {
 
     #[test]
     fn output_is_the_same_on_one_thread_and_many() {
-        let text = std::fs::read_to_string(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../simulation/content/research.qm"
-        ))
-        .unwrap();
-        let run = || crate::compile(vec![("research.qm".into(), text.clone())]).outputs;
+        let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/../simulation/content");
+        let mut paths: Vec<_> = std::fs::read_dir(dir)
+            .unwrap()
+            .map(|e| e.unwrap().path())
+            .collect();
+        paths.sort();
+        let inputs: Vec<(String, String)> = paths
+            .iter()
+            .map(|p| (p.display().to_string(), std::fs::read_to_string(p).unwrap()))
+            .collect();
+        let run = || crate::compile(inputs.clone());
         let many = run();
         std::env::set_var("QMC_THREADS", "1");
         let one = run();
         std::env::remove_var("QMC_THREADS");
-        assert!(!many.is_empty());
-        assert_eq!(one, many);
+        assert!(many.diagnostics.is_empty(), "the content has diagnostics");
+        assert_eq!(many.outputs.len(), 2);
+        assert_eq!(one.outputs, many.outputs);
+    }
+
+    /// `era` with one key replaced: duplicate keys are an error, so the default is cut out.
+    fn era_with(id: &str, key: &str, value: &str) -> String {
+        let base = era(id, "");
+        let start = base.find(&format!(":{key} ")).unwrap();
+        let rest = &base[start + key.len() + 2..];
+        let end = if rest.starts_with('(') {
+            rest.find(')').unwrap() + 1
+        } else {
+            rest.find(' ').unwrap()
+        };
+        format!("{}:{key} {value}{}", &base[..start], &rest[end..])
+    }
+
+    fn era_codes(body: &str) -> Vec<(Severity, &'static str)> {
+        let compiled = crate::compile(vec![("t.qm".into(), format!("{PRELUDE}{body}"))]);
+        let mut out: Vec<_> = compiled
+            .diagnostics
+            .iter()
+            .map(|d| (d.severity, d.code))
+            .collect();
+        out.sort();
+        out
+    }
+
+    #[test]
+    fn a_mix_sums_to_exactly_100_percent_where_floats_would_not() {
+        assert_eq!(
+            era_codes(&era_with("e", "mix", "(:page 10% :read 20% :write 70%)")),
+            []
+        );
+        assert_eq!(
+            era_codes(&era_with(
+                "e",
+                "mix",
+                "(:page 33.3% :read 33.3% :write 33.3%)"
+            )),
+            [(Severity::Error, "mix-total")]
+        );
+        let compiled = crate::compile(vec![(
+            "t.qm".into(),
+            format!("{PRELUDE}{}", era_with("e", "mix", "(:page 60% :read 39%)")),
+        )]);
+        assert_eq!(
+            compiled.diagnostics[0].help.as_deref(),
+            Some("add 1% to a kind")
+        );
+        assert_eq!(
+            era_codes(&era_with("e", "mix", "(:page 60% :page 40%)")),
+            [(Severity::Error, "duplicate")]
+        );
+    }
+
+    #[test]
+    fn named_mixes_resolve_and_are_checked_once() {
+        assert_eq!(
+            era_codes(
+                &("(mix web :page 50% :read 50%)\n".to_string() + &era_with("e", "mix", "web"))
+            ),
+            []
+        );
+        assert_eq!(
+            era_codes(
+                &("(mix web :page 50% :read 40%)\n".to_string() + &era_with("e", "mix", "web"))
+            ),
+            [(Severity::Error, "mix-total")]
+        );
+        assert_eq!(
+            era_codes(&era_with("e", "mix", "wbe")),
+            [(Severity::Error, "unknown-mix")]
+        );
+    }
+
+    #[test]
+    fn a_raise_the_market_cannot_reach_is_an_error() {
+        assert_eq!(era_codes(&era_with("e", "raise-at", "100")), []);
+        assert_eq!(
+            era_codes(&era_with("e", "raise-at", "101")),
+            [(Severity::Error, "raise-above-market")]
+        );
+    }
+
+    #[test]
+    fn an_era_that_never_raises_pays_no_grant_and_no_dilution() {
+        let never = era_with("e", "raise-at", "never");
+        assert_eq!(
+            era_codes(&never),
+            [
+                (Severity::Error, "never-raises"),
+                (Severity::Error, "never-raises")
+            ]
+        );
+        let clean = era_with("e", "raise-at", "never")
+            .replace(":grant 10", ":grant 0")
+            .replace(":dilution 10%", ":dilution 0%");
+        assert_eq!(era_codes(&clean), []);
+    }
+
+    #[test]
+    fn research_must_name_an_era_that_exists() {
+        assert_eq!(codes(&r("a", 2, "", "")), []);
+        assert_eq!(
+            codes(&r("a", 3, "", "")),
+            [(Severity::Error, "unknown-era")]
+        );
+        assert_eq!(
+            era_codes(&r("a", 0, "", "")),
+            [(Severity::Error, "no-eras")]
+        );
+    }
+
+    #[test]
+    fn era_values_keep_their_units() {
+        assert_eq!(
+            era_codes(&era_with("e", "slo", "0.99")),
+            [(Severity::Error, "unit")]
+        );
+        assert_eq!(
+            era_codes(&era_with("e", "incident-every", "720")),
+            [(Severity::Error, "unit")]
+        );
+        assert_eq!(
+            era_codes(&era_with("e", "max-severity", "4")),
+            [(Severity::Error, "range")]
+        );
     }
 }

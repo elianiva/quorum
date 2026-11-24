@@ -34,6 +34,10 @@ qmc refuses content that contradicts itself and reports every problem in one run
 - a study shape with a missing or unknown field, a value in the wrong unit, or a share outside
   0% to 100%
 - an empty or repeated Insight pool list, and two entries that unlock one framework
+- a traffic mix whose shares do not sum to exactly 100%, or that lists a kind twice
+- an Era whose raise target is above its market, or that never raises but still has a grant or
+  dilution
+- research whose `:era` is past the last Era
 
 It warns about a requirement another requirement already implies, and about an unused import.
 

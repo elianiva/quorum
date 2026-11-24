@@ -1,2 +1,1 @@
-export const MSGP_RATE = 10_000
-export const MSGP_PRICE = 0.0001
+export { MSGP_RATE, MSGP_PRICE } from '../generated/msgp.ts'

@@ -42,7 +42,12 @@ export const locked = (game: Game, key: GateKey, value: GateValue): Action | und
   const open = gate.free ? gate.free.includes(value) : !(gate.locked ?? []).includes(value)
   return open || has(game, gate.research)
     ? undefined
-    : no(Refusal.Locked({ what: gate.what, research: RESEARCH[gate.research].name }))
+    : no(
+        Refusal.Locked({
+          what: gate.what ?? gate.labels?.[String(value)]?.name ?? String(value),
+          research: RESEARCH[gate.research].name,
+        }),
+      )
 }
 
 export const withNode = (game: Game, id: string, apply: (node: GameNode) => Action): Action => {

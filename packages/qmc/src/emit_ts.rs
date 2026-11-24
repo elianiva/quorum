@@ -137,7 +137,8 @@ fn gates(w: &mut String, catalog: &Catalog) {
     let _ = writeln!(
         w,
         "\nexport type GateValue = string | number | boolean\n\
-         export type GateDef = Readonly<{{\n  research: ResearchId\n  what: string\n  \
+         export type GateDef = Readonly<{{\n  research: ResearchId\n  what?: string\n  \
+         labels?: Readonly<Record<string, Readonly<{{ name: string }}>>>\n  \
          free?: ReadonlyArray<GateValue>\n  locked?: ReadonlyArray<GateValue>\n}}>\n\
          export const GATES = {{"
     );
@@ -147,12 +148,15 @@ fn gates(w: &mut String, catalog: &Catalog) {
             GateValues::Locked(v) => ("locked", v),
         };
         let values: Vec<String> = values.iter().map(|v| crate::data::ts(v, 0, 0)).collect();
+        let label = match &gate.what {
+            crate::lower::GateLabel::Text(t) => format!("what: {}", string(&t.value)),
+            crate::lower::GateLabel::Table(n) => format!("labels: {}", n.text),
+        };
         let _ = writeln!(
             w,
-            "  {}: {{ research: {}, what: {}, {key}: [{}] }},",
+            "  {}: {{ research: {}, {label}, {key}: [{}] }},",
             string(&format!("{}.{}", gate.component.text, gate.field.text)),
             string(&gate.research.text),
-            string(&gate.what.value),
             values.join(", ")
         );
     }
@@ -170,6 +174,17 @@ pub fn components(catalog: &Catalog) -> String {
     let _ = writeln!(w, "import type {{ ResearchId }} from './research.ts'");
     if !catalog.gates.is_empty() {
         let _ = writeln!(w, "import type {{ GameNode }} from '../state.ts'");
+    }
+    // A gate's label table comes from the module that defines it.
+    let scope = crate::data::Scope::new(catalog);
+    for gate in &catalog.gates {
+        if let crate::lower::GateLabel::Table(n) = &gate.what {
+            if let Some(crate::data::Origin::Generated(p) | crate::data::Origin::Path(p)) =
+                scope.value(&n.text, "components")
+            {
+                let _ = writeln!(w, "import {{ {} }} from '{p}'", n.text);
+            }
+        }
     }
     let mut used = BTreeSet::new();
     for c in &catalog.components {

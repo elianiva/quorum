@@ -3,6 +3,7 @@
 import type { Kind } from '../catalog/kinds.ts'
 import type { ResearchId } from './research.ts'
 import type { GameNode } from '../state.ts'
+import { GPU_PRECISIONS } from './gpu.ts'
 import { SERVERLESS_MS } from '../components/fn.ts'
 import { EDGE_MS } from '../components/edge.ts'
 import { CDC_MS } from '../components/cdc.ts'
@@ -1129,7 +1130,8 @@ export const FLAT_CAPACITY: Readonly<Record<string, number>> = {
 export type GateValue = string | number | boolean
 export type GateDef = Readonly<{
   research: ResearchId
-  what: string
+  what?: string
+  labels?: Readonly<Record<string, Readonly<{ name: string }>>>
   free?: ReadonlyArray<GateValue>
   locked?: ReadonlyArray<GateValue>
 }>
@@ -1148,7 +1150,11 @@ export const GATES = {
   'storage.storeVariant': { research: 'egress-optimization', what: 'R2', locked: ['r2'] },
   'storage.lifecycle': { research: 'lifecycle-rules', what: 'Lifecycle rules', free: [0] },
   'cache.cacheStrategy': { research: 'cache-strategies', what: 'Cache strategies', free: ['aside'] },
+  'cache.coalesce': { research: 'stampede-protection', what: 'Coalescing', locked: [true] },
+  'cache.earlyExpiry': { research: 'stampede-protection', what: 'Early expiration', locked: [true] },
+  'cache.swr': { research: 'stampede-protection', what: 'Stale-while-revalidate', locked: [true] },
   'cache.warming': { research: 'cache-warming', what: 'Warming', locked: [true] },
+  'gpu.precision': { research: 'quantization', labels: GPU_PRECISIONS, free: ['fp16'] },
 } as const satisfies Partial<
   Record<`${ComponentId}.${Extract<keyof GameNode, string>}`, GateDef>
 >

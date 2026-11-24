@@ -55,7 +55,12 @@ A setting that needs research is a `gate`. `:free` lists the values that need no
 ```lisp
 (gate database keep :research retention :what "Retention" :free ("keep"))
 (gate storage storeVariant :research egress-optimization :what "R2" :locked ("r2"))
+(gate gpu precision :research quantization :labels GPU_PRECISIONS :free ("fp16"))
 ```
+
+`:labels TABLE` names the value's `name` in that table instead of fixed text, so locking INT8
+refuses with "INT8 needs Quantization.". qmc checks that every value the gate lists is a key of the
+table.
 
 `GATES` in `generated/components.ts` holds them, keyed `component.field`, and TypeScript checks that
 each field is a field of a Node. A rule calls `locked(game, 'database.keep', keep)`, which returns
@@ -93,7 +98,8 @@ qmc refuses content that contradicts itself and reports every problem in one run
 - a component that is both sized and has a fixed capacity, both fixed and sized, or fixed and
   unlocked by research
 - a gate on a component or research that does not exist, two gates on one field, a gate that
-  locks no value or names a value twice, and, as a warning, a gate on the research that already
+  locks no value or names a value twice, a `:labels` table that is not a record def or lacks a
+  value the gate lists, and, as a warning, a gate on the research that already
   unlocks the component
 - a def that reads a value or names a type that does not exist, that reads itself, that repeats a
   key in one record, or that takes a name another form declares

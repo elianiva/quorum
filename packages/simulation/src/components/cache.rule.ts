@@ -1,6 +1,6 @@
-import { type Action, Refusal, no, notAllowed, ok, patch, withNode, locked } from '../action-kit.ts'
+import { type Action, notAllowed, ok, patch, withNode, locked } from '../action-kit.ts'
 import type { CacheEngine, CacheStrategy, Game } from '../state.ts'
-import { RESEARCH, WARMED } from '../catalog.ts'
+import { WARMED } from '../catalog.ts'
 import { withWarm } from '../life.ts'
 
 import { has } from '../lookups.ts'
@@ -33,21 +33,12 @@ export const setCacheGuard = (
 ): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'cache') return notAllowed('Only a Cache has stampede guards.')
-    if ((change.coalesce || change.earlyExpiry || change.swr) && !has(game, 'stampede-protection'))
-      return no(
-        Refusal.Locked({
-          what: change.coalesce
-            ? 'Coalescing'
-            : change.earlyExpiry
-              ? 'Early expiration'
-              : 'Stale-while-revalidate',
-          research: RESEARCH['stampede-protection'].name,
-        }),
-      )
-    return (
-      (change.warming === undefined ? undefined : locked(game, 'cache.warming', change.warming)) ??
-      ok(patch(game, id, change))
-    )
+    for (const field of ['coalesce', 'earlyExpiry', 'swr', 'warming'] as const) {
+      const value = change[field]
+      const refused = value === undefined ? undefined : locked(game, `cache.${field}`, value)
+      if (refused) return refused
+    }
+    return ok(patch(game, id, change))
   })
 
 export const setCacheStrategy = (game: Game, id: string, cacheStrategy: CacheStrategy): Action =>

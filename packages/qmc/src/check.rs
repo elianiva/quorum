@@ -1145,6 +1145,56 @@ fn gates(catalog: &Catalog) -> Sink {
                 ));
             }
         }
+        if let crate::lower::GateLabel::Table(table) = &gate.what {
+            let def = catalog.defs.iter().find(|d| d.name.text == table.text);
+            let keys: Option<Vec<&str>> = def.and_then(|d| match &d.value.kind {
+                crate::data::D::Record(entries) => Some(
+                    entries
+                        .iter()
+                        .filter_map(|e| match e {
+                            crate::data::Entry::Pair(k, _) => Some(k.text.as_str()),
+                            crate::data::Entry::Spread(_) => None,
+                        })
+                        .collect(),
+                ),
+                _ => None,
+            });
+            match keys {
+                None => sink.push(
+                    Diagnostic::error(
+                        "unknown-table",
+                        table.span,
+                        format!(
+                            "`{}` is not a record def, so it cannot label a gate",
+                            table.text
+                        ),
+                    )
+                    .label("not a table"),
+                ),
+                Some(keys) => {
+                    for v in values {
+                        let key = match &v.kind {
+                            crate::data::D::Str(s) => Some(s.as_str()),
+                            _ => None,
+                        };
+                        if !key.is_some_and(|k| keys.contains(&k)) {
+                            sink.push(
+                                Diagnostic::error(
+                                    "unlabeled-value",
+                                    v.span,
+                                    format!(
+                                        "{} is not a key of `{}`, so the refusal has no name for it",
+                                        crate::data::ts(v, 0, 0),
+                                        table.text
+                                    ),
+                                )
+                                .help(format!("its keys are {}", keys.join(", "))),
+                            );
+                        }
+                    }
+                }
+            }
+        }
         let mut texts: Vec<String> = Vec::new();
         for v in values {
             let text = crate::data::ts(v, 0, 0);
@@ -1738,6 +1788,31 @@ mod tests {
             gate("shed :research other :what \"S\" :locked (true)")
         );
         assert_eq!(component_codes(&fine), []);
+
+        let table = "(def MODES (:fast (:name \"Fast\") :safe (:name \"Safe\")))\n";
+        let labelled = |rest: &str| format!("{other}{table}{}", gate(rest));
+        assert_eq!(
+            component_codes(&labelled(
+                "mode :research other :labels MODES :free (\"safe\")"
+            )),
+            []
+        );
+        assert_eq!(
+            component_codes(&labelled(
+                "mode :research other :labels MODES :free (\"slow\")"
+            )),
+            [(Severity::Error, "unlabeled-value")]
+        );
+        assert_eq!(
+            component_codes(&labelled(
+                "mode :research other :labels MODEZ :free (\"safe\")"
+            )),
+            [(Severity::Error, "unknown-table")]
+        );
+        assert_eq!(
+            component_codes(&labelled("mode :research other :free (\"safe\")")),
+            [(Severity::Error, "gate-label")]
+        );
     }
 
     #[test]

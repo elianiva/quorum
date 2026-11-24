@@ -1,16 +1,9 @@
-import { type Action, Refusal, no, notAllowed, ok, patch, withNode } from '../action-kit.ts'
+import { type Action, notAllowed, ok, patch, withNode, locked } from '../action-kit.ts'
 import type { Game, GpuType } from '../state.ts'
 import { activeIncident } from '../state.ts'
-import {
-  RESEARCH,
-  type GpuModel,
-  type GpuPrecision,
-  GPU_PRECISIONS,
-  GPU_BATCHES,
-  GPU_MODELS,
-} from '../catalog.ts'
+import { type GpuModel, type GpuPrecision, GPU_BATCHES, GPU_MODELS } from '../catalog.ts'
 
-import { has, restarted } from '../lookups.ts'
+import { restarted } from '../lookups.ts'
 
 export const setGpuType = (game: Game, id: string, gpu: GpuType): Action =>
   withNode(game, id, (node) => {
@@ -24,14 +17,10 @@ export const setGpuType = (game: Game, id: string, gpu: GpuType): Action =>
 export const setPrecision = (game: Game, id: string, precision: GpuPrecision): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'gpu') return notAllowed('Only a GPU Node has a precision.')
-    if (precision !== 'fp16' && !has(game, 'quantization'))
-      return no(
-        Refusal.Locked({
-          what: GPU_PRECISIONS[precision].name,
-          research: RESEARCH.quantization.name,
-        }),
-      )
-    return ok(node.precision === precision ? game : patch(game, id, { precision }))
+    return (
+      locked(game, 'gpu.precision', precision) ??
+      ok(node.precision === precision ? game : patch(game, id, { precision }))
+    )
   })
 
 export const setBatch = (game: Game, id: string, batch: number): Action =>

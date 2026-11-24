@@ -179,9 +179,16 @@ pub struct Gate {
     pub component: Name,
     pub field: Name,
     pub research: Name,
-    pub what: Spanned<String>,
+    pub what: GateLabel,
     pub open: GateValues,
     pub span: Span,
+}
+
+/// What a refusal names: fixed text, or `:labels TABLE`, the value's `name` in that table.
+#[derive(Debug)]
+pub enum GateLabel {
+    Text(Spanned<String>),
+    Table(Name),
 }
 
 #[derive(Debug)]
@@ -1288,19 +1295,18 @@ impl Lower {
     }
 
     fn gate(&mut self, form: &Sexp) -> Option<Gate> {
-        let (args, keys) = self.keys(form, 2, &["research", "what", "free", "locked"])?;
+        let (args, keys) = self.keys(form, 2, &["research", "what", "labels", "free", "locked"])?;
         let component = self.name(&args[0], "a component id");
         let field = self.name(&args[1], "a field name");
         let research = keys
             .required("research", "a gate", &mut self.sink)
             .and_then(|v| self.name(v, "a research id"));
-        let what = keys
-            .required("what", "a gate", &mut self.sink)
-            .and_then(|v| match &v.kind {
-                Kind::Str(s) => Some(Spanned {
+        let what = match (keys.get("what"), keys.get("labels")) {
+            (Some(v), None) => match &v.kind {
+                Kind::Str(s) => Some(GateLabel::Text(Spanned {
                     value: s.clone(),
                     span: v.span,
-                }),
+                })),
                 _ => {
                     self.sink.push(Diagnostic::error(
                         "expected-string",
@@ -1309,7 +1315,20 @@ impl Lower {
                     ));
                     None
                 }
-            });
+            },
+            (None, Some(v)) => self.name(v, "a table").map(GateLabel::Table),
+            _ => {
+                self.sink.push(
+                    Diagnostic::error(
+                        "gate-label",
+                        form.span,
+                        "a gate takes either :what or :labels",
+                    )
+                    .help("`:what \"Gzip\"` names the setting; `:labels GPU_PRECISIONS` names the value's `name` in that table"),
+                );
+                None
+            }
+        };
         let mut values = |key: &str| -> Option<Vec<crate::data::Datum>> {
             let list = keys.get(key)?;
             let Some(items) = list.list() else {

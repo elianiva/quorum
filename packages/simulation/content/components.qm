@@ -409,7 +409,8 @@
 (def FLAG_PROPAGATION_SECONDS 2)
 
 ;; Settings that need research. A value in :free needs none; with :locked, only those values need
-;; it. The rules refuse a locked value with "<what> needs <research>."
+;; it. The rules refuse a locked value with "<what> needs <research>.", or with the value's name
+;; from the :labels table.
 (gate server compress :research gzip :what "Gzip" :free ())
 (gate server shed :research load-shedding :what "Load shedding" :locked (true))
 (gate server degrade :research graceful-degradation :what "Degradation" :locked (true))
@@ -424,4 +425,8 @@
 (gate storage storeVariant :research egress-optimization :what "R2" :locked ("r2"))
 (gate storage lifecycle :research lifecycle-rules :what "Lifecycle rules" :free (0))
 (gate cache cacheStrategy :research cache-strategies :what "Cache strategies" :free ("aside"))
+(gate cache coalesce :research stampede-protection :what "Coalescing" :locked (true))
+(gate cache earlyExpiry :research stampede-protection :what "Early expiration" :locked (true))
+(gate cache swr :research stampede-protection :what "Stale-while-revalidate" :locked (true))
 (gate cache warming :research cache-warming :what "Warming" :locked (true))
+(gate gpu precision :research quantization :labels GPU_PRECISIONS :free ("fp16"))

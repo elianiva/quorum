@@ -1,0 +1,28 @@
+(def CACHE_ENGINES :type const
+  (:redis (:name "Redis" :growth 1.7 :memory 1 :speed 1 :warmAfterRestart 0.5)
+   :memcached (:name "Memcached" :growth 2 :memory 1.12 :speed 1.2 :warmAfterRestart 0)))
+
+(def CACHE_TTLS :type const
+  [(:ttl 10 :factor 0.6 :stale 0.005)
+   (:ttl 60 :factor 0.85 :stale 0.02)
+   (:ttl 3_600 :factor 0.97 :stale 0.1)])
+(def HOT_KB_PER_USER 200)
+(def HOT_BASE_USERS 10_000)
+(def CACHE_OPS 100_000)
+
+(def WRITE_BEHIND_SECONDS 10)
+
+(def CACHE_STRATEGIES :type const
+  (:aside (:name "Cache-aside" :stale 1 :write "bypass" :writeMs 0 :flush 1 :loadMs 0)
+   :read-through (:name "Read-through" :stale 0.75 :write "bypass" :writeMs 0 :flush 1 :loadMs 1)
+   :write-through (:name "Write-through" :stale 0 :write "through" :writeMs 0.5 :flush 1 :loadMs 0)
+   :write-behind (:name "Write-behind" :stale 0.5 :write "ahead" :writeMs 0 :flush 0.5 :loadMs 0)))
+
+(def COALESCED 0.25)
+(def WARMED 0.8)
+
+(def EARLY_LIFT 0.5)
+(def EARLY_REFRESH 0.02)
+
+(def cacheGlossary :type "ReadonlyArray<string>"
+  ["cache-hit-rate" "cache-aside" "hot-key" "write-through-cache"])

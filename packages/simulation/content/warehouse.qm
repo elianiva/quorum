@@ -1,0 +1,3 @@
+(def SCAN_PRICE 0.02)
+
+(def warehouseGlossary :type "ReadonlyArray<string>" ["cdc-change-data-capture" "oltp-and-olap"])

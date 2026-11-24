@@ -1,0 +1,4 @@
+(def POISON_SHARE 0.9)
+(def TASK_RETRY_SECONDS 30)
+(def PREFETCH :type const [1 10 100])
+(def FETCH_MS 20)

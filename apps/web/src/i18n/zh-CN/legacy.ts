@@ -23,6 +23,7 @@ export const legacy: Messages['legacy'] = {
   keepResearch: (p0, p1) => `保留研究 · ${p0}/${p1}`,
   legacyShop: '传承商店',
   nextCompany: '下一家公司',
+  nextVenture: '下一家公司的创业方向',
   selected: (p0) => `已选 ${p0} 项`,
   copyCtrlC: '复制（Ctrl+C）',
   duplicateCtrlD: '创建副本（Ctrl+D）',

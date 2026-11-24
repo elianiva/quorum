@@ -27,6 +27,7 @@ export const legacy = {
     `Keep research · ${p0}/${p1}`,
   legacyShop: 'Legacy shop',
   nextCompany: 'Next company',
+  nextVenture: 'Next Company Venture',
   selected: (p0: string | number | null) => `${p0} selected`,
   copyCtrlC: 'Copy (Ctrl+C)',
   duplicateCtrlD: 'Duplicate (Ctrl+D)',

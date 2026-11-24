@@ -30,6 +30,7 @@ export const legacy: Messages['legacy'] = {
     `Conservar investigación · ${p0}/${p1}`,
   legacyShop: 'Tienda de legado',
   nextCompany: 'Siguiente empresa',
+  nextVenture: 'Emprendimiento de la próxima empresa',
   selected: (p0: string | number | null) => `${p0} seleccionados`,
   copyCtrlC: 'Copiar (Ctrl+C)',
   duplicateCtrlD: 'Duplicar (Ctrl+D)',

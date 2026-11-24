@@ -1,5 +1,5 @@
 import { css, cx } from '@quorum/styled-system/css'
-import { copy } from '@/i18n/messages.ts'
+import { copy, localized } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
   BookCopy,
@@ -14,7 +14,13 @@ import {
   Upload,
   X,
 } from 'lucide'
-import { COMPONENTS, EXITS } from '@quorum/simulation/catalog'
+import {
+  COMPONENTS,
+  EXITS,
+  VENTURE_IDS,
+  VENTURES,
+  type VentureId,
+} from '@quorum/simulation/catalog'
 import { exitOffers } from '@quorum/simulation/exit'
 import { keepSlots, playbookSlots } from '@quorum/simulation/founder'
 import { refundOf } from '@quorum/simulation/lookups'
@@ -91,6 +97,7 @@ const footer = (children: ReadonlyArray<Html>, h: HtmlBuilder<Message>) =>
       h.Class(
         css({
           display: 'flex',
+          flexWrap: 'wrap',
           justifyContent: 'flex-end',
           gap: '2',
           borderTopWidth: '1px',
@@ -378,143 +385,225 @@ const surveySection = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const survey = model.survey
   if (isSkipped(survey.phase)) return h.empty
-  if (isSent(survey.phase))
-    return h.div(
+  const shell = (body: Html): Html =>
+    h.div(
       [
         h.Class(
-          cx(
-            NESTED,
-            css({
-              display: 'flex',
-              width: '100%',
-              alignItems: 'center',
-              gap: '2',
-              paddingInline: '4',
-              paddingBlock: '3',
-              fontSize: 'type.12-5',
-            }),
-          ),
-        ),
-      ],
-      [
-        icon(
-          h,
-          Check,
           css({
-            width: '4',
-            height: '4',
-            color: 'ok',
+            flexShrink: '0',
+            borderTopWidth: '1px',
+            borderTopStyle: 'solid',
+            borderColor: 'hairline',
+            paddingInline: '6',
+            paddingTop: '4',
+            paddingBottom: '3',
           }),
         ),
-        h.span([], [t.survey.sent]),
       ],
+      [body],
+    )
+  if (isSent(survey.phase))
+    return shell(
+      h.div(
+        [
+          h.Class(
+            cx(
+              NESTED,
+              css({
+                display: 'flex',
+                width: '100%',
+                alignItems: 'center',
+                gap: '2',
+                paddingInline: '4',
+                paddingBlock: '3',
+                fontSize: 'type.12-5',
+              }),
+            ),
+          ),
+        ],
+        [
+          icon(
+            h,
+            Check,
+            css({
+              width: '4',
+              height: '4',
+              color: 'ok',
+            }),
+          ),
+          h.span([], [t.survey.sent]),
+        ],
+      ),
     )
   const sending = isSending(survey.phase)
   const empty = survey.issues.trim() === '' && survey.likes.trim() === ''
-  return h.div(
+  return shell(
+    h.div(
+      [
+        h.Class(
+          css({
+            display: 'flex',
+            width: '100%',
+            flexDirection: 'column',
+            gap: '3',
+          }),
+        ),
+      ],
+      [
+        h.div(
+          [
+            h.Class(
+              css({
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5',
+              }),
+            ),
+          ],
+          [
+            h.span([h.Class(EYEBROW)], [t.survey.title]),
+            h.span(
+              [
+                h.Class(
+                  css({
+                    fontSize: 'type.11-5',
+                    color: 'mutedForeground',
+                  }),
+                ),
+              ],
+              [t.survey.note],
+            ),
+          ],
+        ),
+        h.div(
+          [
+            h.Class(
+              css({
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '2',
+                _narrow: { gridTemplateColumns: '1fr' },
+              }),
+            ),
+          ],
+          [
+            textarea(
+              {
+                id: 'survey-issues',
+                label: t.survey.issues,
+                value: survey.issues,
+                onInput: (value) =>
+                  Message.SurveyChanged({ message: SurveyMessage.IssuesChanged({ value }) }),
+                rows: 2,
+                isDisabled: sending,
+              },
+              h,
+            ),
+            textarea(
+              {
+                id: 'survey-likes',
+                label: t.survey.likes,
+                value: survey.likes,
+                onInput: (value) =>
+                  Message.SurveyChanged({ message: SurveyMessage.LikesChanged({ value }) }),
+                rows: 2,
+                isDisabled: sending,
+              },
+              h,
+            ),
+          ],
+        ),
+        survey.phase._tag === 'Failed'
+          ? h.span(
+              [
+                h.Class(
+                  css({
+                    fontSize: 'type.11-5',
+                    color: 'warn',
+                  }),
+                ),
+              ],
+              [t.survey.failed(survey.phase.note)],
+            )
+          : h.empty,
+        h.div(
+          [
+            h.Class(
+              css({
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '2',
+              }),
+            ),
+          ],
+          [
+            button(
+              { onClick: Message.SurveySkipped(), variant: 'ghost', size: 'sm' },
+              t.survey.skip,
+              h,
+            ),
+            button(
+              {
+                onClick: Message.SurveySubmitted(),
+                size: 'sm',
+                isDisabled: sending || empty,
+              },
+              sending ? t.survey.sending : t.survey.send,
+              h,
+            ),
+          ],
+        ),
+      ],
+    ),
+  )
+}
+
+const nextVentureField = (model: Model, h: HtmlBuilder<Message>): Html => {
+  const t = copy(h)
+  const current = model.founder.venture
+  return h.label(
     [
       h.Class(
         css({
           display: 'flex',
-          width: '100%',
-          flexDirection: 'column',
-          gap: '3',
-          borderTopWidth: '1px',
-          borderTopStyle: 'solid',
-          borderColor: 'hairline',
-          paddingTop: '4',
+          minWidth: '0',
+          alignItems: 'center',
+          gap: '2',
+          marginRight: 'auto',
         }),
       ),
     ],
     [
-      h.div(
+      h.span([h.Class(EYEBROW)], [t.legacy.nextVenture]),
+      h.select(
         [
+          h.Value(current),
+          h.AriaLabel(t.legacy.nextVenture),
+          h.OnChange((value: string) => Message.VentureChosen({ id: value as VentureId })),
           h.Class(
             css({
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.5',
+              height: '8',
+              minWidth: '0',
+              maxWidth: '260px',
+              borderRadius: 'lg',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'border',
+              backgroundColor: 'background',
+              paddingInline: '2',
+              fontSize: 'type.11-5',
+              color: 'foreground',
+              outlineStyle: 'none',
             }),
           ),
         ],
-        [
-          h.span([h.Class(EYEBROW)], [t.survey.title]),
-          h.span(
-            [
-              h.Class(
-                css({
-                  fontSize: 'type.11-5',
-                  color: 'mutedForeground',
-                }),
-              ),
-            ],
-            [t.survey.note],
-          ),
-        ],
-      ),
-      textarea(
-        {
-          id: 'survey-issues',
-          label: t.survey.issues,
-          value: survey.issues,
-          onInput: (value) =>
-            Message.SurveyChanged({ message: SurveyMessage.IssuesChanged({ value }) }),
-          rows: 2,
-          isDisabled: sending,
-        },
-        h,
-      ),
-      textarea(
-        {
-          id: 'survey-likes',
-          label: t.survey.likes,
-          value: survey.likes,
-          onInput: (value) =>
-            Message.SurveyChanged({ message: SurveyMessage.LikesChanged({ value }) }),
-          rows: 2,
-          isDisabled: sending,
-        },
-        h,
-      ),
-      survey.phase._tag === 'Failed'
-        ? h.span(
-            [
-              h.Class(
-                css({
-                  fontSize: 'type.11-5',
-                  color: 'warn',
-                }),
-              ),
-            ],
-            [t.survey.failed(survey.phase.note)],
+        VENTURE_IDS.map((id) => {
+          const venture = localized(VENTURES[id], t.catalog.ventures[id])
+          return h.option(
+            [h.Value(id), ...(id === current ? [h.Selected(true)] : [])],
+            [`${venture.name} ×${venture.legacy.toFixed(1)}`],
           )
-        : h.empty,
-      h.div(
-        [
-          h.Class(
-            css({
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: '2',
-            }),
-          ),
-        ],
-        [
-          button(
-            { onClick: Message.SurveySkipped(), variant: 'ghost', size: 'sm' },
-            t.survey.skip,
-            h,
-          ),
-          button(
-            {
-              onClick: Message.SurveySubmitted(),
-              size: 'sm',
-              isDisabled: sending || empty,
-            },
-            sending ? t.survey.sending : t.survey.send,
-            h,
-          ),
-        ],
+        }),
       ),
     ],
   )
@@ -776,11 +865,12 @@ export const exitScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
                     ],
                   )
                 : h.empty,
-              surveySection(model, h),
             ],
           ),
+          surveySection(model, h),
           footer(
             [
+              nextVentureField(model, h),
               button(
                 { onClick: Message.MenuChosen({ menu: 'legacy' }), variant: 'outline', size: 'lg' },
                 t.legacy.legacyShop,

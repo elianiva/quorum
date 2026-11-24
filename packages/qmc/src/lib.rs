@@ -90,7 +90,9 @@ pub fn compile(inputs: Vec<(String, String)>) -> Compiled {
     } else {
         let catalog = &catalog;
         let jobs: Vec<par::Job<'_, (&'static str, String)>> = vec![
+            Box::new(move || ("constants.ts", emit_ts::constants(catalog))),
             Box::new(move || ("eras.ts", emit_ts::eras(catalog))),
+            Box::new(move || ("incidents.ts", emit_ts::incidents(catalog))),
             Box::new(move || ("research.ts", emit_ts::research(catalog))),
         ];
         par::join_all(jobs)

@@ -50,6 +50,9 @@ pub const BUILTIN_FORMS: &[&str] = &[
     "research",
     "mix",
     "era",
+    "fallacies",
+    "const",
+    "incident",
 ];
 
 const MAX_DEPTH: usize = 64;

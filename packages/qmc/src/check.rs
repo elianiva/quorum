@@ -3,7 +3,7 @@
 
 use crate::diag::{suggest, Diagnostic, Sink};
 use crate::graph;
-use crate::lower::{Catalog, FieldType, Mix, MixRef, Name, Research, Value};
+use crate::lower::{Catalog, FieldType, Incident, Mix, MixRef, Name, Research, Spanned, Value};
 use crate::num::{Dimension, Ratio, Unit};
 use crate::par;
 use crate::source::Span;
@@ -12,7 +12,7 @@ use std::collections::{BTreeMap, BTreeSet};
 type Pass = fn(&Catalog) -> Sink;
 
 const PASSES: &[Pass] = &[
-    names, requires, cycles, eras, shapes, imports, insight, era_rules, mixes,
+    names, requires, cycles, eras, shapes, imports, insight, era_rules, mixes, incidents,
 ];
 
 pub fn run(catalog: &Catalog) -> Sink {
@@ -429,51 +429,254 @@ fn shapes(catalog: &Catalog) -> Sink {
     sink
 }
 
-/// Names in `(ref …)` and bare constants must come from an `(import …)`, and every import is used.
+/// Every value in the catalog that can name an import or a constant.
+fn values(catalog: &Catalog) -> Vec<&Spanned<Value>> {
+    let mut out = Vec::new();
+    for era in &catalog.eras {
+        out.extend([&era.name, &era.question, &era.arrivals]);
+    }
+    for r in &catalog.research {
+        out.extend([&r.name, &r.blurb]);
+        out.extend(r.shape.iter().flat_map(|s| s.fields.iter().map(|(_, v)| v)));
+    }
+    for incident in &catalog.incidents {
+        out.extend([&incident.name, &incident.cause, &incident.prevention]);
+        out.extend(incident.surge.as_ref().map(|(_, by)| by));
+    }
+    out
+}
+
+/// Names in `(ref …)` and bare constants must come from an `(import …)` or a `(const …)`, and
+/// every import is used.
 fn imports(catalog: &Catalog) -> Sink {
     let mut sink = Sink::default();
-    let imported = unique(
-        catalog.imports.iter().flat_map(|i| &i.names),
-        "the import",
+    let names = catalog
+        .imports
+        .iter()
+        .flat_map(|i| &i.names)
+        .chain(catalog.consts.iter().map(|c| &c.name));
+    let defined = unique(names, "the name", &mut sink);
+    let known: Vec<&str> = defined.keys().copied().collect();
+    let mut used = BTreeSet::new();
+    for value in values(catalog) {
+        let name = match &value.value {
+            Value::Ref(path) => &path[0],
+            Value::Const(name) => name,
+            _ => continue,
+        };
+        used.insert(name.text.as_str());
+        if !defined.contains_key(name.text.as_str()) {
+            sink.push(
+                unknown("unknown-import", name, "imported value or constant", &known).help(
+                    format!(
+                "add (import \"../catalog/….ts\" {0}) or (const {0} …), or check the spelling",
+                name.text
+            ),
+                ),
+            );
+        }
+    }
+    for import in catalog.imports.iter().flat_map(|i| &i.names) {
+        if !used.contains(import.text.as_str()) {
+            sink.push(Diagnostic::warning(
+                "unused-import",
+                import.span,
+                format!("`{}` is imported but never used", import.text),
+            ));
+        }
+    }
+    sink
+}
+
+/// Incidents name real research, fallacies, and incidents, never ease when they escalate, cascade
+/// into a chain that ends, and can start in the Era they claim. Each fallacy has one incident.
+fn incidents(catalog: &Catalog) -> Sink {
+    let mut sink = Sink::default();
+    let ids = unique(
+        catalog.incidents.iter().map(|i| &i.id),
+        "the incident",
         &mut sink,
     );
-    let known: Vec<&str> = imported.keys().copied().collect();
-    let mut used = BTreeSet::new();
-    let mut check = |name: &Name, sink: &mut Sink| {
-        used.insert(name.text.clone());
-        if !imported.contains_key(name.text.as_str()) {
+    let fallacies = unique(catalog.fallacies.iter(), "the fallacy", &mut sink);
+    let research: Vec<&str> = by_id(catalog).keys().copied().collect();
+    let incident_names: Vec<&str> = ids.keys().copied().collect();
+    let fallacy_names: Vec<&str> = fallacies.keys().copied().collect();
+    let mut taught: BTreeMap<&str, &Incident> = BTreeMap::new();
+    let mut cascade_graph: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for incident in &catalog.incidents {
+        if let Some(to) = &incident.escalates_to {
+            if to.value.value > incident.severity.value.value {
+                sink.push(
+                    Diagnostic::error(
+                        "escalates-down",
+                        to.span,
+                        format!(
+                            "`{}` escalates from {} to {}, which is less severe",
+                            incident.id.text, incident.severity.value, to.value
+                        ),
+                    )
+                    .label("1 is the worst")
+                    .note(incident.severity.span, "it starts here"),
+                );
+            }
+        }
+        let mut seen: BTreeMap<&str, Span> = BTreeMap::new();
+        for action in &incident.actions {
+            if !research.contains(&action.text.as_str()) {
+                sink.push(unknown("unknown-research", action, "research", &research));
+            }
+            if let Some(first) = seen.insert(&action.text, action.span) {
+                sink.push(
+                    Diagnostic::warning(
+                        "duplicate-action",
+                        action.span,
+                        format!("`{}` is listed twice", action.text),
+                    )
+                    .note(first, "first listed here"),
+                );
+            }
+        }
+        if let Some(fallacy) = &incident.fallacy {
+            if !fallacies.contains_key(fallacy.text.as_str()) {
+                sink.push(unknown(
+                    "unknown-fallacy",
+                    fallacy,
+                    "fallacy",
+                    &fallacy_names,
+                ));
+            } else if let Some(first) = taught.insert(&fallacy.text, incident) {
+                sink.push(
+                    Diagnostic::error(
+                        "fallacy-twice",
+                        fallacy.span,
+                        format!("the fallacy `{}` is taught twice", fallacy.text),
+                    )
+                    .label("second incident")
+                    .note(first.id.span, "first taught by this incident"),
+                );
+            }
+        }
+        let edges = cascade_graph.entry(incident.id.text.clone()).or_default();
+        if let Some(next) = &incident.cascades {
+            if ids.contains_key(next.text.as_str()) {
+                edges.push(next.text.clone());
+            } else {
+                sink.push(unknown(
+                    "unknown-incident",
+                    next,
+                    "incident",
+                    &incident_names,
+                ));
+            }
+        }
+        if let Some((_, by)) = &incident.surge {
+            if let Value::Num(n) = &by.value {
+                if !matches!(n.unit, Unit::None | Unit::Times) || n.value <= Ratio::int(1) {
+                    sink.push(Diagnostic::error(
+                        "surge",
+                        by.span,
+                        format!("a surge is more than 1 times normal traffic, found {n}"),
+                    ));
+                }
+            }
+        }
+    }
+    for fallacy in &catalog.fallacies {
+        if !taught.contains_key(fallacy.text.as_str()) {
             sink.push(
-                unknown("unknown-import", name, "imported value", &known).help(format!(
-                    "add (import \"../catalog/….ts\" {}) or check the spelling",
-                    name.text
+                Diagnostic::error(
+                    "fallacy-untaught",
+                    fallacy.span,
+                    format!("no incident teaches the fallacy `{}`", fallacy.text),
+                )
+                .help(format!(
+                    "add :fallacy {} to the incident that shows it",
+                    fallacy.text
                 )),
             );
         }
-    };
-    for era in &catalog.eras {
-        for value in [&era.name, &era.question, &era.arrivals] {
-            if let Value::Ref(path) = &value.value {
-                check(&path[0], &mut sink);
-            }
-        }
     }
-    for r in &catalog.research {
-        let shape_values = r.shape.iter().flat_map(|s| s.fields.iter().map(|(_, v)| v));
-        for value in [&r.name, &r.blurb].into_iter().chain(shape_values) {
-            match &value.value {
-                Value::Ref(path) => check(&path[0], &mut sink),
-                Value::Const(name) => check(name, &mut sink),
-                _ => {}
-            }
-        }
+    for cycle in graph::cycles(&cascade_graph) {
+        let path = cycle
+            .iter()
+            .chain(std::iter::once(&cycle[0]))
+            .cloned()
+            .collect::<Vec<_>>()
+            .join(" → ");
+        let start = ids[cycle[0].as_str()];
+        sink.push(
+            Diagnostic::error(
+                "cascade-cycle",
+                start.span,
+                format!("`{}` cascades back into itself", start.text),
+            )
+            .label("an unattended incident would never end")
+            .help(path),
+        );
     }
-    for (name, def) in imported {
-        if !used.contains(name) {
-            sink.push(Diagnostic::warning(
-                "unused-import",
-                def.span,
-                format!("`{name}` is imported but never used"),
-            ));
+    if catalog.eras.is_empty() {
+        return sink;
+    }
+    let targets: BTreeSet<&str> = catalog
+        .incidents
+        .iter()
+        .filter_map(|i| i.cascades.as_ref())
+        .map(|n| n.text.as_str())
+        .collect();
+    let last = catalog.eras.len() - 1;
+    for incident in &catalog.incidents {
+        let era = incident.era.value.value;
+        if era > Ratio::int(last as i128) {
+            sink.push(
+                Diagnostic::error(
+                    "unknown-era",
+                    incident.era.span,
+                    format!("there is no Era {era}"),
+                )
+                .label(format!("Eras are numbered 0 to {last}")),
+            );
+            continue;
+        }
+        if targets.contains(incident.id.text.as_str()) {
+            continue;
+        }
+        // The Director never picks an incident whose severity is below the Era's cap, and never
+        // in an Era without incidents.
+        let first = catalog
+            .eras
+            .iter()
+            .enumerate()
+            .skip(era.num as usize)
+            .find(|(_, e)| {
+                e.incident_every.is_some()
+                    && incident.severity.value.value >= e.max_severity.value.value
+            });
+        match first {
+            None => sink.push(
+                Diagnostic::error(
+                    "never-fires",
+                    incident.severity.span,
+                    format!("`{}` can never start", incident.id.text),
+                )
+                .label("no Era from its own allows this severity")
+                .help("raise its severity number, or lower an Era's :max-severity"),
+            ),
+            Some((index, later)) if index as i128 > era.num => sink.push(
+                Diagnostic::warning(
+                    "fires-later",
+                    incident.era.span,
+                    format!(
+                        "`{}` says Era {era}, but the Director cannot pick it before Era {index}",
+                        incident.id.text
+                    ),
+                )
+                .label(format!(
+                    "severity {} is too severe for the Eras before {index}",
+                    incident.severity.value
+                ))
+                .note(later.max_severity.span, "the first Era whose cap allows it"),
+            ),
+            Some(_) => {}
         }
     }
     sink
@@ -673,9 +876,14 @@ mod tests {
         std::env::set_var("QMC_THREADS", "1");
         let one = run();
         std::env::remove_var("QMC_THREADS");
-        assert!(many.diagnostics.is_empty(), "the content has diagnostics");
-        assert_eq!(many.outputs.len(), 2);
+        assert!(many
+            .diagnostics
+            .iter()
+            .all(|d| d.severity == Severity::Warning));
+        assert_eq!(many.outputs.len(), 4);
         assert_eq!(one.outputs, many.outputs);
+        let codes = |c: &crate::Compiled| c.diagnostics.iter().map(|d| d.code).collect::<Vec<_>>();
+        assert_eq!(codes(&one), codes(&many));
     }
 
     /// `era` with one key replaced: duplicate keys are an error, so the default is cut out.
@@ -801,6 +1009,112 @@ mod tests {
         assert_eq!(
             era_codes(&era_with("e", "max-severity", "4")),
             [(Severity::Error, "range")]
+        );
+    }
+
+    /// Era 0 has no incidents, Era 1 caps severity at 2, and Era 2 allows severity 1.
+    fn incident_codes(body: &str) -> Vec<(Severity, &'static str)> {
+        let eras = era("e0", "")
+            + &era_with("e1", "incident-every", "60s")
+                .replace(":max-severity 1", ":max-severity 2")
+            + &era_with("e2", "incident-every", "60s");
+        era_codes(&format!(
+            "(research fix :name \"f\" :track data :cost 1 :era 0 :blurb \"b\")\n{eras}{body}"
+        ))
+    }
+
+    fn inc(id: &str, era: u32, severity: &str, extra: &str) -> String {
+        format!("(incident {id} :name \"{id}\" :era {era} :severity {severity} :duration 30s :actions (fix) {extra} :cause \"c\" :prevention \"p\")\n")
+    }
+
+    #[test]
+    fn escalation_never_eases_but_may_stay_level() {
+        assert_eq!(incident_codes(&inc("a", 2, "(3 -> 2)", "")), []);
+        assert_eq!(incident_codes(&inc("a", 2, "(1 -> 1)", "")), []);
+        assert_eq!(
+            incident_codes(&inc("a", 2, "(2 -> 3)", "")),
+            [(Severity::Error, "escalates-down")]
+        );
+    }
+
+    #[test]
+    fn an_incident_must_be_able_to_start_in_the_era_it_names() {
+        assert_eq!(incident_codes(&inc("a", 1, "2", "")), []);
+        assert_eq!(incident_codes(&inc("a", 2, "1", "")), []);
+        // Severity 1 is above Era 1's cap, so the Director first picks it in Era 2.
+        assert_eq!(
+            incident_codes(&inc("a", 1, "1", "")),
+            [(Severity::Warning, "fires-later")]
+        );
+        // Era 0 has no incidents at all.
+        assert_eq!(
+            incident_codes(&inc("a", 0, "3", "")),
+            [(Severity::Warning, "fires-later")]
+        );
+        // A cascade can start it, so it is not reported.
+        let cascaded = inc("a", 1, "1", "") + &inc("b", 1, "2", ":cascades a");
+        assert_eq!(incident_codes(&cascaded), []);
+    }
+
+    #[test]
+    fn an_incident_no_era_allows_never_starts() {
+        let eras =
+            era_with("e0", "incident-every", "60s").replace(":max-severity 1", ":max-severity 2");
+        let body = format!(
+            "(research fix :name \"f\" :track data :cost 1 :era 0 :blurb \"b\")\n{eras}{}",
+            inc("a", 0, "1", "")
+        );
+        assert_eq!(era_codes(&body), [(Severity::Error, "never-fires")]);
+    }
+
+    #[test]
+    fn each_fallacy_is_taught_by_exactly_one_incident() {
+        let one = "(fallacies latency)\n".to_string() + &inc("a", 2, "2", ":fallacy latency");
+        assert_eq!(incident_codes(&one), []);
+        assert_eq!(
+            incident_codes("(fallacies latency)\n"),
+            [(Severity::Error, "fallacy-untaught")]
+        );
+        let twice = one + &inc("b", 2, "2", ":fallacy latency");
+        assert_eq!(incident_codes(&twice), [(Severity::Error, "fallacy-twice")]);
+        assert_eq!(
+            incident_codes(&inc("a", 2, "2", ":fallacy latnecy")),
+            [(Severity::Error, "unknown-fallacy")]
+        );
+    }
+
+    #[test]
+    fn cascades_must_end() {
+        let body = inc("a", 2, "2", ":cascades b")
+            + &inc("b", 2, "2", ":cascades c")
+            + &inc("c", 2, "2", "");
+        assert_eq!(incident_codes(&body), []);
+        let looped = inc("a", 2, "2", ":cascades b") + &inc("b", 2, "2", ":cascades a");
+        assert_eq!(
+            incident_codes(&looped),
+            [(Severity::Error, "cascade-cycle")]
+        );
+    }
+
+    #[test]
+    fn actions_and_surges_name_things_that_exist() {
+        assert_eq!(
+            incident_codes(&inc("a", 2, "2", "").replace("(fix)", "(fxi)")),
+            [(Severity::Error, "unknown-research")]
+        );
+        assert_eq!(
+            incident_codes(
+                &("(const SURGE 4)\n".to_string() + &inc("a", 2, "2", ":surge (media SURGE)"))
+            ),
+            []
+        );
+        assert_eq!(
+            incident_codes(&inc("a", 2, "2", ":surge (media SURGE)")),
+            [(Severity::Error, "unknown-import")]
+        );
+        assert_eq!(
+            incident_codes(&inc("a", 2, "2", ":surge (media 1)")),
+            [(Severity::Error, "surge")]
         );
     }
 }

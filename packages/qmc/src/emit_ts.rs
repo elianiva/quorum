@@ -116,6 +116,158 @@ fn imports(w: &mut String, catalog: &Catalog, used: &BTreeSet<&str>) {
             );
         }
     }
+    let consts: Vec<&str> = catalog
+        .consts
+        .iter()
+        .map(|c| c.name.text.as_str())
+        .filter(|n| used.contains(n))
+        .collect();
+    if !consts.is_empty() {
+        let _ = writeln!(
+            w,
+            "import {{ {} }} from './constants.ts'",
+            consts.join(", ")
+        );
+    }
+}
+
+pub fn constants(catalog: &Catalog) -> String {
+    let mut o = String::from(HEADER);
+    for c in &catalog.consts {
+        let _ = writeln!(o, "export const {} = {}", c.name.text, num(&c.value));
+    }
+    o
+}
+
+fn list<'a>(items: impl IntoIterator<Item = &'a str>) -> String {
+    items.into_iter().map(string).collect::<Vec<_>>().join(", ")
+}
+
+pub fn incidents(catalog: &Catalog) -> String {
+    let mut o = String::from(HEADER);
+    let w = &mut o;
+    let _ = writeln!(
+        w,
+        "import type {{ RequestKind }} from '../catalog/kinds.ts'"
+    );
+    let _ = writeln!(w, "import type {{ ResearchId }} from './research.ts'");
+    let mut used = BTreeSet::new();
+    for i in &catalog.incidents {
+        for v in [&i.name, &i.cause, &i.prevention] {
+            uses(&v.value, &mut used);
+        }
+        if let Some((_, by)) = &i.surge {
+            uses(&by.value, &mut used);
+        }
+    }
+    imports(w, catalog, &used);
+
+    let _ = writeln!(w, "\nexport const INCIDENT_IDS = [");
+    for i in &catalog.incidents {
+        let _ = writeln!(w, "  {},", string(&i.id.text));
+    }
+    let _ = writeln!(
+        w,
+        "] as const\nexport type IncidentId = (typeof INCIDENT_IDS)[number]"
+    );
+
+    let _ = writeln!(w, "\nexport const FALLACY_IDS = [");
+    for f in &catalog.fallacies {
+        let _ = writeln!(w, "  {},", string(&f.text));
+    }
+    let _ = writeln!(
+        w,
+        "] as const\nexport type FallacyId = (typeof FALLACY_IDS)[number]"
+    );
+
+    let _ = writeln!(
+        w,
+        "\nexport const FALLACY_INCIDENTS: Readonly<Record<FallacyId, IncidentId>> = {{"
+    );
+    for f in &catalog.fallacies {
+        let teacher = catalog
+            .incidents
+            .iter()
+            .find(|i| i.fallacy.as_ref().is_some_and(|x| x.text == f.text))
+            .expect("checked");
+        let _ = writeln!(w, "  {}: {},", key(&f.text), string(&teacher.id.text));
+    }
+    let _ = writeln!(w, "}}");
+
+    let _ = writeln!(
+        w,
+        "\nexport type IncidentDef = Readonly<{{\n  id: IncidentId\n  name: string\n  era: number\n  severity: 1 | 2 | 3\n  escalatesTo: 1 | 2 | null\n  duration: number\n  cause: string\n  prevention: string\n  actions: ReadonlyArray<ResearchId>\n}}>"
+    );
+
+    let _ = writeln!(w, "\nexport const KIND_SURGE: Partial<Record<IncidentId, readonly [RequestKind, number]>> = {{");
+    for i in &catalog.incidents {
+        if let Some((kind, by)) = &i.surge {
+            let _ = writeln!(
+                w,
+                "  {}: [{}, {}],",
+                key(&i.id.text),
+                string(&kind.text),
+                value(&by.value)
+            );
+        }
+    }
+    let _ = writeln!(w, "}}");
+
+    let _ = writeln!(
+        w,
+        "\nexport const RUNTIME_INCIDENT_FAILURES: Partial<Record<IncidentId, number>> = {{"
+    );
+    for i in &catalog.incidents {
+        if let Some(share) = &i.failures {
+            let _ = writeln!(w, "  {}: {},", key(&i.id.text), num(share));
+        }
+    }
+    let _ = writeln!(w, "}}");
+
+    let _ = writeln!(
+        w,
+        "\nexport const CASCADES: Partial<Record<IncidentId, IncidentId>> = {{"
+    );
+    for i in &catalog.incidents {
+        if let Some(next) = &i.cascades {
+            let _ = writeln!(w, "  {}: {},", key(&i.id.text), string(&next.text));
+        }
+    }
+    let _ = writeln!(w, "}}");
+
+    let _ = writeln!(
+        w,
+        "\nexport const INCIDENTS: Record<IncidentId, IncidentDef> = {{"
+    );
+    for i in &catalog.incidents {
+        let escalates = i
+            .escalates_to
+            .as_ref()
+            .map_or_else(|| "null".to_string(), num);
+        let seconds = i
+            .duration
+            .value
+            .in_unit(Unit::S)
+            .decimal()
+            .expect("seconds are a finite decimal");
+        let _ = writeln!(w, "  {}: {{", key(&i.id.text));
+        let _ = writeln!(w, "    id: {},", string(&i.id.text));
+        let _ = writeln!(w, "    name: {},", value(&i.name.value));
+        let _ = writeln!(w, "    era: {},", num(&i.era));
+        let _ = writeln!(w, "    severity: {},", num(&i.severity));
+        let _ = writeln!(w, "    escalatesTo: {escalates},");
+        let _ = writeln!(w, "    duration: {seconds},");
+        let _ = writeln!(w, "    cause: {},", value(&i.cause.value));
+        let _ = writeln!(w, "    prevention: {},", value(&i.prevention.value));
+        let _ = writeln!(
+            w,
+            "    actions: [{}],",
+            list(i.actions.iter().map(|a| a.text.as_str()))
+        );
+        let _ = writeln!(w, "  }},");
+    }
+    let _ = writeln!(w, "}}");
+    o
 }
 
 fn mix_name(name: &str) -> String {

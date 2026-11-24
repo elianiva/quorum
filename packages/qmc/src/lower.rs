@@ -153,6 +153,37 @@ pub struct Catalog {
     pub research: Vec<Research>,
     pub mixes: Vec<Mix>,
     pub eras: Vec<Era>,
+    pub fallacies: Vec<Name>,
+    pub consts: Vec<Const>,
+    pub incidents: Vec<Incident>,
+}
+
+/// `(const NAME value)`: a number the generated code exports and content can name.
+#[derive(Debug)]
+pub struct Const {
+    pub name: Name,
+    pub value: Spanned<Number>,
+}
+
+#[derive(Debug)]
+pub struct Incident {
+    pub id: Name,
+    pub name: Spanned<Value>,
+    pub era: Spanned<Number>,
+    /// 1 is the worst.
+    pub severity: Spanned<Number>,
+    /// The severity it steps to when left alone, from `:severity (3 -> 2)`.
+    pub escalates_to: Option<Spanned<Number>>,
+    pub duration: Spanned<Number>,
+    pub actions: Vec<Name>,
+    pub fallacy: Option<Name>,
+    pub cascades: Option<Name>,
+    /// `:surge (media 4)`: the request kind that surges, and by how many times.
+    pub surge: Option<(Name, Spanned<Value>)>,
+    pub failures: Option<Spanned<Number>>,
+    pub cause: Spanned<Value>,
+    pub prevention: Spanned<Value>,
+    pub span: Span,
 }
 
 /// Lowers one file. The driver lowers files in parallel and concatenates them in file order.
@@ -175,6 +206,9 @@ impl Catalog {
         self.research.extend(other.research);
         self.mixes.extend(other.mixes);
         self.eras.extend(other.eras);
+        self.fallacies.extend(other.fallacies);
+        self.consts.extend(other.consts);
+        self.incidents.extend(other.incidents);
     }
 }
 
@@ -183,7 +217,17 @@ struct Lower {
     catalog: Catalog,
 }
 
-const FORMS: &[&str] = &["import", "tracks", "study-shapes", "research", "mix", "era"];
+const FORMS: &[&str] = &[
+    "import",
+    "tracks",
+    "study-shapes",
+    "research",
+    "mix",
+    "era",
+    "fallacies",
+    "const",
+    "incident",
+];
 
 /// A form's keyword arguments, after the head and any positional arguments.
 struct Keys<'a> {
@@ -246,6 +290,45 @@ impl Lower {
             "era" => {
                 if let Some(era) = self.era(form) {
                     self.catalog.eras.push(era);
+                }
+            }
+            "fallacies" => {
+                for item in &form.list().unwrap()[1..] {
+                    if let Some(name) = self.name(item, "a fallacy") {
+                        self.catalog.fallacies.push(name);
+                    }
+                }
+            }
+            "const" => match form.list().unwrap() {
+                [_, name, value] => {
+                    let name = self.name(name, "a constant name");
+                    let value = match value.kind {
+                        Kind::Num(n) => Some(Spanned {
+                            value: n,
+                            span: value.span,
+                        }),
+                        _ => {
+                            self.sink.push(Diagnostic::error(
+                                "expected-number",
+                                value.span,
+                                "a constant is a number",
+                            ));
+                            None
+                        }
+                    };
+                    if let (Some(name), Some(value)) = (name, value) {
+                        self.catalog.consts.push(Const { name, value });
+                    }
+                }
+                _ => self.sink.push(Diagnostic::error(
+                    "bad-form",
+                    form.span,
+                    "write (const NAME value)",
+                )),
+            },
+            "incident" => {
+                if let Some(incident) = self.incident(form) {
+                    self.catalog.incidents.push(incident);
                 }
             }
             other => {
@@ -792,18 +875,7 @@ impl Lower {
         let cost_index = req(self, "cost-index").and_then(|v| self.count(v, "a cost index", 1));
         let salary_index =
             req(self, "salary-index").and_then(|v| self.count(v, "a salary index", 1));
-        let max_severity = req(self, "max-severity").and_then(|v| {
-            let n = self.count(v, "a severity", 1)?;
-            if n.value.value > Ratio::int(3) {
-                self.sink.push(Diagnostic::error(
-                    "range",
-                    v.span,
-                    "a severity is 1, 2, or 3",
-                ));
-                return None;
-            }
-            Some(n)
-        });
+        let max_severity = req(self, "max-severity").and_then(|v| self.severity(v));
         let incident_every = req(self, "incident-every").map(|v| {
             if Self::is_word(v, "none") {
                 Ok(None)
@@ -856,5 +928,103 @@ impl Lower {
             arrivals: arrivals?,
             span: form.span,
         })
+    }
+
+    fn incident(&mut self, form: &Sexp) -> Option<Incident> {
+        const KEYS: &[&str] = &[
+            "name",
+            "era",
+            "severity",
+            "duration",
+            "actions",
+            "fallacy",
+            "cascades",
+            "surge",
+            "failures",
+            "cause",
+            "prevention",
+        ];
+        let (args, keys) = self.keys(form, 1, KEYS)?;
+        let id = self.name(&args[0], "an incident id");
+        let what = "an incident";
+        let req = |cx: &mut Lower, key: &str| keys.required(key, what, &mut cx.sink);
+        let name = req(self, "name").and_then(|v| self.text(v, "a name"));
+        let cause = req(self, "cause").and_then(|v| self.text(v, "a cause"));
+        let prevention = req(self, "prevention").and_then(|v| self.text(v, "a prevention"));
+        let era = req(self, "era").and_then(|v| self.count(v, "an era", 0));
+        let duration =
+            req(self, "duration").and_then(|v| self.measure(v, "a duration", Dimension::Time));
+        let severity = req(self, "severity").and_then(|v| match v.list() {
+            Some([from, arrow, to]) if arrow.symbol() == Some("->") => {
+                let from = self.severity(from)?;
+                let to = self.severity(to)?;
+                Some((from, Some(to)))
+            }
+            Some(_) => {
+                self.sink.push(Diagnostic::error(
+                    "bad-value",
+                    v.span,
+                    "write :severity 3, or (3 -> 2) when it escalates",
+                ));
+                None
+            }
+            None => self.severity(v).map(|s| (s, None)),
+        });
+        let actions = keys
+            .get("actions")
+            .map_or_else(Vec::new, |v| self.names(v, "actions"));
+        let fallacy = keys.get("fallacy").and_then(|v| self.name(v, "a fallacy"));
+        let cascades = keys
+            .get("cascades")
+            .and_then(|v| self.name(v, "an incident"));
+        let failures = keys
+            .get("failures")
+            .and_then(|v| self.share(v, "a failure share"));
+        let surge = keys.get("surge").and_then(|v| match v.list() {
+            Some([kind, by]) => {
+                let kind = self.name(kind, "a request kind")?;
+                let by = self.value(by)?;
+                Some((kind, by))
+            }
+            _ => {
+                self.sink.push(Diagnostic::error(
+                    "bad-value",
+                    v.span,
+                    "write :surge (kind times)",
+                ));
+                None
+            }
+        });
+        let (severity, escalates_to) = severity?;
+        Some(Incident {
+            id: id?,
+            name: name?,
+            era: era?,
+            severity,
+            escalates_to,
+            duration: duration?,
+            actions,
+            fallacy,
+            cascades,
+            surge,
+            failures,
+            cause: cause?,
+            prevention: prevention?,
+            span: form.span,
+        })
+    }
+
+    /// A severity from 1, the worst, to 3.
+    fn severity(&mut self, sexp: &Sexp) -> Option<Spanned<Number>> {
+        let n = self.count(sexp, "a severity", 1)?;
+        if n.value.value > Ratio::int(3) {
+            self.sink.push(Diagnostic::error(
+                "range",
+                sexp.span,
+                "a severity is 1, 2, or 3",
+            ));
+            return None;
+        }
+        Some(n)
     }
 }

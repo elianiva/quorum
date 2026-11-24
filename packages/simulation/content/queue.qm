@@ -1,0 +1,10 @@
+(def QUEUE_RATE 20_000)
+(def BACKLOG_MS 0.01)
+(def DRAIN_SECONDS 10)
+(def MAX_ATTEMPTS :type const [1 3 10 25])
+(def FOREVER_ATTEMPTS 25)
+(def QUEUE_LENGTHS :type const [0 1_000 10_000 100_000])
+(def QUEUE_MESSAGE_PRICE 0.00144)
+
+(def queueGlossary :type "ReadonlyArray<string>"
+  ["at-least-once-delivery" "backpressure" "dead-letter-queue" "transactional-outbox"])

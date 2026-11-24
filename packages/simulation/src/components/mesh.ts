@@ -1,4 +1,1 @@
-export const MESH_HOP_MS = 1
-export const MESH_OVERHEAD = 0.05
-export const MESH_INSIGHT = 0.2
-export const MESH_TAX = 0.5
+export { MESH_HOP_MS, MESH_OVERHEAD, MESH_INSIGHT, MESH_TAX } from '../generated/mesh.ts'

@@ -1,0 +1,4 @@
+(def MESH_HOP_MS 1)
+(def MESH_OVERHEAD 0.05)
+(def MESH_INSIGHT 0.2)
+(def MESH_TAX 0.5)

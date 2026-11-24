@@ -1,0 +1,68 @@
+(def DB_ENGINES :type const
+  (:postgres (:name "PostgreSQL"
+              :connections MAX_CONNECTIONS
+              :connectionMB 8
+              :read 0.95
+              :write 1.15
+              :scan 0.9
+              :searchCost 1
+              :migration 1.25
+              :lag 1
+              :bloat true)
+   :mysql (:name "MySQL"
+           :connections 500
+           :connectionMB 1
+           :read 1.05
+           :write 0.85
+           :scan 1.1
+           :searchCost 2
+           :migration 0.75
+           :lag 0.8
+           :bloat false)))
+
+(def STORAGE_IOPS :type const
+  (:general (:name "General purpose" :iops 3_000 :burn 1)
+   :provisioned (:name "Provisioned IOPS" :iops 64_000 :burn 1.5)))
+
+(def SHARD_COUNTS :type const [1 2 4 8])
+
+(def DB_RETENTIONS :type const
+  (:keep (:name "Keep everything" :days 0 :price 1 :scanMs 0 :rebuild 1 :hotSet 1)
+   :archive (:name "Archive after 30 d" :days 30 :price 0.1 :scanMs 200 :rebuild 1 :hotSet 0.4)
+   :delete (:name "Delete after 30 d" :days 30 :price 0 :scanMs 0 :rebuild 3 :hotSet 0.25)))
+(def ROW_KB 10)
+(def DB_STORAGE_MULT 3.5)
+
+(def RESTORE_FAILURE 0.2)
+(def RESTORE_DRILL_DH 4)
+(def MATERIALIZED_SCAN 0.5)
+(def MATERIALIZED_STALE 0.05)
+(def DENORMALIZED_READ 0.7)
+(def DENORMALIZED_WRITE 1.2)
+
+(def BACKUPS :type const
+  (:none (:name "None" :rpo Infinity :burn 0)
+   :nightly (:name "Nightly" :rpo 1_440 :burn 0.05)
+   :pitr (:name "PITR" :rpo 2 :burn 0.15)))
+
+(def SHARD_KEYS :type const
+  (:hash (:name "Hash of user ID" :hot 0 :cross 1 :farMs 0)
+   :range (:name "Range of IDs" :hot 0.5 :cross 1 :farMs 0)
+   :tenant (:name "By tenant" :hot 0.3 :cross 0.1 :farMs 0)
+   :region (:name "By region" :hot 0 :cross 0.2 :farMs 70)))
+(def SCATTER_CPU 0.15)
+(def SCATTER_MS 2)
+(def DISTRIBUTED_TX_FAILURE 0.005)
+(def RESHARD_DH 24)
+(def RESHARD_IOPS 0.5)
+(def RESHARD_MINUTES_PER_GB 1)
+
+(def ONLINE_MIGRATION_DH 1.1)
+(def EXPAND_CONTRACT_DH 1.25)
+(def INDEX_WRITE_COST 0.05)
+(def RESTORE_MINUTES_PER_GB 0.5)
+(def RESTORE_MIN_MINUTES 5)
+(def MIGRATION_LOCK_PER_GB 0.1)
+
+(def MULTI_WRITE_CPU 1.25)
+(def MULTI_CONFLICT 0.02)

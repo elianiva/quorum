@@ -1,97 +1,38 @@
 import { Effect, Schema } from 'effect'
-import { MAX_CONNECTIONS } from '../catalog/instances.ts'
+export {
+  DB_ENGINES,
+  STORAGE_IOPS,
+  SHARD_COUNTS,
+  DB_RETENTIONS,
+  ROW_KB,
+  DB_STORAGE_MULT,
+  RESTORE_FAILURE,
+  RESTORE_DRILL_DH,
+  MATERIALIZED_SCAN,
+  MATERIALIZED_STALE,
+  DENORMALIZED_READ,
+  DENORMALIZED_WRITE,
+  BACKUPS,
+  SHARD_KEYS,
+  SCATTER_CPU,
+  SCATTER_MS,
+  DISTRIBUTED_TX_FAILURE,
+  RESHARD_DH,
+  RESHARD_IOPS,
+  RESHARD_MINUTES_PER_GB,
+  ONLINE_MIGRATION_DH,
+  EXPAND_CONTRACT_DH,
+  INDEX_WRITE_COST,
+  RESTORE_MINUTES_PER_GB,
+  RESTORE_MIN_MINUTES,
+  MIGRATION_LOCK_PER_GB,
+  MULTI_WRITE_CPU,
+  MULTI_CONFLICT,
+} from '../generated/database.ts'
+import { STORAGE_IOPS } from '../generated/database.ts'
 
-export const DB_ENGINES = {
-  postgres: {
-    name: 'PostgreSQL',
-    connections: MAX_CONNECTIONS,
-    connectionMB: 8,
-    read: 0.95,
-    write: 1.15,
-    scan: 0.9,
-    searchCost: 1,
-    migration: 1.25,
-    lag: 1,
-    bloat: true,
-  },
-  mysql: {
-    name: 'MySQL',
-    connections: 500,
-    connectionMB: 1,
-    read: 1.05,
-    write: 0.85,
-    scan: 1.1,
-    searchCost: 2,
-    migration: 0.75,
-    lag: 0.8,
-    bloat: false,
-  },
-} as const
-
-export const STORAGE_IOPS = {
-  general: { name: 'General purpose', iops: 3_000, burn: 1 },
-  provisioned: { name: 'Provisioned IOPS', iops: 64_000, burn: 1.5 },
-} as const
-
-export const SHARD_COUNTS = [1, 2, 4, 8] as const
-
-export const DB_RETENTIONS = {
-  keep: { name: 'Keep everything', days: 0, price: 1, scanMs: 0, rebuild: 1, hotSet: 1 },
-  archive: {
-    name: 'Archive after 30 d',
-    days: 30,
-    price: 0.1,
-    scanMs: 200,
-    rebuild: 1,
-    hotSet: 0.4,
-  },
-  delete: {
-    name: 'Delete after 30 d',
-    days: 30,
-    price: 0,
-    scanMs: 0,
-    rebuild: 3,
-    hotSet: 0.25,
-  },
-} as const
-export const ROW_KB = 10
-export const DB_STORAGE_MULT = 3.5
-
-export const RESTORE_FAILURE = 0.2
-export const RESTORE_DRILL_DH = 4
 export const diskMs = (volume: keyof typeof STORAGE_IOPS): number =>
   1_000 / STORAGE_IOPS[volume].iops
-export const MATERIALIZED_SCAN = 0.5
-export const MATERIALIZED_STALE = 0.05
-export const DENORMALIZED_READ = 0.7
-export const DENORMALIZED_WRITE = 1.2
-
-export const BACKUPS = {
-  none: { name: 'None', rpo: Number.POSITIVE_INFINITY, burn: 0 },
-  nightly: { name: 'Nightly', rpo: 1_440, burn: 0.05 },
-  pitr: { name: 'PITR', rpo: 2, burn: 0.15 },
-} as const
-
-export const SHARD_KEYS = {
-  hash: { name: 'Hash of user ID', hot: 0, cross: 1, farMs: 0 },
-  range: { name: 'Range of IDs', hot: 0.5, cross: 1, farMs: 0 },
-  tenant: { name: 'By tenant', hot: 0.3, cross: 0.1, farMs: 0 },
-  region: { name: 'By region', hot: 0, cross: 0.2, farMs: 70 },
-} as const
-export const SCATTER_CPU = 0.15
-export const SCATTER_MS = 2
-export const DISTRIBUTED_TX_FAILURE = 0.005
-export const RESHARD_DH = 24
-export const RESHARD_IOPS = 0.5
-export const RESHARD_MINUTES_PER_GB = 1
-
-export const ONLINE_MIGRATION_DH = 1.1
-export const EXPAND_CONTRACT_DH = 1.25
-export const INDEX_WRITE_COST = 0.05
-export const RESTORE_MINUTES_PER_GB = 0.5
-export const RESTORE_MIN_MINUTES = 5
-export const MIGRATION_LOCK_PER_GB = 0.1
-
 export const IopsClass = Schema.Literals(['general', 'provisioned'])
 export type IopsClass = typeof IopsClass.Type
 
@@ -103,9 +44,6 @@ export type ShardKey = typeof ShardKey.Type
 
 export const DbTopology = Schema.Literals(['single', 'sharded', 'multi'])
 export type DbTopology = typeof DbTopology.Type
-
-export const MULTI_WRITE_CPU = 1.25
-export const MULTI_CONFLICT = 0.02
 
 export const databaseFields = {
   shardKey: ShardKey.pipe(Schema.withDecodingDefaultKey(Effect.succeed('hash' as const))),

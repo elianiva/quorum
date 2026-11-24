@@ -1,9 +1,5 @@
 import { Effect, Schema } from 'effect'
-
-export const HUB_RAM_KB = 8 * 1_048_576
-export const PRESENCE_CPU = 0.15
-export const PRESENCE_VALUE = 1.25
-export const HERD_REFUSED = 0.5
+export { HUB_RAM_KB, PRESENCE_CPU, PRESENCE_VALUE, HERD_REFUSED } from '../generated/ws.ts'
 
 export const wsFields = {
   presence: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),

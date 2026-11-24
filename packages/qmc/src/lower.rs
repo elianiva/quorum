@@ -154,6 +154,11 @@ pub struct Catalog {
     pub mixes: Vec<Mix>,
     pub eras: Vec<Era>,
     pub fallacies: Vec<Name>,
+    /// `(kinds :request (…) :backend (…))`: every request and backend kind, in order.
+    pub request_kinds: Vec<Name>,
+    pub backend_kinds: Vec<Name>,
+    /// The backend kinds that touch stored data.
+    pub data_kinds: Vec<Name>,
     pub consts: Vec<Const>,
     pub incidents: Vec<Incident>,
 }
@@ -207,6 +212,9 @@ impl Catalog {
         self.mixes.extend(other.mixes);
         self.eras.extend(other.eras);
         self.fallacies.extend(other.fallacies);
+        self.request_kinds.extend(other.request_kinds);
+        self.backend_kinds.extend(other.backend_kinds);
+        self.data_kinds.extend(other.data_kinds);
         self.consts.extend(other.consts);
         self.incidents.extend(other.incidents);
     }
@@ -227,6 +235,7 @@ const FORMS: &[&str] = &[
     "fallacies",
     "const",
     "incident",
+    "kinds",
 ];
 
 /// A form's keyword arguments, after the head and any positional arguments.
@@ -290,6 +299,22 @@ impl Lower {
             "era" => {
                 if let Some(era) = self.era(form) {
                     self.catalog.eras.push(era);
+                }
+            }
+            "kinds" => {
+                if let Some((_, keys)) = self.keys(form, 0, &["request", "backend", "data"]) {
+                    let request = keys.required("request", "kinds", &mut self.sink);
+                    let backend = keys.required("backend", "kinds", &mut self.sink);
+                    if let (Some(request), Some(backend)) = (request, backend) {
+                        let request = self.names(request, "request kinds");
+                        let backend = self.names(backend, "backend kinds");
+                        self.catalog.request_kinds.extend(request);
+                        self.catalog.backend_kinds.extend(backend);
+                        if let Some(data) = keys.get("data") {
+                            let data = self.names(data, "data kinds");
+                            self.catalog.data_kinds.extend(data);
+                        }
+                    }
                 }
             }
             "fallacies" => {

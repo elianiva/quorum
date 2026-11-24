@@ -131,6 +131,22 @@ fn imports(w: &mut String, catalog: &Catalog, used: &BTreeSet<&str>) {
     }
 }
 
+pub fn kinds(catalog: &Catalog) -> String {
+    let mut o = String::from(HEADER);
+    for (name, ty, kinds) in [
+        ("REQUEST_KINDS", "RequestKind", &catalog.request_kinds),
+        ("BACKEND_KINDS", "BackendKind", &catalog.backend_kinds),
+        ("DATA_KINDS", "DataKind", &catalog.data_kinds),
+    ] {
+        let _ = writeln!(o, "\nexport const {name} = [");
+        for kind in kinds {
+            let _ = writeln!(o, "  {},", string(&kind.text));
+        }
+        let _ = writeln!(o, "] as const\nexport type {ty} = (typeof {name})[number]");
+    }
+    o
+}
+
 pub fn constants(catalog: &Catalog) -> String {
     let mut o = String::from(HEADER);
     for c in &catalog.consts {

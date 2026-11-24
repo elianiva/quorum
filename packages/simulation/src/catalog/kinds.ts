@@ -1,55 +1,17 @@
-export const REQUEST_KINDS = [
-  'page',
-  'read',
-  'write',
-  'login',
-  'search',
-  'upload',
-  'bot',
-  'media',
-  'rt',
-  'buy',
-  'job',
-  'report',
-  'ai',
-  'feed',
-  'hook',
-  'push',
-  'bid',
-] as const
-export type RequestKind = (typeof REQUEST_KINDS)[number]
-
-export const BACKEND_KINDS = [
-  'q-read',
-  'q-write',
-  'auth',
-  'q-search',
-  'q-vector',
-  'blob-put',
-  'task',
-  'blob-get',
-  'q-tx',
-  'charge',
-  'q-scan',
-  'infer',
-  'notify',
-  'callout',
-  'k-write',
-  'change',
-] as const
-export type BackendKind = (typeof BACKEND_KINDS)[number]
-
-export const DATA_KINDS = [
-  'q-read',
-  'q-write',
-  'q-search',
-  'q-vector',
-  'blob-put',
-  'q-tx',
-  'blob-get',
-  'q-scan',
-  'k-write',
-] as const
+// The kind lists are written in content/kinds.qm and compiled by qmc.
+import {
+  BACKEND_KINDS,
+  REQUEST_KINDS,
+  type BackendKind,
+  type RequestKind,
+} from '../generated/kinds.ts'
+export {
+  BACKEND_KINDS,
+  DATA_KINDS,
+  REQUEST_KINDS,
+  type BackendKind,
+  type RequestKind,
+} from '../generated/kinds.ts'
 
 export type Kind = RequestKind | BackendKind
 

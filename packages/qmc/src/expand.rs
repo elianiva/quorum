@@ -53,6 +53,7 @@ pub const BUILTIN_FORMS: &[&str] = &[
     "fallacies",
     "const",
     "incident",
+    "kinds",
 ];
 
 const MAX_DEPTH: usize = 64;

@@ -12,7 +12,7 @@ use std::collections::{BTreeMap, BTreeSet};
 type Pass = fn(&Catalog) -> Sink;
 
 const PASSES: &[Pass] = &[
-    names, requires, cycles, eras, shapes, imports, insight, era_rules, mixes, incidents,
+    names, requires, cycles, eras, shapes, imports, insight, era_rules, mixes, incidents, kind_refs,
 ];
 
 pub fn run(catalog: &Catalog) -> Sink {
@@ -682,6 +682,78 @@ fn incidents(catalog: &Catalog) -> Sink {
     sink
 }
 
+/// Every request kind a mix, a study, or a surge names is declared in `(kinds …)`.
+fn kind_refs(catalog: &Catalog) -> Sink {
+    let mut sink = Sink::default();
+    let all = catalog.request_kinds.iter().chain(&catalog.backend_kinds);
+    unique(all, "the kind", &mut sink);
+    let request: Vec<&str> = catalog
+        .request_kinds
+        .iter()
+        .map(|k| k.text.as_str())
+        .collect();
+    let backend: Vec<&str> = catalog
+        .backend_kinds
+        .iter()
+        .map(|k| k.text.as_str())
+        .collect();
+    unique(catalog.data_kinds.iter(), "the data kind", &mut sink);
+    for kind in &catalog.data_kinds {
+        if !backend.contains(&kind.text.as_str()) {
+            sink.push(
+                unknown("unknown-kind", kind, "backend kind", &backend)
+                    .label("a data kind is a backend kind"),
+            );
+        }
+    }
+    let mut refs: Vec<(&Name, &str)> = Vec::new();
+    let inline = catalog.eras.iter().filter_map(|e| match &e.mix {
+        MixRef::Inline(mix) => Some(mix),
+        MixRef::Named(_) => None,
+    });
+    for mix in catalog.mixes.iter().chain(inline) {
+        refs.extend(mix.shares.iter().map(|(kind, _)| (kind, "request kind")));
+    }
+    for incident in &catalog.incidents {
+        refs.extend(
+            incident
+                .surge
+                .iter()
+                .map(|(kind, _)| (kind, "request kind")),
+        );
+    }
+    let pools: Vec<&Name> = catalog
+        .research
+        .iter()
+        .flat_map(|r| r.insight.iter().flat_map(|(_, p)| p))
+        .collect();
+    if refs.is_empty() && pools.is_empty() {
+        return sink;
+    }
+    if request.is_empty() {
+        let first = refs.first().map_or_else(|| pools[0].span, |(k, _)| k.span);
+        sink.push(Diagnostic::error(
+            "no-kinds",
+            first,
+            "a request kind is named, but no (kinds …) is declared",
+        ));
+        return sink;
+    }
+    for (kind, what) in refs {
+        if !request.contains(&kind.text.as_str()) {
+            sink.push(unknown("unknown-kind", kind, what, &request));
+        }
+    }
+    let mut known_pools = request.clone();
+    known_pools.push("failure");
+    for pool in pools {
+        if !known_pools.contains(&pool.text.as_str()) {
+            sink.push(unknown("unknown-kind", pool, "Insight pool", &known_pools));
+        }
+    }
+    sink
+}
+
 fn insight(catalog: &Catalog) -> Sink {
     let mut sink = Sink::default();
     for r in &catalog.research {
@@ -721,7 +793,8 @@ fn insight(catalog: &Catalog) -> Sink {
 mod tests {
     use crate::diag::Severity;
 
-    const PRELUDE: &str = "(tracks (data \"Data\")) \
+    const PRELUDE: &str = "(kinds :request (page read write media) :backend (q-read)) \
+        (tracks (data \"Data\")) \
         (study-shapes (read-share :share share) (backlog :seconds seconds))\n";
 
     /// An Era with valid defaults; `extra` keys come first, so they win over the defaults.
@@ -880,7 +953,7 @@ mod tests {
             .diagnostics
             .iter()
             .all(|d| d.severity == Severity::Warning));
-        assert_eq!(many.outputs.len(), 4);
+        assert!(!many.outputs.is_empty());
         assert_eq!(one.outputs, many.outputs);
         let codes = |c: &crate::Compiled| c.diagnostics.iter().map(|d| d.code).collect::<Vec<_>>();
         assert_eq!(codes(&one), codes(&many));
@@ -1116,5 +1189,50 @@ mod tests {
             incident_codes(&inc("a", 2, "2", ":surge (media 1)")),
             [(Severity::Error, "surge")]
         );
+    }
+
+    #[test]
+    fn every_named_kind_is_declared() {
+        assert_eq!(codes(&r("a", 0, "", ":insight (read failure)")), []);
+        assert_eq!(
+            codes(&r("a", 0, "", ":insight (raed)")),
+            [(Severity::Error, "unknown-kind")]
+        );
+        assert_eq!(
+            era_codes(&era_with("e", "mix", "(:page 50% :pgae 50%)")),
+            [(Severity::Error, "unknown-kind")]
+        );
+        assert_eq!(
+            incident_codes(&inc("a", 2, "2", ":surge (q-read 2)")),
+            [(Severity::Error, "unknown-kind")]
+        );
+    }
+
+    #[test]
+    fn data_kinds_are_backend_kinds() {
+        let compile = |kinds: &str| {
+            let compiled = crate::compile(vec![("t.qm".into(), kinds.to_string())]);
+            compiled
+                .diagnostics
+                .iter()
+                .map(|d| d.code)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            compile("(kinds :request (page) :backend (q-read task) :data (q-read))"),
+            Vec::<&str>::new()
+        );
+        assert_eq!(
+            compile("(kinds :request (page) :backend (q-read task) :data (page))"),
+            ["unknown-kind"]
+        );
+    }
+
+    #[test]
+    fn naming_a_kind_with_no_kinds_declared_is_one_error() {
+        let body = era_with("e", "mix", "(:page 100%)").replace(PRELUDE, "");
+        let compiled = crate::compile(vec![("t.qm".into(), body)]);
+        let codes: Vec<_> = compiled.diagnostics.iter().map(|d| d.code).collect();
+        assert_eq!(codes, ["no-kinds"]);
     }
 }

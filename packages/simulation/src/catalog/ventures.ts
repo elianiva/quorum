@@ -1,26 +1,29 @@
-import type { ComponentId } from './components.ts'
 import type { IncidentId } from './incidents.ts'
 import type { RequestKind } from './kinds.ts'
 import type { ResearchId } from './research.ts'
 import type { LanguageId, RuntimeId } from './runtimes.ts'
+export {
+  VENTURE_IDS,
+  START_CASH,
+  GARAGE_START,
+  MONEY_KINDS,
+  NO_CONSTRAINT,
+  MUTATOR_IDS,
+  MUTATORS,
+  MUTATOR_BANS,
+  MONOLITH_KLOC,
+  MONOLITH_MIGRATION,
+  MONOLITH_DEBT,
+  CHAOS_WEIGHT,
+  CHAOS_FROM_STAGE,
+  STEAL_MAX,
+  STEAL_SECONDS,
+  HN_WEIGHT,
+  SLO_LEVELS,
+} from '../generated/ventures.ts'
+import { VENTURE_IDS, GARAGE_START, NO_CONSTRAINT, MUTATOR_IDS } from '../generated/ventures.ts'
 
-export const VENTURE_IDS = [
-  'b2b-saas',
-  'consumer-social',
-  'fintech',
-  'streaming',
-  'game-backend',
-  'ai-startup',
-  'e-commerce',
-  'developer-platform',
-  'healthcare',
-  'ad-tech',
-  'bootstrapped',
-  'government',
-] as const
 export type VentureId = (typeof VENTURE_IDS)[number]
-
-export const START_CASH = 300
 
 export type VentureStart = Readonly<{
   cash: number
@@ -29,14 +32,6 @@ export type VentureStart = Readonly<{
   runtime: RuntimeId | null
   researched: ReadonlyArray<ResearchId>
 }>
-
-export const GARAGE_START: VentureStart = {
-  cash: START_CASH,
-  equity: 1,
-  stage: 0,
-  runtime: null,
-  researched: [],
-}
 
 export type VentureConstraint = Readonly<{
   noNaiveRetries: boolean
@@ -60,23 +55,6 @@ export type SaleSchedule = Readonly<{
   kind: RequestKind
   lift: number
 }>
-
-export const MONEY_KINDS: ReadonlyArray<RequestKind> = ['read', 'write', 'buy']
-
-export const NO_CONSTRAINT: VentureConstraint = {
-  noNaiveRetries: false,
-  residency: null,
-  deadline: null,
-  procurement: false,
-  languages: null,
-  sla: null,
-  gpus: 0,
-  hubsPerRegion: null,
-  egress: 1,
-  spikeWeight: 1,
-  staleFine: 0,
-  sale: null,
-}
 
 export type VentureShares = Readonly<Partial<Record<RequestKind, number>>>
 
@@ -439,18 +417,6 @@ export const VENTURES: Record<VentureId, VentureDef> = {
   }),
 }
 
-export const MUTATOR_IDS = [
-  'chaos-monkey',
-  'hn-front-page',
-  'legacy-monolith',
-  'one-region',
-  'no-caches',
-  'tight-budget',
-  'single-language',
-  'postgres',
-  'strict-slo',
-  'shared-tenancy',
-] as const
 export type MutatorId = (typeof MUTATOR_IDS)[number]
 
 export type MutatorDef = Readonly<{
@@ -459,76 +425,3 @@ export type MutatorDef = Readonly<{
   rule: string
   legacy: number
 }>
-
-export const MUTATORS: Record<MutatorId, MutatorDef> = {
-  'chaos-monkey': {
-    id: 'chaos-monkey',
-    name: 'Chaos Monkey',
-    rule: 'Instance failures dominate from Seed',
-    legacy: 0.25,
-  },
-  'hn-front-page': {
-    id: 'hn-front-page',
-    name: 'Hacker News front page',
-    rule: 'Traffic spikes three times as often',
-    legacy: 0.15,
-  },
-  'legacy-monolith': {
-    id: 'legacy-monolith',
-    name: 'Legacy monolith',
-    rule: 'Large PHP codebase: migrations ×3, debt starts at 40%',
-    legacy: 0.2,
-  },
-  'one-region': {
-    id: 'one-region',
-    name: 'One region forever',
-    rule: 'No Nodes outside the home region',
-    legacy: 0.2,
-  },
-  'no-caches': { id: 'no-caches', name: 'No caches', rule: 'No Cache, no CDN', legacy: 0.4 },
-  'tight-budget': {
-    id: 'tight-budget',
-    name: 'Tight budget',
-    rule: 'Funding grants halved',
-    legacy: 0.2,
-  },
-  'single-language': {
-    id: 'single-language',
-    name: 'Single language',
-    rule: 'Every App Server runs PHP',
-    legacy: 0.15,
-  },
-  postgres: {
-    id: 'postgres',
-    name: 'Postgres for everything',
-    rule: 'No Cache, wide-column, consensus or warehouse stores',
-    legacy: 0.3,
-  },
-  'strict-slo': {
-    id: 'strict-slo',
-    name: 'Strict SLO',
-    rule: 'The SLO is one level higher',
-    legacy: 0.2,
-  },
-  'shared-tenancy': {
-    id: 'shared-tenancy',
-    name: 'Shared tenancy',
-    rule: 'Noisy neighbours steal CPU from every instance',
-    legacy: 0.1,
-  },
-}
-
-export const MUTATOR_BANS: Partial<Record<MutatorId, ReadonlyArray<ComponentId>>> = {
-  'no-caches': ['cache', 'cdn'],
-  postgres: ['cache', 'wide', 'dsql', 'warehouse'],
-}
-
-export const MONOLITH_KLOC = 40
-export const MONOLITH_MIGRATION = 3
-export const MONOLITH_DEBT = 0.4
-export const CHAOS_WEIGHT = 4
-export const CHAOS_FROM_STAGE = 2
-export const STEAL_MAX = 0.3
-export const STEAL_SECONDS = 30
-export const HN_WEIGHT = 3
-export const SLO_LEVELS: ReadonlyArray<number> = [0.99, 0.995, 0.999, 0.9995, 0.9999, 0.99999]

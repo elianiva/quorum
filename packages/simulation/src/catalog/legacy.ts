@@ -1,4 +1,18 @@
-export const EXIT_IDS = ['acqui-hire', 'acquisition', 'ipo', 'step-down'] as const
+export {
+  EXIT_IDS,
+  EXITS,
+  STREAK_BONUS,
+  STREAK_BONUS_CAP,
+  PERK_IDS,
+  POLICY_LEVEL,
+  AUTOPILOT_PAYROLL,
+  AUTOPILOT_HIRES,
+  AUTOPILOT_LOAD,
+  PLAYBOOK_SLOTS,
+  DILATION_SPEEDS,
+} from '../generated/legacy.ts'
+import { EXIT_IDS, PERK_IDS } from '../generated/legacy.ts'
+
 export type ExitId = (typeof EXIT_IDS)[number]
 
 export type ExitDef = Readonly<{
@@ -10,58 +24,6 @@ export type ExitDef = Readonly<{
   continues: boolean
 }>
 
-export const EXITS: Record<ExitId, ExitDef> = {
-  'acqui-hire': {
-    id: 'acqui-hire',
-    name: 'Acqui-hire',
-    stage: 3,
-    cap: 50_000_000,
-    multiplier: 0.5,
-    continues: false,
-  },
-  acquisition: {
-    id: 'acquisition',
-    name: 'Acquisition',
-    stage: 4,
-    cap: Number.POSITIVE_INFINITY,
-    multiplier: 1,
-    continues: false,
-  },
-  ipo: {
-    id: 'ipo',
-    name: 'IPO',
-    stage: 6,
-    cap: Number.POSITIVE_INFINITY,
-    multiplier: 1.5,
-    continues: true,
-  },
-  'step-down': {
-    id: 'step-down',
-    name: 'Step down',
-    stage: 7,
-    cap: Number.POSITIVE_INFINITY,
-    multiplier: 1.5,
-    continues: false,
-  },
-}
-
-export const STREAK_BONUS = 0.1
-export const STREAK_BONUS_CAP = 1
-
-export const PERK_IDS = [
-  'angel-network',
-  'alumni-network',
-  'institutional-knowledge',
-  'pattern-recognition',
-  'founders-reputation',
-  'better-terms',
-  'night-shift',
-  'time-dilation',
-  'playbooks',
-  'war-stories',
-  'head-start',
-  'autopilot',
-] as const
 export type PerkId = (typeof PERK_IDS)[number]
 
 export type PerkDef = Readonly<{
@@ -168,12 +130,3 @@ export const PERKS: Record<PerkId, PerkDef> = {
     effect: 'Policies: queue the cheapest Study, hire, keep App Servers cool',
   },
 }
-
-export const POLICY_LEVEL = { research: 1, hire: 2, upgrade: 3 } as const
-
-export const AUTOPILOT_PAYROLL = 0.25
-export const AUTOPILOT_HIRES = 4
-export const AUTOPILOT_LOAD = 0.7
-
-export const PLAYBOOK_SLOTS: ReadonlyArray<number> = [1, 2, 5, 10, 25]
-export const DILATION_SPEEDS: ReadonlyArray<ReadonlyArray<number>> = [[], [20], [20, 40]]

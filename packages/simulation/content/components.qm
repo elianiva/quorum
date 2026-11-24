@@ -330,3 +330,80 @@
   :group ops :dock platform :cost 80 :latency 0ms
   :burn 0.005 :max-out 0 :unlock cert-automation
   :blurb "Holds the keys and renews the TLS certificates before they run out. Without it live, the certificate expires on the calendar and the site goes down.")
+(types "../catalog/components.ts" PricingId PricingDef)
+
+(def INTERNET_MS 30)
+
+(def UPLOAD_MB 2)
+
+(def EGRESS_ORIGIN 0.45)
+(def EGRESS_CDN 0.1)
+
+(def AUTHENTICATED_KINDS :type "ReadonlyArray<RequestKind>"
+  ["read" "write" "search" "upload" "buy" "job" "report" "ai" "feed" "hook"])
+(def AUTH_CHECK_MS 0.02)
+
+(def ZONES :type const ["a" "b" "c"])
+(def CROSS_ZONE_MS 1)
+(def EGRESS_CROSS_ZONE 0.01)
+(def BACKEND_KB 4)
+(def FAILOVER_SECONDS 20)
+
+(def TOKENS_PER_PROMPT 400)
+
+(def BREAKER_THRESHOLD 0.5)
+(def BREAKER_OPEN 5)
+
+(def BULKHEAD_MS 1_000)
+(def HEDGE_LOAD 0.1)
+(def SERIALIZE_MS 0.02)
+(def DUAL_WRITE_STALE 0.005)
+(def OUTBOX_STALE 0.0005)
+(def CDC_LAG_STALE 0.0002)
+(def CDC_DROP_STALE 0.005)
+(def CHAOS_EVERY 120)
+(def CHAOS_SECONDS 10)
+(def CHAOS_FAILURE 0.2)
+(def CHAOS_INSIGHT 1)
+(def LOAD_TEST_INSIGHT 2)
+(def DRILL_INSIGHT 5)
+
+(def FIRST_KIND_INSIGHT 20)
+(def INSIGHT_YIELD 1)
+(def FAILURE_YIELD 3)
+(def POOL_FLOOR 100)
+
+(def SPREAD_REGIONS 3)
+(def SPREAD_REPLICATION_KB 1)
+(def WIDE_SPREAD_LAG_STALE 0.015)
+(def WIDE_REBALANCE_MINUTES_PER_GB 0.4)
+(def DOC_REBALANCE_MINUTES_PER_GB 0.4)
+(def LOG_REPLICATE_MINUTES_PER_GB 0.25)
+
+(def HOT_KEY_SHARE 0.3)
+
+(def PRICING_IDS :type const ["on-demand" "reserved" "spot"])
+
+(def PRICINGS :type "Record<PricingId, PricingDef>"
+  (:on-demand (:id "on-demand"
+               :name "On-demand"
+               :price 1
+               :blurb "Full rate. Remove the Node at any time.")
+   :reserved (:id "reserved"
+              :name "Reserved"
+              :price 0.6
+              :blurb "0.6×, for a commitment of one calendar week. Selling before the term ends owes the Burn.")
+   :spot (:id "spot"
+          :name "Spot"
+          :price 0.3
+          :blurb "0.3×. The provider can reclaim the Node after 10 s of warning.")))
+
+(def SAVINGS_PLAN_RATE 0.8)
+
+(def PRICING_FROM_STAGE 3)
+(def RESERVED_SECONDS (* 7 CALENDAR_DAY))
+
+(def STICKY_LOCAL_READ 0.15)
+(def STICKY_HERD 0.5)
+
+(def FLAG_PROPAGATION_SECONDS 2)

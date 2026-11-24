@@ -5,6 +5,9 @@ import type { ResearchId } from './research.ts'
 import { SERVERLESS_MS } from '../components/fn.ts'
 import { EDGE_MS } from '../components/edge.ts'
 import { CDC_MS } from '../components/cdc.ts'
+import type { RequestKind } from './kinds.ts'
+import type { PricingId, PricingDef } from '../catalog/components.ts'
+import { CALENDAR_DAY } from './team.ts'
 
 export const COMPONENT_IDS = [
   'users',
@@ -1121,3 +1124,84 @@ export const FLAT_CAPACITY: Readonly<Record<string, number>> = {
   gw: 10000,
   edge: Number.POSITIVE_INFINITY,
 }
+
+export const INTERNET_MS = 30
+export const UPLOAD_MB = 2
+export const EGRESS_ORIGIN = 0.45
+export const EGRESS_CDN = 0.1
+
+export const AUTHENTICATED_KINDS: ReadonlyArray<RequestKind> = [
+  'read',
+  'write',
+  'search',
+  'upload',
+  'buy',
+  'job',
+  'report',
+  'ai',
+  'feed',
+  'hook',
+]
+
+export const AUTH_CHECK_MS = 0.02
+export const ZONES = ['a', 'b', 'c'] as const
+export const CROSS_ZONE_MS = 1
+export const EGRESS_CROSS_ZONE = 0.01
+export const BACKEND_KB = 4
+export const FAILOVER_SECONDS = 20
+export const TOKENS_PER_PROMPT = 400
+export const BREAKER_THRESHOLD = 0.5
+export const BREAKER_OPEN = 5
+export const BULKHEAD_MS = 1000
+export const HEDGE_LOAD = 0.1
+export const SERIALIZE_MS = 0.02
+export const DUAL_WRITE_STALE = 0.005
+export const OUTBOX_STALE = 0.0005
+export const CDC_LAG_STALE = 0.0002
+export const CDC_DROP_STALE = 0.005
+export const CHAOS_EVERY = 120
+export const CHAOS_SECONDS = 10
+export const CHAOS_FAILURE = 0.2
+export const CHAOS_INSIGHT = 1
+export const LOAD_TEST_INSIGHT = 2
+export const DRILL_INSIGHT = 5
+export const FIRST_KIND_INSIGHT = 20
+export const INSIGHT_YIELD = 1
+export const FAILURE_YIELD = 3
+export const POOL_FLOOR = 100
+export const SPREAD_REGIONS = 3
+export const SPREAD_REPLICATION_KB = 1
+export const WIDE_SPREAD_LAG_STALE = 0.015
+export const WIDE_REBALANCE_MINUTES_PER_GB = 0.4
+export const DOC_REBALANCE_MINUTES_PER_GB = 0.4
+export const LOG_REPLICATE_MINUTES_PER_GB = 0.25
+export const HOT_KEY_SHARE = 0.3
+export const PRICING_IDS = ['on-demand', 'reserved', 'spot'] as const
+
+export const PRICINGS: Record<PricingId, PricingDef> = {
+  'on-demand': {
+    id: 'on-demand',
+    name: 'On-demand',
+    price: 1,
+    blurb: 'Full rate. Remove the Node at any time.',
+  },
+  reserved: {
+    id: 'reserved',
+    name: 'Reserved',
+    price: 0.6,
+    blurb: '0.6×, for a commitment of one calendar week. Selling before the term ends owes the Burn.',
+  },
+  spot: {
+    id: 'spot',
+    name: 'Spot',
+    price: 0.3,
+    blurb: '0.3×. The provider can reclaim the Node after 10 s of warning.',
+  },
+}
+
+export const SAVINGS_PLAN_RATE = 0.8
+export const PRICING_FROM_STAGE = 3
+export const RESERVED_SECONDS = 7 * CALENDAR_DAY
+export const STICKY_LOCAL_READ = 0.15
+export const STICKY_HERD = 0.5
+export const FLAG_PROPAGATION_SECONDS = 2

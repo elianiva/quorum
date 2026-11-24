@@ -1,6 +1,3 @@
-import { CALENDAR_DAY } from './team.ts'
-import type { RequestKind } from './kinds.ts'
-
 // Components, their groups, and the per-component tables are written in content/components.qm and
 // compiled by qmc.
 export {
@@ -20,67 +17,6 @@ export {
   type DockGroup,
 } from '../generated/components.ts'
 
-export const INTERNET_MS = 30
-
-export const UPLOAD_MB = 2
-
-export const EGRESS_ORIGIN = 0.45
-export const EGRESS_CDN = 0.1
-
-export const AUTHENTICATED_KINDS: ReadonlyArray<RequestKind> = [
-  'read',
-  'write',
-  'search',
-  'upload',
-  'buy',
-  'job',
-  'report',
-  'ai',
-  'feed',
-  'hook',
-]
-export const AUTH_CHECK_MS = 0.02
-
-export const ZONES = ['a', 'b', 'c'] as const
-export const CROSS_ZONE_MS = 1
-export const EGRESS_CROSS_ZONE = 0.01
-export const BACKEND_KB = 4
-export const FAILOVER_SECONDS = 20
-
-export const TOKENS_PER_PROMPT = 400
-
-export const BREAKER_THRESHOLD = 0.5
-export const BREAKER_OPEN = 5
-
-export const BULKHEAD_MS = 1_000
-export const HEDGE_LOAD = 0.1
-export const SERIALIZE_MS = 0.02
-export const DUAL_WRITE_STALE = 0.005
-export const OUTBOX_STALE = 0.0005
-export const CDC_LAG_STALE = 0.0002
-export const CDC_DROP_STALE = 0.005
-export const CHAOS_EVERY = 120
-export const CHAOS_SECONDS = 10
-export const CHAOS_FAILURE = 0.2
-export const CHAOS_INSIGHT = 1
-export const LOAD_TEST_INSIGHT = 2
-export const DRILL_INSIGHT = 5
-
-export const FIRST_KIND_INSIGHT = 20
-export const INSIGHT_YIELD = 1
-export const FAILURE_YIELD = 3
-export const POOL_FLOOR = 100
-
-export const SPREAD_REGIONS = 3
-export const SPREAD_REPLICATION_KB = 1
-export const WIDE_SPREAD_LAG_STALE = 0.015
-export const WIDE_REBALANCE_MINUTES_PER_GB = 0.4
-export const DOC_REBALANCE_MINUTES_PER_GB = 0.4
-export const LOG_REPLICATE_MINUTES_PER_GB = 0.25
-
-export const HOT_KEY_SHARE = 0.3
-
-export const PRICING_IDS = ['on-demand', 'reserved', 'spot'] as const
 export type PricingId = (typeof PRICING_IDS)[number]
 
 export type PricingDef = Readonly<{
@@ -89,36 +25,6 @@ export type PricingDef = Readonly<{
   price: number
   blurb: string
 }>
-
-export const PRICINGS: Record<PricingId, PricingDef> = {
-  'on-demand': {
-    id: 'on-demand',
-    name: 'On-demand',
-    price: 1,
-    blurb: 'Full rate. Remove the Node at any time.',
-  },
-  reserved: {
-    id: 'reserved',
-    name: 'Reserved',
-    price: 0.6,
-    blurb:
-      '0.6×, for a commitment of one calendar week. Selling before the term ends owes the Burn.',
-  },
-  spot: {
-    id: 'spot',
-    name: 'Spot',
-    price: 0.3,
-    blurb: '0.3×. The provider can reclaim the Node after 10 s of warning.',
-  },
-}
-
-export const SAVINGS_PLAN_RATE = 0.8
-
-export const PRICING_FROM_STAGE = 3
-export const RESERVED_SECONDS = 7 * CALENDAR_DAY
-
-export const STICKY_LOCAL_READ = 0.15
-export const STICKY_HERD = 0.5
 
 export {
   SERVERLESS_MS,
@@ -338,5 +244,52 @@ export {
 export { DSQL_TX, DSQL_READ_COST } from '../components/dsql.ts'
 export { SYNC_MS, REPLICA_SYNC_MINUTES_PER_GB, REPLICA_BOX_PRICE } from '../components/replica.ts'
 export { SEARCH_COPY_MINUTES_PER_GB } from '../components/search.ts'
-
-export const FLAG_PROPAGATION_SECONDS = 2
+export {
+  INTERNET_MS,
+  UPLOAD_MB,
+  EGRESS_ORIGIN,
+  EGRESS_CDN,
+  AUTHENTICATED_KINDS,
+  AUTH_CHECK_MS,
+  ZONES,
+  CROSS_ZONE_MS,
+  EGRESS_CROSS_ZONE,
+  BACKEND_KB,
+  FAILOVER_SECONDS,
+  TOKENS_PER_PROMPT,
+  BREAKER_THRESHOLD,
+  BREAKER_OPEN,
+  BULKHEAD_MS,
+  HEDGE_LOAD,
+  SERIALIZE_MS,
+  DUAL_WRITE_STALE,
+  OUTBOX_STALE,
+  CDC_LAG_STALE,
+  CDC_DROP_STALE,
+  CHAOS_EVERY,
+  CHAOS_SECONDS,
+  CHAOS_FAILURE,
+  CHAOS_INSIGHT,
+  LOAD_TEST_INSIGHT,
+  DRILL_INSIGHT,
+  FIRST_KIND_INSIGHT,
+  INSIGHT_YIELD,
+  FAILURE_YIELD,
+  POOL_FLOOR,
+  SPREAD_REGIONS,
+  SPREAD_REPLICATION_KB,
+  WIDE_SPREAD_LAG_STALE,
+  WIDE_REBALANCE_MINUTES_PER_GB,
+  DOC_REBALANCE_MINUTES_PER_GB,
+  LOG_REPLICATE_MINUTES_PER_GB,
+  HOT_KEY_SHARE,
+  PRICING_IDS,
+  PRICINGS,
+  SAVINGS_PLAN_RATE,
+  PRICING_FROM_STAGE,
+  RESERVED_SECONDS,
+  STICKY_LOCAL_READ,
+  STICKY_HERD,
+  FLAG_PROPAGATION_SECONDS,
+} from '../generated/components.ts'
+import { PRICING_IDS } from '../generated/components.ts'

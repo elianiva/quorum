@@ -1,6 +1,5 @@
 import { Effect, Schema } from 'effect'
-
-export const poolerGlossary: ReadonlyArray<string> = ['connection-pooling']
+export { poolerGlossary } from '../generated/pooler.ts'
 
 export const PoolerMode = Schema.Literals(['session', 'transaction', 'statement'])
 export type PoolerMode = typeof PoolerMode.Type

@@ -1,0 +1,9 @@
+(types "../catalog/runtimes.ts" LanguageId)
+
+(def EDGE_REQUEST_PRICE 0.00036)
+(def EDGE_CPU_MS 10)
+(def EDGE_MEMORY_MB 128)
+(def EDGE_LANGUAGES :type "ReadonlyArray<LanguageId>" ["node" "rust" "go"])
+(def EDGE_READ_HIT 0.3)
+
+(def EDGE_MS 5)

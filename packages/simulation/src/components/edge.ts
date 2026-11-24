@@ -1,9 +1,8 @@
-import type { LanguageId } from '../catalog/runtimes.ts'
-
-export const EDGE_REQUEST_PRICE = 0.00036
-export const EDGE_CPU_MS = 10
-export const EDGE_MEMORY_MB = 128
-export const EDGE_LANGUAGES: ReadonlyArray<LanguageId> = ['node', 'rust', 'go']
-export const EDGE_READ_HIT = 0.3
-
-export const EDGE_MS = 5
+export {
+  EDGE_REQUEST_PRICE,
+  EDGE_CPU_MS,
+  EDGE_MEMORY_MB,
+  EDGE_LANGUAGES,
+  EDGE_READ_HIT,
+  EDGE_MS,
+} from '../generated/edge.ts'

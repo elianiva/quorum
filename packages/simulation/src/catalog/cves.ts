@@ -1,5 +1,13 @@
 import { COMPONENTS, type ComponentId } from './components.ts'
 import type { GlossaryEntry } from './glossary.ts'
+export {
+  CVE_DEFS,
+  BACKDOOR_FUSE,
+  VENDOR_DISCOUNT,
+  CVE_EVERY,
+  PATCH_GRACE,
+} from '../generated/cves.ts'
+import { CVE_DEFS } from '../generated/cves.ts'
 
 export type CveDef = Readonly<{
   id: string
@@ -7,20 +15,6 @@ export type CveDef = Readonly<{
   affects: ReadonlyArray<ComponentId>
 }>
 
-export const CVE_DEFS: ReadonlyArray<CveDef> = [
-  { id: 'CVE-2026-1337', score: 9.8, affects: ['lb', 'cdn', 'waf'] },
-  { id: 'CVE-2026-0451', score: 7.5, affects: ['server'] },
-  { id: 'CVE-2026-2718', score: 8.1, affects: ['database'] },
-  { id: 'CVE-2026-0042', score: 5.3, affects: ['server', 'worker'] },
-  { id: 'CVE-2026-3141', score: 7.5, affects: ['server'] },
-  { id: 'CVE-2026-1024', score: 9.9, affects: ['server', 'worker'] },
-]
-
-export const BACKDOOR_FUSE = 300
-export const VENDOR_DISCOUNT = 0.2
-
-export const CVE_EVERY = 420
-export const PATCH_GRACE = 60
 export const patchCost = (score: number): number => Math.max(2, Math.round(score / 2))
 export const patchWindow = (score: number): number => Math.round(600 - 40 * score)
 

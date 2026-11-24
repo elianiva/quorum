@@ -1,0 +1,15 @@
+(types "../catalog/cves.ts" CveDef)
+
+(def CVE_DEFS :type "ReadonlyArray<CveDef>"
+  [(:id "CVE-2026-1337" :score 9.8 :affects ["lb" "cdn" "waf"])
+   (:id "CVE-2026-0451" :score 7.5 :affects ["server"])
+   (:id "CVE-2026-2718" :score 8.1 :affects ["database"])
+   (:id "CVE-2026-0042" :score 5.3 :affects ["server" "worker"])
+   (:id "CVE-2026-3141" :score 7.5 :affects ["server"])
+   (:id "CVE-2026-1024" :score 9.9 :affects ["server" "worker"])])
+
+(def BACKDOOR_FUSE 300)
+(def VENDOR_DISCOUNT 0.2)
+
+(def CVE_EVERY 420)
+(def PATCH_GRACE 60)

@@ -1,0 +1,4 @@
+(def DNS_TTLS :type const [30 300 3_600])
+
+(def dnsGlossary :type "ReadonlyArray<string>"
+  ["dns-round-robin" "health-check" "vertical-and-horizontal-scaling"])

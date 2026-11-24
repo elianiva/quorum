@@ -1,23 +1,17 @@
 import { Effect, Schema } from 'effect'
-
-export const VM_REACTION_SECONDS = 180
-export const POD_REACTION_SECONDS = 30
-export const SCALE_COOLDOWN_SECONDS = 30
-export const SCALE_TARGETS = [0.4, 0.6, 0.8] as const
-export const SCALE_MINIMA = [1, 2, 4, 8] as const
-export const SCALE_MAXIMA = [4, 8, 16, 0] as const
-export const SCALE_IN = 0.6
-export const SCHEDULE_LEAD_MINUTES = 120
-
-export const SCALE_RPS_PER_VCPU = 100
-export const SCALE_QUEUE_DEPTH = 100
-
-export const autoscalerGlossary: ReadonlyArray<string> = [
-  'autoscaling',
-  'cold-start',
-  'diurnal-traffic',
-  'vertical-and-horizontal-scaling',
-]
+export {
+  VM_REACTION_SECONDS,
+  POD_REACTION_SECONDS,
+  SCALE_COOLDOWN_SECONDS,
+  SCALE_TARGETS,
+  SCALE_MINIMA,
+  SCALE_MAXIMA,
+  SCALE_IN,
+  SCHEDULE_LEAD_MINUTES,
+  SCALE_RPS_PER_VCPU,
+  SCALE_QUEUE_DEPTH,
+  autoscalerGlossary,
+} from '../generated/autoscaler.ts'
 
 export const ScaleSignal = Schema.Literals(['cpu', 'load', 'rps', 'queue'])
 export type ScaleSignal = typeof ScaleSignal.Type

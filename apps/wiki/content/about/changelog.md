@@ -9,6 +9,19 @@ toc: top
 
 Quorum has no versions. It changes all the time, and this page lists the latest days, newest first, so you can see what moved since you last played. A page on this wiki can lag behind the game by a few days. Older days are in the [full changelog](/about/changelog/all).
 
+## Monday, 23 November 2026
+
+### Changed
+
+- Restyle the Node card around a frame hierarchy and add a Placement row ([97fbe08](https://github.com/elianiva/quorum/commit/97fbe08735e32d2f102438ca0df81d6bcf974cb4))
+- Draw earned badges flat on the tree and drop the bus wire's pointer block ([6e6c728](https://github.com/elianiva/quorum/commit/6e6c72863d71bec90f51502192eb44e3d2b046e1))
+- Gate Chat, AI assistant, Push notifications and Activity feed on the research that fixes their kind ([491c7c0](https://github.com/elianiva/quorum/commit/491c7c05987974d3ecdf4d2670ef03cb89a41650))
+- Fix the Exit and describe each Era in full ([64b6de9](https://github.com/elianiva/quorum/commit/64b6de96bf56dd15c4a89e790a4ba6152d3c81af))
+- Add the changelog entry for 2026-11-22 (#67) ([9a07ffd](https://github.com/elianiva/quorum/commit/9a07ffd7b34f5cdae74e7d4e661ee1d510d401db))
+- Add the changelog entry for 2026-11-21 (#66) ([252a851](https://github.com/elianiva/quorum/commit/252a8515bcfd3738ab0973d5431832784706e49e))
+- Add the changelog entry for 2026-11-20 (#65) ([cb1273f](https://github.com/elianiva/quorum/commit/cb1273f5ea69a761a834a4e993ce1f2a613ad05c))
+- Add the changelog entry for 2026-11-19 (#64) ([3643879](https://github.com/elianiva/quorum/commit/364387940d7fbef23ba8d4d5281b89b1baf0539c))
+
 ## Sunday, 22 November 2026
 
 ### Changed
@@ -79,28 +92,3 @@ Quorum has no versions. It changes all the time, and this page lists the latest 
 - Remove all comments and carry their intent in names, constants and helpers ([04d6e9e](https://github.com/elianiva/quorum/commit/04d6e9eb815c5394678b1209f9d79f01b1805f87))
 - Open online Rooms to everyone, hold 20 Seats, and cap the deployment at 20 live Rooms ([39e2de3](https://github.com/elianiva/quorum/commit/39e2de3c1dade07536ea29b6b182ec6bbb08b6d7))
 - Open the phone Inspector as a bottom sheet and slide the tapped card clear of it ([516f65a](https://github.com/elianiva/quorum/commit/516f65a3c5317e93bab25f3b22ad7d9430f83a09))
-
-## Monday, 16 November 2026
-
-### Changed
-
-- Draw the Dashboard's Node table once per solve ([e6fd216](https://github.com/elianiva/quorum/commit/e6fd216ac84de5bf1d69f7b6ecde3decc35b49a7))
-- Look up each Node's Autoscaler once per Step, not once per Link ([db99f13](https://github.com/elianiva/quorum/commit/db99f13ce001743b2c8230c08f6039756021625e))
-- Memoize the Dashboard's Charts and stat tiles on what they are drawn from ([1525167](https://github.com/elianiva/quorum/commit/15251673d6bee2217b716f32f72001af7f4797b3))
-- Memoize the Dashboard's per-Node panels on the Nodes and the Ledger ([293a1f5](https://github.com/elianiva/quorum/commit/293a1f56f892edf44c8ad1daa73680fbb1226fd5))
-- Give the views one Ledger object per solve ([5fb9992](https://github.com/elianiva/quorum/commit/5fb999209f0c2025ebdf67c6a91a9407daa8404f))
-- Keep the Game's list of Nodes through a Step that changed none ([a92b133](https://github.com/elianiva/quorum/commit/a92b1333d6a37424281366bd817936d3f99b0bd9))
-- Keep Company files in IndexedDB, with the old localStorage key as the fallback ([dc701f3](https://github.com/elianiva/quorum/commit/dc701f3909bf6202ab4eea0ebb4b240bca8b098b))
-- Solve an open incident once a second while the solve reads the same incident ([31f7798](https://github.com/elianiva/quorum/commit/31f779830d07f8197081935d1c232f596aafa755))
-- Keep the Solver's compiled Design between solves that changed no Node or Link ([b0c1745](https://github.com/elianiva/quorum/commit/b0c1745ca779310855c26c6477cab0b6550657f8))
-- Memoize the Dashboard's Node table rows and Node timelines ([8f8953e](https://github.com/elianiva/quorum/commit/8f8953eaeea133857702eba06a30ef0cba7e5c67))
-- Map each Node's load history for the board once per history ([56f90f4](https://github.com/elianiva/quorum/commit/56f90f496369dd5b4d9caf14a5008490f758d53f))
-- Reuse the board's boxes, replication lines, and focus path between frames ([a491855](https://github.com/elianiva/quorum/commit/a491855971938b22a000ccf1e8f7188e1cb4eec7))
-- Memoize the Dashboard's LCD gauges ([2cd1d14](https://github.com/elianiva/quorum/commit/2cd1d14712b7099b4315f8f8abb82f2174dde9e9))
-- Memoize each item of the Research tree ([5a134c0](https://github.com/elianiva/quorum/commit/5a134c036e87495914634c41208dbe96af5982ec))
-- Look up a Company's agent Room once, not after every Message ([8652212](https://github.com/elianiva/quorum/commit/86522122addc39283dc27643168479a5af7481da))
-- Give the Dashboard's latency stat its own key ([083cec9](https://github.com/elianiva/quorum/commit/083cec9eb05ef97881864ea434b6c5d1af927081))
-- Split the web app's one chunk into libraries, catalog, copy, and game ([585cf89](https://github.com/elianiva/quorum/commit/585cf891ad6d98ac91604b5b93f7c2d868bf0826))
-- Reuse the Dashboard's rows and annotations between Samples ([424cb44](https://github.com/elianiva/quorum/commit/424cb44fa7854d7edb1499284b460a651b98480b))
-- Cap a chart's hover targets at 240 ([88fa1b2](https://github.com/elianiva/quorum/commit/88fa1b22b37f8f7edf94c96e00b8e662945404a3))
-- Remove the Bottleneck search the browser no longer runs ([3edd866](https://github.com/elianiva/quorum/commit/3edd8666513892e2f0b14156bb49eb173aa30451))

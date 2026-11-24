@@ -9,6 +9,19 @@ toc: top
 
 Every day that changed Quorum, newest first. The [changelog](/about/changelog) shows only the latest days.
 
+## Monday, 23 November 2026
+
+### Changed
+
+- Restyle the Node card around a frame hierarchy and add a Placement row ([97fbe08](https://github.com/elianiva/quorum/commit/97fbe08735e32d2f102438ca0df81d6bcf974cb4))
+- Draw earned badges flat on the tree and drop the bus wire's pointer block ([6e6c728](https://github.com/elianiva/quorum/commit/6e6c72863d71bec90f51502192eb44e3d2b046e1))
+- Gate Chat, AI assistant, Push notifications and Activity feed on the research that fixes their kind ([491c7c0](https://github.com/elianiva/quorum/commit/491c7c05987974d3ecdf4d2670ef03cb89a41650))
+- Fix the Exit and describe each Era in full ([64b6de9](https://github.com/elianiva/quorum/commit/64b6de96bf56dd15c4a89e790a4ba6152d3c81af))
+- Add the changelog entry for 2026-11-22 (#67) ([9a07ffd](https://github.com/elianiva/quorum/commit/9a07ffd7b34f5cdae74e7d4e661ee1d510d401db))
+- Add the changelog entry for 2026-11-21 (#66) ([252a851](https://github.com/elianiva/quorum/commit/252a8515bcfd3738ab0973d5431832784706e49e))
+- Add the changelog entry for 2026-11-20 (#65) ([cb1273f](https://github.com/elianiva/quorum/commit/cb1273f5ea69a761a834a4e993ce1f2a613ad05c))
+- Add the changelog entry for 2026-11-19 (#64) ([3643879](https://github.com/elianiva/quorum/commit/364387940d7fbef23ba8d4d5281b89b1baf0539c))
+
 ## Sunday, 22 November 2026
 
 ### Changed

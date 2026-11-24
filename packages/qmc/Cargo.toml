@@ -1,0 +1,12 @@
+[package]
+name = "qmc"
+version = "0.1.0"
+edition = "2021"
+description = "Compiles Quorum's content files (.qm) into the Simulation's catalog."
+publish = false
+
+# No dependencies, by design: the reader, the diagnostics, and the thread pool use only std.
+[dependencies]
+
+[profile.release]
+opt-level = 3

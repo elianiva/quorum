@@ -11,6 +11,7 @@ const ignored = [
   'apps/web/art/kit/**',
   '.agents/skills/statechart/**',
   'packages/simulation/solver/target/**',
+  'packages/qmc/target/**',
 ]
 
 export default defineConfig({

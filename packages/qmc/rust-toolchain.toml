@@ -1,0 +1,5 @@
+# The same compiler as the Solver, so the orb and CI install one toolchain.
+[toolchain]
+channel = "1.99.1"
+components = ["clippy", "rustfmt"]
+profile = "minimal"

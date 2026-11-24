@@ -1,0 +1,37 @@
+name: Content compiler
+
+# Runs when the compiler, the content it reads, or the files it writes change.
+on:
+  push:
+    paths:
+      - 'packages/qmc/**'
+      - 'packages/simulation/content/**'
+      - 'packages/simulation/src/generated/**'
+      - '.github/workflows/qmc.yml'
+  pull_request:
+    paths:
+      - 'packages/qmc/**'
+      - 'packages/simulation/content/**'
+      - 'packages/simulation/src/generated/**'
+      - '.github/workflows/qmc.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  qmc:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/qmc
+    steps:
+      - uses: actions/checkout@v7
+      # rustup reads rust-toolchain.toml here and installs the pinned compiler, clippy, and rustfmt.
+      - run: rustup show active-toolchain || rustup toolchain install
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test

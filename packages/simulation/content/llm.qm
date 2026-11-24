@@ -1,0 +1,5 @@
+(def LLM_FIRST_TOKEN_MS 600)
+(def LLM_PRICE 2.5)
+(def LLM_RATE 100)
+
+(def llmGlossary :type "ReadonlyArray<string>" ["model-inference" "rate-limiting"])

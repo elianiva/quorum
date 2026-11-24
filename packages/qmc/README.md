@@ -5,7 +5,7 @@ qmc compiles the content files in `packages/simulation/content/*.qm` into
 
 ```sh
 pnpm --filter @quorum/simulation content   # compile the content and write the generated files
-cargo run -- build <content> <out> --solver <catalog.ts> <catalog.rs> --check  # fail when an output is out of date (CI)
+cargo run -- build <content> <out> --solver <catalog.ts> <catalog.rs>  # what `content` runs
 cargo run -- expand file.qm                 # print a file after macro expansion
 cargo test
 ```

@@ -26,12 +26,13 @@ Considered options:
 
 ## Consequences
 
-- To change a catalog number, edit the `.qm` file and run `pnpm --filter @quorum/simulation
-  content`. That command writes the generated TypeScript and `catalog.rs`. Then run
-  `solver/build.sh` when `catalog.rs` changed. Nobody edits `src/generated` by hand.
-- `.github/workflows/qmc.yml` fails when a generated file or `catalog.rs` is not the output of the
-  current content. The Vitest suite still needs no Rust, because the module and `catalog.rs` are
-  committed.
+- To change a catalog number, edit the `.qm` file. `src/generated`, `catalog.rs`, and
+  `solver.wasm` are build output that git ignores. The turbo `content` task, which is
+  `pnpm --filter @quorum/simulation content`, writes them, and `dev`, `check`, `typecheck`, `test`,
+  `build`, and the deploy run it first. A committed file can never be stale.
+- Every contributor and every CI job needs the Rust that `rust-toolchain.toml` pins.
+  `.agents/setup` installs it in an orb, and `.github/actions/rust` installs it in CI. Turbo caches
+  the task, so an unchanged checkout does not rebuild it.
 - `(def NAME value)` emits arithmetic as written, so the generated code computes the same
   floating-point values a hand-written table did. qmc reads the generated modules back as
   JavaScript would and prints numbers as JavaScript prints them, so the Solver and the Simulation

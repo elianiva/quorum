@@ -31,9 +31,10 @@ Considered options:
   Rejected.
 - **Keep a TypeScript fallback.** Two solves would have to agree forever, and the slower one would
   run only where nobody looks. Rejected: a solve with no Solver installed throws.
-- **Build the module at deploy time instead of committing it.** Every contributor, the test run,
-  and the deploy would need a Rust toolchain, even for a change to a wiki page. Rejected: the
-  module is committed, and CI proves it is the build of its source.
+- **Commit the module.** Nobody would need Rust to run the game, but every catalog change would
+  carry a regenerated binary, and a stale one could reach `main`. Rejected by
+  [ADR 0030](./0030-catalog-content-is-written-in-lisp.md): the module is built by the `content`
+  task before every check, build, and deploy, so every contributor and CI job needs the pinned Rust.
 
 ## Consequences
 
@@ -45,14 +46,12 @@ Considered options:
 - `src/solver.ts` is the only TypeScript that knows the module's layout. It writes the Game into the
   Solver's blocks and decodes the Ledger. `installSolver` checks that both sides agree on the block
   layout, so a slot added on one side fails at start instead of producing a wrong figure.
-- `src/solver.wasm` is committed and lives under `packages/simulation/src`, so `SIM_VERSION`
-  changes whenever the module does.
+- `src/solver.wasm` is built into `packages/simulation/src` and ignored by git. `SIM_VERSION`
+  hashes the trees it is built from, so it changes whenever the module can.
 - qmc, the content compiler in `packages/qmc`, writes `solver/src/catalog.rs` from the generated
-  catalog and stamps it with `CATALOG_HASH`. Its workflow fails when `catalog.rs` is older than the
-  content. `test/solver-catalog.test.ts` fails when the committed module is older than
-  `catalog.rs`, and it needs no Rust.
-- `.github/workflows/solver.yml` runs when the Rust source or the module changes. It runs clippy
-  with warnings as errors and the Rust tests, then rebuilds the module with the compiler that
-  `rust-toolchain.toml` pins and fails unless the build matches the committed file byte for byte.
+  catalog and stamps it with `CATALOG_HASH`. `test/solver-catalog.test.ts` fails when the module
+  in place is older than `catalog.rs`.
+- `.github/workflows/solver.yml` runs when the Rust source, the content, or qmc changes. It writes
+  `catalog.rs`, then runs clippy with warnings as errors and the Rust tests.
 - A change to how the Simulation solves is a Rust change. A change to a catalog number is a
-  content change, followed by `pnpm --filter @quorum/simulation content` and `solver/build.sh`.
+  content change. `pnpm --filter @quorum/simulation content` rebuilds both.

@@ -22,8 +22,9 @@ Considered options:
   `test/purity.test.ts` rejects any other import, host globals such as `Date` and `window`, and the
   math that engines may compute differently (`Math.cos`, `Math.exp`, `Math.pow`, `**`, and the
   rest), as [GDD 04](https://github.com/elianiva/quorum/blob/main/apps/wiki/content/design/04-simulation.md#determinism-and-randomness) requires.
-- `SIM_VERSION` is the git tree hash of `packages/simulation/src`, filled in at build time by
-  `packages/simulation/sim-version.ts`. A commit that changes the Simulation changes the version, so
+- `SIM_VERSION` hashes the git trees of `packages/simulation/src`, `content`, and `solver`, and of
+  `packages/qmc`, which builds the generated catalog and the Solver. It is filled in at build time
+  by `packages/simulation/sim-version.ts`. A commit that changes the Simulation changes the version, so
   results from different versions are never compared, and nobody bumps a number or re-pins a hash.
   `pnpm test:engines` replays one fixed Company and every Challenge's reference solution in each
   engine and compares the hashes with Node's, which it computes on the spot.

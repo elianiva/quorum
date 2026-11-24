@@ -1,0 +1,14 @@
+name: Rust
+description: Installs the Rust toolchains that qmc and the Solver pin, so `content` can build them.
+
+runs:
+  using: composite
+  steps:
+    # rustup reads each rust-toolchain.toml and installs the pinned compiler and the wasm target.
+    - shell: bash
+      run: |
+        for dir in packages/qmc packages/simulation/solver; do
+          (cd "$dir" && (rustup show active-toolchain || rustup toolchain install))
+        done
+        # `content` runs qmc from packages/simulation, which pins nothing, so make the pin the default.
+        rustup default "$(cd packages/simulation/solver && rustup show active-toolchain | cut -d' ' -f1)"

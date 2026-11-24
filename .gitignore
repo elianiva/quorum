@@ -23,3 +23,8 @@ apps/*/styled-system/
 
 # Upstream tests of the vendored statechart skill.
 .agents/skills/statechart/scripts/test/
+
+# Built from packages/simulation/content by `pnpm --filter @quorum/simulation content` (ADR 0030).
+packages/simulation/src/generated/
+packages/simulation/src/solver.wasm
+packages/simulation/solver/src/catalog.rs

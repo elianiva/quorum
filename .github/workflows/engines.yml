@@ -8,11 +8,13 @@ on:
     branches: [main]
     paths:
       - 'packages/simulation/**'
+      - 'packages/qmc/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/engines.yml'
   pull_request:
     paths:
       - 'packages/simulation/**'
+      - 'packages/qmc/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/engines.yml'
 
@@ -36,4 +38,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @quorum/simulation exec playwright install --with-deps chromium firefox webkit
+      - uses: ./.github/actions/rust
+      - run: pnpm exec turbo run content
       - run: pnpm test:engines

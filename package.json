@@ -6,18 +6,18 @@
   "scripts": {
     "prepare": "panda codegen && lefthook install",
     "codegen": "panda codegen",
-    "dev": "alchemy dev",
+    "dev": "turbo run content && alchemy dev",
     "build": "turbo run build",
-    "check": "vp check",
+    "check": "turbo run content && vp check",
     "fmt": "vp fmt",
     "fmt:check": "vp fmt --check",
     "lint": "vp lint",
-    "typecheck": "tsrs --noEmit -p tsconfig.json && effect-tsrs diagnostics --strict --project tsconfig.json && turbo run typecheck",
+    "typecheck": "turbo run content && tsrs --noEmit -p tsconfig.json && effect-tsrs diagnostics --strict --project tsconfig.json && turbo run typecheck",
     "test": "turbo run test",
     "test:full": "FULL_TESTS=1 turbo run test",
     "test:engines": "pnpm --filter @quorum/simulation test:engines",
     "measurements": "node apps/wiki/scripts/measure.ts",
-    "deploy": "alchemy deploy --stage prod"
+    "deploy": "turbo run content && alchemy deploy --stage prod"
   },
   "devDependencies": {
     "@alchemy.run/cloudflare": "2.0.0-beta.87",

@@ -4,9 +4,9 @@ use std::path::Path;
 use std::process::ExitCode;
 
 const USAGE: &str = "usage:
-  qmc build <content dir> <generated dir> [--solver <catalog.ts> <catalog.rs>] [--check]
+  qmc build <content dir> <generated dir> [--solver <catalog.ts> <catalog.rs>]
       compile every .qm file into the generated dir. --solver also writes the Solver's catalog.rs
-      from the scalars catalog.ts exports. --check fails when an output is out of date.
+      from the scalars catalog.ts exports.
   qmc expand <file.qm>…
       print each file after macro expansion";
 
@@ -15,17 +15,16 @@ fn main() -> ExitCode {
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
     match args.as_slice() {
         ["build", content, out, rest @ ..] => {
-            let check = rest.contains(&"--check");
             let solver = rest
                 .iter()
                 .position(|a| *a == "--solver")
                 .and_then(|i| Some((Path::new(rest.get(i + 1)?), Path::new(rest.get(i + 2)?))));
-            let known = rest.len() == usize::from(check) + if solver.is_some() { 3 } else { 0 };
+            let known = rest.len() == if solver.is_some() { 3 } else { 0 };
             if !known {
                 eprintln!("{USAGE}");
                 return ExitCode::from(2);
             }
-            build(Path::new(content), Path::new(out), solver, check)
+            build(Path::new(content), Path::new(out), solver)
         }
         ["expand", paths @ ..] if !paths.is_empty() => expand(paths),
         _ => {
@@ -64,7 +63,7 @@ fn report(diagnostics: &[Diagnostic], sources: &SourceMap) -> bool {
     errors > 0
 }
 
-fn build(content: &Path, out: &Path, solver: Option<(&Path, &Path)>, check: bool) -> ExitCode {
+fn build(content: &Path, out: &Path, solver: Option<(&Path, &Path)>) -> ExitCode {
     let mut paths = match std::fs::read_dir(content) {
         Ok(entries) => entries
             .filter_map(|e| e.ok().map(|e| e.path()))
@@ -103,26 +102,17 @@ fn build(content: &Path, out: &Path, solver: Option<(&Path, &Path)>, check: bool
             qmc::emit_rs::catalog(&modules, &names),
         ));
     }
-    let mut stale = Vec::new();
+    // An unchanged file is not rewritten, so a dev server does not reload for nothing.
     for (path, text) in &outputs {
         if std::fs::read_to_string(path).ok().as_deref() == Some(text.as_str()) {
             continue;
         }
-        if check {
-            stale.push(path.display().to_string());
-        } else if let Err(error) = std::fs::create_dir_all(path.parent().unwrap_or(out))
+        if let Err(error) = std::fs::create_dir_all(path.parent().unwrap_or(out))
             .and_then(|()| std::fs::write(path, text))
         {
             eprintln!("error: cannot write {}: {error}", path.display());
             return ExitCode::FAILURE;
         }
-    }
-    if !stale.is_empty() {
-        eprintln!(
-            "error: out of date: {}\nRun `pnpm --filter @quorum/simulation content` and commit the result.",
-            stale.join(", ")
-        );
-        return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS
 }

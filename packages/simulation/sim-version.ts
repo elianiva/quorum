@@ -1,12 +1,27 @@
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 
-const version = (): string =>
+// The generated catalog and solver.wasm are built, not committed, so the version hashes the trees
+// they are built from as well as the Simulation's own source.
+const SOURCES = [
+  'packages/simulation/src',
+  'packages/simulation/content',
+  'packages/simulation/solver',
+  'packages/qmc',
+]
+
+export const version = (): string =>
   process.env['SIM_VERSION'] ||
-  execFileSync('git', ['rev-parse', '--short=8', 'HEAD:packages/simulation/src'], {
-    cwd: fileURLToPath(new URL('.', import.meta.url)),
-    encoding: 'utf8',
-  }).trim()
+  createHash('sha256')
+    .update(
+      execFileSync('git', ['rev-parse', ...SOURCES.map((path) => `HEAD:${path}`)], {
+        cwd: fileURLToPath(new URL('.', import.meta.url)),
+        encoding: 'utf8',
+      }),
+    )
+    .digest('hex')
+    .slice(0, 8)
 
 export const simVersion = () => {
   const value = version()

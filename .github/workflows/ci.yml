@@ -16,8 +16,10 @@ permissions:
   contents: read
 
 # Every check runs as its own job, so the four start together and the run ends when the slowest one
-# does instead of adding them up. `typecheck`, `test`, and `build` keep Turbo's cache between runs: a
-# package whose inputs did not change replays its last result instead of doing the work again.
+# does instead of adding them up. Each job installs Rust, because `check`, `typecheck`, `test`, and
+# `build` first run the `content` task, which builds the generated catalog and solver.wasm.
+# `typecheck`, `test`, and `build` keep Turbo's cache between runs: a package whose inputs did not
+# change replays its last result instead of doing the work again.
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -29,6 +31,7 @@ jobs:
           node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/rust
       - run: pnpm check
 
   typecheck:
@@ -48,6 +51,7 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-typecheck-
       - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/rust
       - run: pnpm typecheck
 
   test:
@@ -69,6 +73,7 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-test-
       - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/rust
       # The whole-game runs (`pnpm test:full`) take over a minute each, so they run by hand when
       # balance moves, not on every push.
       - run: pnpm test
@@ -90,6 +95,7 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-build-
       - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/rust
       - run: pnpm build
 
   deploy:
@@ -123,6 +129,9 @@ jobs:
           node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/rust
+      # The generated catalog and solver.wasm are not committed, so the deploy builds them first.
+      - run: pnpm exec turbo run content
       - run: pnpm exec alchemy deploy --stage prod --yes
       # The release exists from the build (the Sentry plugins create it). These steps add what the
       # plugins would run twice, once per bundler: its commits and its deploy.

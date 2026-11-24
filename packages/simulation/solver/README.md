@@ -23,11 +23,12 @@ When no solver is installed, the solve throws. There is no TypeScript fallback.
 ./build.sh
 ```
 
-The game loads `src/solver.wasm`, which is committed. `build.sh` builds the crate and copies
-the module there, so run it after every change to the crate and commit the result.
+The game loads `src/solver.wasm`, which is built, not committed. `pnpm --filter @quorum/simulation
+content` writes `src/catalog.rs` with qmc and then runs `build.sh`, which builds the crate and copies
+the module there. `pnpm dev`, `check`, `typecheck`, `test`, and `build` run that step first.
 `rust-toolchain.toml` pins the compiler, and `rustup` installs it on the first build.
 `build.sh` also strips machine paths from the module, so every checkout builds the same
-bytes. Before you commit, run these and make sure each reports 0 warnings:
+bytes. Before you commit a change to the crate, run these and make sure each reports 0 warnings:
 
 ```sh
 cargo clippy --release --target wasm32-unknown-unknown
@@ -35,21 +36,12 @@ cargo clippy --release --tests
 cargo test --release
 ```
 
-The Solver workflow (`.github/workflows/solver.yml`) runs only when this directory or
-`src/solver.wasm` changes. It runs the commands above with warnings as errors, then
-`./build.sh --check`, which fails when the committed module is not the build of this source.
+The Solver workflow (`.github/workflows/solver.yml`) runs when this directory, the content, or
+qmc changes. It writes `src/catalog.rs`, then runs the commands above with warnings as errors.
 
-After a catalog change, regenerate the content, which writes `src/catalog.rs`, then run
-`./build.sh`:
-
-```sh
-pnpm --filter @quorum/simulation content
-```
-
-The content compiler's workflow (`.github/workflows/qmc.yml`) fails when `src/catalog.rs` is not
-the output of the current content and catalog. `test/solver-catalog.test.ts` compares the
-`CATALOG_HASH` in `src/catalog.rs` with the one `solver.wasm` exports through `catalog_hash`, so
-it fails when the module is older than the catalog. That test needs no Rust toolchain.
+`test/solver-catalog.test.ts` compares the `CATALOG_HASH` in `src/catalog.rs` with the one
+`solver.wasm` exports through `catalog_hash`, so it fails when a module left over from an older
+catalog is still in place.
 
 ## The ABI
 

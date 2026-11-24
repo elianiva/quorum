@@ -1,17 +1,22 @@
 name: Solver
 
-# Runs only when the Rust source or the committed module changes. A change to the TypeScript catalog
-# is caught by `test/solver-catalog.test.ts` in CI, which needs no Rust.
+# Runs when the Rust source or the catalog it is built from changes.
 on:
   push:
     paths:
       - 'packages/simulation/solver/**'
-      - 'packages/simulation/src/solver.wasm'
+      - 'packages/simulation/content/**'
+      - 'packages/simulation/src/catalog.ts'
+      - 'packages/simulation/src/catalog/**'
+      - 'packages/qmc/**'
       - '.github/workflows/solver.yml'
   pull_request:
     paths:
       - 'packages/simulation/solver/**'
-      - 'packages/simulation/src/solver.wasm'
+      - 'packages/simulation/content/**'
+      - 'packages/simulation/src/catalog.ts'
+      - 'packages/simulation/src/catalog/**'
+      - 'packages/qmc/**'
       - '.github/workflows/solver.yml'
 
 concurrency:
@@ -29,10 +34,9 @@ jobs:
         working-directory: packages/simulation/solver
     steps:
       - uses: actions/checkout@v7
-      # rustup reads rust-toolchain.toml here and installs the pinned compiler, target, and clippy.
-      - run: rustup show active-toolchain || rustup toolchain install
+      - uses: ./.github/actions/rust
+      # The crate includes src/catalog.rs, which qmc writes from the content.
+      - run: cargo run --release --manifest-path ../../qmc/Cargo.toml -- build ../content ../src/generated --solver ../src/catalog.ts src/catalog.rs
       - run: cargo clippy --release --target wasm32-unknown-unknown -- -D warnings
       - run: cargo clippy --release --tests -- -D warnings
       - run: cargo test --release
-      # The committed module must be the build of this source, byte for byte.
-      - run: ./build.sh --check

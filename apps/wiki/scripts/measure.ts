@@ -3,15 +3,9 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import '@quorum/simulation/host/node'
 import { measure } from '../src/measurements/measure.ts'
+import { version } from '../../../packages/simulation/sim-version.ts'
 
 const root = resolve(import.meta.dirname, '../../..')
-
-const version = (): string =>
-  process.env['SIM_VERSION'] ||
-  execFileSync('git', ['rev-parse', '--short=8', 'HEAD:packages/simulation/src'], {
-    cwd: root,
-    encoding: 'utf8',
-  }).trim()
 
 const target = resolve(import.meta.dirname, '../src/measurements/snapshot.ts')
 

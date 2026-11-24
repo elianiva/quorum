@@ -1,13 +1,5 @@
 import { Effect, Schema } from 'effect'
-
-export const VEC_QUERIES = 500
-export const VEC_INDEXES = {
-  exact: { name: 'Exact', recall: 1, queries: 1, burn: 1 },
-  hnsw: { name: 'HNSW', recall: 0.95, queries: 2, burn: 2 },
-} as const
-export const VEC_AI_LIFT = 1.35
-
-export const vecGlossary: ReadonlyArray<string> = ['model-inference']
+export { VEC_QUERIES, VEC_INDEXES, VEC_AI_LIFT, vecGlossary } from '../generated/vec.ts'
 
 export const VecIndexType = Schema.Literals(['exact', 'hnsw'])
 export type VecIndexType = typeof VecIndexType.Type

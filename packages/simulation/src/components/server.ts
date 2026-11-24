@@ -1,6 +1,5 @@
 import { Effect, Schema } from 'effect'
-
-export const serverGlossary: ReadonlyArray<string> = ['process-per-request']
+export { serverGlossary } from '../generated/server.ts'
 
 export const PmMode = Schema.Literals(['static', 'dynamic', 'ondemand'])
 export type PmMode = typeof PmMode.Type

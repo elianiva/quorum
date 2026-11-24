@@ -1,0 +1,1 @@
+(def serverGlossary :type "ReadonlyArray<string>" ["process-per-request"])

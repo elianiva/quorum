@@ -1,6 +1,4 @@
 import { Effect, Schema } from 'effect'
-import { def } from './define.ts'
-import { REQUEST_KINDS } from '../catalog/kinds.ts'
 
 export const serverGlossary: ReadonlyArray<string> = ['process-per-request']
 
@@ -27,36 +25,3 @@ export const serverFields = {
   ryw: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
   fanout: Fanout.pipe(Schema.withDecodingDefaultKey(Effect.succeed('pull' as const))),
 } as const
-
-export const serverDef = def({
-  id: 'server',
-  code: 'app',
-  name: 'App Server',
-  product: 'VM',
-  group: 'compute',
-  blurb: 'Runs your code. Answers requests and sends queries to the database.',
-  cost: 60,
-  sized: true,
-  latency: 2,
-  accepts: REQUEST_KINDS,
-  sends: [
-    'q-read',
-    'q-write',
-    'auth',
-    'q-search',
-    'q-vector',
-    'blob-put',
-    'task',
-    'blob-get',
-    'q-tx',
-    'charge',
-    'q-scan',
-    'infer',
-    'notify',
-    'callout',
-    'k-write',
-  ],
-  stack: true,
-  limiting: true,
-  coldStart: true,
-})

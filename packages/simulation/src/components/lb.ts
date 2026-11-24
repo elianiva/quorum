@@ -1,6 +1,4 @@
 import { Effect, Schema } from 'effect'
-import { def } from './define.ts'
-import { DATA_KINDS, REQUEST_KINDS } from '../catalog/kinds.ts'
 
 export const LB_POLICIES = {
   weighted: { label: 'Weighted', research: null },
@@ -43,21 +41,3 @@ export const lbFields = {
   checkEvery: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(10))),
   deepCheck: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
 } as const
-
-export const lbDef = def({
-  id: 'lb',
-  code: 'lb',
-  name: 'Load Balancer',
-  product: 'NGINX',
-  group: 'edge',
-  blurb:
-    'Splits traffic across App Servers or Database hosts and drops a dead host at its next health check.',
-  cost: 120,
-  burn: 0.08,
-  latency: 1,
-  accepts: [...REQUEST_KINDS, ...DATA_KINDS],
-  unlock: 'load-balancing',
-  steps: 6,
-  sends: [...REQUEST_KINDS, ...DATA_KINDS],
-  limiting: true,
-})

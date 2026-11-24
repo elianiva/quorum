@@ -1,5 +1,4 @@
 import { Effect, Schema } from 'effect'
-import { def } from './define.ts'
 
 export const LOG_RATE = 100_000
 export const LOG_READ_RATE = 20_000
@@ -28,21 +27,3 @@ export const logFields = {
   retain: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(3_600))),
   keyed: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(true))),
 } as const
-
-export const logDef = def({
-  id: 'log',
-  code: 'log',
-  name: 'Event Stream',
-  product: 'Apache Kafka',
-  group: 'compute',
-  blurb:
-    'A log, not a queue: events stay after they are read, so a consumer can replay them. Consumers read one partition each and fall behind at their own pace.',
-  cost: 900,
-  burn: 0.3,
-  latency: 5,
-  accepts: ['task', 'change'],
-  sends: ['task', 'change'],
-  unlock: 'event-streaming',
-  steps: 6,
-  limiting: true,
-})

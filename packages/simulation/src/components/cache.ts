@@ -1,5 +1,4 @@
 import { Effect, Schema } from 'effect'
-import { def } from './define.ts'
 
 export const CACHE_ENGINES = {
   redis: { name: 'Redis', growth: 1.7, memory: 1, speed: 1, warmAfterRestart: 0.5 },
@@ -86,33 +85,3 @@ export const cacheFields = {
   warming: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
   split: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
 } as const
-
-export const cacheDef = def({
-  id: 'cache',
-  code: 'kv',
-  name: 'Cache',
-  product: 'Redis',
-  group: 'data',
-  blurb:
-    'The cheapest way to cut reads while the hot data fits in memory. Writes pass through and invalidate, and a restart starts cold.',
-  cost: 150,
-  burn: 0.06,
-  latency: 0.5,
-  accepts: [
-    'q-read',
-    'q-write',
-    'q-search',
-    'blob-put',
-    'q-tx',
-    'blob-get',
-    'q-scan',
-    'k-write',
-    'change',
-  ],
-  fallback: ['q-search', 'blob-put', 'blob-get', 'q-scan', 'q-tx', 'k-write'],
-  unlock: 'caching',
-  steps: 8,
-  sends: ['q-read', 'q-write', 'q-search', 'blob-put', 'q-tx', 'blob-get', 'q-scan', 'k-write'],
-  limiting: true,
-  coldStart: true,
-})

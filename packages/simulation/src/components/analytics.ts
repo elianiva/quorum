@@ -1,5 +1,4 @@
 import { Effect, Schema } from 'effect'
-import { def } from './define.ts'
 
 export const SAMPLE_RATES = [0.01, 0.05, 0.1, 0.5, 1] as const
 export const SAMPLE_OVERHEAD = [0.002, 0.01, 0.02, 0.08, 0.15] as const
@@ -15,19 +14,3 @@ export const analyticsFields = {
   sampleRate: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0.1))),
   retention: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(900))),
 } as const
-
-export const analyticsDef = def({
-  id: 'analytics',
-  code: 'otel',
-  name: 'Analytics',
-  product: 'OpenTelemetry',
-  group: 'ops',
-  blurb: 'Link any Node into it. It samples that traffic and turns it into Insight.',
-  cost: 40,
-  burn: 0.05,
-  latency: 0,
-  accepts: [],
-  maxOut: 0,
-  tap: true,
-  steps: 8,
-})

@@ -159,8 +159,77 @@ pub struct Catalog {
     pub backend_kinds: Vec<Name>,
     /// The backend kinds that touch stored data.
     pub data_kinds: Vec<Name>,
+    /// Backend kinds that leave the system, such as a call to a third party. No component
+    /// receives them.
+    pub external_kinds: Vec<Name>,
+    pub build_groups: Vec<Group>,
+    pub dock_groups: Vec<Group>,
+    pub components: Vec<Component>,
     pub consts: Vec<Const>,
     pub incidents: Vec<Incident>,
+}
+
+/// A build group, `(edge "Edge")`, or a dock group, `(edge "Edge" :family edge)`.
+#[derive(Debug)]
+pub struct Group {
+    pub key: Name,
+    pub label: String,
+    pub family: Option<Name>,
+}
+
+/// A list of kinds: names, or `(requests)` and `(requests except rt)`, which follow the declared
+/// request kinds.
+#[derive(Debug)]
+pub enum KindList {
+    Names(Vec<Name>),
+    Requests { except: Vec<Name> },
+}
+
+impl KindList {
+    /// The kinds in order. Request kinds come from the catalog, so `(requests)` stays in step.
+    pub fn resolve<'a>(&'a self, catalog: &'a Catalog) -> Vec<&'a str> {
+        match self {
+            KindList::Names(names) => names.iter().map(|n| n.text.as_str()).collect(),
+            KindList::Requests { except } => catalog
+                .request_kinds
+                .iter()
+                .map(|k| k.text.as_str())
+                .filter(|k| !except.iter().any(|e| e.text == *k))
+                .collect(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Component {
+    pub id: Name,
+    pub code: Name,
+    pub name: Spanned<Value>,
+    pub product: Spanned<Value>,
+    pub group: Name,
+    pub dock: Name,
+    pub cost: Spanned<Number>,
+    /// A time, or an imported constant in milliseconds.
+    pub latency: Spanned<Value>,
+    pub burn: Option<Spanned<Number>>,
+    pub steps: Option<Spanned<Number>>,
+    pub max_out: Option<Spanned<Number>>,
+    pub unlock: Option<Name>,
+    /// `Some(None)` is `:capacity unlimited`.
+    pub capacity: Option<Option<Spanned<Number>>>,
+    pub capacity_span: Option<Span>,
+    pub flags: Vec<Name>,
+    pub accepts: Option<KindList>,
+    pub sends: Option<KindList>,
+    pub fallback: Option<KindList>,
+    pub blurb: Spanned<Value>,
+    pub span: Span,
+}
+
+impl Component {
+    pub fn has(&self, flag: &str) -> bool {
+        self.flags.iter().any(|f| f.text == flag)
+    }
 }
 
 /// `(const NAME value)`: a number the generated code exports and content can name.
@@ -215,6 +284,10 @@ impl Catalog {
         self.request_kinds.extend(other.request_kinds);
         self.backend_kinds.extend(other.backend_kinds);
         self.data_kinds.extend(other.data_kinds);
+        self.external_kinds.extend(other.external_kinds);
+        self.build_groups.extend(other.build_groups);
+        self.dock_groups.extend(other.dock_groups);
+        self.components.extend(other.components);
         self.consts.extend(other.consts);
         self.incidents.extend(other.incidents);
     }
@@ -236,6 +309,9 @@ const FORMS: &[&str] = &[
     "const",
     "incident",
     "kinds",
+    "build-groups",
+    "dock-groups",
+    "component",
 ];
 
 /// A form's keyword arguments, after the head and any positional arguments.
@@ -302,7 +378,9 @@ impl Lower {
                 }
             }
             "kinds" => {
-                if let Some((_, keys)) = self.keys(form, 0, &["request", "backend", "data"]) {
+                if let Some((_, keys)) =
+                    self.keys(form, 0, &["request", "backend", "data", "external"])
+                {
                     let request = keys.required("request", "kinds", &mut self.sink);
                     let backend = keys.required("backend", "kinds", &mut self.sink);
                     if let (Some(request), Some(backend)) = (request, backend) {
@@ -314,7 +392,29 @@ impl Lower {
                             let data = self.names(data, "data kinds");
                             self.catalog.data_kinds.extend(data);
                         }
+                        if let Some(external) = keys.get("external") {
+                            let external = self.names(external, "external kinds");
+                            self.catalog.external_kinds.extend(external);
+                        }
                     }
+                }
+            }
+            "build-groups" | "dock-groups" => {
+                let dock = head == "dock-groups";
+                for item in &form.list().unwrap()[1..] {
+                    if let Some(group) = self.group(item, dock) {
+                        let list = if dock {
+                            &mut self.catalog.dock_groups
+                        } else {
+                            &mut self.catalog.build_groups
+                        };
+                        list.push(group);
+                    }
+                }
+            }
+            "component" => {
+                if let Some(component) = self.component(form) {
+                    self.catalog.components.push(component);
                 }
             }
             "fallacies" => {
@@ -1051,5 +1151,154 @@ impl Lower {
             return None;
         }
         Some(n)
+    }
+
+    fn group(&mut self, item: &Sexp, dock: bool) -> Option<Group> {
+        let shape = if dock {
+            "(key \"Label\" :family group)"
+        } else {
+            "(key \"Label\")"
+        };
+        let items = item.list().unwrap_or_default();
+        let (
+            Some(key),
+            Some(Sexp {
+                kind: Kind::Str(label),
+                ..
+            }),
+        ) = (items.first(), items.get(1))
+        else {
+            self.sink.push(Diagnostic::error(
+                "bad-form",
+                item.span,
+                format!("a group is {shape}"),
+            ));
+            return None;
+        };
+        let key = self.name(key, "a group key")?;
+        let family = match (dock, &items[2..]) {
+            (false, []) => None,
+            (true, [k, v]) if k.keyword() == Some("family") => Some(self.name(v, "a build group")?),
+            _ => {
+                self.sink.push(Diagnostic::error(
+                    "bad-form",
+                    item.span,
+                    format!("a group is {shape}"),
+                ));
+                return None;
+            }
+        };
+        Some(Group {
+            key,
+            label: label.clone(),
+            family,
+        })
+    }
+
+    fn kind_list(&mut self, sexp: &Sexp) -> Option<KindList> {
+        let items = sexp.list();
+        match items {
+            Some([head, rest @ ..]) if head.symbol() == Some("requests") => match rest {
+                [] => Some(KindList::Requests { except: Vec::new() }),
+                [word, names @ ..] if word.symbol() == Some("except") && !names.is_empty() => {
+                    let except = names
+                        .iter()
+                        .filter_map(|n| self.name(n, "a request kind"))
+                        .collect();
+                    Some(KindList::Requests { except })
+                }
+                _ => {
+                    self.sink.push(Diagnostic::error(
+                        "bad-value",
+                        sexp.span,
+                        "write (requests) or (requests except kind …)",
+                    ));
+                    None
+                }
+            },
+            Some(_) => Some(KindList::Names(self.names(sexp, "kinds"))),
+            None => {
+                self.sink.push(Diagnostic::error(
+                    "expected-list",
+                    sexp.span,
+                    "kinds are a list like (q-read q-write)",
+                ));
+                None
+            }
+        }
+    }
+
+    /// A plain number of at least zero, which may be a fraction.
+    fn plain(&mut self, sexp: &Sexp, what: &str) -> Option<Spanned<Number>> {
+        let n = self.measure(sexp, what, Dimension::Plain)?;
+        if n.value.value < Ratio::int(0) {
+            self.sink.push(Diagnostic::error(
+                "range",
+                sexp.span,
+                format!("{what} is at least 0, found {}", n.value),
+            ));
+            return None;
+        }
+        Some(n)
+    }
+
+    fn component(&mut self, form: &Sexp) -> Option<Component> {
+        const KEYS: &[&str] = &[
+            "code", "name", "product", "group", "dock", "cost", "latency", "burn", "steps",
+            "max-out", "unlock", "capacity", "flags", "accepts", "sends", "fallback", "blurb",
+        ];
+        let (args, keys) = self.keys(form, 1, KEYS)?;
+        let id = self.name(&args[0], "a component id");
+        let what = "a component";
+        let req = |cx: &mut Lower, key: &str| keys.required(key, what, &mut cx.sink);
+        let code = req(self, "code").and_then(|v| self.name(v, "a code"));
+        let name = req(self, "name").and_then(|v| self.text(v, "a name"));
+        let product = req(self, "product").and_then(|v| self.text(v, "a product"));
+        let blurb = req(self, "blurb").and_then(|v| self.text(v, "a blurb"));
+        let group = req(self, "group").and_then(|v| self.name(v, "a build group"));
+        let dock = req(self, "dock").and_then(|v| self.name(v, "a dock group"));
+        let cost = req(self, "cost").and_then(|v| self.count(v, "a cost", 0));
+        let latency = req(self, "latency").and_then(|v| self.value(v));
+        let burn = keys.get("burn").and_then(|v| self.plain(v, "a burn"));
+        let steps = keys.get("steps").and_then(|v| self.count(v, "steps", 1));
+        let max_out = keys
+            .get("max-out")
+            .and_then(|v| self.count(v, "a max out", 0));
+        let unlock = keys.get("unlock").and_then(|v| self.name(v, "research"));
+        let capacity = keys.get("capacity").and_then(|v| {
+            if Self::is_word(v, "unlimited") {
+                Some(None)
+            } else {
+                self.count(v, "a capacity", 1).map(Some)
+            }
+        });
+        let flags = keys
+            .get("flags")
+            .map_or_else(Vec::new, |v| self.names(v, "flags"));
+        let accepts = keys.get("accepts").and_then(|v| self.kind_list(v));
+        let sends = keys.get("sends").and_then(|v| self.kind_list(v));
+        let fallback = keys.get("fallback").and_then(|v| self.kind_list(v));
+        Some(Component {
+            id: id?,
+            code: code?,
+            name: name?,
+            product: product?,
+            group: group?,
+            dock: dock?,
+            cost: cost?,
+            latency: latency?,
+            burn,
+            steps,
+            max_out,
+            unlock,
+            capacity,
+            capacity_span: keys.get("capacity").map(|v| v.span),
+            flags,
+            accepts,
+            sends,
+            fallback,
+            blurb: blurb?,
+            span: form.span,
+        })
     }
 }

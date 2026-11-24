@@ -131,6 +131,162 @@ fn imports(w: &mut String, catalog: &Catalog, used: &BTreeSet<&str>) {
     }
 }
 
+pub fn components(catalog: &Catalog) -> String {
+    let mut o = String::from(HEADER);
+    let w = &mut o;
+    let _ = writeln!(w, "import type {{ Kind }} from '../catalog/kinds.ts'");
+    let _ = writeln!(w, "import type {{ ResearchId }} from './research.ts'");
+    let mut used = BTreeSet::new();
+    for c in &catalog.components {
+        for v in [&c.name, &c.product, &c.blurb, &c.latency] {
+            uses(&v.value, &mut used);
+        }
+    }
+    imports(w, catalog, &used);
+    let ids = |pick: &dyn Fn(&crate::lower::Component) -> bool| {
+        catalog
+            .components
+            .iter()
+            .filter(|c| pick(c))
+            .map(|c| c.id.text.as_str())
+            .collect::<Vec<_>>()
+    };
+
+    let _ = writeln!(w, "\nexport const COMPONENT_IDS = [");
+    for c in &catalog.components {
+        let _ = writeln!(w, "  {},", string(&c.id.text));
+    }
+    let _ = writeln!(
+        w,
+        "] as const\nexport type ComponentId = (typeof COMPONENT_IDS)[number]"
+    );
+
+    let groups = |name: &str| -> String {
+        let list = if name == "BuildGroup" {
+            &catalog.build_groups
+        } else {
+            &catalog.dock_groups
+        };
+        list.iter()
+            .map(|g| format!("\n  | {}", string(&g.key.text)))
+            .collect()
+    };
+    let _ = writeln!(w, "\nexport type BuildGroup ={}", groups("BuildGroup"));
+    let _ = writeln!(w, "\nexport const BUILD_GROUPS: ReadonlyArray<Readonly<{{ key: BuildGroup; label: string }}>> = [");
+    for g in &catalog.build_groups {
+        let _ = writeln!(
+            w,
+            "  {{ key: {}, label: {} }},",
+            string(&g.key.text),
+            string(&g.label)
+        );
+    }
+    let _ = writeln!(w, "]\n\nexport type DockGroup ={}", groups("DockGroup"));
+    let _ = writeln!(w, "\nexport const DOCK_GROUPS: ReadonlyArray<\n  Readonly<{{ key: DockGroup; label: string; family: BuildGroup }}>\n> = [");
+    for g in &catalog.dock_groups {
+        let family = g.family.as_ref().map_or("", |f| f.text.as_str());
+        let _ = writeln!(
+            w,
+            "  {{ key: {}, label: {}, family: {} }},",
+            string(&g.key.text),
+            string(&g.label),
+            string(family)
+        );
+    }
+    let _ = writeln!(
+        w,
+        "]\n\nexport const DOCK_OF: Readonly<Record<ComponentId, DockGroup>> = {{"
+    );
+    for c in &catalog.components {
+        let _ = writeln!(w, "  {}: {},", key(&c.id.text), string(&c.dock.text));
+    }
+    let _ = writeln!(w, "}}");
+
+    let _ = writeln!(
+        w,
+        "\nexport type ComponentDef = Readonly<{{\n  id: ComponentId\n  code: string\n  name: string\n  product: string\n  group: BuildGroup\n  blurb: string\n  cost: number\n  burn: number\n  sized: boolean\n  steps: number\n  latency: number\n  accepts: ReadonlyArray<Kind>\n  sends: ReadonlyArray<Kind>\n  fallback: ReadonlyArray<Kind>\n  stack: boolean\n  limiting: boolean\n  coldStart: boolean\n  maxOut: number\n  tap: boolean\n  mirror: boolean\n  control: boolean\n  unlock: ResearchId | null\n  fixed: boolean\n}}>"
+    );
+    let _ = writeln!(
+        w,
+        "\nexport const COMPONENTS: Record<ComponentId, ComponentDef> = {{"
+    );
+    for c in &catalog.components {
+        let kinds = |l: &Option<crate::lower::KindList>| {
+            format!("[{}]", list(l.iter().flat_map(|l| l.resolve(catalog))))
+        };
+        let latency = match &c.latency.value {
+            Value::Num(n) => n
+                .in_unit(Unit::Ms)
+                .decimal()
+                .expect("milliseconds are a finite decimal"),
+            other => value(other),
+        };
+        let or = |n: &Option<Spanned<Number>>, default: &str| {
+            n.as_ref().map_or_else(|| default.to_string(), num)
+        };
+        let _ = writeln!(w, "  {}: {{", key(&c.id.text));
+        let _ = writeln!(w, "    id: {},", string(&c.id.text));
+        let _ = writeln!(w, "    code: {},", string(&c.code.text));
+        let _ = writeln!(w, "    name: {},", value(&c.name.value));
+        let _ = writeln!(w, "    product: {},", value(&c.product.value));
+        let _ = writeln!(w, "    group: {},", string(&c.group.text));
+        let _ = writeln!(w, "    blurb: {},", value(&c.blurb.value));
+        let _ = writeln!(w, "    cost: {},", num(&c.cost));
+        let _ = writeln!(w, "    burn: {},", or(&c.burn, "0"));
+        let _ = writeln!(w, "    sized: {},", c.has("sized"));
+        let _ = writeln!(w, "    steps: {},", or(&c.steps, "1"));
+        let _ = writeln!(w, "    latency: {latency},");
+        let _ = writeln!(w, "    accepts: {},", kinds(&c.accepts));
+        let _ = writeln!(w, "    sends: {},", kinds(&c.sends));
+        let _ = writeln!(w, "    fallback: {},", kinds(&c.fallback));
+        let _ = writeln!(w, "    stack: {},", c.has("stack"));
+        let _ = writeln!(w, "    limiting: {},", c.has("limiting"));
+        let _ = writeln!(w, "    coldStart: {},", c.has("cold-start"));
+        let _ = writeln!(w, "    maxOut: {},", or(&c.max_out, "99"));
+        let _ = writeln!(w, "    tap: {},", c.has("tap"));
+        let _ = writeln!(w, "    mirror: {},", c.has("mirror"));
+        let _ = writeln!(w, "    control: {},", c.has("control"));
+        let _ = writeln!(
+            w,
+            "    unlock: {},",
+            c.unlock
+                .as_ref()
+                .map_or_else(|| "null".to_string(), |u| string(&u.text))
+        );
+        let _ = writeln!(w, "    fixed: {},", c.has("fixed"));
+        let _ = writeln!(w, "  }},");
+    }
+    let _ = writeln!(w, "}}");
+
+    for (name, flag) in [
+        ("TLS_TERMINATORS", "tls"),
+        ("GLOBAL_COMPONENTS", "global"),
+        ("ZONE_SPANNING_COMPONENTS", "zone-spanning"),
+        ("STANDBY_TYPES", "standby"),
+    ] {
+        let _ = writeln!(
+            w,
+            "\nexport const {name}: ReadonlyArray<ComponentId> = [{}]",
+            list(ids(&|c| c.has(flag)))
+        );
+    }
+
+    let _ = writeln!(
+        w,
+        "\nexport const FLAT_CAPACITY: Readonly<Record<string, number>> = {{"
+    );
+    for c in &catalog.components {
+        if let Some(capacity) = &c.capacity {
+            let n = capacity
+                .as_ref()
+                .map_or_else(|| "Number.POSITIVE_INFINITY".to_string(), num);
+            let _ = writeln!(w, "  {}: {n},", key(&c.id.text));
+        }
+    }
+    let _ = writeln!(w, "}}");
+    o
+}
+
 pub fn kinds(catalog: &Catalog) -> String {
     let mut o = String::from(HEADER);
     for (name, ty, kinds) in [

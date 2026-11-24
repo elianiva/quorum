@@ -3,7 +3,9 @@
 
 use crate::diag::{suggest, Diagnostic, Sink};
 use crate::graph;
-use crate::lower::{Catalog, FieldType, Incident, Mix, MixRef, Name, Research, Spanned, Value};
+use crate::lower::{
+    Catalog, Component, FieldType, Incident, KindList, Mix, MixRef, Name, Research, Spanned, Value,
+};
 use crate::num::{Dimension, Ratio, Unit};
 use crate::par;
 use crate::source::Span;
@@ -12,7 +14,8 @@ use std::collections::{BTreeMap, BTreeSet};
 type Pass = fn(&Catalog) -> Sink;
 
 const PASSES: &[Pass] = &[
-    names, requires, cycles, eras, shapes, imports, insight, era_rules, mixes, incidents, kind_refs,
+    names, requires, cycles, eras, shapes, imports, insight, era_rules, mixes, incidents,
+    kind_refs, components,
 ];
 
 pub fn run(catalog: &Catalog) -> Sink {
@@ -443,6 +446,9 @@ fn values(catalog: &Catalog) -> Vec<&Spanned<Value>> {
         out.extend([&incident.name, &incident.cause, &incident.prevention]);
         out.extend(incident.surge.as_ref().map(|(_, by)| by));
     }
+    for c in &catalog.components {
+        out.extend([&c.name, &c.product, &c.blurb, &c.latency]);
+    }
     out
 }
 
@@ -749,6 +755,280 @@ fn kind_refs(catalog: &Catalog) -> Sink {
     for pool in pools {
         if !known_pools.contains(&pool.text.as_str()) {
             sink.push(unknown("unknown-kind", pool, "Insight pool", &known_pools));
+        }
+    }
+    sink
+}
+
+/// The flags a component can carry.
+const FLAGS: &[&str] = &[
+    "sized",
+    "stack",
+    "limiting",
+    "cold-start",
+    "tap",
+    "mirror",
+    "control",
+    "fixed",
+    "standby",
+    "global",
+    "zone-spanning",
+    "tls",
+];
+
+/// Components belong to declared groups, carry known flags that agree with each other, and pass
+/// kinds that someone can receive.
+fn components(catalog: &Catalog) -> Sink {
+    let mut sink = Sink::default();
+    unique(
+        catalog.components.iter().map(|c| &c.id),
+        "the component",
+        &mut sink,
+    );
+    unique(
+        catalog.components.iter().map(|c| &c.code),
+        "the component code",
+        &mut sink,
+    );
+    let builds = unique(
+        catalog.build_groups.iter().map(|g| &g.key),
+        "the build group",
+        &mut sink,
+    );
+    let docks = unique(
+        catalog.dock_groups.iter().map(|g| &g.key),
+        "the dock group",
+        &mut sink,
+    );
+    let build_names: Vec<&str> = builds.keys().copied().collect();
+    let dock_names: Vec<&str> = docks.keys().copied().collect();
+    for g in &catalog.dock_groups {
+        if let Some(family) = &g.family {
+            if !builds.contains_key(family.text.as_str()) {
+                sink.push(unknown(
+                    "unknown-group",
+                    family,
+                    "build group",
+                    &build_names,
+                ));
+            }
+        }
+    }
+    let kinds: Vec<&str> = catalog
+        .request_kinds
+        .iter()
+        .chain(&catalog.backend_kinds)
+        .map(|k| k.text.as_str())
+        .collect();
+    let request: Vec<&str> = catalog
+        .request_kinds
+        .iter()
+        .map(|k| k.text.as_str())
+        .collect();
+    let research: Vec<&str> = by_id(catalog).keys().copied().collect();
+    let external: Vec<&str> = catalog
+        .external_kinds
+        .iter()
+        .map(|k| k.text.as_str())
+        .collect();
+    for kind in &catalog.external_kinds {
+        if !catalog.backend_kinds.iter().any(|k| k.text == kind.text) {
+            sink.push(unknown("unknown-kind", kind, "backend kind", &kinds));
+        }
+    }
+    let mut accepted: BTreeMap<&str, &Component> = BTreeMap::new();
+    let mut sent: BTreeSet<&str> = BTreeSet::new();
+    for c in &catalog.components {
+        for kind in c.accepts.iter().flat_map(|l| l.resolve(catalog)) {
+            accepted.entry(kind).or_insert(c);
+        }
+        sent.extend(c.sends.iter().flat_map(|l| l.resolve(catalog)));
+    }
+    for c in &catalog.components {
+        if !builds.contains_key(c.group.text.as_str()) {
+            sink.push(unknown(
+                "unknown-group",
+                &c.group,
+                "build group",
+                &build_names,
+            ));
+        }
+        if !docks.contains_key(c.dock.text.as_str()) {
+            sink.push(unknown("unknown-group", &c.dock, "dock group", &dock_names));
+        }
+        if let Some(unlock) = &c.unlock {
+            if !research.contains(&unlock.text.as_str()) {
+                sink.push(unknown("unknown-research", unlock, "research", &research));
+            }
+        }
+        match &c.latency.value {
+            Value::Num(n) if n.unit.dimension() != Dimension::Time => sink.push(
+                Diagnostic::error(
+                    "unit",
+                    c.latency.span,
+                    format!("a latency is a time, found {}", n.unit.dimension()),
+                )
+                .label("write it in ms"),
+            ),
+            Value::Str(_) | Value::Ref(_) => sink.push(Diagnostic::error(
+                "bad-value",
+                c.latency.span,
+                "a latency is a time or a constant",
+            )),
+            _ => {}
+        }
+        let mut seen: BTreeMap<&str, Span> = BTreeMap::new();
+        for flag in &c.flags {
+            if !FLAGS.contains(&flag.text.as_str()) {
+                sink.push(unknown("unknown-flag", flag, "flag", FLAGS));
+            } else if let Some(first) = seen.insert(&flag.text, flag.span) {
+                sink.push(
+                    Diagnostic::warning(
+                        "duplicate",
+                        flag.span,
+                        format!("`{}` is flagged twice", flag.text),
+                    )
+                    .note(first, "first here"),
+                );
+            }
+        }
+        let flag = |name: &str| c.flags.iter().find(|f| f.text == name);
+        let clash = |sink: &mut Sink, a: &Name, b_span: Span, why: &str| {
+            sink.push(
+                Diagnostic::error(
+                    "flag-clash",
+                    a.span,
+                    format!("`{}` cannot be both {why}", c.id.text),
+                )
+                .note(b_span, "this says otherwise"),
+            );
+        };
+        if let Some(sized) = flag("sized") {
+            if let Some(span) = c.capacity_span {
+                clash(
+                    &mut sink,
+                    sized,
+                    span,
+                    "sized and a fixed capacity: its size would not change what it serves",
+                );
+            }
+            if let Some(fixed) = flag("fixed") {
+                clash(
+                    &mut sink,
+                    fixed,
+                    sized.span,
+                    "fixed and sized: a fixed node cannot be resized",
+                );
+            }
+        }
+        if let (Some(fixed), Some(unlock)) = (flag("fixed"), &c.unlock) {
+            clash(
+                &mut sink,
+                fixed,
+                unlock.span,
+                "fixed and unlocked by research: a fixed node is never bought",
+            );
+        }
+        let lists = [
+            ("accepts", &c.accepts),
+            ("sends", &c.sends),
+            ("fallback", &c.fallback),
+        ];
+        for (_, list) in &lists {
+            match list {
+                Some(KindList::Names(names)) => {
+                    let mut seen: BTreeMap<&str, Span> = BTreeMap::new();
+                    for kind in names {
+                        if !kinds.contains(&kind.text.as_str()) {
+                            sink.push(unknown("unknown-kind", kind, "kind", &kinds));
+                        } else if let Some(first) = seen.insert(&kind.text, kind.span) {
+                            sink.push(
+                                Diagnostic::warning(
+                                    "duplicate",
+                                    kind.span,
+                                    format!("`{}` is listed twice", kind.text),
+                                )
+                                .note(first, "first here"),
+                            );
+                        }
+                    }
+                }
+                Some(KindList::Requests { except }) => {
+                    for kind in except {
+                        if !request.contains(&kind.text.as_str()) {
+                            sink.push(unknown("unknown-kind", kind, "request kind", &request));
+                        }
+                    }
+                }
+                None => {}
+            }
+        }
+        let accepts = c
+            .accepts
+            .as_ref()
+            .map_or_else(Vec::new, |l| l.resolve(catalog));
+        if let Some(fallback) = &c.fallback {
+            for kind in fallback.resolve(catalog) {
+                if !accepts.contains(&kind) {
+                    sink.push(
+                        Diagnostic::error(
+                            "fallback-not-accepted",
+                            c.id.span,
+                            format!(
+                                "`{}` falls back for `{kind}`, which it never accepts",
+                                c.id.text
+                            ),
+                        )
+                        .help(format!(
+                            "add `{kind}` to :accepts, or remove it from :fallback"
+                        )),
+                    );
+                }
+            }
+        }
+        for kind in accepts {
+            if external.contains(&kind) {
+                sink.push(
+                    Diagnostic::error(
+                        "external-accepted",
+                        c.id.span,
+                        format!("`{}` accepts `{kind}`, which is external", c.id.text),
+                    )
+                    .label("an external kind leaves the system"),
+                );
+            }
+        }
+        for kind in c.sends.iter().flat_map(|l| l.resolve(catalog)) {
+            if kinds.contains(&kind) && !accepted.contains_key(kind) && !external.contains(&kind) {
+                sink.push(
+                    Diagnostic::error(
+                        "nobody-accepts",
+                        c.id.span,
+                        format!(
+                            "`{}` sends `{kind}`, but no component accepts it",
+                            c.id.text
+                        ),
+                    )
+                    .help(format!(
+                        "add `{kind}` to a component's :accepts, or to :external in (kinds …)"
+                    )),
+                );
+            }
+        }
+        for kind in c.accepts.iter().flat_map(|l| l.resolve(catalog)) {
+            if kinds.contains(&kind) && !sent.contains(kind) {
+                sink.push(
+                    Diagnostic::error(
+                        "nobody-sends",
+                        c.id.span,
+                        format!(
+                            "`{}` accepts `{kind}`, but no component sends it",
+                            c.id.text
+                        ),
+                    )
+                    .label("this path never carries traffic"),
+                );
+            }
         }
     }
     sink
@@ -1234,5 +1514,111 @@ mod tests {
         let compiled = crate::compile(vec![("t.qm".into(), body)]);
         let codes: Vec<_> = compiled.diagnostics.iter().map(|d| d.code).collect();
         assert_eq!(codes, ["no-kinds"]);
+    }
+
+    const GROUPS: &str =
+        "(build-groups (data \"Data\")) (dock-groups (data \"Data\" :family data))\n";
+
+    fn comp(id: &str, code: &str, extra: &str) -> String {
+        format!("(component {id} :code {code} :name \"{id}\" :product \"p\" :group data :dock data :cost 1 :latency 2ms {extra} :blurb \"b\")\n")
+    }
+
+    fn component_codes(body: &str) -> Vec<(Severity, &'static str)> {
+        let research = "(research fix :name \"f\" :track data :cost 1 :era 0 :blurb \"b\")\n";
+        codes(&format!("{GROUPS}{research}{body}"))
+    }
+
+    /// Users send every request kind, so a component that accepts requests has a sender.
+    fn with_users(body: &str) -> String {
+        comp("users", "u", ":sends (requests)") + body
+    }
+
+    #[test]
+    fn a_valid_component_graph_has_no_diagnostics() {
+        let body = comp("app", "a", ":accepts (requests) :sends (q-read)")
+            + &comp(
+                "db",
+                "d",
+                ":accepts (q-read) :fallback (q-read) :unlock fix :flags (sized limiting)",
+            );
+        assert_eq!(component_codes(&with_users(&body)), []);
+    }
+
+    #[test]
+    fn a_sent_kind_needs_a_receiver() {
+        assert_eq!(
+            component_codes(&comp("app", "a", ":sends (q-read)")),
+            [(Severity::Error, "nobody-accepts")]
+        );
+        // `(requests)` follows the declared request kinds, so it takes `media` too.
+        assert_eq!(
+            component_codes(&with_users(&comp("app", "a", ":accepts (requests)"))),
+            []
+        );
+        let except = with_users(&comp("app", "a", ":accepts (requests except media)"));
+        assert_eq!(
+            component_codes(&except),
+            [(Severity::Error, "nobody-accepts")]
+        );
+    }
+
+    #[test]
+    fn an_accepted_kind_needs_a_sender() {
+        assert_eq!(
+            component_codes(&comp("db", "d", ":accepts (q-read)")),
+            [(Severity::Error, "nobody-sends")]
+        );
+        let body = comp("app", "a", ":sends (q-read)") + &comp("db", "d", ":accepts (q-read)");
+        assert_eq!(component_codes(&body), []);
+    }
+
+    #[test]
+    fn a_fallback_kind_must_be_accepted() {
+        let app = comp("app", "a", ":sends (q-read page)") + &comp("web", "w", ":accepts (page)");
+        let fine = app.clone() + &comp("db", "d", ":accepts (q-read) :fallback (q-read)");
+        assert_eq!(component_codes(&fine), []);
+        let wrong = app + &comp("db", "d", ":accepts (q-read) :fallback (page)");
+        assert_eq!(
+            component_codes(&wrong),
+            [(Severity::Error, "fallback-not-accepted")]
+        );
+    }
+
+    #[test]
+    fn contradictory_flags_are_errors() {
+        let clash = [(Severity::Error, "flag-clash")];
+        assert_eq!(
+            component_codes(&comp("c", "c", ":flags (sized) :capacity 100")),
+            clash
+        );
+        assert_eq!(
+            component_codes(&comp("c", "c", ":flags (fixed sized)")),
+            clash
+        );
+        assert_eq!(
+            component_codes(&comp("c", "c", ":flags (fixed) :unlock fix")),
+            clash
+        );
+        assert_eq!(
+            component_codes(&comp("c", "c", ":flags (sizd)")),
+            [(Severity::Error, "unknown-flag")]
+        );
+    }
+
+    #[test]
+    fn components_name_real_groups_codes_and_units() {
+        let duplicate = comp("a", "x", "") + &comp("b", "x", "");
+        assert_eq!(
+            component_codes(&duplicate),
+            [(Severity::Error, "duplicate")]
+        );
+        let dock = comp("a", "a", "").replace(":dock data", ":dock dta");
+        assert_eq!(component_codes(&dock), [(Severity::Error, "unknown-group")]);
+        let latency = comp("a", "a", "").replace(":latency 2ms", ":latency 2%");
+        assert_eq!(component_codes(&latency), [(Severity::Error, "unit")]);
+        assert_eq!(
+            component_codes(&comp("a", "a", ":unlock fxi")),
+            [(Severity::Error, "unknown-research")]
+        );
     }
 }

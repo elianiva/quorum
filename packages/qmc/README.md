@@ -42,6 +42,11 @@ qmc refuses content that contradicts itself and reports every problem in one run
 - an incident that escalates to a less severe level, that no Era lets the Director start, or
   whose cascades loop back to it
 - a fallacy no incident teaches, or one that two incidents teach
+- a kind a component sends that no component accepts and that is not `:external`, a fallback kind
+  the component does not accept, a kind a component accepts that no component sends, and an
+  external kind a component accepts
+- a component that is both sized and has a fixed capacity, both fixed and sized, or fixed and
+  unlocked by research
 
 It warns about a requirement another requirement already implies, about an unused import, and about
 an incident the Director cannot pick until an Era later than the one it names.

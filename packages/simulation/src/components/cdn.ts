@@ -1,6 +1,4 @@
 import { Effect, Schema } from 'effect'
-import { def } from './define.ts'
-import { REQUEST_KINDS } from '../catalog/kinds.ts'
 import type { Kind } from '../catalog/kinds.ts'
 
 export const CDN_HIT: Partial<Record<Kind, number>> = { page: 0.7, media: 0.75 }
@@ -35,18 +33,3 @@ export const cdnFields = {
   cacheKey: CacheKey.pipe(Schema.withDecodingDefaultKey(Effect.succeed('full' as const))),
   staleUntil: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
 } as const
-
-export const cdnDef = def({
-  id: 'cdn',
-  code: 'cdn',
-  name: 'CDN',
-  product: 'Cloudflare',
-  group: 'edge',
-  blurb: 'Answers cacheable pages near the user. Egress from the edge costs less.',
-  cost: 220,
-  burn: 0.05,
-  latency: 8,
-  accepts: REQUEST_KINDS,
-  sends: REQUEST_KINDS,
-  unlock: 'cdn',
-})

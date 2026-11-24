@@ -1,8 +1,10 @@
 ; Request kinds arrive from Users; backend kinds are what components send each other. The order is
 ; the Solver's index of each kind, request kinds first. Data kinds are the backend kinds that read
-; or write stored data.
+; or write stored data. External kinds leave the system for a third party, so no component
+; receives them.
 (kinds
   :request (page read write login search upload bot media rt buy job report ai feed hook push bid)
   :backend (q-read q-write auth q-search q-vector blob-put task blob-get q-tx charge q-scan infer
             notify callout k-write change)
-  :data (q-read q-write q-search q-vector blob-put q-tx blob-get q-scan k-write))
+  :data (q-read q-write q-search q-vector blob-put q-tx blob-get q-scan k-write)
+  :external (callout))

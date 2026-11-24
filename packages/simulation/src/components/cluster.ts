@@ -1,5 +1,4 @@
 import { Effect, Schema } from 'effect'
-import { def } from './define.ts'
 
 export const POD_BURN = 0.85
 export const NOISY_SHARE = 0.01
@@ -15,20 +14,3 @@ export const clusterGlossary: ReadonlyArray<string> = ['cold-start', 'container-
 export const clusterFields = {
   upgradedAt: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
 } as const
-
-export const clusterDef = def({
-  id: 'cluster',
-  code: 'k8s',
-  name: 'Kubernetes Cluster',
-  product: 'Kubernetes',
-  group: 'compute',
-  blurb:
-    'Link App Servers or Workers into it. They pack onto shared nodes: 15% less Burn, copies in 30 s.',
-  cost: 500,
-  burn: 0.1,
-  latency: 0,
-  accepts: [],
-  maxOut: 0,
-  control: true,
-  unlock: 'containers',
-})

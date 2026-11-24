@@ -12,23 +12,25 @@ const importsOf = (text: string) =>
 const ruleFile = (id: string): string | null =>
   existsSync(new URL(`${id}.rule.ts`, dir)) ? `${id}.rule.ts` : null
 
-test('every Component has a data file, and every other file belongs to one', () => {
-  for (const id of COMPONENT_IDS)
-    expect(existsSync(new URL(`${id}.ts`, dir)), `${id}.ts`).toBe(true)
-  const owned = new Set(COMPONENT_IDS.flatMap((id) => [`${id}.ts`, ruleFile(id) ?? []].flat()))
-  const files = readdirSync(dir).filter((name) => !/^(define|defs|fields|index)\.ts$/.test(name))
+// A Component is defined in content/components.qm. Its data file holds the tables and fields the
+// content does not, so a Component with none has no data file.
+const dataFile = (id: string): string | null =>
+  existsSync(new URL(`${id}.ts`, dir)) ? `${id}.ts` : null
+
+test('every file in components/ belongs to a Component', () => {
+  const owned = new Set(
+    COMPONENT_IDS.flatMap((id) => [dataFile(id) ?? [], ruleFile(id) ?? []].flat()),
+  )
+  const files = readdirSync(dir).filter((name) => !/^(defs|fields|index)\.ts$/.test(name))
   expect(files.filter((name) => !owned.has(name))).toEqual([])
 })
 
 test('a data file imports only data: effect, the catalog, and types from the state', () => {
-  for (const id of COMPONENT_IDS) {
-    for (const [type, spec] of importsOf(read(`${id}.ts`))) {
+  for (const file of COMPONENT_IDS.flatMap((id) => dataFile(id) ?? [])) {
+    for (const [type, spec] of importsOf(read(file))) {
       const allowed =
-        spec === 'effect' ||
-        spec.startsWith('../catalog') ||
-        spec === './define.ts' ||
-        (type && spec === '../state.ts')
-      expect(allowed, `${id}.ts imports ${spec}`).toBe(true)
+        spec === 'effect' || spec.startsWith('../catalog') || (type && spec === '../state.ts')
+      expect(allowed, `${file} imports ${spec}`).toBe(true)
     }
   }
 })
@@ -36,7 +38,7 @@ test('a data file imports only data: effect, the catalog, and types from the sta
 test('no Component imports another', () => {
   const names = new Set<string>(COMPONENT_IDS)
   for (const id of COMPONENT_IDS) {
-    for (const file of [`${id}.ts`, ruleFile(id) ?? []].flat()) {
+    for (const file of [dataFile(id) ?? [], ruleFile(id) ?? []].flat()) {
       for (const [, spec] of importsOf(read(file))) {
         const other = /^\.\/([a-z0-9]+)(\.rule)?\.ts$/.exec(spec)?.[1]
         expect(!other || !names.has(other) || other === id, `${file} imports ${spec}`).toBe(true)

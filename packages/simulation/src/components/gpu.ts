@@ -1,5 +1,4 @@
 import { Effect, Schema } from 'effect'
-import { def } from './define.ts'
 
 export const GPU_TYPES = {
   t4: { name: 'T4', burn: 0.53, tokens: 200, gb: 16 },
@@ -42,20 +41,3 @@ export const gpuFields = {
   ),
   batch: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(1))),
 } as const
-
-export const gpuDef = def({
-  id: 'gpu',
-  code: 'gpu',
-  name: 'GPU Node',
-  product: 'vLLM on NVIDIA',
-  group: 'compute',
-  blurb: 'Serves AI prompts in tokens per second. Each size step doubles the GPUs.',
-  cost: 900,
-  latency: 300,
-  accepts: ['infer'],
-  maxOut: 0,
-  unlock: 'model-serving',
-  steps: 8,
-  limiting: true,
-  coldStart: true,
-})

@@ -1,150 +1,24 @@
-import { COMPONENT_DEFS } from '../components/defs.ts'
 import { CALENDAR_DAY } from './team.ts'
-import type { Kind, RequestKind } from './kinds.ts'
-import type { ResearchId } from './research.ts'
+import type { RequestKind } from './kinds.ts'
 
-export const COMPONENT_IDS = [
-  'users',
-  'payments',
-  'analytics',
-  'server',
-  'database',
-  'dns',
-  'lb',
-  'pooler',
-  'cache',
-  'replica',
-  'auth',
-  'search',
-  'storage',
-  'doc',
-  'queue',
-  'worker',
-  'log',
-  'fn',
-  'cdn',
-  'waf',
-  'gw',
-  'ws',
-  'psp',
-  'autoscaler',
-  'ci',
-  'cluster',
-  'warehouse',
-  'vec',
-  'gpu',
-  'edge',
-  'llm',
-  'msgp',
-  'wide',
-  'dsql',
-  'cdc',
-  'mesh',
-  'ff',
-  'pki',
-] as const
-export type ComponentId = (typeof COMPONENT_IDS)[number]
-
-export type BuildGroup = 'edge' | 'compute' | 'data' | 'ops'
-
-export const BUILD_GROUPS: ReadonlyArray<Readonly<{ key: BuildGroup; label: string }>> = [
-  { key: 'edge', label: 'Edge' },
-  { key: 'compute', label: 'Compute' },
-  { key: 'data', label: 'Data' },
-  { key: 'ops', label: 'Ops' },
-]
-
-export type DockGroup =
-  | 'edge'
-  | 'compute'
-  | 'data'
-  | 'messaging'
-  | 'platform'
-  | 'insight'
-  | 'managed'
-
-export const DOCK_GROUPS: ReadonlyArray<
-  Readonly<{ key: DockGroup; label: string; family: BuildGroup }>
-> = [
-  { key: 'edge', label: 'Edge', family: 'edge' },
-  { key: 'compute', label: 'Compute', family: 'compute' },
-  { key: 'data', label: 'Data', family: 'data' },
-  { key: 'messaging', label: 'Messaging', family: 'compute' },
-  { key: 'platform', label: 'Platform', family: 'ops' },
-  { key: 'insight', label: 'Observability', family: 'ops' },
-  { key: 'managed', label: 'Managed', family: 'data' },
-]
-
-export const DOCK_OF: Readonly<Record<ComponentId, DockGroup>> = {
-  users: 'edge',
-  dns: 'edge',
-  lb: 'edge',
-  cdn: 'edge',
-  waf: 'edge',
-  gw: 'edge',
-  server: 'compute',
-  worker: 'compute',
-  fn: 'compute',
-  cluster: 'compute',
-  gpu: 'compute',
-  edge: 'compute',
-  database: 'data',
-  pooler: 'data',
-  cache: 'data',
-  replica: 'data',
-  search: 'data',
-  storage: 'data',
-  doc: 'data',
-  warehouse: 'data',
-  vec: 'data',
-  wide: 'data',
-  dsql: 'data',
-  queue: 'messaging',
-  log: 'messaging',
-  cdc: 'messaging',
-  ws: 'messaging',
-  autoscaler: 'platform',
-  ci: 'platform',
-  mesh: 'platform',
-  ff: 'platform',
-  pki: 'platform',
-  analytics: 'insight',
-  payments: 'insight',
-  auth: 'managed',
-  psp: 'managed',
-  llm: 'managed',
-  msgp: 'managed',
-}
-
-export type ComponentDef = Readonly<{
-  id: ComponentId
-  code: string
-  name: string
-  product: string
-  group: BuildGroup
-  blurb: string
-  cost: number
-  burn: number
-  sized: boolean
-  steps: number
-  latency: number
-  accepts: ReadonlyArray<Kind>
-  sends: ReadonlyArray<Kind>
-  fallback: ReadonlyArray<Kind>
-  stack: boolean
-  limiting: boolean
-  coldStart: boolean
-  maxOut: number
-  tap: boolean
-  mirror: boolean
-  control: boolean
-  unlock: ResearchId | null
-  fixed: boolean
-}>
-
-export const TLS_TERMINATORS: ReadonlyArray<ComponentId> = ['lb', 'cdn', 'waf', 'gw', 'ws', 'edge']
-
-export const COMPONENTS: Record<ComponentId, ComponentDef> = COMPONENT_DEFS
+// Components, their groups, and the per-component tables are written in content/components.qm and
+// compiled by qmc.
+export {
+  BUILD_GROUPS,
+  COMPONENT_IDS,
+  COMPONENTS,
+  DOCK_GROUPS,
+  DOCK_OF,
+  FLAT_CAPACITY,
+  GLOBAL_COMPONENTS,
+  STANDBY_TYPES,
+  TLS_TERMINATORS,
+  ZONE_SPANNING_COMPONENTS,
+  type BuildGroup,
+  type ComponentDef,
+  type ComponentId,
+  type DockGroup,
+} from '../generated/components.ts'
 
 export const INTERNET_MS = 30
 
@@ -168,32 +42,9 @@ export const AUTHENTICATED_KINDS: ReadonlyArray<RequestKind> = [
 export const AUTH_CHECK_MS = 0.02
 
 export const ZONES = ['a', 'b', 'c'] as const
-export const GLOBAL_COMPONENTS: ReadonlyArray<ComponentId> = [
-  'psp',
-  'llm',
-  'msgp',
-  'auth',
-  'cdn',
-  'analytics',
-  'payments',
-]
-export const ZONE_SPANNING_COMPONENTS: ReadonlyArray<ComponentId> = [
-  'psp',
-  'llm',
-  'lb',
-  'waf',
-  'gw',
-]
 export const CROSS_ZONE_MS = 1
 export const EGRESS_CROSS_ZONE = 0.01
 export const BACKEND_KB = 4
-export const STANDBY_TYPES: ReadonlyArray<ComponentId> = [
-  'database',
-  'pooler',
-  'cache',
-  'search',
-  'queue',
-]
 export const FAILOVER_SECONDS = 20
 
 export const TOKENS_PER_PROMPT = 400
@@ -489,15 +340,3 @@ export { SYNC_MS, REPLICA_SYNC_MINUTES_PER_GB, REPLICA_BOX_PRICE } from '../comp
 export { SEARCH_COPY_MINUTES_PER_GB } from '../components/search.ts'
 
 export const FLAG_PROPAGATION_SECONDS = 2
-
-export const FLAT_CAPACITY: Readonly<Record<string, number>> = {
-  lb: 2_000,
-  cache: 50_000,
-  pooler: 10_000,
-  search: 400,
-  queue: 20_000,
-  log: 100_000,
-  waf: 5_000,
-  gw: 10_000,
-  edge: Number.POSITIVE_INFINITY,
-}

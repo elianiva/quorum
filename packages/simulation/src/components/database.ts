@@ -1,5 +1,4 @@
 import { Effect, Schema } from 'effect'
-import { def } from './define.ts'
 import { MAX_CONNECTIONS } from '../catalog/instances.ts'
 
 export const DB_ENGINES = {
@@ -116,21 +115,3 @@ export const databaseFields = {
   materialized: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
   topology: DbTopology.pipe(Schema.withDecodingDefaultKey(Effect.succeed('single' as const))),
 } as const
-
-export const databaseDef = def({
-  id: 'database',
-  code: 'sql',
-  name: 'Database',
-  product: 'PostgreSQL or MySQL',
-  group: 'data',
-  blurb:
-    'The relational source of truth. A Read Replica copies it and takes no writes. A bigger size restarts it. Postgres reads and scans cheaper; MySQL writes cheaper and changes schema online.',
-  cost: 90,
-  sized: true,
-  latency: 2,
-  accepts: ['q-read', 'q-write', 'q-search', 'blob-put', 'q-tx', 'blob-get', 'q-scan', 'k-write'],
-  fallback: ['q-search', 'blob-put', 'blob-get', 'q-scan', 'k-write'],
-  maxOut: 0,
-  limiting: true,
-  coldStart: true,
-})

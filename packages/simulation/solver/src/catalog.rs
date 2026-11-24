@@ -232,7 +232,7 @@ pub static GATEWAY_LIMITS: [f64; 6] = [0.0, 100.0, 500.0, 1000.0, 2500.0, 5000.0
 pub const GATEWAY_PRICE: f64 = 0.002;
 pub const GC_STORM: f64 = 5.0;
 pub const GC_STORM_HEAP: f64 = 0.2;
-pub static GLOBAL_COMPONENTS: [&str; 7] = ["psp", "llm", "msgp", "auth", "cdn", "analytics", "payments"];
+pub static GLOBAL_COMPONENTS: [&str; 7] = ["payments", "analytics", "auth", "cdn", "psp", "llm", "msgp"];
 pub static GLOSSARY_CATEGORIES: [&str; 10] = ["performance", "reliability", "observability", "data", "runtimes", "network", "security", "delivery", "team", "business"];
 pub const GPU_CACHE_GB: f64 = 0.25;
 pub const GPU_FIRST_TOKEN_MS: f64 = 300.0;
@@ -575,7 +575,7 @@ pub const WRITE_BEHIND_SECONDS: f64 = 10.0;
 pub const YJIT_MEMORY: f64 = 1.2;
 pub const YJIT_SPEED: f64 = 1.3;
 pub static ZONES: [&str; 3] = ["a", "b", "c"];
-pub static ZONE_SPANNING_COMPONENTS: [&str; 5] = ["psp", "llm", "lb", "waf", "gw"];
+pub static ZONE_SPANNING_COMPONENTS: [&str; 5] = ["lb", "waf", "gw", "psp", "llm"];
 pub static SCALAR_COUNT: usize = 514;
 
 
@@ -1383,4 +1383,4 @@ pub static MONEY_KINDS_MASK: u64 = 0x206;
 pub static DATA_KINDS_MASK: u64 = 0x8b760000;
 pub static QUERY_CPU_BY_BACKEND: [f64; NB] = [8.0, 25.0, -1.0, 80.0, -1.0, 60.0, -1.0, 30.0, 40.0, -1.0, 100.0, -1.0, -1.0, -1.0, -1.0, -1.0];
 
-pub const CATALOG_HASH: u32 = 0xfbf8910d;
+pub const CATALOG_HASH: u32 = 0xc820e8ce;

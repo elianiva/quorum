@@ -1,5 +1,4 @@
 import { Effect, Schema } from 'effect'
-import { def } from './define.ts'
 import type { ResearchId } from '../catalog/research.ts'
 
 export const ROLLOUT_SHARE = 0.25
@@ -38,19 +37,3 @@ export type DeployStrategy = typeof DeployStrategy.Type
 export const ciFields = {
   strategy: DeployStrategy.pipe(Schema.withDecodingDefaultKey(Effect.succeed('rolling' as const))),
 } as const
-
-export const ciDef = def({
-  id: 'ci',
-  code: 'ci',
-  name: 'CI/CD Pipeline',
-  product: 'GitHub Actions',
-  group: 'ops',
-  blurb:
-    'Ships what waits. Its deploy strategy sets how long a deploy takes, what it burns, and how bad a bad deploy is.',
-  cost: 100,
-  burn: 0.02,
-  latency: 1,
-  accepts: [],
-  maxOut: 0,
-  unlock: 'ci',
-})

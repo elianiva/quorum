@@ -1,5 +1,4 @@
 import { Effect, Schema } from 'effect'
-import { def } from './define.ts'
 
 export const SEARCH_QPS = 400
 
@@ -69,20 +68,3 @@ export const searchFields = {
   heap: SearchHeap.pipe(Schema.withDecodingDefaultKey(Effect.succeed('half' as const))),
   refresh: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(1))),
 } as const
-
-export const searchDef = def({
-  id: 'search',
-  code: 'fts',
-  name: 'Search Engine',
-  product: 'Elasticsearch',
-  group: 'data',
-  blurb: 'Answers search queries. 400 per second per size step.',
-  cost: 300,
-  burn: 0.25,
-  latency: 15,
-  accepts: ['q-search', 'change'],
-  maxOut: 0,
-  unlock: 'full-text-search',
-  steps: 8,
-  limiting: true,
-})

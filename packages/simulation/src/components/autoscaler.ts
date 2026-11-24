@@ -1,5 +1,4 @@
 import { Effect, Schema } from 'effect'
-import { def } from './define.ts'
 
 export const VM_REACTION_SECONDS = 180
 export const POD_REACTION_SECONDS = 30
@@ -30,19 +29,3 @@ export const autoscalerFields = {
   maxCopies: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(8))),
   schedule: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
 } as const
-
-export const autoscalerDef = def({
-  id: 'autoscaler',
-  code: 'hpa',
-  name: 'Autoscaler',
-  product: 'Auto Scaling group',
-  group: 'ops',
-  blurb:
-    'Link App Servers or Workers into it. It adds copies when they run hot and removes them when idle.',
-  cost: 200,
-  latency: 0,
-  accepts: [],
-  maxOut: 0,
-  control: true,
-  unlock: 'autoscaling',
-})

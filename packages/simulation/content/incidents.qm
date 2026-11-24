@@ -342,3 +342,90 @@
   :actions (chaos-engineering) :failures 50%
   :cause "A network partition cut a Distributed Erlang cluster in two. Each half kept serving its own clients, and half of the realtime messages never reached the other."
   :prevention "Chaos experiments find the partition before it does. A restart rejoins the cluster.")
+
+(def SPOT_WARNING 10)
+(def SPOT_DOWN 20)
+
+(def LATENCY_REGRESSION_MS 150)
+(def DEADLINE_SURGE 3)
+(def HOT_SHARD_CPU 3)
+(def JVM_WARMUP_SECONDS 30)
+(def MIGRATION_LOCK_SECONDS 150)
+(def SUPPLY_CHAIN_SECONDS 90)
+(def ACCIDENTAL_DELETE_SECONDS 120)
+(def OPERATOR_TYPO_SECONDS 120)
+(def LEAP_SECOND_SECONDS 60)
+
+(def STALE_OPCACHE_SECONDS 90)
+(def RUNTIME_COMPAT_SECONDS 90)
+(def SPLIT_BRAIN_SECONDS 90)
+(def TABLE_BLOAT_SECONDS 120)
+(def PAGE_LEAK_SECONDS 90)
+(def BLOAT_CPU 2)
+(def PAGE_LEAK_CHURN 0.05)
+(def SUPPLY_CHAIN_CHURN 0.1)
+(def SWITCH_PROVIDER_PRICE 5_000)
+(def DELETE_CHURN 0.1)
+(def CLOCK_SKEW_MS 1_000)
+(def CLOCK_SKEW_LOSS 0.1)
+
+(def CASCADE_FROM_STAGE 3)
+
+(def REPORT_SURGE 10)
+(def STORM_SLOWDOWN 0.3)
+(def STORM_TRIGGER 20)
+(def GC_STORM_HEAP 0.2)
+(def GC_STORM 5)
+(def LAG_SURGE 10)
+(def STALE_SURGE 10)
+(def MTU_LOSS 0.5)
+(def SLOW_CHARGE_MS 1_500)
+(def REGEX_CAPACITY 0.1)
+
+(def BOT_SURGE 0.8)
+(def DDOS_MAGNITUDE 50)
+(def STUFFING_MAGNITUDE 19)
+(def CREDENTIAL_PROTECTION_BLOCK 0.2)
+
+(def SPIKE_MAGNITUDE :type const [3 10])
+(def ESCALATION 1.5)
+(def MIN_WEAKNESS 0.2)
+
+(def UNINDEXED_MS_PER_ROW 0.0001)
+(def ROWS_PER_USER 100)
+
+(def OPEN_ACTION_WEIGHT 2)
+
+(def ON_CALL_ACK 5)
+(def SRE_MTTR 0.4)
+(def SLA_CREDIT 0.1)
+(def LEAK_RATE (/ 1 40))
+(def LEAK_KB_PER_REQUEST 12)
+(def LEAK_FROM_STAGE 2)
+
+(def ALERT_RULES :type const
+  (:errors (:threshold 0.01 :seconds 30)
+   :latency (:threshold 4 :seconds 30)
+   :saturation (:threshold 0.9 :seconds 60)
+   :queue (:threshold 30 :seconds 60)
+   :budget (:threshold 10 :seconds 30)))
+
+(def ALERT_THRESHOLDS :type const
+  (:errors [0.005 0.01 0.05]
+   :latency [2 4 8]
+   :saturation [0.8 0.9 0.95]
+   :queue [10 30 120]
+   :budget [6 10 14.4]))
+(def ALERT_FATIGUE 5)
+(def ANOMALY_DETECTION_HOLD 0.5)
+
+(def CALENDAR_DURATION :type "Readonly<Record<1 | 2 | 3, number>>" (record "1" 60 "2" 20 "3" 5))
+
+(def SLO_FROM_STAGE 3)
+(def SLO_WINDOW_HOURS 168)
+(def ERROR_BUDGET_FACTORS :type const (:ahead 1.1 :normal 1 :spent 0.5))
+
+(def DRILL_SECONDS 60)
+(def DRILL_RTO 60)
+(def DRILL_RPO 5)
+(def DRILL_RECOVERED 0.01)

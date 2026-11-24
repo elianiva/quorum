@@ -1,37 +1,16 @@
 import type { BackendKind, RequestKind } from './kinds.ts'
 import type { ResearchId } from './research.ts'
+export {
+  FEATURE_IDS,
+  INTERNAL_TOOL_FEATURES,
+  BACKGROUND_FEATURES,
+  TASK_IDS,
+  TASKS,
+  QUARTER_DAYS,
+  FIXES,
+} from '../generated/work.ts'
+import { FEATURE_IDS, TASK_IDS, FIXES } from '../generated/work.ts'
 
-export const FEATURE_IDS = [
-  'landing-page',
-  'signup-flow',
-  'pagination',
-  'password-login',
-  'paid-plans',
-  'email-digests',
-  'search-filters',
-  'profile-photos',
-  'public-api',
-  'infinite-scroll',
-  'video',
-  'chat',
-  'checkout',
-  'notifications-center',
-  'mobile-app',
-  'data-export',
-  'dashboards',
-  'ai-assistant',
-  'recommendations',
-  'audit-log',
-  'activity-feed',
-  'webhooks',
-  'push-notifications',
-  'localization',
-  'offline-mode',
-  'single-sign-on',
-  'data-residency',
-  'status-page',
-  'usage-pricing',
-] as const
 export type FeatureId = (typeof FEATURE_IDS)[number]
 
 export type FeatureDef = Readonly<{
@@ -366,37 +345,6 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
   }),
 }
 
-export const INTERNAL_TOOL_FEATURES: ReadonlyArray<FeatureId> = [
-  'dashboards',
-  'audit-log',
-  'status-page',
-  'data-export',
-]
-
-export const BACKGROUND_FEATURES: ReadonlyArray<FeatureId> = [
-  'email-digests',
-  'data-export',
-  'notifications-center',
-  'webhooks',
-  'push-notifications',
-]
-
-export const TASK_IDS = [
-  'add-index',
-  'eager-loading',
-  'fix-leak',
-  'session-state',
-  'refactor',
-  'fix-bugs',
-  'upgrade-cluster',
-  'runbook',
-  'idempotency-keys',
-  'off-loop',
-  'timeouts-retries',
-  'graceful-shutdown',
-  'health-check',
-  'load-test',
-] as const
 export type TaskId = (typeof TASK_IDS)[number]
 
 export type TaskDef = Readonly<{
@@ -408,130 +356,4 @@ export type TaskDef = Readonly<{
   internal: boolean
 }>
 
-export const TASKS: Record<TaskId, TaskDef> = {
-  'add-index': {
-    id: 'add-index',
-    name: 'Add index',
-    dh: 4,
-    research: 'query-analysis',
-    effect: 'Ends a Slow query and covers one query shape',
-    internal: false,
-  },
-  'eager-loading': {
-    id: 'eager-loading',
-    name: 'Eager loading',
-    dh: 10,
-    research: 'eager-loading',
-    effect: 'ORM frameworks stop sending N+1 queries',
-    internal: false,
-  },
-  'fix-leak': {
-    id: 'fix-leak',
-    name: 'Fix memory leak',
-    dh: 15,
-    research: null,
-    effect: 'No leaks until the next Feature ships',
-    internal: false,
-  },
-  'session-state': {
-    id: 'session-state',
-    name: 'Drop session state',
-    dh: 8,
-    research: 'pooling',
-    effect: 'Transaction pooling stops breaking queries',
-    internal: false,
-  },
-  refactor: {
-    id: 'refactor',
-    name: 'Refactor',
-    dh: 10,
-    research: null,
-    effect: 'Tech debt −20 points',
-    internal: false,
-  },
-  'fix-bugs': {
-    id: 'fix-bugs',
-    name: 'Fix migration bugs',
-    dh: 1,
-    research: null,
-    effect: 'The new Stack stops failing requests',
-    internal: true,
-  },
-  'upgrade-cluster': {
-    id: 'upgrade-cluster',
-    name: 'Upgrade clusters',
-    dh: 24,
-    research: 'containers',
-    effect: 'Every Kubernetes Cluster runs a supported version for a quarter',
-    internal: false,
-  },
-  runbook: {
-    id: 'runbook',
-    name: 'Write a runbook',
-    dh: 10,
-    research: 'runbooks',
-    effect: 'One incident kind resolves by itself, with no player action',
-    internal: false,
-  },
-  'idempotency-keys': {
-    id: 'idempotency-keys',
-    name: 'Idempotency keys',
-    dh: 20,
-    research: 'idempotency-keys',
-    effect: 'A retried checkout never charges twice',
-    internal: false,
-  },
-  'off-loop': {
-    id: 'off-loop',
-    name: 'Move CPU work off the loop',
-    dh: 12,
-    research: 'worker-threads',
-    effect: 'Node.js and Python async send CPU-heavy kinds to worker threads',
-    internal: false,
-  },
-  'timeouts-retries': {
-    id: 'timeouts-retries',
-    name: 'Add timeouts and retries',
-    dh: 8,
-    research: 'timeouts',
-    effect: 'Every Link out of an App Server or Worker gets a 5 s timeout and backoff retries',
-    internal: false,
-  },
-  'graceful-shutdown': {
-    id: 'graceful-shutdown',
-    name: 'Graceful shutdown',
-    dh: 6,
-    research: null,
-    effect: 'Deploys and scale-downs finish in-flight requests instead of failing them',
-    internal: false,
-  },
-  'health-check': {
-    id: 'health-check',
-    name: 'Health check endpoint',
-    dh: 4,
-    research: 'health-checks',
-    effect: 'A Load Balancer can run deep health checks',
-    internal: false,
-  },
-  'load-test': {
-    id: 'load-test',
-    name: 'Load test',
-    dh: 15,
-    research: null,
-    effect: 'Shows every Node at twice the demand, for one calendar day',
-    internal: false,
-  },
-}
-
-export const QUARTER_DAYS = 90
-
-export const FIXES = [
-  'eager-loading',
-  'fix-leak',
-  'session-state',
-  'idempotency-keys',
-  'off-loop',
-  'graceful-shutdown',
-  'health-check',
-] as const
 export type FixId = (typeof FIXES)[number]

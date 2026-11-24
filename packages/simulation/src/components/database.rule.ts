@@ -1,31 +1,24 @@
 import {
   type Action,
-  Refusal,
   answered,
-  no,
   notAllowed,
   ok,
   patch,
   spend,
   withNode,
+  locked,
 } from '../action-kit.ts'
 import type { Backup, DbRetention, DbTopology, Game, IopsClass, ShardKey } from '../state.ts'
 import { activeIncident } from '../state.ts'
-import {
-  RESEARCH,
-  RESTORE_DRILL_DH,
-  RESTORE_FAILURE,
-  SHARD_COUNTS,
-  SHARD_KEYS,
-} from '../catalog.ts'
+import { RESTORE_DRILL_DH, RESTORE_FAILURE, SHARD_COUNTS, SHARD_KEYS } from '../catalog.ts'
 import { nextRandom } from '../random.ts'
 import { has, replacePrice } from '../lookups.ts'
 
 export const setBackup = (game: Game, id: string, backup: Backup): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'database') return notAllowed('Only a Database keeps backups.')
-    if (backup !== 'none' && !has(game, 'pitr'))
-      return no(Refusal.Locked({ what: 'Backups', research: RESEARCH.pitr.name }))
+    const refused = locked(game, 'database.backup', backup)
+    if (refused) return refused
     if (node.backup === backup) return ok(game)
     if (backup === 'none') return ok(patch(game, id, { backup, restore: 'ok' }))
     return ok(rollRestore(patch(game, id, { backup }), id))
@@ -49,8 +42,8 @@ export const runRestoreDrill = (game: Game, id: string): Action =>
 export const setMaterialized = (game: Game, id: string, materialized: boolean): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'database') return notAllowed('Only a Database holds a materialized view.')
-    if (materialized && !has(game, 'precompute'))
-      return no(Refusal.Locked({ what: 'A view', research: RESEARCH.precompute.name }))
+    const refused = locked(game, 'database.materialized', materialized)
+    if (refused) return refused
     return ok(node.materialized === materialized ? game : patch(game, id, { materialized }))
   })
 
@@ -66,8 +59,8 @@ export const setShards = (game: Game, id: string, shards: number): Action =>
     if (node.type !== 'database') return notAllowed('Only a Database shards.')
     if (!(SHARD_COUNTS as ReadonlyArray<number>).includes(shards))
       return notAllowed(`Shard counts are ${SHARD_COUNTS.join(', ')}.`)
-    if (shards > 1 && !has(game, 'sharding'))
-      return no(Refusal.Locked({ what: 'Sharding', research: RESEARCH.sharding.name }))
+    const refused = locked(game, 'database.shards', shards)
+    if (refused) return refused
     return ok(node.shards === shards ? game : patch(game, id, { shards }))
   })
 
@@ -82,8 +75,8 @@ export const setShardKey = (game: Game, id: string, shardKey: ShardKey): Action 
 export const setDbRetention = (game: Game, id: string, keep: DbRetention): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'database') return notAllowed('Only a Database keeps rows.')
-    if (keep !== 'keep' && !has(game, 'retention'))
-      return no(Refusal.Locked({ what: 'Retention', research: RESEARCH.retention.name }))
+    const refused = locked(game, 'database.keep', keep)
+    if (refused) return refused
     return ok(node.keep === keep ? game : patch(game, id, { keep }))
   })
 

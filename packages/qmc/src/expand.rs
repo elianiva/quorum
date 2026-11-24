@@ -59,6 +59,7 @@ pub const BUILTIN_FORMS: &[&str] = &[
     "component",
     "def",
     "types",
+    "gate",
 ];
 
 const MAX_DEPTH: usize = 64;

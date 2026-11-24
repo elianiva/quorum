@@ -1,8 +1,6 @@
-import { type Action, Refusal, no, notAllowed, ok, patch, withNode } from '../action-kit.ts'
+import { type Action, notAllowed, ok, patch, withNode, locked } from '../action-kit.ts'
 import type { Game } from '../state.ts'
-import { GATEWAY_BURST, GATEWAY_LIMITS, RESEARCH } from '../catalog.ts'
-
-import { has } from '../lookups.ts'
+import { GATEWAY_BURST, GATEWAY_LIMITS } from '../catalog.ts'
 
 export const setRateLimit = (game: Game, id: string, rateLimit: number): Action =>
   withNode(game, id, (node) => {
@@ -24,11 +22,9 @@ export const setRateLimit = (game: Game, id: string, rateLimit: number): Action 
 export const setGatewayBucket = (game: Game, id: string, bucket: boolean): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'gw') return notAllowed('Only an API Gateway holds a token bucket.')
-    if (bucket && !has(game, 'rate-limiting'))
-      return no(
-        Refusal.Locked({ what: 'A token bucket', research: RESEARCH['rate-limiting'].name }),
-      )
     const burst = bucket ? GATEWAY_BURST : 0
+    const refused = locked(game, 'gw.burst', burst)
+    if (refused) return refused
     return ok(
       node.burst === burst
         ? game

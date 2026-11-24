@@ -15,6 +15,10 @@ export {
   type ComponentDef,
   type ComponentId,
   type DockGroup,
+  GATES,
+  type GateDef,
+  type GateKey,
+  type GateValue,
 } from '../generated/components.ts'
 
 export type PricingId = (typeof PRICING_IDS)[number]

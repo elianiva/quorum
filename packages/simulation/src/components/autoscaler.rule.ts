@@ -1,8 +1,6 @@
-import { type Action, Refusal, no, notAllowed, ok, patch, withNode } from '../action-kit.ts'
+import { type Action, notAllowed, ok, patch, withNode, locked } from '../action-kit.ts'
 import type { Game, ScaleSignal } from '../state.ts'
-import { RESEARCH, SCALE_MAXIMA, SCALE_TARGETS } from '../catalog.ts'
-
-import { has } from '../lookups.ts'
+import { SCALE_MAXIMA, SCALE_TARGETS } from '../catalog.ts'
 
 export const setAutoscaler = (
   game: Game,
@@ -17,10 +15,11 @@ export const setAutoscaler = (
 ): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'autoscaler') return notAllowed('Only an Autoscaler scales.')
-    if (change.schedule === true && !has(game, 'scheduled-scaling'))
-      return no(
-        Refusal.Locked({ what: 'A schedule', research: RESEARCH['scheduled-scaling'].name }),
-      )
+    const refused =
+      change.schedule === undefined
+        ? undefined
+        : locked(game, 'autoscaler.schedule', change.schedule)
+    if (refused) return refused
     if (
       change.target !== undefined &&
       !(SCALE_TARGETS as ReadonlyArray<number>).includes(change.target)

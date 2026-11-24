@@ -101,6 +101,10 @@ pub const TYPED_EXPORTS: &[(&str, &[&str])] = &[
             "ZONE_SPANNING_COMPONENTS",
             "STANDBY_TYPES",
             "FLAT_CAPACITY",
+            "GateValue",
+            "GateDef",
+            "GATES",
+            "GateKey",
         ],
     ),
     (

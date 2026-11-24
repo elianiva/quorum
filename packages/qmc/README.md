@@ -47,6 +47,20 @@ hand-written code did. `(as "Type" value)` is a type assertion. `:type "T"` anno
 declaration, `:type const` writes `as const`, `:satisfies "T"` writes `satisfies T`, and `:doc`
 writes a doc comment. `(types "path" Name …)` names the TypeScript types an annotation uses.
 
+### Gates
+
+A setting that needs research is a `gate`. `:free` lists the values that need no research, and
+`:locked` lists the only values that do:
+
+```lisp
+(gate database keep :research retention :what "Retention" :free ("keep"))
+(gate storage storeVariant :research egress-optimization :what "R2" :locked ("r2"))
+```
+
+`GATES` in `generated/components.ts` holds them, keyed `component.field`, and TypeScript checks that
+each field is a field of a Node. A rule calls `locked(game, 'database.keep', keep)`, which returns
+the refusal "Retention needs Retention policies." until the research is done.
+
 ### The Solver catalog
 
 `--solver ../simulation/src/catalog.ts ../simulation/solver/src/catalog.rs` also writes the Rust
@@ -78,6 +92,9 @@ qmc refuses content that contradicts itself and reports every problem in one run
   external kind a component accepts
 - a component that is both sized and has a fixed capacity, both fixed and sized, or fixed and
   unlocked by research
+- a gate on a component or research that does not exist, two gates on one field, a gate that
+  locks no value or names a value twice, and, as a warning, a gate on the research that already
+  unlocks the component
 - a def that reads a value or names a type that does not exist, that reads itself, that repeats a
   key in one record, or that takes a name another form declares
 

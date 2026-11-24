@@ -1,6 +1,18 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { expect, test } from 'vitest'
-import { COMPONENT_IDS, COMPONENTS } from '../src/catalog.ts'
+import {
+  COMPONENT_IDS,
+  COMPONENTS,
+  GATES,
+  type ComponentId,
+  type GateDef,
+  type GateKey,
+  type GateValue,
+} from '../src/catalog.ts'
+import { blankNode } from '../src/actions.ts'
+import { locked } from '../src/action-kit.ts'
+import { newGame } from '../src/company.ts'
+import type { GameNode } from '../src/state.ts'
 
 const dir = new URL('../src/components/', import.meta.url)
 const read = (name: string) => readFileSync(new URL(name, dir), 'utf8')
@@ -62,4 +74,17 @@ test('every accepted kind has a Component that sends it', () => {
   for (const id of COMPONENT_IDS)
     for (const kind of COMPONENTS[id].accepts)
       expect(sent.has(kind), `${id} takes ${kind}, which no Component sends`).toBe(true)
+})
+
+// qmc checks that each gate names real research and locks something. The defaults live in the
+// state schema, so this checks the rest: a new node never starts on a value its gate refuses,
+// unless the gate locks every value.
+test('a new node starts on a setting that needs no research', () => {
+  const game = { ...newGame(), researched: [] }
+  for (const [key, gate] of Object.entries(GATES) as Array<[GateKey, GateDef]>) {
+    if (gate.free?.length === 0) continue
+    const [type, field] = key.split('.') as [ComponentId, keyof GameNode]
+    const value = blankNode(game, 'n', type, 0, 0)[field] as GateValue
+    expect(locked(game, key, value), `${key} starts on ${String(value)}`).toBeUndefined()
+  }
 })

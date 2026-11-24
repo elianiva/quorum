@@ -1,4 +1,4 @@
-import { type Action, Refusal, no, notAllowed, ok, patch, withNode } from '../action-kit.ts'
+import { type Action, Refusal, no, notAllowed, ok, patch, withNode, locked } from '../action-kit.ts'
 import type { CacheEngine, CacheStrategy, Game } from '../state.ts'
 import { RESEARCH, WARMED } from '../catalog.ts'
 import { withWarm } from '../life.ts'
@@ -44,9 +44,10 @@ export const setCacheGuard = (
           research: RESEARCH['stampede-protection'].name,
         }),
       )
-    if (change.warming && !has(game, 'cache-warming'))
-      return no(Refusal.Locked({ what: 'Warming', research: RESEARCH['cache-warming'].name }))
-    return ok(patch(game, id, change))
+    return (
+      (change.warming === undefined ? undefined : locked(game, 'cache.warming', change.warming)) ??
+      ok(patch(game, id, change))
+    )
   })
 
 export const setCacheStrategy = (game: Game, id: string, cacheStrategy: CacheStrategy): Action =>
@@ -56,10 +57,8 @@ export const setCacheStrategy = (game: Game, id: string, cacheStrategy: CacheStr
       return notAllowed(
         'Write-behind needs Redis: Memcached keeps nothing on disk, so a restart loses unflushed writes.',
       )
-    if (cacheStrategy !== 'aside' && !has(game, 'cache-strategies'))
-      return no(
-        Refusal.Locked({ what: 'Cache strategies', research: RESEARCH['cache-strategies'].name }),
-      )
+    const refused = locked(game, 'cache.cacheStrategy', cacheStrategy)
+    if (refused) return refused
     return ok(
       node.cacheStrategy === cacheStrategy
         ? game

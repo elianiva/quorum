@@ -407,3 +407,21 @@
 (def STICKY_HERD 0.5)
 
 (def FLAG_PROPAGATION_SECONDS 2)
+
+;; Settings that need research. A value in :free needs none; with :locked, only those values need
+;; it. The rules refuse a locked value with "<what> needs <research>."
+(gate server compress :research gzip :what "Gzip" :free ())
+(gate server shed :research load-shedding :what "Load shedding" :locked (true))
+(gate server degrade :research graceful-degradation :what "Degradation" :locked (true))
+(gate server ryw :research ryw-routing :what "Read-your-writes" :locked (true))
+(gate replica sync :research sync-replication :what "Synchronous replication" :locked (true))
+(gate gw burst :research rate-limiting :what "A token bucket" :free (0))
+(gate database backup :research pitr :what "Backups" :free ("none"))
+(gate database materialized :research precompute :what "A view" :locked (true))
+(gate database shards :research sharding :what "Sharding" :free (1))
+(gate database keep :research retention :what "Retention" :free ("keep"))
+(gate autoscaler schedule :research scheduled-scaling :what "A schedule" :locked (true))
+(gate storage storeVariant :research egress-optimization :what "R2" :locked ("r2"))
+(gate storage lifecycle :research lifecycle-rules :what "Lifecycle rules" :free (0))
+(gate cache cacheStrategy :research cache-strategies :what "Cache strategies" :free ("aside"))
+(gate cache warming :research cache-warming :what "Warming" :locked (true))

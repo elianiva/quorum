@@ -169,6 +169,25 @@ pub struct Catalog {
     pub incidents: Vec<Incident>,
     pub defs: Vec<crate::data::Def>,
     pub types: Vec<crate::data::Types>,
+    pub gates: Vec<Gate>,
+}
+
+/// `(gate server compress :research gzip :what "Gzip" :free ())`: a setting that needs research.
+/// A value in `:free` needs none, or only a value in `:locked` needs it.
+#[derive(Debug)]
+pub struct Gate {
+    pub component: Name,
+    pub field: Name,
+    pub research: Name,
+    pub what: Spanned<String>,
+    pub open: GateValues,
+    pub span: Span,
+}
+
+#[derive(Debug)]
+pub enum GateValues {
+    Free(Vec<crate::data::Datum>),
+    Locked(Vec<crate::data::Datum>),
 }
 
 /// A build group, `(edge "Edge")`, or a dock group, `(edge "Edge" :family edge)`.
@@ -296,6 +315,7 @@ impl Catalog {
         self.incidents.extend(other.incidents);
         self.defs.extend(other.defs);
         self.types.extend(other.types);
+        self.gates.extend(other.gates);
     }
 }
 
@@ -321,6 +341,7 @@ const FORMS: &[&str] = &[
     "component",
     "def",
     "types",
+    "gate",
 ];
 
 /// A form's keyword arguments, after the head and any positional arguments.
@@ -463,6 +484,11 @@ impl Lower {
             "def" => {
                 if let Some(def) = crate::data::lower_def(form, &self.module, &mut self.sink) {
                     self.catalog.defs.push(def);
+                }
+            }
+            "gate" => {
+                if let Some(gate) = self.gate(form) {
+                    self.catalog.gates.push(gate);
                 }
             }
             "types" => {
@@ -1259,6 +1285,84 @@ impl Lower {
             return None;
         }
         Some(n)
+    }
+
+    fn gate(&mut self, form: &Sexp) -> Option<Gate> {
+        let (args, keys) = self.keys(form, 2, &["research", "what", "free", "locked"])?;
+        let component = self.name(&args[0], "a component id");
+        let field = self.name(&args[1], "a field name");
+        let research = keys
+            .required("research", "a gate", &mut self.sink)
+            .and_then(|v| self.name(v, "a research id"));
+        let what = keys
+            .required("what", "a gate", &mut self.sink)
+            .and_then(|v| match &v.kind {
+                Kind::Str(s) => Some(Spanned {
+                    value: s.clone(),
+                    span: v.span,
+                }),
+                _ => {
+                    self.sink.push(Diagnostic::error(
+                        "expected-string",
+                        v.span,
+                        "a gate's :what is the text the refusal names",
+                    ));
+                    None
+                }
+            });
+        let mut values = |key: &str| -> Option<Vec<crate::data::Datum>> {
+            let list = keys.get(key)?;
+            let Some(items) = list.list() else {
+                self.sink.push(Diagnostic::error(
+                    "expected-list",
+                    list.span,
+                    format!(":{key} is a list of values, such as (false) or (\"none\")"),
+                ));
+                return None;
+            };
+            let mut out = Vec::new();
+            for item in items {
+                let d = crate::data::datum(item, &mut self.sink)?;
+                if !matches!(
+                    d.kind,
+                    crate::data::D::Num(_) | crate::data::D::Str(_) | crate::data::D::Bool(_)
+                ) {
+                    self.sink.push(Diagnostic::error(
+                        "bad-value",
+                        item.span,
+                        "a gate value is a number, a string, true, or false",
+                    ));
+                    return None;
+                }
+                out.push(d);
+            }
+            Some(out)
+        };
+        let free = values("free");
+        let locked = values("locked");
+        let open = match (free, locked) {
+            (Some(free), None) => GateValues::Free(free),
+            (None, Some(locked)) => GateValues::Locked(locked),
+            _ => {
+                self.sink.push(
+                    Diagnostic::error(
+                        "gate-values",
+                        form.span,
+                        "a gate takes either :free or :locked",
+                    )
+                    .help("`:free (false)` locks every other value; `:locked (\"r2\")` locks only those"),
+                );
+                return None;
+            }
+        };
+        Some(Gate {
+            component: component?,
+            field: field?,
+            research: research?,
+            what: what?,
+            open,
+            span: form.span,
+        })
     }
 
     fn component(&mut self, form: &Sexp) -> Option<Component> {

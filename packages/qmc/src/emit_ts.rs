@@ -131,11 +131,46 @@ fn imports(w: &mut String, catalog: &Catalog, used: &BTreeSet<&str>) {
     }
 }
 
+/// `GATES`: each gated setting, keyed `component.field`, with the research it needs.
+fn gates(w: &mut String, catalog: &Catalog) {
+    use crate::lower::GateValues;
+    let _ = writeln!(
+        w,
+        "\nexport type GateValue = string | number | boolean\n\
+         export type GateDef = Readonly<{{\n  research: ResearchId\n  what: string\n  \
+         free?: ReadonlyArray<GateValue>\n  locked?: ReadonlyArray<GateValue>\n}}>\n\
+         export const GATES = {{"
+    );
+    for gate in &catalog.gates {
+        let (key, values) = match &gate.open {
+            GateValues::Free(v) => ("free", v),
+            GateValues::Locked(v) => ("locked", v),
+        };
+        let values: Vec<String> = values.iter().map(|v| crate::data::ts(v, 0, 0)).collect();
+        let _ = writeln!(
+            w,
+            "  {}: {{ research: {}, what: {}, {key}: [{}] }},",
+            string(&format!("{}.{}", gate.component.text, gate.field.text)),
+            string(&gate.research.text),
+            string(&gate.what.value),
+            values.join(", ")
+        );
+    }
+    let _ = writeln!(
+        w,
+        "}} as const satisfies Partial<\n  Record<`${{ComponentId}}.${{Extract<keyof GameNode, string>}}`, GateDef>\n>\n\
+         export type GateKey = keyof typeof GATES"
+    );
+}
+
 pub fn components(catalog: &Catalog) -> String {
     let mut o = String::from(HEADER);
     let w = &mut o;
     let _ = writeln!(w, "import type {{ Kind }} from '../catalog/kinds.ts'");
     let _ = writeln!(w, "import type {{ ResearchId }} from './research.ts'");
+    if !catalog.gates.is_empty() {
+        let _ = writeln!(w, "import type {{ GameNode }} from '../state.ts'");
+    }
     let mut used = BTreeSet::new();
     for c in &catalog.components {
         for v in [&c.name, &c.product, &c.blurb, &c.latency] {
@@ -284,6 +319,9 @@ pub fn components(catalog: &Catalog) -> String {
         }
     }
     let _ = writeln!(w, "}}");
+    if !catalog.gates.is_empty() {
+        gates(w, catalog);
+    }
     o
 }
 

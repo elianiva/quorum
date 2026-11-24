@@ -1,5 +1,7 @@
 import { Data, Result } from 'effect'
+import { GATES, RESEARCH, type GateDef, type GateKey, type GateValue } from './catalog.ts'
 import type { IncidentId } from './catalog.ts'
+import { has } from './lookups.ts'
 import type { Game, GameNode, Incident } from './state.ts'
 import { activeIncident } from './state.ts'
 import { ackIncident, updateIncident, type IncidentState } from './incident-machine.ts'
@@ -33,6 +35,15 @@ export type Action = Result.Result<Game, Refusal>
 export const ok = (game: Game): Action => Result.succeed(game)
 export const no = (refusal: Refusal): Action => Result.fail(refusal)
 export const notAllowed = (reason: string): Action => no(Refusal.NotAllowed({ reason }))
+
+/** The refusal for setting a gated field to `value` before its research, from `GATES`. */
+export const locked = (game: Game, key: GateKey, value: GateValue): Action | undefined => {
+  const gate: GateDef = GATES[key]
+  const open = gate.free ? gate.free.includes(value) : !(gate.locked ?? []).includes(value)
+  return open || has(game, gate.research)
+    ? undefined
+    : no(Refusal.Locked({ what: gate.what, research: RESEARCH[gate.research].name }))
+}
 
 export const withNode = (game: Game, id: string, apply: (node: GameNode) => Action): Action => {
   const node = game.nodes.find((entry) => entry.id === id)

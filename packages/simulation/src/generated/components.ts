@@ -2,6 +2,7 @@
 // change the .qm source and run `pnpm --filter @quorum/simulation content`.
 import type { Kind } from '../catalog/kinds.ts'
 import type { ResearchId } from './research.ts'
+import type { GameNode } from '../state.ts'
 import { SERVERLESS_MS } from '../components/fn.ts'
 import { EDGE_MS } from '../components/edge.ts'
 import { CDC_MS } from '../components/cdc.ts'
@@ -1124,6 +1125,34 @@ export const FLAT_CAPACITY: Readonly<Record<string, number>> = {
   gw: 10000,
   edge: Number.POSITIVE_INFINITY,
 }
+
+export type GateValue = string | number | boolean
+export type GateDef = Readonly<{
+  research: ResearchId
+  what: string
+  free?: ReadonlyArray<GateValue>
+  locked?: ReadonlyArray<GateValue>
+}>
+export const GATES = {
+  'server.compress': { research: 'gzip', what: 'Gzip', free: [] },
+  'server.shed': { research: 'load-shedding', what: 'Load shedding', locked: [true] },
+  'server.degrade': { research: 'graceful-degradation', what: 'Degradation', locked: [true] },
+  'server.ryw': { research: 'ryw-routing', what: 'Read-your-writes', locked: [true] },
+  'replica.sync': { research: 'sync-replication', what: 'Synchronous replication', locked: [true] },
+  'gw.burst': { research: 'rate-limiting', what: 'A token bucket', free: [0] },
+  'database.backup': { research: 'pitr', what: 'Backups', free: ['none'] },
+  'database.materialized': { research: 'precompute', what: 'A view', locked: [true] },
+  'database.shards': { research: 'sharding', what: 'Sharding', free: [1] },
+  'database.keep': { research: 'retention', what: 'Retention', free: ['keep'] },
+  'autoscaler.schedule': { research: 'scheduled-scaling', what: 'A schedule', locked: [true] },
+  'storage.storeVariant': { research: 'egress-optimization', what: 'R2', locked: ['r2'] },
+  'storage.lifecycle': { research: 'lifecycle-rules', what: 'Lifecycle rules', free: [0] },
+  'cache.cacheStrategy': { research: 'cache-strategies', what: 'Cache strategies', free: ['aside'] },
+  'cache.warming': { research: 'cache-warming', what: 'Warming', locked: [true] },
+} as const satisfies Partial<
+  Record<`${ComponentId}.${Extract<keyof GameNode, string>}`, GateDef>
+>
+export type GateKey = keyof typeof GATES
 
 export const INTERNET_MS = 30
 export const UPLOAD_MB = 2

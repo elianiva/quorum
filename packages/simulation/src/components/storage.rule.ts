@@ -1,16 +1,13 @@
-import { type Action, Refusal, no, notAllowed, ok, patch, withNode } from '../action-kit.ts'
+import { type Action, notAllowed, ok, patch, withNode, locked } from '../action-kit.ts'
 import type { Game, StorageClass, StoreVariant } from '../state.ts'
-import { LIFECYCLE_DAYS, RESEARCH } from '../catalog.ts'
-
-import { has } from '../lookups.ts'
+import { LIFECYCLE_DAYS } from '../catalog.ts'
 
 export const setStoreVariant = (game: Game, id: string, storeVariant: StoreVariant): Action =>
   withNode(game, id, (node) =>
     node.type !== 'storage'
       ? notAllowed('Only Object Storage has a product.')
-      : storeVariant === 'r2' && !has(game, 'egress-optimization')
-        ? no(Refusal.Locked({ what: 'R2', research: RESEARCH['egress-optimization'].name }))
-        : ok(node.storeVariant === storeVariant ? game : patch(game, id, { storeVariant })),
+      : (locked(game, 'storage.storeVariant', storeVariant) ??
+        ok(node.storeVariant === storeVariant ? game : patch(game, id, { storeVariant }))),
   )
 
 export const setStorageClass = (game: Game, id: string, storageClass: StorageClass): Action =>
@@ -26,9 +23,8 @@ export const setLifecycle = (game: Game, id: string, lifecycle: number): Action 
       return notAllowed('Only Object Storage moves objects between classes.')
     if (!(LIFECYCLE_DAYS as ReadonlyArray<number>).includes(lifecycle))
       return notAllowed(`Lifecycle windows are ${LIFECYCLE_DAYS.join(', ')} days.`)
-    if (lifecycle > 0 && !has(game, 'lifecycle-rules'))
-      return no(
-        Refusal.Locked({ what: 'Lifecycle rules', research: RESEARCH['lifecycle-rules'].name }),
-      )
-    return ok(node.lifecycle === lifecycle ? game : patch(game, id, { lifecycle }))
+    return (
+      locked(game, 'storage.lifecycle', lifecycle) ??
+      ok(node.lifecycle === lifecycle ? game : patch(game, id, { lifecycle }))
+    )
   })

@@ -27,6 +27,7 @@ const PASSES: &[Pass] = &[
     kind_refs,
     components,
     crate::data::check,
+    gates,
 ];
 
 pub fn run(catalog: &Catalog) -> Sink {
@@ -1085,6 +1086,96 @@ fn insight(catalog: &Catalog) -> Sink {
     sink
 }
 
+/// Gates name a real component and research, give each field one gate, lock something, and do
+/// not repeat the research the component already needs.
+fn gates(catalog: &Catalog) -> Sink {
+    use crate::lower::GateValues;
+    let mut sink = Sink::default();
+    let components: BTreeMap<&str, &Component> = catalog
+        .components
+        .iter()
+        .map(|c| (c.id.text.as_str(), c))
+        .collect();
+    let component_names: Vec<&str> = components.keys().copied().collect();
+    let research: Vec<&str> = catalog
+        .research
+        .iter()
+        .map(|r| r.id.text.as_str())
+        .collect();
+    let mut seen: BTreeMap<(&str, &str), Span> = BTreeMap::new();
+    for gate in &catalog.gates {
+        let component = components.get(gate.component.text.as_str());
+        if component.is_none() {
+            sink.push(unknown(
+                "unknown-component",
+                &gate.component,
+                "component",
+                &component_names,
+            ));
+        }
+        if !research.contains(&gate.research.text.as_str()) {
+            sink.push(unknown(
+                "unknown-research",
+                &gate.research,
+                "research",
+                &research,
+            ));
+        }
+        let key = (gate.component.text.as_str(), gate.field.text.as_str());
+        if let Some(first) = seen.insert(key, gate.span) {
+            sink.push(
+                Diagnostic::error(
+                    "gate-twice",
+                    gate.field.span,
+                    format!("`{}.{}` has two gates", key.0, key.1),
+                )
+                .label("second gate")
+                .note(first, "first gate"),
+            );
+        }
+        let values = match &gate.open {
+            GateValues::Free(v) | GateValues::Locked(v) => v,
+        };
+        if let GateValues::Locked(v) = &gate.open {
+            if v.is_empty() {
+                sink.push(Diagnostic::error(
+                    "dead-gate",
+                    gate.span,
+                    format!("the gate on `{}.{}` locks no value", key.0, key.1),
+                ));
+            }
+        }
+        let mut texts: Vec<String> = Vec::new();
+        for v in values {
+            let text = crate::data::ts(v, 0, 0);
+            if texts.contains(&text) {
+                sink.push(Diagnostic::error(
+                    "duplicate",
+                    v.span,
+                    format!("{text} appears twice in one gate"),
+                ));
+            }
+            texts.push(text);
+        }
+        if let Some(unlock) = component.and_then(|c| c.unlock.as_ref()) {
+            if unlock.text == gate.research.text {
+                sink.push(
+                    Diagnostic::warning(
+                        "redundant-gate",
+                        gate.research.span,
+                        format!(
+                            "`{}` already needs `{}` to build, so this gate never refuses",
+                            key.0, unlock.text
+                        ),
+                    )
+                    .note(unlock.span, "the component's own unlock"),
+                );
+            }
+        }
+    }
+    sink
+}
+
 #[cfg(test)]
 mod tests {
     use crate::diag::Severity;
@@ -1598,6 +1689,55 @@ mod tests {
             component_codes(&wrong),
             [(Severity::Error, "fallback-not-accepted")]
         );
+    }
+
+    #[test]
+    fn gates_that_contradict_themselves_or_the_catalog_are_refused() {
+        let app = with_users(&comp("app", "a", ":accepts (requests) :unlock fix"));
+        let gate = |rest: &str| format!("{app}(gate app {rest})\n");
+        assert_eq!(
+            component_codes(&gate("shed :research other :what \"S\" :locked (true)")),
+            [(Severity::Error, "unknown-research")]
+        );
+        assert_eq!(
+            component_codes(&format!(
+                "{app}(gate ap shed :research fix :what \"S\" :locked (true))"
+            )),
+            [(Severity::Error, "unknown-component")]
+        );
+        assert_eq!(
+            component_codes(&gate("shed :research fix :what \"S\" :locked ()")),
+            [
+                (Severity::Error, "dead-gate"),
+                (Severity::Warning, "redundant-gate")
+            ]
+        );
+        assert_eq!(
+            component_codes(&gate(
+                "keep :research fix :what \"K\" :free (\"keep\" \"keep\")"
+            )),
+            [
+                (Severity::Error, "duplicate"),
+                (Severity::Warning, "redundant-gate")
+            ]
+        );
+        assert_eq!(
+            component_codes(&gate(
+                "shed :research fix :what \"S\" :free (false) :locked (true)"
+            )),
+            [(Severity::Error, "gate-values")]
+        );
+        let other = "(research other :name \"o\" :track data :cost 1 :era 0 :blurb \"b\")\n";
+        let twice = format!(
+            "{other}{}(gate app shed :research other :what \"T\" :free (false))\n",
+            gate("shed :research other :what \"S\" :locked (true)")
+        );
+        assert_eq!(component_codes(&twice), [(Severity::Error, "gate-twice")]);
+        let fine = format!(
+            "{other}{}",
+            gate("shed :research other :what \"S\" :locked (true)")
+        );
+        assert_eq!(component_codes(&fine), []);
     }
 
     #[test]

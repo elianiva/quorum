@@ -1,20 +1,15 @@
-import { type Action, Refusal, no, notAllowed, ok, patch, withNode } from '../action-kit.ts'
+import { type Action, notAllowed, ok, patch, withNode, locked } from '../action-kit.ts'
 import type { Game } from '../state.ts'
-import { RESEARCH } from '../catalog.ts'
-import { databasesOf, databasesOfGroup, dataGroupOf, has, primaryOf } from '../lookups.ts'
+
+import { databasesOf, databasesOfGroup, dataGroupOf, primaryOf } from '../lookups.ts'
 import { warming } from '../life.ts'
 import { PROMOTE_DATA_LOSS } from './replica.ts'
 
 export const setSync = (game: Game, id: string, sync: boolean): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'replica') return notAllowed('Only a Read Replica replicates synchronously.')
-    if (sync && !has(game, 'sync-replication'))
-      return no(
-        Refusal.Locked({
-          what: 'Synchronous replication',
-          research: RESEARCH['sync-replication'].name,
-        }),
-      )
+    const refused = locked(game, 'replica.sync', sync)
+    if (refused) return refused
     const copiesNothing = primaryOf(game, node) === undefined
     if (sync && copiesNothing) return notAllowed('Link a Database into this Read Replica first.')
     return ok(node.sync === sync ? game : patch(game, id, { sync }))

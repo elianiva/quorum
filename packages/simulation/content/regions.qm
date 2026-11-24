@@ -1,0 +1,59 @@
+(types "../catalog/regions.ts" RegionId RegionDef DeviceId IacToolId IacToolDef)
+
+(def REGIONS :type const ["na" "eu" "apac" "sa"])
+
+(def HOME_REGION :type "RegionId" "na")
+
+(def REGION_INFO :type "Record<RegionId, RegionDef>"
+  (:na (:name "North America" :short "NA" :share 0.4 :offset 0)
+   :eu (:name "Europe" :short "EU" :share 0.3 :offset 360)
+   :apac (:name "Asia-Pacific" :short "APAC" :share 0.2 :offset 840)
+   :sa (:name "South America" :short "SA" :share 0.1 :offset 120)))
+
+(def RTT :type "Readonly<Record<string, number>>"
+  (:na-eu 75 :na-apac 200 :na-sa 120 :eu-apac 160 :eu-sa 190 :apac-sa 300))
+
+(def USER_ROUND_TRIPS 2)
+(def ANYCAST_MS 20)
+(def HTTP3_CUT 0.2)
+(def HTTP2_CUT 0.15)
+(def EGRESS_CROSS_REGION 0.02)
+(def OPEN_REGION_PRICE 20_000)
+(def REGIONS_FROM_STAGE 5)
+(def ABROAD_SEED 0.05)
+(def BORDER_MIXING 0.1)
+
+(def DEVICES :type const ["desktop" "mobile" "tablet"])
+
+(def DEVICE_INFO
+  :type "Record<\n  DeviceId,\n  Readonly<{ name: string; share: number; rttMs: number }>\n>"
+  (:desktop (:name "Desktop" :share 0.45 :rttMs 0)
+   :mobile (:name "Mobile" :share 0.45 :rttMs 60)
+   :tablet (:name "Tablet" :share 0.1 :rttMs 30)))
+(def NO_DEVICE_LATENCY :type "Record<DeviceId, number>" (:desktop 0 :mobile 0 :tablet 0))
+
+(def MIRROR_TIME_MINUTES 30)
+(def STAGE_WAIT_MINUTES 60)
+(def SYNC_POLL_MINUTES 3)
+(def IAC_SWITCH_MINUTES CALENDAR_DAY)
+
+(def IAC_TOOLS :type const ["terraform" "pulumi" "alchemy"])
+
+(def SYNC_MODES :type const ["all" "staged"])
+
+(def DATA_PATTERNS :type const ["replica" "primary" "replicate" "call"])
+
+(def REFRESH_TIME_MINUTES 0.5)
+
+(def IAC_TOOL_INFO :type "Record<IacToolId, IacToolDef>"
+  (:terraform (:name "Terraform" :language "HCL" :refreshOnPlan true :refresh null :repair false)
+   :pulumi (:name "Pulumi"
+            :language "TypeScript"
+            :refreshOnPlan false
+            :refresh "pulumi refresh"
+            :repair false)
+   :alchemy (:name "Alchemy"
+             :language "TypeScript"
+             :refreshOnPlan false
+             :refresh "alchemy drift"
+             :repair true)))

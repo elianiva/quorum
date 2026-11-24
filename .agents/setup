@@ -25,6 +25,19 @@ pnpm --version
 step 'Install workspace dependencies'
 pnpm install --frozen-lockfile
 
+step 'Install Rust for the Solver and the content compiler'
+if ! command -v rustup >/dev/null && [[ ! -x "$HOME/.cargo/bin/rustup" ]]; then
+  curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain none
+fi
+export PATH="$HOME/.cargo/bin:$PATH"
+# rust-toolchain.toml pins the channel and the wasm target.
+(cd packages/simulation/solver && rustup toolchain install)
+rustup default "$(cd packages/simulation/solver && rustup show active-toolchain | cut -d' ' -f1)"
+if ! grep -Fq '.cargo/env' "$HOME/.bashrc" 2>/dev/null; then
+  echo '. "$HOME/.cargo/env"' >> "$HOME/.bashrc"
+fi
+rustc --version
+
 step 'Install Playwright browsers for pnpm test:engines'
 (cd packages/simulation && pnpm exec playwright install chromium firefox webkit)
 if sudo -n true 2>/dev/null; then

@@ -81,6 +81,18 @@ export const toasts = {
     needsFirst: (name: Value, needed: Value) => `${name} needs ${needed} first.`,
     queueTooShort: (limit: Value, name: Value, count: Value) =>
       `The queue holds ${limit} Studies, and ${name} needs ${count} of them.`,
+    linkInto: (name: Value) => `Link App Servers or Workers into the ${name}.`,
+    alreadyHas: (source: Value, target: Value) => `${source} already has a ${target}.`,
+    linkIntoClusterFirst: (source: Value) =>
+      `Link ${source} into a Kubernetes Cluster first: the sidecar rides in its pod.`,
+    linkDatabaseInto: (name: Value) => `Link a Database into the ${name}: it reads its write log.`,
+    noTrafficToSample: (source: Value) => `${source} has no traffic to sample.`,
+    sendsNothingOn: (source: Value) =>
+      `${source} sends nothing on. Link it into Analytics to sample it.`,
+    hasNoInput: (target: Value) => `${target} has no input.`,
+    takesLinks: (source: Value, count: Value) => `${source} takes ${count} links.`,
+    takesSends: (target: Value, takes: Value, source: Value, sends: Value) =>
+      `${target} takes ${takes}. ${source} sends ${sends}.`,
   },
   costs: (what: Value, price: Value) => `${what} costs ${price}.`,
   missing: 'That is gone.',

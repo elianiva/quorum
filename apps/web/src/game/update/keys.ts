@@ -18,7 +18,7 @@ import { closePanel, type Dispatch, type MessageCases, type UpdateResult } from 
 import { step as tradeoffStep } from '../tradeoff-machine.ts'
 import { dockGroups, dockItems, playbooksShown, shown } from '../reveal.ts'
 import { leaveExited } from './companies.ts'
-import { has } from '@quorum/simulation/lookups'
+import { has, priceOf, resizePrice } from '@quorum/simulation/lookups'
 import { mailKey } from './mail.ts'
 import { nearestNode, type Direction } from '../viewport.ts'
 import { onBoard } from '../route.ts'
@@ -257,10 +257,16 @@ export const keysHandlers = (
       case 'Z':
       case 'y':
         return route(model, Message.RedoChosen())
-      case 'u':
-        return selected
-          ? route(model, Message.ResizeChosen({ nodeId: selected, direction: 1 }))
-          : { model }
+      case 'u': {
+        if (!selected) return { model }
+        const node = model.board.game.nodes.find((entry) => entry.id === selected)
+        if (node === undefined) return { model }
+        const price = resizePrice(model.board.game, node)
+        const short = !model.board.game.sandbox && model.board.game.cash < (price ?? 0)
+        return price === null || short
+          ? { model }
+          : route(model, Message.ResizeChosen({ nodeId: selected, direction: 1 }))
+      }
       case 'Mod+a':
         return model.panel === 'none' ? route(model, Message.SelectionAll()) : { model }
       case 'Mod+c':
@@ -286,7 +292,11 @@ export const keysHandlers = (
         const picked = (
           model.board.buildGroup ? dockItems(model.board.game, model.board.buildGroup) : []
         )[Number(key) - 1]
-        if (picked) return route(model, Message.PlacingChosen({ type: picked }))
+        if (picked) {
+          const short =
+            !model.board.game.sandbox && model.board.game.cash < priceOf(model.board.game, picked)
+          return short ? { model } : route(model, Message.PlacingChosen({ type: picked }))
+        }
         const group = /^[1-9]$/.test(key)
           ? dockGroups(model.board.game)[Number(key) - 1]
           : undefined

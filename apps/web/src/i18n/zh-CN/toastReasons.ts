@@ -206,4 +206,16 @@ export const reasons: Messages['toasts']['reasons'] = {
   useAtMost12Nodes: '最多使用 12 个节点。',
   waitForTheIncidentToEnd: '请等待故障结束。',
   youAlreadyTookThatDemo: '你已经预约过该演示。',
+  aWorkerTakesTasksFromAQueueOrAnEventStream:
+    'Worker 从 Queue 或 Event Stream 接收任务。请先把 App Server 连接到其中一个。',
+  onlyAnAppServerHandsWorkToAQueue:
+    '只有 App Server 会把工作交给 Queue。Function 或 Edge Function 会在原地执行工作。',
+  aReadReplicaCopiesOneDatabase: '一个 Read Replica 只复制一个 Database。',
+  anL7LoadBalancerReadsHTTP: 'L7 Load Balancer 读取 HTTP。请切换到 L4 来分发查询。',
+  oneCallerReadsOneDataGroup:
+    '一个调用方只能读取一个 Data Group。把 Database 归入同一个组，或让第二个存储经由 API Gateway 和它自己的 App Server。',
+  aDomainResolvesToOneHost:
+    '一个域名只解析到一个主机。在前面放置 DNS 或 Load Balancer 才能覆盖更多主机。',
+  aConnectionPoolerPoolsToOneHost:
+    'Connection Pooler 只把连接汇聚到一个主机。在后面放置 Load Balancer 才能覆盖更多主机。',
 }

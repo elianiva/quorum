@@ -233,4 +233,16 @@ export const reasons: Messages['toasts']['reasons'] = {
   useAtMost12Nodes: 'Usa como máximo 12 nodos.',
   waitForTheIncidentToEnd: 'Espera a que termine el incidente.',
   youAlreadyTookThatDemo: 'Ya aceptaste esa demo.',
+  aWorkerTakesTasksFromAQueueOrAnEventStream:
+    'Un Worker toma tareas de una Cola o de un Event Stream. Enlaza primero el App Server a uno de ellos.',
+  onlyAnAppServerHandsWorkToAQueue:
+    'Solo un App Server entrega trabajo a una Cola. Una Function o Edge Function ejecuta su trabajo en línea.',
+  aReadReplicaCopiesOneDatabase: 'Una Read Replica copia una sola Base de datos.',
+  anL7LoadBalancerReadsHTTP: 'Un Load Balancer L7 lee HTTP. Cámbialo a L4 para repartir consultas.',
+  oneCallerReadsOneDataGroup:
+    'Un llamador lee un solo Grupo de datos. Agrupa las Bases de datos en un grupo, o envía un segundo almacén por un API Gateway y su propio App Server.',
+  aDomainResolvesToOneHost:
+    'Un dominio resuelve a un solo host. Pon DNS o un Load Balancer delante para llegar a más.',
+  aConnectionPoolerPoolsToOneHost:
+    'Un Connection Pooler agrupa conexiones a un solo host. Pon un Load Balancer después para llegar a más.',
 }

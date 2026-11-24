@@ -10,14 +10,16 @@ import type { Html, HtmlBuilder } from 'foldkit/html'
 import { firstStepsBar } from '../components/lab/first-steps.ts'
 import { dock } from '../components/lab/dock.ts'
 import { detail, ResearchResize } from '../components/lab/research.ts'
-import { copyIn } from '../i18n/messages.ts'
+import { copyIn, loadLocale } from '../i18n/messages.ts'
+import { reasonIn } from '../i18n/refusal.ts'
 import { EMPTY_INBOX, InboxMessage, mailed } from './inbox.ts'
 import { firstStepOf, upgradePriceOf } from './first-steps.ts'
 import { linkPreviewOf } from './link-preview.ts'
 import { Message } from './message.ts'
 import { AppRoute } from './route.ts'
 import { initialModel, update } from './update.ts'
-import type { Model } from './model.ts'
+import { placingOf, type Model } from './model.ts'
+import { dockItems } from './reveal.ts'
 
 const inLab = (): Model => {
   const model = initialModel()
@@ -233,5 +235,92 @@ describe('a click that has nothing to do', () => {
     )
     expect(result.model.toast).toBeNull()
     expect(result.model.board.inbox.mail[0]?.phase._tag).toBe('Active')
+  })
+})
+
+describe('a keyboard action that has nothing to do', () => {
+  test('an unaffordable hotkey placement does not start placing', () => {
+    const base = inLab()
+    const group = 'compute' as const
+    const picked = dockItems(base.board.game, group)[0]!
+    const poor: Model = {
+      ...base,
+      board: {
+        ...base.board,
+        game: { ...base.board.game, cash: 0 },
+        buildGroup: group,
+      },
+    }
+    const skipped = update(poor, Message.KeyPressed({ key: '1' }))
+    expect(placingOf(skipped.model)).toBeNull()
+    expect(skipped.model.toast).toBeNull()
+
+    const rich: Model = {
+      ...poor,
+      board: { ...poor.board, game: { ...poor.board.game, cash: 100_000 } },
+    }
+    expect(placingOf(update(rich, Message.KeyPressed({ key: '1' })).model)).toBe(picked)
+  })
+
+  test('an unaffordable resize hotkey leaves the Node alone', () => {
+    const base = inLab()
+    const model: Model = {
+      ...base,
+      board: {
+        ...base.board,
+        game: { ...base.board.game, cash: 0 },
+        selected: 'server',
+      },
+    }
+    const before = model.board.game
+    const result = update(model, Message.KeyPressed({ key: 'u' }))
+    expect(result.model.board.game).toBe(before)
+    expect(result.model.toast).toBeNull()
+
+    const rich: Model = {
+      ...model,
+      board: { ...model.board, game: { ...model.board.game, cash: 100_000 } },
+    }
+    const resized = update(rich, Message.KeyPressed({ key: 'u' })).model
+    expect(resized.board.game.nodes.find((node) => node.id === 'server')?.size).toBe(2)
+  })
+})
+
+describe('a Link refusal in another language', () => {
+  const reasons: ReadonlyArray<string> = [
+    'A domain resolves to one host. Put DNS or a Load Balancer in front to reach more.',
+    'One caller reads one Data Group. Box the Databases into one group, or route a second store through an API Gateway and its own App Server.',
+    'A Connection Pooler pools to one host. Put a Load Balancer after it to reach more.',
+    'An L7 Load Balancer reads HTTP. Switch it to L4 to balance queries.',
+    'A Worker takes tasks from a Queue or an Event Stream. Link the App Server into one first.',
+    'Only an App Server hands work to a Queue. A Function or Edge Function runs its work inline.',
+    'A Read Replica copies one Database.',
+    'Payments has no input.',
+    'App Server takes 1 links.',
+    'App Server already has a Load Balancer.',
+    'Link App Servers or Workers into the Queue.',
+    'Link a Database into the Event Stream: it reads its write log.',
+    'Users has no traffic to sample.',
+    'Mesh sends nothing on. Link it into Analytics to sample it.',
+    'Link an App Server into a Kubernetes Cluster first: the sidecar rides in its pod.',
+    'Load Balancer takes page view, api read. App Server sends read query, write query.',
+  ]
+
+  for (const locale of ['es', 'fr', 'ja', 'zh-CN'] as const)
+    test(`${locale} translates every Link reason`, async () => {
+      await loadLocale(locale)
+      for (const reason of reasons) expect(reasonIn(copyIn(locale), reason)).not.toBe(reason)
+    })
+
+  test('the Request kinds inside the reason are translated, and English is unchanged', async () => {
+    const english =
+      'Load Balancer takes page view, api read. App Server sends read query, write query.'
+    expect(reasonIn(copyIn('en'), english)).toBe(english)
+    await loadLocale('es')
+    const spanish = reasonIn(copyIn('es'), english)
+    expect(spanish).toContain('vista de página')
+    expect(spanish).toContain('lectura de API')
+    expect(spanish).toContain('consulta de lectura')
+    expect(spanish).toContain('consulta de escritura')
   })
 })

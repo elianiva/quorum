@@ -32,6 +32,25 @@ const reasonIds = new Map(
   Object.entries(copyIn('en').toasts.reasons).map(([id, text]) => [text, id] as const),
 )
 
+const kindIds = new Map(
+  Object.entries(copyIn('en').catalog.kinds).map(
+    ([id, entry]) => [entry.label.toLowerCase(), id] as const,
+  ),
+)
+
+const lowerFirst = (text: string): string =>
+  /^[A-Z][a-z]/.test(text) ? `${text.charAt(0).toLowerCase()}${text.slice(1)}` : text
+
+/** A Request kind label inside a sentence, in the reader's language. */
+export const kindIn = (t: Messages, text: string): string => {
+  if (t === copyIn('en')) return text
+  const id = kindIds.get(text.toLowerCase())
+  if (id === undefined) return text
+  const kinds = t.catalog.kinds as unknown as Readonly<Record<string, Readonly<{ label: string }>>>
+  const label = kinds[id]?.label
+  return label === undefined ? text : lowerFirst(label)
+}
+
 export const nameIn = (t: Messages, text: string): string => names.get(text)?.(t) ?? text
 
 const patterns: ReadonlyArray<
@@ -65,6 +84,48 @@ const patterns: ReadonlyArray<
   [
     /^The queue holds (\d+) Studies, and (.+) needs (\d+) of them\.$/,
     (t, [a, b, c]) => t.toasts.reason.queueTooShort(a!, nameIn(t, b!), c!),
+  ],
+  [
+    /^Link App Servers or Workers into the (.+)\.$/,
+    (t, [a]) => t.toasts.reason.linkInto(nameIn(t, a!)),
+  ],
+  [
+    /^(.+) already has a (.+)\.$/,
+    (t, [a, b]) => t.toasts.reason.alreadyHas(nameIn(t, a!), nameIn(t, b!)),
+  ],
+  [
+    /^Link (.+) into a Kubernetes Cluster first: the sidecar rides in its pod\.$/,
+    (t, [a]) => t.toasts.reason.linkIntoClusterFirst(nameIn(t, a!)),
+  ],
+  [
+    /^Link a Database into the (.+): it reads its write log\.$/,
+    (t, [a]) => t.toasts.reason.linkDatabaseInto(nameIn(t, a!)),
+  ],
+  [
+    /^(.+) has no traffic to sample\.$/,
+    (t, [a]) => t.toasts.reason.noTrafficToSample(nameIn(t, a!)),
+  ],
+  [
+    /^(.+) sends nothing on\. Link it into Analytics to sample it\.$/,
+    (t, [a]) => t.toasts.reason.sendsNothingOn(nameIn(t, a!)),
+  ],
+  [/^(.+) has no input\.$/, (t, [a]) => t.toasts.reason.hasNoInput(nameIn(t, a!))],
+  [/^(.+) takes (\d+) links\.$/, (t, [a, b]) => t.toasts.reason.takesLinks(nameIn(t, a!), b!)],
+  [
+    /^(.+) takes (.+)\. (.+) sends (.+)\.$/,
+    (t, [target, takes, source, sends]) =>
+      t.toasts.reason.takesSends(
+        nameIn(t, target!),
+        takes!
+          .split(', ')
+          .map((kind) => kindIn(t, kind))
+          .join(', '),
+        nameIn(t, source!),
+        sends!
+          .split(', ')
+          .map((kind) => kindIn(t, kind))
+          .join(', '),
+      ),
   ],
   [/^(.+) has no Product lever\.$/, (t, [a]) => t.levers.noLever(nameIn(t, a!))],
   [/^A Challenge pins its mix\.$/, (t) => t.levers.pinned],

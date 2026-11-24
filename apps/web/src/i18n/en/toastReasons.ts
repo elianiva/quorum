@@ -217,4 +217,16 @@ export const reasons = {
   useAtMost12Nodes: 'Use at most 12 Nodes.',
   waitForTheIncidentToEnd: 'Wait for the incident to end.',
   youAlreadyTookThatDemo: 'You already took that demo.',
+  aWorkerTakesTasksFromAQueueOrAnEventStream:
+    'A Worker takes tasks from a Queue or an Event Stream. Link the App Server into one first.',
+  onlyAnAppServerHandsWorkToAQueue:
+    'Only an App Server hands work to a Queue. A Function or Edge Function runs its work inline.',
+  aReadReplicaCopiesOneDatabase: 'A Read Replica copies one Database.',
+  anL7LoadBalancerReadsHTTP: 'An L7 Load Balancer reads HTTP. Switch it to L4 to balance queries.',
+  oneCallerReadsOneDataGroup:
+    'One caller reads one Data Group. Box the Databases into one group, or route a second store through an API Gateway and its own App Server.',
+  aDomainResolvesToOneHost:
+    'A domain resolves to one host. Put DNS or a Load Balancer in front to reach more.',
+  aConnectionPoolerPoolsToOneHost:
+    'A Connection Pooler pools to one host. Put a Load Balancer after it to reach more.',
 }

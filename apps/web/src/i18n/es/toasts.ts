@@ -82,6 +82,19 @@ export const toasts: Messages['toasts'] = {
     needsFirst: (name: Value, needed: Value) => `${name} necesita ${needed} primero.`,
     queueTooShort: (limit: Value, name: Value, count: Value) =>
       `La cola contiene ${limit} estudios, y ${name} necesita ${count} de ellos.`,
+    linkInto: (name: Value) => `Enlaza App Servers o Workers al ${name}.`,
+    alreadyHas: (source: Value, target: Value) => `${source} ya tiene un ${target}.`,
+    linkIntoClusterFirst: (source: Value) =>
+      `Enlaza primero ${source} a un Kubernetes Cluster: el sidecar viaja en su pod.`,
+    linkDatabaseInto: (name: Value) =>
+      `Enlaza una Base de datos al ${name}: lee su registro de escrituras.`,
+    noTrafficToSample: (source: Value) => `${source} no tiene tráfico que muestrear.`,
+    sendsNothingOn: (source: Value) =>
+      `${source} no envía nada. Enlázalo a Analytics para muestrearlo.`,
+    hasNoInput: (target: Value) => `${target} no tiene entrada.`,
+    takesLinks: (source: Value, count: Value) => `${source} admite ${count} enlaces.`,
+    takesSends: (target: Value, takes: Value, source: Value, sends: Value) =>
+      `${target} acepta ${takes}. ${source} envía ${sends}.`,
   },
   costs: (what: Value, price: Value) => `${what} cuesta ${price}.`,
   missing: 'Eso ya no está.',

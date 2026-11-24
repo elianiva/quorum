@@ -230,4 +230,17 @@ export const reasons: Messages['toasts']['reasons'] = {
   useAtMost12Nodes: 'ノードは12台までにしてください。',
   waitForTheIncidentToEnd: 'インシデントが終わるのを待ってください。',
   youAlreadyTookThatDemo: 'そのデモはもう受けています。',
+  aWorkerTakesTasksFromAQueueOrAnEventStream:
+    'Worker は Queue または Event Stream からタスクを受け取ります。先に App Server をどちらかにつないでください。',
+  onlyAnAppServerHandsWorkToAQueue:
+    'Queue に作業を渡せるのは App Server だけです。Function や Edge Function はその場で作業を実行します。',
+  aReadReplicaCopiesOneDatabase: 'Read Replica がコピーするのは 1 つの Database だけです。',
+  anL7LoadBalancerReadsHTTP:
+    'L7 Load Balancer は HTTP を読み取ります。クエリを分散するには L4 に切り替えてください。',
+  oneCallerReadsOneDataGroup:
+    '1 つの呼び出し元が読めるのは 1 つの Data Group だけです。Database を 1 つのグループにまとめるか、2 つ目のストアを API Gateway と専用の App Server 経由にしてください。',
+  aDomainResolvesToOneHost:
+    'ドメインは 1 つのホストに解決されます。より多くのホストに届けるには、DNS または Load Balancer を前に置いてください。',
+  aConnectionPoolerPoolsToOneHost:
+    'Connection Pooler は 1 つのホストへの接続をまとめます。より多くのホストに届けるには、後ろに Load Balancer を置いてください。',
 }

@@ -78,6 +78,17 @@ export const toasts: Messages['toasts'] = {
     needsFirst: (name, needed) => `${name}需要先完成${needed}。`,
     queueTooShort: (limit, name, count) =>
       `队列最多容纳 ${limit} 项研究，而${name}需要其中 ${count} 项。`,
+    linkInto: (name) => `请把 App Server 或 Worker 连接到${name}。`,
+    alreadyHas: (source, target) => `${source} 已经有一个${target}。`,
+    linkIntoClusterFirst: (source) =>
+      `请先把${source}连接到 Kubernetes Cluster：sidecar 会随它的 Pod 运行。`,
+    linkDatabaseInto: (name) => `请把 Database 连接到${name}：它会读取写入日志。`,
+    noTrafficToSample: (source) => `${source} 没有可供采样的流量。`,
+    sendsNothingOn: (source) => `${source} 不会向外发送任何内容。请连接到 Analytics 进行采样。`,
+    hasNoInput: (target) => `${target} 没有输入。`,
+    takesLinks: (source, count) => `${source} 最多接受 ${count} 条链路。`,
+    takesSends: (target, takes, source, sends) =>
+      `${target} 接受${takes}。${source} 发送${sends}。`,
   },
   costs: (what, price) => `${what}的费用为 ${price}。`,
   missing: '它已经不存在了。',

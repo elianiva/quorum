@@ -79,6 +79,19 @@ export const toasts: Messages['toasts'] = {
     needsFirst: (name, needed) => `${name}には先に${needed}が必要です。`,
     queueTooShort: (limit, name, count) =>
       `キューに入る研究は${limit}件までで、${name}にはそのうち${count}件が必要です。`,
+    linkInto: (name) => `${name}には App Server または Worker をつないでください。`,
+    alreadyHas: (source, target) => `${source}にはすでに${target}があります。`,
+    linkIntoClusterFirst: (source) =>
+      `先に${source}を Kubernetes Cluster につないでください。サイドカーはその Pod に乗ります。`,
+    linkDatabaseInto: (name) =>
+      `Database を${name}につないでください。書き込みログを読み取ります。`,
+    noTrafficToSample: (source) => `${source}にはサンプリングするトラフィックがありません。`,
+    sendsNothingOn: (source) =>
+      `${source}は何も送りません。Analytics につないでサンプリングしてください。`,
+    hasNoInput: (target) => `${target}には入力がありません。`,
+    takesLinks: (source, count) => `${source}が受け取れるリンクは${count}本です。`,
+    takesSends: (target, takes, source, sends) =>
+      `${target}が受け取るのは${takes}です。${source}が送るのは${sends}です。`,
   },
   costs: (what, price) => `${what}には${price}かかります。`,
   missing: 'もうありません。',

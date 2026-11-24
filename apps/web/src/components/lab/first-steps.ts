@@ -56,7 +56,7 @@ const BODY = css({
   lineHeight: 'snug',
   color: 'mutedForeground',
   textWrap: 'pretty',
-  '@media (min-width: 640px) and (max-width: 860px)': {
+  '@media (max-width: 860px)': {
     display: 'none',
   },
 })

@@ -47,7 +47,7 @@ import { MONO, SANS, fitText, label } from './text.ts'
 import { OFF_PATH_ALPHA } from './belt-view.ts'
 
 export const MIN_FIT_SCALE = 0.85
-export const MIN_FIT_SCALE_PHONE = 0.42
+export const MIN_FIT_SCALE_PHONE = 0.85
 
 export class NodeView {
   readonly root = new Container()

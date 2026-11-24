@@ -1,0 +1,5 @@
+(def CERT_DAYS 90)
+(def CERT_DAYS_SHORT 45)
+(def CERT_FROM_STAGE 2)
+(def CERT_SHORT_FROM 5)
+(def CERT_RENEW (/ 2 3))

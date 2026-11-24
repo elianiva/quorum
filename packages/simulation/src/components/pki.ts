@@ -1,5 +1,7 @@
-export const CERT_DAYS = 90
-export const CERT_DAYS_SHORT = 45
-export const CERT_FROM_STAGE = 2
-export const CERT_SHORT_FROM = 5
-export const CERT_RENEW = 2 / 3
+export {
+  CERT_DAYS,
+  CERT_DAYS_SHORT,
+  CERT_FROM_STAGE,
+  CERT_SHORT_FROM,
+  CERT_RENEW,
+} from '../generated/pki.ts'

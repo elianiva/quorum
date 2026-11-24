@@ -11,7 +11,9 @@
 //! template reaches itself through other macros is refused where it is defined. So expansion
 //! always ends, and its output depends only on the text, never on evaluation order.
 //!
-//! `(begin a b …)` at the top level splices its forms, so one call can define several entries.
+//! A macro call is a top-level form, so a list in a data position, such as `:unlocks (framework x)`,
+//! is never mistaken for a call. `(begin a b …)` splices its forms into the top level, so one call
+//! can define several entries.
 
 use crate::diag::{Diagnostic, Sink};
 use crate::reader::{Kind, Sexp};
@@ -32,10 +34,21 @@ pub struct Macro {
 #[derive(Default, Debug)]
 pub struct Macros {
     pub by_name: BTreeMap<String, Macro>,
+    /// Macros refused where they were defined. Calls to them drop out without a second error.
+    broken: BTreeSet<String>,
 }
 
 /// Forms the compiler defines. A macro may not take one of these names.
-pub const BUILTIN_FORMS: &[&str] = &["defmacro", "begin", "import", "tracks", "research", "quote"];
+pub const BUILTIN_FORMS: &[&str] = &[
+    "defmacro",
+    "begin",
+    "quote",
+    "ref",
+    "import",
+    "tracks",
+    "study-shapes",
+    "research",
+];
 
 const MAX_DEPTH: usize = 64;
 
@@ -172,16 +185,17 @@ fn parse_defmacro(form: &Sexp, sink: &mut Sink) -> Option<Macro> {
     Some(m)
 }
 
-/// Every head symbol a template can produce. A head built by `,(sym …)` is not known, so `sym`
-/// may not build a macro name; `expand` checks that at the call.
+/// Every top-level head a template can produce: its own head, and the heads inside `begin`. A
+/// head built by `,(sym …)` is not known, so `sym` may not build a macro name; `eval` checks that.
 fn heads(sexp: &Sexp, out: &mut BTreeSet<String>) {
-    if let Kind::List(items) | Kind::Row(items) = &sexp.kind {
-        if let Some(head) = items.first().and_then(Sexp::symbol) {
+    match sexp.head() {
+        Some("begin") => sexp.list().unwrap()[1..]
+            .iter()
+            .for_each(|item| heads(item, out)),
+        Some(head) => {
             out.insert(head.to_string());
         }
-        for item in items {
-            heads(item, out);
-        }
+        None => {}
     }
 }
 
@@ -192,11 +206,6 @@ fn refuse_recursion(macros: &mut Macros, sink: &mut Sink) {
         .map(|(name, m)| {
             let mut found = BTreeSet::new();
             heads(&m.template, &mut found);
-            for (_, default) in &m.keys {
-                if let Some(d) = default {
-                    heads(d, &mut found);
-                }
-            }
             (
                 name.clone(),
                 found
@@ -235,6 +244,7 @@ fn refuse_recursion(macros: &mut Macros, sink: &mut Sink) {
     }
     for name in bad {
         macros.by_name.remove(&name);
+        macros.broken.insert(name);
     }
 }
 
@@ -247,55 +257,48 @@ enum Binding {
 }
 
 impl Macros {
-    /// Expands one file's forms. Macro definitions drop out, `begin` splices, and every call is
-    /// replaced by its expansion.
+    /// Expands one file's forms. Macro definitions drop out, `begin` splices, and every
+    /// top-level call is replaced by its expansion.
     pub fn expand_file(&self, forms: &[Sexp]) -> (Vec<Sexp>, Sink) {
         let mut sink = Sink::default();
         let mut out = Vec::new();
         for form in forms {
-            if form.head() == Some("defmacro") {
-                continue;
-            }
-            if let Some(form) = self.expand(form, 0, &mut sink) {
-                splice_begin(form, &mut out);
+            if form.head() != Some("defmacro") {
+                self.expand(form.clone(), 0, &mut out, &mut sink);
             }
         }
         (out, sink)
     }
 
-    fn expand(&self, form: &Sexp, depth: usize, sink: &mut Sink) -> Option<Sexp> {
-        let (Kind::List(items) | Kind::Row(items)) = &form.kind else {
-            return Some(form.clone());
-        };
-        if form.head() == Some("quote") {
-            return Some(form.clone());
-        }
-        if let Some(m) = form.head().and_then(|h| {
-            matches!(form.kind, Kind::List(_))
-                .then(|| self.by_name.get(h))
-                .flatten()
-        }) {
-            if depth >= MAX_DEPTH {
-                sink.push(Diagnostic::error(
-                    "macro-depth",
-                    form.span,
-                    "macro expansion is too deep",
-                ));
-                return None;
+    fn expand(&self, form: Sexp, depth: usize, out: &mut Vec<Sexp>, sink: &mut Sink) {
+        let head = form.head().map(str::to_string);
+        if head.as_deref() == Some("begin") {
+            let Kind::List(items) = form.kind else {
+                unreachable!()
+            };
+            for item in items.into_iter().skip(1) {
+                self.expand(item, depth, out, sink);
             }
-            let expanded = self.call(m, form, sink)?;
-            return self.expand(&expanded, depth + 1, sink);
+            return;
         }
-        let mut out = Vec::with_capacity(items.len());
-        for item in items {
-            out.push(self.expand(item, depth, sink)?);
+        if head.as_ref().is_some_and(|h| self.broken.contains(h)) {
+            return;
         }
-        let kind = if matches!(form.kind, Kind::List(_)) {
-            Kind::List(out)
-        } else {
-            Kind::Row(out)
+        let Some(m) = head.and_then(|h| self.by_name.get(&h)) else {
+            out.push(form);
+            return;
         };
-        Some(Sexp::new(kind, form.span))
+        if depth >= MAX_DEPTH {
+            sink.push(Diagnostic::error(
+                "macro-depth",
+                form.span,
+                "macro expansion is too deep",
+            ));
+            return;
+        }
+        if let Some(expanded) = self.call(m, &form, sink) {
+            self.expand(expanded, depth + 1, out, sink);
+        }
     }
 
     fn call(&self, m: &Macro, form: &Sexp, sink: &mut Sink) -> Option<Sexp> {
@@ -542,19 +545,6 @@ fn eval_part(
     }
 }
 
-fn splice_begin(form: Sexp, out: &mut Vec<Sexp>) {
-    if form.head() == Some("begin") {
-        let Kind::List(items) = form.kind else {
-            unreachable!()
-        };
-        for item in items.into_iter().skip(1) {
-            splice_begin(item, out);
-        }
-    } else {
-        out.push(form);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -607,6 +597,20 @@ mod tests {
             errors,
             ["macro-args", "macro-args", "macro-args", "macro-args"]
         );
+    }
+
+    #[test]
+    fn a_list_in_a_data_position_is_not_a_call() {
+        let (out, errors) =
+            run("(defmacro fw (id) `(research ,id :unlocks (fw ,id))) (fw x) (other (fw y))");
+        assert_eq!(errors, Vec::<&str>::new());
+        assert_eq!(out, ["(research x :unlocks (fw x))", "(other (fw y))"]);
+    }
+
+    #[test]
+    fn calls_to_a_refused_macro_report_nothing_more() {
+        let (_, errors) = run("(defmacro a (x) `(begin (a ,x))) (a 1) (a 2)");
+        assert_eq!(errors, ["macro-recursion"]);
     }
 
     #[test]

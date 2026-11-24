@@ -41,7 +41,7 @@ pub fn map<T: Sync, R: Send>(items: &[T], f: impl Fn(&T) -> R + Sync) -> Vec<R> 
         .collect()
 }
 
-type Job<'a, R> = Box<dyn FnOnce() -> R + Send + 'a>;
+pub type Job<'a, R> = Box<dyn FnOnce() -> R + Send + 'a>;
 
 /// Runs independent jobs at once and returns their results in the order given.
 pub fn join_all<R: Send>(jobs: Vec<Job<'_, R>>) -> Vec<R> {

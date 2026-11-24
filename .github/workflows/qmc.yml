@@ -35,3 +35,5 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
+      # The committed generated files must be the output of this compiler and content.
+      - run: cargo run --release -- build ../simulation/content ../simulation/src/generated --check

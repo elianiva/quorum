@@ -16,7 +16,8 @@ const ignored = [
 
 export default defineConfig({
   fmt: {
-    ignorePatterns: [...ignored, '**/*.d.ts'],
+    // qmc writes src/generated; its output is checked against the compiler, not the formatter.
+    ignorePatterns: [...ignored, '**/*.d.ts', 'packages/simulation/src/generated/**'],
     semi: false,
     singleQuote: true,
     trailingComma: 'all',

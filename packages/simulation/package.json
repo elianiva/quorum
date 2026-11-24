@@ -13,6 +13,7 @@
   "scripts": {
     "typecheck": "tsrs --noEmit -p tsconfig.json && tsrs --noEmit -p tsconfig.hosts.json && effect-tsrs diagnostics --strict --project tsconfig.json",
     "catalog": "node solver/gen-catalog.ts solver/src/catalog.rs",
+    "content": "cargo run --quiet --release --manifest-path ../qmc/Cargo.toml -- build content src/generated",
     "test": "vitest run",
     "test:full": "FULL_TESTS=1 vitest run",
     "test:engines": "vitest run --config vitest.engines.config.ts && node engines/workerd.mjs"

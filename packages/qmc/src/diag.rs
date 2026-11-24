@@ -105,6 +105,34 @@ fn snippet(out: &mut String, sources: &SourceMap, span: Span, label: &str, mark:
     }
 }
 
+/// The closest known name to a misspelled one, when it is close enough to be a typo.
+pub fn suggest<'a>(name: &str, known: impl IntoIterator<Item = &'a str>) -> Option<&'a str> {
+    let limit = (name.chars().count() / 3).max(1);
+    known
+        .into_iter()
+        .map(|k| (edit_distance(name, k), k))
+        .filter(|&(d, _)| d <= limit)
+        .min()
+        .map(|(_, k)| k)
+}
+
+fn edit_distance(a: &str, b: &str) -> usize {
+    let b: Vec<char> = b.chars().collect();
+    let mut row: Vec<usize> = (0..=b.len()).collect();
+    for (i, ca) in a.chars().enumerate() {
+        let mut diagonal = row[0];
+        row[0] = i + 1;
+        for (j, &cb) in b.iter().enumerate() {
+            let next = (row[j + 1] + 1)
+                .min(row[j] + 1)
+                .min(diagonal + usize::from(ca != cb));
+            diagonal = row[j + 1];
+            row[j + 1] = next;
+        }
+    }
+    row[b.len()]
+}
+
 /// Diagnostics from one pass. Each pass owns its sink, so threads never share one.
 #[derive(Default)]
 pub struct Sink {
@@ -133,6 +161,14 @@ impl Sink {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn suggests_only_close_names() {
+        let known = ["load-balancing", "caching", "pooling"];
+        assert_eq!(suggest("load-balanicng", known), Some("load-balancing"));
+        assert_eq!(suggest("polling", known), Some("pooling"));
+        assert_eq!(suggest("sharding", known), None);
+    }
 
     #[test]
     fn renders_a_caret_under_the_span_and_a_note() {

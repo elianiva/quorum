@@ -25,11 +25,14 @@ test('every file in components/ belongs to a Component', () => {
   expect(files.filter((name) => !owned.has(name))).toEqual([])
 })
 
-test('a data file imports only data: effect, the catalog, and types from the state', () => {
+test('a data file imports only data: effect, the catalog, generated content, and state types', () => {
   for (const file of COMPONENT_IDS.flatMap((id) => dataFile(id) ?? [])) {
     for (const [type, spec] of importsOf(read(file))) {
       const allowed =
-        spec === 'effect' || spec.startsWith('../catalog') || (type && spec === '../state.ts')
+        spec === 'effect' ||
+        spec.startsWith('../catalog') ||
+        spec.startsWith('../generated/') ||
+        (type && spec === '../state.ts')
       expect(allowed, `${file} imports ${spec}`).toBe(true)
     }
   }

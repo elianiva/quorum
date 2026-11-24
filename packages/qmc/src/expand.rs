@@ -57,6 +57,8 @@ pub const BUILTIN_FORMS: &[&str] = &[
     "build-groups",
     "dock-groups",
     "component",
+    "def",
+    "types",
 ];
 
 const MAX_DEPTH: usize = 64;

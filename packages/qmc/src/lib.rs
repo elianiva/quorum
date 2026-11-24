@@ -13,6 +13,7 @@
 //! result never depends on which thread finished first.
 
 pub mod check;
+pub mod data;
 pub mod diag;
 pub mod emit_ts;
 pub mod expand;
@@ -67,7 +68,7 @@ pub struct Compiled {
     pub sources: SourceMap,
     pub diagnostics: Vec<Diagnostic>,
     /// Each generated file, by its name in the output directory. Empty when there were errors.
-    pub outputs: Vec<(&'static str, String)>,
+    pub outputs: Vec<(String, String)>,
 }
 
 /// Reads, expands, lowers, checks, and emits the given files.
@@ -78,7 +79,11 @@ pub fn compile(inputs: Vec<(String, String)>) -> Compiled {
         diagnostics,
     } = expand(inputs);
     let mut sink = Sink { items: diagnostics };
-    let lowered = par::map(&files, |(_, forms)| lower::lower(forms));
+    let lowered = par::map(&files, |(id, forms)| {
+        let name = &sources.get(*id).name;
+        let file = name.rsplit(['/', '\\']).next().unwrap_or(name);
+        lower::lower(forms, file.strip_suffix(".qm").unwrap_or(file))
+    });
     let mut catalog = lower::Catalog::default();
     for (part, part_sink) in lowered {
         catalog.append(part);
@@ -97,7 +102,28 @@ pub fn compile(inputs: Vec<(String, String)>) -> Compiled {
             Box::new(move || ("kinds.ts", emit_ts::kinds(catalog))),
             Box::new(move || ("research.ts", emit_ts::research(catalog))),
         ];
-        par::join_all(jobs)
+        let mut outputs: Vec<(String, String)> = par::join_all(jobs)
+            .into_iter()
+            .map(|(name, text)| (name.to_string(), text))
+            .collect();
+        let mut modules: Vec<&str> = catalog.defs.iter().map(|d| d.module.as_str()).collect();
+        modules.dedup();
+        let bodies = par::map(&modules, |m| (m.to_string(), data::module(catalog, m)));
+        for (module, (needs, body)) in bodies {
+            let name = format!("{module}.ts");
+            match outputs.iter_mut().find(|(n, _)| *n == name) {
+                Some((_, text)) => {
+                    *text = data::merge_imports(text, &needs);
+                    text.push_str(&body);
+                }
+                None => {
+                    let mut text = data::merge_imports(emit_ts::HEADER, &needs);
+                    text.push_str(&body);
+                    outputs.push((name, text));
+                }
+            }
+        }
+        outputs
     };
     Compiled {
         sources,

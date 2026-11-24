@@ -14,8 +14,19 @@ use std::collections::{BTreeMap, BTreeSet};
 type Pass = fn(&Catalog) -> Sink;
 
 const PASSES: &[Pass] = &[
-    names, requires, cycles, eras, shapes, imports, insight, era_rules, mixes, incidents,
-    kind_refs, components,
+    names,
+    requires,
+    cycles,
+    eras,
+    shapes,
+    imports,
+    insight,
+    era_rules,
+    mixes,
+    incidents,
+    kind_refs,
+    components,
+    crate::data::check,
 ];
 
 pub fn run(catalog: &Catalog) -> Sink {
@@ -55,7 +66,7 @@ fn unique<'a>(
     seen
 }
 
-fn unknown(code: &'static str, name: &Name, what: &str, known: &[&str]) -> Diagnostic {
+pub(crate) fn unknown(code: &'static str, name: &Name, what: &str, known: &[&str]) -> Diagnostic {
     let mut d = Diagnostic::error(
         code,
         name.span,
@@ -482,6 +493,11 @@ fn imports(catalog: &Catalog) -> Sink {
             );
         }
     }
+    let mut def_refs = Vec::new();
+    for def in &catalog.defs {
+        crate::data::refs(&def.value, &mut def_refs);
+    }
+    used.extend(def_refs.iter().map(|n| n.text.as_str()));
     for import in catalog.imports.iter().flat_map(|i| &i.names) {
         if !used.contains(import.text.as_str()) {
             sink.push(Diagnostic::warning(

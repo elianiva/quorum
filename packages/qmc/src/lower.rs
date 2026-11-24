@@ -167,6 +167,8 @@ pub struct Catalog {
     pub components: Vec<Component>,
     pub consts: Vec<Const>,
     pub incidents: Vec<Incident>,
+    pub defs: Vec<crate::data::Def>,
+    pub types: Vec<crate::data::Types>,
 }
 
 /// A build group, `(edge "Edge")`, or a dock group, `(edge "Edge" :family edge)`.
@@ -261,10 +263,12 @@ pub struct Incident {
 }
 
 /// Lowers one file. The driver lowers files in parallel and concatenates them in file order.
-pub fn lower(forms: &[Sexp]) -> (Catalog, Sink) {
+/// `module` is the file's stem, which names the generated file its defs land in.
+pub fn lower(forms: &[Sexp], module: &str) -> (Catalog, Sink) {
     let mut cx = Lower {
         sink: Sink::default(),
         catalog: Catalog::default(),
+        module: module.to_string(),
     };
     for form in forms {
         cx.form(form);
@@ -290,12 +294,15 @@ impl Catalog {
         self.components.extend(other.components);
         self.consts.extend(other.consts);
         self.incidents.extend(other.incidents);
+        self.defs.extend(other.defs);
+        self.types.extend(other.types);
     }
 }
 
 struct Lower {
     sink: Sink,
     catalog: Catalog,
+    module: String,
 }
 
 const FORMS: &[&str] = &[
@@ -312,6 +319,8 @@ const FORMS: &[&str] = &[
     "build-groups",
     "dock-groups",
     "component",
+    "def",
+    "types",
 ];
 
 /// A form's keyword arguments, after the head and any positional arguments.
@@ -451,6 +460,16 @@ impl Lower {
                     "write (const NAME value)",
                 )),
             },
+            "def" => {
+                if let Some(def) = crate::data::lower_def(form, &self.module, &mut self.sink) {
+                    self.catalog.defs.push(def);
+                }
+            }
+            "types" => {
+                if let Some(types) = crate::data::lower_types(form, &mut self.sink) {
+                    self.catalog.types.push(types);
+                }
+            }
             "incident" => {
                 if let Some(incident) = self.incident(form) {
                     self.catalog.incidents.push(incident);

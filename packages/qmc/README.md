@@ -24,6 +24,29 @@ name. `(import "../catalog/runtimes.ts" RUNTIMES)` names a TypeScript value that
 reads. TypeScript checks the facts qmc cannot see, such as that `puma` is a runtime or that every
 framework has research.
 
+### Plain data
+
+A table or number that needs no rule of its own is a `def`. It lands in the generated file named
+after its content file, so `content/tuning.qm` writes `generated/tuning.ts`:
+
+```lisp
+(types "../catalog/tuning.ts" Tuning)
+
+(def CALENDAR_PACE 24)
+(def ZONES :type const ["a" "b" "c"])
+(def CHALLENGE_TUNING :type "Tuning" :doc "The pace of a challenge run."
+  (:pace 1 :incidentGap 720 :calendarPace CALENDAR_PACE))
+```
+
+A value is a number, a string, `true`, `false`, `null`, `undefined`, `Infinity`, the name of
+another value, a row `[a b]` (an array), or a list. `(:key value …)` is a record, and
+`(record "key" value …)` is one whose first key is not a plain name. `(... NAME)` spreads a value
+into a row or record. `(ref NAME key 0)` reads a property. `(+ a b)`, `(- a b)`, `(* a b)`, and
+`(/ a b)` are emitted as written, so the generated code computes the same floating-point value the
+hand-written code did. `(as "Type" value)` is a type assertion. `:type "T"` annotates the
+declaration, `:type const` writes `as const`, `:satisfies "T"` writes `satisfies T`, and `:doc`
+writes a doc comment. `(types "path" Name …)` names the TypeScript types an annotation uses.
+
 ## The checks
 
 qmc refuses content that contradicts itself and reports every problem in one run:
@@ -47,6 +70,8 @@ qmc refuses content that contradicts itself and reports every problem in one run
   external kind a component accepts
 - a component that is both sized and has a fixed capacity, both fixed and sized, or fixed and
   unlocked by research
+- a def that reads a value or names a type that does not exist, that reads itself, that repeats a
+  key in one record, or that takes a name another form declares
 
 It warns about a requirement another requirement already implies, about an unused import, and about
 an incident the Director cannot pick until an Era later than the one it names.

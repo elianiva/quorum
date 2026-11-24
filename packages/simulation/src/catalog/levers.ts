@@ -1,52 +1,23 @@
 import { ERAS } from './eras.ts'
-import type { FeatureId } from './work.ts'
-import type { VentureId } from './ventures.ts'
+export {
+  LEVER_KINDS,
+  LEVER_STEPS,
+  LEVER_DH,
+  LEVER_GROWTH,
+  LEVER_REFUND,
+  MAX_LEVER_STEP,
+  LEVER_OWNER,
+  LEVER_CAPS,
+} from '../generated/levers.ts'
+import {
+  LEVER_KINDS,
+  LEVER_STEPS,
+  LEVER_DH,
+  LEVER_GROWTH,
+  MAX_LEVER_STEP,
+} from '../generated/levers.ts'
 
-export const LEVER_KINDS = [
-  'login',
-  'search',
-  'upload',
-  'media',
-  'rt',
-  'buy',
-  'job',
-  'report',
-  'ai',
-  'feed',
-  'hook',
-  'push',
-] as const
 export type LeverKind = (typeof LEVER_KINDS)[number]
-
-export const LEVER_STEPS = [1, 2, 3, 4] as const
-export const LEVER_DH = [24, 80, 240] as const
-export const LEVER_GROWTH = [0.99, 0.98, 0.96] as const
-export const LEVER_REFUND = 0.5
-export const MAX_LEVER_STEP = 3
-
-export const LEVER_OWNER: Readonly<Record<LeverKind, FeatureId>> = {
-  login: 'password-login',
-  search: 'search-filters',
-  upload: 'profile-photos',
-  media: 'video',
-  rt: 'chat',
-  buy: 'checkout',
-  job: 'data-export',
-  report: 'dashboards',
-  ai: 'ai-assistant',
-  feed: 'activity-feed',
-  hook: 'webhooks',
-  push: 'push-notifications',
-}
-
-export const LEVER_CAPS: Readonly<
-  Partial<Record<VentureId, Readonly<{ kind: LeverKind; step: number }>>>
-> = {
-  fintech: { kind: 'buy', step: 1 },
-  'ai-startup': { kind: 'ai', step: 1 },
-  healthcare: { kind: 'upload', step: 1 },
-  government: { kind: 'push', step: 1 },
-}
 
 export const leverEra = (kind: LeverKind): number => {
   const index = ERAS.findIndex((era) => (era.mix[kind] ?? 0) > 0)

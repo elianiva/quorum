@@ -45,12 +45,21 @@ const DOCK_ICONS: Record<DockGroup, IconNode> = {
 }
 
 const row = (model: Model, type: ComponentId, index: number, h: HtmlBuilder<Message>): Html => {
-  const part = partOf(copy(h), model.board.game, type)
+  const t = copy(h)
+  const part = partOf(t, model.board.game, type)
   return h.button(
     [
       h.Key(type),
       h.Type('button'),
+      h.AriaLabel(part.name),
       h.OnClick(Message.PlacingChosen({ type })),
+      ...(part.short
+        ? [
+            h.Disabled(true),
+            h.AriaDisabled(true),
+            h.Title(t.toasts.costs(part.name, part.price ?? '')),
+          ]
+        : []),
       h.Class(
         cx(
           cx(
@@ -70,6 +79,13 @@ const row = (model: Model, type: ComponentId, index: number, h: HtmlBuilder<Mess
             }),
             'press',
           ),
+          part.short
+            ? css({
+                cursor: 'not-allowed',
+                opacity: 0.5,
+                _hover: { backgroundColor: 'transparent' },
+              })
+            : '',
           part.locked === null
             ? ''
             : css({
@@ -87,6 +103,7 @@ const row = (model: Model, type: ComponentId, index: number, h: HtmlBuilder<Mess
               _compact: {
                 display: 'none',
               },
+              ...(part.short ? { display: 'none' } : {}),
             }),
           ),
         ],

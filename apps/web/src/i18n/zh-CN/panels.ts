@@ -87,6 +87,12 @@ export const panels: Messages['panels'] = {
   collect: '收款',
   revenueWaitsInPaymentsPressCollect:
     '收入暂存在支付节点中，记得在收款箱满之前点击领取。Stripe Billing 可以自动收款。',
+  firstSteps: '第一步',
+  stepOf: (p0: string | number | null, p1: string | number | null) => `第 ${p0} 步，共 ${p1} 步`,
+  collectTheRevenue: '收取收入',
+  collectTheRevenueBody: '收入暂存在支付节点中。在收款箱满之前收取。',
+  upgradeTheAppServer: '升级应用服务器',
+  theAppServerIsYourFirstLimit: '应用服务器是你的第一个瓶颈。在用户等待之前购买下一档规格。',
   learn: '积累知识',
   analyticsSamplesLinkedNodesEachRequest:
     '分析节点会对已连接的节点采样。每类请求的样本会填充各自的洞察池。',

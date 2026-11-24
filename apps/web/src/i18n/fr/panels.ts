@@ -88,6 +88,14 @@ export const panels: Messages['panels'] = {
   collect: 'Encaisser',
   revenueWaitsInPaymentsPressCollect:
     'Les revenus s’accumulent dans Paiements. Appuyez sur Encaisser avant que la caisse soit pleine. Stripe Billing encaisse automatiquement pour vous.',
+  firstSteps: 'Premiers pas',
+  stepOf: (p0: string | number | null, p1: string | number | null) => `Étape ${p0} sur ${p1}`,
+  collectTheRevenue: 'Encaissez les revenus',
+  collectTheRevenueBody:
+    'Les revenus attendent dans Paiements. Encaissez-les avant que la caisse soit pleine.',
+  upgradeTheAppServer: 'Améliorez le serveur d’applications',
+  theAppServerIsYourFirstLimit:
+    'Le serveur d’applications est votre première limite. Achetez la taille suivante avant que les utilisateurs attendent.',
   learn: 'Apprendre',
   analyticsSamplesLinkedNodesEachRequest:
     "Des échantillons d'analyse ont lié des nœuds. Chaque type de requête échantillonné remplit son propre réserve connaissances.",

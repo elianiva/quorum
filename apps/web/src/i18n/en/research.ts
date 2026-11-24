@@ -42,6 +42,8 @@ export const research = {
   queueStudy: (duration: string | number) => `Queue Study · ${duration}`,
   queued: 'Queued',
   queueCount: (count: number, max: number) => `${count} of ${max}`,
+  queueFull: 'Queue full',
+  queueFullHelp: (max: number) => `The queue holds ${max} Studies. Cancel one to add another.`,
   speed: (p0: string | number | null) => `×${p0}`,
   studySpeedTitle:
     'An idle team boosts the Study. A specialist is strongest in its track; a Product team helps any track at half rate. A Spike and study-speed research make it faster too.',

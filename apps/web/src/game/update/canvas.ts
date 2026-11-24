@@ -1,6 +1,7 @@
 import { Actions } from '../board-actions.ts'
 import { intent, workIntent } from '@quorum/simulation/room'
 import { CARD_W, boxOf, crowds, freeSpot, heightOf } from '@quorum/ui/board/geometry'
+import { footerOf } from '@quorum/ui/board/card'
 import { COMPONENTS } from '@quorum/simulation/catalog'
 import { missingParts, provisioned } from '@quorum/simulation/parts'
 import { FocusInspector } from '../commands.ts'
@@ -467,8 +468,10 @@ export const canvasHandlers = (
     )
   },
 
-  LinkRequested: ({ from, to }) =>
-    act(
+  LinkRequested: ({ from, to }) => {
+    if (model.board.game.links.some((link) => link.from === from && link.to === to))
+      return { model }
+    return act(
       model,
       `Linked ${nodeName(model.board.game, from)} to ${nodeName(model.board.game, to)}`,
       Actions.connect(model.board.game, from, to),
@@ -481,7 +484,8 @@ export const canvasHandlers = (
             ? [say(model).toasts.postgresMoved, 'ok']
             : null,
       },
-    ),
+    )
+  },
 
   LinkCut: ({ from, to }) =>
     act(
@@ -517,6 +521,8 @@ export const canvasHandlers = (
         Message.ShopOpened({ nodeId, slot: missingParts(model.board.game, node)[0] ?? 'cpu' }),
       )
     if (node.type === 'payments') return route(model, Message.Collected())
+    const footer = footerOf(model.board.game, node)
+    if (footer !== null && !footer.enabled) return { model }
     if (node.life._tag === 'Stopped') return route(model, Message.ReplaceBought({ nodeId }))
     return route(model, Message.ResizeChosen({ nodeId, direction: 1 }))
   },

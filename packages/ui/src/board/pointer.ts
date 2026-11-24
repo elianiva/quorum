@@ -371,7 +371,7 @@ export const bindPointer = (c: BoardController): void => {
       return
     }
     if (gesture._tag === 'Linking') {
-      if (over !== null && over !== gesture.from) {
+      if (over !== null && over !== gesture.from && c.linkIsLegal(gesture.from, over)) {
         c.wired = `${gesture.from}>${over}`
         c.wireEnd = null
         c.events.onLink(gesture.from, over)

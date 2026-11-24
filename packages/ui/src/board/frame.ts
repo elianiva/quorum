@@ -96,7 +96,6 @@ export const animate = (c: BoardController, seconds: number): void => {
   const f: Frame = { c, state, colors, seconds, still, detailed, view, byId }
   const { mouths, moved } = drawBelts(f)
   c.packets.end()
-  c.notes.end()
   c.places.end()
   c.chevrons.end()
   c.drawBoxes(state.game, colors)
@@ -105,6 +104,7 @@ export const animate = (c: BoardController, seconds: number): void => {
   drawPortals(c, mouths, colors)
   drawSplitters(f, moved)
   drawOverlay(f)
+  c.notes.end()
 }
 
 const aboveGround = (): boolean => false
@@ -386,9 +386,31 @@ const drawOverlay = (f: Frame): void => {
   }
 
   const gesture = c.gesture
+  const targets = gesture._tag === 'Linking' ? c.targetsFor(gesture.from) : null
   const snapped =
     gesture._tag === 'Linking' && gesture.snapTo ? byId.get(gesture.snapTo) : undefined
+  const snappedReason =
+    gesture._tag === 'Linking' && gesture.snapTo ? targets?.get(gesture.snapTo) : undefined
+  const checked = state.linkCheck !== undefined
+  const snapInk = !checked ? colors.accent : snappedReason === null ? colors.ok : colors.danger
   c.snapGlow += ((snapped ? 1 : 0) - c.snapGlow) * follow(seconds, 26, still)
+  if (targets && checked) {
+    const pulse = still ? 0.55 : 0.45 + 0.2 * Math.abs(Math.sin(c.phase * 2.2))
+    for (const [id, reason] of targets) {
+      if (reason !== null) continue
+      const node = byId.get(id)
+      if (!node) continue
+      silhouette(
+        c.overlay,
+        COMPONENTS[node.type].group,
+        node.x,
+        node.y,
+        CARD_W,
+        heightOf(node.type),
+        4,
+      ).stroke({ color: colors.ok, width: 2, alpha: pulse })
+    }
+  }
   if (gesture._tag === 'Linking') {
     const from = byId.get(gesture.from)
     if (from) {
@@ -397,13 +419,14 @@ const drawOverlay = (f: Frame): void => {
       const k = follow(seconds, snapped ? 30 : 60, still)
       c.wireEnd = { x: end.x + (aim.x - end.x) * k, y: end.y + (aim.y - end.y) * k }
       const lane = laneUnder(from, snapped ? snapped.y + heightOf(snapped.type) : c.wireEnd.y)
+      const ink = snapped ? snapInk : colors.accent
       traceOf(c.overlay, route(outPort(from), c.wireEnd, lane)).stroke({
-        color: colors.accent,
+        color: ink,
         width: 2.5,
         cap: 'round',
         join: 'round',
       })
-      c.overlay.circle(c.wireEnd.x, c.wireEnd.y, 5 + 1.5 * c.snapGlow).fill(colors.accent)
+      c.overlay.circle(c.wireEnd.x, c.wireEnd.y, 5 + 1.5 * c.snapGlow).fill(ink)
       if (snapped) {
         silhouette(
           c.overlay,
@@ -413,7 +436,16 @@ const drawOverlay = (f: Frame): void => {
           CARD_W,
           heightOf(snapped.type),
           3 + 5 * (1 - c.snapGlow),
-        ).stroke({ color: colors.accent, width: 2, alpha: c.snapGlow })
+        ).stroke({ color: snapInk, width: 2, alpha: c.snapGlow })
+        if (snappedReason)
+          c.notes.add(
+            snapped.x + CARD_W / 2,
+            snapped.y - 6,
+            snappedReason,
+            0xffffff,
+            colors.danger,
+            8,
+          )
       }
     }
   }

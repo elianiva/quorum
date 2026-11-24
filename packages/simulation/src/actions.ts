@@ -436,36 +436,30 @@ const kindList = (kinds: ReadonlyArray<Kind>): string =>
 const DATASET_KINDS: ReadonlyArray<Kind> = ['q-read', 'q-write', 'q-tx']
 const DATASET_STORES: ReadonlyArray<ComponentId> = ['database', 'doc', 'wide', 'dsql', 'replica']
 
-export const connect = (game: Game, from: string, to: string): Action => {
+/** Why a Link from `from` to `to` would be refused, or null when it is legal. */
+export const linkRefusalOf = (game: Game, from: string, to: string): string | null => {
   const source = game.nodes.find((node) => node.id === from)
   const target = game.nodes.find((node) => node.id === to)
-  if (!source || !target || from === to) return notAllowed('Link two different Nodes.')
+  if (!source || !target || from === to) return 'Link two different Nodes.'
   const sourceDef = COMPONENTS[source.type]
   const targetDef = COMPONENTS[target.type]
-  if (game.links.some((link) => link.from === from && link.to === to))
-    return notAllowed('Already linked.')
+  if (game.links.some((link) => link.from === from && link.to === to)) return 'Already linked.'
   if (source.type === 'server' && target.type === 'worker')
-    return notAllowed(
-      'A Worker takes tasks from a Queue or an Event Stream. Link the App Server into one first.',
-    )
+    return 'A Worker takes tasks from a Queue or an Event Stream. Link the App Server into one first.'
   if ((source.type === 'fn' || source.type === 'edge') && targetDef.accepts.includes('task'))
-    return notAllowed(
-      'Only an App Server hands work to a Queue. A Function or Edge Function runs its work inline.',
-    )
+    return 'Only an App Server hands work to a Queue. A Function or Edge Function runs its work inline.'
   if (targetDef.control) {
     if (source.type !== 'server' && source.type !== 'worker')
-      return notAllowed(`Link App Servers or Workers into the ${targetDef.name}.`)
+      return `Link App Servers or Workers into the ${targetDef.name}.`
     const taken = game.links.some(
       (entry) =>
         entry.from === from &&
         game.nodes.some((node) => node.id === entry.to && node.type === target.type),
     )
-    if (taken) return notAllowed(`${sourceDef.name} already has a ${targetDef.name}.`)
+    if (taken) return `${sourceDef.name} already has a ${targetDef.name}.`
     if (target.type === 'mesh' && !inCluster(game, source))
-      return notAllowed(
-        `Link ${sourceDef.name} into a Kubernetes Cluster first: the sidecar rides in its pod.`,
-      )
-    return ok({ ...game, links: [...game.links, link(from, to)] })
+      return `Link ${sourceDef.name} into a Kubernetes Cluster first: the sidecar rides in its pod.`
+    return null
   }
   if (target.type === 'replica' && source.type === 'database') {
     if (
@@ -474,39 +468,33 @@ export const connect = (game: Game, from: string, to: string): Action => {
           entry.to === to && game.nodes.some((n) => n.id === entry.from && n.type === 'database'),
       )
     )
-      return notAllowed('A Read Replica copies one Database.')
-    return ok({ ...game, links: [...game.links, link(from, to)] })
+      return 'A Read Replica copies one Database.'
+    return null
   }
   if (targetDef.mirror) {
     if (source.type !== 'database')
-      return notAllowed(`Link a Database into the ${targetDef.name}: it reads its write log.`)
-    if (game.links.some((entry) => entry.from === from && entry.to === to))
-      return notAllowed('Already linked.')
-    return ok({ ...game, links: [...game.links, link(from, to)] })
+      return `Link a Database into the ${targetDef.name}: it reads its write log.`
+    return null
   }
   if (targetDef.tap) {
     if (sourceDef.tap || source.type === 'payments')
-      return notAllowed(`${sourceDef.name} has no traffic to sample.`)
-    return ok({ ...game, links: [...game.links, link(from, to)] })
+      return `${sourceDef.name} has no traffic to sample.`
+    return null
   }
   if (source.type === 'database' && (target.type === 'database' || target.type === 'replica'))
-    return notAllowed(
-      target.type === 'replica'
-        ? 'A Read Replica copies its primary automatically. Link App Servers to the replica to send reads there.'
-        : 'Databases do not link to each other. The topology decides how they share rows. Link App Servers to each Database.',
-    )
+    return target.type === 'replica'
+      ? 'A Read Replica copies its primary automatically. Link App Servers to the replica to send reads there.'
+      : 'Databases do not link to each other. The topology decides how they share rows. Link App Servers to each Database.'
   if (sourceDef.maxOut === 0 || emitsOf(source).length === 0)
-    return notAllowed(`${sourceDef.name} sends nothing on. Link it into Analytics to sample it.`)
-  if (targetDef.accepts.length === 0) return notAllowed(`${targetDef.name} has no input.`)
+    return `${sourceDef.name} sends nothing on. Link it into Analytics to sample it.`
+  if (targetDef.accepts.length === 0) return `${targetDef.name} has no input.`
   const carried = emitsOf(source).filter(
     (kind) => targetDef.accepts.includes(kind) && relays(source, target, kind),
   )
   if (carried.length === 0 && emitsOf(source).some((kind) => targetDef.accepts.includes(kind)))
-    return notAllowed('An L7 Load Balancer reads HTTP. Switch it to L4 to balance queries.')
+    return 'An L7 Load Balancer reads HTTP. Switch it to L4 to balance queries.'
   if (carried.length === 0)
-    return notAllowed(
-      `${targetDef.name} takes ${kindList(targetDef.accepts)}. ${sourceDef.name} sends ${kindList(emitsOf(source))}.`,
-    )
+    return `${targetDef.name} takes ${kindList(targetDef.accepts)}. ${sourceDef.name} sends ${kindList(emitsOf(source))}.`
   if (
     DATASET_STORES.includes(target.type) &&
     carried.some((kind) => DATASET_KINDS.includes(kind))
@@ -522,23 +510,28 @@ export const connect = (game: Game, from: string, to: string): Action => {
           dataGroupOf(game, node) !== group,
       )
     if (other)
-      return notAllowed(
-        'One caller reads one Data Group. Box the Databases into one group, or route a second store through an API Gateway and its own App Server.',
-      )
+      return 'One caller reads one Data Group. Box the Databases into one group, or route a second store through an API Gateway and its own App Server.'
   }
   const routing = game.links.filter((link) => {
     const end = game.nodes.find((node) => node.id === link.to)
     return link.from === from && end && !COMPONENTS[end.type].tap
   })
   if (routing.length >= sourceDef.maxOut)
-    return notAllowed(
-      source.type === 'users'
-        ? 'A domain resolves to one host. Put DNS or a Load Balancer in front to reach more.'
-        : source.type === 'pooler'
-          ? 'A Connection Pooler pools to one host. Put a Load Balancer after it to reach more.'
-          : `${sourceDef.name} takes ${sourceDef.maxOut} links.`,
-    )
-  if (reaches(game.links, to, from)) return notAllowed('That link would make a loop.')
+    return source.type === 'users'
+      ? 'A domain resolves to one host. Put DNS or a Load Balancer in front to reach more.'
+      : source.type === 'pooler'
+        ? 'A Connection Pooler pools to one host. Put a Load Balancer after it to reach more.'
+        : `${sourceDef.name} takes ${sourceDef.maxOut} links.`
+  if (reaches(game.links, to, from)) return 'That link would make a loop.'
+  return null
+}
+
+export const connect = (game: Game, from: string, to: string): Action => {
+  const refusal = linkRefusalOf(game, from, to)
+  if (refusal !== null) return notAllowed(refusal)
+  const source = game.nodes.find((node) => node.id === from)
+  const target = game.nodes.find((node) => node.id === to)
+  if (!source || !target) return notAllowed('Link two different Nodes.')
   const linked: Game = { ...game, links: [...game.links, link(from, to)] }
   return ok(
     source.localDb &&

@@ -88,6 +88,13 @@ export const panels: Messages['panels'] = {
   collect: '回収',
   revenueWaitsInPaymentsPressCollect:
     '売上は決済に溜まります。引き出しがいっぱいになる前に回収を押してください。Stripe Billingなら自動で回収されます。',
+  firstSteps: '最初の一歩',
+  stepOf: (p0: string | number | null, p1: string | number | null) => `ステップ${p0}/${p1}`,
+  collectTheRevenue: '売上を回収する',
+  collectTheRevenueBody: '売上は決済に溜まっています。引き出しがいっぱいになる前に回収しましょう。',
+  upgradeTheAppServer: 'アプリサーバーを強化する',
+  theAppServerIsYourFirstLimit:
+    'アプリサーバーが最初の限界です。ユーザーが待つ前に次のサイズを買いましょう。',
   learn: '学ぶ',
   analyticsSamplesLinkedNodesEachRequest:
     'アナリティクスはリンクされたノードをサンプリングします。サンプリングしたリクエスト種別ごとに、それぞれのインサイトプールが満ちます。',

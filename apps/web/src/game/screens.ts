@@ -38,6 +38,7 @@ import {
   sellBar,
   stampBar,
 } from '@/components/lab/legacy.ts'
+import { firstStepsBar } from '@/components/lab/first-steps.ts'
 import { objectiveBar, passedPanel, sandboxHud } from '@/components/lab/sandbox.ts'
 import { challengeBar, challengeHud, challengePanel } from '@/components/lab/challenge.ts'
 import { nodeList } from '@/components/lab/node-list.ts'
@@ -172,7 +173,7 @@ export const labScreen = (model: Model, h: HtmlBuilder<Message>): Html => {
                     ? challengeBar(model, h)
                     : boardSandbox(model.board)
                       ? objectiveBar(model, h)
-                      : h.empty,
+                      : firstStepsBar(model, h),
                   incidentNotice(model, h),
                   activeIncident(model.board.game) !== null ? h.empty : mailQueueRow(model, h),
                   alertsNotice(model, h),

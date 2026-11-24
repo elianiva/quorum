@@ -816,6 +816,42 @@ const requirement = (
   )
 }
 
+const fullNotice = (max: number, t: Messages, h: HtmlBuilder<Message>): Html =>
+  h.div(
+    [
+      h.Class(
+        css({
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '2',
+          marginInline: '5',
+          marginTop: '3',
+          borderRadius: 'lg',
+          backgroundColor: 'warnSoft',
+          paddingInline: '2.5',
+          paddingBlock: '2',
+          fontSize: 'type.11-5',
+          fontWeight: 'medium',
+          lineHeight: 'snug',
+          color: 'warn',
+        }),
+      ),
+    ],
+    [
+      icon(
+        h,
+        TriangleAlert,
+        css({
+          marginTop: '0.5',
+          width: '3.5',
+          height: '3.5',
+          flexShrink: '0',
+        }),
+      ),
+      h.span([], [t.research.queueFullHelp(max)]),
+    ],
+  )
+
 const linkSection = (
   label: string,
   entries: ReadonlyArray<ResearchDef>,
@@ -1783,7 +1819,14 @@ const queuePanel = (model: Model, focus: ResearchId, h: HtmlBuilder<Message>): H
             [
               h.span([], [t.research.studyQueue]),
               h.span(
-                [h.Class(css({ fontSize: 'type.10-5', color: 'mutedForeground' }))],
+                [
+                  h.Class(
+                    css({
+                      fontSize: 'type.10-5',
+                      color: studies.length >= MAX_STUDIES ? 'danger' : 'mutedForeground',
+                    }),
+                  ),
+                ],
                 [t.research.queueCount(studies.length, MAX_STUDIES)],
               ),
             ],
@@ -2242,7 +2285,7 @@ const attachResize = (host: HTMLElement, offer: (width: number) => void): (() =>
   return () => events.abort()
 }
 
-const ResearchResize = Mount.defineStream('ResearchResize', {
+export const ResearchResize = Mount.defineStream('ResearchResize', {
   args: {},
   messages: [Message.ResearchChanged, Message.Synced],
   execute: ({ element }) =>
@@ -2262,11 +2305,12 @@ const ResearchResize = Mount.defineStream('ResearchResize', {
     ),
 })
 
-const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html => {
+export const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
   const game = model.board.game
-  const queued = studyList(game.studies).findIndex((item) => item.id === entry.id)
+  const studies = studyList(game.studies)
+  const queued = studies.findIndex((item) => item.id === entry.id)
   const state = stateOf(game, entry)
   const open = state !== 'owned' && game.openActions.includes(entry.id)
   const track = t.catalog.researchTracks[entry.track].label
@@ -2279,39 +2323,46 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
       : [...chain, entry.id]
           .map((id) => ({ id, stall: studyStall(game, ledger, id) }))
           .find((item) => item.stall !== null)
+  const queueable = era <= game.stage && chain.length > 0
+  const adds = (state === 'buy' || queueable) && queued < 0
+  const fresh = [...chain, entry.id].filter((id) => !studies.some((item) => item.id === id)).length
+  const full = adds && studies.length + fresh > MAX_STUDIES
   const label =
     state === 'owned'
       ? t.research.researched
-      : state === 'buy'
-        ? stalled?.stall
-          ? t.research.queueStudy(duration(t, game, ledger, entry))
-          : t.research.startStudy(duration(t, game, ledger, entry))
-        : era > game.stage
-          ? t.research.opensIn(t.catalog.eras[era]?.name ?? eraName(era))
-          : chain.length > 2
-            ? t.research.studyAfterCount(chain.length)
-            : chain.length > 0
-              ? t.research.studyAfter(chain.map((id) => t.catalog.research[id].name))
-              : queued > 0
-                ? t.research.studyNow
-                : stalled?.stall
-                  ? t.research.queued
-                  : t.research.studying(
-                      Math.floor(studyProgressOf(currentStudy(game.studies)) * 100),
-                    )
+      : full
+        ? t.research.queueFull
+        : state === 'buy'
+          ? stalled?.stall
+            ? t.research.queueStudy(duration(t, game, ledger, entry))
+            : t.research.startStudy(duration(t, game, ledger, entry))
+          : era > game.stage
+            ? t.research.opensIn(t.catalog.eras[era]?.name ?? eraName(era))
+            : chain.length > 2
+              ? t.research.studyAfterCount(chain.length)
+              : chain.length > 0
+                ? t.research.studyAfter(chain.map((id) => t.catalog.research[id].name))
+                : queued > 0
+                  ? t.research.studyNow
+                  : stalled?.stall
+                    ? t.research.queued
+                    : t.research.studying(
+                        Math.floor(studyProgressOf(currentStudy(game.studies)) * 100),
+                      )
   const first = stalled && stalled.id !== entry.id ? t.catalog.research[stalled.id].name : null
-  const consequence =
-    first === null
+  const consequence = full
+    ? t.research.queueFullHelp(MAX_STUDIES)
+    : first === null
       ? queued === 0
         ? t.research.atTheFront
         : queued > 0
           ? t.research.everyStudyBehindItWaits
           : t.research.queueToStart
       : null
-  const queueable = era <= game.stage && chain.length > 0
   const follow = followUps(entry.id)
-  const status: Readonly<{ label: string; tone: BadgeVariant }> =
-    state === 'owned'
+  const status: Readonly<{ label: string; tone: BadgeVariant }> | null = full
+    ? null
+    : state === 'owned'
       ? { label: t.research.researched, tone: 'ok' }
       : stalled?.stall
         ? { label: t.research.cannotRunShort, tone: 'warn' }
@@ -2515,16 +2566,20 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                     ],
                     [t.catalog.research[entry.id].name],
                   ),
-                  badge(
-                    {
-                      variant: status.tone,
-                      className: css({
-                        flexShrink: '0',
-                      }),
-                    },
-                    [status.label],
-                    h,
-                  ),
+                  ...(status === null
+                    ? []
+                    : [
+                        badge(
+                          {
+                            variant: status.tone,
+                            className: css({
+                              flexShrink: '0',
+                            }),
+                          },
+                          [status.label],
+                          h,
+                        ),
+                      ]),
                 ],
               ),
               h.span(
@@ -2556,7 +2611,11 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
           ),
         ],
       ),
-      stalled?.stall ? requirement(t, stalled.stall, first, consequence, h) : h.empty,
+      stalled?.stall
+        ? requirement(t, stalled.stall, first, consequence, h)
+        : full
+          ? fullNotice(MAX_STUDIES, t, h)
+          : h.empty,
       queuePanel(model, entry.id, h),
       h.div(
         [
@@ -2694,9 +2753,14 @@ const detail = (model: Model, entry: ResearchDef, h: HtmlBuilder<Message>): Html
                     ? ResearchMessage.StudyPrioritized({ id: entry.id })
                     : ResearchMessage.Bought({ id: entry.id }),
               }),
-              isDisabled: !(state === 'buy' || queueable || (state === 'saving' && queued > 0)),
+              isDisabled:
+                full || !(state === 'buy' || queueable || (state === 'saving' && queued > 0)),
               size: 'lg',
-              variant: state === 'buy' || queueable || queued > 0 ? 'default' : 'outline',
+              variant: full
+                ? 'outline'
+                : state === 'buy' || queueable || queued > 0
+                  ? 'default'
+                  : 'outline',
               className: cx(
                 FIGURE,
                 css({

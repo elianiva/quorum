@@ -38,6 +38,22 @@ const linkedOf = (data: Record<string, unknown>): ReadonlyArray<string> =>
 
 const eraOf = (data: Record<string, unknown>): number | null => count(record(data.context)?.stage)
 
+const changedOf = (data: Record<string, unknown>): ReadonlyArray<Record<string, unknown>> =>
+  listOf(record(data.diff)?.changed).flatMap((change) => {
+    const entry = record(change)
+    return entry === null ? [] : [entry]
+  })
+
+const sizedOf = (data: Record<string, unknown>): ReadonlyArray<Record<string, unknown>> =>
+  changedOf(data).filter((change) => change['field'] === 'size')
+
+const nestedTag = (data: Record<string, unknown>): string | null => text(record(data.message)?._tag)
+
+const nodeTypeOf = (game: Game, id: string | null): string | null =>
+  id === null ? null : (game.nodes.find((node) => node.id === id)?.type ?? null)
+
+const nodeOf = (data: Record<string, unknown>): string | null => text(data.id) ?? text(data.nodeId)
+
 export const eventsOf = (
   entries: ReadonlyArray<LogEntry>,
   context: BridgeContext,
@@ -82,6 +98,125 @@ export const eventsOf = (
 
       case 'EraReached':
         events.push({ event: 'company:era_reached', properties: data })
+        break
+
+      case 'SandboxStarted':
+        events.push({
+          event: 'sandbox:started',
+          properties: {
+            sandbox: text(data.sandbox),
+            free: text(data.sandbox) === 'free',
+          },
+        })
+        break
+
+      case 'ChallengeStarted':
+        events.push({
+          event: 'challenge:started',
+          properties: { challenge: text(data.challenge) },
+        })
+        break
+
+      case 'SessionResumed':
+        events.push({ event: 'session:resumed', properties: { era: eraOf(data) } })
+        break
+
+      case 'AchievementEarned':
+        events.push({
+          event: 'achievement:earned',
+          properties: { achievement_id: text(data.id) },
+        })
+        break
+
+      case 'ObjectivePassed':
+        events.push({
+          event: 'sandbox:objective_passed',
+          properties: {
+            sandbox: text(data.sandbox),
+            objective: count(data.objective),
+          },
+        })
+        break
+
+      case 'Collected': {
+        const amount = count(record(data.diff)?.cash)
+        if (amount !== null && amount > 0)
+          events.push({ event: 'game:collected', properties: { amount, era: eraOf(data) } })
+        break
+      }
+
+      case 'ResizeChosen':
+      case 'UpgradeAllChosen':
+        for (const change of sizedOf(data))
+          events.push({
+            event: 'board:node_resized',
+            properties: {
+              component_id: text(change['type']),
+              from_size: count(change['from']),
+              to_size: count(change['to']),
+              era: eraOf(data),
+            },
+          })
+        break
+
+      case 'InstallCpu':
+      case 'InstallRam':
+      case 'InstallDisk':
+        if (refused !== null) break
+        events.push({
+          event: 'shop:part_bought',
+          properties: {
+            slot:
+              entry.type === 'InstallCpu' ? 'cpu' : entry.type === 'InstallRam' ? 'ram' : 'disk',
+            component_id: nodeTypeOf(context.game, nodeOf(data)),
+            era: eraOf(data),
+          },
+        })
+        break
+
+      case 'SelectInstance':
+        if (refused !== null) break
+        events.push({
+          event: 'shop:instance_selected',
+          properties: {
+            component_id: nodeTypeOf(context.game, nodeOf(data)),
+            family: text(data.family),
+            size: count(data.size),
+            era: eraOf(data),
+          },
+        })
+        break
+
+      case 'ShopOpened':
+        events.push({
+          event: 'shop:opened',
+          properties: {
+            component_id: nodeTypeOf(context.game, text(data.nodeId)),
+            slot: text(data.slot),
+            mode: text(data.mode),
+            era: eraOf(data),
+          },
+        })
+        break
+
+      case 'PanelOpened':
+        if (text(data.panel) === 'inbox')
+          events.push({ event: 'inbox:opened', properties: { era: eraOf(data) } })
+        break
+
+      case 'InboxChanged': {
+        const tag = nestedTag(data)
+        if (tag === 'Opened' || tag === 'PeekOpened')
+          events.push({ event: 'mail:opened', properties: { era: eraOf(data) } })
+        break
+      }
+
+      case 'TeamChanged':
+        if (nestedTag(data) === 'HireChosen' && refused === null)
+          events.push({
+            event: 'team:hired',
+            properties: { era: eraOf(data), engineers: context.game.engineers.length },
+          })
         break
 
       case 'ResearchCompleted': {

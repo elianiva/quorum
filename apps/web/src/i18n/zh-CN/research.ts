@@ -39,6 +39,8 @@ export const research: Messages['research'] = {
   queueStudy: (duration) => `加入队列 · ${duration}`,
   queued: '已排队',
   queueCount: (count, max) => `${count} / ${max}`,
+  queueFull: '队列已满',
+  queueFullHelp: (max) => `队列中已有 ${max} 项研究。取消一项即可添加新的研究。`,
   speed: (p0) => `×${p0}`,
   studySpeedTitle:
     '空闲团队可以加速研究。专家团队在自己的领域最强，产品团队以一半速度协助任何领域。技术探索和研究速度研究也会加快研究。',

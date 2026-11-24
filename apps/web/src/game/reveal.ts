@@ -16,6 +16,7 @@ import type { Game } from '@quorum/simulation/state'
 import type { Message } from './message.ts'
 import { Reveal, offCompany, type Model } from './model.ts'
 import { step as disclosureStep, type DisclosureFlow } from './disclosure-machine.ts'
+import { firstStepNodeOf } from './first-steps.ts'
 
 const ALL: ReadonlyArray<Reveal> = Reveal.literals
 
@@ -127,6 +128,8 @@ export const noticed = (model: Model, message: Message): Model => {
 }
 
 export const cueNode = (model: Model): string | null => {
+  const first = firstStepNodeOf(model)
+  if (first !== null) return first
   const flow = model.board.disclosure
   if (flow._tag !== 'Cueing' || !glowing(model, flow.key)) return null
   if (flow.key === 'collect')

@@ -43,6 +43,8 @@ export const research: Messages['research'] = {
   queueStudy: (duration: string | number) => `Encolar estudio · ${duration}`,
   queued: 'En cola',
   queueCount: (count: number, max: number) => `${count} de ${max}`,
+  queueFull: 'Cola llena',
+  queueFullHelp: (max: number) => `La cola tiene ${max} estudios. Cancela uno para añadir otro.`,
   speed: (p0: string | number | null) => `×${p0}`,
   studySpeedTitle:
     'Un equipo inactivo impulsa el estudio. Un especialista es más fuerte en su área; un equipo de Producto ayuda en cualquier área a la mitad de velocidad. Un Spike y la investigación de velocidad de estudio también lo aceleran.',

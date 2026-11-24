@@ -42,6 +42,9 @@ export const research: Messages['research'] = {
   queueStudy: (duration) => `Mettre en file · ${duration}`,
   queued: 'En file',
   queueCount: (count, max) => `${count} sur ${max}`,
+  queueFull: 'File pleine',
+  queueFullHelp: (max) =>
+    `La file contient ${max} études. Annulez-en une pour en ajouter une autre.`,
   speed: (p0) => `×${p0}`,
   studySpeedTitle:
     'Une équipe inactive accélère l’étude. Un spécialiste est plus fort dans son domaine ; une équipe Produit aide sur tous les domaines à moitié vitesse. Une exploration et la recherche de vitesse d’étude l’accélèrent aussi.',

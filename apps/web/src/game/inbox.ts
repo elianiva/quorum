@@ -370,6 +370,41 @@ const ACTING = new Set([
   'easy',
 ])
 
+/** A click on a Mail action whose target has since left the Game changes nothing. */
+export const staleAction = (
+  game: Game,
+  kind: string | undefined,
+  target: string | null,
+  mail: Mail,
+): boolean => {
+  const id = Number(target)
+  switch (kind) {
+    case 'raise':
+      return game.round._tag === 'Raised' || game.round._tag === 'Declined'
+    case 'decline':
+      return (
+        !mail.sender.startsWith('mate:') &&
+        (game.round._tag === 'Raised' || game.round._tag === 'Declined')
+      )
+    case 'approve':
+    case 'defer':
+    case 'patch':
+    case 'queue':
+    case 'first':
+    case 'rush':
+      return !Number.isFinite(id) || !game.backlog.some((item) => item.id === id)
+    case 'timeoff':
+    case 'payrise':
+    case 'resign':
+      return target === null || !game.engineers.some((engineer) => engineer.id === target)
+    case 'postmortem':
+    case 'postmortem-take':
+      return !game.postmortems.some((entry) => entry.id === id)
+    default:
+      return false
+  }
+}
+
 export const updateInbox = (
   inbox: Inbox,
   message: InboxMessage,
@@ -404,6 +439,7 @@ export const updateInbox = (
       const mail = inbox.mail.find((entry) => entry.id === id)
       if (!mail) return { model: inbox }
       const [kind, target] = action.split(':')
+      if (staleAction(context.game, kind, target ?? null, mail)) return { model: inbox }
       const unpeeked =
         kind === 'mute'
           ? muting(inbox, mail.sender, context.game.time)

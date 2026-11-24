@@ -172,8 +172,10 @@ const plainCell = (
   ),
 ]
 
-const row = (command: PaletteCommand, active: boolean, h: HtmlBuilder<Message>): Html =>
-  h.button(
+const row = (command: PaletteCommand, active: boolean, h: HtmlBuilder<Message>): Html => {
+  const t = copy(h)
+  const short = command.part?.short === true
+  return h.button(
     [
       h.Key(command.id),
       h.Id(`palette-option-${command.id}`),
@@ -182,6 +184,13 @@ const row = (command: PaletteCommand, active: boolean, h: HtmlBuilder<Message>):
       h.Tabindex(-1),
       h.AriaSelected(active),
       ...(active ? [h.DataAttribute('palette-active', '')] : []),
+      ...(short
+        ? [
+            h.Disabled(true),
+            h.AriaDisabled(true),
+            h.Title(t.toasts.costs(command.part?.name ?? '', command.part?.price ?? '')),
+          ]
+        : []),
       h.OnClick(Message.PaletteChosen({ id: command.id })),
       h.OnMouseMove(Message.PaletteHighlighted({ id: command.id })),
       h.Class(
@@ -208,11 +217,16 @@ const row = (command: PaletteCommand, active: boolean, h: HtmlBuilder<Message>):
                 borderRadius: 'xl',
                 paddingInline: '2',
               }),
-          command.part?.locked !== null && command.part !== undefined
+          short
             ? css({
-                opacity: 0.7,
+                cursor: 'not-allowed',
+                opacity: 0.5,
               })
-            : '',
+            : command.part?.locked !== null && command.part !== undefined
+              ? css({
+                  opacity: 0.7,
+                })
+              : '',
           active
             ? css({
                 backgroundColor: 'color-mix(in oklab, var(--foreground) 10%, transparent)',
@@ -233,6 +247,7 @@ const row = (command: PaletteCommand, active: boolean, h: HtmlBuilder<Message>):
       active ? runHint(h) : h.empty,
     ],
   )
+}
 
 const results = (
   rows: ReadonlyArray<PaletteCommand>,

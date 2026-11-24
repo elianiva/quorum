@@ -48,6 +48,7 @@ import { saveJson } from './save-file.ts'
 import { play, setMuted, setVolume, SOUND_NAMES } from './sound.ts'
 import { pruneAgentRooms, setAgentAccess } from './agent-room.ts'
 import { appendLog, clearLog, downloadLog, LogEntry } from './playlog.ts'
+import { linkPreviewOf } from './link-preview.ts'
 import { forward, setAnalyticsEnabled } from '../platform/analytics.ts'
 import { SurveySubmission } from '@quorum/rpc'
 import { ClientMessage } from '@quorum/simulation/room'
@@ -119,6 +120,7 @@ export const SyncBoard = Command.define('SyncBoard', {
         speed,
         suspended,
         cue,
+        linkCheck: (from, to) => linkPreviewOf(game, locale, from, to),
       })
       if (fit) fitBoard('board')
       if (focus) focusBoard('board', focus)

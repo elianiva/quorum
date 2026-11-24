@@ -89,6 +89,13 @@ export const panels: Messages['panels'] = {
   collect: 'Cobrar',
   revenueWaitsInPaymentsPressCollect:
     'Los ingresos esperan en Pagos. Pulsa Cobrar antes de que se llene el cajón. Stripe Billing cobra por ti.',
+  firstSteps: 'Primeros pasos',
+  stepOf: (p0: string | number | null, p1: string | number | null) => `Paso ${p0} de ${p1}`,
+  collectTheRevenue: 'Cobra los ingresos',
+  collectTheRevenueBody: 'Los ingresos esperan en Pagos. Cóbralos antes de que se llene el cajón.',
+  upgradeTheAppServer: 'Mejora el Servidor de aplicaciones',
+  theAppServerIsYourFirstLimit:
+    'El Servidor de aplicaciones es tu primer límite. Compra el siguiente tamaño antes de que los usuarios esperen.',
   learn: 'Aprender',
   analyticsSamplesLinkedNodesEachRequest:
     'Analítica muestrea los nodos enlazados. Cada tipo de petición que muestrea llena su propio fondo de conocimiento.',

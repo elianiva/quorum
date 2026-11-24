@@ -1,6 +1,7 @@
 import type { CaptureResult } from 'posthog-js'
 import type { Locale } from '../i18n/index.ts'
 import { eraOf } from '@quorum/simulation/lookups'
+import { bottleneckOf } from '@quorum/simulation/solve'
 import { SIM_VERSION } from '@quorum/simulation/version'
 import { eventsOf } from '../game/analytics-bridge.ts'
 import { allow } from '../game/analytics-budget.ts'
@@ -137,6 +138,9 @@ const heartbeat = (): void => {
   const game = model.board.game
   const ledger = ledgerOf(model)
   const kind = model.board.session._tag.toLowerCase()
+  const bottleneckId = bottleneckOf(game)
+  const bottleneck =
+    bottleneckId === null ? null : (game.nodes.find((node) => node.id === bottleneckId) ?? null)
   client.capture('game:heartbeat', {
     session_kind: kind,
     company_id: kind === 'company' ? savesOf(model.saves).lastPlayed : null,
@@ -148,7 +152,7 @@ const heartbeat = (): void => {
     burn: round(ledger.burn),
     apdex: round(ledger.apdex, 3),
     error_share: round(ledger.errorShare, 4),
-    bottleneck_component: null,
+    bottleneck_component: bottleneck?.type ?? null,
     node_count: game.nodes.length,
     link_count: game.links.length,
     speed: model.board.clock.speed,

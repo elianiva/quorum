@@ -85,6 +85,13 @@ export const panels = {
   collect: 'Collect',
   revenueWaitsInPaymentsPressCollect:
     'Revenue waits in Payments. Press Collect before the drawer fills. Stripe Billing collects for you.',
+  firstSteps: 'First steps',
+  stepOf: (p0: string | number | null, p1: string | number | null) => `Step ${p0} of ${p1}`,
+  collectTheRevenue: 'Collect the revenue',
+  collectTheRevenueBody: 'Revenue is waiting in Payments. Collect it before the drawer fills.',
+  upgradeTheAppServer: 'Upgrade the App Server',
+  theAppServerIsYourFirstLimit:
+    'The App Server is your first limit. Buy the next size before users wait on it.',
   learn: 'Learn',
   analyticsSamplesLinkedNodesEachRequest:
     'Analytics samples linked Nodes. Each request kind it samples fills its own Insight pool.',

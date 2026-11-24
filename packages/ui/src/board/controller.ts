@@ -71,6 +71,8 @@ const GLIDE_STOPPED_PX_PER_S = 20
 const isWebKit = (): boolean =>
   /AppleWebKit/.test(navigator.userAgent) && !/Chrome|Chromium|Android/.test(navigator.userAgent)
 
+const NO_TARGETS: ReadonlyMap<string, string | null> = new Map()
+
 const rendererPreference = async (): Promise<Array<RendererPreference>> => {
   if (isWebKit() || !navigator.gpu) return ['webgl']
   const adapter = await navigator.gpu.requestAdapter().catch(() => null)
@@ -189,6 +191,9 @@ export class BoardController {
   ghostLocale = 'en'
   wireEnd: Pt | null = null
   snapGlow = 0
+  private linkTargets: ReadonlyMap<string, string | null> = NO_TARGETS
+  private linkTargetsFrom: string | null = null
+  private linkTargetsKey: string | null = null
   retract: { path: Route; t: number } | null = null
   readonly fresh = new Map<string, number>()
   wired: string | null = null
@@ -652,6 +657,34 @@ export class BoardController {
   selectLink(link: Readonly<{ from: string; to: string }>): void {
     this.selectedLink = link
     this.events.onEmptyTap()
+  }
+
+  /** Each Node the dragged Link could reach, with the reason a drop would fail. */
+  targetsFor(from: string): ReadonlyMap<string, string | null> {
+    const state = this.state
+    const check = state?.linkCheck
+    if (!state || !check) return NO_TARGETS
+    const game = state.game
+    const key = [
+      state.locale,
+      ...game.nodes.map(
+        (node) => `${node.id}:${node.type}:${node.localDb}:${node.variant}:${node.life._tag}`,
+      ),
+      ...game.links.map((link) => `${link.from}>${link.to}`),
+      ...game.boxes.map((box) => `${box.id}:${box.nodes.join(',')}`),
+    ].join('|')
+    if (this.linkTargetsFrom === from && this.linkTargetsKey === key) return this.linkTargets
+    const targets = new Map<string, string | null>()
+    for (const node of game.nodes) if (node.id !== from) targets.set(node.id, check(from, node.id))
+    this.linkTargets = targets
+    this.linkTargetsFrom = from
+    this.linkTargetsKey = key
+    return targets
+  }
+
+  linkIsLegal(from: string, to: string): boolean {
+    if (this.state?.linkCheck === undefined) return true
+    return this.targetsFor(from).get(to) === null
   }
 
   onBadge(point: Pt): boolean {

@@ -53,6 +53,8 @@ export type BoardState = Readonly<{
   speed: number
   suspended: boolean
   cue: string | null
+  /** Why dropping a Link on a Node would be refused, or null when it is legal. */
+  linkCheck?: (from: string, to: string) => string | null
   readOnly?: boolean
   animate?: boolean
   inset?: Readonly<{ top: number; bottom: number; left: number }>

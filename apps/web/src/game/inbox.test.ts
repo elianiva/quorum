@@ -46,8 +46,8 @@ const sent = (facts: ReadonlyArray<Fact>, folder: 'action' | 'fyi' | 'spam' | 't
   return inbox
 }
 
-const act = (inbox: Inbox, id: number, action: string) =>
-  updateInbox(inbox, InboxMessage.Acted({ id, action }), { game, open: true })
+const act = (inbox: Inbox, id: number, action: string, world: Game = game) =>
+  updateInbox(inbox, InboxMessage.Acted({ id, action }), { game: world, open: true })
 
 test('an engineer keeps one name, and the first hires have different ones', () => {
   const ids = Array.from({ length: 8 }, (_, index) => `e${index + 1}`)
@@ -225,7 +225,10 @@ test('a resolved incident asks a teammate to file the postmortem', () => {
 
   const inbox = reading(mailed(EMPTY_INBOX, mail, game.time, true))
   const id = inbox.mail[0]?.id ?? 0
-  const taken = act(inbox, id, `postmortem-take:${postmortem.id}`)
+  const taken = act(inbox, id, `postmortem-take:${postmortem.id}`, {
+    ...game,
+    postmortems: [postmortem],
+  })
   expect(taken.outMessage).toEqual({ _tag: 'ActionTaken', kind: 'postmortem-take', target: '3' })
   expect(answerOf(taken.model.mail[0])).toBe(
     'You filed the postmortem and put the action item in the study queue.',

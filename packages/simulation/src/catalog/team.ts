@@ -1,10 +1,90 @@
-export const CALENDAR_DAY = 1_440
+export {
+  CALENDAR_DAY,
+  DEV_HOURS_PER_DAY,
+  FOUNDER_OUTPUT,
+  POLICY_IDS,
+  POLICIES,
+  POLICY_SWITCH_DAYS,
+  SALARY_BASE_PER_SECOND,
+  SIGNING_BASE,
+  HIRE_DAYS,
+  RAMP_OUTPUT,
+  RAMP_DAYS,
+  LAYOFF_MORALE,
+  MORALE_DAYS,
+  LEARN_DAYS,
+  LEARN_OUTPUT,
+  LEARN_COST,
+  FOREIGN_OUTPUT,
+  COORDINATION,
+  RETROGRADE,
+  START_KLOC,
+  KLOC_PER_DH,
+  REFACTOR_PER_DH,
+  UNSTRUCTURED_DEBT,
+  HOTFIX_DEBT,
+  RUSH_DEBT,
+  RUSH_BUG_CHANCE,
+  UPKEEP_SHARE,
+  UPKEEP_HALF,
+  UPKEEP_CEILING,
+  OUTCOME_BANDS,
+  MARKET_GAIN_CAP,
+  ADOPTION_DAYS,
+  LIFT_SPREAD,
+  LIFT_Z_SCORE,
+  LIFT_MIN_ROLLOUT,
+  LIFT_MAX_ROLLOUT,
+  BLOCK_REMIND_DAYS,
+  BLOCK_SIZE_AT,
+  MOOD_START,
+  UNHAPPY_MOOD,
+  CONTENT_MOOD,
+  FREEZE_MOOD_DAYS,
+  PAGE_MOOD,
+  PAY_GAP_MOOD_DAYS,
+  TIME_OFF_DAYS,
+  HIRING_PIPELINE,
+  TRUNK_FREQUENCY,
+  DATA_TEAM_HOURS,
+  DATA_TEAM_LAG,
+  SECURITY_TEAM_SUPPLY_CHAIN,
+  SECURITY_TEAM_GRACE,
+  WORK_MINUTES,
+  MANUAL_DEPLOY_MINUTES,
+  CI_DEPLOY_MINUTES,
+  VERIFY_MINUTES,
+  BAD_DEPLOY_BASE,
+  BAD_DEPLOY_ERRORS,
+  BAD_DEPLOY_MAX,
+  TESTS_FACTOR,
+  CODE_REVIEW_FACTOR,
+  BUILD_CACHE,
+  DEV_ENVIRONMENT_RAMP,
+  STATIC_ANALYSIS_FACTOR,
+  FORMAL_VERIFICATION_FACTOR,
+  FORMAL_VERIFICATION_VELOCITY,
+  MIGRATION_STEPS,
+  MIGRATION_TRANCHES,
+  MIGRATION_FACTORS,
+  MIGRATION_BUGS,
+  FIX_BUGS_SHARE,
+  MIGRATION_FEATURE_SPEED,
+  SHARED_DB_COORDINATION,
+  TASK_LINK_TIMEOUT_SECONDS,
+  LOAD_TEST_DEMAND,
+  LOAD_TEST_DAYS,
+  AUTH_MOVE_DH,
+  SERVICE_HANDOFF_DH,
+  DATASTORE_MOVE_DH,
+  ENGINE_FACTOR,
+  ENGINE_COPY_MINUTES_PER_GB,
+  SESSION_STATE_CRASHES,
+  PAYING_SHARE,
+  PLAN_PER_DAY,
+} from '../generated/team.ts'
+import { POLICY_IDS } from '../generated/team.ts'
 
-export const DEV_HOURS_PER_DAY = 8
-
-export const FOUNDER_OUTPUT = 0.8
-
-export const POLICY_IDS = ['move-fast', 'balanced', 'quality'] as const
 export type PolicyId = (typeof POLICY_IDS)[number]
 
 export type PolicyDef = Readonly<{
@@ -16,135 +96,3 @@ export type PolicyDef = Readonly<{
   deploysPerDay: number
   paydown: number
 }>
-
-export const POLICIES: Record<PolicyId, PolicyDef> = {
-  'move-fast': {
-    id: 'move-fast',
-    label: 'Move fast',
-    velocity: 1.3,
-    debt: 0.06,
-    badDeploy: 1.5,
-    deploysPerDay: 16,
-    paydown: 0,
-  },
-  balanced: {
-    id: 'balanced',
-    label: 'Balanced',
-    velocity: 1,
-    debt: 0.03,
-    badDeploy: 1,
-    deploysPerDay: 8,
-    paydown: 0,
-  },
-  quality: {
-    id: 'quality',
-    label: 'Quality',
-    velocity: 0.8,
-    debt: 0.01,
-    badDeploy: 0.5,
-    deploysPerDay: 4,
-    paydown: 0.1,
-  },
-}
-
-export const POLICY_SWITCH_DAYS = 1
-
-export const SALARY_BASE_PER_SECOND = 0.4
-export const SIGNING_BASE = 2_000
-export const HIRE_DAYS = 1
-export const RAMP_OUTPUT = 0.3
-export const RAMP_DAYS = 7
-export const LAYOFF_MORALE = 0.9
-export const MORALE_DAYS = 7
-
-export const LEARN_DAYS = 7
-export const LEARN_OUTPUT = 0.5
-export const LEARN_COST = 0.25
-export const FOREIGN_OUTPUT = 0.7
-
-export const COORDINATION = 0.08
-export const RETROGRADE = 0.0004
-
-export const START_KLOC = 5
-export const KLOC_PER_DH = 0.5
-export const REFACTOR_PER_DH = 0.02
-export const UNSTRUCTURED_DEBT = 0.01
-export const HOTFIX_DEBT = 0.02
-export const RUSH_DEBT = 0.02
-export const RUSH_BUG_CHANCE = 0.1
-
-export const UPKEEP_SHARE = 0.4
-export const UPKEEP_HALF = 2_000
-export const UPKEEP_CEILING = 0.6
-
-export const OUTCOME_BANDS: ReadonlyArray<Readonly<{ lo: number; hi: number }>> = [
-  { lo: 0.6, hi: 1.4 },
-  { lo: -0.1, hi: 0.2 },
-  { lo: -0.5, hi: -0.1 },
-]
-
-export const MARKET_GAIN_CAP = 2
-
-export const ADOPTION_DAYS = 7
-export const LIFT_SPREAD = 1
-export const LIFT_Z_SCORE = 1.96
-export const LIFT_MIN_ROLLOUT = 0.05
-export const LIFT_MAX_ROLLOUT = 0.5
-
-export const BLOCK_REMIND_DAYS = 1
-export const BLOCK_SIZE_AT = 8
-
-export const MOOD_START = 1
-export const UNHAPPY_MOOD = 0.35
-export const CONTENT_MOOD = 0.7
-export const FREEZE_MOOD_DAYS = 7
-export const PAGE_MOOD = 0.08
-export const PAY_GAP_MOOD_DAYS = 3
-export const TIME_OFF_DAYS = 3
-
-export const HIRING_PIPELINE = 0.7
-export const TRUNK_FREQUENCY = 1.5
-export const DATA_TEAM_HOURS = 0.7
-export const DATA_TEAM_LAG = 0.5
-export const SECURITY_TEAM_SUPPLY_CHAIN = 0.5
-export const SECURITY_TEAM_GRACE = 2
-
-export const WORK_MINUTES = 480
-export const MANUAL_DEPLOY_MINUTES = 30
-export const CI_DEPLOY_MINUTES = 5
-export const VERIFY_MINUTES = 15
-export const BAD_DEPLOY_BASE: ReadonlyArray<number> = [0, 0.1, 0.1]
-export const BAD_DEPLOY_ERRORS = 0.08
-export const BAD_DEPLOY_MAX = 0.4
-export const TESTS_FACTOR = 0.3
-export const CODE_REVIEW_FACTOR = 0.2
-export const BUILD_CACHE = 0.75
-export const DEV_ENVIRONMENT_RAMP = 0.5
-export const STATIC_ANALYSIS_FACTOR = 0.2
-export const FORMAL_VERIFICATION_FACTOR = 0.5
-export const FORMAL_VERIFICATION_VELOCITY = 0.85
-
-export const MIGRATION_STEPS: ReadonlyArray<number> = [0.05, 0.25, 0.5, 1]
-export const MIGRATION_TRANCHES: ReadonlyArray<number> = [0.1, 0.2, 0.3, 0.4]
-export const MIGRATION_FACTORS = { variant: 0.1, framework: 0.5, language: 1, split: 0.3 } as const
-export const MIGRATION_BUGS = 0.03
-export const FIX_BUGS_SHARE = 0.25
-export const MIGRATION_FEATURE_SPEED = 0.5
-
-export const SHARED_DB_COORDINATION = 0.5
-
-export const TASK_LINK_TIMEOUT_SECONDS = 5
-
-export const LOAD_TEST_DEMAND = 2
-export const LOAD_TEST_DAYS = 1
-
-export const AUTH_MOVE_DH = 120
-export const SERVICE_HANDOFF_DH = 8
-export const DATASTORE_MOVE_DH = 16
-export const ENGINE_FACTOR = 0.8
-export const ENGINE_COPY_MINUTES_PER_GB = 1
-
-export const SESSION_STATE_CRASHES = 0.05
-
-export const PAYING_SHARE = 0.05
-export const PLAN_PER_DAY = 24

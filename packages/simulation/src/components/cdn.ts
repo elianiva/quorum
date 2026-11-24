@@ -1,29 +1,14 @@
 import { Effect, Schema } from 'effect'
-import type { Kind } from '../catalog/kinds.ts'
-
-export const CDN_HIT: Partial<Record<Kind, number>> = { page: 0.7, media: 0.75 }
-export const ANONYMOUS_PAGE = 0.6
-export const TIERED_MEDIA_HIT = 0.92
-export const CDN_TTLS = [
-  { ttl: 60, factor: 0.8 },
-  { ttl: 300, factor: 1 },
-  { ttl: 3_600, factor: 1.2 },
-] as const
-export const ESI_PAGE_HIT = 0.2
-
-export const STALE_AFTER_DEPLOY = 0.3
-
-export const CACHE_KEYS = {
-  full: { name: 'Path, query and cookies', hit: 1, leak: 0 },
-  query: { name: 'Path and query', hit: 1.1, leak: 1 },
-  path: { name: 'Path only', hit: 1.2, leak: 2.5 },
-} as const
-
-export const cdnGlossary: ReadonlyArray<string> = [
-  'cache-hit-rate',
-  'cdn-content-delivery-network',
-  'egress',
-]
+export {
+  CDN_HIT,
+  ANONYMOUS_PAGE,
+  TIERED_MEDIA_HIT,
+  CDN_TTLS,
+  ESI_PAGE_HIT,
+  STALE_AFTER_DEPLOY,
+  CACHE_KEYS,
+  cdnGlossary,
+} from '../generated/cdn.ts'
 
 export const CacheKey = Schema.Literals(['full', 'query', 'path'])
 export type CacheKey = typeof CacheKey.Type

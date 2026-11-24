@@ -5,7 +5,7 @@ qmc compiles the content files in `packages/simulation/content/*.qm` into
 
 ```sh
 pnpm --filter @quorum/simulation content   # compile the content and write the generated files
-cargo run -- build <content> <out> --check  # fail when the generated files are out of date (CI)
+cargo run -- build <content> <out> --solver <catalog.ts> <catalog.rs> --check  # fail when an output is out of date (CI)
 cargo run -- expand file.qm                 # print a file after macro expansion
 cargo test
 ```
@@ -46,6 +46,14 @@ into a row or record. `(ref NAME key 0)` reads a property. `(+ a b)`, `(- a b)`,
 hand-written code did. `(as "Type" value)` is a type assertion. `:type "T"` annotates the
 declaration, `:type const` writes `as const`, `:satisfies "T"` writes `satisfies T`, and `:doc`
 writes a doc comment. `(types "path" Name …)` names the TypeScript types an annotation uses.
+
+### The Solver catalog
+
+`--solver ../simulation/src/catalog.ts ../simulation/solver/src/catalog.rs` also writes the Rust
+Solver's catalog: every number, flag, and string that `catalog.ts` exports, the tables the solve
+reads, and `CATALOG_HASH`, a SHA-256 prefix the Simulation compares with the built module. qmc
+reads the values back from the generated TypeScript and prints numbers as JavaScript prints them,
+so the Solver and the Simulation see the same floating-point values.
 
 ## The checks
 

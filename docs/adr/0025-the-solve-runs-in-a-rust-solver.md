@@ -47,11 +47,12 @@ Considered options:
   layout, so a slot added on one side fails at start instead of producing a wrong figure.
 - `src/solver.wasm` is committed and lives under `packages/simulation/src`, so `SIM_VERSION`
   changes whenever the module does.
-- `solver/gen-catalog.ts` writes `solver/src/catalog.rs` from the TypeScript catalog and stamps it
-  with `CATALOG_HASH`. `test/solver-catalog.test.ts` fails when `catalog.rs` or the committed module
-  is older than the catalog, and it needs no Rust.
+- qmc, the content compiler in `packages/qmc`, writes `solver/src/catalog.rs` from the generated
+  catalog and stamps it with `CATALOG_HASH`. Its workflow fails when `catalog.rs` is older than the
+  content. `test/solver-catalog.test.ts` fails when the committed module is older than
+  `catalog.rs`, and it needs no Rust.
 - `.github/workflows/solver.yml` runs when the Rust source or the module changes. It runs clippy
   with warnings as errors and the Rust tests, then rebuilds the module with the compiler that
   `rust-toolchain.toml` pins and fails unless the build matches the committed file byte for byte.
-- A change to how the Simulation solves is a Rust change. A change to a catalog number stays a
-  TypeScript change, followed by `pnpm --filter @quorum/simulation catalog` and `solver/build.sh`.
+- A change to how the Simulation solves is a Rust change. A change to a catalog number is a
+  content change, followed by `pnpm --filter @quorum/simulation content` and `solver/build.sh`.

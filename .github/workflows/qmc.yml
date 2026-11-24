@@ -7,12 +7,18 @@ on:
       - 'packages/qmc/**'
       - 'packages/simulation/content/**'
       - 'packages/simulation/src/generated/**'
+      - 'packages/simulation/src/catalog.ts'
+      - 'packages/simulation/src/catalog/**'
+      - 'packages/simulation/solver/src/catalog.rs'
       - '.github/workflows/qmc.yml'
   pull_request:
     paths:
       - 'packages/qmc/**'
       - 'packages/simulation/content/**'
       - 'packages/simulation/src/generated/**'
+      - 'packages/simulation/src/catalog.ts'
+      - 'packages/simulation/src/catalog/**'
+      - 'packages/simulation/solver/src/catalog.rs'
       - '.github/workflows/qmc.yml'
 
 concurrency:
@@ -36,4 +42,4 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
       # The committed generated files must be the output of this compiler and content.
-      - run: cargo run --release -- build ../simulation/content ../simulation/src/generated --check
+      - run: cargo run --release -- build ../simulation/content ../simulation/src/generated --solver ../simulation/src/catalog.ts ../simulation/solver/src/catalog.rs --check

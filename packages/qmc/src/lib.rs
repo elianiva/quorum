@@ -15,6 +15,7 @@
 pub mod check;
 pub mod data;
 pub mod diag;
+pub mod emit_rs;
 pub mod emit_ts;
 pub mod expand;
 pub mod graph;
@@ -22,7 +23,9 @@ pub mod lower;
 pub mod num;
 pub mod par;
 pub mod reader;
+pub mod sha256;
 pub mod source;
+pub mod tsval;
 
 use diag::{Diagnostic, Sink};
 use reader::Sexp;

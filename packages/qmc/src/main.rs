@@ -4,16 +4,29 @@ use std::path::Path;
 use std::process::ExitCode;
 
 const USAGE: &str = "usage:
-  qmc build <content dir> <generated dir> [--check]   compile every .qm file; --check fails when
-                                                       the generated files are out of date
-  qmc expand <file.qm>…                                print each file after macro expansion";
+  qmc build <content dir> <generated dir> [--solver <catalog.ts> <catalog.rs>] [--check]
+      compile every .qm file into the generated dir. --solver also writes the Solver's catalog.rs
+      from the scalars catalog.ts exports. --check fails when an output is out of date.
+  qmc expand <file.qm>…
+      print each file after macro expansion";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
     match args.as_slice() {
-        ["build", content, out] => build(Path::new(content), Path::new(out), false),
-        ["build", content, out, "--check"] => build(Path::new(content), Path::new(out), true),
+        ["build", content, out, rest @ ..] => {
+            let check = rest.contains(&"--check");
+            let solver = rest
+                .iter()
+                .position(|a| *a == "--solver")
+                .and_then(|i| Some((Path::new(rest.get(i + 1)?), Path::new(rest.get(i + 2)?))));
+            let known = rest.len() == usize::from(check) + if solver.is_some() { 3 } else { 0 };
+            if !known {
+                eprintln!("{USAGE}");
+                return ExitCode::from(2);
+            }
+            build(Path::new(content), Path::new(out), solver, check)
+        }
         ["expand", paths @ ..] if !paths.is_empty() => expand(paths),
         _ => {
             eprintln!("{USAGE}");
@@ -51,7 +64,7 @@ fn report(diagnostics: &[Diagnostic], sources: &SourceMap) -> bool {
     errors > 0
 }
 
-fn build(content: &Path, out: &Path, check: bool) -> ExitCode {
+fn build(content: &Path, out: &Path, solver: Option<(&Path, &Path)>, check: bool) -> ExitCode {
     let mut paths = match std::fs::read_dir(content) {
         Ok(entries) => entries
             .filter_map(|e| e.ok().map(|e| e.path()))
@@ -71,16 +84,34 @@ fn build(content: &Path, out: &Path, check: bool) -> ExitCode {
     if report(&compiled.diagnostics, &compiled.sources) {
         return ExitCode::FAILURE;
     }
+    let mut outputs: Vec<(std::path::PathBuf, String)> = compiled
+        .outputs
+        .iter()
+        .map(|(name, text)| (out.join(name), text.clone()))
+        .collect();
+    if let Some((namespace, target)) = solver {
+        let names = match qmc::tsval::namespace(namespace) {
+            Ok(names) => names,
+            Err(error) => {
+                eprintln!("error: cannot read {}: {error}", namespace.display());
+                return ExitCode::FAILURE;
+            }
+        };
+        let modules: Vec<&str> = compiled.outputs.iter().map(|(_, t)| t.as_str()).collect();
+        outputs.push((
+            target.to_path_buf(),
+            qmc::emit_rs::catalog(&modules, &names),
+        ));
+    }
     let mut stale = Vec::new();
-    for (name, text) in &compiled.outputs {
-        let path = out.join(name);
-        if std::fs::read_to_string(&path).ok().as_deref() == Some(text.as_str()) {
+    for (path, text) in &outputs {
+        if std::fs::read_to_string(path).ok().as_deref() == Some(text.as_str()) {
             continue;
         }
         if check {
             stale.push(path.display().to_string());
-        } else if let Err(error) =
-            std::fs::create_dir_all(out).and_then(|()| std::fs::write(&path, text))
+        } else if let Err(error) = std::fs::create_dir_all(path.parent().unwrap_or(out))
+            .and_then(|()| std::fs::write(path, text))
         {
             eprintln!("error: cannot write {}: {error}", path.display());
             return ExitCode::FAILURE;

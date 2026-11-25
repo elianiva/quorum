@@ -1,10 +1,12 @@
+(id ResearchId RESEARCH_IDS)
+
 ; Research: what the player studies, what each study needs, and what it unlocks.
 ;
 ; Each entry becomes one ResearchDef. Declaration order is the order of RESEARCH_IDS, which the
 ; Solver indexes by, so append new research at the end of its era's group.
-(import "../catalog/instances.ts" POOLER_CONNECTIONS)
+(import "./instances.ts" POOLER_CONNECTIONS)
 
-(import "../catalog/runtimes.ts" FRAMEWORKS RUNTIMES)
+(import "./runtimes.ts" FRAMEWORKS RUNTIMES)
 
 (tracks
   (infrastructure "Infrastructure")
@@ -1575,13 +1577,7 @@
   :requires (testing-culture)
   :blurb    "Proofs and property-based tests catch the bugs tests miss: bad deploys −50%, but every Feature costs 15% more Dev Hours.")
 
-(types "../catalog/research.ts" ResearchTeamKind)
-
-(types "../catalog/runtimes.ts" FrameworkId)
-
-(types "../catalog/kinds.ts" InsightPool)
-
-(def TEAM_TRACKS
+(def team-tracks
   :type (record ResearchTeamKind (array ResearchTrack))
   (:product  ["product" "runtimes" "frameworks"]
    :platform ["infrastructure" "performance" "cost"]
@@ -1591,17 +1587,17 @@
 
 (def researchList RESEARCH_LIST)
 
-(def EVERY_KIND
+(def every-kind
   :type (array InsightPool)
   ["page" "read" "write" "login" "search" "upload" "media" "rt" "buy" "job" "report" "ai" "feed"
    "hook" "push"])
 
-(def ERA_RECIPES
+(def era-recipes
   :type (array (array InsightPool))
   [["page" "read"] ["write" "login"] ["search" "upload"] ["search" "upload"] ["media" "rt" "buy"]
-   ["job" "report" "ai"] EVERY_KIND EVERY_KIND])
+   ["job" "report" "ai"] every-kind every-kind])
 
-(def STUDY_SECONDS
+(def study-seconds
   :type const
   [20 60 120 240 480 900 1_800 3_600])
 

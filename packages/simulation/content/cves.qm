@@ -1,5 +1,3 @@
-(types "../catalog/cves.ts" CveDef)
-
 (table cve-defs
   :type (array CveDef)
   [id               score  affects]
@@ -10,10 +8,10 @@
   ["CVE-2026-3141"    7.5  ["server"]]
   ["CVE-2026-1024"    9.9  ["server" "worker"]])
 
-(def BACKDOOR_FUSE 300)
+(def backdoor-fuse 300)
 
-(def VENDOR_DISCOUNT 0.2)
+(def vendor-discount 0.2)
 
-(def CVE_EVERY 420)
+(def cve-every 420)
 
-(def PATCH_GRACE 60)
+(def patch-grace 60)

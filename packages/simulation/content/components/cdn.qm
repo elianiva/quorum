@@ -23,16 +23,14 @@
   (field stale-until number
     :default 0))
 
-(types "../catalog/kinds.ts" Kind)
-
-(def CDN_HIT
+(def cdn-hit
   :type (partial (record Kind number))
   (:page  0.7
    :media 0.75))
 
-(def ANONYMOUS_PAGE 0.6)
+(def anonymous-page 0.6)
 
-(def TIERED_MEDIA_HIT 0.92)
+(def tiered-media-hit 0.92)
 
 (table cdn-ttls
   [ttl    factor]
@@ -40,7 +38,7 @@
   [  300       1]
   [3_600     1.2])
 
-(def ESI_PAGE_HIT 0.2)
+(def esi-page-hit 0.2)
 
 (table cache-keys
   :key id

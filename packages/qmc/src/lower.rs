@@ -230,7 +230,7 @@ pub struct Catalog {
     pub incidents: Vec<Incident>,
     pub defs: Vec<crate::data::Def>,
     pub type_defs: Vec<crate::data::TypeDef>,
-    pub types: Vec<crate::data::Types>,
+    pub ids: Vec<IdDef>,
     pub gates: Vec<Gate>,
     pub states: Vec<State>,
 }
@@ -367,6 +367,14 @@ impl Component {
     }
 }
 
+/// `(id NAME VALUES)`: an Effect Schema for a generated array of ids.
+#[derive(Debug)]
+pub struct IdDef {
+    pub name: Name,
+    pub values: Name,
+    pub span: Span,
+}
+
 /// `(const NAME value)`: a number the generated code exports and content can name.
 #[derive(Debug)]
 pub struct Const {
@@ -439,7 +447,7 @@ impl Catalog {
         self.incidents.extend(other.incidents);
         self.defs.extend(other.defs);
         self.type_defs.extend(other.type_defs);
-        self.types.extend(other.types);
+        self.ids.extend(other.ids);
         self.gates.extend(other.gates);
         self.states.extend(other.states);
     }
@@ -474,8 +482,8 @@ const FORMS: &[&str] = &[
     "component",
     "def",
     "type",
+    "id",
     "constants",
-    "types",
     "gate",
     "state",
     "table",
@@ -633,6 +641,11 @@ impl Lower {
                     self.catalog.type_defs.push(ty);
                 }
             }
+            "id" => {
+                if let Some(id) = self.id(form) {
+                    self.catalog.ids.push(id);
+                }
+            }
             "constants" => {
                 self.catalog.defs.extend(crate::data::lower_constants(
                     form,
@@ -655,11 +668,6 @@ impl Lower {
                     self.catalog.defs.push(table);
                 }
             }
-            "types" => {
-                if let Some(types) = crate::data::lower_types(form, &mut self.sink) {
-                    self.catalog.types.push(types);
-                }
-            }
             "incident" => {
                 if let Some(incident) = self.incident(form) {
                     self.catalog.incidents.push(incident);
@@ -674,6 +682,24 @@ impl Lower {
                     d = d.help(format!("did you mean `{s}`?"));
                 }
                 self.sink.push(d);
+            }
+        }
+    }
+
+    fn id(&mut self, form: &Sexp) -> Option<IdDef> {
+        let items = &form.list().unwrap()[1..];
+        match items {
+            [name, values] => Some(IdDef {
+                name: self.name(name, "an id name")?,
+                values: self.name(values, "an id value list")?,
+                span: form.span,
+            }),
+            _ => {
+                self.sink.push(
+                    Diagnostic::error("bad-form", form.span, "write (id NAME VALUES)")
+                        .help("VALUES is the name of a generated array of ids"),
+                );
+                None
             }
         }
     }

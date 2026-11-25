@@ -24,38 +24,12 @@ export {
   REFRESH_TIME_MINUTES,
   IAC_TOOL_INFO,
 } from '../generated/regions.ts'
-import {
-  REGIONS,
-  RTT,
-  DEVICES,
-  IAC_TOOLS,
-  SYNC_MODES,
-  DATA_PATTERNS,
-} from '../generated/regions.ts'
+import { RTT } from '../generated/regions.ts'
 
-export type RegionId = (typeof REGIONS)[number]
+import type { RegionId } from '../generated/ids.ts'
 
-export type RegionDef = Readonly<{
-  name: string
-  short: string
-  share: number
-  offset: number
-}>
+export type { DataPatternId, DeviceId, IacToolId, RegionId, SyncModeId } from '../generated/ids.ts'
+export type { IacToolDef, RegionDef } from '../generated/types.ts'
 
 export const rttOf = (from: RegionId, to: RegionId): number =>
   from === to ? 0 : (RTT[`${from}-${to}`] ?? RTT[`${to}-${from}`] ?? 0)
-
-export type DeviceId = (typeof DEVICES)[number]
-export type IacToolId = (typeof IAC_TOOLS)[number]
-
-export type SyncModeId = (typeof SYNC_MODES)[number]
-
-export type DataPatternId = (typeof DATA_PATTERNS)[number]
-
-export type IacToolDef = Readonly<{
-  name: string
-  language: string
-  refreshOnPlan: boolean
-  refresh: string | null
-  repair: boolean
-}>

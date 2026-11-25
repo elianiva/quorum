@@ -28,14 +28,6 @@ export {
   IO_PER_SCAN,
   IO_PER_SPILLED_READ,
 } from '../generated/instances.ts'
-import { FAMILY_IDS } from '../generated/instances.ts'
 
-export type FamilyId = (typeof FAMILY_IDS)[number]
-
-export type FamilyDef = Readonly<{
-  id: FamilyId
-  name: string
-  ramPerVcpu: number
-  price: number
-  blurb: string
-}>
+export type { FamilyId } from '../generated/ids.ts'
+export type { FamilyDef } from '../generated/types.ts'

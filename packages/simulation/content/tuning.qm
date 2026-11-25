@@ -1,17 +1,15 @@
-(types "../catalog/tuning.ts" Tuning)
+(def playtest-pace 2)
 
-(def PLAYTEST_PACE 2)
+(def incident-gap-seconds 400)
 
-(def INCIDENT_GAP_SECONDS 400)
-
-(def LIVE_TUNING
+(def live-tuning
   :type Tuning
-  (:pace               PLAYTEST_PACE
-   :incidentGap        INCIDENT_GAP_SECONDS
+  (:pace               playtest-pace
+   :incidentGap        incident-gap-seconds
    :firstIncidentAfter FIRST_INCIDENT_AFTER_SECONDS
    :calendarPace       CALENDAR_PACE))
 
-(def CHALLENGE_TUNING
+(def challenge-tuning
   :type Tuning
   (:pace               1
    :incidentGap        720

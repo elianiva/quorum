@@ -1,6 +1,6 @@
-(def COPY_PRICE_GROWTH 1.25)
+(def copy-price-growth 1.25)
 
-(def SELL_REFUND 0.5)
+(def sell-refund 0.5)
 
 (constants drawer
   (seconds 60)

@@ -39,7 +39,7 @@
   (rps-per-vcpu 100)
   (queue-depth 100))
 
-(def SCHEDULE_LEAD_MINUTES 120)
+(def schedule-lead-minutes 120)
 
 (def autoscalerGlossary
   :type (array string)

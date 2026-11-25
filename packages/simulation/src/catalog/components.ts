@@ -21,14 +21,8 @@ export {
   type GateValue,
 } from '../generated/components.ts'
 
-export type PricingId = (typeof PRICING_IDS)[number]
-
-export type PricingDef = Readonly<{
-  id: PricingId
-  name: string
-  price: number
-  blurb: string
-}>
+export type { PricingId } from '../generated/ids.ts'
+export type { PricingDef } from '../generated/types.ts'
 
 export {
   SERVERLESS_MS,
@@ -294,4 +288,3 @@ export {
   STICKY_HERD,
   FLAG_PROPAGATION_SECONDS,
 } from '../generated/components.ts'
-import { PRICING_IDS } from '../generated/components.ts'

@@ -47,7 +47,7 @@
   (capacity 1.5)
   (imbalance 0.1))
 
-(def CHECK_INTERVALS
+(def check-intervals
   :type const
   [2 10 30])
 

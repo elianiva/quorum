@@ -1,5 +1,3 @@
-import type { RequestKind } from './kinds.ts'
-import type { ResearchId } from './research.ts'
 export {
   LANGUAGE_IDS,
   BLAST_FACTOR,
@@ -40,80 +38,13 @@ export {
   BEAM_CRASHES_PER_REQUESTS,
   LET_IT_CRASH,
 } from '../generated/runtimes.ts'
-import { LANGUAGE_IDS, RUNTIME_IDS, AXES, FRAMEWORK_IDS } from '../generated/runtimes.ts'
 
-export type LanguageId = (typeof LANGUAGE_IDS)[number]
-
-export type LanguageDef = Readonly<{
-  id: LanguageId
-  name: string
-  velocity: number
-  salary: number
-  hireTime: number
-  buildMinutes: number
-  sessionKB: number
-  armSpeed: number
-  armPortDh: number
-  blast: 'request' | 'whole' | 'task'
-}>
-
-export type RuntimeId = (typeof RUNTIME_IDS)[number]
-
-export type ConcurrencyModel = 'process' | 'threads' | 'loop' | 'green' | 'async'
-
-export type Axis = (typeof AXES)[number]
-export type Axes = Readonly<Record<Axis, 1 | 2 | 3 | 4 | 5>>
-
-export type RuntimeDef = Readonly<{
-  id: RuntimeId
-  axes: Axes
-  glossary: ReadonlyArray<string>
-  language: LanguageId
-  name: string
-  model: ConcurrencyModel
-  speed: number
-  memoryMb: number
-  pool: boolean
-  threads: number
-  connections: number
-  persistent: boolean
-  startupSeconds: number
-  warmFrom: number
-  warmup: number
-  parallel: boolean
-  blocking: 'loop' | 'worker' | null
-  gc: Readonly<{ pauseMs: number; cpu: number }> | null
-  connectionKB: number | null
-  overheadFactor?: number
-  velocity?: number
-  hotReload?: boolean
-  build?: number
-  research: ResearchId | null
-  blurb: string
-}>
-
-export type FrameworkId = (typeof FRAMEWORK_IDS)[number]
-
-export type FrameworkDef = Readonly<{
-  id: FrameworkId
-  axes: Axes
-  glossary: ReadonlyArray<string>
-  name: string
-  language: LanguageId | null
-  overhead: number
-  cpu?: Partial<Record<RequestKind, number>>
-  asgi?: boolean
-  velocity: number
-  memoryMb: number
-  orm: boolean
-  value: Partial<Record<RequestKind, number>>
-  startupSeconds: number
-  workerOverhead?: number
-  coordination?: number
-  debt?: number
-  nativeBuild?: number
-  cacheable?: number
-  internalTools?: number
-  workerHours?: number
-  blurb: string
-}>
+export type { FrameworkId, LanguageId, RuntimeId } from '../generated/ids.ts'
+export type {
+  Axis,
+  Axes,
+  ConcurrencyModel,
+  FrameworkDef,
+  LanguageDef,
+  RuntimeDef,
+} from '../generated/types.ts'

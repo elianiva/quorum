@@ -1,3 +1,7 @@
+(id IncidentId INCIDENT_IDS)
+
+(id FallacyId FALLACY_IDS)
+
 ; Incidents: what breaks, when it can start, and what fixes it.
 ;
 ; Declaration order is the order of INCIDENT_IDS. The Director picks an incident by walking that
@@ -537,37 +541,37 @@
   (warning 10)
   (down 20))
 
-(def LATENCY_REGRESSION_MS 150)
+(def latency-regression-ms 150)
 
-(def DEADLINE_SURGE 3)
+(def deadline-surge 3)
 
 (constants supply
   (chain-seconds 90)
   (chain-churn 0.1))
 
-(def ACCIDENTAL_DELETE_SECONDS 120)
+(def accidental-delete-seconds 120)
 
-(def OPERATOR_TYPO_SECONDS 120)
+(def operator-typo-seconds 120)
 
-(def LEAP_SECOND_SECONDS 60)
+(def leap-second-seconds 60)
 
-(def SPLIT_BRAIN_SECONDS 90)
+(def split-brain-seconds 90)
 
-(def TABLE_BLOAT_SECONDS 120)
+(def table-bloat-seconds 120)
 
-(def BLOAT_CPU 2)
+(def bloat-cpu 2)
 
-(def SWITCH_PROVIDER_PRICE 5_000)
+(def switch-provider-price 5_000)
 
-(def DELETE_CHURN 0.1)
+(def delete-churn 0.1)
 
 (constants clock
   (skew-ms 1_000)
   (skew-loss 0.1))
 
-(def CASCADE_FROM_STAGE 3)
+(def cascade-from-stage 3)
 
-(def REPORT_SURGE 10)
+(def report-surge 10)
 
 (constants storm
   (slowdown 0.3)
@@ -577,33 +581,33 @@
   (storm-heap 0.2)
   (storm 5))
 
-(def LAG_SURGE 10)
+(def lag-surge 10)
 
-(def MTU_LOSS 0.5)
+(def mtu-loss 0.5)
 
-(def SLOW_CHARGE_MS 1_500)
+(def slow-charge-ms 1_500)
 
-(def REGEX_CAPACITY 0.1)
+(def regex-capacity 0.1)
 
-(def DDOS_MAGNITUDE 50)
+(def ddos-magnitude 50)
 
-(def STUFFING_MAGNITUDE 19)
+(def stuffing-magnitude 19)
 
-(def CREDENTIAL_PROTECTION_BLOCK 0.2)
+(def credential-protection-block 0.2)
 
-(def ESCALATION 1.5)
+(def escalation 1.5)
 
-(def MIN_WEAKNESS 0.2)
+(def min-weakness 0.2)
 
-(def UNINDEXED_MS_PER_ROW 0.0001)
+(def unindexed-ms-per-row 0.0001)
 
-(def ROWS_PER_USER 100)
+(def rows-per-user 100)
 
-(def ON_CALL_ACK 5)
+(def on-call-ack 5)
 
-(def SRE_MTTR 0.4)
+(def sre-mttr 0.4)
 
-(def SLA_CREDIT 0.1)
+(def sla-credit 0.1)
 
 (constants leak
   (rate (/ 1 40))
@@ -629,9 +633,9 @@
      :budget     [6 10 14.4]))
   (fatigue 5))
 
-(def ANOMALY_DETECTION_HOLD 0.5)
+(def anomaly-detection-hold 0.5)
 
-(def ERROR_BUDGET_FACTORS
+(def error-budget-factors
   :type const
   (:ahead  1.1
    :normal 1

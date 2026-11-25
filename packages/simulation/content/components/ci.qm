@@ -1,3 +1,5 @@
+(id DeployStrategyId deploy-strategy-ids)
+
 ; Ci: the Component and the tables it reads.
 (component ci
   :code    ci
@@ -17,9 +19,7 @@
     :default rolling
     :schema  DeployStrategy))
 
-(types "../components/ci.ts" DeployStrategyId DeployStrategyDef)
-
-(def DEPLOY_STRATEGY_IDS
+(def deploy-strategy-ids
   :type const
   ["recreate" "rolling" "blue-green" "canary"])
 
@@ -33,7 +33,7 @@
   ["blue-green"  "Blue-green"              7    0.1     2]
   ["canary"      "Canary"                 10   0.05   1.5])
 
-(def STRATEGY_RESEARCH
+(def strategy-research
   :type (partial (record DeployStrategyId ResearchId))
   (:blue-green "blue-green"
    :canary     "canary"))

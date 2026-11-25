@@ -1,10 +1,14 @@
-(types "../catalog/runtimes.ts" LanguageId LanguageDef RuntimeId RuntimeDef FrameworkId FrameworkDef)
+(id LanguageId language-ids)
 
-(def LANGUAGE_IDS
+(id RuntimeId RUNTIME_IDS)
+
+(id FrameworkId FRAMEWORK_IDS)
+
+(def language-ids
   :type const
   ["php" "ruby" "node" "python" "go" "java" "csharp" "elixir" "rust" "zig" "haskell"])
 
-(def BLAST_FACTOR
+(def blast-factor
   :type const
   (:request 1
    :whole   1.5
@@ -27,7 +31,7 @@
   ["zig"      "Zig"           0.7    1.25         3             6         65         1          8  "whole"]
   ["haskell"  "Haskell"      1.15     1.4       2.5             8        180      0.93         32  "request"])
 
-(def AXES
+(def axes
   :type const
   ["throughput" "tail" "memory" "velocity" "resilience" "operability"])
 
@@ -69,7 +73,7 @@
   (max-workers 150)
   (spare 5))
 
-(def OPCACHE_SPEED 2.5)
+(def opcache-speed 2.5)
 
 (constants yjit
   (speed 1.3)
@@ -83,9 +87,9 @@
   (jit-speed 1.05)
   (jit-heavy 1.6))
 
-(def NIF_SPEED 3)
+(def nif-speed 3)
 
-(def CPU_HEAVY_KINDS
+(def cpu-heavy-kinds
   :type (array RequestKind)
   ["upload" "report" "job"])
 
@@ -93,7 +97,7 @@
   (threads 4)
   (thread-mb 10))
 
-(def RECYCLE_CYCLE_SECONDS 1_800)
+(def recycle-cycle-seconds 1_800)
 
 (constants libuv
   (threads 4)
@@ -103,13 +107,13 @@
   (blocking-threads 8)
   (blocking-thread-mb 2))
 
-(def ML_AI_BONUS 1.2)
+(def ml-ai-bonus 1.2)
 
-(def ELIXIR_HOT_UPGRADE_DEV_HOURS 4)
+(def elixir-hot-upgrade-dev-hours 4)
 
-(def SIM_SECONDS_PER_DEV_HOUR 0.3125)
+(def sim-seconds-per-dev-hour 0.3125)
 
-(def DEFAULT_FPM_WORKERS 5)
+(def default-fpm-workers 5)
 
 (table frameworks
   :key      id
@@ -161,7 +165,7 @@
   [ 100       1    1]
   [ 200     1.5  0.5])
 
-(def ORM_READS 3)
+(def orm-reads 3)
 
 (table pm-modes
   :key id
@@ -170,6 +174,6 @@
   [dynamic   "Dynamic"    2             0.02       20]
   [ondemand  "On demand"  0              0.1       50])
 
-(def BEAM_CRASHES_PER_REQUESTS 100)
+(def beam-crashes-per-requests 100)
 
-(def LET_IT_CRASH 1_000)
+(def let-it-crash 1_000)

@@ -13,7 +13,7 @@
   :accepts (q-scan change)
   :blurb   "Answers report scans in columns. 1.5 s each, no limit, paid per scan.")
 
-(def SCAN_PRICE 0.02)
+(def scan-price 0.02)
 
 (def warehouseGlossary
   :type (array string)

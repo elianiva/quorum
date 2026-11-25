@@ -11,27 +11,11 @@ export {
   PLAYBOOK_SLOTS,
   DILATION_SPEEDS,
 } from '../generated/legacy.ts'
-import { EXIT_IDS, PERK_IDS } from '../generated/legacy.ts'
+import type { PerkId } from '../generated/ids.ts'
+import type { PerkDef } from '../generated/types.ts'
 
-export type ExitId = (typeof EXIT_IDS)[number]
-
-export type ExitDef = Readonly<{
-  id: ExitId
-  name: string
-  stage: number
-  cap: number
-  multiplier: number
-  continues: boolean
-}>
-
-export type PerkId = (typeof PERK_IDS)[number]
-
-export type PerkDef = Readonly<{
-  id: PerkId
-  name: string
-  costs: ReadonlyArray<number>
-  effect: string
-}>
+export type { ExitId, PerkId } from '../generated/ids.ts'
+export type { ExitDef, PerkDef } from '../generated/types.ts'
 
 const doubling = (first: number, levels: number): ReadonlyArray<number> => {
   const costs: Array<number> = []

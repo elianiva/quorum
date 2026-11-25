@@ -83,16 +83,6 @@ export {
   PAYING_SHARE,
   PLAN_PER_DAY,
 } from '../generated/team.ts'
-import { POLICY_IDS } from '../generated/team.ts'
 
-export type PolicyId = (typeof POLICY_IDS)[number]
-
-export type PolicyDef = Readonly<{
-  id: PolicyId
-  label: string
-  velocity: number
-  debt: number
-  badDeploy: number
-  deploysPerDay: number
-  paydown: number
-}>
+export type { PolicyId } from '../generated/ids.ts'
+export type { PolicyDef } from '../generated/types.ts'

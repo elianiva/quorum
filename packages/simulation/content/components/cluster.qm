@@ -21,11 +21,11 @@
   (share 0.01)
   (ms 10))
 
-(def UPGRADE_CRASHES 0.3)
+(def upgrade-crashes 0.3)
 
-(def SUPPORTED_QUARTERS 1)
+(def supported-quarters 1)
 
-(def PLATFORM_TAX 0.5)
+(def platform-tax 0.5)
 
 (def clusterGlossary
   :type (array string)

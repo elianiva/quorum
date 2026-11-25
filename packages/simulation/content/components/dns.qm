@@ -14,7 +14,7 @@
   :sends   (requests)
   :blurb   "Round robin across up to 8 hosts. No health checks: a dead host keeps its share.")
 
-(def DNS_TTLS
+(def dns-ttls
   :type const
   [30 300 3_600])
 

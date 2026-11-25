@@ -1,4 +1,6 @@
-(def ACHIEVEMENT_IDS
+(id AchievementId achievement-ids)
+
+(def achievement-ids
   :type const
   ["hello-world" "works-on-my-machine" "split-brain" "averages-lie" "shared-nothing" "blocked"
    "off-by-one-region" "littles-law" "metastable" "big-rewrite" "strangler" "quorum" "eventually"
@@ -7,8 +9,6 @@
    "default-alive" "unicorn" "decacorn" "everyone-online" "warm-start" "rule-of-40" "beat-and-raise"
    "serial-founder" "two-hard-things" "conways-law" "fallacies" "thundering-herd" "runbook" "finops"
    "spot-the-difference" "let-it-crash"])
-
-(types "../catalog/achievements.ts" AchievementId AchievementDef)
 
 (table achievements
   :key      id

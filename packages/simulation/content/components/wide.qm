@@ -23,7 +23,7 @@
   (field lost number
     :default 0))
 
-(def QUORUM_N
+(def quorum-n
   :type const
   [1 2 3 4 5])
 

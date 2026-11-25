@@ -210,22 +210,22 @@
   :question       "Can you beat your guidance every quarter?"
   :arrivals       "Quarters, guidance and the market multiple. The game is endless.")
 
-(def RPS_PER_USER 0.02)
+(def rps-per-user 0.02)
 
-(def DIURNAL_AMPLITUDE 0.45)
+(def diurnal-amplitude 0.45)
 
-(def WEEKEND_FACTOR 1)
+(def weekend-factor 1)
 
-(def STEP_SECONDS 0.1)
+(def step-seconds 0.1)
 
-(def CHURN 0.004)
+(def churn 0.004)
 
-(def FICKLE_SHARE 0.5)
+(def fickle-share 0.5)
 
-(def STEADY_CHURN 0.2)
+(def steady-churn 0.2)
 
-(def FUNNEL_GROWTH 1.1)
+(def funnel-growth 1.1)
 
-(def DECLINED_GROWTH 0.7)
+(def declined-growth 0.7)
 
-(def APDEX_WINDOW 60)
+(def apdex-window 60)

@@ -1,10 +1,18 @@
-(types "../catalog/regions.ts" RegionId RegionDef DeviceId IacToolId IacToolDef)
+(id RegionId REGIONS)
+
+(id DeviceId devices)
+
+(id IacToolId IAC_TOOLS)
+
+(id SyncModeId SYNC_MODES)
+
+(id DataPatternId DATA_PATTERNS)
 
 (constants regions
   (regions :type const ["na" "eu" "apac" "sa"])
   (from-stage 5))
 
-(def HOME_REGION
+(def home-region
   :type RegionId
   "na")
 
@@ -17,7 +25,7 @@
   [apac  "Asia-Pacific"   "APAC"    0.2     840]
   [sa    "South America"  "SA"      0.1     120])
 
-(def RTT
+(def rtt
   :type (readonly (record string number))
   (:na-eu   75
    :na-apac 200
@@ -26,17 +34,17 @@
    :eu-sa   190
    :apac-sa 300))
 
-(def ANYCAST_MS 20)
+(def anycast-ms 20)
 
-(def HTTP3_CUT 0.2)
+(def http3-cut 0.2)
 
-(def HTTP2_CUT 0.15)
+(def http2-cut 0.15)
 
-(def ABROAD_SEED 0.05)
+(def abroad-seed 0.05)
 
-(def BORDER_MIXING 0.1)
+(def border-mixing 0.1)
 
-(def DEVICES
+(def devices
   :type const
   ["desktop" "mobile" "tablet"])
 
@@ -48,15 +56,15 @@
   [mobile   "Mobile"    0.45     60]
   [tablet   "Tablet"     0.1     30])
 
-(def MIRROR_TIME_MINUTES 30)
+(def mirror-time-minutes 30)
 
-(def STAGE_WAIT_MINUTES 60)
+(def stage-wait-minutes 60)
 
 (constants iac
   (switch-minutes CALENDAR_DAY)
   (tools :type const ["terraform" "pulumi" "alchemy"]))
 
-(def REFRESH_TIME_MINUTES 0.5)
+(def refresh-time-minutes 0.5)
 
 (table iac-tool-info
   :key  id

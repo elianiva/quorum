@@ -33,7 +33,7 @@ export {
 } from '../generated/research.ts'
 import { EVERY_KIND, ERA_RECIPES } from '../generated/research.ts'
 
-export type ResearchTeamKind = 'product' | 'platform' | 'sre' | 'data' | 'security'
+export type { ResearchTeamKind } from '../generated/types.ts'
 export const RESEARCH: Record<ResearchId, ResearchDef> = Object.fromEntries(
   RESEARCH_LIST.map((entry) => [entry.id, entry]),
 ) as Record<ResearchId, ResearchDef>

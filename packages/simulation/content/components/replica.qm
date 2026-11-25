@@ -26,7 +26,7 @@
   (sync-minutes-per-gb 0.5)
   (box-price 0.7))
 
-(def PROMOTE_DATA_LOSS 0.02)
+(def promote-data-loss 0.02)
 
 (def replicaGlossary
   :type (array string)

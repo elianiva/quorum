@@ -13,7 +13,8 @@
 //! `(def NAME :type "T" value)` annotates the declaration, `:type const` writes `as const`,
 //! `:satisfies "T"` writes `satisfies T`, and `:doc "…"` writes a doc comment. A def lands in the
 //! generated file named after its content file: `content/team.qm` writes `generated/team.ts`.
-//! `(types "../catalog/team.ts" Hire Role)` names the TypeScript types the annotations use.
+//! Types are declared in content with `(type NAME expression)`; qmc does not import TypeScript
+//! types from the catalog.
 
 use crate::diag::{Diagnostic, Sink};
 use crate::lower::Name;
@@ -43,13 +44,6 @@ pub struct Def {
     pub doc: Option<String>,
     pub value: Datum,
     pub span: Span,
-}
-
-/// `(types "../catalog/team.ts" Hire Role)`.
-#[derive(Debug)]
-pub struct Types {
-    pub from: String,
-    pub names: Vec<Name>,
 }
 
 #[derive(Clone, Debug)]
@@ -780,31 +774,6 @@ fn era_refs<'a>(d: &'a Datum, out: &mut Vec<&'a Name>) {
     }
 }
 
-/// Lowers `(types "path" Name …)`.
-pub fn lower_types(form: &Sexp, sink: &mut Sink) -> Option<Types> {
-    let items = &form.list().unwrap()[1..];
-    let Some(Kind::Str(from)) = items.first().map(|i| &i.kind) else {
-        err(
-            sink,
-            form.span,
-            "write (types \"../catalog/file.ts\" Type …)",
-        );
-        return None;
-    };
-    let names: Vec<Name> = items[1..].iter().filter_map(name_of).collect();
-    if names.len() + 1 != items.len() || names.is_empty() {
-        err(
-            sink,
-            form.span,
-            "(types …) names one or more types after the path",
-        );
-    }
-    Some(Types {
-        from: from.clone(),
-        names,
-    })
-}
-
 pub fn datum(sexp: &Sexp, sink: &mut Sink) -> Option<Datum> {
     let kind = match &sexp.kind {
         Kind::Num(n) => {
@@ -1045,7 +1014,7 @@ pub enum Origin {
     Local,
     /// Another generated module, such as `./kinds.ts`.
     Generated(String),
-    /// A TypeScript module named by `(import …)` or `(types …)`.
+    /// A TypeScript module named by `(import …)`.
     Path(String),
 }
 
@@ -1079,16 +1048,17 @@ impl<'a> Scope<'a> {
                 values.insert(n.text.as_str(), (import.from.as_str(), false));
             }
         }
-        for t in &catalog.types {
-            for n in &t.names {
-                types.insert(n.text.as_str(), (t.from.as_str(), false));
-            }
-        }
         for def in &catalog.defs {
             values.insert(def.export.as_str(), (def.module.as_str(), true));
         }
         for ty in &catalog.type_defs {
             types.insert(ty.name.text.as_str(), ("types", true));
+        }
+        for id in &catalog.ids {
+            values.insert(id.name.text.as_str(), ("ids", true));
+            // A generated module may already export the same id as a type, such as `ComponentId`.
+            // Keep that local type so its own module does not import it from `ids.ts`.
+            types.entry(id.name.text.as_str()).or_insert(("ids", true));
         }
         Scope { values, types }
     }
@@ -1122,6 +1092,11 @@ pub fn rewrite(catalog: &mut crate::lower::Catalog) {
     }
     for def in &mut catalog.defs {
         rewrite_datum(&mut def.value, &names);
+    }
+    for id in &mut catalog.ids {
+        if let Some(export) = names.get(&id.values.text) {
+            id.values.text = export.clone();
+        }
     }
     for component in &mut catalog.components {
         rewrite_value(&mut component.name.value, &names);
@@ -1242,7 +1217,7 @@ pub fn check(catalog: &crate::lower::Catalog) -> Sink {
                 };
                 let mut d = crate::check::unknown("unknown-type", &name, "type", &known_types);
                 if d.help.is_none() {
-                    d = d.help("name it in (types \"../catalog/….ts\" …)");
+                    d = d.help("declare it in content with (type NAME expression)");
                 }
                 sink.push(d);
             }
@@ -1299,7 +1274,7 @@ pub fn check(catalog: &crate::lower::Catalog) -> Sink {
                     };
                     let mut d = crate::check::unknown("unknown-type", &name, "type", &known_types);
                     if d.help.is_none() {
-                        d = d.help("name it in (types \"../catalog/….ts\" …)");
+                        d = d.help("declare it in content with (type NAME expression)");
                     }
                     sink.push(d);
                 }
@@ -1765,7 +1740,7 @@ mod tests {
     fn defs_emit_typescript_that_computes_what_was_written() {
         let c = compile(&[(
             "content/team.qm",
-            r#"(types "../catalog/team.ts" Role)
+            r#"(type Role "string")
                (def BASE 0.1)
                (def ZONES :type const ["a" "b"])
                (def ROLES :type "Record<string, Role>" :doc "Who works here."
@@ -1775,7 +1750,7 @@ mod tests {
         assert_eq!(errors(&c), Vec::<&str>::new());
         let ts = output(&c, "team.ts");
         assert!(
-            ts.contains("import type { Role } from '../catalog/team.ts'\n"),
+            ts.contains("import type { Role } from './types.ts'\n"),
             "{ts}"
         );
         assert!(
@@ -1807,15 +1782,11 @@ mod tests {
         ]);
         assert_eq!(errors(&c), Vec::<&str>::new());
         let ts = output(&c, "eras.ts");
-        assert_eq!(ts.matches("import type { RequestKind }").count(), 1, "{ts}");
         assert!(
-            ts.contains("import type { RequestKind } from '../catalog/kinds.ts'\n"),
+            ts.contains("type RequestKind") && ts.contains("from './kinds.ts'"),
             "{ts}"
         );
-        assert!(
-            ts.contains("import { REQUEST_KINDS } from './kinds.ts'\n"),
-            "{ts}"
-        );
+        assert!(ts.contains("REQUEST_KINDS"), "{ts}");
         assert!(
             ts.contains("export const FIRST = REQUEST_KINDS[0]\n"),
             "{ts}"
@@ -1980,6 +1951,26 @@ mod tests {
         assert!(
             types.contains("export type Counts = Record<string, number>"),
             "{types}"
+        );
+    }
+
+    #[test]
+    fn an_id_generates_an_effect_schema() {
+        let c = compile(&[(
+            "content/t.qm",
+            "(def IDS :type const [\"a\" \"b\"])\n(id TestId IDS)\n",
+        )]);
+        assert_eq!(errors(&c), Vec::<&str>::new());
+        let ids = output(&c, "ids.ts");
+        assert!(ids.contains("import { Schema } from 'effect'"), "{ids}");
+        assert!(ids.contains("import { IDS } from './t.ts'"), "{ids}");
+        assert!(
+            ids.contains("export const TestId = Schema.Literals(IDS)"),
+            "{ids}"
+        );
+        assert!(
+            ids.contains("export type TestId = typeof TestId.Type"),
+            "{ids}"
         );
     }
 

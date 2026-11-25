@@ -29,7 +29,7 @@
   [    3   0.92           0.02  2.5]
   [    4   0.98           0.06    4])
 
-(def UNDER_ATTACK
+(def under-attack
   :type const
   (:block         0.99
    :falsePositive 0.01

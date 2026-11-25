@@ -1,24 +1,10 @@
 import { Effect, Schema } from 'effect'
 import { Life } from './life.ts'
 import {
-  MUTATOR_IDS,
-  VENTURE_IDS,
-  COMPONENT_IDS,
   DATA_PATTERNS,
-  FAMILY_IDS,
-  FEATURE_IDS,
-  FIXES,
-  FRAMEWORK_IDS,
-  INCIDENT_IDS,
   INSIGHT_POOLS,
-  LANGUAGE_IDS,
-  LEVER_KINDS,
-  POLICY_IDS,
   PRICING_IDS,
-  REQUEST_KINDS,
   REGIONS,
-  RESEARCH_IDS,
-  RUNTIME_IDS,
   START_KLOC,
   IAC_TOOLS,
   SYNC_MODES,
@@ -42,21 +28,38 @@ import { Incident, IncidentState } from './incident-machine.ts'
 import { MirrorSync, NodeSpec, Observed } from './mirror-machine.ts'
 import { FeaturePhase } from './feature-machine.ts'
 
-export const ComponentId = Schema.Literals(COMPONENT_IDS)
-export const FamilyId = Schema.Literals(FAMILY_IDS)
-export const RuntimeId = Schema.Literals(RUNTIME_IDS)
-export const FrameworkId = Schema.Literals(FRAMEWORK_IDS)
-export const ResearchId = Schema.Literals(RESEARCH_IDS)
-export const IncidentId = Schema.Literals(INCIDENT_IDS)
+import {
+  ComponentId,
+  FamilyId,
+  FeatureId,
+  FixId,
+  FrameworkId,
+  IncidentId,
+  LanguageId,
+  MutatorId,
+  PolicyId,
+  RequestKindId,
+  ResearchId,
+  RuntimeId,
+  VentureId,
+} from './generated/ids.ts'
 
-export const RequestKindId = Schema.Literals(REQUEST_KINDS)
-export const LeverKindId = Schema.Literals(LEVER_KINDS)
-export const LanguageId = Schema.Literals(LANGUAGE_IDS)
-export const PolicyId = Schema.Literals(POLICY_IDS)
-export const FeatureId = Schema.Literals(FEATURE_IDS)
-export const FixId = Schema.Literals(FIXES)
-export const VentureId = Schema.Literals(VENTURE_IDS)
-export const MutatorId = Schema.Literals(MUTATOR_IDS)
+export {
+  ComponentId,
+  FamilyId,
+  FeatureId,
+  FixId,
+  FrameworkId,
+  IncidentId,
+  LanguageId,
+  LeverKindId,
+  MutatorId,
+  PolicyId,
+  RequestKindId,
+  ResearchId,
+  RuntimeId,
+  VentureId,
+} from './generated/ids.ts'
 
 export const DbEngine = Schema.Literals(['postgres', 'mysql'])
 export type DbEngine = typeof DbEngine.Type

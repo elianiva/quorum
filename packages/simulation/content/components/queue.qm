@@ -23,13 +23,13 @@
   (field max-length number
     :default 0))
 
-(def QUEUE_RATE 20_000)
+(def queue-rate 20_000)
 
-(def BACKLOG_MS 0.01)
+(def backlog-ms 0.01)
 
-(def DRAIN_SECONDS 10)
+(def drain-seconds 10)
 
-(def FOREVER_ATTEMPTS 25)
+(def forever-attempts 25)
 
 (constants queue
   (lengths :type const [0 1_000 10_000 100_000])

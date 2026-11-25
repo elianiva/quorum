@@ -31,7 +31,7 @@
     :default 1
     :schema  SearchRefresh))
 
-(def SEARCH_QPS 400)
+(def search-qps 400)
 
 (table search-refresh
   [seconds  capacity  stale]

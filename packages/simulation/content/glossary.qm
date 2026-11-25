@@ -1,6 +1,4 @@
-(types "../catalog/glossary.ts" GlossaryEntry)
-
-(def GLOSSARY_CATEGORIES
+(def glossary-categories
   :type const
   ["performance" "reliability" "observability" "data" "runtimes" "network" "security" "delivery"
    "team" "business"])

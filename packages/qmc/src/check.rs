@@ -28,6 +28,7 @@ const PASSES: &[Pass] = &[
     components,
     crate::data::check,
     def_cycles,
+    ids,
     crate::data::check_eras,
     def_modules,
     gates,
@@ -105,6 +106,45 @@ fn def_cycles(catalog: &Catalog) -> Sink {
             }
         }
         sink.push(diagnostic);
+    }
+    sink
+}
+
+/// An `(id NAME VALUES)` needs a generated array of string ids. The array may be a def or one of
+/// the typed exports, such as `COMPONENT_IDS` or `RESEARCH_IDS`.
+fn ids(catalog: &Catalog) -> Sink {
+    let mut sink = Sink::default();
+    let scope = crate::data::Scope::new(catalog);
+    let defs: BTreeMap<&str, &crate::data::Def> = catalog
+        .defs
+        .iter()
+        .map(|def| (def.export.as_str(), def))
+        .collect();
+    let known: Vec<&str> = scope.values.keys().copied().collect();
+    unique(catalog.ids.iter().map(|id| &id.name), "the id", &mut sink);
+    for id in &catalog.ids {
+        if scope.value(&id.values.text, "ids").is_none() {
+            sink.push(unknown("unknown-name", &id.values, "value", &known));
+            continue;
+        }
+        let Some(def) = defs.get(id.values.text.as_str()) else {
+            continue;
+        };
+        let valid = matches!(
+            &def.value.kind,
+            crate::data::D::Array(items)
+                if items.iter().all(|(spread, item)| !spread && matches!(item.kind, crate::data::D::Str(_)))
+        );
+        if !valid {
+            sink.push(
+                Diagnostic::error(
+                    "id-values",
+                    id.values.span,
+                    format!("`{}` needs an array of strings", id.values.text),
+                )
+                .label("not an id list"),
+            );
+        }
     }
     sink
 }

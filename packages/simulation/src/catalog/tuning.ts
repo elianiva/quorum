@@ -7,9 +7,4 @@ export {
   CHALLENGE_TUNING,
 } from '../generated/tuning.ts'
 
-export type Tuning = Readonly<{
-  pace: number
-  incidentGap: number
-  firstIncidentAfter: number
-  calendarPace: number
-}>
+export type { Tuning } from '../generated/types.ts'

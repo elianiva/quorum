@@ -1,7 +1,7 @@
 ; TypeScript types shared by the content.
 ; Each name expands into the annotation that uses it.
 (type LeverCaps
-  "Readonly<\n  Partial<Record<VentureId, Readonly<{ kind: LeverKind; step: number }>>>\n>")
+  "Readonly<\n  Partial<Record<VentureId, Readonly<{ kind: LeverKindId; step: number }>>>\n>")
 
 (type QueryCosts
   "Readonly<{\n  'q-read': number\n  'q-write': number\n  'q-search': number\n  'blob-put': number\n  'q-tx': number\n  'blob-get': number\n  'q-scan': number\n}>")
@@ -10,3 +10,88 @@
 
 (type DeviceInfoById
   "Record<\n  DeviceId,\n  Readonly<{ name: string; share: number; rttMs: number }>\n>")
+
+(type AchievementDef "Readonly<{ id: AchievementId; name: string; condition: string }>")
+
+(type PricingDef "Readonly<{ id: PricingId; name: string; price: number; blurb: string }>")
+
+(type DeployStrategyDef
+  "Readonly<{ id: DeployStrategyId; name: string; deployMinutes: number; blast: number; burn: number }>")
+
+(type RegionDef "Readonly<{ name: string; short: string; share: number; offset: number }>")
+
+(type IacToolDef
+  "Readonly<{ name: string; language: string; refreshOnPlan: boolean; refresh: string | null; repair: boolean }>")
+
+(type ExitDef
+  "Readonly<{ id: ExitId; name: string; stage: number; cap: number; multiplier: number; continues: boolean }>")
+
+(type PerkDef
+  "Readonly<{ id: PerkId; name: string; costs: ReadonlyArray<number>; effect: string }>")
+
+(type PolicyDef
+  "Readonly<{ id: PolicyId; label: string; velocity: number; debt: number; badDeploy: number; deploysPerDay: number; paydown: number }>")
+
+(type FamilyDef
+  "Readonly<{ id: FamilyId; name: string; ramPerVcpu: number; price: number; blurb: string }>")
+
+(type LanguageDef
+  "Readonly<{ id: LanguageId; name: string; velocity: number; salary: number; hireTime: number; buildMinutes: number; sessionKB: number; armSpeed: number; armPortDh: number; blast: 'request' | 'whole' | 'task' }>")
+
+(type ConcurrencyModel "'process' | 'threads' | 'loop' | 'green' | 'async'")
+
+(type Axis "'throughput' | 'tail' | 'memory' | 'velocity' | 'resilience' | 'operability'")
+
+(type Axes "Readonly<Record<Axis, 1 | 2 | 3 | 4 | 5>>")
+
+(type RuntimeDef
+  "Readonly<{ id: RuntimeId; axes: Axes; glossary: ReadonlyArray<string>; language: LanguageId; name: string; model: ConcurrencyModel; speed: number; memoryMb: number; pool: boolean; threads: number; connections: number; persistent: boolean; startupSeconds: number; warmFrom: number; warmup: number; parallel: boolean; blocking: 'loop' | 'worker' | null; gc: Readonly<{ pauseMs: number; cpu: number }> | null; connectionKB: number | null; overheadFactor?: number; velocity?: number; hotReload?: boolean; build?: number; research: ResearchId | null; blurb: string }>")
+
+(type FrameworkDef
+  "Readonly<{ id: FrameworkId; axes: Axes; glossary: ReadonlyArray<string>; name: string; language: LanguageId | null; overhead: number; cpu?: Partial<Record<RequestKind, number>>; asgi?: boolean; velocity: number; memoryMb: number; orm: boolean; value: Partial<Record<RequestKind, number>>; startupSeconds: number; workerOverhead?: number; coordination?: number; debt?: number; nativeBuild?: number; cacheable?: number; internalTools?: number; workerHours?: number; blurb: string }>")
+
+(type VentureStart
+  "Readonly<{ cash: number; equity: number; stage: number; runtime: RuntimeId | null; researched: ReadonlyArray<ResearchId> }>")
+
+(type SaleSchedule
+  "Readonly<{ everyDays: number; startMinute: number; minutes: number; kind: RequestKind; lift: number }>")
+
+(type VentureConstraint
+  "Readonly<{ noNaiveRetries: boolean; residency: number | null; deadline: number | null; procurement: boolean; languages: ReadonlyArray<LanguageId> | null; sla: number | null; gpus: number; hubsPerRegion: number | null; egress: number; spikeWeight: number; staleFine: number; sale: SaleSchedule | null }>")
+
+(type VentureShares "Readonly<Partial<Record<RequestKind, number>>>")
+
+(type VentureDef
+  "Readonly<{ id: VentureId; name: string; peak: number; amplitude: number; weekend: number; shares: VentureShares | null; value: number; market: number; bootstrapped: boolean; start: VentureStart; constraint: VentureConstraint; signature: IncidentId | null; legacy: number; summary: string }>")
+
+(type MutatorDef "Readonly<{ id: MutatorId; name: string; rule: string; legacy: number }>")
+
+(type FeatureDef
+  "Readonly<{ id: FeatureId; name: string; era: number; dh: number; requires: ReadonlyArray<FeatureId>; research: ResearchId | null; market: number; growth: number; churn: number; load: Partial<Record<RequestKind, number>>; value: Partial<Record<RequestKind, number>>; payload: Partial<Record<RequestKind, number>>; queries: Partial<Record<BackendKind, number>>; unlocks: Readonly<{ kind: RequestKind; share: number; gated: boolean }> | null; shapes: number; history: number; subscription: boolean; effect: string; hidden: string | null }>")
+
+(type TaskDef
+  "Readonly<{ id: TaskId; name: string; dh: number; research: ResearchId | null; effect: string; internal: boolean }>")
+
+(type ResearchTeamKind "'product' | 'platform' | 'sre' | 'data' | 'security'")
+
+(type LeverKind "LeverKindId")
+
+(type Kind "RequestKind | BackendKind")
+
+(type KindInfo "Readonly<{ label: string; value: number; color: number }>")
+
+(type InsightPool "RequestKind | 'failure'")
+
+(type RequestProfile
+  "Readonly<{ cpu: number; native: boolean; apdex: number; calls: Readonly<Partial<Record<Exclude<BackendKind, 'auth' | 'task'>, number>>>; asyncCalls: Readonly<Partial<Record<'q-read' | 'q-write' | 'blob-put' | 'notify' | 'callout', number>>>; orm: boolean; payloadKB: number; asyncKB: number; stream: boolean; compressible: boolean; inKB: number; offload: number; completion?: number; scored: boolean }>")
+
+(type GlossaryCategory
+  "'performance' | 'reliability' | 'observability' | 'data' | 'runtimes' | 'network' | 'security' | 'delivery' | 'team' | 'business'")
+
+(type GlossaryEntry
+  "Readonly<{ id: string; term: string; category: GlossaryCategory; definition: string; inGame: string; design?: ReadonlyArray<Readonly<{ label: string; url: string }>>; related: ReadonlyArray<string>; links: ReadonlyArray<Readonly<{ label: string; url: string }>> }>")
+
+(type Tuning
+  "Readonly<{ pace: number; incidentGap: number; firstIncidentAfter: number; calendarPace: number }>")
+
+(type CveDef "Readonly<{ id: string; score: number; affects: ReadonlyArray<ComponentId> }>")

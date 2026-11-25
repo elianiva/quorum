@@ -29,7 +29,7 @@
   (windows :type const [900 3_600 21_600])
   (storage :type const [1 2 4]))
 
-(def ANALYTICS_CAPACITY 4)
+(def analytics-capacity 4)
 
 (def analyticsGlossary
   :type (array string)

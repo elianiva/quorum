@@ -327,8 +327,8 @@ fn gates(w: &mut String, catalog: &Catalog) {
 pub fn components(catalog: &Catalog) -> String {
     let mut o = String::from(HEADER);
     let w = &mut o;
-    let _ = writeln!(w, "import type {{ Kind }} from '../catalog/kinds.ts'");
-    let _ = writeln!(w, "import type {{ ResearchId }} from './research.ts'");
+    let _ = writeln!(w, "import type {{ Kind }} from './types.ts'");
+    let _ = writeln!(w, "import type {{ ResearchId }} from './ids.ts'");
     if !catalog.gates.is_empty() {
         let _ = writeln!(w, "import type {{ GameNode }} from '../state.ts'");
     }
@@ -521,6 +521,45 @@ pub fn constants(catalog: &Catalog) -> String {
     o
 }
 
+/// The Effect Schemas for the catalog's id lists. They live in one generated module so a content
+/// `(id NAME VALUES)` is the only place that decides an id's type.
+pub fn ids(catalog: &Catalog) -> String {
+    let scope = crate::data::Scope::new(catalog);
+    let mut needs: Vec<(crate::data::Origin, String, bool)> = vec![(
+        crate::data::Origin::Path("effect".into()),
+        "Schema".into(),
+        false,
+    )];
+    for id in &catalog.ids {
+        let Some(origin) = scope.value(&id.values.text, "ids") else {
+            continue;
+        };
+        if origin != crate::data::Origin::Local
+            && !needs
+                .iter()
+                .any(|(o, name, _)| o == &origin && name == &id.values.text)
+        {
+            needs.push((origin, id.values.text.clone(), false));
+        }
+    }
+    let mut body = String::new();
+    for id in &catalog.ids {
+        let _ = writeln!(
+            body,
+            "export const {} = Schema.Literals({})",
+            id.name.text, id.values.text
+        );
+        let _ = writeln!(
+            body,
+            "export type {} = typeof {}.Type",
+            id.name.text, id.name.text
+        );
+    }
+    let mut out = crate::data::merge_imports(HEADER, &needs);
+    out.push_str(&body);
+    out
+}
+
 fn list<'a>(items: impl IntoIterator<Item = &'a str>) -> String {
     items.into_iter().map(string).collect::<Vec<_>>().join(", ")
 }
@@ -528,11 +567,8 @@ fn list<'a>(items: impl IntoIterator<Item = &'a str>) -> String {
 pub fn incidents(catalog: &Catalog) -> String {
     let mut o = String::from(HEADER);
     let w = &mut o;
-    let _ = writeln!(
-        w,
-        "import type {{ RequestKind }} from '../catalog/kinds.ts'"
-    );
-    let _ = writeln!(w, "import type {{ ResearchId }} from './research.ts'");
+    let _ = writeln!(w, "import type {{ RequestKind }} from './kinds.ts'");
+    let _ = writeln!(w, "import type {{ ResearchId }} from './ids.ts'");
     let mut used = BTreeSet::new();
     for i in &catalog.incidents {
         for v in [&i.name, &i.cause, &i.prevention] {
@@ -698,10 +734,7 @@ pub fn types(catalog: &Catalog) -> String {
 pub fn eras(catalog: &Catalog) -> String {
     let mut o = String::from(HEADER);
     let w = &mut o;
-    let _ = writeln!(
-        w,
-        "import type {{ RequestKind }} from '../catalog/kinds.ts'"
-    );
+    let _ = writeln!(w, "import type {{ RequestKind }} from './kinds.ts'");
     let mut used = BTreeSet::new();
     for era in &catalog.eras {
         for v in [&era.name, &era.question, &era.arrivals] {
@@ -780,14 +813,8 @@ fn era_entry(w: &mut String, era: &Era) {
 pub fn research(catalog: &Catalog) -> String {
     let mut o = String::from(HEADER);
     let w = &mut o;
-    let _ = writeln!(
-        w,
-        "import type {{ InsightPool }} from '../catalog/kinds.ts'"
-    );
-    let _ = writeln!(
-        w,
-        "import type {{ FrameworkId }} from '../catalog/runtimes.ts'"
-    );
+    let _ = writeln!(w, "import type {{ InsightPool }} from './types.ts'");
+    let _ = writeln!(w, "import type {{ FrameworkId }} from './ids.ts'");
     let mut used = BTreeSet::new();
     for r in &catalog.research {
         uses(&r.name.value, &mut used);

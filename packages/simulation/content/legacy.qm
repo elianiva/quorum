@@ -1,6 +1,8 @@
-(types "../catalog/legacy.ts" ExitId ExitDef)
+(id ExitId exit-ids)
 
-(def EXIT_IDS
+(id PerkId perk-ids)
+
+(def exit-ids
   :type const
   ["acqui-hire" "acquisition" "ipo" "step-down"])
 
@@ -18,7 +20,7 @@
   (bonus 0.1)
   (bonus-cap 1))
 
-(def PERK_IDS
+(def perk-ids
   :type const
   ["angel-network" "alumni-network" "institutional-knowledge" "pattern-recognition"
    "founders-reputation" "better-terms" "night-shift" "time-dilation" "playbooks" "war-stories"
@@ -29,10 +31,10 @@
   (hires 4)
   (load 0.7))
 
-(def PLAYBOOK_SLOTS
+(def playbook-slots
   :type (array number)
   [1 2 5 10 25])
 
-(def DILATION_SPEEDS
+(def dilation-speeds
   :type (array (array number))
   [[] [20] [20 40]])

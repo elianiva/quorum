@@ -23,6 +23,9 @@ feature, and the flags stop composing. The core here is deliberately smaller tha
   and `:module` names the file that exports an entry in a cross-file family.
 - `type`: a generated TypeScript alias for an annotation. Its expression is a name, a string, or a
   generic application such as `(array FeatureId)`.
+- `id`: a generated Effect Schema for an array of string ids. `(id ComponentId COMPONENT_IDS)`
+  writes `ComponentId` and its type to `generated/ids.ts`; the array comes from a generated table
+  or a `def`.
 
 The syntax is sugar over that core, not a second language. `:schema`, `:values`, `:gate`, and
 `:set` are the only keys a field takes beyond its type and default. A setter that needs more than
@@ -73,5 +76,7 @@ Considered options:
   source of truth, and qmc has a check for a name declared twice.
 - Naming is content naming. A constant is written `db-engines`, exported `DB_ENGINES`, and read
   either way in content. A name with an uppercase letter is a TypeScript name and keeps its casing.
+- qmc owns every catalog type. Content declares aliases with `(type …)` and ids with `(id …)`;
+  the checked-in catalog TypeScript re-exports generated types instead of defining them.
 - An Era is named by its content id, such as `garage`. The generated Era data keeps the numeric
   index the Simulation uses.

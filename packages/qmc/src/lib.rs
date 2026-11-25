@@ -135,6 +135,9 @@ pub fn compile(inputs: Vec<(String, String)>) -> Compiled {
         if !catalog.type_defs.is_empty() {
             outputs.push(("types.ts".into(), emit_ts::types(catalog)));
         }
+        if !catalog.ids.is_empty() {
+            outputs.push(("ids.ts".into(), emit_ts::ids(catalog)));
+        }
         let mut modules: Vec<&str> = catalog
             .defs
             .iter()

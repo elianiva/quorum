@@ -1,4 +1,4 @@
-(types "../catalog/instances.ts" FamilyId FamilyDef)
+(id FamilyId family-ids)
 
 (table sizes
   [name       vcpu  gbps]
@@ -12,7 +12,7 @@
   ["4xlarge"    64    50]
   ["metal"      96   100])
 
-(def FAMILY_IDS
+(def family-ids
   :type const
   ["burstable" "general" "compute" "memory" "arm"])
 
@@ -27,17 +27,17 @@
   ["memory"     "Memory"              8    1.3  "1 vCPU : 8 GB."]
   ["arm"        "ARM"                 4    0.8  "Same as General for 20% less. Some runtimes and libraries need work to port."])
 
-(def ARM_RESEARCH
+(def arm-research
   :type const
   "arm-instances")
 
-(def VCPU_PRICE 0.05)
+(def vcpu-price 0.05)
 
-(def BURST_BASELINE 0.2)
+(def burst-baseline 0.2)
 
-(def CREDIT_CAP 100)
+(def credit-cap 100)
 
-(def OS_RAM 0.25)
+(def os-ram 0.25)
 
 (constants local
   (db-ram 0.6)
@@ -46,21 +46,21 @@
 
 (def max-connections 100)
 
-(def POOLER_CONNECTIONS 20)
+(def pooler-connections 20)
 
-(def RESTART_SECONDS 2)
+(def restart-seconds 2)
 
-(def OOM_RATIO 1.25)
+(def oom-ratio 1.25)
 
-(def WARMUP_SECONDS 15)
+(def warmup-seconds 15)
 
-(def HOP_MS 0.5)
+(def hop-ms 0.5)
 
-(def HANDSHAKE_MS 1)
+(def handshake-ms 1)
 
-(def LINK_TIMEOUT 30)
+(def link-timeout 30)
 
-(def ACTIVE_USERS_PER_RPS 50)
+(def active-users-per-rps 50)
 
 (constants shed
   (from 1)

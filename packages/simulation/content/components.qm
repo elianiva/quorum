@@ -1,3 +1,7 @@
+(id ComponentId COMPONENT_IDS)
+
+(id PricingId PRICING_IDS)
+
 ; Shared Component groups and constants.
 ;
 ; Each Component, its state, and its tables live in content/components/<id>.qm. COMPONENT_IDS
@@ -20,41 +24,41 @@
   (managed "Managed"
     :family data))
 
-(def INTERNET_MS 30)
+(def internet-ms 30)
 
-(def UPLOAD_MB 2)
+(def upload-mb 2)
 
-(def AUTHENTICATED_KINDS
+(def authenticated-kinds
   :type (array RequestKind)
   ["read" "write" "search" "upload" "buy" "job" "report" "ai" "feed" "hook"])
 
-(def ZONES
+(def zones
   :type const
   ["a" "b" "c"])
 
-(def CROSS_ZONE_MS 1)
+(def cross-zone-ms 1)
 
-(def BACKEND_KB 4)
+(def backend-kb 4)
 
-(def FAILOVER_SECONDS 20)
+(def failover-seconds 20)
 
-(def TOKENS_PER_PROMPT 400)
+(def tokens-per-prompt 400)
 
 (constants breaker
   (threshold 0.5)
   (open 5))
 
-(def BULKHEAD_MS 1_000)
+(def bulkhead-ms 1_000)
 
-(def HEDGE_LOAD 0.1)
+(def hedge-load 0.1)
 
-(def SERIALIZE_MS 0.02)
+(def serialize-ms 0.02)
 
-(def DUAL_WRITE_STALE 0.005)
+(def dual-write-stale 0.005)
 
-(def OUTBOX_STALE 0.0005)
+(def outbox-stale 0.0005)
 
-(def FAILURE_YIELD 3)
+(def failure-yield 3)
 
 (constants spread
   (regions 3)
@@ -73,11 +77,11 @@
   ["reserved"   "Reserved"     0.6  "0.6×, for a commitment of one calendar week. Selling before the term ends owes the Burn."]
   ["spot"       "Spot"         0.3  "0.3×. The provider can reclaim the Node after 10 s of warning."])
 
-(def SAVINGS_PLAN_RATE 0.8)
+(def savings-plan-rate 0.8)
 
-(def RESERVED_SECONDS (* 7 CALENDAR_DAY))
+(def reserved-seconds (* 7 CALENDAR_DAY))
 
-(def FLAG_PROPAGATION_SECONDS 2)
+(def flag-propagation-seconds 2)
 
 ;; Settings that need research. A value in :free needs none; with :locked, only those values need
 ;; it. The rules refuse a locked value with "<what> needs <research>.", or with the value's name

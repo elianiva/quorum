@@ -21,10 +21,9 @@ A content file is S-expressions. Numbers are exact fractions and can carry a uni
 `(sym "fw-" id)`, and runs no code. A macro call is a top-level form, so a list in a data position
 is never a call, and a macro cannot expand into itself, so expansion always ends.
 
-`(const PREMIERE_SURGE 4)` declares a number that `generated/constants.ts` exports and content can
-name. `(import "../catalog/runtimes.ts" RUNTIMES)` names a TypeScript value that `(ref RUNTIMES puma blurb)`
-reads. TypeScript checks the facts qmc cannot see, such as that `puma` is a runtime or that every
-framework has research.
+`(const premiere-surge 4)` declares a number that `generated/constants.ts` exports and content can
+name. `(import "./runtimes.ts" RUNTIMES)` names a generated value that `(ref RUNTIMES puma blurb)`
+reads. qmc owns the catalog types; content never imports a type from TypeScript.
 
 ### Plain data
 
@@ -32,8 +31,7 @@ A table or number that needs no rule of its own is a `def`. It lands in the gene
 after its content file, so `content/tuning.qm` writes `generated/tuning.ts`:
 
 ```lisp
-(types "../catalog/tuning.ts" Tuning)
-
+(type Tuning "Readonly<{ pace: number; incidentGap: number; firstIncidentAfter: number; calendarPace: number }>")
 (type ZoneIds (array string))
 
 (def calendar-pace 24)
@@ -45,7 +43,18 @@ after its content file, so `content/tuning.qm` writes `generated/tuning.ts`:
 `:type` and `:satisfies` take a type name, a type expression, or a string of raw TypeScript. The
 type expression forms are `(array T)`, `(record K V)`, `(partial T)`, `(readonly T)`, `(union …)`,
 and `(intersection …)`; a generic form such as `(Record K V)` also works. `(type NAME expression)`
-writes a TypeScript type alias to `generated/types.ts`, and an annotation imports that name.
+writes a TypeScript type alias to `generated/types.ts`, and an annotation imports that name. qmc
+does not read types from the TypeScript catalog.
+
+A list of ids is one declaration. `(id ComponentId COMPONENT_IDS)` writes an Effect Schema and its
+type to `generated/ids.ts`:
+
+```lisp
+(id ComponentId COMPONENT_IDS)
+```
+
+`VALUES` names a generated array or a `def` whose value is an array of strings. The schema is
+available to app code as `ComponentId`, and `ComponentId.Type` is its value type.
 
 A name in kebab case is exported in SCREAM_CASE: `(def db-engines …)` writes `DB_ENGINES`, and
 content may read it as `db-engines` or `DB_ENGINES`. A name with an uppercase letter is a TypeScript
@@ -76,8 +85,7 @@ into a row or record. `(ref NAME key 0)` reads a property. `(era NAME)` reads an
 `(+ a b)`, `(- a b)`, `(* a b)`, and `(/ a b)` are emitted as written, so the generated code
 computes the same floating-point value the hand-written code did. `(as Type value)` is a type
 assertion. `:type T` annotates the declaration, `:type const` writes `as const`, `:satisfies T`
-writes `satisfies T`, and `:doc` writes a doc comment. `(types "path" Name …)` names the TypeScript
-types an annotation uses.
+writes `satisfies T`, and `:doc` writes a doc comment.
 
 Eras are declared by their id, such as `(era garage …)`. Research, incidents, and feature data name
 that id, not an index: `:era garage` in a research or incident form, and `(era garage)` in a data

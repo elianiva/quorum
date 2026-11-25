@@ -1,6 +1,8 @@
-(types "../catalog/ventures.ts" VentureStart VentureConstraint MutatorId MutatorDef)
+(id VentureId VENTURE_IDS)
 
-(def GARAGE_START
+(id MutatorId MUTATOR_IDS)
+
+(def garage-start
   :type VentureStart
   (:cash       START_CASH
    :equity     1
@@ -8,7 +10,7 @@
    :runtime    null
    :researched []))
 
-(def MONEY_KINDS
+(def money-kinds
   :type (array RequestKind)
   ["read" "write" "buy"])
 
@@ -47,9 +49,7 @@
   (max 0.3)
   (seconds 30))
 
-(def HN_WEIGHT 3)
-
-(types "../catalog/ventures.ts" VentureDef VentureId)
+(def hn-weight 3)
 
 (constants venture
   (ids
@@ -65,11 +65,11 @@
      :value        1
      :market       1
      :bootstrapped false
-     :start        GARAGE_START
+     :start        garage-start
      :constraint   NO_CONSTRAINT
      :signature    null)))
 
-(def VENTURES
+(def ventures
   :type (record VentureId VentureDef)
   (:b2b-saas           (record (... VENTURE_DEFAULTS)
                          :id         "b2b-saas"
@@ -319,7 +319,7 @@
                                       :bid    0.3)
                          :value      0.44
                          :market     3
-                         :start      (record (... GARAGE_START) :cash 400)
+                         :start      (record (... garage-start) :cash 400)
                          :legacy     1.3
                          :constraint (record (... NO_CONSTRAINT) :deadline 100)
                          :signature  "latency-regression"
@@ -348,7 +348,7 @@
                                       :bid    0.01)
                          :value      1.51
                          :market     0.8
-                         :start      (record (... GARAGE_START)
+                         :start      (record (... garage-start)
                                        :cash       900
                                        :runtime    "tomcat"
                                        :researched ["lang-java"])

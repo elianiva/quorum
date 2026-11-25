@@ -17,8 +17,6 @@
              callout k-write)
   :blurb    "Runs small handlers next to the user: 5 ms, no cold start, and a CPU ceiling instead of a box.")
 
-(types "../catalog/runtimes.ts" LanguageId)
-
 (constants edge
   (request-price 0.00036)
   (cpu-ms 10)

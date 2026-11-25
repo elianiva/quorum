@@ -30,20 +30,14 @@ export {
   HYBRID_WRITES,
   HYBRID_READS,
 } from '../generated/kinds.ts'
-import { KINDS, INSIGHT_POOLS } from '../generated/kinds.ts'
+import { KINDS } from '../generated/kinds.ts'
 
-export type Kind = RequestKind | BackendKind
+import type { InsightPool, Kind } from '../generated/types.ts'
+
+export type { InsightPool, Kind, KindInfo, RequestProfile } from '../generated/types.ts'
 
 export const isBackendKind = (kind: Kind): kind is BackendKind =>
   (BACKEND_KINDS as ReadonlyArray<Kind>).includes(kind)
-
-export type KindInfo = Readonly<{
-  label: string
-  value: number
-  color: number
-}>
-
-export type InsightPool = (typeof INSIGHT_POOLS)[number]
 
 export const POOLS: Record<InsightPool, Readonly<{ label: string; color: number }>> = {
   ...(Object.fromEntries(
@@ -51,22 +45,3 @@ export const POOLS: Record<InsightPool, Readonly<{ label: string; color: number 
   ) as Record<RequestKind, Readonly<{ label: string; color: number }>>),
   failure: { label: 'Failure', color: 0xf04438 },
 }
-
-export type RequestProfile = Readonly<{
-  cpu: number
-  native: boolean
-  apdex: number
-  calls: Readonly<Partial<Record<Exclude<BackendKind, 'auth' | 'task'>, number>>>
-  asyncCalls: Readonly<
-    Partial<Record<'q-read' | 'q-write' | 'blob-put' | 'notify' | 'callout', number>>
-  >
-  orm: boolean
-  payloadKB: number
-  asyncKB: number
-  stream: boolean
-  compressible: boolean
-  inKB: number
-  offload: number
-  completion?: number
-  scored: boolean
-}>

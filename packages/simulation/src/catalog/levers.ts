@@ -17,7 +17,8 @@ import {
   MAX_LEVER_STEP,
 } from '../generated/levers.ts'
 
-export type LeverKind = (typeof LEVER_KINDS)[number]
+import type { LeverKind } from '../generated/types.ts'
+export type { LeverKind } from '../generated/types.ts'
 
 export const leverEra = (kind: LeverKind): number => {
   const index = ERAS.findIndex((era) => (era.mix[kind] ?? 0) > 0)

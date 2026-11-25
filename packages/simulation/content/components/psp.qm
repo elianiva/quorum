@@ -23,9 +23,9 @@
   (rate 0.029)
   (fixed 0.3))
 
-(def SECOND_PROVIDER_FEE 1.15)
+(def second-provider-fee 1.15)
 
-(def PSP_CAPACITY 1_000)
+(def psp-capacity 1_000)
 
 (def pspGlossary
   :type (array string)

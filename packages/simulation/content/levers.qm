@@ -1,8 +1,4 @@
-(types "../catalog/levers.ts" LeverKind)
-
-(types "../catalog/work.ts" FeatureId)
-
-(types "../catalog/ventures.ts" VentureId)
+(id LeverKindId LEVER_KINDS)
 
 (constants lever
   (kinds
@@ -13,8 +9,8 @@
   (growth :type const [0.99 0.98 0.96])
   (refund 0.5))
 
-(def LEVER_OWNER
-  :type (readonly (record LeverKind FeatureId))
+(def lever-owner
+  :type (readonly (record LeverKindId FeatureId))
   (:login  "password-login"
    :search "search-filters"
    :upload "profile-photos"

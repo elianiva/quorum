@@ -1,4 +1,4 @@
-import { COMPONENTS, type ComponentId } from './components.ts'
+import { COMPONENTS } from './components.ts'
 import type { GlossaryEntry } from './glossary.ts'
 export {
   CVE_DEFS,
@@ -9,11 +9,7 @@ export {
 } from '../generated/cves.ts'
 import { CVE_DEFS } from '../generated/cves.ts'
 
-export type CveDef = Readonly<{
-  id: string
-  score: number
-  affects: ReadonlyArray<ComponentId>
-}>
+export type { CveDef } from '../generated/types.ts'
 
 export const patchCost = (score: number): number => Math.max(2, Math.round(score / 2))
 export const patchWindow = (score: number): number => Math.round(600 - 40 * score)

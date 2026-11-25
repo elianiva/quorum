@@ -1,4 +1,8 @@
-(types "../catalog/work.ts" FeatureId TaskId TaskDef FeatureDef)
+(id FeatureId FEATURE_IDS)
+
+(id TaskId TASK_IDS)
+
+(id FixId fixes)
 
 (constants feature
   (ids
@@ -25,11 +29,11 @@
      :subscription false
      :hidden       null)))
 
-(def INTERNAL_TOOL_FEATURES
+(def internal-tool-features
   :type (array FeatureId)
   ["dashboards" "audit-log" "status-page" "data-export"])
 
-(def BACKGROUND_FEATURES
+(def background-features
   :type (array FeatureId)
   ["email-digests" "data-export" "notifications-center" "webhooks" "push-notifications"])
 
@@ -53,14 +57,14 @@
   ["health-check"       "Health check endpoint"        4  "health-checks"     "A Load Balancer can run deep health checks"  false]
   ["load-test"          "Load test"                   15  null                "Shows every Node at twice the demand, for one calendar day"  false])
 
-(def QUARTER_DAYS 90)
+(def quarter-days 90)
 
-(def FIXES
+(def fixes
   :type const
   ["eager-loading" "fix-leak" "session-state" "idempotency-keys" "off-loop" "graceful-shutdown"
    "health-check"])
 
-(def FEATURES
+(def features
   :type (record FeatureId FeatureDef)
   (:landing-page         (record (... FEATURE_DEFAULTS)
                            :id     "landing-page"

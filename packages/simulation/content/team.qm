@@ -1,10 +1,10 @@
-(types "../catalog/team.ts" PolicyId PolicyDef)
+(id PolicyId POLICY_IDS)
 
 (constants dev
   (hours-per-day 8)
   (environment-ramp 0.5))
 
-(def FOUNDER_OUTPUT 0.8)
+(def founder-output 0.8)
 
 (table policies
   :key      id
@@ -15,38 +15,38 @@
   ["balanced"   "Balanced"          1  0.03          1              8        0]
   ["quality"    "Quality"         0.8  0.01        0.5              4      0.1])
 
-(def SALARY_BASE_PER_SECOND 0.4)
+(def salary-base-per-second 0.4)
 
-(def SIGNING_BASE 2_000)
+(def signing-base 2_000)
 
-(def HIRE_DAYS 1)
+(def hire-days 1)
 
 (constants ramp
   (output 0.3)
   (days 7))
 
-(def LAYOFF_MORALE 0.9)
+(def layoff-morale 0.9)
 
-(def MORALE_DAYS 7)
+(def morale-days 7)
 
 (constants learn
   (days 7)
   (output 0.5)
   (cost 0.25))
 
-(def FOREIGN_OUTPUT 0.7)
+(def foreign-output 0.7)
 
-(def COORDINATION 0.08)
+(def coordination 0.08)
 
-(def RETROGRADE 0.0004)
+(def retrograde 0.0004)
 
-(def KLOC_PER_DH 0.5)
+(def kloc-per-dh 0.5)
 
-(def REFACTOR_PER_DH 0.02)
+(def refactor-per-dh 0.02)
 
-(def UNSTRUCTURED_DEBT 0.01)
+(def unstructured-debt 0.01)
 
-(def HOTFIX_DEBT 0.02)
+(def hotfix-debt 0.02)
 
 (constants rush
   (debt 0.02)
@@ -64,9 +64,9 @@
   [-0.1   0.2]
   [-0.5  -0.1])
 
-(def MARKET_GAIN_CAP 2)
+(def market-gain-cap 2)
 
-(def ADOPTION_DAYS 7)
+(def adoption-days 7)
 
 (constants lift
   (spread 1)
@@ -78,65 +78,65 @@
   (remind-days 1)
   (size-at 8))
 
-(def MOOD_START 1)
+(def mood-start 1)
 
-(def UNHAPPY_MOOD 0.35)
+(def unhappy-mood 0.35)
 
-(def CONTENT_MOOD 0.7)
+(def content-mood 0.7)
 
-(def FREEZE_MOOD_DAYS 7)
+(def freeze-mood-days 7)
 
-(def PAY_GAP_MOOD_DAYS 3)
+(def pay-gap-mood-days 3)
 
-(def TIME_OFF_DAYS 3)
+(def time-off-days 3)
 
-(def HIRING_PIPELINE 0.7)
+(def hiring-pipeline 0.7)
 
-(def TRUNK_FREQUENCY 1.5)
+(def trunk-frequency 1.5)
 
 (constants security
   (team-supply-chain 0.5)
   (team-grace 2))
 
-(def WORK_MINUTES 480)
+(def work-minutes 480)
 
-(def MANUAL_DEPLOY_MINUTES 30)
+(def manual-deploy-minutes 30)
 
-(def CI_DEPLOY_MINUTES 5)
+(def ci-deploy-minutes 5)
 
-(def VERIFY_MINUTES 15)
+(def verify-minutes 15)
 
 (constants bad
   (deploy-base :type (array number) [0 0.1 0.1])
   (deploy-errors 0.08)
   (deploy-max 0.4))
 
-(def TESTS_FACTOR 0.3)
+(def tests-factor 0.3)
 
-(def CODE_REVIEW_FACTOR 0.2)
+(def code-review-factor 0.2)
 
-(def BUILD_CACHE 0.75)
+(def build-cache 0.75)
 
-(def STATIC_ANALYSIS_FACTOR 0.2)
+(def static-analysis-factor 0.2)
 
 (constants formal
   (verification-factor 0.5)
   (verification-velocity 0.85))
 
-(def FIX_BUGS_SHARE 0.25)
+(def fix-bugs-share 0.25)
 
-(def SHARED_DB_COORDINATION 0.5)
+(def shared-db-coordination 0.5)
 
-(def SERVICE_HANDOFF_DH 8)
+(def service-handoff-dh 8)
 
-(def DATASTORE_MOVE_DH 16)
+(def datastore-move-dh 16)
 
 (constants engine
   (factor 0.8)
   (copy-minutes-per-gb 1))
 
-(def SESSION_STATE_CRASHES 0.05)
+(def session-state-crashes 0.05)
 
-(def PAYING_SHARE 0.05)
+(def paying-share 0.05)
 
-(def PLAN_PER_DAY 24)
+(def plan-per-day 24)

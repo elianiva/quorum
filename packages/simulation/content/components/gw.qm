@@ -1,0 +1,37 @@
+; Gw: the Component and the tables it reads.
+(component gw
+  :code     gw
+  :name     "API Gateway"
+  :product  "Kong"
+  :group    edge
+  :dock     edge
+  :cost     300
+  :latency  6ms
+  :unlock   api-gateway
+  :capacity 10_000
+  :flags    (limiting zone-spanning tls)
+  :accepts  (requests)
+  :sends    (requests)
+  :blurb    "Rate-limits and routes API calls. Past its rate limit, requests fail as throttled, and it bills per request.")
+
+(state gw
+  (field auth-edge bool
+    :default false)
+  (field merge bool
+    :default false)
+  (field burst number
+    :default 0
+    :gate    (rate-limiting "A token bucket"))
+  (field rate-limit number
+    :default 0))
+
+(constants gateway
+  (price 0.002)
+  (limits :type const [0 100 500 1_000 2_500 5_000])
+  (burst 200)
+  (auth-ms 2))
+
+(constants coalesce
+  (kinds :type (array RequestKind) ["page" "read" "feed" "search"])
+  (hot 0.3)
+  (window 0.05))

@@ -1,0 +1,25 @@
+; Doc: the Component and the tables it reads.
+(component doc
+  :code     doc
+  :name     "Document Store"
+  :product  "MongoDB, Firestore"
+  :group    data
+  :dock     data
+  :cost     260
+  :latency  3ms
+  :burn     0.2
+  :steps    8
+  :max-out  0
+  :unlock   document-db
+  :flags    (limiting cold-start)
+  :accepts  (q-read q-write q-tx q-scan)
+  :fallback (q-scan)
+  :blurb    "Holds documents instead of rows. No joins and no connections to pool: one flat rate of reads and writes, and each query needs its own index.")
+
+(state doc
+  (field transactions bool
+    :default false))
+
+(def docGlossary
+  :type (array string)
+  ["hot-key" "sharding"])

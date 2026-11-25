@@ -1,7 +1,0 @@
-(def GATEWAY_PRICE 0.002)
-(def GATEWAY_LIMITS :type const [0 100 500 1_000 2_500 5_000])
-(def GATEWAY_BURST 200)
-(def GATEWAY_AUTH_MS 2)
-(def COALESCE_KINDS :type "ReadonlyArray<RequestKind>" ["page" "read" "feed" "search"])
-(def COALESCE_HOT 0.3)
-(def COALESCE_WINDOW 0.05)

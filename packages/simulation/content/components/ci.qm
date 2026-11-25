@@ -1,0 +1,39 @@
+; Ci: the Component and the tables it reads.
+(component ci
+  :code    ci
+  :name    "CI/CD Pipeline"
+  :product "GitHub Actions"
+  :group   ops
+  :dock    platform
+  :cost    100
+  :latency 1ms
+  :burn    0.02
+  :max-out 0
+  :unlock  ci
+  :blurb   "Ships what waits. Its deploy strategy sets how long a deploy takes, what it burns, and how bad a bad deploy is.")
+
+(state ci
+  (field strategy (enum recreate rolling blue-green canary)
+    :default rolling
+    :schema  DeployStrategy))
+
+(types "../components/ci.ts" DeployStrategyId DeployStrategyDef)
+
+(def DEPLOY_STRATEGY_IDS
+  :type const
+  ["recreate" "rolling" "blue-green" "canary"])
+
+(table deploy-strategies
+  :key      id
+  :keep-key
+  :type     (record DeployStrategyId DeployStrategyDef)
+  [id            name          deployMinutes  blast  burn]
+  ["recreate"    "Recreate"                2      1     1]
+  ["rolling"     "Rolling"                 5    0.4     1]
+  ["blue-green"  "Blue-green"              7    0.1     2]
+  ["canary"      "Canary"                 10   0.05   1.5])
+
+(def STRATEGY_RESEARCH
+  :type (partial (record DeployStrategyId ResearchId))
+  (:blue-green "blue-green"
+   :canary     "canary"))

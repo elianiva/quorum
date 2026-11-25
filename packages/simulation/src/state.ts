@@ -77,9 +77,6 @@ export const PerRegion = Schema.Struct({
 })
 export type PerRegion = typeof PerRegion.Type
 
-export const Backup = Schema.Literals(['none', 'nightly', 'pitr'])
-export type Backup = typeof Backup.Type
-
 export const NodeParts = Schema.Struct({
   cpu: Schema.Boolean,
   ram: Schema.Boolean,
@@ -93,20 +90,20 @@ export const EMPTY_PARTS: NodeParts = { cpu: false, ram: false, disk: false }
 export const Pricing = Schema.Literals(PRICING_IDS)
 export type Pricing = typeof Pricing.Type
 
-export { LbPolicy } from './components/lb.ts'
-export { PmMode, Collector, Fanout } from './components/server.ts'
-export { CacheEngine, CacheStrategy } from './components/cache.ts'
-export { IopsClass, DbRetention, ShardKey, DbTopology } from './components/database.ts'
-import { DbTopology, ShardKey } from './components/database.ts'
-export { VecIndexType } from './components/vec.ts'
-export { Acks } from './components/log.ts'
-export { SearchRefresh, SearchVariant, SearchHeap } from './components/search.ts'
-export { StorageClass, StoreVariant } from './components/storage.ts'
-export { PoolerMode } from './components/pooler.ts'
-export { GpuType } from './components/gpu.ts'
-export { ScaleSignal } from './components/autoscaler.ts'
-export { DeployStrategy } from './components/ci.ts'
-export { CacheKey } from './components/cdn.ts'
+export { LbPolicy } from './generated/lb.ts'
+export { PmMode, Collector, Fanout } from './generated/server.ts'
+export { CacheEngine, CacheStrategy } from './generated/cache.ts'
+export { Backup, IopsClass, DbRetention, ShardKey, DbTopology } from './generated/database.ts'
+import { DbTopology, ShardKey } from './generated/database.ts'
+export { VecIndexType } from './generated/vec.ts'
+export { Acks } from './generated/log.ts'
+export { SearchRefresh, SearchVariant, SearchHeap } from './generated/search.ts'
+export { StorageClass, StoreVariant } from './generated/storage.ts'
+export { PoolerMode } from './generated/pooler.ts'
+export { GpuType } from './generated/gpu.ts'
+export { ScaleSignal } from './generated/autoscaler.ts'
+export { DeployStrategy } from './generated/ci.ts'
+export { CacheKey } from './generated/cdn.ts'
 
 const NODE_FIELD_ORDER = [
   'id',
@@ -267,7 +264,6 @@ const NODE_FIELDS_UNORDERED = {
   serviceId: Schema.optionalKey(Schema.String),
   n: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(3))),
   spread: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
-  backup: Backup.pipe(Schema.withDecodingDefaultKey(Effect.succeed('none' as const))),
   ...COMPONENT_FIELDS,
 } as const
 

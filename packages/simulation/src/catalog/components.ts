@@ -41,7 +41,7 @@ export {
   NATIVE_COLD_MS,
   FUNCTION_LIMIT_MS,
   EXPORT_MS_PER_GB,
-} from '../components/fn.ts'
+} from '../generated/fn.ts'
 export {
   EDGE_MS,
   EDGE_REQUEST_PRICE,
@@ -49,7 +49,7 @@ export {
   EDGE_MEMORY_MB,
   EDGE_LANGUAGES,
   EDGE_READ_HIT,
-} from '../components/edge.ts'
+} from '../generated/edge.ts'
 export {
   DOC_OPS,
   DOC_JOIN_COST,
@@ -58,8 +58,8 @@ export {
   DOC_PARTIAL,
   DOC_PATTERN_FACTOR,
   DOC_SHAPE_DH,
-} from '../components/doc.ts'
-export { VEC_QUERIES, VEC_INDEXES, VEC_AI_LIFT } from '../components/vec.ts'
+} from '../generated/doc.ts'
+export { VEC_QUERIES, VEC_INDEXES, VEC_AI_LIFT } from '../generated/vec.ts'
 export {
   LOG_RATE,
   LOG_READ_RATE,
@@ -69,17 +69,17 @@ export {
   LOG_REPLICA_BURN,
   LOG_REPLICAS,
   LOG_LOSS,
-} from '../components/log.ts'
-export { CDC_MS, CDC_RATE, CDC_CHANGES } from '../components/cdc.ts'
-export { MESH_HOP_MS, MESH_OVERHEAD, MESH_INSIGHT, MESH_TAX } from '../components/mesh.ts'
-export { ROLLOUT_STEPS, ROLLOUT_ALL } from '../components/ff.ts'
+} from '../generated/log.ts'
+export { CDC_MS, CDC_RATE, CDC_CHANGES } from '../generated/cdc.ts'
+export { MESH_HOP_MS, MESH_OVERHEAD, MESH_INSIGHT, MESH_TAX } from '../generated/mesh.ts'
+export { ROLLOUT_STEPS, ROLLOUT_ALL } from '../generated/ff.ts'
 export {
   CERT_DAYS,
   CERT_DAYS_SHORT,
   CERT_FROM_STAGE,
   CERT_SHORT_FROM,
   CERT_RENEW,
-} from '../components/pki.ts'
+} from '../generated/pki.ts'
 export {
   LB_POLICIES,
   P2C_CAPACITY,
@@ -92,8 +92,8 @@ export {
   type LbVariant,
   STICKY_SHARE,
   STICKY_DECAY,
-} from '../components/lb.ts'
-export { DNS_TTLS } from '../components/dns.ts'
+} from '../generated/lb.ts'
+export { DNS_TTLS } from '../generated/dns.ts'
 export {
   CACHE_ENGINES,
   CACHE_TTLS,
@@ -106,7 +106,7 @@ export {
   WARMED,
   EARLY_LIFT,
   EARLY_REFRESH,
-} from '../components/cache.ts'
+} from '../generated/cache.ts'
 export {
   CDN_HIT,
   ANONYMOUS_PAGE,
@@ -115,8 +115,8 @@ export {
   ESI_PAGE_HIT,
   STALE_AFTER_DEPLOY,
   CACHE_KEYS,
-} from '../components/cdn.ts'
-export { PARANOIA, UNDER_ATTACK, BOT_MANAGEMENT_FALSE } from '../components/waf.ts'
+} from '../generated/cdn.ts'
+export { PARANOIA, UNDER_ATTACK, BOT_MANAGEMENT_FALSE } from '../generated/waf.ts'
 export {
   QUEUE_RATE,
   BACKLOG_MS,
@@ -125,9 +125,9 @@ export {
   FOREVER_ATTEMPTS,
   QUEUE_LENGTHS,
   QUEUE_MESSAGE_PRICE,
-} from '../components/queue.ts'
-export { POISON_SHARE, TASK_RETRY_SECONDS, PREFETCH, FETCH_MS } from '../components/worker.ts'
-export { HUB_RAM_KB, PRESENCE_CPU, PRESENCE_VALUE, HERD_REFUSED } from '../components/ws.ts'
+} from '../generated/queue.ts'
+export { POISON_SHARE, TASK_RETRY_SECONDS, PREFETCH, FETCH_MS } from '../generated/worker.ts'
+export { HUB_RAM_KB, PRESENCE_CPU, PRESENCE_VALUE, HERD_REFUSED } from '../generated/ws.ts'
 export {
   SEARCH_QPS,
   SEARCH_REFRESH,
@@ -137,14 +137,14 @@ export {
   SEARCH_HEAPS,
   SEARCH_VARIANTS,
   SEARCH_INDEX_SHARE,
-} from '../components/search.ts'
+} from '../generated/search.ts'
 export {
   STORAGE_PRICE,
   STORAGE_CLASSES,
   LIFECYCLE_DAYS,
   R2_FIRST_BYTE_MS,
   STORE_VARIANTS,
-} from '../components/storage.ts'
+} from '../generated/storage.ts'
 export {
   DB_ENGINES,
   STORAGE_IOPS,
@@ -154,7 +154,6 @@ export {
   DB_STORAGE_MULT,
   RESTORE_FAILURE,
   RESTORE_DRILL_DH,
-  diskMs,
   MATERIALIZED_SCAN,
   MATERIALIZED_STALE,
   DENORMALIZED_READ,
@@ -175,8 +174,8 @@ export {
   MIGRATION_LOCK_PER_GB,
   MULTI_WRITE_CPU,
   MULTI_CONFLICT,
-} from '../components/database.ts'
-export { PSP_RATE, PSP_FIXED, SECOND_PROVIDER_FEE, PSP_CAPACITY } from '../components/psp.ts'
+} from '../generated/database.ts'
+export { PSP_RATE, PSP_FIXED, SECOND_PROVIDER_FEE, PSP_CAPACITY } from '../generated/psp.ts'
 export {
   GATEWAY_PRICE,
   GATEWAY_LIMITS,
@@ -185,7 +184,7 @@ export {
   COALESCE_KINDS,
   COALESCE_HOT,
   COALESCE_WINDOW,
-} from '../components/gw.ts'
+} from '../generated/gw.ts'
 export {
   VM_REACTION_SECONDS,
   POD_REACTION_SECONDS,
@@ -197,7 +196,7 @@ export {
   SCHEDULE_LEAD_MINUTES,
   SCALE_RPS_PER_VCPU,
   SCALE_QUEUE_DEPTH,
-} from '../components/autoscaler.ts'
+} from '../generated/autoscaler.ts'
 export {
   POD_BURN,
   NOISY_SHARE,
@@ -206,16 +205,15 @@ export {
   UPGRADE_CRASHES,
   SUPPORTED_QUARTERS,
   PLATFORM_TAX,
-} from '../components/cluster.ts'
+} from '../generated/cluster.ts'
 export {
   ROLLOUT_SHARE,
   DEPLOY_STRATEGY_IDS,
-  type DeployStrategyId,
-  type DeployStrategyDef,
   DEPLOY_STRATEGIES,
   STRATEGY_RESEARCH,
-} from '../components/ci.ts'
-export { SCAN_PRICE } from '../components/warehouse.ts'
+} from '../generated/ci.ts'
+export type { DeployStrategyId, DeployStrategyDef } from '../components/ci.ts'
+export { SCAN_PRICE } from '../generated/warehouse.ts'
 export {
   GPU_TYPES,
   GPU_MODELS,
@@ -225,9 +223,9 @@ export {
   GPU_PRECISIONS,
   type GpuPrecision,
   GPU_BATCHES,
-} from '../components/gpu.ts'
-export { LLM_FIRST_TOKEN_MS, LLM_PRICE, LLM_RATE } from '../components/llm.ts'
-export { AUTH_PRICE_PER_USER } from '../components/auth.ts'
+} from '../generated/gpu.ts'
+export { LLM_FIRST_TOKEN_MS, LLM_PRICE, LLM_RATE } from '../generated/llm.ts'
+export { AUTH_PRICE_PER_USER } from '../generated/auth.ts'
 export {
   SAMPLE_RATES,
   SAMPLE_OVERHEAD,
@@ -236,18 +234,18 @@ export {
   RETENTION_WINDOWS,
   RETENTION_STORAGE,
   ANALYTICS_CAPACITY,
-} from '../components/analytics.ts'
-export { MSGP_RATE, MSGP_PRICE } from '../components/msgp.ts'
+} from '../generated/analytics.ts'
+export { MSGP_RATE, MSGP_PRICE } from '../generated/msgp.ts'
 export {
   WIDE_OPS,
   QUORUM_N,
   WIDE_STALE,
   WIDE_TX_STALE,
   WIDE_TX_DUPLICATE,
-} from '../components/wide.ts'
-export { DSQL_TX, DSQL_READ_COST } from '../components/dsql.ts'
-export { SYNC_MS, REPLICA_SYNC_MINUTES_PER_GB, REPLICA_BOX_PRICE } from '../components/replica.ts'
-export { SEARCH_COPY_MINUTES_PER_GB } from '../components/search.ts'
+} from '../generated/wide.ts'
+export { DSQL_TX, DSQL_READ_COST } from '../generated/dsql.ts'
+export { SYNC_MS, REPLICA_SYNC_MINUTES_PER_GB, REPLICA_BOX_PRICE } from '../generated/replica.ts'
+export { SEARCH_COPY_MINUTES_PER_GB } from '../generated/search.ts'
 export {
   INTERNET_MS,
   UPLOAD_MB,

@@ -1,0 +1,12 @@
+; TypeScript types shared by the content.
+; Each name expands into the annotation that uses it.
+(type LeverCaps
+  "Readonly<\n  Partial<Record<VentureId, Readonly<{ kind: LeverKind; step: number }>>>\n>")
+
+(type QueryCosts
+  "Readonly<{\n  'q-read': number\n  'q-write': number\n  'q-search': number\n  'blob-put': number\n  'q-tx': number\n  'blob-get': number\n  'q-scan': number\n}>")
+
+(type OutcomeBands "ReadonlyArray<Readonly<{ lo: number; hi: number }>>")
+
+(type DeviceInfoById
+  "Record<\n  DeviceId,\n  Readonly<{ name: string; share: number; rttMs: number }>\n>")

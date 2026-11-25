@@ -1,6 +1,8 @@
 import { type Action, notAllowed, ok, patch, withNode, locked } from '../action-kit.ts'
-import type { Game, StorageClass, StoreVariant } from '../state.ts'
+import type { Game, StoreVariant } from '../state.ts'
 import { LIFECYCLE_DAYS } from '../catalog.ts'
+
+export { setStorageClass } from '../generated/storage.rule.ts'
 
 export const setStoreVariant = (game: Game, id: string, storeVariant: StoreVariant): Action =>
   withNode(game, id, (node) =>
@@ -8,13 +10,6 @@ export const setStoreVariant = (game: Game, id: string, storeVariant: StoreVaria
       ? notAllowed('Only Object Storage has a product.')
       : (locked(game, 'storage.storeVariant', storeVariant) ??
         ok(node.storeVariant === storeVariant ? game : patch(game, id, { storeVariant }))),
-  )
-
-export const setStorageClass = (game: Game, id: string, storageClass: StorageClass): Action =>
-  withNode(game, id, (node) =>
-    node.type === 'storage'
-      ? ok(node.storageClass === storageClass ? game : patch(game, id, { storageClass }))
-      : notAllowed('Only Object Storage has a storage class.'),
   )
 
 export const setLifecycle = (game: Game, id: string, lifecycle: number): Action =>

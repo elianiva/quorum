@@ -1,0 +1,19 @@
+; Mesh: the Component and the tables it reads.
+(component mesh
+  :code    mesh
+  :name    "Service Mesh"
+  :product "Istio"
+  :group   ops
+  :dock    platform
+  :cost    600
+  :latency 0ms
+  :max-out 0
+  :unlock  service-mesh
+  :flags   (control)
+  :blurb   "Link App Servers and Workers into it. A sidecar beside each one retries and breaks its calls, and watches them: +1 ms a hop, and 5% of its CPU.")
+
+(constants mesh
+  (hop-ms 1)
+  (overhead 0.05)
+  (insight 0.2)
+  (tax 0.5))

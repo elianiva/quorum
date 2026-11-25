@@ -1,6 +1,0 @@
-(def PSP_RATE 0.029)
-(def PSP_FIXED 0.3)
-(def SECOND_PROVIDER_FEE 1.15)
-(def PSP_CAPACITY 1_000)
-
-(def pspGlossary :type "ReadonlyArray<string>" ["idempotency"])

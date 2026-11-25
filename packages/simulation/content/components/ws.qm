@@ -1,0 +1,32 @@
+; Ws: the Component and the tables it reads.
+(component ws
+  :code    ws
+  :name    "Realtime Hub"
+  :product "Socket.IO"
+  :group   compute
+  :dock    messaging
+  :cost    400
+  :latency 1ms
+  :burn    0.15
+  :steps   8
+  :max-out 0
+  :unlock  websockets
+  :flags   (limiting tls)
+  :accepts (rt)
+  :blurb   "Holds a connection open for every realtime message. How many fit depends on the runtime.")
+
+(state ws
+  (field presence bool
+    :default false)
+  (field backoff bool
+    :default false)
+  (field clustering bool
+    :default false))
+
+(def HUB_RAM_KB (* 8 1_048_576))
+
+(constants presence
+  (cpu 0.15)
+  (value 1.25))
+
+(def HERD_REFUSED 0.5)

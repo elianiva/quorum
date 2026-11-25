@@ -71,7 +71,7 @@ import { nodeLabel } from './labels.ts'
 export { zoned }
 import { Life, causeOf, down as takeDown, withWarm } from './life.ts'
 import { drillPassed, step as drillStep } from './drill-machine.ts'
-import { PROMOTE_DATA_LOSS } from './components/replica.ts'
+import { PROMOTE_DATA_LOSS } from './generated/replica.ts'
 import { nextRandom, pickWeighted } from './random.ts'
 import type { Game, GameLink, GameNode, Incident, Postmortem, Region, Zone } from './state.ts'
 import { activeIncident } from './state.ts'

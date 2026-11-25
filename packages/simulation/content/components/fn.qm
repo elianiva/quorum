@@ -1,0 +1,48 @@
+; Fn: the Component and the tables it reads.
+(import "./fn.ts" SERVERLESS_MS)
+
+(component fn
+  :code    fn
+  :name    "Serverless Function"
+  :product "AWS Lambda"
+  :group   compute
+  :dock    compute
+  :cost    0
+  :latency SERVERLESS_MS
+  :unlock  serverless
+  :flags   (stack limiting cold-start)
+  :accepts (requests except rt)
+  :sends   (q-read q-write auth q-search q-vector blob-put blob-get q-tx charge q-scan infer notify
+            callout k-write)
+  :blurb   "Runs your code per request with no box to pay for: nothing while it idles, a cold start when it has, and 1,000 executions at once.")
+
+(types "../catalog/runtimes.ts" LanguageId)
+
+(constants serverless
+  (request-price 0.00024)
+  (gb-second 0.02)
+  (memory-gb 1)
+  (concurrency 1_000)
+  (idle-seconds 5))
+
+(def COLD_START_MS
+  :type (record LanguageId number)
+  (:go      50
+   :rust    50
+   :zig     50
+   :haskell 100
+   :node    200
+   :python  200
+   :php     200
+   :ruby    300
+   :csharp  500
+   :elixir  500
+   :java    2_000))
+
+(def NATIVE_COLD_MS 100)
+
+(def FUNCTION_LIMIT_MS 900_000)
+
+(def EXPORT_MS_PER_GB 4_000)
+
+(def SERVERLESS_MS 1)

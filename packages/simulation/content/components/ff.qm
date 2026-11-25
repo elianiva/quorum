@@ -1,0 +1,13 @@
+; Ff: the Component and the tables it reads.
+(component ff
+  :code    ff
+  :name    "Feature Flags"
+  :product "LaunchDarkly"
+  :group   ops
+  :dock    platform
+  :cost    150
+  :latency 0ms
+  :burn    0.01
+  :max-out 0
+  :unlock  feature-flags
+  :blurb   "Rolls a Feature out to 5%, 25%, 50% or every user, and turns it off. Changes propagate to every server in seconds. A bad deploy reaches only the share that has it.")

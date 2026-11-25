@@ -1,0 +1,18 @@
+; Worker: the Component and the tables it reads.
+(component worker
+  :code    wrk
+  :name    "Worker"
+  :product "Sidekiq"
+  :group   compute
+  :dock    compute
+  :cost    60
+  :latency 0ms
+  :unlock  background-jobs
+  :flags   (sized stack limiting cold-start)
+  :accepts (task)
+  :sends   (q-read q-write blob-put notify callout)
+  :blurb   "Runs your code on tasks from a Queue. Users never wait for it. Link it to the data its tasks read and write.")
+
+(def POISON_SHARE 0.9)
+
+(def FETCH_MS 20)

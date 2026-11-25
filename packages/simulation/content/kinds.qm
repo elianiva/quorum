@@ -3,291 +3,100 @@
 ; or write stored data. External kinds leave the system for a third party, so no component
 ; receives them.
 (kinds
-  :request (page read write login search upload bot media rt buy job report ai feed hook push bid)
-  :backend (q-read q-write auth q-search q-vector blob-put task blob-get q-tx charge q-scan infer
-            notify callout k-write change)
-  :data (q-read q-write q-search q-vector blob-put q-tx blob-get q-scan k-write)
+  :request  (page read write login search upload bot media rt buy job report ai feed hook push bid)
+  :backend  (q-read q-write auth q-search q-vector blob-put task blob-get q-tx charge q-scan infer
+             notify callout k-write change)
+  :data     (q-read q-write q-search q-vector blob-put q-tx blob-get q-scan k-write)
   :external (callout))
+
 (types "../catalog/kinds.ts" Kind KindInfo RequestProfile)
 
-(def KINDS :type "Record<Kind, KindInfo>"
-  (:page (:label "Page view" :value 0.1 :color 7841014)
-   :read (:label "API read" :value 0.2 :color 5210080)
-   :write (:label "API write" :value 0.5 :color 7426741)
-   :login (:label "Login" :value 0.25 :color 13648779)
-   :search (:label "Search" :value 0.6 :color 3120783)
-   :upload (:label "Upload" :value 0.75 :color 14254635)
-   :bot (:label "Bot" :value 0 :color 9080728)
-   :media (:label "Video" :value 1 :color 14702159)
-   :rt (:label "Realtime" :value 0.025 :color 4175561)
-   :buy (:label "Checkout" :value 25 :color 3054935)
-   :job (:label "Export" :value 1.6 :color 10124111)
-   :report (:label "Report" :value 2 :color 5991103)
-   :ai (:label "AI prompt" :value 24 :color 11554759)
-   :q-read (:label "Read query" :value 0 :color 5210080)
-   :q-write (:label "Write query" :value 0 :color 7426741)
-   :auth (:label "Auth call" :value 0 :color 13648779)
-   :q-search (:label "Search query" :value 0 :color 3120783)
-   :q-vector (:label "Vector lookup" :value 0 :color 8023982)
-   :blob-put (:label "Object put" :value 0 :color 14254635)
-   :task (:label "Task" :value 0 :color 12099642)
-   :blob-get (:label "Object get" :value 0 :color 14702159)
-   :q-tx (:label "Transaction" :value 0 :color 3054935)
-   :charge (:label "Charge" :value 0 :color 3054935)
-   :q-scan (:label "Scan" :value 0 :color 5991103)
-   :infer (:label "Inference" :value 0 :color 11554759)
-   :feed (:label "Feed" :value 0.3 :color 13214247)
-   :hook (:label "Webhook" :value 0.4 :color 7180090)
-   :push (:label "Notify" :value 0.05 :color 14248858)
-   :bid (:label "Bid request" :value 0.001 :color 9338051)
-   :notify (:label "Push message" :value 0 :color 14248858)
-   :callout (:label "Customer call" :value 0 :color 7180090)
-   :k-write (:label "Timeline write" :value 0 :color 13214247)
-   :change (:label "Change" :value 0 :color 9072461)))
+(table kinds
+  :key  id
+  :type (record Kind KindInfo)
+  [id        label             value  color]
+  [page      "Page view"         0.1   7841014]
+  [read      "API read"          0.2   5210080]
+  [write     "API write"         0.5   7426741]
+  [login     "Login"            0.25  13648779]
+  [search    "Search"            0.6   3120783]
+  [upload    "Upload"           0.75  14254635]
+  [bot       "Bot"                 0   9080728]
+  [media     "Video"               1  14702159]
+  [rt        "Realtime"        0.025   4175561]
+  [buy       "Checkout"           25   3054935]
+  [job       "Export"            1.6  10124111]
+  [report    "Report"              2   5991103]
+  [ai        "AI prompt"          24  11554759]
+  [q-read    "Read query"          0   5210080]
+  [q-write   "Write query"         0   7426741]
+  [auth      "Auth call"           0  13648779]
+  [q-search  "Search query"        0   3120783]
+  [q-vector  "Vector lookup"       0   8023982]
+  [blob-put  "Object put"          0  14254635]
+  [task      "Task"                0  12099642]
+  [blob-get  "Object get"          0  14702159]
+  [q-tx      "Transaction"         0   3054935]
+  [charge    "Charge"              0   3054935]
+  [q-scan    "Scan"                0   5991103]
+  [infer     "Inference"           0  11554759]
+  [feed      "Feed"              0.3  13214247]
+  [hook      "Webhook"           0.4   7180090]
+  [push      "Notify"           0.05  14248858]
+  [bid       "Bid request"     0.001   9338051]
+  [notify    "Push message"        0  14248858]
+  [callout   "Customer call"       0   7180090]
+  [k-write   "Timeline write"      0  13214247]
+  [change    "Change"              0   9072461])
 
-(def INSIGHT_POOLS :type const [(... REQUEST_KINDS) "failure"])
-
-(def PROFILES :type "Record<RequestKind, RequestProfile>"
-  (:page (:cpu 4
-          :native false
-          :apdex 400
-          :calls (:q-read 2 :q-write 0)
-          :asyncCalls (record)
-          :orm true
-          :payloadKB 80
-          :asyncKB 80
-          :stream false
-          :compressible true
-          :inKB 0
-          :offload 0
-          :scored true)
-   :read (:cpu 1.5
-          :native false
-          :apdex 200
-          :calls (:q-read 1 :q-write 0)
-          :asyncCalls (record)
-          :orm true
-          :payloadKB 4
-          :asyncKB 4
-          :stream false
-          :compressible true
-          :inKB 0
-          :offload 0
-          :scored true)
-   :write (:cpu 2
-           :native false
-           :apdex 300
-           :calls (:q-read 0 :q-write 1)
-           :asyncCalls (record)
-           :orm false
-           :payloadKB 2
-           :asyncKB 2
-           :stream false
-           :compressible false
-           :inKB 0
-           :offload 0
-           :scored true)
-   :login (:cpu 80
-           :native true
-           :apdex 800
-           :calls (:q-read 1 :q-write 0)
-           :asyncCalls (record)
-           :orm false
-           :payloadKB 1
-           :asyncKB 1
-           :stream false
-           :compressible false
-           :inKB 0
-           :offload 0
-           :scored true)
-   :search (:cpu 3
-            :native false
-            :apdex 300
-            :calls (:q-search 1)
-            :asyncCalls (record)
-            :orm false
-            :payloadKB 8
-            :asyncKB 8
-            :stream false
-            :compressible true
-            :inKB 0
-            :offload 0
-            :scored true)
-   :upload (:cpu 120
-            :native true
-            :apdex 1_500
-            :calls (record)
-            :asyncCalls (:blob-put 1 :q-write 1)
-            :orm false
-            :payloadKB 2
-            :asyncKB 2
-            :stream false
-            :compressible false
-            :inKB 2_000
-            :offload 0.9
-            :completion 10_000
-            :scored true)
-   :bot (:cpu 2
-         :native false
-         :apdex 400
-         :calls (:q-read 1)
-         :asyncCalls (record)
-         :orm false
-         :payloadKB 4
-         :asyncKB 4
-         :stream false
-         :compressible true
-         :inKB 0
-         :offload 0
-         :scored false)
-   :media (:cpu 1
-           :native false
-           :apdex 1_000
-           :calls (:blob-get 1)
-           :asyncCalls (record)
-           :orm false
-           :payloadKB 5_000
-           :asyncKB 5_000
-           :stream true
-           :compressible false
-           :inKB 0
-           :offload 0
-           :scored true)
-   :rt (:cpu 0.3
-        :native false
-        :apdex 100
-        :calls (record)
-        :asyncCalls (record)
-        :orm false
-        :payloadKB 1
-        :asyncKB 1
-        :stream false
-        :compressible false
-        :inKB 0
-        :offload 0
-        :scored true)
-   :buy (:cpu 5
-         :native false
-         :apdex 2_000
-         :calls (:q-read 1 :q-tx 1 :charge 1)
-         :asyncCalls (record)
-         :orm false
-         :payloadKB 2
-         :asyncKB 2
-         :stream false
-         :compressible false
-         :inKB 0
-         :offload 0
-         :scored true)
-   :job (:cpu 400
-         :native false
-         :apdex 1_000
-         :calls (record)
-         :asyncCalls (:q-read 50)
-         :orm false
-         :payloadKB 10_000
-         :asyncKB 2
-         :stream false
-         :compressible false
-         :inKB 0
-         :offload 0.95
-         :completion 60_000
-         :scored true)
-   :report (:cpu 20
-            :native false
-            :apdex 3_000
-            :calls (:q-scan 1)
-            :asyncCalls (record)
-            :orm false
-            :payloadKB 50
-            :asyncKB 50
-            :stream false
-            :compressible true
-            :inKB 0
-            :offload 0
-            :scored true)
-   :ai (:cpu 5
-        :native false
-        :apdex 4_000
-        :calls (:infer 1)
-        :asyncCalls (record)
-        :orm false
-        :payloadKB 4
-        :asyncKB 4
-        :stream true
-        :compressible false
-        :inKB 0
-        :offload 0
-        :scored true)
-   :feed (:cpu 6
-          :native false
-          :apdex 300
-          :calls (:q-read 20)
-          :asyncCalls (record)
-          :orm false
-          :payloadKB 30
-          :asyncKB 30
-          :stream false
-          :compressible true
-          :inKB 0
-          :offload 0
-          :scored true)
-   :hook (:cpu 2
-          :native false
-          :apdex 1_000
-          :calls (record)
-          :asyncCalls (:callout 1)
-          :orm false
-          :payloadKB 2
-          :asyncKB 2
-          :stream false
-          :compressible false
-          :inKB 0
-          :offload 0.9
-          :scored true)
-   :push (:cpu 0.5
-          :native false
-          :apdex 1_000
-          :calls (record)
-          :asyncCalls (:notify 1)
-          :orm false
-          :payloadKB 1
-          :asyncKB 1
-          :stream false
-          :compressible false
-          :inKB 0
-          :offload 0.9
-          :scored true)
-   :bid (:cpu 0.5
-         :native false
-         :apdex 100
-         :calls (:q-read 1)
-         :asyncCalls (record)
-         :orm false
-         :payloadKB 1
-         :asyncKB 1
-         :stream false
-         :compressible false
-         :inKB 0
-         :offload 0
-         :scored true)))
+(table profiles
+  :key  id
+  :type (record RequestKind RequestProfile)
+  [id      cpu  native  apdex  calls  asyncCalls  orm  payloadKB  asyncKB  stream  compressible  inKB  offload  scored  completion]
+  [page      4  false     400  (:q-read 2 :q-write 0)  (record)  true  80  80  false  true  0  0  true  -]
+  [read    1.5  false     200  (:q-read 1 :q-write 0)  (record)  true  4  4  false  true  0  0  true  -]
+  [write     2  false     300  (:q-read 0 :q-write 1)  (record)  false  2  2  false  false  0  0  true  -]
+  [login    80  true      800  (:q-read 1 :q-write 0)  (record)  false  1  1  false  false  0  0  true  -]
+  [search    3  false     300  (:q-search 1)  (record)  false  8  8  false  true  0  0  true  -]
+  [upload  120  true    1_500  (record)  (:blob-put 1 :q-write 1)  false  2  2  false  false  2_000  0.9  true  10_000]
+  [bot       2  false     400  (:q-read 1)  (record)  false  4  4  false  true  0  0  false  -]
+  [media     1  false   1_000  (:blob-get 1)  (record)  false  5_000  5_000  true  false  0  0  true  -]
+  [rt      0.3  false     100  (record)  (record)  false  1  1  false  false  0  0  true  -]
+  [buy       5  false   2_000  (:q-read 1 :q-tx 1 :charge 1)  (record)  false  2  2  false  false  0  0  true  -]
+  [job     400  false   1_000  (record)  (:q-read 50)  false  10_000  2  false  false  0  0.95  true  60_000]
+  [report   20  false   3_000  (:q-scan 1)  (record)  false  50  50  false  true  0  0  true  -]
+  [ai        5  false   4_000  (:infer 1)  (record)  false  4  4  true  false  0  0  true  -]
+  [feed      6  false     300  (:q-read 20)  (record)  false  30  30  false  true  0  0  true  -]
+  [hook      2  false   1_000  (record)  (:callout 1)  false  2  2  false  false  0  0.9  true  -]
+  [push    0.5  false   1_000  (record)  (:notify 1)  false  1  1  false  false  0  0.9  true  -]
+  [bid     0.5  false     100  (:q-read 1)  (record)  false  1  1  false  false  0  0  true  -])
 
 (def QUERY_CPU
-  :type "Readonly<{\n  'q-read': number\n  'q-write': number\n  'q-search': number\n  'blob-put': number\n  'q-tx': number\n  'blob-get': number\n  'q-scan': number\n}>"
-  (:q-read 8 :q-write 25 :q-search 80 :blob-put 60 :q-tx 40 :blob-get 30 :q-scan 100))
+  :type QueryCosts
+  (:q-read   8
+   :q-write  25
+   :q-search 80
+   :blob-put 60
+   :q-tx     40
+   :blob-get 30
+   :q-scan   100))
 
 (def STREAM_KB 500)
+
 (def RT_HOLD_SECONDS 300)
 
-(def USER_MBPS 20)
-(def USER_UP_MBPS 20)
-(def GZIP_RATIO 0.3)
-(def GZIP_CPU 1.1)
+(constants gzip
+  (ratio 0.3)
+  (cpu 1.1))
 
 (def LOGIN_DELEGATED_CPU 2)
 
-(def CALLOUT_MS 800)
-(def CALLOUT_FAILURE 0.02)
+(constants callout
+  (ms 800)
+  (failure 0.02))
+
 (def FOLLOWERS 20)
-(def HYBRID_WRITES 0.5)
-(def HYBRID_READS 2)
+
+(constants hybrid
+  (writes 0.5)
+  (reads 2))

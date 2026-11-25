@@ -1,6 +1,6 @@
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
-import { SECOND_PROVIDER_FEE } from '@quorum/simulation/components/psp'
+import { SECOND_PROVIDER_FEE } from '@quorum/simulation/generated/psp'
 import type { GameNode } from '@quorum/simulation/state'
 import { Message } from '@/game/message.ts'
 import { type Panel, caption, picker, section } from './shared.ts'

@@ -1,0 +1,28 @@
+; Edge: the Component and the tables it reads.
+(import "./edge.ts" EDGE_MS)
+
+(component edge
+  :code     edge
+  :name     "Edge Function"
+  :product  "Cloudflare Workers"
+  :group    compute
+  :dock     compute
+  :cost     0
+  :latency  EDGE_MS
+  :unlock   edge-compute
+  :capacity unlimited
+  :flags    (stack tls)
+  :accepts  (requests except rt)
+  :sends    (q-read q-write auth q-search q-vector blob-put blob-get q-tx charge q-scan infer notify
+             callout k-write)
+  :blurb    "Runs small handlers next to the user: 5 ms, no cold start, and a CPU ceiling instead of a box.")
+
+(types "../catalog/runtimes.ts" LanguageId)
+
+(constants edge
+  (request-price 0.00036)
+  (cpu-ms 10)
+  (memory-mb 128)
+  (languages :type (array LanguageId) ["node" "rust" "go"])
+  (read-hit 0.3)
+  (ms 5))

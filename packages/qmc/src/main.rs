@@ -8,7 +8,9 @@ const USAGE: &str = "usage:
       compile every .qm file into the generated dir. --solver also writes the Solver's catalog.rs
       from the scalars catalog.ts exports.
   qmc expand <file.qm>…
-      print each file after macro expansion";
+      print each file after macro expansion
+  qmc fmt [--check] <file or dir>…
+      format content files, or report the files that would change";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -27,11 +29,72 @@ fn main() -> ExitCode {
             build(Path::new(content), Path::new(out), solver)
         }
         ["expand", paths @ ..] if !paths.is_empty() => expand(paths),
+        ["fmt", rest @ ..] if !rest.is_empty() => fmt(rest),
         _ => {
             eprintln!("{USAGE}");
             ExitCode::from(2)
         }
     }
+}
+
+fn fmt(args: &[&str]) -> ExitCode {
+    let (check, paths): (bool, &[&str]) = match args.split_first() {
+        Some((flag, rest)) if *flag == "--check" => (true, rest),
+        _ => (false, args),
+    };
+    if paths.is_empty() {
+        eprintln!("{USAGE}");
+        return ExitCode::from(2);
+    }
+    let mut files = Vec::new();
+    for path in paths.iter().map(Path::new) {
+        if path.is_dir() {
+            match qmc::qm_files(path) {
+                Ok(mut found) => files.append(&mut found),
+                Err(error) => {
+                    eprintln!("error: cannot read {}: {error}", path.display());
+                    return ExitCode::FAILURE;
+                }
+            }
+        } else {
+            files.push(path.to_path_buf());
+        }
+    }
+    let mut changed = 0;
+    for path in files {
+        let text = match std::fs::read_to_string(&path) {
+            Ok(text) => text,
+            Err(error) => {
+                eprintln!("error: cannot read {}: {error}", path.display());
+                return ExitCode::FAILURE;
+            }
+        };
+        let formatted = match qmc::fmt::format(&text) {
+            Ok(formatted) => formatted,
+            Err(error) => {
+                eprintln!("{}: {error}", path.display());
+                return ExitCode::FAILURE;
+            }
+        };
+        if formatted == text {
+            continue;
+        }
+        changed += 1;
+        if check {
+            println!("{}", path.display());
+        } else if let Err(error) = std::fs::write(&path, formatted) {
+            eprintln!("error: cannot write {}: {error}", path.display());
+            return ExitCode::FAILURE;
+        }
+    }
+    if check && changed > 0 {
+        eprintln!("qmc: {changed} file(s) are not formatted");
+        return ExitCode::FAILURE;
+    }
+    if !check && changed > 0 {
+        eprintln!("qmc: formatted {changed} file(s)");
+    }
+    ExitCode::SUCCESS
 }
 
 fn read(paths: &[&Path]) -> Result<Vec<(String, String)>, ExitCode> {
@@ -64,17 +127,13 @@ fn report(diagnostics: &[Diagnostic], sources: &SourceMap) -> bool {
 }
 
 fn build(content: &Path, out: &Path, solver: Option<(&Path, &Path)>) -> ExitCode {
-    let mut paths = match std::fs::read_dir(content) {
-        Ok(entries) => entries
-            .filter_map(|e| e.ok().map(|e| e.path()))
-            .filter(|p| p.extension().is_some_and(|x| x == "qm"))
-            .collect::<Vec<_>>(),
+    let paths = match qmc::qm_files(content) {
+        Ok(paths) => paths,
         Err(error) => {
             eprintln!("error: cannot read {}: {error}", content.display());
             return ExitCode::FAILURE;
         }
     };
-    paths.sort();
     let inputs = match read(&paths.iter().map(|p| p.as_path()).collect::<Vec<_>>()) {
         Ok(inputs) => inputs,
         Err(code) => return code,

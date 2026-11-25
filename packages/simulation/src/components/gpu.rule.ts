@@ -1,7 +1,9 @@
-import { type Action, notAllowed, ok, patch, withNode, locked } from '../action-kit.ts'
+import { type Action, notAllowed, ok, patch, withNode } from '../action-kit.ts'
 import type { Game, GpuType } from '../state.ts'
 import { activeIncident } from '../state.ts'
-import { type GpuModel, type GpuPrecision, GPU_BATCHES, GPU_MODELS } from '../catalog.ts'
+import { type GpuModel, GPU_BATCHES, GPU_MODELS } from '../catalog.ts'
+
+export { setPrecision } from '../generated/gpu.rule.ts'
 
 import { restarted } from '../lookups.ts'
 
@@ -12,15 +14,6 @@ export const setGpuType = (game: Game, id: string, gpu: GpuType): Action =>
     if (gpu === 'h100' && activeIncident(game)?.kind === 'gpu-shortage')
       return notAllowed('No H100 capacity this month.')
     return ok(patch(game, id, { gpu, ...restarted(node) }))
-  })
-
-export const setPrecision = (game: Game, id: string, precision: GpuPrecision): Action =>
-  withNode(game, id, (node) => {
-    if (node.type !== 'gpu') return notAllowed('Only a GPU Node has a precision.')
-    return (
-      locked(game, 'gpu.precision', precision) ??
-      ok(node.precision === precision ? game : patch(game, id, { precision }))
-    )
   })
 
 export const setBatch = (game: Game, id: string, batch: number): Action =>

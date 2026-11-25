@@ -1,0 +1,68 @@
+; Server: the Component and the tables it reads.
+(component server
+  :code    app
+  :name    "App Server"
+  :product "VM"
+  :group   compute
+  :dock    compute
+  :cost    60
+  :latency 2ms
+  :flags   (sized stack limiting cold-start)
+  :accepts (requests)
+  :sends   (q-read q-write auth q-search q-vector blob-put task blob-get q-tx charge q-scan infer
+            notify callout k-write)
+  :blurb   "Runs your code. Answers requests and sends queries to the database.")
+
+(state server
+  (field workers number
+    :required)
+  (field local-db bool
+    :required)
+  (field crashes number
+    :default 0)
+  (field recycle bool
+    :default false)
+  (field compress bool
+    :default false)
+  (field pm (enum static dynamic ondemand)
+    :default static
+    :schema  PmMode)
+  (field collector (enum g1 parallel zgc)
+    :default g1
+    :schema  Collector)
+  (field gogc number
+    :default 100)
+  (field shed bool
+    :default false)
+  (field degrade bool
+    :default false)
+  (field ryw bool
+    :default false)
+  (field fanout (enum pull push)
+    :default pull
+    :schema  Fanout
+    :set     (setFanout :refuse "Only App Servers build feeds.")))
+
+(gate server compress
+  :research gzip
+  :what     "Gzip"
+  :free     ())
+
+(gate server shed
+  :research load-shedding
+  :what     "Load shedding"
+  :locked   (true))
+
+(gate server degrade
+  :research graceful-degradation
+  :what     "Degradation"
+  :locked   (true))
+
+(gate server ryw
+  :research ryw-routing
+  :what     "Read-your-writes"
+  :locked   (true))
+
+(def serverGlossary
+  :type (array string)
+  ["process-per-request"])

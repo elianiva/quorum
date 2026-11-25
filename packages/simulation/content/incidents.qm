@@ -5,427 +5,634 @@
 ;
 ; :severity (3 -> 2) starts at 3 and escalates to 2 when the incident is left alone; 1 is the
 ; worst. Escalating to the same severity still makes the incident last longer.
-
 ; The eight fallacies of distributed computing. Each one is taught by exactly one incident.
 (fallacies reliable latency bandwidth secure topology administrator transport-cost homogeneous)
 
 ; How many times normal traffic a surge incident brings.
-(const PREMIERE_SURGE 4)
-(const LAUNCH_SURGE 6)
-(const FLASH_SALE_SURGE 20)
+(const premiere-surge 4)
+
+(const launch-surge 6)
+
+(const flash-sale-surge 20)
 
 (incident spike
-  :name "Traffic spike" :era 1 :severity (3 -> 2) :duration 30s
-  :actions (caching alerting) :cascades connections
-  :cause "A big news site linked to you. Demand tripled."
+  :name       "Traffic spike"
+  :era        pre-seed
+  :severity   (3 -> 2)
+  :duration   30s
+  :actions    (caching alerting)
+  :cascades   connections
+  :cause      "A big news site linked to you. Demand tripled."
   :prevention "Spare capacity, a cache, more App Servers.")
 
 (incident instance
-  :name "Instance failure" :era 1 :severity (3 -> 2) :duration 60s
-  :actions (load-balancing health-checks)
-  :cause "The host under a VM died."
+  :name       "Instance failure"
+  :era        pre-seed
+  :severity   (3 -> 2)
+  :duration   60s
+  :actions    (load-balancing health-checks)
+  :cause      "The host under a VM died."
   :prevention "A second copy behind a Load Balancer, which skips dead hosts.")
 
 (incident connections
-  :name "Connection exhaustion" :era 1 :severity (2 -> 1) :duration 40s
-  :actions (pooling)
-  :cause "A deploy doubled every connection pool. Postgres refused the excess."
+  :name       "Connection exhaustion"
+  :era        pre-seed
+  :severity   (2 -> 1)
+  :duration   40s
+  :actions    (pooling)
+  :cause      "A deploy doubled every connection pool. Postgres refused the excess."
   :prevention "A Connection Pooler, or smaller pools.")
 
 (incident loop
-  :name "Event loop block" :era 1 :severity (3 -> 2) :duration 35s
-  :actions (libuv-pool auth-provider)
-  :cause "Password hashing cost went from 10 to 12 rounds: 4× CPU per login."
+  :name       "Event loop block"
+  :era        pre-seed
+  :severity   (3 -> 2)
+  :duration   35s
+  :actions    (libuv-pool auth-provider)
+  :cause      "Password hashing cost went from 10 to 12 rounds: 4× CPU per login."
   :prevention "The libuv thread pool, an Auth Provider, or a runtime without one event loop.")
 
 (incident leak
-  :name "Memory leak" :era 1 :severity (3 -> 2) :duration 60s
-  :actions (metrics alerting) :cascades gc-storm
-  :cause "A persistent process leaked memory until the kernel killed it."
+  :name       "Memory leak"
+  :era        pre-seed
+  :severity   (3 -> 2)
+  :duration   60s
+  :actions    (metrics alerting)
+  :cascades   gc-storm
+  :cause      "A persistent process leaked memory until the kernel killed it."
   :prevention "Restart the service, or run PHP: it frees everything after each request.")
 
 (incident slow-query
-  :name "Slow query" :era 1 :severity (3 -> 2) :duration 300s
-  :actions (query-analysis caching) :fallacy latency :cascades retry-storm
-  :cause "A new feature shipped a query with no index. Each read scans the whole table."
+  :name       "Slow query"
+  :era        pre-seed
+  :severity   (3 -> 2)
+  :duration   300s
+  :actions    (query-analysis caching)
+  :fallacy    latency
+  :cascades   retry-storm
+  :cause      "A new feature shipped a query with no index. Each read scans the whole table."
   :prevention "Query analysis finds the missing index. A Cache keeps most reads off the table.")
 
 (incident bad-deploy
-  :name "Bad deploy" :era 1 :severity (3 -> 2) :duration 120s
-  :actions (ci testing-culture)
-  :cause "A deploy shipped a bug. Requests to the App Servers fail."
+  :name       "Bad deploy"
+  :era        pre-seed
+  :severity   (3 -> 2)
+  :duration   120s
+  :actions    (ci testing-culture)
+  :cause      "A deploy shipped a bug. Requests to the App Servers fail."
   :prevention "A pipeline that can roll back, automated tests, and smaller deploys.")
 
 (incident bot-surge
-  :name "Bot surge" :era 2 :severity (3 -> 2) :duration 90s
-  :actions (waf)
-  :cause "Scrapers found the site. Half of all traffic was bots."
+  :name       "Bot surge"
+  :era        seed
+  :severity   (3 -> 2)
+  :duration   90s
+  :actions    (waf)
+  :cause      "Scrapers found the site. Half of all traffic was bots."
   :prevention "A WAF in front of the App Servers.")
 
 (incident stuffing
-  :name "Credential stuffing" :era 2 :severity (2 -> 1) :duration 60s
-  :actions (waf auth-provider)
-  :cause "Bots tried leaked passwords: 20× the logins, each one a bcrypt hash."
+  :name       "Credential stuffing"
+  :era        seed
+  :severity   (2 -> 1)
+  :duration   60s
+  :actions    (waf auth-provider)
+  :cause      "Bots tried leaked passwords: 20× the logins, each one a bcrypt hash."
   :prevention "A WAF blocks most of them. An Auth Provider hashes the rest.")
 
 (incident stampede
-  :name "Cache stampede" :era 2 :severity (2 -> 1) :duration 90s
-  :actions (stampede-protection cache-warming) :cascades slow-query
-  :cause "The Cache restarted empty. Every miss went to the database at once."
+  :name       "Cache stampede"
+  :era        seed
+  :severity   (2 -> 1)
+  :duration   90s
+  :actions    (stampede-protection cache-warming)
+  :cascades   slow-query
+  :cause      "The Cache restarted empty. Every miss went to the database at once."
   :prevention "Stampede protection coalesces misses. Cache warming refills it before traffic.")
 
 (incident poison
-  :name "Poison message" :era 2 :severity (3 -> 2) :duration 120s
-  :cause "A task that always fails kept coming back. Workers retried it instead of the queue."
+  :name       "Poison message"
+  :era        seed
+  :severity   (3 -> 2)
+  :duration   120s
+  :cause      "A task that always fails kept coming back. Workers retried it instead of the queue."
   :prevention "A dead-letter queue moves a failing task aside.")
 
 (incident ddos
-  :name "DDoS" :era 2 :severity (2 -> 1) :duration 60s
-  :actions (waf cdn) :fallacy bandwidth
-  :cause "An attacker flooded the edge with 50 times normal traffic."
+  :name       "DDoS"
+  :era        seed
+  :severity   (2 -> 1)
+  :duration   60s
+  :actions    (waf cdn)
+  :fallacy    bandwidth
+  :cause      "An attacker flooded the edge with 50 times normal traffic."
   :prevention "A WAF, with Under attack mode when it starts. A CDN takes the cacheable part.")
 
 (incident certificate
-  :name "Certificate expired" :era 2 :severity (2 -> 1) :duration 60s
-  :actions (cert-automation)
-  :cause "The TLS certificate expired. Every browser refused the site."
+  :name       "Certificate expired"
+  :era        seed
+  :severity   (2 -> 1)
+  :duration   60s
+  :actions    (cert-automation)
+  :cause      "The TLS certificate expired. Every browser refused the site."
   :prevention "Certificate automation renews it before it expires.")
 
 (incident psp-outage
-  :name "Payment provider outage" :era 3 :severity (2 -> 1) :duration 60s
-  :cause "The Payment Provider went down. Every checkout failed."
+  :name       "Payment provider outage"
+  :era        series-a
+  :severity   (2 -> 1)
+  :duration   60s
+  :cause      "The Payment Provider went down. Every checkout failed."
   :prevention "Nothing on your side: it is their outage. Checkouts come back when it ends.")
 
 (incident zone
-  :name "Zone outage" :era 3 :severity (2 -> 1) :duration 120s
-  :actions (multi-az)
-  :cause "A whole zone failed. Every Node in it went grey."
+  :name       "Zone outage"
+  :era        series-a
+  :severity   (2 -> 1)
+  :duration   120s
+  :actions    (multi-az)
+  :cause      "A whole zone failed. Every Node in it went grey."
   :prevention "Copies in a second zone with spare capacity, and a Database standby.")
 
 (incident disk-full
-  :name "Disk full" :era 2 :severity (2 -> 1) :duration 60s
-  :actions (alerting)
-  :cause "Logs and WAL filled the Database disk. Every write failed."
+  :name       "Disk full"
+  :era        seed
+  :severity   (2 -> 1)
+  :duration   60s
+  :actions    (alerting)
+  :cause      "Logs and WAL filled the Database disk. Every write failed."
   :prevention "Alerts on disk catch it early. Expand the volume to end it.")
 
 (incident repl-lag
-  :name "Replication lag" :era 3 :severity (3 -> 2) :duration 60s
-  :actions (ryw-routing)
-  :cause "A burst of writes left the replicas seconds behind. Reads after a write came back stale."
+  :name       "Replication lag"
+  :era        series-a
+  :severity   (3 -> 2)
+  :duration   60s
+  :actions    (ryw-routing)
+  :cause      "A burst of writes left the replicas seconds behind. Reads after a write came back stale."
   :prevention "Read-your-writes routing sends those reads to the primary.")
 
 (incident latency-regression
-  :name "Latency regression" :era 3 :severity (3 -> 2) :duration 60s
-  :actions (percentiles tracing)
-  :cause "A deploy put one more synchronous call on every request: each answer is 150 ms slower."
+  :name       "Latency regression"
+  :era        series-a
+  :severity   (3 -> 2)
+  :duration   60s
+  :actions    (percentiles tracing)
+  :cause      "A deploy put one more synchronous call on every request: each answer is 150 ms slower."
   :prevention "Percentiles and tracing on the request path, and a canary that watches p99.")
 
 (incident gc-storm
-  :name "GC pause storm" :era 3 :severity (3 -> 2) :duration 60s
-  :actions (zgc gogc-tuning)
-  :cause "The heap passed 90%. The collector paused one request in ten."
+  :name       "GC pause storm"
+  :era        series-a
+  :severity   (3 -> 2)
+  :duration   60s
+  :actions    (zgc gogc-tuning)
+  :cause      "The heap passed 90%. The collector paused one request in ten."
   :prevention "More memory, ZGC, or GOGC tuning. Restart to end it.")
 
 (incident retry-storm
-  :name "Retry storm" :era 3 :severity (2 -> 1) :duration 300s
-  :actions (backoff-jitter circuit-breakers load-shedding) :cascades connections
-  :cause "The Database slowed for 20 s. Callers retried at once, and the retries kept it overloaded."
+  :name       "Retry storm"
+  :era        series-a
+  :severity   (2 -> 1)
+  :duration   300s
+  :actions    (backoff-jitter circuit-breakers load-shedding)
+  :cascades   connections
+  :cause      "The Database slowed for 20 s. Callers retried at once, and the retries kept it overloaded."
   :prevention "Backoff with jitter, circuit breakers, and load shedding.")
 
 (incident deadline-day
-  :name "Deadline day" :era 2 :severity (2 -> 1) :duration 90s
-  :actions (load-shedding autoscaling)
-  :cause "The contract's deadline landed: every agency sent its work at once, 3× the usual demand."
+  :name       "Deadline day"
+  :era        seed
+  :severity   (2 -> 1)
+  :duration   90s
+  :actions    (load-shedding autoscaling)
+  :cause      "The contract's deadline landed: every agency sent its work at once, 3× the usual demand."
   :prevention "Reserved capacity, load shedding, and a Queue for the deadline work.")
 
 (incident double-charge
-  :name "Double charge" :era 3 :severity (2 -> 1) :duration 60s
-  :actions (idempotency-keys)
-  :cause "The Payment Provider slowed. Charges timed out and were retried, and some charged twice."
+  :name       "Double charge"
+  :era        series-a
+  :severity   (2 -> 1)
+  :duration   60s
+  :actions    (idempotency-keys)
+  :cause      "The Payment Provider slowed. Charges timed out and were retried, and some charged twice."
   :prevention "Idempotency keys. Stop retries on the charge Link to end it.")
 
 (incident report-db
-  :name "Report kills the database" :era 4 :severity (2 -> 1) :duration 90s
-  :actions (data-warehouse)
-  :cause "A quarter-end report scanned every table on the primary. Every kind slowed."
+  :name       "Report kills the database"
+  :era        series-b
+  :severity   (2 -> 1)
+  :duration   90s
+  :actions    (data-warehouse)
+  :cause      "A quarter-end report scanned every table on the primary. Every kind slowed."
   :prevention "A Data Warehouse takes the scans off the primary.")
 
 (incident gpu-shortage
-  :name "GPU shortage" :era 4 :severity (3 -> 2) :duration 120s
-  :actions (hosted-models)
-  :cause "The provider reclaimed a GPU Node. No H100 capacity this month."
+  :name       "GPU shortage"
+  :era        series-b
+  :severity   (3 -> 2)
+  :duration   120s
+  :actions    (hosted-models)
+  :cause      "The provider reclaimed a GPU Node. No H100 capacity this month."
   :prevention "The LLM API takes prompts when GPUs run short.")
 
 (incident regex
-  :name "Regex backtracking" :era 4 :severity (1 -> 1) :duration 60s
-  :cause "A new WAF rule backtracked on long inputs. Every WAF ran at 100% CPU."
+  :name       "Regex backtracking"
+  :era        series-b
+  :severity   (1 -> 1)
+  :duration   60s
+  :cause      "A new WAF rule backtracked on long inputs. Every WAF ran at 100% CPU."
   :prevention "Roll rules out to a canary first. Disable the rule to end it.")
 
 (incident region
-  :name "Region outage" :era 5 :severity (1 -> 1) :duration 180s
-  :actions (multi-region geo-dns)
-  :cause "A whole region failed. Its board went grey."
+  :name       "Region outage"
+  :era        series-c
+  :severity   (1 -> 1)
+  :duration   180s
+  :actions    (multi-region geo-dns)
+  :cause      "A whole region failed. Its board went grey."
   :prevention "A second region, GeoDNS to send users there, and data that lives in both.")
 
 (incident partition
-  :name "Network partition" :era 5 :severity (1 -> 1) :duration 45s
-  :actions (consensus) :fallacy reliable
-  :cause "Regions lost contact. Calls between them timed out, and leader-based writes diverged."
+  :name       "Network partition"
+  :era        series-c
+  :severity   (1 -> 1)
+  :duration   45s
+  :actions    (consensus)
+  :fallacy    reliable
+  :cause      "Regions lost contact. Calls between them timed out, and leader-based writes diverged."
   :prevention "A consensus store keeps one leader. Fence the old leader to end it.")
 
 (incident hot-key
-  :name "Hot key" :era 5 :severity (2 -> 1) :duration 90s
-  :actions (hybrid-fanout) :cascades stampede
-  :cause "A celebrity posted. 30% of reads asked for one key, and its shard saturated."
+  :name       "Hot key"
+  :era        series-c
+  :severity   (2 -> 1)
+  :duration   90s
+  :actions    (hybrid-fanout)
+  :cascades   stampede
+  :cause      "A celebrity posted. 30% of reads asked for one key, and its shard saturated."
   :prevention "Split hot keys across shards and cache them in the App Servers.")
 
 (incident bgp
-  :name "BGP misconfiguration" :era 5 :severity (1 -> 1) :duration 120s
-  :fallacy topology
-  :cause "A routing change withdrew the company from the internet. No region was reachable."
+  :name       "BGP misconfiguration"
+  :era        series-c
+  :severity   (1 -> 1)
+  :duration   120s
+  :fallacy    topology
+  :cause      "A routing change withdrew the company from the internet. No region was reachable."
   :prevention "Review routing changes. Roll back to end it.")
 
 (incident audit
-  :name "Audit finding" :era 6 :severity (3 -> 2) :duration 10s
-  :actions (security-team)
-  :cause "A SOC 2 auditor found a gap. The DR drill no longer counts."
+  :name       "Audit finding"
+  :era        pre-ipo
+  :severity   (3 -> 2)
+  :duration   10s
+  :actions    (security-team)
+  :cause      "A SOC 2 auditor found a gap. The DR drill no longer counts."
   :prevention "A Security team fixes findings before they reset anything.")
 
 (incident dr-drill
-  :name "DR drill" :era 6 :severity (1 -> 1) :duration 60s
-  :cause "A scripted failure of the home region, to measure recovery."
+  :name       "DR drill"
+  :era        pre-ipo
+  :severity   (1 -> 1)
+  :duration   60s
+  :cause      "A scripted failure of the home region, to measure recovery."
   :prevention "Serve every kind from another region within the hour, without losing writes.")
 
 (incident breach
-  :name "Data breach" :era 1 :severity (1 -> 1) :duration 120s
-  :fallacy secure
-  :cause "A disclosed vulnerability stayed unpatched past its deadline, and someone used it."
+  :name       "Data breach"
+  :era        pre-seed
+  :severity   (1 -> 1)
+  :duration   120s
+  :fallacy    secure
+  :cause      "A disclosed vulnerability stayed unpatched past its deadline, and someone used it."
   :prevention "Patch the ticket before it expires. The Team backlog shows the deadline.")
 
 (incident credential-leak
-  :name "Credential leak" :era 1 :severity (1 -> 1) :duration 90s
-  :actions (waf)
-  :cause "A phishing page took the Company credentials, and a stranger used them."
+  :name       "Credential leak"
+  :era        pre-seed
+  :severity   (1 -> 1)
+  :duration   90s
+  :actions    (waf)
+  :cause      "A phishing page took the Company credentials, and a stranger used them."
   :prevention "Read the domain, not the logo. Report the Mail as phishing and it loses its button.")
 
 (incident cluster-upgrade
-  :name "Forced cluster upgrade" :era 3 :severity (2 -> 1) :duration 60s
-  :cause "The cloud provider upgraded a Kubernetes Cluster off a version it no longer supports. Pods that used removed APIs crash-looped."
+  :name       "Forced cluster upgrade"
+  :era        series-a
+  :severity   (2 -> 1)
+  :duration   60s
+  :cause      "The cloud provider upgraded a Kubernetes Cluster off a version it no longer supports. Pods that used removed APIs crash-looped."
   :prevention "Upgrade clusters at least once a quarter, or let a Platform team keep them current.")
 
 (incident config
-  :name "Bad config push" :era 5 :severity (1 -> 1) :duration 60s
-  :actions (gitops) :fallacy administrator
-  :cause "A config change reached every App Server and Worker at once, and they crashed together. GitOps all at once carried it to every Mirror too."
+  :name       "Bad config push"
+  :era        series-c
+  :severity   (1 -> 1)
+  :duration   60s
+  :actions    (gitops)
+  :fallacy    administrator
+  :cause      "A config change reached every App Server and Worker at once, and they crashed together. GitOps all at once carried it to every Mirror too."
   :prevention "Roll back to end it. GitOps Staged holds a change on one region first.")
 
 (incident spot-reclaim
-  :name "Spot reclaim" :era 3 :severity (3 -> 2) :duration 30s
-  :cause "The provider needed the capacity back. It reclaimed a Spot Node after a 10-second warning."
+  :name       "Spot reclaim"
+  :era        series-a
+  :severity   (3 -> 2)
+  :duration   30s
+  :cause      "The provider needed the capacity back. It reclaimed a Spot Node after a 10-second warning."
   :prevention "Mixed fleets, graceful shutdown, and on-demand copies behind a Load Balancer.")
 
 (incident stale-read
-  :name "Stale reads" :era 2 :severity (2 -> 1) :duration 60s
-  :actions (caching)
-  :cause "A Cache served values past their TTL: a write-heavy table outran its invalidation, and reads of the same rows came back old."
+  :name       "Stale reads"
+  :era        seed
+  :severity   (2 -> 1)
+  :duration   60s
+  :actions    (caching)
+  :cause      "A Cache served values past their TTL: a write-heavy table outran its invalidation, and reads of the same rows came back old."
   :prevention "A shorter TTL, a Cache that writes through, or read-your-writes routing.")
 
 (incident reconnect
-  :name "Reconnect storm" :era 3 :severity (2 -> 1) :duration 20s
-  :actions (websockets)
-  :cause "A Realtime Hub restarted. Every client reconnected in the same second."
+  :name       "Reconnect storm"
+  :era        series-a
+  :severity   (2 -> 1)
+  :duration   20s
+  :actions    (websockets)
+  :cause      "A Realtime Hub restarted. Every client reconnected in the same second."
   :prevention "Reconnect jitter spreads the wave, and Clustering gives it more than one box.")
 
 (incident runaway-bill
-  :name "Runaway bill" :era 3 :severity (2 -> 1) :duration 60s
-  :actions (autoscaling) :fallacy transport-cost
-  :cause "An Autoscaler grew to its ceiling without a spike to serve, and Burn rose with no extra revenue."
+  :name       "Runaway bill"
+  :era        series-a
+  :severity   (2 -> 1)
+  :duration   60s
+  :actions    (autoscaling)
+  :fallacy    transport-cost
+  :cause      "An Autoscaler grew to its ceiling without a spike to serve, and Burn rose with no extra revenue."
   :prevention "Lower the Autoscaler ceiling, and read the cloud bill line by line.")
 
 (incident mtu
-  :name "MTU mismatch" :era 3 :severity (2 -> 1) :duration 60s
-  :fallacy homogeneous
-  :cause "A partner network uses a smaller packet size. Uploads larger than its MTU time out on the way in."
+  :name       "MTU mismatch"
+  :era        series-a
+  :severity   (2 -> 1)
+  :duration   60s
+  :fallacy    homogeneous
+  :cause      "A partner network uses a smaller packet size. Uploads larger than its MTU time out on the way in."
   :prevention "Clamp the packet size, or keep large uploads on one network.")
 
 (incident hot-shard
-  :name "Big tenant hot shard" :era 4 :severity (2 -> 1) :duration 90s
-  :actions (sharding caching)
-  :cause "The biggest tenant's key landed on one shard. Its reads and writes cost 3× the CPU, and everything else on that shard waits behind it."
+  :name       "Big tenant hot shard"
+  :era        series-b
+  :severity   (2 -> 1)
+  :duration   90s
+  :actions    (sharding caching)
+  :cause      "The biggest tenant's key landed on one shard. Its reads and writes cost 3× the CPU, and everything else on that shard waits behind it."
   :prevention "Shard the tenant by key, and keep its reads in a Cache in front of the Database.")
 
 (incident premiere-spike
-  :name "Premiere spike" :era 3 :severity (2 -> 1) :duration 90s
-  :actions (tiered-caching load-shedding) :surge (media PREMIERE_SURGE)
-  :cause "A premiere dropped: 4× the usual video demand, all in the same minute."
+  :name       "Premiere spike"
+  :era        series-a
+  :severity   (2 -> 1)
+  :duration   90s
+  :actions    (tiered-caching load-shedding)
+  :surge      (media premiere-surge)
+  :cause      "A premiere dropped: 4× the usual video demand, all in the same minute."
   :prevention "Tiered caching at the CDN, reserved capacity, and load shedding.")
 
 (incident launch-day
-  :name "Launch day" :era 3 :severity (2 -> 1) :duration 90s
-  :actions (websockets load-shedding) :surge (rt LAUNCH_SURGE)
-  :cause "The game launched: 6× the usual realtime messages, and every client connects at once."
+  :name       "Launch day"
+  :era        series-a
+  :severity   (2 -> 1)
+  :duration   90s
+  :actions    (websockets load-shedding)
+  :surge      (rt launch-surge)
+  :cause      "The game launched: 6× the usual realtime messages, and every client connects at once."
   :prevention "Realtime Hubs sized for the peak, reconnect jitter, and load shedding.")
 
 (incident flash-sale
-  :name "Flash sale" :era 3 :severity (2 -> 1) :duration 90s
-  :actions (autoscaling load-shedding) :surge (buy FLASH_SALE_SURGE)
-  :cause "A flash sale: 20× the usual checkouts for a few minutes."
+  :name       "Flash sale"
+  :era        series-a
+  :severity   (2 -> 1)
+  :duration   90s
+  :actions    (autoscaling load-shedding)
+  :surge      (buy flash-sale-surge)
+  :cause      "A flash sale: 20× the usual checkouts for a few minutes."
   :prevention "A Queue for the checkout work, an Autoscaler, and load shedding.")
 
 (incident jvm-warmup
-  :name "JVM warmup under load" :era 2 :severity 3 :duration 30s
-  :actions (graal-native autoscaling)
-  :cause "An Autoscaler added Java App Servers during a spike, and the new copies ran cold: 30% speed for their first 30 s."
+  :name       "JVM warmup under load"
+  :era        seed
+  :severity   3
+  :duration   30s
+  :actions    (graal-native autoscaling)
+  :cause      "An Autoscaler added Java App Servers during a spike, and the new copies ran cold: 30% speed for their first 30 s."
   :prevention "Slow start on the Load Balancer, scheduled scaling, and a GraalVM native image, which starts warm. With slow start a new copy takes traffic gradually, so it never answers cold.")
 
 (incident migration-lock
-  :name "Schema migration lock" :era 3 :severity 2 :duration 150s
-  :actions (online-migrations) :cascades retry-storm
-  :cause "A migration ran ALTER TABLE on the biggest table. It held the lock while it copied it, and every write queued behind it until it timed out."
+  :name       "Schema migration lock"
+  :era        series-a
+  :severity   2
+  :duration   150s
+  :actions    (online-migrations)
+  :cascades   retry-storm
+  :cause      "A migration ran ALTER TABLE on the biggest table. It held the lock while it copied it, and every write queued behind it until it timed out."
   :prevention "Online schema migrations change a big table without holding the lock.")
 
 (incident supply-chain
-  :name "Supply-chain compromise" :era 4 :severity 1 :duration 90s
-  :actions (dependency-scanning deno)
-  :cause "A dependency published a malicious version, and a deploy installed it. The package ran in the App Servers and shipped data out."
+  :name       "Supply-chain compromise"
+  :era        series-b
+  :severity   1
+  :duration   90s
+  :actions    (dependency-scanning deno)
+  :cause      "A dependency published a malicious version, and a deploy installed it. The package ran in the App Servers and shipped data out."
   :prevention "Dependency scanning catches a published backdoor before the build installs it; Deno permissions keep a package from reading what it does not need.")
 
 (incident accidental-delete
-  :name "Accidental delete" :era 4 :severity 2 :duration 120s
-  :actions (pitr restore-drills) :cascades repl-lag
-  :cause "An operator deleted data. A table was gone, and every query that needed it failed."
+  :name       "Accidental delete"
+  :era        series-b
+  :severity   2
+  :duration   120s
+  :actions    (pitr restore-drills)
+  :cascades   repl-lag
+  :cause      "An operator deleted data. A table was gone, and every query that needed it failed."
   :prevention "Point-in-time recovery restores the table to the minute before the delete. Restore drills prove the backup restores.")
 
 (incident operator-typo
-  :name "Operator typo" :era 5 :severity 2 :duration 120s
-  :actions (infra-as-code)
-  :cause "A command meant to remove one Node matched the whole Component, and most of its Nodes went with it."
+  :name       "Operator typo"
+  :era        series-c
+  :severity   2
+  :duration   120s
+  :actions    (infra-as-code)
+  :cause      "A command meant to remove one Node matched the whole Component, and most of its Nodes went with it."
   :prevention "A plan and a review before a change is applied show what it will remove, so a typo stops at the plan.")
 
 (incident leap-second
-  :name "Leap second or clock skew" :era 5 :severity 1 :duration 60s
-  :actions (leap-smearing) :cascades partition
-  :cause "A leap second repeated a second of the clock. Timers fired twice, leases expired early, and requests and locks across one region timed out."
+  :name       "Leap second or clock skew"
+  :era        series-c
+  :severity   1
+  :duration   60s
+  :actions    (leap-smearing)
+  :cascades   partition
+  :cause      "A leap second repeated a second of the clock. Timers fired twice, leases expired early, and requests and locks across one region timed out."
   :prevention "Leap smearing spreads the second over a day, so no clock ever jumps.")
 
 (incident table-bloat
-  :name "Table bloat" :era 3 :severity (2 -> 1) :duration 120s
-  :actions (retention)
-  :cause "PostgreSQL keeps the old version of every updated row until VACUUM cleans it. Heavy updates outran the cleaning, and the table filled with dead rows: every read and write costs more CPU."
+  :name       "Table bloat"
+  :era        series-a
+  :severity   (2 -> 1)
+  :duration   120s
+  :actions    (retention)
+  :cause      "PostgreSQL keeps the old version of every updated row until VACUUM cleans it. Heavy updates outran the cleaning, and the table filled with dead rows: every read and write costs more CPU."
   :prevention "A retention window keeps the tables small, and a MySQL engine has no dead rows to clean.")
 
 (incident page-leak
-  :name "Cached page leak" :era 3 :severity 1 :duration 90s
-  :cause "The CDN cached a logged-in page under a key that left out the cookie, and served one user’s page to another."
+  :name       "Cached page leak"
+  :era        series-a
+  :severity   1
+  :duration   90s
+  :cause      "The CDN cached a logged-in page under a key that left out the cookie, and served one user’s page to another."
   :prevention "A cache key that holds the cookie, so a personal page is never shared.")
 
 (incident stale-opcache
-  :name "Stale OPcache" :era 1 :severity 3 :duration 90s
-  :actions (ci) :failures 30%
-  :cause "OPcache runs with validate_timestamps off, and a deploy did not reset it. The PHP servers kept running the old code against the new schema, and a share of requests failed."
+  :name       "Stale OPcache"
+  :era        pre-seed
+  :severity   3
+  :duration   90s
+  :actions    (ci)
+  :failures   30%
+  :cause      "OPcache runs with validate_timestamps off, and a deploy did not reset it. The PHP servers kept running the old code against the new schema, and a share of requests failed."
   :prevention "A CI/CD Pipeline resets OPcache on every deploy. A restart clears the cache by hand.")
 
 (incident bun-compat
-  :name "Runtime compatibility" :era 3 :severity 3 :duration 90s
-  :actions (testing-culture) :failures 20%
-  :cause "A package that works on Node.js does not work on Bun, which is less mature. A share of requests that touched it failed until the package was swapped."
+  :name       "Runtime compatibility"
+  :era        series-a
+  :severity   3
+  :duration   90s
+  :actions    (testing-culture)
+  :failures   20%
+  :cause      "A package that works on Node.js does not work on Bun, which is less mature. A share of requests that touched it failed until the package was swapped."
   :prevention "Automated tests run against the runtime a Service ships on, and catch the package before a deploy does.")
 
 (incident gevent-compat
-  :name "Library incompatibility" :era 2 :severity 3 :duration 90s
-  :actions (testing-culture) :failures 15%
-  :cause "gevent monkey patches the standard library, and one library did not survive it: its calls blocked the hub, and a share of requests failed."
+  :name       "Library incompatibility"
+  :era        seed
+  :severity   3
+  :duration   90s
+  :actions    (testing-culture)
+  :failures   15%
+  :cause      "gevent monkey patches the standard library, and one library did not survive it: its calls blocked the hub, and a share of requests failed."
   :prevention "Automated tests run the Service under gevent before it ships, and show which library breaks.")
 
 (incident split-brain
-  :name "Split brain" :era 4 :severity (2 -> 1) :duration 90s
-  :actions (chaos-engineering) :failures 50%
-  :cause "A network partition cut a Distributed Erlang cluster in two. Each half kept serving its own clients, and half of the realtime messages never reached the other."
+  :name       "Split brain"
+  :era        series-b
+  :severity   (2 -> 1)
+  :duration   90s
+  :actions    (chaos-engineering)
+  :failures   50%
+  :cause      "A network partition cut a Distributed Erlang cluster in two. Each half kept serving its own clients, and half of the realtime messages never reached the other."
   :prevention "Chaos experiments find the partition before it does. A restart rejoins the cluster.")
 
-(def SPOT_WARNING 10)
-(def SPOT_DOWN 20)
+(constants spot
+  (warning 10)
+  (down 20))
 
 (def LATENCY_REGRESSION_MS 150)
+
 (def DEADLINE_SURGE 3)
-(def HOT_SHARD_CPU 3)
-(def JVM_WARMUP_SECONDS 30)
-(def MIGRATION_LOCK_SECONDS 150)
-(def SUPPLY_CHAIN_SECONDS 90)
+
+(constants supply
+  (chain-seconds 90)
+  (chain-churn 0.1))
+
 (def ACCIDENTAL_DELETE_SECONDS 120)
+
 (def OPERATOR_TYPO_SECONDS 120)
+
 (def LEAP_SECOND_SECONDS 60)
 
-(def STALE_OPCACHE_SECONDS 90)
-(def RUNTIME_COMPAT_SECONDS 90)
 (def SPLIT_BRAIN_SECONDS 90)
+
 (def TABLE_BLOAT_SECONDS 120)
-(def PAGE_LEAK_SECONDS 90)
+
 (def BLOAT_CPU 2)
-(def PAGE_LEAK_CHURN 0.05)
-(def SUPPLY_CHAIN_CHURN 0.1)
+
 (def SWITCH_PROVIDER_PRICE 5_000)
+
 (def DELETE_CHURN 0.1)
-(def CLOCK_SKEW_MS 1_000)
-(def CLOCK_SKEW_LOSS 0.1)
+
+(constants clock
+  (skew-ms 1_000)
+  (skew-loss 0.1))
 
 (def CASCADE_FROM_STAGE 3)
 
 (def REPORT_SURGE 10)
-(def STORM_SLOWDOWN 0.3)
-(def STORM_TRIGGER 20)
-(def GC_STORM_HEAP 0.2)
-(def GC_STORM 5)
+
+(constants storm
+  (slowdown 0.3)
+  (trigger 20))
+
+(constants gc
+  (storm-heap 0.2)
+  (storm 5))
+
 (def LAG_SURGE 10)
-(def STALE_SURGE 10)
+
 (def MTU_LOSS 0.5)
+
 (def SLOW_CHARGE_MS 1_500)
+
 (def REGEX_CAPACITY 0.1)
 
-(def BOT_SURGE 0.8)
 (def DDOS_MAGNITUDE 50)
+
 (def STUFFING_MAGNITUDE 19)
+
 (def CREDENTIAL_PROTECTION_BLOCK 0.2)
 
-(def SPIKE_MAGNITUDE :type const [3 10])
 (def ESCALATION 1.5)
+
 (def MIN_WEAKNESS 0.2)
 
 (def UNINDEXED_MS_PER_ROW 0.0001)
+
 (def ROWS_PER_USER 100)
 
-(def OPEN_ACTION_WEIGHT 2)
-
 (def ON_CALL_ACK 5)
+
 (def SRE_MTTR 0.4)
+
 (def SLA_CREDIT 0.1)
-(def LEAK_RATE (/ 1 40))
-(def LEAK_KB_PER_REQUEST 12)
-(def LEAK_FROM_STAGE 2)
 
-(def ALERT_RULES :type const
-  (:errors (:threshold 0.01 :seconds 30)
-   :latency (:threshold 4 :seconds 30)
-   :saturation (:threshold 0.9 :seconds 60)
-   :queue (:threshold 30 :seconds 60)
-   :budget (:threshold 10 :seconds 30)))
+(constants leak
+  (rate (/ 1 40))
+  (kb-per-request 12)
+  (from-stage 2))
 
-(def ALERT_THRESHOLDS :type const
-  (:errors [0.005 0.01 0.05]
-   :latency [2 4 8]
-   :saturation [0.8 0.9 0.95]
-   :queue [10 30 120]
-   :budget [6 10 14.4]))
-(def ALERT_FATIGUE 5)
+(table alert-rules
+  :key id
+  [id          threshold  seconds]
+  [errors           0.01       30]
+  [latency             4       30]
+  [saturation        0.9       60]
+  [queue              30       60]
+  [budget             10       30])
+
+(constants alert
+  (thresholds
+    :type const
+    (:errors     [0.005 0.01 0.05]
+     :latency    [2 4 8]
+     :saturation [0.8 0.9 0.95]
+     :queue      [10 30 120]
+     :budget     [6 10 14.4]))
+  (fatigue 5))
+
 (def ANOMALY_DETECTION_HOLD 0.5)
 
-(def CALENDAR_DURATION :type "Readonly<Record<1 | 2 | 3, number>>" (record "1" 60 "2" 20 "3" 5))
-
-(def SLO_FROM_STAGE 3)
-(def SLO_WINDOW_HOURS 168)
-(def ERROR_BUDGET_FACTORS :type const (:ahead 1.1 :normal 1 :spent 0.5))
-
-(def DRILL_SECONDS 60)
-(def DRILL_RTO 60)
-(def DRILL_RPO 5)
-(def DRILL_RECOVERED 0.01)
+(def ERROR_BUDGET_FACTORS
+  :type const
+  (:ahead  1.1
+   :normal 1
+   :spent  0.5))

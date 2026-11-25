@@ -24,8 +24,17 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 
 #[derive(Debug)]
+pub struct TypeDef {
+    pub name: Name,
+    pub ty: String,
+    pub span: Span,
+}
+
+#[derive(Debug)]
 pub struct Def {
     pub name: Name,
+    /// The SCREAM_CASE name the generated module exports.
+    pub export: String,
     /// The content file's stem, which names the generated file.
     pub module: String,
     pub ty: Option<String>,
@@ -60,6 +69,8 @@ pub enum D {
     Ref(Name),
     /// `(ref NAME key 0)`.
     Member(Name, Vec<Key>),
+    /// `(era NAME)`: an Era id, resolved to its index after every Era is known.
+    Era(Name),
     /// Items, each with whether it is spread.
     Array(Vec<(bool, Datum)>),
     Record(Vec<Entry>),
@@ -223,8 +234,10 @@ pub fn lower_def(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
         err(sink, form.span, "write (def NAME value)");
         return None;
     };
+    let export = crate::lower::constant(&name.text);
     let mut def = Def {
         name,
+        export,
         module: module.to_string(),
         ty: None,
         as_const: false,
@@ -239,18 +252,16 @@ pub fn lower_def(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
     let mut rest = &items[1..];
     while let [key, value, tail @ ..] = rest {
         let Some(k) = key.keyword() else { break };
-        let text = match &value.kind {
-            Kind::Str(s) => Some(s.clone()),
-            _ => None,
-        };
-        match (k, text) {
-            ("type", _) if value.symbol() == Some("const") => def.as_const = true,
-            ("type", Some(t)) => def.ty = Some(t),
-            ("satisfies", Some(t)) => def.satisfies = Some(t),
-            ("doc", Some(t)) => def.doc = Some(t),
-            ("type" | "satisfies" | "doc", None) => {
-                err(sink, value.span, format!(":{k} takes a string"));
-            }
+        match k {
+            "type" if value.symbol() == Some("const") => def.as_const = true,
+            "type" => def.ty = type_expr(value, sink),
+            "satisfies" => def.satisfies = type_expr(value, sink),
+            "doc" => match &value.kind {
+                Kind::Str(t) => def.doc = Some(t.clone()),
+                _ => {
+                    err(sink, value.span, ":doc takes a string");
+                }
+            },
             _ => sink.push(
                 Diagnostic::error("unknown-key", key.span, format!("a def has no `:{k}`"))
                     .help("a def takes :type, :satisfies, and :doc"),
@@ -274,6 +285,499 @@ pub fn lower_def(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
         }
     }
     Some(def)
+}
+
+/// Lowers `(table NAME [:key COLUMN] [header…] [row…] …)` to a def. Without `:key` the value is
+/// an array of records; with it, a record keyed by that column.
+pub fn lower_table(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
+    let items = &form.list().unwrap()[1..];
+    let Some(name) = items.first().and_then(name_of) else {
+        err(sink, form.span, "write (table NAME [header…] [row…] …)");
+        return None;
+    };
+    let export = crate::lower::constant(&name.text);
+    let mut ty = None;
+    let mut satisfies = None;
+    let mut doc = None;
+    let mut key: Option<Name> = None;
+    let mut keep_key = false;
+    let mut rows: Vec<&Sexp> = Vec::new();
+    let mut i = 1;
+    while i < items.len() {
+        let item = &items[i];
+        if let Some(k) = item.keyword() {
+            if k == "keep-key" {
+                keep_key = true;
+                i += 1;
+                continue;
+            }
+            let Some(value) = items.get(i + 1) else {
+                err(sink, item.span, format!("`:{k}` needs a value"));
+                return None;
+            };
+            match k {
+                "type" if value.symbol() == Some("const") => {}
+                "type" => ty = type_expr(value, sink),
+                "satisfies" => satisfies = type_expr(value, sink),
+                "doc" => match &value.kind {
+                    Kind::Str(t) => doc = Some(t.clone()),
+                    _ => {
+                        err(sink, value.span, ":doc takes a string");
+                    }
+                },
+                "key" => key = name_of(value),
+                _ => err(
+                    sink,
+                    item.span,
+                    format!("a table has no `:{k}`; write :key, :type, :satisfies, or :doc"),
+                ),
+            }
+            i += 2;
+            continue;
+        }
+        if matches!(item.kind, Kind::Row(_)) {
+            rows.push(item);
+            i += 1;
+            continue;
+        }
+        err(
+            sink,
+            item.span,
+            format!("a table row is [value …], found {}", item.describe()),
+        );
+        return None;
+    }
+    let Some(header) = rows.first().and_then(|row| match &row.kind {
+        Kind::Row(cells) => Some(cells.as_slice()),
+        _ => None,
+    }) else {
+        err(sink, form.span, "a table needs a header row like [id name]");
+        return None;
+    };
+    let mut columns: Vec<Name> = Vec::new();
+    for cell in header {
+        let Some(text) = cell.symbol().or(match &cell.kind {
+            Kind::Str(s) => Some(s.as_str()),
+            _ => None,
+        }) else {
+            err(sink, cell.span, "a column is a name or a string");
+            return None;
+        };
+        let text = crate::lower::camel(text);
+        if columns.iter().any(|column| column.text == text) {
+            err(
+                sink,
+                cell.span,
+                format!("the column `{text}` appears twice"),
+            );
+            return None;
+        }
+        columns.push(Name {
+            text,
+            span: cell.span,
+        });
+    }
+    if columns.is_empty() {
+        err(sink, form.span, "a table names at least one column");
+        return None;
+    }
+    let key_at = key.as_ref().and_then(|key| {
+        columns
+            .iter()
+            .position(|column| column.text == crate::lower::camel(&key.text))
+    });
+    if let Some(key) = key.as_ref() {
+        if key_at.is_none() {
+            err(
+                sink,
+                key.span,
+                format!("`:key {}` is not a column of the table", key.text),
+            );
+            return None;
+        }
+    }
+    let mut records: Vec<(String, Datum)> = Vec::new();
+    let mut by_key: Vec<(String, Span)> = Vec::new();
+    for row in &rows[1..] {
+        let Kind::Row(cells) = &row.kind else {
+            continue;
+        };
+        if cells.len() != columns.len() {
+            err(
+                sink,
+                row.span,
+                format!(
+                    "the row has {} values but the header has {} columns",
+                    cells.len(),
+                    columns.len()
+                ),
+            );
+            continue;
+        }
+        let mut entries = Vec::with_capacity(columns.len());
+        for (index, (column, cell)) in columns.iter().zip(cells.iter()).enumerate() {
+            if key_at == Some(index) && !keep_key {
+                continue;
+            }
+            if cell.symbol() == Some("-") {
+                continue;
+            }
+            entries.push(Entry::Pair(column.clone(), datum(cell, sink)?));
+        }
+        let record = Datum {
+            kind: D::Record(entries),
+            span: row.span,
+        };
+        if let Some(at) = key_at {
+            let key_text = match &cells[at].kind {
+                Kind::Str(s) | Kind::Symbol(s) if s != "-" => s.clone(),
+                _ => {
+                    err(sink, cells[at].span, "a `:key` value is a name or string");
+                    continue;
+                }
+            };
+            if let Some(first) = by_key.iter().find(|(k, _)| k == &key_text) {
+                sink.push(
+                    Diagnostic::error(
+                        "bad-value",
+                        cells[at].span,
+                        format!("the key `{key_text}` appears twice"),
+                    )
+                    .note(first.1, "first here"),
+                );
+                continue;
+            }
+            by_key.push((key_text.clone(), cells[at].span));
+            records.push((key_text, record));
+        } else {
+            records.push((String::new(), record));
+        }
+    }
+    let value = if key_at.is_some() {
+        D::Record(
+            records
+                .into_iter()
+                .map(|(key, row)| {
+                    Entry::Pair(
+                        Name {
+                            text: key,
+                            span: row.span,
+                        },
+                        row,
+                    )
+                })
+                .collect(),
+        )
+    } else {
+        D::Array(records.into_iter().map(|(_, row)| (false, row)).collect())
+    };
+    let as_const = ty.is_none();
+    Some(Def {
+        name,
+        export,
+        module: module.to_string(),
+        ty,
+        as_const,
+        satisfies,
+        doc,
+        value: Datum {
+            kind: value,
+            span: form.span,
+        },
+        span: form.span,
+    })
+}
+
+/// Lowers `(constants PREFIX [:type T] [:satisfies T] (name value) …)`. Each entry is a
+/// `def` whose export is `PREFIX_NAME`, so a family keeps its shared word in one place.
+pub fn lower_constants(form: &Sexp, module: &str, sink: &mut Sink) -> Vec<Def> {
+    let items = &form.list().unwrap()[1..];
+    let Some(prefix) = items.first().and_then(name_of) else {
+        err(sink, form.span, "write (constants PREFIX (name value) …)");
+        return Vec::new();
+    };
+    let mut defaults: Vec<(String, Sexp)> = Vec::new();
+    let mut at = 1;
+    while let [key, value, ..] = &items[at..] {
+        let Some(k) = key.keyword() else { break };
+        if !matches!(k, "type" | "satisfies") {
+            err(sink, key.span, format!("a constants group has no `:{k}`"));
+            return Vec::new();
+        }
+        defaults.push((k.to_string(), value.clone()));
+        at += 2;
+    }
+    if at == items.len() {
+        err(
+            sink,
+            form.span,
+            format!("`{}` has no constants", prefix.text),
+        );
+        return Vec::new();
+    }
+    let mut defs = Vec::new();
+    for entry in &items[at..] {
+        let Some(parts) = entry.list() else {
+            err(sink, entry.span, "write (name value) for each constant");
+            continue;
+        };
+        let Some(suffix) = parts.first().and_then(name_of) else {
+            err(sink, entry.span, "write (name value) for each constant");
+            continue;
+        };
+        let full = if suffix.text == prefix.text {
+            prefix.text.clone()
+        } else {
+            format!("{}-{}", prefix.text, suffix.text)
+        };
+        let name = Sexp::new(Kind::Symbol(full), suffix.span);
+        let mut form_items = vec![Sexp::new(Kind::Symbol("def".to_string()), entry.span), name];
+        for (k, value) in &defaults {
+            let written = parts
+                .iter()
+                .skip(1)
+                .any(|p| p.keyword() == Some(k.as_str()));
+            if !written {
+                form_items.push(Sexp::new(Kind::Keyword(k.clone()), entry.span));
+                form_items.push(value.clone());
+            }
+        }
+        let mut target: Option<Name> = None;
+        let mut bad = false;
+        let mut rest = parts[1..].iter();
+        while let Some(part) = rest.next() {
+            if part.keyword() == Some("module") {
+                if target.is_some() {
+                    err(sink, part.span, "an entry has one `:module`");
+                    bad = true;
+                    break;
+                }
+                let Some(value) = rest.next() else {
+                    err(sink, part.span, "`:module` takes a file stem");
+                    bad = true;
+                    break;
+                };
+                match &value.kind {
+                    Kind::Str(text) | Kind::Symbol(text)
+                        if !text.is_empty() && !text.contains(['.', '/', '\\']) =>
+                    {
+                        target = Some(Name {
+                            text: text.clone(),
+                            span: value.span,
+                        });
+                    }
+                    _ => {
+                        err(
+                            sink,
+                            value.span,
+                            "`:module` takes a file stem such as `team`",
+                        );
+                        bad = true;
+                        break;
+                    }
+                }
+                continue;
+            }
+            form_items.push(part.clone());
+        }
+        if bad {
+            continue;
+        }
+        let def_form = Sexp::new(Kind::List(form_items), entry.span);
+        if let Some(mut def) = lower_def(&def_form, module, sink) {
+            // A group always exports a SCREAM_CASE constant, even when the prefix is uppercase.
+            def.export = crate::lower::scream(&def.name.text);
+            if let Some(target) = target {
+                def.module = target.text;
+            }
+            defs.push(def);
+        }
+    }
+    defs
+}
+
+/// A TypeScript type expression. A string is raw TypeScript; a name is a type; a list is a generic
+/// application. The lowercase forms are the content spelling of the common generic types.
+pub fn type_expr(sexp: &Sexp, sink: &mut Sink) -> Option<String> {
+    match &sexp.kind {
+        Kind::Str(text) | Kind::Symbol(text) => Some(text.clone()),
+        Kind::Num(n) => Some(n.to_string()),
+        Kind::List(items) => {
+            let Some(head) = items.first().and_then(Sexp::symbol) else {
+                err(sink, sexp.span, "a type is a name, a string, or a list");
+                return None;
+            };
+            let args: Option<Vec<String>> = items[1..]
+                .iter()
+                .map(|item| type_expr(item, sink))
+                .collect();
+            let args = args?;
+            match (head, args.as_slice()) {
+                ("array", [item]) => Some(format!("ReadonlyArray<{item}>")),
+                ("record", [key, value]) => Some(format!("Record<{key}, {value}>")),
+                ("partial", [item]) => Some(format!("Partial<{item}>")),
+                ("readonly", [item]) => Some(format!("Readonly<{item}>")),
+                ("union", []) => {
+                    err(sink, sexp.span, "a union names at least one type");
+                    None
+                }
+                ("union", items) => Some(items.join(" | ")),
+                ("intersection", []) => {
+                    err(sink, sexp.span, "an intersection names at least one type");
+                    None
+                }
+                ("intersection", items) => Some(items.join(" & ")),
+                (_, []) => {
+                    err(
+                        sink,
+                        sexp.span,
+                        "a generic type needs at least one argument",
+                    );
+                    None
+                }
+                (_, items) => Some(format!("{head}<{}>", items.join(", "))),
+            }
+        }
+        Kind::Keyword(_) => {
+            err(sink, sexp.span, "a type is a name, a string, or a list");
+            None
+        }
+        Kind::Row(_) => {
+            err(sink, sexp.span, "a type is a name, a string, or a list");
+            None
+        }
+    }
+}
+
+/// Lowers `(type NAME expression)`: a content type name that expands wherever a `:type` or
+/// `:satisfies` names it. It does not emit a TypeScript declaration.
+pub fn lower_type(form: &Sexp, sink: &mut Sink) -> Option<TypeDef> {
+    let items = &form.list().unwrap()[1..];
+    let Some(name) = items.first().and_then(name_of) else {
+        err(sink, form.span, "write (type NAME expression)");
+        return None;
+    };
+    let Some(value) = items.get(1) else {
+        err(sink, form.span, format!("`{}` has no type", name.text));
+        return None;
+    };
+    if items.len() != 2 {
+        err(sink, form.span, "a type has one expression");
+        return None;
+    }
+    let ty = type_expr(value, sink)?;
+    Some(TypeDef {
+        name,
+        ty,
+        span: form.span,
+    })
+}
+
+/// Resolves `(era NAME)` values to their index. The check pass reports an unknown Era before this
+/// runs.
+pub fn resolve_eras(catalog: &mut crate::lower::Catalog) {
+    let eras: BTreeMap<String, usize> = catalog
+        .eras
+        .iter()
+        .enumerate()
+        .map(|(index, era)| (era.id.text.clone(), index))
+        .collect();
+    for def in &mut catalog.defs {
+        resolve_datum_eras(&mut def.value, &eras);
+    }
+    for state in &mut catalog.states {
+        for field in &mut state.fields {
+            resolve_datum_eras(&mut field.default, &eras);
+        }
+    }
+}
+
+fn resolve_datum_eras(d: &mut Datum, eras: &BTreeMap<String, usize>) {
+    match &mut d.kind {
+        D::Era(name) => {
+            if let Some(index) = eras.get(&name.text) {
+                d.kind = D::Num(Ratio::int(*index as i128));
+            }
+        }
+        D::Array(items) => {
+            for (_, item) in items {
+                resolve_datum_eras(item, eras);
+            }
+        }
+        D::Record(entries) => {
+            for entry in entries {
+                match entry {
+                    Entry::Pair(_, value) | Entry::Spread(value) => resolve_datum_eras(value, eras),
+                }
+            }
+        }
+        D::Neg(value) => resolve_datum_eras(value, eras),
+        D::As(_, value) => resolve_datum_eras(value, eras),
+        D::Op(_, values) => {
+            for value in values {
+                resolve_datum_eras(value, eras);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Reports every `(era NAME)` that names no declared Era.
+pub fn check_eras(catalog: &crate::lower::Catalog) -> Sink {
+    let mut sink = Sink::default();
+    let known: Vec<&str> = catalog.eras.iter().map(|e| e.id.text.as_str()).collect();
+    let check = |d: &Datum, sink: &mut Sink| {
+        let mut refs = Vec::new();
+        era_refs(d, &mut refs);
+        for name in refs {
+            if !known.contains(&name.text.as_str()) {
+                let mut diagnostic = Diagnostic::error(
+                    "unknown-era",
+                    name.span,
+                    format!("`{}` is not a declared Era", name.text),
+                )
+                .label("unknown Era");
+                if !known.is_empty() {
+                    diagnostic = diagnostic.help(format!("write one of: {}", known.join(", ")));
+                }
+                sink.push(diagnostic);
+            }
+        }
+    };
+    for def in &catalog.defs {
+        check(&def.value, &mut sink);
+    }
+    for state in &catalog.states {
+        for field in &state.fields {
+            check(&field.default, &mut sink);
+        }
+    }
+    sink
+}
+
+fn era_refs<'a>(d: &'a Datum, out: &mut Vec<&'a Name>) {
+    match &d.kind {
+        D::Era(name) => out.push(name),
+        D::Array(items) => {
+            for (_, item) in items {
+                era_refs(item, out);
+            }
+        }
+        D::Record(entries) => {
+            for entry in entries {
+                match entry {
+                    Entry::Pair(_, value) | Entry::Spread(value) => era_refs(value, out),
+                }
+            }
+        }
+        D::Neg(value) | D::As(_, value) => era_refs(value, out),
+        D::Op(_, values) => {
+            for value in values {
+                era_refs(value, out);
+            }
+        }
+        _ => {}
+    }
 }
 
 /// Lowers `(types "path" Name …)`.
@@ -381,6 +885,13 @@ fn list(sexp: &Sexp, items: &[Sexp], sink: &mut Sink) -> Option<D> {
     let args = &items[1..];
     match head {
         "record" => record(args, sink).map(D::Record),
+        "era" => match args {
+            [value] => name_of(value).map(D::Era),
+            _ => {
+                err(sink, sexp.span, "write (era NAME)");
+                None
+            }
+        },
         "ref" => {
             let base = args.first().and_then(name_of);
             let Some(base) = base else {
@@ -420,12 +931,9 @@ fn list(sexp: &Sexp, items: &[Sexp], sink: &mut Sink) -> Option<D> {
             Some(D::Op(head.chars().next().unwrap(), ops?))
         }
         "as" => match args {
-            [Sexp {
-                kind: Kind::Str(ty),
-                ..
-            }, value] => Some(D::As(ty.clone(), Box::new(datum(value, sink)?))),
+            [ty, value] => Some(D::As(type_expr(ty, sink)?, Box::new(datum(value, sink)?))),
             _ => {
-                err(sink, sexp.span, "write (as \"Type\" value)");
+                err(sink, sexp.span, "write (as Type value)");
                 None
             }
         },
@@ -564,7 +1072,7 @@ impl<'a> Scope<'a> {
             }
         }
         for c in &catalog.consts {
-            values.insert(c.name.text.as_str(), ("constants", true));
+            values.insert(c.export.as_str(), ("constants", true));
         }
         for import in &catalog.imports {
             for n in &import.names {
@@ -577,7 +1085,10 @@ impl<'a> Scope<'a> {
             }
         }
         for def in &catalog.defs {
-            values.insert(def.name.text.as_str(), (def.module.as_str(), true));
+            values.insert(def.export.as_str(), (def.module.as_str(), true));
+        }
+        for ty in &catalog.type_defs {
+            types.insert(ty.name.text.as_str(), ("types", true));
         }
         Scope { values, types }
     }
@@ -599,6 +1110,112 @@ impl<'a> Scope<'a> {
     }
 }
 
+/// Rewrites every reference to a def or const into the SCREAM_CASE name the generated module
+/// exports, so content can write `db-engines` and the TypeScript still reads `DB_ENGINES`.
+pub fn rewrite(catalog: &mut crate::lower::Catalog) {
+    let mut names: BTreeMap<String, String> = BTreeMap::new();
+    for def in &catalog.defs {
+        names.insert(def.name.text.clone(), def.export.clone());
+    }
+    for constant in &catalog.consts {
+        names.insert(constant.name.text.clone(), constant.export.clone());
+    }
+    for def in &mut catalog.defs {
+        rewrite_datum(&mut def.value, &names);
+    }
+    for component in &mut catalog.components {
+        rewrite_value(&mut component.name.value, &names);
+        rewrite_value(&mut component.product.value, &names);
+        rewrite_value(&mut component.blurb.value, &names);
+        rewrite_value(&mut component.latency.value, &names);
+    }
+    for research in &mut catalog.research {
+        rewrite_value(&mut research.name.value, &names);
+        rewrite_value(&mut research.blurb.value, &names);
+    }
+    for era in &mut catalog.eras {
+        rewrite_value(&mut era.name.value, &names);
+        rewrite_value(&mut era.question.value, &names);
+        rewrite_value(&mut era.arrivals.value, &names);
+    }
+    for incident in &mut catalog.incidents {
+        rewrite_value(&mut incident.name.value, &names);
+        rewrite_value(&mut incident.cause.value, &names);
+        rewrite_value(&mut incident.prevention.value, &names);
+        if let Some((_, value)) = &mut incident.surge {
+            rewrite_value(&mut value.value, &names);
+        }
+    }
+    for gate in &mut catalog.gates {
+        if let crate::lower::GateLabel::Table(name) = &mut gate.what {
+            name.text = crate::lower::constant(&name.text);
+        }
+        let values = match &mut gate.open {
+            crate::lower::GateValues::Free(values) | crate::lower::GateValues::Locked(values) => {
+                values
+            }
+        };
+        for value in values {
+            rewrite_datum(value, &names);
+        }
+    }
+    for state in &mut catalog.states {
+        for field in &mut state.fields {
+            rewrite_datum(&mut field.default, &names);
+            if let Some(name) = &mut field.values_name {
+                name.text = crate::lower::constant(&name.text);
+            }
+            if let Some(crate::lower::GateLabel::Table(name)) = &mut field.label {
+                name.text = crate::lower::constant(&name.text);
+            }
+        }
+    }
+}
+
+fn rename(name: &mut crate::lower::Name, names: &BTreeMap<String, String>) {
+    if let Some(export) = names.get(&name.text) {
+        name.text = export.clone();
+    }
+}
+
+fn rewrite_value(value: &mut crate::lower::Value, names: &BTreeMap<String, String>) {
+    match value {
+        crate::lower::Value::Const(name) => rename(name, names),
+        crate::lower::Value::Ref(path) => {
+            if let Some(first) = path.first_mut() {
+                rename(first, names);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn rewrite_datum(datum: &mut Datum, names: &BTreeMap<String, String>) {
+    match &mut datum.kind {
+        D::Ref(name) => rename(name, names),
+        D::Member(base, _) => rename(base, names),
+        D::Array(items) => {
+            for (_, value) in items {
+                rewrite_datum(value, names);
+            }
+        }
+        D::Record(entries) => {
+            for entry in entries {
+                match entry {
+                    Entry::Pair(_, value) | Entry::Spread(value) => rewrite_datum(value, names),
+                }
+            }
+        }
+        D::Neg(value) | D::As(_, value) => rewrite_datum(value, names),
+        D::Op(_, values) => {
+            for value in values {
+                rewrite_datum(value, names);
+            }
+        }
+        _ => {}
+    }
+}
+
 /// Checks the defs: names are unique, references and types resolve, and record keys appear once.
 pub fn check(catalog: &crate::lower::Catalog) -> Sink {
     let mut sink = Sink::default();
@@ -608,15 +1225,31 @@ pub fn check(catalog: &crate::lower::Catalog) -> Sink {
         .iter()
         .flat_map(|(_, n)| n.iter().copied())
         .collect();
-    let consts: BTreeSet<&str> = catalog
-        .consts
-        .iter()
-        .map(|c| c.name.text.as_str())
-        .collect();
+    let consts: BTreeSet<&str> = catalog.consts.iter().map(|c| c.export.as_str()).collect();
     let known: Vec<&str> = scope.values.keys().copied().collect();
     let known_types: Vec<&str> = scope.types.keys().copied().collect();
+    for ty in &catalog.type_defs {
+        for (word, is_value) in type_names(&ty.ty) {
+            let found = if is_value {
+                scope.value(&word, "types").is_some() || scope.ty(&word, "types").is_some()
+            } else {
+                scope.ty(&word, "types").is_some()
+            };
+            if !found {
+                let name = Name {
+                    text: word,
+                    span: ty.span,
+                };
+                let mut d = crate::check::unknown("unknown-type", &name, "type", &known_types);
+                if d.help.is_none() {
+                    d = d.help("name it in (types \"../catalog/….ts\" …)");
+                }
+                sink.push(d);
+            }
+        }
+    }
     for def in &catalog.defs {
-        let n = def.name.text.as_str();
+        let n = def.export.as_str();
         if let Some(first) = seen.insert(n, &def.name) {
             sink.push(
                 Diagnostic::error(
@@ -637,7 +1270,7 @@ pub fn check(catalog: &crate::lower::Catalog) -> Sink {
         let mut used = Vec::new();
         refs(&def.value, &mut used);
         for r in used {
-            if r.text == def.name.text {
+            if r.text == def.export {
                 sink.push(Diagnostic::error(
                     "self-reference",
                     r.span,
@@ -866,7 +1499,63 @@ fn flat(d: &Datum) -> String {
             o
         }
         D::As(ty, v) => format!("{} as {ty}", flat(v)),
+        D::Era(name) => format!("(era {})", name.text),
     }
+}
+
+/// Defs in dependency order, with the catalog order as the tie-break. A group can move a def
+/// into another module, so its position in the catalog no longer says which local values it may
+/// read.
+fn ordered(defs: Vec<&Def>) -> Vec<&Def> {
+    let mut index = BTreeMap::new();
+    for (at, def) in defs.iter().enumerate() {
+        index.insert(def.export.as_str(), at);
+    }
+    let mut deps = vec![Vec::new(); defs.len()];
+    let mut users = vec![Vec::new(); defs.len()];
+    for (at, def) in defs.iter().enumerate() {
+        let mut used = Vec::new();
+        refs(&def.value, &mut used);
+        let mut seen = BTreeSet::new();
+        for name in used {
+            if let Some(&dep) = index.get(name.text.as_str()) {
+                if dep != at && seen.insert(dep) {
+                    deps[at].push(dep);
+                    users[dep].push(at);
+                }
+            }
+        }
+    }
+    let mut left: Vec<usize> = deps.iter().map(Vec::len).collect();
+    let mut ready: BTreeSet<usize> = left
+        .iter()
+        .enumerate()
+        .filter(|(_, count)| **count == 0)
+        .map(|(at, _)| at)
+        .collect();
+    let mut done = vec![false; defs.len()];
+    let mut out = Vec::with_capacity(defs.len());
+    while let Some(&at) = ready.iter().next() {
+        ready.remove(&at);
+        done[at] = true;
+        out.push(defs[at]);
+        for &user in &users[at] {
+            left[user] -= 1;
+            if left[user] == 0 {
+                ready.insert(user);
+            }
+        }
+    }
+    // A cycle cannot be emitted in dependency order. Keep the rest in catalog order so the
+    // diagnostic from the check pass, not a panic, decides what happens next.
+    if out.len() != defs.len() {
+        for (at, def) in defs.iter().enumerate() {
+            if !done[at] {
+                out.push(def);
+            }
+        }
+    }
+    out
 }
 
 /// The body of a generated module: its defs, in order, and the imports they need.
@@ -885,7 +1574,7 @@ pub fn module(
         }
     };
     let mut last_block = true;
-    for def in catalog.defs.iter().filter(|d| d.module == module) {
+    for def in ordered(catalog.defs.iter().filter(|d| d.module == module).collect()) {
         let mut used = Vec::new();
         refs(&def.value, &mut used);
         for r in used {
@@ -920,7 +1609,7 @@ pub fn module(
             .as_ref()
             .map(|t| format!(": {t}"))
             .unwrap_or_default();
-        let head = format!("export const {}{ann} = ", def.name.text);
+        let head = format!("export const {}{ann} = ", def.export);
         let mut line = format!("{head}{}", ts(&def.value, 0, head.len()));
         if def.as_const {
             line.push_str(" as const");
@@ -1164,21 +1853,191 @@ mod tests {
     }
 
     #[test]
+    fn a_table_turns_rows_into_a_keyed_record() {
+        let c = compile(&[(
+            "content/t.qm",
+            "(table engines :key id\n  [id name]\n  [postgres \"PostgreSQL\"]\n  [mysql \"MySQL\"])\n",
+        )]);
+        assert_eq!(errors(&c), Vec::<&str>::new());
+        let ts = output(&c, "t.ts");
+        assert!(ts.contains("export const ENGINES = {"));
+        assert!(ts.contains("postgres: {"));
+        assert!(ts.contains("'PostgreSQL'"));
+    }
+
+    #[test]
+    fn a_table_refuses_a_short_row_and_a_repeated_key() {
+        let short = compile(&[(
+            "content/t.qm",
+            "(table engines :key id [id name] [postgres])\n",
+        )]);
+        assert_eq!(errors(&short), ["bad-value"]);
+        let dash = compile(&[(
+            "content/t.qm",
+            "(table engines :key id [id name] [- \"PostgreSQL\"])\n",
+        )]);
+        assert_eq!(errors(&dash), ["bad-value"]);
+        let twice = compile(&[(
+            "content/t.qm",
+            "(table engines :key id [id name] [postgres \"PostgreSQL\"] [postgres \"PostgreSQL\"])\n",
+        )]);
+        assert_eq!(errors(&twice), ["bad-value"]);
+    }
+
+    #[test]
+    fn a_dash_leaves_a_column_out_of_one_record() {
+        let c = compile(&[(
+            "content/t.qm",
+            "(table engines :key id\n  [id name cache]\n  [postgres \"PostgreSQL\" -]\n  [mysql \"MySQL\" 64])\n",
+        )]);
+        assert_eq!(errors(&c), Vec::<&str>::new());
+        let ts = output(&c, "t.ts");
+        assert!(ts.contains("postgres: { name: 'PostgreSQL' }"), "{ts}");
+        assert!(ts.contains("mysql: { name: 'MySQL', cache: 64 }"), "{ts}");
+    }
+
+    #[test]
+    fn a_constants_group_names_each_export_from_one_prefix() {
+        let c = compile(&[(
+            "content/t.qm",
+            "(constants SCALE :type const\n  (targets [1 2])\n  (in :type \"number\" 0.6))\n(def USE SCALE_IN)\n",
+        )]);
+        assert_eq!(errors(&c), Vec::<&str>::new());
+        let ts = output(&c, "t.ts");
+        assert!(
+            ts.contains("export const SCALE_TARGETS = [1, 2] as const"),
+            "{ts}"
+        );
+        assert!(ts.contains("export const SCALE_IN: number = 0.6"), "{ts}");
+        assert!(!ts.contains("SCALE_IN: number = 0.6 as const"), "{ts}");
+        assert!(ts.contains("export const USE = SCALE_IN"), "{ts}");
+        let base = compile(&[(
+            "content/t.qm",
+            "(constants regions (regions :type const [\"na\" \"eu\"]) (from-stage 5))\n",
+        )]);
+        assert_eq!(errors(&base), Vec::<&str>::new());
+        let ts = output(&base, "t.ts");
+        assert!(
+            ts.contains("export const REGIONS = ['na', 'eu'] as const"),
+            "{ts}"
+        );
+        assert!(ts.contains("export const REGIONS_FROM_STAGE = 5"), "{ts}");
+    }
+
+    #[test]
+    fn a_constants_group_can_send_an_entry_to_another_module() {
+        let c = compile(&[
+            (
+                "content/t.qm",
+                "(constants auth (move-dh :module team 120) (check-ms :module t 0.02))\n",
+            ),
+            ("content/team.qm", "(def TEAM 1)\n"),
+        ]);
+        assert_eq!(errors(&c), Vec::<&str>::new());
+        let t = output(&c, "t.ts");
+        let team = output(&c, "team.ts");
+        assert!(t.contains("export const AUTH_CHECK_MS = 0.02"), "{t}");
+        assert!(!t.contains("AUTH_MOVE_DH"), "{t}");
+        assert!(team.contains("export const AUTH_MOVE_DH = 120"), "{team}");
+    }
+
+    #[test]
+    fn a_module_emits_a_local_value_before_the_constant_that_reads_it() {
+        let c = compile(&[("content/t.qm", "(def LATE (+ EARLY 1))\n(def EARLY 1)\n")]);
+        assert_eq!(errors(&c), Vec::<&str>::new());
+        let ts = output(&c, "t.ts");
+        let early = ts.find("export const EARLY = 1").unwrap();
+        let late = ts.find("export const LATE = EARLY + 1").unwrap();
+        assert!(early < late, "{ts}");
+    }
+
+    #[test]
+    fn a_type_expression_and_a_named_type_reach_the_annotation() {
+        let c = compile(&[(
+            "content/t.qm",
+            "(type Ids (array string))\n(type Counts (record string number))\n(def A :type Ids [\"x\"])\n(def B :type (array number) [1])\n(def C :satisfies (partial Counts) (:x 1))\n",
+        )]);
+        assert_eq!(errors(&c), Vec::<&str>::new());
+        let ts = output(&c, "t.ts");
+        assert!(
+            ts.contains("import type { Ids, Counts } from './types.ts'"),
+            "{ts}"
+        );
+        assert!(ts.contains("export const A: Ids = ['x']"), "{ts}");
+        assert!(
+            ts.contains("export const B: ReadonlyArray<number> = [1]"),
+            "{ts}"
+        );
+        assert!(
+            ts.contains("export const C = { x: 1 } satisfies Partial<Counts>"),
+            "{ts}"
+        );
+        let types = output(&c, "types.ts");
+        assert!(
+            types.contains("export type Ids = ReadonlyArray<string>"),
+            "{types}"
+        );
+        assert!(
+            types.contains("export type Counts = Record<string, number>"),
+            "{types}"
+        );
+    }
+
+    #[test]
+    fn an_era_value_becomes_its_index_and_an_unknown_era_is_an_error() {
+        let era = "(kinds :request (page) :backend (q-read))\n(era garage :name \"Garage\" :slo 99% :incident-every none :max-severity 1 :market 100 :raise-at 50 :grant 10 :dilution 10% :growth 1% :apdex-target 90% :cost-index 1 :salary-index 1 :mix (:page 100%) :question \"q\" :arrivals \"a\")\n";
+        let c = compile(&[("content/t.qm", &format!("{era}(def X (era garage))"))]);
+        assert_eq!(errors(&c), Vec::<&str>::new());
+        assert!(
+            output(&c, "t.ts").contains("export const X = 0"),
+            "{}",
+            output(&c, "t.ts")
+        );
+        let bad = compile(&[("content/t.qm", &format!("{era}(def X (era nowhere))"))]);
+        assert_eq!(errors(&bad), ["unknown-era"]);
+    }
+
+    #[test]
+    fn a_module_owner_must_name_a_content_file() {
+        let c = compile(&[(
+            "content/t.qm",
+            "(constants auth (check-ms :module nowhere 0.02))\n",
+        )]);
+        assert_eq!(errors(&c), ["unknown-module"]);
+    }
+
+    #[test]
     fn the_typed_exports_table_matches_the_typed_emitters() {
         let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/../simulation/content");
-        let mut inputs = Vec::new();
-        for entry in std::fs::read_dir(dir).unwrap() {
-            let path = entry.unwrap().path();
-            if path.extension().is_some_and(|x| x == "qm") {
-                inputs.push((
+        let inputs: Vec<(String, String)> = crate::qm_files(std::path::Path::new(dir))
+            .unwrap()
+            .iter()
+            .map(|path| {
+                (
                     path.display().to_string(),
-                    std::fs::read_to_string(&path).unwrap(),
-                ));
-            }
-        }
-        inputs.sort();
+                    std::fs::read_to_string(path).unwrap(),
+                )
+            })
+            .collect();
         let c = crate::compile(inputs);
         assert_eq!(errors(&c), Vec::<&str>::new());
+        let database = output(&c, "database.ts");
+        assert!(database.contains("export const DB_ENGINES = {"));
+        assert!(database.contains("export const SHARD_COUNTS = [1, 2, 4, 8] as const"));
+        let constants = output(&c, "constants.ts");
+        assert!(constants.contains("export const PREMIERE_SURGE = 4"));
+        assert!(database.contains(
+            "export const SHARD_KEY_VALUES = ['hash', 'range', 'tenant', 'region'] as const"
+        ));
+        assert!(database.contains("export const ShardKey = Schema.Literals(SHARD_KEY_VALUES)"));
+        assert!(database.contains(
+            "  shards: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(1))),"
+        ));
+        let rule = output(&c, "database.rule.ts");
+        assert!(rule.contains("export const setShards = fieldSetter("));
+        assert!(rule.contains("    locked: 'database.shards',"));
+        assert!(rule.contains("export const setTopology = fieldSetter("));
+        assert!(rule.contains("    scope: 'all-of-type',"));
         let defs: std::collections::BTreeSet<String> = c
             .outputs
             .iter()

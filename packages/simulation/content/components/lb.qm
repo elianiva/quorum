@@ -1,0 +1,67 @@
+; Lb: the Component and the tables it reads.
+(component lb
+  :code     lb
+  :name     "Load Balancer"
+  :product  "NGINX"
+  :group    edge
+  :dock     edge
+  :cost     120
+  :latency  1ms
+  :burn     0.08
+  :steps    6
+  :unlock   load-balancing
+  :capacity 2_000
+  :flags    (limiting zone-spanning tls)
+  :accepts  (page read write login search upload bot media rt buy job report ai feed hook push bid
+             q-read q-write q-search q-vector blob-put q-tx blob-get q-scan k-write)
+  :sends    (page read write login search upload bot media rt buy job report ai feed hook push bid
+             q-read q-write q-search q-vector blob-put q-tx blob-get q-scan k-write)
+  :blurb    "Splits traffic across App Servers or Database hosts and drops a dead host at its next health check.")
+
+(state lb
+  (field policy (enum weighted round-robin least-conn p2c hash)
+    :default weighted
+    :schema  LbPolicy)
+  (field sticky bool
+    :default false)
+  (field slow-start bool
+    :default false)
+  (field variant (enum l7 l4)
+    :default l7
+    :schema  LbVariant)
+  (field check-every number
+    :default 10)
+  (field deep-check bool
+    :default false))
+
+(table lb-policies
+  :key id
+  [id           label              research]
+  [weighted     "Weighted"         null]
+  [round-robin  "Round robin"      null]
+  [least-conn   "Least conn"       "lb-algorithms"]
+  [p2c          "Two choices"      "lb-algorithms"]
+  [hash         "Consistent hash"  "lb-algorithms"])
+
+(constants p2c
+  (capacity 1.5)
+  (imbalance 0.1))
+
+(def CHECK_INTERVALS
+  :type const
+  [2 10 30])
+
+(constants l4
+  (capacity 10)
+  (ms 0.2)
+  (burn 0.6))
+
+(table lb-variants
+  :key id
+  [id  name  research]
+  [l7  "L7"  null]
+  [l4  "L4"  "l4-lb"])
+
+(def lbGlossary
+  :type (array string)
+  ["health-check" "load-balancer" "vertical-and-horizontal-scaling"])

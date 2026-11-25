@@ -1,2 +1,0 @@
-(def ROLLOUT_STEPS :type const [0 0.05 0.25 0.5 1])
-(def ROLLOUT_ALL 1)

@@ -3,7 +3,7 @@ import type { Game } from '../state.ts'
 
 import { databasesOf, databasesOfGroup, dataGroupOf, primaryOf } from '../lookups.ts'
 import { warming } from '../life.ts'
-import { PROMOTE_DATA_LOSS } from './replica.ts'
+import { PROMOTE_DATA_LOSS } from '../generated/replica.ts'
 
 export const setSync = (game: Game, id: string, sync: boolean): Action =>
   withNode(game, id, (node) => {

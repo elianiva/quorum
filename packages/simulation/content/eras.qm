@@ -1,110 +1,231 @@
 ; Eras: the stages of the company, in order. An Era's index is its position here.
 ;
 ; A mix is the share of requests of each kind. qmc checks that every mix sums to exactly 100%.
-
 (mix series-b
-  :page 15% :read 22% :write 9% :login 4% :search 7% :upload 4%
-  :bot 7% :media 10% :rt 8% :buy 3% :job 2% :report 3%
-  :ai 5% :bid 1%)
+  :page   15%
+  :read   22%
+  :write  9%
+  :login  4%
+  :search 7%
+  :upload 4%
+  :bot    7%
+  :media  10%
+  :rt     8%
+  :buy    3%
+  :job    2%
+  :report 3%
+  :ai     5%
+  :bid    1%)
 
 (mix series-c
-  :page 11% :read 18% :write 8% :login 3% :search 6% :upload 3%
-  :bot 7% :media 10% :rt 8% :buy 3% :job 2% :report 2%
-  :ai 6% :feed 8% :hook 2% :push 2% :bid 1%)
+  :page   11%
+  :read   18%
+  :write  8%
+  :login  3%
+  :search 6%
+  :upload 3%
+  :bot    7%
+  :media  10%
+  :rt     8%
+  :buy    3%
+  :job    2%
+  :report 2%
+  :ai     6%
+  :feed   8%
+  :hook   2%
+  :push   2%
+  :bid    1%)
 
 (mix tuned-pre-seed
-  :page 45% :read 35% :write 15% :login 5%)
+  :page  45%
+  :read  35%
+  :write 15%
+  :login 5%)
 
 (mix tuned-seed
-  :page 30% :read 30% :write 12% :login 4% :search 10% :upload 4%
-  :bot 10%)
+  :page   30%
+  :read   30%
+  :write  12%
+  :login  4%
+  :search 10%
+  :upload 4%
+  :bot    10%)
 
 (mix tuned-series-a
-  :page 21% :read 25% :write 10% :login 3% :search 8% :upload 3%
-  :bot 8% :media 10% :rt 8% :buy 3% :bid 1%)
+  :page   21%
+  :read   25%
+  :write  10%
+  :login  3%
+  :search 8%
+  :upload 3%
+  :bot    8%
+  :media  10%
+  :rt     8%
+  :buy    3%
+  :bid    1%)
 
 (era garage
-  :name "Garage"
-  :slo 99% :incident-every none :max-severity 3
-  :market 1_500 :raise-at 1_000 :grant 2_500 :dilution 10%
-  :growth 0.4% :apdex-target 85% :cost-index 1 :salary-index 1
-  :mix (:page 60% :read 40%)
-  :question "How far does one box go?"
-  :arrivals "Page views and API reads.")
+  :name           "Garage"
+  :slo            99%
+  :incident-every none
+  :max-severity   3
+  :market         1_500
+  :raise-at       1_000
+  :grant          2_500
+  :dilution       10%
+  :growth         0.4%
+  :apdex-target   85%
+  :cost-index     1
+  :salary-index   1
+  :mix            (:page 60% :read 40%)
+  :question       "How far does one box go?"
+  :arrivals       "Page views and API reads.")
 
 (era pre-seed
-  :name "Pre-seed"
-  :slo 99% :incident-every 720s :max-severity 2
-  :market 7_000 :raise-at 5_000 :grant 15_000 :dilution 19%
-  :growth 0.22% :apdex-target 86% :cost-index 4 :salary-index 4
-  :mix (:page 44% :read 35% :write 15% :login 6%)
-  :question "What happens when the database is the bottleneck?"
-  :arrivals "Writes contend for the database. Hiring opens. Incidents begin.")
+  :name           "Pre-seed"
+  :slo            99%
+  :incident-every 720s
+  :max-severity   2
+  :market         7_000
+  :raise-at       5_000
+  :grant          15_000
+  :dilution       19%
+  :growth         0.22%
+  :apdex-target   86%
+  :cost-index     4
+  :salary-index   4
+  :mix            (:page 44% :read 35% :write 15% :login 6%)
+  :question       "What happens when the database is the bottleneck?"
+  :arrivals       "Writes contend for the database. Hiring opens. Incidents begin.")
 
 (era seed
-  :name "Seed"
-  :slo 99.5% :incident-every 600s :max-severity 2
-  :market 35_000 :raise-at 25_000 :grant 80_000 :dilution 19%
-  :growth 0.16% :apdex-target 88% :cost-index 8 :salary-index 8
-  :mix (:page 26% :read 29% :write 12% :login 6% :search 10% :upload 7%
-        :bot 10%)
-  :question "What happens when one App Server type cannot serve every kind?"
-  :arrivals "Search, uploads and bots. Queues, Workers, a CDN and a WAF.")
+  :name           "Seed"
+  :slo            99.5%
+  :incident-every 600s
+  :max-severity   2
+  :market         35_000
+  :raise-at       25_000
+  :grant          80_000
+  :dilution       19%
+  :growth         0.16%
+  :apdex-target   88%
+  :cost-index     8
+  :salary-index   8
+  :mix            (:page 26% :read 29% :write 12% :login 6% :search 10% :upload 7% :bot 10%)
+  :question       "What happens when one App Server type cannot serve every kind?"
+  :arrivals       "Search, uploads and bots. Queues, Workers, a CDN and a WAF.")
 
 (era series-a
-  :name "Series A"
-  :slo 99.9% :incident-every 540s :max-severity 2
-  :market 200_000 :raise-at 150_000 :grant 1_500_000 :dilution 13%
-  :growth 0.09% :apdex-target 90% :cost-index 12 :salary-index 12
-  :mix (:page 15% :read 25% :write 10% :login 4% :search 10% :upload 6%
-        :bot 8% :media 10% :rt 8% :buy 3% :bid 1%)
-  :question "What happens when a whole zone fails?"
-  :arrivals "Video, chat, checkout and bids. Zones, autoscaling and an error budget.")
+  :name           "Series A"
+  :slo            99.9%
+  :incident-every 540s
+  :max-severity   2
+  :market         200_000
+  :raise-at       150_000
+  :grant          1_500_000
+  :dilution       13%
+  :growth         0.09%
+  :apdex-target   90%
+  :cost-index     12
+  :salary-index   12
+  :mix            (:page   15%
+                   :read   25%
+                   :write  10%
+                   :login  4%
+                   :search 10%
+                   :upload 6%
+                   :bot    8%
+                   :media  10%
+                   :rt     8%
+                   :buy    3%
+                   :bid    1%)
+  :question       "What happens when a whole zone fails?"
+  :arrivals       "Video, chat, checkout and bids. Zones, autoscaling and an error budget.")
 
 (era series-b
-  :name "Series B"
-  :slo 99.9% :incident-every 480s :max-severity 1
-  :market 1_400_000 :raise-at 1_000_000 :grant 18_000_000 :dilution 12%
-  :growth 0.07% :apdex-target 91% :cost-index 16 :salary-index 16
-  :mix series-b
-  :question "What happens when analytics and AI share a database built for checkouts?"
-  :arrivals "Exports, reports and AI prompts. Warehouses, GPUs, retries and breakers.")
+  :name           "Series B"
+  :slo            99.9%
+  :incident-every 480s
+  :max-severity   1
+  :market         1_400_000
+  :raise-at       1_000_000
+  :grant          18_000_000
+  :dilution       12%
+  :growth         0.07%
+  :apdex-target   91%
+  :cost-index     16
+  :salary-index   16
+  :mix            series-b
+  :question       "What happens when analytics and AI share a database built for checkouts?"
+  :arrivals       "Exports, reports and AI prompts. Warehouses, GPUs, retries and breakers.")
 
 (era series-c
-  :name "Series C"
-  :slo 99.95% :incident-every 480s :max-severity 1
-  :market 14_000_000 :raise-at 10_000_000 :grant 150_000_000 :dilution 12%
-  :growth 0.05% :apdex-target 92% :cost-index 20 :salary-index 20
-  :mix series-c
-  :question "What happens when your users live on four continents?"
-  :arrivals "Feeds, webhooks and push. Regions, GeoDNS, quorums and consensus.")
+  :name           "Series C"
+  :slo            99.95%
+  :incident-every 480s
+  :max-severity   1
+  :market         14_000_000
+  :raise-at       10_000_000
+  :grant          150_000_000
+  :dilution       12%
+  :growth         0.05%
+  :apdex-target   92%
+  :cost-index     20
+  :salary-index   20
+  :mix            series-c
+  :question       "What happens when your users live on four continents?"
+  :arrivals       "Feeds, webhooks and push. Regions, GeoDNS, quorums and consensus.")
 
 (era pre-ipo
-  :name "Pre-IPO"
-  :slo 99.9% :incident-every 600s :max-severity 1
-  :market 70_000_000 :raise-at 50_000_000 :grant 0 :dilution 15%
-  :growth 0.03% :apdex-target 93% :cost-index 24 :salary-index 24
-  :mix series-c
-  :question "Can you prove the company is ready to go public?"
-  :arrivals "The IPO checklist: reliability, SOC 2, a DR drill, data residency, the Rule of 40.")
+  :name           "Pre-IPO"
+  :slo            99.9%
+  :incident-every 600s
+  :max-severity   1
+  :market         70_000_000
+  :raise-at       50_000_000
+  :grant          0
+  :dilution       15%
+  :growth         0.03%
+  :apdex-target   93%
+  :cost-index     24
+  :salary-index   24
+  :mix            series-c
+  :question       "Can you prove the company is ready to go public?"
+  :arrivals       "The IPO checklist: reliability, SOC 2, a DR drill, data residency, the Rule of 40.")
 
 (era public
-  :name "Public"
-  :slo 99.99% :incident-every 600s :max-severity 1
-  :market 6_000_000_000 :raise-at never :grant 0 :dilution 0%
-  :growth 0.02% :apdex-target 94% :cost-index 24 :salary-index 24
-  :mix series-c
-  :question "Can you beat your guidance every quarter?"
-  :arrivals "Quarters, guidance and the market multiple. The game is endless.")
+  :name           "Public"
+  :slo            99.99%
+  :incident-every 600s
+  :max-severity   1
+  :market         6_000_000_000
+  :raise-at       never
+  :grant          0
+  :dilution       0%
+  :growth         0.02%
+  :apdex-target   94%
+  :cost-index     24
+  :salary-index   24
+  :mix            series-c
+  :question       "Can you beat your guidance every quarter?"
+  :arrivals       "Quarters, guidance and the market multiple. The game is endless.")
 
 (def RPS_PER_USER 0.02)
+
 (def DIURNAL_AMPLITUDE 0.45)
+
 (def WEEKEND_FACTOR 1)
+
 (def STEP_SECONDS 0.1)
-(def CALENDAR_START (* 14 60))
+
 (def CHURN 0.004)
+
 (def FICKLE_SHARE 0.5)
+
 (def STEADY_CHURN 0.2)
+
 (def FUNNEL_GROWTH 1.1)
+
 (def DECLINED_GROWTH 0.7)
+
 (def APDEX_WINDOW 60)

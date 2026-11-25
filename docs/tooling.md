@@ -5,7 +5,8 @@
 | pnpm                       | Workspace installation and package linking                                             |
 | Turborepo                  | Cached build, typecheck, and test task graph                                           |
 | Vite+ (`vp`)               | Root formatting/lint configuration and unified checks                                  |
-| Oxfmt                      | Formatting engine used by Vite+                                                        |
+| Oxfmt                      | Formatting engine used by Vite+ for TypeScript and Markdown                            |
+| `qmc fmt`                  | Field and table layout for `.qm` content                                               |
 | Oxlint                     | Lint engine used by Vite+                                                              |
 | Vite                       | Web app bundler, integrated into Alchemy's website dev/deploy flow                     |
 | Alchemy                    | Local Cloudflare development and deployment through the root `alchemy.run.ts`          |

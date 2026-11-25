@@ -1,0 +1,56 @@
+; Storage: the Component and the tables it reads.
+(component storage
+  :code    s3
+  :name    "Object Storage"
+  :product "Amazon S3"
+  :group   data
+  :dock    data
+  :cost    280
+  :latency 40ms
+  :burn    0.01
+  :max-out 0
+  :unlock  object-storage
+  :accepts (blob-put blob-get)
+  :blurb   "Holds uploaded files. No limit. Pay for what it stores.")
+
+(state storage
+  (field store-variant (enum s3 r2)
+    :default s3
+    :schema  StoreVariant)
+  (field storage-class (enum standard infrequent archive)
+    :default standard
+    :schema  StorageClass
+    :set     (setStorageClass :refuse "Only Object Storage has a storage class."))
+  (field lifecycle number
+    :default 0
+    :gate    (lifecycle-rules "Lifecycle rules")))
+
+(gate storage storeVariant
+  :research egress-optimization
+  :what     "R2"
+  :locked   ("r2"))
+
+(def STORAGE_PRICE 0.000032)
+
+(table storage-classes
+  :key id
+  [id          name                 price  retrieval  archived]
+  [standard    "Standard"               1          0  false]
+  [infrequent  "Infrequent access"    0.5       0.01  false]
+  [archive     "Archive"              0.1          0  true])
+
+(def LIFECYCLE_DAYS
+  :type const
+  [0 30 90 365])
+
+(def R2_FIRST_BYTE_MS 15)
+
+(table store-variants
+  :key id
+  [id  name  egress  get       put]
+  [s3  "S3"  true     0.00048   0.006]
+  [r2  "R2"  false   0.000432  0.0054])
+
+(def storageGlossary
+  :type (array string)
+  ["object-storage"])

@@ -1,0 +1,24 @@
+; Llm: the Component and the tables it reads.
+(component llm
+  :code    llm
+  :name    "LLM API"
+  :product "A hosted model"
+  :group   data
+  :dock    managed
+  :cost    0
+  :latency 600ms
+  :steps   8
+  :max-out 0
+  :unlock  hosted-models
+  :flags   (limiting global zone-spanning)
+  :accepts (infer)
+  :blurb   "Serves AI prompts with no GPUs. Paid per token, and rate limited.")
+
+(constants llm
+  (first-token-ms 600)
+  (price 2.5)
+  (rate 100))
+
+(def llmGlossary
+  :type (array string)
+  ["model-inference" "rate-limiting"])

@@ -1,0 +1,54 @@
+; Cdn: the Component and the tables it reads.
+(component cdn
+  :code    cdn
+  :name    "CDN"
+  :product "Cloudflare"
+  :group   edge
+  :dock    edge
+  :cost    220
+  :latency 8ms
+  :burn    0.05
+  :unlock  cdn
+  :flags   (global tls)
+  :accepts (requests)
+  :sends   (requests)
+  :blurb   "Answers cacheable pages near the user. Egress from the edge costs less.")
+
+(state cdn
+  (field purge bool
+    :default false)
+  (field cache-key (enum full query path)
+    :default full
+    :schema  CacheKey)
+  (field stale-until number
+    :default 0))
+
+(types "../catalog/kinds.ts" Kind)
+
+(def CDN_HIT
+  :type (partial (record Kind number))
+  (:page  0.7
+   :media 0.75))
+
+(def ANONYMOUS_PAGE 0.6)
+
+(def TIERED_MEDIA_HIT 0.92)
+
+(table cdn-ttls
+  [ttl    factor]
+  [   60     0.8]
+  [  300       1]
+  [3_600     1.2])
+
+(def ESI_PAGE_HIT 0.2)
+
+(table cache-keys
+  :key id
+  [id     name                       hit  leak]
+  [full   "Path, query and cookies"    1     0]
+  [query  "Path and query"           1.1     1]
+  [path   "Path only"                1.2   2.5])
+
+(def cdnGlossary
+  :type (array string)
+  ["cache-hit-rate" "cdn-content-delivery-network" "egress"])

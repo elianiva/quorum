@@ -1,5 +1,7 @@
 import { type Action, notAllowed, ok, patch, withNode, locked } from '../action-kit.ts'
-import type { Fanout, Game } from '../state.ts'
+import type { Game } from '../state.ts'
+
+export { setFanout } from '../generated/server.rule.ts'
 
 export const setCompression = (game: Game, id: string, compress: boolean): Action =>
   withNode(game, id, (node) => {
@@ -32,10 +34,3 @@ export const setRyw = (game: Game, id: string, ryw: boolean): Action =>
     if (node.type !== 'server') return notAllowed('Only App Servers route reads.')
     return locked(game, 'server.ryw', ryw) ?? ok(node.ryw === ryw ? game : patch(game, id, { ryw }))
   })
-
-export const setFanout = (game: Game, id: string, fanout: Fanout): Action =>
-  withNode(game, id, (node) =>
-    node.type !== 'server'
-      ? notAllowed('Only App Servers build feeds.')
-      : ok(node.fanout === fanout ? game : patch(game, id, { fanout })),
-  )

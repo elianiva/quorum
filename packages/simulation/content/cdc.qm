@@ -1,4 +1,0 @@
-(def CDC_RATE 20_000)
-(def CDC_CHANGES :type const ["q-write" "q-tx" "k-write"])
-
-(def CDC_MS 2)

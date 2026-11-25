@@ -3,12 +3,7 @@ import type { Game } from '../state.ts'
 import { activeIncident } from '../state.ts'
 import { MAX_ATTEMPTS, QUEUE_LENGTHS } from '../catalog.ts'
 
-export const setDlq = (game: Game, id: string, dlq: boolean): Action =>
-  withNode(game, id, (node) =>
-    node.type === 'queue'
-      ? ok(node.dlq === dlq ? game : patch(game, id, { dlq }))
-      : notAllowed('Only a Queue has a dead-letter queue.'),
-  )
+export { setDlq } from '../generated/queue.rule.ts'
 
 export const setAttempts = (game: Game, id: string, attempts: number): Action =>
   withNode(game, id, (node) => {

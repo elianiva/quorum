@@ -1,0 +1,32 @@
+; Log: the Component and the tables it reads.
+(component log
+  :code     log
+  :name     "Event Stream"
+  :product  "Apache Kafka"
+  :group    compute
+  :dock     messaging
+  :cost     900
+  :latency  5ms
+  :burn     0.3
+  :steps    6
+  :unlock   event-streaming
+  :capacity 100_000
+  :flags    (limiting)
+  :accepts  (task change)
+  :sends    (task change)
+  :blurb    "A log, not a queue: events stay after they are read, so a consumer can replay them. Consumers read one partition each and fall behind at their own pace.")
+
+(state log
+  (field partitions number
+    :default 3)
+  (field acks (enum "0" "1" all)
+    :default all
+    :schema  Acks)
+  (field retain number
+    :default 3_600)
+  (field keyed bool
+    :default true))
+
+(def logGlossary
+  :type (array string)
+  ["at-least-once-delivery" "cdc-change-data-capture"])

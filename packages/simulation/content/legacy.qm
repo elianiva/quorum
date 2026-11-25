@@ -1,50 +1,38 @@
 (types "../catalog/legacy.ts" ExitId ExitDef)
 
-(def EXIT_IDS :type const ["acqui-hire" "acquisition" "ipo" "step-down"])
+(def EXIT_IDS
+  :type const
+  ["acqui-hire" "acquisition" "ipo" "step-down"])
 
-(def EXITS :type "Record<ExitId, ExitDef>"
-  (:acqui-hire (:id "acqui-hire"
-                :name "Acqui-hire"
-                :stage 3
-                :cap 50_000_000
-                :multiplier 0.5
-                :continues false)
-   :acquisition (:id "acquisition"
-                 :name "Acquisition"
-                 :stage 4
-                 :cap Infinity
-                 :multiplier 1
-                 :continues false)
-   :ipo (:id "ipo" :name "IPO" :stage 6 :cap Infinity :multiplier 1.5 :continues true)
-   :step-down (:id "step-down"
-               :name "Step down"
-               :stage 7
-               :cap Infinity
-               :multiplier 1.5
-               :continues false)))
+(table exits
+  :key      id
+  :keep-key
+  :type     (record ExitId ExitDef)
+  [id             name           stage  cap         multiplier  continues]
+  ["acqui-hire"   "Acqui-hire"       3  50_000_000         0.5  false]
+  ["acquisition"  "Acquisition"      4  Infinity             1  false]
+  ["ipo"          "IPO"              6  Infinity           1.5  true]
+  ["step-down"    "Step down"        7  Infinity           1.5  false])
 
-(def STREAK_BONUS 0.1)
-(def STREAK_BONUS_CAP 1)
+(constants streak
+  (bonus 0.1)
+  (bonus-cap 1))
 
-(def PERK_IDS :type const
-  ["angel-network"
-   "alumni-network"
-   "institutional-knowledge"
-   "pattern-recognition"
-   "founders-reputation"
-   "better-terms"
-   "night-shift"
-   "time-dilation"
-   "playbooks"
-   "war-stories"
-   "head-start"
-   "autopilot"])
+(def PERK_IDS
+  :type const
+  ["angel-network" "alumni-network" "institutional-knowledge" "pattern-recognition"
+   "founders-reputation" "better-terms" "night-shift" "time-dilation" "playbooks" "war-stories"
+   "head-start" "autopilot"])
 
-(def POLICY_LEVEL :type const (:research 1 :hire 2 :upgrade 3))
+(constants autopilot
+  (payroll 0.25)
+  (hires 4)
+  (load 0.7))
 
-(def AUTOPILOT_PAYROLL 0.25)
-(def AUTOPILOT_HIRES 4)
-(def AUTOPILOT_LOAD 0.7)
+(def PLAYBOOK_SLOTS
+  :type (array number)
+  [1 2 5 10 25])
 
-(def PLAYBOOK_SLOTS :type "ReadonlyArray<number>" [1 2 5 10 25])
-(def DILATION_SPEEDS :type "ReadonlyArray<ReadonlyArray<number>>" [[] [20] [20 40]])
+(def DILATION_SPEEDS
+  :type (array (array number))
+  [[] [20] [20 40]])

@@ -1,33 +1,38 @@
 (types "../catalog/levers.ts" LeverKind)
+
 (types "../catalog/work.ts" FeatureId)
+
 (types "../catalog/ventures.ts" VentureId)
 
-(def LEVER_KINDS :type const
-  ["login" "search" "upload" "media" "rt" "buy" "job" "report" "ai" "feed" "hook" "push"])
+(constants lever
+  (kinds
+    :type const
+    ["login" "search" "upload" "media" "rt" "buy" "job" "report" "ai" "feed" "hook" "push"])
+  (steps :type const [1 2 3 4])
+  (dh :type const [24 80 240])
+  (growth :type const [0.99 0.98 0.96])
+  (refund 0.5))
 
-(def LEVER_STEPS :type const [1 2 3 4])
-(def LEVER_DH :type const [24 80 240])
-(def LEVER_GROWTH :type const [0.99 0.98 0.96])
-(def LEVER_REFUND 0.5)
-(def MAX_LEVER_STEP 3)
-
-(def LEVER_OWNER :type "Readonly<Record<LeverKind, FeatureId>>"
-  (:login "password-login"
+(def LEVER_OWNER
+  :type (readonly (record LeverKind FeatureId))
+  (:login  "password-login"
    :search "search-filters"
    :upload "profile-photos"
-   :media "video"
-   :rt "chat"
-   :buy "checkout"
-   :job "data-export"
+   :media  "video"
+   :rt     "chat"
+   :buy    "checkout"
+   :job    "data-export"
    :report "dashboards"
-   :ai "ai-assistant"
-   :feed "activity-feed"
-   :hook "webhooks"
-   :push "push-notifications"))
+   :ai     "ai-assistant"
+   :feed   "activity-feed"
+   :hook   "webhooks"
+   :push   "push-notifications"))
 
-(def LEVER_CAPS
-  :type "Readonly<\n  Partial<Record<VentureId, Readonly<{ kind: LeverKind; step: number }>>>\n>"
-  (:fintech (:kind "buy" :step 1)
-   :ai-startup (:kind "ai" :step 1)
-   :healthcare (:kind "upload" :step 1)
-   :government (:kind "push" :step 1)))
+(table lever-caps
+  :key  id
+  :type LeverCaps
+  [id          kind      step]
+  [fintech     "buy"        1]
+  [ai-startup  "ai"         1]
+  [healthcare  "upload"     1]
+  [government  "push"       1])

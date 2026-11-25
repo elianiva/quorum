@@ -1,0 +1,28 @@
+; Pooler: the Component and the tables it reads.
+(component pooler
+  :code     pool
+  :name     "Connection Pooler"
+  :product  "PgBouncer"
+  :group    data
+  :dock     data
+  :cost     80
+  :latency  0.3ms
+  :burn     0.03
+  :steps    4
+  :max-out  1
+  :unlock   pooling
+  :capacity 10_000
+  :flags    (limiting standby)
+  :accepts  (q-read q-write q-tx)
+  :sends    (q-read q-write q-tx)
+  :blurb    "Many app connections share 20 database connections. It pools to one host.")
+
+(state pooler
+  (field mode (enum session transaction statement)
+    :default transaction
+    :schema  PoolerMode
+    :set     (setPoolerMode :refuse "Only a Connection Pooler has a mode.")))
+
+(def poolerGlossary
+  :type (array string)
+  ["connection-pooling"])

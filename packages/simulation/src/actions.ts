@@ -1,5 +1,5 @@
 import { RUNNING, warming, withWarm } from './life.ts'
-import { PROMOTE_DATA_LOSS } from './components/replica.ts'
+import { PROMOTE_DATA_LOSS } from './generated/replica.ts'
 import { step as roundStep } from './era-round-machine.ts'
 import {
   type Action,

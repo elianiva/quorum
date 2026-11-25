@@ -1,0 +1,35 @@
+; Vec: the Component and the tables it reads.
+(component vec
+  :code    vec
+  :name    "Vector Index"
+  :product "pgvector, Pinecone, Qdrant"
+  :group   data
+  :dock    data
+  :cost    400
+  :latency 20ms
+  :burn    0.3
+  :steps   6
+  :max-out 0
+  :unlock  embeddings
+  :flags   (limiting cold-start)
+  :accepts (q-vector)
+  :blurb   "Answers nearest-neighbour lookups over your embeddings. It holds the index in memory, and a prompt that reaches it earns more.")
+
+(state vec
+  (field index-type (enum exact hnsw)
+    :default exact
+    :schema  VecIndexType))
+
+(constants vec
+  (queries 500)
+  (ai-lift 1.35))
+
+(table vec-indexes
+  :key id
+  [id     name     recall  queries  burn]
+  [exact  "Exact"       1        1     1]
+  [hnsw   "HNSW"     0.95        2     2])
+
+(def vecGlossary
+  :type (array string)
+  ["model-inference"])

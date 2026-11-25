@@ -1,0 +1,40 @@
+; Queue: the Component and the tables it reads.
+(component queue
+  :code     mq
+  :name     "Queue"
+  :product  "RabbitMQ"
+  :group    compute
+  :dock     messaging
+  :cost     360
+  :latency  2ms
+  :burn     0.1
+  :steps    6
+  :unlock   queues
+  :capacity 20_000
+  :flags    (limiting standby)
+  :accepts  (task)
+  :sends    (task)
+  :blurb    "Takes work now so Workers can do it later. Users wait only for the enqueue.")
+
+(state queue
+  (field dlq bool
+    :default false
+    :set     (setDlq :refuse "Only a Queue has a dead-letter queue."))
+  (field max-length number
+    :default 0))
+
+(def QUEUE_RATE 20_000)
+
+(def BACKLOG_MS 0.01)
+
+(def DRAIN_SECONDS 10)
+
+(def FOREVER_ATTEMPTS 25)
+
+(constants queue
+  (lengths :type const [0 1_000 10_000 100_000])
+  (message-price 0.00144))
+
+(def queueGlossary
+  :type (array string)
+  ["at-least-once-delivery" "backpressure" "dead-letter-queue" "transactional-outbox"])

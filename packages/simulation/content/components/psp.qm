@@ -1,0 +1,32 @@
+; Psp: the Component and the tables it reads.
+(component psp
+  :code    psp
+  :name    "Payment Provider"
+  :product "Stripe"
+  :group   data
+  :dock    managed
+  :cost    0
+  :latency 400ms
+  :steps   8
+  :max-out 0
+  :unlock  checkout
+  :flags   (limiting global zone-spanning)
+  :accepts (charge)
+  :blurb   "Charges cards for checkouts. 2.9% plus $0.30 per checkout.")
+
+(state psp
+  (field provider (enum first second)
+    :default first
+    :schema  Provider))
+
+(constants psp
+  (rate 0.029)
+  (fixed 0.3))
+
+(def SECOND_PROVIDER_FEE 1.15)
+
+(def PSP_CAPACITY 1_000)
+
+(def pspGlossary
+  :type (array string)
+  ["idempotency"])

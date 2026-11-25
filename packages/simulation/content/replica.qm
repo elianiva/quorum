@@ -1,7 +1,0 @@
-(def SYNC_MS 2)
-(def REPLICA_SYNC_MINUTES_PER_GB 0.5)
-(def REPLICA_BOX_PRICE 0.7)
-(def PROMOTE_DATA_LOSS 0.02)
-
-(def replicaGlossary :type "ReadonlyArray<string>"
-  ["eventual-consistency" "read-replica" "read-your-writes-consistency" "replication-lag"])

@@ -27,7 +27,10 @@ const PASSES: &[Pass] = &[
     kind_refs,
     components,
     crate::data::check,
+    crate::data::check_eras,
+    def_modules,
     gates,
+    states,
 ];
 
 pub fn run(catalog: &Catalog) -> Sink {
@@ -38,6 +41,24 @@ pub fn run(catalog: &Catalog) -> Sink {
     let mut sink = Sink::default();
     for result in par::join_all(jobs) {
         sink.extend(result);
+    }
+    sink
+}
+
+/// A `:module` on a constants entry must name a content file that exists.
+fn def_modules(catalog: &Catalog) -> Sink {
+    let mut sink = Sink::default();
+    for def in &catalog.defs {
+        if !catalog.modules.contains(&def.module) {
+            sink.push(
+                Diagnostic::error(
+                    "unknown-module",
+                    def.span,
+                    format!("`:module {}` names no content file", def.module),
+                )
+                .help("write the file stem, such as `team` for content/team.qm"),
+            );
+        }
     }
     sink
 }
@@ -90,6 +111,11 @@ fn names(catalog: &Catalog) -> Sink {
     unique(
         catalog.shape_kinds.iter().map(|s| &s.name),
         "the study shape",
+        &mut sink,
+    );
+    unique(
+        catalog.type_defs.iter().map(|t| &t.name),
+        "the type",
         &mut sink,
     );
     let tracks = unique(
@@ -225,18 +251,24 @@ fn eras(catalog: &Catalog) -> Sink {
     let mut sink = Sink::default();
     let ids = by_id(catalog);
     for r in &catalog.research {
+        let Some(rera) = catalog.era_index(&r.era.value.text) else {
+            continue;
+        };
         for q in &r.requires {
             let Some(req) = ids.get(q.text.as_str()) else {
                 continue;
             };
-            if req.era.value.value > r.era.value.value {
+            let Some(reqera) = catalog.era_index(&req.era.value.text) else {
+                continue;
+            };
+            if reqera > rera {
                 sink.push(
                     Diagnostic::error(
                         "later-era",
                         q.span,
                         format!(
-                            "`{}` is Era {} research but requires `{}`, which is Era {}",
-                            r.id.text, r.era.value, q.text, req.era.value
+                            "`{}` is Era `{}` research but requires `{}`, which is Era `{}`",
+                            r.id.text, r.era.value.text, q.text, req.era.value.text
                         ),
                     )
                     .label("arrives in a later Era")
@@ -297,14 +329,23 @@ fn era_rules(catalog: &Catalog) -> Sink {
             _ => {}
         }
     }
-    let last = catalog.eras.len() - 1;
+    let known: Vec<&str> = catalog
+        .eras
+        .iter()
+        .map(|era| era.id.text.as_str())
+        .collect();
     for r in &catalog.research {
-        let era = r.era.value.value;
-        if era > Ratio::int(last as i128) {
+        if catalog.era_index(&r.era.value.text).is_none() {
             sink.push(
-                Diagnostic::error("unknown-era", r.era.span, format!("there is no Era {era}"))
-                    .label(format!("Eras are numbered 0 to {last}"))
-                    .note(catalog.eras[last].id.span, "the last Era"),
+                Diagnostic::error(
+                    "unknown-era",
+                    r.era.span,
+                    format!(
+                        "`{}` names no declared Era `{}`",
+                        r.id.text, r.era.value.text
+                    ),
+                )
+                .help(format!("write one of: {}", known.join(", "))),
             );
         }
     }
@@ -468,11 +509,19 @@ fn values(catalog: &Catalog) -> Vec<&Spanned<Value>> {
 /// every import is used.
 fn imports(catalog: &Catalog) -> Sink {
     let mut sink = Sink::default();
+    let consts: Vec<Name> = catalog
+        .consts
+        .iter()
+        .map(|c| Name {
+            text: c.export.clone(),
+            span: c.name.span,
+        })
+        .collect();
     let names = catalog
         .imports
         .iter()
         .flat_map(|i| &i.names)
-        .chain(catalog.consts.iter().map(|c| &c.name));
+        .chain(consts.iter());
     let defined = unique(names, "the name", &mut sink);
     let known: Vec<&str> = defined.keys().copied().collect();
     let mut used = BTreeSet::new();
@@ -646,34 +695,35 @@ fn incidents(catalog: &Catalog) -> Sink {
         .filter_map(|i| i.cascades.as_ref())
         .map(|n| n.text.as_str())
         .collect();
-    let last = catalog.eras.len() - 1;
+    let known: Vec<&str> = catalog
+        .eras
+        .iter()
+        .map(|era| era.id.text.as_str())
+        .collect();
     for incident in &catalog.incidents {
-        let era = incident.era.value.value;
-        if era > Ratio::int(last as i128) {
+        let Some(era) = catalog.era_index(&incident.era.value.text) else {
             sink.push(
                 Diagnostic::error(
                     "unknown-era",
                     incident.era.span,
-                    format!("there is no Era {era}"),
+                    format!(
+                        "`{}` names no declared Era `{}`",
+                        incident.id.text, incident.era.value.text
+                    ),
                 )
-                .label(format!("Eras are numbered 0 to {last}")),
+                .help(format!("write one of: {}", known.join(", "))),
             );
             continue;
-        }
+        };
         if targets.contains(incident.id.text.as_str()) {
             continue;
         }
         // The Director never picks an incident whose severity is below the Era's cap, and never
         // in an Era without incidents.
-        let first = catalog
-            .eras
-            .iter()
-            .enumerate()
-            .skip(era.num as usize)
-            .find(|(_, e)| {
-                e.incident_every.is_some()
-                    && incident.severity.value.value >= e.max_severity.value.value
-            });
+        let first = catalog.eras.iter().enumerate().skip(era).find(|(_, e)| {
+            e.incident_every.is_some()
+                && incident.severity.value.value >= e.max_severity.value.value
+        });
         match first {
             None => sink.push(
                 Diagnostic::error(
@@ -684,18 +734,18 @@ fn incidents(catalog: &Catalog) -> Sink {
                 .label("no Era from its own allows this severity")
                 .help("raise its severity number, or lower an Era's :max-severity"),
             ),
-            Some((index, later)) if index as i128 > era.num => sink.push(
+            Some((index, later)) if index > era => sink.push(
                 Diagnostic::warning(
                     "fires-later",
                     incident.era.span,
                     format!(
-                        "`{}` says Era {era}, but the Director cannot pick it before Era {index}",
-                        incident.id.text
+                        "`{}` says Era `{}`, but the Director cannot pick it before Era `{}`",
+                        incident.id.text, incident.era.value.text, later.id.text
                     ),
                 )
                 .label(format!(
-                    "severity {} is too severe for the Eras before {index}",
-                    incident.severity.value
+                    "severity {} is too severe for the Eras before `{}`",
+                    incident.severity.value, later.id.text
                 ))
                 .note(later.max_severity.span, "the first Era whose cap allows it"),
             ),
@@ -1146,7 +1196,7 @@ fn gates(catalog: &Catalog) -> Sink {
             }
         }
         if let crate::lower::GateLabel::Table(table) = &gate.what {
-            let def = catalog.defs.iter().find(|d| d.name.text == table.text);
+            let def = catalog.defs.iter().find(|d| d.export == table.text);
             let keys: Option<Vec<&str>> = def.and_then(|d| match &d.value.kind {
                 crate::data::D::Record(entries) => Some(
                     entries
@@ -1226,6 +1276,97 @@ fn gates(catalog: &Catalog) -> Sink {
     sink
 }
 
+/// A `(state …)` names a real Component, appears once per Component, and gives each field a key
+/// no other state uses. The fields share one `GameNode` struct, so a repeated key would silently
+/// replace the first one.
+fn states(catalog: &Catalog) -> Sink {
+    let mut sink = Sink::default();
+    let components: BTreeSet<&str> = catalog
+        .components
+        .iter()
+        .map(|c| c.id.text.as_str())
+        .collect();
+    let mut per_component: BTreeMap<&str, Span> = BTreeMap::new();
+    let mut fields: BTreeMap<String, Span> = BTreeMap::new();
+    let mut exported: BTreeMap<String, Span> = BTreeMap::new();
+    for def in &catalog.defs {
+        exported.insert(def.export.clone(), def.name.span);
+    }
+    for constant in &catalog.consts {
+        exported.insert(constant.export.clone(), constant.name.span);
+    }
+    for state in &catalog.states {
+        if !components.contains(state.component.text.as_str()) {
+            sink.push(Diagnostic::error(
+                "unknown-component",
+                state.component.span,
+                format!("`{}` is not a component", state.component.text),
+            ));
+        }
+        let repeated = per_component.insert(state.component.text.as_str(), state.span);
+        if let Some(first) = repeated {
+            sink.push(
+                Diagnostic::error(
+                    "state-twice",
+                    state.span,
+                    format!("`{}` has two state forms", state.component.text),
+                )
+                .label("second state")
+                .note(first, "first state"),
+            );
+        } else {
+            let object = format!("{}Fields", crate::lower::camel(&state.component.text));
+            if let Some(first) = exported.insert(object.clone(), state.span) {
+                sink.push(
+                    Diagnostic::error(
+                        "duplicate",
+                        state.span,
+                        format!("`{object}` is already declared"),
+                    )
+                    .note(first, "first declared here"),
+                );
+            }
+        }
+        for field in &state.fields {
+            let key = crate::lower::camel(&field.key.text);
+            if let Some(first) = fields.insert(key.clone(), field.key.span) {
+                sink.push(
+                    Diagnostic::error(
+                        "duplicate",
+                        field.key.span,
+                        format!("the field `{key}` is declared twice"),
+                    )
+                    .label("second declaration")
+                    .note(first, "first declaration"),
+                );
+            }
+            let schema = field.as_name.as_ref().map_or_else(
+                || match field.ty {
+                    crate::lower::StateType::Enum(_) => Some(crate::lower::pascal(&key)),
+                    _ => None,
+                },
+                |name| Some(name.text.clone()),
+            );
+            for name in [schema, field.values_name.as_ref().map(|n| n.text.clone())]
+                .into_iter()
+                .flatten()
+            {
+                if let Some(first) = exported.insert(name.clone(), field.span) {
+                    sink.push(
+                        Diagnostic::error(
+                            "duplicate",
+                            field.span,
+                            format!("`{name}` is already declared"),
+                        )
+                        .note(first, "first declared here"),
+                    );
+                }
+            }
+        }
+    }
+    sink
+}
+
 #[cfg(test)]
 mod tests {
     use crate::diag::Severity;
@@ -1257,7 +1398,7 @@ mod tests {
     }
 
     fn r(id: &str, era: u32, requires: &str, extra: &str) -> String {
-        format!("(research {id} :name \"{id}\" :track data :cost 10 :era {era} :requires ({requires}) :blurb \"b\" {extra})\n")
+        format!("(research {id} :name \"{id}\" :track data :cost 10 :era e{era} :requires ({requires}) :blurb \"b\" {extra})\n")
     }
 
     #[test]
@@ -1372,11 +1513,7 @@ mod tests {
     #[test]
     fn output_is_the_same_on_one_thread_and_many() {
         let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/../simulation/content");
-        let mut paths: Vec<_> = std::fs::read_dir(dir)
-            .unwrap()
-            .map(|e| e.unwrap().path())
-            .collect();
-        paths.sort();
+        let paths = crate::qm_files(std::path::Path::new(dir)).unwrap();
         let inputs: Vec<(String, String)> = paths
             .iter()
             .map(|p| (p.display().to_string(), std::fs::read_to_string(p).unwrap()))
@@ -1529,12 +1666,12 @@ mod tests {
                 .replace(":max-severity 1", ":max-severity 2")
             + &era_with("e2", "incident-every", "60s");
         era_codes(&format!(
-            "(research fix :name \"f\" :track data :cost 1 :era 0 :blurb \"b\")\n{eras}{body}"
+            "(research fix :name \"f\" :track data :cost 1 :era e0 :blurb \"b\")\n{eras}{body}"
         ))
     }
 
     fn inc(id: &str, era: u32, severity: &str, extra: &str) -> String {
-        format!("(incident {id} :name \"{id}\" :era {era} :severity {severity} :duration 30s :actions (fix) {extra} :cause \"c\" :prevention \"p\")\n")
+        format!("(incident {id} :name \"{id}\" :era e{era} :severity {severity} :duration 30s :actions (fix) {extra} :cause \"c\" :prevention \"p\")\n")
     }
 
     #[test]
@@ -1571,7 +1708,7 @@ mod tests {
         let eras =
             era_with("e0", "incident-every", "60s").replace(":max-severity 1", ":max-severity 2");
         let body = format!(
-            "(research fix :name \"f\" :track data :cost 1 :era 0 :blurb \"b\")\n{eras}{}",
+            "(research fix :name \"f\" :track data :cost 1 :era e0 :blurb \"b\")\n{eras}{}",
             inc("a", 0, "1", "")
         );
         assert_eq!(era_codes(&body), [(Severity::Error, "never-fires")]);
@@ -1681,7 +1818,7 @@ mod tests {
     }
 
     fn component_codes(body: &str) -> Vec<(Severity, &'static str)> {
-        let research = "(research fix :name \"f\" :track data :cost 1 :era 0 :blurb \"b\")\n";
+        let research = "(research fix :name \"f\" :track data :cost 1 :era e0 :blurb \"b\")\n";
         codes(&format!("{GROUPS}{research}{body}"))
     }
 
@@ -1777,7 +1914,7 @@ mod tests {
             )),
             [(Severity::Error, "gate-values")]
         );
-        let other = "(research other :name \"o\" :track data :cost 1 :era 0 :blurb \"b\")\n";
+        let other = "(research other :name \"o\" :track data :cost 1 :era e0 :blurb \"b\")\n";
         let twice = format!(
             "{other}{}(gate app shed :research other :what \"T\" :free (false))\n",
             gate("shed :research other :what \"S\" :locked (true)")
@@ -1834,6 +1971,57 @@ mod tests {
             component_codes(&comp("c", "c", ":flags (sizd)")),
             [(Severity::Error, "unknown-flag")]
         );
+    }
+
+    #[test]
+    fn a_state_declares_a_field_default_and_gate() {
+        let app = with_users(&comp("app", "a", ":accepts (requests)"));
+        let state = "(state app \
+            (field mode (enum fast safe) :default fast) \
+            (field shards (one-of 1 2) :default 1 :gate (fix)))\n";
+        assert_eq!(component_codes(&format!("{app}{state}")), []);
+    }
+
+    #[test]
+    fn a_state_default_must_be_one_of_its_values() {
+        let app = with_users(&comp("app", "a", ":accepts (requests)"));
+        let state = "(state app (field mode (enum fast safe) :default slow))\n";
+        assert_eq!(
+            component_codes(&format!("{app}{state}")),
+            [(Severity::Error, "state-default")]
+        );
+    }
+
+    #[test]
+    fn a_state_names_a_real_component_once_and_unique_fields() {
+        let app = with_users(&comp("app", "a", ":accepts (requests)"));
+        let unknown = "(state ap (field mode (enum fast safe) :default fast))\n";
+        assert_eq!(
+            component_codes(&format!("{app}{unknown}")),
+            [(Severity::Error, "unknown-component")]
+        );
+        let twice = "(state app (field mode (enum fast safe) :default fast))\n\
+            (state app (field other bool :default true))\n";
+        assert_eq!(
+            component_codes(&format!("{app}{twice}")),
+            [(Severity::Error, "state-twice")]
+        );
+        let duplicate =
+            "(state app (field mode (enum fast safe) :default fast) (field mode bool :default true))\n";
+        assert_eq!(
+            component_codes(&format!("{app}{duplicate}")),
+            [(Severity::Error, "duplicate")]
+        );
+    }
+
+    #[test]
+    fn a_state_gate_does_not_repeat_a_gate_form() {
+        let app = with_users(&comp("app", "a", ":accepts (requests)"));
+        let body = format!(
+            "{app}(state app (field mode (enum fast safe) :default fast :gate (fix)))\n\
+             (gate app mode :research fix :what \"Mode\" :free (\"fast\"))\n"
+        );
+        assert_eq!(component_codes(&body), [(Severity::Error, "gate-twice")]);
     }
 
     #[test]

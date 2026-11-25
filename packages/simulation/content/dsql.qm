@@ -1,4 +1,0 @@
-(def DSQL_TX 6_000)
-(def DSQL_READ_COST 0.25)
-
-(def dsqlGlossary :type "ReadonlyArray<string>" ["quorum" "raft" "synchronous-replication"])

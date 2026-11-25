@@ -2,8 +2,8 @@
 ;
 ; Each entry becomes one ResearchDef. Declaration order is the order of RESEARCH_IDS, which the
 ; Solver indexes by, so append new research at the end of its era's group.
-
 (import "../catalog/instances.ts" POOLER_CONNECTIONS)
+
 (import "../catalog/runtimes.ts" FRAMEWORKS RUNTIMES)
 
 (tracks
@@ -20,955 +20,1591 @@
 
 ; What a Study watches for, and the field each shape is measured by.
 (study-shapes
-  (connections :more-than count)
-  (read-share :share share)
-  (cache-hit :ratio share)
-  (backlog :seconds seconds)
-  (report-share :share share)
-  (saturation :ratio share)
+  (connections
+    :more-than count)
+  (read-share
+    :share share)
+  (cache-hit
+    :ratio share)
+  (backlog
+    :seconds seconds)
+  (report-share
+    :share share)
+  (saturation
+    :ratio share)
   (replica))
 
 ; A framework's research shares the framework's name and blurb, and unlocks it.
 (defmacro framework (id name &key cost era (requires ()))
-  `(research ,(sym "fw-" id) :name ,name :track frameworks :cost ,cost :era ,era
-     :requires ,requires :blurb (ref FRAMEWORKS ,id blurb) :unlocks (framework ,id)))
-
+  `(research ,(sym "fw-" id)
+     :name     ,name
+     :track    frameworks
+     :cost     ,cost
+     :era      ,era
+     :requires ,requires
+     :blurb    (ref FRAMEWORKS ,id blurb)
+     :unlocks  (framework ,id)))
 
 (research stripe
-  :name "Stripe Billing" :track product :cost 30 :era 0
+  :name  "Stripe Billing"
+  :track product
+  :cost  30
+  :era   garage
   :blurb "Payments collect themselves.")
 
 (research dns-rr
-  :name "DNS round robin" :track infrastructure :cost 15 :era 0
+  :name  "DNS round robin"
+  :track infrastructure
+  :cost  15
+  :era   garage
   :blurb "Unlocks DNS: spread Users over up to 8 hosts.")
 
 (research load-balancing
-  :name "Load balancing" :track infrastructure :cost 25 :era 0
+  :name  "Load balancing"
+  :track infrastructure
+  :cost  25
+  :era   garage
   :blurb "Unlocks the Load Balancer: split by capacity, skip dead hosts.")
 
 (research custom-instances
-  :name "Custom instances" :track infrastructure :cost 60 :era 0
+  :name  "Custom instances"
+  :track infrastructure
+  :cost  60
+  :era   garage
   :blurb "Unlocks separate CPU, memory, and disk Parts, with prices that move each week. Before this, a Node buys a fixed instance type.")
 
 (research health-checks
-  :name "Health checks" :track infrastructure :cost 90 :era 1
+  :name     "Health checks"
+  :track    infrastructure
+  :cost     90
+  :era      pre-seed
   :requires (load-balancing)
-  :insight (failure read)
-  :blurb "DNS stops sending Users to a dead host.")
+  :insight  (failure read)
+  :blurb    "DNS stops sending Users to a dead host.")
 
 (research auth-provider
-  :name "Managed identity" :track infrastructure :cost 140 :era 1
+  :name    "Managed identity"
+  :track   infrastructure
+  :cost    140
+  :era     pre-seed
   :insight (login)
-  :blurb "Unlocks the Auth Provider. Logins stop costing your CPU.")
+  :blurb   "Unlocks the Auth Provider. Logins stop costing your CPU.")
 
 (research caching
-  :name "Caching" :track data :cost 80 :era 1
+  :name    "Caching"
+  :track   data
+  :cost    80
+  :era     pre-seed
   :insight (read)
-  :blurb "Unlocks Redis. Most read queries never reach the database.")
+  :blurb   "Unlocks Redis. Most read queries never reach the database.")
 
 (research pooling
-  :name "Connection pooling" :track data :cost 120 :era 1
+  :name    "Connection pooling"
+  :track   data
+  :cost    120
+  :era     pre-seed
   :insight (write)
-  :shape (connections :more-than POOLER_CONNECTIONS)
-  :blurb "Unlocks PgBouncer. App connections share a few database connections.")
+  :shape   (connections :more-than POOLER_CONNECTIONS)
+  :blurb   "Unlocks PgBouncer. App connections share a few database connections.")
 
 (research replication
-  :name "Read replicas" :track data :cost 220 :era 1
+  :name    "Read replicas"
+  :track   data
+  :cost    220
+  :era     pre-seed
   :insight (read write)
-  :shape (read-share :share 60%)
-  :blurb "Unlocks the Read Replica.")
+  :shape   (read-share :share 60%)
+  :blurb   "Unlocks the Read Replica.")
 
 (research eager-loading
-  :name "Eager loading" :track performance :cost 100 :era 1
+  :name    "Eager loading"
+  :track   performance
+  :cost    100
+  :era     pre-seed
   :insight (read)
-  :blurb "Fixes N+1 queries: ORM frameworks send 1 read query, not 3.")
+  :blurb   "Fixes N+1 queries: ORM frameworks send 1 read query, not 3.")
 
 (research query-analysis
-  :name "Query analysis" :track data :cost 40 :era 0
+  :name    "Query analysis"
+  :track   data
+  :cost    40
+  :era     garage
   :insight (read)
-  :blurb "EXPLAIN finds queries with no index. Add the index from the Database card.")
+  :blurb   "EXPLAIN finds queries with no index. Add the index from the Database card.")
 
 (research logs
-  :name "Structured logs" :track observability :cost 20 :era 0
+  :name    "Structured logs"
+  :track   observability
+  :cost    20
+  :era     garage
   :insight (page)
-  :blurb "Errors split by cause: stranded, dropped, refused, down, stale, oom.")
+  :blurb   "Errors split by cause: stranded, dropped, refused, down, stale, oom.")
 
 (research metrics
-  :name "Metrics" :track observability :cost 50 :era 0
+  :name    "Metrics"
+  :track   observability
+  :cost    50
+  :era     garage
   :insight (read)
-  :blurb "History graphs for every Node.")
+  :blurb   "History graphs for every Node.")
 
 (research percentiles
-  :name "Percentiles" :track observability :cost 150 :era 1
+  :name     "Percentiles"
+  :track    observability
+  :cost     150
+  :era      pre-seed
   :requires (metrics)
-  :insight (read login)
-  :blurb "p50, p95 and p99 next to the mean. See how much the mean hides.")
+  :insight  (read login)
+  :blurb    "p50, p95 and p99 next to the mean. See how much the mean hides.")
 
 (research alerting
-  :name "Alerting" :track observability :cost 250 :era 1
+  :name     "Alerting"
+  :track    observability
+  :cost     250
+  :era      pre-seed
   :requires (metrics)
-  :insight (failure read)
-  :blurb "A pager when errors, p99 or saturation cross a threshold.")
+  :insight  (failure read)
+  :blurb    "A pager when errors, p99 or saturation cross a threshold.")
 
 (research funnels
-  :name "Funnel analytics" :track product :cost 150 :era 1
+  :name    "Funnel analytics"
+  :track   product
+  :cost    150
+  :era     pre-seed
   :insight (page login)
-  :blurb "See where sign-ups drop off and fix it: user growth +10%.")
+  :blurb   "See where sign-ups drop off and fix it: user growth +10%.")
 
 (research php-fpm
-  :name "PHP-FPM" :track runtimes :cost 25 :era 0
+  :name  "PHP-FPM"
+  :track runtimes
+  :cost  25
+  :era   garage
   :blurb "A worker pool instead of Apache processes. You set the pool size.")
 
 (research opcache
-  :name "OPcache" :track runtimes :cost 45 :era 0
+  :name     "OPcache"
+  :track    runtimes
+  :cost     45
+  :era      garage
   :requires (php-fpm)
-  :blurb "PHP stops compiling scripts on every request: 2.5× CPU speed.")
+  :blurb    "PHP stops compiling scripts on every request: 2.5× CPU speed.")
 
 (research lang-ruby
-  :name "Ruby" :track runtimes :cost 30 :era 0
+  :name  "Ruby"
+  :track runtimes
+  :cost  30
+  :era   garage
   :blurb (ref RUNTIMES puma blurb))
 
 (research lang-node
-  :name "Node.js" :track runtimes :cost 40 :era 0
+  :name  "Node.js"
+  :track runtimes
+  :cost  40
+  :era   garage
   :blurb (ref RUNTIMES node blurb))
 
 (research lang-python
-  :name "Python" :track runtimes :cost 120 :era 1
+  :name  "Python"
+  :track runtimes
+  :cost  120
+  :era   pre-seed
   :blurb (ref RUNTIMES gunicorn blurb))
 
 (research node-cluster
-  :name "Node.js cluster mode" :track runtimes :cost 100 :era 1
+  :name     "Node.js cluster mode"
+  :track    runtimes
+  :cost     100
+  :era      pre-seed
   :requires (lang-node)
-  :blurb (ref RUNTIMES node_cluster blurb))
+  :blurb    (ref RUNTIMES node_cluster blurb))
 
 (research libuv-pool
-  :name "libuv thread pool" :track runtimes :cost 120 :era 1
+  :name     "libuv thread pool"
+  :track    runtimes
+  :cost     120
+  :era      pre-seed
   :requires (lang-node)
-  :blurb "Password hashing moves off the event loop, so logins stop stalling other requests.")
-(framework laravel "Laravel" :cost 20 :era 0)
-(framework rails "Rails" :cost 30 :era 0 :requires (lang-ruby))
-(framework express "Express" :cost 30 :era 0 :requires (lang-node))
-(framework django "Django" :cost 150 :era 1 :requires (lang-python))
-(framework symfony "Symfony" :cost 80 :era 1)
-(framework sinatra "Sinatra" :cost 60 :era 1 :requires (lang-ruby))
-(framework flask "Flask" :cost 100 :era 1 :requires (lang-python))
+  :blurb    "Password hashing moves off the event loop, so logins stop stalling other requests.")
+
+(framework laravel "Laravel"
+  :cost 20
+  :era  garage)
+
+(framework rails "Rails"
+  :cost     30
+  :era      garage
+  :requires (lang-ruby))
+
+(framework express "Express"
+  :cost     30
+  :era      garage
+  :requires (lang-node))
+
+(framework django "Django"
+  :cost     150
+  :era      pre-seed
+  :requires (lang-python))
+
+(framework symfony "Symfony"
+  :cost 80
+  :era  pre-seed)
+
+(framework sinatra "Sinatra"
+  :cost     60
+  :era      pre-seed
+  :requires (lang-ruby))
+
+(framework flask "Flask"
+  :cost     100
+  :era      pre-seed
+  :requires (lang-python))
 
 (research keepalive
-  :name "Connection reuse" :track performance :cost 25 :era 0
+  :name  "Connection reuse"
+  :track performance
+  :cost  25
+  :era   garage
   :blurb "Keep-alive: internal calls skip the TCP handshake, 1 ms each.")
 
 (research gzip
-  :name "Compression" :track performance :cost 30 :era 0
+  :name  "Compression"
+  :track performance
+  :cost  30
+  :era   garage
   :blurb "Gzip: page and read responses 70% smaller, for 10% more CPU.")
 
 (research timeouts
-  :name "Timeouts and retries" :track reliability :cost 60 :era 1
+  :name  "Timeouts and retries"
+  :track reliability
+  :cost  60
+  :era   pre-seed
   :blurb "Set each call timeout to 1, 5 or 30 s, and retry failed calls.")
 
 (research lb-algorithms
-  :name "Load balancing algorithms" :track infrastructure :cost 120 :era 1
+  :name     "Load balancing algorithms"
+  :track    infrastructure
+  :cost     120
+  :era      pre-seed
   :requires (load-balancing)
-  :blurb "Least connections and power of two choices.")
+  :blurb    "Least connections and power of two choices.")
 
 (research ci
-  :name "Continuous delivery" :track reliability :cost 100 :era 1
+  :name  "Continuous delivery"
+  :track reliability
+  :cost  100
+  :era   pre-seed
   :blurb "A pipeline deploys in 5 minutes, not 30, and can roll a bad deploy back. Recreate and Rolling come with it.")
 
 (research blue-green
-  :name "Blue-green deploys" :track reliability :cost 900 :era 2
+  :name     "Blue-green deploys"
+  :track    reliability
+  :cost     900
+  :era      seed
   :requires (ci)
-  :blurb "Blue-green: the new version comes up beside the old one, so a bad deploy breaks 10% of requests.")
+  :blurb    "Blue-green: the new version comes up beside the old one, so a bad deploy breaks 10% of requests.")
 
 (research canary
-  :name "Canary deploys" :track reliability :cost 3_000 :era 3
+  :name     "Canary deploys"
+  :track    reliability
+  :cost     3_000
+  :era      series-a
   :requires (ci percentiles)
-  :blurb "Canary: 5% of traffic meets the new version first. The smallest blast radius, the slowest deploy.")
+  :blurb    "Canary: 5% of traffic meets the new version first. The smallest blast radius, the slowest deploy.")
 
 (research code-review
-  :name "Code review" :track product :cost 120 :era 1
+  :name  "Code review"
+  :track product
+  :cost  120
+  :era   pre-seed
   :blurb "Shows the hidden costs of a Feature before it ships. Bad deploys −20%.")
 
 (research testing-culture
-  :name "Automated tests" :track product :cost 150 :era 1
+  :name     "Automated tests"
+  :track    product
+  :cost     150
+  :era      pre-seed
   :requires (ci)
-  :blurb "The pipeline runs tests before each deploy. Bad deploys −30%.")
+  :blurb    "The pipeline runs tests before each deploy. Bad deploys −30%.")
 
 (research full-text-search
-  :name "Full-text search" :track data :cost 450 :era 2
+  :name    "Full-text search"
+  :track   data
+  :cost    450
+  :era     seed
   :insight (search)
-  :blurb "Unlocks the Search Engine. Postgres stops answering search.")
+  :blurb   "Unlocks the Search Engine. Postgres stops answering search.")
 
 (research object-storage
-  :name "Object storage" :track data :cost 500 :era 2
+  :name    "Object storage"
+  :track   data
+  :cost    500
+  :era     seed
   :insight (upload)
-  :blurb "Unlocks Object Storage. Uploads stop landing in Postgres.")
+  :blurb   "Unlocks Object Storage. Uploads stop landing in Postgres.")
 
 (research cache-strategies
-  :name "Cache strategies" :track data :cost 600 :era 2
+  :name     "Cache strategies"
+  :track    data
+  :cost     600
+  :era      seed
   :requires (caching)
-  :insight (read write)
-  :shape (cache-hit :ratio 60%)
-  :blurb "Read-through, write-through and write-behind: the Cache owns the load and the write.")
+  :insight  (read write)
+  :shape    (cache-hit :ratio 60%)
+  :blurb    "Read-through, write-through and write-behind: the Cache owns the load and the write.")
 
 (research lifecycle-rules
-  :name "Storage lifecycle rules" :track data :cost 1_500 :era 3
+  :name     "Storage lifecycle rules"
+  :track    data
+  :cost     1_500
+  :era      series-a
   :requires (object-storage)
-  :blurb "Old objects move to a cheaper storage class on their own.")
+  :blurb    "Old objects move to a cheaper storage class on their own.")
 
 (research retention
-  :name "Retention policies" :track data :cost 250_000 :era 6
+  :name  "Retention policies"
+  :track data
+  :cost  250_000
+  :era   pre-ipo
   :blurb "A Database archives or deletes old rows: cheaper storage, slower reports.")
 
 (research cdn
-  :name "Content delivery" :track infrastructure :cost 350 :era 2
+  :name    "Content delivery"
+  :track   infrastructure
+  :cost    350
+  :era     seed
   :insight (page upload)
-  :blurb "Unlocks the CDN: pages answered at the edge, cheaper egress.")
+  :blurb   "Unlocks the CDN: pages answered at the edge, cheaper egress.")
 
 (research waf
-  :name "Web application firewall" :track infrastructure :cost 500 :era 2
+  :name    "Web application firewall"
+  :track   infrastructure
+  :cost    500
+  :era     seed
   :insight (bot)
-  :blurb "Unlocks the WAF: blocks bots, and some real users with them.")
+  :blurb   "Unlocks the WAF: blocks bots, and some real users with them.")
 
 (research api-gateway
-  :name "API gateway" :track infrastructure :cost 2_000 :era 3
+  :name     "API gateway"
+  :track    infrastructure
+  :cost     2_000
+  :era      series-a
   :requires (load-balancing)
-  :blurb "Unlocks the API Gateway: the front door that routes each request kind and rate-limits every call.")
+  :blurb    "Unlocks the API Gateway: the front door that routes each request kind and rate-limits every call.")
 
 (research websockets
-  :name "WebSockets" :track infrastructure :cost 2_500 :era 3
+  :name  "WebSockets"
+  :track infrastructure
+  :cost  2_500
+  :era   series-a
   :blurb "Unlocks the Realtime Hub: holds the open connections that realtime messages need.")
 
 (research background-jobs
-  :name "Background jobs" :track infrastructure :cost 300 :era 2
+  :name  "Background jobs"
+  :track infrastructure
+  :cost  300
+  :era   seed
   :blurb "Unlocks the Worker: your code, off the request path.")
 
 (research queues
-  :name "Message queues" :track infrastructure :cost 600 :era 2
+  :name     "Message queues"
+  :track    infrastructure
+  :cost     600
+  :era      seed
   :requires (background-jobs)
-  :blurb "Unlocks the Queue. App Servers hand slow work to Workers.")
+  :blurb    "Unlocks the Queue. App Servers hand slow work to Workers.")
 
 (research stampede-protection
-  :name "Stampede protection" :track data :cost 900 :era 2
+  :name     "Stampede protection"
+  :track    data
+  :cost     900
+  :era      seed
   :requires (caching)
-  :insight (read failure)
-  :blurb "A cold Cache coalesces misses, so the database keeps up while it fills.")
+  :insight  (read failure)
+  :blurb    "A cold Cache coalesces misses, so the database keeps up while it fills.")
 
 (research cache-warming
-  :name "Cache warming" :track data :cost 2_000 :era 3
+  :name     "Cache warming"
+  :track    data
+  :cost     2_000
+  :era      series-a
   :requires (stampede-protection)
-  :blurb "A Cache comes back from a restart mostly warm.")
+  :blurb    "A Cache comes back from a restart mostly warm.")
 
 (research lang-go
-  :name "Go" :track runtimes :cost 600 :era 2
+  :name  "Go"
+  :track runtimes
+  :cost  600
+  :era   seed
   :blurb (ref RUNTIMES go blurb))
 
 (research lang-java
-  :name "Java" :track runtimes :cost 800 :era 2
+  :name  "Java"
+  :track runtimes
+  :cost  800
+  :era   seed
   :blurb (ref RUNTIMES tomcat blurb))
 
 (research lang-csharp
-  :name "C#" :track runtimes :cost 800 :era 2
+  :name  "C#"
+  :track runtimes
+  :cost  800
+  :era   seed
   :blurb (ref RUNTIMES kestrel blurb))
-(framework gin "Gin" :cost 700 :era 2 :requires (lang-go))
-(framework spring-boot "Spring Boot" :cost 900 :era 2 :requires (lang-java))
-(framework aspnet "ASP.NET Core" :cost 900 :era 2 :requires (lang-csharp))
+
+(framework gin "Gin"
+  :cost     700
+  :era      seed
+  :requires (lang-go))
+
+(framework spring-boot "Spring Boot"
+  :cost     900
+  :era      seed
+  :requires (lang-java))
+
+(framework aspnet "ASP.NET Core"
+  :cost     900
+  :era      seed
+  :requires (lang-csharp))
 
 (research tracing
-  :name "Distributed tracing" :track observability :cost 800 :era 2
+  :name     "Distributed tracing"
+  :track    observability
+  :cost     800
+  :era      seed
   :requires (percentiles)
-  :breadth 3
-  :blurb "Each request kind’s time, Node by Node. Names the slowest hop of each kind.")
+  :breadth  3
+  :blurb    "Each request kind’s time, Node by Node. Names the slowest hop of each kind.")
 
 (research trace-search
-  :name "Trace search" :track observability :cost 600 :era 2
+  :name     "Trace search"
+  :track    observability
+  :cost     600
+  :era      seed
   :requires (tracing)
-  :blurb "Studies run 25% faster.")
+  :blurb    "Studies run 25% faster.")
 
 (research notebooks
-  :name "Notebooks" :track observability :cost 12_000 :era 4
+  :name     "Notebooks"
+  :track    observability
+  :cost     12_000
+  :era      series-b
   :requires (trace-search)
-  :blurb "Studies run 25% faster.")
+  :blurb    "Studies run 25% faster.")
 
 (research cert-automation
-  :name "Certificate automation" :track reliability :cost 300 :era 2
+  :name  "Certificate automation"
+  :track reliability
+  :cost  300
+  :era   seed
   :blurb "Certificates renew themselves before they expire.")
 
 (research lang-elixir
-  :name "Elixir" :track runtimes :cost 2_500 :era 3
+  :name  "Elixir"
+  :track runtimes
+  :cost  2_500
+  :era   series-a
   :blurb (ref RUNTIMES beam blurb))
 
 (research lang-rust
-  :name "Rust" :track runtimes :cost 4_000 :era 3
+  :name  "Rust"
+  :track runtimes
+  :cost  4_000
+  :era   series-a
   :blurb (ref RUNTIMES tokio blurb))
 
 (research lang-zig
-  :name "Zig" :track runtimes :cost 3_500 :era 3
+  :name  "Zig"
+  :track runtimes
+  :cost  3_500
+  :era   series-a
   :blurb (ref RUNTIMES zig blurb))
 
 (research lang-haskell
-  :name "Haskell" :track runtimes :cost 3_000 :era 3
+  :name  "Haskell"
+  :track runtimes
+  :cost  3_000
+  :era   series-a
   :blurb (ref RUNTIMES warp blurb))
-(framework phoenix "Phoenix" :cost 2_500 :era 3 :requires (lang-elixir))
+
+(framework phoenix "Phoenix"
+  :cost     2_500
+  :era      series-a
+  :requires (lang-elixir))
 
 (research checkout
-  :name "Checkout" :track product :cost 1_500 :era 3
+  :name  "Checkout"
+  :track product
+  :cost  1_500
+  :era   series-a
   :blurb "Unlocks the Payment Provider and the Checkout Feature.")
 
 (research tiered-caching
-  :name "Tiered caching" :track infrastructure :cost 2_000 :era 3
+  :name     "Tiered caching"
+  :track    infrastructure
+  :cost     2_000
+  :era      series-a
   :requires (cdn)
-  :insight (media)
-  :blurb "CDN edges ask a regional tier before the origin: 92% of video from the edge.")
+  :insight  (media)
+  :blurb    "CDN edges ask a regional tier before the origin: 92% of video from the edge.")
 
 (research multi-az
-  :name "Multiple zones" :track infrastructure :cost 3_000 :era 3
+  :name     "Multiple zones"
+  :track    infrastructure
+  :cost     3_000
+  :era      series-a
   :requires (health-checks)
-  :blurb "Place Nodes in three zones, and give a data Node a standby in another.")
+  :blurb    "Place Nodes in three zones, and give a data Node a standby in another.")
 
 (research autoscaling
-  :name "Autoscaling" :track infrastructure :cost 4_000 :era 3
+  :name     "Autoscaling"
+  :track    infrastructure
+  :cost     4_000
+  :era      series-a
   :requires (load-balancing)
-  :shape (saturation :ratio 80%)
-  :blurb "Unlocks the Autoscaler: copies of an App Server or Worker follow the load.")
+  :shape    (saturation :ratio 80%)
+  :blurb    "Unlocks the Autoscaler: copies of an App Server or Worker follow the load.")
 
 (research containers
-  :name "Container orchestration" :track infrastructure :cost 5_000 :era 3
+  :name     "Container orchestration"
+  :track    infrastructure
+  :cost     5_000
+  :era      series-a
   :requires (autoscaling)
-  :blurb "Unlocks the Kubernetes Cluster: 15% less Burn, scaling in 30 s.")
+  :blurb    "Unlocks the Kubernetes Cluster: 15% less Burn, scaling in 30 s.")
 
 (research serverless
-  :name "Serverless" :track infrastructure :cost 3_500 :era 3
+  :name  "Serverless"
+  :track infrastructure
+  :cost  3_500
+  :era   series-a
   :blurb "Unlocks the Serverless Function: your code per request, and no box to pay for.")
 
 (research reserved-instances
-  :name "Reserved instances" :track cost :cost 2_000 :era 3
+  :name     "Reserved instances"
+  :track    cost
+  :cost     2_000
+  :era      series-a
   :requires (autoscaling)
-  :blurb "Reserved pricing: 0.6× for a calendar-week commitment.")
+  :blurb    "Reserved pricing: 0.6× for a calendar-week commitment.")
 
 (research spot-instances
-  :name "Spot instances" :track cost :cost 3_000 :era 3
+  :name     "Spot instances"
+  :track    cost
+  :cost     3_000
+  :era      series-a
   :requires (autoscaling)
-  :blurb "Spot pricing: 0.3×, until the provider reclaims the Node.")
+  :blurb    "Spot pricing: 0.3×, until the provider reclaims the Node.")
 
 (research slo-dashboards
-  :name "SLO dashboards" :track observability :cost 2_500 :era 3
+  :name     "SLO dashboards"
+  :track    observability
+  :cost     2_500
+  :era      series-a
   :requires (percentiles)
-  :insight (failure buy)
-  :blurb "The error budget, on the HUD.")
+  :insight  (failure buy)
+  :blurb    "The error budget, on the HUD.")
 
 (research error-budgets
-  :name "Error budgets" :track reliability :cost 3_000 :era 3
+  :name     "Error budgets"
+  :track    reliability
+  :cost     3_000
+  :era      series-a
   :requires (slo-dashboards)
-  :blurb "Budget left speeds the team up 10%. A spent budget freezes Features at half speed.")
+  :blurb    "Budget left speeds the team up 10%. A spent budget freezes Features at half speed.")
 
 (research backoff-jitter
-  :name "Backoff with jitter" :track reliability :cost 400 :era 2
+  :name     "Backoff with jitter"
+  :track    reliability
+  :cost     400
+  :era      seed
   :requires (timeouts)
-  :blurb "Retries wait and spread out, within a budget of 10% more calls.")
+  :blurb    "Retries wait and spread out, within a budget of 10% more calls.")
 
 (research circuit-breakers
-  :name "Circuit breakers" :track reliability :cost 2_500 :era 3
+  :name     "Circuit breakers"
+  :track    reliability
+  :cost     2_500
+  :era      series-a
   :requires (backoff-jitter)
-  :blurb "A Link stops calling for 5 s when half its calls fail, then tries again.")
+  :blurb    "A Link stops calling for 5 s when half its calls fail, then tries again.")
 
 (research load-shedding
-  :name "Priority load shedding" :track reliability :cost 4_000 :era 3
+  :name     "Priority load shedding"
+  :track    reliability
+  :cost     4_000
+  :era      series-a
   :requires (timeouts)
-  :blurb "A saturated App Server drops the lowest-value kinds first.")
+  :blurb    "A saturated App Server drops the lowest-value kinds first.")
 
 (research idempotency-keys
-  :name "Idempotency keys" :track reliability :cost 1_500 :era 3
+  :name     "Idempotency keys"
+  :track    reliability
+  :cost     1_500
+  :era      series-a
   :requires (checkout)
-  :insight (buy)
-  :blurb "A retried charge never charges twice.")
+  :insight  (buy)
+  :blurb    "A retried charge never charges twice.")
 
 (research ryw-routing
-  :name "Read-your-writes routing" :track data :cost 3_000 :era 3
+  :name     "Read-your-writes routing"
+  :track    data
+  :cost     3_000
+  :era      series-a
   :requires (replication)
-  :insight (read write)
-  :blurb "An App Server can send reads that follow a write to the primary.")
+  :insight  (read write)
+  :blurb    "An App Server can send reads that follow a write to the primary.")
 
 (research gogc-tuning
-  :name "Go GC tuning" :track runtimes :cost 2_500 :era 3
+  :name     "Go GC tuning"
+  :track    runtimes
+  :cost     2_500
+  :era      series-a
   :requires (lang-go)
-  :blurb "GOGC 50, 100 or 200: less memory for more GC CPU, or the reverse.")
-(framework axum "Axum" :cost 3_000 :era 3 :requires (lang-rust))
-(framework actix "Actix Web" :cost 3_000 :era 3 :requires (lang-rust))
+  :blurb    "GOGC 50, 100 or 200: less memory for more GC CPU, or the reverse.")
+
+(framework axum "Axum"
+  :cost     3_000
+  :era      series-a
+  :requires (lang-rust))
+
+(framework actix "Actix Web"
+  :cost     3_000
+  :era      series-a
+  :requires (lang-rust))
 
 (research zgc
-  :name "ZGC" :track runtimes :cost 9_000 :era 4
+  :name     "ZGC"
+  :track    runtimes
+  :cost     9_000
+  :era      series-b
   :requires (lang-java)
-  :blurb "Java pauses for 1 ms instead of 30, for 10% of throughput and 15% more memory.")
+  :blurb    "Java pauses for 1 ms instead of 30, for 10% of throughput and 15% more memory.")
 
 (research data-warehouse
-  :name "Data warehousing" :track data :cost 12_000 :era 4
+  :name    "Data warehousing"
+  :track   data
+  :cost    12_000
+  :era     series-b
   :insight (report)
-  :shape (report-share :share 10%)
-  :blurb "Unlocks the Data Warehouse. Reports stop scanning the primary.")
+  :shape   (report-share :share 10%)
+  :blurb   "Unlocks the Data Warehouse. Reports stop scanning the primary.")
 
 (research event-streaming
-  :name "Event streaming" :track data :cost 15_000 :era 4
+  :name     "Event streaming"
+  :track    data
+  :cost     15_000
+  :era      series-b
   :requires (queues)
-  :shape (backlog :seconds 1s)
-  :blurb "Unlocks the Event Stream: a log that keeps its messages, so consumers replay them.")
+  :shape    (backlog :seconds 1s)
+  :blurb    "Unlocks the Event Stream: a log that keeps its messages, so consumers replay them.")
 
 (research embeddings
-  :name "Embeddings" :track data :cost 16_000 :era 4
+  :name    "Embeddings"
+  :track   data
+  :cost    16_000
+  :era     series-b
   :insight (ai search)
-  :blurb "Unlocks the Vector Index. AI answers use your own documents, and Python keeps its bonus.")
+  :blurb   "Unlocks the Vector Index. AI answers use your own documents, and Python keeps its bonus.")
 
 (research hosted-models
-  :name "Hosted models" :track infrastructure :cost 8_000 :era 4
+  :name  "Hosted models"
+  :track infrastructure
+  :cost  8_000
+  :era   series-b
   :blurb "Unlocks the LLM API: AI prompts with no GPUs, paid per token.")
 
 (research model-serving
-  :name "Model serving" :track infrastructure :cost 15_000 :era 4
+  :name    "Model serving"
+  :track   infrastructure
+  :cost    15_000
+  :era     series-b
   :insight (ai)
-  :blurb "Unlocks the GPU Node: AI prompts at a lower price per token, if it stays busy.")
+  :blurb   "Unlocks the GPU Node: AI prompts at a lower price per token, if it stays busy.")
 
 (research pitr
-  :name "Point-in-time recovery" :track data :cost 700 :era 2
+  :name    "Point-in-time recovery"
+  :track   data
+  :cost    700
+  :era     seed
   :insight (write)
-  :blurb "Backups for the Database: nightly snapshots, or WAL archiving with minutes of RPO.")
+  :blurb   "Backups for the Database: nightly snapshots, or WAL archiving with minutes of RPO.")
 
 (research tls-everywhere
-  :name "TLS everywhere" :track security :cost 300 :era 2
+  :name  "TLS everywhere"
+  :track security
+  :cost  300
+  :era   seed
   :blurb "Encrypts every internal Link. Required for SOC 2.")
 
 (research http2
-  :name "HTTP/2" :track performance :cost 350 :era 2
+  :name    "HTTP/2"
+  :track   performance
+  :cost    350
+  :era     seed
   :insight (page upload)
-  :blurb "One connection carries many requests: 15% less user hop on page views.")
+  :blurb   "One connection carries many requests: 15% less user hop on page views.")
 
 (research sync-replication
-  :name "Synchronous replication" :track data :cost 2_500 :era 3
+  :name     "Synchronous replication"
+  :track    data
+  :cost     2_500
+  :era      series-a
   :requires (replication)
-  :insight (write buy)
-  :blurb "Writes wait for a replica. Required for consensus.")
+  :insight  (write buy)
+  :blurb    "Writes wait for a replica. Required for consensus.")
 
 (research restore-drills
-  :name "Restore drills" :track reliability :cost 2_000 :era 3
+  :name     "Restore drills"
+  :track    reliability
+  :cost     2_000
+  :era      series-a
   :requires (pitr)
-  :blurb "Backups are tested, so a restore works when it counts.")
+  :blurb    "Backups are tested, so a restore works when it counts.")
 
 (research dependency-scanning
-  :name "Dependency scanning" :track security :cost 3_000 :era 3
+  :name     "Dependency scanning"
+  :track    security
+  :cost     3_000
+  :era      series-a
   :requires (ci)
-  :blurb "Every build checks its libraries for known holes. Required for SOC 2.")
+  :blurb    "Every build checks its libraries for known holes. Required for SOC 2.")
 
 (research sharding
-  :name "Sharding" :track data :cost 25_000 :era 4
+  :name     "Sharding"
+  :track    data
+  :cost     25_000
+  :era      series-b
   :requires (replication)
-  :insight (read write)
-  :blurb "Splits data across nodes by key.")
+  :insight  (read write)
+  :blurb    "Splits data across nodes by key.")
 
 (research encryption-at-rest
-  :name "Encryption at rest" :track security :cost 9_000 :era 4
+  :name  "Encryption at rest"
+  :track security
+  :cost  9_000
+  :era   series-b
   :blurb "Disks and backups are encrypted. Required for SOC 2.")
 
 (research multi-region
-  :name "Multiple regions" :track infrastructure :cost 60_000 :era 5
+  :name     "Multiple regions"
+  :track    infrastructure
+  :cost     60_000
+  :era      series-c
   :requires (multi-az)
-  :blurb "Open a region on another continent. Each region is a tab.")
+  :blurb    "Open a region on another continent. Each region is a tab.")
 
 (research geo-dns
-  :name "GeoDNS" :track infrastructure :cost 50_000 :era 5
+  :name     "GeoDNS"
+  :track    infrastructure
+  :cost     50_000
+  :era      series-c
   :requires (multi-region)
-  :blurb "Users go to their own region, or the nearest one alive.")
+  :blurb    "Users go to their own region, or the nearest one alive.")
 
 (research infra-as-code
-  :name "Infrastructure as code" :track infrastructure :cost 40_000 :era 5
+  :name     "Infrastructure as code"
+  :track    infrastructure
+  :cost     40_000
+  :era      series-c
   :requires (multi-region)
-  :blurb "Pick an IaC tool. Mirror a region into another, and apply plans to keep it in sync.")
+  :blurb    "Pick an IaC tool. Mirror a region into another, and apply plans to keep it in sync.")
 
 (research gitops
-  :name "GitOps" :track infrastructure :cost 90_000 :era 5
+  :name     "GitOps"
+  :track    infrastructure
+  :cost     90_000
+  :era      series-c
   :requires (infra-as-code)
-  :blurb "Mirrors sync on their own, all at once or staged.")
+  :blurb    "Mirrors sync on their own, all at once or staged.")
 
 (research anycast
-  :name "Anycast" :track infrastructure :cost 120_000 :era 5
+  :name     "Anycast"
+  :track    infrastructure
+  :cost     120_000
+  :era      series-c
   :requires (geo-dns)
-  :blurb "20 ms off the user hop everywhere.")
+  :blurb    "20 ms off the user hop everywhere.")
 
 (research document-db
-  :name "Document databases" :track data :cost 3_500 :era 3
+  :name  "Document databases"
+  :track data
+  :cost  3_500
+  :era   series-a
   :blurb "Unlocks the Document Store: no schema migrations, and no joins either.")
 
 (research edge-compute
-  :name "Edge compute" :track infrastructure :cost 80_000 :era 5
+  :name     "Edge compute"
+  :track    infrastructure
+  :cost     80_000
+  :era      series-c
   :requires (cdn)
-  :blurb "Unlocks the Edge Function: small handlers that run next to the user.")
+  :blurb    "Unlocks the Edge Function: small handlers that run next to the user.")
 
 (research http3
-  :name "HTTP/3" :track performance :cost 60_000 :era 5
+  :name     "HTTP/3"
+  :track    performance
+  :cost     60_000
+  :era      series-c
   :requires (http2)
-  :insight (page upload)
-  :blurb "20% off the user hop to distant users.")
+  :insight  (page upload)
+  :blurb    "20% off the user hop to distant users.")
 
 (research notifications
-  :name "Notifications" :track infrastructure :cost 40_000 :era 5
+  :name  "Notifications"
+  :track infrastructure
+  :cost  40_000
+  :era   series-c
   :blurb "Unlocks the Push Provider.")
 
 (research hybrid-fanout
-  :name "Hybrid fan-out" :track data :cost 90_000 :era 5
+  :name     "Hybrid fan-out"
+  :track    data
+  :cost     90_000
+  :era      series-c
   :requires (caching)
-  :blurb "Push for normal accounts, pull for celebrities. Caches split hot keys.")
+  :blurb    "Push for normal accounts, pull for celebrities. Caches split hot keys.")
 
 (research leaderless
-  :name "Leaderless replication" :track data :cost 70_000 :era 5
+  :name     "Leaderless replication"
+  :track    data
+  :cost     70_000
+  :era      series-c
   :requires (sharding)
-  :insight (feed)
-  :blurb "Unlocks the Wide-column Store with tunable quorums.")
+  :insight  (feed)
+  :blurb    "Unlocks the Wide-column Store with tunable quorums.")
 
 (research consensus
-  :name "Consensus databases" :track data :cost 150_000 :era 5
+  :name     "Consensus databases"
+  :track    data
+  :cost     150_000
+  :era      series-c
   :requires (sync-replication)
-  :insight (write buy)
-  :shape (replica)
-  :blurb "Unlocks Distributed SQL.")
+  :insight  (write buy)
+  :shape    (replica)
+  :blurb    "Unlocks Distributed SQL.")
 
 (research dr-drills
-  :name "Disaster recovery drills" :track reliability :cost 400_000 :era 6
+  :name     "Disaster recovery drills"
+  :track    reliability
+  :cost     400_000
+  :era      pre-ipo
   :requires (restore-drills multi-region)
-  :blurb "Run the DR drill for the IPO checklist.")
+  :blurb    "Run the DR drill for the IPO checklist.")
 
 (research soc2
-  :name "SOC 2 program" :track security :cost 300_000 :era 6
+  :name     "SOC 2 program"
+  :track    security
+  :cost     300_000
+  :era      pre-ipo
   :requires (tls-everywhere encryption-at-rest dependency-scanning)
-  :blurb "IPO checklist item.")
+  :blurb    "IPO checklist item.")
 
 (research gdpr-residency
-  :name "Data residency controls" :track security :cost 350_000 :era 6
+  :name     "Data residency controls"
+  :track    security
+  :cost     350_000
+  :era      pre-ipo
   :requires (multi-region)
-  :blurb "IPO checklist item: EU users served from an EU region.")
+  :blurb    "IPO checklist item: EU users served from an EU region.")
 
 (research security-team
-  :name "Security team" :track security :cost 200_000 :era 6
+  :name  "Security team"
+  :track security
+  :cost  200_000
+  :era   pre-ipo
   :blurb "IPO checklist item. Audit findings get fixed before they reset anything.")
 
 (research investor-relations
-  :name "Investor relations" :track product :cost 300_000 :era 6
+  :name  "Investor relations"
+  :track product
+  :cost  300_000
+  :era   pre-ipo
   :blurb "Valuation multiple +2.")
 
 (research guidance-modeling
-  :name "Guidance modeling" :track product :cost 1_000_000 :era 7
+  :name  "Guidance modeling"
+  :track product
+  :cost  1_000_000
+  :era   public
   :blurb "Shows the chance of beating each guidance level.")
 
 (research php-jit
-  :name "PHP JIT" :track runtimes :cost 500 :era 2
+  :name     "PHP JIT"
+  :track    runtimes
+  :cost     500
+  :era      seed
   :requires (opcache)
-  :blurb "The PHP 8 JIT: 1.05× CPU on web kinds, 1.6× on CPU-heavy ones. It barely helps page and read.")
+  :blurb    "The PHP 8 JIT: 1.05× CPU on web kinds, 1.6× on CPU-heavy ones. It barely helps page and read.")
 
 (research worker-threads
-  :name "Node.js worker threads" :track runtimes :cost 500 :era 2
+  :name     "Node.js worker threads"
+  :track    runtimes
+  :cost     500
+  :era      seed
   :requires (lang-node)
-  :blurb "A pool of 4 worker threads (40 MB) takes CPU-heavy kinds off the event loop.")
+  :blurb    "A pool of 4 worker threads (40 MB) takes CPU-heavy kinds off the event loop.")
 
 (research yjit
-  :name "YJIT" :track runtimes :cost 400 :era 2
+  :name     "YJIT"
+  :track    runtimes
+  :cost     400
+  :era      seed
   :requires (lang-ruby)
-  :blurb "Ruby’s JIT: 1.3× CPU work for 20% more memory.")
+  :blurb    "Ruby’s JIT: 1.3× CPU work for 20% more memory.")
 
 (research gevent
-  :name "gevent" :track runtimes :cost 400 :era 2
+  :name     "gevent"
+  :track    runtimes
+  :cost     400
+  :era      seed
   :requires (lang-python)
-  :blurb (ref RUNTIMES gevent blurb))
+  :blurb    (ref RUNTIMES gevent blurb))
 
 (research asgi
-  :name "ASGI with Uvicorn" :track runtimes :cost 500 :era 2
+  :name     "ASGI with Uvicorn"
+  :track    runtimes
+  :cost     500
+  :era      seed
   :requires (lang-python)
-  :blurb (ref RUNTIMES uvicorn blurb))
+  :blurb    (ref RUNTIMES uvicorn blurb))
 
 (research php-worker-mode
-  :name "PHP worker mode" :track runtimes :cost 2_500 :era 3
+  :name     "PHP worker mode"
+  :track    runtimes
+  :cost     2_500
+  :era      series-a
   :requires (php-fpm)
-  :blurb (ref RUNTIMES php_worker blurb))
+  :blurb    (ref RUNTIMES php_worker blurb))
 
 (research swoole
-  :name "Swoole" :track runtimes :cost 3_000 :era 3
+  :name     "Swoole"
+  :track    runtimes
+  :cost     3_000
+  :era      series-a
   :requires (php-fpm)
-  :blurb (ref RUNTIMES swoole blurb))
+  :blurb    (ref RUNTIMES swoole blurb))
 
 (research bun
-  :name "Bun" :track runtimes :cost 2_000 :era 3
+  :name     "Bun"
+  :track    runtimes
+  :cost     2_000
+  :era      series-a
   :requires (lang-node)
-  :blurb (ref RUNTIMES bun blurb))
+  :blurb    (ref RUNTIMES bun blurb))
 
 (research deno
-  :name "Deno" :track runtimes :cost 2_000 :era 3
+  :name     "Deno"
+  :track    runtimes
+  :cost     2_000
+  :era      series-a
   :requires (lang-node)
-  :blurb (ref RUNTIMES deno blurb))
+  :blurb    (ref RUNTIMES deno blurb))
 
 (research falcon
-  :name "Falcon" :track runtimes :cost 2_000 :era 3
+  :name     "Falcon"
+  :track    runtimes
+  :cost     2_000
+  :era      series-a
   :requires (lang-ruby)
-  :blurb (ref RUNTIMES falcon blurb))
+  :blurb    (ref RUNTIMES falcon blurb))
 
 (research pypy
-  :name "PyPy" :track runtimes :cost 2_500 :era 3
+  :name     "PyPy"
+  :track    runtimes
+  :cost     2_500
+  :era      series-a
   :requires (lang-python)
-  :blurb (ref RUNTIMES pypy blurb))
+  :blurb    (ref RUNTIMES pypy blurb))
 
 (research virtual-threads
-  :name "Java virtual threads" :track runtimes :cost 3_000 :era 3
+  :name     "Java virtual threads"
+  :track    runtimes
+  :cost     3_000
+  :era      series-a
   :requires (lang-java)
-  :blurb (ref RUNTIMES java_virtual blurb))
+  :blurb    (ref RUNTIMES java_virtual blurb))
 
 (research webflux
-  :name "Spring WebFlux" :track runtimes :cost 3_000 :era 3
+  :name     "Spring WebFlux"
+  :track    runtimes
+  :cost     3_000
+  :era      series-a
   :requires (lang-java)
-  :blurb (ref RUNTIMES webflux blurb))
+  :blurb    (ref RUNTIMES webflux blurb))
 
 (research fasthttp
-  :name "fasthttp" :track runtimes :cost 2_000 :era 3
+  :name     "fasthttp"
+  :track    runtimes
+  :cost     2_000
+  :era      series-a
   :requires (lang-go)
-  :blurb (ref RUNTIMES fasthttp blurb))
+  :blurb    (ref RUNTIMES fasthttp blurb))
 
 (research spawn-blocking
-  :name "Tokio blocking pool" :track runtimes :cost 3_000 :era 3
+  :name     "Tokio blocking pool"
+  :track    runtimes
+  :cost     3_000
+  :era      series-a
   :requires (lang-rust)
-  :blurb "CPU-heavy kinds move to a blocking pool, so a Tokio task stops stalling a worker thread.")
+  :blurb    "CPU-heavy kinds move to a blocking pool, so a Tokio task stops stalling a worker thread.")
 
 (research graal-native
-  :name "GraalVM native image" :track runtimes :cost 12_000 :era 4
+  :name     "GraalVM native image"
+  :track    runtimes
+  :cost     12_000
+  :era      series-b
   :requires (lang-java)
-  :blurb (ref RUNTIMES graal blurb))
+  :blurb    (ref RUNTIMES graal blurb))
 
 (research native-aot
-  :name ".NET Native AOT" :track runtimes :cost 10_000 :era 4
+  :name     ".NET Native AOT"
+  :track    runtimes
+  :cost     10_000
+  :era      series-b
   :requires (lang-csharp)
-  :blurb (ref RUNTIMES native_aot blurb))
+  :blurb    (ref RUNTIMES native_aot blurb))
 
 (research distributed-erlang
-  :name "Distributed Erlang" :track runtimes :cost 12_000 :era 4
+  :name     "Distributed Erlang"
+  :track    runtimes
+  :cost     12_000
+  :era      series-b
   :requires (lang-elixir)
-  :blurb "A BEAM Realtime Hub clusters on its own built-in pub/sub, with no separate backbone. Partitions can split the brain.")
+  :blurb    "A BEAM Realtime Hub clusters on its own built-in pub/sub, with no separate backbone. Partitions can split the brain.")
 
 (research nifs
-  :name "NIFs" :track runtimes :cost 10_000 :era 4
+  :name     "NIFs"
+  :track    runtimes
+  :cost     10_000
+  :era      series-b
   :requires (lang-elixir)
-  :blurb "Native code makes Elixir’s CPU-heavy kinds 3× faster. A NIF is not preempted, and a crash in one takes the whole VM.")
+  :blurb    "Native code makes Elixir’s CPU-heavy kinds 3× faster. A NIF is not preempted, and a crash in one takes the whole VM.")
 
 (research jemalloc
-  :name "jemalloc" :track runtimes :cost 8_000 :era 4
+  :name     "jemalloc"
+  :track    runtimes
+  :cost     8_000
+  :era      series-b
   :requires (lang-rust)
-  :blurb "Less fragmentation in long-running Rust services: 1.05× CPU, for 5% more memory at start.")
+  :blurb    "Less fragmentation in long-running Rust services: 1.05× CPU, for 5% more memory at start.")
 
 (research free-threading
-  :name "Free-threaded Python" :track runtimes :cost 50_000 :era 5
+  :name     "Free-threaded Python"
+  :track    runtimes
+  :cost     50_000
+  :era      series-c
   :requires (lang-python)
-  :blurb (ref RUNTIMES python_ft blurb))
-(framework fastapi "FastAPI" :cost 500 :era 2 :requires (asgi))
-(framework fastify "Fastify" :cost 400 :era 2 :requires (lang-node))
-(framework nextjs "Next.js" :cost 600 :era 2 :requires (lang-node))
-(framework nestjs "NestJS" :cost 2_000 :era 3 :requires (lang-node))
-(framework fiber "Fiber" :cost 2_000 :era 3 :requires (fasthttp))
-(framework quarkus "Quarkus" :cost 10_000 :era 4 :requires (lang-java))
-(framework hono "Hono" :cost 400 :era 2 :requires (lang-node))
-(framework elysia "Elysia" :cost 2_000 :era 3 :requires (bun))
-(framework koa "Koa" :cost 300 :era 2 :requires (lang-node))
-(framework adonis "AdonisJS" :cost 1_500 :era 3 :requires (lang-node))
-(framework codeigniter "CodeIgniter" :cost 60 :era 1)
-(framework sanic "Sanic" :cost 500 :era 2 :requires (lang-python))
-(framework rocket "Rocket" :cost 3_000 :era 3 :requires (lang-rust))
+  :blurb    (ref RUNTIMES python_ft blurb))
+
+(framework fastapi "FastAPI"
+  :cost     500
+  :era      seed
+  :requires (asgi))
+
+(framework fastify "Fastify"
+  :cost     400
+  :era      seed
+  :requires (lang-node))
+
+(framework nextjs "Next.js"
+  :cost     600
+  :era      seed
+  :requires (lang-node))
+
+(framework nestjs "NestJS"
+  :cost     2_000
+  :era      series-a
+  :requires (lang-node))
+
+(framework fiber "Fiber"
+  :cost     2_000
+  :era      series-a
+  :requires (fasthttp))
+
+(framework quarkus "Quarkus"
+  :cost     10_000
+  :era      series-b
+  :requires (lang-java))
+
+(framework hono "Hono"
+  :cost     400
+  :era      seed
+  :requires (lang-node))
+
+(framework elysia "Elysia"
+  :cost     2_000
+  :era      series-a
+  :requires (bun))
+
+(framework koa "Koa"
+  :cost     300
+  :era      seed
+  :requires (lang-node))
+
+(framework adonis "AdonisJS"
+  :cost     1_500
+  :era      series-a
+  :requires (lang-node))
+
+(framework codeigniter "CodeIgniter"
+  :cost 60
+  :era  pre-seed)
+
+(framework sanic "Sanic"
+  :cost     500
+  :era      seed
+  :requires (lang-python))
+
+(framework rocket "Rocket"
+  :cost     3_000
+  :era      series-a
+  :requires (lang-rust))
 
 (research cdc
-  :name "Change data capture" :track data :cost 18_000 :era 4
+  :name     "Change data capture"
+  :track    data
+  :cost     18_000
+  :era      series-b
   :requires (event-streaming data-warehouse)
-  :insight (report write)
-  :blurb "Unlocks the CDC Connector: the copies follow the write log, without a second write.")
+  :insight  (report write)
+  :blurb    "Unlocks the CDC Connector: the copies follow the write log, without a second write.")
 
 (research service-boundaries
-  :name "Service boundaries" :track product :cost 15_000 :era 4
+  :name  "Service boundaries"
+  :track product
+  :cost  15_000
+  :era   series-b
   :blurb "Split a Service: a new codebase with its own team, its own deploys, and its own blast.")
 
 (research service-mesh
-  :name "Service mesh" :track infrastructure :cost 20_000 :era 4
+  :name     "Service mesh"
+  :track    infrastructure
+  :cost     20_000
+  :era      series-b
   :requires (containers)
-  :blurb "Unlocks the Service Mesh: retries, breakers and metrics on every link.")
+  :blurb    "Unlocks the Service Mesh: retries, breakers and metrics on every link.")
 
 (research feature-flags
-  :name "Feature flags" :track reliability :cost 800 :era 2
+  :name     "Feature flags"
+  :track    reliability
+  :cost     800
+  :era      seed
   :requires (ci)
-  :blurb "Unlocks Feature Flags: a Feature reaches a share of users, and a bad deploy with it.")
+  :blurb    "Unlocks Feature Flags: a Feature reaches a share of users, and a bad deploy with it.")
 
 (research secrets-management
-  :name "Secrets management" :track security :cost 400 :era 2
+  :name  "Secrets management"
+  :track security
+  :cost  400
+  :era   seed
   :blurb "Keys live in a vault, so a phishing page has nothing to steal.")
 
 (research spam-filter
-  :name "Spam filter" :track security :cost 300 :era 1
+  :name  "Spam filter"
+  :track security
+  :cost  300
+  :era   pre-seed
   :blurb "Adds a Postbox filter that sorts spam into its own folder, and now and then a real letter too.")
 
 (research on-call
-  :name "On-call rotation" :track reliability :cost 2_000 :era 3
+  :name     "On-call rotation"
+  :track    reliability
+  :cost     2_000
+  :era      series-a
   :requires (alerting)
-  :blurb "A rotation answers the page, so an incident is acknowledged in minutes.")
+  :blurb    "A rotation answers the page, so an incident is acknowledged in minutes.")
 
 (research runbooks
-  :name "Runbooks" :track reliability :cost 5_000 :era 3
+  :name     "Runbooks"
+  :track    reliability
+  :cost     5_000
+  :era      series-a
   :requires (on-call)
-  :blurb "Write a runbook for an incident kind the team has handled: it then resolves itself.")
+  :blurb    "Write a runbook for an incident kind the team has handled: it then resolves itself.")
 
 (research sre-team
-  :name "SRE team" :track product :cost 4_000 :era 3
+  :name     "SRE team"
+  :track    product
+  :cost     4_000
+  :era      series-a
   :requires (on-call)
-  :blurb "Unlocks the SRE team: MTTR −40%, and an open action item weighs half as much.")
+  :blurb    "Unlocks the SRE team: MTTR −40%, and an open action item weighs half as much.")
 
 (research enterprise-sales
-  :name "Enterprise sales" :track product :cost 20_000 :era 4
+  :name  "Enterprise sales"
+  :track product
+  :cost  20_000
+  :era   series-b
   :blurb "Signs the SLA: a missed week of availability pays credits back to customers.")
 
 (research online-migrations
-  :name "Online schema migrations" :track data :cost 4_000 :era 3
+  :name     "Online schema migrations"
+  :track    data
+  :cost     4_000
+  :era      series-a
   :requires (query-analysis)
-  :insight (write)
-  :blurb "Changes a big table without holding its lock, so writes keep flowing through a migration.")
+  :insight  (write)
+  :blurb    "Changes a big table without holding its lock, so writes keep flowing through a migration.")
 
 (research leap-smearing
-  :name "Leap smearing" :track reliability :cost 60_000 :era 5
+  :name  "Leap smearing"
+  :track reliability
+  :cost  60_000
+  :era   series-c
   :blurb "Spreads a leap second over the whole day, so no clock jumps and no lease expires early.")
 
 (research ab-testing
-  :name "A/B testing" :track product :cost 700 :era 2
+  :name     "A/B testing"
+  :track    product
+  :cost     700
+  :era      seed
   :requires (funnels feature-flags)
-  :blurb "Measures a Feature’s lift against the users its flag holds out, with a confidence interval.")
+  :blurb    "Measures a Feature’s lift against the users its flag holds out, with a confidence interval.")
 
 (research hiring-pipeline
-  :name "Hiring pipeline" :track product :cost 600 :era 2
+  :name  "Hiring pipeline"
+  :track product
+  :cost  600
+  :era   seed
   :blurb "Recruiters keep a pipeline warm, so every hire takes 30% less calendar time.")
 
 (research trunk-based
-  :name "Trunk-based development" :track product :cost 800 :era 2
+  :name     "Trunk-based development"
+  :track    product
+  :cost     800
+  :era      seed
   :requires (ci)
-  :blurb "Small changes land on one branch many times a day, so the Team ships 50% more often.")
+  :blurb    "Small changes land on one branch many times a day, so the Team ships 50% more often.")
 
 (research platform-team
-  :name "Platform team" :track product :cost 3_000 :era 3
+  :name     "Platform team"
+  :track    product
+  :cost     3_000
+  :era      series-a
   :requires (containers)
-  :blurb "Unlocks the Platform team: it runs the Clusters and the pipeline, and halves deploy time.")
+  :blurb    "Unlocks the Platform team: it runs the Clusters and the pipeline, and halves deploy time.")
 
 (research data-team
-  :name "Data team" :track product :cost 10_000 :era 4
+  :name     "Data team"
+  :track    product
+  :cost     10_000
+  :era      series-b
   :requires (data-warehouse)
-  :blurb "Unlocks the Data team: report and AI Features cost 30% less, and a pipeline lags half as much.")
+  :blurb    "Unlocks the Data team: report and AI Features cost 30% less, and a pipeline lags half as much.")
 
 (research l4-lb
-  :name "L4 load balancing" :track infrastructure :cost 400 :era 2
+  :name     "L4 load balancing"
+  :track    infrastructure
+  :cost     400
+  :era      seed
   :requires (lb-algorithms)
-  :blurb "A Load Balancer forwards TCP instead of reading HTTP: ten times the throughput, a fifth of the hop, and cheaper, with no retries.")
+  :blurb    "A Load Balancer forwards TCP instead of reading HTTP: ten times the throughput, a fifth of the hop, and cheaper, with no retries.")
 
 (research rate-limiting
-  :name "Rate limiting" :track infrastructure :cost 1_800 :era 3
+  :name     "Rate limiting"
+  :track    infrastructure
+  :cost     1_800
+  :era      series-a
   :requires (api-gateway)
-  :blurb "A token bucket on the Gateway: a burst up to the bucket passes whole, and the long-run average holds at the limit.")
+  :blurb    "A token bucket on the Gateway: a burst up to the bucket passes whole, and the long-run average holds at the limit.")
 
 (research esi
-  :name "Edge-side includes" :track infrastructure :cost 3_000 :era 3
+  :name     "Edge-side includes"
+  :track    infrastructure
+  :cost     3_000
+  :era      series-a
   :requires (cdn)
-  :insight (page media)
-  :blurb "The CDN caches the shared shell of a logged-in page and fills in the personal parts at the edge, so 20% more page views hit.")
+  :insight  (page media)
+  :blurb    "The CDN caches the shared shell of a logged-in page and fills in the personal parts at the edge, so 20% more page views hit.")
 
 (research bot-management
-  :name "Bot management" :track infrastructure :cost 2_500 :era 3
+  :name     "Bot management"
+  :track    infrastructure
+  :cost     2_500
+  :era      series-a
   :requires (waf)
-  :insight (bot)
-  :blurb "A WAF that challenges suspicious clients instead of blocking them outright: it blocks the same bots and mistakes fewer real users for one.")
+  :insight  (bot)
+  :blurb    "A WAF that challenges suspicious clients instead of blocking them outright: it blocks the same bots and mistakes fewer real users for one.")
 
 (research scheduled-scaling
-  :name "Scheduled scaling" :track infrastructure :cost 9_000 :era 4
+  :name     "Scheduled scaling"
+  :track    infrastructure
+  :cost     9_000
+  :era      series-b
   :requires (autoscaling)
-  :blurb "An Autoscaler adds copies before the known daily peak, so the copies are warm when it arrives.")
+  :blurb    "An Autoscaler adds copies before the known daily peak, so the copies are warm when it arrives.")
 
 (research arm-instances
-  :name "ARM instances" :track infrastructure :cost 12_000 :era 4
+  :name  "ARM instances"
+  :track infrastructure
+  :cost  12_000
+  :era   series-b
   :blurb "Unlocks the ARM instance family: the same vCPU and RAM as General for 0.8× the price.")
 
 (research quantization
-  :name "Quantization" :track infrastructure :cost 18_000 :era 4
+  :name     "Quantization"
+  :track    infrastructure
+  :cost     18_000
+  :era      series-b
   :requires (model-serving)
-  :insight (ai)
-  :blurb "A GPU Node runs INT8 or INT4 weights: faster and smaller, and its answers are worth 5% or 15% less.")
+  :insight  (ai)
+  :blurb    "A GPU Node runs INT8 or INT4 weights: faster and smaller, and its answers are worth 5% or 15% less.")
 
 (research continuous-batching
-  :name "Continuous batching" :track infrastructure :cost 25_000 :era 4
+  :name     "Continuous batching"
+  :track    infrastructure
+  :cost     25_000
+  :era      series-b
   :requires (model-serving)
-  :insight (ai)
-  :blurb "A GPU Node batches prompts as they arrive, so a larger batch raises throughput without raising the time to the first token.")
+  :insight  (ai)
+  :blurb    "A GPU Node batches prompts as they arrive, so a larger batch raises throughput without raising the time to the first token.")
 
 (research bulkheads
-  :name "Bulkheads" :track reliability :cost 3_500 :era 3
+  :name     "Bulkheads"
+  :track    reliability
+  :cost     3_500
+  :era      series-a
   :requires (circuit-breakers)
-  :blurb "A Link caps how many of its caller’s slots one dependency may hold: a slow dependency sheds its own calls and leaves the rest serving.")
+  :blurb    "A Link caps how many of its caller’s slots one dependency may hold: a slow dependency sheds its own calls and leaves the rest serving.")
 
 (research graceful-degradation
-  :name "Graceful degradation" :track reliability :cost 3_000 :era 3
+  :name     "Graceful degradation"
+  :track    reliability
+  :cost     3_000
+  :era      series-a
   :requires (feature-flags)
-  :blurb "A saturated App Server turns off its most expensive kinds first, so the cheap ones keep their latency and the expensive ones fail fast.")
+  :blurb    "A saturated App Server turns off its most expensive kinds first, so the cheap ones keep their latency and the expensive ones fail fast.")
 
 (research hedged-requests
-  :name "Hedged requests" :track reliability :cost 100_000 :era 5
+  :name     "Hedged requests"
+  :track    reliability
+  :cost     100_000
+  :era      series-c
   :requires (tracing)
-  :blurb "A Link sends a second copy of a slow call after the p95 and keeps the faster answer: the tail drops and the callee sees 10% more calls.")
+  :blurb    "A Link sends a second copy of a slow call after the p95 and keeps the faster answer: the tail drops and the callee sees 10% more calls.")
 
 (research chaos-engineering
-  :name "Chaos engineering" :track reliability :cost 300_000 :era 6
+  :name     "Chaos engineering"
+  :track    reliability
+  :cost     300_000
+  :era      pre-ipo
   :requires (runbooks)
-  :blurb "A scheduled experiment fails your weakest Node for a few seconds and names it: it earns Failure Insight and proves the Design survives.")
+  :blurb    "A scheduled experiment fails your weakest Node for a few seconds and names it: it earns Failure Insight and proves the Design survives.")
 
 (research denormalization
-  :name "Denormalization" :track performance :cost 3_000 :era 3
+  :name    "Denormalization"
+  :track   performance
+  :cost    3_000
+  :era     series-a
   :insight (read write)
-  :blurb "A Database keeps a pre-joined copy: reads cost 30% less CPU, and every write costs 20% more.")
+  :blurb   "A Database keeps a pre-joined copy: reads cost 30% less CPU, and every write costs 20% more.")
 
 (research precompute
-  :name "Materialized views" :track performance :cost 12_000 :era 4
+  :name    "Materialized views"
+  :track   performance
+  :cost    12_000
+  :era     series-b
   :insight (report)
-  :blurb "A Database answers a report from a stored view: half the scan CPU, and the figures are as old as the refresh.")
+  :blurb   "A Database answers a report from a stored view: half the scan CPU, and the figures are as old as the refresh.")
 
 (research binary-rpc
-  :name "Binary RPC between services" :track performance :cost 15_000 :era 4
+  :name  "Binary RPC between services"
+  :track performance
+  :cost  15_000
+  :era   series-b
   :blurb "Services serialise calls as binary instead of text: half the serialization CPU on every backend call.")
 
 (research outbox
-  :name "Transactional outbox" :track data :cost 14_000 :era 4
+  :name     "Transactional outbox"
+  :track    data
+  :cost     14_000
+  :era      series-b
   :requires (queues)
-  :insight (buy job)
-  :blurb "A write and its event land in one transaction, and a relay publishes it: the copies stop diverging when a publish fails.")
+  :insight  (buy job)
+  :blurb    "A write and its event land in one transaction, and a relay publishes it: the copies stop diverging when a publish fails.")
 
 (research expand-contract
-  :name "Expand and contract" :track data :cost 10_000 :era 4
+  :name     "Expand and contract"
+  :track    data
+  :cost     10_000
+  :era      series-b
   :requires (online-migrations)
-  :blurb "A schema change adds the new shape, backfills, then drops the old one: no table lock, so a migration can never stall writes.")
+  :blurb    "A schema change adds the new shape, backfills, then drops the old one: no table lock, so a migration can never stall writes.")
 
 (research profiling
-  :name "Continuous profiling" :track observability :cost 3_000 :era 3
+  :name     "Continuous profiling"
+  :track    observability
+  :cost     3_000
+  :era      series-a
   :requires (tracing)
-  :breadth 4
-  :blurb "Names the resource that limits each Node: CPU, workers, memory, connections, or disk.")
+  :breadth  4
+  :blurb    "Names the resource that limits each Node: CPU, workers, memory, connections, or disk.")
 
 (research tail-sampling
-  :name "Tail-based sampling" :track observability :cost 10_000 :era 4
+  :name     "Tail-based sampling"
+  :track    observability
+  :cost     10_000
+  :era      series-b
   :requires (tracing)
-  :insight (failure)
-  :blurb "Keeps slow and failed traces: twice the Failure Insight.")
+  :insight  (failure)
+  :blurb    "Keeps slow and failed traces: twice the Failure Insight.")
 
 (research rum
-  :name "Real user monitoring" :track observability :cost 50_000 :era 5
-  :requires (tracing)
-  :insight (page feed)
+  :name           "Real user monitoring"
+  :track          observability
+  :cost           50_000
+  :era            series-c
+  :requires       (tracing)
+  :insight        (page feed)
   :region-breadth 2
-  :blurb "Latency from the user’s side, split by device: desktop, mobile, and tablet.")
+  :blurb          "Latency from the user’s side, split by device: desktop, mobile, and tablet.")
 
 (research anomaly-detection
-  :name "Anomaly detection" :track observability :cost 80_000 :era 5
+  :name     "Anomaly detection"
+  :track    observability
+  :cost     80_000
+  :era      series-c
   :requires (alerting)
-  :insight (failure feed hook push)
-  :blurb "Forecasts tomorrow’s peak traffic and warns before an incident peaks.")
+  :insight  (failure feed hook push)
+  :blurb    "Forecasts tomorrow’s peak traffic and warns before an incident peaks.")
 
 (research credential-protection
-  :name "Credential stuffing protection" :track security :cost 2_500 :era 3
+  :name     "Credential stuffing protection"
+  :track    security
+  :cost     2_500
+  :era      series-a
   :requires (rate-limiting)
-  :insight (login bot)
-  :blurb "Blocks most of a credential-stuffing bot burst before it reaches login.")
+  :insight  (login bot)
+  :blurb    "Blocks most of a credential-stuffing bot burst before it reaches login.")
 
 (research pen-testing
-  :name "Penetration testing" :track security :cost 200_000 :era 6
+  :name  "Penetration testing"
+  :track security
+  :cost  200_000
+  :era   pre-ipo
   :blurb "Reveals the Design’s weakest incident kind once a calendar week.")
 
 (research rightsizing
-  :name "Rightsizing report" :track cost :cost 2_500 :era 3
+  :name     "Rightsizing report"
+  :track    cost
+  :cost     2_500
+  :era      series-a
   :requires (metrics)
-  :blurb "Marks Nodes below 30% utilization at peak, so oversized boxes are easy to find.")
+  :blurb    "Marks Nodes below 30% utilization at peak, so oversized boxes are easy to find.")
 
 (research egress-optimization
-  :name "Egress optimization" :track cost :cost 3_500 :era 3
+  :name     "Egress optimization"
+  :track    cost
+  :cost     3_500
+  :era      series-a
   :requires (object-storage)
-  :blurb "An R2-priced Object Storage variant: no egress to the internet.")
+  :blurb    "An R2-priced Object Storage variant: no egress to the internet.")
 
 (research unit-economics
-  :name "Unit economics" :track cost :cost 8_000 :era 4
+  :name  "Unit economics"
+  :track cost
+  :cost  8_000
+  :era   series-b
   :blurb "Cost per served request, for each request kind.")
 
 (research cost-allocation
-  :name "Cost allocation" :track cost :cost 10_000 :era 4
+  :name     "Cost allocation"
+  :track    cost
+  :cost     10_000
+  :era      series-b
   :requires (unit-economics)
-  :blurb "Cost per Service and per Team, from the Nodes each Service owns.")
+  :blurb    "Cost per Service and per Team, from the Nodes each Service owns.")
 
 (research savings-plans
-  :name "Savings plans" :track cost :cost 250_000 :era 6
+  :name     "Savings plans"
+  :track    cost
+  :cost     250_000
+  :era      pre-ipo
   :requires (reserved-instances)
-  :blurb "20% off every compute Node’s Burn, on-demand or not, with no per-Node commitment.")
-(framework jetzig "Jetzig" :cost 3_000 :era 3 :requires (lang-zig))
-(framework tokamak "Tokamak" :cost 2_000 :era 3 :requires (lang-zig))
-(framework servant "Servant" :cost 3_000 :era 3 :requires (lang-haskell))
-(framework ihp "IHP" :cost 3_500 :era 3 :requires (lang-haskell))
+  :blurb    "20% off every compute Node’s Burn, on-demand or not, with no per-Node commitment.")
+
+(framework jetzig "Jetzig"
+  :cost     3_000
+  :era      series-a
+  :requires (lang-zig))
+
+(framework tokamak "Tokamak"
+  :cost     2_000
+  :era      series-a
+  :requires (lang-zig))
+
+(framework servant "Servant"
+  :cost     3_000
+  :era      series-a
+  :requires (lang-haskell))
+
+(framework ihp "IHP"
+  :cost     3_500
+  :era      series-a
+  :requires (lang-haskell))
 
 (research build-cache
-  :name "Build cache" :track product :cost 600 :era 2
+  :name     "Build cache"
+  :track    product
+  :cost     600
+  :era      seed
   :requires (ci)
-  :blurb "A shared cache for build artifacts and dependencies: every Stack builds 25% faster.")
+  :blurb    "A shared cache for build artifacts and dependencies: every Stack builds 25% faster.")
 
 (research dev-environment
-  :name "Reproducible dev environment" :track product :cost 300 :era 1
+  :name     "Reproducible dev environment"
+  :track    product
+  :cost     300
+  :era      pre-seed
   :requires (ci)
-  :blurb "One container pins every compiler and tool: a new hire reaches full speed in half the ramp time.")
+  :blurb    "One container pins every compiler and tool: a new hire reaches full speed in half the ramp time.")
 
 (research static-analysis
-  :name "Static analysis" :track product :cost 180 :era 1
+  :name     "Static analysis"
+  :track    product
+  :cost     180
+  :era      pre-seed
   :requires (ci)
-  :blurb "A linter and type checker run on every change before it ships: bad deploys −20%.")
+  :blurb    "A linter and type checker run on every change before it ships: bad deploys −20%.")
 
 (research formal-verification
-  :name "Formal verification" :track product :cost 5_000 :era 3
+  :name     "Formal verification"
+  :track    product
+  :cost     5_000
+  :era      series-a
   :requires (testing-culture)
-  :blurb "Proofs and property-based tests catch the bugs tests miss: bad deploys −50%, but every Feature costs 15% more Dev Hours.")
+  :blurb    "Proofs and property-based tests catch the bugs tests miss: bad deploys −50%, but every Feature costs 15% more Dev Hours.")
+
 (types "../catalog/research.ts" ResearchTeamKind)
+
 (types "../catalog/runtimes.ts" FrameworkId)
+
 (types "../catalog/kinds.ts" InsightPool)
 
-(def TEAM_TRACKS :type "Record<ResearchTeamKind, ReadonlyArray<ResearchTrack>>"
-  (:product ["product" "runtimes" "frameworks"]
+(def TEAM_TRACKS
+  :type (record ResearchTeamKind (array ResearchTrack))
+  (:product  ["product" "runtimes" "frameworks"]
    :platform ["infrastructure" "performance" "cost"]
-   :sre ["reliability" "observability"]
-   :data ["data"]
+   :sre      ["reliability" "observability"]
+   :data     ["data"]
    :security ["security"]))
 
 (def researchList RESEARCH_LIST)
 
-(def FRAMEWORK_RESEARCH :type "Record<FrameworkId, ResearchId | null>"
-  (:none null (... FRAMEWORK_UNLOCKS)))
+(def EVERY_KIND
+  :type (array InsightPool)
+  ["page" "read" "write" "login" "search" "upload" "media" "rt" "buy" "job" "report" "ai" "feed"
+   "hook" "push"])
 
-(def EVERY_KIND :type "ReadonlyArray<InsightPool>"
-  ["page"
-   "read"
-   "write"
-   "login"
-   "search"
-   "upload"
-   "media"
-   "rt"
-   "buy"
-   "job"
-   "report"
-   "ai"
-   "feed"
-   "hook"
-   "push"])
+(def ERA_RECIPES
+  :type (array (array InsightPool))
+  [["page" "read"] ["write" "login"] ["search" "upload"] ["search" "upload"] ["media" "rt" "buy"]
+   ["job" "report" "ai"] EVERY_KIND EVERY_KIND])
 
-(def ERA_RECIPES :type "ReadonlyArray<ReadonlyArray<InsightPool>>"
-  [["page" "read"]
-   ["write" "login"]
-   ["search" "upload"]
-   ["search" "upload"]
-   ["media" "rt" "buy"]
-   ["job" "report" "ai"]
-   EVERY_KIND
-   EVERY_KIND])
+(def STUDY_SECONDS
+  :type const
+  [20 60 120 240 480 900 1_800 3_600])
 
-(def STUDY_SECONDS :type const [20 60 120 240 480 900 1_800 3_600])
-(def MAX_STUDIES 8)
-(def SPIKE_SPEED 2)
-(def STUDY_SPEEDUP 0.25)
-(def STUDY_SPEED_RESEARCH :type "ReadonlyArray<ResearchId>" ["trace-search" "notebooks"])
+(constants study
+  (speedup 0.25)
+  (speed-research :type (array ResearchId) ["trace-search" "notebooks"]))

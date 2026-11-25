@@ -1,0 +1,128 @@
+; Database: the relational source of truth, and every setting it exposes.
+;
+; This file owns the Component, its state fields, the tables those fields read, and the research
+; each setting needs. qmc writes the generated module, including the Effect Schema fields.
+(component database
+  :code     sql
+  :name     "Database"
+  :product  "PostgreSQL or MySQL"
+  :group    data
+  :dock     data
+  :cost     90
+  :latency  2ms
+  :max-out  0
+  :flags    (sized limiting cold-start standby)
+  :accepts  (q-read q-write q-search blob-put q-tx blob-get q-scan k-write)
+  :fallback (q-search blob-put blob-get q-scan k-write)
+  :blurb    "The relational source of truth. A Read Replica copies it and takes no writes. A bigger size restarts it. Postgres reads and scans cheaper; MySQL writes cheaper and changes schema online.")
+
+(state database
+  (field shard-key (enum hash range tenant region)
+    :default hash
+    :schema  ShardKey
+    :values  shard-key-values
+    :set     (setShardKey :refuse "Only a Database shards."))
+  (field iops (enum general provisioned)
+    :default general
+    :schema  IopsClass
+    :set     (setStorageIops :refuse "Only a Database has a volume."))
+  (field shards (one-of 1 2 4 8)
+    :default 1
+    :values  shard-counts
+    :gate    (sharding)
+    :set     (setShards :refuse "Only a Database shards." :values-label "Shard counts"))
+  (field keep (enum keep archive delete)
+    :default keep
+    :schema  DbRetention
+    :gate    (retention)
+    :set     (setDbRetention :refuse "Only a Database keeps rows."))
+  (field materialized bool
+    :default false
+    :gate    (precompute "A view")
+    :set     (setMaterialized :refuse "Only a Database holds a materialized view."))
+  (field topology (enum single sharded multi)
+    :default single
+    :schema  DbTopology
+    :set     (setTopology :scope all-of-type))
+  (field backup (enum none nightly pitr)
+    :default none
+    :schema  Backup
+    :gate    (pitr "Backups")))
+
+(table db-engines
+  :key id
+  [id        name          connections      connectionMB  read  write  scan  searchCost  migration  lag  bloat]
+  [postgres  "PostgreSQL"  max-connections             8  0.95   1.15   0.9           1       1.25    1  true]
+  [mysql     "MySQL"       500                         1  1.05   0.85   1.1           2       0.75  0.8  false])
+
+(table storage-iops
+  :key id
+  [id           name                iops    burn]
+  [general      "General purpose"    3_000     1]
+  [provisioned  "Provisioned IOPS"  64_000   1.5])
+
+(table db-retentions
+  :key id
+  [id       name                  days  price  scanMs  rebuild  hotSet]
+  [keep     "Keep everything"        0      1       0        1       1]
+  [archive  "Archive after 30 d"    30    0.1     200        1     0.4]
+  [delete   "Delete after 30 d"     30      0       0        3    0.25])
+
+(def row-kb 10)
+
+(def db-storage-mult 3.5)
+
+(def restore-failure 0.2)
+
+(def restore-drill-dh 4)
+
+(def materialized-scan 0.5)
+
+(def materialized-stale 0.05)
+
+(def denormalized-read 0.7)
+
+(def denormalized-write 1.2)
+
+(table backups
+  :key id
+  [id       name       rpo       burn]
+  [none     "None"     Infinity     0]
+  [nightly  "Nightly"  1_440     0.05]
+  [pitr     "PITR"     2         0.15])
+
+(table shard-keys
+  :key id
+  [id      name               hot  cross  farMs]
+  [hash    "Hash of user ID"    0      1      0]
+  [range   "Range of IDs"     0.5      1      0]
+  [tenant  "By tenant"        0.3    0.1      0]
+  [region  "By region"          0    0.2     70])
+
+(def scatter-cpu 0.15)
+
+(def scatter-ms 2)
+
+(def distributed-tx-failure 0.005)
+
+(def reshard-dh 24)
+
+(def reshard-iops 0.5)
+
+(def reshard-minutes-per-gb 1)
+
+(def online-migration-dh 1.1)
+
+(def expand-contract-dh 1.25)
+
+(def index-write-cost 0.05)
+
+(def restore-minutes-per-gb 0.5)
+
+(def restore-min-minutes 5)
+
+(def migration-lock-per-gb 0.1)
+
+(def multi-write-cpu 1.25)
+
+(def multi-conflict 0.02)

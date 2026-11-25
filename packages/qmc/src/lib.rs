@@ -18,6 +18,7 @@ pub mod diag;
 pub mod emit_rs;
 pub mod emit_ts;
 pub mod expand;
+pub mod fmt;
 pub mod graph;
 pub mod lower;
 pub mod num;
@@ -30,6 +31,26 @@ pub mod tsval;
 use diag::{Diagnostic, Sink};
 use reader::Sexp;
 use source::{FileId, SourceMap};
+use std::path::{Path, PathBuf};
+
+/// Every `.qm` file under `dir`, sorted, so declaration order is stable across runs.
+pub fn qm_files(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
+    fn walk(dir: &Path, out: &mut Vec<PathBuf>) -> std::io::Result<()> {
+        for entry in std::fs::read_dir(dir)? {
+            let path = entry?.path();
+            if path.is_dir() {
+                walk(&path, out)?;
+            } else if path.extension().is_some_and(|x| x == "qm") {
+                out.push(path);
+            }
+        }
+        Ok(())
+    }
+    let mut paths = Vec::new();
+    walk(dir, &mut paths)?;
+    paths.sort();
+    Ok(paths)
+}
 
 pub struct Expanded {
     pub sources: SourceMap,
@@ -92,10 +113,12 @@ pub fn compile(inputs: Vec<(String, String)>) -> Compiled {
         catalog.append(part);
         sink.extend(part_sink);
     }
+    crate::data::rewrite(&mut catalog);
     sink.extend(check::run(&catalog));
     let outputs = if sink.has_errors() {
         Vec::new()
     } else {
+        crate::data::resolve_eras(&mut catalog);
         let catalog = &catalog;
         let jobs: Vec<par::Job<'_, (&'static str, String)>> = vec![
             Box::new(move || ("constants.ts", emit_ts::constants(catalog))),
@@ -109,10 +132,25 @@ pub fn compile(inputs: Vec<(String, String)>) -> Compiled {
             .into_iter()
             .map(|(name, text)| (name.to_string(), text))
             .collect();
-        let mut modules: Vec<&str> = catalog.defs.iter().map(|d| d.module.as_str()).collect();
+        if !catalog.type_defs.is_empty() {
+            outputs.push(("types.ts".into(), emit_ts::types(catalog)));
+        }
+        let mut modules: Vec<&str> = catalog
+            .defs
+            .iter()
+            .map(|d| d.module.as_str())
+            .chain(catalog.states.iter().map(|s| s.module.as_str()))
+            .collect();
+        modules.sort();
         modules.dedup();
-        let bodies = par::map(&modules, |m| (m.to_string(), data::module(catalog, m)));
-        for (module, (needs, body)) in bodies {
+        let bodies = par::map(&modules, |m| {
+            let (needs, body) = data::module(catalog, m);
+            let (state_needs, state_body) = emit_ts::states(catalog, m);
+            let mut all = needs;
+            all.extend(state_needs);
+            (m.to_string(), all, format!("{body}{state_body}"))
+        });
+        for (module, needs, body) in bodies {
             let name = format!("{module}.ts");
             match outputs.iter_mut().find(|(n, _)| *n == name) {
                 Some((_, text)) => {
@@ -124,6 +162,12 @@ pub fn compile(inputs: Vec<(String, String)>) -> Compiled {
                     text.push_str(&body);
                     outputs.push((name, text));
                 }
+            }
+            let (rule_needs, rule_body) = emit_ts::setters(catalog, &module);
+            if !rule_body.is_empty() {
+                let mut text = data::merge_imports(emit_ts::HEADER, &rule_needs);
+                text.push_str(&rule_body);
+                outputs.push((format!("{module}.rule.ts"), text));
             }
         }
         outputs

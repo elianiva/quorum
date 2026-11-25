@@ -1,432 +1,84 @@
-; Components: what the player places on the board.
+; Shared Component groups and constants.
 ;
-; Declaration order is the order of COMPONENT_IDS, which the Solver indexes by.
-;
-; Flags: sized (buys instance sizes), stack (runs a language stack), limiting (can saturate),
-; cold-start (restarts slowly), tap, mirror, control, fixed (cannot be bought or sold),
-; standby (keeps a warm standby), global (one per company, outside zones), zone-spanning (one
-; node covers every zone), and tls (terminates TLS).
-
-(import "../components/fn.ts" SERVERLESS_MS)
-(import "../components/edge.ts" EDGE_MS)
-(import "../components/cdc.ts" CDC_MS)
-
-(build-groups
-  (edge "Edge")
-  (compute "Compute")
-  (data "Data")
-  (ops "Ops"))
+; Each Component, its state, and its tables live in content/components/<id>.qm. COMPONENT_IDS
+; follows the sorted file order, and the Solver indexes by it.
+(build-groups (edge "Edge") (compute "Compute") (data "Data") (ops "Ops"))
 
 (dock-groups
-  (edge "Edge" :family edge)
-  (compute "Compute" :family compute)
-  (data "Data" :family data)
-  (messaging "Messaging" :family compute)
-  (platform "Platform" :family ops)
-  (insight "Observability" :family ops)
-  (managed "Managed" :family data))
-
-(component users
-  :code www :name "Users" :product "The internet"
-  :group edge :dock edge :cost 0 :latency 30ms
-  :max-out 1
-  :flags (fixed)
-  :sends (requests)
-  :blurb "Where traffic starts. A domain resolves to one host, so Users take one link.")
-
-(component payments
-  :code pay :name "Payments" :product "Invoices"
-  :group ops :dock insight :cost 0 :latency 0ms
-  :steps 6 :max-out 0
-  :flags (fixed global)
-  :blurb "Revenue waits here. The drawer holds about a minute of it.")
-
-(component analytics
-  :code otel :name "Analytics" :product "OpenTelemetry"
-  :group ops :dock insight :cost 40 :latency 0ms
-  :burn 0.05 :steps 8 :max-out 0
-  :flags (tap global)
-  :blurb "Link any Node into it. It samples that traffic and turns it into Insight.")
-
-(component server
-  :code app :name "App Server" :product "VM"
-  :group compute :dock compute :cost 60 :latency 2ms
-  :flags (sized stack limiting cold-start)
-  :accepts (requests)
-  :sends (q-read q-write auth q-search q-vector blob-put task blob-get q-tx charge q-scan infer notify callout k-write)
-  :blurb "Runs your code. Answers requests and sends queries to the database.")
-
-(component database
-  :code sql :name "Database" :product "PostgreSQL or MySQL"
-  :group data :dock data :cost 90 :latency 2ms
-  :max-out 0
-  :flags (sized limiting cold-start standby)
-  :accepts (q-read q-write q-search blob-put q-tx blob-get q-scan k-write)
-  :fallback (q-search blob-put blob-get q-scan k-write)
-  :blurb "The relational source of truth. A Read Replica copies it and takes no writes. A bigger size restarts it. Postgres reads and scans cheaper; MySQL writes cheaper and changes schema online.")
-
-(component dns
-  :code dns :name "DNS" :product "Route 53"
-  :group edge :dock edge :cost 20 :latency 0ms
-  :burn 0.01 :max-out 8 :unlock dns-rr
-  :accepts (requests)
-  :sends (requests)
-  :blurb "Round robin across up to 8 hosts. No health checks: a dead host keeps its share.")
-
-(component lb
-  :code lb :name "Load Balancer" :product "NGINX"
-  :group edge :dock edge :cost 120 :latency 1ms
-  :burn 0.08 :steps 6 :unlock load-balancing :capacity 2_000
-  :flags (limiting zone-spanning tls)
-  :accepts (page read write login search upload bot media rt buy job report ai feed hook push bid q-read q-write q-search q-vector blob-put q-tx blob-get q-scan k-write)
-  :sends (page read write login search upload bot media rt buy job report ai feed hook push bid q-read q-write q-search q-vector blob-put q-tx blob-get q-scan k-write)
-  :blurb "Splits traffic across App Servers or Database hosts and drops a dead host at its next health check.")
-
-(component pooler
-  :code pool :name "Connection Pooler" :product "PgBouncer"
-  :group data :dock data :cost 80 :latency 0.3ms
-  :burn 0.03 :steps 4 :max-out 1 :unlock pooling :capacity 10_000
-  :flags (limiting standby)
-  :accepts (q-read q-write q-tx)
-  :sends (q-read q-write q-tx)
-  :blurb "Many app connections share 20 database connections. It pools to one host.")
-
-(component cache
-  :code kv :name "Cache" :product "Redis"
-  :group data :dock data :cost 150 :latency 0.5ms
-  :burn 0.06 :steps 8 :unlock caching :capacity 50_000
-  :flags (limiting cold-start standby)
-  :accepts (q-read q-write q-search blob-put q-tx blob-get q-scan k-write change)
-  :sends (q-read q-write q-search blob-put q-tx blob-get q-scan k-write)
-  :fallback (q-search blob-put blob-get q-scan q-tx k-write)
-  :blurb "The cheapest way to cut reads while the hot data fits in memory. Writes pass through and invalidate, and a restart starts cold.")
-
-(component replica
-  :code rep :name "Read Replica" :product "PostgreSQL or MySQL replica"
-  :group data :dock data :cost 60 :latency 2ms
-  :max-out 0 :unlock replication
-  :flags (sized limiting cold-start)
-  :accepts (q-read q-scan)
-  :blurb "Link a Database into it, and it copies that Database. Takes reads and reports off it, and adding one does not restart it. Lags behind writes, so some API reads come back stale.")
-
-(component auth
-  :code idp :name "Auth Provider" :product "Auth0"
-  :group data :dock managed :cost 0 :latency 120ms
-  :max-out 0 :unlock auth-provider
-  :flags (global)
-  :accepts (auth)
-  :blurb "Hashes passwords for you. Charged per user.")
-
-(component search
-  :code fts :name "Search Engine" :product "Elasticsearch"
-  :group data :dock data :cost 300 :latency 15ms
-  :burn 0.25 :steps 8 :max-out 0 :unlock full-text-search :capacity 400
-  :flags (limiting standby)
-  :accepts (q-search change)
-  :blurb "Answers search queries. 400 per second per size step.")
-
-(component storage
-  :code s3 :name "Object Storage" :product "Amazon S3"
-  :group data :dock data :cost 280 :latency 40ms
-  :burn 0.01 :max-out 0 :unlock object-storage
-  :accepts (blob-put blob-get)
-  :blurb "Holds uploaded files. No limit. Pay for what it stores.")
-
-(component doc
-  :code doc :name "Document Store" :product "MongoDB, Firestore"
-  :group data :dock data :cost 260 :latency 3ms
-  :burn 0.2 :steps 8 :max-out 0 :unlock document-db
-  :flags (limiting cold-start)
-  :accepts (q-read q-write q-tx q-scan)
-  :fallback (q-scan)
-  :blurb "Holds documents instead of rows. No joins and no connections to pool: one flat rate of reads and writes, and each query needs its own index.")
-
-(component queue
-  :code mq :name "Queue" :product "RabbitMQ"
-  :group compute :dock messaging :cost 360 :latency 2ms
-  :burn 0.1 :steps 6 :unlock queues :capacity 20_000
-  :flags (limiting standby)
-  :accepts (task)
-  :sends (task)
-  :blurb "Takes work now so Workers can do it later. Users wait only for the enqueue.")
-
-(component worker
-  :code wrk :name "Worker" :product "Sidekiq"
-  :group compute :dock compute :cost 60 :latency 0ms
-  :unlock background-jobs
-  :flags (sized stack limiting cold-start)
-  :accepts (task)
-  :sends (q-read q-write blob-put notify callout)
-  :blurb "Runs your code on tasks from a Queue. Users never wait for it. Link it to the data its tasks read and write.")
-
-(component log
-  :code log :name "Event Stream" :product "Apache Kafka"
-  :group compute :dock messaging :cost 900 :latency 5ms
-  :burn 0.3 :steps 6 :unlock event-streaming :capacity 100_000
-  :flags (limiting)
-  :accepts (task change)
-  :sends (task change)
-  :blurb "A log, not a queue: events stay after they are read, so a consumer can replay them. Consumers read one partition each and fall behind at their own pace.")
-
-(component fn
-  :code fn :name "Serverless Function" :product "AWS Lambda"
-  :group compute :dock compute :cost 0 :latency SERVERLESS_MS
-  :unlock serverless
-  :flags (stack limiting cold-start)
-  :accepts (requests except rt)
-  :sends (q-read q-write auth q-search q-vector blob-put blob-get q-tx charge q-scan infer notify callout k-write)
-  :blurb "Runs your code per request with no box to pay for: nothing while it idles, a cold start when it has, and 1,000 executions at once.")
-
-(component cdn
-  :code cdn :name "CDN" :product "Cloudflare"
-  :group edge :dock edge :cost 220 :latency 8ms
-  :burn 0.05 :unlock cdn
-  :flags (global tls)
-  :accepts (requests)
-  :sends (requests)
-  :blurb "Answers cacheable pages near the user. Egress from the edge costs less.")
-
-(component waf
-  :code waf :name "WAF" :product "ModSecurity"
-  :group edge :dock edge :cost 260 :latency 2ms
-  :burn 0.1 :steps 6 :unlock waf :capacity 5_000
-  :flags (limiting zone-spanning tls)
-  :accepts (requests)
-  :sends (requests)
-  :blurb "Blocks bots before they reach the app, and some real users with them.")
-
-(component gw
-  :code gw :name "API Gateway" :product "Kong"
-  :group edge :dock edge :cost 300 :latency 6ms
-  :unlock api-gateway :capacity 10_000
-  :flags (limiting zone-spanning tls)
-  :accepts (requests)
-  :sends (requests)
-  :blurb "Rate-limits and routes API calls. Past its rate limit, requests fail as throttled, and it bills per request.")
-
-(component ws
-  :code ws :name "Realtime Hub" :product "Socket.IO"
-  :group compute :dock messaging :cost 400 :latency 1ms
-  :burn 0.15 :steps 8 :max-out 0 :unlock websockets
-  :flags (limiting tls)
-  :accepts (rt)
-  :blurb "Holds a connection open for every realtime message. How many fit depends on the runtime.")
-
-(component psp
-  :code psp :name "Payment Provider" :product "Stripe"
-  :group data :dock managed :cost 0 :latency 400ms
-  :steps 8 :max-out 0 :unlock checkout
-  :flags (limiting global zone-spanning)
-  :accepts (charge)
-  :blurb "Charges cards for checkouts. 2.9% plus $0.30 per checkout.")
-
-(component autoscaler
-  :code hpa :name "Autoscaler" :product "Auto Scaling group"
-  :group ops :dock platform :cost 200 :latency 0ms
-  :max-out 0 :unlock autoscaling
-  :flags (control)
-  :blurb "Link App Servers or Workers into it. It adds copies when they run hot and removes them when idle.")
-
-(component ci
-  :code ci :name "CI/CD Pipeline" :product "GitHub Actions"
-  :group ops :dock platform :cost 100 :latency 1ms
-  :burn 0.02 :max-out 0 :unlock ci
-  :blurb "Ships what waits. Its deploy strategy sets how long a deploy takes, what it burns, and how bad a bad deploy is.")
-
-(component cluster
-  :code k8s :name "Kubernetes Cluster" :product "Kubernetes"
-  :group compute :dock compute :cost 500 :latency 0ms
-  :burn 0.1 :max-out 0 :unlock containers
-  :flags (control)
-  :blurb "Link App Servers or Workers into it. They pack onto shared nodes: 15% less Burn, copies in 30 s.")
-
-(component warehouse
-  :code olap :name "Data Warehouse" :product "BigQuery"
-  :group data :dock data :cost 800 :latency 1500ms
-  :burn 0.05 :max-out 0 :unlock data-warehouse
-  :accepts (q-scan change)
-  :blurb "Answers report scans in columns. 1.5 s each, no limit, paid per scan.")
-
-(component vec
-  :code vec :name "Vector Index" :product "pgvector, Pinecone, Qdrant"
-  :group data :dock data :cost 400 :latency 20ms
-  :burn 0.3 :steps 6 :max-out 0 :unlock embeddings
-  :flags (limiting cold-start)
-  :accepts (q-vector)
-  :blurb "Answers nearest-neighbour lookups over your embeddings. It holds the index in memory, and a prompt that reaches it earns more.")
-
-(component gpu
-  :code gpu :name "GPU Node" :product "vLLM on NVIDIA"
-  :group compute :dock compute :cost 900 :latency 300ms
-  :steps 8 :max-out 0 :unlock model-serving
-  :flags (limiting cold-start)
-  :accepts (infer)
-  :blurb "Serves AI prompts in tokens per second. Each size step doubles the GPUs.")
-
-(component edge
-  :code edge :name "Edge Function" :product "Cloudflare Workers"
-  :group compute :dock compute :cost 0 :latency EDGE_MS
-  :unlock edge-compute :capacity unlimited
-  :flags (stack tls)
-  :accepts (requests except rt)
-  :sends (q-read q-write auth q-search q-vector blob-put blob-get q-tx charge q-scan infer notify callout k-write)
-  :blurb "Runs small handlers next to the user: 5 ms, no cold start, and a CPU ceiling instead of a box.")
-
-(component llm
-  :code llm :name "LLM API" :product "A hosted model"
-  :group data :dock managed :cost 0 :latency 600ms
-  :steps 8 :max-out 0 :unlock hosted-models
-  :flags (limiting global zone-spanning)
-  :accepts (infer)
-  :blurb "Serves AI prompts with no GPUs. Paid per token, and rate limited.")
-
-(component msgp
-  :code msgp :name "Push Provider" :product "Amazon SNS"
-  :group data :dock managed :cost 0 :latency 100ms
-  :max-out 0 :unlock notifications
-  :flags (limiting global)
-  :accepts (notify)
-  :blurb "Sends push notifications and email. Paid per message, 10,000 a second.")
-
-(component wide
-  :code wide :name "Wide-column Store" :product "Apache Cassandra"
-  :group data :dock data :cost 1_200 :latency 3ms
-  :burn 1.2 :steps 6 :max-out 0 :unlock leaderless
-  :flags (limiting)
-  :accepts (q-read q-write q-tx k-write)
-  :blurb "Replicates each key to N nodes. Reads ask R of them, writes wait for W.")
-
-(component dsql
-  :code dsql :name "Distributed SQL" :product "CockroachDB"
-  :group data :dock data :cost 2_500 :latency 3ms
-  :burn 1.95 :steps 6 :max-out 0 :unlock consensus
-  :flags (limiting)
-  :accepts (q-read q-write q-tx)
-  :blurb "SQL on Raft. Every write waits for a majority of its replicas.")
-
-(component cdc
-  :code cdc :name "CDC Connector" :product "Debezium"
-  :group compute :dock messaging :cost 300 :latency CDC_MS
-  :burn 0.05 :max-out 1 :unlock cdc
-  :flags (limiting mirror)
-  :sends (change)
-  :blurb "Link a Database into it. It reads every change off the write log and publishes it to an Event Stream, so the app never writes twice.")
-
-(component mesh
-  :code mesh :name "Service Mesh" :product "Istio"
-  :group ops :dock platform :cost 600 :latency 0ms
-  :max-out 0 :unlock service-mesh
-  :flags (control)
-  :blurb "Link App Servers and Workers into it. A sidecar beside each one retries and breaks its calls, and watches them: +1 ms a hop, and 5% of its CPU.")
-
-(component ff
-  :code ff :name "Feature Flags" :product "LaunchDarkly"
-  :group ops :dock platform :cost 150 :latency 0ms
-  :burn 0.01 :max-out 0 :unlock feature-flags
-  :blurb "Rolls a Feature out to 5%, 25%, 50% or every user, and turns it off. Changes propagate to every server in seconds. A bad deploy reaches only the share that has it.")
-
-(component pki
-  :code pki :name "Secrets and Certificates" :product "Let's Encrypt"
-  :group ops :dock platform :cost 80 :latency 0ms
-  :burn 0.005 :max-out 0 :unlock cert-automation
-  :blurb "Holds the keys and renews the TLS certificates before they run out. Without it live, the certificate expires on the calendar and the site goes down.")
-(types "../catalog/components.ts" PricingId PricingDef)
+  (edge "Edge"
+    :family edge)
+  (compute "Compute"
+    :family compute)
+  (data "Data"
+    :family data)
+  (messaging "Messaging"
+    :family compute)
+  (platform "Platform"
+    :family ops)
+  (insight "Observability"
+    :family ops)
+  (managed "Managed"
+    :family data))
 
 (def INTERNET_MS 30)
 
 (def UPLOAD_MB 2)
 
-(def EGRESS_ORIGIN 0.45)
-(def EGRESS_CDN 0.1)
-
-(def AUTHENTICATED_KINDS :type "ReadonlyArray<RequestKind>"
+(def AUTHENTICATED_KINDS
+  :type (array RequestKind)
   ["read" "write" "search" "upload" "buy" "job" "report" "ai" "feed" "hook"])
-(def AUTH_CHECK_MS 0.02)
 
-(def ZONES :type const ["a" "b" "c"])
+(def ZONES
+  :type const
+  ["a" "b" "c"])
+
 (def CROSS_ZONE_MS 1)
-(def EGRESS_CROSS_ZONE 0.01)
+
 (def BACKEND_KB 4)
+
 (def FAILOVER_SECONDS 20)
 
 (def TOKENS_PER_PROMPT 400)
 
-(def BREAKER_THRESHOLD 0.5)
-(def BREAKER_OPEN 5)
+(constants breaker
+  (threshold 0.5)
+  (open 5))
 
 (def BULKHEAD_MS 1_000)
+
 (def HEDGE_LOAD 0.1)
+
 (def SERIALIZE_MS 0.02)
+
 (def DUAL_WRITE_STALE 0.005)
+
 (def OUTBOX_STALE 0.0005)
-(def CDC_LAG_STALE 0.0002)
-(def CDC_DROP_STALE 0.005)
-(def CHAOS_EVERY 120)
-(def CHAOS_SECONDS 10)
-(def CHAOS_FAILURE 0.2)
-(def CHAOS_INSIGHT 1)
-(def LOAD_TEST_INSIGHT 2)
-(def DRILL_INSIGHT 5)
 
-(def FIRST_KIND_INSIGHT 20)
-(def INSIGHT_YIELD 1)
 (def FAILURE_YIELD 3)
-(def POOL_FLOOR 100)
 
-(def SPREAD_REGIONS 3)
-(def SPREAD_REPLICATION_KB 1)
-(def WIDE_SPREAD_LAG_STALE 0.015)
-(def WIDE_REBALANCE_MINUTES_PER_GB 0.4)
-(def DOC_REBALANCE_MINUTES_PER_GB 0.4)
-(def LOG_REPLICATE_MINUTES_PER_GB 0.25)
+(constants spread
+  (regions 3)
+  (replication-kb 1))
 
-(def HOT_KEY_SHARE 0.3)
+(constants pricing
+  (ids :type const ["on-demand" "reserved" "spot"])
+  (from-stage 3))
 
-(def PRICING_IDS :type const ["on-demand" "reserved" "spot"])
-
-(def PRICINGS :type "Record<PricingId, PricingDef>"
-  (:on-demand (:id "on-demand"
-               :name "On-demand"
-               :price 1
-               :blurb "Full rate. Remove the Node at any time.")
-   :reserved (:id "reserved"
-              :name "Reserved"
-              :price 0.6
-              :blurb "0.6×, for a commitment of one calendar week. Selling before the term ends owes the Burn.")
-   :spot (:id "spot"
-          :name "Spot"
-          :price 0.3
-          :blurb "0.3×. The provider can reclaim the Node after 10 s of warning.")))
+(table pricings
+  :key      id
+  :keep-key
+  :type     (record PricingId PricingDef)
+  [id           name         price  blurb]
+  ["on-demand"  "On-demand"      1  "Full rate. Remove the Node at any time."]
+  ["reserved"   "Reserved"     0.6  "0.6×, for a commitment of one calendar week. Selling before the term ends owes the Burn."]
+  ["spot"       "Spot"         0.3  "0.3×. The provider can reclaim the Node after 10 s of warning."])
 
 (def SAVINGS_PLAN_RATE 0.8)
 
-(def PRICING_FROM_STAGE 3)
 (def RESERVED_SECONDS (* 7 CALENDAR_DAY))
-
-(def STICKY_LOCAL_READ 0.15)
-(def STICKY_HERD 0.5)
 
 (def FLAG_PROPAGATION_SECONDS 2)
 
 ;; Settings that need research. A value in :free needs none; with :locked, only those values need
 ;; it. The rules refuse a locked value with "<what> needs <research>.", or with the value's name
 ;; from the :labels table.
-(gate server compress :research gzip :what "Gzip" :free ())
-(gate server shed :research load-shedding :what "Load shedding" :locked (true))
-(gate server degrade :research graceful-degradation :what "Degradation" :locked (true))
-(gate server ryw :research ryw-routing :what "Read-your-writes" :locked (true))
-(gate replica sync :research sync-replication :what "Synchronous replication" :locked (true))
-(gate gw burst :research rate-limiting :what "A token bucket" :free (0))
-(gate database backup :research pitr :what "Backups" :free ("none"))
-(gate database materialized :research precompute :what "A view" :locked (true))
-(gate database shards :research sharding :what "Sharding" :free (1))
-(gate database keep :research retention :what "Retention" :free ("keep"))
-(gate autoscaler schedule :research scheduled-scaling :what "A schedule" :locked (true))
-(gate storage storeVariant :research egress-optimization :what "R2" :locked ("r2"))
-(gate storage lifecycle :research lifecycle-rules :what "Lifecycle rules" :free (0))
-(gate cache cacheStrategy :research cache-strategies :what "Cache strategies" :free ("aside"))
-(gate cache coalesce :research stampede-protection :what "Coalescing" :locked (true))
-(gate cache earlyExpiry :research stampede-protection :what "Early expiration" :locked (true))
-(gate cache swr :research stampede-protection :what "Stale-while-revalidate" :locked (true))
-(gate cache warming :research cache-warming :what "Warming" :locked (true))
-(gate gpu precision :research quantization :labels GPU_PRECISIONS :free ("fp16"))

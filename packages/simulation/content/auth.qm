@@ -1,3 +1,0 @@
-(def AUTH_PRICE_PER_USER 0.00006)
-
-(def authGlossary :type "ReadonlyArray<string>" ["bcrypt"])

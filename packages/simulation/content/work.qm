@@ -1,456 +1,321 @@
-(types "../catalog/work.ts" FeatureId TaskId TaskDef)
+(types "../catalog/work.ts" FeatureId TaskId TaskDef FeatureDef)
 
-(def FEATURE_IDS :type const
-  ["landing-page"
-   "signup-flow"
-   "pagination"
-   "password-login"
-   "paid-plans"
-   "email-digests"
-   "search-filters"
-   "profile-photos"
-   "public-api"
-   "infinite-scroll"
-   "video"
-   "chat"
-   "checkout"
-   "notifications-center"
-   "mobile-app"
-   "data-export"
-   "dashboards"
-   "ai-assistant"
-   "recommendations"
-   "audit-log"
-   "activity-feed"
-   "webhooks"
-   "push-notifications"
-   "localization"
-   "offline-mode"
-   "single-sign-on"
-   "data-residency"
-   "status-page"
-   "usage-pricing"])
+(constants feature
+  (ids
+    :type const
+    ["landing-page" "signup-flow" "pagination" "password-login" "paid-plans" "email-digests"
+     "search-filters" "profile-photos" "public-api" "infinite-scroll" "video" "chat" "checkout"
+     "notifications-center" "mobile-app" "data-export" "dashboards" "ai-assistant" "recommendations"
+     "audit-log" "activity-feed" "webhooks" "push-notifications" "localization" "offline-mode"
+     "single-sign-on" "data-residency" "status-page" "usage-pricing"])
+  (defaults
+    :satisfies (partial FeatureDef)
+    (:requires     []
+     :research     null
+     :market       1
+     :growth       1
+     :churn        1
+     :load         (record)
+     :value        (record)
+     :payload      (record)
+     :queries      (record)
+     :unlocks      null
+     :shapes       0
+     :history      1
+     :subscription false
+     :hidden       null)))
 
-(def INTERNAL_TOOL_FEATURES :type "ReadonlyArray<FeatureId>"
+(def INTERNAL_TOOL_FEATURES
+  :type (array FeatureId)
   ["dashboards" "audit-log" "status-page" "data-export"])
 
-(def BACKGROUND_FEATURES :type "ReadonlyArray<FeatureId>"
+(def BACKGROUND_FEATURES
+  :type (array FeatureId)
   ["email-digests" "data-export" "notifications-center" "webhooks" "push-notifications"])
 
-(def TASK_IDS :type const
-  ["add-index"
-   "eager-loading"
-   "fix-leak"
-   "session-state"
-   "refactor"
-   "fix-bugs"
-   "upgrade-cluster"
-   "runbook"
-   "idempotency-keys"
-   "off-loop"
-   "timeouts-retries"
-   "graceful-shutdown"
-   "health-check"
-   "load-test"])
-
-(def TASKS :type "Record<TaskId, TaskDef>"
-  (:add-index (:id "add-index"
-               :name "Add index"
-               :dh 4
-               :research "query-analysis"
-               :effect "Ends a Slow query and covers one query shape"
-               :internal false)
-   :eager-loading (:id "eager-loading"
-                   :name "Eager loading"
-                   :dh 10
-                   :research "eager-loading"
-                   :effect "ORM frameworks stop sending N+1 queries"
-                   :internal false)
-   :fix-leak (:id "fix-leak"
-              :name "Fix memory leak"
-              :dh 15
-              :research null
-              :effect "No leaks until the next Feature ships"
-              :internal false)
-   :session-state (:id "session-state"
-                   :name "Drop session state"
-                   :dh 8
-                   :research "pooling"
-                   :effect "Transaction pooling stops breaking queries"
-                   :internal false)
-   :refactor (:id "refactor"
-              :name "Refactor"
-              :dh 10
-              :research null
-              :effect "Tech debt −20 points"
-              :internal false)
-   :fix-bugs (:id "fix-bugs"
-              :name "Fix migration bugs"
-              :dh 1
-              :research null
-              :effect "The new Stack stops failing requests"
-              :internal true)
-   :upgrade-cluster (:id "upgrade-cluster"
-                     :name "Upgrade clusters"
-                     :dh 24
-                     :research "containers"
-                     :effect "Every Kubernetes Cluster runs a supported version for a quarter"
-                     :internal false)
-   :runbook (:id "runbook"
-             :name "Write a runbook"
-             :dh 10
-             :research "runbooks"
-             :effect "One incident kind resolves by itself, with no player action"
-             :internal false)
-   :idempotency-keys (:id "idempotency-keys"
-                      :name "Idempotency keys"
-                      :dh 20
-                      :research "idempotency-keys"
-                      :effect "A retried checkout never charges twice"
-                      :internal false)
-   :off-loop (:id "off-loop"
-              :name "Move CPU work off the loop"
-              :dh 12
-              :research "worker-threads"
-              :effect "Node.js and Python async send CPU-heavy kinds to worker threads"
-              :internal false)
-   :timeouts-retries (:id "timeouts-retries"
-                      :name "Add timeouts and retries"
-                      :dh 8
-                      :research "timeouts"
-                      :effect "Every Link out of an App Server or Worker gets a 5 s timeout and backoff retries"
-                      :internal false)
-   :graceful-shutdown (:id "graceful-shutdown"
-                       :name "Graceful shutdown"
-                       :dh 6
-                       :research null
-                       :effect "Deploys and scale-downs finish in-flight requests instead of failing them"
-                       :internal false)
-   :health-check (:id "health-check"
-                  :name "Health check endpoint"
-                  :dh 4
-                  :research "health-checks"
-                  :effect "A Load Balancer can run deep health checks"
-                  :internal false)
-   :load-test (:id "load-test"
-               :name "Load test"
-               :dh 15
-               :research null
-               :effect "Shows every Node at twice the demand, for one calendar day"
-               :internal false)))
+(table tasks
+  :key      id
+  :keep-key
+  :type     (record TaskId TaskDef)
+  [id                   name                          dh  research            effect  internal]
+  ["add-index"          "Add index"                    4  "query-analysis"    "Ends a Slow query and covers one query shape"  false]
+  ["eager-loading"      "Eager loading"               10  "eager-loading"     "ORM frameworks stop sending N+1 queries"  false]
+  ["fix-leak"           "Fix memory leak"             15  null                "No leaks until the next Feature ships"  false]
+  ["session-state"      "Drop session state"           8  "pooling"           "Transaction pooling stops breaking queries"  false]
+  ["refactor"           "Refactor"                    10  null                "Tech debt −20 points"  false]
+  ["fix-bugs"           "Fix migration bugs"           1  null                "The new Stack stops failing requests"  true]
+  ["upgrade-cluster"    "Upgrade clusters"            24  "containers"        "Every Kubernetes Cluster runs a supported version for a quarter"  false]
+  ["runbook"            "Write a runbook"             10  "runbooks"          "One incident kind resolves by itself, with no player action"  false]
+  ["idempotency-keys"   "Idempotency keys"            20  "idempotency-keys"  "A retried checkout never charges twice"  false]
+  ["off-loop"           "Move CPU work off the loop"  12  "worker-threads"    "Node.js and Python async send CPU-heavy kinds to worker threads"  false]
+  ["timeouts-retries"   "Add timeouts and retries"     8  "timeouts"          "Every Link out of an App Server or Worker gets a 5 s timeout and backoff retries"  false]
+  ["graceful-shutdown"  "Graceful shutdown"            6  null                "Deploys and scale-downs finish in-flight requests instead of failing them"  false]
+  ["health-check"       "Health check endpoint"        4  "health-checks"     "A Load Balancer can run deep health checks"  false]
+  ["load-test"          "Load test"                   15  null                "Shows every Node at twice the demand, for one calendar day"  false])
 
 (def QUARTER_DAYS 90)
 
-(def FIXES :type const
-  ["eager-loading"
-   "fix-leak"
-   "session-state"
-   "idempotency-keys"
-   "off-loop"
-   "graceful-shutdown"
+(def FIXES
+  :type const
+  ["eager-loading" "fix-leak" "session-state" "idempotency-keys" "off-loop" "graceful-shutdown"
    "health-check"])
-(types "../catalog/work.ts" FeatureDef FeatureId)
 
-(def FEATURE_DEFAULTS :satisfies "Partial<FeatureDef>"
-  (:requires []
-   :research null
-   :market 1
-   :growth 1
-   :churn 1
-   :load (record)
-   :value (record)
-   :payload (record)
-   :queries (record)
-   :unlocks null
-   :shapes 0
-   :history 1
-   :subscription false
-   :hidden null))
-
-(def FEATURES :type "Record<FeatureId, FeatureDef>"
-  (:landing-page (record
-                  (... FEATURE_DEFAULTS)
-                  :id "landing-page"
-                  :name "Landing page"
-                  :era 0
-                  :dh 8
-                  :market 1.2
-                  :load (:page 1.1)
-                  :effect "Market +20%, page views +10%")
-   :signup-flow (record
-                 (... FEATURE_DEFAULTS)
-                 :id "signup-flow"
-                 :name "Signup flow"
-                 :era 0
-                 :dh 16
-                 :growth 1.15
-                 :unlocks (:kind "write" :share 0.05 :gated false)
-                 :effect "Growth +15%, writes arrive early")
-   :pagination (record
-                (... FEATURE_DEFAULTS)
-                :id "pagination"
-                :name "Pagination"
-                :era 0
-                :dh 4
-                :payload (:read 0.5)
-                :shapes 1
-                :effect "API reads send half the bytes"
-                :hidden "Adds a query shape with no index")
-   :password-login (record
-                    (... FEATURE_DEFAULTS)
-                    :id "password-login"
-                    :name "Password login"
-                    :era 1
-                    :dh 40
-                    :requires ["signup-flow"]
-                    :unlocks (:kind "login" :share 0.05 :gated true)
-                    :effect "Logins arrive: 80 ms of CPU each")
-   :paid-plans (record
-                (... FEATURE_DEFAULTS)
-                :id "paid-plans"
-                :name "Paid plans"
-                :era 1
-                :dh 80
-                :requires ["password-login"]
-                :value (:write 1.3)
-                :subscription true
-                :effect "Writes earn 30% more, plus subscriptions")
-   :email-digests (record
-                   (... FEATURE_DEFAULTS)
-                   :id "email-digests"
-                   :name "Email digests"
-                   :era 1
-                   :dh 40
-                   :requires ["signup-flow"]
-                   :churn 0.9
-                   :unlocks (:kind "job" :share 0.01 :gated false)
-                   :load (:job 2)
-                   :effect "Churn −10%. Digests send in a burst of jobs: twice the exports, 400 ms of CPU and 50 reads each"
-                   :hidden "The send is a burst of jobs")
-   :search-filters (record
-                    (... FEATURE_DEFAULTS)
-                    :id "search-filters"
-                    :name "Search filters"
-                    :era 2
-                    :dh 40
-                    :value (:search 1.25)
-                    :queries (:q-search 1.4)
-                    :effect "Searches earn 25% more"
-                    :hidden "Each search query costs 40% more")
-   :profile-photos (record
-                    (... FEATURE_DEFAULTS)
-                    :id "profile-photos"
-                    :name "Profile photos"
-                    :era 2
-                    :dh 40
-                    :requires ["password-login"]
-                    :growth 1.1
-                    :unlocks (:kind "upload" :share 0.04 :gated true)
-                    :effect "Growth +10%, uploads arrive: 120 ms of CPU each")
-   :public-api (record
-                (... FEATURE_DEFAULTS)
-                :id "public-api"
-                :name "Public API"
-                :era 2
-                :dh 160
-                :requires ["password-login"]
-                :market 1.25
-                :load (:read 1.3 :bot 1.5)
-                :effect "Market +25%, API reads +30%"
-                :hidden "Bots +50%")
-   :infinite-scroll (record
-                     (... FEATURE_DEFAULTS)
-                     :id "infinite-scroll"
-                     :name "Infinite scroll"
-                     :era 2
-                     :dh 24
-                     :requires ["pagination"]
-                     :value (:read 1.1)
-                     :load (:read 1.4)
-                     :effect "API reads earn 10% more, and users send 40% more")
-   :video (record
-           (... FEATURE_DEFAULTS)
-           :id "video"
-           :name "Video"
-           :era 3
-           :dh 480
-           :requires ["profile-photos"]
-           :market 1.4
-           :unlocks (:kind "media" :share 0.1 :gated true)
-           :effect "Market +40%, video arrives: 5 MB each")
-   :chat (record
-          (... FEATURE_DEFAULTS)
-          :id "chat"
-          :name "Chat"
-          :era 3
-          :dh 480
-          :requires ["password-login"]
-          :churn 0.8
-          :research "websockets"
-          :unlocks (:kind "rt" :share 0.08 :gated true)
-          :effect "Churn −20%, realtime messages hold connections open")
-   :checkout (record
-              (... FEATURE_DEFAULTS)
-              :id "checkout"
-              :name "Checkout"
-              :era 3
-              :dh 320
-              :requires ["paid-plans"]
-              :research "checkout"
-              :unlocks (:kind "buy" :share 0.03 :gated true)
-              :effect "Checkouts arrive: $25 each, through the Payment Provider")
-   :notifications-center (record
-                          (... FEATURE_DEFAULTS)
-                          :id "notifications-center"
-                          :name "Notifications center"
-                          :era 3
-                          :dh 80
-                          :requires ["chat"]
-                          :growth 1.1
-                          :load (:rt 1.2)
-                          :effect "Growth +10%, realtime +20%")
-   :mobile-app (record
-                (... FEATURE_DEFAULTS)
-                :id "mobile-app"
-                :name "Mobile app"
-                :era 3
-                :dh 960
-                :requires ["public-api"]
-                :market 1.6
-                :load (:read 1.5)
-                :effect "Market +60%, API reads +50%")
-   :data-export (record
-                 (... FEATURE_DEFAULTS)
-                 :id "data-export"
-                 :name "Data export"
-                 :era 4
-                 :dh 80
-                 :value (:write 1.2)
-                 :unlocks (:kind "job" :share 0.02 :gated true)
-                 :effect "Writes earn 20% more. Exports arrive: 400 ms of CPU and 50 reads each")
-   :dashboards (record
-                (... FEATURE_DEFAULTS)
-                :id "dashboards"
-                :name "Dashboards"
-                :era 4
-                :dh 480
-                :market 1.1
-                :history 0.5
-                :unlocks (:kind "report" :share 0.03 :gated true)
-                :effect "Market +10%. Reports arrive: a table scan each")
-   :ai-assistant (record
-                  (... FEATURE_DEFAULTS)
-                  :id "ai-assistant"
-                  :name "AI assistant"
-                  :era 4
-                  :dh 480
-                  :research "hosted-models"
-                  :unlocks (:kind "ai" :share 0.05 :gated true)
-                  :effect "AI prompts arrive: $24 each, served by a GPU Node or the LLM API")
-   :recommendations (record
-                     (... FEATURE_DEFAULTS)
-                     :id "recommendations"
-                     :name "Recommendations"
-                     :era 4
-                     :dh 480
-                     :requires ["video" "data-export"]
-                     :history 0.5
-                     :load (:media 1.3 :job 1.3)
-                     :effect "Video +30%"
-                     :hidden "Exports +30%: the model trains in batch")
-   :audit-log (record
-               (... FEATURE_DEFAULTS)
-               :id "audit-log"
-               :name "Audit log"
-               :era 4
-               :dh 120
-               :requires ["password-login"]
-               :market 1.1
-               :queries (:q-write 1.2)
-               :effect "Market +10%: enterprises can buy"
-               :hidden "Each write query costs 20% more")
-   :activity-feed (record
-                   (... FEATURE_DEFAULTS)
-                   :id "activity-feed"
-                   :name "Activity feed"
-                   :era 5
-                   :dh 480
-                   :market 1.5
-                   :research "hybrid-fanout"
-                   :unlocks (:kind "feed" :share 0.08 :gated true)
-                   :effect "Market +50%. Feeds arrive: 20 reads each, or one timeline with fan-out on write")
-   :webhooks (record
-              (... FEATURE_DEFAULTS)
-              :id "webhooks"
-              :name "Webhooks"
-              :era 5
-              :dh 120
-              :requires ["public-api"]
-              :market 1.2
-              :unlocks (:kind "hook" :share 0.02 :gated true)
-              :effect "Market +20%. Webhooks arrive: 800 ms calls to customer servers")
-   :push-notifications (record
-                        (... FEATURE_DEFAULTS)
-                        :id "push-notifications"
-                        :name "Push notifications"
-                        :era 5
-                        :dh 80
-                        :requires ["mobile-app" "notifications-center"]
-                        :growth 1.15
-                        :churn 1.05
-                        :research "notifications"
-                        :unlocks (:kind "push" :share 0.02 :gated true)
-                        :effect "Growth +15%. Notifications arrive, through the Push Provider"
-                        :hidden "Churn +5%: users tire of them")
-   :localization (record
-                  (... FEATURE_DEFAULTS)
-                  :id "localization"
-                  :name "Localization"
-                  :era 5
-                  :dh 480
-                  :market 1.24
-                  :effect "Market +40% outside North America")
-   :offline-mode (record
-                  (... FEATURE_DEFAULTS)
-                  :id "offline-mode"
-                  :name "Offline mode"
-                  :era 5
-                  :dh 480
-                  :requires ["mobile-app"]
-                  :churn 0.9
-                  :load (:write 1.1)
-                  :effect "Churn −10%"
-                  :hidden "Writes +10%: devices sync in bursts on reconnect")
-   :single-sign-on (record
-                    (... FEATURE_DEFAULTS)
-                    :id "single-sign-on"
-                    :name "Single sign-on"
-                    :era 6
-                    :dh 240
-                    :requires ["password-login"]
-                    :market 1.1
-                    :effect "Market +10%: enterprises sign in with SAML")
-   :data-residency (record
-                    (... FEATURE_DEFAULTS)
-                    :id "data-residency"
-                    :name "Data residency"
-                    :era 6
-                    :dh 1_440
-                    :effect "Required for the EU market: EU data stays in an EU region")
-   :status-page (record
-                 (... FEATURE_DEFAULTS)
-                 :id "status-page"
-                 :name "Status page"
-                 :era 6
-                 :dh 16
-                 :churn 0.9
-                 :effect "Churn −10%: users see you are on it")
-   :usage-pricing (record
-                   (... FEATURE_DEFAULTS)
-                   :id "usage-pricing"
-                   :name "Usage-based pricing"
-                   :era 7
-                   :dh 480
-                   :requires ["paid-plans"]
-                   :value (:job 1.15 :write 1.15 :ai 1.15 :hook 1.15)
-                   :effect "Exports, writes, prompts and webhooks earn 15% more")))
+(def FEATURES
+  :type (record FeatureId FeatureDef)
+  (:landing-page         (record (... FEATURE_DEFAULTS)
+                           :id     "landing-page"
+                           :name   "Landing page"
+                           :era    (era garage)
+                           :dh     8
+                           :market 1.2
+                           :load   (:page 1.1)
+                           :effect "Market +20%, page views +10%")
+   :signup-flow          (record (... FEATURE_DEFAULTS)
+                           :id      "signup-flow"
+                           :name    "Signup flow"
+                           :era     (era garage)
+                           :dh      16
+                           :growth  1.15
+                           :unlocks (:kind "write" :share 0.05 :gated false)
+                           :effect  "Growth +15%, writes arrive early")
+   :pagination           (record (... FEATURE_DEFAULTS)
+                           :id      "pagination"
+                           :name    "Pagination"
+                           :era     (era garage)
+                           :dh      4
+                           :payload (:read 0.5)
+                           :shapes  1
+                           :effect  "API reads send half the bytes"
+                           :hidden  "Adds a query shape with no index")
+   :password-login       (record (... FEATURE_DEFAULTS)
+                           :id       "password-login"
+                           :name     "Password login"
+                           :era      (era pre-seed)
+                           :dh       40
+                           :requires ["signup-flow"]
+                           :unlocks  (:kind "login" :share 0.05 :gated true)
+                           :effect   "Logins arrive: 80 ms of CPU each")
+   :paid-plans           (record (... FEATURE_DEFAULTS)
+                           :id           "paid-plans"
+                           :name         "Paid plans"
+                           :era          (era pre-seed)
+                           :dh           80
+                           :requires     ["password-login"]
+                           :value        (:write 1.3)
+                           :subscription true
+                           :effect       "Writes earn 30% more, plus subscriptions")
+   :email-digests        (record (... FEATURE_DEFAULTS)
+                           :id       "email-digests"
+                           :name     "Email digests"
+                           :era      (era pre-seed)
+                           :dh       40
+                           :requires ["signup-flow"]
+                           :churn    0.9
+                           :unlocks  (:kind "job" :share 0.01 :gated false)
+                           :load     (:job 2)
+                           :effect   "Churn −10%. Digests send in a burst of jobs: twice the exports, 400 ms of CPU and 50 reads each"
+                           :hidden   "The send is a burst of jobs")
+   :search-filters       (record (... FEATURE_DEFAULTS)
+                           :id      "search-filters"
+                           :name    "Search filters"
+                           :era     (era seed)
+                           :dh      40
+                           :value   (:search 1.25)
+                           :queries (:q-search 1.4)
+                           :effect  "Searches earn 25% more"
+                           :hidden  "Each search query costs 40% more")
+   :profile-photos       (record (... FEATURE_DEFAULTS)
+                           :id       "profile-photos"
+                           :name     "Profile photos"
+                           :era      (era seed)
+                           :dh       40
+                           :requires ["password-login"]
+                           :growth   1.1
+                           :unlocks  (:kind "upload" :share 0.04 :gated true)
+                           :effect   "Growth +10%, uploads arrive: 120 ms of CPU each")
+   :public-api           (record (... FEATURE_DEFAULTS)
+                           :id       "public-api"
+                           :name     "Public API"
+                           :era      (era seed)
+                           :dh       160
+                           :requires ["password-login"]
+                           :market   1.25
+                           :load     (:read 1.3 :bot 1.5)
+                           :effect   "Market +25%, API reads +30%"
+                           :hidden   "Bots +50%")
+   :infinite-scroll      (record (... FEATURE_DEFAULTS)
+                           :id       "infinite-scroll"
+                           :name     "Infinite scroll"
+                           :era      (era seed)
+                           :dh       24
+                           :requires ["pagination"]
+                           :value    (:read 1.1)
+                           :load     (:read 1.4)
+                           :effect   "API reads earn 10% more, and users send 40% more")
+   :video                (record (... FEATURE_DEFAULTS)
+                           :id       "video"
+                           :name     "Video"
+                           :era      (era series-a)
+                           :dh       480
+                           :requires ["profile-photos"]
+                           :market   1.4
+                           :unlocks  (:kind "media" :share 0.1 :gated true)
+                           :effect   "Market +40%, video arrives: 5 MB each")
+   :chat                 (record (... FEATURE_DEFAULTS)
+                           :id       "chat"
+                           :name     "Chat"
+                           :era      (era series-a)
+                           :dh       480
+                           :requires ["password-login"]
+                           :churn    0.8
+                           :research "websockets"
+                           :unlocks  (:kind "rt" :share 0.08 :gated true)
+                           :effect   "Churn −20%, realtime messages hold connections open")
+   :checkout             (record (... FEATURE_DEFAULTS)
+                           :id       "checkout"
+                           :name     "Checkout"
+                           :era      (era series-a)
+                           :dh       320
+                           :requires ["paid-plans"]
+                           :research "checkout"
+                           :unlocks  (:kind "buy" :share 0.03 :gated true)
+                           :effect   "Checkouts arrive: $25 each, through the Payment Provider")
+   :notifications-center (record (... FEATURE_DEFAULTS)
+                           :id       "notifications-center"
+                           :name     "Notifications center"
+                           :era      (era series-a)
+                           :dh       80
+                           :requires ["chat"]
+                           :growth   1.1
+                           :load     (:rt 1.2)
+                           :effect   "Growth +10%, realtime +20%")
+   :mobile-app           (record (... FEATURE_DEFAULTS)
+                           :id       "mobile-app"
+                           :name     "Mobile app"
+                           :era      (era series-a)
+                           :dh       960
+                           :requires ["public-api"]
+                           :market   1.6
+                           :load     (:read 1.5)
+                           :effect   "Market +60%, API reads +50%")
+   :data-export          (record (... FEATURE_DEFAULTS)
+                           :id      "data-export"
+                           :name    "Data export"
+                           :era     (era series-b)
+                           :dh      80
+                           :value   (:write 1.2)
+                           :unlocks (:kind "job" :share 0.02 :gated true)
+                           :effect  "Writes earn 20% more. Exports arrive: 400 ms of CPU and 50 reads each")
+   :dashboards           (record (... FEATURE_DEFAULTS)
+                           :id      "dashboards"
+                           :name    "Dashboards"
+                           :era     (era series-b)
+                           :dh      480
+                           :market  1.1
+                           :history 0.5
+                           :unlocks (:kind "report" :share 0.03 :gated true)
+                           :effect  "Market +10%. Reports arrive: a table scan each")
+   :ai-assistant         (record (... FEATURE_DEFAULTS)
+                           :id       "ai-assistant"
+                           :name     "AI assistant"
+                           :era      (era series-b)
+                           :dh       480
+                           :research "hosted-models"
+                           :unlocks  (:kind "ai" :share 0.05 :gated true)
+                           :effect   "AI prompts arrive: $24 each, served by a GPU Node or the LLM API")
+   :recommendations      (record (... FEATURE_DEFAULTS)
+                           :id       "recommendations"
+                           :name     "Recommendations"
+                           :era      (era series-b)
+                           :dh       480
+                           :requires ["video" "data-export"]
+                           :history  0.5
+                           :load     (:media 1.3 :job 1.3)
+                           :effect   "Video +30%"
+                           :hidden   "Exports +30%: the model trains in batch")
+   :audit-log            (record (... FEATURE_DEFAULTS)
+                           :id       "audit-log"
+                           :name     "Audit log"
+                           :era      (era series-b)
+                           :dh       120
+                           :requires ["password-login"]
+                           :market   1.1
+                           :queries  (:q-write 1.2)
+                           :effect   "Market +10%: enterprises can buy"
+                           :hidden   "Each write query costs 20% more")
+   :activity-feed        (record (... FEATURE_DEFAULTS)
+                           :id       "activity-feed"
+                           :name     "Activity feed"
+                           :era      (era series-c)
+                           :dh       480
+                           :market   1.5
+                           :research "hybrid-fanout"
+                           :unlocks  (:kind "feed" :share 0.08 :gated true)
+                           :effect   "Market +50%. Feeds arrive: 20 reads each, or one timeline with fan-out on write")
+   :webhooks             (record (... FEATURE_DEFAULTS)
+                           :id       "webhooks"
+                           :name     "Webhooks"
+                           :era      (era series-c)
+                           :dh       120
+                           :requires ["public-api"]
+                           :market   1.2
+                           :unlocks  (:kind "hook" :share 0.02 :gated true)
+                           :effect   "Market +20%. Webhooks arrive: 800 ms calls to customer servers")
+   :push-notifications   (record (... FEATURE_DEFAULTS)
+                           :id       "push-notifications"
+                           :name     "Push notifications"
+                           :era      (era series-c)
+                           :dh       80
+                           :requires ["mobile-app" "notifications-center"]
+                           :growth   1.15
+                           :churn    1.05
+                           :research "notifications"
+                           :unlocks  (:kind "push" :share 0.02 :gated true)
+                           :effect   "Growth +15%. Notifications arrive, through the Push Provider"
+                           :hidden   "Churn +5%: users tire of them")
+   :localization         (record (... FEATURE_DEFAULTS)
+                           :id     "localization"
+                           :name   "Localization"
+                           :era    (era series-c)
+                           :dh     480
+                           :market 1.24
+                           :effect "Market +40% outside North America")
+   :offline-mode         (record (... FEATURE_DEFAULTS)
+                           :id       "offline-mode"
+                           :name     "Offline mode"
+                           :era      (era series-c)
+                           :dh       480
+                           :requires ["mobile-app"]
+                           :churn    0.9
+                           :load     (:write 1.1)
+                           :effect   "Churn −10%"
+                           :hidden   "Writes +10%: devices sync in bursts on reconnect")
+   :single-sign-on       (record (... FEATURE_DEFAULTS)
+                           :id       "single-sign-on"
+                           :name     "Single sign-on"
+                           :era      (era pre-ipo)
+                           :dh       240
+                           :requires ["password-login"]
+                           :market   1.1
+                           :effect   "Market +10%: enterprises sign in with SAML")
+   :data-residency       (record (... FEATURE_DEFAULTS)
+                           :id     "data-residency"
+                           :name   "Data residency"
+                           :era    (era pre-ipo)
+                           :dh     1_440
+                           :effect "Required for the EU market: EU data stays in an EU region")
+   :status-page          (record (... FEATURE_DEFAULTS)
+                           :id     "status-page"
+                           :name   "Status page"
+                           :era    (era pre-ipo)
+                           :dh     16
+                           :churn  0.9
+                           :effect "Churn −10%: users see you are on it")
+   :usage-pricing        (record (... FEATURE_DEFAULTS)
+                           :id       "usage-pricing"
+                           :name     "Usage-based pricing"
+                           :era      (era public)
+                           :dh       480
+                           :requires ["paid-plans"]
+                           :value    (:job 1.15 :write 1.15 :ai 1.15 :hook 1.15)
+                           :effect   "Exports, writes, prompts and webhooks earn 15% more")))

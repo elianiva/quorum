@@ -1,0 +1,65 @@
+; Search: the Component and the tables it reads.
+(component search
+  :code     fts
+  :name     "Search Engine"
+  :product  "Elasticsearch"
+  :group    data
+  :dock     data
+  :cost     300
+  :latency  15ms
+  :burn     0.25
+  :steps    8
+  :max-out  0
+  :unlock   full-text-search
+  :capacity 400
+  :flags    (limiting standby)
+  :accepts  (q-search change)
+  :blurb    "Answers search queries. 400 per second per size step.")
+
+(state search
+  (field search-variant (enum elasticsearch opensearch meilisearch)
+    :default elasticsearch
+    :schema  SearchVariant)
+  (field search-shards number
+    :default 1)
+  (field search-replicas number
+    :default 0)
+  (field heap (enum small half large)
+    :default half
+    :schema  SearchHeap)
+  (field refresh number
+    :default 1
+    :schema  SearchRefresh))
+
+(def SEARCH_QPS 400)
+
+(table search-refresh
+  [seconds  capacity  stale]
+  [      1         1      0]
+  [      5       1.1   0.05]
+  [     60       1.3   0.25])
+
+(constants search
+  (shards :type const [1 2 4])
+  (replicas :type const [0 1 2])
+  (fanout 0.2)
+  (index-share 0.3)
+  (copy-minutes-per-gb 0.5))
+
+(table search-heaps
+  :key id
+  [id     name          capacity  tailP  tailMs]
+  [small  "25% of RAM"         1   0.05     150]
+  [half   "50% of RAM"         1      0       0]
+  [large  "75% of RAM"      0.85   0.02     400])
+
+(table search-variants
+  :key id
+  [id             name             jvm    capacity  fixedMs  burn  relevance  cap]
+  [elasticsearch  "Elasticsearch"  true          1       15     1          0     0]
+  [opensearch     "OpenSearch"     true          1       15     1          0     0]
+  [meilisearch    "Meilisearch"    false       1.5        8   0.6  0.0000005  0.25])
+
+(def searchGlossary
+  :type (array string)
+  ["inverted-index"])

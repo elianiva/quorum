@@ -1,0 +1,18 @@
+; Auth: the Component and the tables it reads.
+(component auth
+  :code    idp
+  :name    "Auth Provider"
+  :product "Auth0"
+  :group   data
+  :dock    managed
+  :cost    0
+  :latency 120ms
+  :max-out 0
+  :unlock  auth-provider
+  :flags   (global)
+  :accepts (auth)
+  :blurb   "Hashes passwords for you. Charged per user.")
+
+(def authGlossary
+  :type (array string)
+  ["bcrypt"])

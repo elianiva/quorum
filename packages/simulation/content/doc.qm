@@ -1,9 +1,0 @@
-(def DOC_OPS 3_000)
-(def DOC_JOIN_COST 3)
-(def DOC_OP_MS 1)
-(def DOC_TXN_LATENCY 0.5)
-(def DOC_PARTIAL 0.02)
-(def DOC_PATTERN_FACTOR 1.1)
-(def DOC_SHAPE_DH 0.75)
-
-(def docGlossary :type "ReadonlyArray<string>" ["hot-key" "sharding"])

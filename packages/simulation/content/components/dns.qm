@@ -1,0 +1,23 @@
+; Dns: the Component and the tables it reads.
+(component dns
+  :code    dns
+  :name    "DNS"
+  :product "Route 53"
+  :group   edge
+  :dock    edge
+  :cost    20
+  :latency 0ms
+  :burn    0.01
+  :max-out 8
+  :unlock  dns-rr
+  :accepts (requests)
+  :sends   (requests)
+  :blurb   "Round robin across up to 8 hosts. No health checks: a dead host keeps its share.")
+
+(def DNS_TTLS
+  :type const
+  [30 300 3_600])
+
+(def dnsGlossary
+  :type (array string)
+  ["dns-round-robin" "health-check" "vertical-and-horizontal-scaling"])

@@ -1,0 +1,46 @@
+; Autoscaler: the Component and the tables it reads.
+(component autoscaler
+  :code    hpa
+  :name    "Autoscaler"
+  :product "Auto Scaling group"
+  :group   ops
+  :dock    platform
+  :cost    200
+  :latency 0ms
+  :max-out 0
+  :unlock  autoscaling
+  :flags   (control)
+  :blurb   "Link App Servers or Workers into it. It adds copies when they run hot and removes them when idle.")
+
+(state autoscaler
+  (field signal (enum cpu load rps queue)
+    :default cpu
+    :schema  ScaleSignal)
+  (field target number
+    :default 0.6)
+  (field min-copies number
+    :default 1)
+  (field max-copies number
+    :default 8)
+  (field schedule bool
+    :default false))
+
+(gate autoscaler schedule
+  :research scheduled-scaling
+  :what     "A schedule"
+  :locked   (true))
+
+(constants scale
+  (cooldown-seconds 30)
+  (targets :type const [0.4 0.6 0.8])
+  (minima :type const [1 2 4 8])
+  (maxima :type const [4 8 16 0])
+  (in 0.6)
+  (rps-per-vcpu 100)
+  (queue-depth 100))
+
+(def SCHEDULE_LEAD_MINUTES 120)
+
+(def autoscalerGlossary
+  :type (array string)
+  ["autoscaling" "cold-start" "diurnal-traffic" "vertical-and-horizontal-scaling"])

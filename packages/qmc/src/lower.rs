@@ -9,6 +9,66 @@ use crate::reader::{Kind, Sexp};
 use crate::source::Span;
 use std::collections::BTreeMap;
 
+/// `shard-key` to `shardKey`, the key a Node field uses.
+pub(crate) fn camel(name: &str) -> String {
+    let mut out = String::new();
+    let mut upper = false;
+    for c in name.chars() {
+        if c == '-' {
+            upper = true;
+        } else if upper {
+            out.extend(c.to_uppercase());
+            upper = false;
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
+/// `shardKey` to `ShardKey`, the name a field's Schema const takes by default.
+pub(crate) fn pascal(name: &str) -> String {
+    let mut chars = name.chars();
+    match chars.next() {
+        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+        None => String::new(),
+    }
+}
+
+/// `db-engines` to `DB_ENGINES`, the name a constant is exported under. A name that already has an
+/// uppercase letter is a TypeScript name such as `wideGlossary` and stays as written.
+pub(crate) fn constant(name: &str) -> String {
+    if name.chars().any(|c| c.is_ascii_uppercase()) {
+        name.to_string()
+    } else {
+        scream(name)
+    }
+}
+
+/// `db-engines` to `DB_ENGINES`, the name a constant is exported under.
+pub(crate) fn scream(name: &str) -> String {
+    name.chars()
+        .map(|c| match c {
+            '-' | ' ' => '_',
+            c => c.to_ascii_uppercase(),
+        })
+        .collect()
+}
+
+/// `quantization` to `Quantization`, the default label a refusal uses.
+fn title(id: &str) -> String {
+    id.split('-')
+        .map(|word| {
+            let mut chars = word.chars();
+            match chars.next() {
+                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Name {
     pub text: String,
@@ -93,7 +153,7 @@ pub struct Research {
     pub name: Spanned<Value>,
     pub track: Name,
     pub cost: Spanned<Number>,
-    pub era: Spanned<Number>,
+    pub era: Spanned<Name>,
     pub requires: Vec<Name>,
     pub blurb: Spanned<Value>,
     /// The Insight pools a study draws on, with the span of the list.
@@ -166,10 +226,13 @@ pub struct Catalog {
     pub dock_groups: Vec<Group>,
     pub components: Vec<Component>,
     pub consts: Vec<Const>,
+    pub modules: std::collections::BTreeSet<String>,
     pub incidents: Vec<Incident>,
     pub defs: Vec<crate::data::Def>,
+    pub type_defs: Vec<crate::data::TypeDef>,
     pub types: Vec<crate::data::Types>,
     pub gates: Vec<Gate>,
+    pub states: Vec<State>,
 }
 
 /// `(gate server compress :research gzip :what "Gzip" :free ())`: a setting that needs research.
@@ -185,7 +248,7 @@ pub struct Gate {
 }
 
 /// What a refusal names: fixed text, or `:labels TABLE`, the value's `name` in that table.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum GateLabel {
     Text(Spanned<String>),
     Table(Name),
@@ -195,6 +258,50 @@ pub enum GateLabel {
 pub enum GateValues {
     Free(Vec<crate::data::Datum>),
     Locked(Vec<crate::data::Datum>),
+}
+
+/// `(state database (field shard-key (enum hash range) :default hash))`: a Component's writable
+/// settings, in one place. A field with `:requires` also declares the gate on that setting.
+#[derive(Debug)]
+pub struct State {
+    pub component: Name,
+    /// The stem of the content file, which names the generated module the descriptor lands in.
+    pub module: String,
+    pub fields: Vec<StateField>,
+    pub span: Span,
+}
+
+#[derive(Debug)]
+pub struct StateField {
+    /// The content key, such as `shard-key`.
+    pub key: Name,
+    pub ty: StateType,
+    pub default: crate::data::Datum,
+    pub requires: Option<Name>,
+    pub label: Option<GateLabel>,
+    /// `:required`: the schema has no default.
+    pub required: bool,
+    /// `:schema ShardKey`: the name of the generated Schema const for an enum or number.
+    pub as_name: Option<Name>,
+    /// `:values SHARD_COUNTS`: the name of the generated tuple for a one-of.
+    pub values_name: Option<Name>,
+    /// `(set setShards …)`: the exported setter and its refuse, values label, and scope.
+    pub setter: Option<Name>,
+    /// `:refuse "Only a Database shards."`: the refusal for another Component.
+    pub only: Option<Spanned<String>>,
+    /// `:values-label "Shard counts"`: what the refusal calls the allowed values.
+    pub values_what: Option<Spanned<String>>,
+    /// `:scope all-of-type`: the setter patches every Node of the Component.
+    pub scope: Option<Name>,
+    pub span: Span,
+}
+
+#[derive(Debug)]
+pub enum StateType {
+    Enum(Vec<Spanned<String>>),
+    OneOf(Vec<Spanned<Number>>),
+    Number,
+    Bool,
 }
 
 /// A build group, `(edge "Edge")`, or a dock group, `(edge "Edge" :family edge)`.
@@ -264,6 +371,8 @@ impl Component {
 #[derive(Debug)]
 pub struct Const {
     pub name: Name,
+    /// The SCREAM_CASE name `constants.ts` exports.
+    pub export: String,
     pub value: Spanned<Number>,
 }
 
@@ -271,7 +380,7 @@ pub struct Const {
 pub struct Incident {
     pub id: Name,
     pub name: Spanned<Value>,
-    pub era: Spanned<Number>,
+    pub era: Spanned<Name>,
     /// 1 is the worst.
     pub severity: Spanned<Number>,
     /// The severity it steps to when left alone, from `:severity (3 -> 2)`.
@@ -296,6 +405,7 @@ pub fn lower(forms: &[Sexp], module: &str) -> (Catalog, Sink) {
         catalog: Catalog::default(),
         module: module.to_string(),
     };
+    cx.catalog.modules.insert(module.to_string());
     for form in forms {
         cx.form(form);
     }
@@ -303,6 +413,12 @@ pub fn lower(forms: &[Sexp], module: &str) -> (Catalog, Sink) {
 }
 
 impl Catalog {
+    /// The position of an Era id in the catalog. The content names Eras; the generated data still
+    /// uses their index.
+    pub fn era_index(&self, id: &str) -> Option<usize> {
+        self.eras.iter().position(|era| era.id.text == id)
+    }
+
     pub fn append(&mut self, other: Catalog) {
         self.imports.extend(other.imports);
         self.tracks.extend(other.tracks);
@@ -319,12 +435,22 @@ impl Catalog {
         self.dock_groups.extend(other.dock_groups);
         self.components.extend(other.components);
         self.consts.extend(other.consts);
+        self.modules.extend(other.modules);
         self.incidents.extend(other.incidents);
         self.defs.extend(other.defs);
+        self.type_defs.extend(other.type_defs);
         self.types.extend(other.types);
         self.gates.extend(other.gates);
+        self.states.extend(other.states);
     }
 }
+
+type SetParts = (
+    Option<Name>,
+    Option<Spanned<String>>,
+    Option<Spanned<String>>,
+    Option<Name>,
+);
 
 struct Lower {
     sink: Sink,
@@ -347,8 +473,12 @@ const FORMS: &[&str] = &[
     "dock-groups",
     "component",
     "def",
+    "type",
+    "constants",
     "types",
     "gate",
+    "state",
+    "table",
 ];
 
 /// A form's keyword arguments, after the head and any positional arguments.
@@ -479,7 +609,12 @@ impl Lower {
                         }
                     };
                     if let (Some(name), Some(value)) = (name, value) {
-                        self.catalog.consts.push(Const { name, value });
+                        let export = constant(&name.text);
+                        self.catalog.consts.push(Const {
+                            name,
+                            export,
+                            value,
+                        });
                     }
                 }
                 _ => self.sink.push(Diagnostic::error(
@@ -493,9 +628,31 @@ impl Lower {
                     self.catalog.defs.push(def);
                 }
             }
+            "type" => {
+                if let Some(ty) = crate::data::lower_type(form, &mut self.sink) {
+                    self.catalog.type_defs.push(ty);
+                }
+            }
+            "constants" => {
+                self.catalog.defs.extend(crate::data::lower_constants(
+                    form,
+                    &self.module,
+                    &mut self.sink,
+                ));
+            }
             "gate" => {
                 if let Some(gate) = self.gate(form) {
                     self.catalog.gates.push(gate);
+                }
+            }
+            "state" => {
+                if let Some(state) = self.state(form) {
+                    self.catalog.states.push(state);
+                }
+            }
+            "table" => {
+                if let Some(table) = crate::data::lower_table(form, &self.module, &mut self.sink) {
+                    self.catalog.defs.push(table);
                 }
             }
             "types" => {
@@ -562,6 +719,17 @@ impl Lower {
         positional: usize,
         allowed: &[&str],
     ) -> Option<(&'a [Sexp], Keys<'a>)> {
+        self.keys_with(form, positional, allowed, &[])
+    }
+
+    /// Like `keys`, with keys that may stand alone as flags, such as `:required`.
+    fn keys_with<'a>(
+        &mut self,
+        form: &'a Sexp,
+        positional: usize,
+        allowed: &[&str],
+        flags: &[&str],
+    ) -> Option<(&'a [Sexp], Keys<'a>)> {
         let items = &form.list().unwrap()[1..];
         if items.len() < positional || items[..positional].iter().any(|i| i.keyword().is_some()) {
             self.sink.push(Diagnostic::error(
@@ -608,6 +776,11 @@ impl Lower {
                 ok = false;
             }
             let Some(value) = rest.get(i + 1) else {
+                if flags.contains(&key) {
+                    keys.map.insert(key, (&rest[i], &rest[i]));
+                    i += 1;
+                    continue;
+                }
                 self.sink.push(Diagnostic::error(
                     "missing-value",
                     rest[i].span,
@@ -615,6 +788,11 @@ impl Lower {
                 ));
                 return None;
             };
+            if flags.contains(&key) && value.keyword().is_some() {
+                keys.map.insert(key, (&rest[i], &rest[i]));
+                i += 1;
+                continue;
+            }
             if let Some((first, _)) = keys.map.insert(key, (&rest[i], value)) {
                 self.sink.push(
                     Diagnostic::error(
@@ -843,9 +1021,12 @@ impl Lower {
         let cost = keys
             .required("cost", what, &mut self.sink)
             .and_then(|v| self.count(v, "a cost", 1));
-        let era = keys
-            .required("era", what, &mut self.sink)
-            .and_then(|v| self.count(v, "an era", 0));
+        let era = keys.required("era", what, &mut self.sink).and_then(|v| {
+            self.name(v, "an era").map(|value| Spanned {
+                value,
+                span: v.span,
+            })
+        });
         let blurb = keys
             .required("blurb", what, &mut self.sink)
             .and_then(|v| self.text(v, "a blurb"));
@@ -1128,7 +1309,12 @@ impl Lower {
         let name = req(self, "name").and_then(|v| self.text(v, "a name"));
         let cause = req(self, "cause").and_then(|v| self.text(v, "a cause"));
         let prevention = req(self, "prevention").and_then(|v| self.text(v, "a prevention"));
-        let era = req(self, "era").and_then(|v| self.count(v, "an era", 0));
+        let era = req(self, "era").and_then(|v| {
+            self.name(v, "an era").map(|value| Spanned {
+                value,
+                span: v.span,
+            })
+        });
         let duration =
             req(self, "duration").and_then(|v| self.measure(v, "a duration", Dimension::Time));
         let severity = req(self, "severity").and_then(|v| match v.list() {
@@ -1301,34 +1487,7 @@ impl Lower {
         let research = keys
             .required("research", "a gate", &mut self.sink)
             .and_then(|v| self.name(v, "a research id"));
-        let what = match (keys.get("what"), keys.get("labels")) {
-            (Some(v), None) => match &v.kind {
-                Kind::Str(s) => Some(GateLabel::Text(Spanned {
-                    value: s.clone(),
-                    span: v.span,
-                })),
-                _ => {
-                    self.sink.push(Diagnostic::error(
-                        "expected-string",
-                        v.span,
-                        "a gate's :what is the text the refusal names",
-                    ));
-                    None
-                }
-            },
-            (None, Some(v)) => self.name(v, "a table").map(GateLabel::Table),
-            _ => {
-                self.sink.push(
-                    Diagnostic::error(
-                        "gate-label",
-                        form.span,
-                        "a gate takes either :what or :labels",
-                    )
-                    .help("`:what \"Gzip\"` names the setting; `:labels GPU_PRECISIONS` names the value's `name` in that table"),
-                );
-                None
-            }
-        };
+        let what = self.gate_label(&keys, form, true);
         let mut values = |key: &str| -> Option<Vec<crate::data::Datum>> {
             let list = keys.get(key)?;
             let Some(items) = list.list() else {
@@ -1382,6 +1541,518 @@ impl Lower {
             open,
             span: form.span,
         })
+    }
+
+    /// `:what "Gzip"` or `:labels GPU_PRECISIONS`: what a refusal names. A state field may omit
+    /// both and take its label from the research.
+    fn gate_label(&mut self, keys: &Keys<'_>, form: &Sexp, required: bool) -> Option<GateLabel> {
+        match (keys.get("what"), keys.get("labels")) {
+            (Some(v), None) => match &v.kind {
+                Kind::Str(s) => Some(GateLabel::Text(Spanned {
+                    value: s.clone(),
+                    span: v.span,
+                })),
+                _ => {
+                    self.sink.push(Diagnostic::error(
+                        "expected-string",
+                        v.span,
+                        "a gate's :what is the text the refusal names",
+                    ));
+                    None
+                }
+            },
+            (None, Some(v)) => self.name(v, "a table").map(GateLabel::Table),
+            (None, None) if !required => None,
+            (None, None) | (Some(_), Some(_)) => {
+                self.sink.push(
+                    Diagnostic::error(
+                        "gate-label",
+                        form.span,
+                        "a gate takes either :what or :labels",
+                    )
+                    .help("`:what \"Gzip\"` names the setting; `:labels GPU_PRECISIONS` names the value's `name` in that table"),
+                );
+                None
+            }
+        }
+    }
+
+    /// `(state database (field shard-key (enum hash range) :default hash) …)`: one declaration per
+    /// setting, for the Effect Schema field, its default, and the gate it needs.
+    fn state(&mut self, form: &Sexp) -> Option<State> {
+        let items = form.list().unwrap();
+        if items.len() < 2 {
+            self.sink.push(Diagnostic::error(
+                "bad-form",
+                form.span,
+                "write (state COMPONENT (field …) …)",
+            ));
+            return None;
+        }
+        let component = self.name(&items[1], "a component id")?;
+        let mut fields = Vec::new();
+        for item in &items[2..] {
+            if let Some(field) = self.state_field(item, &component) {
+                fields.push(field);
+            }
+        }
+        if fields.is_empty() && items.len() == 2 {
+            self.sink.push(Diagnostic::error(
+                "bad-form",
+                form.span,
+                format!("`{}` declares no fields", component.text),
+            ));
+            return None;
+        }
+        Some(State {
+            component,
+            module: self.module.clone(),
+            fields,
+            span: form.span,
+        })
+    }
+
+    fn state_field(&mut self, form: &Sexp, component: &Name) -> Option<StateField> {
+        if form.head() != Some("field") {
+            self.sink.push(Diagnostic::error(
+                "bad-form",
+                form.span,
+                format!("a state holds (field …) forms, found {}", form.describe()),
+            ));
+            return None;
+        }
+        let (args, keys) = self.keys_with(
+            form,
+            2,
+            &["default", "gate", "set", "schema", "values", "required"],
+            &["required"],
+        )?;
+        let key = self.name(&args[0], "a field name");
+        let ty = self.state_type(&args[1])?;
+        let required = keys.get("required").is_some();
+        let default = match keys.get("default") {
+            Some(value) => self.state_default(value, &ty),
+            None if required => None,
+            None => {
+                self.sink.push(
+                    Diagnostic::error(
+                        "missing-key",
+                        form.span,
+                        "a field needs `:default` unless it is `:required`",
+                    )
+                    .label("no :default"),
+                );
+                None
+            }
+        };
+        if required && keys.get("default").is_some() {
+            self.sink.push(Diagnostic::error(
+                "state-required",
+                form.span,
+                "a field takes `:required` or `:default`, not both",
+            ));
+        }
+        let schema = keys
+            .get("schema")
+            .and_then(|v| self.name(v, "a schema name"));
+        let values_name = keys
+            .get("values")
+            .and_then(|v| self.name(v, "a values name"));
+        if schema.is_some() && !matches!(ty, StateType::Enum(_) | StateType::Number) {
+            self.sink.push(Diagnostic::error(
+                "state-name",
+                form.span,
+                "`:schema` names the Schema const of an enum or number field",
+            ));
+        }
+        if values_name.is_some() && matches!(ty, StateType::Bool) {
+            self.sink.push(Diagnostic::error(
+                "state-name",
+                form.span,
+                "`:values` names the values of an enum or one-of field",
+            ));
+        }
+        let (requires, label) = keys
+            .get("gate")
+            .map(|gate| self.state_gate(gate))
+            .unwrap_or((None, None));
+        let (setter, only, values_what, scope) = keys
+            .get("set")
+            .map(|set| self.state_set(set))
+            .unwrap_or((None, None, None, None));
+        if setter.is_some() && only.is_none() && scope.is_none() {
+            self.sink.push(Diagnostic::error(
+                "state-setter",
+                form.span,
+                "a setter needs `:refuse` or `:scope`",
+            ));
+        }
+        if let Some(scope) = &scope {
+            if scope.text != "all-of-type" {
+                self.sink.push(Diagnostic::error(
+                    "state-scope",
+                    scope.span,
+                    "a setter's :scope is all-of-type, or absent",
+                ));
+            }
+        }
+        let key = key?;
+        if let Some(research) = requires.clone() {
+            let what = label.clone().unwrap_or_else(|| {
+                GateLabel::Text(Spanned {
+                    value: title(&research.text),
+                    span: research.span,
+                })
+            });
+            let locked = default.clone().unwrap_or(crate::data::Datum {
+                kind: crate::data::D::Null,
+                span: form.span,
+            });
+            self.catalog.gates.push(Gate {
+                component: component.clone(),
+                field: Name {
+                    text: camel(&key.text),
+                    span: key.span,
+                },
+                research,
+                what,
+                open: GateValues::Free(vec![locked]),
+                span: form.span,
+            });
+        }
+        Some(StateField {
+            key,
+            ty,
+            default: default.unwrap_or(crate::data::Datum {
+                kind: crate::data::D::Null,
+                span: form.span,
+            }),
+            requires,
+            label,
+            required,
+            as_name: schema,
+            values_name,
+            setter,
+            only,
+            values_what,
+            scope,
+            span: form.span,
+        })
+    }
+
+    /// `(gate sharding "Sharding")` or `(gate quantization :labels GPU_PRECISIONS)`.
+    fn state_gate(&mut self, form: &Sexp) -> (Option<Name>, Option<GateLabel>) {
+        let Some(items) = form.list() else {
+            self.sink.push(Diagnostic::error(
+                "bad-form",
+                form.span,
+                "a gate is (research), (research \"Label\"), or (research :labels TABLE)",
+            ));
+            return (None, None);
+        };
+        let research = items
+            .first()
+            .and_then(|item| self.name(item, "a research id"));
+        let label = match items.get(1) {
+            None => None,
+            Some(keyword) if keyword.keyword() == Some("labels") => items
+                .get(2)
+                .and_then(|table| self.name(table, "a table"))
+                .map(GateLabel::Table),
+            Some(text) => match &text.kind {
+                Kind::Str(value) => Some(GateLabel::Text(Spanned {
+                    value: value.clone(),
+                    span: text.span,
+                })),
+                _ => {
+                    self.sink.push(Diagnostic::error(
+                        "expected-string",
+                        text.span,
+                        "a gate's label is a string or :labels TABLE",
+                    ));
+                    None
+                }
+            },
+        };
+        (research, label)
+    }
+
+    /// `(setShards :refuse "Only a Database shards." :values-label "Shard counts")`.
+    fn state_set(&mut self, form: &Sexp) -> SetParts {
+        let Some(item) = form.list() else {
+            self.sink.push(Diagnostic::error(
+                "bad-form",
+                form.span,
+                "a setter is (name :refuse \"…\" :values-label \"…\" :scope all-of-type)",
+            ));
+            return (None, None, None, None);
+        };
+        let setter = item
+            .first()
+            .and_then(|head| self.name(head, "a setter name"));
+        let Some((_, keys)) = self.keys(form, 0, &["refuse", "values-label", "scope"]) else {
+            return (setter, None, None, None);
+        };
+        let text = |cx: &mut Lower, key: &str| {
+            keys.get(key).and_then(|value| match &value.kind {
+                Kind::Str(text) => Some(Spanned {
+                    value: text.clone(),
+                    span: value.span,
+                }),
+                _ => {
+                    cx.sink.push(Diagnostic::error(
+                        "expected-string",
+                        value.span,
+                        format!("a setter's :{key} is a string"),
+                    ));
+                    None
+                }
+            })
+        };
+        let refuse = text(self, "refuse");
+        let values = text(self, "values-label");
+        let scope = keys.get("scope").and_then(|v| self.name(v, "a scope"));
+        (setter, refuse, values, scope)
+    }
+
+    fn state_type(&mut self, sexp: &Sexp) -> Option<StateType> {
+        if let Some(name) = sexp.symbol() {
+            if name == "bool" {
+                return Some(StateType::Bool);
+            }
+            if name == "number" {
+                return Some(StateType::Number);
+            }
+            self.sink.push(
+                Diagnostic::error(
+                    "state-type",
+                    sexp.span,
+                    format!(
+                        "a field type is number, bool, (enum …), or (one-of …), found `{name}`"
+                    ),
+                )
+                .label("unknown type"),
+            );
+            return None;
+        }
+        let Some(items) = sexp.list() else {
+            self.sink.push(Diagnostic::error(
+                "state-type",
+                sexp.span,
+                format!(
+                    "a field type is number, bool, (enum …), or (one-of …), found {}",
+                    sexp.describe()
+                ),
+            ));
+            return None;
+        };
+        match items.first().and_then(|i| i.symbol()) {
+            Some("enum") => {
+                let mut values: Vec<Spanned<String>> = Vec::new();
+                for item in &items[1..] {
+                    let value = match &item.kind {
+                        Kind::Symbol(value) | Kind::Str(value) => value.as_str(),
+                        _ => {
+                            self.sink.push(Diagnostic::error(
+                                "state-type",
+                                item.span,
+                                format!(
+                                    "an enum value is a name or string, found {}",
+                                    item.describe()
+                                ),
+                            ));
+                            continue;
+                        }
+                    };
+                    if values.iter().any(|v| v.value == value) {
+                        self.sink.push(Diagnostic::error(
+                            "duplicate",
+                            item.span,
+                            format!("`{value}` appears twice in one enum"),
+                        ));
+                        continue;
+                    }
+                    values.push(Spanned {
+                        value: value.to_string(),
+                        span: item.span,
+                    });
+                }
+                if values.is_empty() {
+                    self.sink.push(Diagnostic::error(
+                        "state-type",
+                        sexp.span,
+                        "an enum names at least one value",
+                    ));
+                    return None;
+                }
+                Some(StateType::Enum(values))
+            }
+            Some("one-of") => {
+                let mut values: Vec<Spanned<Number>> = Vec::new();
+                for item in &items[1..] {
+                    let Kind::Num(n) = item.kind else {
+                        self.sink.push(Diagnostic::error(
+                            "state-type",
+                            item.span,
+                            format!("a one-of value is a number, found {}", item.describe()),
+                        ));
+                        continue;
+                    };
+                    if n.unit != Unit::None {
+                        self.sink.push(Diagnostic::error(
+                            "state-type",
+                            item.span,
+                            format!(
+                                "a one-of value is a plain number, found {}",
+                                n.unit.dimension()
+                            ),
+                        ));
+                        continue;
+                    }
+                    if values.iter().any(|v| v.value == n) {
+                        self.sink.push(Diagnostic::error(
+                            "duplicate",
+                            item.span,
+                            format!("`{n}` appears twice in one one-of"),
+                        ));
+                        continue;
+                    }
+                    values.push(Spanned {
+                        value: n,
+                        span: item.span,
+                    });
+                }
+                if values.is_empty() {
+                    self.sink.push(Diagnostic::error(
+                        "state-type",
+                        sexp.span,
+                        "a one-of names at least one value",
+                    ));
+                    return None;
+                }
+                Some(StateType::OneOf(values))
+            }
+            _ => {
+                self.sink.push(Diagnostic::error(
+                    "state-type",
+                    sexp.span,
+                    "a field type is number, bool, (enum …), or (one-of …)",
+                ));
+                None
+            }
+        }
+    }
+
+    fn state_default(&mut self, sexp: &Sexp, ty: &StateType) -> Option<crate::data::Datum> {
+        let datum = |kind, span| crate::data::Datum { kind, span };
+        match ty {
+            StateType::Enum(values) => {
+                let text = match &sexp.kind {
+                    Kind::Symbol(s) | Kind::Str(s) => s.clone(),
+                    _ => {
+                        self.sink.push(Diagnostic::error(
+                            "state-default",
+                            sexp.span,
+                            format!("an enum default is a name, found {}", sexp.describe()),
+                        ));
+                        return None;
+                    }
+                };
+                if !values.iter().any(|v| v.value == text) {
+                    self.sink.push(
+                        Diagnostic::error(
+                            "state-default",
+                            sexp.span,
+                            format!("`{text}` is not one of the field's values"),
+                        )
+                        .help(format!(
+                            "the values are {}",
+                            values
+                                .iter()
+                                .map(|v| v.value.as_str())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )),
+                    );
+                    return None;
+                }
+                Some(datum(crate::data::D::Str(text), sexp.span))
+            }
+            StateType::OneOf(values) => {
+                let Kind::Num(n) = sexp.kind else {
+                    self.sink.push(Diagnostic::error(
+                        "state-default",
+                        sexp.span,
+                        format!("a one-of default is a number, found {}", sexp.describe()),
+                    ));
+                    return None;
+                };
+                if n.unit != Unit::None {
+                    self.sink.push(Diagnostic::error(
+                        "state-default",
+                        sexp.span,
+                        format!(
+                            "a one-of default is a plain number, found {}",
+                            n.unit.dimension()
+                        ),
+                    ));
+                    return None;
+                }
+                if !values.iter().any(|v| v.value == n) {
+                    self.sink.push(
+                        Diagnostic::error(
+                            "state-default",
+                            sexp.span,
+                            format!("`{n}` is not one of the field's values"),
+                        )
+                        .help(format!(
+                            "the values are {}",
+                            values
+                                .iter()
+                                .map(|v| v.value.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )),
+                    );
+                    return None;
+                }
+                Some(datum(crate::data::D::Num(n.value), sexp.span))
+            }
+            StateType::Number => {
+                let Kind::Num(n) = sexp.kind else {
+                    self.sink.push(Diagnostic::error(
+                        "state-default",
+                        sexp.span,
+                        format!("a number default is a number, found {}", sexp.describe()),
+                    ));
+                    return None;
+                };
+                if n.unit != Unit::None {
+                    self.sink.push(Diagnostic::error(
+                        "state-default",
+                        sexp.span,
+                        format!("a number default has no unit, found {}", n.unit.dimension()),
+                    ));
+                    return None;
+                }
+                Some(datum(crate::data::D::Num(n.value), sexp.span))
+            }
+            StateType::Bool => {
+                let value = match sexp.symbol() {
+                    Some("true") => true,
+                    Some("false") => false,
+                    _ => {
+                        self.sink.push(Diagnostic::error(
+                            "state-default",
+                            sexp.span,
+                            "a bool default is true or false",
+                        ));
+                        return None;
+                    }
+                };
+                Some(datum(crate::data::D::Bool(value), sexp.span))
+            }
+        }
     }
 
     fn component(&mut self, form: &Sexp) -> Option<Component> {

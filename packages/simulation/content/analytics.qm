@@ -1,9 +1,0 @@
-(def SAMPLE_RATES :type const [0.01 0.05 0.1 0.5 1])
-(def SAMPLE_OVERHEAD :type const [0.002 0.01 0.02 0.08 0.15])
-(def SAMPLE_LATENCY :type const [0 0.5 1 3 5])
-(def SAMPLE_STORAGE :type const [0.1 0.5 1 5 10])
-(def RETENTION_WINDOWS :type const [900 3_600 21_600])
-(def RETENTION_STORAGE :type const [1 2 4])
-(def ANALYTICS_CAPACITY 4)
-
-(def analyticsGlossary :type "ReadonlyArray<string>" ["observability"])

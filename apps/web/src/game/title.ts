@@ -23,7 +23,6 @@ import {
   Coffee,
   Download,
   Lock,
-  Settings,
   Trash2,
   type IconNode,
 } from 'lucide'
@@ -576,9 +575,13 @@ const TreeCamera = Mount.define('TreeCamera', {
           const fresh = key !== openKey
           openKey = key
           if (!fresh) return aim(clampY(cameraY), 'glide')
+          const stageHeight = element.clientHeight
           const head = r.head + cameraY
-          const onStage = head >= MARGIN && head <= element.clientHeight - MARGIN
-          aim(onStage ? cameraY : r.top, 'open')
+          const tail = r.tail + cameraY
+          if (head >= MARGIN && tail <= stageHeight - MARGIN) return aim(cameraY, 'open')
+          /* A column that fits pans only as far as it must to show all of it;
+             a tall one shows its head. */
+          aim(r.fits && head >= MARGIN ? r.bottom : r.top, 'open')
         }
         /* Keep the focused line on screen, panning no further than it needs. */
         const follow = (target: Element) => {
@@ -1207,7 +1210,6 @@ const mainIndex = (model: Model, h: HtmlBuilder<Message>): Html => {
       {
         key: 'settings',
         label: t.title.settings,
-        lead: glyph(Settings, h),
         ...to('settings'),
         hotkey: next(),
       },
@@ -2049,10 +2051,9 @@ const trailOf = (page: Page): ReadonlyArray<Page> =>
         ? ['main', 'settings', 'setting']
         : ['main', page]
 
-/* The line each page grows from, by its data-key. Settings opens from the
-   dock, so it hangs from the wordmark. */
+/* The line each page grows from, by its data-key. */
 const fromOf = (model: Model, page: Page): string | null =>
-  page === 'main' || page === 'settings'
+  page === 'main'
     ? null
     : page === 'save'
       ? model.saveFocus

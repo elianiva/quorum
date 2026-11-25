@@ -454,6 +454,10 @@ export const hasCompany = (model: Model): boolean =>
 
 export const offCompany = (model: Model): boolean => model.board.session._tag !== 'Company'
 
+/** A Sandbox always has Easy mode's clock: pause and every speed, whatever the preference says. */
+export const easyMode = (model: Model): boolean =>
+  model.prefs.easyMode || model.board.session._tag === 'Sandbox'
+
 export const parkedCompanyOf = (model: Model): Board | null =>
   offCompany(model) && isPlaying(model.companyPhase) ? model.parkedCompany : null
 

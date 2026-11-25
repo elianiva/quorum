@@ -1,7 +1,7 @@
 import { canRaise } from '@quorum/simulation/actions'
 import { senderOf } from './mail.ts'
 import type { Message } from './message.ts'
-import { clockPaused, placingOf, boardSandbox, type Model, type Tone } from './model.ts'
+import { clockPaused, easyMode, placingOf, boardSandbox, type Model, type Tone } from './model.ts'
 import { onBoard } from './route.ts'
 import type { Sound } from './sound.ts'
 
@@ -97,9 +97,9 @@ const gestureCue = (before: Model, message: Message, after: Model): Cue | null =
     case 'PostmortemFiled':
       return message.take ? gesture('unlock') : gesture('close')
     case 'PauseToggled':
-      return after.prefs.easyMode ? gesture('toggle', clockPaused(after) ? 0.8 : 1.15) : null
+      return easyMode(after) ? gesture('toggle', clockPaused(after) ? 0.8 : 1.15) : null
     case 'SpeedCycled':
-      if (!after.prefs.easyMode) return null
+      if (!easyMode(after)) return null
       return gesture('tick', SPEED_PITCH[after.board.clock.speed] ?? 1)
     case 'SpeedChosen':
       return gesture('tick', SPEED_PITCH[after.board.clock.speed] ?? 1)

@@ -1478,6 +1478,23 @@ test('only Easy mode pauses and speeds up the clock, and turning it off restores
   expect(off.board.clock.speed).toBe(1)
 })
 
+test('a Sandbox always pauses and speeds up the clock, and the Company keeps its own setting', () => {
+  const company = inLab()
+  expect(company.prefs.easyMode).toBe(false)
+  const sandbox = update(company, Message.FreeSandboxStarted()).model
+  expect(sandbox.prefs.easyMode).toBe(false)
+  const fast = update(sandbox, Message.KeyPressed({ key: 's' })).model
+  expect(fast.board.clock.speed).toBeGreaterThan(1)
+  const paused = update(fast, Message.KeyPressed({ key: ' ' })).model
+  expect(paused.board.clock.mode._tag).not.toBe('Running')
+  const toggled = update(
+    fast,
+    Message.PrefsChanged({ message: PrefsMessage.EasyModeToggled() }),
+  ).model
+  expect(toggled.board.clock.speed).toBe(fast.board.clock.speed)
+  expect(update(company, Message.KeyPressed({ key: 's' })).model.board.clock.speed).toBe(1)
+})
+
 test('the Mentor offers Easy mode once to a Company with too many severe incidents', () => {
   const lab = inLab()
   const postmortem = (id: number, severity: number): Postmortem => ({

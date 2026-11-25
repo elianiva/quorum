@@ -50,7 +50,7 @@ import { openVoteOf } from '@quorum/simulation/vote-machine'
 import { companyMark } from '@/components/company-mark.ts'
 import { speedsOf } from '@/game/update.ts'
 import { modShortcut } from '@/game/palette.ts'
-import { roomOwner } from '@/game/model.ts'
+import { easyMode, roomOwner } from '@/game/model.ts'
 import { pwaInstallable, pwaInstalled } from '@/game/pwa-machine.ts'
 import { ROOM_NAME_LENGTH } from '@/game/names.ts'
 import { RoomPhase } from '@/game/room-machine.ts'
@@ -651,7 +651,7 @@ const stepCell = (
 
 export const helpPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
-  const groups = keyGroupsOf(t, model.prefs.easyMode)
+  const groups = keyGroupsOf(t, easyMode(model))
   const columns = [groups.slice(0, 2), groups.slice(2, 3), groups.slice(3)]
   return shell(
     t.panels.howToPlay,

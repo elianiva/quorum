@@ -58,7 +58,7 @@ import { COMPONENT_ICONS } from '@quorum/ui/game/component-icons'
 import { nodeTitle, type Messages } from '../i18n/messages.ts'
 import { partOf, type Part } from './parts.ts'
 import { Message } from './message.ts'
-import { exitLegacy, offCompany, clockPaused, type Model, type Panel } from './model.ts'
+import { exitLegacy, offCompany, clockPaused, easyMode, type Model, type Panel } from './model.ts'
 import { ResearchMessage } from './research.ts'
 import { PrefsMessage } from './prefs.ts'
 import { dockGroups, dockItems, playbooksShown, shown } from './reveal.ts'
@@ -331,7 +331,7 @@ const viewRows = (t: Messages, model: Model): ReadonlyArray<PaletteCommand> => {
       message: Message.ScreenshotToggled(),
     },
   ]
-  const playerSetsClock = model.prefs.easyMode
+  const playerSetsClock = easyMode(model)
   if (!playerSetsClock) return rows
   rows.push(
     {

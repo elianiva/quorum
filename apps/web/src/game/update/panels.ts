@@ -1,7 +1,7 @@
 import { ApplySettings, FocusDashboard, WritePrefs } from '../commands.ts'
 import { EMPTY_RESEARCH, ResearchMessage } from '../research.ts'
 import { Message } from '../message.ts'
-import { Model, Prefs, clockAway, offCompany, roomLive } from '../model.ts'
+import { Model, Prefs, clockAway, easyMode, offCompany, roomLive } from '../model.ts'
 import { isExited } from '../company-machine.ts'
 import { clockStep } from '../clock-machine.ts'
 import { Option, Schema } from 'effect'
@@ -53,7 +53,7 @@ const savePrefs = (model: Model): UpdateResult => ({
 })
 
 const plainClock = (model: Model): UpdateResult =>
-  model.prefs.easyMode
+  easyMode(model)
     ? { model }
     : {
         model: {

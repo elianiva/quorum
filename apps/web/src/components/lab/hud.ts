@@ -80,6 +80,7 @@ import { clock as mmss, compact, money, rate } from '@quorum/ui/game/format'
 import { Message } from '@/game/message.ts'
 import {
   clockPaused,
+  easyMode,
   exitLegacy,
   offCompany,
   type Board,
@@ -2904,7 +2905,7 @@ export const toolbar = (model: Model, h: HtmlBuilder<Message>): Html => {
             ],
           )
         : h.empty,
-      ...(model.prefs.easyMode
+      ...(easyMode(model)
         ? [
             divider(h),
             toolButton(

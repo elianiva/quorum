@@ -30,6 +30,7 @@ import { HISTORY_EVERY, HISTORY_POINTS, sampleNode, type NodeSample } from '../n
 import {
   Model,
   clockPaused,
+  easyMode,
   offCompany,
   boardChallenge,
   boardSandbox,
@@ -755,7 +756,7 @@ export const clockHandlers = (model: Model): MessageCases<UpdateResult, ClockTag
   Ticked: ({ elapsedMs }) => tick(model, elapsedMs),
 
   SpeedCycled: () => {
-    if (!model.prefs.easyMode) return { model }
+    if (!easyMode(model)) return { model }
     const speeds = speedsOf(model.board.game)
     const index = speeds.indexOf(model.board.clock.speed)
     return {
@@ -774,7 +775,7 @@ export const clockHandlers = (model: Model): MessageCases<UpdateResult, ClockTag
   }),
 
   PauseToggled: () => {
-    if (!model.prefs.easyMode) return { model }
+    if (!easyMode(model)) return { model }
     const next = {
       ...model,
       board: {

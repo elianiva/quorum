@@ -94,7 +94,7 @@
     :category   "security"
     :definition "A password hashing function from 1999, based on the Blowfish cipher, with a built-in salt and a tunable cost. Each step of cost doubles the work, so stored hashes stay slow to crack as hardware gets faster. The same slowness costs server CPU on every login."
     :inGame     (text
-                 "A login costs {profiles.login.cpu} ms of CPU for the hash, and a faster runtime does not shorten it. In the Event loop block Incident the cost goes from 10 to 12 rounds, which is 4× the CPU per login. In Credential stuffing, bots send 20× the logins. An Auth Provider (Managed identity) takes the hash off your App Servers for a per-user price.")
+                 "A login costs {profiles.login.cpu} ms of CPU for the hash, and a faster runtime does not shorten it. In the Event loop block Incident the cost goes from 10 to 12 rounds, which is 4× the CPU per login. In Credential stuffing, bots send {stuffing-magnitude x} the logins. An Auth Provider (Managed identity) takes the hash off your App Servers for a per-user price.")
     :design     [(:label "Request kinds" :url "/design/04-simulation#request-kinds")]
     :related    [event-loop credential-stuffing rate-limiting]
     :links      [(:label "Provos and Mazieres: A Future-Adaptable Password Scheme (USENIX 1999)" :url "https://www.usenix.org/legacy/events/usenix99/provos/provos.pdf")
@@ -113,7 +113,8 @@
     :term       "BGP (Border Gateway Protocol)"
     :category   "network"
     :definition "The protocol that networks on the internet use to tell each other which IP addresses they can reach. If a network withdraws its routes by mistake, the rest of the internet can no longer find it, even though its servers still run."
-    :inGame     "The BGP misconfiguration Incident can start in Series C. A routing change withdraws your Company from the internet, so every request from Users fails as down, in every region, for up to 60 s. No Research prevents it, and the director picks it rarely. Press Roll back on the Incident to end it at once."
+    :inGame     (text
+                 "The BGP misconfiguration Incident can start in Series C. A routing change withdraws your Company from the internet, so every request from Users fails as down, in every region, for up to {incidents.bgp.duration} s. No Research prevents it, and the director picks it rarely. Press Roll back on the Incident to end it at once.")
     :related    [anycast blast-radius mttr fallacies-of-distributed-computing]
     :links      [(:label "Cloudflare Learning Center: What is BGP?" :url "https://www.cloudflare.com/learning/security/glossary/what-is-bgp/")
                  (:label "RFC 4271: BGP-4" :url "https://www.rfc-editor.org/rfc/rfc4271")
@@ -261,7 +262,7 @@
     :category   "performance"
     :definition "A network of cache servers in many locations that store copies of content close to users. A request that the nearest edge can answer never reaches the origin, so it is faster and costs the origin nothing."
     :inGame     (text
-                 "The CDN Component, unlocked by Content delivery research, answers requests at the edge before they reach your App Servers. At the default {cdn-ttls.1.ttl} s TTL it answers {cdn-hit.page %} of page and {cdn-hit.media %} of media requests. A {cdn-ttls.0.ttl} s TTL lowers that by 20% and a {cdn-ttls.2.ttl} s TTL raises it by 20%, up to 95%. Edge Egress costs $0.02 per GB against $0.09 per GB from App Servers, and Tiered caching lifts the media hit rate to {tiered-media-hit %}.")
+                 "The CDN Component, unlocked by Content delivery research, answers requests at the edge before they reach your App Servers. At the default {cdn-ttls.1.ttl} s TTL it answers {cdn-hit.page %} of page and {cdn-hit.media %} of media requests. A {cdn-ttls.0.ttl} s TTL lowers that by 20% and a {cdn-ttls.2.ttl} s TTL raises it by 20%, up to 95%. Edge Egress costs ${egress-cdn} per GB against ${egress-origin} per GB from App Servers, and Tiered caching lifts the media hit rate to {tiered-media-hit %}.")
     :related    [egress tiered-caching cache-hit-rate anycast]
     :links      [(:label "Cloudflare Learning Center: What is a CDN?" :url "https://www.cloudflare.com/learning/cdn/what-is-a-cdn/")
                  (:label "MDN: CDN" :url "https://developer.mozilla.org/en-US/docs/Glossary/CDN")])
@@ -493,7 +494,7 @@
     :category   "network"
     :definition "Data that leaves a cloud provider's network, to the internet or to another zone or region. Providers charge per GB for it, while data coming in is usually free."
     :inGame     (text
-                 "From Seed, Burn includes egress: $0.09 per GB that App Servers send to users, and $0.02 per GB for pages a CDN answers at the edge. A call between zones costs ${egress-cross-zone} per GB each way, and a call between regions ${egress-cross-region} per GB. The Era's cost index scales all of these. Compression makes page and read responses 70% smaller for 10% more CPU.")
+                 "From Seed, Burn includes egress: ${egress-origin} per GB that App Servers send to users, and ${egress-cdn} per GB for pages a CDN answers at the edge. A call between zones costs ${egress-cross-zone} per GB each way, and a call between regions ${egress-cross-region} per GB. The Era's cost index scales all of these. Compression makes page and read responses 70% smaller for 10% more CPU.")
     :design     [(:label "Egress" :url "/design/09-economy#egress")]
     :related    [cdn-content-delivery-network compression availability-zone operating-margin]
     :links      [(:label "Cloudflare Learning Center: What are data egress fees?" :url "https://www.cloudflare.com/learning/cloud/what-are-data-egress-fees/")
@@ -803,7 +804,7 @@
     :category   "reliability"
     :definition "Rejecting some requests on purpose when a server is overloaded, so the requests it keeps finish in time instead of all of them timing out. Good shedding rejects early, before the work uses resources, and drops the least important or cheapest work first."
     :inGame     (text
-                 "Priority load shedding research lets you turn on load shedding on an App Server. Above 90% load it drops whole request kinds, lowest value first (bots, then Realtime, then page views and up), until its load is back at 90%, so a ${kinds.buy.value} checkout survives an overload. Dropped requests count as errors and spend the error budget, but the requests it keeps stay fast.")
+                 "Priority load shedding research lets you turn on load shedding on an App Server. Above {shed-from %} load it drops whole request kinds, lowest value first (bots, then Realtime, then page views and up), until its load is back at {shed-to %}, so a ${kinds.buy.value} checkout survives an overload. Dropped requests count as errors and spend the error budget, but the requests it keeps stay fast.")
     :design     [(:label "Incident mitigation toolbox" :url "/design/11-incidents#mitigation-toolbox")]
     :related    [backpressure circuit-breaker rate-limiting metastable-failure]
     :links      [(:label "AWS Builders' Library: Using load shedding to avoid overload" :url "https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/")
@@ -1013,7 +1014,7 @@
     :category   "performance"
     :definition "Storing a model’s weights at lower precision, such as 8-bit or 4-bit integers rather than 16-bit floats, so the model uses less memory and computes faster, at some cost in answer quality."
     :inGame     (text
-                 "Quantization research adds FP16, INT8 and INT4 to a GPU Node. INT8 serves {gpu-precisions.int8.speed x} the tokens and INT4 {gpu-precisions.int4.speed x}, and each answer is worth 5% or 15% less. It pays when the GPU is the bottleneck and the answers can afford to be slightly worse.")
+                 "Quantization research adds FP16, INT8 and INT4 to a GPU Node. INT8 serves {gpu-precisions.int8.speed x} the tokens and INT4 {gpu-precisions.int4.speed x}, and each answer keeps {gpu-precisions.int8.value %} or {gpu-precisions.int4.value %} of its value. It pays when the GPU is the bottleneck and the answers can afford to be slightly worse.")
     :design     [(:label "GPU Node and precision" :url "/design/05-components#gpu-node")]
     :related    [model-inference continuous-batching utilization cold-start]
     :links      [(:label "Hugging Face docs: Quantization" :url "https://huggingface.co/docs/transformers/main/en/quantization/overview")])

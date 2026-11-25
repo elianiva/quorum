@@ -225,6 +225,24 @@ qmc writes `COMPONENT_GLOSSARY` into `generated/components.ts` and checks every 
 keys of the `glossary` records. Runtimes, frameworks, and the glossary's own `related` lists name
 glossary ids through `:refs`.
 
+### Prose from catalog values
+
+`(text "…")` is a string whose holes read catalog values, so prose does not repeat a number by
+hand. qmc fills each hole from the checked catalog when it compiles, and the generated file holds
+the finished string.
+
+```lisp
+:inGame (text "Each Request kind has its own T: {profiles.page.apdex} ms for a page view, and
+the target rises from {eras.garage.apdexTarget} in Garage to {eras.public.apdexTarget} in Public.")
+```
+
+A hole is `{PATH}` or `{PATH FORMAT}`. PATH is a value name, then property names or indices
+joined with `.`, as `(ref …)` reads them. A property name on a list finds the item whose `id` is
+that name, and on `eras` it is an Era id. With no format, a hole prints a string as written and
+a number rounded to nine decimal places, with commas from 1,000 up. `%` prints a share as a
+percentage, so `0.3` prints `30%`, and `x` prints a factor, so `2.5` prints `2.5×`. `{{` and `}}`
+write a literal brace.
+
 ### Formatting
 
 `qmc fmt` puts keyword fields one per line and aligns their values. Tables align their columns from
@@ -289,6 +307,8 @@ qmc refuses content that contradicts itself and reports every problem in one run
   0% to 100%
 - an empty or repeated Insight pool list, and two entries that unlock one framework
 - a traffic mix whose shares do not sum to exactly 100%, or that lists a kind twice
+- a `(text …)` with no hole, an unclosed or empty hole, an unknown format, a hole that names an
+  unknown value, reads nothing, or reads a value that is not a number or a string
 - a `(mix …)` value anywhere in the data whose shares name an unknown request kind or do not sum
   to 100%
 - an Era whose raise target is above its market, or that never raises but still has a grant or

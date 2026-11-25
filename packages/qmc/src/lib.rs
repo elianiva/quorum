@@ -120,6 +120,9 @@ pub fn compile(inputs: Vec<(String, String)>) -> Compiled {
     crate::data::rewrite(&mut catalog);
     sink.extend(crate::data::resolve_key_of(&mut catalog));
     sink.extend(check::run(&catalog));
+    if !sink.has_errors() {
+        sink.extend(crate::data::render_texts(&mut catalog));
+    }
     let solver = if !sink.has_errors() && solver::wanted(&catalog) {
         match solver::render(&catalog) {
             Ok(text) => Some(text),

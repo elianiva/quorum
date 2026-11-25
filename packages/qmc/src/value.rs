@@ -1,6 +1,6 @@
 //! Catalog values, evaluated in qmc.
 //!
-//! The Solver catalog reads values from the catalog itself,
+//! The Solver catalog and the glossary's interpolated prose read values from the catalog itself,
 //! not from the generated TypeScript. `Values` evaluates a def's datum the way JavaScript evaluates
 //! the module qmc writes for it: a number literal is the double its decimal text parses to,
 //! arithmetic runs in `f64` in the written order, a spread keeps the first position of a key, and
@@ -8,7 +8,7 @@
 //! such as `COMPONENTS` or `ERAS`, are built from the same lowered forms the TypeScript emitter
 //! reads.
 
-use crate::data::{Def, Entry, Key, D};
+use crate::data::{Def, Entry, Format, Hole, Key, D};
 use crate::lower::{Catalog, Component, Value};
 use crate::num::{Number, Ratio, Unit};
 use std::cell::RefCell;
@@ -102,6 +102,31 @@ impl V {
             Some((_, slot)) => *slot = value,
             None => entries.push((key, value)),
         }
+    }
+}
+
+/// A number as prose prints it: rounded to nine decimal places, so `0.07 * 100` prints `7`, with a
+/// comma between each group of three integer digits from 1,000 up.
+pub fn prose_number(n: f64) -> String {
+    let text = js_number((n * 1e9).round() / 1e9);
+    let (sign, digits) = text
+        .strip_prefix('-')
+        .map_or(("", text.as_str()), |d| ("-", d));
+    let (int, frac) = digits.split_once('.').map_or((digits, ""), |(i, f)| (i, f));
+    if int.len() < 4 || !int.bytes().all(|b| b.is_ascii_digit()) {
+        return text;
+    }
+    let mut grouped = String::new();
+    for (i, c) in int.chars().enumerate() {
+        if i > 0 && (int.len() - i) % 3 == 0 {
+            grouped.push(',');
+        }
+        grouped.push(c);
+    }
+    if frac.is_empty() {
+        format!("{sign}{grouped}")
+    } else {
+        format!("{sign}{grouped}.{frac}")
     }
 }
 
@@ -324,7 +349,65 @@ impl<'a> Values<'a> {
                 V::Num(acc)
             }
             D::As(_, value) | D::Mix(value) => self.datum(&value.kind)?,
+            D::Text(pieces) => {
+                let mut out = String::new();
+                for piece in pieces {
+                    out.push_str(&piece.text);
+                    if let Some(hole) = &piece.hole {
+                        out.push_str(&self.hole(hole)?);
+                    }
+                }
+                V::Str(out)
+            }
         })
+    }
+
+    /// A `(text …)` hole, printed. A property name on a list finds the item whose `id` is that
+    /// name. `ERAS` has no `id` field, so on `eras` the name is an Era id: `eras.garage` reads
+    /// the Garage Era.
+    fn hole(&self, hole: &Hole) -> Result<String, String> {
+        let (base, path): (&str, &[Key]) = match &hole.value.kind {
+            D::Ref(name) => (&name.text, &[]),
+            D::Member(name, path) => (&name.text, path),
+            _ => unreachable!("a hole reads a name or a path"),
+        };
+        let mut v = self.get(base)?;
+        for key in path {
+            v = match (key, &v) {
+                (Key::Name(id), V::Arr(items)) => items
+                    .iter()
+                    .find(|item| item.get("id") == &V::Str(id.clone()))
+                    .or_else(|| {
+                        (self.export(base) == "ERAS")
+                            .then(|| self.catalog.era_index(id))
+                            .flatten()
+                            .and_then(|i| items.get(i))
+                    })
+                    .cloned()
+                    .unwrap_or(V::Undefined),
+                (Key::Name(k), _) => v.get(k).clone(),
+                (Key::Index(i), _) => v.get(&i.to_string()).clone(),
+            };
+            if v.is_missing() {
+                return Err(format!("`{{{}}}` reads nothing", hole.source));
+            }
+        }
+        match (v, hole.format) {
+            (V::Num(n), Format::Number) => Ok(prose_number(n)),
+            (V::Num(n), Format::Percent) => Ok(format!("{}%", prose_number(n * 100.0))),
+            (V::Num(n), Format::Times) => Ok(format!("{}×", prose_number(n))),
+            (V::Str(s), Format::Number) => Ok(s),
+            (other, _) => Err(format!(
+                "`{{{}}}` reads {}; a hole prints a number{}",
+                hole.source,
+                other.describe(),
+                if hole.format == Format::Number {
+                    " or a string"
+                } else {
+                    ""
+                }
+            )),
+        }
     }
 
     fn number(&self, d: &D) -> Result<f64, String> {

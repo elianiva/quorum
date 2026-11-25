@@ -84,6 +84,35 @@ pub enum D {
     As(String, Box<Datum>),
     /// `(mix :kind share …)`: a record of request kind shares that the mix check sums to 100%.
     Mix(Box<Datum>),
+    /// `(text "… {path} …")`: prose whose holes read catalog values. `render_texts` replaces it
+    /// with the finished string before any output is written.
+    Text(Vec<Piece>),
+}
+
+/// Literal text, then the hole that follows it, if any.
+#[derive(Clone, Debug)]
+pub struct Piece {
+    pub text: String,
+    pub hole: Option<Hole>,
+}
+
+/// `{eras.garage.apdexTarget %}`: a value read as `(ref …)` reads it, and how to print it.
+#[derive(Clone, Debug)]
+pub struct Hole {
+    pub value: Datum,
+    pub format: Format,
+    /// The hole as written, without the braces.
+    pub source: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Format {
+    /// A number with thousands separators, such as `1,500` or `0.85`.
+    Number,
+    /// A share as a percentage: `0.85` prints `85%`.
+    Percent,
+    /// A factor: `2.5` prints `2.5×`.
+    Times,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -1393,6 +1422,16 @@ fn list(sexp: &Sexp, items: &[Sexp], sink: &mut Sink) -> Option<D> {
             Some(D::Op(head.chars().next().unwrap(), ops?))
         }
         "mix" => mix(sexp, args, sink),
+        "text" => match args {
+            [Sexp {
+                kind: Kind::Str(template),
+                span,
+            }] => text(template, *span, sink).map(D::Text),
+            _ => {
+                err(sink, sexp.span, "write (text \"prose with {holes}\")");
+                None
+            }
+        },
         "as" => match args {
             [ty, value] => Some(D::As(type_expr(ty, sink)?, Box::new(datum(value, sink)?))),
             _ => {
@@ -1404,6 +1443,169 @@ fn list(sexp: &Sexp, items: &[Sexp], sink: &mut Sink) -> Option<D> {
             err(sink, first.span, format!("`{head}` is not a value form"));
             None
         }
+    }
+}
+
+/// The pieces of a `(text …)` template. A hole is `{PATH}` or `{PATH FORMAT}`: PATH is a value
+/// name and then property names or indices joined with `.`, and FORMAT is `%` or `x`. `{{` and
+/// `}}` write a literal brace.
+fn text(template: &str, span: Span, sink: &mut Sink) -> Option<Vec<Piece>> {
+    let mut pieces = Vec::new();
+    let mut literal = String::new();
+    let mut chars = template.chars().peekable();
+    let mut ok = true;
+    while let Some(c) = chars.next() {
+        match c {
+            '{' if chars.peek() == Some(&'{') => {
+                chars.next();
+                literal.push('{');
+            }
+            '}' if chars.peek() == Some(&'}') => {
+                chars.next();
+                literal.push('}');
+            }
+            '}' => {
+                err(
+                    sink,
+                    span,
+                    "a `}` with no `{`; write `}}` for a literal brace",
+                );
+                ok = false;
+            }
+            '{' => {
+                let mut source = String::new();
+                let mut closed = false;
+                for c in chars.by_ref() {
+                    if c == '}' {
+                        closed = true;
+                        break;
+                    }
+                    source.push(c);
+                }
+                if !closed {
+                    err(sink, span, format!("the hole `{{{source}` has no `}}`"));
+                    return None;
+                }
+                match hole(&source, span) {
+                    Ok(hole) => pieces.push(Piece {
+                        text: std::mem::take(&mut literal),
+                        hole: Some(hole),
+                    }),
+                    Err(message) => {
+                        err(sink, span, message);
+                        ok = false;
+                    }
+                }
+            }
+            c => literal.push(c),
+        }
+    }
+    if pieces.is_empty() && ok {
+        err(sink, span, "a (text …) without a {hole} is a plain string");
+        return None;
+    }
+    pieces.push(Piece {
+        text: literal,
+        hole: None,
+    });
+    ok.then_some(pieces)
+}
+
+fn hole(source: &str, span: Span) -> Result<Hole, String> {
+    let mut words = source.split_whitespace();
+    let path = words.next().ok_or("an empty hole; write {name.key}")?;
+    let format = match words.next() {
+        None => Format::Number,
+        Some("%") => Format::Percent,
+        Some("x") => Format::Times,
+        Some(other) => return Err(format!("`{other}` is not a format; write `%` or `x`")),
+    };
+    if words.next().is_some() {
+        return Err(format!("`{{{source}}}` is a path and at most one format"));
+    }
+    let mut parts = path.split('.');
+    let base = Name {
+        text: parts.next().unwrap_or_default().to_string(),
+        span,
+    };
+    let keys: Vec<Key> = parts
+        .map(|part| match part.parse::<usize>() {
+            Ok(i) => Ok(Key::Index(i)),
+            Err(_) if !part.is_empty() => Ok(Key::Name(part.to_string())),
+            Err(_) => Err(format!("`{path}` has an empty part")),
+        })
+        .collect::<Result<_, _>>()?;
+    if base.text.is_empty() {
+        return Err(format!("`{path}` has an empty part"));
+    }
+    let kind = if keys.is_empty() {
+        D::Ref(base)
+    } else {
+        D::Member(base, keys)
+    };
+    Ok(Hole {
+        value: Datum { kind, span },
+        format,
+        source: source.to_string(),
+    })
+}
+
+/// Replaces every `(text …)` with its finished string. A hole that reads nothing, or reads a value
+/// that is not a number or a string, is an error.
+pub fn render_texts(catalog: &mut crate::lower::Catalog) -> Sink {
+    let mut sink = Sink::default();
+    let mut rendered = Vec::new();
+    {
+        let values = crate::value::Values::new(catalog);
+        let mut texts = Vec::new();
+        for def in &catalog.defs {
+            texts_in(&def.value, &mut texts);
+        }
+        for text in texts {
+            match values.datum(&text.kind) {
+                Ok(crate::value::V::Str(s)) => rendered.push(s),
+                Ok(_) => unreachable!("a (text …) evaluates to a string"),
+                Err(message) => {
+                    sink.push(
+                        Diagnostic::error("bad-hole", text.span, message).label("in this text"),
+                    );
+                    rendered.push(String::new());
+                }
+            }
+        }
+    }
+    let mut rendered = rendered.into_iter();
+    for def in &mut catalog.defs {
+        replace_texts(&mut def.value, &mut rendered);
+    }
+    sink
+}
+
+fn texts_in<'a>(d: &'a Datum, out: &mut Vec<&'a Datum>) {
+    match &d.kind {
+        D::Text(_) => out.push(d),
+        D::Array(items) => items.iter().for_each(|(_, v)| texts_in(v, out)),
+        D::Record(entries) => entries.iter().for_each(|e| match e {
+            Entry::Pair(_, v) | Entry::Spread(v) => texts_in(v, out),
+        }),
+        D::Neg(v) | D::As(_, v) | D::Mix(v) => texts_in(v, out),
+        D::Op(_, vs) => vs.iter().for_each(|v| texts_in(v, out)),
+        _ => {}
+    }
+}
+
+fn replace_texts(d: &mut Datum, rendered: &mut impl Iterator<Item = String>) {
+    match &mut d.kind {
+        D::Text(_) => d.kind = D::Str(rendered.next().expect("one string per text")),
+        D::Array(items) => items
+            .iter_mut()
+            .for_each(|(_, v)| replace_texts(v, rendered)),
+        D::Record(entries) => entries.iter_mut().for_each(|e| match e {
+            Entry::Pair(_, v) | Entry::Spread(v) => replace_texts(v, rendered),
+        }),
+        D::Neg(v) | D::As(_, v) | D::Mix(v) => replace_texts(v, rendered),
+        D::Op(_, vs) => vs.iter_mut().for_each(|v| replace_texts(v, rendered)),
+        _ => {}
     }
 }
 
@@ -1558,6 +1760,10 @@ pub fn refs<'a>(d: &'a Datum, out: &mut Vec<&'a Name>) {
         }),
         D::Neg(v) | D::As(_, v) | D::Mix(v) => refs(v, out),
         D::Op(_, vs) => vs.iter().for_each(|v| refs(v, out)),
+        D::Text(pieces) => pieces
+            .iter()
+            .filter_map(|p| p.hole.as_ref())
+            .for_each(|h| refs(&h.value, out)),
         _ => {}
     }
 }
@@ -1796,6 +2002,11 @@ fn rewrite_datum(datum: &mut Datum, names: &BTreeMap<String, String>) {
         D::Op(_, values) => {
             for value in values {
                 rewrite_datum(value, names);
+            }
+        }
+        D::Text(pieces) => {
+            for hole in pieces.iter_mut().filter_map(|p| p.hole.as_mut()) {
+                rewrite_datum(&mut hole.value, names);
             }
         }
         _ => {}
@@ -2108,6 +2319,16 @@ fn flat(d: &Datum) -> String {
         D::As(ty, v) => format!("{} as {ty}", flat(v)),
         D::Mix(v) => flat(v),
         D::Era(name) => format!("(era {})", name.text),
+        D::Text(pieces) => {
+            let mut template = String::new();
+            for piece in pieces {
+                template.push_str(&piece.text.replace('{', "{{").replace('}', "}}"));
+                if let Some(hole) = &piece.hole {
+                    let _ = write!(template, "{{{}}}", hole.source);
+                }
+            }
+            format!("(text {})", string(&template))
+        }
     }
 }
 
@@ -2679,6 +2900,42 @@ mod tests {
             "{rust}"
         );
         assert!(!rust.contains("OTHER_X"), "{rust}");
+    }
+
+    #[test]
+    fn a_text_prints_catalog_values_into_a_plain_string() {
+        let c = compile(&[(
+            "content/t.qm",
+            r#"(def wait-ms 1_500)
+               (def share 0.07)
+               (def speed 2.5)
+               (records kinds :array :key id (page :apdex 400) (read :apdex 200))
+               (def doc :type const
+                 (text "T is {kinds.read.apdex} ms, {wait-ms} ms, {share %}, {speed x}, {{kept}}."))"#,
+        )]);
+        assert_eq!(errors(&c), Vec::<&str>::new());
+        let ts = output(&c, "t.ts");
+        assert!(
+            ts.contains("export const DOC = 'T is 200 ms, 1,500 ms, 7%, 2.5×, {kept}.' as const\n"),
+            "{ts}"
+        );
+    }
+
+    #[test]
+    fn a_text_refuses_a_hole_it_cannot_print() {
+        let codes = |text: &str| {
+            errors(&compile(&[(
+                "content/t.qm",
+                &format!("(def costs (:page 4 :tags [\"a\"]))\n(def doc (text \"{text}\"))\n"),
+            )]))
+        };
+        assert_eq!(codes("{costs.page}"), Vec::<&str>::new());
+        assert_eq!(codes("{cost.page}"), ["unknown-name"]);
+        assert_eq!(codes("{costs.read}"), ["bad-hole"]);
+        assert_eq!(codes("{costs.tags}"), ["bad-hole"]);
+        assert_eq!(codes("{costs.page ms}"), ["bad-value"]);
+        assert_eq!(codes("{costs.page"), ["bad-value"]);
+        assert_eq!(codes("no holes"), ["bad-value"]);
     }
 
     #[test]

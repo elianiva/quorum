@@ -8,7 +8,7 @@ import {
   type ClientMessage as Client,
   type SeatActivity,
 } from '@quorum/simulation/room'
-import type { Region } from '@quorum/simulation/state'
+import type { RegionId } from '@quorum/simulation/state'
 
 export type RoomConfig = Readonly<{
   code: string
@@ -135,7 +135,7 @@ export const sendCursor = (
   at: Readonly<{
     x: number
     y: number
-    region: Region
+    region: RegionId
     activity: SeatActivity | null
   }>,
 ): void =>

@@ -45,7 +45,7 @@ import {
   GameLink,
   GameNode,
   ResearchId,
-  Region,
+  RegionId,
 } from '@quorum/simulation/state'
 
 export const Panel = Schema.Literals([
@@ -229,7 +229,7 @@ export const Dashboard = Schema.Struct({
   table: Schema.Boolean,
   kind: Schema.NullOr(Schema.Literals(REQUEST_KINDS)),
   service: Schema.NullOr(Schema.String).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
-  region: Schema.NullOr(Region),
+  region: Schema.NullOr(RegionId),
 })
 export type Dashboard = typeof Dashboard.Type
 
@@ -303,7 +303,7 @@ export const Board = Schema.Struct({
   game: Game,
   session: Session,
   surface: BoardSurface,
-  region: Region,
+  region: RegionId,
   selected: Schema.NullOr(Schema.String),
   selection: Schema.Array(Schema.String),
   flow: BoardFlow,

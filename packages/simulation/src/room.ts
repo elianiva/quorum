@@ -4,7 +4,7 @@ import { Refusal } from './action-kit.ts'
 import { type ComponentId } from './catalog.ts'
 import * as Mirrors from './mirror.ts'
 import * as Runway from './runway.ts'
-import { Game, Region, Sample } from './state.ts'
+import { Game, RegionId, Sample } from './state.ts'
 import * as Work from './work.ts'
 
 export const ROOM_MAX_SEATS = 20
@@ -76,7 +76,7 @@ export type Intent = typeof Intent.Type
 
 type Rest<F> = F extends (game: Game, ...rest: infer A) => unknown ? A : never
 
-const upgradeAll = (game: Game, type: ComponentId, region?: Region) =>
+const upgradeAll = (game: Game, type: ComponentId, region?: RegionId) =>
   Result.map(Actions.upgradeAll(game, type, region), (outcome) => outcome.game)
 
 const seatMoves = <T extends object, Denied extends keyof T>(
@@ -291,7 +291,7 @@ export const ClientMessage = Schema.TaggedUnion({
   Cursor: {
     x: Schema.Finite,
     y: Schema.Finite,
-    region: Region,
+    region: RegionId,
     activity: Schema.optionalKey(SeatActivity),
   },
   HideCursor: {},
@@ -332,7 +332,7 @@ export const ServerMessage = Schema.TaggedUnion({
     colour: Schema.Finite,
     x: Schema.Finite,
     y: Schema.Finite,
-    region: Region,
+    region: RegionId,
     activity: Schema.optionalKey(SeatActivity),
   },
   CursorGone: { seat: Schema.String },

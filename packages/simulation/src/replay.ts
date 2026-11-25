@@ -11,7 +11,7 @@ import {
   STACK_SETTINGS,
   pick,
 } from './playbook.ts'
-import { FixId, GameLink, GameNode, Region, type Game } from './state.ts'
+import { FixId, GameLink, GameNode, RegionId, type Game } from './state.ts'
 import { openRegions } from './regions.ts'
 import { serviceOf } from './team.ts'
 import { setFix } from './work.ts'
@@ -25,7 +25,7 @@ export const Design = Schema.Struct({
       settings: Schema.Record(Schema.String, Schema.Unknown),
     }),
   ),
-  regions: Schema.optionalKey(Schema.Array(Region)),
+  regions: Schema.optionalKey(Schema.Array(RegionId)),
   fixes: Schema.optionalKey(Schema.Array(FixId)),
 })
 export type Design = typeof Design.Type
@@ -281,7 +281,7 @@ export const applyDesign = (start: Game, design: Design): Built => {
       game = Actions.move(game, id, entry.dx, entry.dy)
     } else {
       id = `n${game.nextId}`
-      const region = Schema.decodeUnknownOption(Region)(entry.settings['region'])
+      const region = Schema.decodeUnknownOption(RegionId)(entry.settings['region'])
       const placed = Actions.place(
         game,
         entry.type,

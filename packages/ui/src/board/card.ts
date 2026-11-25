@@ -12,7 +12,7 @@ import {
 } from '@quorum/simulation/lookups'
 import { isGlobal } from '@quorum/simulation/regions'
 import { nodeLabelOf } from '@quorum/simulation/labels'
-import type { Game, GameNode, Region } from '@quorum/simulation/state'
+import type { Game, GameNode, RegionId } from '@quorum/simulation/state'
 import { provisioned, type SlotKind } from '@quorum/simulation/parts'
 import { COMPONENT_VIEWS } from '../components/index.ts'
 import { ms, priceLabel, rate } from '../game/format.ts'
@@ -66,7 +66,7 @@ export const rowsOf = (
   node: GameNode,
   ledger: Ledger,
   history: ReadonlyArray<number> = [],
-  region: Region | null = null,
+  region: RegionId | null = null,
   ordinal = nodeLabelOf(game, node).ordinal,
 ): ReadonlyArray<Row> => {
   const rows = withLimit(game, node, ledger, baseRowsOf(game, node, ledger, history))
@@ -219,7 +219,7 @@ export const sizePips = (node: GameNode): Readonly<{ filled: number; total: numb
 
 type Tag = Readonly<{ kind: 'remote' | 'zone' | 'copies'; text: string }>
 
-const tagsOf = (game: Game, node: GameNode, region: Region | null = null): ReadonlyArray<Tag> => {
+const tagsOf = (game: Game, node: GameNode, region: RegionId | null = null): ReadonlyArray<Tag> => {
   const booting = bootingOf(node)
   const copies = `${node.replicas > 1 ? `×${node.replicas}` : ''}${
     booting > 0

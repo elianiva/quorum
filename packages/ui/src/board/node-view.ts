@@ -3,7 +3,7 @@ import { Container, Graphics, Sprite, Text } from 'pixi.js'
 import { COMPONENTS, POOLS, type BuildGroup, type ComponentId } from '@quorum/simulation/catalog'
 import { POOL_ICONS } from '../game/pool-visuals.ts'
 import { type Ledger, type NodeStatus } from '@quorum/simulation/ledger'
-import { type Game, type GameNode, type Region } from '@quorum/simulation/state'
+import { type Game, type GameNode, type RegionId } from '@quorum/simulation/state'
 import { partsUnlocked } from '@quorum/simulation/parts'
 import {
   BAY_H,
@@ -404,7 +404,7 @@ export class NodeView {
     colors: Palette,
     history: ReadonlyArray<number>,
     ordinal: number,
-    region: Region | null,
+    region: RegionId | null,
     locale: string,
     t: (text: string) => string,
   ): void {

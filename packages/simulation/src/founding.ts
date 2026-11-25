@@ -32,7 +32,7 @@ import { headStartGame, newGame } from './company.ts'
 import { restarting, type Life } from './life.ts'
 import { perkLevel, sreStaffed } from './lookups.ts'
 import { NEW_ENGINEER } from './state.ts'
-import type { Founding, Game, GameNode, Region, Retries } from './state.ts'
+import type { Founding, Game, GameNode, RegionId, Retries } from './state.ts'
 
 export { perkLevel }
 
@@ -86,7 +86,7 @@ export const mutatorWeight = (game: Game, kind: IncidentId): number =>
 
 export const FOUNDING_LANGUAGE: LanguageId = 'php'
 
-export const placeRefusal = (game: Game, type: ComponentId, region: Region): string | null => {
+export const placeRefusal = (game: Game, type: ComponentId, region: RegionId): string | null => {
   for (const id of game.founding.mutators) {
     if (game.sandbox) break
     if (MUTATOR_BANS[id]?.includes(type))
@@ -114,7 +114,7 @@ export const signatureWeakness = (game: Game, kind: IncidentId): number =>
 export const venturePlaceRefusal = (
   game: Game,
   type: ComponentId,
-  region: Region,
+  region: RegionId,
 ): string | null => {
   const venture = ventureOf(game)
   const { residency, hubsPerRegion, gpus } = venture.constraint

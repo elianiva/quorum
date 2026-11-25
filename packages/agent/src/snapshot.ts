@@ -1,5 +1,5 @@
 import { Schema } from 'effect'
-import { Game, Region, Sample } from '@quorum/simulation/state'
+import { Game, RegionId, Sample } from '@quorum/simulation/state'
 import { NodeSample } from './node-metrics.ts'
 
 export const AgentMode = Schema.Literals(['company', 'sandbox', 'challenge'])
@@ -29,7 +29,7 @@ export type AgentMail = typeof AgentMail.Type
 export const AgentScreen = Schema.Struct({
   route: Schema.String,
   panel: Schema.String,
-  region: Region,
+  region: RegionId,
   selectedNode: Schema.NullOr(Schema.String),
 })
 export type AgentScreen = typeof AgentScreen.Type

@@ -15,7 +15,7 @@ import {
 import { decodeText, encodeText } from './codec.ts'
 import { placeRefusal, retryRefusal } from './founding.ts'
 import { isUnlocked } from './lookups.ts'
-import { ComponentId, GameLink, GameNode, type Game, type Region, type Retries } from './state.ts'
+import { ComponentId, GameLink, GameNode, type Game, type RegionId, type Retries } from './state.ts'
 
 export const PlaybookNode = Schema.Struct({
   key: Schema.String,
@@ -165,7 +165,7 @@ export const capture = (game: Game, ids: ReadonlyArray<string>, name: string): P
   }
 }
 
-export const ghostReason = (game: Game, node: PlaybookNode, region: Region): string | null => {
+export const ghostReason = (game: Game, node: PlaybookNode, region: RegionId): string | null => {
   const def = COMPONENTS[node.type]
   if (def.fixed) return `${def.name} is already on the Board.`
   if (!isUnlocked(game, node.type) && def.unlock) return RESEARCH[def.unlock].name
@@ -244,7 +244,7 @@ export const placePlaybook = (
   playbook: Playbook,
   x: number,
   y: number,
-  region: Region = HOME_REGION,
+  region: RegionId = HOME_REGION,
 ): Result.Result<Placed, Refusal> => {
   let next = game
   const ids = new Map<string, string>()
@@ -297,7 +297,7 @@ export const duplicate = (
   playbook: Playbook,
   x: number,
   y: number,
-  region: Region = HOME_REGION,
+  region: RegionId = HOME_REGION,
 ): Result.Result<Placed, Refusal> =>
   Result.map(placePlaybook(game, playbook, x, y, region), (placed) => {
     const outside = (id: string) =>

@@ -1,21 +1,21 @@
-import { DataPattern, IacTool, Region, SyncMode } from '@quorum/simulation/state'
+import { DataPattern, IacTool, RegionId, SyncMode } from '@quorum/simulation/state'
 import { MANAGED } from '@quorum/simulation/mirror'
 import { Schema } from 'effect'
 
 export const mirrorsCases = {
   IacToolPicked: { tool: IacTool },
   SyncModePicked: { sync: Schema.NullOr(SyncMode) },
-  MirrorStarted: { target: Region, source: Region },
-  MirrorApplied: { region: Region, destroy: Schema.Boolean },
-  MirrorDataPicked: { region: Region, source: Schema.String, pattern: DataPattern },
+  MirrorStarted: { target: RegionId, source: RegionId },
+  MirrorApplied: { region: RegionId, destroy: Schema.Boolean },
+  MirrorDataPicked: { region: RegionId, source: Schema.String, pattern: DataPattern },
   MirrorOverrideSet: {
-    region: Region,
+    region: RegionId,
     nodeId: Schema.String,
     field: Schema.Literals(MANAGED),
     keep: Schema.Boolean,
   },
-  MirrorComputedSet: { region: Region, computed: Schema.Boolean },
-  MirrorStopped: { region: Region },
-  MirrorRefreshed: { region: Region },
-  MirrorRepaired: { region: Region },
+  MirrorComputedSet: { region: RegionId, computed: Schema.Boolean },
+  MirrorStopped: { region: RegionId },
+  MirrorRefreshed: { region: RegionId },
+  MirrorRepaired: { region: RegionId },
 }

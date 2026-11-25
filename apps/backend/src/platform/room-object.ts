@@ -9,7 +9,7 @@ import {
   type SeatActivity,
   type VoteKind,
 } from '@quorum/simulation/room'
-import type { Region } from '@quorum/simulation/state'
+import type { RegionId } from '@quorum/simulation/state'
 import { openVoteOf } from '@quorum/simulation/vote-machine'
 import type { PublishInput, RoomStub } from '../contexts/room/directory.ts'
 import {
@@ -305,7 +305,7 @@ class RoomObjectBase extends DurableObject<RoomEnv> implements RoomStub {
     ws: WebSocket,
     x: number,
     y: number,
-    region: Region,
+    region: RegionId,
     activity: SeatActivity | undefined,
   ): void {
     const current = this.state

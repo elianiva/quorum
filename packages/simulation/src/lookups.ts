@@ -87,7 +87,7 @@ import type {
   DbTopology,
   Game,
   GameNode,
-  Pricing,
+  PricingId,
   Service,
   StorageClass,
 } from './state.ts'
@@ -371,7 +371,7 @@ export const spreadCount = (game: Game): number =>
     ]).size,
   )
 
-export const pricingOf = (game: Game, node: GameNode): Pricing =>
+export const pricingOf = (game: Game, node: GameNode): PricingId =>
   node.pricing === 'reserved' && !(node.pricingUntil !== null && node.pricingUntil > game.time)
     ? 'on-demand'
     : node.pricing

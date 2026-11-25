@@ -11,7 +11,7 @@ import { solveFlow } from '@quorum/simulation/solve'
 import { compute } from '@quorum/ui/board/compute'
 import { nodeOrdinals } from '@quorum/simulation/labels'
 import { regionView } from '@quorum/simulation/regions'
-import { ComponentId, Game, Region } from '@quorum/simulation/state'
+import { ComponentId, Game, RegionId } from '@quorum/simulation/state'
 import { Message } from './message.ts'
 import { Founder } from '@quorum/simulation/founder'
 import {
@@ -77,7 +77,7 @@ export const SyncBoard = Command.define('SyncBoard', {
     placing: Schema.NullOr(ComponentId),
     stamp: StampArg,
     history: Schema.Record(Schema.String, Schema.Array(Schema.Finite)),
-    region: Region,
+    region: RegionId,
     paused: Schema.Boolean,
     speed: Schema.Finite,
     suspended: Schema.Boolean,

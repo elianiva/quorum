@@ -56,8 +56,8 @@ export { DownCause } from './life.ts'
 export { Zone } from './generated/ids.ts'
 import { Zone } from './generated/ids.ts'
 
-export { RegionId as Region } from './generated/regions.ts'
-import { RegionId as Region } from './generated/regions.ts'
+export { RegionId } from './generated/regions.ts'
+import { RegionId } from './generated/regions.ts'
 
 export const PerRegion = Schema.Struct({
   na: Schema.Finite,
@@ -77,8 +77,8 @@ export type NodeParts = typeof NodeParts.Type
 export const FULL_PARTS: NodeParts = { cpu: true, ram: true, disk: true }
 export const EMPTY_PARTS: NodeParts = { cpu: false, ram: false, disk: false }
 
-export { PricingId as Pricing } from './generated/components.ts'
-import { PricingId as Pricing } from './generated/components.ts'
+export { PricingId } from './generated/components.ts'
+import { PricingId } from './generated/components.ts'
 
 export { LbPolicy } from './generated/lb.ts'
 export { PmMode, Collector, Fanout } from './generated/server.ts'
@@ -171,7 +171,7 @@ const NODE_FIELDS_UNORDERED = {
   zone: Zone.pipe(Schema.withDecodingDefaultKey(Effect.succeed('a' as const))),
   standby: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
   standbySync: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(true))),
-  pricing: Pricing.pipe(Schema.withDecodingDefaultKey(Effect.succeed('on-demand' as const))),
+  pricing: PricingId.pipe(Schema.withDecodingDefaultKey(Effect.succeed('on-demand' as const))),
   pricingUntil: Schema.NullOr(Schema.Finite).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(null)),
   ),
@@ -180,7 +180,7 @@ const NODE_FIELDS_UNORDERED = {
     Schema.withDecodingDefaultKey(Effect.succeed<Autoscaler>({ _tag: 'Steady' })),
   ) as unknown as typeof Autoscaler,
   scaledAt: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
-  region: Region.pipe(Schema.withDecodingDefaultKey(Effect.succeed('na' as const))),
+  region: RegionId.pipe(Schema.withDecodingDefaultKey(Effect.succeed('na' as const))),
   serviceId: Schema.optionalKey(Schema.String),
   n: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(3))),
   spread: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
@@ -557,8 +557,8 @@ export type Iac = typeof Iac.Type
 export { NodeSpec, Observed }
 
 export const Mirror = Schema.Struct({
-  region: Region,
-  source: Region,
+  region: RegionId,
+  source: RegionId,
   nodes: Schema.Record(Schema.String, Schema.String),
   data: Schema.Record(Schema.String, DataPattern),
   code: Schema.Record(Schema.String, NodeSpec),

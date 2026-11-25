@@ -2,7 +2,7 @@ import { Schema } from 'effect'
 import type { Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
 import { REQUEST_KINDS } from '@quorum/simulation/catalog'
-import { Region } from '@quorum/simulation/state'
+import { RegionId } from '@quorum/simulation/state'
 import { AnnotationGroup, type Dashboard } from './model.ts'
 
 export const DashboardMessage = defineMessageUnion({
@@ -14,7 +14,7 @@ export const DashboardMessage = defineMessageUnion({
   TableToggled: {},
   KindChosen: { kind: Schema.NullOr(Schema.Literals(REQUEST_KINDS)) },
   ServiceChosen: { service: Schema.NullOr(Schema.String) },
-  RegionChosen: { region: Schema.NullOr(Region) },
+  RegionChosen: { region: Schema.NullOr(RegionId) },
 })
 export type DashboardMessage = typeof DashboardMessage.Type
 

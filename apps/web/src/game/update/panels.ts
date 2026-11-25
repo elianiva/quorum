@@ -29,7 +29,7 @@ import { moreMenu, type MoreItem } from '../more.ts'
 import { onBoard } from '../route.ts'
 import { openRegions } from '@quorum/simulation/regions'
 import { listing, openingFolder } from '../inbox.ts'
-import { type RegionId as Region, type ResearchId } from '@quorum/simulation/catalog'
+import { type RegionId, type ResearchId } from '@quorum/simulation/catalog'
 import { updateDashboard } from '../dashboard.ts'
 import * as VolumeSlider from '@quorum/ui/primitives/slider'
 import { poolFromSlider } from '../pool-scale.ts'
@@ -405,7 +405,7 @@ export const panelsHandlers = (
       if (!node) return { model: board }
       return route(board, Message.RevealNode({ nodeId: node.id }))
     }
-    const region = target as Region
+    const region = target as RegionId
     const shown = route(
       board,
       openRegions(game).includes(region)

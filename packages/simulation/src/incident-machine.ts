@@ -5,7 +5,7 @@ import { planState } from './machine.ts'
 
 const IncidentId = Schema.Literals(INCIDENT_IDS)
 const Zone = Schema.Literals(ZONES)
-const Region = Schema.Literals(REGIONS)
+const RegionId = Schema.Literals(REGIONS)
 
 export const IncidentPhase = Schema.TaggedUnion({
   Pending: {},
@@ -32,7 +32,7 @@ export const Incident = Schema.Struct({
   severity: Schema.Finite,
   magnitude: Schema.Finite,
   zone: Schema.NullOr(Zone),
-  region: Schema.NullOr(Region),
+  region: Schema.NullOr(RegionId),
   service: Schema.optionalKey(Schema.NullOr(Schema.String)),
   causedBy: Schema.NullOr(IncidentId),
   throttled: Schema.optionalKey(Schema.Boolean),

@@ -1,4 +1,4 @@
-import type { Region } from '@quorum/simulation/state'
+import type { RegionId } from '@quorum/simulation/state'
 import type { SeatActivity } from '@quorum/simulation/room'
 
 export type SeatCursor = Readonly<{
@@ -7,7 +7,7 @@ export type SeatCursor = Readonly<{
   colour: string
   x: number
   y: number
-  region: Region
+  region: RegionId
   activity: SeatActivity | null
 }>
 
@@ -23,7 +23,7 @@ type Track = Readonly<{
   seat: string
   name: string
   colour: string
-  region: Region
+  region: RegionId
   activity: SeatActivity | null
   samples: ReadonlyArray<Sample>
 }>
@@ -149,7 +149,7 @@ export class CursorOverlay {
   tick(
     now: number,
     camera: CursorCamera,
-    region: Region,
+    region: RegionId,
     activityOf: (activity: SeatActivity) => string,
   ): void {
     const shown = new Set<string>()

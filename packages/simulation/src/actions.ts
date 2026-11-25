@@ -116,10 +116,10 @@ import type {
   GameLink,
   GameNode,
   PmMode,
-  Pricing,
+  PricingId,
   Retries,
   Zone,
-  Region,
+  RegionId,
   DbEngine,
   IopsClass,
 } from './state.ts'
@@ -200,7 +200,7 @@ export const blankNode = (
   type: ComponentId,
   x: number,
   y: number,
-  region: Region = HOME_REGION,
+  region: RegionId = HOME_REGION,
 ): GameNode => {
   const stack = game.nodes.find((node) => node.type === 'server')
   return {
@@ -325,7 +325,7 @@ export const place = (
   type: ComponentId,
   x: number,
   y: number,
-  region: Region = HOME_REGION,
+  region: RegionId = HOME_REGION,
 ): Action => {
   const def = COMPONENTS[type]
   if (def.fixed) return notAllowed(`${def.name} cannot be placed.`)
@@ -649,7 +649,7 @@ export type UpgradeAllOutcome = Readonly<{
 export const upgradeAll = (
   game: Game,
   type: ComponentId,
-  region?: Region,
+  region?: RegionId,
 ): Result.Result<UpgradeAllOutcome, Refusal> => {
   const nodes = game.nodes.filter(
     (node) => node.type === type && (region === undefined || node.region === region),
@@ -906,7 +906,7 @@ export const setStandby = (game: Game, id: string, standby: boolean, sync = true
     return ok(patch(game, id, { standby, standbySync: sync }))
   })
 
-export const setPricing = (game: Game, id: string, pricing: Pricing): Action =>
+export const setPricing = (game: Game, id: string, pricing: PricingId): Action =>
   withNode(game, id, (node) => {
     if (game.stage < PRICING_FROM_STAGE)
       return no(
@@ -960,7 +960,7 @@ export const setChaos = (game: Game, chaos: boolean): Action => {
   return ok(game.chaos === chaos ? game : { ...game, chaos, weakest: chaos ? game.weakest : null })
 }
 
-export const openRegion = (game: Game, region: Region): Action => {
+export const openRegion = (game: Game, region: RegionId): Action => {
   if (!has(game, 'multi-region'))
     return no(Refusal.Locked({ what: 'Regions', research: RESEARCH['multi-region'].name }))
   if (openRegions(game).includes(region)) return notAllowed('That region is open.')
@@ -978,7 +978,7 @@ export const openRegion = (game: Game, region: Region): Action => {
   )
 }
 
-export const setRegion = (game: Game, id: string, region: Region): Action =>
+export const setRegion = (game: Game, id: string, region: RegionId): Action =>
   withNode(game, id, (node) => {
     if (COMPONENTS[node.type].fixed || isGlobal(node))
       return notAllowed(`${COMPONENTS[node.type].name} serves every region.`)
@@ -1233,7 +1233,7 @@ export const failOverRegion = (game: Game): Action => {
   const out = incident.region
   const target = openRegions(game)
     .filter((region) => region !== out)
-    .reduce<Region | undefined>(
+    .reduce<RegionId | undefined>(
       (best, region) => (!best || rttOf(out, region) < rttOf(out, best) ? region : best),
       undefined,
     )

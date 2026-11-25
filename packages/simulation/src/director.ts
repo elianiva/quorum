@@ -73,7 +73,7 @@ import { Life, causeOf, down as takeDown, withWarm } from './life.ts'
 import { drillPassed, step as drillStep } from './drill-machine.ts'
 import { PROMOTE_DATA_LOSS } from './generated/replica.ts'
 import { nextRandom, pickWeighted } from './random.ts'
-import type { Game, GameLink, GameNode, Incident, Postmortem, Region, Zone } from './state.ts'
+import type { Game, GameLink, GameNode, Incident, Postmortem, RegionId, Zone } from './state.ts'
 import { activeIncident } from './state.ts'
 import { isGlobal, survivesRegion } from './regions.ts'
 import {
@@ -325,22 +325,22 @@ const hotKeyTargets = (game: Game, ledger: Ledger): ReadonlyArray<GameNode> =>
 
 const configured = (node: GameNode): boolean => node.type === 'server' || node.type === 'worker'
 
-const configRegion = (game: Game): Region | null => {
+const configRegion = (game: Game): RegionId | null => {
   const source = game.mirrors[0]?.source
   if (source) return source
-  const counts = new Map<Region, number>()
+  const counts = new Map<RegionId, number>()
   for (const node of game.nodes)
     if (configured(node) && !isDown(node))
       counts.set(node.region, (counts.get(node.region) ?? 0) + 1)
   return (
-    [...counts.entries()].reduce<readonly [Region, number] | undefined>(
+    [...counts.entries()].reduce<readonly [RegionId, number] | undefined>(
       (best, entry) => (!best || entry[1] > best[1] ? entry : best),
       undefined,
     )?.[0] ?? null
   )
 }
 
-export const configReach = (game: Game, region: Region): ReadonlyArray<Region> =>
+export const configReach = (game: Game, region: RegionId): ReadonlyArray<RegionId> =>
   game.iac._tag === 'Chosen' && game.iac.sync === 'all'
     ? [
         region,
@@ -348,12 +348,12 @@ export const configReach = (game: Game, region: Region): ReadonlyArray<Region> =
       ]
     : [region]
 
-const busiestRegion = (game: Game): Region | undefined => {
-  const counts = new Map<Region, number>()
+const busiestRegion = (game: Game): RegionId | undefined => {
+  const counts = new Map<RegionId, number>()
   for (const node of game.nodes)
     if (!survivesRegion(game, node) && !isDown(node))
       counts.set(node.region, (counts.get(node.region) ?? 0) + 1)
-  return [...counts.entries()].reduce<readonly [Region, number] | undefined>(
+  return [...counts.entries()].reduce<readonly [RegionId, number] | undefined>(
     (best, entry) => (!best || entry[1] > best[1] ? entry : best),
     undefined,
   )?.[0]

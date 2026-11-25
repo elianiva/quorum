@@ -1,7 +1,7 @@
 import { type ComponentId } from '@quorum/simulation/catalog'
 import { type SlotKind } from '@quorum/simulation/parts'
 import { type Ledger } from '@quorum/simulation/ledger'
-import { type Game, type Region } from '@quorum/simulation/state'
+import { type Game, type RegionId } from '@quorum/simulation/state'
 import { type SeatActivity } from '@quorum/simulation/room'
 
 export type BoardSound = 'pull' | 'lift' | 'detent' | 'snap' | 'release'
@@ -21,7 +21,7 @@ export type BoardEvents = Readonly<{
     at: Readonly<{
       x: number
       y: number
-      region: Region
+      region: RegionId
       activity: SeatActivity | null
     }>,
   ) => void
@@ -48,7 +48,7 @@ export type BoardState = Readonly<{
   stamp: Stamp | null
   history: Readonly<Record<string, ReadonlyArray<number>>>
   ordinals: Readonly<Record<string, number>>
-  region: Region
+  region: RegionId
   paused: boolean
   speed: number
   suspended: boolean

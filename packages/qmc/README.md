@@ -191,8 +191,8 @@ qmc refuses content that contradicts itself and reports every problem in one run
   locks no value or names a value twice, a `:labels` table that is not a record def or lacks a
   value the gate lists, and, as a warning, a gate on the research that already
   unlocks the component
-- a def that reads a value or names a type that does not exist, that reads itself, that repeats a
-  key in one record, or that takes a name another form declares
+- a def that reads a value or names a type that does not exist, that reads itself or forms a cycle
+  with other defs, that repeats a key in one record, or that takes a name another form declares
 - a `:module` that names no content file
 - a state that names no Component, appears twice, repeats a field or Schema name, or has a default
   outside its values

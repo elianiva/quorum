@@ -27,6 +27,7 @@ const PASSES: &[Pass] = &[
     kind_refs,
     components,
     crate::data::check,
+    def_cycles,
     crate::data::check_eras,
     def_modules,
     gates,
@@ -41,6 +42,69 @@ pub fn run(catalog: &Catalog) -> Sink {
     let mut sink = Sink::default();
     for result in par::join_all(jobs) {
         sink.extend(result);
+    }
+    sink
+}
+
+/// A cycle between defs cannot be emitted as top-level constants: one constant would read another
+/// before it is initialized. The graph is catalog-wide because `:module` can move an entry into
+/// another generated file, where the two files would still initialize in a cycle.
+fn def_cycles(catalog: &Catalog) -> Sink {
+    let mut sink = Sink::default();
+    let defs: BTreeMap<&str, &crate::data::Def> = catalog
+        .defs
+        .iter()
+        .map(|def| (def.export.as_str(), def))
+        .collect();
+    let mut graph: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    let mut edge_spans: BTreeMap<(String, String), Span> = BTreeMap::new();
+    for def in &catalog.defs {
+        let mut used = Vec::new();
+        crate::data::refs(&def.value, &mut used);
+        let mut edges = BTreeSet::new();
+        for name in used {
+            if name.text.as_str() == def.export.as_str() || !defs.contains_key(name.text.as_str()) {
+                continue;
+            }
+            edges.insert(name.text.clone());
+            edge_spans
+                .entry((def.export.clone(), name.text.clone()))
+                .or_insert(name.span);
+        }
+        graph.insert(def.export.clone(), edges.into_iter().collect());
+    }
+    for cycle in graph::cycles(&graph) {
+        // `data::check` already reports a def that reads itself.
+        if cycle.len() == 1 {
+            continue;
+        }
+        let Some(start) = defs.get(cycle[0].as_str()) else {
+            continue;
+        };
+        let path = cycle
+            .iter()
+            .chain(std::iter::once(&cycle[0]))
+            .cloned()
+            .collect::<Vec<_>>()
+            .join(" → ");
+        let mut diagnostic = Diagnostic::error(
+            "def-cycle",
+            start.name.span,
+            format!(
+                "`{}` is part of a definition cycle, so it cannot be initialized",
+                start.name.text
+            ),
+        )
+        .label("part of a cycle")
+        .help(path);
+        for pair in cycle.windows(2).chain(std::iter::once(
+            [cycle[cycle.len() - 1].clone(), cycle[0].clone()].as_slice(),
+        )) {
+            if let Some(&span) = edge_spans.get(&(pair[0].clone(), pair[1].clone())) {
+                diagnostic = diagnostic.note(span, format!("`{}` reads `{}`", pair[0], pair[1]));
+            }
+        }
+        sink.push(diagnostic);
     }
     sink
 }
@@ -1421,6 +1485,34 @@ mod tests {
             .collect();
         assert_eq!(helps, ["a → c → b → a", "d → d"]);
         assert!(compiled.outputs.is_empty());
+    }
+
+    #[test]
+    fn a_def_cycle_is_an_error() {
+        assert_eq!(
+            codes("(def A B)\n(def B A)\n"),
+            [(Severity::Error, "def-cycle")]
+        );
+    }
+
+    #[test]
+    fn a_def_cycle_across_content_files_is_an_error() {
+        let compiled = crate::compile(vec![
+            ("t.qm".into(), "(def A B)\n".into()),
+            ("team.qm".into(), "(def B A)\n".into()),
+        ]);
+        let codes: Vec<_> = compiled
+            .diagnostics
+            .iter()
+            .map(|d| (d.severity, d.code))
+            .collect();
+        assert_eq!(codes, [(Severity::Error, "def-cycle")]);
+        assert!(compiled.outputs.is_empty());
+    }
+
+    #[test]
+    fn a_self_reading_def_keeps_its_own_diagnostic() {
+        assert_eq!(codes("(def A A)\n"), [(Severity::Error, "self-reference")]);
     }
 
     #[test]

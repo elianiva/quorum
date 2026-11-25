@@ -3,17 +3,14 @@ import { Life } from './life.ts'
 import {
   DATA_PATTERNS,
   INSIGHT_POOLS,
-  PRICING_IDS,
-  REGIONS,
   START_KLOC,
   IAC_TOOLS,
   SYNC_MODES,
-  ZONES,
   MOOD_START,
   DEVICES,
   NO_DEVICE_LATENCY,
 } from './catalog.ts'
-import { COMPONENT_FIELDS } from './components/fields.ts'
+import { COMPONENT_FIELDS, COMPONENT_FIELD_ORDER } from './components/fields.ts'
 import { DrillState } from './drill-machine.ts'
 import { BridgeState } from './bridge-machine.ts'
 import { QuarterState } from './quarter-machine.ts'
@@ -28,49 +25,39 @@ import { Incident, IncidentState } from './incident-machine.ts'
 import { MirrorSync, NodeSpec, Observed } from './mirror-machine.ts'
 import { FeaturePhase } from './feature-machine.ts'
 
-import {
-  ComponentId,
-  FamilyId,
-  FeatureId,
-  FixId,
-  FrameworkId,
-  IncidentId,
-  LanguageId,
-  MutatorId,
-  PolicyId,
-  RequestKindId,
-  ResearchId,
-  RuntimeId,
-  VentureId,
-} from './generated/ids.ts'
+import { ComponentId } from './generated/components.ts'
+import { FamilyId } from './generated/instances.ts'
+import { FrameworkId, LanguageId, RuntimeId } from './generated/runtimes.ts'
+import { IncidentId } from './generated/incidents.ts'
+import { MutatorId } from './generated/ventures.ts'
+import { PolicyId } from './generated/team.ts'
+import { ResearchId } from './generated/research.ts'
+import { VentureId } from './generated/ventures.ts'
+import { FeatureId } from './generated/work.ts'
+import { RequestKind } from './generated/kinds.ts'
+import { FixId } from './generated/ids.ts'
 
-export {
-  ComponentId,
-  FamilyId,
-  FeatureId,
-  FixId,
-  FrameworkId,
-  IncidentId,
-  LanguageId,
-  LeverKindId,
-  MutatorId,
-  PolicyId,
-  RequestKindId,
-  ResearchId,
-  RuntimeId,
-  VentureId,
-} from './generated/ids.ts'
+export { ComponentId } from './generated/components.ts'
+export { FamilyId } from './generated/instances.ts'
+export { FrameworkId, LanguageId, RuntimeId } from './generated/runtimes.ts'
+export { IncidentId } from './generated/incidents.ts'
+export { MutatorId } from './generated/ventures.ts'
+export { PolicyId } from './generated/team.ts'
+export { ResearchId } from './generated/research.ts'
+export { VentureId } from './generated/ventures.ts'
+export { FeatureId } from './generated/work.ts'
+export { FixId, LeverKindId } from './generated/ids.ts'
 
-export const DbEngine = Schema.Literals(['postgres', 'mysql'])
-export type DbEngine = typeof DbEngine.Type
+export { DbEngine } from './generated/database.ts'
+import { DbEngine } from './generated/database.ts'
 
 export { DownCause } from './life.ts'
 
-export const Zone = Schema.Literals(ZONES)
-export type Zone = typeof Zone.Type
+export { Zone } from './generated/ids.ts'
+import { Zone } from './generated/ids.ts'
 
-export const Region = Schema.Literals(REGIONS)
-export type Region = typeof Region.Type
+export { RegionId as Region } from './generated/regions.ts'
+import { RegionId as Region } from './generated/regions.ts'
 
 export const PerRegion = Schema.Struct({
   na: Schema.Finite,
@@ -90,14 +77,21 @@ export type NodeParts = typeof NodeParts.Type
 export const FULL_PARTS: NodeParts = { cpu: true, ram: true, disk: true }
 export const EMPTY_PARTS: NodeParts = { cpu: false, ram: false, disk: false }
 
-export const Pricing = Schema.Literals(PRICING_IDS)
-export type Pricing = typeof Pricing.Type
+export { PricingId as Pricing } from './generated/components.ts'
+import { PricingId as Pricing } from './generated/components.ts'
 
 export { LbPolicy } from './generated/lb.ts'
 export { PmMode, Collector, Fanout } from './generated/server.ts'
 export { CacheEngine, CacheStrategy } from './generated/cache.ts'
-export { Backup, IopsClass, DbRetention, ShardKey, DbTopology } from './generated/database.ts'
-import { DbTopology, ShardKey } from './generated/database.ts'
+export {
+  Backup,
+  IopsClass,
+  DbRetention,
+  ShardKey,
+  Shards,
+  DbTopology,
+} from './generated/database.ts'
+import { DbTopology, ShardKey, Shards } from './generated/database.ts'
 export { VecIndexType } from './generated/vec.ts'
 export { Acks } from './generated/log.ts'
 export { SearchRefresh, SearchVariant, SearchHeap } from './generated/search.ts'
@@ -108,7 +102,7 @@ export { ScaleSignal } from './generated/autoscaler.ts'
 export { DeployStrategy } from './generated/ci.ts'
 export { CacheKey } from './generated/cdn.ts'
 
-const NODE_FIELD_ORDER = [
+const CORE_FIELD_ORDER = [
   'id',
   'type',
   'ordinal',
@@ -119,69 +113,18 @@ const NODE_FIELD_ORDER = [
   'parts',
   'runtime',
   'framework',
-  'workers',
-  'localDb',
   'sample',
-  'sampleRate',
-  'retention',
   'credits',
   'leak',
   'service',
-  'crashes',
-  'recycle',
-  'compress',
   'downAt',
-  'policy',
-  'sticky',
-  'provider',
-  'slowStart',
-  'purge',
-  'cacheKey',
-  'staleUntil',
-  'earlyExpiry',
-  'swr',
-  'shardKey',
-  'sync',
-  'searchVariant',
-  'searchShards',
-  'searchReplicas',
-  'heap',
-  'storeVariant',
-  'variant',
-  'authEdge',
-  'merge',
-  'burst',
-  'checkEvery',
-  'deepCheck',
   'ttl',
-  'pm',
   'certUntil',
-  'engine',
   'dbEngine',
-  'iops',
-  'shards',
-  'storageClass',
-  'keep',
-  'lifecycle',
-  'cacheStrategy',
-  'refresh',
   'restore',
-  'mode',
   'depth',
-  'dlq',
   'attempts',
-  'maxLength',
   'prefetch',
-  'upgradedAt',
-  'coalesce',
-  'warming',
-  'paranoia',
-  'underAttack',
-  'rateLimit',
-  'strategy',
-  'presence',
-  'backoff',
-  'clustering',
   'zone',
   'standby',
   'standbySync',
@@ -190,39 +133,13 @@ const NODE_FIELD_ORDER = [
   'replicas',
   'scaler',
   'scaledAt',
-  'signal',
-  'target',
-  'minCopies',
-  'maxCopies',
-  'gpu',
-  'precision',
-  'gpuModel',
-  'batch',
-  'collector',
-  'gogc',
-  'shed',
-  'degrade',
-  'schedule',
-  'materialized',
-  'ryw',
   'region',
   'serviceId',
   'n',
-  'r',
-  'w',
-  'lost',
   'spread',
-  'backup',
-  'fanout',
-  'split',
-  'transactions',
-  'indexType',
-  'partitions',
-  'acks',
-  'retain',
-  'keyed',
-  'topology',
 ] as const
+
+const NODE_FIELD_ORDER = [...CORE_FIELD_ORDER, ...COMPONENT_FIELD_ORDER] as const
 
 const NODE_FIELDS_UNORDERED = {
   id: Schema.String,
@@ -285,7 +202,7 @@ export const GameLink = Schema.Struct({
   to: Schema.String,
   timeout: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(30))),
   retries: Retries.pipe(Schema.withDecodingDefaultKey(Effect.succeed('none' as const))),
-  kinds: Schema.NullOr(Schema.Array(RequestKindId)).pipe(
+  kinds: Schema.NullOr(Schema.Array(RequestKind)).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(null)),
   ),
   breaker: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
@@ -335,7 +252,7 @@ export const Sample = Schema.Struct({
   device: Schema.Record(Schema.Literals(DEVICES), Schema.Finite).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(NO_DEVICE_LATENCY)),
   ),
-  slow: Schema.NullOr(RequestKindId).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
+  slow: Schema.NullOr(RequestKind).pipe(Schema.withDecodingDefaultKey(Effect.succeed(null))),
 })
 export type Sample = typeof Sample.Type
 
@@ -461,7 +378,7 @@ export type EngineChange = typeof EngineChange.Type
 
 export const Resharding = Schema.Struct({
   node: Schema.String,
-  shards: Schema.Finite,
+  shards: Shards,
   key: ShardKey,
   group: Schema.String.pipe(Schema.withDecodingDefaultKey(Effect.succeed(''))),
   topology: DbTopology.pipe(Schema.withDecodingDefaultKey(Effect.succeed('single' as const))),
@@ -553,7 +470,7 @@ export const CORE_TEAM: Team = {
   since: 0,
 }
 
-export const monolith = (fixes: ReadonlyArray<typeof FixId.Type>): Service => ({
+export const monolith = (fixes: ReadonlyArray<FixId>): Service => ({
   id: 'monolith',
   name: 'Monolith',
   debt: 0,
@@ -724,7 +641,7 @@ export const Game = Schema.Struct({
   handled: Schema.Array(IncidentId).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   runbooks: Schema.Array(IncidentId).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   alarms: Alarms,
-  servedKinds: Schema.Array(RequestKindId).pipe(
+  servedKinds: Schema.Array(RequestKind).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed(['page', 'read'] as const)),
   ),
   alertRules: AlertRules.pipe(Schema.withDecodingDefaultKey(Effect.succeed(DEFAULT_ALERT_RULES))),

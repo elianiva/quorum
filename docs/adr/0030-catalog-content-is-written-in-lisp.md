@@ -4,8 +4,9 @@ The catalog's data, meaning research, Eras, incidents, kinds, Components, the ta
 Component file, and the research gates on Node settings, lives in the `.qm` files under `packages/simulation/content`.
 These files are S-expressions. qmc, a Rust compiler in `packages/qmc` with no dependencies outside
 `std`, reads them and writes two outputs: `packages/simulation/src/generated/*.ts`, which the
-catalog files re-export, and the Solver's `solver/src/catalog.rs`. Types, pure functions such as
-`rttOf`, and tables computed from others such as `RECIPE` stay in TypeScript. A Component's
+catalog files re-export, and the Solver's `solver/src/catalog.rs`. Types are content too: a
+`(type NAME expression)` form becomes an alias in `generated/types.ts`. Pure functions such as
+`rttOf`, and tables computed from others such as `RECIPE`, stay in TypeScript. A Component's
 `(state …)` form declares its settings, so qmc writes the Effect Schema fields and the setters that
 only check a field's values, its gate, and its scope. A setter that needs more, such as a backup
 that rolls a restore, stays in the `.rule.ts` file.
@@ -40,26 +41,27 @@ Considered options:
   floating-point values a hand-written table did. qmc reads the generated modules back as
   JavaScript would and prints numbers as JavaScript prints them, so the Solver and the Simulation
   agree bit for bit.
-- A setting that needs research is a `(gate …)` or a `:requires` on its state field. A rule refuses
-  a locked value through `locked` in `src/action-kit.ts`, so the research and the label of a gate
-  are content and not code.
+- A setting that needs research has a `:gate` on its state field. The gate names its research, its
+  refusal label, and the values that research locks. A rule refuses a locked value through `locked`
+  in `src/action-kit.ts`, so the research and the label of a gate are content and not code.
 - A content file describes one thing completely. `content/components/database.qm` holds the
   Database's component, state fields, tables, and glossary. qmc writes `generated/database.ts` and
   `generated/database.rule.ts`, and `src/components/database.ts` does not exist. A rule that needs
   more than a field, its values, its gate, and its scope, such as a check against the links of a
   Node, stays in the `.rule.ts` file.
 - A constant is written in kebab case and exported in SCREAM_CASE: `(def db-engines …)` writes
-  `DB_ENGINES`, and content may read it as `db-engines` or `DB_ENGINES`. A name with an uppercase
+  `DB_ENGINES`, and content reads it as `db-engines`. A name with an uppercase
   letter is a TypeScript name, such as `wideGlossary`, and keeps its casing.
 - An Era has an id such as `garage`. Research, incidents, and data values name that id, and qmc
   turns it into the index the generated data uses.
-- A TypeScript annotation is a type name, a type expression such as `(array FeatureId)`, or a raw
-  string. `(type NAME expression)` writes a generated TypeScript alias in `generated/types.ts`.
+- A TypeScript annotation is a structured type expression such as `(array FeatureId)` or
+  `(object (id FeatureId) (name string))`. A raw string remains an escape hatch for a type qmc has no
+  form for. `(type NAME expression)` writes a generated TypeScript alias in `generated/types.ts`.
 - A family of constants that shares a prefix is one `(constants PREFIX …)` form. Each entry names
   only the suffix, or the prefix itself for the base constant, and the group's `:type` and
-  `:satisfies` are defaults, so a family states its shared prefix and type once. A family whose
-  members belong to different modules lives in `content/families.qm`, and each entry names its
-  owner with `:module`, so the generated constant stays in the module that owned it.
+  `:satisfies` are defaults, so a family states its shared prefix and type once. The group stays in
+  the file that owns its domain. A constant does not move into another file just because two
+  unrelated constants share a first word.
 - A table row can leave a cell out with `-`. The generated record omits that key, which lets one
-  header describe rows with optional fields. The Glossary, Profiles, Runtimes, and Frameworks use
-  this to stay tables instead of becoming nested `def` records.
+  header describe rows with optional fields. A wide or nested catalog uses a `records` form instead,
+  where each entry reads as its own record and can omit fields without a placeholder.

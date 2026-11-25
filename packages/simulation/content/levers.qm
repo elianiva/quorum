@@ -1,4 +1,4 @@
-(id LeverKindId LEVER_KINDS)
+(id LeverKindId lever-kinds)
 
 (constants lever
   (kinds
@@ -32,3 +32,5 @@
   [ai-startup  "ai"         1]
   [healthcare  "upload"     1]
   [government  "push"       1])
+
+(def max-lever-step 3)

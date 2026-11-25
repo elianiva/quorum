@@ -15,14 +15,11 @@
   :flags    (limiting standby)
   :accepts  (q-read q-write q-tx)
   :sends    (q-read q-write q-tx)
-  :blurb    "Many app connections share 20 database connections. It pools to one host.")
+  :blurb    "Many app connections share 20 database connections. It pools to one host."
+  :glossary (connection-pooling))
 
 (state pooler
   (field mode (enum session transaction statement)
     :default transaction
     :schema  PoolerMode
     :set     (setPoolerMode :refuse "Only a Connection Pooler has a mode.")))
-
-(def poolerGlossary
-  :type (array string)
-  ["connection-pooling"])

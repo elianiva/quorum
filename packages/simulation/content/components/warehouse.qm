@@ -1,20 +1,17 @@
 ; Warehouse: the Component and the tables it reads.
 (component warehouse
-  :code    olap
-  :name    "Data Warehouse"
-  :product "BigQuery"
-  :group   data
-  :dock    data
-  :cost    800
-  :latency 1500ms
-  :burn    0.05
-  :max-out 0
-  :unlock  data-warehouse
-  :accepts (q-scan change)
-  :blurb   "Answers report scans in columns. 1.5 s each, no limit, paid per scan.")
+  :code     olap
+  :name     "Data Warehouse"
+  :product  "BigQuery"
+  :group    data
+  :dock     data
+  :cost     800
+  :latency  1500ms
+  :burn     0.05
+  :max-out  0
+  :unlock   data-warehouse
+  :accepts  (q-scan change)
+  :blurb    "Answers report scans in columns. 1.5 s each, no limit, paid per scan."
+  :glossary (cdc-change-data-capture oltp-and-olap))
 
 (def scan-price 0.02)
-
-(def warehouseGlossary
-  :type (array string)
-  ["cdc-change-data-capture" "oltp-and-olap"])

@@ -3,12 +3,7 @@ import type { FeatureId, Game } from '../state.ts'
 import { ROLLOUT_STEPS } from '../catalog.ts'
 import { isLive, step } from '../feature-machine.ts'
 
-export const setRollout = (
-  game: Game,
-  id: string,
-  feature: typeof FeatureId.Type,
-  share: number,
-): Action =>
+export const setRollout = (game: Game, id: string, feature: FeatureId, share: number): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'ff') return notAllowed('Only Feature Flags roll a Feature out.')
     const phase = game.features[feature]

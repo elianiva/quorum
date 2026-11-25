@@ -1,5 +1,5 @@
 import { type Action, notAllowed, ok, patch, withNode } from '../action-kit.ts'
-import type { Game, SearchHeap, SearchVariant } from '../state.ts'
+import type { Game, GameNode, SearchHeap, SearchVariant } from '../state.ts'
 import {
   SEARCH_REPLICAS,
   SEARCH_SHARDS,
@@ -60,5 +60,9 @@ export const setSearchRefresh = (game: Game, id: string, refresh: number): Actio
       return notAllowed(
         `Refresh intervals are ${SEARCH_REFRESH.map((entry) => entry.seconds).join(', ')} s.`,
       )
-    return ok(node.refresh === refresh ? game : patch(game, id, { refresh }))
+    return ok(
+      node.refresh === refresh
+        ? game
+        : patch(game, id, { refresh: refresh as GameNode['refresh'] }),
+    )
   })

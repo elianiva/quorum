@@ -16,17 +16,20 @@
              q-read q-write q-search q-vector blob-put q-tx blob-get q-scan k-write)
   :sends    (page read write login search upload bot media rt buy job report ai feed hook push bid
              q-read q-write q-search q-vector blob-put q-tx blob-get q-scan k-write)
-  :blurb    "Splits traffic across App Servers or Database hosts and drops a dead host at its next health check.")
+  :blurb    "Splits traffic across App Servers or Database hosts and drops a dead host at its next health check."
+  :glossary (health-check load-balancer vertical-and-horizontal-scaling))
 
 (state lb
-  (field policy (enum weighted round-robin least-conn p2c hash)
+  (field policy (key-of lb-policies)
     :default weighted
     :schema  LbPolicy)
   (field sticky bool
-    :default false)
+    :default false
+    :set     (setSticky :refuse "Only a Load Balancer keeps users on a target."))
   (field slow-start bool
-    :default false)
-  (field variant (enum l7 l4)
+    :default false
+    :set     (setSlowStart :refuse "Only a Load Balancer ramps a new copy up."))
+  (field variant (key-of lb-variants)
     :default l7
     :schema  LbVariant)
   (field check-every number
@@ -62,6 +65,6 @@
   [l7  "L7"  null]
   [l4  "L4"  "l4-lb"])
 
-(def lbGlossary
-  :type (array string)
-  ["health-check" "load-balancer" "vertical-and-horizontal-scaling"])
+(def sticky-share 0.4)
+
+(def sticky-decay 0.8)

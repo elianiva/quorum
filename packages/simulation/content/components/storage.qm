@@ -1,23 +1,26 @@
 ; Storage: the Component and the tables it reads.
 (component storage
-  :code    s3
-  :name    "Object Storage"
-  :product "Amazon S3"
-  :group   data
-  :dock    data
-  :cost    280
-  :latency 40ms
-  :burn    0.01
-  :max-out 0
-  :unlock  object-storage
-  :accepts (blob-put blob-get)
-  :blurb   "Holds uploaded files. No limit. Pay for what it stores.")
+  :code     s3
+  :name     "Object Storage"
+  :product  "Amazon S3"
+  :group    data
+  :dock     data
+  :cost     280
+  :latency  40ms
+  :burn     0.01
+  :max-out  0
+  :unlock   object-storage
+  :accepts  (blob-put blob-get)
+  :blurb    "Holds uploaded files. No limit. Pay for what it stores."
+  :glossary (object-storage))
 
 (state storage
-  (field store-variant (enum s3 r2)
+  (field store-variant (key-of store-variants)
     :default s3
-    :schema  StoreVariant)
-  (field storage-class (enum standard infrequent archive)
+    :schema  StoreVariant
+    :gate    (egress-optimization "R2" :locked ("r2"))
+    :set     (setStoreVariant :refuse "Only Object Storage has a product."))
+  (field storage-class (key-of storage-classes)
     :default standard
     :schema  StorageClass
     :set     (setStorageClass :refuse "Only Object Storage has a storage class."))
@@ -25,15 +28,12 @@
     :default 0
     :gate    (lifecycle-rules "Lifecycle rules")))
 
-(gate storage storeVariant
-  :research egress-optimization
-  :what     "R2"
-  :locked   ("r2"))
-
 (def storage-price 0.000032)
 
 (table storage-classes
-  :key id
+  :key         id
+  :export-rust
+  :ids         storage-class-ids
   [id          name                 price  retrieval  archived]
   [standard    "Standard"               1          0  false]
   [infrequent  "Infrequent access"    0.5       0.01  false]
@@ -50,7 +50,3 @@
   [id  name  egress  get       put]
   [s3  "S3"  true     0.00048   0.006]
   [r2  "R2"  false   0.000432  0.0054])
-
-(def storageGlossary
-  :type (array string)
-  ["object-storage"])

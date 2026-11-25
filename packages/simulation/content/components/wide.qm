@@ -1,19 +1,21 @@
 ; Wide: the Component and the tables it reads.
 (component wide
-  :code    wide
-  :name    "Wide-column Store"
-  :product "Apache Cassandra"
-  :group   data
-  :dock    data
-  :cost    1_200
-  :latency 3ms
-  :burn    1.2
-  :steps   6
-  :max-out 0
-  :unlock  leaderless
-  :flags   (limiting)
-  :accepts (q-read q-write q-tx k-write)
-  :blurb   "Replicates each key to N nodes. Reads ask R of them, writes wait for W.")
+  :code     wide
+  :name     "Wide-column Store"
+  :product  "Apache Cassandra"
+  :group    data
+  :dock     data
+  :cost     1_200
+  :latency  3ms
+  :burn     1.2
+  :steps    6
+  :max-out  0
+  :unlock   leaderless
+  :flags    (limiting)
+  :accepts  (q-read q-write q-tx k-write)
+  :blurb    "Replicates each key to N nodes. Reads ask R of them, writes wait for W."
+  :glossary (consistent-hashing eventual-consistency hedged-request hot-key leaderless-replication
+             quorum tail-at-scale))
 
 (state wide
   (field r number
@@ -27,7 +29,10 @@
   :type const
   [1 2 3 4 5])
 
-(def wideGlossary
-  :type (array string)
-  ["consistent-hashing" "eventual-consistency" "hedged-request" "hot-key" "leaderless-replication"
-   "quorum" "tail-at-scale"])
+(def wide-ops 30_000)
+
+(def wide-stale 0.5)
+
+(def wide-tx-stale 0.02)
+
+(def wide-tx-duplicate 0.01)

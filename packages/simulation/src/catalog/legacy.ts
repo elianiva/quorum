@@ -14,7 +14,8 @@ export {
 import type { PerkId } from '../generated/ids.ts'
 import type { PerkDef } from '../generated/types.ts'
 
-export type { ExitId, PerkId } from '../generated/ids.ts'
+export type { ExitId } from '../generated/legacy.ts'
+export type { PerkId } from '../generated/ids.ts'
 export type { ExitDef, PerkDef } from '../generated/types.ts'
 
 const doubling = (first: number, levels: number): ReadonlyArray<number> => {

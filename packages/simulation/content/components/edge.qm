@@ -1,6 +1,4 @@
 ; Edge: the Component and the tables it reads.
-(import "./edge.ts" EDGE_MS)
-
 (component edge
   :code     edge
   :name     "Edge Function"
@@ -8,7 +6,7 @@
   :group    compute
   :dock     compute
   :cost     0
-  :latency  EDGE_MS
+  :latency  edge-ms
   :unlock   edge-compute
   :capacity unlimited
   :flags    (stack tls)

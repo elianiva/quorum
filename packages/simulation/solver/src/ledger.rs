@@ -22,7 +22,7 @@ const ANALYTICS_CAPACITY_GROWTH_PER_SIZE: f64 = 2.0;
 const TAIL_SAMPLING_FAILURE_MULTIPLIER: f64 = 2.0;
 
 #[inline]
-fn has_kind(mask: u64, kind: usize) -> bool {
+fn has_kind(mask: u128, kind: usize) -> bool {
     (mask >> kind) & 1 == 1
 }
 
@@ -637,7 +637,7 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
         if let Some(model) = model {
             for kind in order
                 .iter()
-                .filter(|kind| has_kind(model.service_mask, *kind))
+                .filter(|kind| has_kind(model.service_mask.into(), *kind))
             {
                 hop_by_kind.set(
                     kind,
@@ -679,7 +679,7 @@ pub fn ledger_of(setup: &crate::solve::Setup, pass: &Pass, tree: &mut Tree) -> L
             _ => Some(kind),
         });
         let p99 = match (model, busiest) {
-            (Some(model), Some(kind)) if inbound > 0.0 && has_kind(model.service_mask, kind) => {
+            (Some(model), Some(kind)) if inbound > 0.0 && has_kind(model.service_mask.into(), kind) => {
                 let own = crate::dist::Hop {
                     share: 1.0,
                     fixed_ms: model.service_fixed[kind],

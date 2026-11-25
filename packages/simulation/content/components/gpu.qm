@@ -1,43 +1,49 @@
 ; Gpu: the Component and the tables it reads.
 (component gpu
-  :code    gpu
-  :name    "GPU Node"
-  :product "vLLM on NVIDIA"
-  :group   compute
-  :dock    compute
-  :cost    900
-  :latency 300ms
-  :steps   8
-  :max-out 0
-  :unlock  model-serving
-  :flags   (limiting cold-start)
-  :accepts (infer)
-  :blurb   "Serves AI prompts in tokens per second. Each size step doubles the GPUs.")
+  :code     gpu
+  :name     "GPU Node"
+  :product  "vLLM on NVIDIA"
+  :group    compute
+  :dock     compute
+  :cost     900
+  :latency  300ms
+  :steps    8
+  :max-out  0
+  :unlock   model-serving
+  :flags    (limiting cold-start)
+  :accepts  (infer)
+  :blurb    "Serves AI prompts in tokens per second. Each size step doubles the GPUs."
+  :glossary (model-inference))
 
 (state gpu
-  (field gpu (enum t4 a100 h100)
+  (field gpu (key-of gpu-types)
     :default t4
     :schema  GpuType)
-  (field precision (enum fp16 int8 int4)
+  (field precision (key-of gpu-precisions)
     :default fp16
     :schema  GpuPrecision
-    :gate    (quantization :labels GPU_PRECISIONS)
+    :gate    (quantization :labels gpu-precisions)
     :set     (setPrecision :refuse "Only a GPU Node has a precision."))
-  (field gpu-model (enum small medium large)
+  (field gpu-model (key-of gpu-models)
     :default medium
     :schema  GpuModel)
-  (field batch number
-    :default 1))
+  (field batch (one-of 1 8 32)
+    :default 1
+    :schema  GpuBatch))
 
 (table gpu-types
-  :key id
+  :key         id
+  :export-rust
+  :ids         gpu-type-ids
   [id    name    burn  tokens  gb]
   [t4    "T4"    0.53     200  16]
   [a100  "A100"   1.8     900  80]
   [h100  "H100"   3.3   2_000  80])
 
 (table gpu-models
-  :key id
+  :key         id
+  :export-rust
+  :ids         gpu-model-ids
   [id      name           gb  speed  value]
   [small   "Small (3B)"    6      2    0.6]
   [medium  "Medium (7B)"  14      1      1]
@@ -48,18 +54,17 @@
   (first-token-ms 300))
 
 (table gpu-precisions
-  :key id
+  :key         id
+  :export-rust
+  :ids         gpu-precision-ids
   [id    name    speed  value  memory]
   [fp16  "FP16"      1      1       1]
   [int8  "INT8"      2   0.99     0.5]
   [int4  "INT4"      3   0.97    0.25])
 
 (table gpu-batches
+  :export-rust
   [batch  gain  ttft   int4]
   [    1     1      0     1]
   [    8   1.6    700  0.75]
   [   32   2.2  3_200   0.5])
-
-(def gpuGlossary
-  :type (array string)
-  ["model-inference"])

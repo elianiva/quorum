@@ -39,7 +39,7 @@ export {
   LET_IT_CRASH,
 } from '../generated/runtimes.ts'
 
-export type { FrameworkId, LanguageId, RuntimeId } from '../generated/ids.ts'
+export type { FrameworkId, LanguageId, RuntimeId } from '../generated/runtimes.ts'
 export type {
   Axis,
   Axes,

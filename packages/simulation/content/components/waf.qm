@@ -14,15 +14,18 @@
   :flags    (limiting zone-spanning tls)
   :accepts  (requests)
   :sends    (requests)
-  :blurb    "Blocks bots before they reach the app, and some real users with them.")
+  :blurb    "Blocks bots before they reach the app, and some real users with them."
+  :glossary (rate-limiting waf-web-application-firewall))
 
 (state waf
-  (field paranoia number
-    :default 2)
+  (field paranoia (one-of 1 2 3 4)
+    :default 2
+    :schema  Paranoia)
   (field under-attack bool
     :default false))
 
 (table paranoia
+  :export-rust
   [level  block  falsePositive  cpu]
   [    1    0.6          0.001    1]
   [    2    0.8          0.005  1.5]
@@ -30,12 +33,11 @@
   [    4   0.98           0.06    4])
 
 (def under-attack
-  :type const
+  :export-rust
+  :type        const
   (:block         0.99
    :falsePositive 0.01
    :latency       40
    :cpu           1))
 
-(def wafGlossary
-  :type (array string)
-  ["rate-limiting" "waf-web-application-firewall"])
+(def bot-management-false 0.5)

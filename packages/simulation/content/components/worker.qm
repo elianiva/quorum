@@ -16,3 +16,9 @@
 (def poison-share 0.9)
 
 (def fetch-ms 20)
+
+(def prefetch
+  :type const
+  [1 10 100])
+
+(def task-retry-seconds 30)

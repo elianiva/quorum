@@ -29,5 +29,5 @@ export {
   IO_PER_SPILLED_READ,
 } from '../generated/instances.ts'
 
-export type { FamilyId } from '../generated/ids.ts'
+export type { FamilyId } from '../generated/instances.ts'
 export type { FamilyDef } from '../generated/types.ts'

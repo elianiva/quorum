@@ -82,36 +82,27 @@ fn uses<'a>(v: &'a Value, out: &mut BTreeSet<&'a str>) {
     }
 }
 
-/// The `import` lines for the names one output uses, in declaration order.
-fn imports(w: &mut String, catalog: &Catalog, used: &BTreeSet<&str>) {
-    for import in &catalog.imports {
-        let names: Vec<&str> = import
-            .names
-            .iter()
-            .map(|n| n.text.as_str())
-            .filter(|n| used.contains(n))
-            .collect();
-        if !names.is_empty() {
-            let _ = writeln!(
-                w,
-                "import {{ {} }} from {}",
-                names.join(", "),
-                string(&import.from)
-            );
+/// The `import` lines for the names one output uses, in declaration order. Any value in the
+/// catalog scope resolves to its generated module, so a `.qm` reference needs no hand-written
+/// import.
+fn imports(w: &mut String, catalog: &Catalog, module: &str, used: &BTreeSet<&str>) {
+    let scope = crate::data::Scope::new(catalog);
+    let mut groups: Vec<(String, Vec<&str>)> = Vec::new();
+    for name in used {
+        let Some(origin) = scope.value(name, module) else {
+            continue;
+        };
+        let path = match origin {
+            crate::data::Origin::Local => continue,
+            crate::data::Origin::Generated(path) | crate::data::Origin::Path(path) => path,
+        };
+        match groups.iter_mut().find(|(p, _)| *p == path) {
+            Some((_, names)) => names.push(name),
+            None => groups.push((path, vec![name])),
         }
     }
-    let consts: Vec<&str> = catalog
-        .consts
-        .iter()
-        .map(|c| c.export.as_str())
-        .filter(|n| used.contains(n))
-        .collect();
-    if !consts.is_empty() {
-        let _ = writeln!(
-            w,
-            "import {{ {} }} from './constants.ts'",
-            consts.join(", ")
-        );
+    for (path, names) in groups {
+        let _ = writeln!(w, "import {{ {} }} from '{}'", names.join(", "), path);
     }
 }
 
@@ -140,7 +131,9 @@ pub fn states(
                 crate::lower::StateType::OneOf(values) => {
                     values.iter().map(num).collect::<Vec<_>>().join(", ")
                 }
-                crate::lower::StateType::Number | crate::lower::StateType::Bool => continue,
+                crate::lower::StateType::Number
+                | crate::lower::StateType::Bool
+                | crate::lower::StateType::KeyOf(_) => continue,
             };
             let _ = writeln!(out, "export const {} = [{}] as const", name.text, values);
         }
@@ -153,7 +146,16 @@ pub fn states(
                 }
                 continue;
             }
-            let crate::lower::StateType::Enum(values) = &field.ty else {
+            let values = match &field.ty {
+                crate::lower::StateType::Enum(values) => {
+                    Some(values.iter().map(|v| string(&v.value)).collect::<Vec<_>>())
+                }
+                crate::lower::StateType::OneOf(values) => {
+                    Some(values.iter().map(num).collect::<Vec<_>>())
+                }
+                _ => None,
+            };
+            let Some(values) = values else {
                 continue;
             };
             let name = field.as_name.as_ref().map_or_else(
@@ -161,16 +163,7 @@ pub fn states(
                 |n| n.text.clone(),
             );
             let values = field.values_name.as_ref().map_or_else(
-                || {
-                    format!(
-                        "[{}]",
-                        values
-                            .iter()
-                            .map(|v| string(&v.value))
-                            .collect::<Vec<_>>()
-                            .join(", ")
-                    )
-                },
+                || format!("[{}]", values.join(", ")),
                 |name| name.text.clone(),
             );
             let _ = writeln!(out, "export const {name} = Schema.Literals({values})");
@@ -182,16 +175,18 @@ pub fn states(
         for field in &state.fields {
             let key = key(&crate::lower::camel(&field.key.text));
             let base = match &field.ty {
-                crate::lower::StateType::Enum(_) => field.as_name.as_ref().map_or_else(
-                    || crate::lower::pascal(&crate::lower::camel(&field.key.text)),
-                    |n| n.text.clone(),
-                ),
-                crate::lower::StateType::OneOf(_) => "Schema.Finite".to_string(),
+                crate::lower::StateType::Enum(_) | crate::lower::StateType::OneOf(_) => {
+                    field.as_name.as_ref().map_or_else(
+                        || crate::lower::pascal(&crate::lower::camel(&field.key.text)),
+                        |n| n.text.clone(),
+                    )
+                }
                 crate::lower::StateType::Number => field
                     .as_name
                     .as_ref()
                     .map_or_else(|| "Schema.Finite".to_string(), |n| n.text.clone()),
                 crate::lower::StateType::Bool => "Schema.Boolean".to_string(),
+                crate::lower::StateType::KeyOf(_) => "Schema.Never".to_string(),
             };
             if field.required {
                 let _ = writeln!(out, "  {key}: {base},");
@@ -327,8 +322,9 @@ fn gates(w: &mut String, catalog: &Catalog) {
 pub fn components(catalog: &Catalog) -> String {
     let mut o = String::from(HEADER);
     let w = &mut o;
+    let _ = writeln!(w, "import {{ Schema }} from 'effect'");
     let _ = writeln!(w, "import type {{ Kind }} from './types.ts'");
-    let _ = writeln!(w, "import type {{ ResearchId }} from './ids.ts'");
+    let _ = writeln!(w, "import type {{ ResearchId }} from './research.ts'");
     if !catalog.gates.is_empty() {
         let _ = writeln!(w, "import type {{ GameNode }} from '../state.ts'");
     }
@@ -349,7 +345,7 @@ pub fn components(catalog: &Catalog) -> String {
             uses(&v.value, &mut used);
         }
     }
-    imports(w, catalog, &used);
+    imports(w, catalog, "components", &used);
     let ids = |pick: &dyn Fn(&crate::lower::Component) -> bool| {
         catalog
             .components
@@ -365,7 +361,8 @@ pub fn components(catalog: &Catalog) -> String {
     }
     let _ = writeln!(
         w,
-        "] as const\nexport type ComponentId = (typeof COMPONENT_IDS)[number]"
+        "] as const\nexport const ComponentId = Schema.Literals(COMPONENT_IDS)\n\
+         export type ComponentId = typeof ComponentId.Type"
     );
 
     let groups = |name: &str| -> String {
@@ -491,14 +488,61 @@ pub fn components(catalog: &Catalog) -> String {
         }
     }
     let _ = writeln!(w, "}}");
+
+    let _ = writeln!(
+        w,
+        "export const COMPONENT_GLOSSARY: Partial<Record<ComponentId, ReadonlyArray<string>>> = {{"
+    );
+    for c in &catalog.components {
+        if c.glossary.is_empty() {
+            continue;
+        }
+        let _ = writeln!(
+            w,
+            "  {}: [{}],",
+            key(&c.id.text),
+            list(c.glossary.iter().map(|g| g.text.as_str()))
+        );
+    }
+    let _ = writeln!(w, "}}");
     if !catalog.gates.is_empty() {
         gates(w, catalog);
     }
     o
 }
 
+/// The combined `COMPONENT_FIELDS` object. Each component's fields object stays in its own
+/// generated module; this module only spreads them in a stable order.
+pub fn fields(catalog: &Catalog) -> String {
+    let mut modules: Vec<&str> = catalog.states.iter().map(|s| s.module.as_str()).collect();
+    modules.sort();
+    modules.dedup();
+    let mut o = String::from(HEADER);
+    for module in &modules {
+        let _ = writeln!(
+            o,
+            "import {{ {}Fields }} from './{module}.ts'",
+            crate::lower::camel(module)
+        );
+    }
+    let _ = writeln!(o, "\nexport const COMPONENT_FIELDS = {{");
+    for module in &modules {
+        let _ = writeln!(o, "  ...{}Fields,", crate::lower::camel(module));
+    }
+    let _ = writeln!(o, "}} as const");
+    let _ = writeln!(o, "\nexport const COMPONENT_FIELD_ORDER = [");
+    for state in &catalog.states {
+        for field in &state.fields {
+            let _ = writeln!(o, "  '{}',", crate::lower::camel(&field.key.text));
+        }
+    }
+    let _ = writeln!(o, "] as const");
+    o
+}
+
 pub fn kinds(catalog: &Catalog) -> String {
     let mut o = String::from(HEADER);
+    let _ = writeln!(o, "import {{ Schema }} from 'effect'");
     for (name, ty, kinds) in [
         ("REQUEST_KINDS", "RequestKind", &catalog.request_kinds),
         ("BACKEND_KINDS", "BackendKind", &catalog.backend_kinds),
@@ -508,15 +552,11 @@ pub fn kinds(catalog: &Catalog) -> String {
         for kind in kinds {
             let _ = writeln!(o, "  {},", string(&kind.text));
         }
-        let _ = writeln!(o, "] as const\nexport type {ty} = (typeof {name})[number]");
-    }
-    o
-}
-
-pub fn constants(catalog: &Catalog) -> String {
-    let mut o = String::from(HEADER);
-    for c in &catalog.consts {
-        let _ = writeln!(o, "export const {} = {}", c.export, num(&c.value));
+        let _ = writeln!(
+            o,
+            "] as const\nexport const {ty} = Schema.Literals({name})\n\
+             export type {ty} = typeof {ty}.Type"
+        );
     }
     o
 }
@@ -567,8 +607,9 @@ fn list<'a>(items: impl IntoIterator<Item = &'a str>) -> String {
 pub fn incidents(catalog: &Catalog) -> String {
     let mut o = String::from(HEADER);
     let w = &mut o;
+    let _ = writeln!(w, "import {{ Schema }} from 'effect'");
     let _ = writeln!(w, "import type {{ RequestKind }} from './kinds.ts'");
-    let _ = writeln!(w, "import type {{ ResearchId }} from './ids.ts'");
+    let _ = writeln!(w, "import type {{ ResearchId }} from './research.ts'");
     let mut used = BTreeSet::new();
     for i in &catalog.incidents {
         for v in [&i.name, &i.cause, &i.prevention] {
@@ -578,7 +619,7 @@ pub fn incidents(catalog: &Catalog) -> String {
             uses(&by.value, &mut used);
         }
     }
-    imports(w, catalog, &used);
+    imports(w, catalog, "incidents", &used);
 
     let _ = writeln!(w, "\nexport const INCIDENT_IDS = [");
     for i in &catalog.incidents {
@@ -586,7 +627,8 @@ pub fn incidents(catalog: &Catalog) -> String {
     }
     let _ = writeln!(
         w,
-        "] as const\nexport type IncidentId = (typeof INCIDENT_IDS)[number]"
+        "] as const\nexport const IncidentId = Schema.Literals(INCIDENT_IDS)\n\
+         export type IncidentId = typeof IncidentId.Type"
     );
 
     let _ = writeln!(w, "\nexport const FALLACY_IDS = [");
@@ -595,7 +637,8 @@ pub fn incidents(catalog: &Catalog) -> String {
     }
     let _ = writeln!(
         w,
-        "] as const\nexport type FallacyId = (typeof FALLACY_IDS)[number]"
+        "] as const\nexport const FallacyId = Schema.Literals(FALLACY_IDS)\n\
+         export type FallacyId = typeof FallacyId.Type"
     );
 
     let _ = writeln!(
@@ -741,7 +784,7 @@ pub fn eras(catalog: &Catalog) -> String {
             uses(&v.value, &mut used);
         }
     }
-    imports(w, catalog, &used);
+    imports(w, catalog, "eras", &used);
     let _ = writeln!(
         w,
         "\nexport type EraDef = Readonly<{{\n  name: string\n  market: number\n  raiseAt: number\n  grant: number\n  dilution: number\n  growth: number\n  apdexTarget: number\n  costIndex: number\n  salaryIndex: number\n  slo: number\n  incidentInterval: number\n  maxSeverity: 1 | 2 | 3\n  mix: Partial<Record<RequestKind, number>>\n  question: string\n  arrivals: string\n}}>"
@@ -813,8 +856,9 @@ fn era_entry(w: &mut String, era: &Era) {
 pub fn research(catalog: &Catalog) -> String {
     let mut o = String::from(HEADER);
     let w = &mut o;
+    let _ = writeln!(w, "import {{ Schema }} from 'effect'");
     let _ = writeln!(w, "import type {{ InsightPool }} from './types.ts'");
-    let _ = writeln!(w, "import type {{ FrameworkId }} from './ids.ts'");
+    let _ = writeln!(w, "import type {{ FrameworkId }} from './runtimes.ts'");
     let mut used = BTreeSet::new();
     for r in &catalog.research {
         uses(&r.name.value, &mut used);
@@ -823,14 +867,15 @@ pub fn research(catalog: &Catalog) -> String {
             uses(&v.value, &mut used);
         }
     }
-    imports(w, catalog, &used);
+    imports(w, catalog, "research", &used);
     let _ = writeln!(w, "\nexport const RESEARCH_IDS = [");
     for r in &catalog.research {
         let _ = writeln!(w, "  {},", string(&r.id.text));
     }
     let _ = writeln!(
         w,
-        "] as const\nexport type ResearchId = (typeof RESEARCH_IDS)[number]\n"
+        "] as const\nexport const ResearchId = Schema.Literals(RESEARCH_IDS)\n\
+         export type ResearchId = typeof ResearchId.Type\n"
     );
 
     let _ = writeln!(w, "export type ResearchTrack =");

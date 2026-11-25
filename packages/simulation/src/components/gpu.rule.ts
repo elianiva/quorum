@@ -1,5 +1,5 @@
 import { type Action, notAllowed, ok, patch, withNode } from '../action-kit.ts'
-import type { Game, GpuType } from '../state.ts'
+import type { Game, GameNode, GpuType } from '../state.ts'
 import { activeIncident } from '../state.ts'
 import { type GpuModel, GPU_BATCHES, GPU_MODELS } from '../catalog.ts'
 
@@ -21,7 +21,7 @@ export const setBatch = (game: Game, id: string, batch: number): Action =>
     if (node.type !== 'gpu') return notAllowed('Only a GPU Node batches prompts.')
     if (!GPU_BATCHES.some((entry) => entry.batch === batch))
       return notAllowed(`A batch is ${GPU_BATCHES.map((entry) => entry.batch).join(', ')}.`)
-    return ok(node.batch === batch ? game : patch(game, id, { batch }))
+    return ok(node.batch === batch ? game : patch(game, id, { batch: batch as GameNode['batch'] }))
   })
 
 export const setGpuModel = (game: Game, id: string, gpuModel: GpuModel): Action =>

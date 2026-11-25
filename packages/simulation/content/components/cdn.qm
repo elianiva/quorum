@@ -1,23 +1,24 @@
 ; Cdn: the Component and the tables it reads.
 (component cdn
-  :code    cdn
-  :name    "CDN"
-  :product "Cloudflare"
-  :group   edge
-  :dock    edge
-  :cost    220
-  :latency 8ms
-  :burn    0.05
-  :unlock  cdn
-  :flags   (global tls)
-  :accepts (requests)
-  :sends   (requests)
-  :blurb   "Answers cacheable pages near the user. Egress from the edge costs less.")
+  :code     cdn
+  :name     "CDN"
+  :product  "Cloudflare"
+  :group    edge
+  :dock     edge
+  :cost     220
+  :latency  8ms
+  :burn     0.05
+  :unlock   cdn
+  :flags    (global tls)
+  :accepts  (requests)
+  :sends    (requests)
+  :blurb    "Answers cacheable pages near the user. Egress from the edge costs less."
+  :glossary (cache-hit-rate cdn-content-delivery-network egress))
 
 (state cdn
   (field purge bool
     :default false)
-  (field cache-key (enum full query path)
+  (field cache-key (key-of cache-keys)
     :default full
     :schema  CacheKey)
   (field stale-until number
@@ -41,12 +42,12 @@
 (def esi-page-hit 0.2)
 
 (table cache-keys
-  :key id
+  :key         id
+  :export-rust
+  :ids         cache-key-ids
   [id     name                       hit  leak]
   [full   "Path, query and cookies"    1     0]
   [query  "Path and query"           1.1     1]
   [path   "Path only"                1.2   2.5])
 
-(def cdnGlossary
-  :type (array string)
-  ["cache-hit-rate" "cdn-content-delivery-network" "egress"])
+(def stale-after-deploy 0.3)

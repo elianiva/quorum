@@ -14,12 +14,23 @@
   :flags    (limiting cold-start)
   :accepts  (q-read q-write q-tx q-scan)
   :fallback (q-scan)
-  :blurb    "Holds documents instead of rows. No joins and no connections to pool: one flat rate of reads and writes, and each query needs its own index.")
+  :blurb    "Holds documents instead of rows. No joins and no connections to pool: one flat rate of reads and writes, and each query needs its own index."
+  :glossary (hot-key sharding))
 
 (state doc
   (field transactions bool
     :default false))
 
-(def docGlossary
-  :type (array string)
-  ["hot-key" "sharding"])
+(def doc-ops 3_000)
+
+(def doc-join-cost 3)
+
+(def doc-op-ms 1)
+
+(def doc-txn-latency 0.5)
+
+(def doc-partial 0.02)
+
+(def doc-pattern-factor 1.1)
+
+(def doc-shape-dh 0.75)

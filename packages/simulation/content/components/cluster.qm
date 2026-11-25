@@ -1,17 +1,18 @@
 ; Cluster: the Component and the tables it reads.
 (component cluster
-  :code    k8s
-  :name    "Kubernetes Cluster"
-  :product "Kubernetes"
-  :group   compute
-  :dock    compute
-  :cost    500
-  :latency 0ms
-  :burn    0.1
-  :max-out 0
-  :unlock  containers
-  :flags   (control)
-  :blurb   "Link App Servers or Workers into it. They pack onto shared nodes: 15% less Burn, copies in 30 s.")
+  :code     k8s
+  :name     "Kubernetes Cluster"
+  :product  "Kubernetes"
+  :group    compute
+  :dock     compute
+  :cost     500
+  :latency  0ms
+  :burn     0.1
+  :max-out  0
+  :unlock   containers
+  :flags    (control)
+  :blurb    "Link App Servers or Workers into it. They pack onto shared nodes: 15% less Burn, copies in 30 s."
+  :glossary (cold-start container-orchestration))
 
 (state cluster
   (field upgraded-at number
@@ -27,6 +28,6 @@
 
 (def platform-tax 0.5)
 
-(def clusterGlossary
-  :type (array string)
-  ["cold-start" "container-orchestration"])
+(def pod-burn 0.85)
+
+(def pod-reschedule-seconds 30)

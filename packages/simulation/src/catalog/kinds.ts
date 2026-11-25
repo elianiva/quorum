@@ -10,7 +10,7 @@ export {
   DATA_KINDS,
   REQUEST_KINDS,
   type BackendKind,
-  type RequestKind,
+  RequestKind,
 } from '../generated/kinds.ts'
 export {
   KINDS,

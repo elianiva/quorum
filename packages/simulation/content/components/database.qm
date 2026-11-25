@@ -17,12 +17,12 @@
   :blurb    "The relational source of truth. A Read Replica copies it and takes no writes. A bigger size restarts it. Postgres reads and scans cheaper; MySQL writes cheaper and changes schema online.")
 
 (state database
-  (field shard-key (enum hash range tenant region)
+  (field shard-key (key-of shard-keys)
     :default hash
     :schema  ShardKey
     :values  shard-key-values
     :set     (setShardKey :refuse "Only a Database shards."))
-  (field iops (enum general provisioned)
+  (field iops (key-of storage-iops)
     :default general
     :schema  IopsClass
     :set     (setStorageIops :refuse "Only a Database has a volume."))
@@ -31,7 +31,7 @@
     :values  shard-counts
     :gate    (sharding)
     :set     (setShards :refuse "Only a Database shards." :values-label "Shard counts"))
-  (field keep (enum keep archive delete)
+  (field keep (key-of db-retentions)
     :default keep
     :schema  DbRetention
     :gate    (retention)
@@ -44,13 +44,15 @@
     :default single
     :schema  DbTopology
     :set     (setTopology :scope all-of-type))
-  (field backup (enum none nightly pitr)
+  (field backup (key-of backups)
     :default none
     :schema  Backup
     :gate    (pitr "Backups")))
 
 (table db-engines
-  :key id
+  :key     id
+  :ids     db-engine-ids
+  :id-type DbEngine
   [id        name          connections      connectionMB  read  write  scan  searchCost  migration  lag  bloat]
   [postgres  "PostgreSQL"  max-connections             8  0.95   1.15   0.9           1       1.25    1  true]
   [mysql     "MySQL"       500                         1  1.05   0.85   1.1           2       0.75  0.8  false])

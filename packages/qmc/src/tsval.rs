@@ -132,6 +132,11 @@ impl Env {
     /// The value of an exported name. Panics on a name no module exports, which is a bug in the
     /// emitter, not in content.
     pub fn get(&self, name: &str) -> J {
+        // Generated modules also export Effect Schema consts. The Solver catalog only reads
+        // literal data, so a schema expression is deliberately undefined here.
+        if name == "Schema" || name == "Effect" {
+            return J::Undefined;
+        }
         if let Some(v) = self.memo.borrow().get(name) {
             return v.clone();
         }

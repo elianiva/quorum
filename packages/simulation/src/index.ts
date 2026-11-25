@@ -37,7 +37,6 @@ export {
   NO_FALSE_ALARMS,
   PmMode,
   Postmortem,
-  RequestKindId,
   Retries,
   Sample,
 } from './state.ts'

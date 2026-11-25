@@ -1,5 +1,3 @@
-(id FamilyId family-ids)
-
 (table sizes
   [name       vcpu  gbps]
   ["nano"      0.5   0.5]
@@ -12,20 +10,18 @@
   ["4xlarge"    64    50]
   ["metal"      96   100])
 
-(def family-ids
-  :type const
-  ["burstable" "general" "compute" "memory" "arm"])
-
 (table families
   :key      id
+  :ids      family-ids
+  :id-type  FamilyId
   :keep-key
   :type     (record FamilyId FamilyDef)
-  [id           name         ramPerVcpu  price  blurb]
-  ["burstable"  "Burstable"           2    0.4  "Cheap. Earns CPU credits while idle and drops to 20% CPU when they run out."]
-  ["general"    "General"             4      1  "1 vCPU : 4 GB."]
-  ["compute"    "Compute"             2   0.85  "1 vCPU : 2 GB."]
-  ["memory"     "Memory"              8    1.3  "1 vCPU : 8 GB."]
-  ["arm"        "ARM"                 4    0.8  "Same as General for 20% less. Some runtimes and libraries need work to port."])
+  [id         name         ramPerVcpu  price  blurb]
+  [burstable  "Burstable"           2    0.4  "Cheap. Earns CPU credits while idle and drops to 20% CPU when they run out."]
+  [general    "General"             4      1  "1 vCPU : 4 GB."]
+  [compute    "Compute"             2   0.85  "1 vCPU : 2 GB."]
+  [memory     "Memory"              8    1.3  "1 vCPU : 8 GB."]
+  [arm        "ARM"                 4    0.8  "Same as General for 20% less. Some runtimes and libraries need work to port."])
 
 (def arm-research
   :type const
@@ -71,3 +67,7 @@
   (per-tx 12)
   (per-scan 40)
   (per-spilled-read 4))
+
+(def prefetch-task-mb 20)
+
+(def vm-restart-seconds 1)

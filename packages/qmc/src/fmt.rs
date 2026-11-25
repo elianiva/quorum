@@ -195,6 +195,7 @@ impl Printer<'_> {
             Some("type") => self.type_def(items, indent),
             Some("constants") => self.constants(items, indent),
             Some("table") => self.table(items, indent),
+            Some("records") => self.records(items, indent),
             Some("state") => self.state(items, indent),
             _ => self.form(items, indent),
         }
@@ -436,7 +437,7 @@ impl Printer<'_> {
         let mut at = 2;
         let mut defaults = Vec::new();
         while at < items.len() && items[at].keyword().is_some() {
-            if at + 1 < items.len() && items[at + 1].keyword().is_none() {
+            if takes_value(items, at) {
                 defaults.push(Field {
                     key: &items[at],
                     value: Some(&items[at + 1]),
@@ -494,7 +495,7 @@ impl Printer<'_> {
         let mut at = 2;
         let mut fields = Vec::new();
         while at < items.len() && items[at].keyword().is_some() {
-            if at + 1 < items.len() && items[at + 1].keyword().is_none() {
+            if takes_value(items, at) {
                 fields.push(Field {
                     key: &items[at],
                     value: Some(&items[at + 1]),
@@ -593,6 +594,80 @@ impl Printer<'_> {
         out
     }
 
+    fn records(&self, items: &[Sexp], indent: usize) -> String {
+        if items.len() < 2 {
+            return self.sequence(items, indent);
+        }
+        let mut out = format!("(records {}", self.compact(&items[1]));
+        let mut at = 2;
+        let mut fields = Vec::new();
+        while at < items.len() && items[at].keyword().is_some() {
+            if takes_value(items, at) {
+                fields.push(Field {
+                    key: &items[at],
+                    value: Some(&items[at + 1]),
+                });
+                at += 2;
+            } else {
+                fields.push(Field {
+                    key: &items[at],
+                    value: None,
+                });
+                at += 1;
+            }
+        }
+        if !fields.is_empty() {
+            out.push_str(&self.pairs(&fields, indent + 2));
+        }
+        for entry in &items[at..] {
+            out.push('\n');
+            out.push_str(&" ".repeat(indent + 2));
+            out.push_str(&self.records_entry(entry, indent + 2));
+        }
+        out.push(')');
+        out
+    }
+
+    /// A records entry is a key and keyword fields, laid out like the fields of a def.
+    fn records_entry(&self, sexp: &Sexp, indent: usize) -> String {
+        let Some(items) = sexp.list() else {
+            return self.render(sexp, indent);
+        };
+        if items.is_empty() {
+            return "()".into();
+        }
+        let mut out = format!("({}", self.compact(&items[0]));
+        let rest = &items[1..];
+        let pairs = rest
+            .chunks(2)
+            .all(|pair| pair.first().is_some_and(|k| k.keyword().is_some()));
+        if !rest.is_empty() && pairs {
+            let mut fields = Vec::new();
+            for pair in rest.chunks(2) {
+                if let [key, value] = pair {
+                    fields.push(Field {
+                        key,
+                        value: Some(value),
+                    });
+                } else {
+                    fields.push(Field {
+                        key: &pair[0],
+                        value: None,
+                    });
+                }
+            }
+            out.push_str(&self.pairs(&fields, indent + 2));
+        } else {
+            for item in rest {
+                out.push('\n');
+                out.push_str(&" ".repeat(indent + 2));
+                out.push_str(&self.render(item, indent + 2));
+            }
+        }
+        out.push(')');
+        out
+    }
+
     fn state(&self, items: &[Sexp], indent: usize) -> String {
         if items.len() < 2 {
             return self.sequence(items, indent);
@@ -621,6 +696,17 @@ fn prefix(items: &[Sexp]) -> Option<&'static str> {
     }
 }
 
+/// Keywords that stand alone. A flag never takes the next item as its value, so the header of an
+/// `:export-rust` table stays a row.
+const FLAGS: &[&str] = &["array", "export-rust", "keep-key", "lock-all", "required"];
+
+/// Whether the keyword at `at` takes the item after it as its value.
+fn takes_value(items: &[Sexp], at: usize) -> bool {
+    !items[at].keyword().is_some_and(|k| FLAGS.contains(&k))
+        && at + 1 < items.len()
+        && items[at + 1].keyword().is_none()
+}
+
 /// Positional arguments and `:key value` pairs. Keys also appear after a positional value in a
 /// few forms, so this keeps the first appearance order and leaves the rest positional.
 fn split_fields<'a>(items: &'a [Sexp], start: usize) -> (Vec<&'a Sexp>, Vec<Field<'a>>) {
@@ -629,7 +715,7 @@ fn split_fields<'a>(items: &'a [Sexp], start: usize) -> (Vec<&'a Sexp>, Vec<Fiel
     let mut at = start;
     while at < items.len() {
         if items[at].keyword().is_some() {
-            if at + 1 < items.len() && items[at + 1].keyword().is_none() {
+            if takes_value(items, at) {
                 fields.push(Field {
                     key: &items[at],
                     value: Some(&items[at + 1]),
@@ -654,7 +740,7 @@ fn attrs_and_value<'a>(items: &'a [Sexp]) -> (Vec<Field<'a>>, Vec<&'a Sexp>) {
     let mut fields = Vec::new();
     let mut at = 0;
     while at < items.len() && items[at].keyword().is_some() {
-        if at + 1 < items.len() && items[at + 1].keyword().is_none() {
+        if takes_value(items, at) {
             fields.push(Field {
                 key: &items[at],
                 value: Some(&items[at + 1]),
@@ -723,5 +809,13 @@ mod tests {
         let out = format(text).unwrap();
         assert!(out.contains("[a   \"one\"]"), "{out}");
         assert!(out.contains("[b   \"two\"]"), "{out}");
+    }
+
+    #[test]
+    fn a_flag_keeps_the_header_as_the_first_row() {
+        let text = "(table t :export-rust [level cpu] [1 1] [32 2.5])\n";
+        let expected =
+            "(table t\n  :export-rust\n  [level  cpu]\n  [    1    1]\n  [   32  2.5])\n";
+        assert_eq!(format(text).unwrap(), expected);
     }
 }

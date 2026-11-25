@@ -1,17 +1,18 @@
 ; Analytics: the Component and the tables it reads.
 (component analytics
-  :code    otel
-  :name    "Analytics"
-  :product "OpenTelemetry"
-  :group   ops
-  :dock    insight
-  :cost    40
-  :latency 0ms
-  :burn    0.05
-  :steps   8
-  :max-out 0
-  :flags   (tap global)
-  :blurb   "Link any Node into it. It samples that traffic and turns it into Insight.")
+  :code     otel
+  :name     "Analytics"
+  :product  "OpenTelemetry"
+  :group    ops
+  :dock     insight
+  :cost     40
+  :latency  0ms
+  :burn     0.05
+  :steps    8
+  :max-out  0
+  :flags    (tap global)
+  :blurb    "Link any Node into it. It samples that traffic and turns it into Insight."
+  :glossary (observability))
 
 (state analytics
   (field sample-rate number
@@ -30,7 +31,3 @@
   (storage :type const [1 2 4]))
 
 (def analytics-capacity 4)
-
-(def analyticsGlossary
-  :type (array string)
-  ["observability"])

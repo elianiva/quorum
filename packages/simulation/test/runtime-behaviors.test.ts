@@ -450,7 +450,7 @@ describe('ARM instances', () => {
 })
 
 describe('GPU serving options', () => {
-  const load = (precision: GameNode['precision'], batch: number): number => {
+  const load = (precision: GameNode['precision'], batch: GameNode['batch']): number => {
     const game = freeSandbox()
     const placed = ok(Actions.place(game, 'gpu', 600, 560))
     const id = placed.nodes.at(-1)!.id

@@ -93,12 +93,6 @@ pub struct Spanned<T> {
 }
 
 #[derive(Debug)]
-pub struct Import {
-    pub from: String,
-    pub names: Vec<Name>,
-}
-
-#[derive(Debug)]
 pub struct Track {
     pub key: Name,
     pub label: String,
@@ -207,7 +201,6 @@ pub struct Era {
 
 #[derive(Default, Debug)]
 pub struct Catalog {
-    pub imports: Vec<Import>,
     pub tracks: Vec<Track>,
     pub shape_kinds: Vec<ShapeKind>,
     pub research: Vec<Research>,
@@ -225,8 +218,6 @@ pub struct Catalog {
     pub build_groups: Vec<Group>,
     pub dock_groups: Vec<Group>,
     pub components: Vec<Component>,
-    pub consts: Vec<Const>,
-    pub modules: std::collections::BTreeSet<String>,
     pub incidents: Vec<Incident>,
     pub defs: Vec<crate::data::Def>,
     pub type_defs: Vec<crate::data::TypeDef>,
@@ -235,8 +226,8 @@ pub struct Catalog {
     pub states: Vec<State>,
 }
 
-/// `(gate server compress :research gzip :what "Gzip" :free ())`: a setting that needs research.
-/// A value in `:free` needs none, or only a value in `:locked` needs it.
+/// A state field's `:gate (gzip "Gzip" :lock-all)`: a setting that needs research. Without
+/// `:locked` or `:lock-all`, every value but the field's default needs the research.
 #[derive(Debug)]
 pub struct Gate {
     pub component: Name,
@@ -299,6 +290,8 @@ pub struct StateField {
 #[derive(Debug)]
 pub enum StateType {
     Enum(Vec<Spanned<String>>),
+    /// `(key-of table)`: the enum of a keyed table's keys, resolved once every file is lowered.
+    KeyOf(Name),
     OneOf(Vec<Spanned<Number>>),
     Number,
     Bool,
@@ -357,6 +350,7 @@ pub struct Component {
     pub accepts: Option<KindList>,
     pub sends: Option<KindList>,
     pub fallback: Option<KindList>,
+    pub glossary: Vec<Name>,
     pub blurb: Spanned<Value>,
     pub span: Span,
 }
@@ -373,15 +367,6 @@ pub struct IdDef {
     pub name: Name,
     pub values: Name,
     pub span: Span,
-}
-
-/// `(const NAME value)`: a number the generated code exports and content can name.
-#[derive(Debug)]
-pub struct Const {
-    pub name: Name,
-    /// The SCREAM_CASE name `constants.ts` exports.
-    pub export: String,
-    pub value: Spanned<Number>,
 }
 
 #[derive(Debug)]
@@ -413,7 +398,6 @@ pub fn lower(forms: &[Sexp], module: &str) -> (Catalog, Sink) {
         catalog: Catalog::default(),
         module: module.to_string(),
     };
-    cx.catalog.modules.insert(module.to_string());
     for form in forms {
         cx.form(form);
     }
@@ -428,7 +412,6 @@ impl Catalog {
     }
 
     pub fn append(&mut self, other: Catalog) {
-        self.imports.extend(other.imports);
         self.tracks.extend(other.tracks);
         self.shape_kinds.extend(other.shape_kinds);
         self.research.extend(other.research);
@@ -442,8 +425,6 @@ impl Catalog {
         self.build_groups.extend(other.build_groups);
         self.dock_groups.extend(other.dock_groups);
         self.components.extend(other.components);
-        self.consts.extend(other.consts);
-        self.modules.extend(other.modules);
         self.incidents.extend(other.incidents);
         self.defs.extend(other.defs);
         self.type_defs.extend(other.type_defs);
@@ -467,14 +448,12 @@ struct Lower {
 }
 
 const FORMS: &[&str] = &[
-    "import",
     "tracks",
     "study-shapes",
     "research",
     "mix",
     "era",
     "fallacies",
-    "const",
     "incident",
     "kinds",
     "build-groups",
@@ -484,9 +463,9 @@ const FORMS: &[&str] = &[
     "type",
     "id",
     "constants",
-    "gate",
     "state",
     "table",
+    "records",
 ];
 
 /// A form's keyword arguments, after the head and any positional arguments.
@@ -529,7 +508,6 @@ impl Lower {
             return;
         };
         match head {
-            "import" => self.import(form),
             "tracks" => self.tracks(form),
             "study-shapes" => self.shape_kinds(form),
             "research" => {
@@ -599,38 +577,6 @@ impl Lower {
                     }
                 }
             }
-            "const" => match form.list().unwrap() {
-                [_, name, value] => {
-                    let name = self.name(name, "a constant name");
-                    let value = match value.kind {
-                        Kind::Num(n) => Some(Spanned {
-                            value: n,
-                            span: value.span,
-                        }),
-                        _ => {
-                            self.sink.push(Diagnostic::error(
-                                "expected-number",
-                                value.span,
-                                "a constant is a number",
-                            ));
-                            None
-                        }
-                    };
-                    if let (Some(name), Some(value)) = (name, value) {
-                        let export = constant(&name.text);
-                        self.catalog.consts.push(Const {
-                            name,
-                            export,
-                            value,
-                        });
-                    }
-                }
-                _ => self.sink.push(Diagnostic::error(
-                    "bad-form",
-                    form.span,
-                    "write (const NAME value)",
-                )),
-            },
             "def" => {
                 if let Some(def) = crate::data::lower_def(form, &self.module, &mut self.sink) {
                     self.catalog.defs.push(def);
@@ -653,11 +599,6 @@ impl Lower {
                     &mut self.sink,
                 ));
             }
-            "gate" => {
-                if let Some(gate) = self.gate(form) {
-                    self.catalog.gates.push(gate);
-                }
-            }
             "state" => {
                 if let Some(state) = self.state(form) {
                     self.catalog.states.push(state);
@@ -666,6 +607,13 @@ impl Lower {
             "table" => {
                 if let Some(table) = crate::data::lower_table(form, &self.module, &mut self.sink) {
                     self.catalog.defs.push(table);
+                }
+            }
+            "records" => {
+                if let Some(records) =
+                    crate::data::lower_records(form, &self.module, &mut self.sink)
+                {
+                    self.catalog.defs.push(records);
                 }
             }
             "incident" => {
@@ -913,33 +861,6 @@ impl Lower {
             value: n,
             span: sexp.span,
         })
-    }
-
-    fn import(&mut self, form: &Sexp) {
-        let items = &form.list().unwrap()[1..];
-        let Some(Kind::Str(from)) = items.first().map(|i| &i.kind) else {
-            self.sink.push(Diagnostic::error(
-                "bad-form",
-                form.span,
-                "write (import \"./file.ts\" NAME …)",
-            ));
-            return;
-        };
-        let names = items[1..]
-            .iter()
-            .filter_map(|i| self.name(i, "an imported name"))
-            .collect::<Vec<_>>();
-        if names.is_empty() {
-            self.sink.push(Diagnostic::error(
-                "bad-form",
-                form.span,
-                "an import names at least one value",
-            ));
-        }
-        self.catalog.imports.push(Import {
-            from: from.clone(),
-            names,
-        });
     }
 
     fn tracks(&mut self, form: &Sexp) {
@@ -1506,103 +1427,6 @@ impl Lower {
         Some(n)
     }
 
-    fn gate(&mut self, form: &Sexp) -> Option<Gate> {
-        let (args, keys) = self.keys(form, 2, &["research", "what", "labels", "free", "locked"])?;
-        let component = self.name(&args[0], "a component id");
-        let field = self.name(&args[1], "a field name");
-        let research = keys
-            .required("research", "a gate", &mut self.sink)
-            .and_then(|v| self.name(v, "a research id"));
-        let what = self.gate_label(&keys, form, true);
-        let mut values = |key: &str| -> Option<Vec<crate::data::Datum>> {
-            let list = keys.get(key)?;
-            let Some(items) = list.list() else {
-                self.sink.push(Diagnostic::error(
-                    "expected-list",
-                    list.span,
-                    format!(":{key} is a list of values, such as (false) or (\"none\")"),
-                ));
-                return None;
-            };
-            let mut out = Vec::new();
-            for item in items {
-                let d = crate::data::datum(item, &mut self.sink)?;
-                if !matches!(
-                    d.kind,
-                    crate::data::D::Num(_) | crate::data::D::Str(_) | crate::data::D::Bool(_)
-                ) {
-                    self.sink.push(Diagnostic::error(
-                        "bad-value",
-                        item.span,
-                        "a gate value is a number, a string, true, or false",
-                    ));
-                    return None;
-                }
-                out.push(d);
-            }
-            Some(out)
-        };
-        let free = values("free");
-        let locked = values("locked");
-        let open = match (free, locked) {
-            (Some(free), None) => GateValues::Free(free),
-            (None, Some(locked)) => GateValues::Locked(locked),
-            _ => {
-                self.sink.push(
-                    Diagnostic::error(
-                        "gate-values",
-                        form.span,
-                        "a gate takes either :free or :locked",
-                    )
-                    .help("`:free (false)` locks every other value; `:locked (\"r2\")` locks only those"),
-                );
-                return None;
-            }
-        };
-        Some(Gate {
-            component: component?,
-            field: field?,
-            research: research?,
-            what: what?,
-            open,
-            span: form.span,
-        })
-    }
-
-    /// `:what "Gzip"` or `:labels GPU_PRECISIONS`: what a refusal names. A state field may omit
-    /// both and take its label from the research.
-    fn gate_label(&mut self, keys: &Keys<'_>, form: &Sexp, required: bool) -> Option<GateLabel> {
-        match (keys.get("what"), keys.get("labels")) {
-            (Some(v), None) => match &v.kind {
-                Kind::Str(s) => Some(GateLabel::Text(Spanned {
-                    value: s.clone(),
-                    span: v.span,
-                })),
-                _ => {
-                    self.sink.push(Diagnostic::error(
-                        "expected-string",
-                        v.span,
-                        "a gate's :what is the text the refusal names",
-                    ));
-                    None
-                }
-            },
-            (None, Some(v)) => self.name(v, "a table").map(GateLabel::Table),
-            (None, None) if !required => None,
-            (None, None) | (Some(_), Some(_)) => {
-                self.sink.push(
-                    Diagnostic::error(
-                        "gate-label",
-                        form.span,
-                        "a gate takes either :what or :labels",
-                    )
-                    .help("`:what \"Gzip\"` names the setting; `:labels GPU_PRECISIONS` names the value's `name` in that table"),
-                );
-                None
-            }
-        }
-    }
-
     /// `(state database (field shard-key (enum hash range) :default hash) …)`: one declaration per
     /// setting, for the Effect Schema field, its default, and the gate it needs.
     fn state(&mut self, form: &Sexp) -> Option<State> {
@@ -1684,7 +1508,12 @@ impl Lower {
         let values_name = keys
             .get("values")
             .and_then(|v| self.name(v, "a values name"));
-        if schema.is_some() && !matches!(ty, StateType::Enum(_) | StateType::Number) {
+        if schema.is_some()
+            && !matches!(
+                ty,
+                StateType::Enum(_) | StateType::KeyOf(_) | StateType::OneOf(_) | StateType::Number
+            )
+        {
             self.sink.push(Diagnostic::error(
                 "state-name",
                 form.span,
@@ -1698,10 +1527,10 @@ impl Lower {
                 "`:values` names the values of an enum or one-of field",
             ));
         }
-        let (requires, label) = keys
+        let (requires, label, open) = keys
             .get("gate")
             .map(|gate| self.state_gate(gate))
-            .unwrap_or((None, None));
+            .unwrap_or((None, None, None));
         let (setter, only, values_what, scope) = keys
             .get("set")
             .map(|set| self.state_set(set))
@@ -1742,7 +1571,7 @@ impl Lower {
                 },
                 research,
                 what,
-                open: GateValues::Free(vec![locked]),
+                open: open.unwrap_or_else(|| GateValues::Free(vec![locked])),
                 span: form.span,
             });
         }
@@ -1766,41 +1595,139 @@ impl Lower {
         })
     }
 
-    /// `(gate sharding "Sharding")` or `(gate quantization :labels GPU_PRECISIONS)`.
-    fn state_gate(&mut self, form: &Sexp) -> (Option<Name>, Option<GateLabel>) {
+    /// `(gate sharding "Sharding")`, `(gate quantization :labels gpu-precisions)`, or
+    /// `(gate egress-optimization "R2" :locked ("r2"))`. `:lock-all` locks every value, which is
+    /// how a boolean setting refuses before its research.
+    fn state_gate(&mut self, form: &Sexp) -> (Option<Name>, Option<GateLabel>, Option<GateValues>) {
         let Some(items) = form.list() else {
             self.sink.push(Diagnostic::error(
                 "bad-form",
                 form.span,
                 "a gate is (research), (research \"Label\"), or (research :labels TABLE)",
             ));
-            return (None, None);
+            return (None, None, None);
         };
         let research = items
             .first()
             .and_then(|item| self.name(item, "a research id"));
-        let label = match items.get(1) {
-            None => None,
-            Some(keyword) if keyword.keyword() == Some("labels") => items
-                .get(2)
-                .and_then(|table| self.name(table, "a table"))
-                .map(GateLabel::Table),
-            Some(text) => match &text.kind {
-                Kind::Str(value) => Some(GateLabel::Text(Spanned {
-                    value: value.clone(),
-                    span: text.span,
-                })),
+        let mut label = None;
+        let mut values = None;
+        let mut lock_all = false;
+        let mut i = 1;
+        while i < items.len() {
+            let item = &items[i];
+            if item.keyword() == Some("lock-all") {
+                lock_all = true;
+                i += 1;
+                continue;
+            }
+            if let Some(key) = item.keyword() {
+                let Some(value) = items.get(i + 1) else {
+                    self.sink.push(Diagnostic::error(
+                        "missing-value",
+                        item.span,
+                        format!("`:{key}` needs a value"),
+                    ));
+                    return (research, label, values);
+                };
+                match key {
+                    "labels" => {
+                        if label.is_some() {
+                            self.sink.push(Diagnostic::error(
+                                "gate-label",
+                                item.span,
+                                "a gate has one label",
+                            ));
+                        } else {
+                            label = self.name(value, "a table").map(GateLabel::Table);
+                        }
+                    }
+                    "locked" | "free" => {
+                        if values.is_some() {
+                            self.sink.push(Diagnostic::error(
+                                "gate-values",
+                                item.span,
+                                "a gate has one value list",
+                            ));
+                            i += 2;
+                            continue;
+                        }
+                        let Some(list) = value.list() else {
+                            self.sink.push(Diagnostic::error(
+                                "expected-list",
+                                value.span,
+                                format!(":{key} is a list of values, such as (false)"),
+                            ));
+                            return (research, label, values);
+                        };
+                        let mut out = Vec::new();
+                        for item in list {
+                            match crate::data::datum(item, &mut self.sink) {
+                                Some(datum)
+                                    if matches!(
+                                        datum.kind,
+                                        crate::data::D::Num(_)
+                                            | crate::data::D::Str(_)
+                                            | crate::data::D::Bool(_)
+                                    ) =>
+                                {
+                                    out.push(datum)
+                                }
+                                Some(_) | None => {
+                                    self.sink.push(Diagnostic::error(
+                                        "bad-value",
+                                        item.span,
+                                        "a gate value is a number, a string, true, or false",
+                                    ));
+                                }
+                            }
+                        }
+                        values = Some(if key == "free" {
+                            GateValues::Free(out)
+                        } else {
+                            GateValues::Locked(out)
+                        });
+                    }
+                    _ => {
+                        self.sink.push(Diagnostic::error(
+                            "gate-label",
+                            item.span,
+                            format!("a gate has no `:{key}`"),
+                        ));
+                    }
+                }
+                i += 2;
+                continue;
+            }
+            match &item.kind {
+                Kind::Str(value) | Kind::Symbol(value) if label.is_none() => {
+                    label = Some(GateLabel::Text(Spanned {
+                        value: value.clone(),
+                        span: item.span,
+                    }));
+                    i += 1;
+                }
                 _ => {
                     self.sink.push(Diagnostic::error(
-                        "expected-string",
-                        text.span,
+                        "gate-label",
+                        item.span,
                         "a gate's label is a string or :labels TABLE",
                     ));
-                    None
+                    i += 1;
                 }
-            },
-        };
-        (research, label)
+            }
+        }
+        if lock_all && values.is_some() {
+            self.sink.push(Diagnostic::error(
+                "gate-values",
+                form.span,
+                "a gate takes :lock-all or a value list, not both",
+            ));
+        }
+        if lock_all {
+            values = Some(GateValues::Free(Vec::new()));
+        }
+        (research, label, values)
     }
 
     /// `(setShards :refuse "Only a Database shards." :values-label "Shard counts")`.
@@ -1873,6 +1800,25 @@ impl Lower {
             return None;
         };
         match items.first().and_then(|i| i.symbol()) {
+            Some("key-of") => {
+                let Some(table) = items.get(1) else {
+                    self.sink.push(Diagnostic::error(
+                        "state-type",
+                        sexp.span,
+                        "write (key-of table)",
+                    ));
+                    return None;
+                };
+                if items.len() != 2 {
+                    self.sink.push(Diagnostic::error(
+                        "state-type",
+                        sexp.span,
+                        "(key-of …) takes one table name",
+                    ));
+                    return None;
+                }
+                Some(StateType::KeyOf(self.name(table, "a table")?))
+            }
             Some("enum") => {
                 let mut values: Vec<Spanned<String>> = Vec::new();
                 for item in &items[1..] {
@@ -2004,6 +1950,20 @@ impl Lower {
                 }
                 Some(datum(crate::data::D::Str(text), sexp.span))
             }
+            StateType::KeyOf(_) => {
+                let text = match &sexp.kind {
+                    Kind::Symbol(s) | Kind::Str(s) => s.clone(),
+                    _ => {
+                        self.sink.push(Diagnostic::error(
+                            "state-default",
+                            sexp.span,
+                            format!("a key-of default is a name, found {}", sexp.describe()),
+                        ));
+                        return None;
+                    }
+                };
+                Some(datum(crate::data::D::Str(text), sexp.span))
+            }
             StateType::OneOf(values) => {
                 let Kind::Num(n) = sexp.kind else {
                     self.sink.push(Diagnostic::error(
@@ -2084,7 +2044,8 @@ impl Lower {
     fn component(&mut self, form: &Sexp) -> Option<Component> {
         const KEYS: &[&str] = &[
             "code", "name", "product", "group", "dock", "cost", "latency", "burn", "steps",
-            "max-out", "unlock", "capacity", "flags", "accepts", "sends", "fallback", "blurb",
+            "max-out", "unlock", "capacity", "flags", "accepts", "sends", "fallback", "glossary",
+            "blurb",
         ];
         let (args, keys) = self.keys(form, 1, KEYS)?;
         let id = self.name(&args[0], "a component id");
@@ -2136,6 +2097,9 @@ impl Lower {
             accepts,
             sends,
             fallback,
+            glossary: keys
+                .get("glossary")
+                .map_or_else(Vec::new, |v| self.names(v, "a glossary id")),
             blurb: blurb?,
             span: form.span,
         })

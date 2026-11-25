@@ -30,7 +30,9 @@ const PASSES: &[Pass] = &[
     def_cycles,
     ids,
     crate::data::check_eras,
-    def_modules,
+    refs,
+    research_refs,
+    solver_columns,
     gates,
     states,
 ];
@@ -48,8 +50,8 @@ pub fn run(catalog: &Catalog) -> Sink {
 }
 
 /// A cycle between defs cannot be emitted as top-level constants: one constant would read another
-/// before it is initialized. The graph is catalog-wide because `:module` can move an entry into
-/// another generated file, where the two files would still initialize in a cycle.
+/// before it is initialized. The graph is catalog-wide because two files still initialize in one
+/// order.
 fn def_cycles(catalog: &Catalog) -> Sink {
     let mut sink = Sink::default();
     let defs: BTreeMap<&str, &crate::data::Def> = catalog
@@ -143,24 +145,6 @@ fn ids(catalog: &Catalog) -> Sink {
                     format!("`{}` needs an array of strings", id.values.text),
                 )
                 .label("not an id list"),
-            );
-        }
-    }
-    sink
-}
-
-/// A `:module` on a constants entry must name a content file that exists.
-fn def_modules(catalog: &Catalog) -> Sink {
-    let mut sink = Sink::default();
-    for def in &catalog.defs {
-        if !catalog.modules.contains(&def.module) {
-            sink.push(
-                Diagnostic::error(
-                    "unknown-module",
-                    def.span,
-                    format!("`:module {}` names no content file", def.module),
-                )
-                .help("write the file stem, such as `team` for content/team.qm"),
             );
         }
     }
@@ -456,7 +440,7 @@ fn era_rules(catalog: &Catalog) -> Sink {
     sink
 }
 
-/// Every mix an Era uses exists and sums to exactly 100%.
+/// Every mix an Era uses exists, and every mix, named, inline, or in data, sums to exactly 100%.
 fn mixes(catalog: &Catalog) -> Sink {
     let mut sink = Sink::default();
     let named = unique(
@@ -476,6 +460,9 @@ fn mixes(catalog: &Catalog) -> Sink {
     }
     for mix in &catalog.mixes {
         check_mix(mix, &mut sink);
+    }
+    for mix in crate::data::mixes(&catalog.defs) {
+        check_mix(&mix, &mut sink);
     }
     sink
 }
@@ -609,56 +596,24 @@ fn values(catalog: &Catalog) -> Vec<&Spanned<Value>> {
     out
 }
 
-/// Names in `(ref …)` and bare constants must come from an `(import …)` or a `(const …)`, and
-/// every import is used.
+/// Names in `(ref …)` and bare values must resolve somewhere in the catalog. A generated value
+/// resolves to the module that declares it, so there is no hand-written import to maintain.
 fn imports(catalog: &Catalog) -> Sink {
     let mut sink = Sink::default();
-    let consts: Vec<Name> = catalog
-        .consts
-        .iter()
-        .map(|c| Name {
-            text: c.export.clone(),
-            span: c.name.span,
-        })
-        .collect();
-    let names = catalog
-        .imports
-        .iter()
-        .flat_map(|i| &i.names)
-        .chain(consts.iter());
-    let defined = unique(names, "the name", &mut sink);
-    let known: Vec<&str> = defined.keys().copied().collect();
-    let mut used = BTreeSet::new();
+    let scope = crate::data::Scope::new(catalog);
+    let known: Vec<&str> = scope.values.keys().copied().collect();
     for value in values(catalog) {
         let name = match &value.value {
             Value::Ref(path) => &path[0],
             Value::Const(name) => name,
             _ => continue,
         };
-        used.insert(name.text.as_str());
-        if !defined.contains_key(name.text.as_str()) {
+        if !scope.values.contains_key(name.text.as_str()) {
             sink.push(
-                unknown("unknown-import", name, "imported value or constant", &known).help(
-                    format!(
-                "add (import \"../catalog/….ts\" {0}) or (const {0} …), or check the spelling",
-                name.text
-            ),
+                unknown("unknown-name", name, "value", &known).help(
+                    "define it in content, or name a generated value that the catalog exports",
                 ),
             );
-        }
-    }
-    let mut def_refs = Vec::new();
-    for def in &catalog.defs {
-        crate::data::refs(&def.value, &mut def_refs);
-    }
-    used.extend(def_refs.iter().map(|n| n.text.as_str()));
-    for import in catalog.imports.iter().flat_map(|i| &i.names) {
-        if !used.contains(import.text.as_str()) {
-            sink.push(Diagnostic::warning(
-                "unused-import",
-                import.span,
-                format!("`{}` is imported but never used", import.text),
-            ));
         }
     }
     sink
@@ -888,7 +843,8 @@ fn kind_refs(catalog: &Catalog) -> Sink {
         MixRef::Inline(mix) => Some(mix),
         MixRef::Named(_) => None,
     });
-    for mix in catalog.mixes.iter().chain(inline) {
+    let data = crate::data::mixes(&catalog.defs);
+    for mix in catalog.mixes.iter().chain(inline).chain(&data) {
         refs.extend(mix.shares.iter().map(|(kind, _)| (kind, "request kind")));
     }
     for incident in &catalog.incidents {
@@ -1240,6 +1196,299 @@ fn insight(catalog: &Catalog) -> Sink {
     sink
 }
 
+/// The keys a keyed table or records form declares, or `None` for a def that names no rows.
+fn table_keys(def: &crate::data::Def) -> Option<Vec<&str>> {
+    use crate::data::{Entry, D};
+    let key = def.key.as_deref()?;
+    match &def.value.kind {
+        D::Record(rows) => Some(
+            rows.iter()
+                .filter_map(|row| match row {
+                    Entry::Pair(name, _) => Some(name.text.as_str()),
+                    Entry::Spread(_) => None,
+                })
+                .collect(),
+        ),
+        D::Array(rows) => Some(
+            rows.iter()
+                .filter_map(|(_, row)| match &row.kind {
+                    D::Record(fields) => fields.iter().find_map(|field| match field {
+                        Entry::Pair(name, value) if name.text == key => match &value.kind {
+                            D::Str(id) => Some(id.as_str()),
+                            _ => None,
+                        },
+                        _ => None,
+                    }),
+                    _ => None,
+                })
+                .collect(),
+        ),
+        _ => None,
+    }
+}
+
+/// The keyed table a `:refs` column or a component's `:glossary` names.
+fn keyed_table<'a>(catalog: &'a Catalog, name: &Name, sink: &mut Sink) -> Option<Vec<&'a str>> {
+    let export = crate::lower::constant(&name.text);
+    let def = catalog
+        .defs
+        .iter()
+        .find(|def| def.name.text == name.text || def.export == export);
+    let keys = def.and_then(table_keys);
+    if keys.is_none() {
+        let known: Vec<&str> = catalog
+            .defs
+            .iter()
+            .filter(|def| def.key.is_some())
+            .map(|def| def.name.text.as_str())
+            .collect();
+        sink.push(unknown("unknown-table", name, "keyed table", &known));
+    }
+    keys
+}
+
+/// Every `:refs` column names keys of its table, and every component glossary id is a key of
+/// `glossary`. The Solver indexes some of these by position, so a wrong id would become a wrong
+/// index rather than a type error.
+fn refs(catalog: &Catalog) -> Sink {
+    use crate::data::{Entry, D};
+    let mut sink = Sink::default();
+    for def in &catalog.defs {
+        let rows: Vec<&crate::data::Datum> = match &def.value.kind {
+            D::Record(rows) => rows
+                .iter()
+                .filter_map(|row| match row {
+                    Entry::Pair(_, row) => Some(row),
+                    Entry::Spread(_) => None,
+                })
+                .collect(),
+            D::Array(rows) => rows.iter().map(|(_, row)| row).collect(),
+            _ => Vec::new(),
+        };
+        for (column, table) in &def.refs {
+            let Some(keys) = keyed_table(catalog, table, &mut sink) else {
+                continue;
+            };
+            let check = |text: &str, span: Span, sink: &mut Sink| {
+                if !keys.contains(&text) {
+                    let name = Name {
+                        text: text.to_string(),
+                        span,
+                    };
+                    sink.push(unknown(
+                        "unknown-key",
+                        &name,
+                        &format!("`{}` key", table.text),
+                        &keys,
+                    ));
+                }
+            };
+            for row in &rows {
+                let D::Record(fields) = &row.kind else {
+                    continue;
+                };
+                for field in fields {
+                    let Entry::Pair(name, value) = field else {
+                        continue;
+                    };
+                    if name.text != column.text {
+                        continue;
+                    }
+                    match &value.kind {
+                        D::Null => {}
+                        D::Str(id) => check(id, value.span, &mut sink),
+                        D::Array(items) => {
+                            for (_, item) in items {
+                                match &item.kind {
+                                    D::Str(id) => check(id, item.span, &mut sink),
+                                    _ => sink.push(Diagnostic::error(
+                                        "bad-ref",
+                                        item.span,
+                                        format!(
+                                            "`{}` lists keys of `{}` as strings",
+                                            column.text, table.text
+                                        ),
+                                    )),
+                                }
+                            }
+                        }
+                        _ => sink.push(Diagnostic::error(
+                            "bad-ref",
+                            value.span,
+                            format!(
+                                "`{}` is a key of `{}`, a list of keys, or null",
+                                column.text, table.text
+                            ),
+                        )),
+                    }
+                }
+            }
+        }
+    }
+    let named: Vec<&Name> = catalog
+        .components
+        .iter()
+        .flat_map(|c| &c.glossary)
+        .collect();
+    if let Some(first) = named.first() {
+        let glossary = Name {
+            text: "glossary".to_string(),
+            span: first.span,
+        };
+        if let Some(keys) = keyed_table(catalog, &glossary, &mut sink) {
+            for name in named {
+                if !keys.contains(&name.text.as_str()) {
+                    sink.push(unknown("unknown-glossary", name, "glossary entry", &keys));
+                }
+            }
+        }
+    }
+    sink
+}
+
+/// A `:research` cell in a keyed table names a `(research …)` entry. The generated `ResearchId`
+/// union catches a typo only in generated code, away from the line that wrote it.
+fn research_refs(catalog: &Catalog) -> Sink {
+    use crate::data::{Entry, D};
+    let mut sink = Sink::default();
+    let known: Vec<&str> = catalog
+        .research
+        .iter()
+        .map(|research| research.id.text.as_str())
+        .collect();
+    for def in catalog.defs.iter().filter(|def| def.key.is_some()) {
+        let rows: Vec<&crate::data::Datum> = match &def.value.kind {
+            D::Record(rows) => rows
+                .iter()
+                .filter_map(|row| match row {
+                    Entry::Pair(_, row) => Some(row),
+                    Entry::Spread(_) => None,
+                })
+                .collect(),
+            D::Array(rows) => rows.iter().map(|(_, row)| row).collect(),
+            _ => Vec::new(),
+        };
+        for row in rows {
+            let D::Record(fields) = &row.kind else {
+                continue;
+            };
+            for field in fields {
+                let Entry::Pair(name, value) = field else {
+                    continue;
+                };
+                if name.text != "research" {
+                    continue;
+                }
+                match &value.kind {
+                    D::Null => {}
+                    D::Str(id) if !known.contains(&id.as_str()) => {
+                        let name = Name {
+                            text: id.clone(),
+                            span: value.span,
+                        };
+                        sink.push(unknown("unknown-research", &name, "research item", &known));
+                    }
+                    D::Str(_) => {}
+                    _ => sink.push(Diagnostic::error(
+                        "bad-research",
+                        value.span,
+                        "`research` is a research id or null",
+                    )),
+                }
+            }
+        }
+    }
+    sink
+}
+
+/// An `:export-rust` table gives the Solver one value per row in every column: a column that is
+/// missing from a row or mixes numbers, flags, strings, and `null` has no Rust array type.
+fn solver_columns(catalog: &Catalog) -> Sink {
+    use crate::data::{Entry, D};
+    let mut sink = Sink::default();
+    for def in catalog.defs.iter().filter(|def| def.solver) {
+        let rows: Vec<(&str, &crate::data::Datum)> = match &def.value.kind {
+            D::Record(rows) => rows
+                .iter()
+                .filter_map(|row| match row {
+                    Entry::Pair(key, row) => Some((key.text.as_str(), row)),
+                    Entry::Spread(_) => None,
+                })
+                .collect(),
+            D::Array(rows) => rows.iter().map(|(_, row)| ("", row)).collect(),
+            _ => continue,
+        };
+        let mut columns: Vec<&str> = Vec::new();
+        for (_, row) in &rows {
+            if let D::Record(fields) = &row.kind {
+                for field in fields {
+                    match field {
+                        Entry::Pair(name, _) if !columns.contains(&name.text.as_str()) => {
+                            columns.push(&name.text)
+                        }
+                        Entry::Pair(..) => {}
+                        Entry::Spread(value) => sink.push(Diagnostic::error(
+                            "solver-column",
+                            value.span,
+                            "an `:export-rust` table writes every cell; it cannot spread a record",
+                        )),
+                    }
+                }
+            }
+        }
+        for column in columns {
+            let mut kinds: Vec<&str> = Vec::new();
+            for (key, row) in &rows {
+                let D::Record(fields) = &row.kind else {
+                    continue;
+                };
+                let value = fields.iter().find_map(|field| match field {
+                    Entry::Pair(name, value) if name.text == column => Some(value),
+                    _ => None,
+                });
+                let kind = match value.map(|v| &v.kind) {
+                    None => {
+                        let row_name = if key.is_empty() {
+                            String::new()
+                        } else {
+                            format!(" `{key}`")
+                        };
+                        sink.push(Diagnostic::error(
+                            "solver-column",
+                            row.span,
+                            format!(
+                                "the row{row_name} has no `{column}`; an `:export-rust` table fills every column"
+                            ),
+                        ));
+                        continue;
+                    }
+                    Some(D::Num(_) | D::Neg(_) | D::Op(..) | D::Inf | D::Era(_)) => "a number",
+                    Some(D::Bool(_)) => "a flag",
+                    Some(D::Str(_)) => "a string",
+                    Some(D::Null | D::Undefined) => "null",
+                    Some(D::Ref(_) | D::Member(..)) => continue,
+                    Some(_) => "a record or list",
+                };
+                if !kinds.contains(&kind) {
+                    kinds.push(kind);
+                }
+            }
+            if kinds.len() > 1 {
+                sink.push(Diagnostic::error(
+                    "solver-column",
+                    def.span,
+                    format!(
+                        "the `{column}` column of `{}` mixes {}; the Solver reads one type per column",
+                        def.name.text,
+                        kinds.join(" and ")
+                    ),
+                ));
+            }
+        }
+    }
+    sink
+}
+
 /// Gates name a real component and research, give each field one gate, lock something, and do
 /// not repeat the research the component already needs.
 fn gates(catalog: &Catalog) -> Sink {
@@ -1266,6 +1515,41 @@ fn gates(catalog: &Catalog) -> Sink {
                 "component",
                 &component_names,
             ));
+        } else if let Some(state) = catalog
+            .states
+            .iter()
+            .find(|s| s.component.text == gate.component.text)
+        {
+            let field = crate::lower::camel(&gate.field.text);
+            if !state
+                .fields
+                .iter()
+                .any(|f| crate::lower::camel(&f.key.text) == field)
+            {
+                sink.push(
+                    Diagnostic::error(
+                        "unknown-field",
+                        gate.field.span,
+                        format!(
+                            "`{}.{}` is not a field of the component's state",
+                            gate.component.text, gate.field.text
+                        ),
+                    )
+                    .help("write the gate on the (field …) it locks"),
+                );
+            }
+        } else {
+            sink.push(
+                Diagnostic::error(
+                    "unknown-field",
+                    gate.field.span,
+                    format!(
+                        "`{}` declares no state, so `{}` has no field to gate",
+                        gate.component.text, gate.field.text
+                    ),
+                )
+                .help("write the gate on the (field …) it locks"),
+            );
         }
         if !research.contains(&gate.research.text.as_str()) {
             sink.push(unknown(
@@ -1396,9 +1680,6 @@ fn states(catalog: &Catalog) -> Sink {
     for def in &catalog.defs {
         exported.insert(def.export.clone(), def.name.span);
     }
-    for constant in &catalog.consts {
-        exported.insert(constant.export.clone(), constant.name.span);
-    }
     for state in &catalog.states {
         if !components.contains(state.component.text.as_str()) {
             sink.push(Diagnostic::error(
@@ -1446,7 +1727,9 @@ fn states(catalog: &Catalog) -> Sink {
             }
             let schema = field.as_name.as_ref().map_or_else(
                 || match field.ty {
-                    crate::lower::StateType::Enum(_) => Some(crate::lower::pascal(&key)),
+                    crate::lower::StateType::Enum(_) | crate::lower::StateType::KeyOf(_) => {
+                        Some(crate::lower::pascal(&key))
+                    }
                     _ => None,
                 },
                 |name| Some(name.text.clone()),
@@ -1622,17 +1905,11 @@ mod tests {
     }
 
     #[test]
-    fn refs_need_an_import_and_imports_need_a_use() {
-        let body = "(import \"./x.ts\" USED UNUSED)\n".to_string()
-            + &r("a", 0, "", ":shape (read-share :share 5%)").replace("\"b\"", "(ref USED a b)")
+    fn values_resolve_through_the_catalog_scope() {
+        let body = "(def USED (:a 1))\n".to_string()
+            + &r("a", 0, "", ":shape (read-share :share 5%)").replace("\"b\"", "(ref USED a)")
             + &r("c", 0, "", "").replace("\"b\"", "(ref MISSING a)");
-        assert_eq!(
-            codes(&body),
-            [
-                (Severity::Error, "unknown-import"),
-                (Severity::Warning, "unused-import")
-            ]
-        );
+        assert_eq!(codes(&body), [(Severity::Error, "unknown-name")]);
     }
 
     #[test]
@@ -1883,13 +2160,13 @@ mod tests {
         );
         assert_eq!(
             incident_codes(
-                &("(const SURGE 4)\n".to_string() + &inc("a", 2, "2", ":surge (media SURGE)"))
+                &("(def SURGE 4)\n".to_string() + &inc("a", 2, "2", ":surge (media SURGE)"))
             ),
             []
         );
         assert_eq!(
             incident_codes(&inc("a", 2, "2", ":surge (media SURGE)")),
-            [(Severity::Error, "unknown-import")]
+            [(Severity::Error, "unknown-name")]
         );
         assert_eq!(
             incident_codes(&inc("a", 2, "2", ":surge (media 1)")),
@@ -2013,74 +2290,39 @@ mod tests {
     #[test]
     fn gates_that_contradict_themselves_or_the_catalog_are_refused() {
         let app = with_users(&comp("app", "a", ":accepts (requests) :unlock fix"));
-        let gate = |rest: &str| format!("{app}(gate app {rest})\n");
+        let state = |research: &str, values: &str| {
+            format!(
+                "{app}(state app (field shed bool :default false :gate ({research} \"S\" {values})))\n"
+            )
+        };
         assert_eq!(
-            component_codes(&gate("shed :research other :what \"S\" :locked (true)")),
+            component_codes(&state("other", ":locked (true)")),
             [(Severity::Error, "unknown-research")]
         );
         assert_eq!(
-            component_codes(&format!(
-                "{app}(gate ap shed :research fix :what \"S\" :locked (true))"
-            )),
-            [(Severity::Error, "unknown-component")]
-        );
-        assert_eq!(
-            component_codes(&gate("shed :research fix :what \"S\" :locked ()")),
+            component_codes(&state("fix", ":locked ()")),
             [
                 (Severity::Error, "dead-gate"),
                 (Severity::Warning, "redundant-gate")
             ]
         );
         assert_eq!(
-            component_codes(&gate(
-                "keep :research fix :what \"K\" :free (\"keep\" \"keep\")"
+            component_codes(&format!(
+                "{app}(state ap (field shed bool :default false :gate (fix \"S\" :locked (true))))\n"
             )),
             [
-                (Severity::Error, "duplicate"),
-                (Severity::Warning, "redundant-gate")
+                (Severity::Error, "unknown-component"),
+                (Severity::Error, "unknown-component")
             ]
         );
         assert_eq!(
-            component_codes(&gate(
-                "shed :research fix :what \"S\" :free (false) :locked (true)"
+            component_codes(&format!(
+                "{app}(state app (field shed bool :default false :gate (fix \"S\" :locked (true) :free (false))))\n"
             )),
-            [(Severity::Error, "gate-values")]
-        );
-        let other = "(research other :name \"o\" :track data :cost 1 :era e0 :blurb \"b\")\n";
-        let twice = format!(
-            "{other}{}(gate app shed :research other :what \"T\" :free (false))\n",
-            gate("shed :research other :what \"S\" :locked (true)")
-        );
-        assert_eq!(component_codes(&twice), [(Severity::Error, "gate-twice")]);
-        let fine = format!(
-            "{other}{}",
-            gate("shed :research other :what \"S\" :locked (true)")
-        );
-        assert_eq!(component_codes(&fine), []);
-
-        let table = "(def MODES (:fast (:name \"Fast\") :safe (:name \"Safe\")))\n";
-        let labelled = |rest: &str| format!("{other}{table}{}", gate(rest));
-        assert_eq!(
-            component_codes(&labelled(
-                "mode :research other :labels MODES :free (\"safe\")"
-            )),
-            []
-        );
-        assert_eq!(
-            component_codes(&labelled(
-                "mode :research other :labels MODES :free (\"slow\")"
-            )),
-            [(Severity::Error, "unlabeled-value")]
-        );
-        assert_eq!(
-            component_codes(&labelled(
-                "mode :research other :labels MODEZ :free (\"safe\")"
-            )),
-            [(Severity::Error, "unknown-table")]
-        );
-        assert_eq!(
-            component_codes(&labelled("mode :research other :free (\"safe\")")),
-            [(Severity::Error, "gate-label")]
+            [
+                (Severity::Error, "gate-values"),
+                (Severity::Warning, "redundant-gate")
+            ]
         );
     }
 
@@ -2147,16 +2389,6 @@ mod tests {
     }
 
     #[test]
-    fn a_state_gate_does_not_repeat_a_gate_form() {
-        let app = with_users(&comp("app", "a", ":accepts (requests)"));
-        let body = format!(
-            "{app}(state app (field mode (enum fast safe) :default fast :gate (fix)))\n\
-             (gate app mode :research fix :what \"Mode\" :free (\"fast\"))\n"
-        );
-        assert_eq!(component_codes(&body), [(Severity::Error, "gate-twice")]);
-    }
-
-    #[test]
     fn components_name_real_groups_codes_and_units() {
         let duplicate = comp("a", "x", "") + &comp("b", "x", "");
         assert_eq!(
@@ -2171,5 +2403,77 @@ mod tests {
             component_codes(&comp("a", "a", ":unlock fxi")),
             [(Severity::Error, "unknown-research")]
         );
+    }
+
+    #[test]
+    fn a_mix_in_data_is_checked_like_an_eras_mix() {
+        let ok = "(def ventures (:a (:shares (mix :page 60% :read 40%))))\n";
+        assert_eq!(codes(ok), []);
+        let short = "(def ventures (:a (:shares (mix :page 60% :read 30%))))\n";
+        assert_eq!(codes(short), [(Severity::Error, "mix-total")]);
+        let unknown = "(def shares (mix :page 60% :raed 40%))\n";
+        assert_eq!(codes(unknown), [(Severity::Error, "unknown-kind")]);
+        let fraction = "(def shares (mix :page 0.6 :read 40%))\n";
+        assert_eq!(codes(fraction), [(Severity::Error, "bad-value")]);
+    }
+
+    #[test]
+    fn a_ref_column_names_keys_of_its_table() {
+        let langs = "(table langs :key id [id name] [php \"PHP\"] [go \"Go\"])\n";
+        let rows = |refs: &str, cell: &str| {
+            format!("{langs}(records apps :key id :refs {refs} (a :lang {cell}) (b :lang null))\n")
+        };
+        assert_eq!(codes(&rows("(:lang langs)", "php")), []);
+        assert_eq!(codes(&rows("(:lang langs)", "[php go]")), []);
+        assert_eq!(
+            codes(&rows("(:lang langs)", "pyhton")),
+            [(Severity::Error, "unknown-key")]
+        );
+        assert_eq!(
+            codes(&rows("(:lang languages)", "php")),
+            [(Severity::Error, "unknown-table")]
+        );
+        assert_eq!(
+            codes(&rows("(:lang langs)", "1")),
+            [(Severity::Error, "bad-ref")]
+        );
+    }
+
+    #[test]
+    fn a_research_cell_names_a_research_entry() {
+        let base = r("pooling", 0, "", "");
+        let table = |cell: &str| format!("(table apps :key id [id research] [a {cell}])\n");
+        assert_eq!(codes(&(base.clone() + &table("\"pooling\""))), []);
+        assert_eq!(
+            codes(&(base + &table("\"poolign\""))),
+            [(Severity::Error, "unknown-research")]
+        );
+        assert_eq!(codes(&table("1")), [(Severity::Error, "bad-research")]);
+    }
+
+    #[test]
+    fn a_component_glossary_needs_a_glossary_table() {
+        let component = comp("a", "a", ":glossary (cold-start)");
+        assert_eq!(
+            component_codes(&component),
+            [(Severity::Error, "unknown-table")]
+        );
+        let glossary = "(records glossary :array :key id (cold-start :term \"Cold start\"))\n";
+        assert_eq!(component_codes(&format!("{glossary}{component}")), []);
+        let typo = comp("a", "a", ":glossary (cold-strat)");
+        assert_eq!(
+            component_codes(&format!("{glossary}{typo}")),
+            [(Severity::Error, "unknown-glossary")]
+        );
+    }
+
+    #[test]
+    fn a_solver_table_fills_every_column_with_one_type() {
+        let full = "(table t :key id :export-rust [id a] [x 1] [y 2])\n";
+        assert_eq!(codes(full), []);
+        let sparse = "(table t :key id :export-rust [id a b] [x 1 2] [y 2 -])\n";
+        assert_eq!(codes(sparse), [(Severity::Error, "solver-column")]);
+        let mixed = "(table t :key id :export-rust [id a] [x 1] [y null])\n";
+        assert_eq!(codes(mixed), [(Severity::Error, "solver-column")]);
     }
 }

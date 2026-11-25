@@ -42,6 +42,16 @@ pub struct Def {
     pub as_const: bool,
     pub satisfies: Option<String>,
     pub doc: Option<String>,
+    /// `:ids NAME`: the array of keys a keyed table or record also exports.
+    pub ids: Option<String>,
+    /// `:id-type NAME`: the Effect Schema a keyed table or record generates from `:ids`.
+    pub id_type: Option<String>,
+    /// `:key COLUMN`: the column that names a row, when this def is a keyed table or record.
+    pub key: Option<String>,
+    /// `:export-rust`: the Solver catalog exports this record's columns.
+    pub solver: bool,
+    /// `:refs (:column table …)`: each row's `column` names a key of `table`, or lists keys.
+    pub refs: Vec<(Name, Name)>,
     pub value: Datum,
     pub span: Span,
 }
@@ -72,6 +82,8 @@ pub enum D {
     /// `+ - * /` over two or more operands, folded from the left.
     Op(char, Vec<Datum>),
     As(String, Box<Datum>),
+    /// `(mix :kind share …)`: a record of request kind shares that the mix check sums to 100%.
+    Mix(Box<Datum>),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -106,6 +118,7 @@ pub const TYPED_EXPORTS: &[(&str, &[&str])] = &[
             "ZONE_SPANNING_COMPONENTS",
             "STANDBY_TYPES",
             "FLAT_CAPACITY",
+            "COMPONENT_GLOSSARY",
             "GateValue",
             "GateDef",
             "GATES",
@@ -237,6 +250,11 @@ pub fn lower_def(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
         as_const: false,
         satisfies: None,
         doc: None,
+        ids: None,
+        id_type: None,
+        key: None,
+        solver: false,
+        refs: Vec::new(),
         value: Datum {
             kind: D::Null,
             span: form.span,
@@ -244,8 +262,17 @@ pub fn lower_def(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
         span: form.span,
     };
     let mut rest = &items[1..];
-    while let [key, value, tail @ ..] = rest {
+    while let [key, tail @ ..] = rest {
         let Some(k) = key.keyword() else { break };
+        if k == "export-rust" {
+            def.solver = true;
+            rest = tail;
+            continue;
+        }
+        let Some((value, tail)) = tail.split_first() else {
+            err(sink, key.span, format!("`:{k}` needs a value"));
+            return None;
+        };
         match k {
             "type" if value.symbol() == Some("const") => def.as_const = true,
             "type" => def.ty = type_expr(value, sink),
@@ -258,7 +285,7 @@ pub fn lower_def(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
             },
             _ => sink.push(
                 Diagnostic::error("unknown-key", key.span, format!("a def has no `:{k}`"))
-                    .help("a def takes :type, :satisfies, and :doc"),
+                    .help("a def takes :type, :satisfies, :doc, and :export-rust"),
             ),
         }
         rest = tail;
@@ -274,6 +301,26 @@ pub fn lower_def(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
                 sink,
                 extra.span,
                 "a def has one value; put the keys before it",
+            );
+            return None;
+        }
+    }
+    if def.solver {
+        let table = match &def.value.kind {
+            D::Record(_) => true,
+            D::Array(items) => {
+                !items.is_empty()
+                    && items
+                        .iter()
+                        .all(|(_, value)| matches!(value.kind, D::Record(_)))
+            }
+            _ => false,
+        };
+        if !table {
+            err(
+                sink,
+                def.span,
+                "`:export-rust` needs a record or an array of records",
             );
             return None;
         }
@@ -295,6 +342,10 @@ pub fn lower_table(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
     let mut doc = None;
     let mut key: Option<Name> = None;
     let mut keep_key = false;
+    let mut ids: Option<String> = None;
+    let mut id_type: Option<String> = None;
+    let mut solver = false;
+    let mut refs: Vec<(Name, Name)> = Vec::new();
     let mut rows: Vec<&Sexp> = Vec::new();
     let mut i = 1;
     while i < items.len() {
@@ -302,6 +353,11 @@ pub fn lower_table(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
         if let Some(k) = item.keyword() {
             if k == "keep-key" {
                 keep_key = true;
+                i += 1;
+                continue;
+            }
+            if k == "export-rust" {
+                solver = true;
                 i += 1;
                 continue;
             }
@@ -320,10 +376,19 @@ pub fn lower_table(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
                     }
                 },
                 "key" => key = name_of(value),
+                "ids" => {
+                    ids = name_of(value).map(|n| crate::lower::constant(&n.text));
+                }
+                "id-type" => {
+                    id_type = name_of(value).map(|n| n.text);
+                }
+                "refs" => refs = lower_refs(value, sink)?,
                 _ => err(
                     sink,
                     item.span,
-                    format!("a table has no `:{k}`; write :key, :type, :satisfies, or :doc"),
+                    format!(
+                        "a table has no `:{k}`; write :key, :ids, :id-type, :refs, :type, :satisfies, or :doc"
+                    ),
                 ),
             }
             i += 2;
@@ -416,7 +481,13 @@ pub fn lower_table(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
             if cell.symbol() == Some("-") {
                 continue;
             }
-            entries.push(Entry::Pair(column.clone(), datum(cell, sink)?));
+            let value = if key_at == Some(index) || refs.iter().any(|(c, _)| c.text == column.text)
+            {
+                id_datum(cell, sink)?
+            } else {
+                datum(cell, sink)?
+            };
+            entries.push(Entry::Pair(column.clone(), value));
         }
         let record = Datum {
             kind: D::Record(entries),
@@ -465,6 +536,14 @@ pub fn lower_table(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
     } else {
         D::Array(records.into_iter().map(|(_, row)| (false, row)).collect())
     };
+    if ids.is_some() && key_at.is_none() {
+        err(sink, form.span, "`:ids` needs `:key`");
+        return None;
+    }
+    if id_type.is_some() && ids.is_none() {
+        err(sink, form.span, "`:id-type` needs `:ids`");
+        return None;
+    }
     let as_const = ty.is_none();
     Some(Def {
         name,
@@ -474,6 +553,11 @@ pub fn lower_table(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
         as_const,
         satisfies,
         doc,
+        ids: ids.clone(),
+        id_type,
+        key: key.as_ref().map(|k| crate::lower::camel(&k.text)),
+        solver,
+        refs,
         value: Datum {
             kind: value,
             span: form.span,
@@ -482,8 +566,276 @@ pub fn lower_table(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
     })
 }
 
-/// Lowers `(constants PREFIX [:type T] [:satisfies T] (name value) …)`. Each entry is a
-/// `def` whose export is `PREFIX_NAME`, so a family keeps its shared word in one place.
+/// A key or a `:refs` cell: a bare name is the id itself, not a reference to a value, so
+/// `:language php` and `[process-per-request shared-nothing]` read like the keys they name.
+fn id_datum(sexp: &Sexp, sink: &mut Sink) -> Option<Datum> {
+    let kind = match &sexp.kind {
+        Kind::Symbol(s) if s != "null" => D::Str(s.clone()),
+        Kind::Row(items) => D::Array(
+            items
+                .iter()
+                .map(|item| id_datum(item, sink).map(|d| (false, d)))
+                .collect::<Option<Vec<_>>>()?,
+        ),
+        _ => return datum(sexp, sink),
+    };
+    Some(Datum {
+        kind,
+        span: sexp.span,
+    })
+}
+
+/// `(:column table …)`: the columns whose values are keys of another table.
+fn lower_refs(value: &Sexp, sink: &mut Sink) -> Option<Vec<(Name, Name)>> {
+    let items = value.list().filter(|items| items.len().is_multiple_of(2));
+    let Some(items) = items else {
+        err(sink, value.span, "write :refs (:column table …)");
+        return None;
+    };
+    let mut refs = Vec::new();
+    for pair in items.chunks(2) {
+        let (Some(column), Some(table)) = (pair[0].keyword(), name_of(&pair[1])) else {
+            err(sink, pair[0].span, "write :refs (:column table …)");
+            return None;
+        };
+        refs.push((
+            Name {
+                text: crate::lower::camel(column),
+                span: pair[0].span,
+            },
+            table,
+        ));
+    }
+    Some(refs)
+}
+
+/// Lowers `(records NAME :key id (entry [:field value] …) …)` to a keyed record whose entries
+/// read vertically. The key column is copied into each entry, so a record keeps its own id. A
+/// `:defaults NAME` spreads a shared record into every entry.
+pub fn lower_records(form: &Sexp, module: &str, sink: &mut Sink) -> Option<Def> {
+    let items = &form.list().unwrap()[1..];
+    let Some(name) = items.first().and_then(name_of) else {
+        err(
+            sink,
+            form.span,
+            "write (records NAME :key id (entry :field value …) …)",
+        );
+        return None;
+    };
+    let export = crate::lower::constant(&name.text);
+    let mut ty = None;
+    let mut satisfies = None;
+    let mut doc = None;
+    let mut key: Option<Name> = None;
+    let mut defaults: Option<Name> = None;
+    let mut ids: Option<String> = None;
+    let mut id_type: Option<String> = None;
+    let mut array = false;
+    let mut solver = false;
+    let mut refs: Vec<(Name, Name)> = Vec::new();
+    let mut entries: Vec<&Sexp> = Vec::new();
+    let mut i = 1;
+    while i < items.len() {
+        let item = &items[i];
+        if item.keyword() == Some("array") {
+            array = true;
+            i += 1;
+            continue;
+        }
+        if item.keyword() == Some("export-rust") {
+            solver = true;
+            i += 1;
+            continue;
+        }
+        if let Some(k) = item.keyword() {
+            let Some(value) = items.get(i + 1) else {
+                err(sink, item.span, format!("`:{k}` needs a value"));
+                return None;
+            };
+            match k {
+                "type" if value.symbol() == Some("const") => {}
+                "type" => ty = type_expr(value, sink),
+                "satisfies" => satisfies = type_expr(value, sink),
+                "doc" => match &value.kind {
+                    Kind::Str(t) => doc = Some(t.clone()),
+                    _ => {
+                        err(sink, value.span, ":doc takes a string");
+                    }
+                },
+                "key" => key = name_of(value),
+                "defaults" => defaults = name_of(value),
+                "ids" => ids = name_of(value).map(|n| crate::lower::constant(&n.text)),
+                "id-type" => id_type = name_of(value).map(|n| n.text),
+                "refs" => refs = lower_refs(value, sink)?,
+                _ => err(
+                    sink,
+                    item.span,
+                    format!(
+                        "records has no `:{k}`; write :key, :defaults, :ids, :id-type, :refs, :type, :satisfies, or :doc"
+                    ),
+                ),
+            }
+            i += 2;
+            continue;
+        }
+        if item.list().is_some() {
+            entries.push(item);
+            i += 1;
+            continue;
+        }
+        err(
+            sink,
+            item.span,
+            format!(
+                "a records entry is (key :field value …), found {}",
+                item.describe()
+            ),
+        );
+        return None;
+    }
+    let Some(key) = key else {
+        err(sink, form.span, "records needs `:key id`");
+        return None;
+    };
+    if entries.is_empty() {
+        err(sink, form.span, format!("`{}` has no entries", name.text));
+        return None;
+    }
+    if id_type.is_some() && ids.is_none() {
+        err(sink, form.span, "`:id-type` needs `:ids`");
+        return None;
+    }
+    let key_field = Name {
+        text: crate::lower::camel(&key.text),
+        span: key.span,
+    };
+    let mut records: Vec<(String, Datum)> = Vec::new();
+    let mut seen: Vec<(String, Span)> = Vec::new();
+    for entry in entries {
+        let parts = entry.list().unwrap();
+        let Some(head) = parts.first() else {
+            err(sink, entry.span, "a records entry needs a key");
+            return None;
+        };
+        let key_value = match &head.kind {
+            Kind::Symbol(s) | Kind::Str(s) if s != "-" => s.clone(),
+            _ => {
+                err(sink, head.span, "a records key is a name or a string");
+                return None;
+            }
+        };
+        if let Some((_, first)) = seen.iter().find(|(k, _)| k == &key_value) {
+            sink.push(
+                Diagnostic::error(
+                    "bad-value",
+                    head.span,
+                    format!("the key `{key_value}` appears twice"),
+                )
+                .note(*first, "first here"),
+            );
+            continue;
+        }
+        seen.push((key_value.clone(), head.span));
+        let mut fields: Vec<Entry> = vec![Entry::Pair(
+            key_field.clone(),
+            Datum {
+                kind: D::Str(key_value.clone()),
+                span: head.span,
+            },
+        )];
+        if let Some(defaults) = &defaults {
+            fields.push(Entry::Spread(Datum {
+                kind: D::Ref(defaults.clone()),
+                span: defaults.span,
+            }));
+        }
+        let rest = &parts[1..];
+        if !rest.len().is_multiple_of(2) {
+            err(sink, entry.span, "a records entry has :field value pairs");
+            continue;
+        }
+        let mut ok = true;
+        for pair in rest.chunks(2) {
+            let field = &pair[0];
+            let Some(field_name) = field.keyword() else {
+                err(sink, field.span, "a records entry has :field value pairs");
+                ok = false;
+                break;
+            };
+            let value = &pair[1];
+            let is_ref = refs
+                .iter()
+                .any(|(c, _)| c.text == crate::lower::camel(field_name));
+            let value = if is_ref {
+                id_datum(value, sink)
+            } else {
+                datum(value, sink)
+            };
+            match value {
+                Some(value) => fields.push(Entry::Pair(
+                    Name {
+                        text: crate::lower::camel(field_name),
+                        span: field.span,
+                    },
+                    value,
+                )),
+                None => ok = false,
+            }
+        }
+        if !ok {
+            continue;
+        }
+        records.push((
+            key_value,
+            Datum {
+                kind: D::Record(fields),
+                span: entry.span,
+            },
+        ));
+    }
+    if records.is_empty() {
+        return None;
+    }
+    let value = if array {
+        D::Array(records.into_iter().map(|(_, row)| (false, row)).collect())
+    } else {
+        D::Record(
+            records
+                .into_iter()
+                .map(|(key, row)| {
+                    Entry::Pair(
+                        Name {
+                            text: key,
+                            span: row.span,
+                        },
+                        row,
+                    )
+                })
+                .collect(),
+        )
+    };
+    let as_const = ty.is_none();
+    Some(Def {
+        name,
+        export,
+        module: module.to_string(),
+        ty,
+        as_const,
+        satisfies,
+        doc,
+        ids,
+        id_type,
+        key: Some(crate::lower::camel(&key.text)),
+        solver,
+        refs,
+        value: Datum {
+            kind: value,
+            span: form.span,
+        },
+        span: form.span,
+    })
+}
+
 pub fn lower_constants(form: &Sexp, module: &str, sink: &mut Sink) -> Vec<Def> {
     let items = &form.list().unwrap()[1..];
     let Some(prefix) = items.first().and_then(name_of) else {
@@ -536,58 +888,92 @@ pub fn lower_constants(form: &Sexp, module: &str, sink: &mut Sink) -> Vec<Def> {
                 form_items.push(value.clone());
             }
         }
-        let mut target: Option<Name> = None;
-        let mut bad = false;
-        let mut rest = parts[1..].iter();
-        while let Some(part) = rest.next() {
+        for part in &parts[1..] {
             if part.keyword() == Some("module") {
-                if target.is_some() {
-                    err(sink, part.span, "an entry has one `:module`");
-                    bad = true;
-                    break;
-                }
-                let Some(value) = rest.next() else {
-                    err(sink, part.span, "`:module` takes a file stem");
-                    bad = true;
-                    break;
-                };
-                match &value.kind {
-                    Kind::Str(text) | Kind::Symbol(text)
-                        if !text.is_empty() && !text.contains(['.', '/', '\\']) =>
-                    {
-                        target = Some(Name {
-                            text: text.clone(),
-                            span: value.span,
-                        });
-                    }
-                    _ => {
-                        err(
-                            sink,
-                            value.span,
-                            "`:module` takes a file stem such as `team`",
-                        );
-                        bad = true;
-                        break;
-                    }
-                }
+                err(
+                    sink,
+                    part.span,
+                    "a constants group is local to its file; move the entry to the file that owns it",
+                );
                 continue;
             }
             form_items.push(part.clone());
-        }
-        if bad {
-            continue;
         }
         let def_form = Sexp::new(Kind::List(form_items), entry.span);
         if let Some(mut def) = lower_def(&def_form, module, sink) {
             // A group always exports a SCREAM_CASE constant, even when the prefix is uppercase.
             def.export = crate::lower::scream(&def.name.text);
-            if let Some(target) = target {
-                def.module = target.text;
-            }
             defs.push(def);
         }
     }
     defs
+}
+
+/// `(object (field type) …)` to a TypeScript object type. A field name ending in `?` is optional.
+fn object_type(items: &[Sexp], sink: &mut Sink) -> Option<String> {
+    let mut fields = Vec::new();
+    for item in items {
+        let Some(parts) = item.list() else {
+            err(sink, item.span, "write (field type) in an object type");
+            return None;
+        };
+        let Some(name) = parts.first().and_then(|part| match &part.kind {
+            Kind::Symbol(text) | Kind::Str(text) => Some(text.clone()),
+            _ => None,
+        }) else {
+            err(sink, item.span, "an object field needs a name and a type");
+            return None;
+        };
+        if parts.len() != 2 {
+            err(sink, item.span, "an object field has one type");
+            return None;
+        }
+        let optional = name.ends_with('?');
+        let name = name.trim_end_matches('?');
+        if name.is_empty() {
+            err(sink, item.span, "an object field needs a name");
+            return None;
+        }
+        let ty = type_expr(&parts[1], sink)?;
+        fields.push(format!(
+            "{}{}: {}",
+            key(name),
+            if optional { "?" } else { "" },
+            ty
+        ));
+    }
+    if fields.is_empty() {
+        Some("{}".into())
+    } else {
+        Some(format!("{{ {} }}", fields.join("; ")))
+    }
+}
+
+/// `(literal "value")` to a TypeScript literal type.
+fn literal_type(items: &[Sexp], span: Span, sink: &mut Sink) -> Option<String> {
+    if items.is_empty() {
+        err(sink, span, "(literal …) takes at least one value");
+        return None;
+    }
+    let mut out = Vec::with_capacity(items.len());
+    for item in items {
+        match &item.kind {
+            Kind::Str(text) => out.push(string(text)),
+            Kind::Num(n) => out.push(n.to_string()),
+            Kind::Symbol(text) if matches!(text.as_str(), "true" | "false" | "null") => {
+                out.push(text.clone())
+            }
+            _ => {
+                err(
+                    sink,
+                    item.span,
+                    "a literal is a string, a number, true, false, or null",
+                );
+                return None;
+            }
+        }
+    }
+    Some(out.join(" | "))
 }
 
 /// A TypeScript type expression. A string is raw TypeScript; a name is a type; a list is a generic
@@ -601,6 +987,28 @@ pub fn type_expr(sexp: &Sexp, sink: &mut Sink) -> Option<String> {
                 err(sink, sexp.span, "a type is a name, a string, or a list");
                 return None;
             };
+            if head == "object" {
+                return object_type(&items[1..], sink);
+            }
+            if head == "literal" {
+                return literal_type(&items[1..], sexp.span, sink);
+            }
+            if head == "keys-of" || head == "item-of" {
+                let [value] = &items[1..] else {
+                    err(sink, sexp.span, format!("write ({head} VALUE)"));
+                    return None;
+                };
+                let Some(name) = value.symbol() else {
+                    err(sink, value.span, format!("({head} …) names a value"));
+                    return None;
+                };
+                let export = crate::lower::constant(name);
+                return Some(if head == "keys-of" {
+                    format!("keyof typeof {export}")
+                } else {
+                    format!("(typeof {export})[number]")
+                });
+            }
             let args: Option<Vec<String>> = items[1..]
                 .iter()
                 .map(|item| type_expr(item, sink))
@@ -611,6 +1019,8 @@ pub fn type_expr(sexp: &Sexp, sink: &mut Sink) -> Option<String> {
                 ("record", [key, value]) => Some(format!("Record<{key}, {value}>")),
                 ("partial", [item]) => Some(format!("Partial<{item}>")),
                 ("readonly", [item]) => Some(format!("Readonly<{item}>")),
+                ("keyof", [item]) => Some(format!("keyof {item}")),
+                ("exclude", [item, excluded]) => Some(format!("Exclude<{item}, {excluded}>")),
                 ("union", []) => {
                     err(sink, sexp.span, "a union names at least one type");
                     None
@@ -643,8 +1053,8 @@ pub fn type_expr(sexp: &Sexp, sink: &mut Sink) -> Option<String> {
     }
 }
 
-/// Lowers `(type NAME expression)`: a content type name that expands wherever a `:type` or
-/// `:satisfies` names it. It does not emit a TypeScript declaration.
+/// Lowers `(type NAME expression)`: a content type name that qmc writes to `generated/types.ts`
+/// and imports wherever a `:type` or `:satisfies` names it.
 pub fn lower_type(form: &Sexp, sink: &mut Sink) -> Option<TypeDef> {
     let items = &form.list().unwrap()[1..];
     let Some(name) = items.first().and_then(name_of) else {
@@ -665,6 +1075,89 @@ pub fn lower_type(form: &Sexp, sink: &mut Sink) -> Option<TypeDef> {
         ty,
         span: form.span,
     })
+}
+
+/// A keyed table and its keys, each with its span.
+type KeyedTable<'a> = (&'a Def, Vec<(String, Span)>);
+
+/// Resolves every `(key-of table)` state type to the table's keyed record keys. It runs after
+/// lowering so a state field can name a table in another file, and before checks so a default is
+/// validated against the real keys.
+pub fn resolve_key_of(catalog: &mut crate::lower::Catalog) -> Sink {
+    let mut sink = Sink::default();
+    let tables: BTreeMap<(&str, &str), KeyedTable> = catalog
+        .defs
+        .iter()
+        .filter_map(|def| {
+            def.key.as_ref()?;
+            let D::Record(entries) = &def.value.kind else {
+                return None;
+            };
+            let keys = entries
+                .iter()
+                .filter_map(|entry| match entry {
+                    Entry::Pair(name, _) => Some((name.text.clone(), name.span)),
+                    Entry::Spread(_) => None,
+                })
+                .collect();
+            Some(((def.name.text.as_str(), def.export.as_str()), (def, keys)))
+        })
+        .collect();
+    let names: Vec<&str> = tables.keys().map(|(name, _)| *name).collect();
+    for state in &mut catalog.states {
+        for field in &mut state.fields {
+            let Some(name) = (match &field.ty {
+                crate::lower::StateType::KeyOf(name) => Some(name.clone()),
+                _ => None,
+            }) else {
+                continue;
+            };
+            let found = tables
+                .get(&(name.text.as_str(), name.text.as_str()))
+                .or_else(|| {
+                    let export = crate::lower::constant(&name.text);
+                    tables
+                        .iter()
+                        .find(|((raw, out), _)| *raw == name.text || *out == export)
+                        .map(|(_, value)| value)
+                });
+            let Some((_, keys)) = found else {
+                sink.push(
+                    Diagnostic::error(
+                        "unknown-table",
+                        name.span,
+                        format!("there is no keyed table `{}`", name.text),
+                    )
+                    .help(format!("write one of: {}", names.join(", "))),
+                );
+                continue;
+            };
+            let default = match &field.default.kind {
+                D::Str(value) => Some(value.as_str()),
+                _ => None,
+            };
+            if !default.is_some_and(|value| keys.iter().any(|(key, _)| key == value)) {
+                sink.push(Diagnostic::error(
+                    "state-default",
+                    field.default.span,
+                    format!(
+                        "`{}` is not a key of `{}`",
+                        crate::data::ts(&field.default, 0, 0),
+                        name.text
+                    ),
+                ));
+            }
+            field.ty = crate::lower::StateType::Enum(
+                keys.iter()
+                    .map(|(key, span)| crate::lower::Spanned {
+                        value: key.clone(),
+                        span: *span,
+                    })
+                    .collect(),
+            );
+        }
+    }
+    sink
 }
 
 /// Resolves `(era NAME)` values to their index. The check pass reports an unknown Era before this
@@ -706,7 +1199,7 @@ fn resolve_datum_eras(d: &mut Datum, eras: &BTreeMap<String, usize>) {
             }
         }
         D::Neg(value) => resolve_datum_eras(value, eras),
-        D::As(_, value) => resolve_datum_eras(value, eras),
+        D::As(_, value) | D::Mix(value) => resolve_datum_eras(value, eras),
         D::Op(_, values) => {
             for value in values {
                 resolve_datum_eras(value, eras);
@@ -764,7 +1257,7 @@ fn era_refs<'a>(d: &'a Datum, out: &mut Vec<&'a Name>) {
                 }
             }
         }
-        D::Neg(value) | D::As(_, value) => era_refs(value, out),
+        D::Neg(value) | D::As(_, value) | D::Mix(value) => era_refs(value, out),
         D::Op(_, values) => {
             for value in values {
                 era_refs(value, out);
@@ -899,6 +1392,7 @@ fn list(sexp: &Sexp, items: &[Sexp], sink: &mut Sink) -> Option<D> {
             let ops: Option<Vec<Datum>> = args.iter().map(|a| datum(a, sink)).collect();
             Some(D::Op(head.chars().next().unwrap(), ops?))
         }
+        "mix" => mix(sexp, args, sink),
         "as" => match args {
             [ty, value] => Some(D::As(type_expr(ty, sink)?, Box::new(datum(value, sink)?))),
             _ => {
@@ -911,6 +1405,110 @@ fn list(sexp: &Sexp, items: &[Sexp], sink: &mut Sink) -> Option<D> {
             None
         }
     }
+}
+
+/// `(mix :kind share …)`. Each share is a percentage; the check pass sums them like an Era's mix.
+fn mix(sexp: &Sexp, args: &[Sexp], sink: &mut Sink) -> Option<D> {
+    let mut entries = Vec::new();
+    for pair in args.chunks(2) {
+        let [key, value] = pair else {
+            err(
+                sink,
+                pair[0].span,
+                "a mix is :kind share pairs, like :page 60%",
+            );
+            return None;
+        };
+        let Some(kind) = key.keyword() else {
+            err(sink, key.span, "a mix is :kind share pairs, like :page 60%");
+            return None;
+        };
+        let Kind::Num(n) = &value.kind else {
+            err(sink, value.span, "a mix share is a percentage, like 8%");
+            return None;
+        };
+        if n.unit.dimension() != Dimension::Share {
+            err(
+                sink,
+                value.span,
+                format!(
+                    "a mix share is a percentage; write {}%",
+                    n.value * Ratio::int(100)
+                ),
+            );
+            return None;
+        }
+        let share = n.base();
+        if share < Ratio::int(0) || share > Ratio::int(1) {
+            err(sink, value.span, "a mix share is between 0% and 100%");
+            return None;
+        }
+        entries.push(Entry::Pair(
+            Name {
+                text: kind.to_string(),
+                span: key.span,
+            },
+            Datum {
+                kind: D::Num(share),
+                span: value.span,
+            },
+        ));
+    }
+    Some(D::Mix(Box::new(Datum {
+        kind: D::Record(entries),
+        span: sexp.span,
+    })))
+}
+
+/// Every `(mix …)` in a def value, as a mix the Era mix check reads.
+pub fn mixes(defs: &[Def]) -> Vec<crate::lower::Mix> {
+    fn walk(d: &Datum, out: &mut Vec<crate::lower::Mix>) {
+        match &d.kind {
+            D::Mix(inner) => {
+                if let D::Record(entries) = &inner.kind {
+                    let shares = entries
+                        .iter()
+                        .filter_map(|entry| match entry {
+                            Entry::Pair(
+                                kind,
+                                Datum {
+                                    kind: D::Num(n),
+                                    span,
+                                },
+                            ) => Some((
+                                kind.clone(),
+                                crate::lower::Spanned {
+                                    value: crate::num::Number {
+                                        value: *n,
+                                        unit: crate::num::Unit::None,
+                                    },
+                                    span: *span,
+                                },
+                            )),
+                            _ => None,
+                        })
+                        .collect();
+                    out.push(crate::lower::Mix {
+                        name: None,
+                        shares,
+                        span: inner.span,
+                    });
+                }
+            }
+            D::Array(items) => items.iter().for_each(|(_, item)| walk(item, out)),
+            D::Record(entries) => entries.iter().for_each(|entry| match entry {
+                Entry::Pair(_, value) | Entry::Spread(value) => walk(value, out),
+            }),
+            D::Neg(value) | D::As(_, value) => walk(value, out),
+            D::Op(_, items) => items.iter().for_each(|item| walk(item, out)),
+            _ => {}
+        }
+    }
+    let mut out = Vec::new();
+    for def in defs {
+        walk(&def.value, &mut out);
+    }
+    out
 }
 
 fn record(items: &[Sexp], sink: &mut Sink) -> Option<Vec<Entry>> {
@@ -958,7 +1556,7 @@ pub fn refs<'a>(d: &'a Datum, out: &mut Vec<&'a Name>) {
         D::Record(entries) => entries.iter().for_each(|e| match e {
             Entry::Pair(_, v) | Entry::Spread(v) => refs(v, out),
         }),
-        D::Neg(v) | D::As(_, v) => refs(v, out),
+        D::Neg(v) | D::As(_, v) | D::Mix(v) => refs(v, out),
         D::Op(_, vs) => vs.iter().for_each(|v| refs(v, out)),
         _ => {}
     }
@@ -1014,7 +1612,7 @@ pub enum Origin {
     Local,
     /// Another generated module, such as `./kinds.ts`.
     Generated(String),
-    /// A TypeScript module named by `(import …)`.
+    /// A TypeScript module outside the generated catalog, such as `effect`.
     Path(String),
 }
 
@@ -1031,25 +1629,22 @@ impl<'a> Scope<'a> {
         let mut types = BTreeMap::new();
         for (module, names) in TYPED_EXPORTS {
             for name in names.iter() {
-                let starts_upper_word = name.chars().nth(1).is_some_and(|c| c.is_ascii_lowercase());
-                let map = if starts_upper_word {
-                    &mut types
-                } else {
-                    &mut values
-                };
-                map.insert(*name, (*module, true));
-            }
-        }
-        for c in &catalog.consts {
-            values.insert(c.export.as_str(), ("constants", true));
-        }
-        for import in &catalog.imports {
-            for n in &import.names {
-                values.insert(n.text.as_str(), (import.from.as_str(), false));
+                // A typed module exports both a value (`COMPONENT_IDS`) and, often, the Schema
+                // const and its type under one name (`ComponentId`). Insert it in both maps so
+                // either position resolves to the same generated module.
+                values.insert(*name, (*module, true));
+                types.insert(*name, (*module, true));
             }
         }
         for def in &catalog.defs {
             values.insert(def.export.as_str(), (def.module.as_str(), true));
+            if let Some(ids) = &def.ids {
+                values.insert(ids.as_str(), (def.module.as_str(), true));
+            }
+            if let Some(id_type) = &def.id_type {
+                values.insert(id_type.as_str(), (def.module.as_str(), true));
+                types.insert(id_type.as_str(), (def.module.as_str(), true));
+            }
         }
         for ty in &catalog.type_defs {
             types.insert(ty.name.text.as_str(), ("types", true));
@@ -1084,11 +1679,22 @@ impl<'a> Scope<'a> {
 /// exports, so content can write `db-engines` and the TypeScript still reads `DB_ENGINES`.
 pub fn rewrite(catalog: &mut crate::lower::Catalog) {
     let mut names: BTreeMap<String, String> = BTreeMap::new();
+    // A typed export or an `:ids` array has no content name of its own; its kebab spelling is
+    // that name, so `(ref incidents split-brain duration)` reads `INCIDENTS`.
+    let screams = TYPED_EXPORTS
+        .iter()
+        .flat_map(|(_, n)| n.iter().map(|n| n.to_string()))
+        .chain(catalog.defs.iter().filter_map(|d| d.ids.clone()));
+    for export in screams {
+        if export
+            .bytes()
+            .all(|b| b.is_ascii_uppercase() || b.is_ascii_digit() || b == b'_')
+        {
+            names.insert(export.to_ascii_lowercase().replace('_', "-"), export);
+        }
+    }
     for def in &catalog.defs {
         names.insert(def.name.text.clone(), def.export.clone());
-    }
-    for constant in &catalog.consts {
-        names.insert(constant.name.text.clone(), constant.export.clone());
     }
     for def in &mut catalog.defs {
         rewrite_datum(&mut def.value, &names);
@@ -1107,6 +1713,11 @@ pub fn rewrite(catalog: &mut crate::lower::Catalog) {
     for research in &mut catalog.research {
         rewrite_value(&mut research.name.value, &names);
         rewrite_value(&mut research.blurb.value, &names);
+        if let Some(shape) = &mut research.shape {
+            for (_, value) in &mut shape.fields {
+                rewrite_value(&mut value.value, &names);
+            }
+        }
     }
     for era in &mut catalog.eras {
         rewrite_value(&mut era.name.value, &names);
@@ -1181,7 +1792,7 @@ fn rewrite_datum(datum: &mut Datum, names: &BTreeMap<String, String>) {
                 }
             }
         }
-        D::Neg(value) | D::As(_, value) => rewrite_datum(value, names),
+        D::Neg(value) | D::As(_, value) | D::Mix(value) => rewrite_datum(value, names),
         D::Op(_, values) => {
             for value in values {
                 rewrite_datum(value, names);
@@ -1200,7 +1811,6 @@ pub fn check(catalog: &crate::lower::Catalog) -> Sink {
         .iter()
         .flat_map(|(_, n)| n.iter().copied())
         .collect();
-    let consts: BTreeSet<&str> = catalog.consts.iter().map(|c| c.export.as_str()).collect();
     let known: Vec<&str> = scope.values.keys().copied().collect();
     let known_types: Vec<&str> = scope.types.keys().copied().collect();
     for ty in &catalog.type_defs {
@@ -1235,12 +1845,31 @@ pub fn check(catalog: &crate::lower::Catalog) -> Sink {
                 .label("second definition")
                 .note(first.span, "first defined here"),
             );
-        } else if typed.contains(n) || consts.contains(n) {
+        } else if typed.contains(n) {
             sink.push(Diagnostic::error(
                 "duplicate",
                 def.name.span,
                 format!("`{n}` is already declared by another form"),
             ));
+        }
+        for extra in [&def.ids, &def.id_type].into_iter().flatten() {
+            if let Some(first) = seen.insert(extra.as_str(), &def.name) {
+                sink.push(
+                    Diagnostic::error(
+                        "duplicate",
+                        def.span,
+                        format!("`{extra}` is declared twice"),
+                    )
+                    .label("second declaration")
+                    .note(first.span, "first declared here"),
+                );
+            } else if typed.contains(extra.as_str()) {
+                sink.push(Diagnostic::error(
+                    "duplicate",
+                    def.span,
+                    format!("`{extra}` is already declared by another form"),
+                ));
+            }
         }
         let mut used = Vec::new();
         refs(&def.value, &mut used);
@@ -1254,7 +1883,7 @@ pub fn check(catalog: &crate::lower::Catalog) -> Sink {
             } else if scope.value(&r.text, &def.module).is_none() {
                 let mut d = crate::check::unknown("unknown-name", r, "value", &known);
                 if d.help.is_none() {
-                    d = d.help("define it with (def …) or (const …), or name it in (import …)");
+                    d = d.help("define it with (def …), or name a generated value");
                 }
                 sink.push(d);
             }
@@ -1309,7 +1938,7 @@ fn duplicate_keys(d: &Datum, sink: &mut Sink) {
             }
         }
         D::Array(items) => items.iter().for_each(|(_, v)| duplicate_keys(v, sink)),
-        D::Neg(v) | D::As(_, v) => duplicate_keys(v, sink),
+        D::Neg(v) | D::As(_, v) | D::Mix(v) => duplicate_keys(v, sink),
         D::Op(_, vs) => vs.iter().for_each(|v| duplicate_keys(v, sink)),
         _ => {}
     }
@@ -1365,6 +1994,9 @@ const WIDTH: usize = 100;
 /// A datum as a TypeScript expression at nesting `depth`, starting at column `col`. A record or
 /// array that does not fit in `WIDTH` columns puts one entry on each line.
 pub fn ts(d: &Datum, depth: usize, col: usize) -> String {
+    if let D::Mix(inner) = &d.kind {
+        return ts(inner, depth, col);
+    }
     let flat = flat(d);
     if col + flat.len() <= WIDTH || !matches!(d.kind, D::Array(_) | D::Record(_) | D::As(..)) {
         return flat;
@@ -1474,6 +2106,7 @@ fn flat(d: &Datum) -> String {
             o
         }
         D::As(ty, v) => format!("{} as {ty}", flat(v)),
+        D::Mix(v) => flat(v),
         D::Era(name) => format!("(era {})", name.text),
     }
 }
@@ -1533,14 +2166,13 @@ fn ordered(defs: Vec<&Def>) -> Vec<&Def> {
     out
 }
 
-/// The body of a generated module: its defs, in order, and the imports they need.
-pub fn module(
-    catalog: &crate::lower::Catalog,
+/// One generated def, with its doc, annotation, value, and optional id array.
+fn render_def(
+    scope: &Scope<'_>,
     module: &str,
-) -> (Vec<(Origin, String, bool)>, String) {
-    let scope = Scope::new(catalog);
-    let mut body = String::new();
-    let mut needs: Vec<(Origin, String, bool)> = Vec::new();
+    def: &Def,
+    needs: &mut Vec<(Origin, String, bool)>,
+) -> String {
     let mut add = |origin: Option<Origin>, name: &str, ty: bool| {
         if let Some(origin) = origin {
             if origin != Origin::Local && !needs.iter().any(|(o, n, _)| o == &origin && n == name) {
@@ -1548,57 +2180,192 @@ pub fn module(
             }
         }
     };
-    let mut last_block = true;
-    for def in ordered(catalog.defs.iter().filter(|d| d.module == module).collect()) {
-        let mut used = Vec::new();
-        refs(&def.value, &mut used);
-        for r in used {
-            add(scope.value(&r.text, module), &r.text, false);
-        }
-        for ty in [&def.ty, &def.satisfies].into_iter().flatten() {
-            for (word, is_value) in type_names(ty) {
-                let origin = if is_value {
-                    scope
-                        .value(&word, module)
-                        .or_else(|| scope.ty(&word, module))
-                } else {
-                    scope.ty(&word, module)
-                };
-                add(origin, &word, true);
-            }
-        }
-        let start = body.len();
-        if let Some(doc) = &def.doc {
-            if doc.contains('\n') {
-                let _ = writeln!(body, "/**");
-                for line in doc.lines() {
-                    let _ = writeln!(body, "{}", format!(" * {line}").trim_end());
-                }
-                let _ = writeln!(body, " */");
+    let mut used = Vec::new();
+    refs(&def.value, &mut used);
+    for r in used {
+        add(scope.value(&r.text, module), &r.text, false);
+    }
+    for ty in [&def.ty, &def.satisfies].into_iter().flatten() {
+        for (word, is_value) in type_names(ty) {
+            let origin = if is_value {
+                scope
+                    .value(&word, module)
+                    .or_else(|| scope.ty(&word, module))
             } else {
-                let _ = writeln!(body, "/** {doc} */");
+                scope.ty(&word, module)
+            };
+            add(origin, &word, true);
+        }
+    }
+    let mut body = String::new();
+    if let Some(doc) = &def.doc {
+        if doc.contains('\n') {
+            let _ = writeln!(body, "/**");
+            for line in doc.lines() {
+                let _ = writeln!(body, "{}", format!(" * {line}").trim_end());
+            }
+            let _ = writeln!(body, " */");
+        } else {
+            let _ = writeln!(body, "/** {doc} */");
+        }
+    }
+    let ann = def
+        .ty
+        .as_ref()
+        .map(|t| format!(": {t}"))
+        .unwrap_or_default();
+    let head = format!("export const {}{ann} = ", def.export);
+    let mut line = format!("{head}{}", ts(&def.value, 0, head.len()));
+    if def.as_const {
+        line.push_str(" as const");
+    }
+    if let Some(s) = &def.satisfies {
+        let _ = write!(line, " satisfies {s}");
+    }
+    let _ = writeln!(body, "{line}");
+    if let Some(ids) = &def.ids {
+        let keys: Vec<String> = match &def.value.kind {
+            D::Record(entries) => entries
+                .iter()
+                .filter_map(|entry| match entry {
+                    Entry::Pair(key, _) => Some(string(&key.text)),
+                    Entry::Spread(_) => None,
+                })
+                .collect(),
+            _ => Vec::new(),
+        };
+        let _ = writeln!(body, "export const {ids} = [{}] as const", keys.join(", "));
+        if let Some(id_type) = &def.id_type {
+            let _ = writeln!(body, "export const {id_type} = Schema.Literals({ids})");
+            let _ = writeln!(body, "export type {id_type} = typeof {id_type}.Type");
+            add(Some(Origin::Path("effect".into())), "Schema", false);
+        }
+    }
+    body
+}
+
+/// Every value name the typed forms read. Those defs must come before the typed body in their
+/// generated module, while a def that reads a typed export must come after it.
+fn typed_refs(catalog: &crate::lower::Catalog) -> BTreeSet<String> {
+    let mut out = BTreeSet::new();
+    let mut add = |name: &Name| {
+        out.insert(name.text.clone());
+    };
+    let mut add_value = |value: &crate::lower::Value| match value {
+        crate::lower::Value::Const(name) => add(name),
+        crate::lower::Value::Ref(path) => {
+            if let Some(name) = path.first() {
+                add(name);
             }
         }
-        let ann = def
-            .ty
-            .as_ref()
-            .map(|t| format!(": {t}"))
-            .unwrap_or_default();
-        let head = format!("export const {}{ann} = ", def.export);
-        let mut line = format!("{head}{}", ts(&def.value, 0, head.len()));
-        if def.as_const {
-            line.push_str(" as const");
+        _ => {}
+    };
+    for component in &catalog.components {
+        for value in [
+            &component.name,
+            &component.product,
+            &component.blurb,
+            &component.latency,
+        ] {
+            add_value(&value.value);
         }
-        if let Some(s) = &def.satisfies {
-            let _ = write!(line, " satisfies {s}");
+    }
+    for research in &catalog.research {
+        add_value(&research.name.value);
+        add_value(&research.blurb.value);
+        for (_, value) in research.shape.iter().flat_map(|s| &s.fields) {
+            add_value(&value.value);
         }
-        let _ = writeln!(body, "{line}");
-        // One-line defs sit together; a doc or a multi-line def gets a blank line around it.
-        let block = body[start..].lines().count() > 1;
-        if block || last_block {
-            body.insert(start, '\n');
+    }
+    for era in &catalog.eras {
+        add_value(&era.name.value);
+        add_value(&era.question.value);
+        add_value(&era.arrivals.value);
+    }
+    for incident in &catalog.incidents {
+        add_value(&incident.name.value);
+        add_value(&incident.cause.value);
+        add_value(&incident.prevention.value);
+        if let Some((_, value)) = &incident.surge {
+            add_value(&value.value);
         }
-        last_block = block;
+    }
+    for gate in &catalog.gates {
+        let values = match &gate.open {
+            crate::lower::GateValues::Free(values) | crate::lower::GateValues::Locked(values) => {
+                values
+            }
+        };
+        for value in values {
+            let mut used = Vec::new();
+            refs(value, &mut used);
+            for name in used {
+                add(name);
+            }
+        }
+    }
+    for state in &catalog.states {
+        for field in &state.fields {
+            let mut used = Vec::new();
+            refs(&field.default, &mut used);
+            for name in used {
+                add(name);
+            }
+        }
+    }
+    out
+}
+
+/// The defs of a generated module, split into the defs the typed body reads and the rest. A def
+/// that reads a typed export in the same module must come after it; a def the typed body reads
+/// must come before it. Keeping the two groups separate lets a typed module use a constant
+/// without a hand-written import or a use-before-declaration.
+pub fn module(
+    catalog: &crate::lower::Catalog,
+    module: &str,
+) -> (Vec<(Origin, String, bool)>, String, String) {
+    let scope = Scope::new(catalog);
+    let mut needs: Vec<(Origin, String, bool)> = Vec::new();
+    let defs = ordered(catalog.defs.iter().filter(|d| d.module == module).collect());
+    let typed = typed_refs(catalog);
+    let mut early: BTreeSet<&str> = defs
+        .iter()
+        .filter(|def| typed.contains(def.export.as_str()))
+        .map(|def| def.export.as_str())
+        .collect();
+    // A def the typed body reads may itself read another local def, so include that closure.
+    loop {
+        let mut added = false;
+        for def in &defs {
+            if !early.contains(def.export.as_str()) {
+                continue;
+            }
+            let mut used = Vec::new();
+            refs(&def.value, &mut used);
+            for name in used {
+                if defs.iter().any(|d| d.export == name.text) && early.insert(name.text.as_str()) {
+                    added = true;
+                }
+            }
+        }
+        if !added {
+            break;
+        }
+    }
+    let mut early_body = String::new();
+    let mut late_body = String::new();
+    for def in defs {
+        let target = if early.contains(def.export.as_str()) {
+            &mut early_body
+        } else {
+            &mut late_body
+        };
+        let block = render_def(&scope, module, def, &mut needs);
+        let multiline = block.lines().count() > 1;
+        if !target.is_empty() || multiline {
+            target.push('\n');
+        }
+        target.push_str(&block);
     }
     // A name read as a value needs a value import even when a type also uses it.
     let values: BTreeSet<(Origin, String)> = needs
@@ -1607,7 +2374,7 @@ pub fn module(
         .map(|(o, n, _)| (o.clone(), n.clone()))
         .collect();
     needs.retain(|(o, n, ty)| !ty || !values.contains(&(o.clone(), n.clone())));
-    (needs, body)
+    (needs, early_body, late_body)
 }
 
 impl PartialOrd for Origin {
@@ -1837,6 +2604,80 @@ mod tests {
     }
 
     #[test]
+    fn a_records_form_copies_keys_and_defaults_and_ids() {
+        let c = compile(&[(
+            "content/t.qm",
+            r#"(def DEFAULTS (:v 0 :w false))
+               (records things
+                 :key id
+                 :ids THING_IDS
+                 :id-type ThingId
+                 :defaults DEFAULTS
+                 (alpha :name "Alpha" :v 1)
+                 (beta :name "Beta"))
+            "#,
+        )]);
+        assert_eq!(errors(&c), Vec::<&str>::new());
+        let ts = output(&c, "t.ts");
+        assert!(
+            ts.contains("export const THING_IDS = ['alpha', 'beta'] as const"),
+            "{ts}"
+        );
+        assert!(
+            ts.contains("export const ThingId = Schema.Literals(THING_IDS)"),
+            "{ts}"
+        );
+        assert!(
+            ts.contains("alpha: { id: 'alpha', ...DEFAULTS, name: 'Alpha', v: 1 }"),
+            "{ts}"
+        );
+        assert!(
+            ts.contains("beta: { id: 'beta', ...DEFAULTS, name: 'Beta' }"),
+            "{ts}"
+        );
+    }
+
+    #[test]
+    fn a_table_can_own_its_id_array_and_schema() {
+        let c = compile(&[(
+            "content/t.qm",
+            "(table engines
+  :key id
+  :ids ENGINE_IDS
+  :id-type EngineId
+  [id name]
+  [postgres \"PostgreSQL\"]
+  [mysql \"MySQL\"])\n",
+        )]);
+        assert_eq!(errors(&c), Vec::<&str>::new());
+        let ts = output(&c, "t.ts");
+        assert!(
+            ts.contains("export const ENGINE_IDS = ['postgres', 'mysql'] as const"),
+            "{ts}"
+        );
+        assert!(
+            ts.contains("export const EngineId = Schema.Literals(ENGINE_IDS)"),
+            "{ts}"
+        );
+        assert!(ts.contains("export const ENGINES = {"), "{ts}");
+    }
+
+    #[test]
+    fn export_rust_comes_from_the_declaration_not_a_list() {
+        let c = compile(&[(
+            "content/t.qm",
+            "(table things :key id :ids THING_IDS :export-rust [id name] [a \"A\"])\n             (def summary :export-rust (:x 1))\n             (def other (:x 2))\n",
+        )]);
+        assert_eq!(errors(&c), Vec::<&str>::new());
+        let names: Vec<(&str, Option<&str>)> = c
+            .solver_tables
+            .iter()
+            .map(|t| (t.name.as_str(), t.module.as_deref()))
+            .collect();
+        assert_eq!(names, [("THINGS", Some("thing")), ("SUMMARY", None)]);
+    }
+
+    #[test]
     fn a_table_refuses_a_short_row_and_a_repeated_key() {
         let short = compile(&[(
             "content/t.qm",
@@ -1893,23 +2734,6 @@ mod tests {
             "{ts}"
         );
         assert!(ts.contains("export const REGIONS_FROM_STAGE = 5"), "{ts}");
-    }
-
-    #[test]
-    fn a_constants_group_can_send_an_entry_to_another_module() {
-        let c = compile(&[
-            (
-                "content/t.qm",
-                "(constants auth (move-dh :module team 120) (check-ms :module t 0.02))\n",
-            ),
-            ("content/team.qm", "(def TEAM 1)\n"),
-        ]);
-        assert_eq!(errors(&c), Vec::<&str>::new());
-        let t = output(&c, "t.ts");
-        let team = output(&c, "team.ts");
-        assert!(t.contains("export const AUTH_CHECK_MS = 0.02"), "{t}");
-        assert!(!t.contains("AUTH_MOVE_DH"), "{t}");
-        assert!(team.contains("export const AUTH_MOVE_DH = 120"), "{team}");
     }
 
     #[test]
@@ -1989,15 +2813,6 @@ mod tests {
     }
 
     #[test]
-    fn a_module_owner_must_name_a_content_file() {
-        let c = compile(&[(
-            "content/t.qm",
-            "(constants auth (check-ms :module nowhere 0.02))\n",
-        )]);
-        assert_eq!(errors(&c), ["unknown-module"]);
-    }
-
-    #[test]
     fn the_typed_exports_table_matches_the_typed_emitters() {
         let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/../simulation/content");
         let inputs: Vec<(String, String)> = crate::qm_files(std::path::Path::new(dir))
@@ -2015,15 +2830,15 @@ mod tests {
         let database = output(&c, "database.ts");
         assert!(database.contains("export const DB_ENGINES = {"));
         assert!(database.contains("export const SHARD_COUNTS = [1, 2, 4, 8] as const"));
-        let constants = output(&c, "constants.ts");
-        assert!(constants.contains("export const PREMIERE_SURGE = 4"));
+        let incidents = output(&c, "incidents.ts");
+        assert!(incidents.contains("export const PREMIERE_SURGE = 4"));
         assert!(database.contains(
             "export const SHARD_KEY_VALUES = ['hash', 'range', 'tenant', 'region'] as const"
         ));
         assert!(database.contains("export const ShardKey = Schema.Literals(SHARD_KEY_VALUES)"));
-        assert!(database.contains(
-            "  shards: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(1))),"
-        ));
+        assert!(database.contains("export const Shards = Schema.Literals(SHARD_COUNTS)"));
+        assert!(database
+            .contains("  shards: Shards.pipe(Schema.withDecodingDefaultKey(Effect.succeed(1))),"));
         let rule = output(&c, "database.rule.ts");
         assert!(rule.contains("export const setShards = fieldSetter("));
         assert!(rule.contains("    locked: 'database.shards',"));
@@ -2049,8 +2864,11 @@ mod tests {
                     rest.split([' ', ':', '<', '(', '=']).next()
                 })
                 .collect();
+            exported.sort();
+            exported.dedup();
             // Defs merged into a typed file are not part of the typed emitter's exports.
-            let typed: Vec<&str> = names.to_vec();
+            let mut typed: Vec<&str> = names.to_vec();
+            typed.sort();
             exported.retain(|n| typed.contains(n) || !defs.contains(*n));
             assert_eq!(exported, typed, "{module}.ts");
         }

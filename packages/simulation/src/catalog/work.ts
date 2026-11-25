@@ -9,5 +9,7 @@ export {
 } from '../generated/work.ts'
 export { FEATURES } from '../generated/work.ts'
 
-export type { FeatureId, FixId, TaskId } from '../generated/ids.ts'
+export type { TaskId } from '../generated/work.ts'
+export type { FeatureId } from '../generated/work.ts'
+export type { FixId } from '../generated/ids.ts'
 export type { FeatureDef, TaskDef } from '../generated/types.ts'

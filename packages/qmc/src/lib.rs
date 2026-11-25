@@ -93,6 +93,16 @@ pub struct Compiled {
     pub diagnostics: Vec<Diagnostic>,
     /// Each generated file, by its name in the output directory. Empty when there were errors.
     pub outputs: Vec<(String, String)>,
+    /// The records the Solver catalog may export as columns. qmc derives this from the lowered
+    /// catalog, so `emit_rs` does not keep its own table list.
+    pub solver_tables: Vec<SolverTable>,
+}
+
+#[derive(Clone, Debug)]
+pub struct SolverTable {
+    pub name: String,
+    /// The Rust module for this table's keys, when the table declares an id array and no typed id.
+    pub module: Option<String>,
 }
 
 /// Reads, expands, lowers, checks, and emits the given files.
@@ -114,6 +124,7 @@ pub fn compile(inputs: Vec<(String, String)>) -> Compiled {
         sink.extend(part_sink);
     }
     crate::data::rewrite(&mut catalog);
+    sink.extend(crate::data::resolve_key_of(&mut catalog));
     sink.extend(check::run(&catalog));
     let outputs = if sink.has_errors() {
         Vec::new()
@@ -121,7 +132,6 @@ pub fn compile(inputs: Vec<(String, String)>) -> Compiled {
         crate::data::resolve_eras(&mut catalog);
         let catalog = &catalog;
         let jobs: Vec<par::Job<'_, (&'static str, String)>> = vec![
-            Box::new(move || ("constants.ts", emit_ts::constants(catalog))),
             Box::new(move || ("components.ts", emit_ts::components(catalog))),
             Box::new(move || ("eras.ts", emit_ts::eras(catalog))),
             Box::new(move || ("incidents.ts", emit_ts::incidents(catalog))),
@@ -147,22 +157,30 @@ pub fn compile(inputs: Vec<(String, String)>) -> Compiled {
         modules.sort();
         modules.dedup();
         let bodies = par::map(&modules, |m| {
-            let (needs, body) = data::module(catalog, m);
+            let (needs, early, late) = data::module(catalog, m);
             let (state_needs, state_body) = emit_ts::states(catalog, m);
             let mut all = needs;
             all.extend(state_needs);
-            (m.to_string(), all, format!("{body}{state_body}"))
+            (m.to_string(), all, early, format!("{late}{state_body}"))
         });
-        for (module, needs, body) in bodies {
+        for (module, needs, early, late) in bodies {
             let name = format!("{module}.ts");
             match outputs.iter_mut().find(|(n, _)| *n == name) {
                 Some((_, text)) => {
                     *text = data::merge_imports(text, &needs);
-                    text.push_str(&body);
+                    if !early.is_empty() {
+                        if let Some(at) = text.find("\n\nexport ") {
+                            text.insert_str(at + 1, &early);
+                        } else {
+                            text.push_str(&early);
+                        }
+                    }
+                    text.push_str(&late);
                 }
                 None => {
                     let mut text = data::merge_imports(emit_ts::HEADER, &needs);
-                    text.push_str(&body);
+                    text.push_str(&early);
+                    text.push_str(&late);
                     outputs.push((name, text));
                 }
             }
@@ -173,11 +191,36 @@ pub fn compile(inputs: Vec<(String, String)>) -> Compiled {
                 outputs.push((format!("{module}.rule.ts"), text));
             }
         }
-        outputs
+        if catalog.states.is_empty() {
+            outputs
+        } else {
+            outputs.push(("fields.ts".into(), emit_ts::fields(catalog)));
+            outputs
+        }
     };
+    let solver_tables = catalog
+        .defs
+        .iter()
+        .filter(|def| def.solver)
+        .map(|def| {
+            let module = if def.id_type.is_some() {
+                None
+            } else {
+                def.ids
+                    .as_deref()
+                    .and_then(|ids| ids.strip_suffix("_IDS"))
+                    .map(|name| name.to_ascii_lowercase())
+            };
+            SolverTable {
+                name: def.export.clone(),
+                module,
+            }
+        })
+        .collect();
     Compiled {
         sources,
         diagnostics: sink.sorted(),
         outputs,
+        solver_tables,
     }
 }

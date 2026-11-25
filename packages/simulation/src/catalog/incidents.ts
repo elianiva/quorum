@@ -19,7 +19,7 @@ export {
   type IncidentDef,
   type IncidentId,
 } from '../generated/incidents.ts'
-export { FLASH_SALE_SURGE, LAUNCH_SURGE, PREMIERE_SURGE } from '../generated/constants.ts'
+export { FLASH_SALE_SURGE, LAUNCH_SURGE, PREMIERE_SURGE } from '../generated/incidents.ts'
 export {
   SPOT_WARNING,
   SPOT_DOWN,

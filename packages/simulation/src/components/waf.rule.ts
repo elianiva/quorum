@@ -1,5 +1,5 @@
 import { type Action, endIncident, notAllowed, ok, patch, withNode } from '../action-kit.ts'
-import type { Game } from '../state.ts'
+import type { Game, GameNode } from '../state.ts'
 import { PARANOIA } from '../catalog.ts'
 
 export const setParanoia = (game: Game, id: string, paranoia: number): Action =>
@@ -7,7 +7,11 @@ export const setParanoia = (game: Game, id: string, paranoia: number): Action =>
     if (node.type !== 'waf') return notAllowed('Only a WAF has a paranoia level.')
     if (!PARANOIA.some((entry) => entry.level === paranoia))
       return notAllowed('Paranoia runs from 1 to 4.')
-    return ok(node.paranoia === paranoia ? game : patch(game, id, { paranoia }))
+    return ok(
+      node.paranoia === paranoia
+        ? game
+        : patch(game, id, { paranoia: paranoia as GameNode['paranoia'] }),
+    )
   })
 
 export const setUnderAttack = (game: Game, id: string, underAttack: boolean): Action =>

@@ -287,7 +287,7 @@ export const queueReshard = (
     reshard: {
       node: nodeId,
       group: dataGroupOf(game, node),
-      shards,
+      shards: shards as GameNode['shards'],
       key,
       topology: node.topology,
       phase: moveStep(game.reshard.phase, { _tag: 'Queued' }),

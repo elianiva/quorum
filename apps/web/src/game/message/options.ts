@@ -19,7 +19,6 @@ import {
   PoolerMode,
   Pricing,
   Region,
-  RequestKindId,
   Retries,
   RuntimeId,
   ScaleSignal,
@@ -31,7 +30,14 @@ import {
   VecIndexType,
   Zone,
 } from '@quorum/simulation/state'
-import { FEATURE_IDS } from '@quorum/simulation/catalog'
+import {
+  FEATURE_IDS,
+  GpuBatch,
+  Paranoia,
+  RequestKind,
+  SearchRefresh,
+  Shards,
+} from '@quorum/simulation/catalog'
 import { Effect, Schema } from 'effect'
 
 export const optionsCases = {
@@ -68,7 +74,7 @@ export const optionsCases = {
   LinkKindsChosen: {
     from: Schema.String,
     to: Schema.String,
-    kinds: Schema.NullOr(Schema.Array(RequestKindId)),
+    kinds: Schema.NullOr(Schema.Array(RequestKind)),
   },
   AlertRuleChosen: {
     rule: Schema.Literals(['errors', 'latency', 'saturation', 'queue', 'budget']),
@@ -114,7 +120,7 @@ export const optionsCases = {
   AttemptsChosen: { nodeId: Schema.String, attempts: Schema.Finite },
   MaxLengthChosen: { nodeId: Schema.String, maxLength: Schema.Finite },
   PrefetchChosen: { nodeId: Schema.String, prefetch: Schema.Finite },
-  ParanoiaChosen: { nodeId: Schema.String, paranoia: Schema.Finite },
+  ParanoiaChosen: { nodeId: Schema.String, paranoia: Paranoia },
   UnderAttackChosen: { nodeId: Schema.String, underAttack: Schema.Boolean },
   RateLimitChosen: { nodeId: Schema.String, rateLimit: Schema.Finite },
   GatewayBucketChosen: { nodeId: Schema.String, bucket: Schema.Boolean },
@@ -125,14 +131,14 @@ export const optionsCases = {
   },
   DbEngineChosen: { nodeId: Schema.String, dbEngine: DbEngine },
   StorageIopsChosen: { nodeId: Schema.String, iops: IopsClass },
-  ShardsChosen: { nodeId: Schema.String, shards: Schema.Finite },
+  ShardsChosen: { nodeId: Schema.String, shards: Shards },
   StorageClassChosen: { nodeId: Schema.String, storageClass: StorageClass },
   LifecycleChosen: { nodeId: Schema.String, lifecycle: Schema.Finite },
   DbRetentionChosen: { nodeId: Schema.String, keep: DbRetention },
   MaterializedChosen: { nodeId: Schema.String, materialized: Schema.Boolean },
   ChaosChosen: { chaos: Schema.Boolean },
   CacheStrategyChosen: { nodeId: Schema.String, cacheStrategy: CacheStrategy },
-  SearchRefreshChosen: { nodeId: Schema.String, refresh: Schema.Finite },
+  SearchRefreshChosen: { nodeId: Schema.String, refresh: SearchRefresh },
   RestoreDrilled: { nodeId: Schema.String },
   DeployStrategyChosen: { nodeId: Schema.String, strategy: DeployStrategy },
   HubOptionsChosen: {
@@ -172,7 +178,7 @@ export const optionsCases = {
   },
   GpuChosen: { nodeId: Schema.String, gpu: GpuType },
   PrecisionChosen: { nodeId: Schema.String, precision: Schema.Literals(['fp16', 'int8', 'int4']) },
-  BatchChosen: { nodeId: Schema.String, batch: Schema.Finite },
+  BatchChosen: { nodeId: Schema.String, batch: GpuBatch },
   GpuModelChosen: {
     nodeId: Schema.String,
     gpuModel: Schema.Literals(['small', 'medium', 'large']),

@@ -229,3 +229,5 @@
 (def declined-growth 0.7)
 
 (def apdex-window 60)
+
+(def calendar-start (* 14 60))

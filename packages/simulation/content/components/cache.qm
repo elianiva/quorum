@@ -15,54 +15,42 @@
   :accepts  (q-read q-write q-search blob-put q-tx blob-get q-scan k-write change)
   :sends    (q-read q-write q-search blob-put q-tx blob-get q-scan k-write)
   :fallback (q-search blob-put blob-get q-scan q-tx k-write)
-  :blurb    "The cheapest way to cut reads while the hot data fits in memory. Writes pass through and invalidate, and a restart starts cold.")
+  :blurb    "The cheapest way to cut reads while the hot data fits in memory. Writes pass through and invalidate, and a restart starts cold."
+  :glossary (cache-hit-rate cache-aside hot-key write-through-cache))
 
 (state cache
   (field early-expiry bool
-    :default false)
+    :default false
+    :gate    (stampede-protection "Early expiration" :locked (true)))
   (field swr bool
-    :default false)
-  (field engine (enum redis memcached)
+    :default false
+    :gate    (stampede-protection "Stale-while-revalidate" :locked (true)))
+  (field engine (key-of cache-engines)
     :default redis
     :schema  CacheEngine)
-  (field cache-strategy (enum aside read-through write-through write-behind)
+  (field cache-strategy (key-of cache-strategies)
     :default aside
     :schema  CacheStrategy
     :gate    (cache-strategies "Cache strategies"))
   (field coalesce bool
-    :default false)
+    :default false
+    :gate    (stampede-protection "Coalescing" :locked (true)))
   (field warming bool
-    :default false)
+    :default false
+    :gate    (cache-warming "Warming" :locked (true)))
   (field split bool
     :default false))
 
-(gate cache coalesce
-  :research stampede-protection
-  :what     "Coalescing"
-  :locked   (true))
-
-(gate cache earlyExpiry
-  :research stampede-protection
-  :what     "Early expiration"
-  :locked   (true))
-
-(gate cache swr
-  :research stampede-protection
-  :what     "Stale-while-revalidate"
-  :locked   (true))
-
-(gate cache warming
-  :research cache-warming
-  :what     "Warming"
-  :locked   (true))
-
 (table cache-engines
-  :key id
+  :key         id
+  :export-rust
+  :ids         cache-engine-ids
   [id         name         growth  memory  speed  warmAfterRestart]
   [redis      "Redis"         1.7       1      1               0.5]
   [memcached  "Memcached"       2    1.12    1.2                 0])
 
 (table cache-ttls
+  :export-rust
   [ttl    factor  stale]
   [   10     0.6  0.005]
   [   60    0.85   0.02]
@@ -73,7 +61,9 @@
 (def write-behind-seconds 10)
 
 (table cache-strategies
-  :key id
+  :key         id
+  :export-rust
+  :ids         cache-strategy-ids
   [id             name             stale  write      writeMs  flush  loadMs]
   [aside          "Cache-aside"        1  "bypass"         0      1       0]
   [read-through   "Read-through"    0.75  "bypass"         0      1       1]
@@ -88,6 +78,6 @@
   (lift 0.5)
   (refresh 0.02))
 
-(def cacheGlossary
-  :type (array string)
-  ["cache-hit-rate" "cache-aside" "hot-key" "write-through-cache"])
+(def hot-kb-per-user 200)
+
+(def hot-base-users 10_000)

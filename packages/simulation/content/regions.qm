@@ -1,15 +1,8 @@
-(id RegionId REGIONS)
+(id SyncModeId sync-modes)
 
-(id DeviceId devices)
-
-(id IacToolId IAC_TOOLS)
-
-(id SyncModeId SYNC_MODES)
-
-(id DataPatternId DATA_PATTERNS)
+(id DataPatternId data-patterns)
 
 (constants regions
-  (regions :type const ["na" "eu" "apac" "sa"])
   (from-stage 5))
 
 (def home-region
@@ -17,8 +10,10 @@
   "na")
 
 (table region-info
-  :key  id
-  :type (record RegionId RegionDef)
+  :key     id
+  :ids     regions
+  :id-type RegionId
+  :type    (record RegionId RegionDef)
   [id    name             short   share  offset]
   [na    "North America"  "NA"      0.4       0]
   [eu    "Europe"         "EU"      0.3     360]
@@ -44,13 +39,11 @@
 
 (def border-mixing 0.1)
 
-(def devices
-  :type const
-  ["desktop" "mobile" "tablet"])
-
 (table device-info
-  :key  id
-  :type DeviceInfoById
+  :key     id
+  :ids     devices
+  :id-type DeviceId
+  :type    DeviceInfoById
   [id       name       share  rttMs]
   [desktop  "Desktop"   0.45      0]
   [mobile   "Mobile"    0.45     60]
@@ -61,15 +54,38 @@
 (def stage-wait-minutes 60)
 
 (constants iac
-  (switch-minutes CALENDAR_DAY)
-  (tools :type const ["terraform" "pulumi" "alchemy"]))
+  (switch-minutes calendar-day))
 
 (def refresh-time-minutes 0.5)
 
 (table iac-tool-info
-  :key  id
-  :type (record IacToolId IacToolDef)
+  :key     id
+  :ids     iac-tools
+  :id-type IacToolId
+  :type    (record IacToolId IacToolDef)
   [id         name         language      refreshOnPlan  refresh           repair]
   [terraform  "Terraform"  "HCL"         true           null              false]
   [pulumi     "Pulumi"     "TypeScript"  false          "pulumi refresh"  false]
   [alchemy    "Alchemy"    "TypeScript"  false          "alchemy drift"   true])
+
+(def data-patterns
+  :type const
+  ["replica" "primary" "replicate" "call"])
+
+(def egress-cross-region 0.02)
+
+(def no-device-latency
+  :type (record DeviceId number)
+  (:desktop 0
+   :mobile  0
+   :tablet  0))
+
+(def open-region-price 20_000)
+
+(def sync-poll-minutes 3)
+
+(def sync-modes
+  :type const
+  ["all" "staged"])
+
+(def user-round-trips 2)

@@ -6,12 +6,16 @@
   :type Tuning
   (:pace               playtest-pace
    :incidentGap        incident-gap-seconds
-   :firstIncidentAfter FIRST_INCIDENT_AFTER_SECONDS
-   :calendarPace       CALENDAR_PACE))
+   :firstIncidentAfter first-incident-after-seconds
+   :calendarPace       calendar-pace))
 
 (def challenge-tuning
   :type Tuning
   (:pace               1
    :incidentGap        720
    :firstIncidentAfter 600
-   :calendarPace       CALENDAR_PACE))
+   :calendarPace       calendar-pace))
+
+(def calendar-pace 24)
+
+(def first-incident-after-seconds 90)

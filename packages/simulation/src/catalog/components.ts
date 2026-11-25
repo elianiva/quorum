@@ -2,6 +2,7 @@
 // compiled by qmc.
 export {
   BUILD_GROUPS,
+  COMPONENT_GLOSSARY,
   COMPONENT_IDS,
   COMPONENTS,
   DOCK_GROUPS,
@@ -21,7 +22,7 @@ export {
   type GateValue,
 } from '../generated/components.ts'
 
-export type { PricingId } from '../generated/ids.ts'
+export type { PricingId } from '../generated/components.ts'
 export type { PricingDef } from '../generated/types.ts'
 
 export {
@@ -288,3 +289,7 @@ export {
   STICKY_HERD,
   FLAG_PROPAGATION_SECONDS,
 } from '../generated/components.ts'
+export { Shards } from '../generated/database.ts'
+export { SearchRefresh } from '../generated/search.ts'
+export { GpuBatch } from '../generated/gpu.ts'
+export { Paranoia } from '../generated/waf.ts'

@@ -158,7 +158,7 @@ fn build(content: &Path, out: &Path, solver: Option<(&Path, &Path)>) -> ExitCode
         let modules: Vec<&str> = compiled.outputs.iter().map(|(_, t)| t.as_str()).collect();
         outputs.push((
             target.to_path_buf(),
-            qmc::emit_rs::catalog(&modules, &names),
+            qmc::emit_rs::catalog(&modules, &names, &compiled.solver_tables),
         ));
     }
     // An unchanged file is not rewritten, so a dev server does not reload for nothing.

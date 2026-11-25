@@ -171,7 +171,15 @@ impl Out {
         if let Some(module) = module {
             self.ids(module, &table.keys());
         }
-        let fields = rows.first().map(J::keys).unwrap_or_default();
+        let mut fields: Vec<String> = Vec::new();
+        for row in &rows {
+            for field in row.keys() {
+                if !fields.contains(&field) {
+                    fields.push(field);
+                }
+            }
+        }
+        // `check::solver_columns` guarantees every row has every column with one scalar type.
         for field in fields {
             let values: Vec<&J> = rows.iter().map(|r| r.get(&field)).collect();
             let column = format!("{name}_{}", snake(&field));
@@ -217,28 +225,13 @@ const DEFINED_LATER: &[&str] = &[
     "GOGC",
 ];
 
-const TABLES: &[(&str, Option<&str>)] = &[
-    ("SEARCH_VARIANTS", Some("search_variant")),
-    ("SEARCH_HEAPS", Some("search_heap")),
-    ("SEARCH_REFRESH", None),
-    ("STORAGE_CLASSES", Some("storage_class")),
-    ("GPU_TYPES", Some("gpu_type")),
-    ("GPU_MODELS", Some("gpu_model")),
-    ("GPU_PRECISIONS", Some("gpu_precision")),
-    ("GPU_BATCHES", None),
-    ("CACHE_ENGINES", Some("cache_engine")),
-    ("CACHE_TTLS", None),
-    ("CACHE_STRATEGIES", Some("cache_strategy")),
-    ("PARANOIA", None),
-    ("UNDER_ATTACK", None),
-    ("VEC_INDEXES", Some("vec_index")),
-    ("CACHE_KEYS", Some("cache_key")),
-    ("LOG_ACKS", None),
-];
-
 /// The Solver catalog for the given generated modules. `namespace` is every name the
 /// Simulation's `catalog.ts` exports; its scalars become constants.
-pub fn catalog(modules: &[&str], namespace: &BTreeSet<String>) -> String {
+pub fn catalog(
+    modules: &[&str],
+    namespace: &BTreeSet<String>,
+    tables: &[crate::SolverTable],
+) -> String {
     let env = Env::new(modules.iter().copied());
     let mut o = Out { lines: Vec::new() };
     let request = strings(&env.get("REQUEST_KINDS"));
@@ -249,6 +242,8 @@ pub fn catalog(modules: &[&str], namespace: &BTreeSet<String>) -> String {
     let request_index = |k: &str| request.iter().position(|x| x == k);
 
     o.push(format!("pub const NK: usize = {nk};"));
+    o.push("// Kind masks are u128, one bit per kind.");
+    o.push("const _: () = assert!(NK <= 128);");
     o.push(format!("pub const NR: usize = {nr};"));
     o.push(format!("pub const NB: usize = {nb};"));
     o.push("");
@@ -276,7 +271,7 @@ pub fn catalog(modules: &[&str], namespace: &BTreeSet<String>) -> String {
         let line = match &value {
             J::Num(n) if n.is_finite() => format!("pub const {upper}: f64 = {};", num(&value)),
             J::Bool(b) => format!("pub const {upper}: bool = {b};"),
-            J::Str(s) => format!("pub const {upper}: &str = \"{s}\";"),
+            J::Str(s) => format!("pub const {upper}: &str = {};", json(s)),
             J::Arr(items) if items.iter().all(|i| matches!(i, J::Num(_))) => format!(
                 "pub static {upper}: [f64; {}] = [{}];",
                 items.len(),
@@ -295,8 +290,8 @@ pub fn catalog(modules: &[&str], namespace: &BTreeSet<String>) -> String {
     o.push(format!("pub static SCALAR_COUNT: usize = {scalars};"));
 
     o.push("");
-    for (name, module) in TABLES {
-        o.table(&env, name, *module);
+    for table in tables {
+        o.table(&env, &table.name, table.module.as_deref());
     }
 
     let sparse = |record: &J, total: usize| -> Vec<String> {
@@ -380,7 +375,8 @@ pub fn catalog(modules: &[&str], namespace: &BTreeSet<String>) -> String {
             language_ids
                 .iter()
                 .position(|l| *l == lang)
-                .map_or("-1".to_string(), |i| i.to_string())
+                .expect("a runtime names a declared language")
+                .to_string()
         }))
     ));
     let models: Vec<String> = runtime_ids
@@ -469,9 +465,10 @@ pub fn catalog(modules: &[&str], namespace: &BTreeSet<String>) -> String {
 
     o.push("");
     let pm = env.get("PM_MODES");
-    let pm_ids = ["static", "dynamic", "ondemand"];
+    let pm_ids = pm.keys();
     o.push(format!(
-        "pub static PM_SPARES: [f64; 3] = [{}];",
+        "pub static PM_SPARES: [f64; {}] = [{}];",
+        pm_ids.len(),
         join(
             pm_ids
                 .iter()
@@ -479,11 +476,13 @@ pub fn catalog(modules: &[&str], namespace: &BTreeSet<String>) -> String {
         )
     ));
     o.push(format!(
-        "pub static PM_SPAWN_SHARE: [f64; 3] = [{}];",
+        "pub static PM_SPAWN_SHARE: [f64; {}] = [{}];",
+        pm_ids.len(),
         join(pm_ids.iter().map(|id| num(pm.get(id).get("spawnShare"))))
     ));
     o.push(format!(
-        "pub static PM_SPAWN_MS: [f64; 3] = [{}];",
+        "pub static PM_SPAWN_MS: [f64; {}] = [{}];",
+        pm_ids.len(),
         join(pm_ids.iter().map(|id| num(pm.get(id).get("spawnMs"))))
     ));
 
@@ -514,7 +513,7 @@ pub fn catalog(modules: &[&str], namespace: &BTreeSet<String>) -> String {
         join(
             language_ids
                 .iter()
-                .map(|id| format!("\"{}\"", text(languages.get(id).get("blast"))))
+                .map(|id| json(&text(languages.get(id).get("blast"))))
         )
     ));
 
@@ -577,6 +576,7 @@ pub fn catalog(modules: &[&str], namespace: &BTreeSet<String>) -> String {
 
     o.push("");
     let db = env.get("DB_ENGINES");
+    let db_ids = db.keys();
     for (field, name) in [
         ("connections", "DB_CONNECTIONS"),
         ("connectionMB", "DB_CONNECTION_MB"),
@@ -587,15 +587,19 @@ pub fn catalog(modules: &[&str], namespace: &BTreeSet<String>) -> String {
         ("lag", "DB_LAG"),
     ] {
         o.push(format!(
-            "pub static {name}: [f64; 2] = [{}];",
-            join(
-                ["postgres", "mysql"]
-                    .iter()
-                    .map(|id| num(db.get(id).get(field)))
-            )
+            "pub static {name}: [f64; {}] = [{}];",
+            db_ids.len(),
+            join(db_ids.iter().map(|id| num(db.get(id).get(field))))
         ));
     }
-    o.push("pub fn db_engine_index(name: &str) -> usize { if name == \"mysql\" { 1 } else { 0 } }");
+    o.push("pub fn db_engine_index(name: &str) -> usize {");
+    o.push("    match name {");
+    for (index, id) in db_ids.iter().enumerate() {
+        o.push(format!("        {id:?} => {index},"));
+    }
+    o.push("        _ => 0,");
+    o.push("    }");
+    o.push("}");
 
     o.push("");
     let component_ids = strings(&env.get("COMPONENT_IDS"));
@@ -621,7 +625,7 @@ pub fn catalog(modules: &[&str], namespace: &BTreeSet<String>) -> String {
         ("sends", "COMPONENT_SENDS"),
         ("fallback", "COMPONENT_FALLBACK"),
     ] {
-        o.push(format!("pub static {name}: [u64; {nc}] = ["));
+        o.push(format!("pub static {name}: [u128; {nc}] = ["));
         for id in &component_ids {
             o.push(format!("    {},", mask(components.get(id).get(field))));
         }
@@ -745,61 +749,60 @@ pub fn catalog(modules: &[&str], namespace: &BTreeSet<String>) -> String {
             join(ids.iter().map(|id| num(t.get(id).get(field))))
         ));
     };
-    let collectors = ["g1", "parallel", "zgc"];
+    let collectors = env.get("COLLECTORS").keys();
+    let collector_ids: Vec<&str> = collectors.iter().map(String::as_str).collect();
     keyed(
         &mut o,
         "COLLECTORS",
-        &collectors,
+        &collector_ids,
         "pauseMs",
         "COLLECTOR_PAUSE",
     );
     keyed(
         &mut o,
         "COLLECTORS",
-        &collectors,
+        &collector_ids,
         "speed",
         "COLLECTOR_SPEED",
     );
     keyed(
         &mut o,
         "COLLECTORS",
-        &collectors,
+        &collector_ids,
         "memory",
         "COLLECTOR_MEMORY",
     );
-    keyed(
-        &mut o,
-        "STORAGE_IOPS",
-        &["general", "provisioned"],
-        "iops",
-        "STORAGE_IOPS",
-    );
-    let retentions = ["keep", "archive", "delete"];
+    let iops = env.get("STORAGE_IOPS").keys();
+    let iops_ids: Vec<&str> = iops.iter().map(String::as_str).collect();
+    keyed(&mut o, "STORAGE_IOPS", &iops_ids, "iops", "STORAGE_IOPS");
+    let retentions = env.get("DB_RETENTIONS").keys();
+    let retention_ids: Vec<&str> = retentions.iter().map(String::as_str).collect();
     keyed(
         &mut o,
         "DB_RETENTIONS",
-        &retentions,
+        &retention_ids,
         "scanMs",
         "RETENTION_SCAN_MS",
     );
     keyed(
         &mut o,
         "DB_RETENTIONS",
-        &retentions,
+        &retention_ids,
         "rebuild",
         "RETENTION_REBUILD",
     );
     keyed(
         &mut o,
         "DB_RETENTIONS",
-        &retentions,
+        &retention_ids,
         "hotSet",
         "RETENTION_HOT_SET",
     );
-    let shards = ["hash", "range", "tenant", "region"];
-    keyed(&mut o, "SHARD_KEYS", &shards, "hot", "SHARD_HOT");
-    keyed(&mut o, "SHARD_KEYS", &shards, "cross", "SHARD_CROSS");
-    keyed(&mut o, "SHARD_KEYS", &shards, "farMs", "SHARD_FAR_MS");
+    let shards = env.get("SHARD_KEYS").keys();
+    let shard_ids: Vec<&str> = shards.iter().map(String::as_str).collect();
+    keyed(&mut o, "SHARD_KEYS", &shard_ids, "hot", "SHARD_HOT");
+    keyed(&mut o, "SHARD_KEYS", &shard_ids, "cross", "SHARD_CROSS");
+    keyed(&mut o, "SHARD_KEYS", &shard_ids, "farMs", "SHARD_FAR_MS");
     let gogc = env.get("GOGC");
     for (field, name) in [
         ("cpu", "GOGC_CPU"),
@@ -865,11 +868,11 @@ pub fn catalog(modules: &[&str], namespace: &BTreeSet<String>) -> String {
         join(all.iter().map(|k| u8::from(heavy.contains(k)).to_string()))
     ));
     o.push(format!(
-        "pub static MONEY_KINDS_MASK: u64 = {};",
+        "pub static MONEY_KINDS_MASK: u128 = {};",
         mask(&env.get("MONEY_KINDS"))
     ));
     o.push(format!(
-        "pub static DATA_KINDS_MASK: u64 = {};",
+        "pub static DATA_KINDS_MASK: u128 = {};",
         mask(&env.get("DATA_KINDS"))
     ));
     let query_cpu = env.get("QUERY_CPU");

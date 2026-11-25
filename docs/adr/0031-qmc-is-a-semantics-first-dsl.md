@@ -12,20 +12,26 @@ feature, and the flags stop composing. The core here is deliberately smaller tha
 - `field`: one setting. Its type is `number`, `bool`, `(enum …)`, or `(one-of …)`. It has a
   `:default`, or `:required`, and optional `:schema` and `:values` names.
 - `gate`: a field needs research. `(gate sharding)` or `(gate precompute "A view")`. The field is
-  free at its default, so the default is the free value. A gate that does not follow that rule
-  stays a standalone `(gate …)` in the Component's file.
+  free at its default, so the default is the free value. `:locked` names the only values the
+  research locks, and `:lock-all` locks every value.
 - `set`: one simple action. `(set setShards :refuse "…" :values-label "Shard counts")` patches one
   Node, or every Node of the Component with `:scope all-of-type`.
 - `table`: a header row and data rows, optionally keyed by one column. A `-` cell omits that column
-  from one row.
-- `def` and `const`: plain data. A kebab-case name exports in SCREAM_CASE. `(constants PREFIX …)`
-  writes the prefix once for a family of defs. An entry named like the prefix is the base constant,
-  and `:module` names the file that exports an entry in a cross-file family.
-- `type`: a generated TypeScript alias for an annotation. Its expression is a name, a string, or a
-  generic application such as `(array FeatureId)`.
-- `id`: a generated Effect Schema for an array of string ids. `(id ComponentId COMPONENT_IDS)`
-  writes `ComponentId` and its type to `generated/ids.ts`; the array comes from a generated table
-  or a `def`.
+  from one row. `:refs (:column table)` says a column holds keys of another table, and qmc checks
+  them. `:export-rust` marks a table whose columns the Solver catalog exports; such a table fills
+  every column with one type of value.
+- `records`: a keyed or array record with one vertical entry per row, an optional shared `:defaults`
+  record, and optional `:ids`, `:id-type`, `:refs`, and `:export-rust` declarations.
+- `mix`: request kind shares that sum to exactly 100%. An Era names one, and a data value writes
+  one inline as `(mix :page 8% …)`, so a Venture's shares get the same check as an Era's mix.
+- `def`: plain data. A kebab-case name exports in SCREAM_CASE. `(constants PREFIX …)` writes the
+  prefix once for a family of defs in the same file. There is no separate `const` or `import`
+  form; qmc resolves every generated value through the catalog scope.
+- `type`: a generated TypeScript alias for an annotation. Its expression is a structured form such
+  as `(array FeatureId)`, `(object …)`, `(literal …)`, or `(union …)`. `(keys-of value)` and
+  `(item-of value)` derive a type from a `:type const` value, so a list is declared once.
+- `ids`: a table or records form declares its key array with `:ids` and its Effect Schema with
+  `:id-type`. A plain `def` array still uses `(id NAME VALUES)`.
 
 The syntax is sugar over that core, not a second language. `:schema`, `:values`, `:gate`, and
 `:set` are the only keys a field takes beyond its type and default. A setter that needs more than
@@ -57,9 +63,10 @@ Considered options:
 - **More flat keys on `field`.** Easy to add, but `:requires`, `:what`, `:set`, `:only`,
   `:values-what`, and `:scope` describe compound things. Grouping them as `(gate …)` and `(set …)`
   keeps the field readable and the core small. Rejected.
-- **Tables as nested records.** This is what the first port used. A wide table becomes a wall of
-  `:key value` pairs and column names repeat in every row. A header and rows say the same thing in
-  less space. Rejected.
+- **Tables as nested records for every catalog.** This is what the first port used. A wide table
+  becomes a wall of `:key value` pairs and column names repeat in every row. A header and rows say
+  the same thing in less space. `records` is the second form for the opposite case: a wide or
+  nested entry reads better vertically, and one line per entry hides the fields that matter.
 - **Sparse rows as separate forms.** A table with a few optional fields could split into one table
   per shape, or fall back to `def`. Both repeat the header and hide that the rows describe one
   set. `-` keeps one header and one place for the set. Rejected.
@@ -67,16 +74,16 @@ Considered options:
 ## Consequences
 
 - A Component file is self-contained: `content/components/database.qm` holds the Component, its
-  state, its gates, and its tables. qmc writes `generated/database.ts` and
-  `generated/database.rule.ts`. The exception is a cross-file constant family in
-  `content/families.qm`, which names the owning module on each entry.
+  state, its gates, its tables, and its glossary. qmc writes `generated/database.ts` and
+  `generated/database.rule.ts`. A constant stays in the file that owns its domain.
 - `src/components` holds only behavior that needs more than the core: refusal copy that depends on
   another field, random rolls, incident responses, and calculations over several fields.
 - The generated modules are build output. A checked-in data file for a Component would be a second
   source of truth, and qmc has a check for a name declared twice.
 - Naming is content naming. A constant is written `db-engines`, exported `DB_ENGINES`, and read
-  either way in content. A name with an uppercase letter is a TypeScript name and keeps its casing.
-- qmc owns every catalog type. Content declares aliases with `(type …)` and ids with `(id …)`;
-  the checked-in catalog TypeScript re-exports generated types instead of defining them.
+  as `db-engines` in content, as is a generated value such as `incidents`. A name with an uppercase letter is a TypeScript name and keeps its casing.
+- qmc owns every catalog type. Content declares aliases with `(type …)`, table ids with
+  `:ids`/`:id-type`, and plain def ids with `(id …)`. The checked-in catalog TypeScript re-exports
+  generated types instead of defining them.
 - An Era is named by its content id, such as `garage`. The generated Era data keeps the numeric
   index the Simulation uses.

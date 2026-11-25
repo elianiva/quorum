@@ -2,7 +2,11 @@ import { Schema } from 'effect'
 import { Command, type Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
 import { DragAndDrop } from '@foldkit/ui'
-import { LeverKindId, ResearchId } from '@quorum/simulation/state'
+import {
+  LeverKindId,
+  ResearchId,
+  type ResearchId as ResearchIdType,
+} from '@quorum/simulation/state'
 import type { Research } from './model.ts'
 
 export const STUDY_QUEUE = 'study-queue'
@@ -77,7 +81,7 @@ const dragged = (research: Research, message: DragAndDrop.Message): ResearchRetu
     : {
         ...moved,
         outMessage: ResearchOutMessage.MovedTo({
-          id: drop.itemId as typeof ResearchId.Type,
+          id: drop.itemId as ResearchIdType,
           index,
         }),
       }

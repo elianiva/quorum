@@ -1,6 +1,4 @@
 ; Cdc: the Component and the tables it reads.
-(import "./cdc.ts" CDC_MS)
-
 (component cdc
   :code    cdc
   :name    "CDC Connector"
@@ -8,10 +6,18 @@
   :group   compute
   :dock    messaging
   :cost    300
-  :latency CDC_MS
+  :latency cdc-ms
   :burn    0.05
   :max-out 1
   :unlock  cdc
   :flags   (limiting mirror)
   :sends   (change)
   :blurb   "Link a Database into it. It reads every change off the write log and publishes it to an Event Stream, so the app never writes twice.")
+
+(def cdc-rate 20_000)
+
+(def cdc-changes
+  :type const
+  ["q-write" "q-tx" "k-write"])
+
+(def cdc-ms 2)

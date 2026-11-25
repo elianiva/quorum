@@ -14,26 +14,28 @@
   :capacity 400
   :flags    (limiting standby)
   :accepts  (q-search change)
-  :blurb    "Answers search queries. 400 per second per size step.")
+  :blurb    "Answers search queries. 400 per second per size step."
+  :glossary (inverted-index))
 
 (state search
-  (field search-variant (enum elasticsearch opensearch meilisearch)
+  (field search-variant (key-of search-variants)
     :default elasticsearch
     :schema  SearchVariant)
   (field search-shards number
     :default 1)
   (field search-replicas number
     :default 0)
-  (field heap (enum small half large)
+  (field heap (key-of search-heaps)
     :default half
     :schema  SearchHeap)
-  (field refresh number
+  (field refresh (one-of 1 5 60)
     :default 1
     :schema  SearchRefresh))
 
 (def search-qps 400)
 
 (table search-refresh
+  :export-rust
   [seconds  capacity  stale]
   [      1         1      0]
   [      5       1.1   0.05]
@@ -47,19 +49,19 @@
   (copy-minutes-per-gb 0.5))
 
 (table search-heaps
-  :key id
+  :key         id
+  :export-rust
+  :ids         search-heap-ids
   [id     name          capacity  tailP  tailMs]
   [small  "25% of RAM"         1   0.05     150]
   [half   "50% of RAM"         1      0       0]
   [large  "75% of RAM"      0.85   0.02     400])
 
 (table search-variants
-  :key id
+  :key         id
+  :export-rust
+  :ids         search-variant-ids
   [id             name             jvm    capacity  fixedMs  burn  relevance  cap]
   [elasticsearch  "Elasticsearch"  true          1       15     1          0     0]
   [opensearch     "OpenSearch"     true          1       15     1          0     0]
   [meilisearch    "Meilisearch"    false       1.5        8   0.6  0.0000005  0.25])
-
-(def searchGlossary
-  :type (array string)
-  ["inverted-index"])

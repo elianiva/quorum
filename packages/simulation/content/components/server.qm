@@ -1,17 +1,18 @@
 ; Server: the Component and the tables it reads.
 (component server
-  :code    app
-  :name    "App Server"
-  :product "VM"
-  :group   compute
-  :dock    compute
-  :cost    60
-  :latency 2ms
-  :flags   (sized stack limiting cold-start)
-  :accepts (requests)
-  :sends   (q-read q-write auth q-search q-vector blob-put task blob-get q-tx charge q-scan infer
-            notify callout k-write)
-  :blurb   "Runs your code. Answers requests and sends queries to the database.")
+  :code     app
+  :name     "App Server"
+  :product  "VM"
+  :group    compute
+  :dock     compute
+  :cost     60
+  :latency  2ms
+  :flags    (sized stack limiting cold-start)
+  :accepts  (requests)
+  :sends    (q-read q-write auth q-search q-vector blob-put task blob-get q-tx charge q-scan infer
+             notify callout k-write)
+  :blurb    "Runs your code. Answers requests and sends queries to the database."
+  :glossary (process-per-request))
 
 (state server
   (field workers number
@@ -23,46 +24,30 @@
   (field recycle bool
     :default false)
   (field compress bool
-    :default false)
-  (field pm (enum static dynamic ondemand)
+    :default false
+    :gate    (gzip "Gzip" :lock-all)
+    :set     (setCompression :refuse "Only App Servers compress responses."))
+  (field pm (key-of pm-modes)
     :default static
     :schema  PmMode)
-  (field collector (enum g1 parallel zgc)
+  (field collector (key-of collectors)
     :default g1
     :schema  Collector)
   (field gogc number
     :default 100)
   (field shed bool
-    :default false)
+    :default false
+    :gate    (load-shedding "Load shedding" :locked (true))
+    :set     (setShed :refuse "Only App Servers shed load."))
   (field degrade bool
-    :default false)
+    :default false
+    :gate    (graceful-degradation "Degradation" :locked (true))
+    :set     (setDegrade :refuse "Only App Servers degrade a kind."))
   (field ryw bool
-    :default false)
+    :default false
+    :gate    (ryw-routing "Read-your-writes" :locked (true))
+    :set     (setRyw :refuse "Only App Servers route reads."))
   (field fanout (enum pull push)
     :default pull
     :schema  Fanout
     :set     (setFanout :refuse "Only App Servers build feeds.")))
-
-(gate server compress
-  :research gzip
-  :what     "Gzip"
-  :free     ())
-
-(gate server shed
-  :research load-shedding
-  :what     "Load shedding"
-  :locked   (true))
-
-(gate server degrade
-  :research graceful-degradation
-  :what     "Degradation"
-  :locked   (true))
-
-(gate server ryw
-  :research ryw-routing
-  :what     "Read-your-writes"
-  :locked   (true))
-
-(def serverGlossary
-  :type (array string)
-  ["process-per-request"])

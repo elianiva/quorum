@@ -1,13 +1,3 @@
-(id LanguageId language-ids)
-
-(id RuntimeId RUNTIME_IDS)
-
-(id FrameworkId FRAMEWORK_IDS)
-
-(def language-ids
-  :type const
-  ["php" "ruby" "node" "python" "go" "java" "csharp" "elixir" "rust" "zig" "haskell"])
-
 (def blast-factor
   :type const
   (:request 1
@@ -16,58 +6,517 @@
 
 (table languages
   :key      id
+  :ids      language-ids
+  :id-type  LanguageId
   :keep-key
   :type     (record LanguageId LanguageDef)
-  [id         name       velocity  salary  hireTime  buildMinutes  sessionKB  armSpeed  armPortDh  blast]
-  ["php"      "PHP"           1.2    0.85         1           0.5        130      0.95         16  "request"]
-  ["ruby"     "Ruby"          1.1     1.1       1.5             1        340      0.95         24  "request"]
-  ["node"     "Node.js"      1.15       1         1             3        420         1         12  "whole"]
-  ["python"   "Python"       1.15    1.05         1             1        360      0.97         24  "request"]
-  ["go"       "Go"           0.95    1.15       1.4           1.5        210      1.03          4  "request"]
-  ["java"     "Java"          0.9    1.05       1.1             6        210      1.02          8  "request"]
-  ["csharp"   "C#"              1       1       1.1             4        280      1.02          8  "request"]
-  ["elixir"   "Elixir"          1     1.2       2.5             2        145         1         12  "request"]
-  ["rust"     "Rust"          0.6    1.25         2            12         85      1.03          6  "task"]
-  ["zig"      "Zig"           0.7    1.25         3             6         65         1          8  "whole"]
-  ["haskell"  "Haskell"      1.15     1.4       2.5             8        180      0.93         32  "request"])
+  [id       name       velocity  salary  hireTime  buildMinutes  sessionKB  armSpeed  armPortDh  blast]
+  [php      "PHP"           1.2    0.85         1           0.5        130      0.95         16  "request"]
+  [ruby     "Ruby"          1.1     1.1       1.5             1        340      0.95         24  "request"]
+  [node     "Node.js"      1.15       1         1             3        420         1         12  "whole"]
+  [python   "Python"       1.15    1.05         1             1        360      0.97         24  "request"]
+  [go       "Go"           0.95    1.15       1.4           1.5        210      1.03          4  "request"]
+  [java     "Java"          0.9    1.05       1.1             6        210      1.02          8  "request"]
+  [csharp   "C#"              1       1       1.1             4        280      1.02          8  "request"]
+  [elixir   "Elixir"          1     1.2       2.5             2        145         1         12  "request"]
+  [rust     "Rust"          0.6    1.25         2            12         85      1.03          6  "task"]
+  [zig      "Zig"           0.7    1.25         3             6         65         1          8  "whole"]
+  [haskell  "Haskell"      1.15     1.4       2.5             8        180      0.93         32  "request"])
 
 (def axes
   :type const
   ["throughput" "tail" "memory" "velocity" "resilience" "operability"])
 
-(table runtimes
+(constants runtime
+  (defaults
+    :satisfies (partial RuntimeDef)
+    (:pool       false
+     :threads    1
+     :persistent true
+     :parallel   false
+     :blocking   null
+     :gc         null)))
+
+(records runtimes
+  :defaults runtime-defaults
   :key      id
-  :keep-key
+  :ids      runtime-ids
+  :id-type  RuntimeId
+  :refs     (:language languages :glossary glossary)
   :type     (record RuntimeId RuntimeDef)
-  [id              axes  glossary  language  name  model  speed  memoryMb  pool  threads  connections  persistent  startupSeconds  warmFrom  warmup  parallel  blocking  gc  connectionKB  hotReload  research  blurb  overheadFactor  velocity  build]
-  ["mod_php"       (:throughput 1 :tail 3 :memory 1 :velocity 4 :resilience 5 :operability 5)  ["process-per-request" "shared-nothing"]  "php"  "Apache mod_php"  "process"  0.15  60  false  1  1  false  0  1  15  false  null  null  null  true  null  "Apache starts a process per request in flight, up to 150. Every process embeds PHP, so RAM runs out early."  -  -  -]
-  ["php_fpm"       (:throughput 2 :tail 4 :memory 3 :velocity 4 :resilience 5 :operability 4)  ["process-per-request" "shared-nothing"]  "php"  "PHP-FPM"  "process"  0.15  40  true  1  1  false  0  1  15  false  null  null  null  true  "php-fpm"  "A fixed pool of PHP workers behind NGINX. Each waiting request holds a worker. Shared nothing: no leaks."  -  -  -]
-  ["php_worker"    (:throughput 3 :tail 3 :memory 2 :velocity 5 :resilience 2 :operability 4)  ["process-per-request" "tech-debt"]  "php"  "PHP worker mode"  "process"  0.15  60  true  1  10  true  0  1  0  false  null  null  null  true  "php-worker-mode"  "FrankenPHP, RoadRunner or Octane: the app boots once, so the framework’s per-request overhead goes. Loses shared nothing, so memory leaks and state bleed become possible."  0  -  -]
-  ["swoole"        (:throughput 4 :tail 3 :memory 3 :velocity 4 :resilience 3 :operability 3)  ["event-loop" "async-io"]  "php"  "Swoole"  "loop"  0.15  60  false  1  10  true  0  1  0  false  "loop"  null  20  true  "swoole"  "Coroutines on an event loop, async I/O like Node.js, and no framework overhead per request. Blocking extensions stall the loop. Holds realtime connections at 20 KB each."  0  -  -]
-  ["puma"          (:throughput 3 :tail 3 :memory 2 :velocity 4 :resilience 4 :operability 2)  ["gil-global-interpreter-lock" "cold-start"]  "ruby"  "Puma"  "threads"  0.25  180  false  5  5  true  10  0.9  15  false  null  null  100  -  "lang-ruby"  "One process per core, 5 threads each. Threads overlap waits; the GVL keeps CPU on one core."  -  -  -]
-  ["unicorn"       (:throughput 2 :tail 3 :memory 1 :velocity 5 :resilience 5 :operability 4)  ["process-per-request" "shared-nothing"]  "ruby"  "Unicorn"  "process"  0.25  180  true  1  1  true  10  0.9  15  false  null  null  null  -  "lang-ruby"  "A Rails process per slot: simple and robust, and memory-heavy. One waiting request holds a whole process, so it refuses realtime connections."  -  -  -]
-  ["falcon"        (:throughput 4 :tail 4 :memory 2 :velocity 4 :resilience 4 :operability 1)  ["event-loop" "async-io"]  "ruby"  "Falcon"  "loop"  0.25  180  false  1  10  true  10  0.9  15  false  "loop"  null  100  -  "falcon"  "Fibers hold many idle connections per process. A gem that blocks stalls the loop. 100 KB per connection."  -  -  -]
-  ["node"          (:throughput 4 :tail 2 :memory 4 :velocity 4 :resilience 2 :operability 4)  ["event-loop" "blast-radius"]  "node"  "Node.js"  "loop"  0.7  80  false  1  10  true  1  0.8  15  false  "loop"  null  20  -  "lang-node"  "One event loop. Waiting costs nothing, but it uses one core, and one slow request stalls every other."  -  -  -]
-  ["node_cluster"  (:throughput 5 :tail 2 :memory 3 :velocity 4 :resilience 3 :operability 4)  ["event-loop" "vertical-and-horizontal-scaling"]  "node"  "Node.js cluster"  "loop"  0.7  80  false  1  10  true  1  0.8  15  false  "loop"  null  20  -  "node-cluster"  "One event loop per core. Uses every core; memory and connections grow with the cores."  -  -  -]
-  ["bun"           (:throughput 5 :tail 2 :memory 3 :velocity 4 :resilience 2 :operability 5)  ["event-loop" "cold-start"]  "node"  "Bun"  "loop"  0.85  60  false  1  10  true  0  1  0  false  "loop"  null  20  -  "bun"  "A faster event loop with an instant start, so it autoscales and deploys better than Node.js. 60 MB and no startup. Less mature: a package that works on Node.js can break on it."  -  -  -]
-  ["deno"          (:throughput 5 :tail 3 :memory 4 :velocity 3 :resilience 3 :operability 4)  ["event-loop" "dependency-scanning"]  "node"  "Deno"  "loop"  0.7  80  false  1  10  true  1  0.8  15  false  "loop"  null  20  -  "deno"  "Permissions block most supply-chain attacks, at 10% slower feature work: fewer packages are compatible. The same event loop as Node.js."  -  0.9  -]
-  ["gunicorn"      (:throughput 2 :tail 4 :memory 2 :velocity 5 :resilience 5 :operability 3)  ["process-per-request" "gil-global-interpreter-lock"]  "python"  "Gunicorn"  "process"  0.2  120  true  1  1  true  5  0.95  15  false  null  null  null  -  "lang-python"  "A pool of sync workers, one request each. Like PHP-FPM with more memory per worker."  -  -  -]
-  ["gevent"        (:throughput 4 :tail 4 :memory 3 :velocity 4 :resilience 3 :operability 2)  ["green-threads" "gil-global-interpreter-lock"]  "python"  "Gunicorn with gevent"  "green"  0.2  120  false  1  10  true  5  0.95  15  false  null  null  30  -  "gevent"  "Green threads hold many I/O waits per process, so a slow database stops holding a worker. Monkey patching can break a library. 30 KB per connection."  -  -  -]
-  ["uvicorn"       (:throughput 3 :tail 2 :memory 4 :velocity 4 :resilience 3 :operability 3)  ["event-loop" "async-io" "gil-global-interpreter-lock"]  "python"  "Uvicorn ASGI"  "loop"  0.2  120  false  1  10  true  5  0.95  15  false  "loop"  null  30  -  "asgi"  "Async like Node.js, with slower CPU: a blocking call stalls the loop. Holds realtime connections at the design’s 30 KB each."  -  -  -]
-  ["python_ft"     (:throughput 5 :tail 5 :memory 3 :velocity 3 :resilience 4 :operability 2)  ["thread-pool" "gil-global-interpreter-lock"]  "python"  "Free-threaded CPython"  "threads"  0.18  120  false  8  10  true  5  0.95  15  true  null  null  100  -  "free-threading"  "Real parallel threads on every core, 10% slower per thread, and a thread per connection is not cheap. C extensions that are not ready cost Dev Hours. 8 threads and 100 KB per connection."  -  -  -]
-  ["pypy"          (:throughput 3 :tail 3 :memory 1 :velocity 5 :resilience 5 :operability 3)  ["process-per-request" "jit-warmup"]  "python"  "PyPy"  "process"  0.6  200  true  1  1  true  5  0.5  15  false  null  null  null  -  "pypy"  "Three times the pure-Python CPU of Gunicorn, after a JIT warmup. Poor C-extension support means no ML ecosystem bonus. 200 MB per worker."  -  -  -]
-  ["go"            (:throughput 4 :tail 4 :memory 5 :velocity 3 :resilience 4 :operability 5)  ["green-threads" "gc-pause"]  "go"  "Go net/http"  "green"  1  30  false  1  10  true  0  1  15  true  null  (:pauseMs 1 :cpu 0.25)  10  -  "lang-go"  "Goroutines on every core. Waiting costs a few KB, not a worker. GC takes CPU when the heap is full."  -  -  -]
-  ["fasthttp"      (:throughput 5 :tail 4 :memory 5 :velocity 2 :resilience 4 :operability 1)  ["green-threads" "http2-and-http3"]  "go"  "fasthttp"  "green"  1.25  30  false  1  10  true  0  1  0  true  null  (:pauseMs 1 :cpu 0.25)  10  -  "fasthttp"  "A quarter faster than net/http at 10% slower feature work: the API is not standard, some middleware does not work, and there is no HTTP/2."  -  0.9  -]
-  ["tomcat"        (:throughput 5 :tail 3 :memory 1 :velocity 2 :resilience 4 :operability 4)  ["jit-warmup" "gc-pause" "cold-start"]  "java"  "Tomcat"  "threads"  1.1  500  false  200  10  true  20  0.3  30  true  null  (:pauseMs 30 :cpu 0.12)  1_024  -  "lang-java"  "One JVM, 200 threads on every core. Starts at 30% speed and warms for 30 s. Each waiting request holds a thread."  -  -  -]
-  ["java_virtual"  (:throughput 4 :tail 5 :memory 1 :velocity 2 :resilience 4 :operability 4)  ["green-threads" "jit-warmup" "gc-pause"]  "java"  "Java virtual threads"  "green"  1.1  500  false  1  10  true  20  0.3  30  true  null  (:pauseMs 30 :cpu 0.12)  10  -  "virtual-threads"  "Waiting no longer holds a platform thread, so a slow database only adds latency. Native (JNI) calls still pin a carrier, and the JVM still warms for 30 s. Realtime connections cost 10 KB."  -  -  -]
-  ["webflux"       (:throughput 5 :tail 3 :memory 5 :velocity 2 :resilience 3 :operability 3)  ["event-loop" "jit-warmup" "gc-pause"]  "java"  "Spring WebFlux"  "loop"  1.1  100  false  1  10  true  20  0.3  30  false  "loop"  (:pauseMs 30 :cpu 0.12)  10  -  "webflux"  "Very high concurrency on one loop per process, and 20% slower to build and debug. A blocking call stalls the loop, and the JVM still warms up. 400 MB."  -  0.8  -]
-  ["graal"         (:throughput 4 :tail 5 :memory 3 :velocity 2 :resilience 4 :operability 3)  ["cold-start" "jit-warmup" "thread-pool"]  "java"  "GraalVM native image"  "threads"  0.8  200  false  200  10  true  0  1  0  true  null  (:pauseMs 30 :cpu 0.12)  1_024  -  "graal-native"  "Starts in under 100 ms with no warmup at 60% of the JVM’s memory and 0.80× its speed, with builds three times as long. A thread per connection, like Tomcat. Great for Serverless Functions."  -  -  3]
-  ["kestrel"       (:throughput 5 :tail 4 :memory 3 :velocity 3 :resilience 4 :operability 3)  ["async-io" "jit-warmup" "gc-pause"]  "csharp"  "Kestrel"  "async"  1.1  150  false  1  10  true  3  0.6  15  true  null  (:pauseMs 15 :cpu 0.1)  10  -  "lang-csharp"  ".NET async on every core. Waiting holds no thread. A shorter JIT warmup than the JVM."  -  -  -]
-  ["native_aot"    (:throughput 3 :tail 5 :memory 4 :velocity 3 :resilience 4 :operability 3)  ["cold-start" "async-io"]  "csharp"  "Native AOT"  "async"  0.9  100  false  1  10  true  0  1  0  true  null  (:pauseMs 15 :cpu 0.1)  10  -  "native-aot"  "No JIT, so it starts at full speed, and smaller: 100 MB. 0.90× the speed, and reflection-heavy libraries need Dev Hours."  -  -  -]
-  ["beam"          (:throughput 2 :tail 5 :memory 4 :velocity 4 :resilience 5 :operability 3)  ["green-threads" "blast-radius"]  "elixir"  "BEAM"  "green"  0.45  100  false  1  10  true  3  1  15  true  null  null  5  true  "lang-elixir"  "Preemptive processes on every core. No request stalls another, and each process collects its own garbage. Slow CPU."  -  -  -]
-  ["tokio"         (:throughput 5 :tail 4 :memory 5 :velocity 1 :resilience 4 :operability 4)  ["async-io" "event-loop"]  "rust"  "Tokio"  "async"  1.4  10  false  1  10  true  0  1  15  true  "worker"  null  5  -  "lang-rust"  "Async tasks on every core, no GC, little memory. A CPU-heavy task blocks one worker thread."  -  -  -]
-  ["zig"           (:throughput 5 :tail 4 :memory 4 :velocity 2 :resilience 2 :operability 2)  ["thread-pool" "blast-radius"]  "zig"  "Zig threaded server"  "threads"  1.3  24  false  64  10  true  0  1  0  true  null  null  256  -  "lang-zig"  "Native code with explicit allocators and no GC. A 64-thread server uses every core, but each waiting request holds a thread. Persistent state can leak."  -  -  -]
-  ["warp"          (:throughput 4 :tail 3 :memory 3 :velocity 4 :resilience 4 :operability 1)  ["green-threads" "gc-pause"]  "haskell"  "Haskell (GHC + Warp)"  "green"  0.85  80  false  1  10  true  1  1  0  true  null  (:pauseMs 12 :cpu 0.15)  16  -  "lang-haskell"  "Warp runs lightweight GHC threads across cores. Productive specialists, but slower builds and hiring. I/O waits hold no OS thread; shared-heap GC adds pauses and CPU cost."  -  -  -])
+  (mod_php
+    :axes           (:throughput 1 :tail 3 :memory 1 :velocity 4 :resilience 5 :operability 5)
+    :glossary       [process-per-request shared-nothing]
+    :language       php
+    :name           "Apache mod_php"
+    :model          "process"
+    :speed          0.15
+    :memoryMb       60
+    :connections    1
+    :persistent     false
+    :startupSeconds 0
+    :warmFrom       1
+    :warmup         15
+    :connectionKB   null
+    :hotReload      true
+    :research       null
+    :blurb          "Apache starts a process per request in flight, up to 150. Every process embeds PHP, so RAM runs out early.")
+  (php_fpm
+    :axes           (:throughput 2 :tail 4 :memory 3 :velocity 4 :resilience 5 :operability 4)
+    :glossary       [process-per-request shared-nothing]
+    :language       php
+    :name           "PHP-FPM"
+    :model          "process"
+    :speed          0.15
+    :memoryMb       40
+    :pool           true
+    :connections    1
+    :persistent     false
+    :startupSeconds 0
+    :warmFrom       1
+    :warmup         15
+    :connectionKB   null
+    :hotReload      true
+    :research       "php-fpm"
+    :blurb          "A fixed pool of PHP workers behind NGINX. Each waiting request holds a worker. Shared nothing: no leaks.")
+  (php_worker
+    :axes           (:throughput 3 :tail 3 :memory 2 :velocity 5 :resilience 2 :operability 4)
+    :glossary       [process-per-request tech-debt]
+    :language       php
+    :name           "PHP worker mode"
+    :model          "process"
+    :speed          0.15
+    :memoryMb       60
+    :pool           true
+    :connections    10
+    :startupSeconds 0
+    :warmFrom       1
+    :warmup         0
+    :connectionKB   null
+    :hotReload      true
+    :research       "php-worker-mode"
+    :blurb          "FrankenPHP, RoadRunner or Octane: the app boots once, so the framework’s per-request overhead goes. Loses shared nothing, so memory leaks and state bleed become possible."
+    :overheadFactor 0)
+  (swoole
+    :axes           (:throughput 4 :tail 3 :memory 3 :velocity 4 :resilience 3 :operability 3)
+    :glossary       [event-loop async-io]
+    :language       php
+    :name           "Swoole"
+    :model          "loop"
+    :speed          0.15
+    :memoryMb       60
+    :connections    10
+    :startupSeconds 0
+    :warmFrom       1
+    :warmup         0
+    :blocking       "loop"
+    :connectionKB   20
+    :hotReload      true
+    :research       "swoole"
+    :blurb          "Coroutines on an event loop, async I/O like Node.js, and no framework overhead per request. Blocking extensions stall the loop. Holds realtime connections at 20 KB each."
+    :overheadFactor 0)
+  (puma
+    :axes           (:throughput 3 :tail 3 :memory 2 :velocity 4 :resilience 4 :operability 2)
+    :glossary       [gil-global-interpreter-lock cold-start]
+    :language       ruby
+    :name           "Puma"
+    :model          "threads"
+    :speed          0.25
+    :memoryMb       180
+    :threads        5
+    :connections    5
+    :startupSeconds 10
+    :warmFrom       0.9
+    :warmup         15
+    :connectionKB   100
+    :research       "lang-ruby"
+    :blurb          "One process per core, 5 threads each. Threads overlap waits; the GVL keeps CPU on one core.")
+  (unicorn
+    :axes           (:throughput 2 :tail 3 :memory 1 :velocity 5 :resilience 5 :operability 4)
+    :glossary       [process-per-request shared-nothing]
+    :language       ruby
+    :name           "Unicorn"
+    :model          "process"
+    :speed          0.25
+    :memoryMb       180
+    :pool           true
+    :connections    1
+    :startupSeconds 10
+    :warmFrom       0.9
+    :warmup         15
+    :connectionKB   null
+    :research       "lang-ruby"
+    :blurb          "A Rails process per slot: simple and robust, and memory-heavy. One waiting request holds a whole process, so it refuses realtime connections.")
+  (falcon
+    :axes           (:throughput 4 :tail 4 :memory 2 :velocity 4 :resilience 4 :operability 1)
+    :glossary       [event-loop async-io]
+    :language       ruby
+    :name           "Falcon"
+    :model          "loop"
+    :speed          0.25
+    :memoryMb       180
+    :connections    10
+    :startupSeconds 10
+    :warmFrom       0.9
+    :warmup         15
+    :blocking       "loop"
+    :connectionKB   100
+    :research       "falcon"
+    :blurb          "Fibers hold many idle connections per process. A gem that blocks stalls the loop. 100 KB per connection.")
+  (node
+    :axes           (:throughput 4 :tail 2 :memory 4 :velocity 4 :resilience 2 :operability 4)
+    :glossary       [event-loop blast-radius]
+    :language       node
+    :name           "Node.js"
+    :model          "loop"
+    :speed          0.7
+    :memoryMb       80
+    :connections    10
+    :startupSeconds 1
+    :warmFrom       0.8
+    :warmup         15
+    :blocking       "loop"
+    :connectionKB   20
+    :research       "lang-node"
+    :blurb          "One event loop. Waiting costs nothing, but it uses one core, and one slow request stalls every other.")
+  (node_cluster
+    :axes           (:throughput 5 :tail 2 :memory 3 :velocity 4 :resilience 3 :operability 4)
+    :glossary       [event-loop vertical-and-horizontal-scaling]
+    :language       node
+    :name           "Node.js cluster"
+    :model          "loop"
+    :speed          0.7
+    :memoryMb       80
+    :connections    10
+    :startupSeconds 1
+    :warmFrom       0.8
+    :warmup         15
+    :blocking       "loop"
+    :connectionKB   20
+    :research       "node-cluster"
+    :blurb          "One event loop per core. Uses every core; memory and connections grow with the cores.")
+  (bun
+    :axes           (:throughput 5 :tail 2 :memory 3 :velocity 4 :resilience 2 :operability 5)
+    :glossary       [event-loop cold-start]
+    :language       node
+    :name           "Bun"
+    :model          "loop"
+    :speed          0.85
+    :memoryMb       60
+    :connections    10
+    :startupSeconds 0
+    :warmFrom       1
+    :warmup         0
+    :blocking       "loop"
+    :connectionKB   20
+    :research       "bun"
+    :blurb          "A faster event loop with an instant start, so it autoscales and deploys better than Node.js. 60 MB and no startup. Less mature: a package that works on Node.js can break on it.")
+  (deno
+    :axes           (:throughput 5 :tail 3 :memory 4 :velocity 3 :resilience 3 :operability 4)
+    :glossary       [event-loop dependency-scanning]
+    :language       node
+    :name           "Deno"
+    :model          "loop"
+    :speed          0.7
+    :memoryMb       80
+    :connections    10
+    :startupSeconds 1
+    :warmFrom       0.8
+    :warmup         15
+    :blocking       "loop"
+    :connectionKB   20
+    :research       "deno"
+    :blurb          "Permissions block most supply-chain attacks, at 10% slower feature work: fewer packages are compatible. The same event loop as Node.js."
+    :velocity       0.9)
+  (gunicorn
+    :axes           (:throughput 2 :tail 4 :memory 2 :velocity 5 :resilience 5 :operability 3)
+    :glossary       [process-per-request gil-global-interpreter-lock]
+    :language       python
+    :name           "Gunicorn"
+    :model          "process"
+    :speed          0.2
+    :memoryMb       120
+    :pool           true
+    :connections    1
+    :startupSeconds 5
+    :warmFrom       0.95
+    :warmup         15
+    :connectionKB   null
+    :research       "lang-python"
+    :blurb          "A pool of sync workers, one request each. Like PHP-FPM with more memory per worker.")
+  (gevent
+    :axes           (:throughput 4 :tail 4 :memory 3 :velocity 4 :resilience 3 :operability 2)
+    :glossary       [green-threads gil-global-interpreter-lock]
+    :language       python
+    :name           "Gunicorn with gevent"
+    :model          "green"
+    :speed          0.2
+    :memoryMb       120
+    :connections    10
+    :startupSeconds 5
+    :warmFrom       0.95
+    :warmup         15
+    :connectionKB   30
+    :research       "gevent"
+    :blurb          "Green threads hold many I/O waits per process, so a slow database stops holding a worker. Monkey patching can break a library. 30 KB per connection.")
+  (uvicorn
+    :axes           (:throughput 3 :tail 2 :memory 4 :velocity 4 :resilience 3 :operability 3)
+    :glossary       [event-loop async-io gil-global-interpreter-lock]
+    :language       python
+    :name           "Uvicorn ASGI"
+    :model          "loop"
+    :speed          0.2
+    :memoryMb       120
+    :connections    10
+    :startupSeconds 5
+    :warmFrom       0.95
+    :warmup         15
+    :blocking       "loop"
+    :connectionKB   30
+    :research       "asgi"
+    :blurb          "Async like Node.js, with slower CPU: a blocking call stalls the loop. Holds realtime connections at the design’s 30 KB each.")
+  (python_ft
+    :axes           (:throughput 5 :tail 5 :memory 3 :velocity 3 :resilience 4 :operability 2)
+    :glossary       [thread-pool gil-global-interpreter-lock]
+    :language       python
+    :name           "Free-threaded CPython"
+    :model          "threads"
+    :speed          0.18
+    :memoryMb       120
+    :threads        8
+    :connections    10
+    :startupSeconds 5
+    :warmFrom       0.95
+    :warmup         15
+    :parallel       true
+    :connectionKB   100
+    :research       "free-threading"
+    :blurb          "Real parallel threads on every core, 10% slower per thread, and a thread per connection is not cheap. C extensions that are not ready cost Dev Hours. 8 threads and 100 KB per connection.")
+  (pypy
+    :axes           (:throughput 3 :tail 3 :memory 1 :velocity 5 :resilience 5 :operability 3)
+    :glossary       [process-per-request jit-warmup]
+    :language       python
+    :name           "PyPy"
+    :model          "process"
+    :speed          0.6
+    :memoryMb       200
+    :pool           true
+    :connections    1
+    :startupSeconds 5
+    :warmFrom       0.5
+    :warmup         15
+    :connectionKB   null
+    :research       "pypy"
+    :blurb          "Three times the pure-Python CPU of Gunicorn, after a JIT warmup. Poor C-extension support means no ML ecosystem bonus. 200 MB per worker.")
+  (go
+    :axes           (:throughput 4 :tail 4 :memory 5 :velocity 3 :resilience 4 :operability 5)
+    :glossary       [green-threads gc-pause]
+    :language       go
+    :name           "Go net/http"
+    :model          "green"
+    :speed          1
+    :memoryMb       30
+    :connections    10
+    :startupSeconds 0
+    :warmFrom       1
+    :warmup         15
+    :parallel       true
+    :gc             (:pauseMs 1 :cpu 0.25)
+    :connectionKB   10
+    :research       "lang-go"
+    :blurb          "Goroutines on every core. Waiting costs a few KB, not a worker. GC takes CPU when the heap is full.")
+  (fasthttp
+    :axes           (:throughput 5 :tail 4 :memory 5 :velocity 2 :resilience 4 :operability 1)
+    :glossary       [green-threads http2-and-http3]
+    :language       go
+    :name           "fasthttp"
+    :model          "green"
+    :speed          1.25
+    :memoryMb       30
+    :connections    10
+    :startupSeconds 0
+    :warmFrom       1
+    :warmup         0
+    :parallel       true
+    :gc             (:pauseMs 1 :cpu 0.25)
+    :connectionKB   10
+    :research       "fasthttp"
+    :blurb          "A quarter faster than net/http at 10% slower feature work: the API is not standard, some middleware does not work, and there is no HTTP/2."
+    :velocity       0.9)
+  (tomcat
+    :axes           (:throughput 5 :tail 3 :memory 1 :velocity 2 :resilience 4 :operability 4)
+    :glossary       [jit-warmup gc-pause cold-start]
+    :language       java
+    :name           "Tomcat"
+    :model          "threads"
+    :speed          1.1
+    :memoryMb       500
+    :threads        200
+    :connections    10
+    :startupSeconds 20
+    :warmFrom       0.3
+    :warmup         30
+    :parallel       true
+    :gc             (:pauseMs 30 :cpu 0.12)
+    :connectionKB   1_024
+    :research       "lang-java"
+    :blurb          "One JVM, 200 threads on every core. Starts at 30% speed and warms for 30 s. Each waiting request holds a thread.")
+  (java_virtual
+    :axes           (:throughput 4 :tail 5 :memory 1 :velocity 2 :resilience 4 :operability 4)
+    :glossary       [green-threads jit-warmup gc-pause]
+    :language       java
+    :name           "Java virtual threads"
+    :model          "green"
+    :speed          1.1
+    :memoryMb       500
+    :connections    10
+    :startupSeconds 20
+    :warmFrom       0.3
+    :warmup         30
+    :parallel       true
+    :gc             (:pauseMs 30 :cpu 0.12)
+    :connectionKB   10
+    :research       "virtual-threads"
+    :blurb          "Waiting no longer holds a platform thread, so a slow database only adds latency. Native (JNI) calls still pin a carrier, and the JVM still warms for 30 s. Realtime connections cost 10 KB.")
+  (webflux
+    :axes           (:throughput 5 :tail 3 :memory 5 :velocity 2 :resilience 3 :operability 3)
+    :glossary       [event-loop jit-warmup gc-pause]
+    :language       java
+    :name           "Spring WebFlux"
+    :model          "loop"
+    :speed          1.1
+    :memoryMb       100
+    :connections    10
+    :startupSeconds 20
+    :warmFrom       0.3
+    :warmup         30
+    :blocking       "loop"
+    :gc             (:pauseMs 30 :cpu 0.12)
+    :connectionKB   10
+    :research       "webflux"
+    :blurb          "Very high concurrency on one loop per process, and 20% slower to build and debug. A blocking call stalls the loop, and the JVM still warms up. 400 MB."
+    :velocity       0.8)
+  (graal
+    :axes           (:throughput 4 :tail 5 :memory 3 :velocity 2 :resilience 4 :operability 3)
+    :glossary       [cold-start jit-warmup thread-pool]
+    :language       java
+    :name           "GraalVM native image"
+    :model          "threads"
+    :speed          0.8
+    :memoryMb       200
+    :threads        200
+    :connections    10
+    :startupSeconds 0
+    :warmFrom       1
+    :warmup         0
+    :parallel       true
+    :gc             (:pauseMs 30 :cpu 0.12)
+    :connectionKB   1_024
+    :research       "graal-native"
+    :blurb          "Starts in under 100 ms with no warmup at 60% of the JVM’s memory and 0.80× its speed, with builds three times as long. A thread per connection, like Tomcat. Great for Serverless Functions."
+    :build          3)
+  (kestrel
+    :axes           (:throughput 5 :tail 4 :memory 3 :velocity 3 :resilience 4 :operability 3)
+    :glossary       [async-io jit-warmup gc-pause]
+    :language       csharp
+    :name           "Kestrel"
+    :model          "async"
+    :speed          1.1
+    :memoryMb       150
+    :connections    10
+    :startupSeconds 3
+    :warmFrom       0.6
+    :warmup         15
+    :parallel       true
+    :gc             (:pauseMs 15 :cpu 0.1)
+    :connectionKB   10
+    :research       "lang-csharp"
+    :blurb          ".NET async on every core. Waiting holds no thread. A shorter JIT warmup than the JVM.")
+  (native_aot
+    :axes           (:throughput 3 :tail 5 :memory 4 :velocity 3 :resilience 4 :operability 3)
+    :glossary       [cold-start async-io]
+    :language       csharp
+    :name           "Native AOT"
+    :model          "async"
+    :speed          0.9
+    :memoryMb       100
+    :connections    10
+    :startupSeconds 0
+    :warmFrom       1
+    :warmup         0
+    :parallel       true
+    :gc             (:pauseMs 15 :cpu 0.1)
+    :connectionKB   10
+    :research       "native-aot"
+    :blurb          "No JIT, so it starts at full speed, and smaller: 100 MB. 0.90× the speed, and reflection-heavy libraries need Dev Hours.")
+  (beam
+    :axes           (:throughput 2 :tail 5 :memory 4 :velocity 4 :resilience 5 :operability 3)
+    :glossary       [green-threads blast-radius]
+    :language       elixir
+    :name           "BEAM"
+    :model          "green"
+    :speed          0.45
+    :memoryMb       100
+    :connections    10
+    :startupSeconds 3
+    :warmFrom       1
+    :warmup         15
+    :parallel       true
+    :connectionKB   5
+    :hotReload      true
+    :research       "lang-elixir"
+    :blurb          "Preemptive processes on every core. No request stalls another, and each process collects its own garbage. Slow CPU.")
+  (tokio
+    :axes           (:throughput 5 :tail 4 :memory 5 :velocity 1 :resilience 4 :operability 4)
+    :glossary       [async-io event-loop]
+    :language       rust
+    :name           "Tokio"
+    :model          "async"
+    :speed          1.4
+    :memoryMb       10
+    :connections    10
+    :startupSeconds 0
+    :warmFrom       1
+    :warmup         15
+    :parallel       true
+    :blocking       "worker"
+    :connectionKB   5
+    :research       "lang-rust"
+    :blurb          "Async tasks on every core, no GC, little memory. A CPU-heavy task blocks one worker thread.")
+  (zig
+    :axes           (:throughput 5 :tail 4 :memory 4 :velocity 2 :resilience 2 :operability 2)
+    :glossary       [thread-pool blast-radius]
+    :language       zig
+    :name           "Zig threaded server"
+    :model          "threads"
+    :speed          1.3
+    :memoryMb       24
+    :threads        64
+    :connections    10
+    :startupSeconds 0
+    :warmFrom       1
+    :warmup         0
+    :parallel       true
+    :connectionKB   256
+    :research       "lang-zig"
+    :blurb          "Native code with explicit allocators and no GC. A 64-thread server uses every core, but each waiting request holds a thread. Persistent state can leak.")
+  (warp
+    :axes           (:throughput 4 :tail 3 :memory 3 :velocity 4 :resilience 4 :operability 1)
+    :glossary       [green-threads gc-pause]
+    :language       haskell
+    :name           "Haskell (GHC + Warp)"
+    :model          "green"
+    :speed          0.85
+    :memoryMb       80
+    :connections    10
+    :startupSeconds 1
+    :warmFrom       1
+    :warmup         0
+    :parallel       true
+    :gc             (:pauseMs 12 :cpu 0.15)
+    :connectionKB   16
+    :research       "lang-haskell"
+    :blurb          "Warp runs lightweight GHC threads across cores. Productive specialists, but slower builds and hiring. I/O waits hold no OS thread; shared-heap GC adds pauses and CPU cost."))
 
 (constants apache
   (max-workers 150)
@@ -115,42 +564,326 @@
 
 (def default-fpm-workers 5)
 
-(table frameworks
+(constants framework
+  (defaults :satisfies (partial FrameworkDef) (:orm false :value (record) :startupSeconds 0)))
+
+(records frameworks
+  :defaults framework-defaults
   :key      id
-  :keep-key
+  :ids      framework-ids
+  :id-type  FrameworkId
+  :refs     (:language languages :glossary glossary)
   :type     (record FrameworkId FrameworkDef)
-  [id             axes  glossary  name  language  overhead  velocity  memoryMb  orm  value  startupSeconds  blurb  coordination  workerHours  debt  workerOverhead  internalTools  asgi  cpu  cacheable  nativeBuild]
-  ["none"         (:throughput 5 :tail 4 :memory 5 :velocity 1 :resilience 2 :operability 5)  ["tech-debt"]  "No framework"  null  1  0.8  0  false  (record)  0  "Fast to run, slow to build features."  -  -  -  -  -  -  -  -  -]
-  ["jetzig"       (:throughput 3 :tail 4 :memory 3 :velocity 5 :resilience 3 :operability 2)  []  "Jetzig"  "zig"  1.3  1.4  25  false  (record)  0  "File-based routes, templates, database queries and background jobs in one box: features ship fast. 1.3× CPU and 25 MB per process, on a young toolchain."  0.85  0.8  -  -  -  -  -  -  -]
-  ["tokamak"      (:throughput 5 :tail 4 :memory 5 :velocity 4 :resilience 3 :operability 2)  ["conways-law"]  "Tokamak"  "zig"  1.05  1.2  5  false  (record)  0  "A dependency-injection container over http.zig: explicit wiring cuts coordination and tech debt. 1.05× CPU and 5 MB per process, with a small ecosystem."  0.7  -  0.9  -  -  -  -  -  -]
-  ["servant"      (:throughput 4 :tail 4 :memory 5 :velocity 3 :resilience 4 :operability 2)  ["tech-debt"]  "Servant"  "haskell"  1  1.1  2  false  (record)  0  "The API type is the contract: routing, clients and docs follow from it, so teams coordinate less and drift less. 1.0× CPU and 2 MB per process, with a type-level learning curve."  0.7  -  0.8  -  -  -  -  -  -]
-  ["ihp"          (:throughput 3 :tail 3 :memory 2 :velocity 5 :resilience 4 :operability 1)  ["conways-law"]  "IHP"  "haskell"  1.3  1.4  40  false  (record)  0  "Batteries included: code generation, a type-safe query builder and a built-in job queue. Features ship fast at 1.3× CPU and 40 MB per process, on a Nix-based toolchain."  0.9  0.8  -  -  -  -  -  -  -]
-  ["laravel"      (:throughput 2 :tail 3 :memory 4 :velocity 5 :resilience 3 :operability 3)  ["n1-query"]  "Laravel"  "php"  1.8  1.45  10  true  (record)  0  "Ships features fast, and background work costs 20% fewer Dev Hours. 1.8× CPU (1.1× in worker mode), and Eloquent makes 3 read queries where 1 would do."  -  0.8  -  1.1  -  -  -  -  -]
-  ["rails"        (:throughput 3 :tail 3 :memory 2 :velocity 5 :resilience 3 :operability 3)  ["n1-query"]  "Rails"  "ruby"  1.5  1.5  70  true  (:page 1.2)  0  "Ships features fast, page views earn 20% more. 1.5× CPU and N+1 queries."  -  -  -  -  -  -  -  -  -]
-  ["express"      (:throughput 4 :tail 4 :memory 4 :velocity 3 :resilience 2 :operability 4)  ["tech-debt"]  "Express"  "node"  1.1  1.2  10  false  (record)  0  "Minimal and everywhere. 1.1× CPU, and middleware sprawl grows tech debt 10% faster."  -  -  1.1  -  -  -  -  -  -]
-  ["django"       (:throughput 3 :tail 3 :memory 3 :velocity 5 :resilience 3 :operability 3)  ["n1-query"]  "Django"  "python"  1.4  1.4  30  true  (record)  0  "Ships features fast, and internal tools cost 30% fewer Dev Hours with the admin site. 1.4× CPU and N+1 queries."  -  -  -  -  0.7  -  -  -  -]
-  ["symfony"      (:throughput 3 :tail 3 :memory 4 :velocity 4 :resilience 4 :operability 3)  ["tech-debt"]  "Symfony"  "php"  1.5  1.25  10  false  (record)  0  "Strict structure: 30% less coordination and 30% slower tech debt. 1.5× CPU and no N+1 queries."  0.7  -  0.7  -  -  -  -  -  -]
-  ["sinatra"      (:throughput 4 :tail 4 :memory 5 :velocity 3 :resilience 3 :operability 4)  []  "Sinatra"  "ruby"  1.1  1.1  5  false  (record)  0  "Light. 1.1× CPU."  -  -  -  -  -  -  -  -  -]
-  ["flask"        (:throughput 4 :tail 4 :memory 4 :velocity 3 :resilience 3 :operability 4)  []  "Flask"  "python"  1.1  1.1  10  false  (record)  0  "Light. 1.1× CPU."  -  -  -  -  -  -  -  -  -]
-  ["gin"          (:throughput 4 :tail 4 :memory 4 :velocity 3 :resilience 3 :operability 4)  []  "Gin"  "go"  1.05  1.1  5  false  (record)  0  "A light router. 1.05× CPU."  -  -  -  -  -  -  -  -  -]
-  ["spring-boot"  (:throughput 3 :tail 3 :memory 2 :velocity 4 :resilience 4 :operability 3)  ["cold-start"]  "Spring Boot"  "java"  1.3  1.1  200  false  (record)  15  "Structure for large teams: 30% less coordination. 1.3× CPU, 200 MB more, and 15 s more to start."  0.7  -  -  -  -  -  -  -  -]
-  ["aspnet"       (:throughput 4 :tail 4 :memory 4 :velocity 4 :resilience 3 :operability 3)  []  "ASP.NET Core"  "csharp"  1.05  1.15  20  false  (record)  0  "Fast and complete. 1.05× CPU."  -  -  -  -  -  -  -  -  -]
-  ["phoenix"      (:throughput 3 :tail 4 :memory 4 :velocity 5 :resilience 4 :operability 3)  []  "Phoenix"  "elixir"  1.1  1.3  20  false  (:page 1.3)  0  "LiveView pages earn 30% more. 1.1× CPU."  -  -  -  -  -  -  -  -  -]
-  ["axum"         (:throughput 4 :tail 4 :memory 5 :velocity 3 :resilience 4 :operability 4)  []  "Axum"  "rust"  1  1.15  2  false  (record)  0  "Built on Tokio and Tower. No extra CPU."  -  -  -  -  -  -  -  -  -]
-  ["actix"        (:throughput 5 :tail 4 :memory 5 :velocity 2 :resilience 3 :operability 4)  []  "Actix Web"  "rust"  0.95  1.1  2  false  (record)  0  "Among the fastest in benchmarks. 0.95× CPU."  -  -  -  -  -  -  -  -  -]
-  ["fastapi"      (:throughput 3 :tail 2 :memory 4 :velocity 5 :resilience 3 :operability 3)  ["model-inference"]  "FastAPI"  "python"  1.15  1.3  10  false  (:ai 1.15)  0  "Validation with Pydantic, and the best ecosystem for model glue: `ai` requests earn 15% more. 1.15× CPU, and only on an ASGI server. 10 MB."  -  -  -  -  -  true  -  -  -]
-  ["fastify"      (:throughput 4 :tail 4 :memory 4 :velocity 4 :resilience 2 :operability 3)  []  "Fastify"  "node"  1  1.15  5  false  (record)  0  "Schema-based serialization: reads cost 20% less CPU. No overhead of its own. 5 MB."  -  -  -  -  -  -  (:read 0.8)  -  -]
-  ["nextjs"       (:throughput 3 :tail 3 :memory 4 :velocity 4 :resilience 2 :operability 4)  ["cdn-content-delivery-network"]  "Next.js"  "node"  1  1.35  30  false  (:page 1.5)  0  "Server rendering and incremental static regeneration: pages earn 50% more, at 1.6× their CPU, and a CDN can answer 40% of them. 30 MB per process."  -  -  -  -  -  -  (:page 1.6)  0.4  -]
-  ["nestjs"       (:throughput 3 :tail 3 :memory 3 :velocity 5 :resilience 2 :operability 4)  ["conways-law"]  "NestJS"  "node"  1.3  1.3  20  false  (record)  0  "Structure for large teams: 30% less coordination. 1.3× CPU and 20 MB per process."  0.7  -  -  -  -  -  -  -  -]
-  ["fiber"        (:throughput 5 :tail 4 :memory 4 :velocity 4 :resilience 3 :operability 3)  ["http2-and-http3"]  "Fiber"  "go"  1  1.15  5  false  (record)  0  "An Express-style API on fasthttp: no CPU overhead, and no HTTP/2. 5 MB per process."  -  -  -  -  -  -  -  -  -]
-  ["quarkus"      (:throughput 4 :tail 4 :memory 2 :velocity 4 :resilience 3 :operability 3)  ["cold-start"]  "Quarkus"  "java"  1.1  1.05  100  false  (record)  0  "Built for native images: a GraalVM build takes half the time. 1.1× CPU and 100 MB per process."  -  -  -  -  -  -  -  -  0.5]
-  ["hono"         (:throughput 5 :tail 4 :memory 5 :velocity 3 :resilience 2 :operability 5)  []  "Hono"  "node"  1  1.1  2  false  (record)  0  "A small router on Web Standards: no CPU overhead. 2 MB per process."  -  -  -  -  -  -  -  -  -]
-  ["elysia"       (:throughput 5 :tail 4 :memory 4 :velocity 4 :resilience 2 :operability 3)  ["tech-debt"]  "Elysia"  "node"  1  1.25  5  false  (record)  0  "Built for Bun, with types checked from server to client: tech debt grows 15% slower. No CPU overhead. 5 MB per process."  -  -  0.85  -  -  -  -  -  -]
-  ["koa"          (:throughput 4 :tail 4 :memory 5 :velocity 3 :resilience 3 :operability 4)  []  "Koa"  "node"  1.05  1.15  5  false  (record)  0  "Express’s successor, built on async functions: 1.05× CPU. 5 MB per process."  -  -  -  -  -  -  -  -  -]
-  ["adonis"       (:throughput 3 :tail 3 :memory 3 :velocity 5 :resilience 3 :operability 3)  ["n1-query"]  "AdonisJS"  "node"  1.4  1.4  25  true  (record)  0  "Laravel’s ideas on Node.js: ships features fast. 1.4× CPU, 25 MB per process, and the Lucid ORM makes N+1 queries."  -  -  -  -  -  -  -  -  -]
-  ["codeigniter"  (:throughput 4 :tail 4 :memory 5 :velocity 3 :resilience 3 :operability 4)  []  "CodeIgniter"  "php"  1.1  1.1  4  false  (record)  0  "A small PHP framework that stays out of the way: 1.1× CPU. 4 MB per process."  -  -  -  -  -  -  -  -  -]
-  ["sanic"        (:throughput 4 :tail 3 :memory 4 :velocity 4 :resilience 3 :operability 3)  []  "Sanic"  "python"  1.05  1.2  10  false  (record)  0  "Async from the ground up: 1.05× CPU. 10 MB per process."  -  -  -  -  -  -  -  -  -]
-  ["rocket"       (:throughput 4 :tail 4 :memory 5 :velocity 4 :resilience 4 :operability 3)  []  "Rocket"  "rust"  1.05  1.3  3  false  (record)  0  "Type-safe routing with little boilerplate: Rust’s quickest to write in. 1.05× CPU. 3 MB per process."  -  -  -  -  -  -  -  -  -])
+  (none
+    :axes     (:throughput 5 :tail 4 :memory 5 :velocity 1 :resilience 2 :operability 5)
+    :glossary [tech-debt]
+    :name     "No framework"
+    :language null
+    :overhead 1
+    :velocity 0.8
+    :memoryMb 0
+    :blurb    "Fast to run, slow to build features.")
+  (jetzig
+    :axes         (:throughput 3 :tail 4 :memory 3 :velocity 5 :resilience 3 :operability 2)
+    :glossary     []
+    :name         "Jetzig"
+    :language     zig
+    :overhead     1.3
+    :velocity     1.4
+    :memoryMb     25
+    :blurb        "File-based routes, templates, database queries and background jobs in one box: features ship fast. 1.3× CPU and 25 MB per process, on a young toolchain."
+    :coordination 0.85
+    :workerHours  0.8)
+  (tokamak
+    :axes         (:throughput 5 :tail 4 :memory 5 :velocity 4 :resilience 3 :operability 2)
+    :glossary     [conways-law]
+    :name         "Tokamak"
+    :language     zig
+    :overhead     1.05
+    :velocity     1.2
+    :memoryMb     5
+    :blurb        "A dependency-injection container over http.zig: explicit wiring cuts coordination and tech debt. 1.05× CPU and 5 MB per process, with a small ecosystem."
+    :coordination 0.7
+    :debt         0.9)
+  (servant
+    :axes         (:throughput 4 :tail 4 :memory 5 :velocity 3 :resilience 4 :operability 2)
+    :glossary     [tech-debt]
+    :name         "Servant"
+    :language     haskell
+    :overhead     1
+    :velocity     1.1
+    :memoryMb     2
+    :blurb        "The API type is the contract: routing, clients and docs follow from it, so teams coordinate less and drift less. 1.0× CPU and 2 MB per process, with a type-level learning curve."
+    :coordination 0.7
+    :debt         0.8)
+  (ihp
+    :axes         (:throughput 3 :tail 3 :memory 2 :velocity 5 :resilience 4 :operability 1)
+    :glossary     [conways-law]
+    :name         "IHP"
+    :language     haskell
+    :overhead     1.3
+    :velocity     1.4
+    :memoryMb     40
+    :blurb        "Batteries included: code generation, a type-safe query builder and a built-in job queue. Features ship fast at 1.3× CPU and 40 MB per process, on a Nix-based toolchain."
+    :coordination 0.9
+    :workerHours  0.8)
+  (laravel
+    :axes           (:throughput 2 :tail 3 :memory 4 :velocity 5 :resilience 3 :operability 3)
+    :glossary       [n1-query]
+    :name           "Laravel"
+    :language       php
+    :overhead       1.8
+    :velocity       1.45
+    :memoryMb       10
+    :orm            true
+    :blurb          "Ships features fast, and background work costs 20% fewer Dev Hours. 1.8× CPU (1.1× in worker mode), and Eloquent makes 3 read queries where 1 would do."
+    :workerHours    0.8
+    :workerOverhead 1.1)
+  (rails
+    :axes     (:throughput 3 :tail 3 :memory 2 :velocity 5 :resilience 3 :operability 3)
+    :glossary [n1-query]
+    :name     "Rails"
+    :language ruby
+    :overhead 1.5
+    :velocity 1.5
+    :memoryMb 70
+    :orm      true
+    :value    (:page 1.2)
+    :blurb    "Ships features fast, page views earn 20% more. 1.5× CPU and N+1 queries.")
+  (express
+    :axes     (:throughput 4 :tail 4 :memory 4 :velocity 3 :resilience 2 :operability 4)
+    :glossary [tech-debt]
+    :name     "Express"
+    :language node
+    :overhead 1.1
+    :velocity 1.2
+    :memoryMb 10
+    :blurb    "Minimal and everywhere. 1.1× CPU, and middleware sprawl grows tech debt 10% faster."
+    :debt     1.1)
+  (django
+    :axes          (:throughput 3 :tail 3 :memory 3 :velocity 5 :resilience 3 :operability 3)
+    :glossary      [n1-query]
+    :name          "Django"
+    :language      python
+    :overhead      1.4
+    :velocity      1.4
+    :memoryMb      30
+    :orm           true
+    :blurb         "Ships features fast, and internal tools cost 30% fewer Dev Hours with the admin site. 1.4× CPU and N+1 queries."
+    :internalTools 0.7)
+  (symfony
+    :axes         (:throughput 3 :tail 3 :memory 4 :velocity 4 :resilience 4 :operability 3)
+    :glossary     [tech-debt]
+    :name         "Symfony"
+    :language     php
+    :overhead     1.5
+    :velocity     1.25
+    :memoryMb     10
+    :blurb        "Strict structure: 30% less coordination and 30% slower tech debt. 1.5× CPU and no N+1 queries."
+    :coordination 0.7
+    :debt         0.7)
+  (sinatra
+    :axes     (:throughput 4 :tail 4 :memory 5 :velocity 3 :resilience 3 :operability 4)
+    :glossary []
+    :name     "Sinatra"
+    :language ruby
+    :overhead 1.1
+    :velocity 1.1
+    :memoryMb 5
+    :blurb    "Light. 1.1× CPU.")
+  (flask
+    :axes     (:throughput 4 :tail 4 :memory 4 :velocity 3 :resilience 3 :operability 4)
+    :glossary []
+    :name     "Flask"
+    :language python
+    :overhead 1.1
+    :velocity 1.1
+    :memoryMb 10
+    :blurb    "Light. 1.1× CPU.")
+  (gin
+    :axes     (:throughput 4 :tail 4 :memory 4 :velocity 3 :resilience 3 :operability 4)
+    :glossary []
+    :name     "Gin"
+    :language go
+    :overhead 1.05
+    :velocity 1.1
+    :memoryMb 5
+    :blurb    "A light router. 1.05× CPU.")
+  (spring-boot
+    :axes           (:throughput 3 :tail 3 :memory 2 :velocity 4 :resilience 4 :operability 3)
+    :glossary       [cold-start]
+    :name           "Spring Boot"
+    :language       java
+    :overhead       1.3
+    :velocity       1.1
+    :memoryMb       200
+    :startupSeconds 15
+    :blurb          "Structure for large teams: 30% less coordination. 1.3× CPU, 200 MB more, and 15 s more to start."
+    :coordination   0.7)
+  (aspnet
+    :axes     (:throughput 4 :tail 4 :memory 4 :velocity 4 :resilience 3 :operability 3)
+    :glossary []
+    :name     "ASP.NET Core"
+    :language csharp
+    :overhead 1.05
+    :velocity 1.15
+    :memoryMb 20
+    :blurb    "Fast and complete. 1.05× CPU.")
+  (phoenix
+    :axes     (:throughput 3 :tail 4 :memory 4 :velocity 5 :resilience 4 :operability 3)
+    :glossary []
+    :name     "Phoenix"
+    :language elixir
+    :overhead 1.1
+    :velocity 1.3
+    :memoryMb 20
+    :value    (:page 1.3)
+    :blurb    "LiveView pages earn 30% more. 1.1× CPU.")
+  (axum
+    :axes     (:throughput 4 :tail 4 :memory 5 :velocity 3 :resilience 4 :operability 4)
+    :glossary []
+    :name     "Axum"
+    :language rust
+    :overhead 1
+    :velocity 1.15
+    :memoryMb 2
+    :blurb    "Built on Tokio and Tower. No extra CPU.")
+  (actix
+    :axes     (:throughput 5 :tail 4 :memory 5 :velocity 2 :resilience 3 :operability 4)
+    :glossary []
+    :name     "Actix Web"
+    :language rust
+    :overhead 0.95
+    :velocity 1.1
+    :memoryMb 2
+    :blurb    "Among the fastest in benchmarks. 0.95× CPU.")
+  (fastapi
+    :axes     (:throughput 3 :tail 2 :memory 4 :velocity 5 :resilience 3 :operability 3)
+    :glossary [model-inference]
+    :name     "FastAPI"
+    :language python
+    :overhead 1.15
+    :velocity 1.3
+    :memoryMb 10
+    :value    (:ai 1.15)
+    :blurb    "Validation with Pydantic, and the best ecosystem for model glue: `ai` requests earn 15% more. 1.15× CPU, and only on an ASGI server. 10 MB."
+    :asgi     true)
+  (fastify
+    :axes     (:throughput 4 :tail 4 :memory 4 :velocity 4 :resilience 2 :operability 3)
+    :glossary []
+    :name     "Fastify"
+    :language node
+    :overhead 1
+    :velocity 1.15
+    :memoryMb 5
+    :blurb    "Schema-based serialization: reads cost 20% less CPU. No overhead of its own. 5 MB."
+    :cpu      (:read 0.8))
+  (nextjs
+    :axes      (:throughput 3 :tail 3 :memory 4 :velocity 4 :resilience 2 :operability 4)
+    :glossary  [cdn-content-delivery-network]
+    :name      "Next.js"
+    :language  node
+    :overhead  1
+    :velocity  1.35
+    :memoryMb  30
+    :value     (:page 1.5)
+    :blurb     "Server rendering and incremental static regeneration: pages earn 50% more, at 1.6× their CPU, and a CDN can answer 40% of them. 30 MB per process."
+    :cpu       (:page 1.6)
+    :cacheable 0.4)
+  (nestjs
+    :axes         (:throughput 3 :tail 3 :memory 3 :velocity 5 :resilience 2 :operability 4)
+    :glossary     [conways-law]
+    :name         "NestJS"
+    :language     node
+    :overhead     1.3
+    :velocity     1.3
+    :memoryMb     20
+    :blurb        "Structure for large teams: 30% less coordination. 1.3× CPU and 20 MB per process."
+    :coordination 0.7)
+  (fiber
+    :axes     (:throughput 5 :tail 4 :memory 4 :velocity 4 :resilience 3 :operability 3)
+    :glossary [http2-and-http3]
+    :name     "Fiber"
+    :language go
+    :overhead 1
+    :velocity 1.15
+    :memoryMb 5
+    :blurb    "An Express-style API on fasthttp: no CPU overhead, and no HTTP/2. 5 MB per process.")
+  (quarkus
+    :axes        (:throughput 4 :tail 4 :memory 2 :velocity 4 :resilience 3 :operability 3)
+    :glossary    [cold-start]
+    :name        "Quarkus"
+    :language    java
+    :overhead    1.1
+    :velocity    1.05
+    :memoryMb    100
+    :blurb       "Built for native images: a GraalVM build takes half the time. 1.1× CPU and 100 MB per process."
+    :nativeBuild 0.5)
+  (hono
+    :axes     (:throughput 5 :tail 4 :memory 5 :velocity 3 :resilience 2 :operability 5)
+    :glossary []
+    :name     "Hono"
+    :language node
+    :overhead 1
+    :velocity 1.1
+    :memoryMb 2
+    :blurb    "A small router on Web Standards: no CPU overhead. 2 MB per process.")
+  (elysia
+    :axes     (:throughput 5 :tail 4 :memory 4 :velocity 4 :resilience 2 :operability 3)
+    :glossary [tech-debt]
+    :name     "Elysia"
+    :language node
+    :overhead 1
+    :velocity 1.25
+    :memoryMb 5
+    :blurb    "Built for Bun, with types checked from server to client: tech debt grows 15% slower. No CPU overhead. 5 MB per process."
+    :debt     0.85)
+  (koa
+    :axes     (:throughput 4 :tail 4 :memory 5 :velocity 3 :resilience 3 :operability 4)
+    :glossary []
+    :name     "Koa"
+    :language node
+    :overhead 1.05
+    :velocity 1.15
+    :memoryMb 5
+    :blurb    "Express’s successor, built on async functions: 1.05× CPU. 5 MB per process.")
+  (adonis
+    :axes     (:throughput 3 :tail 3 :memory 3 :velocity 5 :resilience 3 :operability 3)
+    :glossary [n1-query]
+    :name     "AdonisJS"
+    :language node
+    :overhead 1.4
+    :velocity 1.4
+    :memoryMb 25
+    :orm      true
+    :blurb    "Laravel’s ideas on Node.js: ships features fast. 1.4× CPU, 25 MB per process, and the Lucid ORM makes N+1 queries.")
+  (codeigniter
+    :axes     (:throughput 4 :tail 4 :memory 5 :velocity 3 :resilience 3 :operability 4)
+    :glossary []
+    :name     "CodeIgniter"
+    :language php
+    :overhead 1.1
+    :velocity 1.1
+    :memoryMb 4
+    :blurb    "A small PHP framework that stays out of the way: 1.1× CPU. 4 MB per process.")
+  (sanic
+    :axes     (:throughput 4 :tail 3 :memory 4 :velocity 4 :resilience 3 :operability 3)
+    :glossary []
+    :name     "Sanic"
+    :language python
+    :overhead 1.05
+    :velocity 1.2
+    :memoryMb 10
+    :blurb    "Async from the ground up: 1.05× CPU. 10 MB per process.")
+  (rocket
+    :axes     (:throughput 4 :tail 4 :memory 5 :velocity 4 :resilience 4 :operability 3)
+    :glossary []
+    :name     "Rocket"
+    :language rust
+    :overhead 1.05
+    :velocity 1.3
+    :memoryMb 3
+    :blurb    "Type-safe routing with little boilerplate: Rust’s quickest to write in. 1.05× CPU. 3 MB per process."))
 
 (table collectors
   :key id
@@ -177,3 +910,10 @@
 (def beam-crashes-per-requests 100)
 
 (def let-it-crash 1_000)
+
+(def jvm-insight 0.25)
+
+(def pool-limits
+  :type const
+  (:min 1
+   :max 400))

@@ -168,7 +168,8 @@ const database = (game: Game, node: GameNode, h: HtmlBuilder<Message>): Readonly
           'shards',
           SHARD_COUNTS.map((count) => [count, `${count}`] as const),
           shards,
-          (chosen) => Message.ShardsChosen({ nodeId: node.id, shards: chosen }),
+          (chosen) =>
+            Message.ShardsChosen({ nodeId: node.id, shards: chosen as GameNode['shards'] }),
           h,
           (count) => count === 1 || has(game, 'sharding'),
           css({ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }),

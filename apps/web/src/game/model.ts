@@ -38,7 +38,7 @@ import { LogoId } from './logos.ts'
 import { fileOf } from './saves.ts'
 import { SavesState, savesOf } from './saves-machine.ts'
 import {
-  ComponentId,
+  type ComponentId,
   FamilyId,
   FeatureId,
   Game,
@@ -483,7 +483,7 @@ export const stampedPlaybook = (model: Model): Playbook | null => {
     : (model.founder.playbooks[flow.source] ?? null)
 }
 
-export const placingOf = (model: Model): typeof ComponentId.Type | null =>
+export const placingOf = (model: Model): ComponentId | null =>
   model.board.flow._tag === 'Placing' ? model.board.flow.type : null
 
 export const linkFromOf = (board: Board): string | null =>

@@ -11,3 +11,9 @@
   :max-out 0
   :unlock  feature-flags
   :blurb   "Rolls a Feature out to 5%, 25%, 50% or every user, and turns it off. Changes propagate to every server in seconds. A bad deploy reaches only the share that has it.")
+
+(def rollout-steps
+  :type const
+  [0 0.05 0.25 0.5 1])
+
+(def rollout-all 1)

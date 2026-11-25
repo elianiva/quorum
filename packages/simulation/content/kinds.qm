@@ -1,9 +1,3 @@
-(id RequestKindId REQUEST_KINDS)
-
-(id BackendKindId BACKEND_KINDS)
-
-(id DataKindId DATA_KINDS)
-
 ; Request kinds arrive from Users; backend kinds are what components send each other. The order is
 ; the Solver's index of each kind, request kinds first. Data kinds are the backend kinds that read
 ; or write stored data. External kinds leave the system for a third party, so no component
@@ -104,3 +98,11 @@
 (constants hybrid
   (writes 0.5)
   (reads 2))
+
+(def insight-pools
+  :type const
+  [(... request-kinds) "failure"])
+
+(def user-mbps 20)
+
+(def user-up-mbps 20)

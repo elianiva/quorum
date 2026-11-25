@@ -1,7 +1,3 @@
-(id ComponentId COMPONENT_IDS)
-
-(id PricingId PRICING_IDS)
-
 ; Shared Component groups and constants.
 ;
 ; Each Component, its state, and its tables live in content/components/<id>.qm. COMPONENT_IDS
@@ -31,6 +27,8 @@
 (def authenticated-kinds
   :type (array RequestKind)
   ["read" "write" "search" "upload" "buy" "job" "report" "ai" "feed" "hook"])
+
+(id Zone zones)
 
 (def zones
   :type const
@@ -65,24 +63,68 @@
   (replication-kb 1))
 
 (constants pricing
-  (ids :type const ["on-demand" "reserved" "spot"])
   (from-stage 3))
 
 (table pricings
   :key      id
+  :ids      pricing-ids
+  :id-type  PricingId
   :keep-key
   :type     (record PricingId PricingDef)
-  [id           name         price  blurb]
-  ["on-demand"  "On-demand"      1  "Full rate. Remove the Node at any time."]
-  ["reserved"   "Reserved"     0.6  "0.6×, for a commitment of one calendar week. Selling before the term ends owes the Burn."]
-  ["spot"       "Spot"         0.3  "0.3×. The provider can reclaim the Node after 10 s of warning."])
+  [id         name         price  blurb]
+  [on-demand  "On-demand"      1  "Full rate. Remove the Node at any time."]
+  [reserved   "Reserved"     0.6  "0.6×, for a commitment of one calendar week. Selling before the term ends owes the Burn."]
+  [spot       "Spot"         0.3  "0.3×. The provider can reclaim the Node after 10 s of warning."])
 
 (def savings-plan-rate 0.8)
 
-(def reserved-seconds (* 7 CALENDAR_DAY))
+(def reserved-seconds (* 7 calendar-day))
 
 (def flag-propagation-seconds 2)
 
 ;; Settings that need research. A value in :free needs none; with :locked, only those values need
 ;; it. The rules refuse a locked value with "<what> needs <research>.", or with the value's name
 ;; from the :labels table.
+(def auth-check-ms 0.02)
+
+(def cdc-lag-stale 0.0002)
+
+(def cdc-drop-stale 0.005)
+
+(def chaos-every 120)
+
+(def chaos-seconds 10)
+
+(def chaos-failure 0.2)
+
+(def chaos-insight 1)
+
+(def doc-rebalance-minutes-per-gb 0.4)
+
+(def drill-insight 5)
+
+(def egress-origin 0.45)
+
+(def egress-cdn 0.1)
+
+(def egress-cross-zone 0.01)
+
+(def first-kind-insight 20)
+
+(def hot-key-share 0.3)
+
+(def insight-yield 1)
+
+(def load-test-insight 2)
+
+(def log-replicate-minutes-per-gb 0.25)
+
+(def pool-floor 100)
+
+(def sticky-local-read 0.15)
+
+(def sticky-herd 0.5)
+
+(def wide-spread-lag-stale 0.015)
+
+(def wide-rebalance-minutes-per-gb 0.4)

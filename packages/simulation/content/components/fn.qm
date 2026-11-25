@@ -1,6 +1,4 @@
 ; Fn: the Component and the tables it reads.
-(import "./fn.ts" SERVERLESS_MS)
-
 (component fn
   :code    fn
   :name    "Serverless Function"
@@ -8,7 +6,7 @@
   :group   compute
   :dock    compute
   :cost    0
-  :latency SERVERLESS_MS
+  :latency serverless-ms
   :unlock  serverless
   :flags   (stack limiting cold-start)
   :accepts (requests except rt)

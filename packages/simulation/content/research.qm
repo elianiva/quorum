@@ -1,13 +1,7 @@
-(id ResearchId RESEARCH_IDS)
-
 ; Research: what the player studies, what each study needs, and what it unlocks.
 ;
 ; Each entry becomes one ResearchDef. Declaration order is the order of RESEARCH_IDS, which the
 ; Solver indexes by, so append new research at the end of its era's group.
-(import "./instances.ts" POOLER_CONNECTIONS)
-
-(import "./runtimes.ts" FRAMEWORKS RUNTIMES)
-
 (tracks
   (infrastructure "Infrastructure")
   (data "Data")
@@ -44,7 +38,7 @@
      :cost     ,cost
      :era      ,era
      :requires ,requires
-     :blurb    (ref FRAMEWORKS ,id blurb)
+     :blurb    (ref frameworks ,id blurb)
      :unlocks  (framework ,id)))
 
 (research stripe
@@ -106,7 +100,7 @@
   :cost    120
   :era     pre-seed
   :insight (write)
-  :shape   (connections :more-than POOLER_CONNECTIONS)
+  :shape   (connections :more-than pooler-connections)
   :blurb   "Unlocks PgBouncer. App connections share a few database connections.")
 
 (research replication
@@ -196,21 +190,21 @@
   :track runtimes
   :cost  30
   :era   garage
-  :blurb (ref RUNTIMES puma blurb))
+  :blurb (ref runtimes puma blurb))
 
 (research lang-node
   :name  "Node.js"
   :track runtimes
   :cost  40
   :era   garage
-  :blurb (ref RUNTIMES node blurb))
+  :blurb (ref runtimes node blurb))
 
 (research lang-python
   :name  "Python"
   :track runtimes
   :cost  120
   :era   pre-seed
-  :blurb (ref RUNTIMES gunicorn blurb))
+  :blurb (ref runtimes gunicorn blurb))
 
 (research node-cluster
   :name     "Node.js cluster mode"
@@ -218,7 +212,7 @@
   :cost     100
   :era      pre-seed
   :requires (lang-node)
-  :blurb    (ref RUNTIMES node_cluster blurb))
+  :blurb    (ref runtimes node_cluster blurb))
 
 (research libuv-pool
   :name     "libuv thread pool"
@@ -437,21 +431,21 @@
   :track runtimes
   :cost  600
   :era   seed
-  :blurb (ref RUNTIMES go blurb))
+  :blurb (ref runtimes go blurb))
 
 (research lang-java
   :name  "Java"
   :track runtimes
   :cost  800
   :era   seed
-  :blurb (ref RUNTIMES tomcat blurb))
+  :blurb (ref runtimes tomcat blurb))
 
 (research lang-csharp
   :name  "C#"
   :track runtimes
   :cost  800
   :era   seed
-  :blurb (ref RUNTIMES kestrel blurb))
+  :blurb (ref runtimes kestrel blurb))
 
 (framework gin "Gin"
   :cost     700
@@ -505,28 +499,28 @@
   :track runtimes
   :cost  2_500
   :era   series-a
-  :blurb (ref RUNTIMES beam blurb))
+  :blurb (ref runtimes beam blurb))
 
 (research lang-rust
   :name  "Rust"
   :track runtimes
   :cost  4_000
   :era   series-a
-  :blurb (ref RUNTIMES tokio blurb))
+  :blurb (ref runtimes tokio blurb))
 
 (research lang-zig
   :name  "Zig"
   :track runtimes
   :cost  3_500
   :era   series-a
-  :blurb (ref RUNTIMES zig blurb))
+  :blurb (ref runtimes zig blurb))
 
 (research lang-haskell
   :name  "Haskell"
   :track runtimes
   :cost  3_000
   :era   series-a
-  :blurb (ref RUNTIMES warp blurb))
+  :blurb (ref runtimes warp blurb))
 
 (framework phoenix "Phoenix"
   :cost     2_500
@@ -960,7 +954,7 @@
   :cost     400
   :era      seed
   :requires (lang-python)
-  :blurb    (ref RUNTIMES gevent blurb))
+  :blurb    (ref runtimes gevent blurb))
 
 (research asgi
   :name     "ASGI with Uvicorn"
@@ -968,7 +962,7 @@
   :cost     500
   :era      seed
   :requires (lang-python)
-  :blurb    (ref RUNTIMES uvicorn blurb))
+  :blurb    (ref runtimes uvicorn blurb))
 
 (research php-worker-mode
   :name     "PHP worker mode"
@@ -976,7 +970,7 @@
   :cost     2_500
   :era      series-a
   :requires (php-fpm)
-  :blurb    (ref RUNTIMES php_worker blurb))
+  :blurb    (ref runtimes php_worker blurb))
 
 (research swoole
   :name     "Swoole"
@@ -984,7 +978,7 @@
   :cost     3_000
   :era      series-a
   :requires (php-fpm)
-  :blurb    (ref RUNTIMES swoole blurb))
+  :blurb    (ref runtimes swoole blurb))
 
 (research bun
   :name     "Bun"
@@ -992,7 +986,7 @@
   :cost     2_000
   :era      series-a
   :requires (lang-node)
-  :blurb    (ref RUNTIMES bun blurb))
+  :blurb    (ref runtimes bun blurb))
 
 (research deno
   :name     "Deno"
@@ -1000,7 +994,7 @@
   :cost     2_000
   :era      series-a
   :requires (lang-node)
-  :blurb    (ref RUNTIMES deno blurb))
+  :blurb    (ref runtimes deno blurb))
 
 (research falcon
   :name     "Falcon"
@@ -1008,7 +1002,7 @@
   :cost     2_000
   :era      series-a
   :requires (lang-ruby)
-  :blurb    (ref RUNTIMES falcon blurb))
+  :blurb    (ref runtimes falcon blurb))
 
 (research pypy
   :name     "PyPy"
@@ -1016,7 +1010,7 @@
   :cost     2_500
   :era      series-a
   :requires (lang-python)
-  :blurb    (ref RUNTIMES pypy blurb))
+  :blurb    (ref runtimes pypy blurb))
 
 (research virtual-threads
   :name     "Java virtual threads"
@@ -1024,7 +1018,7 @@
   :cost     3_000
   :era      series-a
   :requires (lang-java)
-  :blurb    (ref RUNTIMES java_virtual blurb))
+  :blurb    (ref runtimes java_virtual blurb))
 
 (research webflux
   :name     "Spring WebFlux"
@@ -1032,7 +1026,7 @@
   :cost     3_000
   :era      series-a
   :requires (lang-java)
-  :blurb    (ref RUNTIMES webflux blurb))
+  :blurb    (ref runtimes webflux blurb))
 
 (research fasthttp
   :name     "fasthttp"
@@ -1040,7 +1034,7 @@
   :cost     2_000
   :era      series-a
   :requires (lang-go)
-  :blurb    (ref RUNTIMES fasthttp blurb))
+  :blurb    (ref runtimes fasthttp blurb))
 
 (research spawn-blocking
   :name     "Tokio blocking pool"
@@ -1056,7 +1050,7 @@
   :cost     12_000
   :era      series-b
   :requires (lang-java)
-  :blurb    (ref RUNTIMES graal blurb))
+  :blurb    (ref runtimes graal blurb))
 
 (research native-aot
   :name     ".NET Native AOT"
@@ -1064,7 +1058,7 @@
   :cost     10_000
   :era      series-b
   :requires (lang-csharp)
-  :blurb    (ref RUNTIMES native_aot blurb))
+  :blurb    (ref runtimes native_aot blurb))
 
 (research distributed-erlang
   :name     "Distributed Erlang"
@@ -1096,7 +1090,7 @@
   :cost     50_000
   :era      series-c
   :requires (lang-python)
-  :blurb    (ref RUNTIMES python_ft blurb))
+  :blurb    (ref runtimes python_ft blurb))
 
 (framework fastapi "FastAPI"
   :cost     500
@@ -1585,7 +1579,7 @@
    :data     ["data"]
    :security ["security"]))
 
-(def researchList RESEARCH_LIST)
+(def researchList research-list)
 
 (def every-kind
   :type (array InsightPool)
@@ -1604,3 +1598,13 @@
 (constants study
   (speedup 0.25)
   (speed-research :type (array ResearchId) ["trace-search" "notebooks"]))
+
+(def framework-research
+  :type (record FrameworkId (union ResearchId null))
+  (:none
+    null
+    (... framework-unlocks)))
+
+(def max-studies 8)
+
+(def spike-speed 2)

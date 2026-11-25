@@ -1,5 +1,3 @@
-(id DeployStrategyId deploy-strategy-ids)
-
 ; Ci: the Component and the tables it reads.
 (component ci
   :code    ci
@@ -15,25 +13,25 @@
   :blurb   "Ships what waits. Its deploy strategy sets how long a deploy takes, what it burns, and how bad a bad deploy is.")
 
 (state ci
-  (field strategy (enum recreate rolling blue-green canary)
+  (field strategy (key-of deploy-strategies)
     :default rolling
     :schema  DeployStrategy))
 
-(def deploy-strategy-ids
-  :type const
-  ["recreate" "rolling" "blue-green" "canary"])
-
 (table deploy-strategies
   :key      id
+  :ids      deploy-strategy-ids
+  :id-type  DeployStrategyId
   :keep-key
   :type     (record DeployStrategyId DeployStrategyDef)
-  [id            name          deployMinutes  blast  burn]
-  ["recreate"    "Recreate"                2      1     1]
-  ["rolling"     "Rolling"                 5    0.4     1]
-  ["blue-green"  "Blue-green"              7    0.1     2]
-  ["canary"      "Canary"                 10   0.05   1.5])
+  [id          name          deployMinutes  blast  burn]
+  [recreate    "Recreate"                2      1     1]
+  [rolling     "Rolling"                 5    0.4     1]
+  [blue-green  "Blue-green"              7    0.1     2]
+  [canary      "Canary"                 10   0.05   1.5])
 
 (def strategy-research
   :type (partial (record DeployStrategyId ResearchId))
   (:blue-green "blue-green"
    :canary     "canary"))
+
+(def rollout-share 0.25)

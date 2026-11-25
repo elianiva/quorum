@@ -1,24 +1,21 @@
 ; Dsql: the Component and the tables it reads.
 (component dsql
-  :code    dsql
-  :name    "Distributed SQL"
-  :product "CockroachDB"
-  :group   data
-  :dock    data
-  :cost    2_500
-  :latency 3ms
-  :burn    1.95
-  :steps   6
-  :max-out 0
-  :unlock  consensus
-  :flags   (limiting)
-  :accepts (q-read q-write q-tx)
-  :blurb   "SQL on Raft. Every write waits for a majority of its replicas.")
+  :code     dsql
+  :name     "Distributed SQL"
+  :product  "CockroachDB"
+  :group    data
+  :dock     data
+  :cost     2_500
+  :latency  3ms
+  :burn     1.95
+  :steps    6
+  :max-out  0
+  :unlock   consensus
+  :flags    (limiting)
+  :accepts  (q-read q-write q-tx)
+  :blurb    "SQL on Raft. Every write waits for a majority of its replicas."
+  :glossary (quorum raft synchronous-replication))
 
 (constants dsql
   (tx 6_000)
   (read-cost 0.25))
-
-(def dsqlGlossary
-  :type (array string)
-  ["quorum" "raft" "synchronous-replication"])

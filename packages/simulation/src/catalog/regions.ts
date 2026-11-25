@@ -26,9 +26,10 @@ export {
 } from '../generated/regions.ts'
 import { RTT } from '../generated/regions.ts'
 
-import type { RegionId } from '../generated/ids.ts'
+import type { RegionId } from '../generated/regions.ts'
 
-export type { DataPatternId, DeviceId, IacToolId, RegionId, SyncModeId } from '../generated/ids.ts'
+export type { DeviceId, IacToolId, RegionId } from '../generated/regions.ts'
+export type { DataPatternId, SyncModeId } from '../generated/ids.ts'
 export type { IacToolDef, RegionDef } from '../generated/types.ts'
 
 export const rttOf = (from: RegionId, to: RegionId): number =>

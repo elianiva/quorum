@@ -14,7 +14,8 @@
   :flags    (limiting standby)
   :accepts  (task)
   :sends    (task)
-  :blurb    "Takes work now so Workers can do it later. Users wait only for the enqueue.")
+  :blurb    "Takes work now so Workers can do it later. Users wait only for the enqueue."
+  :glossary (at-least-once-delivery backpressure dead-letter-queue transactional-outbox))
 
 (state queue
   (field dlq bool
@@ -35,6 +36,6 @@
   (lengths :type const [0 1_000 10_000 100_000])
   (message-price 0.00144))
 
-(def queueGlossary
-  :type (array string)
-  ["at-least-once-delivery" "backpressure" "dead-letter-queue" "transactional-outbox"])
+(def max-attempts
+  :type const
+  [1 3 10 25])

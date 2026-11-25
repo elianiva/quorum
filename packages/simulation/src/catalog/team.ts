@@ -84,5 +84,5 @@ export {
   PLAN_PER_DAY,
 } from '../generated/team.ts'
 
-export type { PolicyId } from '../generated/ids.ts'
+export type { PolicyId } from '../generated/team.ts'
 export type { PolicyDef } from '../generated/types.ts'

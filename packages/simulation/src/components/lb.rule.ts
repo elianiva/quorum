@@ -12,6 +12,8 @@ import {
 
 import { has } from '../lookups.ts'
 
+export { setSticky, setSlowStart } from '../generated/lb.rule.ts'
+
 export const setLbVariant = (game: Game, id: string, variant: LbVariant): Action =>
   withNode(game, id, (node) => {
     if (node.type !== 'lb') return notAllowed('Only a Load Balancer has a variant.')
@@ -45,20 +47,6 @@ export const setPolicy = (game: Game, id: string, policy: LbPolicy): Action =>
       )
     return ok(patch(game, id, { policy }))
   })
-
-export const setSticky = (game: Game, id: string, sticky: boolean): Action =>
-  withNode(game, id, (node) =>
-    node.type === 'lb'
-      ? ok(node.sticky === sticky ? game : patch(game, id, { sticky }))
-      : notAllowed('Only a Load Balancer keeps users on a target.'),
-  )
-
-export const setSlowStart = (game: Game, id: string, slowStart: boolean): Action =>
-  withNode(game, id, (node) =>
-    node.type === 'lb'
-      ? ok(node.slowStart === slowStart ? game : patch(game, id, { slowStart }))
-      : notAllowed('Only a Load Balancer ramps a new copy up.'),
-  )
 
 export const setHealthCheck = (
   game: Game,

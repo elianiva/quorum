@@ -19,7 +19,8 @@ export {
 } from '../generated/ventures.ts'
 export { VENTURES } from '../generated/ventures.ts'
 
-export type { MutatorId, VentureId } from '../generated/ids.ts'
+export type { MutatorId } from '../generated/ventures.ts'
+export type { VentureId } from '../generated/ventures.ts'
 export type {
   MutatorDef,
   SaleSchedule,

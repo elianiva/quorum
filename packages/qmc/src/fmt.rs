@@ -197,6 +197,7 @@ impl Printer<'_> {
             Some("table") => self.table(items, indent),
             Some("records") => self.records(items, indent),
             Some("state") => self.state(items, indent),
+            Some("solver") => self.solver(items, indent),
             _ => self.form(items, indent),
         }
     }
@@ -215,6 +216,66 @@ impl Printer<'_> {
         }
         let mut out = self.open(items[0].symbol().unwrap_or(""), &positional);
         out.push_str(&self.pairs(&fields, indent + 2));
+        out.push(')');
+        out
+    }
+
+    /// `(solver …)`: one clause per line. A clause keeps its name, source, and keys on its first
+    /// line when they fit, and puts each entry, such as a column, on a line of its own.
+    fn solver(&self, items: &[Sexp], indent: usize) -> String {
+        let mut out = String::from("(solver");
+        for clause in &items[1..] {
+            out.push('\n');
+            out.push_str(&" ".repeat(indent + 2));
+            out.push_str(&self.solver_clause(clause, indent + 2));
+        }
+        out.push(')');
+        out
+    }
+
+    fn solver_clause(&self, sexp: &Sexp, indent: usize) -> String {
+        let Some(items) = sexp.list().filter(|items| !items.is_empty()) else {
+            return self.render(sexp, indent);
+        };
+        let mut head = vec![self.compact(&items[0])];
+        let mut fields = Vec::new();
+        let mut entries = Vec::new();
+        let mut at = 1;
+        while at < items.len() {
+            if items[at].keyword().is_some() {
+                let value = takes_value(items, at).then(|| &items[at + 1]);
+                fields.push(Field {
+                    key: &items[at],
+                    value,
+                });
+                at += if value.is_some() { 2 } else { 1 };
+            } else if items[at].list().is_some() {
+                entries.push(&items[at]);
+                at += 1;
+            } else {
+                head.push(self.compact(&items[at]));
+                at += 1;
+            }
+        }
+        let mut flat = format!("({}", head.join(" "));
+        for field in &fields {
+            flat.push(' ');
+            flat.push_str(&self.text(field.key));
+            if let Some(value) = field.value {
+                flat.push(' ');
+                flat.push_str(&self.compact(value));
+            }
+        }
+        let mut out = if indent + self.length(&flat) < WIDTH {
+            flat
+        } else {
+            format!("({}{}", head.join(" "), self.pairs(&fields, indent + 2))
+        };
+        for entry in entries {
+            out.push('\n');
+            out.push_str(&" ".repeat(indent + 2));
+            out.push_str(&self.compact(entry));
+        }
         out.push(')');
         out
     }
@@ -809,6 +870,13 @@ mod tests {
         let out = format(text).unwrap();
         assert!(out.contains("[a   \"one\"]"), "{out}");
         assert!(out.contains("[b   \"two\"]"), "{out}");
+    }
+
+    #[test]
+    fn a_solver_clause_keeps_its_keys_on_one_line_and_an_entry_per_line() {
+        let text = "(solver (axis kind :of (a b) :count NK) (columns t :over kind (A a :default 0) (B b)))\n";
+        let expected = "(solver\n  (axis kind :of (a b) :count NK)\n  (columns t :over kind\n    (A a :default 0)\n    (B b)))\n";
+        assert_eq!(format(text).unwrap(), expected);
     }
 
     #[test]

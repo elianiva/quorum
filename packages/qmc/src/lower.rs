@@ -224,6 +224,8 @@ pub struct Catalog {
     pub ids: Vec<IdDef>,
     pub gates: Vec<Gate>,
     pub states: Vec<State>,
+    /// `(solver …)`: the Solver catalog's declarations, in order.
+    pub solver: Vec<crate::solver::Clause>,
 }
 
 /// A state field's `:gate (gzip "Gzip" :lock-all)`: a setting that needs research. Without
@@ -431,6 +433,7 @@ impl Catalog {
         self.ids.extend(other.ids);
         self.gates.extend(other.gates);
         self.states.extend(other.states);
+        self.solver.extend(other.solver);
     }
 }
 
@@ -466,6 +469,7 @@ const FORMS: &[&str] = &[
     "state",
     "table",
     "records",
+    "solver",
 ];
 
 /// A form's keyword arguments, after the head and any positional arguments.
@@ -608,6 +612,10 @@ impl Lower {
                 if let Some(table) = crate::data::lower_table(form, &self.module, &mut self.sink) {
                     self.catalog.defs.push(table);
                 }
+            }
+            "solver" => {
+                let clauses = crate::solver::lower(form, &mut self.sink);
+                self.catalog.solver.extend(clauses);
             }
             "records" => {
                 if let Some(records) =

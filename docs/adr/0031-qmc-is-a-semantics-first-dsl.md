@@ -22,6 +22,9 @@ feature, and the flags stop composing. The core here is deliberately smaller tha
   every column with one type of value.
 - `records`: a keyed or array record with one vertical entry per row, an optional shared `:defaults`
   record, and optional `:ids`, `:id-type`, `:refs`, and `:export-rust` declarations.
+- `solver`: the Solver's ABI. Its clauses (`axis`, `columns`, `matrix`, `masks`, `mask`,
+  `member`, and `pairs`) each name one Rust item in `catalog.rs` and the catalog value it reads,
+  so qmc writes the Solver catalog from declarations and not from a hand-kept list.
 - `mix`: request kind shares that sum to exactly 100%. An Era names one, and a data value writes
   one inline as `(mix :page 8% …)`, so a Venture's shares get the same check as an Era's mix.
 - `def`: plain data. A kebab-case name exports in SCREAM_CASE. `(constants PREFIX …)` writes the

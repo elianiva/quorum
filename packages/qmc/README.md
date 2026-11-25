@@ -5,7 +5,7 @@ qmc compiles the content files in `packages/simulation/content/**/*.qm` into
 
 ```sh
 pnpm --filter @quorum/simulation content   # compile the content and write the generated files
-cargo run -- build <content> <out> --solver <catalog.ts> <catalog.rs>  # what `content` runs
+cargo run -- build <content> <out> --solver <catalog.rs>  # what `content` runs
 cargo run -- expand file.qm                 # print a file after macro expansion
 cargo run -- fmt content                    # lay out fields, tables, and records
 cargo run -- fmt --check content            # report files that would change
@@ -171,8 +171,8 @@ and a bare name in that column is the key itself, so `:language php` and
 table fills every column with one type of value, because the Solver reads each column as one Rust
 array. A table that also has
 `:ids` gets a Rust module named after the id array without `_IDS`, so `SEARCH_VARIANT_IDS` becomes
-`search_variant`. qmc derives the Solver's table list from these declarations instead of keeping a
-second list in the emitter.
+`search_variant`. The `(solver …)` form in `content/solver.qm` declares everything else the Solver
+reads; see [The Solver catalog](#the-solver-catalog).
 
 ```lisp
 (constants runtime
@@ -251,11 +251,31 @@ Effect Schemas for their state values.
 
 ### The Solver catalog
 
-`--solver ../simulation/src/catalog.ts ../simulation/solver/src/catalog.rs` also writes the Rust
-Solver's catalog: every number, flag, and string that `catalog.ts` exports, the tables the solve
-reads, and `CATALOG_HASH`, a SHA-256 prefix the Simulation compares with the built module. qmc
-reads the values back from the generated TypeScript and prints numbers as JavaScript prints them,
-so the Solver and the Simulation see the same floating-point values.
+`--solver ../simulation/solver/src/catalog.rs` also writes the Rust Solver's catalog. The content
+owns that ABI: `content/solver.qm` holds one `(solver …)` form, and each clause in it names one
+Rust item and the catalog value it reads.
+
+- `(axis NAME :of LIST…)` is an ordered set of ids. `:count`, `:names`, and `:module` write its
+  length, its ids, and a `usize` constant per id. `:index` and `:test` write lookup functions.
+- `(columns SOURCE :over AXIS (NAME FIELD) …)` writes one array per field, with one value per id
+  on the axis. `:default` fills a missing value, `:index AXIS` writes a value's position, and
+  `:enum E` writes a Rust enum built from the distinct values.
+- `(matrix NAME SOURCE :field F :rows AXIS :cols AXIS)` writes a two-dimensional array.
+- `(masks …)` and `(mask NAME LIST :bits AXIS)` write `u128` bit sets. qmc adds a compile-time
+  assertion that the axis has at most 128 ids.
+- `(member NAME LIST :over AXIS)` writes a flag per id. `(pairs NAME SOURCE :over AXIS :join "-")`
+  writes a symmetric matrix from keys such as `a-b`.
+
+Every `:export-rust` table writes its columns, and every other scalar def, a number, flag, string,
+or list of numbers or strings, becomes a Rust constant. The file ends with `SCALAR_COUNT` and
+`CATALOG_HASH`, a SHA-256 prefix that the Simulation compares with the built module.
+
+qmc evaluates the declarations from the checked catalog in `value.rs`, not from the generated
+TypeScript. `value.rs` follows JavaScript's rules: decimal literals become doubles, record keys
+keep `Object.keys` order, spreads and arithmetic give the same result, and numbers print as
+`String(n)` prints them. The Solver and the Simulation therefore read the same floating-point
+values. A clause that names an unknown value, field, or axis, or a value that is not on its axis,
+is an error, and two clauses that write one Rust name are an error.
 
 ## The checks
 
@@ -298,6 +318,8 @@ qmc refuses content that contradicts itself and reports every problem in one run
 - a `:research` cell in a keyed table that is not a research id or null
 - an `:export-rust` table with a row that leaves out a column, or a column that mixes numbers,
   flags, strings, and `null`
+- a `(solver …)` clause that names an unknown value, field, or axis, reads a value that is not on
+  its axis, or writes a Rust name another clause or scalar already writes
 
 It warns about a requirement another requirement already implies, and about an incident the
 Director cannot pick until an Era later than the one it names.

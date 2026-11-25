@@ -6,7 +6,7 @@
 //! 2. collect macros from every file, then expand each file, in parallel
 //! 3. lower: the expanded forms to typed entries
 //! 4. check: every rule pass at once over the shared catalog
-//! 5. emit: the generated files, at once
+//! 5. emit: the generated TypeScript files, at once, and the Solver's `catalog.rs`
 //!
 //! Each pass keeps going after an error, so one run reports every problem it can. Diagnostics are
 //! sorted by position before they print, and output is written in declaration order, so the
@@ -15,7 +15,6 @@
 pub mod check;
 pub mod data;
 pub mod diag;
-pub mod emit_rs;
 pub mod emit_ts;
 pub mod expand;
 pub mod fmt;
@@ -25,8 +24,9 @@ pub mod num;
 pub mod par;
 pub mod reader;
 pub mod sha256;
+pub mod solver;
 pub mod source;
-pub mod tsval;
+pub mod value;
 
 use diag::{Diagnostic, Sink};
 use reader::Sexp;
@@ -93,16 +93,10 @@ pub struct Compiled {
     pub diagnostics: Vec<Diagnostic>,
     /// Each generated file, by its name in the output directory. Empty when there were errors.
     pub outputs: Vec<(String, String)>,
-    /// The records the Solver catalog may export as columns. qmc derives this from the lowered
-    /// catalog, so `emit_rs` does not keep its own table list.
-    pub solver_tables: Vec<SolverTable>,
-}
-
-#[derive(Clone, Debug)]
-pub struct SolverTable {
-    pub name: String,
-    /// The Rust module for this table's keys, when the table declares an id array and no typed id.
-    pub module: Option<String>,
+    /// The Solver's `catalog.rs`, when the content declares a Solver catalog and has no errors.
+    pub solver: Option<String>,
+    /// The checked catalog the outputs come from.
+    pub catalog: lower::Catalog,
 }
 
 /// Reads, expands, lowers, checks, and emits the given files.
@@ -126,6 +120,17 @@ pub fn compile(inputs: Vec<(String, String)>) -> Compiled {
     crate::data::rewrite(&mut catalog);
     sink.extend(crate::data::resolve_key_of(&mut catalog));
     sink.extend(check::run(&catalog));
+    let solver = if !sink.has_errors() && solver::wanted(&catalog) {
+        match solver::render(&catalog) {
+            Ok(text) => Some(text),
+            Err(diagnostics) => {
+                sink.extend(Sink { items: diagnostics });
+                None
+            }
+        }
+    } else {
+        None
+    };
     let outputs = if sink.has_errors() {
         Vec::new()
     } else {
@@ -198,29 +203,11 @@ pub fn compile(inputs: Vec<(String, String)>) -> Compiled {
             outputs
         }
     };
-    let solver_tables = catalog
-        .defs
-        .iter()
-        .filter(|def| def.solver)
-        .map(|def| {
-            let module = if def.id_type.is_some() {
-                None
-            } else {
-                def.ids
-                    .as_deref()
-                    .and_then(|ids| ids.strip_suffix("_IDS"))
-                    .map(|name| name.to_ascii_lowercase())
-            };
-            SolverTable {
-                name: def.export.clone(),
-                module,
-            }
-        })
-        .collect();
     Compiled {
         sources,
         diagnostics: sink.sorted(),
         outputs,
-        solver_tables,
+        solver,
+        catalog,
     }
 }

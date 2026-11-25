@@ -4,9 +4,9 @@ use std::path::Path;
 use std::process::ExitCode;
 
 const USAGE: &str = "usage:
-  qmc build <content dir> <generated dir> [--solver <catalog.ts> <catalog.rs>]
+  qmc build <content dir> <generated dir> [--solver <catalog.rs>]
       compile every .qm file into the generated dir. --solver also writes the Solver's catalog.rs
-      from the scalars catalog.ts exports.
+      from the content's (solver …) declarations.
   qmc expand <file.qm>…
       print each file after macro expansion
   qmc fmt [--check] <file or dir>…
@@ -20,8 +20,8 @@ fn main() -> ExitCode {
             let solver = rest
                 .iter()
                 .position(|a| *a == "--solver")
-                .and_then(|i| Some((Path::new(rest.get(i + 1)?), Path::new(rest.get(i + 2)?))));
-            let known = rest.len() == if solver.is_some() { 3 } else { 0 };
+                .and_then(|i| Some(Path::new(rest.get(i + 1)?)));
+            let known = rest.len() == if solver.is_some() { 2 } else { 0 };
             if !known {
                 eprintln!("{USAGE}");
                 return ExitCode::from(2);
@@ -126,7 +126,7 @@ fn report(diagnostics: &[Diagnostic], sources: &SourceMap) -> bool {
     errors > 0
 }
 
-fn build(content: &Path, out: &Path, solver: Option<(&Path, &Path)>) -> ExitCode {
+fn build(content: &Path, out: &Path, solver: Option<&Path>) -> ExitCode {
     let paths = match qmc::qm_files(content) {
         Ok(paths) => paths,
         Err(error) => {
@@ -147,19 +147,12 @@ fn build(content: &Path, out: &Path, solver: Option<(&Path, &Path)>) -> ExitCode
         .iter()
         .map(|(name, text)| (out.join(name), text.clone()))
         .collect();
-    if let Some((namespace, target)) = solver {
-        let names = match qmc::tsval::namespace(namespace) {
-            Ok(names) => names,
-            Err(error) => {
-                eprintln!("error: cannot read {}: {error}", namespace.display());
-                return ExitCode::FAILURE;
-            }
+    if let Some(target) = solver {
+        let Some(text) = compiled.solver.clone() else {
+            eprintln!("error: the content declares no (solver …) and no :export-rust table");
+            return ExitCode::FAILURE;
         };
-        let modules: Vec<&str> = compiled.outputs.iter().map(|(_, t)| t.as_str()).collect();
-        outputs.push((
-            target.to_path_buf(),
-            qmc::emit_rs::catalog(&modules, &names, &compiled.solver_tables),
-        ));
+        outputs.push((target.to_path_buf(), text));
     }
     // An unchanged file is not rewritten, so a dev server does not reload for nothing.
     for (path, text) in &outputs {

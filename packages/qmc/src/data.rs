@@ -2669,12 +2669,16 @@ mod tests {
             "(table things :key id :ids THING_IDS :export-rust [id name] [a \"A\"])\n             (def summary :export-rust (:x 1))\n             (def other (:x 2))\n",
         )]);
         assert_eq!(errors(&c), Vec::<&str>::new());
-        let names: Vec<(&str, Option<&str>)> = c
-            .solver_tables
-            .iter()
-            .map(|t| (t.name.as_str(), t.module.as_deref()))
-            .collect();
-        assert_eq!(names, [("THINGS", Some("thing")), ("SUMMARY", None)]);
+        let rust = c.solver.as_deref().expect("a Solver catalog");
+        assert!(
+            rust.contains("pub mod thing {\n    pub const A: usize = 0;\n}"),
+            "{rust}"
+        );
+        assert!(
+            rust.contains("pub static SUMMARY_X: [f64; 1] = [1.0];"),
+            "{rust}"
+        );
+        assert!(!rust.contains("OTHER_X"), "{rust}");
     }
 
     #[test]

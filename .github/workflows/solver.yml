@@ -6,16 +6,12 @@ on:
     paths:
       - 'packages/simulation/solver/**'
       - 'packages/simulation/content/**'
-      - 'packages/simulation/src/catalog.ts'
-      - 'packages/simulation/src/catalog/**'
       - 'packages/qmc/**'
       - '.github/workflows/solver.yml'
   pull_request:
     paths:
       - 'packages/simulation/solver/**'
       - 'packages/simulation/content/**'
-      - 'packages/simulation/src/catalog.ts'
-      - 'packages/simulation/src/catalog/**'
       - 'packages/qmc/**'
       - '.github/workflows/solver.yml'
 
@@ -36,7 +32,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/rust
       # The crate includes src/catalog.rs, which qmc writes from the content.
-      - run: cargo run --release --manifest-path ../../qmc/Cargo.toml -- build ../content ../src/generated --solver ../src/catalog.ts src/catalog.rs
+      - run: cargo run --release --manifest-path ../../qmc/Cargo.toml -- build ../content ../src/generated --solver src/catalog.rs
       - run: cargo clippy --release --target wasm32-unknown-unknown -- -D warnings
       - run: cargo clippy --release --tests -- -D warnings
       - run: cargo test --release

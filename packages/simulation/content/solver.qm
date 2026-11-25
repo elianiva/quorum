@@ -1,0 +1,141 @@
+; The Solver's ABI: what qmc writes into solver/src/catalog.rs.
+;
+; An axis is an ordered set of ids the Solver indexes by. Every other declaration reads the
+; catalog through an axis, so an array's position is the id's position on that axis. Every scalar
+; the catalog exports is written too, and an :export-rust table writes all of its columns.
+(solver
+  (axis kind :of (request-kinds backend-kinds) :count NK :names KINDS :module kind)
+  (axis request :of request-kinds :count NR :test is_request_kind)
+  (axis backend :of backend-kinds :count NB :module backend)
+  (columns profiles :over request
+    (PROFILE_CPU cpu)
+    (PROFILE_NATIVE native)
+    (PROFILE_APDEX apdex)
+    (PROFILE_OFFLOAD offload)
+    (PROFILE_IN_KB inKB)
+    (PROFILE_PAYLOAD_KB payloadKB)
+    (PROFILE_ASYNC_KB asyncKB)
+    (PROFILE_ORM orm)
+    (PROFILE_SCORED scored)
+    (PROFILE_COMPRESSIBLE compressible)
+    (PROFILE_STREAM stream)
+    (PROFILE_COMPLETION completion :default 0))
+  (matrix PROFILE_CALLS profiles :field calls :rows request :cols kind :default 0)
+  (matrix PROFILE_ASYNC_CALLS profiles :field asyncCalls :rows request :cols kind :default 0)
+  (columns kinds :over kind
+    (KIND_VALUE value :default 0))
+  (axis language :of language-ids :count LANGUAGE_COUNT :names LANGUAGE_IDS :module language)
+  (axis runtime :of runtime-ids :count RUNTIME_COUNT :names RUNTIME_IDS :module runtime)
+  (columns runtimes :over runtime
+    (RUNTIME_LANGUAGE language :index language)
+    (RUNTIME_MODEL model :enum Concurrency)
+    (RUNTIME_SPEED speed)
+    (RUNTIME_MEMORY_MB memoryMb)
+    (RUNTIME_POOL pool)
+    (RUNTIME_THREADS threads)
+    (RUNTIME_PARALLEL parallel)
+    (RUNTIME_CONNECTION_KB connectionKB :default -1)
+    (RUNTIME_STARTUP_S startupSeconds)
+    (RUNTIME_WARM_FROM warmFrom)
+    (RUNTIME_WARMUP warmup)
+    (RUNTIME_OVERHEAD_FACTOR overheadFactor :default 1)
+    (RUNTIME_PERSISTENT persistent)
+    (RUNTIME_BLOCKING blocking :default "none" :enum Blocking)
+    (RUNTIME_CONNECTIONS connections :default 0)
+    (RUNTIME_VELOCITY velocity :default 1)
+    (RUNTIME_GC_PAUSE gc.pauseMs :default -1)
+    (RUNTIME_GC_CPU gc.cpu :default 0))
+  (columns pm-modes
+    (PM_SPARES spares :default -1)
+    (PM_SPAWN_SHARE spawnShare)
+    (PM_SPAWN_MS spawnMs))
+  (columns languages :over language
+    (LANGUAGE_VELOCITY velocity)
+    (LANGUAGE_SESSION_KB sessionKB)
+    (LANGUAGE_ARM_SPEED armSpeed)
+    (LANGUAGE_BLAST blast))
+  (columns cold-start-ms :over language
+    (COLD_START_MS :default native-cold-ms))
+  (axis framework
+    :of    framework-ids
+    :count FRAMEWORK_COUNT
+    :names FRAMEWORK_IDS
+    :index framework_index)
+  (columns frameworks :over framework
+    (FRAMEWORK_OVERHEAD overhead)
+    (FRAMEWORK_VELOCITY velocity)
+    (FRAMEWORK_MEMORY_MB memoryMb)
+    (FRAMEWORK_ORM orm)
+    (FRAMEWORK_ASGI asgi :default false)
+    (FRAMEWORK_CACHEABLE cacheable :default 0)
+    (FRAMEWORK_WORKER_OVERHEAD workerOverhead :default -1))
+  (matrix FRAMEWORK_VALUE frameworks :field value :rows framework :cols request :default 1)
+  (matrix FRAMEWORK_CPU frameworks :field cpu :rows framework :cols request :default 1)
+  (columns collectors
+    (COLLECTOR_PAUSE pauseMs)
+    (COLLECTOR_SPEED speed)
+    (COLLECTOR_MEMORY memory))
+  (columns gogc
+    (GOGC_CPU cpu)
+    (GOGC_MEMORY memory)
+    (GOGC_VALUES gogc))
+  (axis db :of db-engines :index db_engine_index)
+  (columns db-engines :over db
+    (DB_CONNECTIONS connections)
+    (DB_CONNECTION_MB connectionMB)
+    (DB_READ read)
+    (DB_WRITE write)
+    (DB_SCAN scan)
+    (DB_SEARCH_COST searchCost)
+    (DB_LAG lag))
+  (columns storage-iops
+    (STORAGE_IOPS iops))
+  (columns db-retentions
+    (RETENTION_SCAN_MS scanMs)
+    (RETENTION_REBUILD rebuild)
+    (RETENTION_HOT_SET hotSet))
+  (columns shard-keys
+    (SHARD_HOT hot)
+    (SHARD_CROSS cross)
+    (SHARD_FAR_MS farMs))
+  (axis component :of component-ids :count COMPONENT_COUNT :names COMPONENT_IDS :module component)
+  (masks components :over component :bits kind
+    (COMPONENT_ACCEPTS accepts)
+    (COMPONENT_SENDS sends)
+    (COMPONENT_FALLBACK fallback))
+  (columns components :over component
+    (COMPONENT_STACK stack)
+    (COMPONENT_LIMITING limiting)
+    (COMPONENT_COLD_START coldStart)
+    (COMPONENT_TAP tap)
+    (COMPONENT_LATENCY latency :default 0)
+    (COMPONENT_STEPS steps)
+    (COMPONENT_FIXED fixed))
+  (columns flat-capacity :over component
+    (FLAT_CAPACITY :default 0))
+  (member COMPONENT_GLOBAL global-components :over component)
+  (member COMPONENT_SPANS_ZONES zone-spanning-components :over component)
+  (columns cdn-ttls
+    (CDN_TTL_VALUES ttl)
+    (CDN_TTL_FACTOR factor))
+  (columns cdn-hit :over kind
+    (CDN_HIT :default 0))
+  (axis region :of regions)
+  (pairs REGION_RTT rtt :over region :join "-" :default 0)
+  (axis venture :of venture-ids)
+  (columns ventures :over venture
+    (VENTURE_VALUE value)
+    (VENTURE_MARKET market)
+    (VENTURE_AMPLITUDE amplitude)
+    (VENTURE_PEAK peak)
+    (VENTURE_WEEKEND weekend)
+    (VENTURE_DEADLINE constraint.deadline :default -1)
+    (VENTURE_STALE_FINE constraint.staleFine))
+  (axis research :of research-ids :count RESEARCH_COUNT :names RESEARCH_IDS :module research)
+  (axis fix :of fixes :module fix)
+  (member AUTHENTICATED_KINDS_MASK authenticated-kinds :over request :type u8)
+  (member CPU_HEAVY_MASK cpu-heavy-kinds :over kind :type u8)
+  (mask MONEY_KINDS_MASK money-kinds :bits kind)
+  (mask DATA_KINDS_MASK data-kinds :bits kind)
+  (columns query-cpu :over backend
+    (QUERY_CPU_BY_BACKEND :default -1)))

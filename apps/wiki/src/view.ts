@@ -24,7 +24,6 @@ const GRID = css({
   display: 'grid',
   columnGap: '8',
   lg: { gridTemplateColumns: '16rem minmax(0,1fr)' },
-  xl: { gridTemplateColumns: '16rem minmax(0,1fr) 16rem' },
 })
 
 export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
@@ -54,6 +53,37 @@ export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
         ],
       ),
     }
+  const rail =
+    hasRail && railPage
+      ? h.div(
+          [
+            h.Class(
+              cx(
+                css({
+                  minWidth: '0',
+                  flexDirection: 'column',
+                  gap: '10',
+                  xl: {
+                    gridColumnStart: '2',
+                    gridRow: '1 / span 2',
+                  },
+                }),
+                railPage.aside
+                  ? css({
+                      display: 'flex',
+                    })
+                  : css({
+                      display: 'none',
+                      xl: {
+                        display: 'flex',
+                      },
+                    }),
+              ),
+            ),
+          ],
+          [railPage.aside ? railPage.aside(model, h) : h.empty, toc(railPage, h)],
+        )
+      : null
   return {
     title: page ? (isHome ? t.homeTitle : t.title(page.seoTitle ?? page.title)) : t.notFoundTitle,
     lang: LOCALE_TAGS[model.locale].lang,
@@ -76,59 +106,8 @@ export const view = (model: Model, plain: HtmlBuilder<Message>): Document => {
             page
               ? isHome
                 ? homeView(page, model, h)
-                : article(page, model, h)
+                : article(page, model, h, rail)
               : notFound(model, h),
-            hasRail && railPage
-              ? h.div(
-                  [
-                    h.Class(
-                      cx(
-                        css({
-                          flexDirection: 'column',
-                          gap: '10',
-                        }),
-                        railPage.aside
-                          ? css({
-                              display: 'flex',
-                              lg: {
-                                gridColumnStart: '2',
-                                gridRowStart: '2',
-                              },
-                              xl: {
-                                gridColumnStart: '3',
-                                gridRowStart: '1',
-                                paddingTop: '8',
-                              },
-                            })
-                          : css({
-                              display: 'none',
-                              xl: {
-                                display: 'flex',
-                                gridColumnStart: '3',
-                                gridRowStart: '1',
-                                paddingTop: '8',
-                              },
-                            }),
-                      ),
-                    ),
-                  ],
-                  [
-                    railPage.aside
-                      ? h.div(
-                          [
-                            h.Class(
-                              css({
-                                lg: { maxWidth: '80' },
-                              }),
-                            ),
-                          ],
-                          [railPage.aside(model, h)],
-                        )
-                      : h.empty,
-                    toc(railPage, h),
-                  ],
-                )
-              : h.empty,
           ],
         ),
       ],

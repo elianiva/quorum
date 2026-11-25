@@ -419,7 +419,7 @@ const notice = (page: Page, h: H): Html =>
       )
     : h.empty
 
-export const article = (page: Page, model: Model, h: H): Html => {
+export const article = (page: Page, model: Model, h: H, rail: Html | null): Html => {
   const l = langOf(page.locale)
   return h.main(
     [
@@ -432,6 +432,14 @@ export const article = (page: Page, model: Model, h: H): Html => {
           page.wide &&
             css({
               gridColumn: '1 / -1',
+            }),
+          rail !== null &&
+            css({
+              xl: {
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0,1fr) 16rem',
+                columnGap: '8',
+              },
             }),
         ),
       ),
@@ -446,6 +454,10 @@ export const article = (page: Page, model: Model, h: H): Html => {
               borderBottomStyle: 'solid',
               borderColor: 'border',
               paddingBottom: '8',
+              xl: {
+                gridColumnStart: '1',
+                gridRowStart: '1',
+              },
             }),
           ),
         ],
@@ -514,11 +526,16 @@ export const article = (page: Page, model: Model, h: H): Html => {
           pathBar(page, model, h),
         ],
       ),
+      rail ?? h.empty,
       h.div(
         [
           h.Class(
             css({
               paddingTop: '8',
+              xl: {
+                gridColumnStart: '1',
+                gridRowStart: '2',
+              },
             }),
           ),
         ],

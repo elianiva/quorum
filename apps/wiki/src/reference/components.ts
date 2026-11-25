@@ -169,6 +169,16 @@ const entity = (l: Lang, def: ComponentDef): Page => {
               display: 'flex',
               flexDirection: 'column',
               gap: '4',
+              sm: {
+                display: 'grid',
+                gridTemplateColumns: '20rem minmax(0,1fr)',
+                alignItems: 'start',
+              },
+              xl: {
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'stretch',
+              },
             }),
           ),
         ],

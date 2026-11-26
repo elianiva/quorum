@@ -82,7 +82,7 @@ export const inspector: Messages['inspector'] = {
     'CPU、メモリキット、ボリュームを個別に購入できます。各棚に費用と burn への加算が表示されます。',
   partsCpu: 'CPU',
   partsMemory: 'メモリ',
-  partsDisk: 'ディスク',
+  partsDisk: 'IOPS',
   openShop: 'パーツカタログを開く',
   partsAppDisk: 'App Server のディスクはスワップです。スワップパーツはまだ販売していません。',
   partsMemoryHint:

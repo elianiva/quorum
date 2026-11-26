@@ -84,7 +84,7 @@ export const inspector: Messages['inspector'] = {
     'Compra una CPU, un kit de memoria o un volumen. Cada estante muestra lo que cuesta y lo que suma al burn.',
   partsCpu: 'CPU',
   partsMemory: 'Memoria',
-  partsDisk: 'Disco',
+  partsDisk: 'IOPS',
   openShop: 'Abrir catálogo de piezas',
   partsAppDisk: 'El disco del App Server es swap. Aún no se venden piezas de swap.',
   partsMemoryHint: 'El kit fija los GB por vCPU. La ranura RAM muestra lo que recibe esta CPU.',

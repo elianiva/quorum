@@ -89,7 +89,7 @@ export const inspector = {
     'Buy a CPU, a memory kit, or a volume. Each shelf shows what it costs and what it adds to Burn.',
   partsCpu: 'CPU',
   partsMemory: 'Memory',
-  partsDisk: 'Disk',
+  partsDisk: 'IOPS',
   openShop: 'Open parts catalog',
   partsAppDisk: 'The App Server disk is swap. Swap parts are not sold yet.',
   partsMemoryHint: 'A kit sets the GB per vCPU. The RAM slot shows what this CPU gets.',

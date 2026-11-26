@@ -199,7 +199,7 @@ export const slotsOf = (
     },
     {
       kind: 'disk',
-      label: 'DISK',
+      label: 'IOPS',
       value: disk,
       empty: node.type !== 'database' || !diskPresent,
       tone:

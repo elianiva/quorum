@@ -15,6 +15,8 @@ import {
   placingOf,
   playingId,
   roomLive,
+  roomCode,
+  onlineFileOf,
   stampedPlaybook,
   boardChallenge,
   ANNOTATION_GROUPS,
@@ -242,6 +244,8 @@ export const savePayloadOf = (model: Model, board: Board = model.board) => ({
 const saveOf = (model: Model, closing = false): AnyCommand | null => {
   const id = playingId(model)
   if (id === null || !fileOf(savesOf(model.saves), id)) return null
+  const code = roomCode(model)
+  if (code !== null && onlineFileOf(model, code) === null) return null
   const board = offCompany(model) ? model.parkedCompany : model.board
   if (board === null) return null
   return WriteCompany({

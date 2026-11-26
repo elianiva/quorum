@@ -1,5 +1,6 @@
 import { AppRoute } from '../route.ts'
 import { record } from '../history.ts'
+import { EMPTY_INBOX } from '../inbox.ts'
 import {
   currentFile,
   hasCompany,
@@ -126,6 +127,10 @@ const received = (model: Model, message: ServerMessage): UpdateResult =>
       const next: Model = {
         ...shown,
         panel: first ? 'none' : shown.panel,
+        board:
+          first && frame.seat !== frame.owner
+            ? { ...shown.board, inbox: EMPTY_INBOX }
+            : shown.board,
         room: {
           ...model.room,
           phase: roomStep(model.room.phase, {

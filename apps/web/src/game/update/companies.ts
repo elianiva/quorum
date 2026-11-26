@@ -170,9 +170,20 @@ const applyCompany = (
   const aside = offCompany(model)
   const held = aside ? (model.parkedCompany ?? model.board) : model.board
   const companyBoard: Board = {
-    ...held,
+    ...freshBoard(played),
+    session: held.session,
+    surface: held.surface,
+    clipboard: held.clipboard,
+    screenshot: held.screenshot,
     disclosure: disclosureOfSave(file),
-    dashboard: { ...held.dashboard, history: historyOfSave(file) },
+    dashboard: {
+      ...freshBoard(played).dashboard,
+      range: held.dashboard.range,
+      groups: held.dashboard.groups,
+      compare: held.dashboard.compare,
+      table: held.dashboard.table,
+      history: historyOfSave(file),
+    },
     game: played,
     inbox,
     clock: { ...held.clock, savedAt: played.time, sampledAt: played.time },

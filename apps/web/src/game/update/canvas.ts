@@ -199,6 +199,7 @@ export const canvasHandlers = (
   NodeTapped: ({ nodeId }) => {
     const next: Model = {
       ...model,
+      panel: model.panel === 'inbox' ? 'none' : model.panel,
       runtimePicker: initStackPicker(),
       frameworkPicker: initStackPicker(),
       board: {

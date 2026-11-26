@@ -1,5 +1,6 @@
 import { startAnalytics } from './platform/analytics.ts'
 import { startTheme } from './theme.ts'
+import 'katex/dist/katex.min.css'
 import './styles.css'
 
 startTheme()

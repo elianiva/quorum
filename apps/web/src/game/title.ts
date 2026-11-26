@@ -27,6 +27,7 @@ import {
   type IconNode,
 } from 'lucide'
 import { css, cx } from '@quorum/styled-system/css'
+import * as S from './title-styles.ts'
 import { icon } from '@quorum/ui/primitives/icon'
 import { githubMark } from '@quorum/ui/primitives/github'
 import { button } from '@quorum/ui/primitives/button'
@@ -786,7 +787,7 @@ const wordmark = (className: string, h: HtmlBuilder<Message>): Html =>
   h.svg(
     [
       h.ViewBox('0 0 720 194'),
-      h.Class(cx('qm-mark', className)),
+      h.Class(cx(S.MARK, className)),
       h.Role('img'),
       h.AriaLabel('Quorum'),
     ],
@@ -805,7 +806,7 @@ const wordmark = (className: string, h: HtmlBuilder<Message>): Html =>
     ],
   )
 
-const glyph = (node: IconNode, h: HtmlBuilder<Message>) => icon(h, node, 'qm-icon')
+const glyph = (node: IconNode, h: HtmlBuilder<Message>) => icon(h, node, S.ICON)
 
 const hidden = css({
   position: 'absolute',
@@ -855,7 +856,7 @@ const line = (r: Line, h: HtmlBuilder<Message>): Html =>
       h.Style({ '--i': `${r.index ?? 0}` }),
       h.Class(
         cx(
-          'qm-line',
+          S.LINE,
           r.danger && 'is-danger',
           r.open && 'is-open',
           !r.hotkey && !r.pick && !r.lead && 'is-bare',
@@ -864,21 +865,21 @@ const line = (r: Line, h: HtmlBuilder<Message>): Html =>
     ],
     [
       r.hotkey
-        ? h.span([h.Class('qm-num'), h.AriaHidden(true)], [`${r.hotkey}`.padStart(2, '0')])
+        ? h.span([h.Class(S.NUM), h.AriaHidden(true)], [`${r.hotkey}`.padStart(2, '0')])
         : r.pick
           ? h.span(
-              [h.Class(cx('qm-tick', `is-${r.pick}`)), h.AriaHidden(true)],
+              [h.Class(cx(S.TICK, `is-${r.pick}`)), h.AriaHidden(true)],
               [r.checked ? glyph(Check, h) : ''],
             )
           : (r.lead ?? h.empty),
       h.span(
-        [h.Class('qm-text')],
+        [h.Class(S.TEXT)],
         [
-          h.span([h.Class('qm-label')], [r.label]),
-          r.detail ? h.span([h.Class('qm-detail')], [r.detail]) : h.empty,
+          h.span([h.Class(S.LABEL)], [r.label]),
+          r.detail ? h.span([h.Class(S.DETAIL)], [r.detail]) : h.empty,
         ],
       ),
-      r.figure === undefined ? h.empty : h.span([h.Class('qm-figure')], [r.figure]),
+      r.figure === undefined ? h.empty : h.span([h.Class(S.FIGURE)], [r.figure]),
     ],
   )
 
@@ -894,14 +895,14 @@ const record = (
       h.Tabindex(-1),
       h.DataAttribute('nav', ''),
       h.DataAttribute('key', r.key),
-      h.Class('qm-line is-record is-bare'),
+      h.Class(cx(S.LINE, 'is-record is-bare')),
     ],
     [
       h.span(
-        [h.Class('qm-text')],
-        [h.span([h.Class('qm-label')], [r.label]), h.span([h.Class('qm-detail')], [r.detail])],
+        [h.Class(S.TEXT)],
+        [h.span([h.Class(S.LABEL)], [r.label]), h.span([h.Class(S.DETAIL)], [r.detail])],
       ),
-      h.span([h.Class('qm-figure')], [r.figure]),
+      h.span([h.Class(S.FIGURE)], [r.figure]),
     ],
   )
 
@@ -935,22 +936,19 @@ const tile = (
       ...(state === 'done' || state === 'locked'
         ? [h.AriaDescription(state === 'done' ? t.title.earned : t.title.notYet)]
         : []),
-      h.Class(cx('qm-tile', `is-${state}`, r.checked && 'is-on')),
+      h.Class(cx(S.TILE, `is-${state}`, r.checked && 'is-on')),
     ],
     [
       h.span(
-        [h.Class('qm-tile-head')],
+        [h.Class(S.TILE_HEAD)],
         [
           r.mark ?? h.empty,
-          h.span([h.Class('qm-tile-name')], [r.label]),
+          h.span([h.Class(S.TILE_NAME)], [r.label]),
           h.span(
-            [h.Class('qm-tile-state'), h.AriaHidden(true)],
+            [h.Class(S.TILE_STATE), h.AriaHidden(true)],
             [
               r.pick
-                ? h.span(
-                    [h.Class(cx('qm-tick', `is-${r.pick}`))],
-                    [r.checked ? glyph(Check, h) : ''],
-                  )
+                ? h.span([h.Class(cx(S.TICK, `is-${r.pick}`))], [r.checked ? glyph(Check, h) : ''])
                 : state === 'done'
                   ? glyph(Check, h)
                   : state === 'locked'
@@ -962,8 +960,8 @@ const tile = (
           ),
         ],
       ),
-      r.detail ? h.span([h.Class('qm-tile-detail')], [r.detail]) : h.empty,
-      r.figure ? h.span([h.Class('qm-tile-figure')], [r.figure]) : h.empty,
+      r.detail ? h.span([h.Class(S.TILE_DETAIL)], [r.detail]) : h.empty,
+      r.figure ? h.span([h.Class(S.TILE_FIGURE)], [r.figure]) : h.empty,
     ],
   )
 }
@@ -975,17 +973,17 @@ const section = (
   grid = false,
 ): Html =>
   h.section(
-    [h.Key(`section-${title}`), h.Class('qm-section')],
+    [h.Key(`section-${title}`), h.Class(S.SECTION)],
     [
-      h.h2([h.Class('qm-eyebrow')], [title]),
+      h.h2([h.Class(S.EYEBROW)], [title]),
       grid
-        ? h.div([h.Class('qm-grid'), h.DataAttribute('grid', '')], body)
-        : h.div([h.Class('qm-bus')], body),
+        ? h.div([h.Class(S.GRID), h.DataAttribute('grid', '')], body)
+        : h.div([h.Class(S.BUS)], body),
     ],
   )
 
 const note = (text: string, h: HtmlBuilder<Message>): Html =>
-  h.p([h.Key(`note-${text}`), h.Class('qm-note')], [text])
+  h.p([h.Key(`note-${text}`), h.Class(S.NOTE)], [text])
 
 /* ==========================================================================
    Main page
@@ -1002,34 +1000,31 @@ const readout = (model: Model, h: HtmlBuilder<Message>): Html => {
   const share = Math.round(Math.min(1, game.users / era.raiseAt) * 100)
   const vital = (label: string, value: string, extra = '') =>
     h.div(
-      [h.Class('qm-vital')],
+      [h.Class(S.VITAL)],
       [
         h.dt([], [label]),
-        h.dd([], [value, extra ? h.span([h.Class('qm-vital-of')], [extra]) : h.empty]),
+        h.dd([], [value, extra ? h.span([h.Class(S.VITAL_OF)], [extra]) : h.empty]),
       ],
     )
   return h.section(
-    [h.Class('qm-readout'), h.AriaLabel(file?.name ?? t.title.company)],
+    [h.Class(S.READOUT), h.AriaLabel(file?.name ?? t.title.company)],
     [
       h.div(
-        [h.Class('qm-readout-head')],
+        [h.Class(S.READOUT_HEAD)],
         [
-          file ? companyMark(file.logo, 'qm-logo', h) : h.empty,
+          file ? companyMark(file.logo, S.LOGO, h) : h.empty,
           h.div(
-            [h.Class('qm-readout-title')],
+            [h.Class(S.READOUT_TITLE)],
             [
-              h.span([h.Class('qm-readout-name')], [file?.name ?? eraWords(t, game).name]),
-              h.span(
-                [h.Class('qm-readout-era')],
-                [`${eraWords(t, game).name} · ${clock(game.time)}`],
-              ),
+              h.span([h.Class(S.READOUT_NAME)], [file?.name ?? eraWords(t, game).name]),
+              h.span([h.Class(S.READOUT_ERA)], [`${eraWords(t, game).name} · ${clock(game.time)}`]),
             ],
           ),
         ],
       ),
-      progress({ value: share, label: eraWords(t, game).name, className: 'qm-raise' }, h),
+      progress({ value: share, label: eraWords(t, game).name, className: S.FULL }, h),
       h.dl(
-        [h.Class('qm-vitals')],
+        [h.Class(S.VITALS)],
         [
           vital(t.hud.cash, money(game.cash)),
           vital(t.hud.users, compact(game.users)),
@@ -1041,7 +1036,7 @@ const readout = (model: Model, h: HtmlBuilder<Message>): Html => {
         {
           onClick: Message.Continued(),
           size: 'lg',
-          className: 'qm-cta',
+          className: S.CTA,
           attributes: [
             h.DataAttribute('nav', ''),
             h.DataAttribute('key', 'continue'),
@@ -1059,13 +1054,13 @@ const readout = (model: Model, h: HtmlBuilder<Message>): Html => {
 const firstRun = (open: boolean, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.section(
-    [h.Class('qm-readout is-empty')],
+    [h.Class(cx(S.READOUT, 'is-empty'))],
     [
       button(
         {
           onClick: Message.MenuChosen({ menu: 'found' }),
           size: 'lg',
-          className: cx('qm-cta', open && 'is-open'),
+          className: cx(S.CTA, open && 'is-open'),
           attributes: [
             h.DataAttribute('nav', ''),
             h.DataAttribute('key', 'start'),
@@ -1217,7 +1212,7 @@ const mainIndex = (model: Model, h: HtmlBuilder<Message>): Html => {
     ),
   ]
   return h.nav(
-    [h.Class('qm-index'), h.AriaLabel(t.title.mainMenu)],
+    [h.Class(S.INDEX), h.AriaLabel(t.title.mainMenu)],
     [
       ...notices(model, h),
       section(t.title.company, company, h),
@@ -1230,12 +1225,12 @@ const mainIndex = (model: Model, h: HtmlBuilder<Message>): Html => {
 
 const mainPage = (model: Model, h: HtmlBuilder<Message>): Html =>
   h.div(
-    [h.Class('qm-main')],
+    [h.Class(S.MAIN)],
     [
       h.div(
-        [h.Class('qm-hero')],
+        [h.Class(S.HERO)],
         [
-          h.h1([h.Class('qm-hero-title')], [wordmark('is-hero', h)]),
+          h.h1([h.Class(S.HERO_TITLE)], [wordmark('is-hero', h)]),
           hasCompany(model) ? readout(model, h) : firstRun(menuOf(model.route) === 'found', h),
         ],
       ),
@@ -1253,11 +1248,11 @@ const companyStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
   const t = copy(h)
   return [
     h.label(
-      [h.Key('name'), h.Class('qm-field')],
+      [h.Key('name'), h.Class(S.FIELD)],
       [
-        h.span([h.Class('qm-eyebrow')], [t.title.companyName]),
+        h.span([h.Class(S.EYEBROW)], [t.title.companyName]),
         h.input([
-          h.Class(cx(inputClass, 'qm-input')),
+          h.Class(cx(inputClass, S.NAME_INPUT)),
           h.Type('text'),
           h.Value(model.draft.name),
           h.Placeholder(t.title.nameYourCompany),
@@ -1278,7 +1273,7 @@ const companyStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
           {
             key: `logo-${logo.id}`,
             label: t.logos[logo.id],
-            mark: companyMark(logo.id, 'qm-logo is-small', h),
+            mark: companyMark(logo.id, S.LOGO_SMALL, h),
             pick: 'radio',
             checked: model.draft.logo === logo.id,
             message: Message.LogoChosen({ logo: logo.id }),
@@ -1297,7 +1292,7 @@ const ventureStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
   const founding = foundingOf(model.founder)
   return [
     h.div(
-      [h.Class('qm-grid'), h.DataAttribute('grid', '')],
+      [h.Class(S.GRID), h.DataAttribute('grid', '')],
       VENTURE_IDS.map((id) => {
         const def = localized(VENTURES[id], t.catalog.ventures[id])
         return tile(
@@ -1322,7 +1317,7 @@ const mutatorStep = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
   const founding = foundingOf(model.founder)
   return [
     h.div(
-      [h.Class('qm-grid'), h.DataAttribute('grid', '')],
+      [h.Class(S.GRID), h.DataAttribute('grid', '')],
       MUTATOR_IDS.map((id) =>
         tile(
           {
@@ -1372,40 +1367,40 @@ const foundStages = (model: Model, h: HtmlBuilder<Message>): Html => {
         : `${picked.slice(0, 2).join(' · ')}${picked.length > 2 ? ` +${picked.length - 2}` : ''}`,
   }
   return h.ol(
-    [h.Key('stages'), h.Class('qm-phases'), h.AriaLabel(t.title.newCompany)],
+    [h.Key('stages'), h.Class(S.PHASES), h.AriaLabel(t.title.newCompany)],
     FOUND_STEPS.map((step, index) => {
       const open = index === at
       const done = index < at
       const head = [
         h.span(
-          [h.Class('qm-phase-node'), h.AriaHidden(true)],
+          [h.Class(S.PHASE_NODE), h.AriaHidden(true)],
           [done ? glyph(Check, h) : `${index + 1}`],
         ),
-        h.span([h.Class('qm-phase-label')], [label[step]]),
+        h.span([h.Class(S.PHASE_LABEL)], [label[step]]),
         /* Only a station already answered carries its value. */
-        done && value[step] ? h.span([h.Class('qm-phase-value')], [value[step]!]) : h.empty,
+        done && value[step] ? h.span([h.Class(S.PHASE_VALUE)], [value[step]!]) : h.empty,
         open
           ? h.empty
-          : h.span([h.Class('qm-phase-go'), h.AriaHidden(true)], [glyph(ChevronRight, h)]),
+          : h.span([h.Class(S.PHASE_GO), h.AriaHidden(true)], [glyph(ChevronRight, h)]),
       ]
       return h.li(
-        [h.Key(step), h.Class(cx('qm-phase', open && 'is-open', done && 'is-done'))],
+        [h.Key(step), h.Class(cx(S.PHASE, open && 'is-open', done && 'is-done'))],
         [
           /* The open station is not a control: it is where you are. */
           open
-            ? h.div([h.Class('qm-phase-head'), h.AriaCurrent('step')], head)
+            ? h.div([h.Class(S.PHASE_HEAD), h.AriaCurrent('step')], head)
             : h.button(
                 [
                   h.Type('button'),
                   h.DataAttribute('nav', ''),
                   h.DataAttribute('key', `step-${step}`),
                   h.OnClick(Message.FoundStepChosen({ step })),
-                  h.Class('qm-phase-head'),
+                  h.Class(S.PHASE_HEAD),
                 ],
                 head,
               ),
           open
-            ? h.div([h.Class('qm-phase-body'), h.OnMount(PageMounted())], stageBody(model, step, h))
+            ? h.div([h.Class(S.PHASE_BODY), h.OnMount(PageMounted())], stageBody(model, step, h))
             : h.empty,
         ],
       )
@@ -1429,18 +1424,18 @@ const foundFoot = (model: Model, h: HtmlBuilder<Message>): Html => {
   }
   const next = ahead[model.foundStep]
   return h.footer(
-    [h.Class('qm-foot')],
+    [h.Class(S.FOOT)],
     [
       h.div(
-        [h.Class('qm-preview'), h.AriaLive('polite')],
+        [h.Class(S.PREVIEW), h.AriaLive('polite')],
         [
-          companyMark(model.draft.logo, 'qm-logo', h),
+          companyMark(model.draft.logo, S.LOGO, h),
           h.span(
-            [h.Class('qm-text')],
+            [h.Class(S.TEXT)],
             [
-              h.span([h.Class('qm-label')], [nameOr(model.draft.name)]),
+              h.span([h.Class(S.LABEL)], [nameOr(model.draft.name)]),
               h.span(
-                [h.Class('qm-detail')],
+                [h.Class(S.DETAIL)],
                 [t.title.legacy2(startEra(founding), legacyMultiplier(founding).toFixed(2))],
               ),
             ],
@@ -1448,14 +1443,14 @@ const foundFoot = (model: Model, h: HtmlBuilder<Message>): Html => {
         ],
       ),
       h.div(
-        [h.Class('qm-foot-actions')],
+        [h.Class(S.FOOT_ACTIONS)],
         next
           ? [
               button(
                 {
                   onClick: Message.FoundStepChosen({ step: next.step }),
                   size: 'lg',
-                  className: 'qm-cta',
+                  className: S.CTA,
                   attributes: [h.DataAttribute('nav', ''), h.DataAttribute('key', 'next')],
                 },
                 [h.span([], [`${t.title.next}: ${next.label}`]), glyph(ChevronRight, h)],
@@ -1468,7 +1463,7 @@ const foundFoot = (model: Model, h: HtmlBuilder<Message>): Html => {
                   onClick: Message.PreseedStarted(),
                   size: 'lg',
                   variant: 'outline',
-                  className: 'qm-cta',
+                  className: S.CTA,
                   attributes: [
                     h.DataAttribute('nav', ''),
                     h.DataAttribute('key', 'preseed'),
@@ -1483,7 +1478,7 @@ const foundFoot = (model: Model, h: HtmlBuilder<Message>): Html => {
                 {
                   onClick: Message.CompanyFounded(),
                   size: 'lg',
-                  className: 'qm-cta',
+                  className: S.CTA,
                   attributes: [h.DataAttribute('nav', ''), h.DataAttribute('key', 'found')],
                 },
                 [h.span([], [t.title.found(nameOr(model.draft.name))]), glyph(ChevronRight, h)],
@@ -1508,12 +1503,12 @@ const companiesBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Htm
   if (savesOf(model.saves).companies.length === 0) return [note(t.title.noCompaniesSavedYet, h)]
   return [
     h.div(
-      [h.Class('qm-bus')],
+      [h.Class(S.BUS)],
       recent(savesOf(model.saves).companies).map((file, index) =>
         line(
           {
             key: file.id,
-            lead: companyMark(file.logo, 'qm-logo is-small', h),
+            lead: companyMark(file.logo, S.LOGO_SMALL, h),
             label: file.name,
             detail: fileLine(file, h),
             figure:
@@ -1546,22 +1541,19 @@ const saveBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
   })
   return [
     h.div(
-      [h.Class('qm-file')],
+      [h.Class(S.FILE)],
       [
-        companyMark(file.logo, 'qm-logo is-large', h),
+        companyMark(file.logo, S.LOGO_LARGE, h),
         h.dl(
-          [h.Class('qm-vitals is-file')],
+          [h.Class(cx(S.VITALS, 'is-file'))],
           [
             h.div(
-              [h.Class('qm-vital')],
+              [h.Class(S.VITAL)],
               [h.dt([], [t.title.venture]), h.dd([], [t.catalog.ventures[file.venture].name])],
             ),
+            h.div([h.Class(S.VITAL)], [h.dt([], [t.hud.users]), h.dd([], [compact(file.users)])]),
             h.div(
-              [h.Class('qm-vital')],
-              [h.dt([], [t.hud.users]), h.dd([], [compact(file.users)])],
-            ),
-            h.div(
-              [h.Class('qm-vital')],
+              [h.Class(S.VITAL)],
               [h.dt([], [t.title.mutators]), h.dd([], [`${file.mutators.length}`])],
             ),
           ],
@@ -1569,7 +1561,7 @@ const saveBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> =>
       ],
     ),
     h.div(
-      [h.Class('qm-bus')],
+      [h.Class(S.BUS)],
       [
         line(
           {
@@ -1652,7 +1644,7 @@ const sandboxBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
       )
     }),
     h.div(
-      [h.Key('free'), h.Class('qm-bus')],
+      [h.Key('free'), h.Class(S.BUS)],
       [
         line(
           {
@@ -1717,7 +1709,7 @@ const legacyBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> 
   const t = copy(h)
   return [
     h.div(
-      [h.Class('qm-bus')],
+      [h.Class(S.BUS)],
       PERK_IDS.map((id) => {
         const def = localized(PERKS[id], t.catalog.perks[id])
         const price = perkPrice(model.founder, id)
@@ -1728,7 +1720,7 @@ const legacyBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html> 
             label: def.name,
             detail: def.effect,
             lead: h.span(
-              [h.Class('qm-pips'), h.AriaLabel(`${level}/${def.costs.length}`), h.Role('img')],
+              [h.Class(S.PIPS), h.AriaLabel(`${level}/${def.costs.length}`), h.Role('img')],
               def.costs.map((_, index) => h.span([h.Class(index < level ? 'is-on' : '')], [])),
             ),
             figure: price === null ? glyph(Check, h) : t.title.legacy(price),
@@ -1747,7 +1739,7 @@ const historyBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
   if (model.founder.history.length === 0) return [note(t.title.noExitsYet, h)]
   return [
     h.ol(
-      [h.Class('qm-bus')],
+      [h.Class(S.BUS)],
       model.founder.history
         .map((entry, index) => {
           const exit = t.catalog.exits[entry.exit].name
@@ -1775,12 +1767,12 @@ const achievementsBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<
       {
         value: Math.round((earned.length / ACHIEVEMENT_IDS.length) * 100),
         label: t.title.achievements,
-        className: 'qm-meter',
+        className: S.FULL,
       },
       h,
     ),
     h.div(
-      [h.Class('qm-grid'), h.DataAttribute('grid', '')],
+      [h.Class(S.GRID), h.DataAttribute('grid', '')],
       [...ACHIEVEMENT_IDS]
         .sort((a, b) => Number(earned.includes(b)) - Number(earned.includes(a)))
         .map((id) => {
@@ -1795,20 +1787,20 @@ const achievementsBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<
               h.AriaLabel(
                 `${t.catalog.achievements[id].name}. ${t.catalog.achievements[id].condition}. ${isEarned ? t.title.earned : t.title.notYet}`,
               ),
-              h.Class(cx('qm-tile is-badge', isEarned ? 'is-done' : 'is-locked')),
+              h.Class(cx(S.TILE, 'is-badge', isEarned ? 'is-done' : 'is-locked')),
             ],
             [
               h.span(
-                [h.Class('qm-tile-head')],
+                [h.Class(S.TILE_HEAD)],
                 [
-                  h.span([h.Class('qm-tile-name')], [t.catalog.achievements[id].name]),
+                  h.span([h.Class(S.TILE_NAME)], [t.catalog.achievements[id].name]),
                   h.span(
-                    [h.Class('qm-tile-state'), h.AriaHidden(true)],
+                    [h.Class(S.TILE_STATE), h.AriaHidden(true)],
                     [glyph(isEarned ? Check : Lock, h)],
                   ),
                 ],
               ),
-              h.span([h.Class('qm-tile-detail')], [t.catalog.achievements[id].condition]),
+              h.span([h.Class(S.TILE_DETAIL)], [t.catalog.achievements[id].condition]),
             ],
           )
         }),
@@ -1821,7 +1813,7 @@ const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Ht
   switch (setting.kind) {
     case 'volume':
       return h.div(
-        [h.Key('volume'), h.Class('qm-setting is-volume')],
+        [h.Key('volume'), h.Class(cx(S.SETTING, 'is-volume'))],
         [
           h.submodel({
             slotId: 'volume',
@@ -1834,7 +1826,7 @@ const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Ht
                 label: setting.label,
                 formatValue: (value) => `${value}%`,
                 isDisabled: model.prefs.muted,
-                thumbClass: 'qm-thumb',
+                thumbClass: S.THUMB_FOCUS,
               },
               h,
             ),
@@ -1843,7 +1835,7 @@ const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Ht
       )
     case 'toggle':
       return h.div(
-        [h.Key(setting.id), h.Class('qm-setting')],
+        [h.Key(setting.id), h.Class(S.SETTING)],
         [
           switch_(
             {
@@ -1851,10 +1843,9 @@ const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Ht
               label: setting.label,
               isChecked: setting.isOn,
               onToggle: () => setting.message,
-              className: 'qm-switch',
-              wrapperClass: 'qm-switch-row',
+              className: S.FOCUS_OUTLINE,
+              wrapperClass: S.SWITCH_ROW,
               textClass: css({ flex: '1 1 0%', minWidth: '0' }),
-              labelClass: 'qm-label',
             },
             h,
           ),
@@ -1862,9 +1853,9 @@ const settingRow = (setting: Setting, model: Model, h: HtmlBuilder<Message>): Ht
       )
     case 'language':
       return h.div(
-        [h.Key('language'), h.Class('qm-setting is-split')],
+        [h.Key('language'), h.Class(cx(S.SETTING, 'is-split'))],
         [
-          h.span([h.Class('qm-label')], [t.panels.language]),
+          h.span([h.Class(S.LABEL)], [t.panels.language]),
           languagePicker(model.prefs.locale, model.languagePicker, h),
         ],
       )
@@ -1904,7 +1895,7 @@ const settingsBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html
   }
   return [
     h.div(
-      [h.Key('sections'), h.Class('qm-bus')],
+      [h.Key('sections'), h.Class(S.BUS)],
       sections.map((part) =>
         line(
           {
@@ -1928,7 +1919,7 @@ const settingBody = (model: Model, h: HtmlBuilder<Message>): ReadonlyArray<Html>
   const open = sections.find((part) => part.id === model.settingsSection) ?? sections[0]!
   return [
     h.div(
-      [h.Key(`rows-${open.id}`), h.Class('qm-bus is-settings')],
+      [h.Key(`rows-${open.id}`), h.Class(S.BUS)],
       open.rows.map((setting) => settingRow(setting, model, h)),
     ),
   ]
@@ -1999,10 +1990,10 @@ const subPage = (model: Model, page: Exclude<Page, 'main'>, h: HtmlBuilder<Messa
   const t = copy(h)
   const def = pagesOf(model, h)[page]
   return h.div(
-    [h.Class('qm-sub')],
+    [h.Class(S.SUB)],
     [
       h.header(
-        [h.Class('qm-sub-head')],
+        [h.Class(S.SUB_HEAD)],
         [
           button(
             {
@@ -2013,7 +2004,7 @@ const subPage = (model: Model, page: Exclude<Page, 'main'>, h: HtmlBuilder<Messa
                     ? Message.SettingsSectionClosed()
                     : Message.MenuChosen({ menu: 'main' }),
               variant: 'ghost',
-              className: 'qm-back',
+              className: S.BACK,
               attributes: [h.DataAttribute('back', ''), h.AriaKeyshortcuts('Escape')],
             },
             [
@@ -2031,11 +2022,11 @@ const subPage = (model: Model, page: Exclude<Page, 'main'>, h: HtmlBuilder<Messa
             ],
             h,
           ),
-          h.h1([h.Class('qm-sub-title')], [def.title]),
-          def.figure ? h.span([h.Class('qm-sub-figure')], [def.figure(model, h)]) : h.empty,
+          h.h1([h.Class(S.SUB_TITLE)], [def.title]),
+          def.figure ? h.span([h.Class(S.SUB_FIGURE)], [def.figure(model, h)]) : h.empty,
         ],
       ),
-      h.div([h.Class('qm-sub-body')], def.body(model, h)),
+      h.div([h.Class(S.SUB_BODY)], def.body(model, h)),
       page === 'found' ? foundFoot(model, h) : h.empty,
     ],
   )
@@ -2092,7 +2083,7 @@ const column = (
       h.Key(depth === 0 ? 'root' : memory),
       h.Class(
         cx(
-          'qm-page',
+          S.PAGE,
           page === 'main' ? 'is-main' : 'is-sub',
           (page === 'settings' || page === 'companies') && 'is-list',
           open && 'is-active',
@@ -2112,13 +2103,13 @@ const column = (
 const screen = (model: Model, h: HtmlBuilder<Message>): Html => {
   const trail = trailOf(pageOf(model))
   return h.div(
-    [h.Key('stage'), h.Class('qm-stage'), h.OnMount(TreeCamera())],
+    [h.Key('stage'), h.Class(S.STAGE), h.OnMount(TreeCamera())],
     [
       h.div(
-        [h.Class('qm-world'), h.DataAttribute('depth', `${trail.length - 1}`)],
+        [h.Class(S.WORLD), h.DataAttribute('depth', `${trail.length - 1}`)],
         [
-          h.svg([h.Key('wires'), h.Class('qm-wires'), h.AriaHidden(true)], []),
-          h.div([h.Key('ghosts'), h.Class('qm-ghosts'), h.AriaHidden(true), h.Inert(true)], []),
+          h.svg([h.Key('wires'), h.Class(S.WIRES), h.AriaHidden(true)], []),
+          h.div([h.Key('ghosts'), h.Class(S.GHOSTS), h.AriaHidden(true), h.Inert(true)], []),
           ...trail.map((page, depth) => column(model, page, depth, depth === trail.length - 1, h)),
         ],
       ),
@@ -2141,7 +2132,7 @@ const toolLink = (
       h.Rel('noreferrer noopener'),
       h.AriaLabel(r.label),
       h.Title(r.label),
-      h.Class(cx('qm-tool', r.wide && 'is-wide')),
+      h.Class(cx(S.TOOL, r.wide && 'is-wide')),
     ],
     r.body,
   )
@@ -2151,17 +2142,17 @@ const toolbar = (h: HtmlBuilder<Message>): Html => {
   const release = import.meta.env.VITE_SENTRY_RELEASE
   const build = release === undefined || release === '' ? 'dev' : release.slice(0, 7)
   return h.header(
-    [h.Class('qm-bar')],
+    [h.Class(S.BAR)],
     [
       h.span([], []),
       h.nav(
-        [h.Class('qm-tools'), h.AriaLabel(t.title.taskbar)],
+        [h.Class(S.TOOLS), h.AriaLabel(t.title.taskbar)],
         [
           toolLink(
             {
               href: build === 'dev' ? SOURCE_URL : `${SOURCE_URL}/commit/${release}`,
               label: `${t.title.build} ${build}`,
-              body: [h.span([h.Class('qm-build')], [build])],
+              body: [h.span([h.Class(S.BUILD)], [build])],
               wide: true,
             },
             h,
@@ -2170,10 +2161,7 @@ const toolbar = (h: HtmlBuilder<Message>): Html => {
             {
               href: 'https://github.com/elianiva/quorum/issues',
               label: t.title.feedback,
-              body: [
-                h.span([h.Class('qm-tool-label')], [t.title.feedback]),
-                glyph(ArrowUpRight, h),
-              ],
+              body: [h.span([h.Class(S.TOOL_LABEL)], [t.title.feedback]), glyph(ArrowUpRight, h)],
               wide: true,
             },
             h,
@@ -2190,7 +2178,7 @@ const toolbar = (h: HtmlBuilder<Message>): Html => {
             {
               href: SOURCE_URL,
               label: t.title.openSourceOnGitHub,
-              body: [githubMark(h, 'qm-icon')],
+              body: [githubMark(h, S.ICON)],
             },
             h,
           ),
@@ -2208,17 +2196,17 @@ const dock = (model: Model, page: Page, h: HtmlBuilder<Message>): Html => {
     ...(page === 'main' ? [] : ([[t.title.esc, t.title.back]] as const)),
   ]
   return h.footer(
-    [h.Class('qm-dock')],
+    [h.Class(S.DOCK)],
     [
       h.div(
-        [h.Class('qm-keys'), h.AriaHidden(true)],
+        [h.Class(S.KEYS), h.AriaHidden(true)],
         keys.map(([key, label]) =>
-          h.span([h.Class('qm-key')], [Kbd({}, [key], h), h.span([], [label])]),
+          h.span([h.Class(S.KEY)], [Kbd({}, [key], h), h.span([], [label])]),
         ),
       ),
       h.a(
         [
-          h.Class('qm-disclaimer'),
+          h.Class(S.DISCLAIMER),
           h.Href(DISCLAIMER_URL),
           h.Target('_blank'),
           h.Rel('noreferrer noopener'),
@@ -2226,18 +2214,18 @@ const dock = (model: Model, page: Page, h: HtmlBuilder<Message>): Html => {
         [t.title.quorumIsAGameAndSimplifies],
       ),
       h.nav(
-        [h.Class('qm-dock-tools')],
+        [h.Class(S.DOCK_TOOLS)],
         [
           toolLink(
             {
               href: WIKI_URL,
               label: t.title.wiki,
-              body: [glyph(BookOpen, h), h.span([h.Class('qm-tool-label')], [t.title.wiki])],
+              body: [glyph(BookOpen, h), h.span([h.Class(S.TOOL_LABEL)], [t.title.wiki])],
               wide: true,
             },
             h,
           ),
-          h.span([h.Class('qm-clock'), h.OnMount(WallClock())], ['--:--']),
+          h.span([h.Class(S.CLOCK), h.OnMount(WallClock())], ['--:--']),
         ],
       ),
     ],
@@ -2272,15 +2260,15 @@ const connectStatus = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const [host, detail] = sessionOf(model)
   return h.div(
-    [h.Key('connect'), h.Class('qm-connect'), h.Role('status')],
+    [h.Key('connect'), h.Class(S.CONNECT), h.Role('status')],
     [
       h.div(
-        [h.Class('qm-connect-card')],
+        [h.Class(S.CONNECT_CARD)],
         [
-          h.span([h.Class('qm-connect-host')], [`$ ssh ${host}`]),
-          h.span([h.Class('qm-detail')], [detail]),
-          h.span([h.Class('qm-connect-line'), h.AriaHidden(true)], []),
-          h.span([h.Class('qm-connect-ok')], [t.title.connected]),
+          h.span([h.Class(S.CONNECT_HOST)], [`$ ssh ${host}`]),
+          h.span([h.Class(S.DETAIL)], [detail]),
+          h.span([h.Class(S.CONNECT_LINE), h.AriaHidden(true)], []),
+          h.span([h.Class(S.CONNECT_OK)], [t.title.connected]),
         ],
       ),
     ],
@@ -2290,7 +2278,7 @@ const connectStatus = (model: Model, h: HtmlBuilder<Message>): Html => {
 const menu = (model: Model, h: HtmlBuilder<Message>): Html => {
   const page = pageOf(model)
   return h.div(
-    [h.Key('menu'), h.Class('qm'), h.OnMount(MenuDriver())],
+    [h.Key('menu'), h.Class(S.FRAME), h.OnMount(MenuDriver())],
     [
       toolbar(h),
       screen(model, h),
@@ -2311,48 +2299,48 @@ const splash = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const clocking = model.boot._tag === 'Clocking'
   return h.div(
-    [h.Key('splash'), h.Class('reader-splash')],
+    [h.Key('splash'), h.Class(S.SPLASH)],
     [
       h.h1([h.Class(hidden)], ['Quorum']),
       h.div(
-        [h.Class(cx('reader', clocking && 'is-in'))],
+        [h.Class(cx(S.READER, clocking && 'is-in'))],
         [
           h.div(
-            [h.Class('reader-body')],
+            [h.Class(S.READER_BODY)],
             [
               ...['is-tl', 'is-tr', 'is-bl', 'is-br'].map((at) =>
-                h.span([h.Class(cx('reader-screw', at))], []),
+                h.span([h.Class(cx(S.READER_SCREW, at))], []),
               ),
               h.div(
-                [h.Class('reader-screen'), h.AriaLive('polite')],
+                [h.Class(S.READER_SCREEN), h.AriaLive('polite')],
                 [
-                  h.span([h.Class('reader-time'), h.OnMount(WallClock())], ['--:--']),
+                  h.span([h.Class(S.READER_TIME), h.OnMount(WallClock())], ['--:--']),
                   h.span(
-                    [h.Class('reader-status')],
+                    [h.Class(S.READER_STATUS)],
                     [
-                      h.span([h.Class('reader-status-out')], [t.title.insertBadge]),
-                      h.span([h.Class('reader-status-in')], [t.title.clockedIn]),
+                      h.span([h.Class(S.READER_STATUS_OUT)], [t.title.insertBadge]),
+                      h.span([h.Class(S.READER_STATUS_IN)], [t.title.clockedIn]),
                     ],
                   ),
                 ],
               ),
-              h.span([h.Class('reader-led')], []),
-              h.span([h.Class('reader-slot')], []),
+              h.span([h.Class(S.READER_LED)], []),
+              h.span([h.Class(S.READER_SLOT)], []),
             ],
           ),
           h.div(
-            [h.Class('reader-well')],
+            [h.Class(S.READER_WELL)],
             [
               h.button(
                 [
                   h.Type('button'),
                   h.AriaLabel(t.title.clockIn),
                   h.OnClick(Message.ClockedIn()),
-                  h.Class('reader-card'),
+                  h.Class(S.READER_CARD),
                 ],
                 [
                   h.svg(
-                    [h.ViewBox('0 0 100 194'), h.Class('reader-card-mark'), h.AriaHidden(true)],
+                    [h.ViewBox('0 0 100 194'), h.Class(S.READER_CARD_MARK), h.AriaHidden(true)],
                     [
                       ...GLYPHS[0]!.paths.map((d) =>
                         h.path([
@@ -2365,21 +2353,21 @@ const splash = (model: Model, h: HtmlBuilder<Message>): Html => {
                       h.circle([h.Fill('var(--signal)'), h.Cx('89'), h.Cy('180'), h.R('14')]),
                     ],
                   ),
-                  h.span([h.Class('reader-card-chip')], []),
-                  h.span([h.Class('reader-card-name')], [t.title.founder]),
+                  h.span([h.Class(S.READER_CARD_CHIP)], []),
+                  h.span([h.Class(S.READER_CARD_NAME)], [t.title.founder]),
                 ],
               ),
             ],
           ),
         ],
       ),
-      h.p([h.Class('reader-hint'), h.AriaHidden(true)], [t.title.clockInHint]),
+      h.p([h.Class(S.READER_HINT), h.AriaHidden(true)], [t.title.clockInHint]),
     ],
   )
 }
 
 export const titleScreen = (model: Model, h: HtmlBuilder<Message>): Html =>
   h.main(
-    [h.Class('title-screen qm-root')],
+    [h.Class(cx('title-screen', S.ROOT))],
     [titleIsOpen(model.boot) ? menu(model, h) : splash(model, h)],
   )

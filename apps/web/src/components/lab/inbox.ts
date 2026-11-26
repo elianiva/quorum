@@ -530,7 +530,19 @@ const inboxToggle = (
       h.Class(
         cx(
           waiting
-            ? cx('mail-ping', css({ color: 'foreground' }))
+            ? css({
+                color: 'foreground',
+                /* A decision waits in the Inbox: a ring sweeps out of the button until it is read. */
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  inset: '0',
+                  borderRadius: 'inherit',
+                  boxShadow: '0 0 0 0 var(--danger)',
+                  animation: 'mail-ping 1.8s var(--ease-out) infinite',
+                  pointerEvents: 'none',
+                },
+              })
             : css({ color: 'mutedForeground' }),
           css({
             position: 'absolute',

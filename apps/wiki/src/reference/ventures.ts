@@ -25,6 +25,7 @@ import {
   type Lang,
 } from './shared.ts'
 import { css, cx } from '@quorum/styled-system/css'
+import { proseStyle } from '../prose-style.ts'
 
 const WIDEST = ERAS[ERAS.length - 1]
 
@@ -184,7 +185,7 @@ export const venturePages = (l: Lang): ReadonlyArray<Page> => {
       text: VENTURE_IDS.map((id) => `${VENTURES[id].name} ${VENTURES[id].summary}`).join(' '),
       body: (_model, h) =>
         h.div(
-          [h.Class('prose')],
+          [h.Class(proseStyle)],
           [
             paragraph(t.intro, h),
             section(

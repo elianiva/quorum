@@ -13,6 +13,7 @@ import {
   titleOf,
   type H,
 } from '../reference/shared.ts'
+import { proseStyle } from '../prose-style.ts'
 
 const code = (value: string, h: H): Html => h.code([], [value])
 
@@ -87,7 +88,7 @@ export const measurementsPage = (l: Lang) => {
     ].join(' '),
     body: (model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           section(
             t('How these are taken'),

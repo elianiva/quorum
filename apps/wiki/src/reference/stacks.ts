@@ -28,6 +28,7 @@ import {
   type Lang,
 } from './shared.ts'
 import { css } from '@quorum/styled-system/css'
+import { proseStyle } from '../prose-style.ts'
 
 export const runtimePath = (id: RuntimeDef['id']): string => `/runtimes/${id}`
 const frameworkPath = (id: FrameworkDef['id']): string => `/frameworks/${id}`
@@ -146,7 +147,7 @@ const runtimePage = (l: Lang, def: RuntimeDef): Page => {
       ),
     body: (model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           ...(text.view ? [text.view(model, h)] : []),
           section(l.title('tradeoffs'), [axes(l, def.axes, h)], h),
@@ -224,7 +225,7 @@ const frameworkPage = (l: Lang, def: FrameworkDef): Page => {
       ),
     body: (model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           ...(text.view ? [text.view(model, h)] : []),
           section(l.title('tradeoffs'), [axes(l, def.axes, h)], h),
@@ -264,7 +265,7 @@ export const stackPages = (l: Lang): ReadonlyArray<Page> => {
     ].join(' '),
     body: (_model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           paragraph(t.intro, h),
           section(

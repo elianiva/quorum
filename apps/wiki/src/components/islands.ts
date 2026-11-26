@@ -17,6 +17,7 @@ import { practiceView } from './practice-card.ts'
 import { sandboxView } from './sandbox-card.ts'
 import { designView } from './design-view.ts'
 import { css, cx } from '@quorum/styled-system/css'
+import { proseStyle } from '../prose-style.ts'
 
 const NOTE = {
   tip: { glyph: Lightbulb, tone: css({ color: 'ok' }) },
@@ -87,6 +88,7 @@ export const islandViews = (model: Model, h: HtmlBuilder<Message>): Markdown.Isl
                       marginTop: '2',
                     },
                   }),
+                  proseStyle,
                   'prose',
                 ),
               ),

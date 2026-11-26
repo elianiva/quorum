@@ -15,6 +15,7 @@ import {
   type Lang,
 } from './shared.ts'
 import { css, cx } from '@quorum/styled-system/css'
+import { proseStyle } from '../prose-style.ts'
 
 const CATEGORY_NAMES: Readonly<Record<(typeof GLOSSARY_CATEGORIES)[number], string>> = {
   performance: 'Performance',
@@ -53,7 +54,7 @@ const entity = (l: Lang, entry: GlossaryEntry, order: number): Page => {
     text: `${entry.definition} ${entry.inGame} ${text.text}`,
     body: (model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           h.p(
             [],
@@ -155,7 +156,7 @@ export const glossaryPages = (l: Lang): ReadonlyArray<Page> => {
     text: terms.map((entry) => entry.term).join(' '),
     body: (_model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           paragraph(t.intro, h),
           ...GLOSSARY_CATEGORIES.map((category, index) =>

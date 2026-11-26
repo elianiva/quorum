@@ -1,7 +1,15 @@
-import { defineConfig } from '@pandacss/dev'
+import { defineConfig, type Config } from '@pandacss/dev'
 import { quorumPreset } from './preset.ts'
 
-export const quorumConfig = (include: ReadonlyArray<string>, outdir = 'styled-system') =>
+/* An app adds its own document-level styles (fonts, page base) through `app`;
+   everything both apps share lives in the preset. */
+type AppStyles = Pick<Config, 'globalCss' | 'globalFontface' | 'theme'>
+
+export const quorumConfig = (
+  include: ReadonlyArray<string>,
+  outdir = 'styled-system',
+  app: AppStyles = {},
+) =>
   defineConfig({
     presets: ['@pandacss/preset-base', '@pandacss/preset-panda', quorumPreset],
     include: [...include],
@@ -17,4 +25,5 @@ export const quorumConfig = (include: ReadonlyArray<string>, outdir = 'styled-sy
       recipes: 'panda-recipes',
       utilities: 'panda-utilities',
     },
+    ...app,
   })

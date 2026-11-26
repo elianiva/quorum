@@ -10,6 +10,7 @@ import { mathView } from './components/math.ts'
 import { islandViews } from './components/islands.ts'
 import { type Heading, slug } from './page.ts'
 import { css, cx } from '@quorum/styled-system/css'
+import { proseStyle } from './prose-style.ts'
 
 type Inline = Markdown.Inline
 
@@ -124,7 +125,7 @@ export const prose = (
     return count === 1 ? base : `${base}-${count}`
   }
   return h.div(
-    [h.Class('prose')],
+    [h.Class(proseStyle)],
     Markdown.viewBlocks(document, {
       islands: islandViews(model, h),
       views: {

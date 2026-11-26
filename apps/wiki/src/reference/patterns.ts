@@ -14,6 +14,7 @@ import {
   type Lang,
 } from './shared.ts'
 import { css } from '@quorum/styled-system/css'
+import { proseStyle } from '../prose-style.ts'
 
 export type GroupName = keyof Messages['groups']
 
@@ -49,7 +50,7 @@ export const patternsPages = (l: Lang): ReadonlyArray<Page> => {
       body: (_model, h) => {
         const pages: ReadonlyArray<Page> = navOf(l.locale, 'patterns')
         return h.div(
-          [h.Class('prose')],
+          [h.Class(proseStyle)],
           [
             paragraph(t.intro, h),
             h.p([], [t.newHere, link('/patterns/one-box', t.oneBox, h), t.newHereAfter]),

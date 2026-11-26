@@ -1,4 +1,4 @@
-import { css, cx } from '@quorum/styled-system/css'
+import { css } from '@quorum/styled-system/css'
 import { copy, type Messages } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
 import type { Ledger } from '@quorum/simulation/ledger'
@@ -15,6 +15,65 @@ const loadOf = (t: Messages, ledger: Ledger, id: string): string => {
   return `${Math.round(own.utilization * 100)}%`
 }
 
+/* The screen reader's Node list (15 "Accessibility"): hidden until a keyboard player tabs into
+   it, then it names every Node on the board in board order and opens one on Enter. */
+const NODE_LIST = css({
+  position: 'absolute',
+  zIndex: '40',
+  width: '1px',
+  height: '1px',
+  padding: '0',
+  margin: '-1px',
+  overflow: 'hidden',
+  clip: 'rect(0, 0, 0, 0)',
+  whiteSpace: 'nowrap',
+  borderWidth: '0',
+  '&:focus-within': {
+    top: '12px',
+    left: '50%',
+    translate: '-50% 0',
+    width: 'min(420px, calc(100vw - 24px))',
+    maxHeight: '60vh',
+    height: 'auto',
+    margin: '0',
+    padding: '8px 10px 10px',
+    overflow: 'auto',
+    borderRadius: '12px',
+    background: 'var(--card)',
+    boxShadow: 'inset 0 0 0 1px var(--hairline), 0 18px 32px -12px oklch(0 0 0 / 0.45)',
+    whiteSpace: 'normal',
+    clip: 'auto',
+    clipPath: 'none',
+  },
+  '& ul': {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1px',
+    margin: '0',
+    padding: '0',
+    listStyle: 'none',
+  },
+  '& button': {
+    display: 'block',
+    width: '100%',
+    padding: '3px 6px',
+    borderRadius: '7px',
+    color: 'var(--foreground)',
+    fontSize: 'var(--type-12)',
+    textAlign: 'left',
+  },
+  '& button:hover': { background: 'var(--well)' },
+  '& button:focus-visible': { outline: '2px solid var(--ring)', outlineOffset: '-2px' },
+})
+
+const TITLE = css({
+  margin: '0 0 4px',
+  fontFamily: 'var(--heading)',
+  fontSize: 'var(--type-13)',
+  fontWeight: 'var(--quorum-font-weights-semibold)',
+  whiteSpace: 'nowrap',
+})
+
 export const nodeList = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
@@ -24,26 +83,11 @@ export const nodeList = (model: Model, ledger: Ledger, h: HtmlBuilder<Message>):
     [
       h.Key('node-list'),
       h.DataAttribute('node-list', ''),
-      h.Class(
-        cx(
-          css({
-            position: 'absolute',
-            width: '1px',
-            height: '1px',
-            padding: '0',
-            margin: '-1px',
-            overflow: 'hidden',
-            clip: 'rect(0, 0, 0, 0)',
-            whiteSpace: 'nowrap',
-            borderWidth: '0',
-          }),
-          'node-list',
-        ),
-      ),
+      h.Class(NODE_LIST),
       h.AriaLabel(t.nodeList.nodes),
     ],
     [
-      h.h2([h.Class('node-list-title')], [t.nodeList.nodes]),
+      h.h2([h.Class(TITLE)], [t.nodeList.nodes]),
       h.ul(
         [],
         nodes.map((node) =>

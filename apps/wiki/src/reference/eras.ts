@@ -33,6 +33,7 @@ import {
   type Lang,
 } from './shared.ts'
 import { css, cx } from '@quorum/styled-system/css'
+import { proseStyle } from '../prose-style.ts'
 
 const entity = (l: Lang, def: EraDef, index: number): Page => {
   const t = l.t.reference.eras
@@ -108,7 +109,7 @@ const entity = (l: Lang, def: EraDef, index: number): Page => {
       ),
     body: (model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           ...(text.view ? [text.view(model, h)] : []),
           section(
@@ -448,7 +449,7 @@ export const eraPages = (l: Lang): ReadonlyArray<Page> => {
     text: l.cat.ERAS.map((def) => `${def.name} ${def.question}`).join(' '),
     body: (_model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [paragraph(t.intro, h), section(l.title('theClimb'), [timeline(l, h)], h)],
       ),
   })

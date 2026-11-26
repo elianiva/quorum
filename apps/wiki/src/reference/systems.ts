@@ -38,6 +38,7 @@ import {
   type Lang,
 } from './shared.ts'
 import { css } from '@quorum/styled-system/css'
+import { proseStyle } from '../prose-style.ts'
 
 const team = (l: Lang): Page => {
   const t = l.t.reference.team
@@ -55,7 +56,7 @@ const team = (l: Lang): Page => {
     ].join(' '),
     body: (_model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           paragraph(t.intro, h),
           section(
@@ -158,7 +159,7 @@ const infrastructure = (l: Lang): Page => {
     ].join(' '),
     body: (_model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           section(
             l.title('instanceFamilies'),
@@ -280,7 +281,7 @@ const prestige = (l: Lang): Page => {
     ].join(' '),
     body: (_model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           paragraph(t.intro, h),
           section(
@@ -421,7 +422,7 @@ const sandbox = (l: Lang, def: GuidedSummary): Page => {
     text: `${def.objectives.map((objective) => objective.goal).join(' ')} ${text.text}`,
     body: (model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           h.p(
             [],
@@ -501,7 +502,7 @@ export const systemPages = (l: Lang): ReadonlyArray<Page> => {
     text: sandboxes.map((entry) => entry.title).join(' '),
     body: (_model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           paragraph(t.intro, h),
           ...eraTitles.map((title, index) => {

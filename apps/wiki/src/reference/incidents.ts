@@ -24,6 +24,7 @@ import {
   type Lang,
 } from './shared.ts'
 import { css, cx } from '@quorum/styled-system/css'
+import { proseStyle } from '../prose-style.ts'
 
 export const incidentPath = (id: IncidentDef['id']): string => `/incidents/${id}`
 
@@ -112,7 +113,7 @@ const entity = (l: Lang, def: IncidentDef): Page => {
       ),
     body: (model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           section(l.title('whatHappens'), [paragraph(def.cause, h)], h),
           ...(text.view ? [text.view(model, h)] : []),
@@ -192,7 +193,7 @@ export const incidentPages = (l: Lang): ReadonlyArray<Page> => {
     text: entities.map((entry) => entry.title).join(' '),
     body: (_model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           paragraph(t.intro, h),
           section(

@@ -75,6 +75,32 @@ const BoardMounted = Mount.defineStream('BoardMounted', {
     ),
 })
 
+/* A browser without WebGL gets a readable message instead of an empty canvas; each line names
+   the reason it belongs to, and the host shows only the lines for its own reason. */
+const BOARD_HOST = css({
+  position: 'absolute',
+  inset: '0',
+  backgroundColor: 'canvas',
+  '&[data-board-unavailable="webgl"] [data-unavailable="error"]': { display: 'none' },
+  '&[data-board-unavailable="error"] [data-unavailable="webgl"]': { display: 'none' },
+})
+
+const UNAVAILABLE = css({
+  position: 'absolute',
+  inset: '0',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '12px',
+  padding: '24px',
+  textAlign: 'center',
+  color: 'var(--muted-foreground)',
+  background: 'var(--canvas)',
+  '& p': { maxWidth: '380px', lineHeight: 'var(--quorum-line-heights-normal)' },
+  '& a': { color: 'var(--signal)', textDecoration: 'underline', textUnderlineOffset: '3px' },
+})
+
 export const boardHost = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   const surface = model.board.surface
@@ -82,7 +108,7 @@ export const boardHost = (model: Model, h: HtmlBuilder<Message>): Html => {
   return h.div(
     [
       h.Key('board'),
-      h.Class(css({ position: 'absolute', inset: '0', backgroundColor: 'canvas' })),
+      h.Class(BOARD_HOST),
       ...(reason === null
         ? [h.OnMount(BoardMounted({}))]
         : [h.DataAttribute('board-unavailable', reason === 'webgl' ? 'webgl' : 'error')]),
@@ -91,19 +117,19 @@ export const boardHost = (model: Model, h: HtmlBuilder<Message>): Html => {
       ? []
       : [
           h.div(
-            [h.Class('board-unavailable'), h.Role('status')],
+            [h.Class(UNAVAILABLE), h.Role('status')],
             [
-              h.p([h.Class('board-unavailable-webgl')], [t.panels.webglUnavailable]),
+              h.p([h.DataAttribute('unavailable', 'webgl')], [t.panels.webglUnavailable]),
               h.a(
                 [
-                  h.Class('board-unavailable-webgl'),
+                  h.DataAttribute('unavailable', 'webgl'),
                   h.Href('https://get.webgl.org'),
                   h.Target('_blank'),
                   h.Rel('noreferrer noopener'),
                 ],
                 [t.panels.webglHelp],
               ),
-              h.p([h.Class('board-unavailable-error')], [t.panels.boardFailed]),
+              h.p([h.DataAttribute('unavailable', 'error')], [t.panels.boardFailed]),
             ],
           ),
         ],

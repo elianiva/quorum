@@ -13,8 +13,9 @@ The package has subpath exports:
   data it shows and the Messages it sends, never an app's Model.
 - `@quorum/ui/board`: the Pixi board. It takes a `BoardState` and callbacks, so it does not know
   about sound or the app's Messages.
-- `@quorum/ui/theme.css`: the Graphite palette, fonts, and custom variants that both apps import,
-  so the wiki and the game share one design language.
+- `src/panda/preset.ts`: the Panda preset both apps' Panda configs load. It holds the Graphite
+  palette as custom properties, the tokens that read them, the document base, and the motion
+  classes, so the wiki and the game share one design language.
 
 Only views that the wiki embeds move. Screens that exist only in the game (the dock, the HUD,
 Settings) stay in `apps/web`.

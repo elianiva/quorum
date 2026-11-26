@@ -25,19 +25,59 @@ const boardFilled = (model: Model): boolean =>
     Room: () => RoomPhase.isAnyOf(['Online', 'Reconnecting'])(model.room.phase),
   })
 
+/* The network is down. The Company keeps running in this browser; this says why Rooms wait. */
+const OFFLINE = css({
+  position: 'fixed',
+  left: 'max(10px, env(safe-area-inset-left))',
+  bottom: 'max(10px, env(safe-area-inset-bottom))',
+  zIndex: '25',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '5px 9px',
+  border: '1px solid color-mix(in oklch, var(--warn) 40%, transparent)',
+  borderRadius: '999px',
+  background: 'color-mix(in oklch, var(--page) 82%, transparent)',
+  color: 'var(--warn)',
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--type-10-5)',
+  fontWeight: 'var(--quorum-font-weights-semibold)',
+  letterSpacing: 'var(--quorum-letter-spacings-eyebrow)',
+  textTransform: 'uppercase',
+  pointerEvents: 'none',
+  backdropFilter: 'blur(6px)',
+  /* On a phone the action bar sits along the bottom edge. */
+  '@media (max-width: 639px), (max-height: 539px), (max-aspect-ratio: 1 / 1)': {
+    bottom: 'calc(max(10px, env(safe-area-inset-bottom)) + 72px)',
+  },
+})
+
 const offlineStatus = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return model.pwa.online
     ? h.empty
     : h.p(
         [
-          h.Class('offline-status'),
+          h.Class(OFFLINE),
           h.Role('status'),
           h.AriaLabel(t.pwa.offlineStatus),
           h.Title(t.pwa.offlineStatus),
         ],
         [
-          h.span([h.Class('offline-status-dot'), h.AriaHidden(true)], []),
+          h.span(
+            [
+              h.Class(
+                css({
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: 'currentColor',
+                }),
+              ),
+              h.AriaHidden(true),
+            ],
+            [],
+          ),
           h.span([], [t.pwa.offline]),
         ],
       )

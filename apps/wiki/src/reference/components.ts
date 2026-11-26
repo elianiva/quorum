@@ -41,6 +41,7 @@ import {
   type Lang,
 } from './shared.ts'
 import { css } from '@quorum/styled-system/css'
+import { proseStyle } from '../prose-style.ts'
 
 export const componentPath = (id: ComponentId): string => `/components/${id}`
 
@@ -217,7 +218,7 @@ const entity = (l: Lang, def: ComponentDef): Page => {
       ),
     body: (model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           ...(text.view ? [text.view(model, h)] : []),
           section(l.title('rules'), rules(l, def, h), h),
@@ -276,7 +277,7 @@ export const componentPages = (l: Lang): ReadonlyArray<Page> => {
     text: entities.map((entry) => entry.title).join(' '),
     body: (_model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           paragraph(t.intro, h),
           ...DOCK_GROUPS.map((group, index) =>

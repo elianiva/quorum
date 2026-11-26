@@ -33,6 +33,7 @@ import {
 } from './shared.ts'
 import { componentPath } from './components.ts'
 import { css, cx } from '@quorum/styled-system/css'
+import { proseStyle } from '../prose-style.ts'
 
 const trackLabel = (l: Lang, track: ResearchDef['track']): string =>
   l.cat.RESEARCH_TRACKS.find((entry) => entry.key === track)?.label ?? track
@@ -132,7 +133,7 @@ const entity = (l: Lang, entry: ResearchDef): Page => {
       ),
     body: (model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           ...(text.view ? [text.view(model, h)] : []),
           unlocks.length
@@ -888,7 +889,7 @@ export const researchPages = (l: Lang): ReadonlyArray<Page> => {
     text: entities.map((entry) => entry.title).join(' '),
     body: (_model, h) =>
       h.div(
-        [h.Class('prose')],
+        [h.Class(proseStyle)],
         [
           paragraph(t.intro, h),
           section(

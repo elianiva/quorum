@@ -2319,8 +2319,11 @@ mod tests {
 
     #[test]
     fn a_component_lists_known_inbound_and_outbound_components_in_pairs() {
-        let ok = comp("app", "a", ":accepts (requests) :sends (q-read) :outbound (db)")
-            + &comp("db", "d", ":accepts (q-read) :inbound (app)");
+        let ok = comp(
+            "app",
+            "a",
+            ":accepts (requests) :sends (q-read) :outbound (db)",
+        ) + &comp("db", "d", ":accepts (q-read) :inbound (app)");
         assert_eq!(component_codes(&with_users(&ok)), []);
 
         let unknown = comp(
@@ -2333,8 +2336,11 @@ mod tests {
             [(Severity::Error, "unknown-component")]
         );
 
-        let one_side = comp("app", "a", ":accepts (requests) :sends (q-read) :outbound (db)")
-            + &comp("db", "d", ":accepts (q-read)");
+        let one_side = comp(
+            "app",
+            "a",
+            ":accepts (requests) :sends (q-read) :outbound (db)",
+        ) + &comp("db", "d", ":accepts (q-read)");
         assert_eq!(
             component_codes(&with_users(&one_side)),
             [(Severity::Error, "inbound-mismatch")]

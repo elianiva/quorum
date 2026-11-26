@@ -418,9 +418,8 @@ pub fn components(catalog: &Catalog) -> String {
         let kinds = |l: &Option<crate::lower::KindList>| {
             format!("[{}]", list(l.iter().flat_map(|l| l.resolve(catalog))))
         };
-        let components = |l: &[crate::lower::Name]| {
-            format!("[{}]", list(l.iter().map(|n| n.text.as_str())))
-        };
+        let components =
+            |l: &[crate::lower::Name]| format!("[{}]", list(l.iter().map(|n| n.text.as_str())));
         let latency = match &c.latency.value {
             Value::Num(n) => n
                 .in_unit(Unit::Ms)

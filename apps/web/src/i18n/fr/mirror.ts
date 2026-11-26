@@ -50,7 +50,7 @@ export const mirror: Messages['mirror'] = {
   shardKey: 'Clé de partition',
   deadLetterQueue: 'File des messages non traités',
   maxLength: 'Longueur max.',
-  prefetch: 'Préchargement',
+  concurrency: 'Concurrence',
   stampedeProtection: 'Protection contre la bousculade',
   cacheWarming: 'Préchauffage du cache',
   paranoia: 'Paranoïa',

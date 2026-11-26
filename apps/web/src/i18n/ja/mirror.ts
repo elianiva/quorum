@@ -49,7 +49,7 @@ export const mirror: Messages['mirror'] = {
   shardKey: 'シャードキー',
   deadLetterQueue: 'デッドレターキュー',
   maxLength: '最大長',
-  prefetch: 'プリフェッチ',
+  concurrency: '同時実行数',
   stampedeProtection: 'スタンピード対策',
   cacheWarming: 'キャッシュウォーミング',
   paranoia: 'パラノイア',

@@ -171,7 +171,7 @@ export const reasons: Messages['toasts']['reasons'] = {
   onlyAWideColumnStoreHasQuorums: 'Seul un magasin à colonnes larges dispose de quorums.',
   onlyAWideColumnStoreOrDistributed:
     'Seul un magasin à colonnes larges ou un SQL distribué se propage dans toutes les régions.',
-  onlyAWorkerPrefetchesTasks: 'Seul un Worker précharge des tâches.',
+  onlyAWorkerSetsConcurrency: 'Seul un Worker règle sa concurrence.',
   onlyAnAPIGatewayHasThese: 'Seule une passerelle API a ces réglages.',
   onlyAnAPIGatewayHoldsAToken: 'Seule une passerelle API a un seau à jetons.',
   onlyAnAPIGatewayRateLimits: 'Seule une passerelle API limite le débit.',

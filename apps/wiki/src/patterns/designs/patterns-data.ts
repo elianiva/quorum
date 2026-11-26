@@ -475,15 +475,15 @@ export const patternsData = {
       at('worker-a', 'worker', 3, -1, [
         set('size', 2, 'Instance size', 'Small. Each Worker is one consumer.'),
         set(
-          'prefetch',
+          'concurrency',
           10,
-          'Prefetch',
-          'Tasks a Worker process takes ahead of time. A higher number waits less on the broker, and a crash loses every task it had taken.',
+          'Concurrency',
+          'Tasks one Worker copy runs at once. A higher number overlaps waiting, and a crash loses every task it had in flight.',
         ),
       ]),
       at('worker-b', 'worker', 3, 1, [
         set('size', 2, 'Instance size', 'The same size, so the two share the work evenly.'),
-        set('prefetch', 10, 'Prefetch', 'Matches its twin.'),
+        set('concurrency', 10, 'Concurrency', 'Matches its twin.'),
       ]),
       at('database', 'database', 2, 2, [
         set('size', 3, 'Instance size', 'Medium. It serves the reads and writes users wait for.'),

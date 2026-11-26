@@ -124,7 +124,7 @@ const CORE_FIELD_ORDER = [
   'restore',
   'depth',
   'attempts',
-  'prefetch',
+  'concurrency',
   'zone',
   'standby',
   'standbySync',
@@ -167,7 +167,7 @@ const NODE_FIELDS_UNORDERED = {
   ),
   depth: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   attempts: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(25))),
-  prefetch: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(10))),
+  concurrency: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(10))),
   zone: Zone.pipe(Schema.withDecodingDefaultKey(Effect.succeed('a' as const))),
   standby: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
   standbySync: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(true))),
@@ -350,6 +350,9 @@ const MIGRATION_FIELDS = {
   fromFramework: FrameworkId,
   total: Schema.Finite,
   bugs: Schema.Boolean,
+  scope: Schema.Literals(['design', 'worker']).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed('design' as const)),
+  ),
 } as const
 
 export const Migration = Schema.TaggedUnion({

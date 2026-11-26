@@ -172,7 +172,7 @@ export {
   setHealthCheck,
 } from './components/lb.rule.ts'
 export { setCacheEngine, setCacheGuard, setCacheStrategy } from './components/cache.rule.ts'
-export { setPrefetch } from './components/worker.rule.ts'
+export { setConcurrency } from './components/worker.rule.ts'
 export { setDlq, setAttempts, setMaxLength, deleteMessage } from './components/queue.rule.ts'
 
 export const sellAll = (game: Game, ids: ReadonlyArray<string>): Action => {
@@ -267,7 +267,7 @@ export const blankNode = (
     dlq: false,
     attempts: 25,
     maxLength: 0,
-    prefetch: 10,
+    concurrency: 10,
     upgradedAt: game.time,
     coalesce: false,
     warming: false,

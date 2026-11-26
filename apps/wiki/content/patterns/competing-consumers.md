@@ -4,7 +4,7 @@ summary: Let several workers read from one queue, so each task goes to exactly o
 section: patterns
 group: Messaging and async
 order: 402
-aliases: worker pool, parallel consumers, consumer group, prefetch, work queue, scale workers
+aliases: worker pool, parallel consumers, consumer group, concurrency, work queue, scale workers
 ---
 
 Competing consumers are several workers pulling from the same queue, so the work is shared and each task goes to one worker.
@@ -19,7 +19,7 @@ Competing consumers are several workers pulling from the same queue, so the work
 
 The broker hands each task to one ready consumer and waits for an acknowledgement. If a consumer dies before it acks, the broker gives the task to another, which is why delivery is at least once. If one worker handles 20 tasks a second and 100 arrive, five workers keep up.
 
-Prefetch is how many tasks a worker takes ahead of time. A high value hides broker round trips. A low value spreads tasks fairly when they vary in length, and leaves fewer tasks stuck on a worker that crashes.
+Concurrency is how many tasks one worker runs at once. A high value overlaps waits and keeps a worker busy on I/O-bound jobs. A low value protects a CPU or a downstream service, and leaves less work stuck on a worker that crashes.
 
 ## What it costs
 
@@ -29,6 +29,6 @@ Order is gone: two tasks for the same user can run at once or out of order. Fix 
 
 ::Design{id="competing-workers"}
 
-Both [Workers](/components/worker) link to the same [Queue](/components/queue), which offers each of them what arrives. Prefetch is the setting on a Worker. A crash loses every task a process had taken, and a planned restart hands them back first. A [Connection Pooler](/components/pooler) protects the Database when Workers multiply.
+Both [Workers](/components/worker) link to the same [Queue](/components/queue), which offers each of them what arrives. Concurrency is the setting on a Worker. A crash loses every task in flight, and a planned restart hands them back first. A [Connection Pooler](/components/pooler) protects the Database when Workers multiply.
 
 Add copies with an [Autoscaler](/components/autoscaler) on queue depth. Research [Background jobs](/research/background-jobs) and [Message queues](/research/queues). The glossary defines [at-least-once delivery](/glossary/at-least-once-delivery).

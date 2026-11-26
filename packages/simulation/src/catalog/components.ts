@@ -121,7 +121,13 @@ export {
   QUEUE_LENGTHS,
   QUEUE_MESSAGE_PRICE,
 } from '../generated/queue.ts'
-export { POISON_SHARE, TASK_RETRY_SECONDS, PREFETCH, FETCH_MS } from '../generated/worker.ts'
+export {
+  POISON_SHARE,
+  TASK_RETRY_SECONDS,
+  CONCURRENCY,
+  FETCH_MS,
+  PREFETCH_TASKS,
+} from '../generated/worker.ts'
 export { HUB_RAM_KB, PRESENCE_CPU, PRESENCE_VALUE, HERD_REFUSED } from '../generated/ws.ts'
 export {
   SEARCH_QPS,

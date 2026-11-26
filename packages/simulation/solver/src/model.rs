@@ -326,7 +326,7 @@ pub struct Node {
     pub local_db: bool,
     pub leak: f64,
     pub credits: f64,
-    pub prefetch: f64,
+    pub concurrency: f64,
     pub pm: usize,
     pub gogc: usize,
     pub collector: usize,
@@ -1019,7 +1019,13 @@ pub fn server_model(
     let ram = ram_of(node.size, node.family) * ctx.boost * copies;
     let model = RUNTIME_MODEL[runtime];
 
-    let processes = if runtime == runtime::MOD_PHP {
+    let processes = if ctx.flags.worker {
+        if RUNTIME_POOL[runtime] {
+            node.concurrency * copies
+        } else {
+            copies
+        }
+    } else if runtime == runtime::MOD_PHP {
         APACHE_MAX_WORKERS.min((ctx.inflight).ceil() + APACHE_SPARE)
     } else if RUNTIME_POOL[runtime] {
         node.workers * copies
@@ -1030,17 +1036,20 @@ pub fn server_model(
     } else {
         copies
     };
-    let slots =
-        if model == Concurrency::Loop || model == Concurrency::Green || model == Concurrency::Async
-        {
-            f64::INFINITY
-        } else if model == Concurrency::Threads {
-            processes * RUNTIME_THREADS[runtime]
-        } else if runtime == runtime::MOD_PHP {
-            APACHE_MAX_WORKERS * ctx.boost * copies
-        } else {
-            node.workers * ctx.boost * copies
-        };
+    let slots = if ctx.flags.worker {
+        node.concurrency * ctx.boost * copies
+    } else if model == Concurrency::Loop
+        || model == Concurrency::Green
+        || model == Concurrency::Async
+    {
+        f64::INFINITY
+    } else if model == Concurrency::Threads {
+        processes * RUNTIME_THREADS[runtime]
+    } else if runtime == runtime::MOD_PHP {
+        APACHE_MAX_WORKERS * ctx.boost * copies
+    } else {
+        node.workers * ctx.boost * copies
+    };
 
     let pm = if runtime == runtime::PHP_FPM {
         node.pm.min(PM_SPARES.len() - 1)
@@ -1111,7 +1120,7 @@ pub fn server_model(
             / KB_PER_GB;
     }
     if ctx.flags.worker {
-        ram_used += (node.prefetch * resident * PREFETCH_TASK_MB) / 1024.0;
+        ram_used += (node.concurrency * ctx.boost * copies * WORKER_TASK_MB) / 1024.0;
     }
     ram_used += node.leak;
     ram_used += connection_ram;
@@ -1177,7 +1186,7 @@ pub fn server_model(
     let cpu_wait = wait_for(mean_service, cpu_utilization, cores);
 
     let fetching = if ctx.flags.worker {
-        FETCH_MS / node.prefetch.max(1.0)
+        FETCH_MS / PREFETCH_TASKS
     } else {
         0.0
     };

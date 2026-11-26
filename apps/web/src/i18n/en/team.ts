@@ -59,6 +59,7 @@ export const team = {
   resume: 'Resume',
   shiftTo: (p0: string | number | null) => `Shift to ${p0}`,
   ofTraffic: (p0: string | number | null) => `${p0} of traffic`,
+  ofWorkers: (p0: string | number | null) => `${p0} of Workers`,
   wins: 'Wins',
   loses: 'Loses',
   tooEarly: 'Too early',

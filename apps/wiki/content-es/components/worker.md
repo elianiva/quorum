@@ -15,17 +15,16 @@ Una exportación ejecuta muchas consultas de lectura en su tarea, y una subida g
 
 ::Options{id="worker"}
 
-El Stack controla el trabajo igual que en un [Servidor de aplicaciones](/components/server#options). Un Worker llena su pool con tareas en lugar de peticiones, y una tarea retiene un worker mientras se ejecuta, incluida cada llamada al backend que espera.
+El Stack controla el trabajo igual que en un [Servidor de aplicaciones](/components/server#options). Un Worker llena su pool con tareas en lugar de peticiones, y una tarea retiene un worker mientras se ejecuta, incluida cada llamada al backend que espera. Es la [ley de Little](/glossary/littles-law) aplicada a un pool de workers. Cambiar el Stack de un Worker inicia una migración de Workers: dos pasos al 40% del coste de una migración de Servidores de aplicaciones, y los Servidores de aplicaciones conservan su Stack.
 
-- **Tamaño del pool**: cuántas tareas se ejecutan a la vez. Más workers vacían la Cola más rápido, retienen más memoria y cuestan más CPU cuando las tareas compiten por ella.
 - **Gestor de procesos**: la regla de PHP-FPM sobre qué workers siguen en ejecución. Estático mantiene todo el pool residente, Dinámico mantiene dos de reserva y Bajo demanda mantiene solo los workers ocupados. El equilibrio es el mismo: RAM ociosa frente a una breve espera por un fork.
-- **Reciclar workers**: reinicia cada proceso de vez en cuando, lo que limita una fuga y cuesta un arranque en frío. Un reinicio planificado devuelve primero sus tareas precargadas.
-- **Precarga**: cuántas tareas toma cada worker de la Cola por adelantado. Una precarga mayor pasa menos tiempo esperando al broker, y una caída pierde más.
+- **Concurrencia**: cuántas tareas ejecuta una copia a la vez. Una concurrencia mayor solapa las esperas de E/S y vacía la Cola más rápido, a cambio de RAM por cada tarea en vuelo y más trabajo perdido en una caída. Una tarea intensiva de CPU no gana nada por encima del número de núcleos.
+- **Reciclar workers**: reinicia cada proceso de vez en cuando, lo que limita una fuga y cuesta un arranque en frío. Un reinicio planificado devuelve primero sus tareas en vuelo.
 
 ## Cómo falla
 
 - Si es demasiado lento, el backlog de la Cola crece hasta que su longitud máxima rechaza tareas nuevas.
-- Una caída pierde las tareas que había precargado. Un reinicio planificado las devuelve primero.
+- Una caída pierde las tareas en vuelo, hasta su Concurrencia. Un reinicio planificado las devuelve primero.
 
 ### [Fallo de instancia](/incidents/instance)
 
@@ -78,7 +77,7 @@ El Stack controla el trabajo igual que en un [Servidor de aplicaciones](/compone
 ## Consejos
 
 - Enlaza los Workers con un [Autoescalador](/components/autoscaler) para que sigan al backlog.
-- Mantén baja la precarga en los Workers que se caen a menudo.
+- Sube la Concurrencia cuando las tareas esperan a un backend y la CPU está ociosa. Mantenla cerca del número de núcleos cuando las tareas son intensivas de CPU.
 
 :::Note{tone="real"}
 Las colas reales entregan al menos una vez, así que un trabajo puede ejecutarse dos veces. Consulta [entrega al menos una vez](/glossary/at-least-once-delivery).

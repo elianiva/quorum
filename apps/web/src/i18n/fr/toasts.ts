@@ -186,10 +186,9 @@ export const toasts: Messages['toasts'] = {
   indexOnTop: 'L’ajout d’un index est en haut du backlog.',
   providerSwitched: 'Bascule vers un second fournisseur de paiement en pleine panne.',
   collected: (amount) => `Encaissé : ${amount}.`,
-  migrationMoved: (share) => `${share} des serveurs applicatifs déplacés.`,
+  migrationMoved: (share) => `${share} déplacé vers la nouvelle Stack.`,
   migrationDone: 'Migration effectuée.',
-  migrationCancelled:
-    'Migration annulée. Les serveurs applicatifs sont de retour sur l’ancienne Stack.',
+  migrationCancelled: 'Migration annulée. L’ancienne Stack est de retour.',
   rolledBack:
     'Retour arrière. Les fonctionnalités seront livrées de nouveau au prochain déploiement.',
   listed: (legacy) => `Introduction en bourse réussie. +${legacy} points d’héritage.`,
@@ -251,7 +250,6 @@ export const toasts: Messages['toasts'] = {
       `${features} déployé avec un bug. Les serveurs applicatifs plantent.`,
     deployed: (features) => `${features} déployé.`,
     researched: (name) => `${name} est recherché.`,
-    migrationShifted: (share) =>
-      `${share} des serveurs applicatifs ont basculé sur la nouvelle Stack.`,
+    migrationShifted: (share) => `${share} a basculé sur la nouvelle Stack.`,
   },
 }

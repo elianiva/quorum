@@ -52,7 +52,7 @@ export const mirror: Messages['mirror'] = {
   shardKey: 'Clave de shard',
   deadLetterQueue: 'Cola de mensajes muertos',
   maxLength: 'Longitud máxima',
-  prefetch: 'Precarga',
+  concurrency: 'Concurrencia',
   stampedeProtection: 'Protección contra estampidas',
   cacheWarming: 'Calentamiento de caché',
   paranoia: 'Paranoia',

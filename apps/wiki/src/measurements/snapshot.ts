@@ -3,13 +3,13 @@
  * `packages/simulation/src/pacing.ts`. Do not edit: change the Simulation or the measurement and
  * run the script again.
  *
- * Taken at Simulation version 8587d68c on 2026-11-26.
+ * Taken at Simulation version 8dfb3a1d on 2026-11-26.
  */
 
 import type { Measurements } from './measure.ts'
 
 export const SNAPSHOT: Measurements = {
-  version: '8587d68c',
+  version: '8dfb3a1d',
   takenOn: '2026-11-26',
   pacing: [
     {
@@ -72,11 +72,11 @@ export const SNAPSHOT: Measurements = {
     },
     {
       label: 'Series A',
-      value: '68.7–82.8',
+      value: '66.1–69.7',
     },
     {
       label: 'Series B',
-      value: '92.3–112.2',
+      value: '127.5, never on some seeds',
     },
   ],
   seed: [
@@ -98,33 +98,33 @@ export const SNAPSHOT: Measurements = {
     },
     {
       label: 'Series A',
-      value: '82.7–86.8',
+      value: '81.0, never on some seeds',
     },
     {
       label: 'Seed length',
-      value: '46.8–53.3',
+      value: '41.1, never on some seeds',
     },
   ],
   series: [
     {
       label: 'Series A',
-      value: '82.7–86.8',
+      value: '81.0–116.8',
     },
     {
       label: 'Second zone and standbys',
-      value: '86.8–90.8',
+      value: '85.1–120.8',
     },
     {
       label: 'Series B',
-      value: '121.6, never on some seeds',
+      value: 'never',
     },
     {
       label: 'Users at 130 min',
-      value: '122,349–122,521',
+      value: '28,009–42,318',
     },
     {
       label: 'Availability at 130 min',
-      value: '96.68%–98.73%',
+      value: '97.28%–99.71%',
     },
   ],
   legacy: [
@@ -162,5 +162,5 @@ export const SNAPSHOT: Measurements = {
       },
     },
   ],
-  reach: '122,349–122,521',
+  reach: '28,009–42,318',
 }

@@ -25,7 +25,7 @@ El Servidor de aplicaciones responde él mismo las páginas y las lecturas, y pa
 
 El usuario espera solo el encolado, que es rápido, así que el trabajo lento ya no ocupa un hueco de petición. La profundidad de la Cola pasa a ser el primer indicador que vigilar. Cuando crece, los Workers son demasiado lentos, y añadir copias lo arregla sin tocar el Servidor de aplicaciones.
 
-Los ajustes mantienen la honestidad del sistema. Una **cola de mensajes muertos** aparta una tarea que sigue fallando, para que no entre en bucle para siempre. **Máximo de intentos** indica cuántos intentos recibe una tarea. **Longitud máxima** rechaza tareas nuevas cuando está llena, en lugar de dejar crecer un atraso sin que se vea. La **Precarga** de un Worker permite que cada proceso tome tareas por adelantado, lo que ahorra viajes al broker y pierde esas tareas si se cae.
+Los ajustes mantienen la honestidad del sistema. Una **cola de mensajes muertos** aparta una tarea que sigue fallando, para que no entre en bucle para siempre. **Máximo de intentos** indica cuántos intentos recibe una tarea. **Longitud máxima** rechaza tareas nuevas cuando está llena, en lugar de dejar crecer un atraso sin que se vea. La **Concurrencia** de un Worker decide cuántas tareas ejecuta una copia a la vez, y eso convierte un backend lento en una espera creciente en lugar de una caída.
 
 ## Qué cuesta
 

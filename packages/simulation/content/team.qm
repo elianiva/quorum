@@ -172,6 +172,18 @@
 
 (def migration-feature-speed 0.5)
 
+(def worker-migration-factor 0.4)
+
+(def worker-migration-steps
+  :type (array number)
+  [0.5 1])
+
+(def worker-migration-tranches
+  :type (array number)
+  [0.5 0.5])
+
+(def worker-migration-feature-speed 0.8)
+
 (def page-mood 0.08)
 
 (def policy-switch-days 1)

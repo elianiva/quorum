@@ -6,11 +6,11 @@ import {
   FEATURES,
   INCIDENTS,
   REGION_INFO,
-  MIGRATION_STEPS,
   RESEARCH,
   STEP_SECONDS,
   type ResearchId,
 } from '@quorum/simulation/catalog'
+import { stepsFor } from '@quorum/simulation/migration'
 import { CALENDAR_HOUR, mailedTo } from './mail.ts'
 import {
   EVENT_EVERY_SECONDS,
@@ -257,11 +257,14 @@ const eventText = (event: StepEvent, game: Game): EventNote =>
       'ok',
       { topic: 'finished', vars: { item: RESEARCH[research].name } },
     ],
-    MigrationShifted: ({ step }): EventNote => [
-      `${percent(MIGRATION_STEPS[step - 1] ?? 0)} of App Servers moved to the new Stack.`,
-      'primary',
-      { topic: 'migration', vars: { share: percent(MIGRATION_STEPS[step - 1] ?? 0) } },
-    ],
+    MigrationShifted: ({ step, scope }): EventNote => {
+      const share = stepsFor(scope)[step - 1] ?? 0
+      return [
+        `${percent(share)} of ${scope === 'worker' ? 'Workers' : 'App Servers'} moved to the new Stack.`,
+        'primary',
+        { topic: 'migration', vars: { share: percent(share) } },
+      ]
+    },
   })
 
 const eventLog = (event: StepEvent): Record<string, unknown> =>
@@ -285,7 +288,7 @@ const eventLog = (event: StepEvent): Record<string, unknown> =>
     CveExploited: ({ cve, target }) => ({ cve, target }),
     WorkFinished: ({ item }) => ({ kind: item.kind, ref: item.ref, cost: item.cost }),
     Deployed: ({ features, bad }) => ({ features, bad }),
-    MigrationShifted: ({ step }) => ({ step }),
+    MigrationShifted: ({ step, scope }) => ({ step, scope }),
     StudyCompleted: ({ research }) => ({ research }),
   })
 
@@ -375,8 +378,8 @@ const eventToast = (t: Messages, event: StepEvent, game: Game): Note => {
       return bad ? [e.deployedBad(names), 'danger'] : [e.deployed(names), 'primary']
     },
     StudyCompleted: ({ research }): Note => [e.researched(t.catalog.research[research].name), 'ok'],
-    MigrationShifted: ({ step }): Note => [
-      e.migrationShifted(percent(MIGRATION_STEPS[step - 1] ?? 0)),
+    MigrationShifted: ({ step, scope }): Note => [
+      e.migrationShifted(percent(stepsFor(scope)[step - 1] ?? 0)),
       'primary',
     ],
   })

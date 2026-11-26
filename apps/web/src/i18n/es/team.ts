@@ -49,6 +49,7 @@ export const team: Messages['team'] = {
   resume: 'Reanudar',
   shiftTo: (p0: string | number | null) => `Pasar al ${p0}`,
   ofTraffic: (p0: string | number | null) => `${p0} del tráfico`,
+  ofWorkers: (p0: string | number | null) => `${p0} de los Workers`,
   wins: 'Gana',
   loses: 'Pierde',
   tooEarly: 'Aún es pronto',

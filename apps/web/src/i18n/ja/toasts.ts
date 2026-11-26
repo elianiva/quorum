@@ -179,10 +179,9 @@ export const toasts: Messages['toasts'] = {
   indexOnTop: 'インデックスの追加がバックログの先頭に来ました。',
   providerSwitched: '障害の最中に2つ目の決済プロバイダへ切り替えました。',
   collected: (amount) => `${amount}を回収しました。`,
-  migrationMoved: (share) => `アプリサーバーの${share}を移しました。`,
+  migrationMoved: (share) => `${share}を新しいスタックへ移しました。`,
   migrationDone: 'マイグレーション完了。',
-  migrationCancelled:
-    'マイグレーションを中止しました。アプリサーバーは元のスタックに戻っています。',
+  migrationCancelled: 'マイグレーションを中止しました。元のスタックに戻っています。',
   rolledBack: 'ロールバックしました。機能は次回のデプロイでまた出荷されます。',
   listed: (legacy) => `上場しました。+${legacy}レガシー。`,
   ipoFailed: 'IPOは成立しませんでした。',
@@ -242,6 +241,6 @@ export const toasts: Messages['toasts'] = {
       `${features}をバグ付きでデプロイしました。アプリサーバーがクラッシュしています。`,
     deployed: (features) => `${features}をデプロイしました。`,
     researched: (name) => `${name}のリサーチが完了しました。`,
-    migrationShifted: (share) => `アプリサーバーの${share}が新しいスタックへ移りました。`,
+    migrationShifted: (share) => `${share}が新しいスタックへ移りました。`,
   },
 }

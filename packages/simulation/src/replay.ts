@@ -156,7 +156,7 @@ const SETTERS: ReadonlyArray<readonly [ReadonlyArray<keyof GameNode>, Setter]> =
   [['dlq'], (game, id, node) => Actions.setDlq(game, id, node.dlq)],
   [['attempts'], (game, id, node) => Actions.setAttempts(game, id, node.attempts)],
   [['maxLength'], (game, id, node) => Actions.setMaxLength(game, id, node.maxLength)],
-  [['prefetch'], (game, id, node) => Actions.setPrefetch(game, id, node.prefetch)],
+  [['concurrency'], (game, id, node) => Actions.setConcurrency(game, id, node.concurrency)],
   [
     ['coalesce', 'warming', 'earlyExpiry', 'swr'],
     (game, id, node) =>

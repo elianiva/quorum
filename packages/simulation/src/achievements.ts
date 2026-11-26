@@ -188,7 +188,10 @@ const CHECKS: Partial<Record<AchievementId, (moment: Moment) => boolean>> = {
   },
   strangler: ({ events, ledger }) =>
     events.some(
-      (event) => event._tag === 'MigrationShifted' && event.step === MIGRATION_STEPS.length - 1,
+      (event) =>
+        event._tag === 'MigrationShifted' &&
+        event.scope === 'design' &&
+        event.step === MIGRATION_STEPS.length - 1,
     ) && ledger.errorShare < 0.01,
   polyglot: ({ after }) => languages(after).size >= 5,
   'zero-gc': ({ after, ledger }) =>

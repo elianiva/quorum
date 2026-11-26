@@ -21,7 +21,7 @@ export const options: Messages['options'] = {
   degradation: 'Degradación',
   readYourWrites: 'Leer tus escrituras',
   feeds: 'Feeds',
-  prefetch: 'Prefetch',
+  concurrency: 'Concurrencia',
   variant: 'Variante',
   policy: 'Política',
   sessions: 'Sesiones',

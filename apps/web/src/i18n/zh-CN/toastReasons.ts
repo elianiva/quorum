@@ -146,7 +146,7 @@ export const reasons: Messages['toasts']['reasons'] = {
   onlyAWAFHasAParanoiaLevel: '只有 WAF 拥有防护等级。',
   onlyAWideColumnStoreHasQuorums: '只有宽列存储拥有读写法定人数。',
   onlyAWideColumnStoreOrDistributed: '只有宽列存储或分布式 SQL 能跨地域分布。',
-  onlyAWorkerPrefetchesTasks: '只有工作进程能预取任务。',
+  onlyAWorkerSetsConcurrency: '只有工作进程能设置并发数。',
   onlyAnAPIGatewayHasThese: '只有 API 网关有这些设置。',
   onlyAnAPIGatewayHoldsAToken: '只有 API 网关有令牌桶。',
   onlyAnAPIGatewayRateLimits: '只有 API 网关能限流。',

@@ -44,6 +44,7 @@ export const team: Messages['team'] = {
   resume: '恢复',
   shiftTo: (p0) => `切换到 ${p0}`,
   ofTraffic: (p0) => `${p0} 的流量`,
+  ofWorkers: (p0) => `${p0} 的工作进程`,
   wins: '胜出',
   loses: '失败',
   tooEarly: '为时过早',

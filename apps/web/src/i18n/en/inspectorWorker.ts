@@ -1,3 +1,3 @@
 export const inspectorWorker = {
-  prefetch: 'Prefetch',
+  concurrency: 'Concurrency',
 }

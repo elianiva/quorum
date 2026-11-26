@@ -5,6 +5,8 @@ export const tradeoff: Messages['tradeoff'] = {
   cancelEscape: 'キャンセル (Esc)',
   migrationDHAcrossAllAppServers: (value) =>
     `マイグレーション: 全アプリサーバーで${value} DH。機能開発は遅くなり、ロールアウトで不具合が出る可能性があります。開始後はチームで作業を管理し、トラフィックを移してください。`,
+  migrationDHAcrossAllWorkers: (value) =>
+    `ワーカーマイグレーション: 全ワーカーで${value} DH。2ステップで進み、アプリサーバーのマイグレーションより機能開発への影響が小さくなります。開始後はチームで作業と切り替えを管理してください。`,
   confirmEnter: '確定 (Enter)',
   startMigration: 'マイグレーションを開始',
   confirm: '確定',

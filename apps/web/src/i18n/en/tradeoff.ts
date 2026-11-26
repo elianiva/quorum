@@ -3,6 +3,8 @@ export const tradeoff = {
   cancelEscape: 'Cancel (Escape)',
   migrationDHAcrossAllAppServers: (p0: string | number | null) =>
     `Migration: ${p0} DH across all App Servers. Feature work slows and rollout can expose bugs. Manage work and shift traffic in Team after starting.`,
+  migrationDHAcrossAllWorkers: (p0: string | number | null) =>
+    `Worker migration: ${p0} DH across all Workers. It builds in two steps and slows Feature work less than an App Server migration. Manage work and shift in Team after starting.`,
   confirmEnter: 'Confirm (Enter)',
   startMigration: 'Start migration',
   confirm: 'Confirm',

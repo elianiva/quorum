@@ -5,6 +5,8 @@ export const tradeoff: Messages['tradeoff'] = {
   cancelEscape: 'Annuler (Échap)',
   migrationDHAcrossAllAppServers: (p0) =>
     `Migration : ${p0} DH pour tous les serveurs applicatifs. Le développement ralentit et le déploiement peut révéler des bugs. Après le démarrage, gérez le travail et le trafic dans Équipe.`,
+  migrationDHAcrossAllWorkers: (p0) =>
+    `Migration des Workers : ${p0} DH pour tous les Workers. Elle se fait en deux étapes et ralentit moins les fonctionnalités qu'une migration de serveurs applicatifs. Après le démarrage, gérez le travail et le déploiement dans Équipe.`,
   confirmEnter: 'Confirmer (Entrée)',
   startMigration: 'Démarrer la migration',
   confirm: 'Confirmer',

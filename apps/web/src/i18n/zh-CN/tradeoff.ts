@@ -5,6 +5,8 @@ export const tradeoff: Messages['tradeoff'] = {
   cancelEscape: '取消（Esc）',
   migrationDHAcrossAllAppServers: (p0) =>
     `迁移所有应用服务器需要 ${p0} DH。功能开发会减慢，逐步上线可能暴露错误。开始后，请在团队中管理工作并切换流量。`,
+  migrationDHAcrossAllWorkers: (p0) =>
+    `迁移工作进程需要 ${p0} DH。分两步完成，对功能开发的影响小于应用服务器迁移。开始后，请在团队中管理工作并切换。`,
   confirmEnter: '确认（Enter）',
   startMigration: '开始迁移',
   confirm: '确认',

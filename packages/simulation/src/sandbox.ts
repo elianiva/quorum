@@ -210,6 +210,7 @@ export const seriesCData = (scale = 1): ReadonlyArray<GameNode> => [
     size: scale > 1 ? SIZES.length - 1 : 4,
     replicas: scale > 1 ? 3 : 1,
     runtime: 'go',
+    concurrency: scale > 1 ? 250 : 10,
   }),
 ]
 export const seriesCLinks = (

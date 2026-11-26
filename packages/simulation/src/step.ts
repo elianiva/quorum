@@ -268,8 +268,7 @@ const lostOnCrash = (game: Game, from: number, seconds: number): number => {
   for (const node of game.nodes) {
     if (node.type !== 'worker' || !isDown(node) || causeOf(node.life) === 'restart') continue
     if (node.downAt < from || node.downAt >= from + seconds) continue
-    const processes = RUNTIMES[node.runtime].pool ? node.workers : vcpuOf(node)
-    lost += node.prefetch * Math.max(1, processes) * copiesOf(node)
+    lost += node.concurrency * copiesOf(node)
   }
   return lost
 }

@@ -25,7 +25,7 @@ The App Server answers pages and reads itself, and for an export it hands a task
 
 The user waits only for the enqueue, which is fast, so slow work no longer holds a request slot. Queue depth becomes the first gauge to watch. When it grows, the Workers are too slow, and adding copies fixes it without touching the App Server.
 
-The settings keep it honest. A **dead-letter queue** parks a task that keeps failing, so it cannot loop forever. **Max attempts** says how many tries a task gets. **Max length** refuses new tasks when full, instead of letting a backlog grow unseen. A Worker's **Prefetch** lets each process take tasks ahead of time, which saves broker round trips and loses those tasks if it crashes.
+The settings keep it honest. A **dead-letter queue** parks a task that keeps failing, so it cannot loop forever. **Max attempts** says how many tries a task gets. **Max length** refuses new tasks when full, instead of letting a backlog grow unseen. A Worker's **Concurrency** decides how many tasks one copy runs at once, which is what turns a slow backend into a growing wait instead of a crash.
 
 ## What it costs
 

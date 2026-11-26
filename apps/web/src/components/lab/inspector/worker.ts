@@ -1,21 +1,21 @@
 import { copy } from '@/i18n/messages.ts'
 import type { Html, HtmlBuilder } from 'foldkit/html'
-import { PREFETCH } from '@quorum/simulation/catalog'
+import { CONCURRENCY } from '@quorum/simulation/catalog'
 import type { GameNode } from '@quorum/simulation/state'
 import { Message } from '@/game/message.ts'
 import { type Panel, picker, pinnedRuntime, section, serviceOwnership, stack } from './shared.ts'
 import { scaledNodeSections } from './scaling.ts'
 
-const prefetching = (node: GameNode, h: HtmlBuilder<Message>): Html => {
+const concurrency = (node: GameNode, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return section(
-    t.inspectorWorker.prefetch,
+    t.inspectorWorker.concurrency,
     [
       picker(
-        'prefetch',
-        PREFETCH.map((prefetch) => [prefetch, String(prefetch)] as const),
-        node.prefetch,
-        (prefetch) => Message.PrefetchChosen({ nodeId: node.id, prefetch }),
+        'concurrency',
+        CONCURRENCY.map((concurrency) => [concurrency, String(concurrency)] as const),
+        node.concurrency,
+        (concurrency) => Message.ConcurrencyChosen({ nodeId: node.id, concurrency }),
         h,
       ),
     ],
@@ -26,8 +26,8 @@ const prefetching = (node: GameNode, h: HtmlBuilder<Message>): Html => {
 export const workerPanel: Panel = {
   body: ({ model, game, node, ledger, h }) => [
     ...scaledNodeSections(game, ledger, node, h),
-    ...stack(model, node, h, pinnedRuntime(model, node)),
+    ...stack(model, node, h, pinnedRuntime(model, node), false),
     ...serviceOwnership(game, node, h),
-    prefetching(node, h),
+    concurrency(node, h),
   ],
 }

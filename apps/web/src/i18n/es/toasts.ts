@@ -187,10 +187,9 @@ export const toasts: Messages['toasts'] = {
   indexOnTop: 'Añadir índice está al principio del backlog.',
   providerSwitched: 'Cambiado a un segundo proveedor de pagos en mitad de la caída.',
   collected: (amount: Value) => `Cobrado ${amount}.`,
-  migrationMoved: (share: Value) => `${share} de los servidores de aplicaciones se movieron.`,
+  migrationMoved: (share: Value) => `${share} se movió al nuevo stack.`,
   migrationDone: 'Migración completada.',
-  migrationCancelled:
-    'Migración cancelada. Los servidores de aplicaciones vuelven al stack anterior.',
+  migrationCancelled: 'Migración cancelada. El stack anterior está de vuelta.',
   rolledBack: 'Revertido. Las funcionalidades se publican de nuevo en el próximo despliegue.',
   listed: (legacy: Value) => `Cotizada. +${legacy} de legado.`,
   ipoFailed: 'La IPO no salió adelante.',
@@ -253,7 +252,6 @@ export const toasts: Messages['toasts'] = {
       `Se desplegó ${features} con un bug. Los servidores de aplicaciones se están cayendo.`,
     deployed: (features: Value) => `Se desplegó ${features}.`,
     researched: (name: Value) => `Investigación completada: ${name}.`,
-    migrationShifted: (share: Value) =>
-      `${share} de los servidores de aplicaciones se movieron al nuevo stack.`,
+    migrationShifted: (share: Value) => `${share} se movió al nuevo stack.`,
   },
 }

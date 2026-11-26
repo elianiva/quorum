@@ -80,7 +80,7 @@ const fieldLabelOf = (t: Messages): Record<Managed, string> => ({
   dlq: t.mirror.deadLetterQueue,
   attempts: t.mirror.attempts,
   maxLength: t.mirror.maxLength,
-  prefetch: t.mirror.prefetch,
+  concurrency: t.mirror.concurrency,
   coalesce: t.mirror.stampedeProtection,
   warming: t.mirror.cacheWarming,
   paranoia: t.mirror.paranoia,

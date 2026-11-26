@@ -333,9 +333,9 @@ A Worker runs the same runtimes as an App Server, but it pulls `task` from a Que
 receiving user requests. Its latency does not count toward user latency. Its throughput decides
 how long the queue grows.
 
-| Option   | Effect                                                                                                                             |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Prefetch | Jobs taken from the queue ahead of time. Higher prefetch is faster, a crash loses more jobs, and each job held takes 20 MB of RAM. |
+| Option      | Effect                                                                                                                                                                                           |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Concurrency | Tasks one copy runs at once. Higher concurrency overlaps I/O waits, a crash loses more in-flight work, and each task held takes 20 MB of RAM. Past the core count, CPU-heavy tasks gain nothing. |
 
 ### Serverless Function
 

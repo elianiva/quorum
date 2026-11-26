@@ -1,14 +1,6 @@
 import { Actions } from '../board-actions.ts'
 import { Work } from '../board-actions.ts'
-import {
-  FEATURES,
-  INCIDENTS,
-  KINDS,
-  MIGRATION_STEPS,
-  POLICIES,
-  RESEARCH,
-  TASKS,
-} from '@quorum/simulation/catalog'
+import { FEATURES, INCIDENTS, KINDS, POLICIES, RESEARCH, TASKS } from '@quorum/simulation/catalog'
 import { Message } from '../message.ts'
 import { Option, Result } from 'effect'
 import { ResearchMessage, ResearchOutMessage, updateResearch } from '../research.ts'
@@ -23,7 +15,7 @@ import { say, act, percent, withToast, type MessageCases, type UpdateResult } fr
 import { refusalIn } from '../../i18n/refusal.ts'
 import { learnTargetOf, serviceOf } from '@quorum/simulation/team'
 import { stallReasonIn } from '../../i18n/format.ts'
-import { stepOf } from '@quorum/simulation/migration'
+import { stepsOf, stepOf } from '@quorum/simulation/migration'
 import { studyStall } from '@quorum/simulation/studies'
 import { currentStudy, studyList } from '@quorum/simulation/study-machine'
 
@@ -366,7 +358,7 @@ export const teamHandlers = (model: Model): MessageCases<UpdateResult, TeamTag> 
           ? [say(model).toasts.migrationDone, 'ok']
           : [
               say(model).toasts.migrationMoved(
-                percent(MIGRATION_STEPS[stepOf(migration) - 1] ?? 0),
+                percent(stepsOf(migration)[stepOf(migration) - 1] ?? 0),
               ),
               'ok',
             ]

@@ -30,7 +30,8 @@ the simulated effect on the player's own design ([Interface](/design/15-ui-ux#tr
 ## The capacity model
 
 An App Server's capacity is the minimum of four limits. The tightest one is the bottleneck, and
-the card always names it ([Observability](/design/12-observability#the-visibility-ladder)).
+the card always names it ([Observability](/design/12-observability#the-visibility-ladder)). A Worker
+uses the same equation, with its Concurrency in place of the runtime's slot count.
 
 ```latex
 \text{capacity} = \operatorname{min}\left(\text{cpu limit},\ \text{concurrency limit},\ \text{memory limit},\ \text{network limit}\right)

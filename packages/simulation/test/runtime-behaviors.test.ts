@@ -479,37 +479,57 @@ describe('GPU serving options', () => {
   })
 })
 
-describe('Worker prefetch', () => {
-  const ramShare = (prefetch: number): number => {
+describe('Worker concurrency', () => {
+  const worker = (concurrency: number) => {
     const game = freeSandbox()
     const queue = ok(Actions.place(game, 'queue', 400, 100))
     const queueId = queue.nodes.at(-1)!.id
-    const worker = ok(
+    const placed = ok(
       Actions.place(ok(Actions.connect(queue, 'server', queueId)), 'worker', 600, 100),
     )
-    const workerId = worker.nodes.at(-1)!.id
+    const workerId = placed.nodes.at(-1)!.id
     const wired = ok(
-      Actions.connect(ok(Actions.connect(worker, queueId, workerId)), workerId, 'database'),
+      Actions.connect(ok(Actions.connect(placed, queueId, workerId)), workerId, 'database'),
     )
-    const { used, total } = solveFlow({
+    return solveFlow({
       ...wired,
       stage: 4,
       users: 10_000,
-      scenario: { mix: { page: 0.5, read: 0.3, job: 0.2 } },
+      scenario: { mix: { page: 0.2, read: 0.2, job: 0.6 } },
       nodes: wired.nodes.map((node) =>
         node.id === workerId
-          ? { ...node, runtime: 'go', size: 2, family: 'compute', prefetch, replicas: 60, warm: 1 }
+          ? {
+              ...node,
+              runtime: 'go',
+              size: 1,
+              family: 'compute',
+              concurrency,
+              replicas: 1,
+              warm: 1,
+            }
           : node.id === queueId
-            ? { ...node, warm: 1 }
+            ? { ...node, depth: 1_000_000, warm: 1 }
             : node,
       ),
-    }).nodes[workerId]!.resources.ramGb!
-    return used / total
+    }).nodes[workerId]!
   }
 
-  test('each prefetched task holds RAM, so a deep prefetch crowds a small Worker', () => {
-    expect(ramShare(100)).toBeGreaterThan(ramShare(10) * 3)
-    expect(ramShare(10)).toBeGreaterThan(ramShare(1))
+  test('concurrency caps how many tasks one copy runs at once', () => {
+    const low = worker(1)
+    const high = worker(50)
+    expect(low.resources.slots?.total).toBe(1)
+    expect(high.resources.slots?.total).toBe(50)
+    expect(low.capacity).toBeLessThan(high.capacity)
+    expect(low.limit).toBe('workers')
+  })
+
+  test('each in-flight task holds RAM, so a deep concurrency crowds a small Worker', () => {
+    const share = (concurrency: number): number => {
+      const { used, total } = worker(concurrency).resources.ramGb!
+      return used / total
+    }
+    expect(share(100)).toBeGreaterThan(share(10) * 3)
+    expect(share(10)).toBeGreaterThan(share(1))
   })
 })
 

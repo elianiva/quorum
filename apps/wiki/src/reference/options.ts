@@ -20,7 +20,7 @@ import {
   LOG_RETENTION,
   MAX_ATTEMPTS,
   PARANOIA,
-  PREFETCH,
+  CONCURRENCY,
   QUORUM_N,
   QUEUE_LENGTHS,
   ROLLOUT_STEPS,
@@ -110,7 +110,7 @@ export const optionControls = (
       { name: o.readYourWrites, settings: o.readsAnywhere, shown: after('ryw-routing') },
       { name: o.feeds, settings: o.pullPush, shown: o.twoOpenRegions },
     ],
-    worker: [...stack, { name: o.prefetch, settings: list(PREFETCH), shown: o.always }],
+    worker: [...stack, { name: o.concurrency, settings: list(CONCURRENCY), shown: o.always }],
     lb: [
       {
         name: o.variant,

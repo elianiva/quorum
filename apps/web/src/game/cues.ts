@@ -62,6 +62,7 @@ const gestureCue = (before: Model, message: Message, after: Model): Cue | null =
     case 'RuntimeChosen':
     case 'FrameworkChosen':
     case 'WorkersChosen':
+    case 'ConcurrencyChosen':
     case 'SampleChosen':
     case 'MixChosen':
     case 'FullscreenToggled':

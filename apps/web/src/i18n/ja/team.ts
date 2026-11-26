@@ -44,6 +44,7 @@ export const team: Messages['team'] = {
   resume: '再開',
   shiftTo: (p0) => `${p0}へ切り替え`,
   ofTraffic: (p0) => `${p0}のトラフィック`,
+  ofWorkers: (p0) => `ワーカーの${p0}`,
   wins: '勝ち',
   loses: '負け',
   tooEarly: 'まだ早い',

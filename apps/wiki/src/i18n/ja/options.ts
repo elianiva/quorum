@@ -21,7 +21,7 @@ export const options: Messages['options'] = {
   degradation: 'デグラデーション',
   readYourWrites: '自分の書き込みを読む',
   feeds: 'フィード',
-  prefetch: 'プリフェッチ',
+  concurrency: '同時実行数',
   variant: 'バリアント',
   policy: 'ポリシー',
   sessions: 'セッション',

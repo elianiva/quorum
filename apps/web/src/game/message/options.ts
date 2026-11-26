@@ -119,7 +119,7 @@ export const optionsCases = {
   DlqChosen: { nodeId: Schema.String, dlq: Schema.Boolean },
   AttemptsChosen: { nodeId: Schema.String, attempts: Schema.Finite },
   MaxLengthChosen: { nodeId: Schema.String, maxLength: Schema.Finite },
-  PrefetchChosen: { nodeId: Schema.String, prefetch: Schema.Finite },
+  ConcurrencyChosen: { nodeId: Schema.String, concurrency: Schema.Finite },
   ParanoiaChosen: { nodeId: Schema.String, paranoia: Paranoia },
   UnderAttackChosen: { nodeId: Schema.String, underAttack: Schema.Boolean },
   RateLimitChosen: { nodeId: Schema.String, rateLimit: Schema.Finite },

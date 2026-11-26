@@ -167,23 +167,28 @@ export const fixed = (game: Game, fix: FixId): boolean =>
 
 const servers = (game: Game) => game.nodes.filter((node) => node.type === 'server')
 
+const stackNodes = (game: Game): ReadonlyArray<GameNode> => {
+  const apps = servers(game)
+  return apps.length > 0 ? apps : game.nodes.filter((node) => node.type === 'worker')
+}
+
 export const stackOf = (game: Game): Readonly<{ runtime: RuntimeId; framework: FrameworkId }> => {
   const counts = new Map<string, number>()
-  for (const node of servers(game)) {
+  for (const node of stackNodes(game)) {
     const key = `${node.runtime}/${node.framework}`
     counts.set(key, (counts.get(key) ?? 0) + 1)
   }
   let best: string | null = null
   for (const [key, count] of counts)
     if (best === null || count > (counts.get(best) ?? 0)) best = key
-  const first = servers(game)[0]
+  const first = stackNodes(game)[0]
   if (best === null || !first) return { runtime: 'mod_php', framework: 'none' }
   const [runtime, framework] = best.split('/') as [RuntimeId, FrameworkId]
   return { runtime, framework }
 }
 
 export const languageOfService = (game: Game): LanguageId => {
-  const node = servers(game).find((entry) => entry.runtime === stackOf(game).runtime)
+  const node = stackNodes(game).find((entry) => entry.runtime === stackOf(game).runtime)
   return node ? languageOf(node) : 'php'
 }
 

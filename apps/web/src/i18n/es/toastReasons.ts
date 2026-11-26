@@ -168,7 +168,7 @@ export const reasons: Messages['toasts']['reasons'] = {
   onlyAWideColumnStoreHasQuorums: 'Solo un almacén de columnas anchas tiene quórums.',
   onlyAWideColumnStoreOrDistributed:
     'Solo un almacén de columnas anchas o SQL distribuido se reparte entre regiones.',
-  onlyAWorkerPrefetchesTasks: 'Solo un worker precarga tareas.',
+  onlyAWorkerSetsConcurrency: 'Solo un worker ajusta su concurrencia.',
   onlyAnAPIGatewayHasThese: 'Solo un API Gateway tiene esto.',
   onlyAnAPIGatewayHoldsAToken: 'Solo un API Gateway tiene un token bucket.',
   onlyAnAPIGatewayRateLimits: 'Solo un API Gateway limita la tasa.',

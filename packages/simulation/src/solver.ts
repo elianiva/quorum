@@ -181,7 +181,7 @@ const SLOT = {
   localDb: 13,
   leak: 14,
   credits: 15,
-  prefetch: 16,
+  concurrency: 16,
   pm: 17,
   gogc: 18,
   collector: 19,
@@ -544,7 +544,7 @@ const writeGame = (exports: Exports, game: Game, design: Graph): void => {
     row[SLOT.localDb] = node.localDb ? 1 : 0
     row[SLOT.leak] = node.leak
     row[SLOT.credits] = node.credits
-    row[SLOT.prefetch] = node.prefetch
+    row[SLOT.concurrency] = node.concurrency
     row[SLOT.pm] = indexIn(POOLING, node.pm)
     const gogc = S.GOGC.findIndex((entry) => entry.gogc === node.gogc)
     row[SLOT.gogc] = gogc < 0 ? 1 : gogc

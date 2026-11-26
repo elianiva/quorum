@@ -260,10 +260,10 @@ export const step2 = {
             'Several copies drain the backlog faster than one box could, and Queue depth tells you when to add more.',
           ),
           set(
-            'prefetch',
+            'concurrency',
             10,
-            'Prefetch',
-            'Each process takes ten tasks ahead of time, which spares broker round trips. A crash loses only those ten.',
+            'Concurrency',
+            'Each copy runs ten tasks at once, so one slow task does not hold the whole Worker. A crash loses those ten.',
           ),
         ]),
       ],

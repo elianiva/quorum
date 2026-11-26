@@ -68,6 +68,6 @@
   (per-scan 40)
   (per-spilled-read 4))
 
-(def prefetch-task-mb 20)
+(def worker-task-mb 20)
 
 (def vm-restart-seconds 1)

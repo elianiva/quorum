@@ -50,7 +50,7 @@ export const mirror = {
   shardKey: 'Shard key',
   deadLetterQueue: 'Dead-letter queue',
   maxLength: 'Max length',
-  prefetch: 'Prefetch',
+  concurrency: 'Concurrency',
   stampedeProtection: 'Stampede protection',
   cacheWarming: 'Cache warming',
   paranoia: 'Paranoia',

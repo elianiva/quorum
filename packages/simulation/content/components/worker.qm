@@ -17,8 +17,10 @@
 
 (def fetch-ms 20)
 
-(def prefetch
+(def concurrency
   :type const
-  [1 10 100])
+  [1 5 10 25 50 100 250])
+
+(def prefetch-tasks 10)
 
 (def task-retry-seconds 30)

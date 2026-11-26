@@ -40,6 +40,7 @@ import {
   MAX_LEVER_STEP,
   MIGRATION_FACTORS,
   MIGRATION_FEATURE_SPEED,
+  WORKER_MIGRATION_FEATURE_SPEED,
   MOOD_START,
   POLICIES,
   REFACTOR_PER_DH,
@@ -110,6 +111,7 @@ import {
   isReady,
   shiftMigration,
   startMigration,
+  startWorkerMigration,
   stepOf,
   targetOf,
   trancheBuilt,
@@ -1319,7 +1321,7 @@ export const changeStack = (
 ): Action => {
   const node = game.nodes.find((entry) => entry.id === nodeId)
   if (!node) return no(Refusal.Missing())
-  if (game.sandbox || node.type !== 'server')
+  if (game.sandbox || (node.type !== 'server' && node.type !== 'worker'))
     return choice.runtime
       ? setRuntime(game, nodeId, choice.runtime)
       : setFramework(game, nodeId, choice.framework ?? node.framework)
@@ -1331,7 +1333,9 @@ export const changeStack = (
       (target.runtime === node.runtime && target.framework === node.framework))
   )
     return ok(game)
-  return startMigration(game, target)
+  return node.type === 'worker'
+    ? startWorkerMigration(game, nodeId, target)
+    : startMigration(game, target)
 }
 
 export { cancelMigration, shiftMigration }
@@ -1372,7 +1376,9 @@ const autopilot = (game: Game, events: Array<StepEvent>): Game => {
     const shifted = shiftMigration(next)
     if (Result.isSuccess(shifted)) {
       next = shifted.success
-      events.push(StepEvent.MigrationShifted({ step: stepOf(migration) + 1 }))
+      events.push(
+        StepEvent.MigrationShifted({ step: stepOf(migration) + 1, scope: migration.scope }),
+      )
     }
   }
   while (next.backlog.length < next.teams.length) {
@@ -1689,7 +1695,12 @@ export const advanceTeam = (
 
   if (next.autopilot) next = autopilot(next, events)
 
-  const migrating = !migrationIdle(serviceOf(next).migration)
+  const migration = serviceOf(next).migration
+  const migrating = !migrationIdle(migration)
+  const featureSpeed =
+    migrating && migration.scope === 'worker'
+      ? WORKER_MIGRATION_FEATURE_SPEED
+      : MIGRATION_FEATURE_SPEED
   const backlog = next.backlog.map((item) => ({ ...item }))
   const taken = new Set<number>()
   let pool = next.devHours
@@ -1735,7 +1746,7 @@ export const advanceTeam = (
       }
     }
     taken.add(item.id)
-    const speed = item.kind === 'feature' && migrating ? MIGRATION_FEATURE_SPEED : 1
+    const speed = item.kind === 'feature' && migrating ? featureSpeed : 1
     const put = Math.min(item.cost - item.spent, (made - kept) * speed)
     item.spent += put
     pool += made - kept - put / speed

@@ -19,7 +19,7 @@ aliases: worker pool, parallel consumers, consumer group, prefetch, work queue, 
 
 ブローカーは各タスクを 1 つの準備できたコンシューマーに渡し、確認応答を待ちます。コンシューマーが ack の前に死ぬと、ブローカーはタスクを別のものへ渡します。だから配信は at-least-once です。1 つのワーカーが毎秒 20 タスクを処理し、100 が届くなら、5 つのワーカーで追いつきます。
 
-プリフェッチは、ワーカーが先に取るタスクの数です。高い値はブローカーとの往復を隠します。低い値はタスクの長さがまちまちなときに公平に配り、落ちたワーカーに残るタスクを少なくします。
+同時実行数は、1 つのワーカーが同時に動かすタスクの数です。高い値は待ちを重ね、I/O 中心の仕事でワーカーを忙しく保ちます。低い値は CPU や後続サービスを守り、落ちたワーカーに残る仕事を少なくします。
 
 ## コスト
 
@@ -29,6 +29,6 @@ aliases: worker pool, parallel consumers, consumer group, prefetch, work queue, 
 
 ::Design{id="competing-workers"}
 
-2 つの[ワーカー](/components/worker)が同じ[キュー](/components/queue)にリンクし、キューが届いたものをそれぞれに差し出します。プリフェッチはワーカーの設定です。クラッシュするとプロセスが取っていたタスクがすべて失われ、計画的な再起動では先にそれらを返します。ワーカーが増えるときは[コネクションプーラー](/components/pooler)がデータベースを守ります。
+2 つの[ワーカー](/components/worker)が同じ[キュー](/components/queue)にリンクし、キューが届いたものをそれぞれに差し出します。同時実行数はワーカーの設定です。クラッシュすると実行中のタスクがすべて失われ、計画的な再起動では先にそれらを返します。ワーカーが増えるときは[コネクションプーラー](/components/pooler)がデータベースを守ります。
 
 キュー深度で[オートスケーラー](/components/autoscaler)を使ってコピーを足します。リサーチ[バックグラウンドジョブ](/research/background-jobs)と[メッセージキュー](/research/queues)を行います。用語集が[at-least-once 配信](/glossary/at-least-once-delivery)を定義しています。

@@ -77,7 +77,7 @@ El juego modela bien el núcleo de cola y workers. Este tablero muestra los desc
 
 ::Design{id="competing-workers"}
 
-Mira cómo la Cola ofrece trabajo a cada Worker, y qué hace una caída con las tareas que un Worker ya había tomado. Ese es el verdadero compromiso del prefetch en una flota de descargadores.
+Mira cómo la Cola ofrece trabajo a cada Worker, y qué hace una caída con las tareas que un Worker tenía en vuelo. Ese es el verdadero compromiso de la concurrencia en una flota de descargadores.
 
 El siguiente tablero muestra la frontera con un límite. Usa una Cola con una longitud máxima y un Worker más lento que las llegadas:
 

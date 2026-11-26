@@ -77,7 +77,7 @@ The game models the queue-and-workers core well. This board shows fetchers as se
 
 ::Design{id="competing-workers"}
 
-Look at how the Queue offers work to each Worker, and what a crash does to the tasks a Worker had already taken. That is the real tradeoff of prefetch in a fetch fleet.
+Look at how the Queue offers work to each Worker, and what a crash does to the tasks a Worker had in flight. That is the real tradeoff of concurrency in a fetch fleet.
 
 The next board shows the frontier with a limit. It uses a Queue with a maximum length and a Worker slower than the arrivals:
 

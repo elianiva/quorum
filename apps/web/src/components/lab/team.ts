@@ -38,7 +38,6 @@ import {
   FEATURE_IDS,
   LANGUAGES,
   LEVER_KINDS,
-  MIGRATION_STEPS,
   POLICY_IDS,
   RESEARCH,
   RUNTIMES,
@@ -117,7 +116,7 @@ import {
   liftReading,
   liveFeatures,
 } from '@quorum/simulation/features'
-import { isReady, stepOf } from '@quorum/simulation/migration'
+import { isReady, stepsOf, stepOf } from '@quorum/simulation/migration'
 import {
   PLATFORM_STAGE,
   assignments,
@@ -2688,9 +2687,10 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
   const migration = serviceOf(game).migration
   if (migration._tag === 'Idle') return h.empty
   const shifted = stepOf(migration)
+  const steps = stepsOf(migration)
   const done = migration._tag === 'Finishing'
-  const current = shifted > 0 ? (MIGRATION_STEPS[shifted - 1] ?? 1) : 0
-  const next = MIGRATION_STEPS[shifted] ?? 1
+  const current = shifted > 0 ? (steps[shifted - 1] ?? 1) : 0
+  const next = steps[shifted] ?? 1
   const language = RUNTIMES[migration.runtime].language
   const brand = STACK_LOGOS[language].color ?? 'var(--group-compute)'
   const step = game.backlog.find((item) => item.kind === 'migration')
@@ -2972,7 +2972,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                 ],
                 [],
               ),
-              ...MIGRATION_STEPS.slice(0, -1).map((share, at) =>
+              ...steps.slice(0, -1).map((share, at) =>
                 h.div(
                   [
                     h.Key(`tick-${at}`),
@@ -3006,7 +3006,11 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                     ),
                   ),
                 ],
-                [t.team.ofTraffic(percent(current))],
+                [
+                  migration.scope === 'worker'
+                    ? t.team.ofWorkers(percent(current))
+                    : t.team.ofTraffic(percent(current)),
+                ],
               ),
             ],
           ),
@@ -3019,7 +3023,7 @@ const migrationCard = (game: Game, h: HtmlBuilder<Message>): Html => {
                 }),
               ),
             ],
-            MIGRATION_STEPS.map((share, at) =>
+            steps.map((share, at) =>
               h.span(
                 [
                   h.Key(`label-${at}`),

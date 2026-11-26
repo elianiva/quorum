@@ -424,7 +424,7 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
   const now = stackOf(current)
   const migration =
     !model.board.game.sandbox &&
-    node.type === 'server' &&
+    (node.type === 'server' || node.type === 'worker') &&
     (card.option.kind === 'runtime' || card.option.kind === 'framework')
       ? targetOf(
           node,
@@ -508,7 +508,20 @@ export const tradeoffCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                 }),
               ),
             ],
-            [t.tradeoff.migrationDHAcrossAllAppServers(migrationCost(model.board.game, migration))],
+            [
+              node.type === 'worker'
+                ? t.tradeoff.migrationDHAcrossAllWorkers(
+                    migrationCost(
+                      model.board.game,
+                      migration,
+                      { runtime: node.runtime, framework: node.framework },
+                      'worker',
+                    ),
+                  )
+                : t.tradeoff.migrationDHAcrossAllAppServers(
+                    migrationCost(model.board.game, migration),
+                  ),
+            ],
           )
         : h.empty,
       stack && stack.glossary.length > 0

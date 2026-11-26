@@ -499,6 +499,7 @@ export const stack = (
   node: GameNode,
   h: HtmlBuilder<Message>,
   reviewingRuntime: RuntimeId | null,
+  pool = true,
 ): ReadonlyArray<Html> => {
   const t = copy(h)
   const game = model.board.game
@@ -532,7 +533,7 @@ export const stack = (
       h,
       reviewingRuntime !== null,
     ),
-    ...(runtime.pool
+    ...(pool && runtime.pool
       ? [section(t.inspectorShared.poolSize, [poolControl(model, node, fit, t, h)], h)]
       : []),
     section(

@@ -15,7 +15,7 @@ export type StepEvent = Data.TaggedEnum<{
   Hired: { readonly engineerId: string }
   WorkFinished: { readonly item: WorkItem }
   Deployed: { readonly features: ReadonlyArray<FeatureId>; readonly bad: boolean }
-  MigrationShifted: { readonly step: number }
+  MigrationShifted: { readonly step: number; readonly scope: 'design' | 'worker' }
   CveDisclosed: { readonly item: WorkItem }
   PatchProposed: { readonly item: WorkItem; readonly engineerId: string }
   Blocked: { readonly item: WorkItem; readonly reason: BlockKind; readonly engineerId: string }

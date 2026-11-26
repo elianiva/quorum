@@ -17,7 +17,7 @@ pub const S_COMPRESS: usize = 12;
 pub const S_LOCAL_DB: usize = 13;
 pub const S_LEAK: usize = 14;
 pub const S_CREDITS: usize = 15;
-pub const S_PREFETCH: usize = 16;
+pub const S_CONCURRENCY: usize = 16;
 pub const S_PM: usize = 17;
 pub const S_GOGC: usize = 18;
 pub const S_COLLECTOR: usize = 19;
@@ -598,7 +598,7 @@ pub fn node_of(row: &[f64]) -> Node {
         local_db: flag(S_LOCAL_DB),
         leak: slot(S_LEAK),
         credits: slot(S_CREDITS),
-        prefetch: slot(S_PREFETCH),
+        concurrency: slot(S_CONCURRENCY),
         pm: slot(S_PM) as usize,
         gogc: slot(S_GOGC) as usize,
         collector: slot(S_COLLECTOR) as usize,

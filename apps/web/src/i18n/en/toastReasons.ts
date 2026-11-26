@@ -152,7 +152,7 @@ export const reasons = {
   onlyAWideColumnStoreHasQuorums: 'Only a Wide-column Store has quorums.',
   onlyAWideColumnStoreOrDistributed:
     'Only a Wide-column Store or Distributed SQL spreads across regions.',
-  onlyAWorkerPrefetchesTasks: 'Only a Worker prefetches tasks.',
+  onlyAWorkerSetsConcurrency: 'Only a Worker sets its concurrency.',
   onlyAnAPIGatewayHasThese: 'Only an API Gateway has these.',
   onlyAnAPIGatewayHoldsAToken: 'Only an API Gateway holds a token bucket.',
   onlyAnAPIGatewayRateLimits: 'Only an API Gateway rate-limits.',

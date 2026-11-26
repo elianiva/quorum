@@ -94,7 +94,7 @@ export const node = (
   dlq: false,
   attempts: 25,
   maxLength: 0,
-  prefetch: 10,
+  concurrency: 10,
   upgradedAt: 0,
   coalesce: false,
   warming: false,

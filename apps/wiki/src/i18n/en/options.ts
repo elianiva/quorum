@@ -19,7 +19,7 @@ export const options = {
   degradation: 'Degradation',
   readYourWrites: 'Read your writes',
   feeds: 'Feeds',
-  prefetch: 'Prefetch',
+  concurrency: 'Concurrency',
   variant: 'Variant',
   policy: 'Policy',
   sessions: 'Sessions',

@@ -162,7 +162,7 @@ export const reasons: Messages['toasts']['reasons'] = {
   onlyAWideColumnStoreHasQuorums: 'クォーラムを持つのはワイドカラムストアだけです。',
   onlyAWideColumnStoreOrDistributed:
     'リージョン間に広がるのはワイドカラムストアか分散SQLだけです。',
-  onlyAWorkerPrefetchesTasks: 'タスクを先読みするのはワーカーだけです。',
+  onlyAWorkerSetsConcurrency: '同時実行数を設定できるのはワーカーだけです。',
   onlyAnAPIGatewayHasThese: 'これらの設定を持つのはAPIゲートウェイだけです。',
   onlyAnAPIGatewayHoldsAToken: 'トークンバケットを持つのはAPIゲートウェイだけです。',
   onlyAnAPIGatewayRateLimits: 'レート制限を行うのはAPIゲートウェイだけです。',

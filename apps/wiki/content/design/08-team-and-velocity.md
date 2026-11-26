@@ -225,7 +225,7 @@ copy stays with its source. Moving a Node to another Service reconfigures and re
 recovers capacity before it serves again. The
 Team panel lists each Service's Nodes and the Load Balancers that send traffic to them. Burn is
 still reported per Service in proportion to its share of the codebase (KLOC), not from its Nodes. A
-Stack change still migrates the whole Design, not one Service.
+Stack change still reaches every Node of its kind in the Design, not one Service.
 
 | Gain                                           | Cost                                                                                              |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -613,17 +613,21 @@ A migration changes a service's language, moves a capability between Components,
 | Move auth in-house from an Auth Provider  | Fixed 120             | The Auth Provider leaves the Design. App Servers hash passwords, and the per-user fee ends.                                                  |
 | Database engine change                    | 0.8                   | Plus a data copy that takes one calendar minute per GB the Databases hold. The Database keeps serving on the old engine until the copy ends. |
 
-A Stack change moves a Service's runtime and framework, and a split makes a new Service
-([Services](#services)). A language change leaves the engineers who do not know the new language at
-70% of their output until they learn it ([Learning a Stack](#learning-a-stack)). Moving auth in-house is queued from the Auth Provider's card, and a
-Database engine change from the Database's engine picker. Each is one backlog item, and only the
-engine change adds a copy after the Dev Hours.
+An App Server Stack change moves every App Server in the Design, and a split makes a new Service
+([Services](#services)). A Worker Stack change is a smaller migration of every Worker: two steps at
+40% of the cost, because no user traffic moves and the Queue can drain the old Workers. A Service
+runs one migration at a time, so a Worker migration waits for an App Server migration and the other
+way round. A language change leaves the engineers who do not know the new language at 70% of their
+output until they learn it ([Learning a Stack](#learning-a-stack)). Moving auth in-house is queued
+from the Auth Provider's card, and a Database engine change from the Database's engine picker. Each
+is one backlog item, and only the engine change adds a copy after the Dev Hours. The first tranche
+is built before any Node changes Stack, so the change never happens at once.
 
 During a migration:
 
-- Both versions run, and the player shifts traffic in steps (strangler pattern): 5%, 25%, 50%, 100%.
-- Each step can reveal bugs, which appear as a small error rate on the new version until fixed.
-- Features on that service ship at half speed.
+- Both versions run, and the player shifts in steps (strangler pattern). App Servers move at 5%, 25%, 50%, and 100%; Workers move at 50% and 100%.
+- Each App Server step can reveal bugs, which appear as a small error rate on the new version until fixed. A Worker migration has no user-facing bug phase.
+- Features on that service ship at half speed during an App Server migration, and at 80% speed during a Worker migration.
 
 The "big rewrite" is a trap. A full-company language change while competitors ship features costs
 users. The game makes this visible with a market-share line in the Series B Era and later.

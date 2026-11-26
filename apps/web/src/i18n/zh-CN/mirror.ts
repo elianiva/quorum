@@ -49,7 +49,7 @@ export const mirror: Messages['mirror'] = {
   shardKey: '分片键',
   deadLetterQueue: '死信队列',
   maxLength: '最大长度',
-  prefetch: '预取',
+  concurrency: '并发数',
   stampedeProtection: '缓存击穿防护',
   cacheWarming: '缓存预热',
   paranoia: '防护等级',

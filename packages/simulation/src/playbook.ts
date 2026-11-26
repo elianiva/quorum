@@ -87,7 +87,7 @@ export const NODE_SETTINGS = [
   'dlq',
   'attempts',
   'maxLength',
-  'prefetch',
+  'concurrency',
   'coalesce',
   'warming',
   'paranoia',

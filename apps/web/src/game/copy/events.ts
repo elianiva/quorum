@@ -478,23 +478,23 @@ ${from}`,
   migration: [
     ({ from, share }) => ({
       subject: `Migration progress: ${share} on the new Stack`,
-      body: `Hello,\n\nMigration update: ${share} of your App Servers now run on the new Stack.\n\nNo incident to report, which is why this email is so short and why nobody woke you up for it.\n\n${from}`,
+      body: `Hello,\n\nMigration update: ${share} of your fleet now runs on the new Stack.\n\nNo incident to report, which is why this email is so short and why nobody woke you up for it.\n\n${from}`,
     }),
     ({ from, share }) => ({
-      subject: `${share} of App Servers moved`,
-      body: `Hi,\n\nThe new Stack line is going up and to the right, the good way for once: ${share} of App Servers have moved over.\n\nTwo lines share the panel now, old Stack and new. Pick a favourite. We already know which one is going to win.\n\nThe ${from} team`,
+      subject: `${share} moved to the new Stack`,
+      body: `Hi,\n\nThe new Stack line is going up and to the right, the good way for once: ${share} of your fleet have moved over.\n\nTwo lines share the panel now, old Stack and new. Pick a favourite. We already know which one is going to win.\n\nThe ${from} team`,
     }),
     ({ from, share }) => ({
       subject: `Release tracking: new Stack at ${share}`,
-      body: `Hi,\n\nWe're tracking the move: ${share} of your App Servers now run on the new Stack.\n\nWe'll be watching for anything new it brings with it. We always do. It's the only thing we do.\n\n— ${from}`,
+      body: `Hi,\n\nWe're tracking the move: ${share} of your fleet now runs on the new Stack.\n\nWe'll be watching for anything new it brings with it. We always do. It's the only thing we do.\n\n— ${from}`,
     }),
     ({ from, share }) => ({
       subject: `Re: migration — now ${share}`,
-      body: `Hi again,\n\nThe migration keeps moving. ${share} of App Servers are on the new Stack now.\n\nEvery migration has a long middle where both Stacks are running and nobody can quite remember why the old one existed. You're in it.\n\nRegards,\n${from}`,
+      body: `Hi again,\n\nThe migration keeps moving. ${share} of your fleet are on the new Stack now.\n\nEvery migration has a long middle where both Stacks are running and nobody can quite remember why the old one existed. You're in it.\n\nRegards,\n${from}`,
     }),
     ({ from, share }) => ({
       subject: `Status: Stack migration at ${share}`,
-      body: `MIGRATION STATUS\n\nApp Servers on the new Stack: ${share}\nApp Servers on the old Stack: the rest\nPages sent about this: 0\n\nThis notice is informational. Nothing is on fire. We checked twice, because it felt unusual.\n\n${from}`,
+      body: `MIGRATION STATUS\n\nOn the new Stack: ${share}\nOn the old Stack: the rest\nPages sent about this: 0\n\nThis notice is informational. Nothing is on fire. We checked twice, because it felt unusual.\n\n${from}`,
     }),
   ],
 }

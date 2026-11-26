@@ -80,7 +80,7 @@ export const MANAGED = [
   'dlq',
   'attempts',
   'maxLength',
-  'prefetch',
+  'concurrency',
   'coalesce',
   'warming',
   'paranoia',

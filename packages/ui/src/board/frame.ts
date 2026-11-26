@@ -97,6 +97,7 @@ export const animate = (c: BoardController, seconds: number): void => {
   const { mouths, moved } = drawBelts(f)
   c.packets.end()
   c.places.end()
+  c.tips.end()
   c.chevrons.end()
   c.drawBoxes(state.game, colors)
   c.drawReplication(state, colors)
@@ -121,6 +122,7 @@ const drawBelts = (f: Frame): Readonly<{ mouths: Array<Mouth>; moved: boolean }>
   if (c.arrows.context.instructions.length > 0) c.arrows.clear()
   c.notes.begin()
   c.places.begin()
+  c.tips.begin()
   if (c.overlay.context.instructions.length > 0) c.overlay.clear()
   const mouths: Array<Mouth> = []
   c.syncBelts(state.game.links)
@@ -171,13 +173,14 @@ const drawBelts = (f: Frame): Readonly<{ mouths: Array<Mouth>; moved: boolean }>
     const packet = mix(hue, colors.canvas, colors.wireMute)
     const zonal = zoneMs(from, to) > 0
     const focused = focus !== null && !off
-    const rail = hovered
-      ? colors.accent
-      : zonal && focused
+    const rail =
+      zonal && (hovered || focused)
         ? colors.warn
-        : focused || flow?.failing
-          ? mix(packet, colors.shade, 0.3)
-          : mix(packet, colors.canvas, busy ? 0.55 : 0.4)
+        : hovered
+          ? colors.accent
+          : focused || flow?.failing
+            ? mix(packet, colors.shade, 0.3)
+            : mix(packet, colors.canvas, busy ? 0.55 : 0.4)
     const zones = has(state.game, 'multi-az') && zoned(from) && zoned(to)
     const crossing = zones && from.zone !== to.zone
     const body =
@@ -185,7 +188,7 @@ const drawBelts = (f: Frame): Readonly<{ mouths: Array<Mouth>; moved: boolean }>
         ? mix(zoneHue[from.zone], colors.canvas, busy ? 0.75 : 0.85)
         : mix(packet, colors.canvas, hovered ? 0.55 : busy ? 0.8 : 0.92)
     const width = hovered ? BELT + 1 : busy ? BELT : 3
-    belt.draw(pieces, rail, body, width, zonal ? colors.warn : null)
+    belt.draw(pieces, rail, body, width)
     if (drawn >= 1)
       for (const mouth of belt.mouthsFor(pieces, width, off || quiet)) mouths.push(mouth)
     if (hovered && drawn >= 1) {
@@ -215,6 +218,17 @@ const drawBelts = (f: Frame): Readonly<{ mouths: Array<Mouth>; moved: boolean }>
     if (place && detailed && seen && drawn >= 1 && !quiet) {
       const mid = midOf(path)
       c.places.add(mid.x, mid.y, place, colors.ink, colors.warn, -PLACE_LIFT_PX)
+    }
+    if (zonal && hovered && detailed && seen && drawn >= 1 && !quiet) {
+      const mid = midOf(path)
+      c.tips.add(
+        mid.x,
+        mid.y,
+        `${from.zone.toUpperCase()} → ${to.zone.toUpperCase()}`,
+        colors.ink,
+        colors.warn,
+        PLACE_LIFT_PX,
+      )
     }
     if (picked) {
       const mid = pointOn(path, 0.5)

@@ -95,6 +95,8 @@ export class NodeView {
   private medalKey = ''
   private barsKey = ''
   private stranded: boolean | null = null
+  private crossInDrawn = false
+  crossIn = false
   private shadowDrawn = false
   private age = Number.POSITIVE_INFINITY
   private leaving = -1
@@ -817,11 +819,14 @@ export class NodeView {
     })
 
     const stranded = own.stranded > 0.01
-    if (stranded === this.stranded) return
+    if (stranded === this.stranded && this.crossIn === this.crossInDrawn) return
     this.stranded = stranded
+    this.crossInDrawn = this.crossIn
     this.ports.clear()
     if (layout.inRow !== null) {
       const y = rowMid(layout.inRow)
+      if (this.crossIn)
+        this.ports.circle(0, y, PORT_R + 2.5).stroke({ color: colors.warn, width: 2 })
       this.ports.circle(0, y, PORT_R).fill(colors.card).stroke({ color: colors.edge, width: 1.5 })
       this.ports.circle(0, y, 2).fill(colors.edge)
     }

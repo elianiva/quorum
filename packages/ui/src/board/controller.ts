@@ -4,7 +4,7 @@ import { inFooter } from './card-parts.ts'
 import { Application, Container, Graphics, Point, type RendererPreference } from 'pixi.js'
 import { COMPONENTS, type ComponentId } from '@quorum/simulation/catalog'
 import { type SlotKind } from '@quorum/simulation/parts'
-import { replicationPairsOf } from '@quorum/simulation/lookups'
+import { replicationPairsOf, zoneMs } from '@quorum/simulation/lookups'
 import { type Game, type GameNode } from '@quorum/simulation/state'
 import { type SeatActivity } from '@quorum/simulation/room'
 import {
@@ -85,7 +85,6 @@ export class BoardController {
   readonly wires = new Container()
   readonly bodies = new Container()
   readonly chevrons = new ChevronLayer()
-  readonly mouths = new Container()
   readonly belts = new Map<string, BeltView>()
   beltLinks: ReadonlyArray<unknown> = []
   beltOrder = ''
@@ -100,6 +99,7 @@ export class BoardController {
   readonly arrows = new Graphics()
   readonly notes = new NoteLayer()
   readonly places = new NoteLayer()
+  readonly tips = new NoteLayer()
   readonly cards = new Container()
   readonly boxLayer = new Container()
   readonly boxes = new Graphics()
@@ -288,7 +288,7 @@ export class BoardController {
     this.app.stage.addChild(this.world)
     this.chevrons.init(this.app.renderer)
     this.packets.init(this.app.renderer)
-    this.wires.addChild(this.bodies, this.chevrons.root, this.mouths, this.portals, this.splitters)
+    this.wires.addChild(this.bodies, this.chevrons.root, this.portals, this.splitters)
     this.boxLayer.addChild(this.boxes, this.replication, this.boxNames)
     this.boxLayer.isRenderGroup = true
     this.world.addChild(
@@ -299,6 +299,7 @@ export class BoardController {
       this.notes.root,
       this.places.root,
       this.cards,
+      this.tips.root,
       this.overlay,
       this.ghost,
     )
@@ -979,7 +980,15 @@ export class BoardController {
     const live = new Set<string>()
     const path = this.pathOf(state)
     const pressed = this.pressedId()
-    for (const node of this.nodes()) {
+    const nodes = this.nodes()
+    const byId = new Map(nodes.map((node) => [node.id, node]))
+    const crossIn = new Set<string>()
+    for (const link of state.game.links) {
+      const from = byId.get(link.from)
+      const to = byId.get(link.to)
+      if (from && to && zoneMs(from, to) > 0) crossIn.add(link.to)
+    }
+    for (const node of nodes) {
       live.add(node.id)
       let view = this.views.get(node.id)
       if (!view || view.type !== node.type) {
@@ -988,6 +997,7 @@ export class BoardController {
         this.views.set(node.id, view)
         this.cards.addChild(view.root)
       }
+      view.crossIn = crossIn.has(node.id)
       view.update(
         state.game,
         node,
@@ -1063,7 +1073,6 @@ export class BoardController {
       this.belts.delete(key)
     }
     this.bodies.removeChildren()
-    this.mouths.removeChildren()
     for (const key of keys) {
       let belt = this.belts.get(key)
       if (!belt) {
@@ -1071,7 +1080,6 @@ export class BoardController {
         this.belts.set(key, belt)
       }
       this.bodies.addChild(belt.body)
-      this.mouths.addChild(belt.mouths)
     }
   }
 

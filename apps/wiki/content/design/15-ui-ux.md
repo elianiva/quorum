@@ -119,11 +119,12 @@ time the game state makes it useful.
   shape, and faint chevrons point the way it runs. A busier belt runs faster; an idle belt is a thin
   grey line. Its rails are a faint edge in its own tint, and stand out on the focused path and on
   errors.
-- A link with errors turns red. A belt that crosses zones has an orange tick at the port it
-  arrives on, and orange rails in focus: its calls pay the cross-zone latency and Egress. A belt
-  between two regions carries a plate under its midpoint with the round trip its calls pay, such as
-  `75 ms`, in the amber of the cross-zone rails. A link into a global Component pays no place, so
-  it shows no plate.
+- A link with errors turns red. A belt that crosses zones has an amber ring around the port it
+  arrives on. When the player hovers or selects the belt, its rails turn amber and a plate names
+  both zones, such as `A → B`: its calls pay the cross-zone latency and Egress. A belt between two
+  regions carries a plate under its midpoint with the round trip its calls pay, such as `75 ms`, in
+  the amber of the cross-zone rails. A link into a global Component pays no place, so it shows no
+  plate.
 - From Series C, each region is a tab with its own board.
 - Services: a Service is tied to the Features it carries, not to a box of Nodes. The Team panel shows
   the Services and splits one (see [Panels](#panels)).

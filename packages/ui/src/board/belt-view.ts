@@ -21,14 +21,12 @@ export const linkKey = (link: Readonly<{ from: string; to: string }>): string =>
 
 export class BeltView {
   readonly body = new Graphics()
-  readonly mouths = new Graphics()
   travel = 0
   wire: Wire | null = null
   private bodyFor: unknown = null
   private bodyRail = -1
   private bodyFill = -1
   private bodyWidth = -1
-  private bodyZone: number | null | undefined = undefined
   private mouthPieces: unknown = null
   private mouthWidth = -1
   private mouthOff = false
@@ -38,19 +36,15 @@ export class BeltView {
 
   constructor() {
     this.body.context.batchMode = 'batch'
-    this.mouths.context.batchMode = 'batch'
   }
 
   show(visible: boolean, alpha: number): void {
     this.body.visible = visible
     this.body.alpha = alpha
-    this.mouths.visible = visible
-    this.mouths.alpha = alpha
   }
 
   destroy(): void {
     this.body.destroy()
-    this.mouths.destroy()
   }
 
   onScreen(pieces: ReadonlyArray<Route>, view: Box): boolean {
@@ -84,34 +78,23 @@ export class BeltView {
     return this.mouthList
   }
 
-  draw(
-    pieces: ReadonlyArray<Route>,
-    rail: number,
-    body: number,
-    width: number,
-    zone: number | null,
-  ): void {
+  draw(pieces: ReadonlyArray<Route>, rail: number, body: number, width: number): void {
     if (
       pieces === this.bodyFor &&
       rail === this.bodyRail &&
       body === this.bodyFill &&
-      width === this.bodyWidth &&
-      zone === this.bodyZone
+      width === this.bodyWidth
     )
       return
     this.bodyFor = pieces
     this.bodyRail = rail
     this.bodyFill = body
     this.bodyWidth = width
-    this.bodyZone = zone
     this.body.clear()
     for (const piece of pieces) traceOf(this.body, piece)
     this.body.stroke({ color: rail, width: width + 2, join: 'round', alpha: 0.9 })
     for (const piece of pieces) traceOf(this.body, piece)
     this.body.stroke({ color: body, width, join: 'round' })
-    this.mouths.clear()
-    const end = pieces.at(-1)?.at(-1)
-    if (zone !== null && end) this.mouths.roundRect(end.x - 14, end.y - 6, 3, 12, 1.5).fill(zone)
   }
 }
 

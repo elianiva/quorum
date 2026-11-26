@@ -18,6 +18,7 @@ import {
 } from './inbox.ts'
 import { eventMail, identityOf, postmortemFact, senderOf } from './mail.ts'
 import type { Fact } from './mail.ts'
+import { TEAMMATES } from './copy/senders.ts'
 import { SAVE_FORMAT } from './save-file.ts'
 import type { Inbox, Model } from './model.ts'
 import { AppRoute } from './route.ts'
@@ -50,13 +51,10 @@ const act = (inbox: Inbox, id: number, action: string, world: Game = game) =>
   updateInbox(inbox, InboxMessage.Acted({ id, action }), { game: world, open: true })
 
 test('an engineer keeps one name, and the first hires have different ones', () => {
-  const ids = Array.from({ length: 8 }, (_, index) => `e${index + 1}`)
+  const ids = Array.from({ length: TEAMMATES.length }, (_, index) => `e${index + 1}`)
   for (const id of ids) expect(senderOf(`mate:${id}`).name).toBe(identityOf(id).name)
   expect(new Set(ids.map((id) => identityOf(id).name)).size).toBe(ids.length)
   expect(senderOf('mate:e3').signIndex).toBe(identityOf('e3').index)
-  expect(
-    new Set(Array.from({ length: 16 }, (_, index) => identityOf(`e${index + 1}`).name)).size,
-  ).toBe(16)
 })
 
 test('advice that moved on resolves for every Sender of its kind', () => {

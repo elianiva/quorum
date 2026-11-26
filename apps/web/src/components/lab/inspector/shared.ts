@@ -53,7 +53,7 @@ export const section = (
   h.details(
     [
       h.Key(title),
-      ...(open ? [h.Open(true)] : []),
+      ...(open ? [h.Attribute('open', '')] : []),
       h.Class(
         cx(
           css({

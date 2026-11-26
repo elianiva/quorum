@@ -568,7 +568,7 @@ const leverList = (model: Model, h: HtmlBuilder<Message>): Html => {
 const controls = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
   return h.details(
-    [h.Key('controls'), ...(isPhone() ? [] : [h.Open(true)]), h.Class('fold group')],
+    [h.Key('controls'), ...(isPhone() ? [] : [h.Attribute('open', '')]), h.Class('fold group')],
     [
       h.summary(
         [

@@ -2798,6 +2798,33 @@ test('a board action in a live Room goes out as the Intent it stands for', () =>
   })
 })
 
+test('a team rename in a live Room goes out as the intent it stands for', () => {
+  const model: Model = {
+    ...inLab(),
+    room: {
+      ...EMPTY_ROOM,
+      phase: { _tag: 'Online', code: 'ABC234', seat: 'tab-1', owner: false },
+    },
+  }
+  const team = model.board.game.teams[0]!
+  const started = update(
+    model,
+    Message.TeamChanged({ message: TeamMessage.RenameStarted({ target: 'team', id: team.id }) }),
+  ).model
+  const typed = update(
+    started,
+    Message.TeamChanged({ message: TeamMessage.RenameChanged({ name: 'Platform Ops' }) }),
+  ).model
+  const committed = update(typed, Message.TeamChanged({ message: TeamMessage.RenameCommitted() }))
+  const sent = (committed.commands ?? []).find((command) => command.name === 'SendRoom')
+  expect(sent?.args?.['message']).toEqual({
+    _tag: 'Intents',
+    id: model.room.seq,
+    intents: [{ ns: 'work', name: 'renameTeam', args: [team.id, 'Platform Ops'] }],
+  })
+  expect(committed.model.board.game.teams[0]?.name).toBe('Platform Ops')
+})
+
 test('a Seat keeps the name the player types', () => {
   const model: Model = {
     ...inLab(),

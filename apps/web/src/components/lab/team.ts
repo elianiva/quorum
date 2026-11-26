@@ -2507,7 +2507,8 @@ const doraCard = (game: Game, h: HtmlBuilder<Message>): Html => {
           css({
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.5',
+            gap: '1',
+            minWidth: '0',
           }),
         ),
       ],
@@ -2519,7 +2520,7 @@ const doraCard = (game: Game, h: HtmlBuilder<Message>): Html => {
               cx(
                 FIGURE,
                 css({
-                  fontSize: 'type.13',
+                  fontSize: 'type.16',
                 }),
               ),
             ),
@@ -2553,8 +2554,9 @@ const doraCard = (game: Game, h: HtmlBuilder<Message>): Html => {
           h.Class(
             css({
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-              gap: '3',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              columnGap: '4',
+              rowGap: '3.5',
             }),
           ),
         ],

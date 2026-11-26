@@ -928,7 +928,7 @@ export const catalog: Catalog = {
     },
     analytics: {
       name: 'Analítica',
-      product: 'OpenTelemetry',
+      product: 'OpenTelemetry Collector',
       blurb: 'Enlaza cualquier nodo con ella. Muestrea ese tráfico y lo convierte en Conocimiento.',
     },
     server: {
@@ -1001,7 +1001,7 @@ export const catalog: Catalog = {
     },
     worker: {
       name: 'Worker',
-      product: 'Sidekiq',
+      product: 'Celery, Sidekiq, BullMQ',
       blurb:
         'Ejecuta tu código con tareas de una cola. Los usuarios nunca esperan por él. Enlázalo a los datos que lee una exportación.',
     },
@@ -1025,19 +1025,19 @@ export const catalog: Catalog = {
     },
     waf: {
       name: 'WAF',
-      product: 'ModSecurity',
+      product: 'ModSecurity, Coraza',
       blurb:
         'Bloquea a los bots antes de que lleguen a la aplicación, y con ellos a algunos usuarios reales.',
     },
     gw: {
       name: 'API Gateway',
-      product: 'Kong',
+      product: 'Kong, Envoy Gateway',
       blurb:
         'Limita la tasa y enruta las llamadas a la API. Pasado su límite, las peticiones fallan como throttled, y cobra por petición.',
     },
     ws: {
       name: 'Hub en tiempo real',
-      product: 'Socket.IO',
+      product: 'Centrifugo',
       blurb:
         'Mantiene una conexión abierta por cada mensaje en tiempo real. Cuántas caben depende del runtime.',
     },
@@ -1094,7 +1094,7 @@ export const catalog: Catalog = {
     },
     msgp: {
       name: 'Proveedor de notificaciones push',
-      product: 'Amazon SNS',
+      product: 'FCM, APNs, SES',
       blurb: 'Envía notificaciones push y correo. Se paga por mensaje, 10,000 por segundo.',
     },
     wide: {
@@ -1105,7 +1105,7 @@ export const catalog: Catalog = {
     },
     dsql: {
       name: 'SQL distribuido',
-      product: 'CockroachDB',
+      product: 'CockroachDB, TiDB',
       blurb: 'SQL sobre Raft. Cada escritura espera a una mayoría de sus réplicas.',
     },
     cdc: {

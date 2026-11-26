@@ -788,7 +788,7 @@ export const catalog: Catalog = {
     },
     analytics: {
       name: 'アナリティクス',
-      product: 'OpenTelemetry',
+      product: 'OpenTelemetry Collector',
       blurb:
         'どのノードでもリンクできます。そのトラフィックをサンプリングし、インサイトに変えます。',
     },
@@ -859,7 +859,7 @@ export const catalog: Catalog = {
     },
     worker: {
       name: 'ワーカー',
-      product: 'Sidekiq',
+      product: 'Celery, Sidekiq, BullMQ',
       blurb:
         'キューから来たタスクでコードを動かします。ユーザーが待つことはありません。エクスポートが読むデータにリンクさせてください。',
     },
@@ -883,18 +883,18 @@ export const catalog: Catalog = {
     },
     waf: {
       name: 'WAF',
-      product: 'ModSecurity',
+      product: 'ModSecurity, Coraza',
       blurb: 'ボットがアプリに届く前に止めます。本物のユーザーもいくらか巻き込みます。',
     },
     gw: {
       name: 'APIゲートウェイ',
-      product: 'Kong',
+      product: 'Kong, Envoy Gateway',
       blurb:
         'API呼び出しをレート制限し、ルーティングします。レート上限を超えたリクエストはthrottled扱いで失敗し、課金はリクエスト単位です。',
     },
     ws: {
       name: 'リアルタイムハブ',
-      product: 'Socket.IO',
+      product: 'Centrifugo',
       blurb:
         'リアルタイムのメッセージごとに接続を開いたまま保ちます。何本入るかはランタイム次第です。',
     },
@@ -951,7 +951,7 @@ export const catalog: Catalog = {
     },
     msgp: {
       name: 'プッシュプロバイダ',
-      product: 'Amazon SNS',
+      product: 'FCM, APNs, SES',
       blurb: 'プッシュ通知とメールを送ります。メッセージ単価の課金で、毎秒10,000件。',
     },
     wide: {
@@ -961,7 +961,7 @@ export const catalog: Catalog = {
     },
     dsql: {
       name: '分散SQL',
-      product: 'CockroachDB',
+      product: 'CockroachDB, TiDB',
       blurb: 'Raft上のSQLです。書き込みはレプリカの過半数を待ちます。',
     },
     cdc: {

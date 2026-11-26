@@ -1,4 +1,4 @@
-APIゲートウェイは、Kong、AWS API Gateway、Apigee のように、すべての API 呼び出しがサービスに届く前に通る 1 つの玄関です。
+APIゲートウェイは、Kong、Envoy Gateway、AWS API Gateway、Apigee のように、すべての API 呼び出しがサービスに届く前に通る 1 つの玄関です。
 
 ## どこに置くか
 

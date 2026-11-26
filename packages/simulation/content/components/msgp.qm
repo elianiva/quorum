@@ -2,7 +2,7 @@
 (component msgp
   :code    msgp
   :name    "Push Provider"
-  :product "Amazon SNS"
+  :product "FCM, APNs, SES"
   :group   data
   :dock    managed
   :cost    0

@@ -1,4 +1,4 @@
-El API Gateway es una puerta de entrada única por la que pasa cada llamada de API antes de llegar a tus servicios, como Kong, AWS API Gateway o Apigee.
+El API Gateway es una puerta de entrada única por la que pasa cada llamada de API antes de llegar a tus servicios, como Kong, Envoy Gateway, AWS API Gateway o Apigee.
 
 ## Cuándo colocarlo
 

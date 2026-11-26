@@ -2,7 +2,7 @@
 (component analytics
   :code     otel
   :name     "Analytics"
-  :product  "OpenTelemetry"
+  :product  "OpenTelemetry Collector"
   :group    ops
   :dock     insight
   :cost     40

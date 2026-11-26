@@ -1,4 +1,4 @@
-SQL distribuido mantiene correctas las transacciones entre regiones, como hace CockroachDB con el consenso de [Raft](/glossary/raft).
+SQL distribuido mantiene correctas las transacciones entre regiones, como hacen CockroachDB y TiDB con el consenso de [Raft](/glossary/raft).
 
 ## Cuándo colocarlo
 

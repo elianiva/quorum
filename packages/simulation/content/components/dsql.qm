@@ -2,7 +2,7 @@
 (component dsql
   :code     dsql
   :name     "Distributed SQL"
-  :product  "CockroachDB"
+  :product  "CockroachDB, TiDB"
   :group    data
   :dock     data
   :cost     2_500

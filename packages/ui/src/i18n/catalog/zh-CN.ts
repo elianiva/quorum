@@ -100,7 +100,7 @@ export const catalog: Catalog = {
     },
     analytics: {
       name: '分析',
-      product: 'OpenTelemetry',
+      product: 'OpenTelemetry Collector',
       blurb: '将任意节点连接到这里，对其流量采样并转化为洞察。',
     },
     server: {
@@ -158,7 +158,7 @@ export const catalog: Catalog = {
     },
     worker: {
       name: '工作进程',
-      product: 'Sidekiq',
+      product: 'Celery, Sidekiq, BullMQ',
       blurb: '运行队列任务，用户无需等待。请连接到导出任务所需的数据源。',
     },
     log: {
@@ -180,17 +180,17 @@ export const catalog: Catalog = {
     },
     waf: {
       name: 'WAF',
-      product: 'ModSecurity',
+      product: 'ModSecurity, Coraza',
       blurb: '在流量抵达应用前拦截机器人，但也会误拦部分真实用户。',
     },
     gw: {
       name: 'API 网关',
-      product: 'Kong',
+      product: 'Kong, Envoy Gateway',
       blurb: '为 API 调用限流并转发。超过速率限制后，请求以 throttled 失败，并按请求计费。',
     },
     ws: {
       name: '实时中枢',
-      product: 'Socket.IO',
+      product: 'Centrifugo',
       blurb: '为每条实时消息保持一个打开的连接。能容纳多少取决于运行时。',
     },
     psp: {
@@ -240,7 +240,7 @@ export const catalog: Catalog = {
     },
     msgp: {
       name: '推送服务',
-      product: 'Amazon SNS',
+      product: 'FCM, APNs, SES',
       blurb: '发送推送通知和邮件，按条收费，每秒支持 10,000 条。',
     },
     wide: {
@@ -250,7 +250,7 @@ export const catalog: Catalog = {
     },
     dsql: {
       name: '分布式 SQL',
-      product: 'CockroachDB',
+      product: 'CockroachDB, TiDB',
       blurb: '基于 Raft 的 SQL，每次写入都等待多数副本确认。',
     },
     cdc: {

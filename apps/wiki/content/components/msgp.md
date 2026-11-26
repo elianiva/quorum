@@ -1,4 +1,4 @@
-The Push Provider stands for Amazon SNS and SES: services that deliver push notifications and email for you.
+The Push Provider stands for FCM, APNs, and SES: services that deliver push notifications and email for you.
 
 ## When to place it
 

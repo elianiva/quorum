@@ -1,4 +1,4 @@
-分散SQLは、CockroachDB が [Raft](/glossary/raft) の合意形成でそうするように、リージョンをまたいでトランザクションを正しく保ちます。
+分散SQLは、CockroachDB や TiDB が [Raft](/glossary/raft) の合意形成でそうするように、リージョンをまたいでトランザクションを正しく保ちます。
 
 ## どこに置くか
 

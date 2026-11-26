@@ -638,7 +638,7 @@ each. A write costs N of them and a read costs R.
 
 ## Distributed SQL
 
-Real products: CockroachDB, Google Spanner, YugabyteDB.
+Real products: CockroachDB, TiDB, Google Spanner, YugabyteDB.
 
 Distributed SQL gives SQL transactions across shards and regions, built on consensus
 ([Raft](/glossary/raft)).

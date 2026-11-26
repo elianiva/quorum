@@ -1,4 +1,4 @@
-El WAF representa a un firewall de aplicaciones web como ModSecurity con el OWASP Core Rule Set.
+El WAF representa a un firewall de aplicaciones web como ModSecurity o Coraza con el OWASP Core Rule Set.
 
 ## Cuándo colocarlo
 

@@ -244,7 +244,7 @@ The TTL multiplies the hit ratio:
 
 ### WAF
 
-Real products: Cloudflare WAF, AWS WAF, ModSecurity with the OWASP Core Rule Set.
+Real products: Cloudflare WAF, AWS WAF, ModSecurity or Coraza with the OWASP Core Rule Set.
 
 A WAF blocks bots and attacks before they reach the app.
 
@@ -268,7 +268,7 @@ which takes the edge down ([Incidents](/design/11-incidents#catalog)).
 
 ### API Gateway
 
-Real products: Kong, AWS API Gateway, Apigee.
+Real products: Kong, Envoy Gateway, AWS API Gateway, Apigee.
 
 Routes requests to services by path and kind, checks authentication, and applies rate limits. It
 takes every request kind and sends each one on the Links its route table gives it, adding its own hop.
@@ -327,7 +327,7 @@ splits the kinds at an [API Gateway](#api-gateway): page views to a Next.js flee
 
 ### Worker
 
-Real products: Sidekiq, Celery, BullMQ, Oban.
+Real products: Celery, Sidekiq, BullMQ, Oban.
 
 A Worker runs the same runtimes as an App Server, but it pulls `task` from a Queue instead of
 receiving user requests. Its latency does not count toward user latency. Its throughput decides

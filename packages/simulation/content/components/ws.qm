@@ -2,7 +2,7 @@
 (component ws
   :code    ws
   :name    "Realtime Hub"
-  :product "Socket.IO"
+  :product "Centrifugo"
   :group   compute
   :dock    messaging
   :cost    400

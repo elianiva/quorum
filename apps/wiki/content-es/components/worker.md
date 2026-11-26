@@ -1,4 +1,4 @@
-El Worker representa a un ejecutor de trabajos en segundo plano como Sidekiq: tu código, fuera de la ruta de la petición.
+El Worker representa a un ejecutor de trabajos en segundo plano como Celery, Sidekiq o BullMQ: tu código, fuera de la ruta de la petición.
 
 ## Cuándo colocarlo
 

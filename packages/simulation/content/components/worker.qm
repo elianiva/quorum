@@ -2,7 +2,7 @@
 (component worker
   :code    wrk
   :name    "Worker"
-  :product "Sidekiq"
+  :product "Celery, Sidekiq, BullMQ"
   :group   compute
   :dock    compute
   :cost    60

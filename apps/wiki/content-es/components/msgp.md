@@ -1,4 +1,4 @@
-El Proveedor de notificaciones push representa a Amazon SNS y SES: servicios que entregan por ti notificaciones push y correo electrónico.
+El Proveedor de notificaciones push representa a FCM, APNs y SES: servicios que entregan por ti notificaciones push y correo electrónico.
 
 ## Cuándo colocarlo
 

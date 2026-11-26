@@ -1,4 +1,4 @@
-WAF は、OWASP Core Rule Set を備えた ModSecurity のような Webアプリケーションファイアウォールを指します。
+WAF は、OWASP Core Rule Set を備えた ModSecurity や Coraza のような Webアプリケーションファイアウォールを指します。
 
 ## どこに置くか
 

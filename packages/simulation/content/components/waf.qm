@@ -2,7 +2,7 @@
 (component waf
   :code     waf
   :name     "WAF"
-  :product  "ModSecurity"
+  :product  "ModSecurity, Coraza"
   :group    edge
   :dock     edge
   :cost     260

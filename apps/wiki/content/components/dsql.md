@@ -1,4 +1,4 @@
-Distributed SQL keeps transactions correct across regions, as CockroachDB does on [Raft](/glossary/raft) consensus.
+Distributed SQL keeps transactions correct across regions, as CockroachDB and TiDB do on [Raft](/glossary/raft) consensus.
 
 ## When to place it
 

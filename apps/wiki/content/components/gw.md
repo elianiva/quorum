@@ -1,4 +1,4 @@
-The API Gateway is one front door that every API call comes through before it reaches your services, as Kong, AWS API Gateway, or Apigee are.
+The API Gateway is one front door that every API call comes through before it reaches your services, as Kong, Envoy Gateway, AWS API Gateway, or Apigee are.
 
 ## When to place it
 

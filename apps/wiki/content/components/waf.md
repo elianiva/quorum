@@ -1,4 +1,4 @@
-The WAF stands for a web application firewall such as ModSecurity with the OWASP Core Rule Set.
+The WAF stands for a web application firewall such as ModSecurity or Coraza with the OWASP Core Rule Set.
 
 ## When to place it
 

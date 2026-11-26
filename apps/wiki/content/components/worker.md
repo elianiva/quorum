@@ -1,4 +1,4 @@
-The Worker stands for a background job runner such as Sidekiq: your code, off the request path.
+The Worker stands for a background job runner such as Celery, Sidekiq, or BullMQ: your code, off the request path.
 
 ## When to place it
 

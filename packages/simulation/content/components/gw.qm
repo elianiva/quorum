@@ -2,7 +2,7 @@
 (component gw
   :code     gw
   :name     "API Gateway"
-  :product  "Kong"
+  :product  "Kong, Envoy Gateway"
   :group    edge
   :dock     edge
   :cost     300

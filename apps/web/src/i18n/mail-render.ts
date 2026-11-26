@@ -1,6 +1,7 @@
 import type { MailMessage, MailVars, Snippet } from '../game/mail-text.ts'
 import { StudyStall } from '@quorum/simulation/studies'
 import type { FeatureId, InsightPool, StudyShapeKind } from '@quorum/simulation/catalog'
+import { LANGUAGES, type LanguageId } from '@quorum/simulation/catalog'
 import { stallReasonIn } from './format.ts'
 import { copyIn, type Messages } from './messages.ts'
 
@@ -147,12 +148,16 @@ const ACTION_KEY: Readonly<Record<string, keyof Messages['mailWords']['actions']
   patcher: 'first',
 }
 
+const languageName = (id: string): string =>
+  id in LANGUAGES ? LANGUAGES[id as LanguageId].name : id
+
 export const actionLabelIn = (
   t: Messages,
   action: Readonly<{ id: string; label: string }>,
 ): string => {
   const [kind = '', target = ''] = action.id.split(':')
   if (kind === 'rewrite') return t.mailWords.reviewMigration(target)
+  if (kind === 'hire' && target !== '') return t.mailWords.approveHire(languageName(target))
   const key = ACTION_KEY[kind === 'trap' ? target : kind] ?? (kind === 'trap' ? target : kind)
   const words = t.mailWords.actions as Readonly<Record<string, string | undefined>>
   return words[key] ?? action.label

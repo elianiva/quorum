@@ -68,8 +68,11 @@ import {
   dataStaffed,
   nextBadDeployChance,
   languageOfService,
+  languagesInUse,
+  fluencyOf,
   outputOf,
   payOf,
+  signingOf,
   trainCost,
   trainSeconds,
 } from '../src/team.ts'
@@ -405,6 +408,22 @@ describe('Hiring', () => {
     const engineer = joined.engineers.find((entry) => entry.id === hired.hires[0]!.id)
     expect(engineer?.hiredAt).toBe(readyAt)
     expect(engineer?.learning).toBeNull()
+  })
+
+  test('a hire picks any language an App Server runs, and no other', () => {
+    const base = { ...founded({ 'head-start': 1 }), cash: 1_000_000 }
+    const first = base.nodes.find((node) => node.type === 'server')!
+    const game = {
+      ...base,
+      nodes: [...base.nodes, { ...first, id: 'node-server', runtime: 'node_cluster' as const }],
+    }
+    expect(languagesInUse(game)).toEqual(['php', 'node'])
+    const hired = Result.getOrThrow(hire(game, 'node'))
+    expect(hired.hires[0]?.language).toBe('node')
+    expect(hired.cash).toBe(game.cash - signingOf(game, 'node'))
+    const joined = step({ ...hired, time: hired.hires[0]!.readyAt - 1 }, 1).game
+    expect(fluencyOf(joined, joined.engineers.at(-1)!)).toBe(1)
+    expect(Result.isFailure(hire(game, 'go'))).toBe(true)
   })
 })
 

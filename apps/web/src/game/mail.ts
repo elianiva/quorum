@@ -29,7 +29,7 @@ import { compact, money } from '@quorum/ui/game/format'
 import type { WorkItem } from '@quorum/simulation/state'
 import type { StudyStall } from '@quorum/simulation/studies'
 import { stallReason } from '@quorum/ui/game/pools'
-import { languageOfService, unhappy } from '@quorum/simulation/team'
+import { languageOfService, languagesInUse, unhappy } from '@quorum/simulation/team'
 import { featureRefusal, itemName } from '@quorum/simulation/work'
 import {
   ADVICE,
@@ -301,11 +301,21 @@ const mateOf = (game: Game, at: number): string =>
 const writerOf = (game: Game, at: number, key: string): string =>
   game.engineers.length > 0 ? mateOf(game, at) : senderFor('mentor', game, key)
 
+const hireActions = (game: Game): ReadonlyArray<{ id: string; label: string }> => {
+  const languages = languagesInUse(game)
+  return languages.length > 1
+    ? languages.map((language) => ({
+        id: `hire:${language}`,
+        label: `Approve ${LANGUAGES[language].name} hire`,
+      }))
+    : [{ id: 'hire', label: 'Approve hire' }]
+}
+
 const hireFact = (game: Game, mate: string, salt: number): Fact => {
   const key = `team:hire:${game.engineers.length}`
   const backlog = String(Math.max(3, game.backlog.length))
   return fact(key, mate, write('hire', HIRE, { backlog }, mate, game, key, salt), [
-    { id: 'hire', label: 'Approve hire' },
+    ...hireActions(game),
     { id: 'later', label: 'Later' },
   ])
 }

@@ -145,6 +145,7 @@ import {
   hireSeconds,
   kindChangeSeconds,
   languageOfService,
+  languagesInUse,
   memberOf,
   membersOf,
   moraleSeconds,
@@ -1049,12 +1050,17 @@ export const addIndex = (game: Game, nodeId: string): Action => {
   })
 }
 
-export const hire = (game: Game, tuning: Tuning = LIVE_TUNING): Action => {
+export const hire = (
+  game: Game,
+  language: LanguageId = languageOfService(game),
+  tuning: Tuning = LIVE_TUNING,
+): Action => {
   if (game.sandbox) return notAllowed(SANDBOX)
   if (game.stage < 1) return no(Refusal.TooEarly({ what: 'Hiring', era: ERAS[1]?.name ?? '' }))
   if (shortOfCash(game))
     return notAllowed('Out of Cash: no placement, upgrade, or hire until Cash is above zero.')
-  const language = languageOfService(game)
+  if (!languagesInUse(game).includes(language))
+    return notAllowed(`No App Server runs ${LANGUAGES[language].name}.`)
   const price = signingOf(game, language)
   if (game.cash < price)
     return no(Refusal.Unaffordable({ what: 'A hire', price, currency: 'cash' }))

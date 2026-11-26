@@ -192,6 +192,12 @@ export const languageOfService = (game: Game): LanguageId => {
   return node ? languageOf(node) : 'php'
 }
 
+export const languagesInUse = (game: Game): ReadonlyArray<LanguageId> => {
+  const main = languageOfService(game)
+  const others = servers(game).map((node) => languageOf(node))
+  return [main, ...new Set(others.filter((language) => language !== main))]
+}
+
 export const coordinationOf = (game: Game): number =>
   FRAMEWORKS[stackOf(game).framework].coordination ?? 1
 
@@ -268,23 +274,18 @@ export const rampSeconds = (game: Game, tuning: Tuning = LIVE_TUNING): number =>
 
 export const trainingOf = (engineer: Engineer): Training | null => engineer.learning
 
-export const fluencyOf = (
-  game: Game,
-  engineer: Engineer,
-  language: LanguageId = languageOfService(game),
-): number =>
-  trainingOf(engineer) ? LEARN_OUTPUT : engineer.language === language ? 1 : FOREIGN_OUTPUT
+export const fluencyOf = (game: Game, engineer: Engineer): number =>
+  trainingOf(engineer)
+    ? LEARN_OUTPUT
+    : languagesInUse(game).includes(engineer.language)
+      ? 1
+      : FOREIGN_OUTPUT
 
-export const outputOf = (
-  game: Game,
-  engineer: Engineer,
-  tuning: Tuning = LIVE_TUNING,
-  language: LanguageId = languageOfService(game),
-): number =>
+export const outputOf = (game: Game, engineer: Engineer, tuning: Tuning = LIVE_TUNING): number =>
   game.time < engineer.offUntil
     ? 0
     : (game.time - engineer.hiredAt < rampSeconds(game, tuning) ? RAMP_OUTPUT : 1) *
-      fluencyOf(game, engineer, language)
+      fluencyOf(game, engineer)
 
 export const learnTargetOf = (game: Game): LanguageId => {
   const migration = serviceOf(game).migration
@@ -373,14 +374,13 @@ export const teamOutputs = (
 ): ReadonlyArray<TeamOutput> => {
   if (game.sandbox) return []
   const morale = game.time < game.moraleUntil ? LAYOFF_MORALE : 1
-  const language = languageOfService(game)
   const outputs = game.teams.map((team, index) => {
     const owned = serviceOwnedBy(game, team)
     const members = membersOf(game, team)
     const founder = index === 0 ? FOUNDER_OUTPUT : 0
     const headcount = members.length + (index === 0 ? 1 : 0)
     const output = members.reduce(
-      (sum, engineer) => sum + outputOf(game, engineer, tuning, language),
+      (sum, engineer) => sum + outputOf(game, engineer, tuning),
       founder,
     )
     const effective =

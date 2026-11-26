@@ -22,8 +22,8 @@ import { currentStudy, studyList } from '@quorum/simulation/study-machine'
 export const teamAction = (model: Model, out: TeamOutMessage): UpdateResult => {
   const game = model.board.game
   return TeamOutMessage.match<UpdateResult>(out, {
-    Hire: () =>
-      act(model, 'Hired', Work.hire(game), {
+    Hire: ({ language }) =>
+      act(model, 'Hired', Work.hire(game, language), {
         note: () => [say(model).toasts.offerAccepted, 'ok'],
       }),
     Layoff: ({ engineerId }) =>

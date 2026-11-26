@@ -1,3 +1,4 @@
+import { languageOfService } from '@quorum/simulation/team'
 import { Actions } from '../board-actions.ts'
 import { Work } from '../board-actions.ts'
 import {
@@ -11,6 +12,7 @@ import {
 import {
   FEATURES,
   LANGUAGES,
+  LANGUAGE_IDS,
   RESEARCH,
   RUNTIME_IDS,
   RUNTIMES,
@@ -98,7 +100,12 @@ const mailAction = (
     case 'decline':
       return route(model, Message.RoundDeclined())
     case 'hire':
-      return teamAction(model, TeamOutMessage.Hire())
+      return teamAction(
+        model,
+        TeamOutMessage.Hire({
+          language: LANGUAGE_IDS.find((id) => id === target) ?? languageOfService(model.board.game),
+        }),
+      )
     case 'team':
       return route(model, Message.PanelOpened({ panel: 'team' }))
     case 'rewrite': {

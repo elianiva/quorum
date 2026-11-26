@@ -88,6 +88,7 @@ export const mailWords: Messages['mailWords'] = {
     domain: 'Renovar ahora',
   },
   reviewMigration: (language: string) => `Revisar la migración a ${language}`,
+  approveHire: (language: string) => `Aprobar contratación de ${language}`,
   answers: {
     raise: 'Levantaste la ronda.',
     declineRound: 'Rechazaste la ronda.',

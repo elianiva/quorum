@@ -54,7 +54,7 @@ test('Shop, parts, hiring, and Mail opening each have their own event', () => {
     entry('InstallCpu', { nodeId: 'server', size: 2 }),
     entry('InstallRam', { nodeId: 'server', family: 'general' }),
     entry('InstallDisk', { nodeId: 'database', iops: 'general' }),
-    entry('TeamChanged', { message: { _tag: 'HireChosen' } }),
+    entry('TeamChanged', { message: { _tag: 'HireChosen', language: 'php' } }),
     entry('PanelOpened', { panel: 'inbox' }),
     entry('InboxChanged', { message: { _tag: 'Opened', id: 4 } }),
   ]

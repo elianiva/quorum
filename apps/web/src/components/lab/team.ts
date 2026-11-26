@@ -64,6 +64,7 @@ import {
   activeIncident,
   type BlockKind,
   Engineer,
+  type LanguageId,
   Game,
   GameNode,
   Service,
@@ -76,7 +77,7 @@ import {
   deployEvery,
   devHoursRate,
   doraMetrics,
-  languageOfService,
+  languagesInUse,
   learnTargetOf,
   membersOf,
   nextBadDeployChance,
@@ -813,18 +814,17 @@ const founderSeat = (h: HtmlBuilder<Message>): Html => {
   )
 }
 
-const hireSeat = (game: Game, h: HtmlBuilder<Message>): Html => {
+const hireSeat = (game: Game, language: LanguageId, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
 
-  const language = languageOfService(game)
   const price = signingOf(game, language)
   const open = game.stage >= 1
   const afford = game.cash >= price
   return h.button(
     [
-      h.Key('hire'),
+      h.Key(`hire-${language}`),
       h.Type('button'),
-      h.OnClick(Message.TeamChanged({ message: TeamMessage.HireChosen() })),
+      h.OnClick(Message.TeamChanged({ message: TeamMessage.HireChosen({ language }) })),
       h.Disabled(!open || !afford),
       h.AriaLabel(
         open ? t.team.hireEngineerFor(LANGUAGES[language].name, money(price)) : t.team.hiringLocked,
@@ -1555,7 +1555,9 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
             ),
           ),
           ...pending.map((entry) => pendingSeat(game, entry.id, entry.readyAt, h)),
-          index === 0 && !sandbox && game.stage >= 1 ? hireSeat(game, h) : h.empty,
+          ...(index === 0 && !sandbox && game.stage >= 1
+            ? languagesInUse(game).map((language) => hireSeat(game, language, h))
+            : []),
         ],
       ),
       sandbox

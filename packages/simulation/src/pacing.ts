@@ -1187,7 +1187,7 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy, boost = false): Ga
       salaryOf(next, language) * (headcount + 1) <= flow.revenue * PAYROLL_SHARE &&
       next.cash - signingOf(next, language) >= flow.burn * RESERVE_SECONDS
     )
-      next = tried(next, hire(next, tuning))
+      next = tried(next, hire(next, language, tuning))
   }
 
   if (strategy !== 'greedy' && next.stage >= 2) next = seedBuild(next, solveFlow(next))

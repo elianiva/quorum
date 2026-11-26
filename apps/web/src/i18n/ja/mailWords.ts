@@ -93,6 +93,7 @@ export const mailWords: Messages['mailWords'] = {
     domain: '今すぐ更新',
   },
   reviewMigration: (language) => `${language}への移行を確認`,
+  approveHire: (language) => `${language}の採用を承認`,
   answers: {
     raise: 'ラウンドを調達しました。',
     declineRound: 'ラウンドを辞退しました。',

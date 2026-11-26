@@ -93,6 +93,7 @@ export const mailWords: Messages['mailWords'] = {
     domain: '立即续费',
   },
   reviewMigration: (language) => `评估迁移到 ${language}`,
+  approveHire: (language) => `批准招聘 ${language}`,
   answers: {
     raise: '你完成了本轮融资。',
     declineRound: '你拒绝了本轮融资。',

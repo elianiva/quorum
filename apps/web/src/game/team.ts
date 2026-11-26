@@ -2,12 +2,12 @@ import { DragAndDrop } from '@foldkit/ui'
 import { Schema } from 'effect'
 import { Command, type Update } from 'foldkit'
 import { defineMessageUnion } from 'foldkit/message'
-import { FeatureId, PolicyId, TeamKind } from '@quorum/simulation/state'
+import { FeatureId, LanguageId, PolicyId, TeamKind } from '@quorum/simulation/state'
 import { RenameTarget, type Team } from './model.ts'
 
 export const TeamMessage = defineMessageUnion({
   DragChanged: { message: DragAndDrop.Message },
-  HireChosen: {},
+  HireChosen: { language: LanguageId },
   LayoffChosen: { engineerId: Schema.String },
   TrainChosen: { engineerId: Schema.String },
   Created: {},
@@ -33,7 +33,7 @@ export const TeamMessage = defineMessageUnion({
 export type TeamMessage = typeof TeamMessage.Type
 
 export const TeamOutMessage = defineMessageUnion({
-  Hire: {},
+  Hire: { language: LanguageId },
   Layoff: { engineerId: Schema.String },
   Train: { engineerId: Schema.String },
   CreateTeam: {},
@@ -83,7 +83,7 @@ const dragged = (team: Team, message: DragAndDrop.Message): TeamReturn => {
 export const updateTeam = (team: Team, message: TeamMessage): TeamReturn =>
   TeamMessage.match<TeamReturn>(message, {
     DragChanged: ({ message: child }) => dragged(team, child),
-    HireChosen: () => out(team, TeamOutMessage.Hire()),
+    HireChosen: ({ language }) => out(team, TeamOutMessage.Hire({ language })),
     LayoffChosen: ({ engineerId }) => out(team, TeamOutMessage.Layoff({ engineerId })),
     TrainChosen: ({ engineerId }) => out(team, TeamOutMessage.Train({ engineerId })),
     Created: () => out(team, TeamOutMessage.CreateTeam()),

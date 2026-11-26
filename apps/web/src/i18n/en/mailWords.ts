@@ -66,6 +66,7 @@ export const mailWords = {
     domain: 'Renew now',
   },
   reviewMigration: (language: string) => `Review ${language} migration`,
+  approveHire: (language: string) => `Approve ${language} hire`,
   answers: {
     raise: 'You raised the round.',
     declineRound: 'You declined the round.',

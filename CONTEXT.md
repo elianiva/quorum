@@ -420,6 +420,21 @@ item's Service when the item finishes, and from Pre-seed a rushed Feature raises
 bad-deploy chance.
 _Avoid_: boost, speed up
 
+**Morale**:
+The Company-wide velocity multiplier while a layoff's penalty runs. One Team's layoff lowers it for
+every Team, and a Team offsite restores it for the Team that holds one.
+_Avoid_: happiness, satisfaction (that is Apdex), spirit
+
+**Mood**:
+One Engineer's willingness to stay. A long freeze, pages, and a pay gap wear it down, and at a low
+point they write a slump Mail.
+_Avoid_: morale (that is Company-wide), happiness
+
+**Team offsite**:
+The Team action that spends Cash to restore that Team's Morale and the Mood of its Engineers. It can
+run once a calendar week per Team.
+_Avoid_: retreat, party, team building
+
 ### Money and knowledge
 
 **Cash**:
@@ -607,6 +622,7 @@ _Avoid_: save, state dump
 - A **Design** is made of **Nodes** and **Links** on one or more **Boards**.
 - A **Node** is a copy of one **Component**. Compute Nodes run a **Stack** and belong to a **Service**.
 - A **Service** is owned by one **Team**. **Engineers** in Teams produce **Dev Hours**.
+- A **Team offsite** restores its Team's **Morale** and its **Engineers**' **Mood**.
 - The **Simulation** turns the Design into the **Ledger** each **Step**. Every number on screen comes from the Ledger.
 - **Analytics** turns sampled traffic into **Insight** of each request kind. A **Study** takes Insight from its **Recipe**'s pools and completes a **Research** item. A **Spike** puts a **Team** on the running Study, and an idle **Team** can boost it.
 - An **Exit** turns **Equity** × **Valuation** into **Legacy**.

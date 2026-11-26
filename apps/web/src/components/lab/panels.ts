@@ -2587,6 +2587,7 @@ export const endPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
 
 export const devPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
+  const game = model.board.game
   return shell(
     t.panels.developer,
     [],
@@ -2688,6 +2689,45 @@ export const devPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               ),
             ],
           ),
+          game.sandbox
+            ? h.empty
+            : h.div(
+                [
+                  h.Class(
+                    css({
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '2',
+                    }),
+                  ),
+                ],
+                [
+                  h.span([h.Class(EYEBROW)], [t.panels.teamMorale]),
+                  h.div(
+                    [
+                      h.Class(
+                        css({
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: '2',
+                        }),
+                      ),
+                    ],
+                    [
+                      secondaryButton(t.panels.layoffMorale, Message.MoraleForced(), h),
+                      game.engineers[0]
+                        ? secondaryButton(
+                            t.panels.unhappyEngineer,
+                            Message.EngineerUnhappyForced({
+                              engineerId: game.engineers[0].id,
+                            }),
+                            h,
+                          )
+                        : h.empty,
+                    ],
+                  ),
+                ],
+              ),
           h.div(
             [
               h.Class(

@@ -272,17 +272,17 @@ Rule: no action needs more than five repeated clicks without a bulk alternative.
 
 ## Panels
 
-| Panel     | Opens with   | Contents                                                                                                                             |
-| --------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Inspector | Click a Node | All numbers for the Node, its Parts, options, history, and Tradeoff cards                                                            |
-| Research  | `R`          | The tree by track, the Insight bottleneck, and its lever ([Research screen](#research-screen))                                       |
-| Dashboard | `D`          | Charts over time, with its template variables, compare line and table view ([Observability](/design/12-observability#the-dashboard)) |
-| Team      | `T`          | Teams, engineers, the Services and the split, the backlog, policies, DORA metrics, and the levers its Features own                   |
-| Cost      | `$` only     | Burn by line, Revenue, and the margin ([Economy](/design/09-economy#the-cloud-bill))                                                 |
-| Inbox     | `I`          | Mail: advice, offers, and reports ([Mail](/design/18-mail))                                                                          |
-| Incidents | `D`          | The running Incident and its Postmortems with their three times, as a Dashboard row ([below](#company-and-incidents-panels)).        |
-| Company   | `D`          | Cash, runway, the Team's shape, and the funding history, as a Dashboard row ([below](#company-and-incidents-panels))                 |
-| Churn     | Users on HUD | The [Churn breakdown](/design/12-observability#the-churn-breakdown) by region                                                        |
+| Panel     | Opens with   | Contents                                                                                                                               |
+| --------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Inspector | Click a Node | All numbers for the Node, its Parts, options, history, and Tradeoff cards                                                              |
+| Research  | `R`          | The tree by track, the Insight bottleneck, and its lever ([Research screen](#research-screen))                                         |
+| Dashboard | `D`          | Charts over time, with its template variables, compare line and table view ([Observability](/design/12-observability#the-dashboard))   |
+| Team      | `T`          | Teams, engineers, the Services and the split, the backlog, policies, each Team's morale, DORA metrics, and the levers its Features own |
+| Cost      | `$` only     | Burn by line, Revenue, and the margin ([Economy](/design/09-economy#the-cloud-bill))                                                   |
+| Inbox     | `I`          | Mail: advice, offers, and reports ([Mail](/design/18-mail))                                                                            |
+| Incidents | `D`          | The running Incident and its Postmortems with their three times, as a Dashboard row ([below](#company-and-incidents-panels)).          |
+| Company   | `D`          | Cash, runway, the Team's shape, and the funding history, as a Dashboard row ([below](#company-and-incidents-panels))                   |
+| Churn     | Users on HUD | The [Churn breakdown](/design/12-observability#the-churn-breakdown) by region                                                          |
 
 ### The Services card
 
@@ -301,6 +301,14 @@ and while the form breaks a rule, such as moving nothing, it is disabled and say
 takes effect at once, so the new row appears with its owner, and its Dev Hours arrive on the backlog
 as a split item the owner's team builds. The Dashboard's Service drop-down narrows the per-kind panels to that Service's kinds
 ([Observability](/design/12-observability#the-dashboard)).
+
+Each Team card carries a **Morale** row. It shows that team's morale and the mood of its engineers.
+The morale line reads `Steady` or `Layoff · 10% slower for 6 d`; a team that has just held an
+offsite reads `Steady` while the other teams keep the hit. The mood line reads `Everyone content`
+or names the engineers who are unhappy or in a slump. **Team offsite** spends one signing fee per
+engineer on that team to clear its morale hit and bring its engineers back to content, then waits a
+calendar week before that team can go again. The button is disabled while the team is content, the
+Company cannot pay, or the team's cooldown runs; the row says which.
 
 Below the Services card, a **DORA metrics** card shows deploy frequency, lead time for changes,
 change failure rate, and failed deployment recovery time (MTTR) once a CI/CD Pipeline is placed

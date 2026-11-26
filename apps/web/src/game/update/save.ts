@@ -22,6 +22,8 @@ import { step } from '../company-machine.ts'
 import { eraOf, isFinalEra, nextEra } from '@quorum/simulation/lookups'
 import { firstQuarter } from '@quorum/simulation/quarters'
 import { forceIncident } from '@quorum/simulation/director'
+import { UNHAPPY_MOOD } from '@quorum/simulation/catalog'
+import { moraleSeconds } from '@quorum/simulation/team'
 import {
   freshBoard,
   say,
@@ -54,6 +56,8 @@ type SaveTag =
   | 'CheatLegacy'
   | 'CheatRound'
   | 'IncidentForced'
+  | 'MoraleForced'
+  | 'EngineerUnhappyForced'
   | 'LogExported'
   | 'StateCopied'
   | 'AgentRoomCopied'
@@ -264,6 +268,40 @@ export const saveHandlers = (
       board: { ...model.board, game, whatIfsAt: -1 },
     }
     return { model: next }
+  },
+
+  MoraleForced: () => {
+    const game = model.board.game
+    return {
+      model: {
+        ...model,
+        board: {
+          ...model.board,
+          game: { ...game, moraleUntil: game.time + moraleSeconds() },
+        },
+      },
+    }
+  },
+
+  EngineerUnhappyForced: ({ engineerId }) => {
+    const game = model.board.game
+    if (!game.engineers.some((engineer) => engineer.id === engineerId)) return { model }
+    return {
+      model: {
+        ...model,
+        board: {
+          ...model.board,
+          game: {
+            ...game,
+            engineers: game.engineers.map((engineer) =>
+              engineer.id === engineerId
+                ? { ...engineer, mood: UNHAPPY_MOOD, unhappyAt: 0 }
+                : engineer,
+            ),
+          },
+        },
+      },
+    }
   },
 
   LogExported: () => ({ model, commands: [ExportLog({})] }),

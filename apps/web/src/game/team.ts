@@ -10,6 +10,7 @@ export const TeamMessage = defineMessageUnion({
   HireChosen: { language: LanguageId },
   LayoffChosen: { engineerId: Schema.String },
   TrainChosen: { engineerId: Schema.String },
+  OffsiteChosen: { teamId: Schema.String },
   Created: {},
   Removed: { teamId: Schema.String },
   EngineerAssigned: { engineerId: Schema.String, teamId: Schema.String },
@@ -36,6 +37,7 @@ export const TeamOutMessage = defineMessageUnion({
   Hire: { language: LanguageId },
   Layoff: { engineerId: Schema.String },
   Train: { engineerId: Schema.String },
+  Offsite: { teamId: Schema.String },
   CreateTeam: {},
   RemoveTeam: { teamId: Schema.String },
   Assign: { engineerId: Schema.String, teamId: Schema.String },
@@ -86,6 +88,7 @@ export const updateTeam = (team: Team, message: TeamMessage): TeamReturn =>
     HireChosen: ({ language }) => out(team, TeamOutMessage.Hire({ language })),
     LayoffChosen: ({ engineerId }) => out(team, TeamOutMessage.Layoff({ engineerId })),
     TrainChosen: ({ engineerId }) => out(team, TeamOutMessage.Train({ engineerId })),
+    OffsiteChosen: ({ teamId }) => out(team, TeamOutMessage.Offsite({ teamId })),
     Created: () => out(team, TeamOutMessage.CreateTeam()),
     Removed: ({ teamId }) => out(team, TeamOutMessage.RemoveTeam({ teamId })),
     EngineerAssigned: ({ engineerId, teamId }) =>

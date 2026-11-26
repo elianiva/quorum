@@ -29,6 +29,10 @@
 
 (def morale-days 7)
 
+(constants offsite
+  (days 7)
+  (fee 1))
+
 (constants learn
   (days 7)
   (output 0.5)

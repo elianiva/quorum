@@ -150,6 +150,8 @@ import {
   membersOf,
   moraleSeconds,
   nextBadDeployChance,
+  offsiteCost,
+  offsiteSeconds,
   ownerOf,
   paidIndex,
   payGapOf,
@@ -1090,6 +1092,38 @@ export const layoff = (game: Game, engineerId: string, tuning: Tuning = LIVE_TUN
   })
 }
 
+export const teamOffsite = (game: Game, teamId: string, tuning: Tuning = LIVE_TUNING): Action => {
+  const team = game.teams.find((entry) => entry.id === teamId)
+  if (!team) return no(Refusal.Missing())
+  if (game.sandbox) return notAllowed(SANDBOX)
+  if (game.time < team.offsiteReadyAt)
+    return notAllowed('This team is still recovering from its last offsite.')
+  const members = game.engineers.filter((engineer) => engineer.team === teamId)
+  const staffed = team.id === game.teams[0]?.id || members.length > 0
+  if (!staffed) return notAllowed('This team has no engineers.')
+  const needsMorale = game.time < game.moraleUntil && game.time >= team.offsiteUntil
+  const needsMood = members.some((engineer) => engineer.mood < CONTENT_MOOD)
+  if (!needsMorale && !needsMood) return notAllowed('Everyone on this team is content.')
+  if (shortOfCash(game)) return notAllowed('Out of Cash: no offsite until Cash is above zero.')
+  const price = offsiteCost(game, team)
+  if (game.cash < price)
+    return no(Refusal.Unaffordable({ what: 'A team offsite', price, currency: 'cash' }))
+  const shield =
+    game.time < game.moraleUntil ? Math.max(team.offsiteUntil, game.moraleUntil) : team.offsiteUntil
+  return ok({
+    ...game,
+    cash: game.cash - price,
+    teams: game.teams.map((entry) =>
+      entry.id === teamId
+        ? { ...entry, offsiteUntil: shield, offsiteReadyAt: game.time + offsiteSeconds(tuning) }
+        : entry,
+    ),
+    engineers: game.engineers.map((engineer) =>
+      engineer.team === teamId ? { ...engineer, mood: MOOD_START, unhappyAt: 0 } : engineer,
+    ),
+  })
+}
+
 export const train = (
   game: Game,
   engineerId: string,
@@ -1179,6 +1213,8 @@ export const createTeam = (game: Game): Action => {
         policy: 'balanced',
         previous: 'balanced',
         since: game.time,
+        offsiteUntil: 0,
+        offsiteReadyAt: 0,
       },
     ],
   })

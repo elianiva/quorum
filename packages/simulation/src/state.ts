@@ -340,6 +340,8 @@ export const Team = Schema.Struct({
   previous: PolicyId,
   since: Schema.Finite,
   kindAt: Schema.optionalKey(Schema.Finite),
+  offsiteUntil: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
+  offsiteReadyAt: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
 })
 export type Team = typeof Team.Type
 
@@ -471,6 +473,8 @@ export const CORE_TEAM: Team = {
   policy: 'balanced',
   previous: 'balanced',
   since: 0,
+  offsiteUntil: 0,
+  offsiteReadyAt: 0,
 }
 
 export const monolith = (fixes: ReadonlyArray<FixId>): Service => ({

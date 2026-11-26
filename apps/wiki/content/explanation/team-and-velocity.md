@@ -4,7 +4,7 @@ summary: Where Dev Hours come from, why a bigger team is not a faster team, and 
 section: explanation
 order: 8
 era: 1
-aliases: team, dev hours, dh, velocity, engineers, hiring, layoff, training, learn a language, rewrite, coordination, team size, brooks's law, tech debt, policy, deploys, backlog, migration, platform team, autopilot
+aliases: team, dev hours, dh, velocity, engineers, hiring, layoff, morale, team offsite, training, learn a language, rewrite, coordination, team size, brooks's law, tech debt, policy, deploys, backlog, migration, platform team, autopilot
 gdd: /design/08-team-and-velocity
 ---
 
@@ -43,6 +43,11 @@ language your Service runs, and a rare language such as Elixir or Rust takes lon
 A new hire works at 30% for their first Team week. Rails conventions halve that ramp, and with no
 framework, tech debt stretches it. A layoff refunds nothing. It ends the salary, and the rest of the
 team works at 90% for a Team week.
+
+A layoff's morale hit is not permanent. Hold a **Team offsite** from a Team's Morale row: it costs a
+signing fee per engineer on that team and brings that team's morale and every engineer's mood back
+at once. Each team can hold one per calendar week, so a team that offsites right after a layoff
+recovers its output while the other teams keep the hit.
 
 ## Teaching the team a new language
 

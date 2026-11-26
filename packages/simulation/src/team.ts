@@ -27,6 +27,8 @@ import {
   MANUAL_DEPLOY_MINUTES,
   MESH_TAX,
   MORALE_DAYS,
+  OFFSITE_DAYS,
+  OFFSITE_FEE,
   POLICIES,
   PLATFORM_TAX,
   POLICY_SWITCH_DAYS,
@@ -326,6 +328,20 @@ export const hireSeconds = (
 
 export const moraleSeconds = (tuning: Tuning = LIVE_TUNING): number => days(MORALE_DAYS, tuning)
 
+export const offsiteSeconds = (tuning: Tuning = LIVE_TUNING): number => days(OFFSITE_DAYS, tuning)
+
+export const offsiteCost = (game: Game, team: Team): number =>
+  Math.round(
+    (SIGNING_BASE *
+      eraOf(game).salaryIndex *
+      OFFSITE_FEE *
+      Math.max(1, game.engineers.filter((engineer) => engineer.team === team.id).length)) /
+      (ERAS[1]?.salaryIndex ?? 1),
+  )
+
+export const daysUntil = (game: Game, until: number, tuning: Tuning = LIVE_TUNING): number =>
+  Math.max(0, Math.ceil(((until - game.time) * tuning.calendarPace) / CALENDAR_DAY))
+
 export const platformStaffed = (game: Game): boolean =>
   game.teams.some(
     (team) =>
@@ -373,8 +389,9 @@ export const teamOutputs = (
   tuning: Tuning = LIVE_TUNING,
 ): ReadonlyArray<TeamOutput> => {
   if (game.sandbox) return []
-  const morale = game.time < game.moraleUntil ? LAYOFF_MORALE : 1
   const outputs = game.teams.map((team, index) => {
+    const morale =
+      game.time < game.moraleUntil && game.time >= team.offsiteUntil ? LAYOFF_MORALE : 1
     const owned = serviceOwnedBy(game, team)
     const members = membersOf(game, team)
     const founder = index === 0 ? FOUNDER_OUTPUT : 0

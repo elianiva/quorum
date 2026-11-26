@@ -74,9 +74,17 @@ The autopilot rushes the item at the top of the backlog, and Add index rushes it
 | Time to hire | Calendar days, multiplied by the language's time-to-hire factor, and −30% with `hiring-pipeline`. A company with services in several languages hires for the service's language. |
 | Ramp-up      | A new hire produces 30% for the first calendar week, then 100%. Rails conventions halve the ramp.                                                                                |
 
+### Layoffs and morale
+
 Layoffs refund nothing, end the salary Burn, and cost 10% velocity for a calendar week (morale).
 Morale is global: one team's layoff slows every team. An engineer can learn a new language instead
 ([Learning a Stack](#learning-a-stack)).
+
+A **Team offsite** clears the morale hit for that team and restores its engineers' mood. It costs a
+signing fee per engineer on the team, with a minimum of one, and happens at once. Each team can hold
+one per calendar week, so a team that offsites right after a layoff gets its own output back while
+the other teams keep the hit. An offsite also answers a long freeze, pages, or a pay gap before a
+slump Mail arrives.
 
 ### Pay and mood
 

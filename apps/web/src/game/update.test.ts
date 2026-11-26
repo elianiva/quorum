@@ -14,7 +14,7 @@ import { DragAndDrop } from '@foldkit/ui'
 import { fromString } from 'foldkit/url'
 import { newGame, preseedGame } from '@quorum/simulation/company'
 import { advancePropagation } from '@quorum/simulation/features'
-import { SIZES } from '@quorum/simulation/catalog'
+import { SIZES, MOOD_START, UNHAPPY_MOOD } from '@quorum/simulation/catalog'
 import {
   COMPONENTS,
   FEATURE_IDS,
@@ -26,6 +26,7 @@ import type { Advice } from '@quorum/simulation/goals'
 import { researchReady, resizePrice } from '@quorum/simulation/lookups'
 import { solveFlow } from '@quorum/simulation/solve'
 import { NEW_ENGINEER, type Postmortem, type WorkItem } from '@quorum/simulation/state'
+import { moraleSeconds, offsiteCost, offsiteSeconds, teamOutputs } from '@quorum/simulation/team'
 import * as Work from '@quorum/simulation/work'
 import { SHARED } from '@quorum/simulation/playbook'
 import { presetPlan } from '@quorum/simulation/parts'
@@ -105,6 +106,8 @@ test('dropping an engineer on another team moves them', () => {
             policy: 'balanced',
             previous: 'balanced',
             since: 0,
+            offsiteUntil: 0,
+            offsiteReadyAt: 0,
           },
         ],
         engineers: [{ id: 'e1', team: 'core', language: 'php', hiredAt: 0, ...NEW_ENGINEER }],
@@ -123,6 +126,137 @@ test('dropping an engineer on another team moves them', () => {
   )
   const dropped = send(moved, DragAndDrop.Message.ConfirmedKeyboardDrop())
   expect(dropped.board.game.engineers.find((engineer) => engineer.id === 'e1')?.team).toBe('t2')
+})
+
+test('the Developer panel applies a layoff’s morale hit without laying anyone off', () => {
+  const game = { ...preseedGame(), time: 100 }
+  const start: Model = { ...inLab(), board: { ...inLab().board, game } }
+  const forced = update(start, Message.MoraleForced()).model
+  expect(forced.board.game.moraleUntil).toBeCloseTo(game.time + moraleSeconds())
+  expect(forced.board.game.engineers).toEqual(game.engineers)
+})
+
+test('the Developer panel makes an engineer unhappy, and their slump Mail arrives', () => {
+  const game = {
+    ...preseedGame(),
+    nextIncidentAt: Number.MAX_SAFE_INTEGER,
+    engineers: [{ id: 'e1', team: 'core', language: 'php' as const, hiredAt: 0, ...NEW_ENGINEER }],
+  }
+  const start: Model = { ...inLab(), board: { ...inLab().board, game } }
+  const forced = update(start, Message.EngineerUnhappyForced({ engineerId: 'e1' })).model
+  expect(forced.board.game.engineers[0]?.mood).toBe(UNHAPPY_MOOD)
+  const ticked = tick(forced, 1)
+  expect(ticked.board.inbox.mail.some((mail) => mail.key === 'event:unhappy:e1')).toBe(true)
+})
+
+test('a Team offsite clears the hit, restores the mood, and starts the cooldown for that team only', () => {
+  const mail = (id: number, engineerId: string): Mail => ({
+    id,
+    key: `event:unhappy:${engineerId}`,
+    sender: `mate:${engineerId}`,
+    subject: 'About my mood',
+    time: 0,
+    entries: [{ time: 0, text: 'I am tired.' }],
+    actions: [],
+    phase: { _tag: 'Active' } as const,
+    read: false,
+    trashed: false,
+    spam: false,
+  })
+  const base = preseedGame()
+  const core = base.teams[0]!
+  const second = {
+    id: 't2',
+    name: 'Team 2',
+    kind: 'product' as const,
+    policy: 'balanced' as const,
+    previous: 'balanced' as const,
+    since: 0,
+    offsiteUntil: 0,
+    offsiteReadyAt: 0,
+  }
+  const game = {
+    ...base,
+    cash: 100_000,
+    time: 100,
+    moraleUntil: 100 + moraleSeconds(),
+    teams: [core, second],
+    engineers: [
+      {
+        id: 'e1',
+        team: 'core',
+        language: 'php' as const,
+        hiredAt: 0,
+        ...NEW_ENGINEER,
+        mood: 0.2,
+        unhappyAt: 10,
+        pages: 3,
+      },
+      {
+        id: 'e2',
+        team: 't2',
+        language: 'php' as const,
+        hiredAt: 0,
+        ...NEW_ENGINEER,
+        mood: 0.5,
+        unhappyAt: 10,
+        pages: 2,
+      },
+    ],
+  }
+  const start: Model = {
+    ...inLab(),
+    board: {
+      ...inLab().board,
+      game,
+      inbox: { ...inLab().board.inbox, mail: [mail(1, 'e1'), mail(2, 'e2')] },
+    },
+  }
+  const offsite = update(
+    start,
+    Message.TeamChanged({ message: TeamMessage.OffsiteChosen({ teamId: 'core' }) }),
+  ).model
+  const after = offsite.board.game
+  const coreAfter = after.teams.find((team) => team.id === 'core')!
+  const secondAfter = after.teams.find((team) => team.id === 't2')!
+  expect(after.cash).toBe(game.cash - offsiteCost(game, core))
+  expect(after.moraleUntil).toBe(game.moraleUntil)
+  expect(coreAfter.offsiteUntil).toBe(game.moraleUntil)
+  expect(coreAfter.offsiteReadyAt).toBeCloseTo(game.time + offsiteSeconds())
+  expect(secondAfter.offsiteUntil).toBe(0)
+  expect(secondAfter.offsiteReadyAt).toBe(0)
+  expect(after.engineers.find((engineer) => engineer.id === 'e1')?.mood).toBe(MOOD_START)
+  expect(after.engineers.find((engineer) => engineer.id === 'e2')?.mood).toBe(0.5)
+  expect(after.engineers.find((engineer) => engineer.id === 'e2')?.unhappyAt).toBe(10)
+  expect(
+    offsite.board.inbox.mail.find((mail) => mail.key === 'event:unhappy:e1')?.phase,
+  ).toMatchObject({ _tag: 'Resolved' })
+  expect(
+    offsite.board.inbox.mail.find((mail) => mail.key === 'event:unhappy:e2')?.phase,
+  ).toMatchObject({ _tag: 'Active' })
+  const outputs = teamOutputs(after, solveFlow(after))
+  const coreVelocity = outputs.find((entry) => entry.team.id === 'core')?.velocity ?? 0
+  const secondVelocity = outputs.find((entry) => entry.team.id === 't2')?.velocity ?? 0
+  expect(coreVelocity / secondVelocity).toBeCloseTo(1 / 0.9)
+})
+
+test('a Team offsite waits for its own cooldown', () => {
+  const base = preseedGame()
+  const game = {
+    ...base,
+    cash: 100_000,
+    time: 100,
+    moraleUntil: 1_000,
+    teams: [{ ...base.teams[0]!, offsiteReadyAt: 200 }],
+    engineers: [{ id: 'e1', team: 'core', language: 'php' as const, hiredAt: 0, ...NEW_ENGINEER }],
+  }
+  const start: Model = { ...inLab(), board: { ...inLab().board, game } }
+  const after = update(
+    start,
+    Message.TeamChanged({ message: TeamMessage.OffsiteChosen({ teamId: 'core' }) }),
+  ).model
+  expect(after.board.game).toEqual(game)
+  expect(after.toast?.tone).toBe('warn')
 })
 
 test('screenshot mode hides the chrome, blocks other shortcuts, and Escape returns', () => {

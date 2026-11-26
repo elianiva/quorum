@@ -256,6 +256,8 @@ describe('Research boost', () => {
       policy: 'balanced',
       previous: 'balanced',
       since: 0,
+      offsiteUntil: 0,
+      offsiteReadyAt: 0,
     }
     return {
       ...game,

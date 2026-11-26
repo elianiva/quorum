@@ -15,6 +15,8 @@ export const saveCases = {
   CheatLegacy: {},
   CheatRound: {},
   IncidentForced: { kind: IncidentId },
+  MoraleForced: {},
+  EngineerUnhappyForced: { engineerId: Schema.String },
   LogExported: {},
   StateCopied: {},
   AgentRoomCopied: {},

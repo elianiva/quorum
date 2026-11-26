@@ -3,6 +3,7 @@ import { Work } from '../board-actions.ts'
 import { FEATURES, INCIDENTS, KINDS, POLICIES, RESEARCH, TASKS } from '@quorum/simulation/catalog'
 import { Message } from '../message.ts'
 import { Option } from 'effect'
+import { closed } from '../inbox.ts'
 import { ResearchMessage, ResearchOutMessage, updateResearch } from '../research.ts'
 import { TeamOutMessage, updateTeam, type TeamMessage } from '../team.ts'
 import { Update } from 'foldkit'
@@ -33,6 +34,23 @@ export const teamAction = (model: Model, out: TeamOutMessage): UpdateResult => {
       act(model, 'Training', Work.train(game, engineerId, learnTargetOf(game)), {
         note: () => [say(model).toasts.training, 'primary'],
       }),
+    Offsite: ({ teamId }) => {
+      const result = act(model, 'Took the team offsite', Work.teamOffsite(game, teamId))
+      if (result.model.board.game === game) return result
+      const inbox = game.engineers
+        .filter((engineer) => engineer.team === teamId)
+        .reduce(
+          (current, engineer) =>
+            closed(
+              current,
+              `event:unhappy:${engineer.id}`,
+              game.time,
+              'The offsite helped. They are content again.',
+            ),
+          result.model.board.inbox,
+        )
+      return { ...result, model: { ...result.model, board: { ...result.model.board, inbox } } }
+    },
     CreateTeam: () => act(model, 'New team', Work.createTeam(game)),
     RemoveTeam: ({ teamId }) => act(model, 'Removed a team', Work.removeTeam(game, teamId)),
     Assign: ({ engineerId, teamId }) =>

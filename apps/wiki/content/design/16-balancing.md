@@ -76,6 +76,8 @@ Formatting: SI suffixes only (k, M, B, T). No letter suffixes such as "aa".
 | Freeze mood               |                | a calendar week of a spent budget takes all of it                            | [Burnout](/design/18-mail#burnout-and-quitting)                            |
 | Pay-gap mood              |                | a third of a point a calendar day at a 50% gap                               | [Burnout](/design/18-mail#burnout-and-quitting)                            |
 | Time off                  |                | 3 calendar days                                                              | [Burnout](/design/18-mail#burnout-and-quitting)                            |
+| Team offsite cost         |                | 1 signing fee per engineer on the team, at least 1                           | [Layoffs and morale](/design/08-team-and-velocity#layoffs-and-morale)      |
+| Team offsite cooldown     |                | 7 calendar days per team                                                     | [Layoffs and morale](/design/08-team-and-velocity#layoffs-and-morale)      |
 | Block reminder            |                | 1 calendar day after Later                                                   | [Blocked](/design/08-team-and-velocity#blocked)                            |
 | Block team-size threshold |                | 8 engineers on one team                                                      | [Blocked](/design/08-team-and-velocity#blocked)                            |
 | Market gain cap           |                | +100% of the Era market                                                      | [Sizes](/design/08-team-and-velocity#sizes)                                |

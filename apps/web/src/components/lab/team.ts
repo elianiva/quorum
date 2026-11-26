@@ -35,9 +35,11 @@ import {
   Zap,
 } from 'lucide'
 import {
+  CONTENT_MOOD,
   FEATURES,
   FEATURE_IDS,
   LANGUAGES,
+  LAYOFF_MORALE,
   LEVER_KINDS,
   POLICY_IDS,
   RESEARCH,
@@ -75,6 +77,7 @@ import {
   WorkKind,
 } from '@quorum/simulation/state'
 import {
+  daysUntil,
   deployEvery,
   devHoursRate,
   doraMetrics,
@@ -82,6 +85,7 @@ import {
   learnTargetOf,
   membersOf,
   nextBadDeployChance,
+  offsiteCost,
   ownerOf,
   payrollOf,
   policyNow,
@@ -97,6 +101,7 @@ import {
   trainCost,
   trainSeconds,
   trainingOf,
+  unhappy,
   upkeepShare,
 } from '@quorum/simulation/team'
 import { overdueBy } from '@quorum/simulation/cve'
@@ -160,6 +165,7 @@ import {
   stackLogo,
   EYEBROW_STYLE,
   PANEL_STYLE,
+  WELL,
   WELL_STYLE,
 } from '@quorum/ui/game/bits'
 import { shell } from './panels.ts'
@@ -1451,6 +1457,7 @@ const pod = (model: Model, team: Team, index: number, h: HtmlBuilder<Message>): 
             : h.empty,
         ],
       ),
+      moraleCard(game, team, h),
       index > 0 && !sandbox && game.stage >= PLATFORM_STAGE ? kindSwitch(game, team, h) : h.empty,
       !sandbox && !teamReady(game, team)
         ? h.span(
@@ -2681,6 +2688,134 @@ const doraCard = (game: Game, h: HtmlBuilder<Message>): Html => {
           stat(t.team.changeFailureRate, `${Math.round(dora.changeFailureRate * 100)}%`),
           stat(t.team.mttr, dora.mttr === null ? '—' : wait(t, dora.mttr)),
         ],
+      ),
+    ],
+  )
+}
+
+const moraleCard = (game: Game, team: Team, h: HtmlBuilder<Message>): Html => {
+  const t = copy(h)
+
+  if (game.sandbox || game.stage < 1) return h.empty
+  const members = membersOf(game, team)
+  const price = offsiteCost(game, team)
+  const hit = game.time < game.moraleUntil && game.time >= team.offsiteUntil
+  const moraleDays = daysUntil(game, game.moraleUntil)
+  const cooling = game.time < team.offsiteReadyAt
+  const cooldown = daysUntil(game, team.offsiteReadyAt)
+  const unhappyCount = members.filter(unhappy).length
+  const slumpingCount =
+    members.filter((engineer) => engineer.mood < CONTENT_MOOD).length - unhappyCount
+  const needsMood = members.some((engineer) => engineer.mood < CONTENT_MOOD)
+  const staffed = team.id === game.teams[0]?.id || members.length > 0
+  const needs = staffed && (hit || needsMood)
+  const affordable = game.cash >= price
+  const enabled = needs && !cooling && affordable
+  const mood =
+    members.length === 0
+      ? t.team.noEngineers
+      : unhappyCount > 0
+        ? t.team.engineersUnhappy(unhappyCount)
+        : slumpingCount > 0
+          ? t.team.engineersSlumping(slumpingCount)
+          : t.team.everyoneContent
+  const moodTone: 'danger' | 'warn' | 'mutedForeground' =
+    unhappyCount > 0 ? 'danger' : slumpingCount > 0 ? 'warn' : 'mutedForeground'
+  const why = !staffed
+    ? t.team.offsiteNeeds
+    : !affordable
+      ? t.team.offsiteShort
+      : t.team.offsiteEffect
+  const label = cooling
+    ? t.team.nextOffsite(t.units.d(cooldown))
+    : !staffed
+      ? t.team.offsiteNeeds
+      : t.team.teamOffsite(money(price))
+  return h.div(
+    [
+      h.Key(`morale-${team.id}`),
+      h.Class(
+        cx(
+          WELL,
+          css({
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2',
+            borderRadius: 'lg',
+            padding: '2.5',
+          }),
+        ),
+      ),
+    ],
+    [
+      heading(
+        t.team.morale,
+        h.span(
+          [
+            h.Class(
+              cx(
+                FIGURE,
+                css({
+                  fontSize: 'type.12',
+                  color: hit ? 'warn' : 'mutedForeground',
+                }),
+              ),
+            ),
+          ],
+          [
+            hit
+              ? t.team.moraleHit(Math.round((1 - LAYOFF_MORALE) * 100), t.units.d(moraleDays))
+              : t.team.moraleSteady,
+          ],
+        ),
+        h,
+      ),
+      h.div(
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: '2',
+              paddingInline: '1',
+            }),
+          ),
+        ],
+        [
+          h.span([h.Class(EYEBROW)], [t.team.mood]),
+          h.span(
+            [
+              h.Class(
+                cx(
+                  FIGURE,
+                  css({
+                    fontSize: 'type.12',
+                    color: moodTone,
+                  }),
+                ),
+              ),
+            ],
+            [mood],
+          ),
+        ],
+      ),
+      button(
+        {
+          onClick: Message.TeamChanged({
+            message: TeamMessage.OffsiteChosen({ teamId: team.id }),
+          }),
+          isDisabled: !enabled,
+          variant: 'default',
+          size: 'lg',
+          className: css({
+            width: '100%',
+            justifyContent: 'center',
+          }),
+          attributes: [h.Title(why)],
+        },
+        [label],
+        h,
       ),
     ],
   )

@@ -12,6 +12,7 @@ import {
   Bot,
   Bug,
   Check,
+  ChevronRight,
   Container,
   Database,
   Crown,
@@ -1868,8 +1869,109 @@ const working = (
   )
 }
 
-const nodeRow = (
+const fold = (
+  key: string,
+  className: string,
+  summary: ReadonlyArray<Html>,
+  body: Html,
+  h: HtmlBuilder<Message>,
+): Html =>
+  h.details(
+    [h.Key(key), h.Class(cx(className, 'fold', 'group'))],
+    [
+      h.summary(
+        [
+          h.Class(
+            css({
+              display: 'flex',
+              cursor: 'pointer',
+              listStyleType: 'none',
+              alignItems: 'flex-start',
+              gap: '2',
+              '&::-webkit-details-marker': {
+                display: 'none',
+              },
+            }),
+          ),
+        ],
+        [
+          h.span(
+            [
+              h.Class(
+                css({
+                  display: 'flex',
+                  height: '6',
+                  flexShrink: '0',
+                  alignItems: 'center',
+                }),
+              ),
+            ],
+            [
+              icon(
+                h,
+                ChevronRight,
+                cx(
+                  css({
+                    width: '3.5',
+                    height: '3.5',
+                    color: 'mutedForeground',
+                    '.group[open] > summary &': {
+                      rotate: '90deg',
+                    },
+                  }),
+                  'fold-chevron',
+                ),
+              ),
+            ],
+          ),
+          ...summary,
+        ],
+      ),
+      body,
+    ],
+  )
+
+const quiet = (text: string, h: HtmlBuilder<Message>): Html =>
+  h.span(
+    [
+      h.Class(
+        css({
+          color: 'mutedForeground',
+        }),
+      ),
+    ],
+    [text],
+  )
+
+const fact = (
   label: string,
+  value: Html | string,
+  h: HtmlBuilder<Message>,
+): ReadonlyArray<Html> => [
+  h.dt(
+    [
+      h.Class(
+        css({
+          color: 'mutedForeground',
+        }),
+      ),
+    ],
+    [label],
+  ),
+  h.dd(
+    [
+      h.Class(
+        css({
+          minWidth: '0',
+          margin: '0',
+        }),
+      ),
+    ],
+    [value],
+  ),
+]
+
+const nodeChips = (
   nodes: ReadonlyArray<GameNode>,
   empty: string,
   game: Game,
@@ -1882,58 +1984,44 @@ const nodeRow = (
         css({
           display: 'flex',
           flexWrap: 'wrap',
-          alignItems: 'center',
-          columnGap: '2',
-          rowGap: '0.5',
-          fontSize: 'type.11-5',
+          gap: '1',
         }),
       ),
     ],
-    [
-      h.span(
-        [
-          h.Class(
-            css({
-              color: 'mutedForeground',
-            }),
+    nodes.length === 0
+      ? [quiet(empty, h)]
+      : nodes.map((node) =>
+          h.button(
+            [
+              h.Key(node.id),
+              h.Type('button'),
+              h.OnClick(Message.RevealNode({ nodeId: node.id })),
+              h.AriaLabel(t.team.openNode(nodeTitle(t, game, node))),
+              h.Class(
+                css({
+                  height: '5.5',
+                  borderRadius: 'md',
+                  paddingInline: '1.5',
+                  backgroundColor: 'color-mix(in oklab, var(--foreground) 6%, transparent)',
+                  _hover: {
+                    backgroundColor: 'color-mix(in oklab, var(--foreground) 12%, transparent)',
+                  },
+                }),
+              ),
+            ],
+            [nodeTitle(t, game, node)],
           ),
-        ],
-        [t.team.labelColon(label)],
-      ),
-      ...(nodes.length === 0
-        ? [
-            h.span(
-              [
-                h.Class(
-                  css({
-                    color: 'mutedForeground',
-                  }),
-                ),
-              ],
-              [empty],
-            ),
-          ]
-        : nodes.map((node) =>
-            h.button(
-              [
-                h.Type('button'),
-                h.OnClick(Message.RevealNode({ nodeId: node.id })),
-                h.AriaLabel(t.team.openNode(nodeTitle(t, game, node))),
-                h.Class(
-                  css({
-                    fontWeight: 'medium',
-                    _hover: {
-                      textDecorationLine: 'underline',
-                    },
-                  }),
-                ),
-              ],
-              [nodeTitle(t, game, node)],
-            ),
-          )),
-    ],
+        ),
   )
 }
+
+const SERVICE_SELECT = css(WELL_STYLE, {
+  justifySelf: 'start',
+  height: '6',
+  borderRadius: 'lg',
+  paddingInline: '1.5',
+  fontSize: 'type.11',
+})
 
 const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
   const t = copy(h)
@@ -1994,168 +2082,181 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
       ...game.services.map((service) => {
         const owner = ownerOf(game, service)
         const paged = activeIncident(game)?.service === service.id
+        const databases = game.nodes.filter((node) => node.type === 'database')
         const editService =
           renaming !== null && renaming.target === 'service' && renaming.id === service.id
             ? renaming
             : null
-        return h.div(
-          [
-            h.Class(
-              css(
-                WELL_STYLE,
-                {
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1',
-                  borderRadius: 'lg',
-                  paddingInline: '2.5',
-                  paddingBlock: '2',
-                },
-                paged && {
-                  boxShadow: 'dangerLine',
-                },
-              ),
-            ),
-          ],
+        return fold(
+          service.id,
+          css(
+            WELL_STYLE,
+            {
+              borderRadius: 'lg',
+              '& > summary': {
+                paddingInline: '2.5',
+                paddingBlock: '2',
+              },
+            },
+            paged && {
+              boxShadow: 'dangerLine',
+            },
+          ),
           [
             h.div(
               [
                 h.Class(
                   css({
                     display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    columnGap: '2',
-                    rowGap: '1',
+                    minWidth: '0',
+                    flex: '1 1 0%',
+                    flexDirection: 'column',
+                    gap: '0.5',
                   }),
                 ),
               ],
               [
-                editService
-                  ? renameField(editService.draft, t.team.serviceNameLabel, service.name, h)
-                  : h.span(
-                      [
-                        h.Class(
-                          css({
-                            fontSize: 'type.12-5',
-                            fontWeight: 'medium',
-                          }),
-                        ),
-                      ],
-                      [serviceName(t, service)],
-                    ),
-                editService
-                  ? h.empty
-                  : iconButton(
-                      t.team.renameService,
-                      Pencil,
-                      Message.TeamChanged({
-                        message: TeamMessage.RenameStarted({
-                          target: 'service',
-                          id: service.id,
-                        }),
-                      }),
-                      true,
-                      h,
-                    ),
-                editService
-                  ? h.empty
-                  : badge(
-                      {
-                        variant: 'outline',
-                        className: css({
-                          fontSize: 'type.10-5',
-                        }),
-                      },
-                      [t.team.ownedBy(teamName(t, owner))],
-                      h,
-                    ),
-                paged && !editService
-                  ? badge(
-                      {
-                        variant: 'outline',
-                        className: css({
-                          color: 'danger',
-                        }),
-                      },
-                      [t.team.paged],
-                      h,
-                    )
-                  : h.empty,
-              ],
-            ),
-            h.span(
-              [
-                h.Class(
-                  cx(
-                    FIGURE,
-                    css({
-                      whiteSpace: 'nowrap',
-                      fontSize: 'type.10-5',
-                      color: 'mutedForeground',
-                    }),
-                  ),
-                ),
-              ],
-              [
-                t.team.serviceLine(
-                  service.codebase.toFixed(0),
-                  Math.round(service.debt * 100),
-                  t.units.perSecond(money(serviceBurnOf(game, ledgerOf(model), service))),
-                ),
-              ],
-            ),
-            h.span(
-              [
-                h.Class(
-                  css({
-                    fontSize: 'type.11-5',
-                    color: 'mutedForeground',
-                  }),
-                ),
-              ],
-              [
-                service.features.length === 0
-                  ? t.team.carriesEveryFeature
-                  : t.team.carries(
-                      service.features.map((id) => t.catalog.features[id].name).join(', '),
-                    ),
-              ],
-            ),
-            nodeRow(t.team.nodes, nodesOfService(game, service.id), t.team.noneYet, game, h),
-            nodeRow(
-              t.team.loadBalancers,
-              loadBalancersOf(game, service.id),
-              t.team.notBehindOne,
-              game,
-              h,
-            ),
-            game.nodes.filter((node) => node.type === 'database').length > 1
-              ? h.div(
+                h.div(
                   [
                     h.Class(
                       css({
                         display: 'flex',
                         alignItems: 'center',
                         gap: '1.5',
-                        paddingTop: '0.5',
                       }),
                     ),
                   ],
                   [
-                    h.span(
-                      [
-                        h.Class(
-                          css({
-                            fontSize: 'type.11',
-                            color: 'mutedForeground',
-                          }),
+                    editService
+                      ? renameField(editService.draft, t.team.serviceNameLabel, service.name, h)
+                      : h.span(
+                          [
+                            h.Class(
+                              css({
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                fontSize: 'type.12-5',
+                                fontWeight: 'medium',
+                              }),
+                            ),
+                          ],
+                          [serviceName(t, service)],
                         ),
-                      ],
-                      [t.team.datastore],
+                    editService
+                      ? h.empty
+                      : iconButton(
+                          t.team.renameService,
+                          Pencil,
+                          Message.TeamChanged({
+                            message: TeamMessage.RenameStarted({
+                              target: 'service',
+                              id: service.id,
+                            }),
+                          }),
+                          true,
+                          h,
+                        ),
+                    paged && !editService
+                      ? badge(
+                          {
+                            variant: 'outline',
+                            className: css({
+                              color: 'danger',
+                            }),
+                          },
+                          [t.team.paged],
+                          h,
+                        )
+                      : h.empty,
+                    game.teams.length > 1 && !editService
+                      ? h.span(
+                          [
+                            h.Title(t.team.ownedBy(teamName(t, owner))),
+                            h.Class(
+                              css({
+                                flexShrink: '0',
+                                marginLeft: 'auto',
+                                fontSize: 'type.11',
+                                color: 'mutedForeground',
+                              }),
+                            ),
+                          ],
+                          [teamName(t, owner)],
+                        )
+                      : h.empty,
+                  ],
+                ),
+                h.span(
+                  [
+                    h.Class(
+                      cx(
+                        FIGURE,
+                        css({
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          fontSize: 'type.10-5',
+                          color: 'mutedForeground',
+                        }),
+                      ),
                     ),
+                  ],
+                  [
+                    t.team.serviceLine(
+                      service.codebase.toFixed(0),
+                      Math.round(service.debt * 100),
+                      t.units.perSecond(money(serviceBurnOf(game, ledgerOf(model), service))),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+          h.dl(
+            [
+              h.Class(
+                css({
+                  display: 'grid',
+                  gridTemplateColumns: 'max-content minmax(0, 1fr)',
+                  alignItems: 'baseline',
+                  columnGap: '4',
+                  rowGap: '2',
+                  marginInline: '2.5',
+                  marginBottom: '2.5',
+                  borderTopWidth: '1px',
+                  borderTopStyle: 'solid',
+                  borderTopColor: 'color-mix(in oklab, var(--foreground) 8%, transparent)',
+                  paddingTop: '2.5',
+                  paddingLeft: '5.5',
+                  fontSize: 'type.11',
+                }),
+              ),
+            ],
+            [
+              ...fact(
+                t.team.features,
+                service.features.length === 0
+                  ? quiet(t.team.unclaimedFeatures, h)
+                  : service.features.map((id) => t.catalog.features[id].name).join(', '),
+                h,
+              ),
+              ...fact(
+                t.team.nodes,
+                nodeChips(nodesOfService(game, service.id), t.team.noneYet, game, h),
+                h,
+              ),
+              ...fact(
+                t.team.loadBalancers,
+                nodeChips(loadBalancersOf(game, service.id), t.team.notBehindOne, game, h),
+                h,
+              ),
+              ...(databases.length > 1
+                ? fact(
+                    t.team.datastore,
                     h.select(
                       [
+                        h.AriaLabel(t.team.datastore),
                         h.OnChange((datastore) =>
                           Message.TeamChanged({
                             message: TeamMessage.DatastoreChosen({
@@ -2164,14 +2265,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                             }),
                           }),
                         ),
-                        h.Class(
-                          css(WELL_STYLE, {
-                            height: '6',
-                            borderRadius: 'lg',
-                            paddingInline: '1.5',
-                            fontSize: 'type.11',
-                          }),
-                        ),
+                        h.Class(SERVICE_SELECT),
                       ],
                       [
                         h.option(
@@ -2181,49 +2275,26 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                           ],
                           [t.team.firstDatabase],
                         ),
-                        ...game.nodes
-                          .filter((node) => node.type === 'database')
-                          .map((node) =>
-                            h.option(
-                              [
-                                h.Value(node.id),
-                                ...(service.datastore._tag === 'Pinned' &&
-                                service.datastore.id === node.id
-                                  ? [h.Selected(true)]
-                                  : []),
-                              ],
-                              [nodeTitle(t, game, node)],
-                            ),
+                        ...databases.map((node) =>
+                          h.option(
+                            [
+                              h.Value(node.id),
+                              ...(service.datastore._tag === 'Pinned' &&
+                              service.datastore.id === node.id
+                                ? [h.Selected(true)]
+                                : []),
+                            ],
+                            [nodeTitle(t, game, node)],
                           ),
-                      ],
-                    ),
-                  ],
-                )
-              : h.empty,
-            game.teams.length > 1
-              ? h.div(
-                  [
-                    h.Class(
-                      css({
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '1.5',
-                        paddingTop: '0.5',
-                      }),
-                    ),
-                  ],
-                  [
-                    h.span(
-                      [
-                        h.Class(
-                          css({
-                            fontSize: 'type.11',
-                            color: 'mutedForeground',
-                          }),
                         ),
                       ],
-                      [t.team.moveServiceTo],
                     ),
+                    h,
+                  )
+                : []),
+              ...(game.teams.length > 1
+                ? fact(
+                    t.team.team,
                     h.select(
                       [
                         h.AriaLabel(t.team.teamThatOwns(serviceName(t, service))),
@@ -2232,14 +2303,7 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                             message: TeamMessage.ServiceMoved({ serviceId: service.id, teamId }),
                           }),
                         ),
-                        h.Class(
-                          css(WELL_STYLE, {
-                            height: '6',
-                            borderRadius: 'lg',
-                            paddingInline: '1.5',
-                            fontSize: 'type.11',
-                          }),
-                        ),
+                        h.Class(SERVICE_SELECT),
                       ],
                       game.teams.map((entry) =>
                         h.option(
@@ -2251,241 +2315,291 @@ const servicesCard = (model: Model, h: HtmlBuilder<Message>): Html => {
                         ),
                       ),
                     ),
-                  ],
-                )
-              : h.empty,
-          ],
+                    h,
+                  )
+                : []),
+            ],
+          ),
+          h,
         )
       }),
       has(game, 'service-boundaries')
-        ? h.div(
+        ? fold(
+            'split',
+            css({
+              borderRadius: 'lg',
+              borderWidth: '1px',
+              borderStyle: 'dashed',
+              borderColor: 'color-mix(in oklab, var(--foreground) 18%, transparent)',
+              '& > summary': {
+                paddingInline: '2.5',
+                paddingBlock: '2',
+              },
+            }),
             [
-              h.Class(
-                css({
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '2',
-                  paddingTop: '1',
-                }),
-              ),
-            ],
-            [
-              h.div(
+              h.span(
                 [
                   h.Class(
                     css({
                       display: 'flex',
+                      height: '6',
                       alignItems: 'center',
-                      gap: '1.5',
+                      fontSize: 'type.12',
+                      fontWeight: 'medium',
                     }),
                   ),
                 ],
-                [
-                  h.input([
-                    h.Type('text'),
-                    h.Value(draft.name),
-                    h.Placeholder(t.team.nameNewService),
-                    h.AriaLabel(t.team.newServiceName),
-                    h.OnInput((name) =>
-                      Message.TeamChanged({ message: TeamMessage.ServiceNamed({ name }) }),
-                    ),
+                [t.team.splitAService],
+              ),
+            ],
+            h.div(
+              [
+                h.Class(
+                  css({
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2',
+                    marginInline: '2.5',
+                    marginBottom: '2.5',
+                    borderTopWidth: '1px',
+                    borderTopStyle: 'solid',
+                    borderTopColor: 'color-mix(in oklab, var(--foreground) 8%, transparent)',
+                    paddingTop: '2.5',
+                    paddingLeft: '5.5',
+                  }),
+                ),
+              ],
+              [
+                h.div(
+                  [
                     h.Class(
-                      css(WELL_STYLE, {
-                        height: '7',
-                        minWidth: '0',
-                        flex: '1 1 0%',
-                        borderRadius: 'lg',
-                        paddingInline: '2',
-                        fontSize: 'type.12',
-                        outlineStyle: 'none',
+                      css({
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1.5',
                       }),
                     ),
-                  ]),
-                  h.select(
-                    [
-                      h.AriaLabel(t.team.teamOwnsNewService),
-                      h.OnChange((teamId) =>
-                        Message.TeamChanged({
-                          message: TeamMessage.ServiceOwnerChosen({ teamId }),
-                        }),
+                  ],
+                  [
+                    h.input([
+                      h.Type('text'),
+                      h.Value(draft.name),
+                      h.Placeholder(t.team.nameNewService),
+                      h.AriaLabel(t.team.newServiceName),
+                      h.OnInput((name) =>
+                        Message.TeamChanged({ message: TeamMessage.ServiceNamed({ name }) }),
                       ),
                       h.Class(
                         css(WELL_STYLE, {
                           height: '7',
+                          minWidth: '0',
+                          flex: '1 1 0%',
                           borderRadius: 'lg',
-                          paddingInline: '1.5',
+                          paddingInline: '2',
                           fontSize: 'type.12',
+                          outlineStyle: 'none',
                         }),
                       ),
-                    ],
-                    game.teams.map((entry) =>
-                      h.option(
-                        [
-                          h.Value(entry.id),
-                          ...(entry.id === draft.owner ? [h.Selected(true)] : []),
-                        ],
-                        [teamName(t, entry)],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              candidates.length === 0
-                ? h.span(
-                    [
-                      h.Class(
-                        css({
-                          fontSize: 'type.11-5',
-                          color: 'mutedForeground',
-                        }),
-                      ),
-                    ],
-                    [t.team.noLiveFeatureLeft],
-                  )
-                : h.div(
-                    [
-                      h.Class(
-                        css({
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: '1.5',
-                        }),
-                      ),
-                    ],
-                    candidates.map((id) => {
-                      const on = draft.features.includes(id)
-                      return h.button(
-                        [
-                          h.Key(`split-${id}`),
-                          h.Type('button'),
-                          h.OnClick(
-                            Message.TeamChanged({
-                              message: TeamMessage.ServiceFeatureToggled({ id }),
-                            }),
-                          ),
-                          h.Class(
-                            cx(
-                              css({
-                                display: 'flex',
-                                height: '6',
-                                alignItems: 'center',
-                                gap: '1',
-                                borderRadius: 'full',
-                                borderWidth: '1px',
-                                borderStyle: 'solid',
-                                paddingInline: '2',
-                                fontSize: 'type.11',
-                              }),
-                              on
-                                ? css({
-                                    borderColor:
-                                      'color-mix(in oklab, var(--primary) 60%, transparent)',
-                                    backgroundColor:
-                                      'color-mix(in oklab, var(--primary) 15%, transparent)',
-                                    color: 'foreground',
-                                  })
-                                : css({
-                                    borderColor:
-                                      'color-mix(in oklab, var(--foreground) 15%, transparent)',
-                                    color: 'mutedForeground',
-                                    _hover: {
-                                      color: 'foreground',
-                                    },
-                                  }),
-                            ),
-                          ),
-                        ],
-                        [
-                          on
-                            ? icon(
-                                h,
-                                Check,
-                                css({
-                                  width: '3',
-                                  height: '3',
-                                }),
-                              )
-                            : h.empty,
-                          t.catalog.features[id].name,
-                        ],
-                      )
-                    }),
-                  ),
-              h.div(
-                [
-                  h.Class(
-                    css({
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '2',
-                    }),
-                  ),
-                ],
-                [
-                  button(
-                    {
-                      onClick: Message.TeamChanged({ message: TeamMessage.SplitChosen() }),
-                      isDisabled: refusal !== null,
-                      variant: 'outline',
-                      size: 'sm',
-                      attributes: [
-                        h.Title(
-                          refusal === null
-                            ? t.team.moveFeaturesToCodebase
-                            : splitWhy(t, game, draft, refusal),
+                    ]),
+                    h.select(
+                      [
+                        h.AriaLabel(t.team.teamOwnsNewService),
+                        h.OnChange((teamId) =>
+                          Message.TeamChanged({
+                            message: TeamMessage.ServiceOwnerChosen({ teamId }),
+                          }),
+                        ),
+                        h.Class(
+                          css(WELL_STYLE, {
+                            height: '7',
+                            borderRadius: 'lg',
+                            paddingInline: '1.5',
+                            fontSize: 'type.12',
+                          }),
                         ),
                       ],
-                    },
-                    refusal === null
-                      ? [
-                          icon(
-                            h,
-                            Container,
-                            css({
-                              width: '3.5',
-                              height: '3.5',
-                            }),
-                          ),
-                          t.team.splitFor(t.units.devHours(splitCost(draft.features))),
-                        ]
-                      : [
-                          icon(
-                            h,
-                            Lock,
-                            css({
-                              width: '3',
-                              height: '3',
-                            }),
-                          ),
-                          t.team.locked,
-                        ],
-                    h,
-                  ),
-                  h.span(
-                    [
-                      h.Class(
-                        css({
-                          fontSize: 'type.11',
-                          color: 'mutedForeground',
-                        }),
+                      game.teams.map((entry) =>
+                        h.option(
+                          [
+                            h.Value(entry.id),
+                            ...(entry.id === draft.owner ? [h.Selected(true)] : []),
+                          ],
+                          [teamName(t, entry)],
+                        ),
                       ),
-                    ],
-                    [refusal === null ? '' : splitWhy(t, game, draft, refusal)],
-                  ),
-                ],
-              ),
-            ],
+                    ),
+                  ],
+                ),
+                candidates.length === 0
+                  ? h.span(
+                      [
+                        h.Class(
+                          css({
+                            fontSize: 'type.11-5',
+                            color: 'mutedForeground',
+                          }),
+                        ),
+                      ],
+                      [t.team.noLiveFeatureLeft],
+                    )
+                  : h.div(
+                      [
+                        h.Class(
+                          css({
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '1.5',
+                          }),
+                        ),
+                      ],
+                      candidates.map((id) => {
+                        const on = draft.features.includes(id)
+                        return h.button(
+                          [
+                            h.Key(`split-${id}`),
+                            h.Type('button'),
+                            h.OnClick(
+                              Message.TeamChanged({
+                                message: TeamMessage.ServiceFeatureToggled({ id }),
+                              }),
+                            ),
+                            h.Class(
+                              cx(
+                                css({
+                                  display: 'flex',
+                                  height: '6',
+                                  alignItems: 'center',
+                                  gap: '1',
+                                  borderRadius: 'full',
+                                  borderWidth: '1px',
+                                  borderStyle: 'solid',
+                                  paddingInline: '2',
+                                  fontSize: 'type.11',
+                                }),
+                                on
+                                  ? css({
+                                      borderColor:
+                                        'color-mix(in oklab, var(--primary) 60%, transparent)',
+                                      backgroundColor:
+                                        'color-mix(in oklab, var(--primary) 15%, transparent)',
+                                      color: 'foreground',
+                                    })
+                                  : css({
+                                      borderColor:
+                                        'color-mix(in oklab, var(--foreground) 15%, transparent)',
+                                      color: 'mutedForeground',
+                                      _hover: {
+                                        color: 'foreground',
+                                      },
+                                    }),
+                              ),
+                            ),
+                          ],
+                          [
+                            on
+                              ? icon(
+                                  h,
+                                  Check,
+                                  css({
+                                    width: '3',
+                                    height: '3',
+                                  }),
+                                )
+                              : h.empty,
+                            t.catalog.features[id].name,
+                          ],
+                        )
+                      }),
+                    ),
+                h.div(
+                  [
+                    h.Class(
+                      css({
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '2',
+                      }),
+                    ),
+                  ],
+                  [
+                    button(
+                      {
+                        onClick: Message.TeamChanged({ message: TeamMessage.SplitChosen() }),
+                        isDisabled: refusal !== null,
+                        variant: 'outline',
+                        size: 'sm',
+                        attributes: [
+                          h.Title(
+                            refusal === null
+                              ? t.team.moveFeaturesToCodebase
+                              : splitWhy(t, game, draft, refusal),
+                          ),
+                        ],
+                      },
+                      refusal === null
+                        ? [
+                            icon(
+                              h,
+                              Container,
+                              css({
+                                width: '3.5',
+                                height: '3.5',
+                              }),
+                            ),
+                            t.team.splitFor(t.units.devHours(splitCost(draft.features))),
+                          ]
+                        : [
+                            icon(
+                              h,
+                              Lock,
+                              css({
+                                width: '3',
+                                height: '3',
+                              }),
+                            ),
+                            t.team.locked,
+                          ],
+                      h,
+                    ),
+                    h.span(
+                      [
+                        h.Class(
+                          css({
+                            fontSize: 'type.11',
+                            color: 'mutedForeground',
+                          }),
+                        ),
+                      ],
+                      [refusal === null ? '' : splitWhy(t, game, draft, refusal)],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            h,
           )
-        : h.span(
+        : h.div(
             [
               h.Class(
                 css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1.5',
                   fontSize: 'type.11-5',
                   color: 'mutedForeground',
                 }),
               ),
             ],
             [
+              icon(
+                h,
+                Lock,
+                css({
+                  width: '3',
+                  height: '3',
+                  flexShrink: '0',
+                }),
+              ),
               t.team.serviceBoundariesSplits(
                 t.catalog.research['service-boundaries'].name,
                 t.catalog.eras[RESEARCH['service-boundaries'].era]?.name ?? '',

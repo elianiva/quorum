@@ -137,8 +137,7 @@ export const team: Messages['team'] = {
   paged: 'Avisados',
   serviceLine: (kloc: string | number, debt: string | number, burn: string | number) =>
     `${kloc} KLOC · deuda ${debt}% · gasto ${burn}`,
-  carriesEveryFeature: 'Lleva todas las Funcionalidades que ningún otro Servicio menciona',
-  carries: (features: string | number) => `Lleva ${features}`,
+  unclaimedFeatures: 'Todas las Funcionalidades que ningún otro Servicio menciona',
   moveServiceTo: 'Mover a',
   datastore: 'Base de datos',
   firstDatabase: 'Primera base de datos',

@@ -131,8 +131,7 @@ export const team = {
   paged: 'Paged',
   serviceLine: (kloc: string | number, debt: string | number, burn: string | number) =>
     `${kloc} KLOC · debt ${debt}% · ${burn} burn`,
-  carriesEveryFeature: 'Carries every Feature no other Service names',
-  carries: (features: string | number) => `Carries ${features}`,
+  unclaimedFeatures: 'Every Feature no other Service names',
   moveServiceTo: 'Move to',
   datastore: 'Database',
   firstDatabase: 'First Database',

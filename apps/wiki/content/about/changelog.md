@@ -9,6 +9,18 @@ toc: top
 
 Quorum has no versions. It changes all the time, and this page lists the latest days, newest first, so you can see what moved since you last played. A page on this wiki can lag behind the game by a few days. Older days are in the [full changelog](/about/changelog/all).
 
+## Wednesday, 25 November 2026
+
+### Changed
+
+- Add the changelog entry for 2026-11-24 (#69) ([7f251ae](https://github.com/elianiva/quorum/commit/7f251ae7d7ddf5805c48d92f9adc5911e8fb9dfa))
+- Name regions and pricing by their generated ids ([09aeaae](https://github.com/elianiva/quorum/commit/09aeaae534f012f89b1cace6a3b6d7cf234e9e50))
+- Fix the qmc review findings and validate research ids ([19362f1](https://github.com/elianiva/quorum/commit/19362f173d2339e046cc9e8aa620bd63bc74e611))
+- Move the catalog types and ids into qmc ([0863e1d](https://github.com/elianiva/quorum/commit/0863e1d82293ab4a2e6212cc427a3f9fc11375b7))
+- Write the catalog in Lisp and compile it with qmc ([bbfaf6c](https://github.com/elianiva/quorum/commit/bbfaf6ccbcba4c0ed8a7282cd56d511b6025616e))
+- Hang Settings from its own line and frame each new menu column in full ([6c2f4e8](https://github.com/elianiva/quorum/commit/6c2f4e8e04c41834a7523a5d41579a4b31d6e57c))
+- Give every Sandbox Easy mode's pause and speed controls ([ecccd2a](https://github.com/elianiva/quorum/commit/ecccd2a99fcf990ea7bd4b0b71663470dea88d3e))
+
 ## Tuesday, 24 November 2026
 
 ### Changed
@@ -101,9 +113,3 @@ Quorum has no versions. It changes all the time, and this page lists the latest 
 - Turn the menu into a tree on a panning canvas ([786aff3](https://github.com/elianiva/quorum/commit/786aff32728b558ae4eacd74428175725447b1aa))
 - Add the changelog entry for 2026-11-18 (#62) ([768de40](https://github.com/elianiva/quorum/commit/768de40903e103fdfa0ed6b4bd512a49da062663))
 - Add the changelog entry for 2026-11-17 (#61) ([a60af49](https://github.com/elianiva/quorum/commit/a60af49b388488991628ff20f0dd6d154942d538))
-
-## Wednesday, 18 November 2026
-
-### Changed
-
-- Keep saved settings that still read when one saved setting does not ([55b9d94](https://github.com/elianiva/quorum/commit/55b9d9418676ba520cf0ada7fbe0db0cae72ccc3))

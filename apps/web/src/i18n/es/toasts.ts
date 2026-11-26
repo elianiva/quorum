@@ -92,6 +92,7 @@ export const toasts: Messages['toasts'] = {
     sendsNothingOn: (source: Value) =>
       `${source} no envía nada. Enlázalo a Analytics para muestrearlo.`,
     hasNoInput: (target: Value) => `${target} no tiene entrada.`,
+    cannotCall: (source: Value, target: Value) => `${source} no llama a ${target}.`,
     takesLinks: (source: Value, count: Value) => `${source} admite ${count} enlaces.`,
     takesSends: (target: Value, takes: Value, source: Value, sends: Value) =>
       `${target} acepta ${takes}. ${source} envía ${sends}.`,

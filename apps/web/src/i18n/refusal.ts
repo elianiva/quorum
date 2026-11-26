@@ -110,6 +110,10 @@ const patterns: ReadonlyArray<
     (t, [a]) => t.toasts.reason.sendsNothingOn(nameIn(t, a!)),
   ],
   [/^(.+) has no input\.$/, (t, [a]) => t.toasts.reason.hasNoInput(nameIn(t, a!))],
+  [
+    /^(.+) does not call (.+)\.$/,
+    (t, [a, b]) => t.toasts.reason.cannotCall(nameIn(t, a!), nameIn(t, b!)),
+  ],
   [/^(.+) takes (\d+) links\.$/, (t, [a, b]) => t.toasts.reason.takesLinks(nameIn(t, a!), b!)],
   [
     /^(.+) takes (.+)\. (.+) sends (.+)\.$/,

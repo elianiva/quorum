@@ -243,8 +243,6 @@ export const reasons: Messages['toasts']['reasons'] = {
   youAlreadyTookThatDemo: 'Vous avez déjà pris cette démo.',
   aWorkerTakesTasksFromAQueueOrAnEventStream:
     'Un Worker prend les tâches d’une Queue ou d’un Event Stream. Reliez d’abord l’App Server à l’un d’eux.',
-  onlyAnAppServerHandsWorkToAQueue:
-    'Seul un App Server confie du travail à une Queue. Une Function ou une Edge Function exécute son travail en ligne.',
   aReadReplicaCopiesOneDatabase: 'Une Read Replica ne copie qu’une seule Database.',
   anL7LoadBalancerReadsHTTP:
     'Un Load Balancer L7 lit le HTTP. Passez-le en L4 pour répartir les requêtes.',

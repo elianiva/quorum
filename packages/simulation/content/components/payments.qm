@@ -1,13 +1,15 @@
 ; Payments: the Component and the tables it reads.
 (component payments
-  :code    pay
-  :name    "Payments"
-  :product "Invoices"
-  :group   ops
-  :dock    insight
-  :cost    0
-  :latency 0ms
-  :steps   6
-  :max-out 0
-  :flags   (fixed global)
-  :blurb   "Revenue waits here. The drawer holds about a minute of it.")
+  :code     pay
+  :name     "Payments"
+  :product  "Invoices"
+  :group    ops
+  :dock     insight
+  :cost     0
+  :latency  0ms
+  :steps    6
+  :max-out  0
+  :flags    (fixed global)
+  :inbound  ()
+  :outbound ()
+  :blurb    "Revenue waits here. The drawer holds about a minute of it.")

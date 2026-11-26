@@ -8,7 +8,7 @@ La CDN responde el contenido cacheable en el edge, cerca del usuario, como hace 
 
 ## Cómo funciona
 
-Colócala justo después de [Usuarios](/components/users). Recibe todos los tipos de petición, responde en el edge la parte anónima de las vistas de página y la mayor parte del vídeo, y envía los fallos y todos los demás tipos a tu origen. Una página con sesión iniciada no es cacheable hasta tener Edge-side includes. No tiene límite de capacidad y sirve a todas las regiones.
+Colócala justo después de [Usuarios](/components/users). Recibe todos los tipos de petición, responde en el edge la parte anónima de las vistas de página y la mayor parte del vídeo, y envía los fallos y todos los demás tipos a tu origen. Un origen puede ser un bucket de [Almacenamiento de objetos](/components/storage) para vídeo: enlaza la CDN con Almacenamiento de objetos y sus fallos de vídeo leen del bucket, mientras que las páginas y las llamadas de API van al [Servidor de aplicaciones](/components/server). Una página con sesión iniciada no es cacheable hasta tener Edge-side includes. No tiene límite de capacidad y sirve a todas las regiones.
 
 El egress desde el edge cuesta menos que el egress desde tus Servidores de aplicaciones, así que una CDN también reduce la factura de la nube una vez que se factura el egress. Un TTL más largo sube la tasa de aciertos, y la Investigación de [Caché por niveles](/research/tiered-caching) aumenta cuánto vídeo responde el edge. Consulta [CDN](/glossary/cdn-content-delivery-network) y [egress](/glossary/egress).
 

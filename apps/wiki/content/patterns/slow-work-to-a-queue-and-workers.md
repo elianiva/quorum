@@ -7,7 +7,7 @@ order: 116
 aliases: message queue, background jobs, workers, rabbitmq, sqs, sidekiq, async, task queue, dead letter
 ---
 
-Have the App Server enqueue slow work and answer at once, and let Workers do the work later.
+Have the App Server or a Function enqueue slow work and answer at once, and let Workers do the work later.
 
 ## Move up when
 

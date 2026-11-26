@@ -208,8 +208,6 @@ export const reasons: Messages['toasts']['reasons'] = {
   youAlreadyTookThatDemo: '你已经预约过该演示。',
   aWorkerTakesTasksFromAQueueOrAnEventStream:
     'Worker 从 Queue 或 Event Stream 接收任务。请先把 App Server 连接到其中一个。',
-  onlyAnAppServerHandsWorkToAQueue:
-    '只有 App Server 会把工作交给 Queue。Function 或 Edge Function 会在原地执行工作。',
   aReadReplicaCopiesOneDatabase: '一个 Read Replica 只复制一个 Database。',
   anL7LoadBalancerReadsHTTP: 'L7 Load Balancer 读取 HTTP。请切换到 L4 来分发查询。',
   oneCallerReadsOneDataGroup:

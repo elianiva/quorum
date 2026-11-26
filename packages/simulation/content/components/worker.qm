@@ -1,17 +1,19 @@
 ; Worker: the Component and the tables it reads.
 (component worker
-  :code    wrk
-  :name    "Worker"
-  :product "Celery, Sidekiq, BullMQ"
-  :group   compute
-  :dock    compute
-  :cost    60
-  :latency 0ms
-  :unlock  background-jobs
-  :flags   (sized stack limiting cold-start)
-  :accepts (task)
-  :sends   (q-read q-write blob-put notify callout)
-  :blurb   "Runs your code on tasks from a Queue. Users never wait for it. Link it to the data its tasks read and write.")
+  :code     wrk
+  :name     "Worker"
+  :product  "Celery, Sidekiq, BullMQ"
+  :group    compute
+  :dock     compute
+  :cost     60
+  :latency  0ms
+  :unlock   background-jobs
+  :flags    (sized stack limiting cold-start)
+  :accepts  (task)
+  :sends    (q-read q-write blob-put notify callout)
+  :inbound  (log queue)
+  :outbound (cache database doc dsql msgp pooler replica storage wide autoscaler cluster mesh)
+  :blurb    "Runs your code on tasks from a Queue. Users never wait for it. Link it to the data its tasks read and write.")
 
 (def poison-share 0.9)
 

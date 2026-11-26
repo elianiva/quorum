@@ -14,6 +14,8 @@
   :flags    (limiting)
   :accepts  (task change)
   :sends    (task change)
+  :inbound  (cdc server)
+  :outbound (cache queue search warehouse worker)
   :blurb    "A log, not a queue: events stay after they are read, so a consumer can replay them. Consumers read one partition each and fall behind at their own pace."
   :glossary (at-least-once-delivery cdc-change-data-capture))
 

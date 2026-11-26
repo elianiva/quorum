@@ -12,6 +12,8 @@
   :unlock   checkout
   :flags    (limiting global zone-spanning)
   :accepts  (charge)
+  :inbound  (edge fn server)
+  :outbound ()
   :blurb    "Charges cards for checkouts. 2.9% plus $0.30 per checkout."
   :glossary (idempotency))
 

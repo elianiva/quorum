@@ -219,9 +219,9 @@ export const tidy = <K extends string | number>(
   for (const at of replicas) {
     const parent = parents[at]!.map((indexAt) => byId[indexAt]!)
     const source =
-      parent.find((entry) => ['database', 'wide', 'dsql', 'vec'].includes(entry.type)) ??
+      parent.find((entry) => entry.type === 'database') ??
       parent.find((entry) => entry.type === 'cache') ??
-      parent.find((entry) => ['pooler', 'storage', 'doc'].includes(entry.type))
+      parent.find((entry) => entry.type === 'pooler')
     const preferred = source ? COLUMN[ROLE[source.type]] : null
     const column =
       preferred !== null && heights.has(preferred)

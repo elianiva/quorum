@@ -953,6 +953,16 @@ fn components(catalog: &Catalog) -> Sink {
         .map(|k| k.text.as_str())
         .collect();
     let research: Vec<&str> = by_id(catalog).keys().copied().collect();
+    let component_names: Vec<&str> = catalog
+        .components
+        .iter()
+        .map(|c| c.id.text.as_str())
+        .collect();
+    let component_by_id: BTreeMap<&str, &Component> = catalog
+        .components
+        .iter()
+        .map(|c| (c.id.text.as_str(), c))
+        .collect();
     let external: Vec<&str> = catalog
         .external_kinds
         .iter()
@@ -986,6 +996,28 @@ fn components(catalog: &Catalog) -> Sink {
         if let Some(unlock) = &c.unlock {
             if !research.contains(&unlock.text.as_str()) {
                 sink.push(unknown("unknown-research", unlock, "research", &research));
+            }
+        }
+        for (key, list) in [("inbound", &c.inbound), ("outbound", &c.outbound)] {
+            let mut seen: BTreeMap<&str, Span> = BTreeMap::new();
+            for other in list {
+                if !component_by_id.contains_key(other.text.as_str()) {
+                    sink.push(unknown(
+                        "unknown-component",
+                        other,
+                        "component",
+                        &component_names,
+                    ));
+                } else if let Some(first) = seen.insert(&other.text, other.span) {
+                    sink.push(
+                        Diagnostic::warning(
+                            "duplicate",
+                            other.span,
+                            format!("`{}` is listed twice in :{key}", other.text),
+                        )
+                        .note(first, "first here"),
+                    );
+                }
             }
         }
         match &c.latency.value {
@@ -1154,6 +1186,44 @@ fn components(catalog: &Catalog) -> Sink {
                         ),
                     )
                     .label("this path never carries traffic"),
+                );
+            }
+        }
+    }
+    for c in &catalog.components {
+        for target in &c.outbound {
+            let Some(other) = component_by_id.get(target.text.as_str()) else {
+                continue;
+            };
+            if !other.inbound.iter().any(|name| name.text == c.id.text) {
+                sink.push(
+                    Diagnostic::error(
+                        "inbound-mismatch",
+                        target.span,
+                        format!(
+                            "`{}` lists `{}` in :outbound, but `{}` does not list `{}` in :inbound",
+                            c.id.text, target.text, target.text, c.id.text
+                        ),
+                    )
+                    .note(other.id.span, "this component's :inbound"),
+                );
+            }
+        }
+        for source in &c.inbound {
+            let Some(other) = component_by_id.get(source.text.as_str()) else {
+                continue;
+            };
+            if !other.outbound.iter().any(|name| name.text == c.id.text) {
+                sink.push(
+                    Diagnostic::error(
+                        "outbound-mismatch",
+                        source.span,
+                        format!(
+                            "`{}` lists `{}` in :inbound, but `{}` does not list `{}` in :outbound",
+                            c.id.text, source.text, source.text, c.id.text
+                        ),
+                    )
+                    .note(other.id.span, "this component's :outbound"),
                 );
             }
         }
@@ -2245,6 +2315,47 @@ mod tests {
                 ":accepts (q-read) :fallback (q-read) :unlock fix :flags (sized limiting)",
             );
         assert_eq!(component_codes(&with_users(&body)), []);
+    }
+
+    #[test]
+    fn a_component_lists_known_inbound_and_outbound_components_in_pairs() {
+        let ok = comp("app", "a", ":accepts (requests) :sends (q-read) :outbound (db)")
+            + &comp("db", "d", ":accepts (q-read) :inbound (app)");
+        assert_eq!(component_codes(&with_users(&ok)), []);
+
+        let unknown = comp(
+            "app",
+            "a",
+            ":accepts (requests) :sends (q-read) :outbound (db nope)",
+        ) + &comp("db", "d", ":accepts (q-read) :inbound (app)");
+        assert_eq!(
+            component_codes(&with_users(&unknown)),
+            [(Severity::Error, "unknown-component")]
+        );
+
+        let one_side = comp("app", "a", ":accepts (requests) :sends (q-read) :outbound (db)")
+            + &comp("db", "d", ":accepts (q-read)");
+        assert_eq!(
+            component_codes(&with_users(&one_side)),
+            [(Severity::Error, "inbound-mismatch")]
+        );
+
+        let reverse = comp("app", "a", ":accepts (requests) :sends (q-read)")
+            + &comp("db", "d", ":accepts (q-read) :inbound (app)");
+        assert_eq!(
+            component_codes(&with_users(&reverse)),
+            [(Severity::Error, "outbound-mismatch")]
+        );
+
+        let duplicate = comp(
+            "app",
+            "a",
+            ":accepts (requests) :sends (q-read) :outbound (db db)",
+        ) + &comp("db", "d", ":accepts (q-read) :inbound (app)");
+        assert_eq!(
+            component_codes(&with_users(&duplicate)),
+            [(Severity::Warning, "duplicate")]
+        );
     }
 
     #[test]

@@ -7,7 +7,7 @@ The Queue stands for RabbitMQ: a broker that holds work now so that [Workers](/c
 
 ## How it works
 
-When an App Server links to a Queue, kinds that can go async hand most of their work to it as tasks: uploads, exports, webhooks, and notifications. The user waits only for the enqueue. The Queue offers its Workers what arrives, plus part of its backlog when they have room. It has a throughput limit, and each size step doubles it.
+When an App Server, Serverless Function or Edge Function links to a Queue, kinds that can go async hand most of their work to it as tasks: uploads, exports, webhooks, and notifications. The user waits only for the enqueue. The Queue offers its Workers what arrives, plus part of its backlog when they have room. It has a throughput limit, and each size step doubles it.
 
 Queue depth is the number of tasks waiting. A large backlog slows each enqueue a little.
 

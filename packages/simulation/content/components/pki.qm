@@ -1,16 +1,18 @@
 ; Pki: the Component and the tables it reads.
 (component pki
-  :code    pki
-  :name    "Secrets and Certificates"
-  :product "Let's Encrypt"
-  :group   ops
-  :dock    platform
-  :cost    80
-  :latency 0ms
-  :burn    0.005
-  :max-out 0
-  :unlock  cert-automation
-  :blurb   "Holds the keys and renews the TLS certificates before they run out. Without it live, the certificate expires on the calendar and the site goes down.")
+  :code     pki
+  :name     "Secrets and Certificates"
+  :product  "Let's Encrypt"
+  :group    ops
+  :dock     platform
+  :cost     80
+  :latency  0ms
+  :burn     0.005
+  :max-out  0
+  :unlock   cert-automation
+  :inbound  ()
+  :outbound ()
+  :blurb    "Holds the keys and renews the TLS certificates before they run out. Without it live, the certificate expires on the calendar and the site goes down.")
 
 (constants cert
   (days 90)

@@ -464,20 +464,28 @@ const inFront = (
   database: GameNode,
   type: 'pooler' | 'cache',
 ): Game => {
-  const pooler = placed(
+  // A Cache goes in front of the Pooler, not between the Pooler and the Database.
+  const pooler =
+    type === 'cache'
+      ? game.links.find(
+          (link) => link.to === database.id && byId(game, link.from)?.type === 'pooler',
+        )
+      : undefined
+  const behind = pooler ? (byId(game, pooler.from) ?? database) : database
+  const placedNode = placed(
     game,
     ledger,
     type,
-    database.x - 160,
-    database.y + (type === 'cache' ? -120 : 120),
+    behind.x - 160,
+    behind.y + (type === 'cache' ? -120 : 120),
   )
-  if (!pooler) return game
-  let next = pooler[0]
-  for (const link of next.links.filter((entry) => entry.to === database.id)) {
+  if (!placedNode) return game
+  let next = placedNode[0]
+  for (const link of next.links.filter((entry) => entry.to === behind.id)) {
     next = disconnect(next, link.from, link.to)
-    next = tried(next, connect(next, link.from, pooler[1]))
+    next = tried(next, connect(next, link.from, placedNode[1]))
   }
-  return tried(next, connect(next, pooler[1], database.id))
+  return tried(next, connect(next, placedNode[1], behind.id))
 }
 
 const inFrontOfUsers = (game: Game, ledger: Ledger, type: 'waf' | 'cdn'): Game => {

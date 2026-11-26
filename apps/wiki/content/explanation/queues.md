@@ -80,8 +80,9 @@ this links your App Servers to your Database.
 ## Queues: waiting on purpose
 
 A [Queue](/components/queue) is a Component that stores work so that [Workers](/components/worker)
-can do it later. An App Server linked to a Queue hands over the slow, asynchronous part of some
-requests, such as resizing an upload or building an export. The user waits only for the enqueue.
+can do it later. An App Server, Serverless Function or Edge Function linked to a Queue hands over
+the slow, asynchronous part of some requests, such as resizing an upload or building an export.
+The user waits only for the enqueue.
 
 A Queue does not drop work when its Workers fall behind. It stores the excess as **depth**, and the
 Workers drain it when they can, so a burst becomes a delay instead of errors. Depth has a price:

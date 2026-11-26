@@ -760,6 +760,25 @@ by Little's law. Hedging (research `hedged-requests`) sends a second copy of eve
 The user waits for the faster of two, the mean halves, the tail thins, and the callee sees 10% more
 calls, which the Link's own rate shows.
 
+Only some pairs of Nodes can join. Each Component's `:inbound` and `:outbound` lists in
+`packages/simulation/content/components` are the complete table, and qmc refuses a pair declared on
+only one side. These are the non-obvious rules:
+
+| Link                                      | Rule                                                                                                  |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Cache to Object Storage                   | Refused. The application does the object get and put; the Cache never fetches from the bucket itself. |
+| CDN to Object Storage                     | Allowed for media. The edge answers the hits, and the misses read from the bucket.                    |
+| Connection Pooler to Cache                | Refused. PgBouncer pools PostgreSQL connections, so the Cache goes in front of the Pooler.            |
+| Database to Read Replica                  | Allowed. It ships the write log and copies one Database.                                              |
+| Database to CDC Connector                 | Allowed. The connector reads the write log.                                                           |
+| CDC Connector or Event Stream to a sink   | Allowed to a Cache, Search Engine, or Data Warehouse. The Link stands for the sink consumer.          |
+| Function or Edge Function to Queue        | Allowed. The function enqueues a task and returns; a Worker runs it.                                  |
+| Function or Edge Function to Event Stream | Refused. A function hands work to a Queue, not an Event Stream.                                       |
+| WAF to CDN or CDN to WAF                  | Both allowed. A WAF before the CDN filters every request; a WAF after it filters the misses.          |
+
+A tap Link into Analytics keeps its own rule. The Simulation gives control Links, Read Replica
+copies, and CDC mirrors their own messages.
+
 Links that cross zones or regions add egress cost ([Economy](/design/09-economy#egress)).
 
 ## Zones and regions

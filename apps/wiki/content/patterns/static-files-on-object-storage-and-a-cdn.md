@@ -20,7 +20,7 @@ Put a CDN in front of the origin and keep uploaded files in Object Storage.
 
 ::Design{id="cdn-in-front"}
 
-In the first picture every page view reaches the App Server. In the second, Users reach the CDN first. It answers what it has cached and sends misses and every other request kind to the origin.
+In the first picture every page view reaches the App Server. In the second, Users reach the CDN first. It answers what it has cached, sends video misses to Object Storage, and sends every other request kind to the App Server.
 
 ## Why it works
 

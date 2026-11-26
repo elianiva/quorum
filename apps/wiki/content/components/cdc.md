@@ -11,6 +11,8 @@ Debezium is a **change data capture** tool that reads a database's write-ahead l
 
 That is what makes it useful. The [Search Engine](/components/search), the [Data Warehouse](/components/warehouse) and a [Cache](/components/cache) can each follow the Database, and the app never writes the same fact twice. A stream can feed all three at once; a direct link feeds one. The alternative is a **dual write**: the app writes to the Database and to the index in one request, and a crash between the two leaves them disagreeing forever.
 
+A real Debezium deployment publishes to Kafka, and Kafka Connect sink connectors write to the search index, warehouse, or cache. The direct Link folds that sink into the CDC Connector.
+
 It carries no traffic of its own and has no options. Its settings are the Database it reads and the one Node it publishes to. It never slows a write.
 
 ## How it fails

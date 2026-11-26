@@ -10,6 +10,8 @@
   :max-out  0
   :unlock   autoscaling
   :flags    (control)
+  :inbound  (server worker)
+  :outbound ()
   :blurb    "Link App Servers or Workers into it. It adds copies when they run hot and removes them when idle."
   :glossary (autoscaling cold-start diurnal-traffic vertical-and-horizontal-scaling))
 

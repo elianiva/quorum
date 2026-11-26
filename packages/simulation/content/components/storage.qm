@@ -10,7 +10,9 @@
   :burn     0.01
   :max-out  0
   :unlock   object-storage
-  :accepts  (blob-put blob-get)
+  :accepts  (blob-put blob-get media)
+  :inbound  (cdn edge fn server worker)
+  :outbound ()
   :blurb    "Holds uploaded files. No limit. Pay for what it stores."
   :glossary (object-storage))
 

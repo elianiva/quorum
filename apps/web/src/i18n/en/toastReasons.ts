@@ -219,8 +219,6 @@ export const reasons = {
   youAlreadyTookThatDemo: 'You already took that demo.',
   aWorkerTakesTasksFromAQueueOrAnEventStream:
     'A Worker takes tasks from a Queue or an Event Stream. Link the App Server into one first.',
-  onlyAnAppServerHandsWorkToAQueue:
-    'Only an App Server hands work to a Queue. A Function or Edge Function runs its work inline.',
   aReadReplicaCopiesOneDatabase: 'A Read Replica copies one Database.',
   anL7LoadBalancerReadsHTTP: 'An L7 Load Balancer reads HTTP. Switch it to L4 to balance queries.',
   oneCallerReadsOneDataGroup:

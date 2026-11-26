@@ -12,6 +12,8 @@
   :unlock   model-serving
   :flags    (limiting cold-start)
   :accepts  (infer)
+  :inbound  (edge fn server)
+  :outbound ()
   :blurb    "Serves AI prompts in tokens per second. Each size step doubles the GPUs."
   :glossary (model-inference))
 

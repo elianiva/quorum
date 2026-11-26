@@ -11,6 +11,8 @@
   :max-out  0
   :unlock   data-warehouse
   :accepts  (q-scan change)
+  :inbound  (cdc edge fn log server)
+  :outbound ()
   :blurb    "Answers report scans in columns. 1.5 s each, no limit, paid per scan."
   :glossary (cdc-change-data-capture oltp-and-olap))
 

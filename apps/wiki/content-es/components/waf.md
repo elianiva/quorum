@@ -11,7 +11,7 @@ El Sandbox [Bots](/sandboxes/bots) muestra el síntoma.
 
 ## Cómo funciona
 
-Colócalo delante de tus Servidores de aplicaciones. Recibe todos los tipos de petición y envía lo que deja pasar. Bloquea una parte de los bots, y con ellos una parte menor de usuarios reales. Los usuarios bloqueados fallan como `blocked`. Consulta [WAF](/glossary/waf-web-application-firewall).
+Colócalo delante de tus Servidores de aplicaciones. También puede situarse detrás de una [CDN](/components/cdn), para ver solo los fallos, o delante de la CDN, para ver todas las peticiones. Ambas colocaciones son reales. Recibe todos los tipos de petición y envía lo que deja pasar. Bloquea una parte de los bots, y con ellos una parte menor de usuarios reales. Los usuarios bloqueados fallan como `blocked`. Consulta [WAF](/glossary/waf-web-application-firewall).
 
 Cada escalón de tamaño duplica su capacidad. Abarca todas las zonas.
 

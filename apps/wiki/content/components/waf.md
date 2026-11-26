@@ -11,7 +11,7 @@ The [Bots](/sandboxes/bots) Sandbox shows the symptom.
 
 ## How it works
 
-Place it in front of your App Servers. It takes every request kind and sends on what it lets through. It blocks a share of bots, and a smaller share of real users with them. Blocked users fail as `blocked`. See [WAF](/glossary/waf-web-application-firewall).
+Place it in front of your App Servers. It can also sit after a [CDN](/components/cdn), so it sees only the misses, or before the CDN, so it sees every request. Both placements are real. It takes every request kind and sends on what it lets through. It blocks a share of bots, and a smaller share of real users with them. Blocked users fail as `blocked`. See [WAF](/glossary/waf-web-application-firewall).
 
 Each size step doubles its capacity. It spans every zone.
 

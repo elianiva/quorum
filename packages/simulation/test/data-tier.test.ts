@@ -425,6 +425,23 @@ describe('Search Engine and Object Storage products', () => {
     expect(node.purge).toBe(true)
     expect(node.cacheKey).toBe('path')
   })
+
+  test('a CDN sends media misses to Object Storage', () => {
+    let game = freeSandbox()
+    let cdn: string, storage: string
+    ;[game, cdn] = build(game, 'cdn')
+    ;[game, storage] = build(game, 'storage')
+    game = {
+      ...game,
+      links: game.links.filter((link) => !(link.from === 'users' && link.to === 'server')),
+      fixedMix: true,
+      scenario: { mix: { media: 1 } },
+    }
+    game = ok(connect(game, 'users', cdn))
+    game = ok(connect(game, cdn, storage))
+    const ledger = solveFlow(game)
+    expect(ledger.nodes[storage]?.inbound ?? 0).toBeGreaterThan(0)
+  })
 })
 
 describe('a Connection Pooler', () => {

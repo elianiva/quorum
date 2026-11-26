@@ -89,6 +89,7 @@ export const toasts: Messages['toasts'] = {
     sendsNothingOn: (source) =>
       `${source} n’envoie rien. Reliez-le à Analytics pour l’échantillonner.`,
     hasNoInput: (target) => `${target} n’a pas d’entrée.`,
+    cannotCall: (source, target) => `${source} n’appelle pas ${target}.`,
     takesLinks: (source, count) => `${source} accepte ${count} liens.`,
     takesSends: (target, takes, source, sends) =>
       `${target} accepte ${takes}. ${source} envoie ${sends}.`,

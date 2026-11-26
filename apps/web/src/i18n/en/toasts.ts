@@ -90,6 +90,7 @@ export const toasts = {
     sendsNothingOn: (source: Value) =>
       `${source} sends nothing on. Link it into Analytics to sample it.`,
     hasNoInput: (target: Value) => `${target} has no input.`,
+    cannotCall: (source: Value, target: Value) => `${source} does not call ${target}.`,
     takesLinks: (source: Value, count: Value) => `${source} takes ${count} links.`,
     takesSends: (target: Value, takes: Value, source: Value, sends: Value) =>
       `${target} takes ${takes}. ${source} sends ${sends}.`,

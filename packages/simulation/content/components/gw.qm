@@ -12,6 +12,8 @@
   :flags    (limiting zone-spanning tls)
   :accepts  (requests)
   :sends    (requests)
+  :inbound  (cdn dns lb users waf)
+  :outbound (cdn edge fn lb server ws)
   :blurb    "Rate-limits and routes API calls. Past its rate limit, requests fail as throttled, and it bills per request.")
 
 (state gw

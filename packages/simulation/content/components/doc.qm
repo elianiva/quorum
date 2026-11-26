@@ -14,6 +14,8 @@
   :flags    (limiting cold-start)
   :accepts  (q-read q-write q-tx q-scan)
   :fallback (q-scan)
+  :inbound  (cache edge fn server worker)
+  :outbound ()
   :blurb    "Holds documents instead of rows. No joins and no connections to pool: one flat rate of reads and writes, and each query needs its own index."
   :glossary (hot-key sharding))
 

@@ -16,6 +16,8 @@
              q-read q-write q-search q-vector blob-put q-tx blob-get q-scan k-write)
   :sends    (page read write login search upload bot media rt buy job report ai feed hook push bid
              q-read q-write q-search q-vector blob-put q-tx blob-get q-scan k-write)
+  :inbound  (cdn dns gw lb pooler users waf)
+  :outbound (database gw lb pooler replica server ws)
   :blurb    "Splits traffic across App Servers or Database hosts and drops a dead host at its next health check."
   :glossary (health-check load-balancer vertical-and-horizontal-scaling))
 

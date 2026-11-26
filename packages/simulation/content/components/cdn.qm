@@ -12,6 +12,8 @@
   :flags    (global tls)
   :accepts  (requests)
   :sends    (requests)
+  :inbound  (dns gw users waf)
+  :outbound (edge fn gw lb server storage waf)
   :blurb    "Answers cacheable pages near the user. Egress from the edge costs less."
   :glossary (cache-hit-rate cdn-content-delivery-network egress))
 

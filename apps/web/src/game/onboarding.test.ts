@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { Scene } from 'foldkit/test'
-import { newGame, preseedGame } from '@quorum/simulation/company'
+import { newGame, node, preseedGame } from '@quorum/simulation/company'
 import { MAX_STUDIES, RESEARCH, researchList, type ResearchId } from '@quorum/simulation/catalog'
 import { priceOf, researchReady } from '@quorum/simulation/lookups'
 import { studyList, type Study, type StudyQueue } from '@quorum/simulation/study-machine'
@@ -185,6 +185,25 @@ describe('a legal Link preview', () => {
     const unlinked = { ...preseed, links: preseed.links.filter((link) => link.to !== 'database') }
     expect(linkPreviewOf(unlinked, 'en', 'server', 'database')).toBeNull()
   })
+
+  test('names a pair the catalog does not join', async () => {
+    const preseed = preseedGame()
+    const wired = {
+      ...preseed,
+      nodes: [
+        ...preseed.nodes,
+        node('cache', 'cache', 900, 120),
+        node('storage', 'storage', 900, 400),
+      ],
+    }
+    expect(linkPreviewOf(wired, 'en', 'cache', 'storage')).toBe(
+      'Cache does not call Object Storage.',
+    )
+    await loadLocale('es')
+    expect(linkPreviewOf(wired, 'es', 'cache', 'storage')).toBe(
+      'Caché no llama a Almacenamiento de objetos.',
+    )
+  })
 })
 
 describe('a click that has nothing to do', () => {
@@ -293,7 +312,6 @@ describe('a Link refusal in another language', () => {
     'A Connection Pooler pools to one host. Put a Load Balancer after it to reach more.',
     'An L7 Load Balancer reads HTTP. Switch it to L4 to balance queries.',
     'A Worker takes tasks from a Queue or an Event Stream. Link the App Server into one first.',
-    'Only an App Server hands work to a Queue. A Function or Edge Function runs its work inline.',
     'A Read Replica copies one Database.',
     'Payments has no input.',
     'App Server takes 1 links.',
@@ -303,6 +321,7 @@ describe('a Link refusal in another language', () => {
     'Users has no traffic to sample.',
     'Mesh sends nothing on. Link it into Analytics to sample it.',
     'Link an App Server into a Kubernetes Cluster first: the sidecar rides in its pod.',
+    'Cache does not call Object Storage.',
     'Load Balancer takes page view, api read. App Server sends read query, write query.',
   ]
 

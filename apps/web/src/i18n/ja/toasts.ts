@@ -89,6 +89,7 @@ export const toasts: Messages['toasts'] = {
     sendsNothingOn: (source) =>
       `${source}は何も送りません。Analytics につないでサンプリングしてください。`,
     hasNoInput: (target) => `${target}には入力がありません。`,
+    cannotCall: (source, target) => `${source}から${target}へはリンクできません。`,
     takesLinks: (source, count) => `${source}が受け取れるリンクは${count}本です。`,
     takesSends: (target, takes, source, sends) =>
       `${target}が受け取るのは${takes}です。${source}が送るのは${sends}です。`,

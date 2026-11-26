@@ -14,6 +14,8 @@
   :flags    (limiting zone-spanning tls)
   :accepts  (requests)
   :sends    (requests)
+  :inbound  (cdn dns users)
+  :outbound (cdn edge fn gw lb server ws)
   :blurb    "Blocks bots before they reach the app, and some real users with them."
   :glossary (rate-limiting waf-web-application-firewall))
 

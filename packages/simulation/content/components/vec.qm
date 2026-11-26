@@ -13,6 +13,8 @@
   :unlock   embeddings
   :flags    (limiting cold-start)
   :accepts  (q-vector)
+  :inbound  (edge fn server)
+  :outbound ()
   :blurb    "Answers nearest-neighbour lookups over your embeddings. It holds the index in memory, and a prompt that reaches it earns more."
   :glossary (model-inference))
 

@@ -3,13 +3,13 @@
  * `packages/simulation/src/pacing.ts`. Do not edit: change the Simulation or the measurement and
  * run the script again.
  *
- * Taken at Simulation version a937b2a0 on 2026-11-26.
+ * Taken at Simulation version 40ba1bfb on 2026-11-26.
  */
 
 import type { Measurements } from './measure.ts'
 
 export const SNAPSHOT: Measurements = {
-  version: 'a937b2a0',
+  version: '40ba1bfb',
   takenOn: '2026-11-26',
   pacing: [
     {
@@ -38,7 +38,7 @@ export const SNAPSHOT: Measurements = {
     },
     {
       label: 'Second App Server',
-      value: '41.7–55.8',
+      value: '41.7–56.6',
     },
     {
       label: 'First incident',
@@ -58,7 +58,7 @@ export const SNAPSHOT: Measurements = {
     },
     {
       label: 'Margin at Seed entry',
-      value: '50%–75%',
+      value: '53%–75%',
     },
   ],
   live: [
@@ -86,33 +86,33 @@ export const SNAPSHOT: Measurements = {
     },
     {
       label: 'Search Engine placed',
-      value: '31.4–42.3',
+      value: '31.4–42.6',
     },
     {
       label: 'WAF placed',
-      value: '33.4–44.3',
+      value: '33.4–44.6',
     },
     {
       label: 'Second App Server',
-      value: '41.7–52.3',
+      value: '41.7–52.9',
     },
     {
       label: 'Series A',
-      value: '80.6, never on some seeds',
+      value: '82.0, never on some seeds',
     },
     {
       label: 'Seed length',
-      value: '40.7, never on some seeds',
+      value: '42.1, never on some seeds',
     },
   ],
   series: [
     {
       label: 'Series A',
-      value: '80.6–115.2',
+      value: '82.0–115.2',
     },
     {
       label: 'Second zone and standbys',
-      value: '84.7–119.3',
+      value: '86.1–119.3',
     },
     {
       label: 'Series B',
@@ -120,11 +120,11 @@ export const SNAPSHOT: Measurements = {
     },
     {
       label: 'Users at 130 min',
-      value: '28,637–42,110',
+      value: '28,637–42,033',
     },
     {
       label: 'Availability at 130 min',
-      value: '97.22%–99.92%',
+      value: '97.04%–99.92%',
     },
   ],
   legacy: [
@@ -162,5 +162,5 @@ export const SNAPSHOT: Measurements = {
       },
     },
   ],
-  reach: '28,637–42,110',
+  reach: '28,637–42,033',
 }

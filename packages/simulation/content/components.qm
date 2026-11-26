@@ -2,6 +2,9 @@
 ;
 ; Each Component, its state, and its tables live in content/components/<id>.qm. COMPONENT_IDS
 ; follows the sorted file order, and the Solver indexes by it.
+;
+; :inbound and :outbound name the Component types a Link may join. A tap Link into Analytics
+; keeps its own rule in the Simulation.
 (build-groups (edge "Edge") (compute "Compute") (data "Data") (ops "Ops"))
 
 (dock-groups

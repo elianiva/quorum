@@ -86,6 +86,7 @@ export const toasts: Messages['toasts'] = {
     noTrafficToSample: (source) => `${source} 没有可供采样的流量。`,
     sendsNothingOn: (source) => `${source} 不会向外发送任何内容。请连接到 Analytics 进行采样。`,
     hasNoInput: (target) => `${target} 没有输入。`,
+    cannotCall: (source, target) => `${source} 不能连接到${target}。`,
     takesLinks: (source, count) => `${source} 最多接受 ${count} 条链路。`,
     takesSends: (target, takes, source, sends) =>
       `${target} 接受${takes}。${source} 发送${sends}。`,

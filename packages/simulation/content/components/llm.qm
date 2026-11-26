@@ -12,6 +12,8 @@
   :unlock   hosted-models
   :flags    (limiting global zone-spanning)
   :accepts  (infer)
+  :inbound  (edge fn server)
+  :outbound ()
   :blurb    "Serves AI prompts with no GPUs. Paid per token, and rate limited."
   :glossary (model-inference rate-limiting))
 

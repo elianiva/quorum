@@ -11,6 +11,8 @@
   :unlock   replication
   :flags    (sized limiting cold-start)
   :accepts  (q-read q-scan)
+  :inbound  (cache database edge fn lb pooler server worker)
+  :outbound ()
   :blurb    "Link a Database into it, and it copies that Database. Takes reads and reports off it, and adding one does not restart it. Lags behind writes, so some API reads come back stale."
   :glossary (eventual-consistency read-replica read-your-writes-consistency replication-lag))
 

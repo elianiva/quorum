@@ -15,6 +15,8 @@
   :flags    (limiting standby)
   :accepts  (q-read q-write q-tx)
   :sends    (q-read q-write q-tx)
+  :inbound  (cache edge fn lb server worker)
+  :outbound (database lb replica)
   :blurb    "Many app connections share 20 database connections. It pools to one host."
   :glossary (connection-pooling))
 

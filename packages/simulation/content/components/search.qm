@@ -14,6 +14,8 @@
   :capacity 400
   :flags    (limiting standby)
   :accepts  (q-search change)
+  :inbound  (cache cdc edge fn log server)
+  :outbound ()
   :blurb    "Answers search queries. 400 per second per size step."
   :glossary (inverted-index))
 

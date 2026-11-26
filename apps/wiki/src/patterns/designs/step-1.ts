@@ -522,6 +522,7 @@ export const step1 = {
     links: [
       wire('users', 'cdn'),
       wire('cdn', 'server'),
+      wire('cdn', 'storage'),
       wire('server', 'database'),
       wire('server', 'storage'),
     ],

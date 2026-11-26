@@ -11,6 +11,8 @@
   :max-out  0
   :unlock   containers
   :flags    (control)
+  :inbound  (server worker)
+  :outbound ()
   :blurb    "Link App Servers or Workers into it. They pack onto shared nodes: 15% less Burn, copies in 30 s."
   :glossary (cold-start container-orchestration))
 

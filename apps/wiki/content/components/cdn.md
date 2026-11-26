@@ -8,7 +8,7 @@ The CDN answers cacheable content at the edge, near the user, as Cloudflare does
 
 ## How it works
 
-Place it right after [Users](/components/users). It takes every request kind, answers the anonymous share of page views and most video at the edge, and sends the misses and every other kind on to your origin. A logged-in page is not cacheable until Edge-side includes. It has no capacity limit and serves every region.
+Place it right after [Users](/components/users). It takes every request kind, answers the anonymous share of page views and most video at the edge, and sends the misses and every other kind on to your origin. An origin can be an [Object Storage](/components/storage) bucket for video: link the CDN to Object Storage, and its media misses read from the bucket while pages and API calls go to the [App Server](/components/server). A logged-in page is not cacheable until Edge-side includes. It has no capacity limit and serves every region.
 
 Egress from the edge costs less than egress from your App Servers, so a CDN also cuts the cloud bill once egress is billed. A longer TTL raises the hit ratio, and the [Tiered caching](/research/tiered-caching) Research lifts how much video the edge answers. See [CDN](/glossary/cdn-content-delivery-network) and [egress](/glossary/egress).
 
@@ -43,5 +43,5 @@ The CDN itself does not overload in the game. What goes wrong:
 ## Tips
 
 - Pair it with [Object Storage](/components/storage) when you serve video.
-- Place a [WAF](/components/waf) after the CDN, so the WAF sees only the misses.
+- Place a [WAF](/components/waf) after the CDN to filter only misses, or before it to filter every request at the edge. Both Links are valid.
 - Raise the TTL when pages change rarely.

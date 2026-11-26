@@ -14,6 +14,8 @@
   :flags    (sized limiting cold-start standby)
   :accepts  (q-read q-write q-search blob-put q-tx blob-get q-scan k-write)
   :fallback (q-search blob-put blob-get q-scan k-write)
+  :inbound  (cache edge fn lb pooler server worker)
+  :outbound (cdc replica)
   :blurb    "The relational source of truth. A Read Replica copies it and takes no writes. A bigger size restarts it. Postgres reads and scans cheaper; MySQL writes cheaper and changes schema online.")
 
 (state database

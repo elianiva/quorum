@@ -11,6 +11,9 @@
   :accepts  (requests)
   :sends    (q-read q-write auth q-search q-vector blob-put task blob-get q-tx charge q-scan infer
              notify callout k-write)
+  :inbound  (cdn dns gw lb users waf)
+  :outbound (auth cache database doc dsql gpu llm log msgp pooler psp queue replica search storage
+             vec warehouse wide autoscaler cluster mesh)
   :blurb    "Runs your code. Answers requests and sends queries to the database."
   :glossary (process-per-request))
 

@@ -1,13 +1,15 @@
 ; Users: the Component and the tables it reads.
 (component users
-  :code    www
-  :name    "Users"
-  :product "The internet"
-  :group   edge
-  :dock    edge
-  :cost    0
-  :latency 30ms
-  :max-out 1
-  :flags   (fixed)
-  :sends   (requests)
-  :blurb   "Where traffic starts. A domain resolves to one host, so Users take one link.")
+  :code     www
+  :name     "Users"
+  :product  "The internet"
+  :group    edge
+  :dock     edge
+  :cost     0
+  :latency  30ms
+  :max-out  1
+  :flags    (fixed)
+  :sends    (requests)
+  :inbound  ()
+  :outbound (cdn dns edge fn gw lb server waf ws)
+  :blurb    "Where traffic starts. A domain resolves to one host, so Users take one link.")

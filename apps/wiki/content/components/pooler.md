@@ -1,4 +1,4 @@
-The Connection Pooler stands for PgBouncer: a proxy that lets many app connections share a few database connections.
+The Connection Pooler stands for PgBouncer: a proxy that lets many app connections share a few database connections. It pools PostgreSQL connections only, so it links to a Database or a Read Replica, never to a Cache or Object Storage. A Cache goes in front of the Pooler, not behind it.
 
 ## When to place it
 

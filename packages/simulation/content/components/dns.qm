@@ -12,6 +12,8 @@
   :unlock   dns-rr
   :accepts  (requests)
   :sends    (requests)
+  :inbound  (users)
+  :outbound (cdn edge fn gw lb server waf ws)
   :blurb    "Round robin across up to 8 hosts. No health checks: a dead host keeps its share."
   :glossary (dns-round-robin health-check vertical-and-horizontal-scaling))
 

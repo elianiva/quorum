@@ -443,14 +443,14 @@ export const linkRefusalOf = (game: Game, from: string, to: string): string | nu
   if (!source || !target || from === to) return 'Link two different Nodes.'
   const sourceDef = COMPONENTS[source.type]
   const targetDef = COMPONENTS[target.type]
+  const declared = sourceDef.outbound.includes(target.type)
   if (game.links.some((link) => link.from === from && link.to === to)) return 'Already linked.'
   if (source.type === 'server' && target.type === 'worker')
     return 'A Worker takes tasks from a Queue or an Event Stream. Link the App Server into one first.'
-  if ((source.type === 'fn' || source.type === 'edge') && targetDef.accepts.includes('task'))
-    return 'Only an App Server hands work to a Queue. A Function or Edge Function runs its work inline.'
   if (targetDef.control) {
     if (source.type !== 'server' && source.type !== 'worker')
       return `Link App Servers or Workers into the ${targetDef.name}.`
+    if (!declared) return `${sourceDef.name} does not call ${targetDef.name}.`
     const taken = game.links.some(
       (entry) =>
         entry.from === from &&
@@ -462,6 +462,7 @@ export const linkRefusalOf = (game: Game, from: string, to: string): string | nu
     return null
   }
   if (target.type === 'replica' && source.type === 'database') {
+    if (!declared) return `${sourceDef.name} does not call ${targetDef.name}.`
     if (
       game.links.some(
         (entry) =>
@@ -474,6 +475,7 @@ export const linkRefusalOf = (game: Game, from: string, to: string): string | nu
   if (targetDef.mirror) {
     if (source.type !== 'database')
       return `Link a Database into the ${targetDef.name}: it reads its write log.`
+    if (!declared) return `${sourceDef.name} does not call ${targetDef.name}.`
     return null
   }
   if (targetDef.tap) {
@@ -488,6 +490,7 @@ export const linkRefusalOf = (game: Game, from: string, to: string): string | nu
   if (sourceDef.maxOut === 0 || emitsOf(source).length === 0)
     return `${sourceDef.name} sends nothing on. Link it into Analytics to sample it.`
   if (targetDef.accepts.length === 0) return `${targetDef.name} has no input.`
+  if (!declared) return `${sourceDef.name} does not call ${targetDef.name}.`
   const carried = emitsOf(source).filter(
     (kind) => targetDef.accepts.includes(kind) && relays(source, target, kind),
   )

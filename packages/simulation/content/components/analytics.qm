@@ -11,6 +11,8 @@
   :steps    8
   :max-out  0
   :flags    (tap global)
+  :inbound  ()
+  :outbound ()
   :blurb    "Link any Node into it. It samples that traffic and turns it into Insight."
   :glossary (observability))
 

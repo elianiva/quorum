@@ -11,6 +11,8 @@ A Cache answers repeated reads from memory so the [Database](/components/databas
 
 Put it in front of the Database or the [Connection Pooler](/components/pooler). It serves a share of read queries itself, its hit ratio, and passes the misses on. Writes go through and invalidate cached data, so a write-heavy mix pulls the hit ratio down.
 
+An application can cache S3 objects in Redis, but the application does the object get and put. The Cache never fetches from Object Storage itself, so a Link straight from a Cache to Object Storage is refused.
+
 The hit ratio rises with memory relative to your hot data, and your hot data grows with users. A longer TTL raises the ratio too, at the price of more stale reads. A new or restarted Cache starts cold and fills as reads arrive. See [cache hit rate](/glossary/cache-hit-rate) and [cache-aside](/glossary/cache-aside).
 
 ## Options

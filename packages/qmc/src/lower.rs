@@ -352,6 +352,10 @@ pub struct Component {
     pub accepts: Option<KindList>,
     pub sends: Option<KindList>,
     pub fallback: Option<KindList>,
+    /// Components that may link into this one, by id.
+    pub inbound: Vec<Name>,
+    /// Components this one may link into, by id.
+    pub outbound: Vec<Name>,
     pub glossary: Vec<Name>,
     pub blurb: Spanned<Value>,
     pub span: Span,
@@ -2052,8 +2056,8 @@ impl Lower {
     fn component(&mut self, form: &Sexp) -> Option<Component> {
         const KEYS: &[&str] = &[
             "code", "name", "product", "group", "dock", "cost", "latency", "burn", "steps",
-            "max-out", "unlock", "capacity", "flags", "accepts", "sends", "fallback", "glossary",
-            "blurb",
+            "max-out", "unlock", "capacity", "flags", "accepts", "sends", "fallback", "inbound",
+            "outbound", "glossary", "blurb",
         ];
         let (args, keys) = self.keys(form, 1, KEYS)?;
         let id = self.name(&args[0], "a component id");
@@ -2086,6 +2090,12 @@ impl Lower {
         let accepts = keys.get("accepts").and_then(|v| self.kind_list(v));
         let sends = keys.get("sends").and_then(|v| self.kind_list(v));
         let fallback = keys.get("fallback").and_then(|v| self.kind_list(v));
+        let inbound = keys
+            .get("inbound")
+            .map_or_else(Vec::new, |v| self.names(v, "an inbound component"));
+        let outbound = keys
+            .get("outbound")
+            .map_or_else(Vec::new, |v| self.names(v, "an outbound component"));
         Some(Component {
             id: id?,
             code: code?,
@@ -2105,6 +2115,8 @@ impl Lower {
             accepts,
             sends,
             fallback,
+            inbound,
+            outbound,
             glossary: keys
                 .get("glossary")
                 .map_or_else(Vec::new, |v| self.names(v, "a glossary id")),

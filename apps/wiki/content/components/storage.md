@@ -12,7 +12,7 @@ The [Slow Uploads](/sandboxes/slow-uploads) Sandbox shows a slow upload holding 
 
 ## How it works
 
-It has no capacity limit, and each request waits for the first byte, which is slower than a database query. Object puts and gets arrive carrying uploaded files and video, and no Component sits behind it. See [object storage](/glossary/object-storage).
+It has no capacity limit, and each request waits for the first byte, which is slower than a database query. Object puts and gets arrive carrying uploaded files and video, and no Component sits behind it. A CDN can link into it for video: the edge answers the hits, and the media misses read from the bucket. See [object storage](/glossary/object-storage).
 
 Its Burn grows with the data it holds, and that data never shrinks. Every upload adds to it.
 

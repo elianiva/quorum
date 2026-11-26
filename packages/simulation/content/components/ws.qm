@@ -1,19 +1,21 @@
 ; Ws: the Component and the tables it reads.
 (component ws
-  :code    ws
-  :name    "Realtime Hub"
-  :product "Centrifugo"
-  :group   compute
-  :dock    messaging
-  :cost    400
-  :latency 1ms
-  :burn    0.15
-  :steps   8
-  :max-out 0
-  :unlock  websockets
-  :flags   (limiting tls)
-  :accepts (rt)
-  :blurb   "Holds a connection open for every realtime message. How many fit depends on the runtime.")
+  :code     ws
+  :name     "Realtime Hub"
+  :product  "Centrifugo"
+  :group    compute
+  :dock     messaging
+  :cost     400
+  :latency  1ms
+  :burn     0.15
+  :steps    8
+  :max-out  0
+  :unlock   websockets
+  :flags    (limiting tls)
+  :accepts  (rt)
+  :inbound  (dns gw lb users waf)
+  :outbound ()
+  :blurb    "Holds a connection open for every realtime message. How many fit depends on the runtime.")
 
 (state ws
   (field presence bool

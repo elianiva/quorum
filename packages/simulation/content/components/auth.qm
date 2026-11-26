@@ -11,6 +11,8 @@
   :unlock   auth-provider
   :flags    (global)
   :accepts  (auth)
+  :inbound  (edge fn server)
+  :outbound ()
   :blurb    "Hashes passwords for you. Charged per user."
   :glossary (bcrypt))
 

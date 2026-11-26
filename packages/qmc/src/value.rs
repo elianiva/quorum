@@ -622,6 +622,9 @@ impl<'a> Values<'a> {
                     .collect(),
             )
         };
+        let ids = |list: &[crate::lower::Name]| {
+            V::Arr(list.iter().map(|n| V::Str(n.text.clone())).collect())
+        };
         let or = |n: &Option<crate::lower::Spanned<Number>>, default: f64| match n {
             Some(n) => ratio(n.value.base()).map(V::Num),
             None => Ok(V::Num(default)),
@@ -646,6 +649,8 @@ impl<'a> Values<'a> {
             ("accepts".into(), kinds(&x.accepts)),
             ("sends".into(), kinds(&x.sends)),
             ("fallback".into(), kinds(&x.fallback)),
+            ("inbound".into(), ids(&x.inbound)),
+            ("outbound".into(), ids(&x.outbound)),
             ("stack".into(), flag("stack")),
             ("limiting".into(), flag("limiting")),
             ("coldStart".into(), flag("cold-start")),

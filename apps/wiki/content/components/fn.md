@@ -5,11 +5,13 @@ The Serverless Function runs your code per request, with no box of your own, as 
 - Place it when traffic is spiky. It unlocks with [Serverless](/research/serverless) in Series A, for 3,500 ◇, and has no placement cost.
 - Place it when one endpoint needs its own capacity without a second box.
 - Skip it for steady load above about 30% utilization of an equal VM, where it costs more than the VM.
-- Skip it for long `job` work. That belongs on a [Worker](/components/worker) behind a [Queue](/components/queue).
+- Hand long `job` work to a [Queue](/components/queue) and return. A [Worker](/components/worker) runs it after the function's 15-minute limit would have stopped it.
 
 ## How it works
 
 It runs your Service's Stack with no instance type and no size to pick, so the runtime alone decides how fast a request runs and how long a cold start takes. Every request kind comes in and is answered the way an [App Server](/components/server) answers it, turned into the backend calls it makes.
+
+A function can enqueue a task and return. The Queue holds it, and a Worker runs it outside the function's 15-minute limit.
 
 It differs from an App Server in three ways:
 

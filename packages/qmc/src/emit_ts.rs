@@ -408,7 +408,7 @@ pub fn components(catalog: &Catalog) -> String {
 
     let _ = writeln!(
         w,
-        "\nexport type ComponentDef = Readonly<{{\n  id: ComponentId\n  code: string\n  name: string\n  product: string\n  group: BuildGroup\n  blurb: string\n  cost: number\n  burn: number\n  sized: boolean\n  steps: number\n  latency: number\n  accepts: ReadonlyArray<Kind>\n  sends: ReadonlyArray<Kind>\n  fallback: ReadonlyArray<Kind>\n  stack: boolean\n  limiting: boolean\n  coldStart: boolean\n  maxOut: number\n  tap: boolean\n  mirror: boolean\n  control: boolean\n  unlock: ResearchId | null\n  fixed: boolean\n}}>"
+        "\nexport type ComponentDef = Readonly<{{\n  id: ComponentId\n  code: string\n  name: string\n  product: string\n  group: BuildGroup\n  blurb: string\n  cost: number\n  burn: number\n  sized: boolean\n  steps: number\n  latency: number\n  accepts: ReadonlyArray<Kind>\n  sends: ReadonlyArray<Kind>\n  fallback: ReadonlyArray<Kind>\n  inbound: ReadonlyArray<ComponentId>\n  outbound: ReadonlyArray<ComponentId>\n  stack: boolean\n  limiting: boolean\n  coldStart: boolean\n  maxOut: number\n  tap: boolean\n  mirror: boolean\n  control: boolean\n  unlock: ResearchId | null\n  fixed: boolean\n}}>"
     );
     let _ = writeln!(
         w,
@@ -417,6 +417,9 @@ pub fn components(catalog: &Catalog) -> String {
     for c in &catalog.components {
         let kinds = |l: &Option<crate::lower::KindList>| {
             format!("[{}]", list(l.iter().flat_map(|l| l.resolve(catalog))))
+        };
+        let components = |l: &[crate::lower::Name]| {
+            format!("[{}]", list(l.iter().map(|n| n.text.as_str())))
         };
         let latency = match &c.latency.value {
             Value::Num(n) => n
@@ -443,6 +446,8 @@ pub fn components(catalog: &Catalog) -> String {
         let _ = writeln!(w, "    accepts: {},", kinds(&c.accepts));
         let _ = writeln!(w, "    sends: {},", kinds(&c.sends));
         let _ = writeln!(w, "    fallback: {},", kinds(&c.fallback));
+        let _ = writeln!(w, "    inbound: {},", components(&c.inbound));
+        let _ = writeln!(w, "    outbound: {},", components(&c.outbound));
         let _ = writeln!(w, "    stack: {},", c.has("stack"));
         let _ = writeln!(w, "    limiting: {},", c.has("limiting"));
         let _ = writeln!(w, "    coldStart: {},", c.has("cold-start"));

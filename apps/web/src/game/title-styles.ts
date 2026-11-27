@@ -780,8 +780,10 @@ export const GRID = cx(
       left: '4px',
       width: '9px',
       height: 'calc(var(--row-gap) / 2 + 9px)',
-      background:
-        'linear-gradient(var(--edge-solid), var(--edge-solid)) 4.5px 0 / 1px 100% no-repeat',
+      backgroundImage: 'linear-gradient(var(--edge-solid), var(--edge-solid))',
+      backgroundPosition: '4.5px 0',
+      backgroundSize: '1px 100%',
+      backgroundRepeat: 'no-repeat',
     },
     '&:not(:has(.qm-logo)) > .qm-tile > .qm-tile-head > .qm-tile-state': {
       position: 'absolute',
@@ -810,8 +812,11 @@ export const GRID = cx(
       bottom: 'calc(var(--row-gap) / -2)',
       left: '-18px',
       width: 'calc(26.5px + (var(--n) - 1) * (100% + var(--col-gap)))',
-      background:
-        'linear-gradient(var(--edge-solid), var(--edge-solid)) 0 var(--up) / 100% 1px no-repeat, linear-gradient(var(--edge-solid), var(--edge-solid)) 0 0 / 1px 100% no-repeat',
+      backgroundImage:
+        'linear-gradient(var(--edge-solid), var(--edge-solid)), linear-gradient(var(--edge-solid), var(--edge-solid))',
+      backgroundPosition: '0 var(--up), 0 0',
+      backgroundSize: '100% 1px, 1px 100%',
+      backgroundRepeat: 'no-repeat',
     },
     '&:not(:has(.qm-logo)) > .qm-tile:nth-child(3n + 1):nth-last-child(2)::before': {
       '--n': '2',
@@ -834,8 +839,11 @@ export const GRID = cx(
         bottom: 'calc(var(--row-gap) / -2)',
         left: '-18px',
         width: 'calc(26.5px + (var(--n) - 1) * (100% + var(--col-gap)))',
-        background:
-          'linear-gradient(var(--edge-solid), var(--edge-solid)) 0 var(--up) / 100% 1px no-repeat, linear-gradient(var(--edge-solid), var(--edge-solid)) 0 0 / 1px 100% no-repeat',
+        backgroundImage:
+          'linear-gradient(var(--edge-solid), var(--edge-solid)), linear-gradient(var(--edge-solid), var(--edge-solid))',
+        backgroundPosition: '0 var(--up), 0 0',
+        backgroundSize: '100% 1px, 1px 100%',
+        backgroundRepeat: 'no-repeat',
       },
       '&:not(:has(.qm-logo)) > .qm-tile:nth-child(n):nth-last-child(n + 2)::before': {
         bottom: 'calc(var(--row-gap) / -2)',

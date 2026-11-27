@@ -134,8 +134,8 @@ const button = (
   }>,
   label: Label | ReadonlyArray<Label>,
 ): Content => {
-  const base = h.button
-    .key(config.key ?? '')
+  const root = config.key === undefined ? h.button : h.button.key(config.key)
+  const base = root
     .attr('type', config.type ?? 'button')
     .attr('tabindex', '0')
     .attr('aria-disabled', config.isDisabled ? 'true' : undefined)

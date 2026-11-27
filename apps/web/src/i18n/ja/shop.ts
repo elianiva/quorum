@@ -38,7 +38,7 @@ export const shop = {
   installed: '取り付け済み',
   armLocked: 'ARM インスタンスを研究して解放',
   cpuFirst: '先に CPU を取り付けてください。',
-  appDisk: 'App Server のディスクはスワップです。スワップパーツは販売していません。',
+  appDisk: 'App Server の IOPS スロットはスワップです。購入できる IOPS パーツはありません。',
   market: (p0: string | number | null) => `市場 ${p0}`,
   week: '今週',
   free: 'Sandbox では無料',

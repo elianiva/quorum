@@ -38,7 +38,7 @@ export const shop = {
   installed: 'Installed',
   armLocked: 'Research ARM instances to unlock',
   cpuFirst: 'Install a CPU first.',
-  appDisk: 'The App Server disk is swap. Swap parts are not sold.',
+  appDisk: 'The App Server IOPS slot is swap. There is no IOPS part to buy.',
   market: (p0: string | number | null) => `Market ${p0}`,
   week: 'This week',
   free: 'Free in Sandbox',

@@ -31,7 +31,7 @@ The memory kit carries the family. It does not carry a fixed GB number. The kit 
 
 ARM is the one kit that also costs Dev Hours. Moving an App Server to ARM ports its runtime, at the language's rate: Go 4, Rust 6, Java, C# and Zig 8, Node and Elixir 12, PHP 16, Ruby and Python 24, Haskell 32. A Database ports for free because it has no runtime, and a Sandbox ports for free. ARM's speed also depends on the language, from 0.93× a General box's CPU for Haskell to 1.03× for Go and Rust. The shop names the porting cost on the ARM card and disables the card until the Company has the Dev Hours.
 
-The volume kit exists only on a Database. General purpose gives 3,000 IOPS at 1× the box. Provisioned IOPS gives 64,000 at 1.5×. The App Server has an IOPS Slot with no Part for sale, because swap has no IOPS choice in the model. The empty Slot stays visible so the card does not pretend the server has no disk.
+The volume kit exists only on a Database. General purpose gives 3,000 IOPS at 1× the box. Provisioned IOPS gives 64,000 at 1.5×. The App Server has an IOPS Slot with no Part for sale, because swap has no IOPS choice in the model. The Slot shows **Swap**, so the card does not pretend the server has no disk.
 
 ## The card
 
@@ -39,7 +39,7 @@ The card has a light faceplate, a tinted header, engraved row separators, and a 
 
 A click on a Slot opens the shop on the Parts catalog for that Slot. The header also switches to the Instance catalog. A Node with a missing Part also gets an **Install parts** footer. Its Inspector has an **Open parts catalog** button and an **Open instance catalog** link. The rest of the Inspector stays about the Node, not the shop.
 
-The tint follows the Slot's limiting resource. A Slot's outline turns amber at 70% utilization and red at 90%, so a saturated RAM Part is visible without opening the Inspector. The Part body uses `mix(hue, colors.muted, 0.35)`, which keeps the Part from outshining the card around it. A Database shows `3k` or `64k` on its IOPS Part, and an App Server shows the empty IOPS Slot.
+The tint follows the Slot's limiting resource. A Slot's outline turns amber at 70% utilization and red at 90%, so a saturated RAM Part is visible without opening the Inspector. The Part body uses `mix(hue, colors.muted, 0.35)`, which keeps the Part from outshining the card around it. A Database shows `3k` or `64k` on its IOPS Part, and an App Server shows **Swap** on its IOPS Slot.
 
 ## The shop
 
@@ -51,7 +51,7 @@ The Parts catalog has one tab per Slot. The header names the Node and the Slot, 
 
 - **CPU** shows nine cards from `0.5c` to `96c`. Each names the size, vCPU, network, and price. Installing a larger CPU restarts the Node.
 - **Memory** shows five kit cards. Each names the kit, GB per vCPU, the GB it gives this CPU, its Burn multiplier, and its price. The ARM card also names the porting Dev Hours. The cards are disabled until a CPU is installed, and ARM waits for the research and the Dev Hours.
-- **IOPS** shows the two volume classes on a Database. Each names its IOPS, Burn multiplier, and price. An App Server says that swap Parts are not sold.
+- **IOPS** shows the two volume classes on a Database. Each names its IOPS, Burn multiplier, and price. An App Server says that swap is built in and no IOPS Part is for sale.
 
 Each card has one **Install** button. In the Instance catalog, a card says **Select** before the research and **Install** after it. The installed card gets a check and says **Current** and **Installed**. A purchase changes the Node in place, and Undo puts the old Part back with the rest of the Node's state. The shop does not keep an inventory of owned Parts.
 

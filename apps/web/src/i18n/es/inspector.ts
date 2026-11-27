@@ -86,7 +86,7 @@ export const inspector: Messages['inspector'] = {
   partsMemory: 'Memoria',
   partsDisk: 'IOPS',
   openShop: 'Abrir catálogo de piezas',
-  partsAppDisk: 'El disco del App Server es swap. Aún no se venden piezas de swap.',
+  partsAppDisk: 'La ranura IOPS del App Server usa swap. No hay pieza de IOPS que comprar.',
   partsMemoryHint: 'El kit fija los GB por vCPU. La ranura RAM muestra lo que recibe esta CPU.',
   partsDiskHint: 'La clase de volumen fija las IOPS y el burn del disco de la base de datos.',
   partsBurn: (p0: string | number | null) => `×${p0} burn`,

@@ -372,6 +372,7 @@ const slotButton = (
   slot: SlotKind,
   active: boolean,
   value: string | null,
+  hint: string | null,
   t: Messages,
   nodeId: string,
   h: HtmlBuilder<Message>,
@@ -382,6 +383,7 @@ const slotButton = (
       h.Type('button'),
       h.OnClick(Message.ShopSlotChosen({ slot })),
       h.AriaPressed(active ? 'true' : 'false'),
+      ...(hint === null ? [] : [h.Title(hint)]),
       h.Class(
         cx(
           css({
@@ -1245,6 +1247,7 @@ export const shopPanel = (model: Model, h: HtmlBuilder<Message>): Html => {
               entry,
               entry === slot,
               entry === 'disk' && !isDatabase ? t.shop.swap : installedPart(node, entry),
+              entry === 'disk' && !isDatabase ? t.shop.appDisk : null,
               t,
               node.id,
               h,

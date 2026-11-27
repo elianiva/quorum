@@ -91,7 +91,7 @@ export const inspector = {
   partsMemory: 'Memory',
   partsDisk: 'IOPS',
   openShop: 'Open parts catalog',
-  partsAppDisk: 'The App Server disk is swap. Swap parts are not sold yet.',
+  partsAppDisk: 'The App Server IOPS slot is swap. There is no IOPS part to buy.',
   partsMemoryHint: 'A kit sets the GB per vCPU. The RAM slot shows what this CPU gets.',
   partsDiskHint: 'The volume class sets the IOPS and the burn of the database disk.',
   partsBurn: (p0: string | number | null) => `×${p0} burn`,

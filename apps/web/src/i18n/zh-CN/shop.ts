@@ -36,7 +36,7 @@ export const shop = {
   installed: '已安装',
   armLocked: '研究 ARM 实例以解锁',
   cpuFirst: '请先安装 CPU。',
-  appDisk: 'App Server 的磁盘是交换空间。暂不出售交换部件。',
+  appDisk: 'App Server 的 IOPS 插槽使用交换空间。没有可购买的 IOPS 部件。',
   market: (p0: string | number | null) => `市场 ${p0}`,
   week: '本周',
   free: 'Sandbox 免费',

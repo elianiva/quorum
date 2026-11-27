@@ -84,7 +84,7 @@ export const inspector: Messages['inspector'] = {
   partsMemory: 'メモリ',
   partsDisk: 'IOPS',
   openShop: 'パーツカタログを開く',
-  partsAppDisk: 'App Server のディスクはスワップです。スワップパーツはまだ販売していません。',
+  partsAppDisk: 'App Server の IOPS スロットはスワップです。購入できる IOPS パーツはありません。',
   partsMemoryHint:
     'キットは vCPU あたりの GB を決めます。RAM スロットには、この CPU が得る容量が表示されます。',
   partsDiskHint: 'ボリュームクラスは、データベースディスクの IOPS と burn を決めます。',

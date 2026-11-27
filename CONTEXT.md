@@ -88,11 +88,11 @@ A CPU, memory kit, or volume that fills one Slot on an App Server or Database. A
 _Avoid_: module, upgrade, component
 
 **Slot**:
-One of three places on an App Server or Database for a Part: CPU, Memory, or Disk. The card draws each Slot as a seated cartridge, and an empty Slot stays open.
+One of three places on an App Server or Database for a Part: CPU, Memory, or IOPS. The card draws each Slot as a seated cartridge, and an empty Slot stays open. An App Server's IOPS Slot shows built-in swap.
 _Avoid_: bay, socket, port
 
 **Empty Slot**:
-A Slot with no Part. After Custom instances, a new App Server or Database starts with empty Slots outside the guided Sandboxes. A Node with no CPU or memory, or a Database with no disk, serves nothing.
+A Slot with no Part. After Custom instances, a new App Server or Database starts with empty Slots outside the guided Sandboxes. A Node with no CPU or memory, or a Database with no IOPS, serves nothing.
 _Avoid_: blank slot, missing part, uninstalled
 
 **Shop**:
@@ -100,7 +100,7 @@ The popup that sells compute for a selected Node. It opens from a Slot, a Node's
 _Avoid_: parts store, market
 
 **Instance catalog**:
-The shop mode that sells a fixed instance type. Before Custom instances, it is the only mode and prices the instance type. After the research, it is a preset that installs the matching CPU, memory, and disk Parts at the current Part prices.
+The shop mode that sells a fixed instance type. Before Custom instances, it is the only mode and prices the instance type. After the research, it is a preset that installs the matching CPU, memory, and IOPS Parts at the current Part prices.
 _Avoid_: instance shop, instance store
 
 **Parts catalog**:
@@ -108,7 +108,7 @@ The shop mode that sells one Part for one Slot. It opens on the Slot the player 
 _Avoid_: parts store, parts shop (in UI copy)
 
 **Part market**:
-The weekly multiplier on Part prices, from 0.85× to 1.15×. CPU, Memory, and Disk each move on their own phase.
+The weekly multiplier on Part prices, from 0.85× to 1.15×. CPU, Memory, and IOPS each move on their own phase.
 _Avoid_: sale, discount, price index
 
 **Memory kit**:
@@ -116,7 +116,7 @@ The RAM Part. It sets GB per vCPU rather than a fixed size, so its GB follows th
 _Avoid_: RAM module, DIMM, memory upgrade
 
 **Volume kit**:
-The Disk Part on a Database. It sets the IOPS class and its Burn multiplier.
+The IOPS Part on a Database. It sets the IOPS class and its Burn multiplier.
 _Avoid_: disk module, drive, disk upgrade
 
 **Zone**:

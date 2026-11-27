@@ -169,8 +169,9 @@ footer key. The card is the main information surface.
 ```
 
 Rows use engraved separators, and the footer is a dark key against the light faceplate. The three
-chips under the footer are **Slots**. CPU, Memory, and Disk hold **Parts**, and an empty Slot shows a
-plus. Each Slot is a seated cartridge in a recessed well. A Slot's outline
+chips under the footer are **Slots**. CPU, Memory, and IOPS hold **Parts**, and an empty Slot shows a
+plus. An App Server's IOPS Slot shows **Swap** because swap is built in. Each Slot is a seated
+cartridge in a recessed well. A Slot's outline
 turns amber at 70% of its limit and red at 90%, so a saturated Part is visible without the Inspector.
 After Custom instances, a new Node outside the guided Sandboxes starts with empty Slots and an
 **Install parts** footer; a starter Node comes equipped. Click a Slot, the footer, or the Inspector's

@@ -43,6 +43,24 @@ const hashedAsset = async (request: Request, env: Environment): Promise<Response
   return new Response(response.body, { status: response.status, headers })
 }
 
+const PURGED_COOKIE = 'quorum-purged'
+
+/* A device that last loaded the app under another release empties its HTTP cache once, on its
+   first page load after a deploy. Saved games live in other storage and stay. The service worker
+   drops its own old Cache Storage when the new build activates. */
+const purgeOnce = (request: Request, response: Response, release: string | undefined): Response => {
+  if (!release) return response
+  const seen = /(?:^|;\s*)quorum-purged=([^;]*)/.exec(request.headers.get('Cookie') ?? '')?.[1]
+  if (seen === encodeURIComponent(release)) return response
+  const headers = new Headers(response.headers)
+  headers.set('Clear-Site-Data', '"cache"')
+  headers.append(
+    'Set-Cookie',
+    `${PURGED_COOKIE}=${encodeURIComponent(release)}; Path=/; Max-Age=31536000; Secure; SameSite=Lax`,
+  )
+  return new Response(response.body, { status: response.status, headers })
+}
+
 const allowedOrFailOpen = async (
   binding: RateLimitBinding | undefined,
   key: string,
@@ -94,7 +112,12 @@ export default Sentry.withSentry(
         return ingest(request, url)
       }
       if (isHashedAsset(url.pathname)) return hashedAsset(request, env)
-      if (isAppPath(url.pathname)) return env.ASSETS.fetch(new Request(new URL('/', url), request))
+      if (url.pathname === '/' || isAppPath(url.pathname))
+        return purgeOnce(
+          request,
+          await env.ASSETS.fetch(new Request(new URL('/', url), request)),
+          env.SENTRY_RELEASE,
+        )
       if (isApi(url.pathname) && !(await allowedOrFailOpen(env.RATE_LIMIT_API, ip)))
         return tooMany()
       return env.API.fetch(request)

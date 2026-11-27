@@ -9,7 +9,7 @@ import { defineConfig } from 'vitest/config'
 import { simVersion } from '../../packages/simulation/sim-version.ts'
 import { pwa } from './pwa/plugin.ts'
 
-const skipBranding = /\/packages\/simulation\/|\/src\/i18n\/builder\.ts/
+const skipBranding = /\/packages\/simulation\/|\/src\/i18n\/builder\.ts|\/src\/app\//
 
 const unbrandedModules = (plugin: Plugin): Plugin => {
   if (plugin.name !== 'foldkit:view-identity' || typeof plugin.transform !== 'function')

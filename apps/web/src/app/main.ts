@@ -1,5 +1,0 @@
-export { Model } from '../game/model.ts'
-export { Message } from '../game/message.ts'
-export { init, update } from '../game/update.ts'
-export { subscriptions } from '../game/subscriptions.ts'
-export { view } from '../game/view.ts'

@@ -115,6 +115,7 @@ export default Alchemy.Stack(
           `${MCP_PATH}/*`,
           `${API_PREFIX}/*`,
           `${POSTHOG_PROXY_PREFIX}/*`,
+          '/assets/*',
           '/company',
           '/company/',
           ...MENU_PAGES.map((page) => `/${page}`),

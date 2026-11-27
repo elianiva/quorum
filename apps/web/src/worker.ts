@@ -31,6 +31,18 @@ const isApi = (pathname: string): boolean =>
   pathname === MCP_PATH ||
   pathname.startsWith(`${MCP_PATH}/`)
 
+const isHashedAsset = (pathname: string): boolean => pathname.startsWith('/assets/')
+
+/* A deploy replaces hashed files. A stale page that asks for a removed one gets the 404 page, and
+   the immutable header from _headers would pin that page in the edge and browser for a year. */
+const hashedAsset = async (request: Request, env: Environment): Promise<Response> => {
+  const response = await env.ASSETS.fetch(request)
+  if (response.ok || response.status === 304) return response
+  const headers = new Headers(response.headers)
+  headers.set('Cache-Control', 'no-store')
+  return new Response(response.body, { status: response.status, headers })
+}
+
 const allowedOrFailOpen = async (
   binding: RateLimitBinding | undefined,
   key: string,
@@ -81,6 +93,7 @@ export default Sentry.withSentry(
         if (!(await allowedOrFailOpen(env.RATE_LIMIT_INGEST, ip))) return tooMany()
         return ingest(request, url)
       }
+      if (isHashedAsset(url.pathname)) return hashedAsset(request, env)
       if (isAppPath(url.pathname)) return env.ASSETS.fetch(new Request(new URL('/', url), request))
       if (isApi(url.pathname) && !(await allowedOrFailOpen(env.RATE_LIMIT_API, ip)))
         return tooMany()

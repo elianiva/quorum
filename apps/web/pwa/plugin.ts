@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { existsSync, readdirSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import type { Plugin, ResolvedConfig } from 'vite'
 import { precacheOf, type OutputEntry } from './precache.ts'
@@ -42,7 +42,12 @@ export const pwa = (): Plugin => {
       )
       const publicFiles = filesUnder(config.publicDir)
       const precache = precacheOf(outputs, publicFiles)
-      const buildId = createHash('sha256').update(precache.join('\n')).digest('hex').slice(0, 12)
+      /* Built chunks carry a content hash in their names; public files and art do not, and the
+         worker serves them cache-first, so their bytes must change the build id. */
+      const buildHash = createHash('sha256').update(precache.join('\n'))
+      for (const file of [...publicFiles].sort())
+        buildHash.update(file).update(readFileSync(join(config.publicDir, file)))
+      const buildId = buildHash.digest('hex').slice(0, 12)
       this.emitFile({
         type: 'asset',
         fileName: 'sw.js',

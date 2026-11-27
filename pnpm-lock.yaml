@@ -209,6 +209,12 @@ importers:
 
   apps/web:
     dependencies:
+      '@effect/ui':
+        specifier: https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18
+        version: https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18(effect@4.1.4)
+      '@effect/ui-kit':
+        specifier: https://pkg.pr.new/Effect-TS/ui/@effect/ui-kit@1015b18
+        version: https://pkg.pr.new/Effect-TS/ui/@effect/ui-kit@1015b18(@effect/ui@https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18(effect@4.1.4))(effect@4.1.4)
       '@foldkit/ui':
         specifier: 0.170.0
         version: 0.170.0(effect@4.1.4)(foldkit@0.170.0(@effect/platform-browser@4.1.2(effect@4.1.4))(effect@4.1.4))
@@ -258,6 +264,9 @@ importers:
         specifier: 8.3.8
         version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
     devDependencies:
+      '@effect/ui-devtools':
+        specifier: https://pkg.pr.new/Effect-TS/ui/@effect/ui-devtools@1015b18
+        version: https://pkg.pr.new/Effect-TS/ui/@effect/ui-devtools@1015b18(@effect/ui-kit@https://pkg.pr.new/Effect-TS/ui/@effect/ui-kit@1015b18(@effect/ui@https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18(effect@4.1.4))(effect@4.1.4))(@effect/ui@https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18(effect@4.1.4))(effect@4.1.4)
       '@pandacss/preset-base':
         specifier: 'catalog:'
         version: 2.5.0
@@ -705,6 +714,32 @@ packages:
 
   '@effect/sql-d1@4.1.4':
     resolution: {integrity: sha512-x7UtDPNCgcAz6lvGbrf0INHxztV0qV8i4qleqPb31ADeilz7MnGYJ5Qhprqod+ySBUNPdsvXNRE9vm36TznIdg==}
+    peerDependencies:
+      effect: 4.1.4
+
+  '@effect/ui-devtools@https://pkg.pr.new/Effect-TS/ui/@effect/ui-devtools@1015b18':
+    resolution: {integrity: sha512-EiufTUyaqyyDyJmBnwthG0ul8RTaSjoT3KAi/BwdPgITjTRBqWRDo/Z209Y4Jyh+A0vcO3ve1eH7VbrxHrhksg==, tarball: https://pkg.pr.new/Effect-TS/ui/@effect/ui-devtools@1015b18}
+    version: 0.0.0
+    hasBin: true
+    peerDependencies:
+      '@effect/platform-node': ^4.1.4
+      '@effect/ui': ^0.0.0
+      '@effect/ui-kit': ^0.0.0
+      effect: 4.1.4
+    peerDependenciesMeta:
+      '@effect/platform-node':
+        optional: true
+
+  '@effect/ui-kit@https://pkg.pr.new/Effect-TS/ui/@effect/ui-kit@1015b18':
+    resolution: {integrity: sha512-5UwilX+4kufLRSyI+i7N5U8v/IMIGw/R6yyCJ4QrD+tYkUvHJG5E1pcmmi8hk8OOA5lDKGTYQ9lu0uKOq4Nhww==, tarball: https://pkg.pr.new/Effect-TS/ui/@effect/ui-kit@1015b18}
+    version: 0.0.0
+    peerDependencies:
+      '@effect/ui': ^0.0.0
+      effect: 4.1.4
+
+  '@effect/ui@https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18':
+    resolution: {integrity: sha512-pThOd30wJcwKY4MlF4VSr4WlnIxsHrXGyNpffC9/h3zZMW+nNv+6TUHK1ArbU6fxvtNqIfa3sLqJtC5ju+UjCQ==, tarball: https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18}
+    version: 0.0.0
     peerDependencies:
       effect: 4.1.4
 
@@ -3883,10 +3918,12 @@ packages:
   yuku-core@0.19.0:
     resolution: {integrity: sha512-kYK9e1XdfirNhkipzW0wmMcSWcVF/CWnuugodfVYRCUwvoBefweL9HzB96OiKEhsx78V5WbUxbJqlizMX869Qg==}
     engines: {node: '>=14.18.0'}
+    deprecated: 'Yuku is now one package with one core. Use "yuku" instead: https://yuku.fyi/javascript/. Existing installs keep working but get no more fixes.'
 
   yuku-parser@0.19.0:
     resolution: {integrity: sha512-XrBh9ZiQK5mJVRxZBAvD6LwRyAYrK3MFtH3+onyuxFL5hFD44EC3QOmIC1FjTj6H2MMwq46/NAI+NZxLZPZgxg==}
     engines: {node: '>=14.18.0'}
+    deprecated: 'Yuku is now one package with one core. Use "yuku" instead: https://yuku.fyi/javascript/. Existing installs keep working but get no more fixes.'
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
@@ -4106,6 +4143,21 @@ snapshots:
   '@effect/sql-d1@4.1.4(effect@4.1.4)':
     dependencies:
       '@cloudflare/workers-types': 5.20261116.1
+      effect: 4.1.4
+
+  '@effect/ui-devtools@https://pkg.pr.new/Effect-TS/ui/@effect/ui-devtools@1015b18(@effect/ui-kit@https://pkg.pr.new/Effect-TS/ui/@effect/ui-kit@1015b18(@effect/ui@https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18(effect@4.1.4))(effect@4.1.4))(@effect/ui@https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18(effect@4.1.4))(effect@4.1.4)':
+    dependencies:
+      '@effect/ui': https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18(effect@4.1.4)
+      '@effect/ui-kit': https://pkg.pr.new/Effect-TS/ui/@effect/ui-kit@1015b18(@effect/ui@https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18(effect@4.1.4))(effect@4.1.4)
+      effect: 4.1.4
+
+  '@effect/ui-kit@https://pkg.pr.new/Effect-TS/ui/@effect/ui-kit@1015b18(@effect/ui@https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18(effect@4.1.4))(effect@4.1.4)':
+    dependencies:
+      '@effect/ui': https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18(effect@4.1.4)
+      effect: 4.1.4
+
+  '@effect/ui@https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18(effect@4.1.4)':
+    dependencies:
       effect: 4.1.4
 
   '@emnapi/core@2.0.0-beta.2':

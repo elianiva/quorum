@@ -8,6 +8,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@effect/ui": "https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18",
+    "@effect/ui-kit": "https://pkg.pr.new/Effect-TS/ui/@effect/ui-kit@1015b18",
     "@foldkit/ui": "0.170.0",
     "@foldkit/vite-plugin": "0.29.0",
     "@quorum/agent": "workspace:*",
@@ -26,6 +28,7 @@
     "vite": "8.3.8"
   },
   "devDependencies": {
+    "@effect/ui-devtools": "https://pkg.pr.new/Effect-TS/ui/@effect/ui-devtools@1015b18",
     "@pandacss/preset-base": "catalog:",
     "@pandacss/preset-panda": "catalog:",
     "@pandacss/vite": "catalog:",

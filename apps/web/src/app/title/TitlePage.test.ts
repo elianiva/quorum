@@ -10,7 +10,7 @@ it('starts from the four stored loads', async () => {
   await Effect.runPromise(
     Effect.scoped(
       Effect.gen(function* () {
-        const story = yield* Story.make(TitlePage, {})
+        const story = yield* Story.make(TitlePage, { menu: 'main' })
 
         story.resolve(LoadSaves, TitleMessage.SavesLoaded({ index: EMPTY_SAVE_INDEX }))
         story.resolve(

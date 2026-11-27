@@ -55,14 +55,16 @@ const App = Html.component({
 
   head: () => [Head.title('Quorum')],
 
-  view: (h, model) =>
-    model.boot._tag === 'Ready'
-      ? TitlePage(h, { key: 'title' })
-      : splash(h, {
-          clocking: model.boot._tag === 'Clocking',
-          locale: model.locale,
-          onClockIn: AppMessage.ClockedIn,
-        }),
+  view: (h, model) => {
+    if (model.boot._tag !== 'Ready')
+      return splash(h, {
+        clocking: model.boot._tag === 'Clocking',
+        locale: model.locale,
+        onClockIn: AppMessage.ClockedIn,
+      })
+    const menu = model.route._tag === 'Menu' ? model.route.params.menu : 'main'
+    return TitlePage(h, { key: 'title', props: { menu } })
+  },
 })
 
 export { App }

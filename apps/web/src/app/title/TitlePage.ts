@@ -2,23 +2,35 @@ import { Component, Command, Mount, Router } from '@effect/ui'
 import type { View } from '@effect/ui'
 import { Html } from '@effect/ui/html'
 import type { H } from '@effect/ui/html/Html'
-import { Effect } from 'effect'
+import { Effect, Schema } from 'effect'
 import { cx, css } from '@quorum/styled-system/css'
 import { kbdClass } from '@quorum/ui/primitives/kbd'
 import { ACHIEVEMENT_IDS } from '@quorum/simulation/catalog'
 import { CHALLENGES } from '@quorum/simulation/challenges'
 import { SANDBOX_IDS } from '@quorum/simulation/sandbox'
-import { ArrowUpRight, BookOpen, ChevronRight, Coffee, Download, type IconNode } from 'lucide'
+import {
+  ArrowUpRight,
+  BookOpen,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Coffee,
+  Download,
+  Lock,
+  type IconNode,
+} from 'lucide'
 import { siGithub } from 'simple-icons'
 import { Locale } from '../../i18n/index.ts'
 import { copyIn } from '../../i18n/messages.ts'
 import { savesOf } from '../../game/saves-machine.ts'
+import { clock, compact } from '@quorum/ui/game/format'
 import { DISCLAIMER_URL, SOURCE_URL, WIKI_URL } from '../../platform/analytics.ts'
 import * as S from '../../game/title-styles.ts'
 import { AppRoute } from '../routes.ts'
 import { LoadFounder, LoadPrefs, LoadSandbox, LoadSaves } from './commands.ts'
-import { TitleMessage, type MenuPage } from './messages.ts'
+import { MenuChoice, MenuPage, TitleMessage } from './messages.ts'
 import { TitleModel, initialTitle } from './model.ts'
+import { TreeCamera } from './camera.ts'
 import { WallClock } from './Splash.ts'
 
 const STAGE = css({
@@ -403,24 +415,287 @@ const mainPage = (h: H<TitleMessage>, model: TitleModel, t: ReturnType<typeof co
       mainIndex(h, model, t),
     )
 
-const screen = (h: H<TitleMessage>, model: TitleModel, t: ReturnType<typeof copyIn>) =>
-  h.div.class(S.STAGE).children(
-    h.div
-      .class(S.WORLD)
-      .attr('data-depth', '0')
-      .children(
-        h.svg.key('wires').class(S.WIRES).attr('aria-hidden', 'true').children(),
-        h.div.key('ghosts').class(S.GHOSTS).attr('aria-hidden', 'true').children(),
+const BUTTON = css({
+  borderRadius: 'lg',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  borderColor: 'transparent',
+  backgroundClip: 'padding-box',
+  fontSize: 'type.14',
+  fontWeight: 'medium',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  whiteSpace: 'nowrap',
+  outlineStyle: 'none',
+  userSelect: 'none',
+  '& svg': { pointerEvents: 'none', flexShrink: '0' },
+  _hover: { backgroundColor: 'muted', color: 'foreground' },
+  _focusVisible: {
+    boxShadow: '0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent)',
+  },
+})
+
+const PROGRESS = css({ display: 'flex', flexWrap: 'wrap', gap: '3' })
+const PROGRESS_TRACK = css({
+  backgroundColor: 'well',
+  boxShadow: 'well',
+  height: '1.5',
+  borderRadius: 'full',
+  position: 'relative',
+  display: 'flex',
+  width: '100%',
+  alignItems: 'center',
+  overflowX: 'hidden',
+})
+const PROGRESS_INDICATOR = css({
+  layerStyle: 'primaryFill',
+  borderRadius: 'full',
+  boxShadow: 'highlightTop',
+  height: '100%',
+  width: '100%',
+  transitionProperty: 'all',
+  transitionDuration: 'fast',
+  transitionTimingFunction: 'out',
+})
+const PROGRESS_LABEL = css({
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontWeight: 'medium',
+})
+const PROGRESS_VALUE = css({
+  color: 'mutedForeground',
+  marginLeft: 'auto',
+  fontSize: 'type.14',
+  lineHeight: 'fine',
+  fontVariantNumeric: 'tabular-nums',
+})
+
+const note = (h: H<TitleMessage>, text: string) =>
+  h.p.key(`note-${text}`).class(S.NOTE).children(text)
+
+const record = (
+  h: H<TitleMessage>,
+  r: Readonly<{ key: string; label: string; detail: string; figure: string }>,
+) =>
+  h.li
+    .key(r.key)
+    .attr('tabindex', '-1')
+    .attr('data-nav', '')
+    .attr('data-key', r.key)
+    .class(cx(S.LINE, 'is-record is-bare'))
+    .children(
+      h.span
+        .class(S.TEXT)
+        .children(
+          h.span.class(S.LABEL).children(r.label),
+          h.span.class(S.DETAIL).children(r.detail),
+        ),
+      h.span.class(S.FIGURE).children(r.figure),
+    )
+
+const progressBar = (h: H<TitleMessage>, value: number, label: string) => {
+  const clamped = Math.min(100, Math.max(0, value))
+  return h.div
+    .class(cx(PROGRESS, S.FULL))
+    .attr('role', 'progressbar')
+    .attr('aria-label', label)
+    .attr('aria-valuemin', '0')
+    .attr('aria-valuemax', '100')
+    .attr('aria-valuenow', `${clamped}`)
+    .children(
+      h.span.class(PROGRESS_LABEL).children(label),
+      h.span.class(PROGRESS_VALUE).children(`${clamped}%`),
+      h.div.class(PROGRESS_TRACK).children(
         h.div
-          .key('root')
-          .class(cx(S.PAGE, 'is-main', 'is-active'))
-          .attr('data-page', 'main')
-          .attr('data-memory', 'main')
-          .attr('data-depth', '0')
-          .onMount(MenuFocus({}))
-          .children(mainPage(h, model, t)),
+          .class(PROGRESS_INDICATOR)
+          .attr('data-slot', 'progress-indicator')
+          .style({ transform: `translateX(-${100 - clamped}%)` })
+          .children(),
       ),
+    )
+}
+
+const achievementsBody = (h: H<TitleMessage>, model: TitleModel, t: ReturnType<typeof copyIn>) => {
+  const earned = model.founder.achievements
+  return [
+    progressBar(
+      h,
+      Math.round((earned.length / ACHIEVEMENT_IDS.length) * 100),
+      t.title.achievements,
+    ),
+    h.div
+      .class(S.GRID)
+      .attr('data-grid', '')
+      .children(
+        ...[...ACHIEVEMENT_IDS]
+          .sort((a, b) => Number(earned.includes(b)) - Number(earned.includes(a)))
+          .map((id) => {
+            const isEarned = earned.includes(id)
+            return h.div
+              .key(id)
+              .attr('tabindex', '-1')
+              .attr('data-nav', '')
+              .attr('data-key', id)
+              .attr('role', 'group')
+              .attr(
+                'aria-label',
+                `${t.catalog.achievements[id].name}. ${t.catalog.achievements[id].condition}. ${isEarned ? t.title.earned : t.title.notYet}`,
+              )
+              .class(cx(S.TILE, 'is-badge', isEarned ? 'is-done' : 'is-locked'))
+              .children(
+                h.span.class(S.TILE_HEAD).children(
+                  h.span.class(S.TILE_NAME).children(t.catalog.achievements[id].name),
+                  h.span
+                    .class(S.TILE_STATE)
+                    .attr('aria-hidden', 'true')
+                    .children(icon(h, isEarned ? Check : Lock, S.ICON)),
+                ),
+                h.span.class(S.TILE_DETAIL).children(t.catalog.achievements[id].condition),
+              )
+          }),
+      ),
+  ]
+}
+
+const historyBody = (h: H<TitleMessage>, model: TitleModel, t: ReturnType<typeof copyIn>) => {
+  if (model.founder.history.length === 0) return [note(h, t.title.noExitsYet)]
+  return [
+    h.ol.class(S.BUS).children(
+      ...model.founder.history
+        .map((entry, index) => {
+          const exit = t.catalog.exits[entry.exit].name
+          const venture = t.catalog.ventures[entry.founding.venture].name
+          return record(h, {
+            key: `h${index}`,
+            label: entry.name || `${exit} \u00b7 ${venture}`,
+            detail: `${entry.name ? `${exit} \u00b7 ` : ''}${venture} \u00b7 ${t.title.eraUsersTime(t.catalog.eras[entry.stage]?.name ?? '', compact(entry.peak), clock(entry.time))}`,
+            figure: `+${entry.legacy}`,
+          })
+        })
+        .toReversed(),
+    ),
+  ]
+}
+
+const pageTitle = (t: ReturnType<typeof copyIn>, menu: MenuPage): string => {
+  switch (menu) {
+    case 'achievements':
+      return t.title.achievements
+    case 'challenges':
+      return t.title.challenges
+    case 'companies':
+      return t.title.companies
+    case 'found':
+      return t.title.newCompany
+    case 'history':
+      return t.title.history
+    case 'legacy':
+      return t.title.legacyShop
+    case 'sandbox':
+      return t.title.sandbox
+    case 'settings':
+      return t.title.settings
+  }
+}
+
+const pageFigure = (model: TitleModel, menu: MenuPage): string | undefined => {
+  switch (menu) {
+    case 'achievements':
+      return `${model.founder.achievements.length}/${ACHIEVEMENT_IDS.length}`
+    case 'challenges':
+      return `${CHALLENGES.filter((entry) => model.founder.completed.includes(entry.id)).length}/${CHALLENGES.length}`
+    case 'companies':
+      return `${savesOf(model.saves).companies.length}`
+    case 'history':
+      return `${model.founder.history.length}`
+    case 'legacy':
+      return `${model.founder.legacy}`
+    case 'sandbox':
+      return `${SANDBOX_IDS.filter((id) => model.passed.includes(id)).length}/${SANDBOX_IDS.length}`
+    case 'found':
+    case 'settings':
+      return undefined
+  }
+}
+
+const subPage = (
+  h: H<TitleMessage>,
+  model: TitleModel,
+  t: ReturnType<typeof copyIn>,
+  menu: MenuPage,
+) => {
+  const figure = pageFigure(model, menu)
+  const body =
+    menu === 'achievements'
+      ? achievementsBody(h, model, t)
+      : menu === 'history'
+        ? historyBody(h, model, t)
+        : []
+  return h.div.class(S.SUB).children(
+    h.header.class(S.SUB_HEAD).children(
+      h.button
+        .class(cx(BUTTON, S.BACK, 'press'))
+        .attr('type', 'button')
+        .attr('data-back', '')
+        .attr('aria-keyshortcuts', 'Escape')
+        .on('click', () => TitleMessage.MenuChosen({ menu: 'main' }))
+        .children(icon(h, ChevronLeft, S.ICON), h.span.children(t.title.back)),
+      h.h1.class(S.SUB_TITLE).children(pageTitle(t, menu)),
+      figure === undefined ? h.span.children() : h.span.class(S.SUB_FIGURE).children(figure),
+    ),
+    h.div.class(S.SUB_BODY).children(...body),
   )
+}
+
+const column = (
+  h: H<TitleMessage>,
+  model: TitleModel,
+  t: ReturnType<typeof copyIn>,
+  page: MenuChoice,
+  depth: number,
+  last: number,
+) => {
+  const base = h.div
+    .key(depth === 0 ? 'root' : page)
+    .class(
+      cx(
+        S.PAGE,
+        page === 'main' ? 'is-main' : 'is-sub',
+        (page === 'settings' || page === 'companies') && 'is-list',
+        depth === last && 'is-active',
+      ),
+    )
+    .style({ '--d': `${depth}` })
+    .attr('data-page', page)
+    .attr('data-memory', page)
+    .attr('data-depth', `${depth}`)
+    .attr('data-from', depth === 0 ? undefined : page)
+  const rooted = depth === 0 ? base.onMount(MenuFocus({})) : base
+  return rooted.children(page === 'main' ? mainPage(h, model, t) : subPage(h, model, t, page))
+}
+
+const screen = (
+  h: H<TitleMessage>,
+  model: TitleModel,
+  t: ReturnType<typeof copyIn>,
+  menu: MenuChoice,
+) => {
+  const trail: ReadonlyArray<MenuChoice> = menu === 'main' ? ['main'] : ['main', menu]
+  return h.div
+    .class(S.STAGE)
+    .onMount(TreeCamera({}))
+    .children(
+      h.div
+        .class(S.WORLD)
+        .attr('data-depth', `${trail.length - 1}`)
+        .children(
+          h.svg.key('wires').class(S.WIRES).attr('aria-hidden', 'true').children(),
+          h.div.key('ghosts').class(S.GHOSTS).attr('aria-hidden', 'true').children(),
+          ...trail.map((page, depth) => column(h, model, t, page, depth, trail.length - 1)),
+        ),
+    )
+}
 
 const MenuFocus = Mount.make('MenuFocus', {}, (node: HTMLElement) =>
   Effect.sync(() => {
@@ -432,6 +707,7 @@ const MenuFocus = Mount.make('MenuFocus', {}, (node: HTMLElement) =>
 
 export const TitlePage = Html.component({
   name: 'TitlePage',
+  props: Schema.Struct({ menu: MenuChoice }),
   model: TitleModel,
   message: TitleMessage,
 }).make({
@@ -449,11 +725,17 @@ export const TitlePage = Html.component({
     PrefsLoaded: ($, { prefs }) => $.evolve({ prefs }),
     SandboxLoaded: ($, { passed }) => $.evolve({ passed }),
     MenuChosen: ($, { menu }) =>
-      $.run(Router.push(AppRoute, AppRoute.Menu({ params: { menu } })).pipe(Command.asNoop)),
+      $.run(
+        Router.push(
+          AppRoute,
+          menu === 'main' ? AppRoute.Title() : AppRoute.Menu({ params: { menu } }),
+        ).pipe(Command.asNoop),
+      ),
   },
 
   view: (h, model) => {
     const t = copyIn(model.prefs.locale)
+    const menu = h.props.menu
     // The toolbar and dock mix anchors, SVG icons, and kbd elements. Effect UI
     // infers `any` for that children union; the view starts no effects, so
     // narrow the result to a view with no requirements.
@@ -465,7 +747,7 @@ export const TitlePage = Html.component({
           .children(
             h.div
               .class(S.FRAME)
-              .children(toolbar(h, t), screen(h, model, t), dock(h, t, model.prefs.locale)),
+              .children(toolbar(h, t), screen(h, model, t, menu), dock(h, t, model.prefs.locale)),
           ),
       ) as unknown as View.Content<TitleMessage>
   },

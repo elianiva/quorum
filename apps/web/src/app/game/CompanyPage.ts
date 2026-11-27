@@ -1,18 +1,18 @@
 import { Subscription } from '@effect/ui'
 import { Html } from '@effect/ui/html'
-import type { H } from '@effect/ui/html/Html'
-import { css } from '@quorum/styled-system/css'
-import { clock, compact, money, ms } from '@quorum/ui/game/format'
+import { css, cx } from '@quorum/styled-system/css'
 import { Duration, Stream } from 'effect'
-import { copyIn, eraWords, type Messages } from '../../i18n/messages.ts'
 import { Message } from '../../game/message.ts'
-import { Model, currentFile, ledgerOf } from '../../game/model.ts'
+import { Model, ledgerOf } from '../../game/model.ts'
 import { DEFAULT_LOGO } from '../../game/logos.ts'
 import { AppRoute as OldAppRoute } from '../../game/route.ts'
 import { fileFor } from '../../game/saves.ts'
 import { TICK_MS, initialModel, update } from '../../game/update.ts'
 import { freshBoard, sync } from '../../game/update/shared.ts'
 import { boardHost } from './BoardHost.ts'
+import { changeBar, hud, regionTabs, toolbar } from './Hud.ts'
+import { inspector } from './Inspector.ts'
+import { Shop } from './Shop.ts'
 import { runCommands } from './bridge.ts'
 
 const STAGE = css({
@@ -25,112 +25,67 @@ const STAGE = css({
   userSelect: 'none',
 })
 
-const HUD = css({
+const TOP = css({
+  display: 'contents',
+  _compact: {
+    pointerEvents: 'none',
+    position: 'absolute',
+    left: '0',
+    right: '0',
+    top: '0',
+    zIndex: '20',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.5',
+    '--toolbar-w': 'calc(184px * var(--type-scale))',
+    paddingTop: 'max(8px, env(safe-area-inset-top))',
+    paddingRight: 'max(8px, env(safe-area-inset-right))',
+    paddingBottom: '0',
+    paddingLeft: 'max(8px, env(safe-area-inset-left))',
+  },
+})
+
+const TOP_ROW = css({
+  pointerEvents: 'none',
   position: 'absolute',
-  insetInline: '0',
-  top: '0',
-  zIndex: 20,
+  top: '3',
+  right: '3',
+  zIndex: '20',
   display: 'flex',
   alignItems: 'flex-start',
-  justifyContent: 'space-between',
-  gap: '12px',
-  padding:
-    'max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left))',
-  pointerEvents: 'none',
+  gap: '3',
+  _compact: { display: 'contents' },
 })
 
-const PILL = css({
-  pointerEvents: 'auto',
+const LANE = css({
   display: 'flex',
-  alignItems: 'center',
-  gap: '12px',
-  padding: '8px 12px',
-  borderRadius: 'xl',
-  layerStyle: 'surface',
-  boxShadow: 'card',
-  fontFamily: 'mono',
-  fontSize: 'type.12',
-})
-
-const FIGURE = css({ display: 'flex', flexDirection: 'column', gap: '1px', lineHeight: 'none' })
-const LABEL = css({
-  color: 'mutedForeground',
-  fontSize: 'type.10-5',
-  letterSpacing: 'eyebrow',
-  textTransform: 'uppercase',
-})
-const VALUE = css({
-  color: 'foreground',
-  fontSize: 'type.14',
-  fontWeight: 'medium',
-  fontVariantNumeric: 'tabular-nums',
-})
-const NAME = css({
-  display: 'flex',
+  minWidth: '0',
+  flex: '1 1 0%',
   flexDirection: 'column',
-  gap: '2px',
-  paddingRight: '4px',
-  borderRightWidth: '1px',
-  borderRightStyle: 'solid',
-  borderColor: 'hairline',
-})
-const CONTROL = css({
-  pointerEvents: 'auto',
-  height: '8',
-  paddingInline: '3',
-  borderRadius: 'lg',
-  borderWidth: '1px',
-  borderStyle: 'solid',
-  borderColor: 'transparent',
-  layerStyle: 'raised',
-  boxShadow: 'raised',
-  fontSize: 'type.12-8',
-  fontWeight: 'medium',
-  whiteSpace: 'nowrap',
-  outlineStyle: 'none',
-  _hover: { filter: 'brightness(0.985)' },
-  _focusVisible: { boxShadow: 'focus' },
+  alignItems: 'center',
+  gap: '2',
+  _compact: { alignItems: 'stretch', gap: '1.5' },
 })
 
-const figure = (h: H<Message>, label: string, value: string) =>
-  h.span
-    .class(FIGURE)
-    .children(h.span.class(LABEL).children(label), h.span.class(VALUE).children(value))
-
-const hud = (h: H<Message>, model: Model, t: Messages) => {
-  const game = model.board.game
-  const ledger = ledgerOf(model)
-  const file = currentFile(model)
-  const paused = model.board.clock.mode._tag !== 'Running'
-  return h.div.class(HUD).children(
-    h.div
-      .class(PILL)
-      .children(
-        h.span
-          .class(NAME)
-          .children(
-            h.span.class(VALUE).children(file?.name ?? eraWords(t, game).name),
-            h.span.class(LABEL).children(`${eraWords(t, game).name} · ${clock(game.time)}`),
-          ),
-        figure(h, t.hud.cash, money(game.cash)),
-        figure(h, t.hud.users, compact(game.users)),
-        figure(h, 'Apdex', game.apdex.toFixed(2)),
-        figure(h, t.hud.latency, ms(ledger.latency)),
-      ),
-    h.div.class(PILL).children(
-      h.button
-        .class(CONTROL)
-        .attr('type', 'button')
-        .on('click', () => Message.PauseToggled())
-        .children(paused ? t.panels.resume : t.panels.pause),
-      h.button
-        .class(CONTROL)
-        .attr('type', 'button')
-        .on('click', () => Message.SpeedCycled())
-        .children(`×${model.board.clock.speed}`),
-    ),
-  )
-}
+const BOTTOM = css({
+  pointerEvents: 'none',
+  position: 'absolute',
+  bottom: '3',
+  left: '50%',
+  zIndex: '20',
+  display: 'flex',
+  translate: '-50% 0',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '2',
+  _compact: {
+    right: 'max(8px, env(safe-area-inset-right))',
+    bottom: 'max(8px, env(safe-area-inset-bottom))',
+    left: 'max(8px, env(safe-area-inset-left))',
+    translate: '0 0',
+    alignItems: 'stretch',
+  },
+})
 
 export const CompanyPage = Html.component({
   name: 'CompanyPage',
@@ -175,7 +130,25 @@ export const CompanyPage = Html.component({
   ],
 
   view: (h, model) => {
-    const t = copyIn(model.prefs.locale)
-    return h.div.class(STAGE).children(boardHost(h, model), hud(h, model, t))
+    const ledger = ledgerOf(model)
+    return h.div.class(STAGE).children(
+      boardHost(h, model),
+      h.div.class(TOP).children(
+        hud(h, model, ledger),
+        h.div
+          .class(TOP_ROW)
+          .style({ left: `calc(${276 + 24}px * var(--type-scale))` })
+          .children(
+            h.div.attr('data-flip', 'notice').class(LANE).children(regionTabs(h, model)),
+            toolbar(h, model),
+          ),
+      ),
+      h.div
+        .attr('data-flip', 'gesture')
+        .class(BOTTOM)
+        .children(changeBar(h, model, cx('enter-pop', css({ _compact: { display: 'none' } })))),
+      inspector(h, model, ledger),
+      model.panel === 'shop' ? Shop(h, model) : null,
+    )
   },
 })

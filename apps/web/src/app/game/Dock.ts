@@ -100,7 +100,7 @@ const detail = (part: Part, h: H<Message>): Child => {
     .children(part.price)
 }
 
-const partCells = (part: Part, h: H<Message>): ReadonlyArray<Child> => [
+export const partCells = (part: Part, h: H<Message>): ReadonlyArray<Child> => [
   groupBadge(
     part.group,
     part.icon,

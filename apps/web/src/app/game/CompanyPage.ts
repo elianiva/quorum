@@ -10,7 +10,9 @@ import { fileFor } from '../../game/saves.ts'
 import { TICK_MS, initialModel, update } from '../../game/update.ts'
 import { freshBoard, sync } from '../../game/update/shared.ts'
 import { boardHost } from './BoardHost.ts'
-import { changeBar, hud, regionTabs, toolbar } from './Hud.ts'
+import { dock } from './Dock.ts'
+import { firstStepsBar } from './FirstSteps.ts'
+import { changeBar, hud, phoneOffer, regionTabs, toolbar } from './Hud.ts'
 import { inspector } from './Inspector.ts'
 import { Shop } from './Shop.ts'
 import { runCommands } from './bridge.ts'
@@ -139,14 +141,23 @@ export const CompanyPage = Html.component({
           .class(TOP_ROW)
           .style({ left: `calc(${276 + 24}px * var(--type-scale))` })
           .children(
-            h.div.attr('data-flip', 'notice').class(LANE).children(regionTabs(h, model)),
+            h.div
+              .attr('data-flip', 'notice')
+              .class(LANE)
+              .children(regionTabs(h, model), firstStepsBar(h, model)),
             toolbar(h, model),
           ),
       ),
       h.div
         .attr('data-flip', 'gesture')
         .class(BOTTOM)
-        .children(changeBar(h, model, cx('enter-pop', css({ _compact: { display: 'none' } })))),
+        .children(
+          changeBar(h, model, cx('enter-pop', css({ _compact: { display: 'none' } }))),
+          h.div
+            .class(css({ display: 'none', _compact: { display: 'contents' } }))
+            .children(phoneOffer(h, model)),
+          dock(h, model),
+        ),
       inspector(h, model, ledger),
       model.panel === 'shop' ? Shop(h, model) : null,
     )

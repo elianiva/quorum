@@ -3,15 +3,26 @@ import { Html } from '@effect/ui/html'
 import { css, cx } from '@quorum/styled-system/css'
 import { Duration, Stream } from 'effect'
 import { Message } from '../../game/message.ts'
-import { Model, ledgerOf } from '../../game/model.ts'
+import {
+  Model,
+  boardChallenge,
+  boardSandbox,
+  confirmSellOf,
+  ledgerOf,
+  stampedPlaybook,
+} from '../../game/model.ts'
 import { DEFAULT_LOGO } from '../../game/logos.ts'
 import { AppRoute as OldAppRoute } from '../../game/route.ts'
 import { fileFor } from '../../game/saves.ts'
 import { TICK_MS, initialModel, update } from '../../game/update.ts'
+import { isExited } from '../../game/company-machine.ts'
 import { freshBoard, sync } from '../../game/update/shared.ts'
 import { dockItems } from '../../game/reveal.ts'
 import { boardHost } from './BoardHost.ts'
 import { dock } from './Dock.ts'
+import * as Legacy from './Legacy.ts'
+import { challengeBar, challengeHud, challengePanel } from './Challenge.ts'
+import { objectiveBar, passedPanel, sandboxHud } from './Sandbox.ts'
 import { nodeList } from './NodeList.ts'
 import { alertsNotice, incidentNotice, researchOffer } from './Notices.ts'
 import { commandPalette } from './Palette.ts'
@@ -161,6 +172,11 @@ export const CompanyPage = Html.component({
 
   view: (h, model) => {
     const ledger = ledgerOf(model)
+    const sandbox = boardSandbox(model.board)
+    const challenge = boardChallenge(model.board)
+    const hudWidth = sandbox !== null || challenge !== null ? 248 : 276
+    if (isExited(model.companyPhase))
+      return h.div.class(STAGE).children(Legacy.exitScreen(h, model))
     if (model.board.screenshot)
       return h.div
         .class(STAGE)
@@ -169,17 +185,25 @@ export const CompanyPage = Html.component({
       nodeList(h, model, ledger),
       boardHost(h, model),
       h.div.class(TOP).children(
-        hud(h, model, ledger),
+        challenge !== null
+          ? challengeHud(h, model, ledger)
+          : sandbox !== null
+            ? sandboxHud(h, model, ledger)
+            : hud(h, model, ledger),
         h.div
           .class(TOP_ROW)
-          .style({ left: `calc(${276 + 24}px * var(--type-scale))` })
+          .style({ left: `calc(${hudWidth + 24}px * var(--type-scale))` })
           .children(
             h.div
               .attr('data-flip', 'notice')
               .class(LANE)
               .children(
                 regionTabs(h, model),
-                firstStepsBar(h, model),
+                challenge !== null
+                  ? challengeBar(h, model)
+                  : sandbox !== null
+                    ? objectiveBar(h, model)
+                    : firstStepsBar(h, model),
                 incidentNotice(h, model),
                 alertsNotice(h, model),
               ),
@@ -194,10 +218,18 @@ export const CompanyPage = Html.component({
           h.div
             .class(css({ display: 'none', _compact: { display: 'contents' } }))
             .children(phoneOffer(h, model)),
-          dock(h, model),
+          confirmSellOf(model.board) !== null
+            ? Legacy.sellBar(h, model)
+            : model.board.selection.length > 0
+              ? Legacy.selectionBar(h, model)
+              : stampedPlaybook(model)
+                ? Legacy.stampBar(h, model)
+                : dock(h, model),
         ),
       inspector(h, model, ledger),
       tradeoffCard(h, model),
+      model.panel === 'exit' ? Legacy.exitPanel(h, model) : null,
+      model.panel === 'playbooks' ? Legacy.playbooksPanel(h, model) : null,
       model.panel === 'help' ? helpPanel(h, model) : null,
       model.panel === 'menu' ? menuPanel(h, model) : null,
       model.panel === 'room' ? roomPanel(h, model) : null,
@@ -209,6 +241,8 @@ export const CompanyPage = Html.component({
       model.panel === 'era' ? eraPanel(h, model) : null,
       model.panel === 'end' ? endPanel(h, model) : null,
       model.panel === 'dev' ? devPanel(h, model) : null,
+      model.panel === 'passed' ? passedPanel(h, model) : null,
+      model.panel === 'challenge' ? challengePanel(h, model) : null,
       h.div
         .class(css({ display: 'contents', _compact: { display: 'none' } }))
         .children(researchOffer(h, model)),

@@ -112,16 +112,28 @@ const parseFounder = Schema.decodeUnknownOption(Schema.fromJsonString(Founder))
 const StoredIndex = Schema.Struct({
   current: Schema.optionalKey(Schema.NullOr(Schema.String)),
   lastPlayed: Schema.optionalKey(Schema.NullOr(Schema.String)),
-  companies: Schema.Array(CompanyFile),
+  companies: Schema.Array(Schema.Unknown),
 })
 
 const decodeIndex = Schema.decodeUnknownOption(Schema.fromJsonString(StoredIndex))
+const HasId = Schema.Struct({ id: Schema.String })
+const decodeCompanyFile = Schema.decodeUnknownOption(CompanyFile)
 
 export const parseIndex = (text: string) =>
-  Option.map(decodeIndex(text), (stored): SaveIndex => ({
-    lastPlayed: stored.lastPlayed ?? stored.current ?? null,
-    companies: stored.companies,
-  }))
+  Option.map(decodeIndex(text), (stored) => {
+    const companies = stored.companies.flatMap((entry) =>
+      Option.match(decodeCompanyFile(entry), { onNone: () => [], onSome: (file) => [file] }),
+    )
+    const lastPlayed = stored.lastPlayed ?? stored.current ?? null
+    const index: SaveIndex = {
+      lastPlayed: companies.some((file) => file.id === lastPlayed) ? lastPlayed : null,
+      companies,
+    }
+    const held = stored.companies.flatMap((entry) =>
+      Option.isNone(decodeCompanyFile(entry)) && Schema.is(HasId)(entry) ? [entry.id] : [],
+    )
+    return { index, held, skipped: companies.length < stored.companies.length }
+  })
 
 const titleIfBoard = (model: Model): UpdateResult =>
   model.route._tag === 'Company'
@@ -288,14 +300,18 @@ const loadedSaves = (model: Model, index: string | null): UpdateResult => {
       },
     }
   }
-  const parsed = Option.getOrNull(parseIndex(index))
-  if (!parsed) {
+  const read = Option.getOrNull(parseIndex(index))
+  if (!read) {
     const back = titleIfBoard(model)
     return withToast(back.model, say(model).toasts.unreadableList, 'warn', [
       KeepBrokenSave({ json: index, reason: 'The company list is not a save index.' }),
       ...(back.commands ?? []),
     ])
   }
+  const parsed = read.index
+  const keep = read.skipped
+    ? [KeepBrokenSave({ json: index, reason: 'Some companies in the list could not be read.' })]
+    : []
   const loaded: Model = {
     ...model,
     saves: { _tag: 'Ready', index: parsed },
@@ -306,12 +322,16 @@ const loadedSaves = (model: Model, index: string | null): UpdateResult => {
   }
   if (parsed.lastPlayed === null) {
     const back = titleIfBoard(loaded)
-    return { ...back, commands: [PruneSaves({ index: parsed }), ...(back.commands ?? [])] }
+    return {
+      ...back,
+      commands: [...keep, PruneSaves({ index: parsed, held: read.held }), ...(back.commands ?? [])],
+    }
   }
   return {
     model: loaded,
     commands: [
-      PruneSaves({ index: parsed }),
+      ...keep,
+      PruneSaves({ index: parsed, held: read.held }),
       LoadCompany({ id: parsed.lastPlayed, open: model.route._tag === 'Company' }),
     ],
   }

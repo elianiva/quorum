@@ -28,6 +28,7 @@ import { refreshed, SaveIndex } from './saves.ts'
 import {
   BROKEN_SAVE_KEY,
   FOUNDER_KEY,
+  holdCompanyFiles,
   PREFS_KEY,
   SANDBOX_KEY,
   SAVE_INDEX_KEY,
@@ -242,10 +243,11 @@ export const LoadSaves = Command.define('LoadSaves', {
 })
 
 export const PruneSaves = Command.define('PruneSaves', {
-  args: { index: SaveIndex },
+  args: { index: SaveIndex, held: Schema.Array(Schema.String) },
   messages: [Message.Synced],
-  execute: ({ index }) =>
+  execute: ({ index, held }) =>
     Effect.promise(async () => {
+      holdCompanyFiles(held)
       pruneAgentRooms(new Set(index.companies.map((file) => file.id)))
       await pruneCompanies(companyDb(), index)
       return Message.Synced()

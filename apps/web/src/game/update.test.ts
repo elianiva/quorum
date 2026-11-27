@@ -1934,6 +1934,27 @@ test('a save this build cannot read is kept aside and leaves the list', () => {
   }
 })
 
+test('one unreadable entry leaves the company list, not the whole list', () => {
+  const { index, id } = storedWith(newGame())
+  const stored = JSON.parse(index)
+  const broken = JSON.stringify({
+    ...stored,
+    companies: [{ ...stored.companies[0], logo: 'retired-logo' }, ...stored.companies],
+  })
+  const loaded = update(initialModel(), Message.SavesLoaded({ index: broken, now: 0 }))
+  expect(savesOf(loaded.model.saves).companies.map((file) => file.id)).toEqual([id])
+  expect(savesOf(loaded.model.saves).lastPlayed).toBe(id)
+  expect(loaded.commands).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ name: 'KeepBrokenSave' }),
+      expect.objectContaining({
+        name: 'PruneSaves',
+        args: expect.objectContaining({ held: [id] }),
+      }),
+    ]),
+  )
+})
+
 test('a Company whose file is gone leaves the list, and says so only when opened', () => {
   const game = newGame()
   const { index, id } = storedWith(game)

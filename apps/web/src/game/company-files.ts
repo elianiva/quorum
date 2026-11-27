@@ -1,5 +1,12 @@
 import type { SaveIndex } from './saves.ts'
-import { pruneCompanyFiles, readStored, removeStored, saveKeyOf, writeStored } from './storage.ts'
+import {
+  heldCompanyIds,
+  pruneCompanyFiles,
+  readStored,
+  removeStored,
+  saveKeyOf,
+  writeStored,
+} from './storage.ts'
 
 const COMPANY_DB = 'quorum'
 const COMPANY_STORE = 'companies'
@@ -196,7 +203,7 @@ export const deleteCompany = async (db: CompanyDb | null, id: string): Promise<v
 export const pruneCompanies = async (db: CompanyDb | null, index: SaveIndex): Promise<void> => {
   pruneCompanyFiles(index)
   if (db === null) return
-  const keep = new Set(index.companies.map((file) => file.id))
+  const keep = new Set([...index.companies.map((file) => file.id), ...heldCompanyIds()])
   try {
     for (const id of await db.keys()) if (!keep.has(id) && !lastWrite.has(id)) await db.remove(id)
   } catch {}

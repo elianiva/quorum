@@ -12,18 +12,19 @@ so each caller decides what a lost value costs. `apps/web/src/game/company-files
 other module that names a place in the browser: the IndexedDB database that holds the Company
 files.
 
-| Key                     | Holds                                                     | Read by                       | Lifecycle                                   |
-| ----------------------- | --------------------------------------------------------- | ----------------------------- | ------------------------------------------- |
-| `quorum.saves.v1`       | The Company list: `current` and one file per Company      | `LoadSaves`                   | Written with every autosave                 |
-| `quorum.save.v3.<id>`   | A Company file outside IndexedDB (see "Company files")    | `LoadCompany`                 | Removed once IndexedDB holds the file       |
-| `quorum.prefs.v1`       | Settings: sound, motion, language, text, theme, consent   | `LoadPrefs`, Sentry           | Written on every Settings change            |
-| `quorum.founder.v1`     | Founder record: Legacy, Perks, Playbooks, achievements    | `LoadFounder`                 | Written on every Founder change             |
-| `quorum.sandbox.v1`     | Passed guided Sandboxes and the free Sandbox board        | `LoadSandboxStore`            | Written on Sandbox progress                 |
-| `quorum.agent.rooms`    | A write key and Room id per Company, with Agent access on | `agent-room.ts`               | Written when a Room is first needed         |
-| `quorum.room.name`      | The display name other Seats see                          | `room-socket.ts`              | Written when the player sets it             |
-| `quorum.analytics.v1`   | The monthly and session event budget                      | `analytics-budget.ts`         | Written per captured event                  |
-| `quorum.playlog.v1`     | The last 2,000 support log lines                          | `playlog.ts`, developer panel | Capped, written after a batch               |
-| `quorum.save.broken.v1` | The last Company file this build could not read           | Nothing; a support copy       | Replaced by a failure, cleared by an import |
+| Key                     | Holds                                                         | Read by                       | Lifecycle                                         |
+| ----------------------- | ------------------------------------------------------------- | ----------------------------- | ------------------------------------------------- |
+| `quorum.saves.v1`       | The Company list: `current` and one file per Company          | `LoadSaves`                   | Written with every autosave                       |
+| `quorum.save.v3.<id>`   | A Company file outside IndexedDB (see "Company files")        | `LoadCompany`                 | Removed once IndexedDB holds the file             |
+| `quorum.prefs.v1`       | Settings: sound, motion, language, text, theme, consent       | `LoadPrefs`, Sentry           | Written on every Settings change                  |
+| `quorum.founder.v1`     | Founder record: Legacy, Perks, Playbooks, achievements        | `LoadFounder`                 | Written on every Founder change                   |
+| `quorum.sandbox.v1`     | Passed guided Sandboxes and the free Sandbox board            | `LoadSandboxStore`            | Written on Sandbox progress                       |
+| `quorum.agent.rooms`    | A write key and Room id per Company, with Agent access on     | `agent-room.ts`               | Written when a Room is first needed               |
+| `quorum.room.name`      | The display name other Seats see                              | `room-socket.ts`              | Written when the player sets it                   |
+| `quorum.analytics.v1`   | The monthly and session event budget                          | `analytics-budget.ts`         | Written per captured event                        |
+| `quorum.playlog.v1`     | The last 2,000 support log lines                              | `playlog.ts`, developer panel | Capped, written after a batch                     |
+| `quorum.save.held.v1`   | Ids of Companies the list named but this build could not read | `PruneSaves`                  | Appended on boot; `PruneSaves` spares their files |
+| `quorum.save.broken.v1` | The last Company file this build could not read               | Nothing; a support copy       | Replaced by a failure, cleared by an import       |
 
 `quorum.room.seat` lives in `sessionStorage`: it names this tab's Seat and dies with the tab.
 `quorum.pwa.updated` lives there too: it marks the reload after a deploy, so the game can say that

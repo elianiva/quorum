@@ -3,6 +3,7 @@ import type { SaveIndex } from './saves.ts'
 export const SAVE_INDEX_KEY = 'quorum.saves.v1'
 export const SAVE_PREFIX = 'quorum.save.v3.'
 export const BROKEN_SAVE_KEY = 'quorum.save.broken.v1'
+export const HELD_FILES_KEY = 'quorum.save.held.v1'
 export const PREFS_KEY = 'quorum.prefs.v1'
 export const FOUNDER_KEY = 'quorum.founder.v1'
 export const SANDBOX_KEY = 'quorum.sandbox.v1'
@@ -71,8 +72,24 @@ export const sweepLegacyStorage = (): void => {
   for (const key of LEGACY_KEYS) removeStored(key)
 }
 
+export const heldCompanyIds = (): ReadonlyArray<string> => {
+  try {
+    const held: unknown = JSON.parse(readStored(HELD_FILES_KEY) ?? '[]')
+    return Array.isArray(held) ? held.filter((id) => typeof id === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+export const holdCompanyFiles = (ids: ReadonlyArray<string>): void => {
+  if (ids.length === 0) return
+  writeStored(HELD_FILES_KEY, JSON.stringify([...new Set([...heldCompanyIds(), ...ids])]))
+}
+
 export const pruneCompanyFiles = (index: SaveIndex): void => {
-  const keep = new Set(index.companies.map((file) => saveKeyOf(file.id)))
+  const keep = new Set(
+    [...index.companies.map((file) => file.id), ...heldCompanyIds()].map(saveKeyOf),
+  )
   for (const key of storedKeys())
     if (key.startsWith(SAVE_PREFIX) && !keep.has(key)) removeStored(key)
 }

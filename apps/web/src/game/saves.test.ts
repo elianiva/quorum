@@ -488,6 +488,19 @@ describe('browser storage', () => {
     expect(storage.getItem('quorum.saves.v1')).not.toBeNull()
   })
 
+  test('pruning keeps the files of companies the list could not read, on every later boot', async () => {
+    const { index } = stored()
+    const storage = fakeStorage({
+      [`${SAVE_PREFIX}c-one`]: '{}',
+      [`${SAVE_PREFIX}held`]: '{}',
+      [`${SAVE_PREFIX}orphan`]: '{}',
+    })
+    await runStored(storage, PruneSaves({ index, held: ['held'] }))
+    await runStored(storage, PruneSaves({ index, held: [] }))
+    expect(storage.getItem(`${SAVE_PREFIX}held`)).toBe('{}')
+    expect(storage.getItem(`${SAVE_PREFIX}orphan`)).toBeNull()
+  })
+
   test('pruning also drops Agent Room records for Companies the list does not name', async () => {
     const { index } = stored()
     const kept = { writeKey: 'w', roomId: 'r', epoch: 'e' }
@@ -497,7 +510,7 @@ describe('browser storage', () => {
         orphan: { writeKey: 'w2', roomId: 'r2', epoch: 'e2' },
       }),
     })
-    await runStored(storage, PruneSaves({ index }))
+    await runStored(storage, PruneSaves({ index, held: [] }))
     expect(JSON.parse(storage.getItem('quorum.agent.rooms') ?? '{}')).toEqual({ 'c-one': kept })
   })
 

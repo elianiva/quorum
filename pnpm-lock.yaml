@@ -285,6 +285,9 @@ importers:
 
   apps/wiki:
     dependencies:
+      '@effect/ui':
+        specifier: https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18
+        version: https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18(effect@4.1.4)
       '@foldkit/markdown':
         specifier: 0.15.0
         version: 0.15.0(effect@4.1.4)(foldkit@0.170.0(@effect/platform-browser@4.1.2(effect@4.1.4))(effect@4.1.4))(supports-color@8.1.1)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
@@ -324,6 +327,9 @@ importers:
       posthog-js:
         specifier: 1.450.0
         version: 1.450.0
+      simple-icons:
+        specifier: 16.38.0
+        version: 16.38.0
       takumi-js:
         specifier: ^2.20.0
         version: 2.20.0(preact@10.29.8)

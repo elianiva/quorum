@@ -218,15 +218,18 @@ const optionsFor = (locale: Locale): Options<Document> => ({
 
 export type Index = MiniSearch<Document>
 
-const documentOf = (page: Page): Document => ({
+export type IndexPage = Readonly<
+  Pick<Page, 'path' | 'title' | 'aliases' | 'summary' | 'section' | 'headings' | 'text'>
+>
+
+const documentOf = (page: IndexPage, locale: Locale): Document => ({
   id: page.path,
   path: page.path,
   title: page.title,
   aliases: [...new Set(page.aliases)].join(' | '),
   kind:
-    (langOf(page.locale).t.search.kinds as Readonly<Partial<Record<Section, string>>>)[
-      page.section
-    ] ?? '',
+    (langOf(locale).t.search.kinds as Readonly<Partial<Record<Section, string>>>)[page.section] ??
+    '',
   headings: page.headings.map((heading) => heading.text).join(' '),
   summary: page.summary,
   text: page.text,
@@ -234,14 +237,19 @@ const documentOf = (page: Page): Document => ({
   anchors: page.headings.map(({ id, text }) => ({ id, text })),
 })
 
-export const buildIndex = (pages: ReadonlyArray<Page>, locale: Locale = DEFAULT_LOCALE): Index => {
+export const buildIndex = (
+  pages: ReadonlyArray<IndexPage>,
+  locale: Locale = DEFAULT_LOCALE,
+): Index => {
   const index = new MiniSearch<Document>(optionsFor(locale))
-  index.addAll(pages.map(documentOf))
+  index.addAll(pages.map((page) => documentOf(page, locale)))
   return index
 }
 
-export const indexJson = (pages: ReadonlyArray<Page>, locale: Locale = DEFAULT_LOCALE): string =>
-  JSON.stringify(buildIndex(pages, locale))
+export const indexJson = (
+  pages: ReadonlyArray<IndexPage>,
+  locale: Locale = DEFAULT_LOCALE,
+): string => JSON.stringify(buildIndex(pages, locale))
 
 export const loadIndex = (json: string, locale: Locale = DEFAULT_LOCALE): Index =>
   MiniSearch.loadJSON<Document>(json, optionsFor(locale))

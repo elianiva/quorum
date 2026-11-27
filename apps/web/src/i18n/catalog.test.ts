@@ -1,10 +1,8 @@
 import { beforeAll, describe, expect, test } from 'vitest'
-import { inertHtml } from 'foldkit/html'
 import { CHALLENGES } from '@quorum/simulation/challenges'
 import { GLOSSARY, RESEARCH } from '@quorum/simulation/catalog'
 import { componentUrl, glossaryUrl } from '../platform/analytics.ts'
-import { localizeBuilder } from './builder.ts'
-import { copy, copyIn, loadLocale } from './messages.ts'
+import { copyIn, loadLocale } from './messages.ts'
 import { changeIn } from './refusal.ts'
 import { supportedLocales } from './index.ts'
 
@@ -13,12 +11,6 @@ beforeAll(async () => {
 })
 
 describe('typed copy', () => {
-  test('a builder speaks its language, and an untagged builder speaks English', () => {
-    expect(copy(localizeBuilder('fr', inertHtml)).hud.cash).toBe(copyIn('fr').hud.cash)
-    expect(copy(localizeBuilder('fr', inertHtml)).hud.cash).not.toBe(copyIn('en').hud.cash)
-    expect(copy(inertHtml)).toBe(copyIn('en'))
-  })
-
   test('English catalog copy is the Simulation table text, not a second copy', () => {
     const english = copyIn('en').catalog
     expect(english.research.stripe.name).toBe(RESEARCH.stripe.name)

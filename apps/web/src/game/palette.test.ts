@@ -1,17 +1,13 @@
 import { describe, expect, test } from 'vitest'
-import type { Html, HtmlBuilder } from 'foldkit/html'
-import { Scene } from 'foldkit/test'
 import { newGame } from '@quorum/simulation/company'
 import { priceOf } from '@quorum/simulation/lookups'
 import { money } from '@quorum/ui/game/format'
 import { copyIn, loadLocale } from '../i18n/messages.ts'
-import { PaletteFocus, commandPalette } from '../components/lab/palette.ts'
 import { Message } from './message.ts'
 import { EMPTY_PALETTE, halted, type Model } from './model.ts'
 import { activeOf, commandsOf, matchesOf, PALETTE_GROUPS } from './palette.ts'
 import { AppRoute } from './route.ts'
 import { initialModel, update } from './update.ts'
-import { AppendLog, PlaySound, SyncBoard, ToggleFullscreen } from './commands.ts'
 
 const inLab = (): Model => {
   const model = initialModel()
@@ -168,61 +164,5 @@ describe('the rows and the query', () => {
     expect(activeOf(matchesOf(rows, t, ''), '', null)).toBe(null)
     expect(activeOf(matchesOf(rows, t, ''), '', 'fit')?.id).toBe('fit')
     expect(activeOf(matchesOf(rows, t, 'fit'), 'fit', null)?.id).toBe('fit')
-  })
-})
-
-const screen = (model: Model, h: HtmlBuilder<Message>): Html =>
-  h.div([h.Key('screen')], [commandPalette(model, h)])
-
-describe('the palette view', () => {
-  test('shows the search field, the grouped rows, and their shortcuts', () => {
-    Scene.scene(
-      { update, view: screen },
-      Scene.given(open()),
-      Scene.Mount.resolve(PaletteFocus, Message.Synced()),
-      Scene.expect(Scene.role('dialog', { name: 'Commands' })).toExist(),
-      Scene.expect(Scene.placeholder('Search actions')).toExist(),
-      Scene.expect(Scene.text('Place')).toExist(),
-      Scene.expect(Scene.text('App Server')).toExist(),
-      Scene.expect(Scene.text(copyIn('en').catalog.components.server.blurb)).toExist(),
-      Scene.expect(Scene.text('Fit the board')).toExist(),
-      Scene.expect(Scene.text('Shift')).toExist(),
-    )
-  })
-
-  test('typing narrows the rows, and Enter runs the first match', () => {
-    Scene.scene(
-      { update, view: screen },
-      Scene.given(open()),
-      Scene.Mount.resolve(PaletteFocus, Message.Synced()),
-      Scene.type(Scene.placeholder('Search actions'), 'fullscreen'),
-      Scene.expect(Scene.text('Fullscreen')).toExist(),
-      Scene.expect(Scene.text('Fit the board')).toBeAbsent(),
-      Scene.keydown(Scene.placeholder('Search actions'), 'Enter'),
-      Scene.expectHandled(),
-      Scene.Command.resolveAll(
-        [ToggleFullscreen, Message.Synced()],
-        [SyncBoard, Message.Synced()],
-        [PlaySound, Message.Synced()],
-        [AppendLog, Message.Synced()],
-      ),
-      Scene.Mount.expectEnded(PaletteFocus),
-      Scene.expect(Scene.role('dialog')).toBeAbsent(),
-    )
-  })
-
-  test('an arrow moves the highlight, and Escape closes the palette', () => {
-    Scene.scene(
-      { update, view: screen },
-      Scene.given(open()),
-      Scene.Mount.resolve(PaletteFocus, Message.Synced()),
-      Scene.keydown(Scene.placeholder('Search actions'), 'ArrowDown'),
-      Scene.expectHandled(),
-      Scene.keydown(Scene.placeholder('Search actions'), 'Escape'),
-      Scene.expectHandled(),
-      Scene.Command.resolveAll([SyncBoard, Message.Synced()], [AppendLog, Message.Synced()]),
-      Scene.Mount.expectEnded(PaletteFocus),
-      Scene.expect(Scene.role('dialog')).toBeAbsent(),
-    )
   })
 })

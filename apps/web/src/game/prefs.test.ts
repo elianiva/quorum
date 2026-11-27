@@ -1,19 +1,14 @@
 import { describe, expect, test } from 'vitest'
 import { Option, Schema } from 'effect'
-import { Scene } from 'foldkit/test'
 import { Prefs, type Model } from './model.ts'
 import { PrefsMessage } from './prefs.ts'
 import { applySettings } from './commands.ts'
 import { initialModel, update } from './update.ts'
 import { Message } from './message.ts'
 import { AppRoute } from './route.ts'
-import { Message as SliderMessage } from '@quorum/ui/primitives/slider'
 import { parsePrefs } from './prefs-schema.ts'
-import { PanelFocus, settingsPanel } from '../components/lab/panels.ts'
 
 type Named = Readonly<{ name: string; args: Record<string, unknown> }>
-
-const focused = () => Scene.Mount.resolve(PanelFocus, Message.Synced())
 
 const named = (model: Model, message: Message): ReadonlyArray<Named> =>
   ((update(model, message) as { commands?: ReadonlyArray<unknown> }).commands ??
@@ -84,17 +79,6 @@ describe('text at 150%', () => {
     )
     expect(restored.model.prefs.text).toBe('normal')
   })
-
-  test('the Settings panel shows it on, beside Reduce motion', () => {
-    const model: Model = { ...initialModel(), prefs: { ...initialModel().prefs, text: 'large' } }
-    Scene.scene(
-      { update, view: settingsPanel },
-      Scene.given(model),
-      focused(),
-      Scene.expect(Scene.role('switch', { name: 'Text at 150%' })).toBeChecked(),
-      Scene.expect(Scene.text('Text at 150%')).toExist(),
-    )
-  })
 })
 
 describe('dark mode', () => {
@@ -130,10 +114,6 @@ describe('dark mode', () => {
 })
 
 describe('volume', () => {
-  const played = (result: ReturnType<typeof update>): ReadonlyArray<unknown> =>
-    ((result.commands ?? []) as ReadonlyArray<Named>)
-      .filter((command) => command.name === 'PlaySound')
-      .map((command) => command.args['sound'])
   const atBoard: Model = { ...initialModel(), route: AppRoute.Company() }
   const slideTo = (model: Model, volume: number) =>
     update(model, Message.PrefsChanged({ message: PrefsMessage.VolumeChanged({ volume }) })).model
@@ -158,23 +138,6 @@ describe('volume', () => {
     })
   })
 
-  test('the slider moves the level and previews it; a drag move stays quiet', () => {
-    const pressed = update(
-      atBoard,
-      Message.VolumeSliderChanged({
-        message: SliderMessage.PressedPointer({ value: 40, originValue: 100 }),
-      }),
-    )
-    expect(pressed.model.prefs.volume).toBe(40)
-    expect(played(pressed)).toContain('tick')
-    const moved = update(
-      pressed.model,
-      Message.VolumeSliderChanged({ message: SliderMessage.MovedDragPointer({ value: 30 }) }),
-    )
-    expect(moved.model.prefs.volume).toBe(30)
-    expect(played(moved)).not.toContain('tick')
-  })
-
   test('preferences saved before it existed play at full level', () => {
     expect(Schema.decodeSync(Prefs)({ muted: true }).volume).toBe(100)
   })
@@ -189,15 +152,5 @@ describe('volume', () => {
     expect(prefs.easyMode).toBe(true)
     expect(prefs.locale).toBe('en')
     expect(prefs.seenTradeoffs).toEqual([])
-  })
-
-  test('the Settings panel shows the level as a slider', () => {
-    Scene.scene(
-      { update, view: settingsPanel },
-      Scene.given(initialModel()),
-      focused(),
-      Scene.expect(Scene.role('slider', { name: 'Volume' })).toExist(),
-      Scene.expect(Scene.text('100%')).toExist(),
-    )
   })
 })

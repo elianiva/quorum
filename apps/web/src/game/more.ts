@@ -1,5 +1,3 @@
-import { Menu } from '@foldkit/ui'
-
 export type MoreItem =
   | 'exit'
   | 'playbooks'
@@ -11,5 +9,3 @@ export type MoreItem =
   | 'fit'
   | 'fullscreen'
   | 'screenshot'
-
-export const moreMenu = Menu.create<MoreItem>()

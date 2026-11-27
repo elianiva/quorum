@@ -61,7 +61,7 @@ export type ButtonConfig<M> = Readonly<{
   attributes?: Readonly<Record<string, string | undefined>>
 }>
 
-/* Matches the Foldkit button the inspector used: a native button with
+/* A native button with
    `aria-disabled` and `data-disabled`, no click handler while disabled. */
 export const button = <M>(
   h: H<M>,
@@ -356,8 +356,8 @@ const poolControl = (
   h: H<Message>,
 ): Content => {
   const choose = (workers: number) => Message.WorkersChosen({ nodeId: node.id, workers })
-  const shown = model.poolDraft === null ? node.workers : poolFromSlider(model.poolDraft)
-  const position = model.poolDraft ?? sliderFromPool(node.workers)
+  const shown = node.workers
+  const position = sliderFromPool(node.workers)
   const over = shown > fit
   const fitFraction = Math.min(
     1,
@@ -465,7 +465,7 @@ const poolControl = (
                   })
                   .class(css({ top: '0.5' }))
                   .children(),
-                /* The Foldkit slider owned the drag; here a native range
+                /* A native range
                          covers the track and reports the position. */
                 h.input
                   .attr('type', 'range')

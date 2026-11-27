@@ -105,7 +105,7 @@ const painted = (
 
 const send = (model: Model, message: ClientMessage): UpdateResult => ({
   model,
-  commands: [SendRoom({ message })],
+  commands: [SendRoom.make({ message })],
 })
 
 const received = (model: Model, message: ServerMessage): UpdateResult =>
@@ -224,7 +224,7 @@ const handover = (model: Model, game: Model['board']['game']): UpdateResult => {
     file === null
       ? []
       : [
-          WriteCompany({
+          WriteCompany.make({
             id: file.id,
             index: withFile(savesOf(next.saves), { ...file, online: null }),
             ...savePayloadOf(next, board),
@@ -246,14 +246,14 @@ const published = (model: Model, code: string, token: string): UpdateResult => {
   const next: Model = {
     ...model,
     saves,
-    route: AppRoute.Room({ room: code }),
+    route: AppRoute.Room({ params: { room: code } }),
     panel: 'room',
     room: emptyRoom(model, roomStep(model.room.phase, { _tag: 'Connecting', code })),
   }
   return {
     model: next,
     commands: [
-      WriteCompany({ id: file.id, index: savesOf(saves), ...savePayloadOf(next, next.board) }),
+      WriteCompany.make({ id: file.id, index: savesOf(saves), ...savePayloadOf(next, next.board) }),
     ],
   }
 }
@@ -326,7 +326,7 @@ export const roomHandlers = (model: Model): MessageCases<UpdateResult, RoomTag> 
     return {
       model,
       commands: [
-        CopyText({
+        CopyText.make({
           text: `${window.location.origin}/room/${code}`,
           done: say(model).room.linkCopied,
           blocked: say(model).toasts.clipboardBlocked,
@@ -341,7 +341,7 @@ export const roomHandlers = (model: Model): MessageCases<UpdateResult, RoomTag> 
       return {
         model: {
           ...model,
-          route: AppRoute.Room({ room: file.online.code }),
+          route: AppRoute.Room({ params: { room: file.online.code } }),
           panel: 'room',
           room: emptyRoom(
             model,
@@ -352,7 +352,7 @@ export const roomHandlers = (model: Model): MessageCases<UpdateResult, RoomTag> 
     return {
       model,
       commands: [
-        PublishRoom({
+        PublishRoom.make({
           name: file.name,
           game: { ...model.board.game, history: [] },
           samples: model.board.game.history,

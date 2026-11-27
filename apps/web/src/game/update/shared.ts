@@ -25,7 +25,7 @@ import {
 } from '../model.ts'
 import { Result } from 'effect'
 import { StepEvent } from '@quorum/simulation/events'
-import { Update } from 'foldkit'
+import { type IssuedCommand, type UpdateReturn } from '../step.ts'
 import {
   WriteCompany,
   WriteFounder,
@@ -52,12 +52,11 @@ import { onBoard } from '../route.ts'
 import { reasonIn, refusalIn } from '../../i18n/refusal.ts'
 import { solveFlow } from '@quorum/simulation/solve'
 import { type AchievementId } from '@quorum/simulation/catalog'
-import { type ApiRpc } from '@/platform/rpc.ts'
 import { type Ledger } from '@quorum/simulation/ledger'
 
-export type UpdateResult = Update.Return<Model, Message, ApiRpc>
+export type UpdateResult = UpdateReturn<Model, Message>
 
-export type AnyCommand = NonNullable<UpdateResult['commands']>[number]
+export type AnyCommand = IssuedCommand<Message>
 
 export type Dispatch = (model: Model, message: Message) => UpdateResult
 
@@ -143,22 +142,24 @@ export const milestones = (
   next = achieved
   commands.push(...earnedCommands)
   if (next.founder !== after.founder && earnedCommands.length === 0)
-    commands.push(WriteFounder({ founder: next.founder }))
+    commands.push(WriteFounder.make({ founder: next.founder }))
   if (!next.prefs.muted) {
     if (after.board.game.stage > before.board.game.stage)
-      commands.push(PlaySound({ sound: 'era', pitch: 1, spatial: false }))
+      commands.push(PlaySound.make({ sound: 'era', pitch: 1, spatial: false }))
     else if (events.some((event) => event._tag === 'IncidentStarted'))
-      commands.push(PlaySound({ sound: 'incident', pitch: 1, spatial: false }))
+      commands.push(PlaySound.make({ sound: 'incident', pitch: 1, spatial: false }))
   }
   const time = after.board.game.time
   if (after.board.game.stage > before.board.game.stage)
-    commands.push(AppendLog({ entries: [line(time, 'EraReached', eraReachedOf(after, ledger))] }))
+    commands.push(
+      AppendLog.make({ entries: [line(time, 'EraReached', eraReachedOf(after, ledger))] }),
+    )
   const researched = after.board.game.researched.filter(
     (id) => !before.board.game.researched.includes(id),
   )
   if (researched.length > 0)
     commands.push(
-      AppendLog({
+      AppendLog.make({
         entries: [
           line(time, 'ResearchCompleted', { ids: researched, era: after.board.game.stage }),
         ],
@@ -213,7 +214,7 @@ const loadHistoryOf = (
 }
 
 export const sync = (model: Model, fit: boolean, focus: string | null = null): AnyCommand =>
-  SyncBoard({
+  SyncBoard.make({
     fit,
     focus,
     game: model.board.game,
@@ -248,7 +249,7 @@ const saveOf = (model: Model, closing = false): AnyCommand | null => {
   if (code !== null && onlineFileOf(model, code) === null) return null
   const board = offCompany(model) ? model.parkedCompany : model.board
   if (board === null) return null
-  return WriteCompany({
+  return WriteCompany.make({
     id,
     index: refreshedIndex(savesOf(model.saves), board.game),
     ...savePayloadOf(model, board),
@@ -279,7 +280,7 @@ export const toasted = (model: Model, message: string, tone: Tone): [Model, AnyC
   const count = repeat && previous !== null ? previous.count + 1 : 1
   return [
     { ...model, toast: { id, message, tone, count }, toastSeq: id },
-    ClearToast({ id, after: TOAST_MS[tone] }),
+    ClearToast.make({ id, after: TOAST_MS[tone] }),
   ]
 }
 
@@ -363,7 +364,7 @@ export const act = (
       const note = options.note?.(game)
       const sent =
         intents !== null && roomLive(model)
-          ? SendRoom({ message: { _tag: 'Intents', id: model.room.seq, intents } })
+          ? SendRoom.make({ message: { _tag: 'Intents', id: model.room.seq, intents } })
           : null
       const stamped =
         sent === null ? next : { ...next, room: { ...next.room, seq: next.room.seq + 1 } }
@@ -420,7 +421,7 @@ export const achieve = (
   const fresh = ids.filter((id) => !model.founder.achievements.includes(id))
   if (fresh.length === 0) return [model, []]
   let next: Model = { ...model, founder: earnAchievements(model.founder, fresh) }
-  const commands: Array<AnyCommand> = [WriteFounder({ founder: next.founder })]
+  const commands: Array<AnyCommand> = [WriteFounder.make({ founder: next.founder })]
   for (const id of fresh) {
     const [raised, clear] = toasted(
       next,
@@ -431,9 +432,9 @@ export const achieve = (
     commands.push(clear)
   }
   if (!next.prefs.muted)
-    commands.push(PlaySound({ sound: 'achievement', pitch: 1, spatial: false }))
+    commands.push(PlaySound.make({ sound: 'achievement', pitch: 1, spatial: false }))
   commands.push(
-    AppendLog({
+    AppendLog.make({
       entries: fresh.map((id) => line(next.board.game.time, 'AchievementEarned', { id })),
     }),
   )

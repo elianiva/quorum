@@ -61,28 +61,28 @@ import { sessionStep } from '../session-machine.ts'
 import { isExited } from '../company-machine.ts'
 import { clockStep } from '../clock-machine.ts'
 import { roomStep } from '../room-machine.ts'
-import { type Url } from 'foldkit/url'
+import { type GameUrl } from '../route.ts'
 
 const open = (model: Model, route: AppRoute): UpdateResult =>
-  AppRoute.match<UpdateResult>(route, {
-    Title: () => ({ model: { ...model, route } }),
-    Menu: ({ menu }) => ({
+  AppRoute.match(route, {
+    Title: (): UpdateResult => ({ model: { ...model, route } }),
+    Menu: ({ params: { menu } }): UpdateResult => ({
       model: {
         ...model,
         route,
         ...(menu === 'companies' ? {} : { saveFocus: null, saveConfirm: { _tag: 'List' } }),
       },
     }),
-    Company: () => (hasCompany(model) ? continued(model) : { model }),
-    Sandbox: ({ sandbox }) =>
+    Company: (): UpdateResult => (hasCompany(model) ? continued(model) : { model }),
+    Sandbox: ({ params: { sandbox } }): UpdateResult =>
       sandbox === 'free'
         ? enterSandbox(model, model.freeBoard ?? freeSandbox(), { id: null, progress: START })
         : enterSandbox(model, GUIDED[sandbox].start(), { id: sandbox, progress: START }),
-    Challenge: ({ challenge }) => {
+    Challenge: ({ params: { challenge } }): UpdateResult => {
       const entry = challengeById(challenge)
       return entry ? enterChallenge(model, challenge) : { model }
     },
-    Room: ({ room }) => ({
+    Room: ({ params: { room } }): UpdateResult => ({
       model: {
         ...model,
         route,
@@ -96,9 +96,10 @@ const open = (model: Model, route: AppRoute): UpdateResult =>
         },
       },
     }),
+    NotFound: (): UpdateResult => ({ model }),
   })
 
-export const visit = (model: Model, url: Url): UpdateResult => {
+export const visit = (model: Model, url: GameUrl): UpdateResult => {
   const route = urlToAppRoute(url)
   if (urlOf(route) === urlOf(model.route)) return { model }
   const left = onBoard(model.route) ? leaveBoard(model) : { model }
@@ -109,7 +110,7 @@ export const visit = (model: Model, url: Url): UpdateResult => {
     commands: [
       ...(left.commands ?? []),
       ...(opened.commands ?? []),
-      ...(landed === urlOf(route) ? [] : [ReplaceUrl({ url: landed })]),
+      ...(landed === urlOf(route) ? [] : [ReplaceUrl.make({ url: landed })]),
     ],
   }
 }
@@ -123,7 +124,7 @@ const enterSandbox = (model: Model, game: Game, run: SandboxRun): UpdateResult =
   const board = freshBoard(game)
   const next: Model = {
     ...model,
-    route: AppRoute.Sandbox({ sandbox: run.id ?? 'free' }),
+    route: AppRoute.Sandbox({ params: { sandbox: run.id ?? 'free' } }),
     toast: null,
     panel: 'none',
     parkedCompany: heldCompany(model),
@@ -135,8 +136,10 @@ const enterSandbox = (model: Model, game: Game, run: SandboxRun): UpdateResult =
   return {
     model: next,
     commands: [
-      FitBoard({}),
-      AppendLog({ entries: [line(game.time, 'SandboxStarted', { sandbox: run.id ?? 'free' })] }),
+      FitBoard.make({}),
+      AppendLog.make({
+        entries: [line(game.time, 'SandboxStarted', { sandbox: run.id ?? 'free' })],
+      }),
     ],
   }
 }
@@ -162,7 +165,10 @@ const replaceFree = (model: Model, game: Game, text: string): UpdateResult => {
       clock: { ...model.board.clock, savedAt: game.time, sampledAt: game.time },
     },
   }
-  return withToast(next, text, 'plain', [FitBoard({}), WriteSandboxStore({ store: storeOf(next) })])
+  return withToast(next, text, 'plain', [
+    FitBoard.make({}),
+    WriteSandboxStore.make({ store: storeOf(next) }),
+  ])
 }
 
 const tuneFree = (model: Model, game: Game): UpdateResult => {
@@ -198,7 +204,7 @@ export const enterChallenge = (model: Model, id: string): UpdateResult => {
   const game = boardOf(challenge)
   const next: Model = {
     ...model,
-    route: AppRoute.Challenge({ challenge: id }),
+    route: AppRoute.Challenge({ params: { challenge: id } }),
     toast: null,
     panel: 'none',
     parkedCompany: heldCompany(model),
@@ -213,8 +219,8 @@ export const enterChallenge = (model: Model, id: string): UpdateResult => {
   return {
     model: next,
     commands: [
-      FitBoard({}),
-      AppendLog({ entries: [line(game.time, 'ChallengeStarted', { challenge: id })] }),
+      FitBoard.make({}),
+      AppendLog.make({ entries: [line(game.time, 'ChallengeStarted', { challenge: id })] }),
     ],
   }
 }
@@ -322,11 +328,11 @@ const finishRun = (model: Model): UpdateResult => {
     },
   }
   const commands: Array<AnyCommand> = [
-    AppendLog({
+    AppendLog.make({
       entries: [line(model.board.game.time, 'ChallengeRun', { challenge: run.id, ...result })],
     }),
   ]
-  if (founder !== model.founder) commands.push(WriteFounder({ founder }))
+  if (founder !== model.founder) commands.push(WriteFounder.make({ founder }))
   return first && challenge.legacy > 0
     ? withToast(next, say(model).toasts.firstCompletion(challenge.legacy), 'ok', commands)
     : { model: next, commands }
@@ -370,7 +376,7 @@ export const companyBoard = (model: Model): Board =>
 const leaveChallenge = (model: Model): UpdateResult => ({
   model: {
     ...model,
-    route: AppRoute.Menu({ menu: 'challenges' }),
+    route: AppRoute.Menu({ params: { menu: 'challenges' } }),
     panel: 'none',
     board: {
       ...companyBoard(model),
@@ -395,7 +401,7 @@ export const continued = (model: Model): UpdateResult => {
   }
   return {
     model: next,
-    commands: [AppendLog({ entries: [line(model.board.game.time, 'SessionResumed', {})] })],
+    commands: [AppendLog.make({ entries: [line(model.board.game.time, 'SessionResumed', {})] })],
   }
 }
 
@@ -430,7 +436,7 @@ export const leaveBoard = (model: Model): UpdateResult => {
   const freeBoard = free?.id === null ? model.board.game : model.freeBoard
   const next: Model = {
     ...model,
-    route: AppRoute.Menu({ menu: 'sandbox' }),
+    route: AppRoute.Menu({ params: { menu: 'sandbox' } }),
     panel: 'none',
     board: {
       ...companyBoard(model),
@@ -440,7 +446,7 @@ export const leaveBoard = (model: Model): UpdateResult => {
     parkedCompany: null,
     freeBoard,
   }
-  return { model: next, commands: [WriteSandboxStore({ store: storeOf(next) })] }
+  return { model: next, commands: [WriteSandboxStore.make({ store: storeOf(next) })] }
 }
 
 type SessionTag =

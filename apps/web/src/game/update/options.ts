@@ -1018,7 +1018,7 @@ export const optionsHandlers = (model: Model): MessageCases<UpdateResult, Option
 
   RegionPicked: ({ region }) => {
     const next = { ...model, board: { ...model.board, region, selected: null } }
-    return { model: next, commands: [FitBoard({})] }
+    return { model: next, commands: [FitBoard.make({})] }
   },
 
   RegionOpened: ({ region }) =>

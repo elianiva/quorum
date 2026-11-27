@@ -462,7 +462,7 @@ const tick = (model: Model, elapsedMs: number): UpdateResult => {
     (flow.nodes[watched]?.utilization ?? 0) >= WHAT_IF_LOAD &&
     (rows?.nodeId !== watched || second - rows.at >= WHAT_IF_EVERY_SIM_SECONDS || second < rows.at)
   )
-    commands.push(ComputeWhatIfs({ game, nodeId: watched, at: second }))
+    commands.push(ComputeWhatIfs.make({ game, nodeId: watched, at: second }))
   const logs: Array<LogEntry> = []
 
   if (run && guided && advanced) {
@@ -473,7 +473,7 @@ const tick = (model: Model, elapsedMs: number): UpdateResult => {
     if (done) {
       const passed = next.passed.includes(guided.id) ? next.passed : [...next.passed, guided.id]
       next = { ...next, passed, panel: 'passed', board: { ...next.board, flow: { _tag: 'Idle' } } }
-      commands.push(WriteSandboxStore({ store: storeOf(next) }))
+      commands.push(WriteSandboxStore.make({ store: storeOf(next) }))
     } else {
       const [raised, clear] = toasted(
         next,
@@ -719,14 +719,14 @@ const tick = (model: Model, elapsedMs: number): UpdateResult => {
     if (!offCompany(next)) commands.push(...saveCommands(next))
     else if (boardSandbox(next.board)?.id === null) {
       next = { ...next, freeBoard: game }
-      commands.push(WriteSandboxStore({ store: storeOf(next) }))
+      commands.push(WriteSandboxStore.make({ store: storeOf(next) }))
     }
   }
   if (!offCompany(next) && !next.founder.erasReached.includes(game.stage)) {
     next = { ...next, founder: recordEra(next.founder, game.stage) }
-    commands.push(WriteFounder({ founder: next.founder }))
+    commands.push(WriteFounder.make({ founder: next.founder }))
   }
-  if (logs.length > 0) commands.push(AppendLog({ entries: logs }))
+  if (logs.length > 0) commands.push(AppendLog.make({ entries: logs }))
   return milestones(model, { model: next, commands }, events, ledger)
 }
 
@@ -792,7 +792,7 @@ export const clockHandlers = (model: Model): MessageCases<UpdateResult, ClockTag
     return { model: next }
   },
 
-  FullscreenToggled: () => ({ model, commands: [ToggleFullscreen({})] }),
+  FullscreenToggled: () => ({ model, commands: [ToggleFullscreen.make({})] }),
 
   ScreenshotToggled: () => {
     if (model.board.screenshot)
@@ -815,9 +815,9 @@ export const clockHandlers = (model: Model): MessageCases<UpdateResult, ClockTag
     }
   },
 
-  BoardFitted: () => ({ model, commands: [FitBoard({})] }),
+  BoardFitted: () => ({ model, commands: [FitBoard.make({})] }),
 
-  ZoomChosen: ({ direction }) => ({ model, commands: [ZoomBoard({ direction })] }),
+  ZoomChosen: ({ direction }) => ({ model, commands: [ZoomBoard.make({ direction })] }),
 
   BoardTidied: () => {
     const view = regionView(model.board.game, model.board.region)
@@ -830,6 +830,6 @@ export const clockHandlers = (model: Model): MessageCases<UpdateResult, ClockTag
     const tidied = act(model, 'Tidied the board by role', moved, {
       undoable: true,
     })
-    return { ...tidied, commands: [...(tidied.commands ?? []), FitBoard({})] }
+    return { ...tidied, commands: [...(tidied.commands ?? []), FitBoard.make({})] }
   },
 })

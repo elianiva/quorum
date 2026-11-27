@@ -67,10 +67,6 @@ const gestureCue = (before: Model, message: Message, after: Model): Cue | null =
     case 'MixChosen':
     case 'FullscreenToggled':
       return gesture('toggle')
-    case 'PoolSliderChanged':
-      return null
-    case 'VolumeSliderChanged':
-      return message.message._tag === 'MovedDragPointer' ? null : gesture('tick')
     case 'DemandStepped':
       return gesture('tick', message.direction > 0 ? 1.25 : 0.8)
     case 'ReplaceBought':

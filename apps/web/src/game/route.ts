@@ -1,76 +1,27 @@
-import { Schema, pipe } from 'effect'
-import {
-  defineRouteUnion,
-  literal,
-  mapTo,
-  oneOf,
-  parseUrlWithFallback,
-  root,
-  schemaSegment,
-  slash,
-  string,
-} from 'foldkit/route'
-import { SANDBOX_IDS } from '@quorum/simulation/sandbox'
+import { Option, Schema } from 'effect'
+import { AppRoute } from '../app/routes.ts'
 import { MENU_PAGES } from './menu-pages.ts'
 
-export { MENU_PAGES }
+export { AppRoute, MENU_PAGES }
 
-export const MenuPage = Schema.Literals(MENU_PAGES)
+export const GameUrl = Schema.Struct({ pathname: Schema.String, search: Schema.String })
+export type GameUrl = typeof GameUrl.Type
 
-const SandboxPath = Schema.Literals([...SANDBOX_IDS, 'free'])
+export const urlToAppRoute = (url: Readonly<{ pathname: string; search?: string }>): AppRoute => {
+  const parsed = AppRoute.parse(`${url.pathname}${url.search ?? ''}`)
+  return Option.isSome(parsed) && parsed.value._tag !== 'NotFound' ? parsed.value : AppRoute.Title()
+}
 
-export const AppRoute = defineRouteUnion({
-  Title: {},
-  Menu: { menu: MenuPage },
-  Company: {},
-  Sandbox: { sandbox: SandboxPath },
-  Challenge: { challenge: Schema.String },
-  Room: { room: Schema.String },
-})
-export type AppRoute = typeof AppRoute.Type
-
-const titleRouter = pipe(root, mapTo(AppRoute.Title))
-const menuRouter = pipe(schemaSegment('menu', MenuPage), mapTo(AppRoute.Menu))
-const companyRouter = pipe(literal('company'), mapTo(AppRoute.Company))
-const sandboxRouter = pipe(
-  literal('sandbox'),
-  slash(schemaSegment('sandbox', SandboxPath)),
-  mapTo(AppRoute.Sandbox),
-)
-const challengeRouter = pipe(
-  literal('challenges'),
-  slash(string('challenge')),
-  mapTo(AppRoute.Challenge),
-)
-const roomRouter = pipe(literal('room'), slash(string('room')), mapTo(AppRoute.Room))
-
-export const urlToAppRoute = parseUrlWithFallback(
-  oneOf(titleRouter, menuRouter, companyRouter, sandboxRouter, challengeRouter, roomRouter),
-  { make: () => AppRoute.Title() },
-)
-
-export const urlOf = (route: AppRoute): string =>
-  AppRoute.match(route, {
-    Title: () => titleRouter(),
-    Menu: (menu) => menuRouter(menu),
-    Company: () => companyRouter(),
-    Sandbox: (sandbox) => sandboxRouter(sandbox),
-    Challenge: (challenge) => challengeRouter(challenge),
-    Room: (room) => roomRouter(room),
-  })
+export const urlOf = (route: AppRoute): string => AppRoute.printPath(route)
 
 export const onBoard = (route: AppRoute): boolean =>
-  AppRoute.match(route, {
-    Title: () => false,
-    Menu: () => false,
-    Company: () => true,
-    Sandbox: () => true,
-    Challenge: () => true,
-    Room: () => true,
-  })
+  route._tag === 'Company' ||
+  route._tag === 'Sandbox' ||
+  route._tag === 'Challenge' ||
+  route._tag === 'Room'
 
-export const menuOf = (route: AppRoute): typeof MenuPage.Type | 'main' =>
-  route._tag === 'Menu' ? route.menu : 'main'
+export const menuOf = (route: AppRoute): (typeof MENU_PAGES)[number] | 'main' =>
+  route._tag === 'Menu' ? route.params.menu : 'main'
 
-export const routeOfMenu = (menu: typeof MenuPage.Type | 'main'): AppRoute =>
-  menu === 'main' ? AppRoute.Title() : AppRoute.Menu({ menu })
+export const routeOfMenu = (menu: (typeof MENU_PAGES)[number] | 'main'): AppRoute =>
+  menu === 'main' ? AppRoute.Title() : AppRoute.Menu({ params: { menu } })

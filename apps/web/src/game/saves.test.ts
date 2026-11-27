@@ -381,7 +381,7 @@ describe('autosave and migration', () => {
     const board = founded.board
     await runStored(
       storage,
-      WriteCompany({
+      WriteCompany.make({
         id: id!,
         index: refreshedIndex(savesOf(founded.saves), board.game),
         game: board.game,
@@ -424,8 +424,8 @@ describe('autosave and migration', () => {
     const storage = fakeStorage({ [`${SAVE_PREFIX}c-one`]: json })
     await runStored(
       storage,
-      KeepBrokenSave({ json, reason: 'The save is not JSON.' }),
-      DeleteCompany({ id: 'c-one', index: EMPTY_SAVE_INDEX }),
+      KeepBrokenSave.make({ json, reason: 'The save is not JSON.' }),
+      DeleteCompany.make({ id: 'c-one', index: EMPTY_SAVE_INDEX }),
     )
     expect(storage.getItem(BROKEN_SAVE_KEY)).toBe(json)
     expect(storage.getItem(`${SAVE_PREFIX}c-one`)).toBeNull()
@@ -434,7 +434,7 @@ describe('autosave and migration', () => {
 
   test('the kept copy leaves once an import puts a save in the Company', () => {
     const storage = fakeStorage({ [BROKEN_SAVE_KEY]: '{"nodes":[]}' })
-    withStorage(storage, () => runCommand(ClearBrokenSave({})))
+    withStorage(storage, () => runCommand(ClearBrokenSave.make({})))
     expect(storage.getItem(BROKEN_SAVE_KEY)).toBeNull()
   })
 
@@ -495,8 +495,8 @@ describe('browser storage', () => {
       [`${SAVE_PREFIX}held`]: '{}',
       [`${SAVE_PREFIX}orphan`]: '{}',
     })
-    await runStored(storage, PruneSaves({ index, held: ['held'] }))
-    await runStored(storage, PruneSaves({ index, held: [] }))
+    await runStored(storage, PruneSaves.make({ index, held: ['held'] }))
+    await runStored(storage, PruneSaves.make({ index, held: [] }))
     expect(storage.getItem(`${SAVE_PREFIX}held`)).toBe('{}')
     expect(storage.getItem(`${SAVE_PREFIX}orphan`)).toBeNull()
   })
@@ -510,7 +510,7 @@ describe('browser storage', () => {
         orphan: { writeKey: 'w2', roomId: 'r2', epoch: 'e2' },
       }),
     })
-    await runStored(storage, PruneSaves({ index, held: [] }))
+    await runStored(storage, PruneSaves.make({ index, held: [] }))
     expect(JSON.parse(storage.getItem('quorum.agent.rooms') ?? '{}')).toEqual({ 'c-one': kept })
   })
 
@@ -518,7 +518,7 @@ describe('browser storage', () => {
     const { index } = stored()
     const storage = fakeStorage({ 'quorum.saves.v1': JSON.stringify(index) })
     withStorage(storage, () => {
-      const loaded = runCommand(LoadSaves({}))
+      const loaded = runCommand(LoadSaves.make({}))
       expect(loaded).toMatchObject({ index: JSON.stringify(index) })
       const result = update(initialModel(), loaded)
       expect(result.commands).toEqual(
@@ -533,7 +533,7 @@ describe('browser storage', () => {
       [`${SAVE_PREFIX}orphan`]: '{}',
     })
     withStorage(storage, () => {
-      const result = update(initialModel(), runCommand(LoadSaves({})))
+      const result = update(initialModel(), runCommand(LoadSaves.make({})))
       expect(result.model.toast?.tone).toBe('warn')
       expect(result.commands).toEqual(
         expect.arrayContaining([expect.objectContaining({ name: 'KeepBrokenSave' })]),

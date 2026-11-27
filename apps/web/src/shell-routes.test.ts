@@ -1,17 +1,9 @@
-import { Option } from 'effect'
 import { expect, test } from 'vitest'
 import { urlToAppRoute } from './game/route.ts'
 import { isAppPath } from './shell-routes.ts'
 
 const routed = (pathname: string): boolean =>
-  urlToAppRoute({
-    protocol: 'https:',
-    host: 'playquorum.dev',
-    port: Option.none(),
-    pathname,
-    search: Option.none(),
-    hash: Option.none(),
-  })._tag !== 'Title'
+  urlToAppRoute({ pathname, search: '' })._tag !== 'Title'
 
 test('the Worker serves the shell for the paths the app routes, and no others', () => {
   const real = [

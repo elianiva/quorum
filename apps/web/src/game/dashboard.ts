@@ -1,11 +1,11 @@
 import { Schema } from 'effect'
-import type { Update } from 'foldkit'
-import { defineMessageUnion } from 'foldkit/message'
+import { UiSchema } from '@effect/ui'
 import { REQUEST_KINDS } from '@quorum/simulation/catalog'
 import { RegionId } from '@quorum/simulation/state'
 import { AnnotationGroup, type Dashboard } from './model.ts'
+import type { UpdateReturn } from './step.ts'
 
-export const DashboardMessage = defineMessageUnion({
+export const DashboardMessage = UiSchema.TaggedEnum({
   RangeChosen: { minutes: Schema.Finite },
   Hovered: { index: Schema.NullOr(Schema.Finite) },
   PostmortemChosen: { id: Schema.NullOr(Schema.Finite) },
@@ -21,8 +21,8 @@ export type DashboardMessage = typeof DashboardMessage.Type
 export const updateDashboard = (
   dashboard: Dashboard,
   message: DashboardMessage,
-): Update.Return<Dashboard, DashboardMessage> =>
-  DashboardMessage.match<Update.Return<Dashboard, DashboardMessage>>(message, {
+): UpdateReturn<Dashboard, DashboardMessage> =>
+  DashboardMessage.match(message, {
     RangeChosen: ({ minutes }) => ({ model: { ...dashboard, range: minutes, hover: null } }),
     Hovered: ({ index }) => ({ model: { ...dashboard, hover: index } }),
     PostmortemChosen: ({ id }) => ({

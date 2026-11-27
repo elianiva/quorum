@@ -8,7 +8,7 @@ const SandboxPath = Schema.Literals([...SANDBOX_IDS, 'free'])
 
 export const AppRoute = Route.union({
   Title: Route.make('/'),
-  Menu: Route.make('/menu/:menu', { params: { menu: MenuPage } }),
+  Menu: Route.make('/:menu', { params: { menu: MenuPage } }),
   Company: Route.make('/company'),
   Sandbox: Route.make('/sandbox/:sandbox', { params: { sandbox: SandboxPath } }),
   Challenge: Route.make('/challenges/:challenge', { params: { challenge: Schema.String } }),

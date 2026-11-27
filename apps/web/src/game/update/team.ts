@@ -6,7 +6,7 @@ import { Option } from 'effect'
 import { closed } from '../inbox.ts'
 import { ResearchMessage, ResearchOutMessage, updateResearch } from '../research.ts'
 import { TeamOutMessage, updateTeam, type TeamMessage } from '../team.ts'
-import { Update } from 'foldkit'
+import { foldChild } from '../step.ts'
 import { copyIn, insightName } from '../../i18n/messages.ts'
 import { isOne } from '../../i18n/plural.ts'
 import { ledgerOf, Model } from '../model.ts'
@@ -21,7 +21,7 @@ import { currentStudy, studyList } from '@quorum/simulation/study-machine'
 
 export const teamAction = (model: Model, out: TeamOutMessage): UpdateResult => {
   const game = model.board.game
-  return TeamOutMessage.match<UpdateResult>(out, {
+  return TeamOutMessage.match(out, {
     Hire: ({ language }) =>
       act(model, 'Hired', Work.hire(game, language), {
         note: () => [say(model).toasts.offerAccepted, 'ok'],
@@ -126,7 +126,7 @@ export const teamAction = (model: Model, out: TeamOutMessage): UpdateResult => {
 }
 
 const foldTeam = (model: Model, message: TeamMessage): UpdateResult =>
-  Update.foldChild({
+  foldChild({
     update: updateTeam,
     read: (parent: Model) => Option.some(parent.board.team),
     write: (parent, team) => ({ ...parent, board: { ...parent.board, team } }),
@@ -135,13 +135,13 @@ const foldTeam = (model: Model, message: TeamMessage): UpdateResult =>
   })(model, message)
 
 const foldResearch = (model: Model, message: ResearchMessage): UpdateResult =>
-  Update.foldChild({
+  foldChild({
     update: updateResearch,
     read: (parent: Model) => Option.some(parent.board.research),
     write: (parent, research) => ({ ...parent, board: { ...parent.board, research } }),
     toParentMessage: (child) => Message.ResearchChanged({ message: child }),
     foldOutMessage: (out: ResearchOutMessage) => (parent: Model) =>
-      ResearchOutMessage.match<UpdateResult>(out, {
+      ResearchOutMessage.match(out, {
         Study: ({ id }) =>
           act(parent, `Study ${RESEARCH[id].name}`, Actions.study(parent.board.game, id), {
             note: (game) => {

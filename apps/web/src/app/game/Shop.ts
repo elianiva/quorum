@@ -44,7 +44,7 @@ import { buttonClass } from '../ui/button-styles.ts'
 import { icon } from '../ui/icon.ts'
 
 /* The eyebrow and figure type styles come from @quorum/ui/game/bits, which
-   imports Foldkit. The same Panda calls here produce the same classes. */
+   imports the shared UI. The same Panda calls here produce the same classes. */
 const EYEBROW = css({
   fontFamily: 'mono',
   fontSize: 'type.10-5',

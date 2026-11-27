@@ -1,4 +1,3 @@
-import { UrlRequest } from 'foldkit/navigation'
 import { ArrowUpRight, ClipboardPaste, Copy, Download, Upload, type IconNode } from 'lucide'
 import type { Messages } from '@/i18n/messages.ts'
 import { PRIVACY_URL } from '@/platform/analytics.ts'
@@ -96,7 +95,7 @@ export const settingsSections = (model: Model, t: Messages): ReadonlyArray<Setti
           id: 'privacy-policy',
           label: t.panels.privacyPolicy,
           glyph: ArrowUpRight,
-          message: Message.ClickedLink({ request: UrlRequest.External({ href: PRIVACY_URL }) }),
+          message: Message.ClickedLink({ url: PRIVACY_URL, external: true }),
         },
       ],
     },

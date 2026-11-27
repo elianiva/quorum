@@ -1,11 +1,9 @@
 import { LoadUrl, PlaySound, PushUrl, RevealTitle } from '../commands.ts'
 import { Model } from '../model.ts'
-import { UrlRequest } from 'foldkit/navigation'
 import { bootStep } from '../boot-machine.ts'
 import { isExited } from '../company-machine.ts'
 import { leaveExited } from './companies.ts'
 import { routeOfMenu } from '../route.ts'
-import { toString as urlToString } from 'foldkit/url'
 import { withOverlay, type MessageCases, type UpdateResult } from './shared.ts'
 import { visit, continued, leaveBoard } from './session.ts'
 
@@ -15,8 +13,10 @@ export const clockIn = (model: Model): UpdateResult =>
     : {
         model: { ...model, boot: bootStep(model.boot, { _tag: 'ClockedIn' }) },
         commands: [
-          ...(model.prefs.muted ? [] : [PlaySound({ sound: 'clockin', pitch: 1, spatial: false })]),
-          RevealTitle({}),
+          ...(model.prefs.muted
+            ? []
+            : [PlaySound.make({ sound: 'clockin', pitch: 1, spatial: false })]),
+          RevealTitle.make(),
         ],
       }
 
@@ -81,11 +81,10 @@ export const shellHandlers = (model: Model): MessageCases<UpdateResult, ShellTag
 
   FoundStepChosen: ({ step }) => ({ model: { ...model, foundStep: step } }),
 
-  ClickedLink: ({ request }) =>
-    UrlRequest.match<UpdateResult>(request, {
-      Internal: ({ url }) => ({ model, commands: [PushUrl({ url: urlToString(url) })] }),
-      External: ({ href }) => ({ model, commands: [LoadUrl({ href })] }),
-    }),
+  ClickedLink: ({ url, external }) => ({
+    model,
+    commands: [external ? LoadUrl.make({ href: url }) : PushUrl.make({ url })],
+  }),
 
   ChangedUrl: ({ url }) => visit(model, url),
 

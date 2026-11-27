@@ -8,7 +8,8 @@ import { Option } from 'effect'
 import { PrefsMessage, updatePrefs } from '../prefs.ts'
 import { parsePrefs } from '../prefs-schema.ts'
 import { updateSurvey } from '../survey.ts'
-import { Update } from 'foldkit'
+import { combine, foldChild } from '../step.ts'
+import * as Menu from '../menu.ts'
 import {
   act,
   closePanel,
@@ -24,23 +25,20 @@ import { foldInbox } from './mail.ts'
 import { leaveExited } from './companies.ts'
 import { has } from '@quorum/simulation/lookups'
 import { initTeam } from '../team.ts'
-import { languageListbox } from '../../i18n/listbox.ts'
 import { updateStackPicker } from '../stack-picker.ts'
-import { moreMenu, type MoreItem } from '../more.ts'
+import { type MoreItem } from '../more.ts'
 import { onBoard } from '../route.ts'
 import { openRegions } from '@quorum/simulation/regions'
 import { listing, openingFolder } from '../inbox.ts'
 import { type RegionId, type ResearchId } from '@quorum/simulation/catalog'
 import { updateDashboard } from '../dashboard.ts'
-import * as VolumeSlider from '@quorum/ui/primitives/slider'
-import { poolFromSlider } from '../pool-scale.ts'
 import { partsUnlocked, presetPlan } from '@quorum/simulation/parts'
 
 const savePrefs = (model: Model): UpdateResult => ({
   model,
   commands: [
-    WritePrefs({ prefs: model.prefs }),
-    ApplySettings({
+    WritePrefs.make({ prefs: model.prefs }),
+    ApplySettings.make({
       muted: model.prefs.muted,
       volume: model.prefs.volume,
       motion: model.prefs.motion,
@@ -73,8 +71,8 @@ const plainClock = (model: Model): UpdateResult =>
       }
 
 const foldPrefs = (model: Model, message: PrefsMessage): UpdateResult =>
-  Update.combine(model, [
-    Update.foldChild({
+  combine(model, [
+    foldChild({
       update: updatePrefs,
       read: (parent: Model) => Option.some(parent.prefs),
       write: (parent, prefs) => ({ ...parent, prefs }),
@@ -84,86 +82,19 @@ const foldPrefs = (model: Model, message: PrefsMessage): UpdateResult =>
     savePrefs,
   ])
 
-const foldSurvey = Update.foldChild({
+const foldSurvey = foldChild({
   update: updateSurvey,
   read: (model: Model) => Option.some(model.survey),
   write: (model, survey) => ({ ...model, survey }),
   toParentMessage: (message) => Message.SurveyChanged({ message }),
 })
 
-const foldDashboard = Update.foldChild({
+const foldDashboard = foldChild({
   update: updateDashboard,
   read: (model: Model) => Option.some(model.board.dashboard),
   write: (model, dashboard) => ({ ...model, board: { ...model.board, dashboard } }),
   toParentMessage: (message) => Message.DashboardChanged({ message }),
 })
-
-const foldVolumeSlider = (route: Dispatch) =>
-  Update.foldChild({
-    update: VolumeSlider.update,
-    read: (model: Model) => Option.some(model.volumeSlider),
-    write: (model, volumeSlider) => ({ ...model, volumeSlider }),
-    toParentMessage: (message) => Message.VolumeSliderChanged({ message }),
-    foldOutMessage:
-      ({ value }) =>
-      (model) =>
-        route(
-          model,
-          Message.PrefsChanged({ message: PrefsMessage.VolumeChanged({ volume: value }) }),
-        ),
-  })
-
-const foldPoolSlider = (route: Dispatch) =>
-  Update.foldChild({
-    update: VolumeSlider.update,
-    read: (model: Model) => Option.some(model.poolSlider),
-    write: (model, poolSlider) => ({ ...model, poolSlider }),
-    toParentMessage: (message) => Message.PoolSliderChanged({ message }),
-    foldOutMessage:
-      ({ value }) =>
-      (model) => {
-        const nodeId = model.board.selected
-        if (model.poolSlider.dragState._tag === 'Dragging' || nodeId === null)
-          return { model: { ...model, poolDraft: value } }
-        return route(
-          { ...model, poolDraft: null },
-          Message.WorkersChosen({ nodeId, workers: poolFromSlider(value) }),
-        )
-      },
-  })
-
-const foldPoolSliderMessage = (
-  route: Dispatch,
-  model: Model,
-  message: Message & { _tag: 'PoolSliderChanged' },
-): UpdateResult => {
-  const folded = foldPoolSlider(route)(model, message.message)
-  const draft = folded.model.poolDraft
-  const nodeId = folded.model.board.selected
-  if (message.message._tag === 'CancelledDrag')
-    return { ...folded, model: { ...folded.model, poolDraft: null } }
-  if (message.message._tag !== 'ReleasedDragPointer' || draft === null || nodeId === null)
-    return folded
-  return route(
-    { ...folded.model, poolDraft: null },
-    Message.WorkersChosen({ nodeId, workers: poolFromSlider(draft) }),
-  )
-}
-
-const foldLanguagePicker = (route: Dispatch) =>
-  Update.foldChild({
-    update: languageListbox.update,
-    read: (model: Model) => Option.some(model.languagePicker),
-    write: (model, languagePicker) => ({ ...model, languagePicker }),
-    toParentMessage: (message) => Message.LanguagePickerChanged({ message }),
-    foldOutMessage:
-      ({ value }) =>
-      (model) =>
-        route(
-          model,
-          Message.PrefsChanged({ message: PrefsMessage.LocaleChosen({ locale: value }) }),
-        ),
-  })
 
 const MORE_ACTIONS: Record<MoreItem, Message> = {
   exit: Message.PanelOpened({ panel: 'exit' }),
@@ -179,15 +110,15 @@ const MORE_ACTIONS: Record<MoreItem, Message> = {
 }
 
 const foldMoreMenu = (route: Dispatch) =>
-  Update.foldChild({
-    update: moreMenu.update,
+  foldChild({
+    update: Menu.update,
     read: (model: Model) => Option.some(model.moreMenu),
-    write: (model, moreMenu) => ({ ...model, moreMenu }),
-    toParentMessage: (message) => Message.MoreMenuChanged({ message }),
+    write: (model: Model, moreMenu: Menu.MenuModel) => ({ ...model, moreMenu }),
+    toParentMessage: (message: Menu.Message) => Message.MoreMenuChanged({ message }),
     foldOutMessage:
       ({ value }) =>
       (model) =>
-        route(model, MORE_ACTIONS[value]),
+        route(model, MORE_ACTIONS[value as MoreItem]),
   })
 
 type PanelsTag =
@@ -213,9 +144,6 @@ type PanelsTag =
   | 'InsightHelpToggled'
   | 'InboxChanged'
   | 'DashboardChanged'
-  | 'LanguagePickerChanged'
-  | 'VolumeSliderChanged'
-  | 'PoolSliderChanged'
   | 'RuntimePickerChanged'
   | 'FrameworkPickerChanged'
   | 'MoreMenuChanged'
@@ -263,7 +191,8 @@ export const panelsHandlers = (
     const withMenu = withOverlay(next, 'menu', panel === 'menu' || panel === 'settings')
     return {
       model: withMenu,
-      commands: panel === 'dashboard' && model.panel !== 'dashboard' ? [FocusDashboard({})] : [],
+      commands:
+        panel === 'dashboard' && model.panel !== 'dashboard' ? [FocusDashboard.make({})] : [],
     }
   },
 
@@ -361,7 +290,7 @@ export const panelsHandlers = (
 
   AlertsShown: () => {
     const opened = route(model, Message.PanelOpened({ panel: 'dashboard' }))
-    return { model: opened.model, commands: [FocusDashboard({ focus: 'alert-rules' })] }
+    return { model: opened.model, commands: [FocusDashboard.make({ focus: 'alert-rules' })] }
   },
 
   ResearchShown: ({ id }) => {
@@ -413,7 +342,7 @@ export const panelsHandlers = (
           prefs,
         },
         commands: [
-          ApplySettings({
+          ApplySettings.make({
             muted: prefs.muted,
             volume: prefs.volume,
             motion: prefs.motion,
@@ -483,12 +412,6 @@ export const panelsHandlers = (
   InboxChanged: ({ message }) => foldInbox(model, message, route),
 
   DashboardChanged: ({ message }) => foldDashboard(model, message),
-
-  LanguagePickerChanged: ({ message }) => foldLanguagePicker(route)(model, message),
-
-  VolumeSliderChanged: ({ message }) => foldVolumeSlider(route)(model, message),
-
-  PoolSliderChanged: (message) => foldPoolSliderMessage(route, model, message),
 
   RuntimePickerChanged: ({ message }) => ({
     model: { ...model, runtimePicker: updateStackPicker(model.runtimePicker, message) },

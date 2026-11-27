@@ -75,7 +75,7 @@ const submitSurvey = (model: Model): UpdateResult => {
       survey: { ...model.survey, phase: surveyStep(model.survey.phase, { _tag: 'Submitted' }) },
     },
     commands: [
-      SubmitSurvey({
+      SubmitSurvey.make({
         submission: {
           deviceId: model.founder.deviceId,
           locale: model.prefs.locale,
@@ -145,9 +145,9 @@ export const exitHandlers = (model: Model): MessageCases<UpdateResult, ExitTag> 
             model: next,
             commands: [
               ...earnedCommands,
-              WriteFounder({ founder }),
-              ...(removed === null ? [] : [DeleteCompany({ id: removed, index: saves })]),
-              AppendLog({
+              WriteFounder.make({ founder }),
+              ...(removed === null ? [] : [DeleteCompany.make({ id: removed, index: saves })]),
+              AppendLog.make({
                 entries: [
                   line(model.board.game.time, 'Exited', {
                     exit: EXITS[exit].name,
@@ -207,7 +207,7 @@ export const exitHandlers = (model: Model): MessageCases<UpdateResult, ExitTag> 
 
   PlaybookDeleted: ({ index }) => {
     const founder = removePlaybook(model.founder, index)
-    return { model: { ...model, founder }, commands: [WriteFounder({ founder })] }
+    return { model: { ...model, founder }, commands: [WriteFounder.make({ founder })] }
   },
 
   PlaybookExported: ({ index }) => {
@@ -216,7 +216,7 @@ export const exitHandlers = (model: Model): MessageCases<UpdateResult, ExitTag> 
     return {
       model,
       commands: [
-        CopyText({
+        CopyText.make({
           text: encodePlaybook(playbook),
           done: say(model).toasts.copiedPlaybook(playbook.name),
           blocked: say(model).toasts.clipboardBlocked,
@@ -225,7 +225,7 @@ export const exitHandlers = (model: Model): MessageCases<UpdateResult, ExitTag> 
     }
   },
 
-  PlaybookImportAsked: () => ({ model, commands: [AskPlaybook({})] }),
+  PlaybookImportAsked: () => ({ model, commands: [AskPlaybook.make({})] }),
 
   PlaybookImported: ({ text }) =>
     text === null
@@ -240,7 +240,7 @@ export const exitHandlers = (model: Model): MessageCases<UpdateResult, ExitTag> 
     if (roomLive(model))
       return {
         model: { ...model, panel: 'offer' },
-        commands: [SendRoom({ message: { _tag: 'StartVote', kind: 'fund' } })],
+        commands: [SendRoom.make({ message: { _tag: 'StartVote', kind: 'fund' } })],
       }
     if (model.board.game.stage !== PRE_IPO_STAGE || !Actions.canRaise(model.board.game))
       return act(model, 'Raised a round', Actions.raise(model.board.game), { panel: afterRound })
@@ -253,7 +253,7 @@ export const exitHandlers = (model: Model): MessageCases<UpdateResult, ExitTag> 
       ? withToast(model, say(model).toasts.ipoFailed, 'warn')
       : {
           ...result,
-          commands: [...(result.commands ?? []), WriteFounder({ founder: ipo.founder })],
+          commands: [...(result.commands ?? []), WriteFounder.make({ founder: ipo.founder })],
         }
   },
 
@@ -261,7 +261,7 @@ export const exitHandlers = (model: Model): MessageCases<UpdateResult, ExitTag> 
     roomLive(model)
       ? {
           model: { ...model, panel: 'offer' },
-          commands: [SendRoom({ message: { _tag: 'StartVote', kind: 'decline' } })],
+          commands: [SendRoom.make({ message: { _tag: 'StartVote', kind: 'decline' } })],
         }
       : act(model, 'Declined a round', Actions.decline(model.board.game), { panel: afterRound }),
 

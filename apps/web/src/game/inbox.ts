@@ -1,11 +1,11 @@
 import { Effect, Option, Schema } from 'effect'
-import type { Update } from 'foldkit'
-import { defineMessageUnion } from 'foldkit/message'
+import { UiSchema } from '@effect/ui'
 import type { Game } from '@quorum/simulation/state'
 import { EASY_MODE_KEY, SAMPLES, needsAction, randomSample, senderOf, type Fact } from './mail.ts'
 import { Folder, MailLabel, Mail as MailSchema, MailMute, type Inbox, type Mail } from './model.ts'
 import { SENDER_KINDS } from './copy/senders.ts'
 import type { Snippet } from './mail-text.ts'
+import type { UpdateReturnWithOutMessage } from './step.ts'
 
 const MAIL_KEPT = 40
 const THREAD_ENTRIES = 20
@@ -248,7 +248,7 @@ export const inboxOfSave = (saved: unknown): Inbox => {
   return { ...inbox, focus: null, peek: null, folder: 'action', label: null }
 }
 
-export const InboxMessage = defineMessageUnion({
+export const InboxMessage = UiSchema.TaggedEnum({
   Opened: { id: Schema.NullOr(Schema.Finite) },
   PeekOpened: { id: Schema.Finite },
   PeekDismissed: {},
@@ -266,7 +266,7 @@ export const InboxMessage = defineMessageUnion({
 })
 export type InboxMessage = typeof InboxMessage.Type
 
-export const InboxOutMessage = defineMessageUnion({
+export const InboxOutMessage = UiSchema.TaggedEnum({
   PanelWanted: {},
   ActionTaken: { kind: Schema.String, target: Schema.NullOr(Schema.String) },
 })
@@ -409,8 +409,8 @@ export const updateInbox = (
   inbox: Inbox,
   message: InboxMessage,
   context: InboxContext,
-): Update.ReturnWithOutMessage<Inbox, InboxMessage, InboxOutMessage> =>
-  InboxMessage.match<Update.ReturnWithOutMessage<Inbox, InboxMessage, InboxOutMessage>>(message, {
+): UpdateReturnWithOutMessage<Inbox, InboxMessage, InboxOutMessage> =>
+  InboxMessage.match(message, {
     Opened: ({ id }) => ({ model: id === null ? listing(inbox) : reading(inbox, id) }),
     PeekOpened: ({ id }) => {
       const mail = inbox.mail.find((entry) => entry.id === id)

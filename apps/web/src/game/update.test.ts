@@ -10,8 +10,7 @@ import { cueOf } from './cues.ts'
 import { SurveyMessage } from './survey.ts'
 import { describe, expect, test } from 'vitest'
 import { Option, Result } from 'effect'
-import { DragAndDrop } from '@foldkit/ui'
-import { fromString } from 'foldkit/url'
+import * as Drag from './drag.ts'
 import { newGame, preseedGame } from '@quorum/simulation/company'
 import { advancePropagation } from '@quorum/simulation/features'
 import { SIZES, MOOD_START, UNHAPPY_MOOD } from '@quorum/simulation/catalog'
@@ -78,7 +77,7 @@ const tick = (model: Model, times = 1): Model => {
   return current
 }
 
-const at = (path: string) => Option.getOrThrow(fromString(`https://quorum.test${path}`))
+const at = (path: string) => ({ pathname: path, search: '' })
 
 const answerOf = (mail?: Mail) => (mail?.phase._tag === 'Answered' ? mail.phase.answer : null)
 
@@ -114,17 +113,17 @@ test('dropping an engineer on another team moves them', () => {
       },
     },
   }
-  const send = (model: Model, message: DragAndDrop.Message) =>
+  const send = (model: Model, message: Drag.Message) =>
     update(model, Message.TeamChanged({ message: TeamMessage.DragChanged({ message }) })).model
   const picked = send(
     start,
-    DragAndDrop.Message.ActivatedKeyboardDrag({ itemId: 'e1', containerId: 'core', index: 0 }),
+    Drag.Message.ActivatedKeyboardDrag({ itemId: 'e1', containerId: 'core', index: 0 }),
   )
   const moved = send(
     picked,
-    DragAndDrop.Message.CompletedResolveKeyboardMove({ targetContainerId: 't2', targetIndex: 0 }),
+    Drag.Message.CompletedResolveKeyboardMove({ targetContainerId: 't2', targetIndex: 0 }),
   )
-  const dropped = send(moved, DragAndDrop.Message.ConfirmedKeyboardDrop())
+  const dropped = send(moved, Drag.Message.ConfirmedKeyboardDrop())
   expect(dropped.board.game.engineers.find((engineer) => engineer.id === 'e1')?.team).toBe('t2')
 })
 
@@ -313,7 +312,7 @@ test('a board that cannot start is unavailable, and a failed Room shows why', ()
 
   const connecting: Model = {
     ...inLab(),
-    route: AppRoute.Room({ room: 'ABC123' }),
+    route: AppRoute.Room({ params: { room: 'ABC123' } }),
     room: { ...EMPTY_ROOM, phase: { _tag: 'Connecting', code: 'ABC123' } },
   }
   const closed = update(connecting, Message.RoomStatusChanged({ status: 'error' })).model
@@ -900,7 +899,7 @@ describe('Exit', () => {
     expect(exited.founder.history).toHaveLength(1)
     expect(exited.founder.legacy).toBe(exited.founder.history[0]?.legacy)
     const title = send(exited, Message.TitleOpened())
-    expect(title.route).toEqual(AppRoute.Menu({ menu: 'found' }))
+    expect(title.route).toEqual(AppRoute.Menu({ params: { menu: 'found' } }))
     const next = send(title, Message.CompanyFounded())
     expect(next.route).toEqual(AppRoute.Company())
     expect(next.board.game.stage).toBe(0)
@@ -948,7 +947,7 @@ describe('Exit', () => {
     const submitted = update(typed, Message.SurveySubmitted())
     expect(submitted.model.survey.phase._tag).toBe('Sending')
     const command = (submitted.commands ?? []).find((entry) => entry.name === 'SubmitSurvey')
-    expect(command?.args?.['submission']).toMatchObject({
+    expect((command?.args as Record<string, unknown> | undefined)?.['submission']).toMatchObject({
       deviceId: typed.founder.deviceId,
       locale: 'en',
       issues: 'The tutorial ran long.',
@@ -966,7 +965,7 @@ describe('Exit', () => {
     const sent = update(submitted.model, Message.SurveySent())
     expect(sent.model.survey.phase._tag).toBe('Sent')
     const appended = (sent.commands ?? []).find((entry) => entry.name === 'AppendLog')
-    const entries = appended?.args?.['entries'] as
+    const entries = (appended?.args as Record<string, unknown> | undefined)?.['entries'] as
       | ReadonlyArray<{ type: string; data: string }>
       | undefined
     const surveyLine = entries?.find((entry) => entry.type === 'SurveySent')
@@ -1081,7 +1080,7 @@ describe('Challenges', () => {
       Message.ChangedUrl({ url: at('/challenges/split-the-box') }),
     )
     expect(boardChallenge(opened.board)?.id).toBe('split-the-box')
-    expect(opened.route).toEqual(AppRoute.Challenge({ challenge: 'split-the-box' }))
+    expect(opened.route).toEqual(AppRoute.Challenge({ params: { challenge: 'split-the-box' } }))
   })
 
   test('every Challenge opens with its cards apart, and Run keeps them where they are', () => {
@@ -1309,7 +1308,7 @@ describe('URL routing', () => {
   test('a Sandbox URL on a fresh load reopens the stored free board', () => {
     const free = preseedGame()
     const fresh = init(at('/sandbox/free'))
-    expect(fresh.model.route).toEqual(AppRoute.Sandbox({ sandbox: 'free' }))
+    expect(fresh.model.route).toEqual(AppRoute.Sandbox({ params: { sandbox: 'free' } }))
     const model = update(
       fresh.model,
       Message.SandboxStoreLoaded({ json: JSON.stringify({ passed: [], free }) }),
@@ -1343,7 +1342,7 @@ describe('URL routing', () => {
 
   test('a Challenge URL on a fresh load opens it once the Founder has loaded', () => {
     const fresh = init(at('/challenges/hello-world'))
-    expect(fresh.model.route).toEqual(AppRoute.Challenge({ challenge: 'hello-world' }))
+    expect(fresh.model.route).toEqual(AppRoute.Challenge({ params: { challenge: 'hello-world' } }))
     const { record, json } = founder()
     const opened = update(
       fresh.model,
@@ -1360,7 +1359,7 @@ describe('URL routing', () => {
       fresh.model,
       Message.FounderLoaded({ json, deviceId: record.deviceId, today: '2026-11-02' }),
     )
-    expect(landed.model.route).toEqual(AppRoute.Menu({ menu: 'challenges' }))
+    expect(landed.model.route).toEqual(AppRoute.Menu({ params: { menu: 'challenges' } }))
     expect(pushed(landed.commands)).toEqual(['ReplaceUrl /challenges'])
     expect(boardChallenge(landed.model.board)).toBeNull()
   })
@@ -1375,7 +1374,7 @@ describe('URL routing', () => {
   test('opening a Sandbox adds its URL; back closes it and gives the Company back', () => {
     const company = inLab()
     const opened = update(company, Message.FreeSandboxStarted())
-    expect(opened.model.route).toEqual(AppRoute.Sandbox({ sandbox: 'free' }))
+    expect(opened.model.route).toEqual(AppRoute.Sandbox({ params: { sandbox: 'free' } }))
     expect(pushed(opened.commands)).toEqual(['PushUrl /sandbox/free'])
 
     const back = update(opened.model, Message.ChangedUrl({ url: at('/') }))
@@ -1739,12 +1738,12 @@ test('dragging a Study row reorders the queue and keeps its progress', () => {
       },
     },
   }
-  const send = (model: Model, message: DragAndDrop.Message) =>
+  const send = (model: Model, message: Drag.Message) =>
     update(model, Message.ResearchChanged({ message: ResearchMessage.DragChanged({ message }) }))
       .model
   const picked = send(
     queued,
-    DragAndDrop.Message.PressedDraggable({
+    Drag.Message.PressedDraggable({
       itemId: first.id,
       containerId: STUDY_QUEUE,
       index: 0,
@@ -1754,7 +1753,7 @@ test('dragging a Study row reorders the queue and keeps its progress', () => {
   )
   const over = send(
     picked,
-    DragAndDrop.Message.MovedPointer({
+    Drag.Message.MovedPointer({
       screenX: 0,
       screenY: 40,
       clientX: 0,
@@ -1762,7 +1761,7 @@ test('dragging a Study row reorders the queue and keeps its progress', () => {
       maybeDropTarget: Option.some({ containerId: STUDY_QUEUE, index: 2 }),
     }),
   )
-  const dropped = send(over, DragAndDrop.Message.ReleasedPointer())
+  const dropped = send(over, Drag.Message.ReleasedPointer())
   expect(studyList(dropped.board.game.studies)).toEqual([
     { id: second.id, phase: { _tag: 'Queued', progress: 0 } },
     { id: first.id, phase: { _tag: 'Running', progress: 0.25 } },
@@ -1834,11 +1833,11 @@ test('no move puts a Study above a queued prerequisite, by drag or by arrow', as
   await loadLocale('fr')
   const start = withStudies([queuedStudy('php-fpm'), queuedStudy('gzip'), queuedStudy('opcache')])
   const drag = (model: Model, id: ResearchId, from: number, to: number) => {
-    const send = (current: Model, message: DragAndDrop.Message) =>
+    const send = (current: Model, message: Drag.Message) =>
       research(current, ResearchMessage.DragChanged({ message }))
     const picked = send(
       model,
-      DragAndDrop.Message.PressedDraggable({
+      Drag.Message.PressedDraggable({
         itemId: id,
         containerId: STUDY_QUEUE,
         index: from,
@@ -1848,7 +1847,7 @@ test('no move puts a Study above a queued prerequisite, by drag or by arrow', as
     )
     const over = send(
       picked,
-      DragAndDrop.Message.MovedPointer({
+      Drag.Message.MovedPointer({
         screenX: 0,
         screenY: 40,
         clientX: 0,
@@ -1856,7 +1855,7 @@ test('no move puts a Study above a queued prerequisite, by drag or by arrow', as
         maybeDropTarget: Option.some({ containerId: STUDY_QUEUE, index: to }),
       }),
     )
-    return send(over, DragAndDrop.Message.ReleasedPointer())
+    return send(over, Drag.Message.ReleasedPointer())
   }
   const ids = (model: Model) => studyList(model.board.game.studies).map((item) => item.id)
   const above = drag(start, 'opcache', 2, 0)
@@ -2946,7 +2945,7 @@ test('a board action in a live Room goes out as the Intent it stands for', () =>
   const node = model.board.game.nodes[0]!
   const moved = act(model, 'Moved', Actions.move(model.board.game, node.id, 45, 60))
   const sent = (moved.commands ?? []).find((command) => command.name === 'SendRoom')
-  expect(sent?.args?.['message']).toEqual({
+  expect((sent?.args as Record<string, unknown> | undefined)?.['message']).toEqual({
     _tag: 'Intents',
     id: model.room.seq,
     intents: [{ ns: 'actions', name: 'move', args: [node.id, 45, 60] }],
@@ -2972,7 +2971,7 @@ test('a team rename in a live Room goes out as the intent it stands for', () => 
   ).model
   const committed = update(typed, Message.TeamChanged({ message: TeamMessage.RenameCommitted() }))
   const sent = (committed.commands ?? []).find((command) => command.name === 'SendRoom')
-  expect(sent?.args?.['message']).toEqual({
+  expect((sent?.args as Record<string, unknown> | undefined)?.['message']).toEqual({
     _tag: 'Intents',
     id: model.room.seq,
     intents: [{ ns: 'work', name: 'renameTeam', args: [team.id, 'Platform Ops'] }],
@@ -3030,7 +3029,10 @@ test('a funding round in a live Room starts the fund vote', () => {
   }
   const asked = update(model, Message.RoundRaised())
   const sent = (asked.commands ?? []).find((command) => command.name === 'SendRoom')
-  expect(sent?.args?.['message']).toEqual({ _tag: 'StartVote', kind: 'fund' })
+  expect((sent?.args as Record<string, unknown> | undefined)?.['message']).toEqual({
+    _tag: 'StartVote',
+    kind: 'fund',
+  })
   expect(asked.model.board.game).toBe(model.board.game)
   expect(asked.model.panel).toBe('offer')
 })
@@ -3045,9 +3047,9 @@ test('declining a funding round in a live Room starts the decline vote', () => {
   }
   const asked = update(model, Message.RoundDeclined())
   const sent = (asked.commands ?? []).filter((command) => command.name === 'SendRoom')
-  expect(sent.map((command) => command.args?.['message'])).toEqual([
-    { _tag: 'StartVote', kind: 'decline' },
-  ])
+  expect(
+    sent.map((command) => (command.args as Record<string, unknown> | undefined)?.['message']),
+  ).toEqual([{ _tag: 'StartVote', kind: 'decline' }])
   expect(asked.model.board.game).toBe(model.board.game)
   expect(asked.model.panel).toBe('offer')
 })
@@ -3068,7 +3070,7 @@ test('a Load Balancer policy in a live Room goes out as its intent', () => {
     Message.PolicyChosen({ nodeId: balancer.id, policy: 'round-robin' }),
   )
   const sent = (changed.commands ?? []).find((command) => command.name === 'SendRoom')
-  expect(sent?.args?.['message']).toEqual({
+  expect((sent?.args as Record<string, unknown> | undefined)?.['message']).toEqual({
     _tag: 'Intents',
     id: model.room.seq,
     intents: [{ ns: 'actions', name: 'setPolicy', args: [balancer.id, 'round-robin'] }],
@@ -3089,7 +3091,7 @@ test('a bulk upgrade in a live Room goes out as its intent', () => {
   const server = model.board.game.nodes.find((entry) => entry.type === 'server')!
   const upgraded = update(model, Message.UpgradeAllChosen({ nodeId: server.id }))
   const sent = (upgraded.commands ?? []).find((command) => command.name === 'SendRoom')
-  expect(sent?.args?.['message']).toEqual({
+  expect((sent?.args as Record<string, unknown> | undefined)?.['message']).toEqual({
     _tag: 'Intents',
     id: model.room.seq,
     intents: [{ ns: 'actions', name: 'upgradeAll', args: [server.type, server.region] }],
@@ -3171,7 +3173,7 @@ test('a Room frame’s vote is open in the model, and a frame with none closes i
 test('a Seat that joins is announced to the others', () => {
   const model: Model = {
     ...inLab(),
-    route: AppRoute.Room({ room: 'ABC234' }),
+    route: AppRoute.Room({ params: { room: 'ABC234' } }),
     room: {
       ...EMPTY_ROOM,
       phase: { _tag: 'Online', code: 'ABC234', seat: 'tab-1', owner: true },

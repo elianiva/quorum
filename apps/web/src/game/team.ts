@@ -1,12 +1,12 @@
-import { DragAndDrop } from '@foldkit/ui'
 import { Schema } from 'effect'
-import { Command, type Update } from 'foldkit'
-import { defineMessageUnion } from 'foldkit/message'
+import { UiSchema } from '@effect/ui'
 import { FeatureId, LanguageId, PolicyId, TeamKind } from '@quorum/simulation/state'
+import * as Drag from './drag.ts'
+import type { UpdateReturnWithOutMessage } from './step.ts'
 import { RenameTarget, type Team } from './model.ts'
 
-export const TeamMessage = defineMessageUnion({
-  DragChanged: { message: DragAndDrop.Message },
+export const TeamMessage = UiSchema.TaggedEnum({
+  DragChanged: { message: Drag.Message },
   HireChosen: { language: LanguageId },
   LayoffChosen: { engineerId: Schema.String },
   TrainChosen: { engineerId: Schema.String },
@@ -33,7 +33,7 @@ export const TeamMessage = defineMessageUnion({
 })
 export type TeamMessage = typeof TeamMessage.Type
 
-export const TeamOutMessage = defineMessageUnion({
+export const TeamOutMessage = UiSchema.TaggedEnum({
   Hire: { language: LanguageId },
   Layoff: { engineerId: Schema.String },
   Train: { engineerId: Schema.String },
@@ -54,23 +54,20 @@ export const TeamOutMessage = defineMessageUnion({
 export type TeamOutMessage = typeof TeamOutMessage.Type
 
 export const initTeam = (): Team => ({
-  drag: DragAndDrop.init({ id: 'team-drag' }),
+  drag: Drag.init(),
   service: { name: '', owner: 'core', features: [] },
   rename: null,
 })
 
-type TeamReturn = Update.ReturnWithOutMessage<Team, TeamMessage, TeamOutMessage>
+type TeamReturn = UpdateReturnWithOutMessage<Team, TeamMessage, TeamOutMessage>
 
 const out = (team: Team, outMessage: TeamOutMessage): TeamReturn => ({ model: team, outMessage })
 
-const dragged = (team: Team, message: DragAndDrop.Message): TeamReturn => {
-  const next = DragAndDrop.update(team.drag, message)
+const dragged = (team: Team, message: Drag.Message): TeamReturn => {
+  const next = Drag.update(team.drag, message)
   const drop = next.outMessage
   return {
     model: { ...team, drag: next.model },
-    commands: Command.mapMessages(next.commands, (child) =>
-      TeamMessage.DragChanged({ message: child }),
-    ),
     ...(drop?._tag === 'Reordered' && drop.fromContainerId !== drop.toContainerId
       ? {
           outMessage: TeamOutMessage.Assign({
@@ -83,7 +80,7 @@ const dragged = (team: Team, message: DragAndDrop.Message): TeamReturn => {
 }
 
 export const updateTeam = (team: Team, message: TeamMessage): TeamReturn =>
-  TeamMessage.match<TeamReturn>(message, {
+  TeamMessage.match(message, {
     DragChanged: ({ message: child }) => dragged(team, child),
     HireChosen: ({ language }) => out(team, TeamOutMessage.Hire({ language })),
     LayoffChosen: ({ engineerId }) => out(team, TeamOutMessage.Layoff({ engineerId })),

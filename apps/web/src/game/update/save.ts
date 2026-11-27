@@ -119,7 +119,7 @@ const applyImport = (
   return {
     ...loaded,
     model: next,
-    commands: [...(loaded.commands ?? []), ...saveCommands(next), ClearBrokenSave({}), clear],
+    commands: [...(loaded.commands ?? []), ...saveCommands(next), ClearBrokenSave.make({}), clear],
   }
 }
 
@@ -133,7 +133,7 @@ export const saveHandlers = (
     return {
       model,
       commands: [
-        CopyText({
+        CopyText.make({
           text: encodeSave(savePayloadOf(model)),
           done: say(model).toasts.copiedSave,
           blocked: say(model).toasts.clipboardBlocked,
@@ -148,7 +148,7 @@ export const saveHandlers = (
     return {
       model,
       commands: [
-        DownloadSave({
+        DownloadSave.make({
           text: encodeSave(savePayloadOf(model)),
           name: saveFileName(currentFile(model)?.name ?? ''),
         }),
@@ -159,19 +159,19 @@ export const saveHandlers = (
   SaveImportAsked: () =>
     offCompany(model)
       ? withToast(model, say(model).toasts.noSaveHere, 'warn')
-      : { model, commands: [AskSaveImport({})] },
+      : { model, commands: [AskSaveImport.make({})] },
 
   SaveFileAsked: () =>
     offCompany(model)
       ? withToast(model, say(model).toasts.noSaveHere, 'warn')
-      : { model, commands: [PickSaveFile({ as: 'save' })] },
+      : { model, commands: [PickSaveFile.make({ as: 'save' })] },
 
   SaveImported: ({ text }) => applyImport(model, route, text, false),
 
   CompanyFileAsked: () =>
     offCompany(model)
       ? withToast(model, say(model).toasts.noSaveHere, 'warn')
-      : { model, commands: [PickSaveFile({ as: 'company' })] },
+      : { model, commands: [PickSaveFile.make({ as: 'company' })] },
 
   CompanyImported: ({ text }) => applyImport(model, route, text, true),
 
@@ -207,7 +207,7 @@ export const saveHandlers = (
   CheatLegacy: () => {
     const founder = { ...model.founder, legacy: model.founder.legacy + 20 }
     return withToast({ ...model, founder }, say(model).toasts.legacyCheat, 'plain', [
-      WriteFounder({ founder }),
+      WriteFounder.make({ founder }),
     ])
   },
 
@@ -235,7 +235,7 @@ export const saveHandlers = (
         board: { ...model.board, game: listedGame },
         founder: ipo.founder,
       }
-      return { model: next, commands: [WriteFounder({ founder: ipo.founder })] }
+      return { model: next, commands: [WriteFounder.make({ founder: ipo.founder })] }
     }
     return act(
       { ...model, board: { ...model.board, game: ready } },
@@ -304,7 +304,7 @@ export const saveHandlers = (
     }
   },
 
-  LogExported: () => ({ model, commands: [ExportLog({})] }),
+  LogExported: () => ({ model, commands: [ExportLog.make({})] }),
 
   StateCopied: () => {
     const reason = refusal(model)
@@ -313,7 +313,7 @@ export const saveHandlers = (
       : {
           model,
           commands: [
-            CopyText({
+            CopyText.make({
               text: stateJson(model),
               done: say(model).toasts.copiedState,
               blocked: say(model).toasts.clipboardBlocked,
@@ -330,7 +330,7 @@ export const saveHandlers = (
       : {
           model,
           commands: [
-            CopyText({
+            CopyText.make({
               text: id,
               done: say(model).toasts.copiedAgentRoom,
               blocked: say(model).toasts.clipboardBlocked,
@@ -339,5 +339,5 @@ export const saveHandlers = (
         }
   },
 
-  LogCleared: () => withToast(model, say(model).toasts.logCleared, 'plain', [ClearLog({})]),
+  LogCleared: () => withToast(model, say(model).toasts.logCleared, 'plain', [ClearLog.make({})]),
 })

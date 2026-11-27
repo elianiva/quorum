@@ -1,13 +1,13 @@
-import type { Update } from 'foldkit'
-import { defineMessageUnion } from 'foldkit/message'
+import { UiSchema } from '@effect/ui'
 import { Schema } from 'effect'
 import { Locale } from '../i18n/index.ts'
 import type { Prefs } from './model.ts'
+import type { UpdateReturn } from './step.ts'
 import { volumeIn } from './prefs-schema.ts'
 
 export { volumeIn } from './prefs-schema.ts'
 
-export const PrefsMessage = defineMessageUnion({
+export const PrefsMessage = UiSchema.TaggedEnum({
   LocaleChosen: { locale: Locale },
   MuteToggled: {},
   VolumeChanged: { volume: Schema.Finite },
@@ -25,8 +25,8 @@ export type PrefsMessage = typeof PrefsMessage.Type
 export const updatePrefs = (
   prefs: Prefs,
   message: PrefsMessage,
-): Update.Return<Prefs, PrefsMessage> =>
-  PrefsMessage.match<Update.Return<Prefs, PrefsMessage>>(message, {
+): UpdateReturn<Prefs, PrefsMessage> =>
+  PrefsMessage.match(message, {
     LocaleChosen: ({ locale }) => ({ model: { ...prefs, locale } }),
     MuteToggled: () => ({ model: { ...prefs, muted: !prefs.muted } }),
     VolumeChanged: ({ volume }) => ({ model: { ...prefs, volume: volumeIn(volume) } }),
@@ -44,4 +44,4 @@ export const updatePrefs = (
     ThemeToggled: () => ({
       model: { ...prefs, theme: prefs.theme === 'dark' ? 'light' : 'dark' },
     }),
-  })
+  }) as UpdateReturn<Prefs, PrefsMessage>

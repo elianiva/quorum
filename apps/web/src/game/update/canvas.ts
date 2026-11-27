@@ -236,7 +236,7 @@ export const canvasHandlers = (
         tradeoff: { _tag: 'Closed' },
       },
     }
-    return { model: next, commands: [sync(next, false, nodeId), FocusInspector({})] }
+    return { model: next, commands: [sync(next, false, nodeId), FocusInspector.make({})] }
   },
 
   NodeToggled: ({ nodeId }) => {

@@ -26,7 +26,7 @@ import { Option } from 'effect'
 import { PrefsMessage } from '../prefs.ts'
 import { ResearchMessage } from '../research.ts'
 import { TeamOutMessage } from '../team.ts'
-import { Update } from 'foldkit'
+import { combine, foldChild } from '../step.ts'
 import { eventFact, type Fact } from '../mail.ts'
 import { money } from '@quorum/ui/game/format'
 import { say, withToast, act, type UpdateResult, type Dispatch } from './shared.ts'
@@ -49,7 +49,7 @@ export const mailKey = (model: Model, key: string, route: Dispatch): UpdateResul
   const current = list[at]
   const neighbour = (list[at + 1] ?? list[at - 1])?.id ?? null
   const apply = (message: InboxMessage): UpdateResult =>
-    Update.combine(model, [
+    combine(model, [
       (next: Model) => foldInbox(next, message, route),
       (next: Model) => foldInbox(next, InboxMessage.Opened({ id: neighbour }), route),
     ])
@@ -203,7 +203,7 @@ const mailAction = (
           panel: 'none',
           board: { ...inspected.model.board, region: node.region },
         },
-        commands: [...(inspected.commands ?? []), FocusInspector({})],
+        commands: [...(inspected.commands ?? []), FocusInspector.make({})],
       }
     }
     case 'backlog': {
@@ -287,17 +287,23 @@ const trapTaken = (model: Model, target: string | null): UpdateResult => {
 }
 
 export const foldInbox = (model: Model, message: InboxMessage, route: Dispatch): UpdateResult =>
-  Update.foldChild({
+  foldChild({
     update: (inbox: Inbox, child: InboxMessage) =>
       updateInbox(inbox, child, { game: model.board.game, open: model.panel === 'inbox' }),
     read: (parent: Model) => Option.some(parent.board.inbox),
     write: (parent, inbox) => ({ ...parent, board: { ...parent.board, inbox } }),
-    toParentMessage: (child) => Message.InboxChanged({ message: child }),
-    foldOutMessage: (out: InboxOutMessage) => (parent: Model) =>
-      InboxOutMessage.match<UpdateResult>(out, {
-        PanelWanted: () => ({
-          model: { ...parent, panel: 'inbox', board: { ...parent.board, flow: { _tag: 'Idle' } } },
+    toParentMessage: (child: InboxMessage) => Message.InboxChanged({ message: child }),
+    foldOutMessage:
+      (out: InboxOutMessage) =>
+      (parent: Model): UpdateResult =>
+        InboxOutMessage.match(out, {
+          PanelWanted: () => ({
+            model: {
+              ...parent,
+              panel: 'inbox' as const,
+              board: { ...parent.board, flow: { _tag: 'Idle' as const } },
+            },
+          }),
+          ActionTaken: ({ kind, target }) => mailAction(parent, route, kind, target),
         }),
-        ActionTaken: ({ kind, target }) => mailAction(parent, route, kind, target),
-      }),
   })(model, message)

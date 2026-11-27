@@ -1,20 +1,20 @@
 import { Schema } from 'effect'
-import { Command, type Update } from 'foldkit'
-import { defineMessageUnion } from 'foldkit/message'
-import { DragAndDrop } from '@foldkit/ui'
+import { UiSchema } from '@effect/ui'
 import {
   LeverKindId,
   ResearchId,
   type ResearchId as ResearchIdType,
 } from '@quorum/simulation/state'
 import type { Research } from './model.ts'
+import * as Drag from './drag.ts'
+import type { UpdateReturnWithOutMessage } from './step.ts'
 
 export const STUDY_QUEUE = 'study-queue'
 
-export const ResearchMessage = defineMessageUnion({
+export const ResearchMessage = UiSchema.TaggedEnum({
   Focused: { id: ResearchId },
   Bought: { id: ResearchId },
-  DragChanged: { message: DragAndDrop.Message },
+  DragChanged: { message: Drag.Message },
   StudyMoved: { id: ResearchId, direction: Schema.Literals([1, -1]) },
   StudyPrioritized: { id: ResearchId },
   StudyCancelled: { id: ResearchId },
@@ -25,7 +25,7 @@ export const ResearchMessage = defineMessageUnion({
 })
 export type ResearchMessage = typeof ResearchMessage.Type
 
-export const ResearchOutMessage = defineMessageUnion({
+export const ResearchOutMessage = UiSchema.TaggedEnum({
   Study: { id: ResearchId },
   MovedTo: { id: ResearchId, index: Schema.Finite },
   Move: { id: ResearchId, direction: Schema.Literals([1, -1]) },
@@ -42,12 +42,12 @@ export const SHEET_DEFAULT_WIDTH_PX = 320
 
 export const EMPTY_RESEARCH: Research = {
   focus: null,
-  drag: DragAndDrop.init({ id: STUDY_QUEUE }),
+  drag: Drag.init(),
   poolsOpen: false,
   sheetWidth: SHEET_DEFAULT_WIDTH_PX,
 }
 
-type ResearchReturn = Update.ReturnWithOutMessage<Research, ResearchMessage, ResearchOutMessage>
+type ResearchReturn = UpdateReturnWithOutMessage<Research, ResearchMessage, ResearchOutMessage>
 
 const out = (research: Research, outMessage: ResearchOutMessage): ResearchReturn => ({
   model: research,
@@ -60,14 +60,11 @@ export const queueIndex = (fromIndex: number, dropIndex: number): number =>
 export const speedFactorOf = (speed: number): string =>
   Number.isInteger(speed) ? `${speed}` : `${Number(speed.toFixed(2))}`
 
-const dragged = (research: Research, message: DragAndDrop.Message): ResearchReturn => {
-  const next = DragAndDrop.update(research.drag, message)
+const dragged = (research: Research, message: Drag.Message): ResearchReturn => {
+  const next = Drag.update(research.drag, message)
   const drop = next.outMessage
   const moved: ResearchReturn = {
     model: { ...research, drag: next.model },
-    commands: Command.mapMessages(next.commands, (child) =>
-      ResearchMessage.DragChanged({ message: child }),
-    ),
   }
   if (
     drop?._tag !== 'Reordered' ||
@@ -88,7 +85,7 @@ const dragged = (research: Research, message: DragAndDrop.Message): ResearchRetu
 }
 
 export const updateResearch = (research: Research, message: ResearchMessage): ResearchReturn =>
-  ResearchMessage.match<ResearchReturn>(message, {
+  ResearchMessage.match(message, {
     Focused: ({ id }) => ({ model: { ...research, focus: id } }),
     Bought: ({ id }) => out(research, ResearchOutMessage.Study({ id })),
     DragChanged: ({ message: child }) => dragged(research, child),

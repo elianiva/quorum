@@ -37,7 +37,7 @@ export const tradeoffOf = (
           pinned
             ? { _tag: 'Pinned', nodeId, option, preview: null }
             : { _tag: 'Hovering', nodeId, option, preview: null },
-          [ComputePreview({ game: model.board.game, nodeId, option })],
+          [ComputePreview.make({ game: model.board.game, nodeId, option })],
         ] as const,
       onFailure: (refusal) =>
         [
@@ -64,8 +64,8 @@ const applyOption = (model: Model, card: OpenTradeoff, route: Dispatch): UpdateR
     model: next,
     commands: [
       ...(applied.commands ?? []),
-      WritePrefs({ prefs: next.prefs }),
-      AppendLog({
+      WritePrefs.make({ prefs: next.prefs }),
+      AppendLog.make({
         entries: [
           line(model.board.game.time, 'TradeoffPreviewed', {
             option: card.option,

@@ -1,12 +1,11 @@
 import { DashboardMessage } from '../dashboard.ts'
 import { InboxMessage } from '../inbox.ts'
-import { Listbox, Menu as UiMenu } from '@foldkit/ui'
-import { Message as VolumeSliderMessage } from '@quorum/ui/primitives/slider'
 import { Panel, ShopMode, ShopSlot, ShopSort, Tone } from '../model.ts'
 import { PrefsMessage } from '../prefs.ts'
 import { SurveyMessage } from '../survey.ts'
 import { StackPickerMessage } from '../stack-picker.ts'
 import { Schema } from 'effect'
+import * as Menu from '../menu.ts'
 import { FamilyId, IopsClass, ResearchId } from '@quorum/simulation/state'
 
 export const panelsCases = {
@@ -39,12 +38,9 @@ export const panelsCases = {
   InboxChanged: { message: InboxMessage },
 
   DashboardChanged: { message: DashboardMessage },
-  LanguagePickerChanged: { message: Listbox.Message },
-  VolumeSliderChanged: { message: VolumeSliderMessage },
-  PoolSliderChanged: { message: VolumeSliderMessage },
   RuntimePickerChanged: { message: StackPickerMessage },
   FrameworkPickerChanged: { message: StackPickerMessage },
-  MoreMenuChanged: { message: UiMenu.Message },
+  MoreMenuChanged: { message: Menu.Message },
   ToastRaised: { message: Schema.String, tone: Tone },
   ToastCleared: { id: Schema.Finite },
   Synced: {},

@@ -242,14 +242,14 @@ export const keysHandlers = (
         const card = model.board.tradeoff
         if (card._tag === 'Pinned' && card.preview !== null)
           return route(model, Message.OptionConfirmed())
-        return selected ? { model, commands: [FocusInspector({})] } : { model }
+        return selected ? { model, commands: [FocusInspector.make({})] } : { model }
       }
       case ' ':
         return route(model, Message.PauseToggled())
       case 's':
         return route(model, Message.SpeedCycled())
       case 'f':
-        return { model, commands: [ToggleFullscreen({})] }
+        return { model, commands: [ToggleFullscreen.make({})] }
       case 'c':
         return route(model, Message.Collected())
       case 'z':

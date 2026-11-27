@@ -1,6 +1,6 @@
 import { FoundStep, Menu, SettingsSection } from '../model.ts'
-import { Url } from 'foldkit/url'
-import { UrlRequest } from 'foldkit/navigation'
+import { Schema } from 'effect'
+import { GameUrl } from '../route.ts'
 
 export const shellCases = {
   Continued: {},
@@ -13,7 +13,7 @@ export const shellCases = {
   SettingsSectionOpened: { section: SettingsSection },
   SettingsSectionClosed: {},
   FoundStepChosen: { step: FoundStep },
-  ClickedLink: { request: UrlRequest },
-  ChangedUrl: { url: Url },
+  ClickedLink: { url: Schema.String, external: Schema.Boolean },
+  ChangedUrl: { url: GameUrl },
   Navigated: {},
 }

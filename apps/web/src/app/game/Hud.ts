@@ -222,7 +222,7 @@ const ring = (h: H<Message>, share: number, className: string): Content => {
     )
 }
 
-/* The panel focus trap the Foldkit shell ran, as an Effect UI mount. */
+/* The panel focus trap, as an Effect UI mount. */
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
@@ -2535,7 +2535,7 @@ const moreMenuChanged = (message: MoreMenuMessage): Message => Message.MoreMenuC
 
 const wrapIndex = (index: number, count: number): number => ((index % count) + count) % count
 
-/* The menu's items sit under its button, as the Foldkit anchor mount placed them. */
+/* The menu's items sit under its button. */
 const MENU_GAP = 6
 const MENU_PADDING = 8
 
@@ -2627,10 +2627,7 @@ const moreButton = (h: H<Message>, model: Model): Content => {
   const calling = (legacy ?? 0) > 0 || glowing(model, 'undo')
   const items = moreItems(model)
   const menu = model.moreMenu
-  const isLeaving =
-    menu.animation.transitionState === 'LeaveStart' ||
-    menu.animation.transitionState === 'LeaveAnimating'
-  const isVisible = menu.isOpen || isLeaving
+  const isVisible = menu.isOpen
   const active = Option.isSome(menu.maybeActiveItemIndex) ? menu.maybeActiveItemIndex.value : -1
   const isDisabled = (index: number): boolean => {
     const item = items[index]
@@ -2667,12 +2664,12 @@ const moreButton = (h: H<Message>, model: Model): Content => {
     return match
   }
   const itemsKeyDown = (key: string): Message | undefined => {
-    if (isLeaving) return undefined
     if (key === 'Escape') return moreMenuChanged({ _tag: 'Closed' })
     if (key === 'Enter') {
-      return active >= 0
-        ? moreMenuChanged({ _tag: 'RequestedItemClick', index: active })
-        : undefined
+      const item = items[active]
+      return item === undefined
+        ? undefined
+        : moreMenuChanged({ _tag: 'SelectedItem', index: active, item })
     }
     if (key === ' ') {
       if (menu.searchQuery !== '') {
@@ -2683,9 +2680,10 @@ const moreButton = (h: H<Message>, model: Model): Content => {
           maybeTargetIndex: target === null ? Option.none() : Option.some(target),
         })
       }
-      return active >= 0
-        ? moreMenuChanged({ _tag: 'RequestedItemClick', index: active })
-        : undefined
+      const item = items[active]
+      return item === undefined
+        ? undefined
+        : moreMenuChanged({ _tag: 'SelectedItem', index: active, item })
     }
     if (
       key === 'ArrowDown' ||
@@ -2829,7 +2827,7 @@ const moreButton = (h: H<Message>, model: Model): Content => {
                 ...items.map((item, index) => {
                   const isActive = index === active
                   const isItemDisabled = isDisabled(index)
-                  const interactive = !isItemDisabled && !isLeaving
+                  const interactive = !isItemDisabled
                   const config = moreOf(t)[item]
                   const row = h.div
                     .key(`more-menu-item-${index}`)

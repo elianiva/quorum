@@ -294,7 +294,7 @@ describe('a browser without the database', () => {
 
   test('the load Command reads the old key where the test run has no IndexedDB', async () => {
     local.map.set(keyOf('c-q'), fileAt(10))
-    expect(await Effect.runPromise(LoadCompany({ id: 'c-q', open: true }).effect)).toEqual(
+    expect(await Effect.runPromise(LoadCompany.make({ id: 'c-q', open: true }).effect)).toEqual(
       Message.CompanyLoaded({ id: 'c-q', open: true, json: fileAt(10) }),
     )
   })

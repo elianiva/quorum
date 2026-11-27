@@ -1,5 +1,5 @@
 import { Schema } from 'effect'
-import { defineMessageUnion } from 'foldkit/message'
+import { UiSchema } from '@effect/ui'
 
 import { canvasCases } from './message/canvas.ts'
 import { clockCases } from './message/clock.ts'
@@ -30,7 +30,7 @@ const pwaCases = {
   PwaPromptDismissed: {},
 } as const
 
-export const Message = defineMessageUnion({
+export const Message = UiSchema.TaggedEnum({
   ...canvasCases,
   ...clockCases,
   ...companiesCases,

@@ -175,7 +175,7 @@ type Content = View.Content<Message>
 type Child = View.Input<Message>
 type Label = View.Content<Message> | string | false | null | undefined
 
-/* Foldkit kept a class map, so a token repeated across a base class and a
+/* A class map keeps a token repeated across a base class and a
    caller's class appeared once; join the same way here. */
 const joinedClasses = (...tokens: ReadonlyArray<string | undefined>): string =>
   [
@@ -222,7 +222,7 @@ const button = (
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
-/* The panel's focus trap, as the Foldkit shell ran it. */
+/* The panel's focus trap. */
 const PanelFocus = Mount.make('PanelFocus', {}, (element: HTMLElement) =>
   Effect.scoped(
     Effect.gen(function* () {
@@ -436,8 +436,7 @@ const stackLogo = (h: H<Message>, id: LanguageId, className: string): Content =>
     )
 }
 
-/* The team's drag-and-drop submodel, read the way @foldkit/ui read it,
-   without importing Foldkit. */
+/* The team's drag-and-drop state and messages. */
 type DragModel = Model['board']['team']['drag']
 type DragMessage = Parameters<typeof TeamMessage.DragChanged>[0]['message']
 
@@ -507,19 +506,12 @@ const dropTargetAt = (
   return Option.some({ containerId, index: found === -1 ? sortable.length : found })
 }
 
-const ARROW_DIRECTIONS: Readonly<Record<string, 'Down' | 'Left' | 'Right' | 'Up'>> = {
-  ArrowDown: 'Down',
-  ArrowLeft: 'Left',
-  ArrowRight: 'Right',
-  ArrowUp: 'Up',
-}
-
-/* The pointer and keyboard wiring @foldkit/ui's DragAndDrop.draggable,
-   droppable and sortable attributes laid down, hand-written here. */
+/* The pointer and keyboard wiring for the sortable team list. */
 const attachDrag = (host: HTMLElement, offer: (message: DragMessage) => void): (() => void) => {
   const events = new AbortController()
   let pointer: number | null = null
   let keyboard = false
+  let keyboardTarget: Readonly<{ containerId: string; index: number }> | null = null
   const handleOf = (target: EventTarget | null): HTMLElement | null => {
     const element = target instanceof Element ? target : null
     const handle = element?.closest<HTMLElement>('[data-sortable-id]') ?? null
@@ -531,6 +523,21 @@ const attachDrag = (host: HTMLElement, offer: (message: DragMessage) => void): (
   }
   const containerOf = (handle: HTMLElement): string =>
     handle.closest<HTMLElement>('[data-droppable-id]')?.getAttribute('data-droppable-id') ?? ''
+  const containers = (): ReadonlyArray<HTMLElement> => [
+    ...host.querySelectorAll<HTMLElement>('[data-droppable-id]'),
+  ]
+  const countIn = (containerId: string): number =>
+    containers()
+      .find((entry) => entry.getAttribute('data-droppable-id') === containerId)
+      ?.querySelectorAll('[data-sortable-id]').length ?? 0
+  const moveTo = (target: Readonly<{ containerId: string; index: number }>) => {
+    keyboardTarget = target
+    offer({
+      _tag: 'CompletedResolveKeyboardMove',
+      targetContainerId: target.containerId,
+      targetIndex: target.index,
+    })
+  }
   const down = (event: PointerEvent) => {
     if (event.button !== DRAG_BUTTON_LEFT) return
     const handle = handleOf(event.target)
@@ -576,17 +583,27 @@ const attachDrag = (host: HTMLElement, offer: (message: DragMessage) => void): (
         keyboard = false
         offer({ _tag: 'CancelledDrag' })
       } else if (event.key === 'Tab') {
-        offer({
-          _tag: 'PressedArrowKey',
-          direction: event.shiftKey ? 'PreviousContainer' : 'NextContainer',
-        })
+        const all = containers()
+        const current = all.findIndex(
+          (entry) => entry.getAttribute('data-droppable-id') === keyboardTarget?.containerId,
+        )
+        if (current < 0) return
+        const next = (current + (event.shiftKey ? -1 : 1) + all.length) % all.length
+        const container = all[next]
+        const id = container?.getAttribute('data-droppable-id')
+        if (container === undefined || id === null || id === undefined) return
+        moveTo({ containerId: id, index: Math.min(keyboardTarget?.index ?? 0, countIn(id)) })
       } else if (event.key === ' ' || event.key === 'Enter') {
         keyboard = false
+        keyboardTarget = null
         offer({ _tag: 'ConfirmedKeyboardDrop' })
-      } else {
-        const direction = ARROW_DIRECTIONS[event.key]
-        if (direction === undefined) return
-        offer({ _tag: 'PressedArrowKey', direction })
+      } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        if (keyboardTarget === null) return
+        const index =
+          event.key === 'ArrowDown'
+            ? Math.min(countIn(keyboardTarget.containerId), keyboardTarget.index + 1)
+            : Math.max(0, keyboardTarget.index - 1)
+        moveTo({ ...keyboardTarget, index })
       }
       event.preventDefault()
       return
@@ -605,11 +622,13 @@ const attachDrag = (host: HTMLElement, offer: (message: DragMessage) => void): (
     const containerId = containerOf(handle)
     if (containerId === '') return
     keyboard = true
+    const index = handlesOf(handle).indexOf(handle)
+    keyboardTarget = { containerId, index }
     offer({
       _tag: 'ActivatedKeyboardDrag',
       itemId,
       containerId,
-      index: handlesOf(handle).indexOf(handle),
+      index,
     })
     event.preventDefault()
   }

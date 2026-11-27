@@ -12,7 +12,6 @@ import {
   stampedPlaybook,
 } from '../../game/model.ts'
 import { DEFAULT_LOGO } from '../../game/logos.ts'
-import { AppRoute as OldAppRoute } from '../../game/route.ts'
 import { fileFor, parseIndex } from '../../game/saves.ts'
 import { SAVE_INDEX_KEY, readStored } from '../../game/storage.ts'
 import { TICK_MS, initialModel, update } from '../../game/update.ts'
@@ -62,7 +61,6 @@ import {
 import { inspector } from './Inspector.ts'
 import { Shop } from './Shop.ts'
 import { blurs, keys } from './keys.ts'
-import { runCommands } from './bridge.ts'
 import { AppRoute } from '../routes.ts'
 
 const STAGE = css({
@@ -149,45 +147,46 @@ export const CompanyPage = Html.component({
     if (route._tag === 'Sandbox') {
       const id = route.params.sandbox
       const started = update(
-        { ...base, route: OldAppRoute.Sandbox({ sandbox: id }), boot: { _tag: 'Ready' } },
+        { ...base, route, boot: { _tag: 'Ready' } },
         id === 'free' ? Message.FreeSandboxStarted() : Message.GuidedStarted({ id }),
       )
-      return $.set(started.model).run(...runCommands(started.commands))
+      return $.set(started.model).run(...(started.commands ?? []))
     }
     if (route._tag === 'Challenge') {
       const started = update(
         {
           ...base,
-          route: OldAppRoute.Challenge({ challenge: route.params.challenge }),
+          route,
           boot: { _tag: 'Ready' },
         },
         Message.ChallengeStarted({ id: route.params.challenge }),
       )
-      return $.set(started.model).run(...runCommands(started.commands))
+      return $.set(started.model).run(...(started.commands ?? []))
     }
     if (route._tag === 'Room') {
       const code = route.params.room
       const model: Model = {
         ...base,
-        route: OldAppRoute.Room({ room: code }),
+        route,
         boot: { _tag: 'Ready' },
         panel: 'room',
         room: { ...base.room, phase: { _tag: 'Connecting', code } },
       }
-      return $.set(model).run(...runCommands([CheckRoom({ code })]))
+      return $.set(model).run(CheckRoom.make({ code }))
     }
     const stored = readStored(SAVE_INDEX_KEY)
-    const index = stored === null ? null : Option.getOrNull(parseIndex(stored))
+    const read = stored === null ? null : Option.getOrNull(parseIndex(stored))
+    const index = read?.index ?? null
     const id = index?.lastPlayed ?? null
     if (index !== null && id !== null) {
       const saved: Model = {
         ...base,
-        route: OldAppRoute.Company(),
+        route: AppRoute.Company(),
         boot: { _tag: 'Ready' },
         companyPhase: { _tag: 'Open', id },
         saves: { _tag: 'Ready', index },
       }
-      return $.set(saved).run(...runCommands([LoadCompany({ id, open: true })]))
+      return $.set(saved).run(LoadCompany.make({ id, open: true }))
     }
     const game = base.board.game
     const file = fileFor({
@@ -200,19 +199,19 @@ export const CompanyPage = Html.component({
     })
     const model: Model = {
       ...base,
-      route: OldAppRoute.Company(),
+      route: AppRoute.Company(),
       boot: { _tag: 'Ready' },
       companyPhase: { _tag: 'Open', id: file.id },
       saves: { _tag: 'Ready', index: { lastPlayed: file.id, companies: [file] } },
       board: freshBoard(game),
     }
-    return $.set(model).run(...runCommands([sync(model, true)]))
+    return $.set(model).run(sync(model, true))
   },
 
   update: ($, message) => {
     const result = update($.model, message)
     const next = $.set(result.model)
-    return result.commands === undefined ? next : next.run(...runCommands(result.commands))
+    return result.commands === undefined ? next : next.run(...result.commands)
   },
 
   subscriptions: () => [

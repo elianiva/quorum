@@ -2,10 +2,9 @@ import { Prefs } from './prefs-schema.ts'
 export { Motion, Prefs, TextSize, Theme, TradeoffKind } from './prefs-schema.ts'
 import { MailMessage, Snippet } from './mail-text.ts'
 import { TradeoffOption } from '@quorum/ui/game/tradeoff'
-import { Listbox, Menu as UiMenu } from '@foldkit/ui'
-import * as VolumeSlider from '@quorum/ui/primitives/slider'
 import { Effect, Schema } from 'effect'
-import { DragAndDrop } from '@foldkit/ui'
+import * as Drag from './drag.ts'
+import * as MenuControl from './menu.ts'
 import { DOCK_GROUPS, EXIT_IDS, REQUEST_KINDS, type DockGroup } from '@quorum/simulation/catalog'
 import type { Ledger } from '@quorum/simulation/ledger'
 import { solveFlow } from '@quorum/simulation/solve'
@@ -239,7 +238,7 @@ const RenameDraft = Schema.Struct({
 export type RenameDraft = typeof RenameDraft.Type
 
 export const Team = Schema.Struct({
-  drag: DragAndDrop.Model,
+  drag: Drag.DragModel,
   service: ServiceDraft,
   rename: Schema.NullOr(RenameDraft),
 })
@@ -247,7 +246,7 @@ export type Team = typeof Team.Type
 
 export const Research = Schema.Struct({
   focus: Schema.NullOr(ResearchId),
-  drag: DragAndDrop.Model,
+  drag: Drag.DragModel,
   poolsOpen: Schema.Boolean,
   sheetWidth: Schema.Finite,
 })
@@ -394,13 +393,9 @@ export const Model = Schema.Struct({
   settingsSection: SettingsSection,
   /* Whether the menu tree has the section open as its own column. */
   settingsOpen: Schema.Boolean,
-  languagePicker: Listbox.Model,
-  volumeSlider: VolumeSlider.Model,
-  poolSlider: VolumeSlider.Model,
-  poolDraft: Schema.NullOr(Schema.Finite),
   runtimePicker: StackPicker,
   frameworkPicker: StackPicker,
-  moreMenu: UiMenu.Model,
+  moreMenu: MenuControl.MenuModel,
 })
 export type Model = typeof Model.Type
 

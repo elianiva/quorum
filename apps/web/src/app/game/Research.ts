@@ -1777,8 +1777,7 @@ const queueButton = (
     ),
   )
 
-/* The study queue still keeps the game's drag-and-drop submodel, so these
-   read it the way @foldkit/ui/dragAndDrop read it, without importing it. */
+/* The study queue's drag-and-drop state and messages. */
 type DragModel = Model['board']['research']['drag']
 type DragMessage = Parameters<typeof ResearchMessage.DragChanged>[0]['message']
 
@@ -1848,20 +1847,13 @@ const dropTargetAt = (
   return Option.some({ containerId, index: found === -1 ? sortable.length : found })
 }
 
-const ARROW_DIRECTIONS: Readonly<Record<string, 'Down' | 'Left' | 'Right' | 'Up'>> = {
-  ArrowDown: 'Down',
-  ArrowLeft: 'Left',
-  ArrowRight: 'Right',
-  ArrowUp: 'Up',
-}
-
-/* The pointer and keyboard wiring @foldkit/ui's DragAndDrop.draggable,
-   droppable and sortable attributes laid down, hand-written here. */
+/* The pointer and keyboard wiring for the sortable study queue. */
 const attachDrag = (host: HTMLElement, offer: (message: DragMessage) => void): (() => void) => {
   const events = new AbortController()
   const containerId = host.getAttribute('data-droppable-id') ?? STUDY_QUEUE
   let pointer: number | null = null
   let keyboard = false
+  let keyboardIndex = 0
   const handles = () => [...host.querySelectorAll<HTMLElement>('[data-sortable-id]')]
   const handleOf = (target: EventTarget | null): HTMLElement | null => {
     const element = target instanceof Element ? target : null
@@ -1911,17 +1903,20 @@ const attachDrag = (host: HTMLElement, offer: (message: DragMessage) => void): (
         keyboard = false
         offer({ _tag: 'CancelledDrag' })
       } else if (event.key === 'Tab') {
-        offer({
-          _tag: 'PressedArrowKey',
-          direction: event.shiftKey ? 'PreviousContainer' : 'NextContainer',
-        })
+        return
       } else if (event.key === ' ' || event.key === 'Enter') {
         keyboard = false
         offer({ _tag: 'ConfirmedKeyboardDrop' })
-      } else {
-        const direction = ARROW_DIRECTIONS[event.key]
-        if (direction === undefined) return
-        offer({ _tag: 'PressedArrowKey', direction })
+      } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        keyboardIndex =
+          event.key === 'ArrowDown'
+            ? Math.min(handles().length, keyboardIndex + 1)
+            : Math.max(0, keyboardIndex - 1)
+        offer({
+          _tag: 'CompletedResolveKeyboardMove',
+          targetContainerId: containerId,
+          targetIndex: keyboardIndex,
+        })
       }
       event.preventDefault()
       return
@@ -1938,11 +1933,12 @@ const attachDrag = (host: HTMLElement, offer: (message: DragMessage) => void): (
     const itemId = handle.dataset['sortableId']
     if (itemId === undefined) return
     keyboard = true
+    keyboardIndex = handles().indexOf(handle)
     offer({
       _tag: 'ActivatedKeyboardDrag',
       itemId,
       containerId,
-      index: handles().indexOf(handle),
+      index: keyboardIndex,
     })
     event.preventDefault()
   }

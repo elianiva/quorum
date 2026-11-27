@@ -26,7 +26,10 @@ const newDeviceId = (): string =>
   ).join('')
 
 export const loadSaves = () =>
-  Option.getOrElse(parseIndex(readStored(SAVE_INDEX_KEY) ?? ''), () => EMPTY_SAVE_INDEX)
+  Option.getOrElse(
+    Option.map(parseIndex(readStored(SAVE_INDEX_KEY) ?? ''), (read) => read.index),
+    () => EMPTY_SAVE_INDEX,
+  )
 
 export const loadFounder = (): Founder => {
   const stored = readStored(FOUNDER_KEY)

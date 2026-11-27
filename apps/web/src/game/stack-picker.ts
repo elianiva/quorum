@@ -1,5 +1,5 @@
 import { Schema } from 'effect'
-import { defineMessageUnion } from 'foldkit/message'
+import { UiSchema } from '@effect/ui'
 
 export const StackPicker = Schema.Struct({
   query: Schema.String,
@@ -7,7 +7,7 @@ export const StackPicker = Schema.Struct({
 })
 export type StackPicker = typeof StackPicker.Type
 
-export const StackPickerMessage = defineMessageUnion({
+export const StackPickerMessage = UiSchema.TaggedEnum({
   Searched: { query: Schema.String },
   Moved: { delta: Schema.Finite, count: Schema.Finite },
 })
@@ -16,7 +16,7 @@ export type StackPickerMessage = typeof StackPickerMessage.Type
 export const initStackPicker = (): StackPicker => ({ query: '', active: -1 })
 
 export const updateStackPicker = (picker: StackPicker, message: StackPickerMessage): StackPicker =>
-  StackPickerMessage.match<StackPicker>(message, {
+  StackPickerMessage.match(message, {
     Searched: ({ query }) => ({ query, active: -1 }),
     Moved: ({ delta, count }) => ({
       ...picker,

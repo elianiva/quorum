@@ -1,8 +1,6 @@
 import { AppRoute, onBoard, urlOf, urlToAppRoute } from './route.ts'
 import { DEFAULT_LOGO } from './logos.ts'
-import { Listbox, Menu as UiMenu } from '@foldkit/ui'
-import * as VolumeSlider from '@quorum/ui/primitives/slider'
-import { POOL_SLIDER_STEPS } from './pool-scale.ts'
+import * as MenuControl from './menu.ts'
 import { initStackPicker } from './stack-picker.ts'
 import {
   CheckRoom,
@@ -28,10 +26,8 @@ import { isSending, isSent } from './survey-machine.ts'
 import { ledgerOf, Model, halted, EMPTY_PALETTE, EMPTY_ROOM, EMPTY_SURVEY } from './model.ts'
 import { nameOf } from '../platform/room-socket.ts'
 import { newGame } from '@quorum/simulation/company'
-import { type ApiRpc } from '@/platform/rpc.ts'
 import { type Ledger } from '@quorum/simulation/ledger'
 import { type LogEntry } from './playlog.ts'
-import { type Runtime } from 'foldkit'
 import { companiesHandlers } from './update/companies.ts'
 import { sessionHandlers } from './update/session.ts'
 import { shellHandlers } from './update/shell.ts'
@@ -102,17 +98,13 @@ export const initialModel = (): Model => {
     pwa: { install: pwaFrom(pwa), online: pwa.online, updated: pwa.updated },
     settingsSection: 'sound',
     settingsOpen: false,
-    languagePicker: Listbox.init({ id: 'interface-language' }),
-    volumeSlider: VolumeSlider.init({ id: 'volume', min: 0, max: 100, step: 5 }),
-    poolSlider: VolumeSlider.init({ id: 'pool', min: 0, max: POOL_SLIDER_STEPS, step: 10 }),
-    poolDraft: null,
     runtimePicker: initStackPicker(),
     frameworkPicker: initStackPicker(),
-    moreMenu: UiMenu.init({ id: 'more-menu' }),
+    moreMenu: MenuControl.init('more-menu'),
   })
 }
 
-export const init: Runtime.RoutingApplicationInit<Model, Message, void, ApiRpc> = (url) => {
+export const init = (url: Readonly<{ pathname: string }>): UpdateResult => {
   const route = urlToAppRoute(url)
   const base = initialModel()
   return {
@@ -122,18 +114,18 @@ export const init: Runtime.RoutingApplicationInit<Model, Message, void, ApiRpc> 
       ...(AppRoute.guards.Room(route)
         ? {
             panel: 'room' as const,
-            room: { ...base.room, phase: { _tag: 'Connecting' as const, code: route.room } },
+            room: { ...base.room, phase: { _tag: 'Connecting' as const, code: route.params.room } },
           }
         : {}),
       boot: onBoard(route) ? { _tag: 'Ready' } : { _tag: 'Shut' },
     },
     commands: [
-      LoadSaves({}),
-      LoadSandboxStore({}),
-      LoadPrefs({}),
-      LoadFounder({}),
-      ...(AppRoute.guards.Room(route) ? [CheckRoom({ code: route.room })] : []),
-      ...(url.pathname === urlOf(route) ? [] : [ReplaceUrl({ url: urlOf(route) })]),
+      LoadSaves.make(),
+      LoadSandboxStore.make(),
+      LoadPrefs.make(),
+      LoadFounder.make(),
+      ...(AppRoute.guards.Room(route) ? [CheckRoom.make({ code: route.params.room })] : []),
+      ...(url.pathname === urlOf(route) ? [] : [ReplaceUrl.make({ url: urlOf(route) })]),
     ],
   }
 }
@@ -216,7 +208,7 @@ const logged = (model: Model, message: Message, result: UpdateResult): UpdateRes
   }
   if (raised) logs.push(line(time, 'Toast', { message: raised.message, tone: raised.tone }))
   if (logs.length === 0) return result
-  return { ...result, commands: [...(result.commands ?? []), AppendLog({ entries: logs })] }
+  return { ...result, commands: [...(result.commands ?? []), AppendLog.make({ entries: logs })] }
 }
 
 const withUrl = (model: Model, message: Message, result: UpdateResult): UpdateResult => {
@@ -226,7 +218,7 @@ const withUrl = (model: Model, message: Message, result: UpdateResult): UpdateRe
     (command) => command.name === 'PushUrl' || command.name === 'ReplaceUrl',
   )
   if (moved) return result
-  return { ...result, commands: [...(result.commands ?? []), PushUrl({ url })] }
+  return { ...result, commands: [...(result.commands ?? []), PushUrl.make({ url })] }
 }
 
 const ROUNDS = new Set(['RoundRaised', 'RoundDeclined', 'CheatRound'])
@@ -268,11 +260,11 @@ const connect = (model: Model, result: UpdateResult): UpdateResult =>
           'boot',
           true,
         ),
-        commands: [...(result.commands ?? []), ConnectBoard({})],
+        commands: [...(result.commands ?? []), ConnectBoard.make({})],
       }
 
 function handle(model: Model, message: Message): UpdateResult {
-  return Message.match<UpdateResult>(message, {
+  return Message.match(message, {
     ...companiesHandlers(model),
     ...sessionHandlers(model),
     ...shellHandlers(model),
@@ -299,7 +291,7 @@ function route(model: Model, message: Message): UpdateResult {
   if (result.model.prefs.muted || result.commands?.some((command) => command.name === 'PlaySound'))
     return result
   const cue = cueOf(model, message, result.model)
-  return cue ? { ...result, commands: [...(result.commands ?? []), PlaySound(cue)] } : result
+  return cue ? { ...result, commands: [...(result.commands ?? []), PlaySound.make(cue)] } : result
 }
 
 export const update = (model: Model, message: Message): UpdateResult => {

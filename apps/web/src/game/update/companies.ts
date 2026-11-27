@@ -88,8 +88,8 @@ const startCompany = (
     model: next,
     commands: [
       ...saveCommands(next),
-      FitBoard({}),
-      AppendLog({
+      FitBoard.make({}),
+      AppendLog.make({
         entries: [
           line(game.time, 'CompanyStarted', {
             stage: game.stage,
@@ -113,7 +113,7 @@ const titleIfBoard = (model: Model): UpdateResult =>
   model.route._tag === 'Company'
     ? {
         model: { ...model, route: AppRoute.Title() },
-        commands: [ReplaceUrl({ url: urlOf(AppRoute.Title()) })],
+        commands: [ReplaceUrl.make({ url: urlOf(AppRoute.Title()) })],
       }
     : { model }
 
@@ -132,8 +132,8 @@ const dropped = (
     companyPhase: step(model.companyPhase, { _tag: 'Failed', id }),
   })
   const commands: ReadonlyArray<AnyCommand> = [
-    ...(kept === null ? [] : [KeepBrokenSave(kept)]),
-    DeleteCompany({ id, index: saves }),
+    ...(kept === null ? [] : [KeepBrokenSave.make(kept)]),
+    DeleteCompany.make({ id, index: saves }),
     ...(back.commands ?? []),
   ]
   if (!warn) return { model: back.model, commands }
@@ -200,7 +200,7 @@ export const changeFounder = (
     onFailure: (refusal) => withToast(model, refusalIn(say(model), refusal), 'warn'),
     onSuccess: (founder) => {
       const next: Model = { ...model, founder }
-      const commands = [WriteFounder({ founder })]
+      const commands = [WriteFounder.make({ founder })]
       return done ? withToast(next, done, 'ok', commands) : { model: next, commands }
     },
   })
@@ -221,7 +221,7 @@ const found = (model: Model): UpdateResult => {
   const started = startCompany({ ...model, founder }, game, game.stage >= 1 ? 'era' : 'none', file)
   return {
     ...started,
-    commands: [...(started.commands ?? []), WriteFounder({ founder })],
+    commands: [...(started.commands ?? []), WriteFounder.make({ founder })],
   }
 }
 
@@ -278,13 +278,18 @@ const loadedSaves = (model: Model, index: string | null): UpdateResult => {
   if (!read) {
     const back = titleIfBoard(model)
     return withToast(back.model, say(model).toasts.unreadableList, 'warn', [
-      KeepBrokenSave({ json: index, reason: 'The company list is not a save index.' }),
+      KeepBrokenSave.make({ json: index, reason: 'The company list is not a save index.' }),
       ...(back.commands ?? []),
     ])
   }
   const parsed = read.index
   const keep = read.skipped
-    ? [KeepBrokenSave({ json: index, reason: 'Some companies in the list could not be read.' })]
+    ? [
+        KeepBrokenSave.make({
+          json: index,
+          reason: 'Some companies in the list could not be read.',
+        }),
+      ]
     : []
   const loaded: Model = {
     ...model,
@@ -298,15 +303,19 @@ const loadedSaves = (model: Model, index: string | null): UpdateResult => {
     const back = titleIfBoard(loaded)
     return {
       ...back,
-      commands: [...keep, PruneSaves({ index: parsed, held: read.held }), ...(back.commands ?? [])],
+      commands: [
+        ...keep,
+        PruneSaves.make({ index: parsed, held: read.held }),
+        ...(back.commands ?? []),
+      ],
     }
   }
   return {
     model: loaded,
     commands: [
       ...keep,
-      PruneSaves({ index: parsed, held: read.held }),
-      LoadCompany({ id: parsed.lastPlayed, open: model.route._tag === 'Company' }),
+      PruneSaves.make({ index: parsed, held: read.held }),
+      LoadCompany.make({ id: parsed.lastPlayed, open: model.route._tag === 'Company' }),
     ],
   }
 }
@@ -343,7 +352,7 @@ export const companiesHandlers = (model: Model): MessageCases<UpdateResult, Comp
   CompanyClosed: () => ({
     model: {
       ...model,
-      route: AppRoute.Menu({ menu: 'companies' }),
+      route: AppRoute.Menu({ params: { menu: 'companies' } }),
       saveFocus: null,
       saveConfirm: { _tag: 'List' },
     },
@@ -361,7 +370,7 @@ export const companiesHandlers = (model: Model): MessageCases<UpdateResult, Comp
         saveFocus: null,
         saveConfirm: { _tag: 'List' },
       },
-      commands: [LoadCompany({ id, open: true })],
+      commands: [LoadCompany.make({ id, open: true })],
     }
   },
 
@@ -403,7 +412,7 @@ export const companiesHandlers = (model: Model): MessageCases<UpdateResult, Comp
           }
         : {}),
     }
-    return { model: next, commands: [DeleteCompany({ id, index: saves })] }
+    return { model: next, commands: [DeleteCompany.make({ id, index: saves })] }
   },
 
   CompanyDeleted: () => ({ model }),
@@ -415,17 +424,17 @@ export const companiesHandlers = (model: Model): MessageCases<UpdateResult, Comp
     )
     const founder = loaded.deviceId ? loaded : { ...loaded, deviceId }
     const next: Model = { ...model, founder, today }
-    const commands: Array<AnyCommand> = loaded.deviceId ? [] : [WriteFounder({ founder })]
+    const commands: Array<AnyCommand> = loaded.deviceId ? [] : [WriteFounder.make({ founder })]
     if (model.route._tag !== 'Challenge') return { model: next, commands }
-    const entry = challengeById(model.route.challenge)
+    const entry = challengeById(model.route.params.challenge)
     if (entry) {
       const opened = enterChallenge(next, entry.id)
       return { ...opened, commands: [...commands, ...(opened.commands ?? [])] }
     }
-    const menu = AppRoute.Menu({ menu: 'challenges' })
+    const menu = AppRoute.Menu({ params: { menu: 'challenges' } })
     return {
       model: { ...next, route: menu },
-      commands: [...commands, ReplaceUrl({ url: urlOf(menu) })],
+      commands: [...commands, ReplaceUrl.make({ url: urlOf(menu) })],
     }
   },
 

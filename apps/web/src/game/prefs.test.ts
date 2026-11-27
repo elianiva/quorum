@@ -8,7 +8,7 @@ import { initialModel, update } from './update.ts'
 import { Message } from './message.ts'
 import { AppRoute } from './route.ts'
 import { Message as SliderMessage } from '@quorum/ui/primitives/slider'
-import { parsePrefs } from './update/panels.ts'
+import { parsePrefs } from './prefs-schema.ts'
 import { PanelFocus, settingsPanel } from '../components/lab/panels.ts'
 
 type Named = Readonly<{ name: string; args: Record<string, unknown> }>

@@ -1,8 +1,9 @@
+import { Prefs } from './prefs-schema.ts'
+export { Motion, Prefs, TextSize, Theme, TradeoffKind } from './prefs-schema.ts'
 import { MailMessage, Snippet } from './mail-text.ts'
 import { TradeoffOption } from '@quorum/ui/game/tradeoff'
 import { Listbox, Menu as UiMenu } from '@foldkit/ui'
 import * as VolumeSlider from '@quorum/ui/primitives/slider'
-import { Locale } from '../i18n/index.ts'
 import { Effect, Schema } from 'effect'
 import { DragAndDrop } from '@foldkit/ui'
 import { DOCK_GROUPS, EXIT_IDS, REQUEST_KINDS, type DockGroup } from '@quorum/simulation/catalog'
@@ -164,20 +165,8 @@ export type MailLabel = typeof MailLabel.Type
 
 export { TradeoffOption }
 
-const TradeoffKind = Schema.Literals(['runtime', 'framework', 'family'])
-export type TradeoffKind = typeof TradeoffKind.Type
-
 const RevealCue = Schema.Struct({ key: Reveal, left: Schema.Finite })
 export type RevealCue = typeof RevealCue.Type
-
-export const Motion = Schema.Literals(['system', 'reduce'])
-export type Motion = typeof Motion.Type
-
-export const TextSize = Schema.Literals(['normal', 'large'])
-export type TextSize = typeof TextSize.Type
-
-export const Theme = Schema.Literals(['light', 'dark'])
-export type Theme = typeof Theme.Type
 
 const Palette = Schema.Struct({
   open: Schema.Boolean,
@@ -187,23 +176,6 @@ const Palette = Schema.Struct({
 export type Palette = typeof Palette.Type
 
 export const EMPTY_PALETTE: Palette = { open: false, query: '', active: null }
-
-export const Prefs = Schema.Struct({
-  locale: Locale.pipe(Schema.withDecodingDefaultKey(Effect.succeed('en' as const))),
-  seenTradeoffs: Schema.Array(TradeoffKind).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
-  muted: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
-  volume: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(100))),
-  autoPause: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
-  blurPause: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(true))),
-  easyMode: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
-  motion: Motion.pipe(Schema.withDecodingDefaultKey(Effect.succeed('system' as const))),
-  text: TextSize.pipe(Schema.withDecodingDefaultKey(Effect.succeed('normal' as const))),
-  theme: Theme.pipe(Schema.withDecodingDefaultKey(Effect.succeed('light' as const))),
-  agentAccess: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
-  analytics: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(true))),
-  pwaPromptSeen: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
-})
-export type Prefs = typeof Prefs.Type
 
 export const Undo = Schema.Struct({
   label: Schema.String,

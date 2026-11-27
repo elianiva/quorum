@@ -1,11 +1,12 @@
 import { ApplySettings, FocusDashboard, WritePrefs } from '../commands.ts'
 import { EMPTY_RESEARCH, ResearchMessage } from '../research.ts'
 import { Message } from '../message.ts'
-import { Model, Prefs, clockAway, easyMode, offCompany, roomLive } from '../model.ts'
+import { Model, clockAway, easyMode, offCompany, roomLive } from '../model.ts'
 import { isExited } from '../company-machine.ts'
 import { clockStep } from '../clock-machine.ts'
-import { Option, Schema } from 'effect'
-import { PrefsMessage, updatePrefs, volumeIn } from '../prefs.ts'
+import { Option } from 'effect'
+import { PrefsMessage, updatePrefs } from '../prefs.ts'
+import { parsePrefs } from '../prefs-schema.ts'
 import { updateSurvey } from '../survey.ts'
 import { Update } from 'foldkit'
 import {
@@ -96,27 +97,6 @@ const foldDashboard = Update.foldChild({
   write: (model, dashboard) => ({ ...model, board: { ...model.board, dashboard } }),
   toParentMessage: (message) => Message.DashboardChanged({ message }),
 })
-
-const readableFields = (saved: Readonly<Record<string, unknown>>): Record<string, unknown> =>
-  Object.fromEntries(
-    Object.entries(Prefs.fields)
-      .filter(
-        ([key, field]) =>
-          key in saved &&
-          Option.isSome(Schema.decodeUnknownOption(Schema.Struct({ [key]: field }))(saved)),
-      )
-      .map(([key]) => [key, saved[key]]),
-  )
-
-export const parsePrefs = (json: string) =>
-  Option.flatMap(
-    Schema.decodeOption(Schema.fromJsonString(Schema.Record(Schema.String, Schema.Unknown)))(json),
-    (saved) =>
-      Option.map(Schema.decodeOption(Prefs)(readableFields(saved)), (prefs) => ({
-        ...prefs,
-        volume: volumeIn(prefs.volume),
-      })),
-  )
 
 const foldVolumeSlider = (route: Dispatch) =>
   Update.foldChild({

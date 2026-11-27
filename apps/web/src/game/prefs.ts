@@ -3,6 +3,9 @@ import { defineMessageUnion } from 'foldkit/message'
 import { Schema } from 'effect'
 import { Locale } from '../i18n/index.ts'
 import type { Prefs } from './model.ts'
+import { volumeIn } from './prefs-schema.ts'
+
+export { volumeIn } from './prefs-schema.ts'
 
 export const PrefsMessage = defineMessageUnion({
   LocaleChosen: { locale: Locale },
@@ -18,8 +21,6 @@ export const PrefsMessage = defineMessageUnion({
   ThemeToggled: {},
 })
 export type PrefsMessage = typeof PrefsMessage.Type
-
-export const volumeIn = (volume: number): number => Math.min(100, Math.max(0, volume))
 
 export const updatePrefs = (
   prefs: Prefs,

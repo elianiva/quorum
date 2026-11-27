@@ -9,6 +9,27 @@ toc: top
 
 Quorum has no versions. It changes all the time, and this page lists the latest days, newest first, so you can see what moved since you last played. A page on this wiki can lag behind the game by a few days. Older days are in the [full changelog](/about/changelog/all).
 
+## Thursday, 26 November 2026
+
+### Changed
+
+- Define Link rules in the Component catalog ([08d6b1d](https://github.com/elianiva/quorum/commit/08d6b1ddc3d154dcd37c5f1e3cf87fcb34964598))
+- Make team morale recoverable with per-team offsites ([19e086a](https://github.com/elianiva/quorum/commit/19e086a55fc433e91705894013977259b436eaa4))
+- Ring the port that a cross-zone link arrives on ([39df836](https://github.com/elianiva/quorum/commit/39df83641948c3e2ee289966a0f54c07d4579070))
+- Fold each Service in the Services card behind a summary row ([191ee70](https://github.com/elianiva/quorum/commit/191ee707380581fe4523fa7fc8a5b345d479ff5d))
+- Let a Seat rename a team in a live Room ([1974f98](https://github.com/elianiva/quorum/commit/1974f98460e48aed30b304ec6942e8ed3a79d663))
+- Let the player choose which language to hire ([c2d5e3e](https://github.com/elianiva/quorum/commit/c2d5e3e386f7bf37c71c3ddcac0c5e3e204f5d00))
+- Make Workers consumer pools and move their Stack in two steps ([c6c0361](https://github.com/elianiva/quorum/commit/c6c0361d688a67579fe552151eabd08277b6c43c))
+- Let the Parts section and sandbox controls close after they open ([e18d6a8](https://github.com/elianiva/quorum/commit/e18d6a829cf9008bc4c5679f8847767b2b6304fd))
+- Lay out the DORA metrics card as a two-by-two grid ([0dd5851](https://github.com/elianiva/quorum/commit/0dd58516c184b4f7787b25f6ade311627451fe41))
+- Add sixteen engineer names and sign-offs ([264cee3](https://github.com/elianiva/quorum/commit/264cee3d089f99a07208ab80543fcb76915f0b14))
+- Close the Inbox when the inspector opens and keep each Company's state separate ([f2c4a0a](https://github.com/elianiva/quorum/commit/f2c4a0a699e6853105956d930d5cfadce4e70074))
+- Label the database volume slot IOPS instead of Disk ([521c4c6](https://github.com/elianiva/quorum/commit/521c4c63214a6bece897c71832115fcc1918c42c))
+- Move every stylesheet rule into Panda ([0f910a1](https://github.com/elianiva/quorum/commit/0f910a19d8078482fa0b2362b0d4ca5c11c96cfa))
+- Align settings rows with the menu lines ([29acacd](https://github.com/elianiva/quorum/commit/29acacd17cbc024ae9ff937846478f242f66c08c))
+- Name current real products in the component catalog ([6172ff8](https://github.com/elianiva/quorum/commit/6172ff8262ad49db7a6562e9bc03a0c0136f5dda))
+- Add the changelog entry for 2026-11-25 (#70) ([f06cf4a](https://github.com/elianiva/quorum/commit/f06cf4a2dbaeedea4ecff24c8ebeb189509be070))
+
 ## Wednesday, 25 November 2026
 
 ### Changed
@@ -101,15 +122,3 @@ Quorum has no versions. It changes all the time, and this page lists the latest 
 - Show what the Autoscaler is doing and what it does next ([1c4b845](https://github.com/elianiva/quorum/commit/1c4b84588a4e39b433c0f31adec4bf20e380d3b2))
 - Show which Link runs past its timeout on the Dashboard ([430a166](https://github.com/elianiva/quorum/commit/430a166238b2154a80468330eda4de8639ef18b7))
 - Replace the running build when a deploy lands ([fe8640f](https://github.com/elianiva/quorum/commit/fe8640fbd90cd0f747e1dc108788af94b1ec9397))
-
-## Thursday, 19 November 2026
-
-### Changed
-
-- Show the Cache's memory and load, and name a low hit ratio's cause ([19b4517](https://github.com/elianiva/quorum/commit/19b4517b993f599ab81e4ce35aa0b230b6b5cc88))
-- Open the Component's wiki page from the Inspector ([d72d04a](https://github.com/elianiva/quorum/commit/d72d04abbf968b0d05a08cab60bd2082b8487559))
-- Return cancelled work in progress to the queue ([59840c8](https://github.com/elianiva/quorum/commit/59840c8e55dec512c70d3d47d00d8312cc78fdf9))
-- Put the whole menu on one spine and move Settings into the list ([0c4d771](https://github.com/elianiva/quorum/commit/0c4d77155de0266e908818c2c735ec7a5deab1d7))
-- Turn the menu into a tree on a panning canvas ([786aff3](https://github.com/elianiva/quorum/commit/786aff32728b558ae4eacd74428175725447b1aa))
-- Add the changelog entry for 2026-11-18 (#62) ([768de40](https://github.com/elianiva/quorum/commit/768de40903e103fdfa0ed6b4bd512a49da062663))
-- Add the changelog entry for 2026-11-17 (#61) ([a60af49](https://github.com/elianiva/quorum/commit/a60af49b388488991628ff20f0dd6d154942d538))

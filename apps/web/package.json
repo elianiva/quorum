@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "typecheck": "tsrs --noEmit -p tsconfig.json && effect-tsrs diagnostics --strict --project tsconfig.json",
+    "typecheck": "tsrs --noEmit -p tsconfig.json && effect-tsrs diagnostics --strict --project tsconfig.json --lspconfig '{\"allowedExperimentalApis\":[\"@effect/ui\"],\"allowedUnstableApis\":[\"effect/rpc\"]}'",
     "test": "vitest run"
   },
   "dependencies": {

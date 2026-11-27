@@ -29,6 +29,7 @@ import { nodeList } from './NodeList.ts'
 import { alertsNotice, incidentNotice, researchOffer } from './Notices.ts'
 import { commandPalette } from './Palette.ts'
 import { researchPanel } from './Research.ts'
+import { teamPanel } from './Team.ts'
 import { mirrorPanel } from './Mirror.ts'
 import { churnPanel } from './Churn.ts'
 import { costPanel } from './Cost.ts'
@@ -236,6 +237,7 @@ export const CompanyPage = Html.component({
       inspector(h, model, ledger),
       tradeoffCard(h, model),
       model.panel === 'research' ? researchPanel(h, model) : null,
+      model.panel === 'team' ? teamPanel(h, model) : null,
       model.panel === 'exit' ? Legacy.exitPanel(h, model) : null,
       model.panel === 'playbooks' ? Legacy.playbooksPanel(h, model) : null,
       model.panel === 'help' ? helpPanel(h, model) : null,

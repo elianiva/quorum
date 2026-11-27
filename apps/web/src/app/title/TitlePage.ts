@@ -15,7 +15,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Coffee,
-  Download,
   Lock,
   type IconNode,
 } from 'lucide'
@@ -68,7 +67,11 @@ const CTA = css({
   },
 })
 
-const svgElement = <Msg>(h: H<Msg>, tag: string, attrs: Readonly<Record<string, unknown>>) => {
+const svgElement = <Msg>(
+  h: H<Msg>,
+  tag: string,
+  attrs: Readonly<Record<string, unknown>>,
+): View.Content<Msg> => {
   const value = (key: string, fallback = '0') => {
     const raw = attrs[key]
     return typeof raw === 'string' || typeof raw === 'number' ? String(raw) : fallback
@@ -111,7 +114,7 @@ const svgElement = <Msg>(h: H<Msg>, tag: string, attrs: Readonly<Record<string, 
   }
 }
 
-const icon = <Msg>(h: H<Msg>, node: IconNode, className: string) =>
+const icon = <Msg>(h: H<Msg>, node: IconNode, className: string): View.Content<Msg> =>
   h.svg
     .class(className)
     .attr('viewBox', '0 0 24 24')
@@ -123,7 +126,7 @@ const icon = <Msg>(h: H<Msg>, node: IconNode, className: string) =>
     .attr('aria-hidden', 'true')
     .children(...node.map(([tag, attrs]) => svgElement(h, tag, attrs)))
 
-const githubMark = <Msg>(h: H<Msg>) =>
+const githubMark = <Msg>(h: H<Msg>): View.Content<Msg> =>
   h.svg
     .class(ICON)
     .attr('viewBox', '0 0 24 24')
@@ -143,7 +146,7 @@ const GLYPHS: ReadonlyArray<{ at: number; paths: ReadonlyArray<string> }> = [
   },
 ]
 
-const wordmark = <Msg>(h: H<Msg>) =>
+const wordmark = <Msg>(h: H<Msg>): View.Content<Msg> =>
   h.svg
     .class(cx(S.MARK, 'is-hero'))
     .attr('viewBox', '0 0 720 194')
@@ -163,54 +166,60 @@ const wordmark = <Msg>(h: H<Msg>) =>
       h.circle.attr('cx', '89').attr('cy', '180').attr('r', '14').children(),
     )
 
-const toolbar = (h: H<TitleMessage>, t: ReturnType<typeof copyIn>) => {
-  const release = import.meta.env.VITE_SENTRY_RELEASE
+const toolbar = (h: H<TitleMessage>, t: ReturnType<typeof copyIn>): View.Content<TitleMessage> => {
+  const release: string | undefined = import.meta.env.VITE_SENTRY_RELEASE
   const build = release === undefined || release === '' ? 'dev' : release.slice(0, 7)
+  const tools: ReadonlyArray<View.Content<TitleMessage>> = [
+    h.a
+      .class(cx(S.TOOL, 'is-wide'))
+      .attr('href', build === 'dev' ? SOURCE_URL : `${SOURCE_URL}/commit/${release}`)
+      .attr('target', '_blank')
+      .attr('rel', 'noreferrer noopener')
+      .attr('aria-label', `${t.title.build} ${build}`)
+      .attr('title', `${t.title.build} ${build}`)
+      .children(h.span.class(S.BUILD).children(build)),
+    h.a
+      .class(cx(S.TOOL, 'is-wide'))
+      .attr('href', `${SOURCE_URL}/issues`)
+      .attr('target', '_blank')
+      .attr('rel', 'noreferrer noopener')
+      .attr('aria-label', t.title.feedback)
+      .attr('title', t.title.feedback)
+      .children(
+        h.span.class(S.TOOL_LABEL).children(t.title.feedback),
+        icon(h, ArrowUpRight, S.ICON),
+      ),
+    h.a
+      .class(S.TOOL)
+      .attr('href', 'https://ko-fi.com/elianiva')
+      .attr('target', '_blank')
+      .attr('rel', 'noreferrer noopener')
+      .attr('aria-label', t.title.supportOnKofi)
+      .attr('title', t.title.supportOnKofi)
+      .children(icon(h, Coffee, S.ICON)),
+    h.a
+      .class(S.TOOL)
+      .attr('href', SOURCE_URL)
+      .attr('target', '_blank')
+      .attr('rel', 'noreferrer noopener')
+      .attr('aria-label', t.title.openSourceOnGitHub)
+      .attr('title', t.title.openSourceOnGitHub)
+      .children(githubMark(h)),
+  ]
   return h.header.class(S.BAR).children(
+    h.span.children(),
     h.nav
       .class(S.TOOLS)
       .attr('aria-label', t.title.taskbar)
-      .children(
-        h.a
-          .class(cx(S.TOOL, 'is-wide'))
-          .attr('href', build === 'dev' ? SOURCE_URL : `${SOURCE_URL}/commit/${release}`)
-          .attr('target', '_blank')
-          .attr('rel', 'noreferrer noopener')
-          .attr('aria-label', `${t.title.build} ${build}`)
-          .attr('title', `${t.title.build} ${build}`)
-          .children(h.span.class(S.BUILD).children(build)),
-        h.a
-          .class(cx(S.TOOL, 'is-wide'))
-          .attr('href', `${SOURCE_URL}/issues`)
-          .attr('target', '_blank')
-          .attr('rel', 'noreferrer noopener')
-          .attr('aria-label', t.title.feedback)
-          .attr('title', t.title.feedback)
-          .children(
-            h.span.class(S.TOOL_LABEL).children(t.title.feedback),
-            icon(h, ArrowUpRight, S.ICON),
-          ),
-        h.a
-          .class(S.TOOL)
-          .attr('href', 'https://ko-fi.com/elianiva')
-          .attr('target', '_blank')
-          .attr('rel', 'noreferrer noopener')
-          .attr('aria-label', t.title.supportOnKofi)
-          .attr('title', t.title.supportOnKofi)
-          .children(icon(h, Coffee, S.ICON)),
-        h.a
-          .class(S.TOOL)
-          .attr('href', SOURCE_URL)
-          .attr('target', '_blank')
-          .attr('rel', 'noreferrer noopener')
-          .attr('aria-label', t.title.openSourceOnGitHub)
-          .attr('title', t.title.openSourceOnGitHub)
-          .children(githubMark(h)),
-      ),
+      .children(...tools),
   )
 }
 
-const dock = (h: H<TitleMessage>, t: ReturnType<typeof copyIn>, locale: Locale) =>
+const dock = (
+  h: H<TitleMessage>,
+  t: ReturnType<typeof copyIn>,
+  locale: Locale,
+): View.Content<TitleMessage> =>
   h.footer.class(S.DOCK).children(
     h.div
       .class(S.KEYS)
@@ -334,7 +343,6 @@ const mainIndex = (h: H<TitleMessage>, model: TitleModel, t: ReturnType<typeof c
       key: 'import',
       label: t.title.importACompany,
       message: null,
-      figureMark: Download,
       hotkey: next(),
     }),
     ...(count > 0
@@ -407,7 +415,11 @@ const mainIndex = (h: H<TitleMessage>, model: TitleModel, t: ReturnType<typeof c
     )
 }
 
-const mainPage = (h: H<TitleMessage>, model: TitleModel, t: ReturnType<typeof copyIn>) =>
+const mainPage = (
+  h: H<TitleMessage>,
+  model: TitleModel,
+  t: ReturnType<typeof copyIn>,
+): View.Content<TitleMessage> =>
   h.div
     .class(S.MAIN)
     .children(
@@ -624,7 +636,7 @@ const subPage = (
   model: TitleModel,
   t: ReturnType<typeof copyIn>,
   menu: MenuPage,
-) => {
+): View.Content<TitleMessage> => {
   const figure = pageFigure(model, menu)
   const body =
     menu === 'achievements'
@@ -655,7 +667,7 @@ const column = (
   page: MenuChoice,
   depth: number,
   last: number,
-) => {
+): View.Content<TitleMessage> => {
   const base = h.div
     .key(depth === 0 ? 'root' : page)
     .class(
@@ -680,7 +692,7 @@ const screen = (
   model: TitleModel,
   t: ReturnType<typeof copyIn>,
   menu: MenuChoice,
-) => {
+): View.Content<TitleMessage> => {
   const trail: ReadonlyArray<MenuChoice> = menu === 'main' ? ['main'] : ['main', menu]
   return h.div
     .class(S.STAGE)
@@ -738,9 +750,6 @@ export const TitlePage = Html.component({
   view: (h, model) => {
     const t = copyIn(model.prefs.locale)
     const menu = h.props.menu
-    // The toolbar and dock mix anchors, SVG icons, and kbd elements. Effect UI
-    // infers `any` for that children union; the view starts no effects, so
-    // narrow the result to a view with no requirements.
     return h.div
       .class(STAGE)
       .children(
@@ -751,6 +760,6 @@ export const TitlePage = Html.component({
               .class(S.FRAME)
               .children(toolbar(h, t), screen(h, model, t, menu), dock(h, t, model.prefs.locale)),
           ),
-      ) as unknown as View.Content<TitleMessage>
+      )
   },
 })

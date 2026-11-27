@@ -133,7 +133,7 @@ export default Alchemy.Stack(
 
     const Wiki = Cloudflare.Website.StaticSite('Wiki', {
       command: 'pnpm --filter @quorum/wiki build',
-      outdir: 'apps/wiki/dist/client',
+      outdir: 'apps/wiki/dist/site',
       assets: {
         htmlHandling: 'drop-trailing-slash',
         notFoundHandling: 'single-page-application',

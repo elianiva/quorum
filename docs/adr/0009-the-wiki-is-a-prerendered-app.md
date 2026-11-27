@@ -5,22 +5,20 @@ and how to fix it. Upload Labs players quit partly because "this game barely has
 documentation" ([Influences](https://github.com/elianiva/quorum/blob/main/apps/wiki/content/design/02-influences.md#why-players-quit)). The wiki lives in
 `apps/wiki` and is served at `https://wiki.playquorum.dev`.
 
-The wiki is a Foldkit app that Foldkit prerenders at build time (`ssr.build.prerender`). Every page
-is a static HTML file, so pages load fast and search engines read them. The client starts when the
-reader uses a header control, when a quiz, live figure, or practice board nears the viewport, or when
-the browser is idle after the page draws. `src/prefetch.ts` fetches the next page as the reader heads
-for its link, so the first click is as fast as the rest. `Cloudflare.Website.Foldkit` in
-`alchemy.run.ts` deploys the wiki from Foldkit's build manifest; the wiki has no API and no custom
-Worker.
+The wiki is an `@effect/ui` app. `HtmlServerVite` builds the client and server entries, and
+`scripts/site-artifacts.ts` requests every page and writes a static HTML file, so pages load fast and
+search engines read them. The client hydrates the page and starts the header controls, quizzes,
+figures, and practice boards. `Cloudflare.Website.StaticSite` in `alchemy.run.ts` deploys
+`apps/wiki/dist/site`; the wiki has no API and no custom Worker.
 
 Content comes from two places:
 
 - **Numbers, unlocks, and lists** come from `@quorum/simulation`'s catalog at build time, as the
   Path of Exile wiki exports its data from the game files. A writer never types a stat, so the wiki
   cannot disagree with the game. Each page shows the `SIM_VERSION` it matches.
-- **Prose** is Markdown in `apps/wiki/content`, compiled by `@foldkit/markdown`. Directives such as
-  `::TradeoffCard{component="lb"}` place real game views in the text. An unknown island or
-  attribute fails the build.
+- **Prose** is Markdown in `apps/wiki/content`, compiled by `@effect/ui/html/MarkdownVite`.
+  Directives such as `::TradeoffCard{component="lb"}` place real game views in the text. An unknown
+  island or attribute fails the build.
 
 The design document lives in the wiki's `design` section ([ADR 0014](./0014-the-design-document-lives-in-the-wiki.md)).
 It holds balance targets and open questions that players must not read as facts, and the player pages

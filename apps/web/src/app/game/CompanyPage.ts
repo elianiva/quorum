@@ -40,6 +40,7 @@ import {
 } from './Hud.ts'
 import { inspector } from './Inspector.ts'
 import { Shop } from './Shop.ts'
+import { blurs, keys } from './keys.ts'
 import { runCommands } from './bridge.ts'
 
 const STAGE = css({
@@ -148,6 +149,8 @@ export const CompanyPage = Html.component({
   },
 
   subscriptions: () => [
+    Subscription.make('keys', keys),
+    Subscription.make('blurs', blurs),
     Subscription.make(
       'tick',
       Stream.tick(Duration.millis(TICK_MS)).pipe(

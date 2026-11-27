@@ -29,6 +29,9 @@ import { nodeList } from './NodeList.ts'
 import { alertsNotice, incidentNotice, researchOffer } from './Notices.ts'
 import { commandPalette } from './Palette.ts'
 import { researchPanel } from './Research.ts'
+import { mirrorPanel } from './Mirror.ts'
+import { churnPanel } from './Churn.ts'
+import { costPanel } from './Cost.ts'
 import { dashboardPanel } from './Dashboard.ts'
 import {
   devPanel,
@@ -241,6 +244,9 @@ export const CompanyPage = Html.component({
       model.panel === 'settings' ? settingsPanel(h, model) : null,
       model.panel === 'inbox' ? inboxPanel(h, model) : null,
       model.panel === 'dashboard' ? dashboardPanel(h, model, ledger) : null,
+      model.panel === 'churn' ? churnPanel(h, model) : null,
+      model.panel === 'cost' ? costPanel(h, model) : null,
+      model.panel === 'mirror' ? mirrorPanel(h, model) : null,
       model.panel === 'vitals' ? vitalsPanel(h, model, ledger) : null,
       model.panel === 'shop' ? Shop(h, model) : null,
       model.panel === 'offer' ? offerPanel(h, model) : null,

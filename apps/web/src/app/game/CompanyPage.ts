@@ -13,10 +13,13 @@ import {
 } from '../../game/model.ts'
 import { DEFAULT_LOGO } from '../../game/logos.ts'
 import { AppRoute as OldAppRoute } from '../../game/route.ts'
-import { fileFor } from '../../game/saves.ts'
+import { fileFor, parseIndex } from '../../game/saves.ts'
+import { SAVE_INDEX_KEY, readStored } from '../../game/storage.ts'
 import { TICK_MS, initialModel, update } from '../../game/update.ts'
+import { LoadCompany } from '../../game/commands.ts'
 import { isExited } from '../../game/company-machine.ts'
 import { freshBoard, sync } from '../../game/update/shared.ts'
+import { Option } from 'effect'
 import { dockItems } from '../../game/reveal.ts'
 import { activeIncident } from '@quorum/simulation/state'
 import { boardHost } from './BoardHost.ts'
@@ -140,6 +143,19 @@ export const CompanyPage = Html.component({
 }).make({
   init: ($) => {
     const base = initialModel()
+    const stored = readStored(SAVE_INDEX_KEY)
+    const index = stored === null ? null : Option.getOrNull(parseIndex(stored))
+    const id = index?.lastPlayed ?? null
+    if (index !== null && id !== null) {
+      const saved: Model = {
+        ...base,
+        route: OldAppRoute.Company(),
+        boot: { _tag: 'Ready' },
+        companyPhase: { _tag: 'Open', id },
+        saves: { _tag: 'Ready', index },
+      }
+      return $.set(saved).run(...runCommands([LoadCompany({ id, open: true })]))
+    }
     const game = base.board.game
     const file = fileFor({
       id: 'local',

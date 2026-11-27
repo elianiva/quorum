@@ -6,6 +6,7 @@ import { AppRoute } from './routes.ts'
 import { Boot } from './boot.ts'
 import { splash } from './title/Splash.ts'
 import { TitlePage } from './title/TitlePage.ts'
+import { CompanyPage } from './game/CompanyPage.ts'
 
 export const AppMessage = UiSchema.TaggedEnum({
   ChangedRoute: { route: AppRoute },
@@ -62,6 +63,13 @@ const App = Html.component({
         locale: model.locale,
         onClockIn: AppMessage.ClockedIn,
       })
+    if (
+      model.route._tag === 'Company' ||
+      model.route._tag === 'Sandbox' ||
+      model.route._tag === 'Challenge' ||
+      model.route._tag === 'Room'
+    )
+      return CompanyPage(h, { key: 'company' })
     const menu = model.route._tag === 'Menu' ? model.route.params.menu : 'main'
     return TitlePage(h, { key: 'title', props: { menu } })
   },

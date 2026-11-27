@@ -3,6 +3,9 @@ import { BrowserHost, BrowserRouter } from '@effect/ui/html'
 import { Effect, Layer } from 'effect'
 import { App } from './app/App.ts'
 import { AppRoute } from './app/routes.ts'
+import { RunCommand } from './app/game/bridge.ts'
+import { ApiRpc } from './platform/rpc.ts'
+import { solverReady } from '@quorum/simulation/host/browser'
 import { startMotion } from './game/motion.ts'
 import './styles.css'
 
@@ -10,11 +13,15 @@ const root = document.documentElement
 addEventListener('keydown', () => (root.dataset['input'] = 'keyboard'), true)
 addEventListener('pointerdown', () => (root.dataset['input'] = 'pointer'), true)
 
+await solverReady
+
 const container = document.getElementById('root')!
 container.replaceChildren()
 
 const Main = BrowserHost.mount(App, Router.props(AppRoute), container).pipe(
+  Layer.provide(RunCommand.layer),
   Layer.provide(BrowserRouter.layer({ routes: AppRoute })),
+  Layer.provide(ApiRpc.layer),
 )
 
 Layer.launch(Main).pipe(Effect.runFork)

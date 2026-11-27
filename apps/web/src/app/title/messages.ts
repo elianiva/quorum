@@ -18,5 +18,6 @@ export const TitleMessage = UiSchema.TaggedEnum({
   PrefsLoaded: { prefs: Prefs },
   SandboxLoaded: { passed: Schema.Array(SandboxId) },
   MenuChosen: { menu: MenuChoice },
+  CompanyStarted: {},
 })
 export type TitleMessage = typeof TitleMessage.Type

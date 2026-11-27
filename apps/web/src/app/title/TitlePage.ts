@@ -314,7 +314,7 @@ const firstRun = (h: H<TitleMessage>, t: ReturnType<typeof copyIn>) =>
       .attr('data-key', 'start')
       .attr('data-first', '')
       .attr('data-branch', '')
-      .on('click', () => TitleMessage.MenuChosen({ menu: 'found' }))
+      .on('click', () => TitleMessage.CompanyStarted())
       .children(h.span.children(t.title.startACompany), icon(h, ChevronRight, S.ICON)),
   )
 
@@ -724,6 +724,8 @@ export const TitlePage = Html.component({
     FounderLoaded: ($, { founder, today }) => $.evolve({ founder, today }),
     PrefsLoaded: ($, { prefs }) => $.evolve({ prefs }),
     SandboxLoaded: ($, { passed }) => $.evolve({ passed }),
+    CompanyStarted: ($) => $.run(Router.push(AppRoute, AppRoute.Company()).pipe(Command.asNoop)),
+
     MenuChosen: ($, { menu }) =>
       $.run(
         Router.push(

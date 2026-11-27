@@ -1,7 +1,4 @@
-import { css, cx } from '@quorum/styled-system/css'
-import type { Html, HtmlBuilder } from 'foldkit/html'
-
-type Child = Html | string
+import { css } from '@quorum/styled-system/css'
 
 export const kbdClass = css({
   layerStyle: 'raised',
@@ -40,24 +37,3 @@ export const kbdGroupClass = css({
   display: 'inline-flex',
   alignItems: 'center',
 })
-
-type StyleConfig = Readonly<{ className?: string }>
-
-const kbdContainer = <M>(
-  config: StyleConfig,
-  children: ReadonlyArray<Child>,
-  h: HtmlBuilder<M>,
-): Html =>
-  h.kbd([h.Class(cx(kbdClass, config.className)), h.DataAttribute('slot', 'kbd')], children)
-
-const kbdGroup = <M>(
-  config: StyleConfig,
-  children: ReadonlyArray<Child>,
-  h: HtmlBuilder<M>,
-): Html =>
-  h.kbd(
-    [h.Class(cx(kbdGroupClass, config.className)), h.DataAttribute('slot', 'kbd-group')],
-    children,
-  )
-
-export const Kbd = Object.assign(kbdContainer, { group: kbdGroup })

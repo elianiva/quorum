@@ -215,12 +215,6 @@ importers:
       '@effect/ui-kit':
         specifier: https://pkg.pr.new/Effect-TS/ui/@effect/ui-kit@1015b18
         version: https://pkg.pr.new/Effect-TS/ui/@effect/ui-kit@1015b18(@effect/ui@https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18(effect@4.1.4))(effect@4.1.4)
-      '@foldkit/ui':
-        specifier: 0.170.0
-        version: 0.170.0(effect@4.1.4)(foldkit@0.170.0(@effect/platform-browser@4.1.2(effect@4.1.4))(effect@4.1.4))
-      '@foldkit/vite-plugin':
-        specifier: 0.29.0
-        version: 0.29.0(effect@4.1.4)(foldkit@0.170.0(@effect/platform-browser@4.1.2(effect@4.1.4))(effect@4.1.4))(redis@6.3.1(@opentelemetry/api@1.10.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       '@quorum/agent':
         specifier: workspace:*
         version: link:../../packages/agent
@@ -251,9 +245,6 @@ importers:
       effect:
         specifier: 4.1.4
         version: 4.1.4
-      foldkit:
-        specifier: 0.170.0
-        version: 0.170.0(@effect/platform-browser@4.1.2(effect@4.1.4))(effect@4.1.4)
       lucide:
         specifier: 1.73.0
         version: 1.73.0
@@ -394,9 +385,6 @@ importers:
       '@chenglou/pretext':
         specifier: ^1.0.0
         version: 1.0.0
-      '@foldkit/ui':
-        specifier: 0.170.0
-        version: 0.170.0(effect@4.1.4)(foldkit@0.170.0(@effect/platform-browser@4.1.2(effect@4.1.4))(effect@4.1.4))
       '@quorum/simulation':
         specifier: workspace:*
         version: link:../simulation
@@ -412,9 +400,6 @@ importers:
       effect:
         specifier: 4.1.4
         version: 4.1.4
-      foldkit:
-        specifier: 0.170.0
-        version: 0.170.0(@effect/platform-browser@4.1.2(effect@4.1.4))(effect@4.1.4)
       lucide:
         specifier: 1.73.0
         version: 1.73.0
@@ -694,24 +679,6 @@ packages:
     resolution: {integrity: sha512-np/zJgk71/PyHxtoqyUKLYcpQhoRBI+L6+1Z0ILk35JSQ/lvXzwlwOwddYZLDkeC4bdF2ukKekqKlla/F88R5w==}
     hasBin: true
 
-  '@effect/platform-browser@4.1.2':
-    resolution: {integrity: sha512-O+C5hpnfdphBhSaOndFw8XA3dBG0x4SiF3m3QJzJwZZOlB4nGe+ghCZgknyaLcxigA8NqUtEj73rSsVVwshYFA==}
-    peerDependencies:
-      effect: 4.1.4
-
-  '@effect/platform-node-shared@4.1.2':
-    resolution: {integrity: sha512-wSwl9A/G1hcVvF8nLI+YfB3EyOIDvWS6+lsTZBkmgDnPBL7m8YWZF+1HD+mdEsb52SUGfukip46Q3gRwSdk3QA==}
-    engines: {node: '>=22.19.0'}
-    peerDependencies:
-      effect: 4.1.4
-
-  '@effect/platform-node@4.1.2':
-    resolution: {integrity: sha512-ye0UjxORdd5Qu3paZ1LljgGOALWHt7muP9VTpjUSCNfcesiB/Hm7wPJIvZeu4gnwpTe5BtEnO1VHngWqjJp8mA==}
-    engines: {node: '>=22.19.0'}
-    peerDependencies:
-      effect: 4.1.4
-      redis: '>=5.1.0 <7.0.0'
-
   '@effect/sql-d1@4.1.4':
     resolution: {integrity: sha512-x7UtDPNCgcAz6lvGbrf0INHxztV0qV8i4qleqPb31ADeilz7MnGYJ5Qhprqod+ySBUNPdsvXNRE9vm36TznIdg==}
     peerDependencies:
@@ -910,30 +877,6 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
-
-  '@floating-ui/core@1.8.0':
-    resolution: {integrity: sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==}
-
-  '@floating-ui/dom@1.8.0':
-    resolution: {integrity: sha512-yXSrzeHZBTZadLOlfyhCkJHNeLJnHRnRInwdZ40L7ZiaAtrBwoYlsDrX3v5zB1Utk7CLfzcOVnVVWoXEky7Ceg==}
-
-  '@floating-ui/utils@0.2.12':
-    resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
-
-  '@foldkit/ui@0.170.0':
-    resolution: {integrity: sha512-OU6eDVwweFCUA8wsURIBoUptvohD1J7Xs+n+kRJT7h1vmqwajf8h6yu5PljntNrpi6QiRohjqR/sZt3fWSC65A==}
-    engines: {node: '>=18.0.0'}
-    peerDependencies:
-      effect: 4.1.4
-      foldkit: '>=0.167.0'
-
-  '@foldkit/vite-plugin@0.29.0':
-    resolution: {integrity: sha512-nLRScsxd7qzFI0omrkBsP9HtF+B0qhJ+wBEDhWSix+6yy2pmo8GXInq/Cdwu1OnaNkvo2+K4BOC/ZaV+/U7q0Q==}
-    engines: {node: '>=22.19.0'}
-    peerDependencies:
-      effect: 4.1.4
-      foldkit: '>=0.167.0'
-      vite: ^8.0.0
 
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
@@ -1751,42 +1694,6 @@ packages:
       yauzl:
         optional: true
 
-  '@redis/bloom@6.3.1':
-    resolution: {integrity: sha512-dpF9j2yJDoPzSCaZn0MSB3xzmnXQVJeTSAWJcQVcgbmluwhpFeemmII0cF1t+WYfoVS+shEFq79+MmUItgzJLg==}
-    engines: {node: '>= 20.0.0'}
-    peerDependencies:
-      '@redis/client': ^6.3.1
-
-  '@redis/client@6.3.1':
-    resolution: {integrity: sha512-masbfVKULdoAofwddepZxRhWa4w6zvBHn6TRn90TRPrRkVIlGCur3pFqwWaCbMxtYI9twepkz63e/T/tEH8GjA==}
-    engines: {node: '>= 20.0.0'}
-    peerDependencies:
-      '@node-rs/xxhash': ^1.1.0
-      '@opentelemetry/api': '>=1 <2'
-    peerDependenciesMeta:
-      '@node-rs/xxhash':
-        optional: true
-      '@opentelemetry/api':
-        optional: true
-
-  '@redis/json@6.3.1':
-    resolution: {integrity: sha512-fMz4kUwJzEftcU9EMaqsjZcUwzpTQLOYRqhQsAD6uKvZWeamblK13ZhgO5SzVSZVk31jmwLeTRpU5GAl5egfUw==}
-    engines: {node: '>= 20.0.0'}
-    peerDependencies:
-      '@redis/client': ^6.3.1
-
-  '@redis/search@6.3.1':
-    resolution: {integrity: sha512-T67pvPUpW82VrZLvihO8O2DFMC7eY2oMAzMzapCbiPZn7mdWqHMEIlohYim12gIawT5kn6qT/Cvmm4WulKB+kQ==}
-    engines: {node: '>= 20.0.0'}
-    peerDependencies:
-      '@redis/client': ^6.3.1
-
-  '@redis/time-series@6.3.1':
-    resolution: {integrity: sha512-MNDgrm+i63M/1a+XA+HcDsScwt4uBh/fGGJ84swTQZTFK5K5wMmxdlTRa4ZgmNJzjxMaszW/ipPScMUGV3aAMg==}
-    engines: {node: '>= 20.0.0'}
-    peerDependencies:
-      '@redis/client': ^6.3.1
-
   '@rolldown/binding-android-arm-eabi@1.2.16':
     resolution: {integrity: sha512-ia3DwAs0OsMGS7+IConptSiyk9pEXkOx/AbJ2n/lAGxH3QkWQus1t8d7gnAT38FCU2sQu8lUbeR6AiZFv4JxaA==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -2444,9 +2351,6 @@ packages:
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
 
-  '@types/ws@8.18.2':
-    resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
-
   '@vitest/browser-playwright@5.1.0':
     resolution: {integrity: sha512-3PbVvX/KNeUEzUeTTXw5bQDyfJS+WqU/UJ8RNWIojHb0mE6d/IBjuLmt+i7OpJ00tjNWv0O6XBm5ler/tEf3eg==}
     peerDependencies:
@@ -2855,10 +2759,6 @@ packages:
   emoji-regex@10.6.0:
     resolution: {integrity: sha512-toUI84YS5YmxW219erniWD0CIVOo46xGKColeNQRgOzDorgBi1v4D71/OFzgD9GO2UGKIv1C3Sp8DAn0+j5w7A==}
 
-  entities@9.0.0:
-    resolution: {integrity: sha512-oJFNDJg3kTPwAD1cNn2+WmUq4wFoo09npc3Ydf1D7ED4smRiWrsKnaLxykrTWgyGEcusc87P5dxlAleol9kpkg==}
-    engines: {node: '>=20.19.0'}
-
   es-module-lexer@2.3.2:
     resolution: {integrity: sha512-poHGpORABojJJucnV9KbOavETW8lBVnphkW77ER5/BQ5Fz7oXSoCNek7IH3vR5nRjdsEz926ibFYX8KtLQmdyw==}
 
@@ -2911,13 +2811,6 @@ packages:
 
   flatted@3.4.4:
     resolution: {integrity: sha512-5+ybhBZANEJxaH3X5evAFatUxLfEHSr7n6kYJ+1Qd0mUqr4eu9gIf6GDbWHf8RJijHrjjO8G+la14SlL2SeS1Q==}
-
-  foldkit@0.170.0:
-    resolution: {integrity: sha512-H/MRQe/IZ/LqpgPi+Zy1S1OXQ8o12e2S/6U+phQu3WmoHSm7Vase/dEnOvrq9YZfqxK44/oVq6wE9oqXzEIaig==}
-    engines: {node: '>=20.19.0'}
-    peerDependencies:
-      '@effect/platform-browser': ~4.1.0
-      effect: 4.1.4
 
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
@@ -3195,9 +3088,6 @@ packages:
   parse-svg-path@0.2.0:
     resolution: {integrity: sha512-Tf7FFIrguPKQwzD4pWnYkR2VOv3raoHeKED80Bm+BYHI3KxC8KsgsGC5+fSMzAGDA6UEk4bHvmi+RsjmL3khpg==}
 
-  parse5@8.1.0:
-    resolution: {integrity: sha512-sq3qBFpee5jeocbFbO48VHlGr8sT7mbXS0vxlKN6sottBtJzrOG3998sr0llSZcQAGgfpdmEYAIZE0P9z0dE8w==}
-
   path-scurry@3.0.0:
     resolution: {integrity: sha512-1pTbQqH1wIwMi/eleQ5leFTTCkzFsPcgXNjwOA8YGGW/W4/kHT3dssE7Z6NH+zuqNLOzOB0uaD61yl7cAcVhgg==}
     engines: {node: 18 || 20 || >=22}
@@ -3288,10 +3178,6 @@ packages:
   readdirp@5.1.1:
     resolution: {integrity: sha512-Kko+Y5XQ6fM+Ce3dq3m9YGxnacYZYl9cA1wZjaF3Vbry2L3i1qVg8+CAgNPsXRArPMUMCaOR7oa9Nqntc43JKA==}
     engines: {node: '>= 20.19.0'}
-
-  redis@6.3.1:
-    resolution: {integrity: sha512-mV96ZKxQ4CGn3SyEGaY0Lb9YA443mdVey3c+mdr0NAUaBxiOZGoYCWX8PoM55kictSOmxlJRtZJxIsmZm3jL+w==}
-    engines: {node: '>= 20.0.0'}
 
   rolldown@1.2.16:
     resolution: {integrity: sha512-bWvlMpFKiTfDKfnK7FC2MPgPeWCf/Kpwsq49ApdW+FQaBZb6O6dZ4MAPbPUjp7hYQrw/RobqCzn64BRrQecGHw==}
@@ -3417,10 +3303,6 @@ packages:
   undici-types@8.9.0:
     resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
-  undici@8.12.4:
-    resolution: {integrity: sha512-8Mx+uNKKER2bA4AdtedkqRbwUCIJFr2nJckXRe5yrDqzePqwLP7VNcctN8/XdmDSbF7mS+jJKIszlL+vbam1VA==}
-    engines: {node: '>=22.19.0'}
-
   unenv@2.0.0-rc.24:
     resolution: {integrity: sha512-i7qRCmY42zmCwnYlh9H2SvLEypEFGye5iRmEMKjcGi7zk9UquigRjFtTLz0TYqr0ZGLZhaMHl/foy1bZR+Cwlw==}
 
@@ -3528,14 +3410,6 @@ packages:
       tsx:
         optional: true
       yaml:
-        optional: true
-
-  vitefu@1.1.3:
-    resolution: {integrity: sha512-ub4okH7Z5KLjb6hDyjqrGXqWtWvoYdU3IGm/NorpgHncKoLTCfRIbvlhBm7r0YstIaQRYlp4yEbFqDcKSzXSSg==}
-    peerDependencies:
-      vite: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
-    peerDependenciesMeta:
-      vite:
         optional: true
 
   vitest@5.1.0:
@@ -3834,29 +3708,6 @@ snapshots:
 
   '@effect/language-service@0.87.5': {}
 
-  '@effect/platform-browser@4.1.2(effect@4.1.4)':
-    dependencies:
-      effect: 4.1.4
-
-  '@effect/platform-node-shared@4.1.2(effect@4.1.4)':
-    dependencies:
-      '@types/ws': 8.18.2
-      effect: 4.1.4
-      ws: 8.22.1
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-
-  '@effect/platform-node@4.1.2(effect@4.1.4)(redis@6.3.1(@opentelemetry/api@1.10.0))':
-    dependencies:
-      '@effect/platform-node-shared': 4.1.2(effect@4.1.4)
-      effect: 4.1.4
-      redis: 6.3.1(@opentelemetry/api@1.10.0)
-      undici: 8.12.4
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-
   '@effect/sql-d1@4.1.4(effect@4.1.4)':
     dependencies:
       '@cloudflare/workers-types': 5.20261116.1
@@ -3972,38 +3823,6 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
-
-  '@floating-ui/core@1.8.0':
-    dependencies:
-      '@floating-ui/utils': 0.2.12
-
-  '@floating-ui/dom@1.8.0':
-    dependencies:
-      '@floating-ui/core': 1.8.0
-      '@floating-ui/utils': 0.2.12
-
-  '@floating-ui/utils@0.2.12': {}
-
-  '@foldkit/ui@0.170.0(effect@4.1.4)(foldkit@0.170.0(@effect/platform-browser@4.1.2(effect@4.1.4))(effect@4.1.4))':
-    dependencies:
-      '@floating-ui/dom': 1.8.0
-      effect: 4.1.4
-      foldkit: 0.170.0(@effect/platform-browser@4.1.2(effect@4.1.4))(effect@4.1.4)
-
-  '@foldkit/vite-plugin@0.29.0(effect@4.1.4)(foldkit@0.170.0(@effect/platform-browser@4.1.2(effect@4.1.4))(effect@4.1.4))(redis@6.3.1(@opentelemetry/api@1.10.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))':
-    dependencies:
-      '@effect/platform-node': 4.1.2(effect@4.1.4)(redis@6.3.1(@opentelemetry/api@1.10.0))
-      '@effect/platform-node-shared': 4.1.2(effect@4.1.4)
-      effect: 4.1.4
-      foldkit: 0.170.0(@effect/platform-browser@4.1.2(effect@4.1.4))(effect@4.1.4)
-      magic-string: 1.4.5
-      vite: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
-      vitefu: 1.1.3(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
-      ws: 8.22.1
-    transitivePeerDependencies:
-      - bufferutil
-      - redis
-      - utf-8-validate
 
   '@img/colour@1.1.0': {}
 
@@ -4543,26 +4362,6 @@ snapshots:
     optionalDependencies:
       yauzl: 3.4.0
 
-  '@redis/bloom@6.3.1(@redis/client@6.3.1(@opentelemetry/api@1.10.0))':
-    dependencies:
-      '@redis/client': 6.3.1(@opentelemetry/api@1.10.0)
-
-  '@redis/client@6.3.1(@opentelemetry/api@1.10.0)':
-    optionalDependencies:
-      '@opentelemetry/api': 1.10.0
-
-  '@redis/json@6.3.1(@redis/client@6.3.1(@opentelemetry/api@1.10.0))':
-    dependencies:
-      '@redis/client': 6.3.1(@opentelemetry/api@1.10.0)
-
-  '@redis/search@6.3.1(@redis/client@6.3.1(@opentelemetry/api@1.10.0))':
-    dependencies:
-      '@redis/client': 6.3.1(@opentelemetry/api@1.10.0)
-
-  '@redis/time-series@6.3.1(@redis/client@6.3.1(@opentelemetry/api@1.10.0))':
-    dependencies:
-      '@redis/client': 6.3.1(@opentelemetry/api@1.10.0)
-
   '@rolldown/binding-android-arm-eabi@1.2.16':
     optional: true
 
@@ -5000,10 +4799,6 @@ snapshots:
   '@types/trusted-types@2.0.7':
     optional: true
 
-  '@types/ws@8.18.2':
-    dependencies:
-      '@types/node': 26.6.6
-
   '@vitest/browser-playwright@5.1.0(playwright@1.65.0)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(vitest@5.1.0)':
     dependencies:
       '@vitest/browser': 5.1.0(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(vitest@5.1.0)
@@ -5346,8 +5141,6 @@ snapshots:
 
   emoji-regex@10.6.0: {}
 
-  entities@9.0.0: {}
-
   es-module-lexer@2.3.2: {}
 
   esbuild@0.28.2:
@@ -5412,12 +5205,6 @@ snapshots:
   fflate@0.8.3: {}
 
   flatted@3.4.4: {}
-
-  foldkit@0.170.0(@effect/platform-browser@4.1.2(effect@4.1.4))(effect@4.1.4):
-    dependencies:
-      '@effect/platform-browser': 4.1.2(effect@4.1.4)
-      effect: 4.1.4
-      parse5: 8.1.0
 
   fsevents@2.3.3:
     optional: true
@@ -5669,10 +5456,6 @@ snapshots:
 
   parse-svg-path@0.2.0: {}
 
-  parse5@8.1.0:
-    dependencies:
-      entities: 9.0.0
-
   path-scurry@3.0.0:
     dependencies:
       lru-cache: 11.5.3
@@ -5757,17 +5540,6 @@ snapshots:
   react-is@17.0.2: {}
 
   readdirp@5.1.1: {}
-
-  redis@6.3.1(@opentelemetry/api@1.10.0):
-    dependencies:
-      '@redis/bloom': 6.3.1(@redis/client@6.3.1(@opentelemetry/api@1.10.0))
-      '@redis/client': 6.3.1(@opentelemetry/api@1.10.0)
-      '@redis/json': 6.3.1(@redis/client@6.3.1(@opentelemetry/api@1.10.0))
-      '@redis/search': 6.3.1(@redis/client@6.3.1(@opentelemetry/api@1.10.0))
-      '@redis/time-series': 6.3.1(@redis/client@6.3.1(@opentelemetry/api@1.10.0))
-    transitivePeerDependencies:
-      - '@node-rs/xxhash'
-      - '@opentelemetry/api'
 
   rolldown@1.2.16:
     dependencies:
@@ -5965,8 +5737,6 @@ snapshots:
 
   undici-types@8.9.0: {}
 
-  undici@8.12.4: {}
-
   unenv@2.0.0-rc.24:
     dependencies:
       pathe: 2.0.3
@@ -6070,10 +5840,6 @@ snapshots:
       fsevents: 2.3.3
       jiti: 2.7.0
       yaml: 2.9.1
-
-  vitefu@1.1.3(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)):
-    optionalDependencies:
-      vite: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
 
   vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/browser-playwright@5.1.0)(@vitest/browser-preview@5.1.0)(@vitest/ui@5.1.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)):
     dependencies:

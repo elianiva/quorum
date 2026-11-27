@@ -18,8 +18,6 @@ overrides:
 minimumReleaseAgeExclude:
   - vite-plus@1.7.0
   - '@cloudflare/workers-types@5.20261116.1'
-  - '@foldkit/vite-plugin@0.29.0'
-  - foldkit@0.170.0
   - lefthook-darwin-arm64@2.2.2
   - lefthook-darwin-x64@2.2.2
   - lefthook-freebsd-arm64@2.2.2

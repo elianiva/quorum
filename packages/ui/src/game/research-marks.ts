@@ -1,5 +1,3 @@
-import { css, cx } from '@quorum/styled-system/css'
-import type { Html, HtmlBuilder } from 'foldkit/html'
 import {
   Antenna,
   ArchiveRestore,
@@ -79,12 +77,9 @@ import {
   COMPONENTS,
   type BuildGroup,
   type ComponentId,
-  type ResearchDef,
   type ResearchId,
   type ResearchTrack,
 } from '@quorum/simulation/catalog'
-import { groupBadge } from './bits.ts'
-import { COMPONENT_ICONS } from './component-icons.ts'
 import { STACK_LOGOS, type StackLogoId } from './icons.ts'
 
 type Look =
@@ -308,73 +303,6 @@ export const colorOf = (look: Look): string =>
       : 'logo' in look
         ? (STACK_LOGOS[look.logo].color ?? 'var(--foreground)')
         : look.brand.color
-
-export const researchMark = <M>(
-  entry: ResearchDef,
-  size: 'sm' | 'lg',
-  muted: boolean,
-  h: HtmlBuilder<M>,
-): Html => {
-  const look = LOOKS[entry.id]
-  const badge =
-    'component' in look
-      ? groupBadge(
-          COMPONENTS[look.component].group,
-          COMPONENT_ICONS[look.component],
-          size === 'lg'
-            ? css({
-                width: '11',
-                height: '11',
-              })
-            : css({
-                width: '7',
-                height: '7',
-              }),
-          h,
-          muted,
-        )
-      : groupBadge(
-          look.group,
-          'glyph' in look
-            ? look.glyph
-            : { path: 'logo' in look ? STACK_LOGOS[look.logo].path : look.brand.path },
-          size === 'lg'
-            ? css({
-                width: '11',
-                height: '11',
-              })
-            : css({
-                width: '7',
-                height: '7',
-              }),
-          h,
-          muted,
-          colorOf(look),
-        )
-  return h.span(
-    [
-      h.Class(
-        cx(
-          css({
-            display: 'grid',
-            flexShrink: '0',
-            placeItems: 'center',
-          }),
-          size === 'lg'
-            ? css({
-                width: '12',
-                height: '12',
-              })
-            : css({
-                width: '8',
-                height: '8',
-              }),
-        ),
-      ),
-    ],
-    [badge],
-  )
-}
 
 export const TRACK_ICONS: Record<ResearchTrack, IconNode> = {
   infrastructure: Server,

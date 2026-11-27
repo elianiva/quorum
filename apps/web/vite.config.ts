@@ -1,4 +1,3 @@
-import { foldkit } from '@foldkit/vite-plugin'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
@@ -8,21 +7,6 @@ import { type Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
 import { simVersion } from '../../packages/simulation/sim-version.ts'
 import { pwa } from './pwa/plugin.ts'
-
-const skipBranding = /\/packages\/simulation\/|\/src\/i18n\/builder\.ts|\/src\/app\//
-
-const unbrandedModules = (plugin: Plugin): Plugin => {
-  if (plugin.name !== 'foldkit:view-identity' || typeof plugin.transform !== 'function')
-    return plugin
-  const transform = plugin.transform
-  return {
-    ...plugin,
-    transform(code, id, options) {
-      if (skipBranding.test(id)) return null
-      return transform.call(this, code, id, options)
-    },
-  }
-}
 
 const layoutHarness = (): Plugin => ({
   name: 'layout-harness',
@@ -78,7 +62,6 @@ export default defineConfig({
   plugins: [
     layoutHarness(),
     pandacss({ codegen: false }),
-    foldkit().map(unbrandedModules),
     simVersion(),
     pwa(),
     authToken
@@ -94,7 +77,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
-    dedupe: ['effect', 'foldkit'],
+    dedupe: ['effect'],
   },
   test: {
     setupFiles: ['@quorum/simulation/host/node'],

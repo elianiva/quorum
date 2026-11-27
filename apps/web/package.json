@@ -4,14 +4,12 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "typecheck": "tsrs --noEmit -p tsconfig.json && effect-tsrs diagnostics --strict --project tsconfig.json --lspconfig '{\"allowedExperimentalApis\":[\"@effect/ui\"],\"allowedUnstableApis\":[\"effect/rpc\"]}'",
+    "typecheck": "tsrs --noEmit -p tsconfig.json && effect-tsrs diagnostics --strict --project tsconfig.json --lspconfig '{\"allowedExperimentalApis\":[\"@effect/ui\"],\"allowedUnstableApis\":[\"effect/rpc\",\"effect/http\"]}'",
     "test": "vitest run"
   },
   "dependencies": {
     "@effect/ui": "https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18",
     "@effect/ui-kit": "https://pkg.pr.new/Effect-TS/ui/@effect/ui-kit@1015b18",
-    "@foldkit/ui": "0.170.0",
-    "@foldkit/vite-plugin": "0.29.0",
     "@quorum/agent": "workspace:*",
     "@quorum/rpc": "workspace:*",
     "@quorum/simulation": "workspace:*",
@@ -22,7 +20,6 @@
     "@sentry/effect": "11.13.0",
     "@typeonce/effect-machine": "0.46.0",
     "effect": "4.1.4",
-    "foldkit": "0.170.0",
     "lucide": "1.73.0",
     "posthog-js": "1.450.0",
     "simple-icons": "16.38.0",

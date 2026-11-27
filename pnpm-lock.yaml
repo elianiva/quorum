@@ -260,6 +260,9 @@ importers:
       posthog-js:
         specifier: 1.450.0
         version: 1.450.0
+      simple-icons:
+        specifier: 16.38.0
+        version: 16.38.0
       vite:
         specifier: 8.3.8
         version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)

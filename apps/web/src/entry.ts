@@ -17,6 +17,6 @@ const Main = BrowserHost.mount(App, Router.props(AppRoute), container).pipe(
   Layer.provide(BrowserRouter.layer({ routes: AppRoute })),
 )
 
-Effect.runFork(Layer.launch(Main))
+Layer.launch(Main).pipe(Effect.runFork)
 
 startMotion(document.body)

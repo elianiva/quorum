@@ -36,7 +36,7 @@ const formatTime = (locale: Locale): string =>
     hour12: false,
   })
 
-const WallClock = Mount.makeStream(
+export const WallClock = Mount.makeStream(
   'WallClock',
   { args: { locale: Locale } },
   (node: HTMLElement, { locale }) =>

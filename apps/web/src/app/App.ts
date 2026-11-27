@@ -5,6 +5,7 @@ import { Locale } from '../i18n/index.ts'
 import { AppRoute } from './routes.ts'
 import { Boot } from './boot.ts'
 import { splash } from './title/Splash.ts'
+import { TitlePage } from './title/TitlePage.ts'
 
 export const AppMessage = UiSchema.TaggedEnum({
   ChangedRoute: { route: AppRoute },
@@ -56,7 +57,7 @@ const App = Html.component({
 
   view: (h, model) =>
     model.boot._tag === 'Ready'
-      ? h.main.class('effect-placeholder').children('Quorum')
+      ? TitlePage(h, { key: 'title' })
       : splash(h, {
           clocking: model.boot._tag === 'Clocking',
           locale: model.locale,

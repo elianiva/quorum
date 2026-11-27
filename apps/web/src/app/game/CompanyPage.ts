@@ -18,14 +18,17 @@ import { TICK_MS, initialModel, update } from '../../game/update.ts'
 import { isExited } from '../../game/company-machine.ts'
 import { freshBoard, sync } from '../../game/update/shared.ts'
 import { dockItems } from '../../game/reveal.ts'
+import { activeIncident } from '@quorum/simulation/state'
 import { boardHost } from './BoardHost.ts'
 import { dock } from './Dock.ts'
 import * as Legacy from './Legacy.ts'
 import { challengeBar, challengeHud, challengePanel } from './Challenge.ts'
 import { objectiveBar, passedPanel, sandboxHud } from './Sandbox.ts'
+import { inboxButton, inboxPanel, mailQueueRow, peek } from './Inbox.ts'
 import { nodeList } from './NodeList.ts'
 import { alertsNotice, incidentNotice, researchOffer } from './Notices.ts'
 import { commandPalette } from './Palette.ts'
+import { researchPanel } from './Research.ts'
 import { dashboardPanel } from './Dashboard.ts'
 import {
   devPanel,
@@ -205,6 +208,7 @@ export const CompanyPage = Html.component({
                     ? objectiveBar(h, model)
                     : firstStepsBar(h, model),
                 incidentNotice(h, model),
+                activeIncident(model.board.game) !== null ? null : mailQueueRow(h, model),
                 alertsNotice(h, model),
               ),
             toolbar(h, model),
@@ -228,12 +232,14 @@ export const CompanyPage = Html.component({
         ),
       inspector(h, model, ledger),
       tradeoffCard(h, model),
+      model.panel === 'research' ? researchPanel(h, model) : null,
       model.panel === 'exit' ? Legacy.exitPanel(h, model) : null,
       model.panel === 'playbooks' ? Legacy.playbooksPanel(h, model) : null,
       model.panel === 'help' ? helpPanel(h, model) : null,
       model.panel === 'menu' ? menuPanel(h, model) : null,
       model.panel === 'room' ? roomPanel(h, model) : null,
       model.panel === 'settings' ? settingsPanel(h, model) : null,
+      model.panel === 'inbox' ? inboxPanel(h, model) : null,
       model.panel === 'dashboard' ? dashboardPanel(h, model, ledger) : null,
       model.panel === 'vitals' ? vitalsPanel(h, model, ledger) : null,
       model.panel === 'shop' ? Shop(h, model) : null,
@@ -245,7 +251,10 @@ export const CompanyPage = Html.component({
       model.panel === 'challenge' ? challengePanel(h, model) : null,
       h.div
         .class(css({ display: 'contents', _compact: { display: 'none' } }))
-        .children(researchOffer(h, model)),
+        .children(peek(h, model), researchOffer(h, model)),
+      challenge !== null || model.board.game.nodes.some((node) => node.id === model.board.selected)
+        ? null
+        : inboxButton(h, model),
       commandPalette(h, model),
       toast(
         h,

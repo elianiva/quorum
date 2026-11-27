@@ -9,10 +9,35 @@ import { AppRoute as OldAppRoute } from '../../game/route.ts'
 import { fileFor } from '../../game/saves.ts'
 import { TICK_MS, initialModel, update } from '../../game/update.ts'
 import { freshBoard, sync } from '../../game/update/shared.ts'
+import { dockItems } from '../../game/reveal.ts'
 import { boardHost } from './BoardHost.ts'
 import { dock } from './Dock.ts'
+import { nodeList } from './NodeList.ts'
+import { alertsNotice, incidentNotice, researchOffer } from './Notices.ts'
+import { commandPalette } from './Palette.ts'
+import { dashboardPanel } from './Dashboard.ts'
+import {
+  devPanel,
+  endPanel,
+  eraPanel,
+  helpPanel,
+  menuPanel,
+  offerPanel,
+  roomPanel,
+  settingsPanel,
+} from './Panels.ts'
+import { toast } from './Toast.ts'
+import { tradeoffCard } from './Tradeoff.ts'
 import { firstStepsBar } from './FirstSteps.ts'
-import { changeBar, hud, phoneOffer, regionTabs, toolbar } from './Hud.ts'
+import {
+  changeBar,
+  hud,
+  phoneOffer,
+  regionTabs,
+  screenshotExit,
+  toolbar,
+  vitalsPanel,
+} from './Hud.ts'
 import { inspector } from './Inspector.ts'
 import { Shop } from './Shop.ts'
 import { runCommands } from './bridge.ts'
@@ -133,7 +158,12 @@ export const CompanyPage = Html.component({
 
   view: (h, model) => {
     const ledger = ledgerOf(model)
+    if (model.board.screenshot)
+      return h.div
+        .class(STAGE)
+        .children(nodeList(h, model, ledger), boardHost(h, model), screenshotExit(h))
     return h.div.class(STAGE).children(
+      nodeList(h, model, ledger),
       boardHost(h, model),
       h.div.class(TOP).children(
         hud(h, model, ledger),
@@ -144,7 +174,12 @@ export const CompanyPage = Html.component({
             h.div
               .attr('data-flip', 'notice')
               .class(LANE)
-              .children(regionTabs(h, model), firstStepsBar(h, model)),
+              .children(
+                regionTabs(h, model),
+                firstStepsBar(h, model),
+                incidentNotice(h, model),
+                alertsNotice(h, model),
+              ),
             toolbar(h, model),
           ),
       ),
@@ -159,7 +194,30 @@ export const CompanyPage = Html.component({
           dock(h, model),
         ),
       inspector(h, model, ledger),
+      tradeoffCard(h, model),
+      model.panel === 'help' ? helpPanel(h, model) : null,
+      model.panel === 'menu' ? menuPanel(h, model) : null,
+      model.panel === 'room' ? roomPanel(h, model) : null,
+      model.panel === 'settings' ? settingsPanel(h, model) : null,
+      model.panel === 'dashboard' ? dashboardPanel(h, model, ledger) : null,
+      model.panel === 'vitals' ? vitalsPanel(h, model, ledger) : null,
       model.panel === 'shop' ? Shop(h, model) : null,
+      model.panel === 'offer' ? offerPanel(h, model) : null,
+      model.panel === 'era' ? eraPanel(h, model) : null,
+      model.panel === 'end' ? endPanel(h, model) : null,
+      model.panel === 'dev' ? devPanel(h, model) : null,
+      h.div
+        .class(css({ display: 'contents', _compact: { display: 'none' } }))
+        .children(researchOffer(h, model)),
+      commandPalette(h, model),
+      toast(
+        h,
+        model.toast,
+        model.panel !== 'none' && !model.board.screenshot,
+        model.board.buildGroup === null
+          ? 0
+          : dockItems(model.board.game, model.board.buildGroup).length,
+      ),
     )
   },
 })

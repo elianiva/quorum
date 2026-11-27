@@ -593,7 +593,7 @@ _Avoid_: host, admin, moderator
 **Intent**:
 What a Seat asks the Room to do: the name of a Simulation action and its arguments. The Room runs the
 action and either applies it or refuses it.
-_Avoid_: command (that is a Foldkit Command), action (that is a Simulation function)
+_Avoid_: command (that is an Effect UI Command), action (that is a Simulation function)
 
 **Vote**:
 A Room decision on a funding round or the end of the session. It passes when yes is more than half of

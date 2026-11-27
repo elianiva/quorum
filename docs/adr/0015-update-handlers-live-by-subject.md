@@ -4,11 +4,11 @@ A single root `update.ts` would route every Message: 265 arms in one `Message.ma
 2,000 lines of helpers above them. Every new Node option, panel, and gesture would make the file
 harder to navigate, and a review of one behaviour would mean scrolling through unrelated ones.
 
-Foldkit splits a large update two ways. A Submodel owns a Model slice, its own Messages, and its own
-update. A feature that shares the parent Model splits its own `update/` folder into handler modules
-(the typing-game Room does this). Quorum is one screen: a board action raises a toast, opens a panel,
-or changes the route, and those belong to the shell. So the split is by subject, inside one boundary,
-and the Submodels that already own state keep `Update.foldChild`.
+Effect UI splits a large update two ways. A child component owns a Model slice, its own Messages, and
+its own update. A feature that shares the parent Model splits its own `update/` folder into handler
+modules. Quorum is one screen: a board action raises a toast, opens a panel, or changes the route,
+and those belong to the shell. So the split is by subject, inside one boundary, and the submodels
+that already own state keep the local `foldChild` helper.
 
 ## Decision
 
@@ -28,8 +28,8 @@ and the Submodels that already own state keep `Update.foldChild`.
 6. `game/message.ts` composes the Message union from `game/message/<subject>.ts` case records. Each
    record is a plain object: an annotation such as `satisfies Record<string, Schema.Struct.Fields>`
    gives it an index signature, which widens every tag to `string` and breaks the union.
-7. Inbox, Dashboard, Team, Research, Prefs, and Glossary stay Submodels. Their Messages keep their
-   own unions and the root folds them with `Update.foldChild`.
+7. Inbox, Dashboard, Team, Research, Prefs, and Glossary stay pure submodels. Their Messages keep
+   their own unions and the root folds them with `foldChild` from `game/step.ts`.
 8. The Board is a Model slice, not a Submodel. Board handlers write toast or panel state 93 times and
    the route 26 times; `ExitTaken`, `PerkBought`, and the Playbooks write the Founder. A Board child
    would emit an OutMessage for each of those shell effects, and every toast would cross two levels.
@@ -40,7 +40,8 @@ and the Submodels that already own state keep `Update.foldChild`.
   module and its Message case, and the two lists are checked against each other by the type system.
 - The largest module is `options.ts` at 968 lines, which holds the 89 option arms; each arm is one
   `act` call, so they stay together.
-- Behaviour is unchanged: the 280 tests pass, including the 85 that drive the root update.
+- Behaviour is unchanged: the update and save suites pass, including the tests that drive the root
+  update.
 - `Message` tags and payloads are unchanged, so the playlog, the analytics bridge, and the DevTools
   filter read the same entries.
 - A new Message needs one case in `message/<subject>.ts` and one handler in `update/<subject>.ts`.

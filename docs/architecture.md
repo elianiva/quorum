@@ -5,7 +5,7 @@
 `apps/web` and `apps/backend` are separate deployable applications. The browser sends requests to the website origin. The website Worker forwards `/api/*` requests to the API Worker through an Alchemy-managed service binding. Alchemy deploys both Workers in one stack.
 
 ```text
-Browser / Foldkit
+Browser / Effect UI
        │ same-origin /api/rpc
        ▼
 Website Worker ── service binding ──► API Worker
@@ -53,10 +53,9 @@ doing until the pointer moves again.
 
 Sentry records errors, traces, and profiles ([ADR 0013](./adr/0013-sentry-for-errors-traces-and-profiles.md)). Cloudflare Workers Observability keeps logs only: `alchemy.run.ts` turns its traces off, so a request is traced once. Observability is configured on the host resources in `alchemy.run.ts`, never in contexts.
 
-- The browser starts Sentry in `apps/web/src/platform/sentry.ts`. Foldkit's `crash` and `slow` options report to it; `traced` wraps work that matters to load time or smoothness.
+- `apps/web/src/platform/sentry.ts` owns the browser Sentry setup. `reportBoardFailure` records a board that fails to start; `traced` wraps work that matters to load time or smoothness.
 - Both Workers wrap their entry with `Sentry.withSentry`. They need the `nodejs_compat` flag, which `sentryCompatibility` sets. The API Worker also provides the Effect tracer, logger, and error reporter, so `Effect.withSpan` in a context becomes a Sentry span.
-- The browser sends trace headers to `/api/` only. The website Worker passes them through the service binding, so one trace covers the browser, both Workers, and D1.
-- `SubmitSurvey` is a traced Command: its browser span reaches the API Worker's `survey.submit` span. A failed submission is captured with the Exit's type, Era, and one sentence, never the answers.
+- A failed survey submission is captured with the Exit's type, Era, and one sentence, never the answers.
 - Sampling: traces 10%, profiles 5% of sessions. Review both after a week of real traffic.
 
 ## Product analytics
@@ -73,7 +72,7 @@ The browser sends anonymous PostHog events through the website Worker at `/q` (`
 
 ## Code ownership
 
-- `apps/web/src/app` owns the Foldkit application. Remote data belongs in Foldkit Query submodels. Update handlers decide when to load or revalidate them. A flow with exclusive phases is a `foldkit/experimental/machine` definition beside its tagged state union, not a set of nullable fields ([ADR 0011](adr/0011-state-machines-are-for-flows.md)); [State machines](state-machines.md) lists every machine and the properties it holds. `src/game/update.ts` routes Messages; a subject's handlers live in `src/game/update/<subject>.ts` and its Message cases in `src/game/message/<subject>.ts` ([ADR 0015](adr/0015-update-handlers-live-by-subject.md)).
+- `apps/web/src/app` owns the Effect UI application. Commands load remote data; update handlers decide when to load or reload it. A flow with exclusive phases is an `@typeonce/effect-machine` definition beside its tagged state union, not a set of nullable fields ([ADR 0011](adr/0011-state-machines-are-for-flows.md)); [State machines](state-machines.md) lists every machine and the properties it holds. `src/game/update.ts` routes Messages; a subject's handlers live in `src/game/update/<subject>.ts` and its Message cases in `src/game/message/<subject>.ts` ([ADR 0015](adr/0015-update-handlers-live-by-subject.md)).
 - `apps/backend/src/contexts` is the home for server-side bounded contexts as product vocabulary is discovered. Do not pre-invent product domains in the scaffold.
 - `apps/wiki` owns the wiki: `src/site/entry.server.ts` serves the Effect UI app, `src/site/content.ts` reads the Markdown in `content/`, `src/site/reference` builds catalog pages from `@quorum/simulation`, and `scripts/site-artifacts.ts` writes the prerendered pages, Markdown twins, search indexes, sitemap, and social cards. Islands in Markdown render Effect UI views.
 - `packages/rpc` owns the public wire contract only: Effect RPC groups, request/response schemas, declared errors, and the API path prefix.
@@ -91,7 +90,7 @@ apps/wiki ────────► packages/simulation, packages/ui
 packages/rpc ─────► effect
 packages/simulation ► effect
 packages/agent ─────► packages/simulation, effect
-packages/ui ───────► packages/simulation, foldkit, @foldkit/ui, lucide, pixi.js
+packages/ui ───────► packages/simulation, @typeonce/effect-machine, lucide, pixi.js
 ```
 
 The web app must not import backend implementation modules. The wiki must not import either other app or `packages/rpc`. The RPC package must not import either app or the Simulation. The Simulation must not import either app, `packages/rpc`, or any UI, browser, or Cloudflare module. The agent package must not import either app, `packages/rpc`, or a UI, browser, or Cloudflare module; it may import the Simulation because it reads the Game. The UI package must not import an app or `packages/rpc`, and its primitives must not import its game views, its board, or the Simulation. Share the wire contract, not internal backend models.

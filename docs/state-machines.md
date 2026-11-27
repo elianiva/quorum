@@ -23,8 +23,8 @@ events are Effect `Schema` tagged unions, so a phase that needs a field cannot b
 
 The app uses the library's pure planners, not its runtime. `Machine.plan` and `Machine.planInitial`
 run through `Effect.runSync` in `planState` (`apps/web/src/game/machine.ts`,
-`packages/simulation/src/machine.ts`, and `packages/ui/src/board/gesture-machine.ts`). That keeps a
-Foldkit update and a Simulation Step synchronous, with no service layer and no fiber.
+`packages/simulation/src/machine.ts`, and `packages/ui/src/board/gesture-machine.ts`). That keeps an
+Effect UI update and a Simulation Step synchronous, with no service layer and no fiber.
 
 The stored value is the tagged state, not `Machine.Snapshot`. A snapshot is an experimental
 debugging shape with completion and history metadata, and a `Game` is saved, hashed, and replayed.

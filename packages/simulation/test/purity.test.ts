@@ -79,6 +79,6 @@ test('the rules catch what they are meant to catch', () => {
   expect(hostGlobal.test(codeOf('const now = Date.now()'))).toBe(true)
   expect(exponent.test(codeOf('/** A doc comment. */ const x = 1'))).toBe(false)
   expect(hostGlobal.test(codeOf("track: 'performance'"))).toBe(false)
-  expect(specifiers("import { h } from 'foldkit/html'").every(allowedImport)).toBe(false)
+  expect(specifiers("import { h } from 'react'").every(allowedImport)).toBe(false)
   expect(specifiers("import { Schema } from 'effect'").every(allowedImport)).toBe(true)
 })

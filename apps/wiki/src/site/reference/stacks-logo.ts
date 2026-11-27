@@ -3,7 +3,7 @@ import type { H } from '@effect/ui/html/Html'
 import { css, cx } from '@quorum/styled-system/css'
 import { STACK_LOGOS, type StackLogoId } from '@quorum/ui/game/icons'
 
-/** The brand logo `@quorum/ui/game/bits` drew for Foldkit, drawn for Effect UI. */
+/** The brand logo, drawn for Effect UI. */
 export const stackLogo = <Msg>(
   id: StackLogoId,
   className: string,

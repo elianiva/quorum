@@ -8,10 +8,8 @@ matters most.
 
 We add Sentry (SaaS) for three jobs, and keep PostHog for product events:
 
-- **Errors**, with source maps, from the browser and both Workers. A Foldkit crash reports the
-  Message tag, the route, the session kind, the Era, and `SIM_VERSION`, never the Model.
-- **Traces** from the browser through the website Worker and the API Worker to D1. Sentry owns
-  traces; Cloudflare Workers Observability keeps logs only.
+- **Errors**, with source maps, from the browser and both Workers. `reportBoardFailure` captures a board that fails to start. A survey submission that the API rejects or cannot reach is captured with the Exit's type and Era, never the answers.
+- **Traces** from the API Worker through the website Worker to D1. Sentry owns traces; Cloudflare Workers Observability keeps logs only.
 - **Profiles** of the page, in 5% of sessions, in Chromium only.
 
 Only the app edges import Sentry: `apps/web/src/platform/sentry.ts` and the two Worker entries.
@@ -21,12 +19,11 @@ Only the app edges import Sentry: `apps/web/src/platform/sentry.ts` and the two 
 Considered options:
 
 - **`@sentry/effect` everywhere.** It supports Effect 4, but its Node entry pulls in `@sentry/node`,
-  and the browser has no Effect failures to report: Foldkit turns Command failures into Messages.
+  and the browser has no Effect failures to report: Effect UI Commands turn failures into Messages.
   The API Worker uses its tracer and logger. The browser uses `@sentry/browser`.
 - **A span per Message or Command.** Sentry bills spans, and nearly all of these run in under a
-  millisecond. Foldkit's `slow` option reports only an update, view, or patch over its budget, and
-  `sim.tick_ms` samples one tick in sixteen. Rejected: no Message gets a span, and only a Command that
-  calls the API does. Work worth a breakdown (compute, save, replay) uses `traced`.
+  millisecond. The API Worker traces its own Commands; work in the browser worth a breakdown
+  (compute, save, replay) uses `traced`. Rejected: no browser Message gets a span.
 - **Session Replay.** Company names and mail are player text, and the crash tags cover most needs.
   Rejected.
 

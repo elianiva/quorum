@@ -15,7 +15,7 @@ resolved, and a Company can be loading while another is open. The app uses
    transition table makes the legal events per phase explicit, and every other event leaves the
    state unchanged.
 2. The app uses the library's pure planners, not its runtime. `Machine.plan` and `Machine.planInitial`
-   run through `Effect.runSync` in `planState`, so a Foldkit update and a Simulation Step stay
+   run through `Effect.runSync` in `planState`, so an Effect UI update and a Simulation Step stay
    synchronous. The app does not start a fiber, open a service layer, or send events to a running
    machine.
 3. The stored value is the tagged state, not `Machine.Snapshot`. A snapshot is an experimental
@@ -60,5 +60,5 @@ The inventory is in [State machines](../state-machines.md). The flows fall into 
   migration.
 - The Simulation decides the rules. A Challenge's score, Legacy, and hash come from
   `@quorum/simulation`, not from the machine.
-- What would change it: a machine runtime that keeps a Foldkit update synchronous and a `Game`
+- What would change it: a machine runtime that keeps an Effect UI update synchronous and a `Game`
   replayable without a fiber. No runtime does both.

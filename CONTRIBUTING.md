@@ -15,12 +15,12 @@ Small fixes, such as typos and clear bugs, do not need an issue first.
 
 ## Stack
 
-Quorum is built on Cafe: **C**loudflare for the runtime, **A**lchemy for infrastructure,
-**F**oldkit for the UI, and **E**ffect for the server and the shared contract.
+Quorum is built on Cloudflare for the runtime, Alchemy for infrastructure,
+Effect UI for the browser, and Effect for the server and the shared contract.
 
 | Path                  | Contents                                                                     |
 | --------------------- | ---------------------------------------------------------------------------- |
-| `apps/web`            | The Foldkit game client, the website Worker, and static assets.              |
+| `apps/web`            | The Effect UI game client, the website Worker, and static assets.            |
 | `apps/wiki`           | The player wiki, prerendered at build time. Prose lives in `content/`.       |
 | `apps/backend`        | Effect RPC handlers and the API Worker entry.                                |
 | `packages/simulation` | The pure Simulation. The browser plays it; the API Worker replays it.        |

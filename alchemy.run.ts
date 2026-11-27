@@ -105,7 +105,7 @@ export default Alchemy.Stack(
       observability,
       workersDev: false,
     })
-    const Website = Cloudflare.Website.Foldkit('Website', {
+    const Website = Cloudflare.Website.Vite('Website', {
       rootDir: 'apps/web',
       main: 'src/worker.ts',
       env: { API: ApiWorker, ...sentryEnv, ...rateLimits },

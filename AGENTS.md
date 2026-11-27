@@ -13,7 +13,7 @@
 - `packages/ui` views take data and Messages, never an app's Model.
 - Agent tools only read. The tool list, the snapshot and the view live in `packages/agent`; the browser uploads a snapshot and the API Worker answers MCP.
 - RPC schemas and errors live in `packages/rpc`; handlers live in `apps/backend`.
-- Retained remote data uses Foldkit Query; loading decisions belong in update handlers.
+- Remote data loads through Effect UI Commands; loading decisions belong in update handlers.
 - Do not add a workspace package, domain package, or Cloudflare service without a concrete need.
 
 <!-- BEGIN:turborepo-agent-rules -->

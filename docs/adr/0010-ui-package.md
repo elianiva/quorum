@@ -1,24 +1,23 @@
-# Game views live in one UI package
+# Shared UI data and the board live in one package
 
-The wiki ([ADR 0009](./0009-the-wiki-is-a-prerendered-app.md)) shows the game's real views: a Node
-card, a Tradeoff card, the research tree, and the board. A copy would drift from the game, and an
-app cannot import another app. The views move to `packages/ui` (`@quorum/ui`), which both apps
-import.
+The wiki shows the game's board and reads its catalog data. A copy would drift from the game, and an
+app cannot import another app. The shared data and board move to `packages/ui` (`@quorum/ui`), which
+both apps import.
 
 The package has subpath exports:
 
-- `@quorum/ui/primitives/*`: buttons, cards, tabs, and the other design-system parts. They import
-  only Foldkit, `@foldkit/ui`, `cn`, and `lucide`.
-- `@quorum/ui/game/*`: game views over Simulation data, number formats, and icons. A view takes the
-  data it shows and the Messages it sends, never an app's Model.
+- `@quorum/ui/primitives/*`: shared style fragments, such as keyboard hints and hit groups. They
+  import only `@quorum/styled-system`.
+- `@quorum/ui/game/*`: pure data over the Simulation, such as number formats, icons, labels, and
+  style values. The module returns no UI framework types, so each app renders it with Effect UI.
 - `@quorum/ui/board`: the Pixi board. It takes a `BoardState` and callbacks, so it does not know
   about sound or the app's Messages.
 - `src/panda/preset.ts`: the Panda preset both apps' Panda configs load. It holds the Graphite
   palette as custom properties, the tokens that read them, the document base, and the motion
   classes, so the wiki and the game share one design language.
 
-Only views that the wiki embeds move. Screens that exist only in the game (the dock, the HUD,
-Settings) stay in `apps/web`.
+Only the board and pure data move. Screens that exist only in the game (the dock, the HUD,
+Settings) stay in `apps/web`, and the wiki writes its own Effect UI views from the shared data.
 
 Considered options:
 

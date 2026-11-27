@@ -11,7 +11,7 @@ import { groupBadge } from '../badge.ts'
 import { icon } from '../icon.ts'
 
 /**
- * The research mark `@quorum/ui/game/research-marks` drew for Foldkit, drawn
+ * The research mark, drawn
  * here on the ported group badge.
  */
 export const researchMark = <Msg>(

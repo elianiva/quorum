@@ -4,14 +4,14 @@ import { KINDS, type EraDef, type RequestKind } from '@quorum/simulation/catalog
 import { css, cx } from '@quorum/styled-system/css'
 import { percent, type Lang } from './shared.ts'
 
-/** The figure style, copied from `@quorum/ui/game/bits` so these pages stay off Foldkit. */
+/** The figure style, shared with the game. */
 export const FIGURE = css({
   fontFamily: 'mono',
   fontVariantNumeric: 'tabular-nums',
   letterSpacing: 'subtle',
 })
 
-/** The eyebrow style, copied from `@quorum/ui/game/bits` so these pages stay off Foldkit. */
+/** The eyebrow style, shared with the game. */
 export const EYEBROW = css({
   fontFamily: 'mono',
   fontSize: 'type.10-5',

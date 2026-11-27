@@ -51,8 +51,8 @@ domain. Use that endpoint as the shape for your own.
    })
    ```
 
-5. Keep remote data in a Foldkit Query submodel. Update handlers decide when to
-   load or revalidate; views read the query.
+5. Load remote data through Effect UI Commands. Update handlers decide when to
+   load or reload; views read the loaded data.
 
 ## Errors
 

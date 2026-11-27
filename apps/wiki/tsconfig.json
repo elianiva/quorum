@@ -4,9 +4,9 @@
     "types": [
       "vite/client",
       "node",
-      "@foldkit/markdown/content",
-      "@effect/ui/html/HtmlServerViteDocument"
+      "@effect/ui/html/HtmlServerViteDocument",
+      "@effect/ui/html/MarkdownContent"
     ]
   },
-  "include": ["src/**/*.ts", "vite.config.ts", "vitest.config.ts", "vite.site.config.ts"]
+  "include": ["src/**/*.ts", "vite.site.config.ts", "vitest.config.ts", "scripts/**/*.ts"]
 }

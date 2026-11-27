@@ -9,8 +9,8 @@ services:
       title: Quorum
       description: The Quorum client — title, rooms, run, report.
   wiki:
-    command: pnpm exec vite --host 0.0.0.0 --port "$PORT" --strictPort
     cwd: apps/wiki
+    command: pnpm exec vite --config vite.site.config.ts --host 0.0.0.0 --port "$PORT" --strictPort
     health: /
     portal:
       title: Quorum Wiki

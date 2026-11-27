@@ -3,24 +3,20 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/measure.ts --if-stale && vite build",
+    "build": "node scripts/measure.ts --if-stale && vite build --config vite.site.config.ts && node scripts/site-artifacts.ts",
     "measurements": "node scripts/measure.ts",
     "changelog:render": "node scripts/changelog.ts render",
     "changelog:write": "node scripts/changelog.ts write",
     "typecheck": "tsrs --noEmit -p tsconfig.json && effect-tsrs diagnostics --strict --project tsconfig.json --lspconfig '{\"allowedExperimentalApis\":[\"@effect/ui\"]}'",
     "test": "vitest run",
-    "dev:site": "vite --config vite.site.config.ts",
-    "build:site": "vite build --config vite.site.config.ts"
+    "dev": "vite --config vite.site.config.ts"
   },
   "dependencies": {
     "@effect/ui": "https://pkg.pr.new/Effect-TS/ui/@effect/ui@1015b18",
-    "@foldkit/markdown": "0.15.0",
-    "@foldkit/vite-plugin": "0.29.0",
     "@quorum/simulation": "workspace:*",
     "@quorum/styled-system": "workspace:*",
     "@quorum/ui": "workspace:*",
     "effect": "4.1.4",
-    "foldkit": "0.170.0",
     "js.foresight": "^4.2.1",
     "katex": "0.19.1",
     "lucide": "1.73.0",

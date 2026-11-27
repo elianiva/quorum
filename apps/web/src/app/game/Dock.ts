@@ -13,7 +13,7 @@ import { COMPONENT_ICONS } from '@quorum/ui/game/component-icons'
 import { GROUP_ICONS } from '@quorum/ui/game/icons'
 import { FIGURE, GROUP_TEXT, PANEL, tool } from '@quorum/ui/game/bits'
 import { Message } from '@/game/message.ts'
-import { folderHolds } from '@/game/inbox.ts'
+import { unreadCount, waitingMail } from './Inbox.ts'
 import { placingOf, type Model } from '@/game/model.ts'
 import { partOf, type Part } from '@/game/parts.ts'
 import { dockGroups, dockItems } from '@/game/reveal.ts'
@@ -279,10 +279,8 @@ const list = (h: H<Message>, model: Model, group: DockGroup): Content =>
 
 const inboxTab = (h: H<Message>, model: Model): Content => {
   const t = copy(h)
-  const unread = model.board.inbox.mail.filter(
-    (mail) => (folderHolds(mail, 'action') || folderHolds(mail, 'fyi')) && !mail.read,
-  ).length
-  const waiting = model.board.inbox.mail.some((mail) => folderHolds(mail, 'action') && !mail.read)
+  const unread = unreadCount(model)
+  const waiting = waitingMail(model)
   const active = model.panel === 'inbox'
   return h.button
     .key('inbox-tab')

@@ -1,0 +1,143 @@
+import { css } from '@quorum/styled-system/css'
+import { copy, type Messages } from '@/i18n/messages.ts'
+import type { H } from '@effect/ui/html/Html'
+import {
+  LOG_ACKS,
+  LOG_PARTITIONS,
+  LOG_REPLICAS,
+  LOG_READ_RATE,
+  LOG_RETENTION,
+} from '@quorum/simulation/catalog'
+import { burnOf, logLoss, logReplicas } from '@quorum/simulation/lookups'
+import type { Acks, GameNode } from '@quorum/simulation/state'
+import { compact, money, rate } from '@quorum/ui/game/format'
+import { Message } from '@/game/message.ts'
+import { type Content, type Panel, caption, percentNumber, picker, row, section } from './shared.ts'
+
+const retentionLabel = (t: Messages, seconds: number): string =>
+  seconds >= 1_440
+    ? t.units.d(Math.round((seconds / 1_440) * 10) / 10)
+    : t.units.h(Math.round(seconds / 60))
+
+const events = (node: GameNode, h: H<Message>): ReadonlyArray<Content> => {
+  const t = copy(h)
+  return [
+    section(
+      h,
+      t.inspectorLog.partitions,
+      [
+        picker(
+          h,
+          'partitions',
+          LOG_PARTITIONS.map((partitions) => [partitions, String(partitions)] as const),
+          node.partitions,
+          (partitions) => Message.LogOptionsChosen({ nodeId: node.id, partitions }),
+        ),
+        picker(
+          h,
+          'keyed',
+          [
+            [true, t.inspectorLog.keyed],
+            [false, t.inspectorLog.roundRobin],
+          ],
+          node.keyed,
+          (keyed) => Message.LogOptionsChosen({ nodeId: node.id, keyed }),
+        ),
+        caption(
+          h,
+          node.keyed
+            ? t.inspectorLog.oneKeyKeepsAnEntityIn
+            : t.inspectorLog.eventsSpreadEvenlyAndOrderIs,
+        ),
+        caption(
+          h,
+          t.inspectorLog.aConsumerGroupReadsOneConsumer(compact(LOG_READ_RATE * node.partitions)),
+        ),
+      ],
+      true,
+    ),
+    section(h, t.inspectorLog.durability, [
+      picker(
+        h,
+        'acks',
+        (Object.entries(LOG_ACKS) as ReadonlyArray<[Acks, (typeof LOG_ACKS)['all']]>).map(
+          ([id]) => [id, t.catalog.logAcks[id].name] as const,
+        ),
+        node.acks,
+        (acks) => Message.LogOptionsChosen({ nodeId: node.id, acks }),
+      ),
+      caption(h, t.inspectorLog.aProducerWaitsForTheAppend(LOG_ACKS[node.acks].latency)),
+      picker(
+        h,
+        'replicas',
+        LOG_REPLICAS.map((replicas) => [replicas, t.inspectorLog.replicaCount(replicas)] as const),
+        logReplicas(node),
+        (replicas) => Message.LogOptionsChosen({ nodeId: node.id, replicas }),
+      ),
+      caption(
+        h,
+        logLoss(node) >= 1
+          ? t.inspectorLog.oneReplicaHoldsTheOnlyCopy
+          : logLoss(node) > 0
+            ? t.inspectorLog.aBrokerThatFailsLoses(percentNumber(logLoss(node)))
+            : t.inspectorLog.everyReplicaHadEveryEvent,
+      ),
+    ]),
+    section(h, t.inspectorLog.retention, [
+      picker(
+        h,
+        'retain',
+        LOG_RETENTION.map((retain) => [retain, retentionLabel(t, retain)] as const),
+        node.retain,
+        (retain) => Message.LogOptionsChosen({ nodeId: node.id, retain }),
+      ),
+      h.p
+        .class(
+          css({
+            fontSize: 'type.12',
+            lineHeight: 'snug',
+            color: 'mutedForeground',
+          }),
+        )
+        .children(t.inspectorLog.messagesStayAfterTheyAreRead),
+    ]),
+  ]
+}
+
+export const logPanel: Panel = {
+  stats: ({ game, node, own, h }) => {
+    const t = copy(h)
+
+    const lag = node.depth / Math.max(1, own.capacity)
+    return [
+      row(h, t.inspectorLog.inbound, t.inspectorLog.s(rate(own.inbound)), 'plain'),
+      row(
+        h,
+        t.inspectorLog.lag,
+        t.inspectorLog.events(compact(Math.round(node.depth))),
+        node.depth > 0 ? 'warn' : 'plain',
+      ),
+      row(
+        h,
+        t.inspectorLog.behind,
+        node.depth < 1 ? t.inspectorLog.caughtUp : t.inspectorLog.s2(Math.round(lag)),
+        lag > node.retain ? 'danger' : lag > node.retain / 2 ? 'warn' : 'plain',
+      ),
+      row(
+        h,
+        t.inspectorLog.retention,
+        retentionLabel(t, node.retain),
+        lag > node.retain ? 'danger' : 'plain',
+      ),
+      row(h, t.inspectorLog.partitions, `${node.partitions}`, 'plain'),
+      row(
+        h,
+        t.inspectorLog.replicas,
+        t.inspectorLog.replicasAndAcks(logReplicas(node), t.catalog.logAcks[node.acks].name),
+        'plain',
+      ),
+      row(h, t.inspectorLog.burn, t.inspectorLog.s(money(burnOf(game, node))), 'plain'),
+    ]
+  },
+  body: ({ node, h }) => [...events(node, h)],
+}

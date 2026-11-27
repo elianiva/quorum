@@ -1,0 +1,387 @@
+import { css, cx } from '@quorum/styled-system/css'
+import type { H } from '@effect/ui/html/Html'
+import { ArrowUpRight, ChevronRight } from 'lucide'
+import { REQUEST_KINDS, type Kind } from '@quorum/simulation/catalog'
+import type { Ledger } from '@quorum/simulation/ledger'
+import { has } from '@quorum/simulation/lookups'
+import type { GameNode } from '@quorum/simulation/state'
+import { rate } from '@quorum/ui/game/format'
+import { FIGURE, NESTED } from '@quorum/ui/game/bits'
+import { icon } from '../../ui/icon.ts'
+import { formats } from '@/i18n/format.ts'
+import { copy, nodeTitle, type Messages } from '@/i18n/messages.ts'
+import { Message } from '@/game/message.ts'
+import type { Model } from '@/game/model.ts'
+import { hourBefore, loadChangeOf, type NodeSample } from '@/game/node-metrics.ts'
+import { WIKI_URL } from '@/platform/analytics.ts'
+import { type Content, caption, percent, row } from './shared.ts'
+
+const GUIDE = `${WIKI_URL}/guides/find-the-bottleneck`
+
+const WHAT_IF_FRESH = 15
+
+const whyLink = (anchor: string, h: H<Message>): Content => {
+  const t = copy(h)
+  return h.a
+    .attr('href', `${GUIDE}#${anchor}`)
+    .attr('target', '_blank')
+    .attr('rel', 'noreferrer noopener')
+    .attr('aria-label', t.inspector.whyTitle)
+    .class(
+      cx(
+        css({
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.5',
+          fontSize: 'type.12',
+          color: 'mutedForeground',
+          textDecorationLine: 'underline',
+          textDecorationColor: 'color-mix(in oklab, var(--foreground) 25%, transparent)',
+          textUnderlineOffset: '3px',
+          _hover: {
+            color: 'foreground',
+            textDecorationColor: 'foreground',
+          },
+        }),
+        'group',
+      ),
+    )
+    .children(
+      t.inspector.why,
+      icon(
+        h,
+        ArrowUpRight,
+        css({
+          width: '3',
+          height: '3',
+          flexShrink: '0',
+          transitionProperty: 'transform',
+          transitionDuration: 'fast',
+          transitionTimingFunction: 'out',
+          '.group:hover &': {
+            translate: '1px -1px',
+          },
+        }),
+      ),
+    )
+}
+
+const block = (
+  title: string,
+  anchor: string,
+  body: ReadonlyArray<Content>,
+  h: H<Message>,
+): Content =>
+  h.div
+    .key(anchor)
+    .class(
+      css({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1',
+      }),
+    )
+    .children(
+      h.div
+        .class(
+          css({
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            gap: '2',
+          }),
+        )
+        .children(caption(h, title), whyLink(anchor, h)),
+      ...body,
+    )
+
+const signed = (t: Messages, value: number): string =>
+  t.inspector.points(
+    `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.round(Math.abs(value) * 100)}`,
+  )
+
+const STEADY = 0.02
+
+const words = (t: Messages, part: 'demand' | 'cost' | 'capacity', value: number): string => {
+  const up = value > 0
+  switch (part) {
+    case 'demand':
+      return up ? t.inspector.loadChangeMoreTraffic : t.inspector.loadChangeLessTraffic
+    case 'cost':
+      return up ? t.inspector.loadChangeCostsMore : t.inspector.loadChangeCostsLess
+    case 'capacity':
+      return up ? t.inspector.loadChangeLessCapacity : t.inspector.loadChangeMoreCapacity
+  }
+}
+
+export const loadChange = (
+  model: Model,
+  history: ReadonlyArray<NodeSample>,
+  sample: NodeSample,
+  index: number,
+  h: H<Message>,
+): Content | null => {
+  const t = copy(h)
+  const game = model.board.game
+  const earlier = hourBefore(history, index)
+  const change = earlier ? loadChangeOf(sample, earlier) : null
+  const callee = sample.slowest
+  const calleeNode = callee && game.nodes.find((entry) => entry.id === callee.id)
+  const slowest =
+    has(game, 'tracing') && callee
+      ? row(
+          h,
+          t.inspector.slowestCall,
+          `${calleeNode ? nodeTitle(t, game, calleeNode) : callee.name} · ${formats(t).ms(callee.latency)}`,
+          'plain',
+        )
+      : null
+  if (!change || !earlier) return null
+  const parts = (['demand', 'cost', 'capacity'] as const).map(
+    (part) => [part, change[part]] as const,
+  )
+  const [largest, value] = parts.reduce((best, entry) =>
+    Math.abs(entry[1]) > Math.abs(best[1]) ? entry : best,
+  )
+  const steady = Math.abs(sample.utilization - earlier.utilization) < STEADY
+  const summary = steady ? t.inspector.loadChangeSteady : words(t, largest, value)
+  const busy = sample.utilization >= 0.7
+  const label = {
+    demand: t.inspector.loadChangeDemand,
+    cost: t.inspector.loadChangeCost,
+    capacity: t.inspector.loadChangeCapacity,
+  }
+  const rows: ReadonlyArray<Content> = has(game, 'metrics')
+    ? [
+        row(
+          h,
+          summary,
+          t.inspector.loadChangeSince(percent(earlier.utilization), percent(sample.utilization)),
+          'plain',
+        ),
+        ...parts.map(([part, points]) =>
+          row(
+            h,
+            label[part],
+            signed(t, points),
+            busy && !steady && part === largest && points > 0 ? 'warn' : 'plain',
+          ),
+        ),
+        ...(slowest ? [slowest] : []),
+      ]
+    : [row(h, summary, '', busy && !steady && value > 0 ? 'warn' : 'plain')]
+  return block(
+    t.inspector.loadChange,
+    'read-the-load-change',
+    [h.div.class(NESTED).children(...rows)],
+    h,
+  )
+}
+
+export const amplification = (
+  model: Model,
+  node: GameNode,
+  sample: NodeSample,
+  h: H<Message>,
+): Content | null => {
+  const t = copy(h)
+  if (!has(model.board.game, 'tracing') || node.type === 'users' || sample.inbound <= 0) return null
+  const kinds = REQUEST_KINDS.filter((kind) => (sample.origins[kind] ?? 0) > 0.005).toSorted(
+    (a, b) => (sample.origins[b] ?? 0) - (sample.origins[a] ?? 0),
+  )
+  const multiplied = kinds.some(
+    (kind) =>
+      Math.abs((sample.origins[kind] ?? 0) - (sample.sent[kind] ?? 0)) >
+      0.05 * (sample.sent[kind] ?? 1),
+  )
+  if (kinds.length === 0 || (!multiplied && sample.repeated <= 0.005 && sample.misses <= 0.005))
+    return null
+  return block(
+    t.inspector.amplification,
+    'read-amplification',
+    [
+      h.div.class(NESTED).children(
+        ...kinds.map((kind) => {
+          const here = sample.origins[kind] ?? 0
+          const sent = sample.sent[kind] ?? 0
+          return row(
+            h,
+            t.catalog.kinds[kind].label,
+            sent > 0
+              ? t.inspector.callsPerRequest(rate(sent), (here / sent).toFixed(1), rate(here))
+              : t.units.perSecond(rate(here)),
+            'plain',
+          )
+        }),
+        ...(sample.repeated > 0.005
+          ? [
+              row(
+                h,
+                t.inspector.repeatedCalls,
+                percent(sample.repeated / sample.inbound),
+                sample.repeated / sample.inbound >= 0.1 ? 'warn' : 'plain',
+              ),
+            ]
+          : []),
+        ...(sample.misses > 0.005
+          ? [row(h, t.inspector.cacheMisses, percent(sample.misses / sample.inbound), 'plain')]
+          : []),
+      ),
+    ],
+    h,
+  )
+}
+
+const ms = (t: Messages, value: number): string =>
+  t.units.ms(value < 10 ? value.toFixed(2) : value.toFixed(1))
+
+const factor = (value: number): string =>
+  `× ${value >= 10 ? value.toFixed(1) : value.toFixed(2).replace(/0$/, '')}`
+
+export const costReceipts = (
+  model: Model,
+  node: GameNode,
+  ledger: Ledger,
+  h: H<Message>,
+): Content | null => {
+  const t = copy(h)
+  if (!has(model.board.game, 'profiling')) return null
+  const own = ledger.nodes[node.id]
+  if (!own) return null
+  const kinds = (Object.keys(own.receipts) as Array<Kind>).filter(
+    (kind) => (own.traffic[kind] ?? 0) > 0,
+  )
+  const cpu = (kind: Kind) => (own.traffic[kind] ?? 0) * (own.receipts[kind]?.total ?? 0)
+  const total = kinds.reduce((sum, kind) => sum + cpu(kind), 0)
+  if (kinds.length === 0 || total <= 0) return null
+  const sorted = kinds.toSorted((a, b) => cpu(b) - cpu(a))
+  return block(
+    t.inspector.costPerRequest,
+    'read-the-cost-receipt',
+    [
+      h.div.class(NESTED).children(
+        ...sorted.map((kind) => {
+          const receipt = own.receipts[kind]!
+          return h.details
+            .key(kind)
+            .class('group-receipt')
+            .children(
+              h.summary
+                .class(
+                  css({
+                    display: 'flex',
+                    cursor: 'pointer',
+                    listStyleType: 'none',
+                    alignItems: 'baseline',
+                    justifyContent: 'space-between',
+                    gap: '3',
+                    paddingInline: '3',
+                    paddingBlock: '1.5',
+                    '&::-webkit-details-marker': {
+                      display: 'none',
+                    },
+                  }),
+                )
+                .children(
+                  h.span
+                    .class(
+                      css({
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1',
+                        fontSize: 'type.12-5',
+                        color: 'mutedForeground',
+                      }),
+                    )
+                    .children(
+                      icon(
+                        h,
+                        ChevronRight,
+                        css({
+                          width: '3',
+                          height: '3',
+                          flexShrink: '0',
+                          transitionProperty: 'transform',
+                          transitionDuration: 'fast',
+                          transitionTimingFunction: 'out',
+                          '.group-receipt[open] &': {
+                            rotate: '90deg',
+                          },
+                        }),
+                      ),
+                      t.catalog.kinds[kind].label,
+                    ),
+                  h.span
+                    .class(
+                      cx(
+                        FIGURE,
+                        css({
+                          fontSize: 'type.12',
+                          whiteSpace: 'nowrap',
+                        }),
+                      ),
+                    )
+                    .children(
+                      t.inspector.receiptTotal(ms(t, receipt.total), percent(cpu(kind) / total)),
+                    ),
+                ),
+              h.div
+                .class(
+                  css({
+                    paddingBottom: '1',
+                    paddingLeft: '4',
+                  }),
+                )
+                .children(
+                  row(h, t.inspector.receiptBase, ms(t, receipt.base), 'plain'),
+                  ...receipt.lines.map((line) =>
+                    row(
+                      h,
+                      t.inspector.costCauses[line.cause],
+                      line.op === 'times' ? factor(line.value) : `+ ${ms(t, line.value)}`,
+                      line.op === 'times' ? (line.value > 1 ? 'warn' : 'ok') : 'plain',
+                    ),
+                  ),
+                ),
+            )
+        }),
+      ),
+    ],
+    h,
+  )
+}
+
+export const whatIfs = (model: Model, node: GameNode, h: H<Message>): Content | null => {
+  const t = copy(h)
+  const game = model.board.game
+  const found = model.board.whatIfs
+  if (!has(game, 'profiling') || !found || found.nodeId !== node.id) return null
+  const age = game.time - found.at
+  if (age < 0 || age > WHAT_IF_FRESH || found.rows.length === 0) return null
+  return block(
+    t.inspector.whatIf,
+    'try-a-what-if',
+    [
+      h.div.class(NESTED).children(
+        ...found.rows.map((entry) => {
+          const target = game.nodes.find((candidate) => candidate.id === entry.target)
+          const label =
+            entry.change === 'retries-off'
+              ? t.inspector.whatIfRetriesOff
+              : t.inspector.whatIfLarger(target ? nodeTitle(t, game, target) : entry.target)
+          return h.div
+            .key(`${entry.change}:${entry.target}`)
+            .children(
+              row(
+                h,
+                label,
+                t.inspector.loadChangeSince(percent(entry.before), percent(entry.after)),
+                entry.after >= 0.9 ? 'danger' : entry.after >= 0.7 ? 'warn' : 'ok',
+              ),
+            )
+        }),
+      ),
+    ],
+    h,
+  )
+}

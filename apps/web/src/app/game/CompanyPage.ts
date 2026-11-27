@@ -1,7 +1,7 @@
 import { Subscription } from '@effect/ui'
 import { Html } from '@effect/ui/html'
 import { css, cx } from '@quorum/styled-system/css'
-import { Duration, Stream } from 'effect'
+import { Duration, Schema, Stream } from 'effect'
 import { Message } from '../../game/message.ts'
 import {
   Model,
@@ -16,7 +16,7 @@ import { AppRoute as OldAppRoute } from '../../game/route.ts'
 import { fileFor, parseIndex } from '../../game/saves.ts'
 import { SAVE_INDEX_KEY, readStored } from '../../game/storage.ts'
 import { TICK_MS, initialModel, update } from '../../game/update.ts'
-import { LoadCompany } from '../../game/commands.ts'
+import { CheckRoom, LoadCompany } from '../../game/commands.ts'
 import { isExited } from '../../game/company-machine.ts'
 import { freshBoard, sync } from '../../game/update/shared.ts'
 import { Option } from 'effect'
@@ -63,6 +63,7 @@ import { inspector } from './Inspector.ts'
 import { Shop } from './Shop.ts'
 import { blurs, keys } from './keys.ts'
 import { runCommands } from './bridge.ts'
+import { AppRoute } from '../routes.ts'
 
 const STAGE = css({
   position: 'relative',
@@ -138,11 +139,43 @@ const BOTTOM = css({
 
 export const CompanyPage = Html.component({
   name: 'CompanyPage',
+  props: Schema.Struct({ route: AppRoute }),
   model: Model,
   message: Message,
 }).make({
   init: ($) => {
     const base = initialModel()
+    const route = $.props.route
+    if (route._tag === 'Sandbox') {
+      const id = route.params.sandbox
+      const started = update(
+        { ...base, route: OldAppRoute.Sandbox({ sandbox: id }), boot: { _tag: 'Ready' } },
+        id === 'free' ? Message.FreeSandboxStarted() : Message.GuidedStarted({ id }),
+      )
+      return $.set(started.model).run(...runCommands(started.commands))
+    }
+    if (route._tag === 'Challenge') {
+      const started = update(
+        {
+          ...base,
+          route: OldAppRoute.Challenge({ challenge: route.params.challenge }),
+          boot: { _tag: 'Ready' },
+        },
+        Message.ChallengeStarted({ id: route.params.challenge }),
+      )
+      return $.set(started.model).run(...runCommands(started.commands))
+    }
+    if (route._tag === 'Room') {
+      const code = route.params.room
+      const model: Model = {
+        ...base,
+        route: OldAppRoute.Room({ room: code }),
+        boot: { _tag: 'Ready' },
+        panel: 'room',
+        room: { ...base.room, phase: { _tag: 'Connecting', code } },
+      }
+      return $.set(model).run(...runCommands([CheckRoom({ code })]))
+    }
     const stored = readStored(SAVE_INDEX_KEY)
     const index = stored === null ? null : Option.getOrNull(parseIndex(stored))
     const id = index?.lastPlayed ?? null

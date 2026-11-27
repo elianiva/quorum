@@ -69,7 +69,17 @@ const App = Html.component({
       model.route._tag === 'Challenge' ||
       model.route._tag === 'Room'
     )
-      return CompanyPage(h, { key: 'company' })
+      return CompanyPage(h, {
+        key:
+          model.route._tag === 'Sandbox'
+            ? `sandbox-${model.route.params.sandbox}`
+            : model.route._tag === 'Challenge'
+              ? `challenge-${model.route.params.challenge}`
+              : model.route._tag === 'Room'
+                ? `room-${model.route.params.room}`
+                : 'company',
+        props: { route: model.route },
+      })
     const menu = model.route._tag === 'Menu' ? model.route.params.menu : 'main'
     return TitlePage(h, { key: 'title', props: { menu } })
   },

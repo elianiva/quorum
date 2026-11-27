@@ -14,7 +14,7 @@ export const AppMessage = UiSchema.TaggedEnum({
 export type AppMessage = typeof AppMessage.Type
 
 /* The splash holds the menu back for one beat after the badge goes in. */
-const RevealTitle = Command.make('RevealTitle', {}, () =>
+export const RevealTitle = Command.make('RevealTitle', {}, () =>
   Effect.sleep('900 millis').pipe(Effect.as(AppMessage.TitleRevealed())),
 )
 

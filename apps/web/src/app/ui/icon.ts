@@ -12,6 +12,7 @@ const svgElement = <Msg>(h: H<Msg>, tag: string, attrs: Readonly<Record<string, 
         .attr('cx', value('cx'))
         .attr('cy', value('cy'))
         .attr('r', value('r'))
+        .attr('fill', attrs['fill'] === undefined ? undefined : value('fill'))
         .children()
     case 'ellipse':
       return h.ellipse
@@ -27,6 +28,8 @@ const svgElement = <Msg>(h: H<Msg>, tag: string, attrs: Readonly<Record<string, 
         .attr('width', value('width'))
         .attr('height', value('height'))
         .attr('rx', attrs['rx'] === undefined ? undefined : value('rx'))
+        .attr('ry', attrs['ry'] === undefined ? undefined : value('ry'))
+        .attr('fill', attrs['fill'] === undefined ? undefined : value('fill'))
         .children()
     case 'line':
       return h.line
@@ -40,7 +43,10 @@ const svgElement = <Msg>(h: H<Msg>, tag: string, attrs: Readonly<Record<string, 
     case 'polygon':
       return h.polygon.attr('points', value('points', '')).children()
     default:
-      return h.path.attr('d', value('d', '')).children()
+      return h.path
+        .attr('d', value('d', ''))
+        .attr('fill', attrs['fill'] === undefined ? undefined : value('fill'))
+        .children()
   }
 }
 
@@ -48,6 +54,8 @@ export const icon = <Msg>(h: H<Msg>, node: IconNode, className: string) =>
   h.svg
     .class(className)
     .attr('viewBox', '0 0 24 24')
+    .attr('xmlns', 'http://www.w3.org/2000/svg')
+    .attr('data-svg-icon', '')
     .attr('fill', 'none')
     .attr('stroke', 'currentColor')
     .attr('stroke-width', '2')

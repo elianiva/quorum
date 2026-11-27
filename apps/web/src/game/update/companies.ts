@@ -19,10 +19,10 @@ import {
   fileOf,
   nameOr,
   newSaveId,
+  parseIndex,
   refreshedIndex,
   withFile,
   withoutFile,
-  SaveIndex,
   CompanyFile,
   EMPTY_SAVE_INDEX,
 } from '../saves.ts'
@@ -108,32 +108,6 @@ const startCompany = (
 }
 
 const parseFounder = Schema.decodeUnknownOption(Schema.fromJsonString(Founder))
-
-const StoredIndex = Schema.Struct({
-  current: Schema.optionalKey(Schema.NullOr(Schema.String)),
-  lastPlayed: Schema.optionalKey(Schema.NullOr(Schema.String)),
-  companies: Schema.Array(Schema.Unknown),
-})
-
-const decodeIndex = Schema.decodeUnknownOption(Schema.fromJsonString(StoredIndex))
-const HasId = Schema.Struct({ id: Schema.String })
-const decodeCompanyFile = Schema.decodeUnknownOption(CompanyFile)
-
-export const parseIndex = (text: string) =>
-  Option.map(decodeIndex(text), (stored) => {
-    const companies = stored.companies.flatMap((entry) =>
-      Option.match(decodeCompanyFile(entry), { onNone: () => [], onSome: (file) => [file] }),
-    )
-    const lastPlayed = stored.lastPlayed ?? stored.current ?? null
-    const index: SaveIndex = {
-      lastPlayed: companies.some((file) => file.id === lastPlayed) ? lastPlayed : null,
-      companies,
-    }
-    const held = stored.companies.flatMap((entry) =>
-      Option.isNone(decodeCompanyFile(entry)) && Schema.is(HasId)(entry) ? [entry.id] : [],
-    )
-    return { index, held, skipped: companies.length < stored.companies.length }
-  })
 
 const titleIfBoard = (model: Model): UpdateResult =>
   model.route._tag === 'Company'

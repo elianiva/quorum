@@ -1,4 +1,4 @@
-import { Effect, Schema } from 'effect'
+import { Effect, Option, Schema } from 'effect'
 import { MutatorId, VentureId } from '@quorum/simulation/state'
 import type { Game } from '@quorum/simulation/state'
 import { LogoId } from './logos.ts'
@@ -32,6 +32,33 @@ export const SaveIndex = Schema.Struct({
   companies: Schema.Array(CompanyFile),
 })
 export type SaveIndex = typeof SaveIndex.Type
+
+const StoredIndex = Schema.Struct({
+  current: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  lastPlayed: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  companies: Schema.Array(Schema.Unknown),
+})
+
+const decodeIndex = Schema.decodeUnknownOption(Schema.fromJsonString(StoredIndex))
+const HasId = Schema.Struct({ id: Schema.String })
+const decodeCompanyFile = Schema.decodeUnknownOption(CompanyFile)
+
+/** Reads the stored index, including files written before `lastPlayed` existed. */
+export const parseIndex = (text: string) =>
+  Option.map(decodeIndex(text), (stored) => {
+    const companies = stored.companies.flatMap((entry) =>
+      Option.match(decodeCompanyFile(entry), { onNone: () => [], onSome: (file) => [file] }),
+    )
+    const lastPlayed = stored.lastPlayed ?? stored.current ?? null
+    const index: SaveIndex = {
+      lastPlayed: companies.some((file) => file.id === lastPlayed) ? lastPlayed : null,
+      companies,
+    }
+    const held = stored.companies.flatMap((entry) =>
+      Option.isNone(decodeCompanyFile(entry)) && Schema.is(HasId)(entry) ? [entry.id] : [],
+    )
+    return { index, held, skipped: companies.length < stored.companies.length }
+  })
 
 export const EMPTY_SAVE_INDEX: SaveIndex = { lastPlayed: null, companies: [] }
 

@@ -25,7 +25,7 @@ import {
 } from 'lucide'
 import { langOf } from '../i18n/lang.ts'
 import { LOCALES, LOCALE_NAMES, LOCALE_TAGS, Locale, withLocale } from '../i18n/locale.ts'
-import { navOf, pageIn, SECTION_ORDER } from '../pages.ts'
+import { navOf, pageIn, SECTION_ORDER } from './pages.ts'
 import { indexUrl, loadIndex, search, type Hit, type Index } from '../search.ts'
 import { GAME_ORIGIN, REPOSITORY } from '../site.ts'
 import { githubMark } from './github.ts'
@@ -186,8 +186,12 @@ const searchInput = css({
   '&::placeholder': { color: 'mutedForeground' },
 })
 
+export const HeaderEvents = UiSchema.TaggedEnum({
+  ToggledMenu: {},
+})
+
 export const HeaderMessage = UiSchema.TaggedEnum({
-  MenuToggled: {},
+  ClickedMenu: {},
   LanguageMenuToggled: {},
   LanguageMenuClosed: {},
   QueryChanged: { query: Schema.String },
@@ -226,9 +230,6 @@ const SearchFocus = Mount.make(
 )
 
 const HeaderModel = Schema.Struct({
-  path: Schema.String,
-  locale: Locale,
-  menu: Schema.Boolean,
   languageMenu: Schema.Boolean,
   query: Schema.String,
   open: Schema.Boolean,
@@ -625,7 +626,7 @@ const sections = (
   locale: Locale,
 ): View.Content<HeaderMessage> => {
   const l = langOf(locale)
-  const current = path === '/' ? null : (pageIn(locale, path)?.section ?? null)
+  const current = path === '/' ? null : (pageIn<never>(locale, path)?.section ?? null)
   return h.nav.attr('aria-label', l.t.header.sections).children(
     h.div
       .class(
@@ -649,7 +650,7 @@ const sections = (
       )
       .children(
         ...SECTION_ORDER.flatMap((section) => {
-          const first = navOf(locale, section)[0]
+          const first = navOf<never>(locale, section)[0]
           if (!first) return []
           const target = withLocale(locale, first.path)
           return [
@@ -707,14 +708,12 @@ const sectionIcon = (section: (typeof SECTION_ORDER)[number]) => SECTION_ICONS[s
 
 export const Header = Html.component({
   name: 'Header',
-  props: Schema.Struct({ path: Schema.String, locale: Locale }),
+  props: Schema.Struct({ path: Schema.String, locale: Locale, menu: Schema.Boolean }),
   model: HeaderModel,
   message: HeaderMessage,
+  events: HeaderEvents,
 }).make({
-  init: ($) => ({
-    path: $.props.path,
-    locale: $.props.locale,
-    menu: false,
+  init: () => ({
     languageMenu: false,
     query: '',
     open: false,
@@ -724,7 +723,7 @@ export const Header = Html.component({
   }),
 
   update: {
-    MenuToggled: ($) => $.evolve({ menu: !$.model.menu, languageMenu: false }),
+    ClickedMenu: ($) => $.evolve({ languageMenu: false }).emit(HeaderEvents.ToggledMenu()),
     LanguageMenuToggled: ($) => $.evolve({ languageMenu: !$.model.languageMenu }),
     LanguageMenuClosed: ($) => $.evolve({ languageMenu: false }),
     QueryChanged: ($, { query }) => {
@@ -735,12 +734,12 @@ export const Header = Html.component({
         active: 0,
         status: loading ? ('loading' as const) : $.model.status,
       })
-      return loading ? next.run(LoadIndex.make({ locale: $.model.locale })) : next
+      return loading ? next.run(LoadIndex.make({ locale: $.props.locale })) : next
     },
     SearchFocused: ($) => {
       if ($.model.status === 'ready') return $.model
       return $.evolve({ status: 'loading' as const }).run(
-        LoadIndex.make({ locale: $.model.locale }),
+        LoadIndex.make({ locale: $.props.locale }),
       )
     },
     SearchPanelOpened: ($) => {
@@ -750,7 +749,7 @@ export const Header = Html.component({
         status: loading ? ('loading' as const) : $.model.status,
         open: $.model.query.trim() !== '',
       })
-      return loading ? next.run(LoadIndex.make({ locale: $.model.locale })) : next
+      return loading ? next.run(LoadIndex.make({ locale: $.props.locale })) : next
     },
     SearchClosed: ($) => $.evolve({ open: false, panel: false }),
     SearchMoved: ($, { delta, count }) =>
@@ -762,7 +761,7 @@ export const Header = Html.component({
   },
 
   view: (h, model) => {
-    const { path, locale } = model
+    const { path, locale, menu } = h.props
     const t = langOf(locale).t.header
     return h.header
       .class(
@@ -793,10 +792,10 @@ export const Header = Html.component({
           .children(
             h.button
               .attr('type', 'button')
-              .attr('aria-label', model.menu ? t.closeMenu : t.openMenu)
-              .attr('aria-expanded', model.menu ? 'true' : 'false')
+              .attr('aria-label', menu ? t.closeMenu : t.openMenu)
+              .attr('aria-expanded', menu ? 'true' : 'false')
               .attr('data-needs-hydration', 'menu')
-              .on('click', HeaderMessage.MenuToggled())
+              .on('click', HeaderMessage.ClickedMenu())
               .class(
                 css({
                   marginLeft: '-0.25rem',
@@ -810,7 +809,7 @@ export const Header = Html.component({
                   lg: { display: 'none' },
                 }),
               )
-              .children(icon(h, model.menu ? X : Menu, css({ width: '18px', height: '18px' }))),
+              .children(icon(h, menu ? X : Menu, css({ width: '18px', height: '18px' }))),
             h.a
               .attr('href', withLocale(locale, '/'))
               .attr('aria-label', langOf(locale).t.site.name)
@@ -893,49 +892,6 @@ export const Header = Html.component({
               )
               .children(t.play, icon(h, ArrowUpRight, css({ width: '3.5', height: '3.5' }))),
           ),
-        model.menu &&
-          h.nav
-            .attr('aria-label', t.sections)
-            .class(
-              css({
-                borderTopWidth: '1px',
-                borderTopStyle: 'solid',
-                borderColor: 'border',
-                backgroundColor: 'background',
-                paddingInline: '4',
-                paddingBlock: '3',
-                lg: { display: 'none' },
-              }),
-            )
-            .children(
-              ...SECTION_ORDER.flatMap((section) => {
-                const first = navOf(locale, section)[0]
-                if (!first) return []
-                return [
-                  h.a
-                    .key(section)
-                    .attr('href', withLocale(locale, first.path))
-                    .class(
-                      css({
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '2',
-                        paddingBlock: '2',
-                        fontSize: 'type.14',
-                        color: 'foreground',
-                      }),
-                    )
-                    .children(
-                      icon(
-                        h,
-                        sectionIcon(section),
-                        css({ width: '4', height: '4', color: 'mutedForeground' }),
-                      ),
-                      langOf(locale).t.quadrants[section].label,
-                    ),
-                ]
-              }),
-            ),
         sections(h, path, locale),
       )
   },

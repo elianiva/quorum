@@ -1,9 +1,7 @@
-import { Result, Schema } from 'effect'
-import { defineMessageUnion } from 'foldkit/message'
+import { Result } from 'effect'
 import * as Actions from '@quorum/simulation/actions'
 import { DOCK_OF, HOME_REGION, type ComponentId, type DockGroup } from '@quorum/simulation/catalog'
 import { company, link, node } from '@quorum/simulation/company'
-import { ComponentId as ComponentIdSchema } from '@quorum/simulation/state'
 import type { Game } from '@quorum/simulation/state'
 import { nodeOrdinals, normalizeOrdinals } from '@quorum/simulation/labels'
 import { solveFlow } from '@quorum/simulation/solve'
@@ -27,19 +25,43 @@ export type Practice = Readonly<{
   loopRefused: boolean
 }>
 
-export const PracticeEvent = defineMessageUnion({
-  Arm: { type: Schema.NullOr(ComponentIdSchema) },
-  Place: { x: Schema.Finite, y: Schema.Finite },
-  Link: { from: Schema.String, to: Schema.String },
-  Unlink: { from: Schema.String, to: Schema.String },
-  Move: { nodeId: Schema.String, x: Schema.Finite, y: Schema.Finite },
-  Tap: { nodeId: Schema.String },
-  Empty: {},
-  Toggle: { nodeId: Schema.String },
-  Box: { ids: Schema.Array(Schema.String), mode: Schema.Literals(['replace', 'add', 'subtract']) },
-  Footer: { nodeId: Schema.String },
-})
-export type PracticeEvent = typeof PracticeEvent.Type
+export type PracticeEvent =
+  | Readonly<{ _tag: 'Arm'; type: ComponentId | null }>
+  | Readonly<{ _tag: 'Place'; x: number; y: number }>
+  | Readonly<{ _tag: 'Link'; from: string; to: string }>
+  | Readonly<{ _tag: 'Unlink'; from: string; to: string }>
+  | Readonly<{ _tag: 'Move'; nodeId: string; x: number; y: number }>
+  | Readonly<{ _tag: 'Tap'; nodeId: string }>
+  | Readonly<{ _tag: 'Empty' }>
+  | Readonly<{ _tag: 'Toggle'; nodeId: string }>
+  | Readonly<{ _tag: 'Box'; ids: ReadonlyArray<string>; mode: 'replace' | 'add' | 'subtract' }>
+  | Readonly<{ _tag: 'Footer'; nodeId: string }>
+
+const event =
+  <Tag extends PracticeEvent['_tag']>(tag: Tag) =>
+  (payload: Omit<Extract<PracticeEvent, { _tag: Tag }>, '_tag'>): PracticeEvent =>
+    ({ _tag: tag, ...payload }) as PracticeEvent
+
+const matchEvent = <T>(
+  message: PracticeEvent,
+  handlers: {
+    readonly [K in PracticeEvent['_tag']]: (event: Extract<PracticeEvent, { _tag: K }>) => T
+  },
+): T => (handlers[message._tag] as (event: PracticeEvent) => T)(message)
+
+export const PracticeEvent = {
+  Arm: event('Arm'),
+  Place: event('Place'),
+  Link: event('Link'),
+  Unlink: event('Unlink'),
+  Move: event('Move'),
+  Tap: event('Tap'),
+  Empty: (): PracticeEvent => ({ _tag: 'Empty' }),
+  Toggle: event('Toggle'),
+  Box: event('Box'),
+  Footer: event('Footer'),
+  match: matchEvent,
+}
 
 export type Goal = Readonly<{ label: string; done: boolean }>
 

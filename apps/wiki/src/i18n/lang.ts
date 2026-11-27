@@ -38,7 +38,7 @@ import {
   VENTURES,
 } from '@quorum/simulation/catalog'
 import { GUIDED_SUMMARY } from '@quorum/simulation/sandbox-summary'
-import { slug } from '../page.ts'
+import { slug } from '../site/page.ts'
 import { en } from './en/index.ts'
 import type { Locale } from './locale.ts'
 import type { Messages } from './messages.ts'

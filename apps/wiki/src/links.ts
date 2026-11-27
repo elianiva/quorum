@@ -1,7 +1,7 @@
-import type * as Markdown from '@foldkit/markdown'
+import type { Markdown } from '@effect/ui/html'
 
 export const linksIn = (
-  document: Markdown.MarkdownDocument,
+  document: Markdown.Document,
 ): Readonly<{ paths: ReadonlySet<string>; sandboxes: ReadonlySet<string> }> => {
   const paths = new Set<string>()
   const sandboxes = new Set<string>()

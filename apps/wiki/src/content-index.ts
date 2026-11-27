@@ -1,7 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { parseMarkdownWithFrontmatter } from '@foldkit/markdown/vite'
+import { MarkdownParser } from '@effect/ui/html'
 import { Option, Schema } from 'effect'
 import type { Plugin } from 'vite'
 import { Frontmatter } from './frontmatter.ts'
@@ -74,12 +74,12 @@ const build = async (): Promise<Readonly<Record<Locale, string>>> => {
     const root = ROOTS[locale]
     for (const file of await filesIn(root)) {
       const source = await readFile(join(root, file), 'utf8')
-      const parsed = parseMarkdownWithFrontmatter(source, {
+      const parsed = MarkdownParser.parseMarkdownWithFrontmatter(source, {
         frontmatter: Frontmatter,
         islands: islandAttributes,
       })
       const path = pathOf(file)
-      const raw = Option.getOrNull(parsed.maybeFrontmatter)
+      const raw = Option.getOrNull(parsed.frontmatter)
       content[locale][path] = {
         file,
         source: `apps/wiki/${locale === 'en' ? 'content' : `content-${locale}`}/${file}`,

@@ -2,7 +2,6 @@ import MiniSearch, { type Options } from 'minisearch'
 import type { Section } from './frontmatter.ts'
 import { langOf } from './i18n/lang.ts'
 import { DEFAULT_LOCALE, withLocale, type Locale } from './i18n/locale.ts'
-import type { Page } from './page.ts'
 
 export const indexUrl = (locale: Locale): string => withLocale(locale, '/search-index.json')
 
@@ -218,9 +217,15 @@ const optionsFor = (locale: Locale): Options<Document> => ({
 
 export type Index = MiniSearch<Document>
 
-export type IndexPage = Readonly<
-  Pick<Page, 'path' | 'title' | 'aliases' | 'summary' | 'section' | 'headings' | 'text'>
->
+export type IndexPage = Readonly<{
+  path: string
+  title: string
+  aliases: ReadonlyArray<string>
+  summary: string
+  section: Section
+  headings: ReadonlyArray<{ id: string; text: string; level: 2 | 3 }>
+  text: string
+}>
 
 const documentOf = (page: IndexPage, locale: Locale): Document => ({
   id: page.path,

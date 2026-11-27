@@ -29,9 +29,9 @@ import {
 import { Schema } from 'effect'
 import { langOf } from '../i18n/lang.ts'
 import type { Section } from '../frontmatter.ts'
-import type { Page } from '../page.ts'
-import { navOf, pageIn } from '../pages.ts'
-import { PATHS, stepsOf, type Path } from '../paths.ts'
+import type { Page } from './page.ts'
+import { navOf, pageIn } from './pages.ts'
+import { PATHS, stepsOf, type Path } from './paths.ts'
 import { KOFI, REPOSITORY } from '../site.ts'
 import { componentBadge, groupBadge } from './badge.ts'
 import { githubMark } from './github.ts'
@@ -39,6 +39,7 @@ import { GetProject, type ProjectStats } from './project.ts'
 import { icon } from './icon.ts'
 
 type H0 = H<never>
+type P = Page<never>
 
 const CANVAS = {
   backgroundImage: 'radial-gradient(var(--canvas-grid) 1px, transparent 1px)',
@@ -107,7 +108,7 @@ const block = (
       h.div.class(css({ marginTop: '4' })).children(content),
     )
 
-const troubleLink = (target: Page, h: H0): View.Content<never> =>
+const troubleLink = (target: P, h: H0): View.Content<never> =>
   h.a
     .key(target.path)
     .attr('href', target.path)
@@ -352,7 +353,7 @@ const kind = (section: Section, h: H0): View.Content<never> => {
         .class(css({ marginTop: '1', fontSize: 'type.13', color: 'mutedForeground' }))
         .children(l.t.quadrants[section].purpose),
       h.ul.class(css({ marginTop: '3', display: 'flex', flexDirection: 'column' })).children(
-        ...navOf('en', section)
+        ...navOf<never>('en', section)
           .slice(0, 6)
           .map((target) =>
             h.li.key(target.path).children(
@@ -403,7 +404,7 @@ const segments = (steps: ReadonlyArray<Page>, h: H0): View.Content<never> =>
 const pathCard = (path: Path, h: H0): View.Content<never> => {
   const l = langOf('en')
   const copy = l.t.paths[path.id]
-  const steps = stepsOf('en', path)
+  const steps = stepsOf<never>('en', path)
   const target = steps[0]
   if (target === undefined) return h.span.children()
   const read = 0
@@ -738,10 +739,10 @@ const HomePageNoDeps = Html.component({
   view: (h) => {
     const l = langOf('en')
     const t = l.t.home
-    const page = pageIn('en', '/')
+    const page = pageIn<never>('en', '/')
     if (page === null) return h.main.children()
     const trouble = TROUBLE.flatMap((path) => {
-      const target = pageIn('en', path)
+      const target = pageIn<never>('en', path)
       return target ? [target] : []
     })
     const result = h.queries.project
@@ -792,7 +793,7 @@ const HomePageNoDeps = Html.component({
                 }),
               )
               .children(
-                pageIn('en', FIRST_TUTORIAL) !== null &&
+                pageIn<never>('en', FIRST_TUTORIAL) !== null &&
                   h.a
                     .attr('href', FIRST_TUTORIAL)
                     .class(
@@ -876,7 +877,9 @@ const HomePageNoDeps = Html.component({
               '& > :last-child:nth-child(odd)': { gridColumn: 'span 2 / span 2' },
             },
           }),
-          PATHS.filter((path) => stepsOf('en', path).length > 0).map((path) => pathCard(path, h)),
+          PATHS.filter((path) => stepsOf<never>('en', path).length > 0).map((path) =>
+            pathCard(path, h),
+          ),
           h,
         ),
         h,

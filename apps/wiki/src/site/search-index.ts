@@ -1,14 +1,14 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type * as Markdown from '@foldkit/markdown'
-import { parseMarkdownWithFrontmatter } from '@foldkit/markdown/vite'
+import { MarkdownParser, type Markdown } from '@effect/ui/html'
 import { Option, Schema } from 'effect'
 import { Frontmatter } from '../frontmatter.ts'
 import { islandAttributes } from '../islands.ts'
-import { slug } from '../page.ts'
-import { indexJson, type IndexPage } from '../search.ts'
+import { loadLocale } from '../i18n/load.ts'
 import { LOCALES, withLocale, type Locale } from '../i18n/locale.ts'
+import { slug } from './page.ts'
+import { indexJson } from '../search.ts'
 
 const WIKI = fileURLToPath(new URL('../..', import.meta.url))
 
@@ -58,7 +58,9 @@ const headingBlocks = (blocks: ReadonlyArray<Block>): ReadonlyArray<HeadingBlock
     }
   })
 
-const headingsOf = (document: Markdown.MarkdownDocument): IndexPage['headings'] => {
+const headingsOf = (
+  document: Markdown.Document,
+): ReadonlyArray<{ id: string; text: string; level: 2 | 3 }> => {
   const seen = new Map<string, number>()
   return headingBlocks(document.blocks).flatMap((heading) => {
     if (heading.level !== 2 && heading.level !== 3) return []
@@ -70,7 +72,7 @@ const headingsOf = (document: Markdown.MarkdownDocument): IndexPage['headings'] 
   })
 }
 
-const textOf = (document: Markdown.MarkdownDocument): string =>
+const textOf = (document: Markdown.Document): string =>
   document.blocks
     .map((block) =>
       block._tag === 'Paragraph' || block._tag === 'Heading' ? plain(block.content) : '',
@@ -88,18 +90,13 @@ const filesIn = async (root: string): Promise<ReadonlyArray<string>> =>
 const parsed = async (
   root: string,
   file: string,
-): Promise<
-  Readonly<{
-    frontmatter: Frontmatter | null
-    document: Markdown.MarkdownDocument
-  }>
-> => {
+): Promise<Readonly<{ frontmatter: Frontmatter | null; document: Markdown.Document }>> => {
   const source = await readFile(join(root, file), 'utf8')
-  const result = parseMarkdownWithFrontmatter(source, {
+  const result = MarkdownParser.parseMarkdownWithFrontmatter(source, {
     frontmatter: Frontmatter,
     islands: islandAttributes,
   })
-  const raw = Option.getOrNull(result.maybeFrontmatter)
+  const raw = Option.getOrNull(result.frontmatter)
   return {
     frontmatter: raw === null ? null : decodeFrontmatter(raw),
     document: result.document,
@@ -113,35 +110,39 @@ export const clearSearchIndexes = (): void => {
 }
 
 const make = async (locale: Locale): Promise<string> => {
+  await loadLocale(locale)
+  const [{ loadAllProse }, { pagesFor }] = await Promise.all([
+    import('./content.ts'),
+    import('./pages.ts'),
+  ])
+  await loadAllProse()
   const english = new Map<string, Awaited<ReturnType<typeof parsed>>>()
-  for (const file of await filesIn(ROOTS.en)) {
+  for (const file of await filesIn(ROOTS.en))
     english.set(pathOf(file), await parsed(ROOTS.en, file))
-  }
   const localized = new Map<string, Awaited<ReturnType<typeof parsed>>>()
   if (locale !== 'en') {
-    for (const file of await filesIn(ROOTS[locale])) {
+    for (const file of await filesIn(ROOTS[locale]))
       localized.set(pathOf(file), await parsed(ROOTS[locale], file))
+  }
+  const pages = pagesFor(locale).map((page) => {
+    const base = english.get(page.path)
+    const own = localized.get(page.path)
+    return {
+      ...page,
+      headings:
+        page.headings.length > 0
+          ? page.headings
+          : base === undefined
+            ? []
+            : headingsOf(own?.document ?? base.document),
+      text:
+        page.text.length > 0
+          ? page.text
+          : base === undefined
+            ? ''
+            : textOf(own?.document ?? base.document),
     }
-  }
-  const pages: Array<IndexPage> = []
-  for (const [path, base] of english) {
-    if (base.frontmatter === null) continue
-    const own = localized.get(path)
-    const meta = own?.frontmatter ?? base.frontmatter
-    const document = own?.document ?? base.document
-    pages.push({
-      path,
-      title: meta.title,
-      summary: meta.summary,
-      section: meta.section,
-      aliases: (meta.aliases ?? '')
-        .split(',')
-        .map((alias) => alias.trim())
-        .filter(Boolean),
-      headings: headingsOf(document),
-      text: textOf(document),
-    })
-  }
+  })
   return indexJson(pages, locale)
 }
 

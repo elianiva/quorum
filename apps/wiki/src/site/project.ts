@@ -24,7 +24,7 @@ const HEADERS: HeadersInit = { Accept: 'application/vnd.github+json' }
 const decodeRepo = Schema.decodeUnknownSync(Repo)
 
 const get = async (url: string): Promise<Response> => {
-  const response = await fetch(url, { headers: HEADERS })
+  const response = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(4000) })
   if (!response.ok) throw new Error(`GitHub: HTTP ${response.status}`)
   return response
 }

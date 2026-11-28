@@ -26,6 +26,7 @@
     "@alchemy.run/frontend-frameworks": "2.0.0-beta.87",
     "@cloudflare/workers-types": "5.20261116.1",
     "@effect/language-service": "0.87.5",
+    "@effect/platform-node": "4.1.4",
     "@pandacss/dev": "catalog:",
     "@pandacss/preset-base": "catalog:",
     "@pandacss/preset-panda": "catalog:",

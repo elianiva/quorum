@@ -277,5 +277,6 @@ export const dashboard: Messages['dashboard'] = {
     upstream: 'fournisseur',
     throttled: 'limité',
     duplicate: 'doublon',
+    misrouted: 'mal routé',
   },
 }

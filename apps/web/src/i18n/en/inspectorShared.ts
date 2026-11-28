@@ -19,6 +19,7 @@ export const inspectorShared = {
     'pm.max_requests and worker killers restart each process now and then. A leak never builds, and each restart runs cold.',
   compression: 'Compression',
   service: 'Service',
+  noService: 'No Service',
   engine: 'Engine',
   enginePostgres:
     'Postgres: 100 connections, cheaper reads and scans, stronger search. Writes cost more, an ALTER TABLE locks the table, and dead rows bloat it until VACUUM.',

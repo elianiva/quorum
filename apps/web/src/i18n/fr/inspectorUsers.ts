@@ -24,5 +24,6 @@ export const inspectorUsers: Messages['inspectorUsers'] = {
     upstream: 'fournisseur',
     throttled: 'limité',
     duplicate: 'doublon',
+    misrouted: 'mal routé',
   },
 }

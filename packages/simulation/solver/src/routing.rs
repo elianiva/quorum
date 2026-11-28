@@ -27,6 +27,8 @@ const NODE_SLOT_HAS_PRIMARY: usize = 8;
 const NODE_SLOT_DRAINING: usize = 9;
 const NODE_SLOT_DOWN_AT: usize = 10;
 const NODE_SLOT_RESTARTING: usize = 11;
+const NODE_SLOT_SERVES: usize = 12;
+const NODE_SLOT_LAYER4: usize = 13;
 
 const EDGE_SLOT_FROM: usize = 0;
 const EDGE_SLOT_TO: usize = 1;
@@ -53,6 +55,9 @@ pub struct RouteNode {
     pub replica: bool,
     pub has_primary: bool,
     pub draining: bool,
+
+    pub serves: u64,
+    pub layer4: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -358,6 +363,24 @@ fn carries(edge: &RouteEdge, source: &RouteNode, kind: usize) -> bool {
 }
 
 #[inline]
+pub fn serves(target: &RouteNode, kind: usize) -> bool {
+    target.type_code as usize != component::SERVER || kind >= NR || (target.serves >> kind) & 1 == 1
+}
+
+#[inline]
+fn listens(source: &RouteNode, target: &RouteNode, kind: usize) -> bool {
+    if target.type_code as usize != component::SERVER || kind >= NR {
+        return true;
+    }
+    if target.serves == 0 {
+        return false;
+    }
+    let source_type = source.type_code as usize;
+    let reads_path = source_type == component::GW || (source_type == component::LB && !source.layer4);
+    !reads_path || serves(target, kind)
+}
+
+#[inline]
 fn noticed(design: &Design, child: usize, after_secs: f64) -> bool {
     let node = &design.nodes[child];
     node.down && (node.down_cause == DOWN_CAUSE_RESTART || design.time - node.down_at >= after_secs)
@@ -403,6 +426,7 @@ impl Scratch {
             let target = design.nodes[design.edges[edge as usize].to as usize];
             if accepts(target.type_code as usize, kind)
                 && carries(&design.edges[edge as usize], &source, kind)
+                && listens(&source, &target, kind)
             {
                 self.accepting_edges.push(edge);
             }
@@ -741,6 +765,8 @@ pub fn compile(inputs: &crate::abi::Inputs) -> Result<Design, i32> {
                 replica: field(NODE_SLOT_REPLICA) != 0.0,
                 has_primary: field(NODE_SLOT_HAS_PRIMARY) != 0.0,
                 draining: field(NODE_SLOT_DRAINING) != 0.0,
+                serves: field(NODE_SLOT_SERVES) as u64,
+                layer4: field(NODE_SLOT_LAYER4) != 0.0,
             }
         })
         .collect();
@@ -844,6 +870,8 @@ mod tests {
             replica: false,
             has_primary: false,
             draining: false,
+            serves: u64::MAX,
+            layer4: false,
         }
     }
 

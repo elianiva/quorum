@@ -216,8 +216,10 @@ export const canvasHandlers = (
   ServiceAssigned: ({ nodeId, serviceId }) =>
     act(
       model,
-      `Moved a Node to ${model.board.game.services.find((entry) => entry.id === serviceId)?.name ?? 'a Service'}`,
-      workIntent('assignService', nodeId, serviceId),
+      serviceId === ''
+        ? 'Took a Node out of its Service'
+        : `Moved a Node to ${model.board.game.services.find((entry) => entry.id === serviceId)?.name ?? 'a Service'}`,
+      workIntent('assignService', nodeId, serviceId === '' ? null : serviceId),
     ),
 
   RevealNode: ({ nodeId }) => {

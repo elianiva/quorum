@@ -131,6 +131,10 @@
 
 (def shared-db-coordination 0.5)
 
+(def polyglot-velocity 0.1)
+
+(def core-kind-kloc 1)
+
 (def service-handoff-dh 8)
 
 (def datastore-move-dh 16)

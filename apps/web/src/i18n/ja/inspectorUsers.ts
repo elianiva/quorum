@@ -24,5 +24,6 @@ export const inspectorUsers: Messages['inspectorUsers'] = {
     upstream: '上流',
     throttled: '制限',
     duplicate: '重複',
+    misrouted: '誤ルーティング',
   },
 }

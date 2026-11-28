@@ -22,6 +22,7 @@ export const churn: Messages['churn'] = {
     upstream: 'fournisseur',
     throttled: 'limité',
     duplicate: 'doublon',
+    misrouted: 'mal routé',
   },
   fixes: {
     stranded: 'Reliez un Nœud qui accepte ce type.',
@@ -36,6 +37,7 @@ export const churn: Messages['churn'] = {
     upstream: 'Attendez le rétablissement du fournisseur, ou ajoutez une solution de repli.',
     throttled: 'Augmentez la limite de débit.',
     duplicate: 'Recherchez Clés d’idempotence.',
+    misrouted: 'Placez un répartiteur de charge L7 ou une API Gateway devant les services.',
     slow: 'Ajoutez de la capacité au Nœud le plus chargé.',
     failed: 'Recherchez Journaux structurés pour voir pourquoi.',
   },

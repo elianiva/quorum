@@ -262,6 +262,7 @@ describe('Data Groups', () => {
     const two = {
       ...game.services[0]!,
       id: 'b',
+      owner: 'platform',
       datastore: { _tag: 'Pinned' as const, id: second },
     }
     const apart = { ...game, services: [one, two] }

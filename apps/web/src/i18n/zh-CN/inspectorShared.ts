@@ -19,6 +19,7 @@ export const inspectorShared: Messages['inspectorShared'] = {
     'pm.max_requests 和 worker 回收器会时不时重启每个进程。内存泄漏不会累积，每次重启都从冷状态开始。',
   compression: '压缩',
   service: '服务',
+  noService: '无服务',
   engine: '引擎',
   enginePostgres:
     'Postgres：100 个连接，读取和扫描更便宜，全文搜索更强。写入更贵，ALTER TABLE 会锁表，死行会一直膨胀到 VACUUM。',

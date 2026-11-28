@@ -44,6 +44,7 @@ let lastStructure: Readonly<{
   links: unknown
   researched: unknown
   features: unknown
+  services: unknown
   graph: Graph
 }> | null = null
 
@@ -57,6 +58,7 @@ export const graphOf = (game: Game): Graph => {
     previous.links === game.links &&
     previous.researched === game.researched &&
     previous.features === game.features &&
+    previous.services === game.services &&
     sameNodes(previous.nodes, game.nodes)
   ) {
     base = previous.graph
@@ -67,6 +69,7 @@ export const graphOf = (game: Game): Graph => {
       links: game.links,
       researched: game.researched,
       features: game.features,
+      services: game.services,
       graph: base,
     }
   }

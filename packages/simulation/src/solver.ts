@@ -59,6 +59,7 @@ import {
   payrollOf,
   serviceOf,
   serviceOfKind,
+  servedKinds,
 } from './team.ts'
 
 type Exports = Readonly<{
@@ -314,7 +315,7 @@ const SLOT = {
   degrade: 146,
 } as const
 const SCALARS = Object.keys(SLOT).length
-const NODE_FIELDS = 12
+const NODE_FIELDS = 14
 const EDGE_FIELDS = 10
 
 const SUMMARY_BOTTLENECK = 1
@@ -403,6 +404,9 @@ const writeDesign = (exports: Exports, game: Game, design: Graph): void => {
     nodeFields[base + 9] = node.service._tag === 'Draining' ? 1 : 0
     nodeFields[base + 10] = node.downAt
     nodeFields[base + 11] = isDown(node) && causeOf(node.life) === 'restart' ? 1 : 0
+    const served = servedKinds(game, node)
+    nodeFields[base + 12] = served === null ? EVERY_KIND : kindMask(served)
+    nodeFields[base + 13] = node.type === 'lb' && node.variant === 'l4' ? 1 : 0
   })
 
   const slotOf = design.at

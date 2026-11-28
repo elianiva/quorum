@@ -77,8 +77,8 @@ export const teamAction = (model: Model, out: TeamOutMessage): UpdateResult => {
         teamId === null ? 'Stopped research boost' : 'Boosted research',
         Work.setResearchTeam(game, teamId),
       ),
-    QueueFeature: ({ id }) =>
-      act(model, `Queued ${FEATURES[id].name}`, Work.queueFeature(game, id)),
+    QueueFeature: ({ id, service }) =>
+      act(model, `Queued ${FEATURES[id].name}`, Work.queueFeature(game, id, service ?? undefined)),
     RemoveFeature: ({ id }) =>
       act(model, `Removed ${FEATURES[id].name}`, Work.removeFeature(game, id), {
         note: () => [say(model).toasts.featureGone(say(model).catalog.features[id].name), 'warn'],
@@ -95,27 +95,33 @@ export const teamAction = (model: Model, out: TeamOutMessage): UpdateResult => {
         datastore === null ? 'Datastore: first Database' : 'Datastore set',
         Work.setDatastore(game, serviceId, datastore),
       ),
-    SplitService: ({ name, owner, features }) =>
-      act(
-        model,
-        `Split off ${name.trim() === '' ? 'a service' : name.trim()}`,
-        Work.splitService(game, { name, owner, features }),
-        {
-          note: () => [
-            say(model).toasts.featuresMoved(
-              features.length,
-              isOne(model.prefs.locale, features.length),
-            ),
-            'primary',
-          ],
-          patch: (parent, next) => ({
-            team: {
-              ...parent.board.team,
-              service: { name: '', owner: next.services.at(-1)?.owner ?? 'core', features: [] },
+    SplitService: ({ name, kinds, service, node }) => {
+      const request = {
+        kinds,
+        name,
+        ...(service === null ? {} : { service }),
+        ...(node === null ? {} : { node }),
+      }
+      const moving = new Set(kinds.flatMap((kind) => Work.capabilityFeatures(game, kind))).size
+      const labels = kinds.map((kind) => KINDS[kind].label).join(', ')
+      return act(model, `Carved out ${labels}`, Work.splitService(game, request), {
+        note: () => [
+          say(model).toasts.featuresMoved(moving, isOne(model.prefs.locale, moving)),
+          'primary',
+        ],
+        patch: (parent) => ({
+          team: {
+            ...parent.board.team,
+            service: {
+              ...parent.board.team.service,
+              name: '',
+              kinds: [],
+              target: '',
             },
-          }),
-        },
-      ),
+          },
+        }),
+      })
+    },
     Rename: ({ target, id, name }) =>
       act(
         model,

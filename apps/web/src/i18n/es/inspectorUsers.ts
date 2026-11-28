@@ -28,5 +28,6 @@ export const inspectorUsers: Messages['inspectorUsers'] = {
     upstream: 'dependencia',
     throttled: 'limitadas',
     duplicate: 'duplicadas',
+    misrouted: 'mal enrutado',
   } satisfies Record<ErrorCause, string>,
 }

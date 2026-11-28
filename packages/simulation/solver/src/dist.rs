@@ -1,4 +1,4 @@
-pub const CAUSE_COUNT: usize = 12;
+pub const CAUSE_COUNT: usize = 13;
 
 const NEGLIGIBLE_SHARE: f64 = 1e-12;
 const DECAY_SQUARINGS: usize = 8;
@@ -20,6 +20,7 @@ pub const BLOCKED: usize = 8;
 pub const UPSTREAM: usize = 9;
 pub const THROTTLED: usize = 10;
 pub const DUPLICATE: usize = 11;
+pub const MISROUTED: usize = 12;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Outcome {

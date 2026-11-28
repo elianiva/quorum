@@ -23,6 +23,7 @@ export const churn = {
     upstream: 'upstream',
     throttled: 'throttled',
     duplicate: 'duplicate',
+    misrouted: 'misrouted',
   } satisfies Record<ChurnCause, string>,
   fixes: {
     stranded: 'Link a Node that accepts this kind.',
@@ -37,6 +38,7 @@ export const churn = {
     upstream: 'Wait out the provider, or add a fallback.',
     throttled: 'Raise the rate limit.',
     duplicate: 'Research Idempotency keys.',
+    misrouted: 'Put an L7 Load Balancer or an API Gateway in front of the Services.',
     slow: 'Add capacity on the busiest Node.',
     failed: 'Research Structured logs to see why.',
   } satisfies Record<Exclude<ChurnCause, 'far'>, string>,

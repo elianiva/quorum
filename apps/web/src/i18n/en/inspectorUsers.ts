@@ -26,5 +26,6 @@ export const inspectorUsers = {
     upstream: 'upstream',
     throttled: 'throttled',
     duplicate: 'duplicate',
+    misrouted: 'misrouted',
   } satisfies Record<ErrorCause, string>,
 }

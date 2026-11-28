@@ -24,6 +24,7 @@ import {
   Plus,
   Rabbit,
   Rocket,
+  Scissors,
   Scale,
   Shield,
   Siren,
@@ -36,6 +37,8 @@ import {
 } from 'lucide'
 import {
   CONTENT_MOOD,
+  KINDS,
+  REQUEST_KINDS,
   FEATURES,
   FEATURE_IDS,
   LANGUAGES,
@@ -94,7 +97,8 @@ import {
   salaryOf,
   serviceBurnOf,
   serviceOf,
-  serviceOfFeature,
+  serviceOfKind,
+  stackOf,
   sharesDatabase,
   signingOf,
   teamOutputs,
@@ -122,6 +126,7 @@ import {
   isFeatureLive,
   liftReading,
   liveFeatures,
+  mixOf,
 } from '@quorum/simulation/features'
 import { isReady, stepsOf, stepOf } from '@quorum/simulation/migration'
 import {
@@ -143,14 +148,16 @@ import {
   rushDebtOf,
   splitCost,
   splitRefusal,
+  capabilityKloc,
+  type SplitRequest,
   taskRefusal,
 } from '@quorum/simulation/work'
-import type { Refusal } from '@quorum/simulation/actions'
+import { Refusal } from '@quorum/simulation/actions'
 import { refusalIn } from '../../i18n/refusal.ts'
 import { money, sharePercent } from '@quorum/ui/game/format'
 import { STACK_LOGOS } from '@quorum/ui/game/icons'
 import { Message } from '../../game/message.ts'
-import { ledgerOf, type Model } from '../../game/model.ts'
+import { ledgerOf, type Model, type ServiceDraft } from '../../game/model.ts'
 import { identityOf } from '../../game/mail.ts'
 import { glowing, shown } from '../../game/reveal.ts'
 import { copy, localized, nodeTitle, type Messages } from '../../i18n/messages.ts'
@@ -773,33 +780,31 @@ const runbookWhy = (t: Messages, game: Game, kind: IncidentId, refusal: Refusal)
   return refusalIn(t, refusal)
 }
 
-const splitWhy = (
-  t: Messages,
-  game: Game,
-  draft: Readonly<{ name: string; owner: string; features: ReadonlyArray<FeatureId> }>,
-  refusal: Refusal,
-): string => {
+const splitWhy = (t: Messages, game: Game, draft: ServiceDraft, refusal: Refusal): string => {
   const reason = t.team.refusal
   if (game.sandbox) return reason.sandbox
-  if (!has(game, 'service-boundaries'))
-    return reason.locked(reason.aServiceSplit, t.catalog.research['service-boundaries'].name)
-  if (draft.features.length === 0) return reason.chooseFeature
-  if (!game.teams.some((team) => team.id === draft.owner)) return reason.teamGone
+  if (!has(game, 'service-carve-out'))
+    return reason.locked(reason.aServiceSplit, t.catalog.research['service-carve-out'].name)
+  if (draft.kinds.length === 0) return reason.chooseFeature
+  if (draft.target === '') return reason.chooseTarget
   const name = draft.name.trim()
   if (
     name !== '' &&
     game.services.some((service) => service.name.toLowerCase() === name.toLowerCase())
   )
     return reason.serviceExists(name)
-  for (const id of draft.features) {
-    const featureName = t.catalog.features[id].name
-    if (!isFeatureLive(game, id)) return reason.notLive(featureName)
-    const carrier = serviceOfFeature(game, id)
-    if (carrier.id !== serviceOf(game).id)
-      return reason.alreadyOn(featureName, serviceName(t, carrier))
-  }
   return refusalIn(t, refusal)
 }
+
+const splitRequestOf = (draft: ServiceDraft): SplitRequest | null =>
+  draft.kinds.length === 0
+    ? null
+    : {
+        kinds: draft.kinds,
+        name: draft.name,
+        ...(draft.target.startsWith('service:') ? { service: draft.target.slice(8) } : {}),
+        ...(draft.target.startsWith('node:') ? { node: draft.target.slice(5) } : {}),
+      }
 
 const clamp = (share: number): number => Math.max(0, Math.min(1, share))
 
@@ -2339,19 +2344,503 @@ const SERVICE_SELECT = css(WELL_STYLE, {
   fontSize: 'type.11',
 })
 
+const kindColor = (kind: RequestKind): string =>
+  `#${KINDS[kind].color.toString(16).padStart(6, '0')}`
+
+const tint = (color: string, percent: number): string =>
+  `color-mix(in oklab, ${color} ${percent}%, transparent)`
+
+const packet = (h: H<Message>, kind: RequestKind, size = 8): Content =>
+  h.span
+    .attr('aria-hidden', 'true')
+    .class(css({ flexShrink: '0', borderRadius: 'full' }))
+    .style({
+      width: `${size}px`,
+      height: `${size}px`,
+      background: kindColor(kind),
+      boxShadow: `0 0 0 2px ${tint(kindColor(kind), 25)}`,
+    })
+
+const CARVE_CARD = css({
+  display: 'flex',
+  minWidth: '0',
+  alignItems: 'center',
+  gap: '2',
+  borderRadius: 'lg',
+  paddingInline: '2.5',
+  paddingBlock: '1.5',
+  fontSize: 'type.12',
+  textAlign: 'start',
+})
+
+/* Where a carve-out lands: an existing Service, or an empty App Server that becomes one. */
+type CarveTarget = Readonly<{
+  value: string
+  label: string
+  language: LanguageId
+  fresh: boolean
+}>
+
+const carveTargets = (t: Messages, game: Game): ReadonlyArray<CarveTarget> => [
+  ...game.services.slice(1).map((service) => ({
+    value: `service:${service.id}`,
+    label: serviceName(t, service),
+    language: RUNTIMES[stackOf(game, service).runtime].language,
+    fresh: false,
+  })),
+  ...game.nodes
+    .filter((node) => node.type === 'server' && node.serviceId === null)
+    .map((node) => ({
+      value: `node:${node.id}`,
+      label: nodeTitle(t, game, node),
+      language: RUNTIMES[node.runtime].language,
+      fresh: true,
+    })),
+]
+
+const targetCard = (model: Model, target: CarveTarget, h: H<Message>): Content => {
+  const t = copy(h)
+  const draft = model.board.team.service
+  const on = draft.target === target.value
+  const team = (message: TeamMessage) => Message.TeamChanged({ message })
+  const card = h.button
+    .key(`target-${target.value}`)
+    .attr('type', 'button')
+    .attr('aria-pressed', on ? 'true' : 'false')
+    .on('click', () => team(TeamMessage.ServiceTargetChosen({ target: on ? '' : target.value })))
+    .class(
+      cx(
+        CARVE_CARD,
+        css({
+          width: '100%',
+          cursor: 'pointer',
+          borderWidth: '1px',
+          borderStyle: 'solid',
+          transitionProperty: 'border-color, background-color, box-shadow, translate',
+          transitionDuration: '160ms',
+          transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)',
+          _active: { scale: '0.98' },
+        }),
+        on
+          ? css({
+              borderColor: 'color-mix(in oklab, var(--primary) 70%, transparent)',
+              backgroundColor: 'color-mix(in oklab, var(--primary) 10%, transparent)',
+              boxShadow: '0 0 0 3px color-mix(in oklab, var(--primary) 18%, transparent)',
+            })
+          : css({
+              borderColor: 'color-mix(in oklab, var(--foreground) 12%, transparent)',
+              borderStyle: target.fresh ? 'dashed' : 'solid',
+              _hover: {
+                borderColor: 'color-mix(in oklab, var(--foreground) 30%, transparent)',
+                translate: '0 -1px',
+              },
+            }),
+      ),
+    )
+    .children(
+      stackLogo(h, target.language, css({ width: '4', height: '4' })),
+      h.span
+        .class(css({ minWidth: '0', flex: '1', truncate: true, fontWeight: 'medium' }))
+        .children(target.label),
+      target.fresh
+        ? h.span
+            .class(
+              css({
+                borderRadius: 'full',
+                paddingInline: '1.5',
+                fontSize: 'type.10',
+                fontWeight: 'semibold',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                color: 'primaryStrong',
+                backgroundColor: 'color-mix(in oklab, var(--primary) 14%, transparent)',
+              }),
+            )
+            .children(t.team.newServiceBadge)
+        : undefined,
+    )
+  if (!(on && target.fresh)) return card
+  return h.div
+    .key(`target-${target.value}-named`)
+    .class(css({ display: 'flex', flexDirection: 'column', gap: '1.5' }))
+    .children(
+      card,
+      h.input
+        .attr('type', 'text')
+        .value(draft.name)
+        .attr('placeholder', t.team.nameNewService)
+        .attr('aria-label', t.team.newServiceName)
+        .attr('maxlength', String(MAX_NAME_CHARS))
+        .on('input', ({ value: name }) => team(TeamMessage.ServiceNamed({ name })))
+        .class(
+          css(WELL_STYLE, {
+            height: '7',
+            marginLeft: '6',
+            borderRadius: 'lg',
+            paddingInline: '2',
+            fontSize: 'type.12',
+            outlineStyle: 'none',
+          }),
+        ),
+    )
+}
+
+/* Every served kind as a slice of one bar, sized by its share of traffic. Chosen slices lift out. */
+const carvingBoard = (
+  model: Model,
+  candidates: ReadonlyArray<RequestKind>,
+  h: H<Message>,
+): Content => {
+  const t = copy(h)
+  const game = model.board.game
+  const chosen = model.board.team.service.kinds
+  const mix = mixOf(game)
+  const total = candidates.reduce((sum, kind) => sum + (mix[kind] ?? 0), 0) || 1
+  return h.div
+    .attr('aria-hidden', 'true')
+    .class(
+      css({
+        display: 'flex',
+        height: '7',
+        alignItems: 'flex-end',
+        gap: '0.5',
+      }),
+    )
+    .children(
+      ...candidates.map((kind) => {
+        const on = chosen.includes(kind)
+        const label = t.catalog.kinds[kind].label
+        const share = Math.round(((mix[kind] ?? 0) / total) * 100)
+        return h.button
+          .key(`slice-${kind}`)
+          .attr('type', 'button')
+          .attr('tabindex', '-1')
+          .attr('aria-pressed', on ? 'true' : 'false')
+          .attr('aria-label', `${label} · ${share}%`)
+          .attr('title', `${label} · ${share}%`)
+          .on('click', () =>
+            Message.TeamChanged({
+              message: TeamMessage.ServiceKindsPicked({
+                kinds: on ? chosen.filter((each) => each !== kind) : [...chosen, kind],
+              }),
+            }),
+          )
+          .class(
+            css({
+              minWidth: '1.5',
+              height: '4',
+              cursor: 'pointer',
+              borderRadius: 'sm',
+              transitionProperty: 'height, opacity, translate, box-shadow',
+              transitionDuration: '200ms',
+              transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)',
+              opacity: '0.35',
+              _hover: { opacity: '0.7' },
+              '&[aria-pressed="true"]': {
+                height: '6',
+                opacity: '1',
+                translate: '0 -2px',
+              },
+              '@media (prefers-reduced-motion: reduce)': { transitionDuration: '0ms' },
+            }),
+          )
+          .style({
+            flexGrow: String(Math.max(share, 1)),
+            flexBasis: '0',
+            background: kindColor(kind),
+            boxShadow: on ? `0 4px 10px -2px ${tint(kindColor(kind), 60)}` : 'none',
+          })
+          .children()
+      }),
+    )
+}
+
+/* The bar's legend, and the way to pick kinds by name: one toggle per served kind. */
+const kindLegend = (
+  model: Model,
+  candidates: ReadonlyArray<RequestKind>,
+  h: H<Message>,
+): Content => {
+  const t = copy(h)
+  const game = model.board.game
+  const chosen = model.board.team.service.kinds
+  const mix = mixOf(game)
+  const total = candidates.reduce((sum, kind) => sum + (mix[kind] ?? 0), 0) || 1
+  const toggle = (kind: RequestKind): Content => {
+    const on = chosen.includes(kind)
+    const share = Math.round(((mix[kind] ?? 0) / total) * 100)
+    return h.button
+      .key(`legend-${kind}`)
+      .attr('type', 'button')
+      .attr('aria-pressed', on ? 'true' : 'false')
+      .on('click', () =>
+        Message.TeamChanged({
+          message: TeamMessage.ServiceKindsPicked({
+            kinds: on ? chosen.filter((each) => each !== kind) : [...chosen, kind],
+          }),
+        }),
+      )
+      .class(
+        css({
+          display: 'flex',
+          height: '6',
+          cursor: 'pointer',
+          alignItems: 'center',
+          gap: '1.5',
+          borderRadius: 'md',
+          paddingInline: '2',
+          fontSize: 'type.11-5',
+          color: 'mutedForeground',
+          transitionProperty: 'background-color, color, box-shadow',
+          transitionDuration: '160ms',
+          transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)',
+          _hover: { color: 'foreground', backgroundColor: 'muted' },
+          _active: { scale: '0.97' },
+          '&[aria-pressed="true"]': { color: 'foreground', fontWeight: 'medium' },
+        }),
+      )
+      .style(
+        on
+          ? {
+              background: tint(kindColor(kind), 16),
+              boxShadow: `inset 0 0 0 1px ${tint(kindColor(kind), 45)}`,
+            }
+          : {},
+      )
+      .children(
+        packet(h, kind, 7),
+        t.catalog.kinds[kind].label,
+        h.span
+          .class(cx(FIGURE, css({ fontSize: 'type.10', color: 'mutedForeground' })))
+          .children(`${share}%`),
+      )
+  }
+  const groups = game.services
+    .map((service) => ({
+      service,
+      kinds: candidates.filter((kind) => serviceOfKind(game, kind).id === service.id),
+    }))
+    .filter((group) => group.kinds.length > 0)
+  return h.div
+    .attr('role', 'group')
+    .attr('aria-label', t.team.carveBoard)
+    .class(css({ display: 'flex', flexDirection: 'column', gap: '2' }))
+    .children(
+      ...groups.map(({ service, kinds }) =>
+        h.div
+          .key(`legend-group-${service.id}`)
+          .attr('role', 'group')
+          .attr('aria-label', serviceName(t, service))
+          .class(css({ display: 'flex', flexDirection: 'column', gap: '1' }))
+          .children(
+            h.span
+              .class(
+                css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1.5',
+                  fontSize: 'type.10',
+                  fontWeight: 'semibold',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: 'mutedForeground',
+                }),
+              )
+              .children(
+                stackLogo(
+                  h,
+                  RUNTIMES[stackOf(game, service).runtime].language,
+                  css({ width: '3', height: '3' }),
+                ),
+                serviceName(t, service),
+              ),
+            h.div
+              .class(css({ display: 'flex', flexWrap: 'wrap', gap: '1' }))
+              .children(...kinds.map(toggle)),
+          ),
+      ),
+    )
+}
+
+const carveOut = (model: Model, h: H<Message>): Content => {
+  const t = copy(h)
+  const game = model.board.game
+  const draft = model.board.team.service
+  const order = (kind: RequestKind) =>
+    game.services.findIndex((service) => service.id === serviceOfKind(game, kind).id)
+  const candidates = REQUEST_KINDS.filter((kind) => (mixOf(game)[kind] ?? 0) > 0).toSorted(
+    (left, right) => order(left) - order(right),
+  )
+  const request = splitRequestOf(draft)
+  const refusal =
+    request === null
+      ? Refusal.NotAllowed({ reason: t.team.refusal.chooseFeature })
+      : draft.target === ''
+        ? Refusal.NotAllowed({ reason: t.team.refusal.chooseTarget })
+        : splitRefusal(game, request)
+  const targets = carveTargets(t, game)
+  const sources = [...new Set(draft.kinds.map((kind) => serviceOfKind(game, kind)))]
+  const from = sources[0] ?? serviceOf(game)
+  const mix = mixOf(game)
+  const total = candidates.reduce((sum, kind) => sum + (mix[kind] ?? 0), 0) || 1
+  const share = Math.round(
+    (draft.kinds.reduce((sum, kind) => sum + (mix[kind] ?? 0), 0) / total) * 100,
+  )
+  const kloc = draft.kinds.reduce((sum, kind) => sum + capabilityKloc(game, kind), 0)
+  const caption = css({
+    fontSize: 'type.10',
+    fontWeight: 'semibold',
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color: 'mutedForeground',
+  })
+  if (candidates.length === 0)
+    return h.p
+      .class(css({ margin: '2.5', fontSize: 'type.11-5', color: 'mutedForeground' }))
+      .children(t.team.noLiveFeatureLeft)
+  return h.div
+    .class(
+      css({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '3',
+        marginInline: '2.5',
+        marginBottom: '2.5',
+        borderTopWidth: '1px',
+        borderTopStyle: 'solid',
+        borderTopColor: 'color-mix(in oklab, var(--foreground) 8%, transparent)',
+        paddingTop: '3',
+      }),
+    )
+    .children(
+      carvingBoard(model, candidates, h),
+      kindLegend(model, candidates, h),
+      h.div
+        .class(
+          css({
+            display: 'grid',
+            gridTemplateColumns: 'auto 1fr',
+            columnGap: '2',
+            rowGap: '1.5',
+            alignItems: 'center',
+          }),
+        )
+        .children(
+          h.span.class(caption).children(t.team.carveFrom),
+          h.div
+            .class(cx(CARVE_CARD, css(WELL_STYLE, { borderRadius: 'lg' })))
+            .children(
+              stackLogo(
+                h,
+                RUNTIMES[stackOf(game, from).runtime].language,
+                css({ width: '4', height: '4' }),
+              ),
+              h.span
+                .class(css({ minWidth: '0', flex: '1', truncate: true, fontWeight: 'medium' }))
+                .children(
+                  sources.length > 1
+                    ? sources.map((service) => serviceName(t, service)).join(' + ')
+                    : serviceName(t, from),
+                ),
+              ...draft.kinds.map((kind) => packet(h, kind)),
+            ),
+          h.span.children(),
+          h.div
+            .attr('aria-hidden', 'true')
+            .class(
+              css({
+                position: 'relative',
+                display: 'flex',
+                height: '4',
+                alignItems: 'center',
+                color: 'mutedForeground',
+                '&::before': {
+                  content: '""',
+                  flex: '1',
+                  borderTopWidth: '1.5px',
+                  borderTopStyle: 'dashed',
+                  borderTopColor: 'color-mix(in oklab, var(--foreground) 22%, transparent)',
+                },
+              }),
+            )
+            .children(
+              icon(
+                h,
+                Scissors,
+                css({
+                  position: 'absolute',
+                  left: '3',
+                  width: '3.5',
+                  height: '3.5',
+                  paddingInline: '0.5',
+                  backgroundColor: 'card',
+                  boxSizing: 'content-box',
+                }),
+              ),
+            ),
+          h.span
+            .class(cx(caption, css({ alignSelf: 'start', paddingTop: '2' })))
+            .children(t.team.carveTo),
+          targets.length === 0
+            ? h.span
+                .class(css({ fontSize: 'type.11-5', color: 'mutedForeground' }))
+                .children(t.team.noCarveTarget)
+            : h.div
+                .attr('role', 'group')
+                .attr('aria-label', t.team.carveOutTarget)
+                .class(css({ display: 'flex', flexDirection: 'column', gap: '1.5' }))
+                .children(...targets.map((target) => targetCard(model, target, h))),
+        ),
+      h.div
+        .class(
+          css({
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '2',
+          }),
+        )
+        .children(
+          button(
+            h,
+            {
+              onClick: Message.TeamChanged({ message: TeamMessage.SplitChosen() }),
+              isDisabled: refusal !== null,
+              variant: refusal === null ? 'default' : 'outline',
+              size: 'sm',
+              attributes: {
+                title:
+                  refusal === null
+                    ? t.team.moveFeaturesToCodebase
+                    : splitWhy(t, game, draft, refusal),
+              },
+            },
+            [
+              icon(h, Scissors, css({ width: '3.5', height: '3.5' })),
+              request === null
+                ? t.team.carveOut
+                : t.team.splitFor(t.units.devHours(splitCost(game, request))),
+            ],
+          ),
+          draft.kinds.length > 0
+            ? h.span
+                .class(cx(FIGURE, css({ fontSize: 'type.11', color: 'mutedForeground' })))
+                .children(t.team.carveShare(share, kloc.toFixed(1)))
+            : undefined,
+        ),
+      refusal === null || draft.kinds.length === 0
+        ? undefined
+        : h.span
+            .class(css({ fontSize: 'type.11', color: 'mutedForeground' }))
+            .children(splitWhy(t, game, draft, refusal)),
+    )
+}
+
 const servicesCard = (model: Model, h: H<Message>): Content => {
   const t = copy(h)
 
   const game = model.board.game
-  const draft = model.board.team.service
-  const candidates = liveFeatures(game).filter(
-    (id) => serviceOfFeature(game, id).id === serviceOf(game).id,
-  )
-  const refusal = splitRefusal(game, {
-    name: draft.name,
-    owner: draft.owner,
-    features: draft.features,
-  })
   const shared = game.services.filter((service) => sharesDatabase(game, service)).length
   const renaming = model.board.team.rename
   return h.section
@@ -2603,7 +3092,7 @@ const servicesCard = (model: Model, h: H<Message>): Content => {
           h,
         )
       }),
-      has(game, 'service-boundaries')
+      has(game, 'service-carve-out')
         ? fold(
             'split',
             css({
@@ -2623,211 +3112,17 @@ const servicesCard = (model: Model, h: H<Message>): Content => {
                     display: 'flex',
                     height: '6',
                     alignItems: 'center',
+                    gap: '1.5',
                     fontSize: 'type.12',
                     fontWeight: 'medium',
                   }),
                 )
-                .children(t.team.splitAService),
+                .children(
+                  icon(h, Scissors, css({ width: '3.5', height: '3.5', color: 'primary' })),
+                  t.team.splitAService,
+                ),
             ],
-            h.div
-              .class(
-                css({
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '2',
-                  marginInline: '2.5',
-                  marginBottom: '2.5',
-                  borderTopWidth: '1px',
-                  borderTopStyle: 'solid',
-                  borderTopColor: 'color-mix(in oklab, var(--foreground) 8%, transparent)',
-                  paddingTop: '2.5',
-                  paddingLeft: '5.5',
-                }),
-              )
-              .children(
-                h.div
-                  .class(
-                    css({
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '1.5',
-                    }),
-                  )
-                  .children(
-                    h.input
-                      .attr('type', 'text')
-                      .value(draft.name)
-                      .attr('placeholder', t.team.nameNewService)
-                      .attr('aria-label', t.team.newServiceName)
-                      .on('input', ({ value: name }) =>
-                        Message.TeamChanged({ message: TeamMessage.ServiceNamed({ name }) }),
-                      )
-                      .class(
-                        css(WELL_STYLE, {
-                          height: '7',
-                          minWidth: '0',
-                          flex: '1 1 0%',
-                          borderRadius: 'lg',
-                          paddingInline: '2',
-                          fontSize: 'type.12',
-                          outlineStyle: 'none',
-                        }),
-                      ),
-                    h.select
-                      .attr('aria-label', t.team.teamOwnsNewService)
-                      .on('change', ({ value: teamId }) =>
-                        Message.TeamChanged({
-                          message: TeamMessage.ServiceOwnerChosen({ teamId }),
-                        }),
-                      )
-                      .class(
-                        css(WELL_STYLE, {
-                          height: '7',
-                          borderRadius: 'lg',
-                          paddingInline: '1.5',
-                          fontSize: 'type.12',
-                        }),
-                      )
-                      .children(
-                        ...game.teams.map((entry) =>
-                          h.option
-                            .attr('value', entry.id)
-                            .selected(entry.id === draft.owner)
-                            .children(teamName(t, entry)),
-                        ),
-                      ),
-                  ),
-                candidates.length === 0
-                  ? h.span
-                      .class(
-                        css({
-                          fontSize: 'type.11-5',
-                          color: 'mutedForeground',
-                        }),
-                      )
-                      .children(t.team.noLiveFeatureLeft)
-                  : h.div
-                      .class(
-                        css({
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: '1.5',
-                        }),
-                      )
-                      .children(
-                        ...candidates.map((id) => {
-                          const on = draft.features.includes(id)
-                          return h.button
-                            .key(`split-${id}`)
-                            .attr('type', 'button')
-                            .on('click', () =>
-                              Message.TeamChanged({
-                                message: TeamMessage.ServiceFeatureToggled({ id }),
-                              }),
-                            )
-                            .class(
-                              cx(
-                                css({
-                                  display: 'flex',
-                                  height: '6',
-                                  alignItems: 'center',
-                                  gap: '1',
-                                  borderRadius: 'full',
-                                  borderWidth: '1px',
-                                  borderStyle: 'solid',
-                                  paddingInline: '2',
-                                  fontSize: 'type.11',
-                                }),
-                                on
-                                  ? css({
-                                      borderColor:
-                                        'color-mix(in oklab, var(--primary) 60%, transparent)',
-                                      backgroundColor:
-                                        'color-mix(in oklab, var(--primary) 15%, transparent)',
-                                      color: 'foreground',
-                                    })
-                                  : css({
-                                      borderColor:
-                                        'color-mix(in oklab, var(--foreground) 15%, transparent)',
-                                      color: 'mutedForeground',
-                                      _hover: {
-                                        color: 'foreground',
-                                      },
-                                    }),
-                              ),
-                            )
-                            .children(
-                              on
-                                ? icon(
-                                    h,
-                                    Check,
-                                    css({
-                                      width: '3',
-                                      height: '3',
-                                    }),
-                                  )
-                                : undefined,
-                              t.catalog.features[id].name,
-                            )
-                        }),
-                      ),
-                h.div
-                  .class(
-                    css({
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '2',
-                    }),
-                  )
-                  .children(
-                    button(
-                      h,
-                      {
-                        onClick: Message.TeamChanged({ message: TeamMessage.SplitChosen() }),
-                        isDisabled: refusal !== null,
-                        variant: 'outline',
-                        size: 'sm',
-                        attributes: {
-                          title:
-                            refusal === null
-                              ? t.team.moveFeaturesToCodebase
-                              : splitWhy(t, game, draft, refusal),
-                        },
-                      },
-                      refusal === null
-                        ? [
-                            icon(
-                              h,
-                              Container,
-                              css({
-                                width: '3.5',
-                                height: '3.5',
-                              }),
-                            ),
-                            t.team.splitFor(t.units.devHours(splitCost(draft.features))),
-                          ]
-                        : [
-                            icon(
-                              h,
-                              Lock,
-                              css({
-                                width: '3',
-                                height: '3',
-                              }),
-                            ),
-                            t.team.locked,
-                          ],
-                    ),
-                    h.span
-                      .class(
-                        css({
-                          fontSize: 'type.11',
-                          color: 'mutedForeground',
-                        }),
-                      )
-                      .children(refusal === null ? '' : splitWhy(t, game, draft, refusal)),
-                  ),
-              ),
+            carveOut(model, h),
             h,
           )
         : h.div
@@ -2851,8 +3146,8 @@ const servicesCard = (model: Model, h: H<Message>): Content => {
                 }),
               ),
               t.team.serviceBoundariesSplits(
-                t.catalog.research['service-boundaries'].name,
-                t.catalog.eras[RESEARCH['service-boundaries'].era]?.name ?? '',
+                t.catalog.research['service-carve-out'].name,
+                t.catalog.eras[RESEARCH['service-carve-out'].era]?.name ?? '',
               ),
             ),
     )
@@ -4876,6 +5171,7 @@ const featureTile = (
   id: FeatureId,
   review: boolean,
   building: ReadonlySet<string>,
+  buildIn: string | null,
   h: H<Message>,
 ): Content => {
   const t = copy(h)
@@ -4896,7 +5192,7 @@ const featureTile = (
     id,
     codeOf('feature', id),
     def.name,
-    featureHoursOf(game, id),
+    featureHoursOf(game, id, buildIn ?? undefined),
     def.era > game.stage ? `${t.catalog.eras[def.era]?.name ?? ''} · ${def.effect}` : def.effect,
     review && def.hidden && !live ? def.hidden : null,
     state,
@@ -5169,9 +5465,32 @@ const work = (model: Model, h: H<Message>): Content => {
           .children(t.team.live2(live, features.length)),
         h,
       ),
+      game.services.length > 1
+        ? h.select
+            .attr('aria-label', t.team.buildIn)
+            .on('change', ({ value }) =>
+              Message.TeamChanged({
+                message: TeamMessage.BuildInChosen({ serviceId: value === '' ? null : value }),
+              }),
+            )
+            .class(SERVICE_SELECT)
+            .children(
+              ...game.services.map((service, index) => {
+                const value = index === 0 ? '' : service.id
+                return h.option
+                  .attr('value', value)
+                  .selected((model.board.team.service.buildIn ?? '') === value)
+                  .children(t.team.buildInService(serviceName(t, service)))
+              }),
+            )
+        : undefined,
       h.div
         .class(TILES)
-        .children(...features.map((id) => featureTile(game, id, review, building, h))),
+        .children(
+          ...features.map((id) =>
+            featureTile(game, id, review, building, model.board.team.service.buildIn, h),
+          ),
+        ),
       engineering ? heading(t.team.engineering, undefined, h) : undefined,
       engineering
         ? h.div

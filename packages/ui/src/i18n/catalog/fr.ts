@@ -2345,9 +2345,14 @@ export const catalog: Catalog = {
       name: 'Capture des modifications de données',
     },
     'service-boundaries': {
-      blurb:
-        'Découper un service : un nouveau code source avec son équipe, ses déploiements et son propre périmètre d’impact.',
       name: 'Frontières de service',
+      blurb:
+        'Donnez à un service sa propre équipe, pour que chaque équipe reste petite et se coordonne moins.',
+    },
+    'service-carve-out': {
+      name: 'Détacher un service',
+      blurb:
+        'Déplacez une capacité vers un nouveau service avec sa propre Stack, ses déploiements et son périmètre d’impact.',
     },
     'service-mesh': {
       blurb:

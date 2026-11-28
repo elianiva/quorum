@@ -253,6 +253,7 @@ export const LOOKS: Record<ResearchId, Look> = {
   'secrets-management': { group: 'ops', glyph: KeySquare, hue: 150 },
   'spam-filter': { group: 'ops', glyph: ShieldBan, hue: 30 },
   'service-boundaries': { group: 'compute', glyph: Split, hue: 320 },
+  'service-carve-out': { group: 'compute', glyph: Split, hue: 280 },
   'on-call': { group: 'ops', glyph: BellRing, hue: 20 },
   runbooks: { group: 'ops', glyph: BookOpen, hue: 60 },
   'sre-team': { group: 'ops', glyph: Siren, hue: 340 },

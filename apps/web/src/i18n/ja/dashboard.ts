@@ -272,5 +272,6 @@ export const dashboard: Messages['dashboard'] = {
     upstream: '上流',
     throttled: '制限',
     duplicate: '重複',
+    misrouted: '誤ルーティング',
   },
 }

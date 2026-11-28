@@ -447,6 +447,7 @@ const CAUSE_TEXT: Record<ChurnCause, string> = {
   upstream: 'a provider is down',
   throttled: 'rate limited',
   duplicate: 'charged twice',
+  misrouted: 'sent to the wrong Service',
 }
 
 const vendorOffer = (game: Game, salt: number): ResearchId | null => {

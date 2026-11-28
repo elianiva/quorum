@@ -648,7 +648,8 @@ export const serviceOwnership = (
   h: H<Message>,
 ): ReadonlyArray<Content> => {
   const t = copy(h)
-  return game.services.length < 2
+  const empty = node.type === 'server' && node.serviceId === null
+  return game.sandbox || (game.services.length < 2 && !empty)
     ? []
     : [
         section(
@@ -658,8 +659,11 @@ export const serviceOwnership = (
             picker(
               h,
               'service',
-              game.services.map((service) => [service.id, serviceNameIn(t, service)] as const),
-              serviceOfNode(game, node).id,
+              [
+                ...(node.type === 'server' ? [['', t.inspectorShared.noService] as const] : []),
+                ...game.services.map((service) => [service.id, serviceNameIn(t, service)] as const),
+              ],
+              serviceOfNode(game, node)?.id ?? '',
               (serviceId) => Message.ServiceAssigned({ nodeId: node.id, serviceId }),
             ),
           ],

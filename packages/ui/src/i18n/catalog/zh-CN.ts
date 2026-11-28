@@ -1820,8 +1820,12 @@ export const catalog: Catalog = {
     },
     cdc: { blurb: '解锁 CDC 连接器：副本跟随写入日志，无需第二次写入。', name: '变更数据捕获' },
     'service-boundaries': {
-      blurb: '拆分服务：一个拥有自己的团队、自己的部署和自己的爆炸半径的新代码库。',
       name: '服务边界',
+      blurb: '让一个服务拥有自己的团队，使每个团队保持小规模、协调更少。',
+    },
+    'service-carve-out': {
+      name: '拆出服务',
+      blurb: '把一项能力移到一个新服务，它有自己的技术栈、部署和爆炸半径。',
     },
     'service-mesh': { blurb: '解锁服务网格：每条链路上的重试、熔断与指标。', name: '服务网格' },
     'feature-flags': {

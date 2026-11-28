@@ -20,6 +20,7 @@ export const inspectorShared: Messages['inspectorShared'] = {
     'pm.max_requests y los terminadores de workers reinician cada proceso de vez en cuando. Ninguna fuga se acumula, y cada reinicio arranca en frío.',
   compression: 'Compresión',
   service: 'Servicio',
+  noService: 'Sin Servicio',
   engine: 'Motor',
   enginePostgres:
     'Postgres: 100 conexiones, lecturas y escaneos más baratos, mejor búsqueda. Las escrituras cuestan más, un ALTER TABLE bloquea la tabla y las filas muertas la hinchan hasta que pasa el VACUUM.',

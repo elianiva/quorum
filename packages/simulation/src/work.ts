@@ -32,6 +32,8 @@ import {
   HOTFIX_DEBT,
   KLOC_PER_DH,
   KINDS,
+  REQUEST_KINDS,
+  CORE_KIND_KLOC,
   LANGUAGES,
   LEVER_CAPS,
   LEVER_OWNER,
@@ -157,9 +159,16 @@ import {
   payGapOf,
   platformStaffed,
   policyNow,
+  featureTouches,
+  nodeServiceOf,
+  serversOfService,
   serviceOf,
   serviceOfFeature,
   serviceOfId,
+  serviceOfKind,
+  velocityOfService,
+  velocityOfStack,
+  workerStackOf,
   sharesDatabase,
   signingOf,
   trainCost,
@@ -197,7 +206,10 @@ export const itemName = (item: WorkItem): string => {
   if (item.kind === 'patch')
     return `Patch ${COMPONENTS[item.target as ComponentId]?.name ?? 'Design'}`
   if (item.kind === 'spike') return `Spike: ${RESEARCH[item.ref as ResearchId]?.name ?? item.ref}`
-  if (item.kind === 'split') return 'Split a service'
+  if (item.kind === 'split')
+    return item.target
+      ? `Carve out ${KINDS[item.target as RequestKind]?.label ?? item.target}`
+      : 'Split a service'
   if (item.kind === 'lever') return `${KINDS[item.ref as RequestKind]?.label ?? item.ref} lever`
   if (item.kind === 'move')
     return item.ref === 'auth'
@@ -500,13 +512,29 @@ export const runbookKinds = (game: Game): ReadonlyArray<IncidentId> =>
 const refused = (refusal: Refusal | null, apply: () => Game): Action =>
   refusal ? no(refusal) : ok(apply())
 
-export const featureHoursOf = (game: Game, id: FeatureId): number => {
+const stackForFeature = (game: Game, id: FeatureId, service: Service) =>
+  (BACKGROUND_FEATURES.includes(id) ? workerStackOf(game) : null) ?? stackOf(game, service)
+
+export const featureServiceOf = (game: Game, id: FeatureId, chosen?: string): Service => {
+  const carrier = serviceOfFeature(game, id)
+  if (carrier.id !== serviceOf(game).id) return carrier
+  const unlocked = FEATURES[id].unlocks?.kind as RequestKind | undefined
+  const kinds = unlocked ? [unlocked] : REQUEST_KINDS.filter((kind) => featureTouches(id, kind))
+  const holder = kinds
+    .map((kind) => serviceOfKind(game, kind))
+    .find((entry) => entry.id !== serviceOf(game).id)
+  if (holder) return holder
+  return game.services.find((entry) => entry.id === chosen) ?? carrier
+}
+
+export const featureHoursOf = (game: Game, id: FeatureId, chosen?: string): number => {
   const def = FEATURES[id]
   const data =
     dataStaffed(game) && def.unlocks && DATA_KINDS.includes(def.unlocks.kind as RequestKind)
       ? DATA_TEAM_HOURS
       : 1
-  const framework = FRAMEWORKS[stackOf(game).framework]
+  const framework =
+    FRAMEWORKS[stackForFeature(game, id, featureServiceOf(game, id, chosen)).framework]
   const tooling =
     (INTERNAL_TOOL_FEATURES.includes(id) ? (framework.internalTools ?? 1) : 1) *
     (BACKGROUND_FEATURES.includes(id) ? (framework.workerHours ?? 1) : 1)
@@ -531,12 +559,21 @@ export const featureHoursOf = (game: Game, id: FeatureId): number => {
 
 const DATA_KINDS: ReadonlyArray<RequestKind> = ['report', 'ai']
 
-export const queueFeature = (game: Game, id: FeatureId): Action =>
+export const queueFeature = (game: Game, id: FeatureId, serviceId?: string): Action =>
   refused(featureRefusal(game, id), () =>
-    enqueue(rollOutcome(game, id), 'feature', id, featureHoursOf(game, id), false, {
-      service: serviceOfFeature(game, id).id,
+    enqueue(rollOutcome(game, id), 'feature', id, featureHoursOf(game, id, serviceId), false, {
+      service: featureServiceOf(game, id, serviceId).id,
     }),
   )
+
+export const itemVelocityOf = (game: Game, item: WorkItem): number => {
+  const service = serviceOfItem(game, item)
+  const worker =
+    item.kind === 'feature' && BACKGROUND_FEATURES.includes(item.ref as FeatureId)
+      ? workerStackOf(game)
+      : null
+  return worker ? velocityOfStack(game, worker) : velocityOfService(game, service)
+}
 
 export const queueTask = (game: Game, id: TaskId): Action =>
   refused(taskRefusal(game, id), () => enqueue(game, 'task', id, TASKS[id].dh))
@@ -642,100 +679,193 @@ export const queueRunbook = (game: Game, kind: IncidentId): Action =>
   )
 
 export type SplitRequest = Readonly<{
-  name: string
-  owner: string
-  features: ReadonlyArray<FeatureId>
-  datastore?: string | null
+  kinds: ReadonlyArray<RequestKind>
+  service?: string
+  node?: string
+  name?: string
 }>
 
-export const splitCost = (features: ReadonlyArray<FeatureId>): number =>
-  Math.max(
-    0.5,
-    Math.round(
-      features.reduce((sum, id) => sum + FEATURES[id].dh * KLOC_PER_DH, 0) *
-        MIGRATION_FACTORS.split *
-        10,
-    ) / 10,
-  )
+export const capabilityFeatures = (
+  game: Game,
+  kind: RequestKind,
+  from: Service = serviceOfKind(game, kind),
+): ReadonlyArray<FeatureId> => {
+  const start = serviceOf(game).id
+  return FEATURE_IDS.filter((id) => {
+    if (!isBuilt(game, id) || !featureTouches(id, kind)) return false
+    const unlocked = FEATURES[id].unlocks?.kind
+    if (unlocked !== undefined && unlocked !== kind) return false
+    return from.id === start
+      ? !game.services.slice(1).some((entry) => entry.features.includes(id))
+      : from.features.includes(id)
+  })
+}
+
+export const capabilityKloc = (game: Game, kind: RequestKind): number => {
+  const features = capabilityFeatures(game, kind)
+  const core = FEATURE_IDS.some((id) => FEATURES[id].unlocks?.kind === kind) ? 0 : CORE_KIND_KLOC
+  return features.reduce((sum, id) => sum + FEATURES[id].dh * KLOC_PER_DH, core)
+}
+
+const splitStack = (game: Game, request: SplitRequest) => {
+  const service = game.services.find((entry) => entry.id === request.service)
+  if (service) return stackOf(game, service)
+  const node = game.nodes.find((entry) => entry.id === request.node)
+  return node ? { runtime: node.runtime, framework: node.framework } : null
+}
+
+const kindsOf = (request: SplitRequest): ReadonlyArray<RequestKind> => [...new Set(request.kinds)]
+
+const kindCost = (game: Game, request: SplitRequest, kind: RequestKind): number => {
+  const to = splitStack(game, request)
+  const from = RUNTIMES[stackOf(game, serviceOfKind(game, kind)).runtime].language
+  const language = to ? RUNTIMES[to.runtime].language : from
+  const factor =
+    language === from
+      ? MIGRATION_FACTORS.split
+      : MIGRATION_FACTORS.language / LANGUAGES[language].velocity
+  return Math.max(0.5, Math.round(capabilityKloc(game, kind) * factor * 10) / 10)
+}
+
+export const splitCost = (game: Game, request: SplitRequest): number =>
+  Math.round(kindsOf(request).reduce((sum, kind) => sum + kindCost(game, request, kind), 0) * 10) /
+  10
+
+const kindRefusal = (game: Game, request: SplitRequest, kind: RequestKind): Refusal | null => {
+  const label = KINDS[kind]?.label ?? kind
+  if ((mixOf(game)[kind] ?? 0) <= 0)
+    return Refusal.NotAllowed({ reason: `The Company does not serve ${label}.` })
+  if (game.backlog.some((item) => item.kind === 'split' && item.target === kind))
+    return Refusal.NotAllowed({ reason: `${label} is already moving.` })
+  const target = game.services.find((entry) => entry.id === request.service)
+  if (target && target.id === serviceOfKind(game, kind).id)
+    return Refusal.NotAllowed({ reason: `${target.name} already serves ${label}.` })
+  return null
+}
 
 export const splitRefusal = (game: Game, request: SplitRequest): Refusal | null => {
   if (game.sandbox) return Refusal.NotAllowed({ reason: SANDBOX })
-  if (!has(game, 'service-boundaries'))
+  if (!has(game, 'service-carve-out'))
     return Refusal.Locked({
-      what: 'A service split',
-      research: RESEARCH['service-boundaries'].name,
+      what: 'Carving out a Service',
+      research: RESEARCH['service-carve-out'].name,
     })
-  if (request.features.length === 0)
-    return Refusal.NotAllowed({ reason: 'Choose at least one Feature to move.' })
-  if (!game.teams.some((team) => team.id === request.owner))
-    return Refusal.NotAllowed({ reason: 'That team is gone.' })
-  if (
-    request.datastore != null &&
-    !game.nodes.some((node) => node.id === request.datastore && node.type === 'database')
-  )
-    return Refusal.NotAllowed({ reason: 'That Database is not on the Board.' })
-  const name = request.name.trim()
+  const kinds = kindsOf(request)
+  if (kinds.length === 0) return Refusal.NotAllowed({ reason: 'Choose what to carve out.' })
+  for (const kind of kinds) {
+    const refusal = kindRefusal(game, request, kind)
+    if (refusal) return refusal
+  }
+  if (request.service !== undefined) {
+    const target = game.services.find((entry) => entry.id === request.service)
+    if (!target) return Refusal.NotAllowed({ reason: 'That Service is gone.' })
+    if (target.id === serviceOf(game).id)
+      return Refusal.NotAllowed({ reason: 'Move these back by carving them out again.' })
+    return null
+  }
+  const node = game.nodes.find((entry) => entry.id === request.node)
+  if (!node || node.type !== 'server' || node.serviceId !== null)
+    return Refusal.NotAllowed({ reason: 'Choose a Service or an empty App Server.' })
+  const name = (request.name ?? '').trim()
   if (
     name !== '' &&
     game.services.some((service) => service.name.toLowerCase() === name.toLowerCase())
   )
     return Refusal.NotAllowed({ reason: `A Service is already called ${name}.` })
-  for (const id of request.features) {
-    if (!isFeatureLive(game, id))
-      return Refusal.NotAllowed({ reason: `${FEATURES[id].name} is not live yet.` })
-    const carrier = serviceOfFeature(game, id)
-    if (carrier.id !== serviceOf(game).id)
-      return Refusal.NotAllowed({
-        reason: `${FEATURES[id].name} is already on ${carrier.name}.`,
-      })
-  }
   return null
 }
 
+/** Queues one split item per kind, so each kind moves when its own work finishes. */
 export const splitService = (game: Game, request: SplitRequest): Action => {
   const refusal = splitRefusal(game, request)
   if (refusal) return no(refusal)
-  const features = [...new Set(request.features)]
-  const name = request.name.trim() || `Service ${game.services.length}`
-  const moved = features.reduce((sum, id) => sum + FEATURES[id].dh * KLOC_PER_DH, 0)
-  const leaving = new Map<string, number>()
-  for (const id of features) {
-    const carrier = serviceOfFeature(game, id)
-    leaving.set(carrier.id, (leaving.get(carrier.id) ?? 0) + FEATURES[id].dh * KLOC_PER_DH)
-  }
-  let seq = game.services.length + 1
-  while (game.services.some((service) => service.id === `service-${seq}`)) seq += 1
-  const service: Service = {
-    id: `service-${seq}`,
-    name,
-    debt: 0,
-    codebase: moved,
-    fixes: [],
-    shapes: 0,
-    indexes: 0,
-    migration: { _tag: 'Idle' },
-    nextDeployAt: serviceOf(game).nextDeployAt,
-    lastDeploy: [],
-    owner: request.owner,
-    features,
-    datastore: request.datastore ? { _tag: 'Pinned', id: request.datastore } : { _tag: 'Auto' },
-  }
-  const next: Game = {
-    ...game,
-    services: [
-      ...game.services.map((entry) =>
-        leaving.has(entry.id)
-          ? { ...entry, codebase: Math.max(0, entry.codebase - (leaving.get(entry.id) ?? 0)) }
-          : entry,
+  const kinds = kindsOf(request)
+  const costs = kinds.map((kind) => kindCost(game, request, kind))
+  let next = game
+  let targetId = request.service
+  if (targetId === undefined) {
+    let seq = game.services.length + 1
+    while (game.services.some((service) => service.id === `service-${seq}`)) seq += 1
+    const first = kinds[0]!
+    const fallback = `${KINDS[first]?.label ?? first} service`
+    const service: Service = {
+      id: `service-${seq}`,
+      name: (request.name ?? '').trim() || fallback,
+      debt: 0,
+      codebase: 0,
+      fixes: [],
+      shapes: 0,
+      indexes: 0,
+      migration: { _tag: 'Idle' },
+      nextDeployAt: serviceOf(game).nextDeployAt,
+      lastDeploy: [],
+      owner: serviceOfKind(game, first).owner,
+      features: [],
+      kinds: [],
+      datastore: { _tag: 'Auto' },
+    }
+    targetId = service.id
+    next = {
+      ...next,
+      services: [...next.services, service],
+      nodes: next.nodes.map((node) =>
+        node.id === request.node ? { ...node, serviceId: service.id } : node,
       ),
-      service,
-    ],
+    }
   }
-  return ok(enqueue(next, 'split', service.id, splitCost(features), false, { service: service.id }))
+  const service = targetId
+  return ok(
+    kinds.reduce(
+      (acc, kind, index) =>
+        enqueue(acc, 'split', service, costs[index]!, false, { service, target: kind }),
+      next,
+    ),
+  )
+}
+
+const carvedOut = (game: Game, item: WorkItem): Game => {
+  const kind = item.target as RequestKind | undefined
+  const target = game.services.find((entry) => entry.id === item.service)
+  if (!kind || !target) return game
+  const source = serviceOfKind(game, kind)
+  if (source.id === target.id) return game
+  const features = capabilityFeatures(game, kind, source)
+  const kloc = capabilityKloc(game, kind)
+  const start = serviceOf(game).id
+  return {
+    ...game,
+    services: game.services.map((entry) => {
+      if (entry.id === target.id)
+        return {
+          ...entry,
+          codebase: entry.codebase + kloc,
+          kinds: [...entry.kinds.filter((each) => each !== kind), kind],
+          features: [...entry.features, ...features.filter((id) => !entry.features.includes(id))],
+        }
+      if (entry.id === source.id)
+        return {
+          ...entry,
+          codebase: Math.max(0, entry.codebase - kloc),
+          kinds: entry.kinds.filter((each) => each !== kind),
+          features:
+            entry.id === start
+              ? entry.features
+              : entry.features.filter((id) => !features.includes(id)),
+        }
+      return entry
+    }),
+  }
 }
 
 export const moveService = (game: Game, serviceId: string, teamId: string): Action => {
   if (game.sandbox) return notAllowed(SANDBOX)
+  if (!has(game, 'service-boundaries'))
+    return no(
+      Refusal.Locked({
+        what: 'Giving a Service its own team',
+        research: RESEARCH['service-boundaries'].name,
+      }),
+    )
   const service = game.services.find((entry) => entry.id === serviceId)
   if (!service) return no(Refusal.Missing())
   if (!game.teams.some((team) => team.id === teamId)) return no(Refusal.Missing())
@@ -779,31 +909,47 @@ export const setDatastore = (game: Game, serviceId: string, datastore: string | 
   )
 }
 
-export const serviceOfNode = (game: Game, node: GameNode): Service =>
-  game.services.find((entry) => entry.id === node.serviceId) ?? serviceOf(game)
+export const serviceOfNode = nodeServiceOf
 
-export const assignService = (game: Game, nodeId: string, serviceId: string): Action => {
+export const assignService = (game: Game, nodeId: string, serviceId: string | null): Action => {
   if (game.sandbox) return notAllowed(SANDBOX)
   const node = game.nodes.find((entry) => entry.id === nodeId)
-  if (!node || !game.services.some((entry) => entry.id === serviceId)) return no(Refusal.Missing())
+  const service = game.services.find((entry) => entry.id === serviceId)
+  if (!node || (serviceId !== null && !service)) return no(Refusal.Missing())
   if (node.type !== 'server' && node.type !== 'worker')
     return notAllowed('Only an App Server or a Worker belongs to a Service.')
-  if (serviceOfNode(game, node).id === serviceId) return ok(game)
-  return ok({
-    ...game,
-    nodes: game.nodes.map((entry) =>
+  if (serviceId === null && node.type === 'worker')
+    return notAllowed('A Worker always pulls from its Queue.')
+  if ((nodeServiceOf(game, node)?.id ?? null) === serviceId) return ok(game)
+  const fleet = service
+    ? serversOfService(game, service).filter((entry) => entry.id !== nodeId)
+    : []
+  const stack =
+    node.type === 'server' && service && fleet.length > 0 ? stackOf(game, service) : null
+  const restacked = stack
+    ? Result.flatMap(setRuntime(game, nodeId, stack.runtime), (next) =>
+        setFramework(next, nodeId, stack.framework),
+      )
+    : ok(game)
+  return Result.map(restacked, (next) => ({
+    ...next,
+    nodes: next.nodes.map((entry) =>
       entry.id === nodeId
-        ? { ...entry, serviceId, ...(entry.life._tag === 'Stopped' ? {} : { life: warming(0) }) }
+        ? {
+            ...entry,
+            serviceId,
+            ...(entry.life._tag === 'Stopped' || serviceId === null ? {} : { life: warming(0) }),
+          }
         : entry,
     ),
-  })
+  }))
 }
 
 export const nodesOfService = (game: Game, serviceId: string): ReadonlyArray<GameNode> =>
   game.nodes.filter(
     (node) =>
       (node.type === 'server' || node.type === 'worker') &&
-      serviceOfNode(game, node).id === serviceId,
+      nodeServiceOf(game, node)?.id === serviceId,
   )
 
 export const loadBalancersOf = (game: Game, serviceId: string): ReadonlyArray<GameNode> => {
@@ -813,7 +959,7 @@ export const loadBalancersOf = (game: Game, serviceId: string): ReadonlyArray<Ga
 }
 
 export const serviceOfItem = (game: Game, item: WorkItem): Service =>
-  item.kind === 'feature'
+  item.kind === 'feature' && item.service === undefined
     ? serviceOfFeature(game, item.ref as FeatureId)
     : serviceOfId(game, item.service)
 
@@ -1368,7 +1514,12 @@ export const changeStack = (
       ? setRuntime(game, nodeId, choice.runtime)
       : setFramework(game, nodeId, choice.framework ?? node.framework)
   const target = targetOf(node, choice)
-  const migration = serviceOf(game).migration
+  const owner = node.type === 'worker' ? serviceOf(game) : nodeServiceOf(game, node)
+  if (!owner)
+    return Result.flatMap(setRuntime(game, nodeId, target.runtime), (next) =>
+      setFramework(next, nodeId, target.framework),
+    )
+  const migration = owner.migration
   if (
     !migrationIdle(migration) &&
     ((target.runtime === migration.runtime && target.framework === migration.framework) ||
@@ -1377,7 +1528,7 @@ export const changeStack = (
     return ok(game)
   return node.type === 'worker'
     ? startWorkerMigration(game, nodeId, target)
-    : startMigration(game, target)
+    : startMigration(game, target, owner)
 }
 
 export { cancelMigration, shiftMigration }
@@ -1413,9 +1564,10 @@ export const nextFeature = (game: Game): FeatureId | undefined =>
 
 const autopilot = (game: Game, events: Array<StepEvent>): Game => {
   let next = game
-  const migration = serviceOf(next).migration
-  if (isReady(migration)) {
-    const shifted = shiftMigration(next)
+  for (const service of next.services) {
+    const migration = service.migration
+    if (!isReady(migration)) continue
+    const shifted = shiftMigration(next, service.id)
     if (Result.isSuccess(shifted)) {
       next = shifted.success
       events.push(
@@ -1489,7 +1641,8 @@ const complete = (game: Game, item: WorkItem, tuning: Tuning): Game => {
 }
 
 const completed = (game: Game, item: WorkItem, tuning: Tuning): Game => {
-  if (item.kind === 'spike' || item.kind === 'patch' || item.kind === 'split') return game
+  if (item.kind === 'split') return carvedOut(game, item)
+  if (item.kind === 'spike' || item.kind === 'patch') return game
   if (item.kind === 'lever') {
     const step = item.step ?? (game.levers[item.ref] ?? 0) + 1
     return {
@@ -1500,13 +1653,13 @@ const completed = (game: Game, item: WorkItem, tuning: Tuning): Game => {
   if (item.kind === 'move') return moved(game, item, tuning)
   const service = serviceOfItem(game, item)
   if (item.kind === 'migration')
-    return withService(game, { migration: trancheBuilt(serviceOf(game).migration) })
+    return withServiceId(game, service.id, { migration: trancheBuilt(service.migration) })
   if (item.kind === 'feature') {
     const id = item.ref as FeatureId
     const team = game.teams[0]
     const policy = team ? policyNow(game, team) : POLICIES.balanced
     const grows =
-      (policy.debt + (stackOf(game).framework === 'none' ? UNSTRUCTURED_DEBT : 0)) *
+      (policy.debt + (stackOf(game, service).framework === 'none' ? UNSTRUCTURED_DEBT : 0)) *
       debtGrowthOf(game)
     const phase = game.features[id] ?? { _tag: 'Awaiting' as const }
     return withServiceId(
@@ -1515,6 +1668,9 @@ const completed = (game: Game, item: WorkItem, tuning: Tuning): Game => {
       {
         debt: Math.min(1, service.debt + grows),
         codebase: service.codebase + FEATURES[id].dh * KLOC_PER_DH,
+        ...(service.id !== serviceOf(game).id && !service.features.includes(id)
+          ? { features: [...service.features, id] }
+          : {}),
       },
     )
   }
@@ -1567,7 +1723,7 @@ const completed = (game: Game, item: WorkItem, tuning: Tuning): Game => {
     case 'refactor':
       return withService(after, { debt: Math.max(0, service.debt - item.cost * REFACTOR_PER_DH) })
     case 'fix-bugs':
-      return bugsFixed(after)
+      return bugsFixed(after, item.service)
     case 'upgrade-cluster': {
       const nodes = after.nodes.map((node) =>
         node.type === 'cluster' ? { ...node, upgradedAt: after.time } : node,
@@ -1737,12 +1893,14 @@ export const advanceTeam = (
 
   if (next.autopilot) next = autopilot(next, events)
 
-  const migration = serviceOf(next).migration
-  const migrating = !migrationIdle(migration)
-  const featureSpeed =
-    migrating && migration.scope === 'worker'
-      ? WORKER_MIGRATION_FEATURE_SPEED
-      : MIGRATION_FEATURE_SPEED
+  const featureSpeedOf = (item: WorkItem): number => {
+    if (item.kind !== 'feature') return 1
+    const migration = serviceOfItem(next, item).migration
+    const worker = serviceOf(next).migration
+    if (!migrationIdle(migration))
+      return migration.scope === 'worker' ? WORKER_MIGRATION_FEATURE_SPEED : MIGRATION_FEATURE_SPEED
+    return !migrationIdle(worker) && worker.scope === 'worker' ? WORKER_MIGRATION_FEATURE_SPEED : 1
+  }
   const backlog = next.backlog.map((item) => ({ ...item }))
   const taken = new Set<number>()
   let pool = next.devHours
@@ -1788,7 +1946,8 @@ export const advanceTeam = (
       }
     }
     taken.add(item.id)
-    const speed = item.kind === 'feature' && migrating ? featureSpeed : 1
+    const speed =
+      featureSpeedOf(item) * (output.stack > 0 ? itemVelocityOf(next, item) / output.stack : 1)
     const put = Math.min(item.cost - item.spent, (made - kept) * speed)
     item.spent += put
     pool += made - kept - put / speed

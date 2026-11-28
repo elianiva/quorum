@@ -19,6 +19,7 @@ export const inspectorShared: Messages['inspectorShared'] = {
     "pm.max_requests et les tueurs de workers redémarrent chaque processus de temps en temps. Une fuite ne s'accumule jamais, et chaque redémarrage repart à froid.",
   compression: 'Compression',
   service: 'Service',
+  noService: 'Aucun service',
   engine: 'Moteur',
   enginePostgres:
     'Postgres : 100 connexions, lectures et scans moins chers, recherche plus forte. Les écritures coûtent plus, un ALTER TABLE verrouille la table, et les lignes mortes la gonflent jusqu’à VACUUM.',

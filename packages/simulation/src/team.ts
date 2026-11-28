@@ -14,6 +14,7 @@ import {
   FEATURES,
   FOREIGN_OUTPUT,
   FORMAL_VERIFICATION_FACTOR,
+  FORMAL_VERIFICATION_VELOCITY,
   FOUNDER_OUTPUT,
   FRAMEWORKS,
   HIRE_DAYS,
@@ -30,6 +31,8 @@ import {
   OFFSITE_DAYS,
   OFFSITE_FEE,
   POLICIES,
+  POLYGLOT_VELOCITY,
+  REQUEST_KINDS,
   PLATFORM_TAX,
   POLICY_SWITCH_DAYS,
   QUARTER_DAYS,
@@ -125,19 +128,40 @@ export const serviceOwnedBy = (game: Game, team: Team): Service =>
 export const pagedTeam = (game: Game): Team =>
   ownerOf(game, serviceOfId(game, activeIncident(game)?.service ?? undefined))
 
-const featureTouches = (id: FeatureId, kind: RequestKind): boolean => {
+export const featureTouches = (id: FeatureId, kind: RequestKind): boolean => {
   const def = FEATURES[id]
-  return def !== undefined && (kind in def.load || def.unlocks?.kind === kind)
+  return (
+    def !== undefined &&
+    (def.unlocks?.kind === kind ||
+      kind in def.load ||
+      kind in def.value ||
+      kind in def.payload ||
+      (kind === 'search' && 'q-search' in def.queries))
+  )
 }
+
+const carriesKind = (service: Service, kind: RequestKind): boolean =>
+  service.kinds.includes(kind) ||
+  service.features.some((id) => FEATURES[id]?.unlocks?.kind === kind)
 
 export const serviceOfFeature = (game: Game, id: FeatureId): Service =>
   game.services.slice(1).find((service) => service.features.includes(id)) ?? serviceOf(game)
 
-export const serviceOfKind = (game: Game, kind: RequestKind): Service => {
-  const carrier = game.services
-    .slice(1)
-    .find((service) => service.features.some((id) => featureTouches(id, kind)))
-  return carrier ?? serviceOf(game)
+export const serviceOfKind = (game: Game, kind: RequestKind): Service =>
+  game.services.slice(1).find((service) => carriesKind(service, kind)) ?? serviceOf(game)
+
+export const kindsOfService = (game: Game, service: Service): ReadonlyArray<RequestKind> =>
+  REQUEST_KINDS.filter((kind) => serviceOfKind(game, kind).id === service.id)
+
+export const nodeServiceOf = (game: Game, node: GameNode): Service | null =>
+  node.serviceId === null
+    ? null
+    : (game.services.find((entry) => entry.id === node.serviceId) ?? serviceOf(game))
+
+export const servedKinds = (game: Game, node: GameNode): ReadonlyArray<RequestKind> | null => {
+  if (node.type !== 'server' || game.sandbox) return null
+  const service = nodeServiceOf(game, node)
+  return service ? kindsOfService(game, service) : []
 }
 
 export const blastService = (game: Game): Service =>
@@ -152,6 +176,9 @@ const datastoreOf = (game: Game, service: Service): string =>
     ? service.datastore.id
     : (game.nodes.find((node) => node.type === 'database')?.id ?? '')
 
+const otherTeam = (service: Service) => (entry: Service) =>
+  entry.id !== service.id && entry.owner !== service.owner
+
 export const sharesDatabase = (game: Game, service: Service): boolean => {
   const group = dataGroupOfService(game, service)
   if (
@@ -159,9 +186,12 @@ export const sharesDatabase = (game: Game, service: Service): boolean => {
     topologyOfGroup(game, group) === 'multi' &&
     databasesOfGroup(game, group).length > 1
   )
-    return groupServicesOf(game, group).length > 1
+    return groupServicesOf(game, group).some(otherTeam(service))
   const key = datastoreOf(game, service)
-  return key !== '' && game.services.filter((entry) => datastoreOf(game, entry) === key).length > 1
+  return (
+    key !== '' &&
+    game.services.some((entry) => otherTeam(service)(entry) && datastoreOf(game, entry) === key)
+  )
 }
 
 export const fixed = (game: Game, fix: FixId): boolean =>
@@ -169,30 +199,65 @@ export const fixed = (game: Game, fix: FixId): boolean =>
 
 const servers = (game: Game) => game.nodes.filter((node) => node.type === 'server')
 
-const stackNodes = (game: Game): ReadonlyArray<GameNode> => {
-  const apps = servers(game)
+export const serversOfService = (game: Game, service: Service): ReadonlyArray<GameNode> =>
+  servers(game).filter((node) => nodeServiceOf(game, node)?.id === service.id)
+
+const stackNodes = (game: Game, service: Service = serviceOf(game)): ReadonlyArray<GameNode> => {
+  const own = serversOfService(game, service)
+  if (own.length > 0) return own
+  const apps = servers(game).filter((node) => node.serviceId !== null)
   return apps.length > 0 ? apps : game.nodes.filter((node) => node.type === 'worker')
 }
 
-export const stackOf = (game: Game): Readonly<{ runtime: RuntimeId; framework: FrameworkId }> => {
+export type Stack = Readonly<{ runtime: RuntimeId; framework: FrameworkId }>
+
+export const stackOf = (game: Game, service: Service = serviceOf(game)): Stack => {
   const counts = new Map<string, number>()
-  for (const node of stackNodes(game)) {
+  const nodes = stackNodes(game, service)
+  for (const node of nodes) {
     const key = `${node.runtime}/${node.framework}`
     counts.set(key, (counts.get(key) ?? 0) + 1)
   }
   let best: string | null = null
   for (const [key, count] of counts)
     if (best === null || count > (counts.get(best) ?? 0)) best = key
-  const first = stackNodes(game)[0]
-  if (best === null || !first) return { runtime: 'mod_php', framework: 'none' }
+  if (best === null || !nodes[0]) return { runtime: 'mod_php', framework: 'none' }
   const [runtime, framework] = best.split('/') as [RuntimeId, FrameworkId]
   return { runtime, framework }
 }
 
-export const languageOfService = (game: Game): LanguageId => {
-  const node = stackNodes(game).find((entry) => entry.runtime === stackOf(game).runtime)
-  return node ? languageOf(node) : 'php'
+export const languageOfService = (game: Game, service: Service = serviceOf(game)): LanguageId =>
+  RUNTIMES[stackOf(game, service).runtime].language
+
+export const velocityOfStack = (game: Game, stack: Stack): number =>
+  LANGUAGES[RUNTIMES[stack.runtime].language].velocity *
+  FRAMEWORKS[stack.framework].velocity *
+  (RUNTIMES[stack.runtime].velocity ?? 1) *
+  (has(game, 'formal-verification') ? FORMAL_VERIFICATION_VELOCITY : 1)
+
+export const velocityOfService = (game: Game, service: Service): number =>
+  velocityOfStack(game, stackOf(game, service))
+
+export const workerStackOf = (game: Game): Stack | null => {
+  const workers = game.nodes.filter((node) => node.type === 'worker')
+  const first = workers[0]
+  return first ? { runtime: first.runtime, framework: first.framework } : null
 }
+
+export const teamLanguages = (game: Game, team: Team): ReadonlyArray<LanguageId> => {
+  const owned = game.services.filter((service) => service.owner === team.id)
+  const services = owned.length > 0 ? owned : [serviceOf(game)]
+  return [
+    ...new Set(
+      services
+        .filter((service, index) => index === 0 || serversOfService(game, service).length > 0)
+        .map((service) => languageOfService(game, service)),
+    ),
+  ]
+}
+
+export const polyglotFactor = (game: Game, team: Team): number =>
+  Math.max(0.5, 1 - POLYGLOT_VELOCITY * (teamLanguages(game, team).length - 1))
 
 export const languagesInUse = (game: Game): ReadonlyArray<LanguageId> => {
   const main = languageOfService(game)
@@ -200,8 +265,8 @@ export const languagesInUse = (game: Game): ReadonlyArray<LanguageId> => {
   return [main, ...new Set(others.filter((language) => language !== main))]
 }
 
-export const coordinationOf = (game: Game): number =>
-  FRAMEWORKS[stackOf(game).framework].coordination ?? 1
+export const coordinationOf = (game: Game, service: Service = serviceOf(game)): number =>
+  FRAMEWORKS[stackOf(game, service).framework].coordination ?? 1
 
 export const debtGrowthOf = (game: Game): number => FRAMEWORKS[stackOf(game).framework].debt ?? 1
 
@@ -290,7 +355,9 @@ export const outputOf = (game: Game, engineer: Engineer, tuning: Tuning = LIVE_T
       fluencyOf(game, engineer)
 
 export const learnTargetOf = (game: Game): LanguageId => {
-  const migration = serviceOf(game).migration
+  const migration = (
+    game.services.find((service) => !Migration.guards.Idle(service.migration)) ?? serviceOf(game)
+  ).migration
   return Migration.guards.Idle(migration)
     ? languageOfService(game)
     : RUNTIMES[migration.runtime].language
@@ -377,6 +444,7 @@ export type TeamOutput = Readonly<{
   headcount: number
   effective: number
   velocity: number
+  stack: number
   devHoursPerSecond: number
 }>
 
@@ -402,12 +470,14 @@ export const teamOutputs = (
     )
     const effective =
       headcount > 0
-        ? (effectiveEngineers(headcount, coordinationOf(game), sharesDatabase(game, owned)) *
+        ? (effectiveEngineers(headcount, coordinationOf(game, owned), sharesDatabase(game, owned)) *
             output) /
           headcount
         : 0
+    const stack = velocityOfService(game, owned)
     const velocity =
-      ledger.velocity *
+      stack *
+      polyglotFactor(game, team) *
       (1 - 0.5 * owned.debt) *
       policyNow(game, team, tuning).velocity *
       morale *
@@ -423,7 +493,7 @@ export const teamOutputs = (
         devHoursPerk(game) *
         ramp) /
       CALENDAR_DAY
-    return { team, headcount, effective, velocity, devHoursPerSecond: rate }
+    return { team, headcount, effective, velocity, stack, devHoursPerSecond: rate }
   })
   const tax = platformTax(game)
   if (tax <= 0) return outputs
@@ -589,7 +659,7 @@ export const enqueue = (
 }
 
 export const buggy = (game: Game, node: GameNode): boolean => {
-  const migration = serviceOf(game).migration
+  const migration = (nodeServiceOf(game, node) ?? serviceOf(game)).migration
   return (
     !Migration.guards.Idle(migration) &&
     migration.bugs &&

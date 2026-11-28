@@ -46,6 +46,7 @@ export { PolicyId } from './generated/team.ts'
 export { ResearchId } from './generated/research.ts'
 export { VentureId } from './generated/ventures.ts'
 export { FeatureId } from './generated/work.ts'
+export { RequestKind } from './generated/kinds.ts'
 export { FixId, LeverKindId } from './generated/ids.ts'
 
 export { DbEngine } from './generated/database.ts'
@@ -181,7 +182,7 @@ const NODE_FIELDS_UNORDERED = {
   ) as unknown as typeof Autoscaler,
   scaledAt: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
   region: RegionId.pipe(Schema.withDecodingDefaultKey(Effect.succeed('na' as const))),
-  serviceId: Schema.optionalKey(Schema.String),
+  serviceId: Schema.optionalKey(Schema.NullOr(Schema.String)),
   n: Schema.Finite.pipe(Schema.withDecodingDefaultKey(Effect.succeed(3))),
   spread: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
   ...COMPONENT_FIELDS,
@@ -427,6 +428,7 @@ export const Service = Schema.Struct({
   lastDeploy: Schema.Array(FeatureId),
   owner: Schema.String.pipe(Schema.withDecodingDefaultKey(Effect.succeed('core'))),
   features: Schema.Array(FeatureId).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
+  kinds: Schema.Array(RequestKind).pipe(Schema.withDecodingDefaultKey(Effect.succeed([]))),
   datastore: Datastore.pipe(
     Schema.withDecodingDefaultKey(Effect.succeed({ _tag: 'Auto' } as const)),
   ),
@@ -490,6 +492,7 @@ export const monolith = (fixes: ReadonlyArray<FixId>): Service => ({
   lastDeploy: [],
   owner: 'core',
   features: [],
+  kinds: [],
   datastore: { _tag: 'Auto' },
 })
 

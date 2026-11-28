@@ -43,6 +43,7 @@ export const mailWords: Messages['mailWords'] = {
     upstream: '某个服务商宕机',
     throttled: '被限流',
     duplicate: '被重复扣款',
+    misrouted: '被发到错误的服务',
   },
   blocked: {
     decision: '等待决定',

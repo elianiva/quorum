@@ -22,6 +22,7 @@ export const churn: Messages['churn'] = {
     upstream: '上游故障',
     throttled: '限流',
     duplicate: '重复扣款',
+    misrouted: '路由错误',
   },
   fixes: {
     stranded: '连接一个接受此类请求的节点。',
@@ -36,6 +37,7 @@ export const churn: Messages['churn'] = {
     upstream: '等待服务商恢复，或添加备用方案。',
     throttled: '提高速率限制。',
     duplicate: '研究幂等键。',
+    misrouted: '在服务前放置 L7 负载均衡器或 API 网关。',
     slow: '为最繁忙的节点增加容量。',
     failed: '研究结构化日志以查看原因。',
   },

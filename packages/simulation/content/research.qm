@@ -1166,11 +1166,12 @@
   :blurb    "Unlocks the CDC Connector: the copies follow the write log, without a second write.")
 
 (research service-boundaries
-  :name  "Service boundaries"
-  :track product
-  :cost  15_000
-  :era   series-b
-  :blurb "Split a Service: a new codebase with its own team, its own deploys, and its own blast.")
+  :name     "Service boundaries"
+  :track    product
+  :cost     15_000
+  :era      series-b
+  :requires (service-carve-out)
+  :blurb    "Give a Service its own team, so each team stays small and coordinates less.")
 
 (research service-mesh
   :name     "Service mesh"
@@ -1608,3 +1609,10 @@
 (def max-studies 8)
 
 (def spike-speed 2)
+
+(research service-carve-out
+  :name  "Carve out a Service"
+  :track product
+  :cost  600
+  :era   seed
+  :blurb "Move one capability to a new Service with its own Stack, deploys, and blast radius.")

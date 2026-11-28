@@ -4,9 +4,11 @@ import * as Actions from '../src/actions.ts'
 import type { RuntimeId } from '../src/catalog.ts'
 import { preseedGame } from '../src/company.ts'
 import { migrationCost, stepsOf } from '../src/migration.ts'
+import { setLbVariant } from '../src/components/lb.rule.ts'
+import { solveFlow } from '../src/solve.ts'
 import { step } from '../src/step.ts'
 import { Migration, NEW_ENGINEER, type Game } from '../src/state.ts'
-import { serviceOf } from '../src/team.ts'
+import { serviceOf, serviceOfKind } from '../src/team.ts'
 import * as Work from '../src/work.ts'
 
 const ok = <Value, Error>(result: Result.Result<Value, Error>): Value => Result.getOrThrow(result)
@@ -103,5 +105,106 @@ describe('a Stack migration', () => {
     const done = drain(started).game
     expect(done.nodes.find((node) => node.id === worker)?.runtime).toBe('go')
     expect(done.nodes.find((node) => node.id === server)?.runtime).toBe(before)
+  })
+})
+
+describe('Services with their own Stack', () => {
+  const carved = () => {
+    let game: Game = {
+      ...fromIdle(),
+      researched: [
+        ...preseedGame(1).researched,
+        'load-balancing',
+        'service-carve-out',
+        'lang-go',
+        'lang-node',
+        'l4-lb',
+      ],
+    }
+    game = ok(Actions.place(game, 'lb', 0, 0))
+    const lb = game.nodes.at(-1)!.id
+    game = ok(Actions.place(game, 'server', 0, 200))
+    const reads = game.nodes.at(-1)!.id
+    game = Actions.disconnect(game, 'users', 'server')
+    for (const [from, to] of [
+      ['users', lb],
+      [lb, 'server'],
+      [lb, reads],
+      [reads, 'database'],
+    ] as const)
+      game = ok(Actions.connect(game, from, to))
+    const empty = game
+    game = ok(Work.changeStack(game, reads, { runtime: 'go' }))
+    game = ok(Work.splitService(game, { kinds: ['read'], node: reads, name: 'Reads' }))
+    const item = game.backlog.find((entry) => entry.kind === 'split')!
+    game = step(ok(Work.rushItem({ ...game, devHours: 1e6 }, item.id)), 1).game
+    return { game, lb, reads, empty }
+  }
+
+  test('a new App Server serves nothing until it runs a Service', () => {
+    const { empty, lb, reads } = carved()
+    expect(empty.nodes.find((node) => node.id === reads)?.serviceId).toBeNull()
+    const flow = solveFlow(ok(setLbVariant(empty, lb, 'l4')))
+    expect(flow.nodes[reads]?.inbound ?? 0).toBe(0)
+    expect(flow.errors.misrouted).toBe(0)
+  })
+
+  test('an L7 balancer routes each kind to its Service, and an L4 one misroutes', () => {
+    const { game, lb, reads } = carved()
+    expect(serviceOfKind(game, 'read').name).toBe('Reads')
+    const l7 = solveFlow(game)
+    expect(l7.errors.misrouted).toBe(0)
+    expect(l7.nodes[reads]?.inbound).toBeCloseTo(l7.kinds.read?.rate ?? -1, 6)
+    const l4 = solveFlow(ok(setLbVariant(game, lb, 'l4')))
+    expect(l4.errors.misrouted).toBeGreaterThan(0)
+    expect(l4.kinds.read?.success ?? 1).toBeLessThan(0.95)
+  })
+
+  test('one carve-out moves every chosen kind into the new Service', () => {
+    const { empty, reads } = carved()
+    const request = { kinds: ['read', 'write'] as const, node: reads, name: 'Data' }
+    let game = ok(Work.splitService(empty, request))
+    const items = game.backlog.filter((entry) => entry.kind === 'split')
+    expect(new Set(items.map((item) => item.target))).toEqual(new Set(['read', 'write']))
+    expect(items).toHaveLength(2)
+    expect(items.reduce((sum, item) => sum + item.cost, 0)).toBeCloseTo(
+      Work.splitCost(empty, request),
+      6,
+    )
+    game = { ...game, devHours: 1e6 }
+    for (const item of items) game = ok(Work.rushItem(game, item.id))
+    game = step(game, 1).game
+    expect(serviceOfKind(game, 'read').name).toBe('Data')
+    expect(serviceOfKind(game, 'write').name).toBe('Data')
+  })
+
+  test('a Stack change migrates one Service and costs only its codebase', () => {
+    const { game, reads } = carved()
+    const reading = serviceOfKind(game, 'read')
+    const started = ok(Work.changeStack(game, reads, { runtime: 'node' }))
+    const migration = started.services.find((entry) => entry.id === reading.id)!.migration
+    if (Migration.guards.Idle(migration)) throw new Error('No migration.')
+    expect(Migration.guards.Idle(serviceOf(started).migration)).toBe(true)
+    expect(migration.total).toBeLessThan(
+      migrationCost(
+        game,
+        { runtime: 'node', framework: 'none' },
+        undefined,
+        'design',
+        serviceOf(game),
+      ),
+    )
+    let next = started
+    for (let index = 0; index < 12; index += 1) {
+      const service = next.services.find((entry) => entry.id === reading.id)!
+      if (Migration.guards.Idle(service.migration)) break
+      if (Migration.guards.Ready(service.migration))
+        next = ok(Work.shiftMigration(next, reading.id))
+      next = { ...next, devHours: 1e6 }
+      for (const item of next.backlog) next = ok(Work.rushItem(next, item.id))
+      next = step(next, 60).game
+    }
+    expect(next.nodes.find((node) => node.id === reads)?.runtime).toBe('node')
+    expect(next.nodes.find((node) => node.id === 'server')?.runtime).toBe('php_fpm')
   })
 })

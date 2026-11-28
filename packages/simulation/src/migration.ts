@@ -17,8 +17,8 @@ import {
 import { hasMutator } from './founding.ts'
 import { Refusal, setFramework, setRuntime, type Action } from './actions.ts'
 import { Migration } from './state.ts'
-import type { Game, GameNode } from './state.ts'
-import { enqueue, serviceOf, stackOf, withService } from './team.ts'
+import type { Game, GameNode, Service } from './state.ts'
+import { enqueue, nodeServiceOf, serviceOf, serviceOfId, stackOf, withServiceId } from './team.ts'
 
 export type StackTarget = Readonly<{ runtime: RuntimeId; framework: FrameworkId }>
 
@@ -108,8 +108,12 @@ export const migrationCost = (
   to: StackTarget,
   from: StackTarget = stackOf(game),
   scope: 'design' | 'worker' = 'design',
+  service: Service = serviceOf(game),
 ): number => {
-  const codebase = game.services.reduce((sum, service) => sum + service.codebase, 0)
+  const codebase =
+    scope === 'worker'
+      ? game.services.reduce((sum, entry) => sum + entry.codebase, 0)
+      : service.codebase
   const worker = scope === 'worker' ? WORKER_MIGRATION_FACTOR : 1
   return Math.max(
     0.5,
@@ -139,12 +143,18 @@ export const targetOf = (
   return { runtime, framework }
 }
 
-const serversOf = (game: Game) => game.nodes.filter((node) => node.type === 'server')
+const serversOf = (game: Game, service: Service) =>
+  game.nodes.filter(
+    (node) => node.type === 'server' && nodeServiceOf(game, node)?.id === service.id,
+  )
 
 const workersOf = (game: Game) => game.nodes.filter((node) => node.type === 'worker')
 
-const nodesOf = (game: Game, scope: 'design' | 'worker') =>
-  scope === 'worker' ? workersOf(game) : serversOf(game)
+const nodesOf = (game: Game, scope: 'design' | 'worker', service: Service = serviceOf(game)) =>
+  scope === 'worker' ? workersOf(game) : serversOf(game, service)
+
+export const migratingService = (game: Game): Service =>
+  game.services.find((service) => !Migration.guards.Idle(service.migration)) ?? serviceOf(game)
 
 const onStack = (node: GameNode, stack: StackTarget): boolean =>
   node.runtime === stack.runtime && node.framework === stack.framework
@@ -159,18 +169,25 @@ const convert = (
   stack: StackTarget,
   count: number,
   scope: 'design' | 'worker',
+  service: Service,
 ): Game => {
   let next = game
-  for (const node of nodesOf(game, scope)) {
-    if (nodesOf(next, scope).filter((entry) => onStack(entry, stack)).length >= count) break
+  for (const node of nodesOf(game, scope, service)) {
+    if (nodesOf(next, scope, service).filter((entry) => onStack(entry, stack)).length >= count)
+      break
     if (!onStack(node, stack)) next = Result.getOrElse(swap(next, node.id, stack), () => next)
   }
   return next
 }
 
-export const nodesAt = (game: Game, step: number, scope: 'design' | 'worker'): number => {
+export const nodesAt = (
+  game: Game,
+  step: number,
+  scope: 'design' | 'worker',
+  service: Service = serviceOf(game),
+): number => {
   const steps = stepsFor(scope)
-  const total = nodesOf(game, scope).length
+  const total = nodesOf(game, scope, service).length
   return step >= steps.length ? total : Math.floor(total * (steps[step - 1] ?? 0))
 }
 
@@ -185,11 +202,17 @@ const refusalFor = (migration: Migration): Action | null =>
         }),
       )
 
-export const startMigration = (game: Game, to: StackTarget): Action => {
-  const running = refusalFor(serviceOf(game).migration)
+export const startMigration = (
+  game: Game,
+  to: StackTarget,
+  service: Service = serviceOf(game),
+): Action => {
+  const running =
+    refusalFor(service.migration) ??
+    (service.id === serviceOf(game).id ? null : refusalFor(serviceOf(game).migration))
   if (running) return running
-  const from = stackOf(game)
-  const first = serversOf(game)[0]
+  const from = stackOf(game, service)
+  const first = serversOf(game, service)[0]
   if (!first) return Result.fail(Refusal.NotAllowed({ reason: 'There is no App Server.' }))
   if (from.runtime === to.runtime && from.framework === to.framework) return Result.succeed(game)
   const checked = swap(game, first.id, to)
@@ -199,18 +222,28 @@ export const startMigration = (game: Game, to: StackTarget): Action => {
     framework: to.framework,
     fromRuntime: from.runtime,
     fromFramework: from.framework,
-    total: migrationCost(game, to, from, 'design'),
+    total: migrationCost(game, to, from, 'design', service),
     step: 0,
     bugs: false,
     scope: 'design',
   })
   return Result.succeed(
-    enqueue(withService(game, { migration }), 'migration', 'step-1', trancheOf(migration, 1)),
+    enqueue(
+      withServiceId(game, service.id, { migration }),
+      'migration',
+      'step-1',
+      trancheOf(migration, 1),
+      false,
+      { service: service.id },
+    ),
   )
 }
 
 export const startWorkerMigration = (game: Game, nodeId: string, to: StackTarget): Action => {
-  const running = refusalFor(serviceOf(game).migration)
+  const running =
+    refusalFor(serviceOf(game).migration) ??
+    game.services.map((service) => refusalFor(service.migration)).find(Boolean) ??
+    null
   if (running) return running
   const node = game.nodes.find((entry) => entry.id === nodeId && entry.type === 'worker')
   if (!node) return Result.fail(Refusal.NotAllowed({ reason: 'That is not a Worker.' }))
@@ -230,13 +263,22 @@ export const startWorkerMigration = (game: Game, nodeId: string, to: StackTarget
     bugs: false,
     scope: 'worker',
   })
+  const service = serviceOf(game)
   return Result.succeed(
-    enqueue(withService(game, { migration }), 'migration', 'step-1', trancheOf(migration, 1)),
+    enqueue(
+      withServiceId(game, service.id, { migration }),
+      'migration',
+      'step-1',
+      trancheOf(migration, 1),
+      false,
+      { service: service.id },
+    ),
   )
 }
 
-export const shiftMigration = (game: Game): Action => {
-  const migration = serviceOf(game).migration
+export const shiftMigration = (game: Game, serviceId?: string): Action => {
+  const service = serviceId === undefined ? migratingService(game) : serviceOfId(game, serviceId)
+  const migration = service.migration
   if (Migration.guards.Idle(migration))
     return Result.fail(Refusal.NotAllowed({ reason: 'No migration is running.' }))
   if (!Migration.guards.Ready(migration))
@@ -245,9 +287,9 @@ export const shiftMigration = (game: Game): Action => {
   const steps = stepsOf(migration)
   const step = migration.step + 1
   const stack = { runtime: migration.runtime, framework: migration.framework }
-  const before = nodesOf(game, scope).filter((node) => onStack(node, stack)).length
-  let next = convert(game, stack, nodesAt(game, step, scope), scope)
-  const moved = nodesOf(next, scope).filter((node) => onStack(node, stack)).length > before
+  const before = nodesOf(game, scope, service).filter((node) => onStack(node, stack)).length
+  let next = convert(game, stack, nodesAt(game, step, scope, service), scope, service)
+  const moved = nodesOf(next, scope, service).filter((node) => onStack(node, stack)).length > before
   if (moved && scope === 'design' && !next.backlog.some((item) => item.ref === 'fix-bugs'))
     next = enqueue(
       next,
@@ -255,26 +297,45 @@ export const shiftMigration = (game: Game): Action => {
       'fix-bugs',
       Math.max(1, Math.round(trancheOf(migration, step) * FIX_BUGS_SHARE * 10) / 10),
       true,
+      { service: service.id },
     )
   const done = step >= steps.length
-  if (!done) next = enqueue(next, 'migration', `step-${step + 1}`, trancheOf(migration, step + 1))
-  return Result.succeed(withService(next, { migration: shifted(migration, moved) }))
+  if (!done)
+    next = enqueue(next, 'migration', `step-${step + 1}`, trancheOf(migration, step + 1), false, {
+      service: service.id,
+    })
+  return Result.succeed(withServiceId(next, service.id, { migration: shifted(migration, moved) }))
 }
 
-export const bugsFixed = (game: Game): Game =>
-  withService(game, { migration: fixed(serviceOf(game).migration) })
+export const bugsFixed = (game: Game, serviceId?: string): Game => {
+  const service = serviceId === undefined ? migratingService(game) : serviceOfId(game, serviceId)
+  return withServiceId(game, service.id, { migration: fixed(service.migration) })
+}
 
-export const cancelMigration = (game: Game): Action => {
-  const migration = serviceOf(game).migration
+export const cancelMigration = (game: Game, serviceId?: string): Action => {
+  const service = serviceId === undefined ? migratingService(game) : serviceOfId(game, serviceId)
+  const migration = service.migration
   if (Migration.guards.Idle(migration))
     return Result.fail(Refusal.NotAllowed({ reason: 'No migration is running.' }))
   if (Migration.guards.Finishing(migration))
     return Result.fail(Refusal.NotAllowed({ reason: 'Every App Server has moved. Fix its bugs.' }))
   const cleared = {
     ...game,
-    backlog: game.backlog.filter((item) => item.kind !== 'migration' && item.ref !== 'fix-bugs'),
+    backlog: game.backlog.filter(
+      (item) =>
+        !(item.kind === 'migration' || item.ref === 'fix-bugs') ||
+        (item.service !== undefined && item.service !== service.id),
+    ),
   }
   const from = { runtime: migration.fromRuntime, framework: migration.fromFramework }
-  const reverted = convert(cleared, from, nodesOf(cleared, migration.scope).length, migration.scope)
-  return Result.succeed(withService(reverted, { migration: Migration.cases.Idle.make({}) }))
+  const reverted = convert(
+    cleared,
+    from,
+    nodesOf(cleared, migration.scope, service).length,
+    migration.scope,
+    service,
+  )
+  return Result.succeed(
+    withServiceId(reverted, service.id, { migration: Migration.cases.Idle.make({}) }),
+  )
 }

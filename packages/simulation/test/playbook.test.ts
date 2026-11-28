@@ -179,7 +179,7 @@ describe('Service ownership', () => {
     }
     const billing = split.services.find((service) => service.name === 'Billing')!
     const server = split.nodes.find((node) => node.type === 'server')!
-    expect(serviceOfNode(split, server).id).toBe(split.services[0]!.id)
+    expect(serviceOfNode(split, server)?.id).toBe(split.services[0]!.id)
     const moved = Result.getOrThrow(assignService(split, server.id, billing.id))
     expect(nodesOfService(moved, billing.id).map((node) => node.id)).toEqual([server.id])
     expect(nodesOfService(moved, split.services[0]!.id)).not.toContain(

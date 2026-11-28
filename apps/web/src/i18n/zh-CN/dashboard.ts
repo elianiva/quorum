@@ -271,5 +271,6 @@ export const dashboard: Messages['dashboard'] = {
     upstream: '上游故障',
     throttled: '限流',
     duplicate: '重复扣款',
+    misrouted: '路由错误',
   },
 }

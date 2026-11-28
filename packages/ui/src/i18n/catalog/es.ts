@@ -3608,7 +3608,12 @@ export const catalog: Catalog = {
     'service-boundaries': {
       name: 'Fronteras de servicio',
       blurb:
-        'Divide un Servicio: un código nuevo con su propio equipo, sus propios despliegues y su propio radio de impacto.',
+        'Da a un Servicio su propio equipo, para que cada equipo siga siendo pequeño y coordine menos.',
+    },
+    'service-carve-out': {
+      name: 'Separar un Servicio',
+      blurb:
+        'Mueve una capacidad a un Servicio nuevo con su propio Stack, despliegues y radio de impacto.',
     },
     'service-mesh': {
       name: 'Service mesh',

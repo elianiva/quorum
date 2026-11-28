@@ -73,7 +73,7 @@ import type { Ledger } from './ledger.ts'
 import { has, isDown, maxSize, ramOf, researchReady, securityStaffed } from './lookups.ts'
 import { partsUnlocked } from './parts.ts'
 import { CACHE_HIT_LOW } from './rule-kit.ts'
-import { isBuilt } from './features.ts'
+import { isBuilt, mixOf } from './features.ts'
 import { churnOf, type ChurnRow } from './churn.ts'
 import { currentStudy, studyCount, studyOf } from './study-machine.ts'
 import { recipeOf, shapeHolds } from './studies.ts'
@@ -102,6 +102,9 @@ import {
   addIndex,
   approveBlock,
   assign,
+  assignService,
+  serviceOfNode,
+  splitService,
   createTeam,
   MAX_TEAMS,
   setTeamKind,
@@ -224,6 +227,7 @@ const POLYGLOT_PRIORITY: ReadonlyArray<ResearchId> = [
   'lang-python',
   'lang-ruby',
   'lang-node',
+  'service-carve-out',
   ...PRIORITY.slice(3),
 ]
 
@@ -449,6 +453,10 @@ const addServer = (game: Game, ledger: Ledger, model: GameNode): Game => {
   )
   if (!copy || !lb) return next
   next = copy[0]
+  next = tried(
+    next,
+    assignService(next, copy[1], serviceOfNode(next, model)?.id ?? serviceOf(next).id),
+  )
   next = tried(next, setRuntime(next, copy[1], model.runtime))
   if (RUNTIMES[model.runtime].pool)
     next = tried(next, setWorkers(next, copy[1], fittingWorkers(byId(next, copy[1]) ?? model)))
@@ -1141,6 +1149,25 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy, boost = false): Ga
     if (target && stackOf(next).runtime !== target)
       next = tried(next, changeStack(next, first.id, { runtime: target }))
   }
+  const carved = servers(next).at(-1)
+  const polyglotRuntime = LANGUAGE_RESEARCH.findLast(([id]) => has(next, id))?.[1]
+  if (
+    strategy === 'polyglot' &&
+    has(next, 'service-carve-out') &&
+    next.services.length < 2 &&
+    servers(next).length >= 2 &&
+    carved &&
+    polyglotRuntime &&
+    RUNTIMES[polyglotRuntime].language !== languageOfService(next) &&
+    (mixOf(next).search ?? 0) > 0
+  ) {
+    const emptied = tried(next, assignService(next, carved.id, null))
+    const restacked = tried(emptied, changeStack(emptied, carved.id, { runtime: polyglotRuntime }))
+    const split = splitService(restacked, { kinds: ['search'], node: carved.id, name: 'Search' })
+    if (Result.isSuccess(split)) next = split.success
+  }
+  for (const server of servers(next).filter((node) => node.serviceId === null))
+    next = tried(next, assignService(next, server.id, serviceOf(next).id))
   if (
     strategy !== 'stubborn' &&
     strategy !== 'greedy' &&

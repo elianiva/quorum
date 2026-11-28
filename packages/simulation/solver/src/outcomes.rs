@@ -481,6 +481,11 @@ impl<'a> Tree<'a> {
                 fail_some(relayed, crashes, CRASH)
             }
             component::DATABASE | component::REPLICA => self.database(node, kind),
+            component::SERVER
+                if !crate::routing::serves(&self.board.design.nodes[node], kind) =>
+            {
+                failed(MISROUTED)
+            }
             component::SERVER => self.answer_calls(node, kind),
 
             component::FN if kind == kind::JOB => {

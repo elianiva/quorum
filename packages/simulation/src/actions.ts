@@ -343,7 +343,15 @@ export const place = (
   return spend(game, priceOf(game, type), def.name, (paid) => ({
     ...paid,
     nextId: paid.nextId + 1,
-    nodes: [...paid.nodes, { ...node, parts, life: placedLife(paid, node) }],
+    nodes: [
+      ...paid.nodes,
+      {
+        ...node,
+        parts,
+        life: placedLife(paid, node),
+        ...(type === 'server' && !paid.sandbox ? { serviceId: null } : {}),
+      },
+    ],
   }))
 }
 

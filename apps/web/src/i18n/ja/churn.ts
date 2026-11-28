@@ -22,6 +22,7 @@ export const churn: Messages['churn'] = {
     upstream: '上流',
     throttled: '制限',
     duplicate: '重複',
+    misrouted: '誤ルーティング',
   },
   fixes: {
     stranded: 'この種のリクエストを受け取れるノードにリンクしてください。',
@@ -36,6 +37,7 @@ export const churn: Messages['churn'] = {
     upstream: 'プロバイダの復旧を待つか、フォールバックを用意してください。',
     throttled: 'レート制限を上げてください。',
     duplicate: '冪等キーを研究してください。',
+    misrouted: 'サービスの前に L7 ロードバランサーか API ゲートウェイを置いてください。',
     slow: '高負荷ノードにキャパシティを追加してください。',
     failed: '構造化ログを研究して、原因を確認してください。',
   },

@@ -55,7 +55,7 @@ export type RegionChurn = Readonly<{
 const MIN_POINTS = 0.002
 
 const FAILURE_FIX: Readonly<Record<ErrorCause, string>> = {
-  stranded: 'Link a Node that accepts this kind.',
+  stranded: 'Link a Node that accepts this kind, or deploy the Service that serves it.',
   dropped: 'Add capacity: a Node is past its backlog.',
   refused: 'Add a Connection Pooler: a connection limit is full.',
   down: 'Replace or restore the Node that is down.',
@@ -67,6 +67,7 @@ const FAILURE_FIX: Readonly<Record<ErrorCause, string>> = {
   upstream: 'Wait out the provider, or add a fallback.',
   throttled: 'Raise the rate limit.',
   duplicate: 'Research Idempotency keys.',
+  misrouted: 'Put an L7 Load Balancer or an API Gateway in front of the Services.',
 }
 
 const farFix = (game: Game, region: RegionId): ChurnFix => {

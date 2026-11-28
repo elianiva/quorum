@@ -11,6 +11,7 @@ export const ERROR_CAUSES = [
   'upstream',
   'throttled',
   'duplicate',
+  'misrouted',
 ] as const
 export type ErrorCause = (typeof ERROR_CAUSES)[number]
 export type Failures = Readonly<Record<ErrorCause, number>>

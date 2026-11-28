@@ -43,6 +43,7 @@ export const mailWords: Messages['mailWords'] = {
     upstream: 'un fournisseur est en panne',
     throttled: 'débit limité',
     duplicate: 'débité deux fois',
+    misrouted: 'envoyé au mauvais service',
   },
   blocked: {
     decision: 'en attente d’une décision',

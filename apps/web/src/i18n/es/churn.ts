@@ -24,6 +24,7 @@ export const churn: Messages['churn'] = {
     upstream: 'proveedor',
     throttled: 'limitado',
     duplicate: 'duplicado',
+    misrouted: 'mal enrutado',
   } satisfies Record<ChurnCause, string>,
   fixes: {
     stranded: 'Enlaza un Nodo que acepte este tipo.',
@@ -38,6 +39,7 @@ export const churn: Messages['churn'] = {
     upstream: 'Espera a que el proveedor se recupere, o añade una alternativa.',
     throttled: 'Sube el límite de peticiones.',
     duplicate: 'Investiga Claves de idempotencia.',
+    misrouted: 'Pon un Balanceador de carga L7 o un API Gateway delante de los Servicios.',
     slow: 'Añade capacidad en el Nodo más cargado.',
     failed: 'Investiga Logs estructurados para ver por qué.',
   } satisfies Record<Exclude<ChurnCause, 'far'>, string>,

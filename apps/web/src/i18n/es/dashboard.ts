@@ -285,5 +285,6 @@ export const dashboard: Messages['dashboard'] = {
     upstream: 'proveedor',
     throttled: 'limitado',
     duplicate: 'duplicado',
+    misrouted: 'mal enrutado',
   } satisfies Record<ErrorCause, string>,
 }

@@ -43,6 +43,7 @@ export const mailWords: Messages['mailWords'] = {
     upstream: 'プロバイダが落ちている',
     throttled: 'レート制限される',
     duplicate: '二重請求される',
+    misrouted: '別のサービスに送られる',
   },
   blocked: {
     decision: '決定待ち',

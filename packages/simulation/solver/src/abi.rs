@@ -162,7 +162,7 @@ pub const S_SHED: usize = 145;
 pub const S_DEGRADE: usize = 146;
 pub const SCALARS: usize = 147;
 
-pub const NODE_FIELDS: usize = 12;
+pub const NODE_FIELDS: usize = 14;
 
 pub const EDGE_FIELDS: usize = 10;
 

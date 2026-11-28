@@ -19,6 +19,7 @@ export const inspectorShared: Messages['inspectorShared'] = {
     'pm.max_requestsとワーカーキラーは、ときどき各プロセスを再起動します。リークは積み上がらず、再起動のたびにコールドから始まります。',
   compression: '圧縮',
   service: 'サービス',
+  noService: 'サービスなし',
   engine: 'エンジン',
   enginePostgres:
     'Postgres：接続100本、読み取りとスキャンが安く、検索も得意。書き込みは高く、ALTER TABLEはテーブルをロックし、死んだ行はVACUUMまで膨らみ続けます。',

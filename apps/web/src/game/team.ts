@@ -1,6 +1,6 @@
 import { Schema } from 'effect'
 import { UiSchema } from '@effect/ui'
-import { FeatureId, LanguageId, PolicyId, TeamKind } from '@quorum/simulation/state'
+import { FeatureId, LanguageId, PolicyId, RequestKind, TeamKind } from '@quorum/simulation/state'
 import * as Drag from './drag.ts'
 import type { UpdateReturnWithOutMessage } from './step.ts'
 import { RenameTarget, type Team } from './model.ts'
@@ -21,8 +21,9 @@ export const TeamMessage = UiSchema.TaggedEnum({
   FeatureQueued: { id: FeatureId },
   FeatureRemoved: { id: FeatureId },
   ServiceNamed: { name: Schema.String },
-  ServiceOwnerChosen: { teamId: Schema.String },
-  ServiceFeatureToggled: { id: FeatureId },
+  ServiceTargetChosen: { target: Schema.String },
+  ServiceKindsPicked: { kinds: Schema.Array(RequestKind) },
+  BuildInChosen: { serviceId: Schema.NullOr(Schema.String) },
   SplitChosen: {},
   ServiceMoved: { serviceId: Schema.String, teamId: Schema.String },
   DatastoreChosen: { serviceId: Schema.String, datastore: Schema.NullOr(Schema.String) },
@@ -44,9 +45,14 @@ export const TeamOutMessage = UiSchema.TaggedEnum({
   SetPolicy: { teamId: Schema.String, policy: PolicyId },
   SetKind: { teamId: Schema.String, kind: TeamKind },
   SetResearchTeam: { teamId: Schema.NullOr(Schema.String) },
-  QueueFeature: { id: FeatureId },
+  QueueFeature: { id: FeatureId, service: Schema.NullOr(Schema.String) },
   RemoveFeature: { id: FeatureId },
-  SplitService: { name: Schema.String, owner: Schema.String, features: Schema.Array(FeatureId) },
+  SplitService: {
+    name: Schema.String,
+    kinds: Schema.Array(RequestKind),
+    service: Schema.NullOr(Schema.String),
+    node: Schema.NullOr(Schema.String),
+  },
   MoveService: { serviceId: Schema.String, teamId: Schema.String },
   DatastoreService: { serviceId: Schema.String, datastore: Schema.NullOr(Schema.String) },
   Rename: { target: RenameTarget, id: Schema.String, name: Schema.String },
@@ -55,7 +61,7 @@ export type TeamOutMessage = typeof TeamOutMessage.Type
 
 export const initTeam = (): Team => ({
   drag: Drag.init(),
-  service: { name: '', owner: 'core', features: [] },
+  service: { name: '', kinds: [], target: '', buildIn: null },
   rename: null,
 })
 
@@ -79,6 +85,10 @@ const dragged = (team: Team, message: Drag.Message): TeamReturn => {
   }
 }
 
+const drafted = (team: Team, change: Partial<Team['service']>): TeamReturn => ({
+  model: { ...team, service: { ...team.service, ...change } },
+})
+
 export const updateTeam = (team: Team, message: TeamMessage): TeamReturn =>
   TeamMessage.match(message, {
     DragChanged: ({ message: child }) => dragged(team, child),
@@ -94,34 +104,27 @@ export const updateTeam = (team: Team, message: TeamMessage): TeamReturn =>
     KindChosen: ({ teamId, kind }) => out(team, TeamOutMessage.SetKind({ teamId, kind })),
     ResearchTeamChosen: ({ teamId }) => out(team, TeamOutMessage.SetResearchTeam({ teamId })),
     ResearchTeamCleared: () => out(team, TeamOutMessage.SetResearchTeam({ teamId: null })),
-    FeatureQueued: ({ id }) => out(team, TeamOutMessage.QueueFeature({ id })),
+    FeatureQueued: ({ id }) =>
+      out(team, TeamOutMessage.QueueFeature({ id, service: team.service.buildIn })),
     FeatureRemoved: ({ id }) => out(team, TeamOutMessage.RemoveFeature({ id })),
-    ServiceNamed: ({ name }) => ({
-      model: { ...team, service: { ...team.service, name } },
-    }),
-    ServiceOwnerChosen: ({ teamId }) => ({
-      model: { ...team, service: { ...team.service, owner: teamId } },
-    }),
-    ServiceFeatureToggled: ({ id }) => ({
-      model: {
-        ...team,
-        service: {
-          ...team.service,
-          features: team.service.features.includes(id)
-            ? team.service.features.filter((entry) => entry !== id)
-            : [...team.service.features, id],
-        },
-      },
-    }),
+    ServiceNamed: ({ name }) => drafted(team, { name }),
+    ServiceTargetChosen: ({ target }) => drafted(team, { target }),
+    ServiceKindsPicked: ({ kinds }) => drafted(team, { kinds }),
+    BuildInChosen: ({ serviceId }) => drafted(team, { buildIn: serviceId }),
     SplitChosen: () =>
-      out(
-        team,
-        TeamOutMessage.SplitService({
-          name: team.service.name,
-          owner: team.service.owner,
-          features: [...team.service.features],
-        }),
-      ),
+      team.service.kinds.length === 0
+        ? { model: team }
+        : out(
+            team,
+            TeamOutMessage.SplitService({
+              name: team.service.name,
+              kinds: team.service.kinds,
+              service: team.service.target.startsWith('service:')
+                ? team.service.target.slice(8)
+                : null,
+              node: team.service.target.startsWith('node:') ? team.service.target.slice(5) : null,
+            }),
+          ),
     ServiceMoved: ({ serviceId, teamId }) =>
       out(team, TeamOutMessage.MoveService({ serviceId, teamId })),
     DatastoreChosen: ({ serviceId, datastore }) =>

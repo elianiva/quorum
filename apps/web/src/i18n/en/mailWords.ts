@@ -21,6 +21,7 @@ export const mailWords = {
     upstream: 'a provider is down',
     throttled: 'rate limited',
     duplicate: 'charged twice',
+    misrouted: 'sent to the wrong Service',
   } satisfies Record<ChurnCause, string>,
   blocked: {
     decision: 'waiting on a decision',

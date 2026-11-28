@@ -40,7 +40,7 @@ import { SavesState, savesOf } from './saves-machine.ts'
 import {
   type ComponentId,
   FamilyId,
-  FeatureId,
+  RequestKind,
   Game,
   GameLink,
   GameNode,
@@ -222,8 +222,9 @@ export type Inbox = typeof Inbox.Type
 
 const ServiceDraft = Schema.Struct({
   name: Schema.String,
-  owner: Schema.String,
-  features: Schema.Array(FeatureId),
+  kinds: Schema.Array(RequestKind),
+  target: Schema.String,
+  buildIn: Schema.NullOr(Schema.String),
 })
 export type ServiceDraft = typeof ServiceDraft.Type
 

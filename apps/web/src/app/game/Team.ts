@@ -3434,10 +3434,15 @@ const floor = (model: Model, h: H<Message>): Content => {
 const stackName = (t: Messages, runtime: RuntimeId, framework: FrameworkId): string =>
   `${t.catalog.runtimes[runtime].name}${framework === 'none' ? '' : ` · ${t.catalog.frameworks[framework].name}`}`
 
-const migrationCard = (game: Game, h: H<Message>): Child => {
+const migrationCards = (game: Game, h: H<Message>): ReadonlyArray<Child> =>
+  game.services
+    .filter((service) => service.migration._tag !== 'Idle')
+    .map((service) => migrationCard(game, service, h))
+
+const migrationCard = (game: Game, service: Service, h: H<Message>): Child => {
   const t = copy(h)
 
-  const migration = serviceOf(game).migration
+  const migration = service.migration
   if (migration._tag === 'Idle') return undefined
   const shifted = stepOf(migration)
   const steps = stepsOf(migration)
@@ -3446,10 +3451,12 @@ const migrationCard = (game: Game, h: H<Message>): Child => {
   const next = steps[shifted] ?? 1
   const language = RUNTIMES[migration.runtime].language
   const brand = STACK_LOGOS[language].color ?? 'var(--group-compute)'
-  const step = game.backlog.find((item) => item.kind === 'migration')
+  const step = game.backlog.find(
+    (item) => item.kind === 'migration' && (item.service ?? serviceOf(game).id) === service.id,
+  )
   const percent = (share: number) => `${Math.round(share * 100)}%`
   return h.section
-    .key('migration')
+    .key(`migration-${service.id}`)
     .class(
       cx(
         PANEL,
@@ -3487,6 +3494,18 @@ const migrationCard = (game: Game, h: H<Message>): Child => {
               }),
             )
             .children(
+              game.services.length > 1
+                ? h.span
+                    .class(
+                      css({
+                        flexShrink: '0',
+                        fontSize: 'type.12',
+                        fontWeight: 'medium',
+                        color: 'mutedForeground',
+                      }),
+                    )
+                    .children(serviceName(t, service))
+                : undefined,
               h.span
                 .class(
                   css({
@@ -3601,13 +3620,17 @@ const migrationCard = (game: Game, h: H<Message>): Child => {
                     ),
                   button(
                     h,
-                    { onClick: Message.MigrationCancelled(), variant: 'ghost', size: 'sm' },
+                    {
+                      onClick: Message.MigrationCancelled({ serviceId: service.id }),
+                      variant: 'ghost',
+                      size: 'sm',
+                    },
                     t.team.cancel,
                   ),
                   button(
                     h,
                     {
-                      onClick: Message.MigrationShifted(),
+                      onClick: Message.MigrationShifted({ serviceId: service.id }),
                       isDisabled: !isReady(migration),
                       size: 'sm',
                     },
@@ -5431,7 +5454,7 @@ const work = (model: Model, h: H<Message>): Content => {
       ),
     )
     .children(
-      migrationCard(game, h),
+      ...migrationCards(game, h),
       heading(
         t.team.board,
         h.div

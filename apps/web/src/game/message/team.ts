@@ -24,7 +24,7 @@ export const teamCases = {
   WorkPrioritized: { id: Schema.Finite },
   WorkRushed: { id: Schema.Finite },
   AutopilotToggled: {},
-  MigrationShifted: {},
-  MigrationCancelled: {},
+  MigrationShifted: { serviceId: Schema.String },
+  MigrationCancelled: { serviceId: Schema.String },
   RolledBack: {},
 }

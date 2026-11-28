@@ -41,7 +41,6 @@ import { isOne } from '../../i18n/plural.ts'
 import { logRunAction, logResponse } from './session.ts'
 import { refusalIn } from '../../i18n/refusal.ts'
 import { say, withToast, act, nodeName, type MessageCases, type UpdateResult } from './shared.ts'
-import { serviceOf } from '@quorum/simulation/team'
 import { copyIn, type Messages } from '../../i18n/messages.ts'
 import { type Note } from './clock.ts'
 
@@ -55,8 +54,12 @@ export const migrates = (game: Game, nodeId: string): boolean =>
   )
 
 const migrationNote = (t: Messages, before: Game, after: Game): Note => {
-  const migration = serviceOf(after).migration
-  if (migration._tag === 'Idle' || serviceOf(before).migration === migration) return null
+  const migration = after.services.find(
+    (service) =>
+      service.migration._tag !== 'Idle' &&
+      before.services.find((entry) => entry.id === service.id)?.migration !== service.migration,
+  )?.migration
+  if (migration === undefined || migration._tag === 'Idle') return null
   return [t.toasts.migrationQueued(Math.round(migration.total)), 'primary']
 }
 

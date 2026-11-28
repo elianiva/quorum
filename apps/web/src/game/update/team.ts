@@ -13,7 +13,7 @@ import { ledgerOf, Model } from '../model.ts'
 import { recipeOf } from '@quorum/ui/game/pools'
 import { sharePercent } from '@quorum/ui/game/format'
 import { say, act, percent, type MessageCases, type UpdateResult } from './shared.ts'
-import { learnTargetOf, serviceOf } from '@quorum/simulation/team'
+import { learnTargetOf, serviceOfId } from '@quorum/simulation/team'
 import { stallReasonIn } from '../../i18n/format.ts'
 import { stepsOf, stepOf } from '@quorum/simulation/migration'
 import { studyStall } from '@quorum/simulation/studies'
@@ -364,10 +364,10 @@ export const teamHandlers = (model: Model): MessageCases<UpdateResult, TeamTag> 
     return { model: { ...model, board: { ...model.board, game } } }
   },
 
-  MigrationShifted: () =>
-    act(model, 'Shifted traffic', Work.shiftMigration(model.board.game), {
+  MigrationShifted: ({ serviceId }) =>
+    act(model, 'Shifted traffic', Work.shiftMigration(model.board.game, serviceId), {
       note: (game) => {
-        const migration = serviceOf(game).migration
+        const migration = serviceOfId(game, serviceId).migration
         return migration._tag === 'Idle'
           ? [say(model).toasts.migrationDone, 'ok']
           : [
@@ -379,8 +379,8 @@ export const teamHandlers = (model: Model): MessageCases<UpdateResult, TeamTag> 
       },
     }),
 
-  MigrationCancelled: () =>
-    act(model, 'Cancelled the migration', Work.cancelMigration(model.board.game), {
+  MigrationCancelled: ({ serviceId }) =>
+    act(model, 'Cancelled the migration', Work.cancelMigration(model.board.game, serviceId), {
       note: () => [say(model).toasts.migrationCancelled, 'plain'],
     }),
 

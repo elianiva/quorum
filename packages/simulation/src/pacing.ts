@@ -1166,6 +1166,17 @@ const look = (game: Game, tuning: Tuning, strategy: Strategy, boost = false): Ga
     const split = splitService(restacked, { kinds: ['search'], node: carved.id, name: 'Search' })
     if (Result.isSuccess(split)) next = split.success
   }
+  const carvedOut = next.services[1]
+  const carvedServer = carvedOut && servers(next).find((node) => node.serviceId === carvedOut.id)
+  if (
+    strategy === 'polyglot' &&
+    has(next, 'lang-go') &&
+    carvedOut &&
+    carvedServer &&
+    stackOf(next, carvedOut).runtime !== 'go' &&
+    Migration.guards.Idle(carvedOut.migration)
+  )
+    next = tried(next, changeStack(next, carvedServer.id, { runtime: 'go' }))
   for (const server of servers(next).filter((node) => node.serviceId === null))
     next = tried(next, assignService(next, server.id, serviceOf(next).id))
   if (

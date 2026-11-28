@@ -5,9 +5,17 @@ section: design
 order: 6
 ---
 
-A **Stack** is a language, a runtime variant and a framework, and every App Server and Worker runs
-one. It is a cost profile that suits some designs and fails in others. This page is the main
-application of [pillar 2: tradeoffs, not tiers](/design/01-vision#pillar-2-tradeoffs-not-tiers).
+A **Stack** is a language, a runtime variant and a framework. Each Service runs one on its App
+Servers, and the Workers run their own. It is a cost profile that suits some designs and fails in
+others. This page is the main application of
+[pillar 2: tradeoffs, not tiers](/design/01-vision#pillar-2-tradeoffs-not-tiers).
+
+Because the Stack belongs to a Service, the player chooses a language for each capability, not for
+the whole product. From Seed, `search` can run in a Rust Service for its CPU speed while new product
+Features ship in a Python Service, where they cost half the Dev Hours
+([Team: Services](/design/08-team-and-velocity#services)). Slack ran its PHP web app next to a Java
+message server for WebSockets, and Discord ran its Elixir realtime gateway next to a Python API.
+Both added the second language for one kind of work while the team was small.
 
 "PHP is slow" is true and incomplete. PHP-FPM is slow per request, but it cannot leak memory between
 requests and it deploys by copying files. Node.js is fast on I/O, but one CPU-heavy request stalls the
@@ -416,6 +424,9 @@ These scenarios are the dominance test in prose. Each runtime wins at least one.
 ## Migrations
 
 Changing a service's language is a migration. Changing a variant or framework inside the same
-language is an adoption. Both cost Dev Hours and take calendar time. During a migration, the service
-runs both versions, and traffic shifts in steps ([Team: migrations](/design/08-team-and-velocity#migrations)).
-The "big rewrite" is a real trap: it stops feature work while the competition ships.
+language is an adoption. Both cost Dev Hours and take calendar time, and both cost only the codebase
+of the Service that changes. During a migration, the service runs both versions, and traffic shifts
+in steps ([Team: migrations](/design/08-team-and-velocity#migrations)). Moving one capability into a
+Service on another language is a smaller rewrite of the moved part. Twitter did this in 2008, when
+it moved its message queue to Scala and kept Rails for the pages. The "big rewrite" of the whole
+monolith is a trap: it stops feature work while the competition ships.

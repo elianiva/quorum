@@ -162,10 +162,10 @@ Teaches: DNS is a slow, coarse load balancer. Real clients cache answers.
 
 Real products: NGINX, HAProxy, Envoy, AWS ALB and NLB.
 
-| Variant | Profile                                                                                                                                  |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| L7      | Understands HTTP. Terminates TLS, retries failed requests, and checks health. Lower capacity and 1 ms latency.                           |
-| L4      | Forwards TCP. Ten times the capacity, 0.2 ms latency, and cheaper. Cannot retry, and treats a long-lived connection as one unit of load. |
+| Variant | Profile                                                                                                                                                   |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| L7      | Understands HTTP. Terminates TLS, routes by path, retries failed requests, and checks health. Lower capacity and 1 ms latency.                            |
+| L4      | Forwards TCP. Ten times the capacity, 0.2 ms latency, and cheaper. Cannot route by path or retry, and treats a long-lived connection as one unit of load. |
 
 | Algorithm            | Behavior                                                                                                                                                                                           |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -188,6 +188,14 @@ L7 is the default: 2,000 requests a second at size 1, with a 1 ms hop. It is the
 retry. L4 carries 20,000 at size 1 in a 0.2 ms hop for 0.6× the Burn. It sends every kind and never
 retries, even with Timeouts and retries. It counts a realtime message as one message. L4 is unlocked
 by research `l4-lb` ([Progression](/design/10-progression#track-infrastructure)).
+
+An L7 balancer reads the path, so it sends each kind only to the targets whose Service serves it,
+and it fills those routes from the Services its targets run. An L4 balancer sends every kind to
+every target. Behind one Service that costs nothing. Behind two it fails as `misrouted`: put a PHP
+monolith and a Rust `search` Service behind one L4 balancer, and the `read` requests it sends to the
+Rust Nodes fail with no retry, like a 404. A kind that no target serves fails as `no route`, and the
+Churn breakdown names both causes. A target that runs no Service gets no traffic from either
+variant, because nothing listens on it ([Team: Services](/design/08-team-and-velocity#services)).
 
 A Load Balancer does not choose by kind. Every kind it receives goes on to its targets, so splitting a
 Design by kind is the [API Gateway](#api-gateway)'s job, and the Load Balancer spreads what reaches it
@@ -272,12 +280,12 @@ Real products: Kong, Envoy Gateway, AWS API Gateway, Apigee.
 
 Routes requests to services by path and kind, checks authentication, and applies rate limits. It
 takes every request kind and sends each one on the Links its route table gives it, adding its own hop.
-This is what makes a split by kind possible: page views can go to a Service built for them, and API
+With an L7 Load Balancer, it is what makes a split by kind possible: page views can go to a Service built for them, and API
 calls to another, while one Gateway stays the public front door.
 
 | Option             | Effect                                                                                                                                                                                                                                            |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Routes             | The request kinds each Link carries. Every kind goes on every Link until the player takes one out, and a Link with no kinds carries nothing.                                                                                                      |
+| Routes             | The request kinds each Link carries. Each Link starts with the kinds its target's Service serves, the player can take one out, and a Link with no kinds carries nothing.                                                                          |
 | Rate limit         | A cap in requests per second. Rejected requests fail as `throttled` and cost no downstream capacity. Protects against bursts and abusive clients.                                                                                                 |
 | Auth at the edge   | Validates tokens once, so services skip it. Adds 2 ms to the Gateway's hop, and takes 0.02 ms of CPU off each authenticated request a service answers.                                                                                            |
 | Request coalescing | Merges identical in-flight reads: 30% of `page`, `read`, `feed` and `search` ask for popular objects, and λw / (1 + λw) of them find an identical read in flight (w = 50 ms). The busier the Gateway, the more it merges, so spikes send less on. |
@@ -320,17 +328,20 @@ Its speed depends on the language: 0.93× a General box's CPU for Haskell, 0.95�
 Node can take it, not just the App Server.
 
 The App Server answers `page` and `bot` itself and turns other kinds into backend kinds
-([Simulation](/design/04-simulation#backend-kinds)). It answers whatever kind reaches it, so one
-Stack serves the whole mix. A Design that wants rendering on one Stack and API calls on another
-splits the kinds at an [API Gateway](#api-gateway): page views to a Next.js fleet behind a CDN, and
-`read` to a fleet on Fastify. That split is what the Seed Era's question asks for.
+([Simulation](/design/04-simulation#backend-kinds)). It runs one Service and answers the kinds that
+Service carries, so a new App Server serves nothing until the player deploys a Service to it
+([Team: Services](/design/08-team-and-velocity#services)). A Design that wants rendering on one
+Stack and API calls on another carves `read` out into its own Service and splits the kinds at an L7
+[Load Balancer](#load-balancer) or an [API Gateway](#api-gateway): page views to a Next.js fleet
+behind a CDN, and `read` to a fleet on Fastify. That split is what the Seed Era's question asks for.
 
 ### Worker
 
 Real products: Celery, Sidekiq, BullMQ, Oban.
 
 A Worker runs the same runtimes as an App Server, but it pulls `task` from a Queue instead of
-receiving user requests. Its latency does not count toward user latency. Its throughput decides
+receiving user requests. It keeps its own Stack apart from the Services, and background Features
+are built in its language. Its latency does not count toward user latency. Its throughput decides
 how long the queue grows.
 
 | Option      | Effect                                                                                                                                                                                           |

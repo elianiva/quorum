@@ -41,14 +41,14 @@ ramp-up, and deploys. The live game runs the Team's calendar 24× faster than th
 
 Dev Hours are spent on six kinds of work:
 
-| Work              | Examples                                                         | Section                                 |
-| ----------------- | ---------------------------------------------------------------- | --------------------------------------- |
-| Features          | Onboarding, search filters, recommendations                      | [Features](#features)                   |
-| Engineering tasks | Add an index, eager loading, idempotency keys, fix a memory leak | [Engineering tasks](#engineering-tasks) |
-| Migrations        | Change a service's language, split a service, move auth in-house | [Migrations](#migrations)               |
-| Debt paydown      | Refactoring sprints                                              | [Tech debt](#tech-debt)                 |
-| Upkeep            | Bug fixes, dependency updates, support for live Features         | [Upkeep](#upkeep)                       |
-| Spikes            | Make the running Study faster                                    | [Spikes](#spikes)                       |
+| Work              | Examples                                                                | Section                                 |
+| ----------------- | ----------------------------------------------------------------------- | --------------------------------------- |
+| Features          | Onboarding, search filters, recommendations                             | [Features](#features)                   |
+| Engineering tasks | Add an index, eager loading, idempotency keys, fix a memory leak        | [Engineering tasks](#engineering-tasks) |
+| Migrations        | Change a service's language, carve out a capability, move auth in-house | [Migrations](#migrations)               |
+| Debt paydown      | Refactoring sprints                                                     | [Tech debt](#tech-debt)                 |
+| Upkeep            | Bug fixes, dependency updates, support for live Features                | [Upkeep](#upkeep)                       |
+| Spikes            | Make the running Study faster                                           | [Spikes](#spikes)                       |
 
 Work items sit in a **backlog** with a priority order. Engineers work on the top items in parallel,
 up to one item per team at a time. An item can stop before it starts, waiting on something only the
@@ -201,46 +201,72 @@ version of Brooks's law: "adding manpower to a late software project makes it la
 
 ## Services
 
-A **Service** is a codebase with its own deploy pipeline, owned by one team. Every App Server and
-Worker belongs to a Service. The starting company has one Service: the monolith.
+A **Service** is a codebase with its own deploy pipeline and its own Stack, owned by one team. Every
+App Server belongs to a Service. The starting company has one Service: the monolith. Workers keep
+their own Stack, because they pull `task` from a Queue and serve no other kind
+([Runtimes](/design/06-runtimes)).
 
-A Service **carries Features**. The request kinds those Features put on the wire, the load they add
-and the kind they unlock, are the Service's traffic. Features that no other Service names stay with
-the starting Service, so a Company that never splits plays the same, and an old save opens on one
-Service.
+A Service **carries capabilities**. A **capability** is one Request kind and every Feature that
+unlocks it or changes its load, value, payload, or queries: `search` and Search filters are one
+capability. Kinds that no Feature brings, such as `page`, `read`, and `search`, start in the starting
+Service, so a Company that never splits plays the same, and an old save opens on one Service. A
+Feature that touches kinds in two capabilities goes with the kind it unlocks. When it unlocks none,
+the player picks.
 
-**Splitting** a service (research "Service boundaries", Series B) moves some live Features to a new
-codebase with a name and an owning team.
+A new App Server runs no Service. It serves nothing until the player deploys a Service to it, and no
+balancer sends to it, because nothing listens on it. The Garage's first App Server starts on the
+monolith, and a copy runs its source's Service.
+
+**Carving out** a Service (research "Carve out a Service", Seed) moves one capability to a new
+codebase with a name and a Stack. The player can also assign a capability to an empty App Server,
+which carves out a Service on that Node's Stack. The team that owns the source owns the new
+Service, so a carve-out adds a codebase, a deploy timer, and a blast radius, but no team. Research
+"Service boundaries" (Series B) lets the player give a Service its own team, and that is where the
+coordination gain below comes from.
 
 ```latex
 \begin{aligned}
-\text{split DH} &= 0.3 \times 0.5 \times \sum_{\text{Features moved}} \text{DH} && \qquad \text{at least 0.5 DH, to a tenth}
+\text{move DH} &= f \times 0.5 \times \sum_{\text{Features moved}} \text{DH} && \qquad \text{at least 0.5 DH, to a tenth} \\
+f &= 0.3 \quad \text{when the target Service runs the same language} \\
+f &= 1.0 / \text{velocity} \left(\text{target language}\right) \quad \text{when it does not}
 \end{aligned}
 ```
 
-The 0.3 is the migration factor for a split, and the 0.5 is the codebase's KLOC per Dev Hour. A
-split costs the same 0.3 of the moved part as the [Migrations](#migrations) table says: moving
-Checkout, 320 DH, is 48 Dev Hours. The Dev Hours go on the backlog as one **split** item, owned by
-the team the split gives the Service, and the moved code leaves the codebase it came from.
+The 0.5 is the codebase's KLOC per Dev Hour. Moving Checkout, 320 DH, into a PHP Service from a PHP
+monolith is 48 Dev Hours. Moving it into a Rust Service is a rewrite: 1.0 / 0.60 × 160 KLOC, or about
+267 Dev Hours. The Dev Hours go on the backlog as one **move** item, owned by the team that owns the
+target Service, and the moved code leaves the codebase it came from. A move into a new language is
+a language migration of that capability, so it shifts traffic in the same steps
+([Migrations](#migrations)).
+
+A **new Feature** goes to the Service the player picks, and a Feature that changes a kind another
+Service holds goes to that Service. The target Service's Stack velocity applies to the Feature's Dev
+Hours, so the same Feature costs about half as much in Python with FastAPI (1.15 × 1.30) as in Rust
+with Axum (0.60 × 1.15). Background Features (digests, exports, notifications, webhooks, push) are
+built in the language of the Workers that pull their `task`.
 
 Each Service deploys on its own timer and rolls its own bad deploy. The odds come from its owner's
 policy and its own tech debt, not the Design's. One shared CI/CD Pipeline still sets the cadence and
 strategy for every Service, so two Services on the same policy deploy about as often. The difference
 is that a bad deploy on one Service never waits behind another's and never pulls it down.
 
-Each App Server and Worker belongs to one Service: a new Node starts on the starting Service, and a
-copy stays with its source. Moving a Node to another Service reconfigures and redeploys it, so it
-recovers capacity before it serves again. The
-Team panel lists each Service's Nodes and the Load Balancers that send traffic to them. Burn is
-still reported per Service in proportion to its share of the codebase (KLOC), not from its Nodes. A
-Stack change still reaches every Node of its kind in the Design, not one Service.
+Moving a Node to another Service redeploys it on that Service's Stack, so it recovers capacity
+before it serves again. The Team panel lists each Service's Nodes and the Load Balancers that send
+traffic to them. Burn is still reported per Service in proportion to its share of the codebase
+(KLOC), not from its Nodes. A Stack change migrates one Service and the App Servers that run it.
 
-| Gain                                           | Cost                                                                                              |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Teams stay small, so coordination improves     | A network hop between services: +1 ms and serialization CPU on both sides                         |
-| Each service can pick its own Stack            | Another deploy pipeline, more Nodes, more Burn                                                    |
-| A bad deploy hits one service, not all of them | Distributed failure modes: partial outages, retries, timeouts ([Incidents](/design/11-incidents)) |
-| Each service scales on its own                 | DH for the split itself (proportional to the moved code)                                          |
+A team that owns Services in more than one language loses 10% velocity for each language past the
+first, because its engineers switch toolchains between items. Uber's 2016 account of 1,000 services
+describes the same cost at scale: engineers split into camps by language, and expertise stopped
+moving between teams.
+
+| Gain                                           | Cost                                                                                                       |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Teams stay small, so coordination improves     | A network hop between services: +1 ms and serialization CPU on both sides                                  |
+| Each service runs the Stack that suits it      | Another deploy pipeline, more Nodes, more Burn, and a velocity cost for each extra language                |
+| A bad deploy hits one service, not all of them | Distributed failure modes: partial outages, retries, timeouts ([Incidents](/design/11-incidents))          |
+| Each service scales on its own                 | DH for the move itself (proportional to the moved code)                                                    |
+| Traffic needs an L7 balancer or a Gateway      | An L4 Load Balancer in front of two Services misroutes ([Components](/design/05-components#load-balancer)) |
 
 ### Ownership
 
@@ -270,9 +296,11 @@ the checkout Service leaves `login` and `page` alone. Infrastructure incidents, 
 Database, or a Queue, still hit every Service that uses the Node.
 
 **Shared database penalty.** Services that share one database keep 50% of the coordination penalty,
-because schema changes still need agreement. This is the "distributed monolith" trap. The build
-multiplies the coordination constant `k` by 1.5 for a team whose Service shares its Database with
-another Service: two services on the starting Database pay it, and a Service that names its own
+because schema changes still need agreement between their teams. This is the "distributed monolith"
+trap. The build multiplies the coordination constant `k` by 1.5 for a team whose Service shares its
+Database with a Service another team owns. A team that owns both Services agrees with itself, so a
+carve-out on the starting Database pays nothing until "Service boundaries" gives it its own team.
+Two teams' services on the starting Database pay it, and a Service that names its own
 Database Node, such as a second one the player placed, pays nothing. Giving each service its own
 data store removes the penalty and creates the problems in
 [keeping copies in sync](/design/07-data-tier#keeping-copies-in-sync).
@@ -602,7 +630,8 @@ pays 3 days at half output, without its specialist effect, before it can boost t
 
 ## Migrations
 
-A migration changes a service's language, moves a capability between Components, or splits a service.
+A migration changes a service's language, moves a capability between Components, or moves a
+capability between Services.
 
 ```latex
 \begin{aligned}
@@ -617,12 +646,12 @@ A migration changes a service's language, moves a capability between Components,
 | Variant inside a language (FPM to Octane) | 0.1                   | Fast, with surprises (state bleed).                                                                                                          |
 | Framework inside a language               | 0.5                   |                                                                                                                                              |
 | Language change                           | 1.0                   | Multiplied by the target language's velocity inverse: rewriting into Rust costs more.                                                        |
-| Split a service                           | 0.3 of the moved part | Adds a Service with its own owner and Features ([Services](#services)).                                                                      |
+| Move a capability to another Service      | 0.3 of the moved part | In the same language. Into another language it is a language change of the moved part ([Services](#services)).                               |
 | Move auth in-house from an Auth Provider  | Fixed 120             | The Auth Provider leaves the Design. App Servers hash passwords, and the per-user fee ends.                                                  |
 | Database engine change                    | 0.8                   | Plus a data copy that takes one calendar minute per GB the Databases hold. The Database keeps serving on the old engine until the copy ends. |
 
-An App Server Stack change moves every App Server in the Design, and a split makes a new Service
-([Services](#services)). A Worker Stack change is a smaller migration of every Worker: two steps at
+An App Server Stack change moves the App Servers of one Service and costs that Service's codebase,
+and a carve-out makes a new Service ([Services](#services)). A Worker Stack change is a smaller migration of every Worker: two steps at
 40% of the cost, because no user traffic moves and the Queue can drain the old Workers. A Service
 runs one migration at a time, so a Worker migration waits for an App Server migration and the other
 way round. A language change leaves the engineers who do not know the new language at 70% of their

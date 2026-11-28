@@ -150,10 +150,13 @@ plays its [Sandbox track](/design/14-challenges#sandbox-tracks).
 - **New kinds.** `search` needs a search engine (Postgres full-text search works at low volume).
   `upload` is CPU-heavy and large. `bot` earns nothing and costs capacity.
 - **New problems.** One App Server type cannot serve all kinds well. Work must be separated: CPU work
-  to Workers through a Queue, bots blocked at the edge, payloads moved to Object Storage.
+  to Workers through a Queue, bots blocked at the edge, payloads moved to Object Storage, and a kind
+  that suits another language carved out into its own Service.
+- **New systems.** A second Service, with its own Stack, owned by the founding team
+  ([Team](/design/08-team-and-velocity#services)).
 - **New levers.** `search` and `upload`.
 - **Unlocks available.** WAF, CDN, Search Engine, Object Storage, Queue, Worker, distributed tracing,
-  Go, Java, C#.
+  Go, Java, C#, Carve out a Service.
 
 ### Era 3: Series A
 
@@ -177,7 +180,7 @@ plays its [Sandbox track](/design/14-challenges#sandbox-tracks).
   and must be asynchronous. `ai` needs GPUs or an LLM API.
 - **New problems.** Analytics and transactions must separate. GPU cost per prompt decides whether
   `ai` makes money. The team passes 15 people and coordination drops velocity.
-- **New systems.** Service splits ([Team](/design/08-team-and-velocity#services)), data pipelines.
+- **New systems.** A team per Service ([Team](/design/08-team-and-velocity#services)), data pipelines.
 - **New levers.** `job`, `report`, and `ai`.
 - **Unlocks available.** Data Warehouse, Event Stream, CDC Connector, GPU Node, LLM API, Vector Index,
   Service Mesh, sharding, ARM instances.
@@ -752,6 +755,7 @@ it already runs, with no per-Node commitment. These five numbers are the game's 
 | `dev-environment`     | Reproducible dev env    | Pre-seed | 300       | `ci`                       | Ramp-up −50%                                         |
 | `static-analysis`     | Static analysis         | Pre-seed | 180       | `ci`                       | Bad-deploy chance −20%                               |
 | `ab-testing`          | A/B testing             | Seed     | 700       | `funnels`, `feature-flags` | Measures each Feature's lift against a holdout group |
+| `service-carve-out`   | Carve out a Service     | Seed     | 600       | None                       | Moves one capability to a new Service and Stack      |
 | `hiring-pipeline`     | Hiring pipeline         | Seed     | 600       | None                       | Time to hire −30%                                    |
 | `trunk-based`         | Trunk-based development | Seed     | 800       | `ci`                       | Deploy frequency +50%                                |
 | `build-cache`         | Build cache             | Seed     | 600       | `ci`                       | Build minutes −25%                                   |
@@ -759,7 +763,7 @@ it already runs, with no per-Node commitment. These five numbers are the game's 
 | `sre-team`            | SRE team                | Series A | 4,000     | `on-call`                  | Team type                                            |
 | `formal-verification` | Formal verification     | Series A | 5,000     | `testing-culture`          | Velocity −15%, bad-deploy chance −50%                |
 | `checkout`            | Checkout                | Series A | 1,500     | None                       | Payment Provider and the Checkout Feature            |
-| `service-boundaries`  | Service boundaries      | Series B | 15,000    | None                       | Split a Service                                      |
+| `service-boundaries`  | Service boundaries      | Series B | 15,000    | `service-carve-out`        | Gives a Service its own team                         |
 | `data-team`           | Data team               | Series B | 10,000    | `data-warehouse`           | Team type                                            |
 | `enterprise-sales`    | Enterprise sales        | Series B | 20,000    | None                       | Signs the SLA: a missed week costs SLA credits       |
 | `investor-relations`  | Investor relations      | Pre-IPO  | 300,000   | None                       | Valuation multiple +2                                |

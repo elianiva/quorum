@@ -76,7 +76,7 @@ The Nodes and Links on all Boards of a Company.
 _Avoid_: topology, blueprint, layout, architecture
 
 **Stack**:
-The language, runtime variant, and framework that an App Server or Worker runs.
+The language, runtime variant, and framework that a Service runs on its App Servers, or that a Worker runs.
 _Avoid_: tech, build, loadout
 
 **Instance type**:
@@ -192,8 +192,12 @@ A Component that serves AI prompts in tokens per second; cheaper per prompt than
 _Avoid_: inference server, GPU box
 
 **Service**:
-A codebase with its own deploy pipeline, owned by one Team. Every App Server and Worker belongs to one.
+A codebase with its own deploy pipeline and Stack, owned by one Team. Every App Server runs one, and a new App Server runs none until the player deploys one to it.
 _Avoid_: app, microservice, group
+
+**Capability**:
+One Request kind and every Feature that unlocks it or changes it. It is what moves between Services, so `search` and Search filters move together.
+_Avoid_: domain, module, feature set
 
 **Playbook**:
 A saved part of a Design that the player can place in one action. Playbooks survive Exits.

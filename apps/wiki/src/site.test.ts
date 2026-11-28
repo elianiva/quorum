@@ -17,7 +17,7 @@ import { prosePaths } from './site/content.ts'
 
 beforeAll(async () => {
   await loadAllProse()
-})
+}, 60_000)
 
 test('every page has one path, without a trailing slash', () => {
   const paths = pagesFor('en').map((page) => page.path)

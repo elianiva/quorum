@@ -193,13 +193,13 @@ An L7 balancer reads the path, so it sends each kind only to the targets whose S
 and it fills those routes from the Services its targets run. An L4 balancer sends every kind to
 every target. Behind one Service that costs nothing. Behind two it fails as `misrouted`: put a PHP
 monolith and a Rust `search` Service behind one L4 balancer, and the `read` requests it sends to the
-Rust Nodes fail with no retry, like a 404. A kind that no target serves fails as `no route`, and the
+Rust Nodes fail with no retry, like a 404. A kind that no target serves fails as `stranded`, and the
 Churn breakdown names both causes. A target that runs no Service gets no traffic from either
 variant, because nothing listens on it ([Team: Services](/design/08-team-and-velocity#services)).
 
-A Load Balancer does not choose by kind. Every kind it receives goes on to its targets, so splitting a
-Design by kind is the [API Gateway](#api-gateway)'s job, and the Load Balancer spreads what reaches it
-across the copies behind it.
+A Load Balancer never splits by a rule the player writes. An L7 one follows the Services its
+targets run, and spreads each kind across the copies that serve it. Sending one kind down a chosen
+Link, whatever the Services behind it, is the [API Gateway](#api-gateway)'s job.
 
 Sticky sessions are a switch on the card. With it on, 40% of the Load Balancer's traffic belongs to
 users already pinned to a target, whatever the algorithm would send now. The other 60% follows the

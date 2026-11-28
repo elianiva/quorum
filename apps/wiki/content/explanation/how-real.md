@@ -104,7 +104,7 @@ from those exact operations. That is how the server can replay a Challenge and c
 
 ## What the game simplifies
 
-- **Services.** A Service is a codebase owned by one team. The coordination cost of a shared database
+- **Services.** A Service is a codebase with one Stack, owned by one team. A carve-out moves whole request kinds, not code paths inside one kind. The coordination cost of a shared database
   is the team size penalty, not a model of the database. See [Conway's law](/glossary/conways-law).
 - **Feature Flags.** A flag sets the share of users a Feature reaches. Nothing removes a Feature's
   code afterwards, so flags never pile up as they do in a real codebase. See

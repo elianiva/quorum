@@ -29,16 +29,19 @@ Each team makes Dev Hours by this rule:
 An engineer works an 8-hour day. At 1× speed, one Team day passes in one real minute, so one
 engineer makes 8 DH a minute.
 
-Stack velocity comes from the language and framework of your App Servers, weighted by the traffic
-each one serves. A convention-heavy framework such as Rails or Laravel raises it, and Rust lowers it.
+Stack velocity comes from the language and framework of the Service a team owns, so a team on a
+Laravel monolith ships faster than one on a Rust search Service. A convention-heavy framework such as
+Rails or Laravel raises it, and Rust lowers it. A team that owns Services in two languages pays for
+the switching: each extra language it keeps in its head slows its output.
 The [Runtimes](/runtimes) pages list each Stack's velocity. A fast runtime can save servers and cost
 engineer time, and a productive one does the reverse.
 
 ## Hiring takes Cash and time
 
 A hire costs a one-time signing fee in Cash, and after that the salary adds to your Burn every
-second. Both scale with the Era and with the language's salary factor. You always hire for the
-language your Service runs, and a rare language such as Elixir or Rust takes longer to hire for.
+second. Both scale with the Era and with the language's salary factor. You pick the language of
+each hire from the languages your App Servers run, and a rare language such as Elixir or Rust takes
+longer to hire for.
 
 A new hire works at 30% for their first Team week. Rails conventions halve that ramp, and with no
 framework, tech debt stretches it. A layoff refunds nothing. It ends the salary, and the rest of the
@@ -85,8 +88,8 @@ structured framework such as Symfony, Spring Boot, or NestJS lowers the penalty 
 :::Note{tone="real"}
 The second term comes from Neil Gunther's Universal Scalability Law, which also describes servers
 that slow down as you add cores. Real companies split into small teams for the same reason, and a
-Service in Quorum works the same way. A Service is a codebase one team owns, and a split moves
-Features to a new Service with its own team, deploys, and bad deploys. See
+Service in Quorum works the same way. A Service is a codebase one team owns, with its own Stack,
+deploys, and bad deploys. Handing a Service to its own team is where the split pays off. See
 [Conway's law](/glossary/conways-law).
 :::
 
@@ -97,7 +100,8 @@ A team of eight engineers stops. Each item the team starts waits for you, and it
 at nine people.
 
 Approve an item to let it move, but the next item waits too. The real answer is a smaller team, so
-move some engineers to another team or split the Service.
+move some engineers to another team. Once you own [Service boundaries](/research/service-boundaries),
+hand that team a Service of its own, so both teams have work.
 
 Nine engineers do less than eight, which is why the stop comes before the drop. Coordination grows
 faster than headcount, and effort per person falls as a group grows. Your ninth engineer adds less
@@ -183,9 +187,34 @@ your Kubernetes Clusters and the pipeline instead. Without one, each live Cluste
 engineer's Dev Hours from your product teams. A staffed Platform team removes that tax, keeps Clusters
 on a supported version, and halves deploy time.
 
+## Carving out a Service
+
+A Service is a codebase with one Stack, and every App Server runs one Service or none. You start
+with one, the monolith, and every kind of request runs on it. Real companies split for two reasons
+at two different sizes. Early on, one capability wants a different runtime: search is CPU-bound and
+runs far better on Go or Rust than on PHP. Later, the team is too big to share one codebase. Quorum
+unlocks the two at different Eras.
+
+[Carve out a Service](/research/service-carve-out) does the first. Place an App Server, set its Stack
+in the Inspector, and leave its **Service** empty. Then open **Carve out a capability** on the Team
+panel, pick the kinds to move on the traffic bar, and pick that App Server as the target. The kinds
+and the Features that touch them move to a new Service on that Stack once the split items ship.
+Carving onto the same language costs little. A new language means rewriting that code, so it costs
+much more.
+
+The team that owned the monolith owns the new Service too. That keeps the carve-out cheap, but the
+team now ships in two languages and pays for it in velocity. [Service
+boundaries](/research/service-boundaries) lets you hand the Service to a team of its own.
+
+A carve-out changes how traffic moves. An App Server only answers the kinds its Service serves, and
+an empty one answers nothing. An L7 [Load Balancer](/components/lb) and an [API
+Gateway](/components/gw) read each request and send it to a Service that serves it. An L4 Load
+Balancer cannot, so behind it some requests land on the wrong Service and fail as `misrouted`.
+
 ## Migrations
 
-Changing your Service's Stack starts a migration. Its Dev Hours grow with the codebase, and a
+Changing a Service's Stack starts a migration of that Service. Its Dev Hours grow with its own
+codebase, so a small carved-out Service changes Stack far more cheaply than the monolith. A
 language change costs the most. Traffic moves in four steps: 5%, 25%, 50%, then 100%. Requests on the
 new Stack fail 3% of the time until you fix its bugs, and Features build at half speed meanwhile. This
 is the [strangler pattern](/glossary/strangler-pattern). See

@@ -34,8 +34,8 @@ longer and the spike grows by half.
    Database.
 3. Select it and select **Larger**, or press **U**. Larger capacity helps at once, after a short
    restart.
-4. If the App Server is red, place a second copy behind the Load Balancer instead, so that no
-   restart drops traffic.
+4. If the App Server is red, duplicate it behind the Load Balancer instead, so that no restart
+   drops traffic. A duplicate runs the same Service, and a newly placed App Server runs none.
 5. If you own [Priority load shedding](/research/load-shedding), open the **Overload** section of
    each App Server and select **Shed low value**, so that a saturated App Server drops the
    lowest-value kinds first, starting with bots.
@@ -67,7 +67,8 @@ order of cost.
    place a [CDN](/components/cdn) in front of the App Servers, which answers cacheable pages and
    media without your servers.
 4. **Spread App Servers.** Use a [Load Balancer](/components/lb) with two or more copies of the App
-   Server. A second copy adds headroom with no restart, and it also survives an instance failure.
+   Server. Duplicate it so the copy runs the same Service. A second copy adds headroom with no
+   restart, and it also survives an instance failure.
 5. **Scale with demand.** Research [Autoscaling](/research/autoscaling). Link the App Servers into
    an [Autoscaler](/components/autoscaler), and set its **min** to the copies you need at the peak.
    The minimum keeps copies warm, so the spike meets capacity that already runs.

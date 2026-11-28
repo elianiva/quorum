@@ -11,7 +11,7 @@ The Load Balancer spreads requests across your App Servers, or queries across a 
 
 It spans every zone, so a zone outage does not take it down. Every request kind comes in and goes on, and an L4 one also passes on every query kind, so it can sit in front of a [Database](/components/database) and its [Read Replicas](/components/replica). An L7 one reads HTTP and refuses queries. It adds a little latency, and each size step doubles its throughput limit.
 
-By default it splits traffic by each target's capacity, so a large App Server gets a larger share. It drops a dead host at its next [health check](/glossary/health-check). It sends every kind it receives to every target, so an [API Gateway](/components/gw) in front is what sends page views and API calls to different server groups.
+By default it splits traffic by each target's capacity, so a large App Server gets a larger share. It drops a dead host at its next [health check](/glossary/health-check). An L7 one reads each request and sends each kind only to the App Servers whose Service serves it, so it splits a monolith from a carved-out Service on its own. An L4 one sends every kind to every target, so behind two Services some requests fail as `misrouted`. Neither sends traffic to an App Server that runs no Service. To send a kind down a Link you choose, use an [API Gateway](/components/gw).
 
 ## Options
 
@@ -53,4 +53,5 @@ Health checks can cause outages as well as prevent them. Real teams keep deep ch
 ## Tips
 
 - Use least connections when App Servers have mixed sizes or runtimes.
-- Route slow kinds, such as exports, to their own App Servers.
+- Route slow kinds, such as exports, to their own App Servers by carving them out into their own Service.
+- Keep L7 in front of App Servers that run more than one Service.

@@ -72,9 +72,9 @@ The header shows your Dev Hours balance, its rate per minute, and the payroll pe
 
 The floor shows one card per Team. Each card lists its engineers, starting with **Founder** (labelled "You"). Each engineer shows a salary per second, or **Ramping** while they are new.
 
-1. Select **Hire** on an empty seat. The seat's label names the language, for example "Hire Python engineer for $x". It reads **Locked** until Pre-seed, and it is greyed when you cannot pay the signing cost.
+1. Select **Hire** on an empty seat. A Team shows one seat for each language your App Servers run, and the label names it, for example "Hire Python engineer for $x". It reads **Locked** until Pre-seed, and it is greyed when you cannot pay the signing cost.
 2. To move an engineer, drag them to another Team, or use the move button on their card.
-3. To teach an engineer the language your Service runs, or the one a migration is moving to, hover their card and use its **Learn** button. The button shows the language and the price. The engineer works at half speed until their ring fills, then takes the language. The button is greyed when you cannot pay.
+3. To teach an engineer the language a Service runs, or the one a migration is moving to, hover their card and use its **Learn** button. The button shows the language and the price. The engineer works at half speed until their ring fills, then takes the language. The button is greyed when you cannot pay.
 4. To lay someone off, hover their card and use its **Lay off** button.
 5. Select **New team** to add a Team. A Team has a kind: Product, Platform, SRE, Data or Security.
 
@@ -86,10 +86,20 @@ A team of eight engineers stops starting work. Every item it starts waits for yo
 
 The Board has four columns: **Up next**, **In progress**, **Shipping** and **Live**.
 
-1. Find a tile under **Features**. Select **Build** to add it to the backlog.
+1. Find a tile under **Features**. Select **Build** to add it to the backlog. With more than one Service, the **Build in** list above the tiles picks the Service whose codebase gets the Feature.
 2. Watch it move to **In progress**. Teams spend Dev Hours on it.
 3. A finished item waits in **Shipping**. The deploy card says **Deploy in** and a time, then the Feature goes **Live**.
 4. Use the lightning button on a backlog item to **Rush** it with Dev Hours. Rushed work finishes now and adds tech debt to its Service. From Pre-seed, a rushed Feature makes its deploy likelier to ship a bug. Use **Cancel** to drop it.
+
+### Carve out a capability
+
+From Seed, with [Carve out a Service](/research/service-carve-out), a Service card has a **Carve out a capability** fold. It moves request kinds out of a Service and onto an App Server, so they run on that App Server's Stack.
+
+1. Place an App Server and set its Stack. Leave its **Service** empty.
+2. Open the fold. The traffic bar shows each request kind's share, and the legend groups the kinds by the Service that serves them.
+3. Select the kinds to move in the legend.
+4. Under **From** and **To**, pick the Service to take them from and where they go. An empty App Server makes a new Service, and you name it.
+5. Select **Carve out**. The button shows the Dev Hours price, and the line under it shows the share of traffic and the code that moves. The work goes on the backlog.
 
 Under **Engineering**, select **Queue** on a tile to pay down tech debt or fix a leak. The row appears when something needs fixing.
 

@@ -38,7 +38,7 @@ below.
 
 | Full gauge                 | What it means                                                            | Fix                                                                                                    |
 | -------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| CPU                        | The Node does too much work per request.                                 | Select **Larger**, or place a second copy behind a [Load Balancer](/components/lb).                    |
+| CPU                        | The Node does too much work per request.                                 | Select **Larger**, or duplicate it behind a [Load Balancer](/components/lb).                           |
 | Workers busy, with CPU low | Each request holds a worker while it waits for a slower Node downstream. | Fix the Node that the requests wait for. Or select **More workers** if **RAM fits** a larger pool.     |
 | RAM                        | The process is near its memory limit.                                    | Select **Fewer workers**, select **Larger**, or pick the **Memory** family.                            |
 | CPU credits                | A Burstable box spent its credits and runs at a fraction of its CPU.     | Pick the **General** or **Compute** family.                                                            |
@@ -59,7 +59,7 @@ for each question, and each block's **Why?** link opens its part of this page.
 
 **Load change** compares the Node now with one calendar hour earlier.
 
-- **More traffic** means demand grew. Capacity is the fix: a larger size, a second copy behind a
+- **More traffic** means demand grew. Capacity is the fix: a larger size, a duplicate behind a
   [Load Balancer](/components/lb), or a [Cache](/components/cache) in front so fewer requests arrive.
 - **Each request costs more** means the same requests got heavier. More capacity hides it until
   traffic grows again, so read the **Cost per request** block to find what changed.

@@ -39,27 +39,30 @@ Fast-shipping frameworks cost CPU, and Laravel, Rails, and Django send
 3. Do the same in the **Framework** section. It lists only frameworks for the runtime's language.
 4. A greyed option needs Research. Its tooltip names the Research that unlocks it.
 
-Also compare the language's salary and time to hire. You hire engineers for the language of your
-service, so a rare language makes the Team more expensive and slower to grow. Engineers who do not
+Also compare the language's salary and time to hire. You hire engineers for the languages your App
+Servers run, so a rare language makes the Team more expensive and slower to grow. Engineers who do not
 know the new language work slower until you train them, which is cheaper than laying them off and
 hiring again. See [Team and velocity](/explanation/team-and-velocity).
 
 ## Start the migration
 
-In a Company, switching Stack starts a migration of the whole service.
+In a Company, switching Stack on an App Server starts a migration of the Service it runs, and only
+that Service. Each Service keeps its own Stack, so the monolith can stay on PHP while a carved-out
+search Service runs Go. An empty App Server, one whose **Service** is empty, switches at once with no
+migration.
 
-1. Select the new runtime or framework on any App Server. The first time you pick from a section,
+1. Select the new runtime or framework on an App Server that runs the Service. The first time you pick from a section,
    the Tradeoff card stays open. Click **Confirm** on it. The game starts a migration and puts its
    first step on the Team backlog.
 2. Press **T** to open the Team panel. A migration card at the top shows the old and new Stack.
 
-The cost in Dev Hours depends on how large the change is and on your codebase: a runtime of the same
+The cost in Dev Hours depends on how large the change is and on that Service's codebase: a runtime of the same
 language costs least, a framework costs more, and a new language costs most of all, especially one
 that ships slowly.
 
 ## Shift traffic in steps
 
-The migration moves App Servers to the new Stack in four steps: 5%, 25%, 50%, and 100%. This is the
+The migration moves the Service's App Servers to the new Stack in four steps: 5%, 25%, 50%, and 100%. This is the
 [strangler pattern](/glossary/strangler-pattern).
 
 1. Wait until the card shows **Ready**. The Team has built the step.
@@ -78,6 +81,11 @@ during an incident.
 :::
 
 ## Smaller changes
+
+You do not always need to move the whole monolith. If one capability wants another runtime, such
+as search on Go, place an App Server, set its Stack while it is empty, and carve that capability
+out onto it from the Team panel. See
+[Carving out a Service](/explanation/team-and-velocity#carving-out-a-service).
 
 You do not always need a new language:
 

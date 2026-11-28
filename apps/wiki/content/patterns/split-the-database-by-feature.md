@@ -40,4 +40,4 @@ A query that joins across the split no longer works. The app has to call both si
 
 ## In Quorum
 
-Draw it as above, with one Link setting that carries only some request kinds from a [Load Balancer](/components/lb). Separate codebases and teams come with [Service boundaries](/research/service-boundaries). The pattern is on [Federation](/patterns/federation), and the opposite move, spreading one table, is [Sharding](/patterns/sharding). The next step moves slow work off the request: [Slow work to a queue and workers](/patterns/slow-work-to-a-queue-and-workers).
+Draw it as above, with one Link setting that carries only some request kinds from a [Load Balancer](/components/lb). Separate codebases come with [Carve out a Service](/research/service-carve-out), and a team of their own with [Service boundaries](/research/service-boundaries). The pattern is on [Federation](/patterns/federation), and the opposite move, spreading one table, is [Sharding](/patterns/sharding). The next step moves slow work off the request: [Slow work to a queue and workers](/patterns/slow-work-to-a-queue-and-workers).

@@ -29,6 +29,7 @@ research splits that number by cause:
 - `upstream`: a managed service, such as the Payment Provider, failed.
 - `throttled`: a rate limit rejected the request.
 - `duplicate`: a retried checkout charged a card twice.
+- `misrouted`: an L4 Load Balancer sent a kind to a Service that does not serve it.
 
 With the split, "errors are up" becomes a question you can answer.
 

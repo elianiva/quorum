@@ -3,12 +3,13 @@ The App Server stands for a virtual machine that runs your code.
 ## When to place it
 
 - Add a copy, or a size step, when its card shows CPU, workers, or memory near full and p99 climbs.
-- Put a [Load Balancer](/components/lb) in front before the second copy.
+- Put a [Load Balancer](/components/lb) in front before the second copy. Duplicate the App Server so the copy runs the same Service, because a newly placed one runs none.
+- Place one for a carve-out when a capability, such as search, wants a different Stack from the monolith.
 - Fix the backends first when the limit is workers while CPU is low: the box is waiting on them. See [Find the bottleneck](/guides/find-the-bottleneck).
 
 ## How it works
 
-It answers page views and bots itself, and turns every other request kind into backend calls: read and write queries, auth calls, tasks, charges, and more. Its capacity depends on its instance type, its [runtime, and its framework](/runtimes). The tightest of four limits sets it: CPU, worker slots, memory, and network.
+It runs one Service, or none, and answers only the request kinds that Service serves. An empty App Server answers nothing. It answers page views and bots itself, and turns every other request kind into backend calls: read and write queries, auth calls, tasks, charges, and more. Its capacity depends on its instance type, its [runtime, and its framework](/runtimes). The tightest of four limits sets it: CPU, worker slots, memory, and network.
 
 CPU and memory are **Parts**. After **Custom instances**, a new Node outside the guided Sandboxes starts with empty Slots. The shop's Parts catalog sells a bigger CPU or a different memory kit, and its Instance catalog installs a preset bundle at the same Part prices. The card shows the installed pair. A [Database](/components/database) also has a Disk Slot for its volume, and needs it before it serves.
 
@@ -30,7 +31,7 @@ The Stack is the language, its runtime, and the framework. It sets how the box s
 - **Process manager**: PHP-FPM keeps a pool of worker processes, and the process manager decides which of them stay running. Static keeps the whole pool resident, so no request waits for a fork, and the box holds that memory even when idle. Dynamic keeps the busy workers plus two spares, so a burst makes a small share of requests wait a moment for a fork. On demand keeps only the busy workers, so idle RAM is lowest and more requests wait. Pick Static when RAM is spare, Dynamic for most Designs, and On demand when memory is the limit and the tail can wait.
 - **Recycle workers**: restarts each process now and then. It caps a memory leak before the process runs out, and every restart comes back cold. Turn it on for a runtime that keeps memory between requests. A persistent runtime leaks in proportion to the requests it serves, so a busy box needs it sooner.
 - **Compression**: Gzip on the responses that shrink well. It cuts their size, the egress they bill, and the time they take to reach a user, and it costs CPU on each one. Uploads and media do not shrink.
-- **Service**: which Service the Node belongs to. It appears once the app splits into more than one Service.
+- **Service**: the Service the Node runs. A newly placed App Server starts with none and gets no traffic until you pick one. Pick **No Service** to empty it, set a new Stack, and carve a capability out onto it from the Team panel.
 
 ### Garbage collection
 

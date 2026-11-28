@@ -126,8 +126,9 @@ time the game state makes it useful.
   the amber of the cross-zone rails. A link into a global Component pays no place, so it shows no
   plate.
 - From Series C, each region is a tab with its own board.
-- Services: a Service is tied to the Features it carries, not to a box of Nodes. The Team panel shows
-  the Services and splits one (see [Panels](#panels)).
+- Services: a Service is a codebase with its own Stack, and each App Server runs one Service or
+  none. The Team panel shows the Services and carves capabilities out of them (see [Panels](#panels)),
+  and the Inspector's **Service** select deploys one to an App Server.
 
 ### Tidy by role column
 
@@ -273,34 +274,45 @@ Rule: no action needs more than five repeated clicks without a bulk alternative.
 
 ## Panels
 
-| Panel     | Opens with   | Contents                                                                                                                               |
-| --------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Inspector | Click a Node | All numbers for the Node, its Parts, options, history, and Tradeoff cards                                                              |
-| Research  | `R`          | The tree by track, the Insight bottleneck, and its lever ([Research screen](#research-screen))                                         |
-| Dashboard | `D`          | Charts over time, with its template variables, compare line and table view ([Observability](/design/12-observability#the-dashboard))   |
-| Team      | `T`          | Teams, engineers, the Services and the split, the backlog, policies, each Team's morale, DORA metrics, and the levers its Features own |
-| Cost      | `$` only     | Burn by line, Revenue, and the margin ([Economy](/design/09-economy#the-cloud-bill))                                                   |
-| Inbox     | `I`          | Mail: advice, offers, and reports ([Mail](/design/18-mail))                                                                            |
-| Incidents | `D`          | The running Incident and its Postmortems with their three times, as a Dashboard row ([below](#company-and-incidents-panels)).          |
-| Company   | `D`          | Cash, runway, the Team's shape, and the funding history, as a Dashboard row ([below](#company-and-incidents-panels))                   |
-| Churn     | Users on HUD | The [Churn breakdown](/design/12-observability#the-churn-breakdown) by region                                                          |
+| Panel     | Opens with   | Contents                                                                                                                                   |
+| --------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Inspector | Click a Node | All numbers for the Node, its Parts, options, history, and Tradeoff cards                                                                  |
+| Research  | `R`          | The tree by track, the Insight bottleneck, and its lever ([Research screen](#research-screen))                                             |
+| Dashboard | `D`          | Charts over time, with its template variables, compare line and table view ([Observability](/design/12-observability#the-dashboard))       |
+| Team      | `T`          | Teams, engineers, the Services and the carve-out, the backlog, policies, each Team's morale, DORA metrics, and the levers its Features own |
+| Cost      | `$` only     | Burn by line, Revenue, and the margin ([Economy](/design/09-economy#the-cloud-bill))                                                       |
+| Inbox     | `I`          | Mail: advice, offers, and reports ([Mail](/design/18-mail))                                                                                |
+| Incidents | `D`          | The running Incident and its Postmortems with their three times, as a Dashboard row ([below](#company-and-incidents-panels)).              |
+| Company   | `D`          | Cash, runway, the Team's shape, and the funding history, as a Dashboard row ([below](#company-and-incidents-panels))                       |
+| Churn     | Users on HUD | The [Churn breakdown](/design/12-observability#the-churn-breakdown) by region                                                              |
 
 ### The Services card
 
 The Team panel opens with the Company's Services ([Services](/design/08-team-and-velocity#services)),
 one row per codebase. A row carries its name, a badge naming the team that owns it, its KLOC, tech
 debt and Burn, and the Features it carries. Burn is its share of the Company's total Burn, in
-proportion to its share of the codebase, because no Node belongs to a Service. The row rings when an
+proportion to its share of the codebase. The row rings when an
 incident names it, and a `Paged` badge marks the Service whose code broke. The starting Service's
-row says it carries every Feature no other Service names, so a Company with one Service shows one
-row and no split form. With more than one team, each row also holds a **Move to** select: choosing
-another team moves the Service there at once ([Ownership](/design/08-team-and-velocity#ownership)).
+row says it carries every Feature no other Service names. With Service boundaries and more than one
+team, each row also holds a **Move to** select. Choosing another team queues a handoff on the
+backlog, and the Service changes hands when it ships
+([Ownership](/design/08-team-and-velocity#ownership)).
 
-With Service boundaries, the card holds the split's form: a name, a select of the teams, and a chip
-per live Feature no other Service carries. The button says what the split costs (`Split · 48 DH`),
-and while the form breaks a rule, such as moving nothing, it is disabled and says why. The split
-takes effect at once, so the new row appears with its owner, and its Dev Hours arrive on the backlog
-as a split item the owner's team builds. The Dashboard's Service drop-down narrows the per-kind panels to that Service's kinds
+With Carve out a Service, the card holds a **Carve out a capability** fold. It opens on a traffic
+bar: one slice per kind the Company serves, sized by its share of traffic and drawn in the kind's
+packet color. Under the bar, a legend groups the kinds by the Service that serves each one, under
+that Service's stack logo. The player picks kinds by clicking a slice or a legend entry, and a
+picked slice lifts out of the bar. A **From** row shows the source Service with a dot per picked
+kind, and a **To** list shows each target as a card with its stack logo: the other Services, and
+every empty App Server with a `New` badge. Picking an empty App Server opens a name field under its
+card. The button says what the carve-out costs (`Carve out · 4.3 DH`), with the picked kinds' share
+of traffic and KLOC beside it, and while the form breaks a rule it is disabled and says why. A
+carve-out onto an empty App Server makes the new Service at once, and each picked kind arrives on
+the backlog as its own split item; a kind moves when its item ships.
+
+Above the Features tiles, a **Build in** select appears once the Company has two Services. It sets
+which Service the next queued Feature is built in, and each tile's Dev Hours follow that Service's
+Stack. The Dashboard's Service drop-down narrows the per-kind panels to that Service's kinds
 ([Observability](/design/12-observability#the-dashboard)).
 
 Each Team card carries a **Morale** row. It shows that team's morale and the mood of its engineers.

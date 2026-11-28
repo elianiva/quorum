@@ -23,13 +23,13 @@ An API Gateway sends each request kind to one of two App Servers. Both call the 
 
 ## Why it works
 
-Each App Server stands for a Service, so a bad deploy of one breaks only its own kinds. The mesh puts a sidecar beside each member. That adds mutual TLS, retries and a circuit breaker to every Link out of it, and per-Link metrics, even before the matching research. A Link you set yourself keeps your policy.
+Each App Server runs one Service, so a bad deploy of one breaks only its own kinds. The mesh puts a sidecar beside each member. That adds mutual TLS, retries and a circuit breaker to every Link out of it, and per-Link metrics, even before the matching research. A Link you set yourself keeps your policy.
 
 The sidecar rides in the pod, so a Service must run in a Cluster first. The game refuses the link otherwise.
 
 ## What it costs
 
-The mesh adds latency to each hop and takes a share of the member's CPU, and it bills a share of its members' Burn. The Cluster and the mesh each take Dev Hours from the product Teams unless a Platform team runs them. In a Company a new Service also needs [Service boundaries](/research/service-boundaries), a Team and a deploy pipeline of its own. The picture here only splits traffic by kind. Retries on every Link can also feed a [Retry storm](/incidents/retry-storm).
+The mesh adds latency to each hop and takes a share of the member's CPU, and it bills a share of its members' Burn. The Cluster and the mesh each take Dev Hours from the product Teams unless a Platform team runs them. In a Company a new Service comes from [Carve out a Service](/research/service-carve-out) and has a deploy timer of its own, and a Team of its own needs [Service boundaries](/research/service-boundaries). The picture here only splits traffic by kind. Retries on every Link can also feed a [Retry storm](/incidents/retry-storm).
 
 ## In Quorum
 

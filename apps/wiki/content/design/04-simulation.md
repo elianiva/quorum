@@ -294,6 +294,7 @@ player researches Structured logs ([Observability](/design/12-observability#the-
 | `throttled` | A rate limiter rejected the request (HTTP 429).                                               |
 | `upstream`  | A Managed Component, such as the payment provider, failed.                                    |
 | `duplicate` | A retried checkout without an idempotency key charged twice.                                  |
+| `misrouted` | An L4 balancer sent a kind to an App Server whose Service does not serve it.                  |
 
 ## Retries
 

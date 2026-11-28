@@ -9,6 +9,31 @@ toc: top
 
 Quorum has no versions. It changes all the time, and this page lists the latest days, newest first, so you can see what moved since you last played. A page on this wiki can lag behind the game by a few days. Older days are in the [full changelog](/about/changelog/all).
 
+## Friday, 27 November 2026
+
+### Changed
+
+- Write the tile rails as background longhands ([190d410](https://github.com/elianiva/quorum/commit/190d41031a3ba88a813ef4b93638fe9548f1ebb8))
+- Remove the shared Foldkit controls ([a9ee98f](https://github.com/elianiva/quorum/commit/a9ee98f5a5723e11a1e3af2d645559ca597b60d2))
+- Port the web game state to Effect UI ([3d57c7a](https://github.com/elianiva/quorum/commit/3d57c7a2422a0f34230afd124bd0e583d16c69b5))
+- Remove the unused Foldkit lab screens ([b9fca13](https://github.com/elianiva/quorum/commit/b9fca1333cc078aee721bcbb15d349e2df9ab818))
+- Start sandbox, challenge, and room routes from the URL ([57d950b](https://github.com/elianiva/quorum/commit/57d950beaf98f76225cf3d6f1cdb2abab243c520))
+- Load the last played company when the board opens ([d7c2333](https://github.com/elianiva/quorum/commit/d7c2333a1a2b8ce44d625b8c770b9bc281d2f977))
+- Add the full title screen flows in Effect UI ([187b9c4](https://github.com/elianiva/quorum/commit/187b9c4b133d1dddd329f44a7da5899190da701d))
+- Allow the pinned Effect UI snapshot in strict diagnostics ([85dbdbb](https://github.com/elianiva/quorum/commit/85dbdbb111a8479a8a7e57bf5fdb691cb045deee))
+- Mount the team panel ([774b0a9](https://github.com/elianiva/quorum/commit/774b0a96bc6b5ac815a4177debd1be4aabaf03bc))
+- Add the hand-ported team panel ([dc8e9b2](https://github.com/elianiva/quorum/commit/dc8e9b2945785cc67929d5d8841b7cb36d16935f))
+- Mount the churn, cost, and mirror panels ([9749acd](https://github.com/elianiva/quorum/commit/9749acdeca7afb4d0fd3a552a1af1a9881286cb6))
+- Add the hand-ported cloud bill panel ([c0ac57e](https://github.com/elianiva/quorum/commit/c0ac57e944aea0b9139d480b623d55b1de316d30))
+- Add the hand-ported churn panel ([c234be7](https://github.com/elianiva/quorum/commit/c234be7ef22dc1b70442e08a97d7efae7ea5c3ad))
+- Add the hand-ported infrastructure mirror panel ([c8f3598](https://github.com/elianiva/quorum/commit/c8f3598d04cec89946cfe9f3f1cd667d70c09aa5))
+- Mount the inbox, mail queue, peek, and research views ([b0528e2](https://github.com/elianiva/quorum/commit/b0528e2add74ec4fa739855ad48b9abfc51bbbf3))
+- Add the hand-ported research panel ([7a7b69e](https://github.com/elianiva/quorum/commit/7a7b69e26648a564e99e37d2ce27ff8e1dff73fd))
+- Reuse the inbox unread counts in the dock ([47ff6a0](https://github.com/elianiva/quorum/commit/47ff6a0cc3eda7d72ace71d120616dbabbf2d8ec))
+- Add the hand-ported inbox, mail queue, and peek view ([e5a08d4](https://github.com/elianiva/quorum/commit/e5a08d436cc8f4157ffba510d1bf512a82a64ac5))
+- Mount the exit, playbook, sandbox, and challenge views ([0d50b6e](https://github.com/elianiva/quorum/commit/0d50b6e6566b2022cc390a935434dacc2defbf14))
+- Add the hand-ported challenge HUD and result panel ([8904220](https://github.com/elianiva/quorum/commit/89042204af36584e7b0f85147fc37609a2ae8f50))
+
 ## Wednesday, 25 November 2026
 
 ### Changed
@@ -101,15 +126,3 @@ Quorum has no versions. It changes all the time, and this page lists the latest 
 - Show what the Autoscaler is doing and what it does next ([1c4b845](https://github.com/elianiva/quorum/commit/1c4b84588a4e39b433c0f31adec4bf20e380d3b2))
 - Show which Link runs past its timeout on the Dashboard ([430a166](https://github.com/elianiva/quorum/commit/430a166238b2154a80468330eda4de8639ef18b7))
 - Replace the running build when a deploy lands ([fe8640f](https://github.com/elianiva/quorum/commit/fe8640fbd90cd0f747e1dc108788af94b1ec9397))
-
-## Thursday, 19 November 2026
-
-### Changed
-
-- Show the Cache's memory and load, and name a low hit ratio's cause ([19b4517](https://github.com/elianiva/quorum/commit/19b4517b993f599ab81e4ce35aa0b230b6b5cc88))
-- Open the Component's wiki page from the Inspector ([d72d04a](https://github.com/elianiva/quorum/commit/d72d04abbf968b0d05a08cab60bd2082b8487559))
-- Return cancelled work in progress to the queue ([59840c8](https://github.com/elianiva/quorum/commit/59840c8e55dec512c70d3d47d00d8312cc78fdf9))
-- Put the whole menu on one spine and move Settings into the list ([0c4d771](https://github.com/elianiva/quorum/commit/0c4d77155de0266e908818c2c735ec7a5deab1d7))
-- Turn the menu into a tree on a panning canvas ([786aff3](https://github.com/elianiva/quorum/commit/786aff32728b558ae4eacd74428175725447b1aa))
-- Add the changelog entry for 2026-11-18 (#62) ([768de40](https://github.com/elianiva/quorum/commit/768de40903e103fdfa0ed6b4bd512a49da062663))
-- Add the changelog entry for 2026-11-17 (#61) ([a60af49](https://github.com/elianiva/quorum/commit/a60af49b388488991628ff20f0dd6d154942d538))
